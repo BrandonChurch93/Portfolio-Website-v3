@@ -1,0 +1,89 @@
+.host {
+  position: relative;
+  overflow: hidden;
+}
+
+.host :global(.piece-stats) {
+  position: absolute;
+  left: var(--edge);
+  bottom: calc(var(--space-5) + var(--host-foot, 0px));
+  z-index: 2;
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  letter-spacing: var(--track-label);
+  color: var(--accent);
+  opacity: 0;
+  transition: opacity var(--dur-2) var(--ease-settle);
+  pointer-events: none;
+}
+
+.host[data-making='on'] :global(.piece-stats) {
+  opacity: 1;
+}
+
+.making {
+  position: absolute;
+  right: var(--edge);
+  bottom: calc(var(--space-5) + var(--host-foot, 0px));
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--touch);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--shade);
+  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  letter-spacing: var(--track-label);
+  cursor: pointer;
+  transition: color var(--dur-1), border-color var(--dur-1);
+}
+
+.making:hover,
+.making[aria-pressed='true'] {
+  color: var(--text);
+  border-color: var(--line-strong);
+}
+
+.making:focus-visible {
+  outline: var(--focus);
+  outline-offset: var(--focus-offset);
+}
+
+.dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+}
+
+.making[aria-pressed='true'] .dot,
+.host[data-making='on'] .dot {
+  background: var(--amber);
+  border-color: var(--amber);
+  box-shadow: 0 0 0.6rem var(--amber);
+}
+
+/* The switch on the left, the readout on the right. */
+.host[data-switch='left'] .making {
+  right: auto;
+  left: var(--edge);
+}
+
+.host[data-switch='left'] :global(.piece-stats) {
+  left: var(--edge);
+  bottom: auto;
+  top: calc(var(--nav-h) + var(--space-4));
+}
+
+/* On a phone the switch is compact. */
+@media (max-width: 520px) {
+  .making {
+    padding: 0 var(--space-2);
+    font-size: var(--step--2);
+    letter-spacing: 0.04em;
+  }
+}

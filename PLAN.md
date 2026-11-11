@@ -4,29 +4,35 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 
 ## How this works
 
-- `[ ]` not started · `[~]` in progress · `[x]` approved by Brandon, with the date
+- `[ ]` not started · `[~]` built or in progress, waiting on Brandon · `[x]` approved by Brandon, with the date
 - Only Brandon's approval ticks a box.
 - Every item is real code in this repo that he can open and look at.
 - Items inside a phase can run side by side. A phase's gate has to pass before the next phase builds on it.
 - Fable builds phases 0 to 6. Opus comes in at phase 7.
+- `QUALITY.md` is the bar for every item. `LOG.md` has the notes from each session.
 
 ## Now
 
-- **Phase:** 0
-- **Next:** Brandon reads `BRIEF.md` and says what is wrong or missing.
+- **Phase:** 0, built and waiting on Brandon
+- **Waiting on Brandon:** his read of Settled and Dropped in `BRIEF.md`, and his check of the items marked `[~]` below
+- **Next for Fable:** Phase 1, starting with the palette from his portrait
 
 ## Phase 0 · Foundation
 
-- [ ] Brandon approves `BRIEF.md`
-- [ ] Project set up and running (Next.js, TypeScript, CSS Modules, Three.js, GSAP)
-- [ ] Carried over from the second build: city, workbench, handheld, camera, rocket, the cursor light
-- [ ] Each piece opens on its own page so it can be checked alone
+- [~] `BRIEF.md`: Brandon reads Settled and Dropped and corrects them
+- [~] `QUALITY.md`: Brandon reads the bar and corrects it
+- [~] The workflow for any new or compacted session (`CLAUDE.md`, `LOG.md`)
+- [~] Project set up and running (Next.js, TypeScript, CSS Modules, Three.js, GSAP)
+- [~] Carried over from the second build: city, workbench, handheld, camera, rocket, the cursor light
+- [~] Each piece opens on its own page (`/lab/piece/<name>`)
+- [~] Screenshot and filmstrip tools (`npm run shot`, `npm run strip`)
 - [ ] A preview link that updates on every push
 
 ## Phase 1 · Color and light
 
 - [ ] Palette built from the portrait: background, text, accent, metal, water
 - [ ] The portrait set on the new background, looking seamless
+- [ ] One carried piece moved to the new palette as a test
 - [ ] Type in the new palette
 - [ ] The cursor light on a test surface
 - [ ] Primary and accent buttons
@@ -81,7 +87,8 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - [ ] The handheld and the camera in their categories
 - [ ] The PC animation
 - [ ] The software piece
-- [ ] The water touching the pieces
+- [ ] The water touching the pieces, replacing the old water drawn inside the city, the workbench and the rocket
+- [ ] The workbench and the rocket brought up to the bar (see `LOG.md`, 2026-11-11)
 
 ## Phase 6 · Words and pictures
 

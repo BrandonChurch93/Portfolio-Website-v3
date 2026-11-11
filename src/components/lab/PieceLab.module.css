@@ -1,0 +1,22 @@
+.main {
+  position: relative;
+  height: 100vh;
+  height: 100svh;
+}
+
+.title {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--edge);
+  z-index: 2;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  font-weight: 400;
+  letter-spacing: var(--track-label);
+  color: var(--text-3);
+}
+
+.stage {
+  position: absolute;
+  inset: 0;
+}

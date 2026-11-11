@@ -22,7 +22,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 
 ## The bar
 
-- A new level, not an improvement. At or above his PC Builder.
+- A new level, not an improvement. At or above his PC Builder. `QUALITY.md` spells the bar out.
 - It does not look like anyone else's portfolio.
 - World class on a phone, an iPad, a desktop and a 4K screen.
 - 3D is hyper detailed. He means detailed, not true to a real place. Nothing janky.
@@ -110,7 +110,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 
 - The more 3D the better. The pieces do not all follow the city. Each has its own idea.
 - Each kind of work can have its own piece.
-- Carried over from the second build: the city, the workbench, the handheld (he really likes it), the camera (he does not mind it) and the rocket.
+- Carried over from the second build: the city, the workbench, the handheld (he really likes it), the camera (he is happy to keep it) and the rocket.
 - He wants the PC from his PC Builder animated somewhere visible on the site. Not in the hero, and not as the piece for the work section.
 - Video and photos never compete with 3D.
 
@@ -120,7 +120,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 - The tone is serious: he wants to better humanity, work on cutting edge technology and push design. It is not a sales pitch. Fun is mentioned only on a project where fun was the point.
 - He rewrites the copy himself. Claude drafts in his voice only when he asks.
 - No em dashes anywhere on the site.
-- He has ten years of experience, almost eleven. "Twelve years" and "40+ clients" on the live site are out of date.
+- He has ten years of experience, almost eleven. The live site's "twelve years" and "40+ clients" lines get corrected.
 - How he wants to be positioned: someone who takes a product from zero to done (meets the client, understands the problem, designs it, builds it, tests it with users, ships it), works well with teams, and has spent countless hours evaluating, red teaming and improving frontier AI models. (Nov 10)
 - Project pages hold video, click through screenshots, clear live and code links, more detail, and the year.
 - Python stays on the site.
@@ -128,6 +128,8 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 ### How we work
 
 - Fable builds the creative parts and Brandon approves each one. Opus builds contained 3D objects and the remaining pages at the end.
+- The work runs across many chats, and any chat can lose its memory. So the repo carries everything a new or compacted session needs: the rules, the plan, the quality bar and a log. (Nov 11)
+- The plan is a checklist worked phase by phase. Several items can be in progress at once. (Nov 11)
 - Everything he approves is real code in this repo.
 - Nothing is approved as "fine if the final is better". If it is not at the bar when he sees it, it is not done.
 - He is told exactly what he is and is not approving at each step.
