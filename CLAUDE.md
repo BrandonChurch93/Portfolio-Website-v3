@@ -90,6 +90,8 @@ npm run strip -- "/lab/piece/city?entrance=1&label=0" --opening --times 0.4,1.2,
 | `src/styles/tokens.css`, `src/config/site.ts` | Design tokens and constants, each defined once |
 | `scripts/` | The screenshot tools |
 
+Every push to `main` deploys to https://portfolio-website-v3-wheat.vercel.app, which is where Brandon looks at the work on his own machine.
+
 The second build is at https://github.com/BrandonChurch93/Portfolio-Website-v2. Its code can be read for ideas and lifted from when Brandon asks for something it had. Its kit and its rules do not apply here.
 
 ## Code and writing

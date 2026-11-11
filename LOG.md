@@ -19,6 +19,7 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 - Left behind: the sculpture, the water system, the metal plates, every page and layout, the draft copy, the kit and its screenshot gates.
 - `/lab/piece/<name>` shows one piece alone. `/` is a plain index, not a design.
 - `npm run shot` and `npm run strip`.
+- A Vercel project, `portfolio-website-v3`, linked to this repo. Every push to `main` deploys to https://portfolio-website-v3-wheat.vercel.app. The first deploy built without errors. It was not opened from the web chat, so Brandon is the first to see it live.
 - Every piece was opened and looked at in this repo. Stills are in `reference/pieces/`. The city's opening plays (see `reference/pieces/city-opening.jpg`).
 
 **How the carried pieces look (Fable's reading, not Brandon's verdict)**

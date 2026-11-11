@@ -26,7 +26,7 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - [~] Carried over from the second build: city, workbench, handheld, camera, rocket, the cursor light
 - [~] Each piece opens on its own page (`/lab/piece/<name>`)
 - [~] Screenshot and filmstrip tools (`npm run shot`, `npm run strip`)
-- [ ] A preview link that updates on every push
+- [~] A preview link that updates on every push: https://portfolio-website-v3-wheat.vercel.app
 
 ## Phase 1 · Color and light
 
