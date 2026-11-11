@@ -2,6 +2,41 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-11 · Study 02, buttons (Fable, web chat)
+
+**What Brandon said first**
+
+- On Study 01: "an overall improvement for the colors. Looks good." The palette and the portrait on the page are approved and in `BRIEF.md`.
+
+**What was built**
+
+- The lit metal system from the second build, brought across whole: `src/metal/` and `src/components/Plate.tsx`. It is the system behind the buttons he liked.
+- `src/metal/finishes.ts` now takes its metals from the palette: copper-light, copper, bronze-deep. No brass is left in it.
+- `src/components/MetalButton.tsx`: one component, two variants. `primary` is bright copper with the words cut in and filled dark. `accent` is dark bronze with the words in copper, set flush. It renders a link when given `href` and a button when not.
+- `/lab/buttons`: the study.
+
+**How it was judged (Fable, from software stills at pixel ratio 2)**
+
+- Both read as lit metal, not as gradients: a studio reflection across the face, a bevel, a cut border, a shadow that falls away from the light.
+- The highlight moves with the lamp. `reference/studies/02-buttons-three-lights.jpg` shows three lamp positions.
+- The words are readable on both.
+- Not judged: hover, press and the tilt toward the cursor, which need a real pointer. They are his to try.
+
+**Things worth knowing**
+
+- The metal system can do more than buttons: plates with engraved words, header bars, and a photo sunk under glass in a recess. That last one is what he approved earlier ("the photos look great") and is a candidate for the cards in Phase 4. Nothing uses those kinds yet.
+- `plates.setWater()` exists so the stream can light metal near it. Nothing calls it yet. The new water should.
+- A button's width comes from its label's length (`--chars` in `MetalButton.module.css`).
+- The words on a plate are drawn in Sora 600. The fonts are loaded before a plate is baked.
+
+**Waiting on Brandon**
+
+1. His verdict on the two buttons.
+
+**Next**
+
+Phase 2, the water. It is all motion, which this web chat cannot see, so the recommendation is to build it in Claude Code on his Mac (see Open in `BRIEF.md`).
+
 ## 2026-11-11 · Study 01, color and light (Fable, web chat)
 
 **What Brandon said first**

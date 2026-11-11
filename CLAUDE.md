@@ -86,6 +86,8 @@ npm run strip -- "/lab/piece/city?entrance=1&label=0" --opening --times 0.4,1.2,
 | `src/lamp/` | The cursor light. One lamp, read by everything that is lit |
 | `src/hooks/` | `window.__site`, present only with `?hook=1`. The screenshot scripts drive pages through it |
 | `src/components/PieceView.tsx` | Puts a piece in a page |
+| `src/metal/`, `src/components/Plate.tsx` | Lit metal for the interface: one hidden WebGL context draws every plate from a height field |
+| `src/components/MetalButton.tsx` | The primary and accent buttons |
 | `src/app/lab/` | Pages for looking at one thing alone |
 | `src/config/palette.ts` | Every color, defined once. The interface gets them as CSS variables, 3D as numbers |
 | `src/styles/tokens.css`, `src/config/site.ts` | Type, spacing and other constants, each defined once |

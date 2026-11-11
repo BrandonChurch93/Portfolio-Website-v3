@@ -1,0 +1,33 @@
+.button {
+  position: relative;
+  display: inline-block;
+  width: calc(var(--chars) * 0.62rem + 3.6rem);
+  min-width: 9.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-2);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform var(--dur-2) var(--ease-settle);
+}
+
+.button:hover {
+  transform: translateY(-2px);
+}
+
+.button:active {
+  transform: translateY(1px);
+  transition-duration: var(--dur-1);
+}
+
+.button:focus-visible {
+  outline: var(--focus);
+  outline-offset: 5px;
+}
+
+.plate {
+  width: 100%;
+}

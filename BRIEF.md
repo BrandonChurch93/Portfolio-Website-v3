@@ -35,6 +35,8 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 
 - The site is built to complement his portrait (`reference/portrait.jpg`) so the photo looks seamless in the page. Dark and warm. (Nov 10, restated Nov 11)
 - The accent may sit slightly off the photo as long as it complements it. The yellow gold brass of the second build did not. (Nov 11)
+- The palette built from the portrait is approved: copper and bronze in place of brass, with the ground, light and text colors in `src/config/palette.ts`. "An overall improvement for the colors. Looks good." (Nov 11)
+- The portrait set straight on the page, melting into the background, is approved as shown in Study 01. (Nov 11)
 
 ### Type
 
