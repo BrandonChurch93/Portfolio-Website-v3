@@ -13,20 +13,20 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 
 ## Now
 
-- **Phase:** 0, built and waiting on Brandon
-- **Waiting on Brandon:** his read of Settled and Dropped in `BRIEF.md`, and his check of the items marked `[~]` below
-- **Next for Fable:** Phase 1, starting with the palette from his portrait
+- **Phase:** 1, color and light
+- **Waiting on Brandon:** his read of Settled and Dropped in `BRIEF.md`
+- **Next for Fable:** the palette from his portrait
 
 ## Phase 0 · Foundation
 
 - [~] `BRIEF.md`: Brandon reads Settled and Dropped and corrects them
-- [~] `QUALITY.md`: Brandon reads the bar and corrects it
+- [x] `QUALITY.md`: fine as it stands, may be refined later (Nov 11)
 - [~] The workflow for any new or compacted session (`CLAUDE.md`, `LOG.md`)
-- [~] Project set up and running (Next.js, TypeScript, CSS Modules, Three.js, GSAP)
-- [~] Carried over from the second build: city, workbench, handheld, camera, rocket, the cursor light
-- [~] Each piece opens on its own page (`/lab/piece/<name>`)
+- [x] Project set up and running (Nov 11)
+- [x] Carried over from the second build: city, workbench, handheld, camera, rocket, the cursor light. They look fine to him (Nov 11)
+- [x] Each piece opens on its own page (`/lab/piece/<name>`) (Nov 11)
 - [~] Screenshot and filmstrip tools (`npm run shot`, `npm run strip`)
-- [~] A preview link that updates on every push: https://portfolio-website-v3-wheat.vercel.app
+- [x] A preview link that updates on every push: https://portfolio-website-v3-wheat.vercel.app (Nov 11)
 
 ## Phase 1 · Color and light
 
@@ -41,6 +41,7 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 
 ## Phase 2 · The water, on its own
 
+- [ ] What the stream is made of: real studies to choose from (`BRIEF.md`, Open)
 - [ ] The body at rest and flowing
 - [ ] Falling
 - [ ] Landing, with a real splash

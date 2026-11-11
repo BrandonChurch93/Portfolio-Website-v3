@@ -23,6 +23,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 ## The bar
 
 - A new level, not an improvement. At or above his PC Builder. `QUALITY.md` spells the bar out.
+- He read `QUALITY.md` and is fine with it as it stands. He expects it may need refining once he sees what it produces. (Nov 11)
 - It does not look like anyone else's portfolio.
 - World class on a phone, an iPad, a desktop and a 4K screen.
 - 3D is hyper detailed. He means detailed, not true to a real place. Nothing janky.
@@ -61,6 +62,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 - Nothing is drawn ahead of it to show where it will go.
 - No permanent grid floor behind the page.
 - It has to look incredible.
+- The water drawn inside the second build's pieces (the city's falls, the desk's edge, the rocket's flume) "looks very low quality". He is not sure "water" is even the right name for what is there. (Nov 11)
 
 ### Hero
 
@@ -111,6 +113,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 - The more 3D the better. The pieces do not all follow the city. Each has its own idea.
 - Each kind of work can have its own piece.
 - Carried over from the second build: the city, the workbench, the handheld (he really likes it), the camera (he is happy to keep it) and the rocket.
+- He looked at the five carried pieces on his own machine and they look fine to him. (Nov 11)
 - He wants the PC from his PC Builder animated somewhere visible on the site. Not in the hero, and not as the piece for the work section.
 - Video and photos never compete with 3D.
 
@@ -152,7 +155,8 @@ Each line has Fable's recommendation where there is one. None of these are rules
 11. **Which projects show** in each category on the home page.
 12. **What ties the bottom of the page together.**
 13. **The rocket as built.** He has not judged it yet.
-14. **Where the building happens.** Recommendation: planning in the web chat, building in Claude Code on his Mac with Fable, because it can see what it renders.
+14. **What the stream is made of, and what it is called.** What the second build drew does not read as water to him. Recommendation: settle this first in Phase 2, from real studies he can look at, not from a description.
+15. **Where the building happens.** Recommendation: planning in the web chat, building in Claude Code on his Mac with Fable, because it can see what it renders.
 
 ## Dropped
 

@@ -53,6 +53,7 @@ This is the real calibration. Every row is his verdict, not a guess.
 | The city built in the second build | Kept. He prefers it because it is much more detailed | This is roughly the level for a hero piece |
 | First stream of light | Called it terribly simple | A glowing line is not water |
 | Third water preview | "Looks really bad". No real splash, physics not real, particles missing | Water needs shape, weight and particles |
+| The water drawn inside the carried pieces | "Looks very low quality". Not sure "water" is the right name for it | If it does not read as a liquid, it is not water |
 | First brass cards | Lower quality than he expected | Painted gradients do not read as metal |
 | Second brass cards, really lit | "Look really good" | Metal has to be lit, per pixel |
 | Whole page of brass plates | "Amateurish". Lost the tags and text | A good part repeated everywhere is a bad page. Never trade information for looks |
