@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { palette } from '../../config/palette';
 import { site } from '../../content/site';
 
 // The handheld's screen: a small game made for this site, drawn from the clock into a low resolution canvas that the
@@ -12,10 +13,10 @@ const RUNNER_X = 52;
 // The boot: the screen opens from a line, shows the title, then wipes into the game.
 export const BOOT = { open: 0.28, title: 1.5, wipe: 1.85 } as const;
 
-const C = {
+const C: Record<string, string> = {
   off: '#0d0805', skyTop: '#130a04', skyMid: '#1d1006', skyLow: '#2a1607', far: '#3a200b', farWin: '#7c4513', mid: '#1f1108', midWin: '#b0661b',
-  face: '#4a2a0f', faceDark: '#3a2009', edge: '#e09442', win: '#ffc46e', winOff: '#5e3510', water: '#ffb150', waterHi: '#ffe7b0',
-  drop: '#ffe7b0', dropCore: '#ffb150', ink: '#140b05', body: '#ffd08a', glow: '#8f5316', hud: '#ffe2a6', star: '#d98b3a', moon: '#f7c983',
+  face: '#4a2a0f', faceDark: '#3a2009', edge: '#e09442', win: palette.hot, winOff: '#5e3510', water: palette.hot, waterHi: palette.pale,
+  drop: palette.pale, dropCore: palette.hot, ink: '#140b05', body: '#ffc98a', glow: '#8f5316', hud: palette.pale, star: '#d98b3a', moon: '#f5c08a',
 };
 
 const FONT: Record<string, string> = {

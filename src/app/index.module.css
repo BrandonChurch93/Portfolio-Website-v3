@@ -27,7 +27,7 @@
   font-size: var(--step--1);
   font-weight: 400;
   letter-spacing: var(--track-label);
-  color: var(--accent);
+  color: var(--copper-light);
 }
 
 .list {
@@ -52,7 +52,7 @@
 }
 
 .list a:hover {
-  color: var(--amber);
+  color: var(--flame);
 }
 
 .list a:focus-visible {

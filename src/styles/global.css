@@ -48,8 +48,17 @@ h3 {
   text-wrap: balance;
 }
 
+p {
+  text-wrap: pretty;
+}
+
 a {
   color: inherit;
+}
+
+/* Light and other decoration may reach past its box, but never past the page: on a phone that widens the page. */
+main {
+  overflow-x: clip;
 }
 
 canvas {

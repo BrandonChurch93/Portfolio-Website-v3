@@ -14,8 +14,8 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 ## Now
 
 - **Phase:** 1, color and light
-- **Waiting on Brandon:** his read of Settled and Dropped in `BRIEF.md`
-- **Next for Fable:** the palette from his portrait
+- **Waiting on Brandon:** his verdict on Study 01 at `/lab/palette`, and his read of Settled and Dropped in `BRIEF.md`
+- **Next for Fable:** the primary and accent buttons in the new metal, then Phase 2
 
 ## Phase 0 · Foundation
 
@@ -30,11 +30,13 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 
 ## Phase 1 · Color and light
 
-- [ ] Palette built from the portrait: background, text, accent, metal, water
-- [ ] The portrait set on the new background, looking seamless
-- [ ] One carried piece moved to the new palette as a test
-- [ ] Type in the new palette
-- [ ] The cursor light on a test surface
+Study 01 is at `/lab/palette`. Stills are in `reference/studies/`.
+
+- [~] Palette built from the portrait: ground, light, metal, text (`src/config/palette.ts`)
+- [~] The portrait set on the new background, looking seamless
+- [~] One carried piece moved to the new palette as a test: the handheld, brass to copper
+- [~] Type in the new palette
+- [~] The cursor light: it shifts the light behind the portrait and crosses the handheld's metal
 - [ ] Primary and accent buttons
 
 **Gate:** the portrait, the metal and the water read as one light.

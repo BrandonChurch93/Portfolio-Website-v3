@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { Builder, pause, at, lathe, rbox, xf } from '../../world/build';
 import { circle, inset, rounded, rrect, screw, slab, type P2, type V } from '../../world/shape';
 import { dielectric, metal, screenGlass } from '../../world/surface';
+import { hex } from '../../config/palette';
 import { site } from '../../content/site';
 import { HandheldScreen, RES } from './screen';
 
@@ -205,6 +206,9 @@ function plaqueText(): THREE.MeshPhysicalMaterial {
   return m;
 }
 
+// Copper and bronze tarnish toward brown.
+const PATINA: [number, number, number] = [0.74, 0.66, 0.58];
+
 export async function buildHandheld(): Promise<HandheldModel> {
   const root = new THREE.Group();
   root.scale.setScalar(HH.SCALE);
@@ -220,22 +224,22 @@ export async function buildHandheld(): Promise<HandheldModel> {
   // ---- materials ------------------------------------------------------------------------------------
   const eng = engraving();
   const brassFace = engraved(eng, -0.05, 'cut');
-  const brass = metal({ name: 'hhBrass', color: 0xdcae62, rough: 0.3, brush: 'x', tarnish: 0.35, aniso: 0.75, anisoRot: Math.PI / 2, extra: brassFace.chunks });
+  const brass = metal({ name: 'hhBrass', color: hex('copper'), rough: 0.3, brush: 'x', tarnish: 0.35, patina: PATINA, aniso: 0.75, anisoRot: Math.PI / 2, extra: brassFace.chunks });
   brass.userData.uniforms = brassFace.uniforms;
-  const brassPlain = metal({ name: 'hhBrassPlain', color: 0xd6a85e, rough: 0.3, brush: 'radial-z', tarnish: 0.25 });
+  const brassPlain = metal({ name: 'hhBrassPlain', color: hex('copper'), rough: 0.3, brush: 'radial-z', tarnish: 0.25, patina: PATINA });
   const deckFace = engraved(eng, -0.6, 'inlay');
-  const deck = metal({ name: 'hhDeck', color: 0x4e3420, rough: 0.46, cast: 0.9, tarnish: 0.3, extra: deckFace.chunks });
+  const deck = metal({ name: 'hhDeck', color: 0x4e3420, rough: 0.46, cast: 0.9, tarnish: 0.3, patina: PATINA, extra: deckFace.chunks });
   deck.userData.uniforms = deckFace.uniforms;
-  const bronze = metal({ name: 'hhBronze', color: 0x77522f, rough: 0.36, brush: 'radial-z', tarnish: 0.2 });
+  const bronze = metal({ name: 'hhBronze', color: 0x77522f, rough: 0.36, brush: 'radial-z', tarnish: 0.2, patina: PATINA });
   const steel = metal({ name: 'hhSteel', color: 0xbdb5aa, rough: 0.24, brush: 'radial-z' });
   const ivory = dielectric('hhIvory', 0xcdbfa6, 0.34, { coat: 0.6, vary: 0.05, scale: 0.08 });
   const rubber = dielectric('hhRubber', 0x1d1815, 0.78, { vary: 0.12, scale: 0.3, sheen: 0.3 });
   const ink = dielectric('hhInk', 0x0f0b09, 0.7, { vary: 0.05 });
   const cloth = dielectric('hhCloth', 0x16110d, 0.95, { vary: 0.2, scale: 1.4 });
   const stone = dielectric('hhStone', 0x1a1512, 0.42, { vary: 0.45, scale: 0.035, coat: 0.4 });
-  const floor = dielectric('hhFloor', 0x17120f, 0.72, { vary: 0.2, scale: 0.004 });
+  const floor = dielectric('hhFloor', 0x180f0b, 0.72, { vary: 0.2, scale: 0.004 });
   const glass = screenGlass('hhGlass');
-  const led = new THREE.MeshStandardMaterial({ color: 0x3a1c08, emissive: new THREE.Color(0xff9a38), emissiveIntensity: 0, roughness: 0.2 });
+  const led = new THREE.MeshStandardMaterial({ color: 0x3a1c08, emissive: new THREE.Color(hex('flame')), emissiveIntensity: 0, roughness: 0.2 });
   led.name = 'hhLed';
 
   const controls: Control[] = [];

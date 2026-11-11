@@ -11,7 +11,7 @@
   font-family: var(--font-mono);
   font-size: var(--step--2);
   letter-spacing: var(--track-label);
-  color: var(--accent);
+  color: var(--copper-light);
   opacity: 0;
   transition: opacity var(--dur-2) var(--ease-settle);
   pointer-events: none;
@@ -57,14 +57,14 @@
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 50%;
-  border: 1px solid var(--accent);
+  border: 1px solid var(--copper-light);
 }
 
 .making[aria-pressed='true'] .dot,
 .host[data-making='on'] .dot {
-  background: var(--amber);
-  border-color: var(--amber);
-  box-shadow: 0 0 0.6rem var(--amber);
+  background: var(--flame);
+  border-color: var(--flame);
+  box-shadow: 0 0 0.6rem var(--flame);
 }
 
 /* The switch on the left, the readout on the right. */

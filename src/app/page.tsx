@@ -10,6 +10,13 @@ export default function Index() {
       <p className={styles.label}>Brandon Church · portfolio · third build</p>
       <h1 className={styles.title}>Work in progress</h1>
       <p className={styles.note}>Nothing on this page is designed yet. It lists what can be opened and checked.</p>
+      <h2 className={styles.group}>Studies</h2>
+      <ul className={styles.list}>
+        <li>
+          <Link href="/lab/palette">Color and light</Link>
+          <span className={styles.minor}>Phase 1 · the palette from the portrait</span>
+        </li>
+      </ul>
       <h2 className={styles.group}>Pieces carried from the second build</h2>
       <ul className={styles.list}>
         {PIECES.map((name) => (

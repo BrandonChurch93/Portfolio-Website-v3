@@ -1,0 +1,343 @@
+.main {
+  padding: var(--space-9) var(--edge) var(--space-10);
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
+  grid-template-areas: 'intro photo' 'sampled photo';
+  grid-template-rows: auto 1fr;
+  column-gap: var(--space-8);
+  row-gap: var(--space-8);
+  align-items: start;
+}
+
+.intro {
+  grid-area: intro;
+}
+
+.sampled {
+  grid-area: sampled;
+}
+
+.label,
+.kicker {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  font-weight: 400;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--copper-light);
+}
+
+.title {
+  margin-top: var(--space-4);
+  font-size: clamp(2.4rem, 1rem + 3.2vw, 4.4rem);
+  font-weight: 300;
+  letter-spacing: var(--track-display);
+  line-height: 1.05;
+}
+
+.lede {
+  margin-top: var(--space-6);
+  max-width: 36rem;
+  font-size: var(--step-1);
+  color: var(--text-2);
+}
+
+.note {
+  max-width: 34rem;
+  color: var(--text-3);
+}
+
+.section {
+  margin-top: var(--space-10);
+}
+
+.section > .note {
+  margin-top: var(--space-3);
+}
+
+/* The photograph melts into the page: anything in it darker than the page takes the page's own color. */
+.photo {
+  grid-area: photo;
+  isolation: isolate;
+  background: var(--bg);
+}
+
+.photo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  mix-blend-mode: lighten;
+  -webkit-mask-image: linear-gradient(to bottom, #000 70%, transparent 98%), linear-gradient(to right, transparent 0, #000 7%, #000 93%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 70%, transparent 98%), linear-gradient(to right, transparent 0, #000 7%, #000 93%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
+}
+
+.caption {
+  margin-top: var(--space-4);
+  font-size: var(--step--1);
+  color: var(--text-3);
+  text-align: center;
+}
+
+.samples {
+  margin-top: var(--space-5);
+  padding: 0;
+  list-style: none;
+}
+
+.samples li {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--line);
+}
+
+.samples li:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.dot {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.where {
+  color: var(--text-2);
+}
+
+.hex {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: 0.04em;
+  color: var(--text-3);
+}
+
+/* The palette. */
+.families {
+  margin-top: var(--space-6);
+}
+
+.family {
+  display: grid;
+  grid-template-columns: minmax(0, 15rem) minmax(0, 1fr);
+  gap: var(--space-7);
+  padding: var(--space-7) 0;
+  border-top: 1px solid var(--line);
+}
+
+.familyName {
+  font-size: var(--step-3);
+  font-weight: 300;
+}
+
+.familyHead .note {
+  margin-top: var(--space-3);
+}
+
+.chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: grid;
+  align-content: start;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--space-3);
+  row-gap: var(--space-1);
+  align-items: baseline;
+}
+
+.swatch {
+  grid-column: 1 / -1;
+  height: 6.5rem;
+  margin-bottom: var(--space-3);
+  border-radius: var(--radius-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.token {
+  white-space: nowrap;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  color: var(--text);
+}
+
+.use {
+  grid-column: 1 / -1;
+  font-size: var(--step--1);
+  line-height: 1.45;
+  color: var(--text-3);
+}
+
+/* One light. */
+.pair {
+  margin-top: var(--space-7);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: var(--space-6);
+  align-items: end;
+}
+
+.lit {
+  position: relative;
+  isolation: isolate;
+  aspect-ratio: 1600 / 1552;
+  --gx: 50%;
+  --gy: 47%;
+}
+
+/* The light behind him, shaped like the one in the photograph: a wide soft core that falls away to nothing. */
+.glow {
+  position: absolute;
+  inset: -30%;
+  z-index: -1;
+  background: radial-gradient(
+    ellipse 33% 29% at var(--gx) var(--gy),
+    var(--ember) 0%,
+    var(--ember) 36%,
+    color-mix(in oklab, var(--ember) 62%, var(--ember-deep)) 58%,
+    color-mix(in oklab, var(--ember-deep) 70%, transparent) 80%,
+    transparent 100%
+  );
+}
+
+.lit img {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: auto;
+  -webkit-mask-image: linear-gradient(to bottom, #000 74%, transparent 99%);
+  mask-image: linear-gradient(to bottom, #000 74%, transparent 99%);
+}
+
+.piece {
+  aspect-ratio: 16 / 11;
+  -webkit-mask-image: radial-gradient(ellipse closest-side at 50% 54%, #000 56%, transparent 100%);
+  mask-image: radial-gradient(ellipse closest-side at 50% 54%, #000 56%, transparent 100%);
+}
+
+.before {
+  margin-top: var(--space-8);
+  display: grid;
+  grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
+  gap: var(--space-6);
+  align-items: center;
+}
+
+.before img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-2);
+  opacity: 0.9;
+}
+
+/* Type. */
+.type {
+  margin-top: var(--space-6);
+  padding-top: var(--space-7);
+  border-top: 1px solid var(--line);
+  max-width: 56rem;
+}
+
+.specLabel {
+  margin-top: var(--space-7);
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.specLabel:first-child {
+  margin-top: 0;
+}
+
+.display {
+  margin-top: var(--space-3);
+  font-family: var(--font-display);
+  font-size: var(--step-5);
+  font-weight: 400;
+  letter-spacing: var(--track-display);
+  line-height: 1.04;
+  color: var(--text);
+}
+
+.heading {
+  margin-top: var(--space-3);
+  font-family: var(--font-display);
+  font-size: var(--step-4);
+  font-weight: 300;
+  letter-spacing: var(--track-tight);
+  line-height: 1.1;
+  color: var(--text);
+}
+
+.body {
+  margin-top: var(--space-3);
+  max-width: 38rem;
+  font-size: var(--step-1);
+  color: var(--text-2);
+}
+
+.mono {
+  margin-top: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--track-label);
+  color: var(--copper-light);
+}
+
+.small {
+  margin-top: var(--space-7);
+  font-size: var(--step--1);
+  color: var(--text-3);
+}
+
+@media (max-width: 900px) {
+  .main {
+    padding-top: var(--space-8);
+  }
+
+  .hero,
+  .pair,
+  .family,
+  .before {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hero {
+    grid-template-areas: 'intro' 'photo' 'sampled';
+    grid-template-rows: auto;
+    row-gap: var(--space-6);
+  }
+
+  .family {
+    gap: var(--space-5);
+  }
+
+  .chips {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .swatch {
+    height: 5rem;
+  }
+
+  .chip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

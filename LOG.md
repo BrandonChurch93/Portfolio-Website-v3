@@ -2,6 +2,53 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-11 · Study 01, color and light (Fable, web chat)
+
+**What Brandon said first**
+
+- The five carried pieces look fine on his machine.
+- The water inside them "looks very low quality", and he is not sure "water" is the right name for it.
+- He is fine with `QUALITY.md` as it stands and expects to refine it once he sees what it produces.
+- All three are in `BRIEF.md`. He has not yet said he read Settled and Dropped.
+
+**What was built**
+
+- `src/config/palette.ts`: fifteen colors in four families, defined once. `src/app/layout.tsx` sets them on `<html>` as CSS variables. 3D reads them through `hex()`.
+- `/lab/palette`: the study. The portrait on the new ground, the samples it was built from, the palette, the portrait and the handheld under one light, and type.
+- The handheld moved from brass (hue 37) to copper (hue 29). Its metal now measures hue 28 to 29 on screen, against the photo's 31.
+- `metal()` in `src/world/surface.ts` takes a `patina` so copper tarnishes brown, not the grey green of brass.
+
+**What the portrait measured**
+
+- The light behind him: `#5b2f00`. Hue 31, saturation 100, value 36. It is a dark color, not a bright one.
+- It falls through `#3b1b00` and `#1a0700` to pure black at the frame's edge.
+- Shirt `#160e0d`. Skin about `#bb6555`. Hair about `#633b1a`.
+- The second build's small accents were already at hue 30. The mismatch he saw was its brass, at hue 37 to 38, which covered most of the page.
+
+**How it was judged (Fable, from software stills)**
+
+- The photo and the copper handheld read as one light. The old brass beside them does not.
+- Nothing sits in a visible rectangle, on desktop or phone.
+- Not judged: how the light feels as it moves. That is his to judge on the preview.
+
+**Things worth knowing**
+
+- To set the photo on the page with no visible edge, `mix-blend-mode: lighten` against the page color. Anything in the photo darker than the page becomes the page. A mask alone left a dark rectangle, because the photo's black is darker than the ground.
+- A noise layer with a blend mode, placed inside an isolated element, painted a grey square over the page. It was removed. If grain is ever wanted, mask it to the shape it sits on.
+- Decoration that reaches past its box (the glow) widened the page on a phone. `main { overflow-x: clip }` in `global.css` stops that.
+- A 3D piece placed in a page shows its floor as a rectangle unless it is masked. The study uses a soft elliptical mask. Phase 5 needs a real answer for how pieces sit in the page.
+- The pieces' colors are written inline in each piece's `model.ts` and `index.ts`. Moving a piece to the palette is a per-piece edit. Only the handheld is done.
+- The cut-out portrait came from the second build. Its hair edge is good enough at this size. Phase 4 should check it at full size.
+
+**Waiting on Brandon**
+
+1. His verdict on the study: the palette, the copper, the portrait on the page.
+2. His read of Settled and Dropped in `BRIEF.md`.
+
+**Next**
+
+The primary and accent buttons in the new metal. Then Phase 2, which opens by settling what the stream is made of.
+
 ## 2026-11-11 · Restart and foundation (Fable, web chat)
 
 **What happened**

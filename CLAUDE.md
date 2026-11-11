@@ -80,14 +80,15 @@ npm run strip -- "/lab/piece/city?entrance=1&label=0" --opening --times 0.4,1.2,
 | Path | What |
 |---|---|
 | `BRIEF.md`, `PLAN.md`, `QUALITY.md`, `LOG.md` | The record |
-| `reference/` | The portrait, the bar, the rejected second build, the pieces as carried |
+| `reference/` | The portrait, the bar, the rejected second build, the pieces as carried, stills of each study |
 | `src/pieces/` | The 3D pieces, one folder each, behind the contract in `src/world/piece.ts` |
 | `src/world/` | Shared 3D code: the stage, materials, the clock, quality tiers |
 | `src/lamp/` | The cursor light. One lamp, read by everything that is lit |
 | `src/hooks/` | `window.__site`, present only with `?hook=1`. The screenshot scripts drive pages through it |
 | `src/components/PieceView.tsx` | Puts a piece in a page |
 | `src/app/lab/` | Pages for looking at one thing alone |
-| `src/styles/tokens.css`, `src/config/site.ts` | Design tokens and constants, each defined once |
+| `src/config/palette.ts` | Every color, defined once. The interface gets them as CSS variables, 3D as numbers |
+| `src/styles/tokens.css`, `src/config/site.ts` | Type, spacing and other constants, each defined once |
 | `scripts/` | The screenshot tools |
 
 Every push to `main` deploys to https://portfolio-website-v3-wheat.vercel.app, which is where Brandon looks at the work on his own machine.

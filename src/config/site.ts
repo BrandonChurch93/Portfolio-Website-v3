@@ -1,10 +1,10 @@
-// Constants the code needs. Each appears once, here.
-// Carried from the second build with the 3D pieces. The colors are the second build's and get replaced in Phase 1.
+// Constants the code needs. Each appears once, here. Colors are in ./palette.
+import { hex, palette } from './palette';
 
 export const SITE_NAME = 'Brandon Church';
 
-// Colors that code needs as numbers (WebGL clears, shaders). The interface reads src/styles/tokens.css.
-export const COLORS = { bg: '#0c0a09', amber: '#ff9d3c', accent: '#d4a574', text: '#f5f2ee', waterAmber3d: 0xff9a38 } as const;
+// The names the carried 3D pieces use for the palette. waterAmber3d is the stream's color as a number.
+export const COLORS = { bg: palette.bg, amber: palette.flame, accent: palette['copper-light'], text: palette.text, waterAmber3d: hex('flame') } as const;
 
 export const PIECES = ['city', 'workbench', 'handheld', 'camera', 'rocket'] as const;
 export type PieceName = (typeof PIECES)[number];

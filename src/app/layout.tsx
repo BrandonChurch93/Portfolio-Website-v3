@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from 'next';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import '@fontsource-variable/sora';
 import '@fontsource-variable/inter';
 import '@fontsource-variable/jetbrains-mono';
 import '../styles/tokens.css';
 import '../styles/global.css';
+import { paletteVars } from '../config/palette';
 import { COLORS, SITE_NAME } from '../config/site';
 import { Runtime } from '../components/Runtime';
 
@@ -23,7 +24,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" style={paletteVars as CSSProperties}>
       <body>
         {children}
         <Runtime />

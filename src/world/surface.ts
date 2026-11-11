@@ -60,6 +60,8 @@ export interface MetalOptions {
   brush?: 'x' | 'y' | 'z' | 'radial-z' | 'none';
   // Darkening and roughening by tarnish, 0 to 1.
   tarnish?: number;
+  // The tone tarnish pulls the metal toward. The default is the grey green of old brass; copper and bronze go brown.
+  patina?: [number, number, number];
   // A cast face: a soft, uneven tone.
   cast?: number;
   // Anisotropic highlights for brushed metal: strength, and the angle of the stretch from the uv u axis.
@@ -81,6 +83,7 @@ export function metal(o: MetalOptions): THREE.MeshPhysicalMaterial {
     : o.brush === 'radial-z' ? 'vec3(length(vObj.xy) * 7.0, atan(vObj.y, vObj.x) * 0.6, vObj.z * 0.2)'
     : '';
   const tarn = (o.tarnish ?? 0).toFixed(3), cast = (o.cast ?? 0).toFixed(3);
+  const pat = (o.patina ?? [0.78, 0.86, 0.7]).map((v) => v.toFixed(3)).join(', ');
   const e = o.extra ?? {};
   return shade(m, `metal-${o.name}`, {
     ...e,
@@ -90,7 +93,7 @@ float mBrush(){ ${q ? `float px = length(fwidth(vObj)); float a1 = 1.0 - smooths
     color: `
   { float tn = mTarnish(); float br = mBrush();
     diffuseColor.rgb *= (0.94 + 0.12 * br) * (1.0 - 0.38 * tn) * (1.0 - ${cast} * 0.35 * wFbm(vObj * 0.08));
-    diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(0.78, 0.86, 0.7), tn * 0.5); }
+    diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(${pat}), tn * 0.5); }
   ${e.color ?? ''}`,
     rough: `
   roughnessFactor = clamp(roughnessFactor + 0.1 * (mBrush() - 0.5) + 0.2 * mTarnish() + ${cast} * 0.12 * (wFbm(vObj * 0.11) - 0.5), 0.04, 1.0);
