@@ -134,6 +134,12 @@ Said after scrolling the second round at `/lab/stream`, with the facets in. The 
 - At a landing, while the page is not being scrolled, shards keep flying out. "I do like the periodic piece flying down and bouncing every now and then, but it shouldn't be like a constant stream of things flying out of the stream." In exact terms: at rest a landing throws a single shard now and then, at uneven intervals, never a steady flow.
 - A thrown shard keeps its own momentum, and the flow never turns it round. He saw shards thrown left on the card land short, then get carried right across it and off the far end: "a mysterious force pulls them off to the right side". Agreed with Fable (Nov 12): one thrown with enough force clears the near edge and falls, which he likes "a lot". One that lands short skids a little the way it was going, stops, and fades within about a second. One thrown the way the stream runs can still ride along and spill off that end. The same on the title. Nothing heaps up.
 
+**His verdict on the three changes (Nov 12)**
+
+- "Everything is pretty much perfect now across the board minus one thing." At a strike "the density is now perfect and everything looks super realistic, except for the very end of the animation".
+- The one thing, in his words: "there's like a sloshing effect". "A lot of the particles are going straight up in the air", and "these ones that go straight up fall straight down, so what happens is after the strike there's this beautiful explosion and then once it ends, there's a bunch of particles that kinda just get pushed off the right side of the card all at once". On WORK the same: after it ends "a bunch of particles get shot out both sides".
+- In exact terms: a strike must be one burst that dies away. There must be no second wave, where shards that went up and came back down are carried off the end of the title or the card together. Not built yet.
+
 **How it is built**
 
 He added these while the stream was a simulated liquid. They hold for anything in the stream that is simulated: shards thrown loose, sparks.
