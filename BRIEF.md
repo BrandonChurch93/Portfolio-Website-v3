@@ -48,7 +48,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 
 ### The stream
 
-- **Where it stands (Nov 12):** the stream's test shot is approved: "this is good to move on with". It is at `/lab/stream`, with a paused frame at `/lab/stream?hold`. Three small things he asked for after approving it are built and pushed, and he has not looked at them yet: the lone shard at rest drops off the far end again, riding shards on the title and the card stay with the stream, and nothing vanishes, reappears or jumps there. The first round's shards are still one switch away: the switch at the foot of that page, or `/lab/stream?shards=first`. Calls Fable made for him while building are listed in `LOG.md` and are his to overturn. None of them is a rule.
+- **Where it stands (Nov 12):** the stream's test shot is approved, and he calls it "almost certainly the finalized base" (see "The stream is the finished base" below). It is at `/lab/stream`, with a paused frame at `/lab/stream?hold`. The three small things he asked for after approving it are built, and he has looked: "All my issues have been fixed." The first round's shards are still one switch away: the switch at the foot of that page, or `/lab/stream?shards=first`. Calls Fable made for him while building are listed in `LOG.md` and are his to overturn. None of them is a rule.
 - It is the most important thing on the site. "It's probably like the most important thing on the site to get right." (Nov 11)
 - It is called the stream, which is his own word for it. It is never called water, in anything written for a model or shown to a visitor. His reason: "if I call it water, then the model is gonna build it as if it acts like water". It is not called the pour either: that was its name while it was going to be molten metal. (Nov 11)
 
@@ -271,6 +271,7 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
 - He is told exactly what he is and is not approving at each step.
 - The building happens in Claude Code on his Mac, with Fable, from Phase 2 on. Planning can still happen in the web chat. Both read and write this repo. (Nov 11)
 - Every message to him ends with a clear, simple recommendation.
+- He and Fable are free to change course: "me and you have the freedom to pivot and recommend new things". When Fable recommends something that goes against a rule agreed here, it is laid out plainly in the chat, in bold, naming the rule: "they need to be explicitly laid out here in the chat maybe even bold so I make sure I see them". The rule stands until he changes it. Claude Code builds to the rules as written: "Claude code is our executioner." (Nov 12)
 - Before the full build of the page there is a final pass over what is already approved, because the stream may change it: "now that we have the stream in place, I may want to update things we've already talked about like the buttons". (Nov 12)
 - When something is ready to show him: run a production build, commit, push to `main`, and give him the live link. He is often on his iPad, which cannot open localhost. (Nov 11)
 
@@ -297,7 +298,15 @@ Each line has Fable's recommendation where there is one. None of these are rules
     - Work: the stream "hits work and then splits and then it goes down each of the sides and then it hits the side of the project cards as they load in so it's timed perfectly", "going down each side, symmetrical framing".
     - The 3D pieces: "it'd be really cool if the stream hits that section of the screen, and then the actual art comes into life from that like it's the catalyst and the animation opens and closes for that 3-D object based on the stream's positioning".
     - The look of the site updated to work with the stream, "like the card we just used in the demo". "I love how the stream hit it." "We also need to exactly figure out what the cards will look like."
-16. **The order the sections are worked in.** He wants them taken one at a time: "my idea should go section by section". Fable's list and recommended starting point are in `LOG.md`. Not agreed yet.
+    - The stream as the reason things arrive: "I feel like the stream could be used to give life to each of the page and play part onto why these sections and potentially some of the individual components are coming on screen."
+    - A wilder idea he is less keen on: 3D objects in the background, such as a shelf, for the stream to bounce off. He sees that it would need the whole site to "feel coherently 3-D and part of the same world", which could mean "revisiting pretty much everything that's locked in".
+    - **Work, drawn three ways as wireframes** at `/lab/work-draft` (Study 09), waiting on his pick. A · Frame is his idea as he described it. B · Steps is his idea with the right column half a row lower and the stream landing on each card. C · Middle is one stream winding down between the columns. Where each one meets the settled rules:
+        - A runs straight down both sides for the whole section, against "It never runs straight down", and draws a box round the section, against the quality bar's "nothing boxed".
+        - B breaks no rule about where the stream goes.
+        - C changes "hit the work title dead center, split, and run down both sides": the two sides close again under the title. It leans on "It can run through the middle of a section to make a layout that breaks the usual pattern".
+        - All three touch every card, which sits against "It also should not touch everything". If he picks one, he rules on that too.
+        - Fable recommends C. Not decided.
+16. **The order the sections are worked in.** He wants them taken one at a time: "my idea should go section by section". Work is first: he asked for its rough draft ("I would love to see a rough draft", Nov 12). The order of the rest is not agreed. Fable's list is in `LOG.md`.
 
 ## Dropped
 

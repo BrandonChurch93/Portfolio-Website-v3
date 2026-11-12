@@ -14,11 +14,12 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 
 ## Now
 
-- **Phase:** 2, the stream. Its test shot is approved, and he calls it "almost certainly the finalized base" (Nov 12). He is ready to move on to what comes next, which is not decided yet
-- **His words (Nov 12):** "This looks great to me. If there is any improvements to be made, it'll be very tiny ones, but I think for right now this is good to move on with." Earlier the same day: "I think we nailed this and we build everything else off of this stream"
-- **Where it is:** `/lab/stream`, built in Claude Code on Brandon's Mac. `LOG.md` has each round's account
-- **Not decided:** what comes next. Fable's recommendation, which he agreed to in talk but has not started: draw the stream's route down the whole page first, then sketch the layout around it, then design the components as surfaces the stream and the cursor light. The city and the opening get revisited with the hero (`BRIEF.md`, Hero)
-- **Built and pushed, waiting on Brandon's look:** three small things he asked for after approving it. The lone shard at rest drops off the far end again. Riding shards on the title and the card stay with the stream. None vanishes, reappears or jumps there. `LOG.md`, top entry, has the cause and the counts, and what else the fix changes, which is his to overturn
+- **Phase:** 3 has begun, a section at a time, starting with Work. Phase 2's test shot is approved and he calls the stream "almost certainly the finalized base" (Nov 12). Its small items below stay open and block nothing
+- **In front of Brandon:** three wireframe layouts for the Work section at `/lab/work-draft` (Study 09). A · Frame is his idea as he described it, B · Steps is his idea with the stream landing on each card, C · Middle is one stream winding down between the columns. Fable recommends C. `BRIEF.md`, Open 15, says where each meets the settled rules
+- **What he is choosing:** where the stream goes through Work, and with it whether the rows are straight or the right column sits half a row lower. Nothing else on that page is for approval: not the cards' look, not the spacing, not the phone, not how many cards are struck
+- **After his pick:** the card's look, here in the web chat. Then the stream's real route through Work, in Claude Code on his Mac
+- **He is on his iPad for now, with no mouse.** Anything that needs the cursor is confirmed when he is home
+- **Where the stream is:** `/lab/stream`, built in Claude Code on Brandon's Mac. `LOG.md` has each round's account
 - **Small things left on the stream, none blocking:** the rest of Phase 2's list below. A real phone and a real iPad
 
 ## Phase 0 · Foundation
@@ -67,7 +68,7 @@ Set aside, kept as records: the molten metal test shot at `/lab/pour`, its looks
 
 ## Phase 3 · The home page, composed around the stream
 
-- [ ] Layout sketches to choose from
+- [~] Layout sketches to choose from · Work: three wireframes at `/lab/work-draft`, waiting on his pick (Nov 12)
 - [ ] The spacing system
 - [ ] Hero
 - [ ] Work

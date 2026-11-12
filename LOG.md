@@ -2,6 +2,61 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-12 · The Work section, drawn three ways (Fable, web chat)
+
+**What Brandon said**
+
+- "I would love to see a rough draft." He is on his iPad for a few hours with no mouse, so anything that needs the cursor is confirmed when he is home.
+- "I feel like the stream could be used to give life to each of the page and play part onto why these sections and potentially some of the individual components are coming on screen."
+- A wilder idea he is less keen on: 3D objects in the background, such as a shelf, for the stream to bounce off. It would need the whole site to feel like one 3D world. In `BRIEF.md`, Open 15.
+- A new rule for how we work, in `BRIEF.md` and `CLAUDE.md`: he and Fable may pivot, and anything Fable recommends against an agreed rule is laid out in the chat in bold. Claude Code builds to the rules as written.
+- He has not seen the draft yet.
+
+**What was built**
+
+- Study 09 at `/lab/work-draft` (`src/components/lab/WorkDraft.tsx`): a wireframe of Work with a hero block above and a Skills block below, so the line has somewhere to come from and go to. A switch at the top, which stays on screen, picks the layout. `?v=a`, `b` or `c` opens one directly, and `?whole` draws the whole line for a still.
+- The line stands in for the stream. Its leading end is held 62% of the way down the screen and follows the scroll, and it goes back when the page is scrolled up. A card is faint until the line reaches it, then lights from the side it was struck on. Nothing is drawn ahead of the line.
+- The route is planned from where the title, the categories, the cards and the button really are, like the real stream's `route.ts`, so it holds at any width. How far the line has run goes by height on the page, as the real route's `floor` does, so a run across a card's top is covered at once.
+- **A · Frame.** His idea as he described it: parts on WORK, runs straight down both sides of a plain two column grid, lights the side of each card as it passes, and the two sides meet on the View all work button.
+- **B · Steps.** His idea made to land. The right column sits half a row lower. Each side drops from the title onto the top of its first card, as on the card in the test shot, runs off the end and down the side, swings off the foot and lands on the top corner of the next. The cards wake one at a time, left then right. The two sides sweep in to the button.
+- **C · Middle.** One stream. The two sides close again under the categories, and the stream winds down the gap between the columns, landing on the inner top corner of each card in turn, left then right, and ends on the button.
+- Still: `reference/studies/13-work-draft-three-layouts.jpg`, the three side by side with the whole line drawn.
+
+**How each one reads, looked at whole**
+
+- A reads as a bottle drawn round the section: a border. Its two rails run straight for three screens, which the brief rules out, and the cards wake in pairs with nothing landing on them.
+- B keeps his framing and gives each card a landing. It is the fullest of the three. It needs wide margins: on an iPad held upright the swings reach the edge of the screen, and the real stream is far wider than this line.
+- C is the most graceful line of the three and puts every strike in the middle of the screen, beside the card it wakes. Its shape is close to a timeline with alternating cards, which is a common pattern, and it leaves a gap of about 160 px between the columns, so the cards are narrower than in B.
+- One stream is what a phone will have room for whichever is picked, so C is the only one whose idea is the same on every screen.
+
+**Tried and cut before showing him**
+
+- A fourth layout, Ledges: the stream landed on top of every card, ran the whole length of it and fell off the end, out along one row and back in along the next. The idea is the test shot's own motion. Drawn, it put a bracket round every row and the stream on every edge of every card. It read as a maze. The first landing in B is what was kept of it.
+- C first had a straight line down the middle with short spurs to each card. The real stream has no spurs, and it read as a circuit. The winding line replaced it.
+- The same switchback, with one column, may still suit the phone: the stream crossing in the gaps between cards costs almost no width. Not drawn.
+
+**What is not right yet, and he is told**
+
+- The phone. One column is only roughed in for all three, and none should be judged there.
+- Motion. This workspace draws in software, and the line is not the stream. He judges the feel on his iPad.
+- Every name, picture and tag is a stand in. Nothing on the page is for approval except the route.
+
+**Notes for the next session**
+
+- No blur filters in the sketch. A blur over a line three screens long, redrawn on every scroll frame, is slow on an iPad, and a filter on a perfectly upright line draws nothing because its box has no width. The glow is three wide strokes.
+- The dashes that reveal each line are set from script on each path, not through a CSS variable inside `calc()`, to be safe on Safari.
+- The half row for B and C is measured from the cards and written to `--half` on the stage, so it is exact at any width.
+- A 404 in the browser's console on every page is the missing favicon, not this page.
+- Stills in `reference/studies/` are numbered in the order they were saved, which is no longer the study's number. This one is 13.
+
+**Fable's recommendation to him**
+
+- C, said in bold as a change to a settled rule ("split, and run down both sides"), with B as the choice if he wants the two sides kept. Also in bold: A breaks "It never runs straight down", and all three touch every card against "It also should not touch everything".
+
+**Half finished**
+
+- His pick. Then the card's look, then the real route in Claude Code.
+
 ## 2026-11-12 · Riding shards stay with the stream on objects, and the lone shard drops off again (Fable, Claude Code on Brandon's Mac)
 
 **What Brandon said**

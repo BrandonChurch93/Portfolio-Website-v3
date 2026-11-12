@@ -50,6 +50,7 @@ Do not work from what you remember of these. Read them from disk.
 - Never show him something with "the final will be better". If it is not at the bar, keep working or say what is wrong with it.
 - Do not make him critique every small detail. Give him an agreed list of what is being built and what is not.
 - Ask before changing something he has already approved.
+- He and Fable may recommend something that goes against a rule in `BRIEF.md`. When you do, say so in the chat in bold and name the rule, so he cannot miss it. The rule stands until he changes it. Claude Code builds to the rules as written.
 - When he has to do something himself, give only the steps needed right now, as a numbered list. No "if this, then that" branches.
 - For a command, say it goes in VS Code's integrated terminal and give the exact text to paste. He prefers the Claude Code panel in VS Code to the terminal when either would do.
 - Do not bring up timelines or how long things will take.
@@ -104,6 +105,7 @@ npm run strip -- "/lab/stream?ui=0" --times 1,1.7,2.4,2.8,3.1,3.4,4.3,6 --eval "
 | `src/stream/` | The stream. Its test shot is at `/lab/stream`, and `/lab/stream?hold` opens it with the frame held. `route.ts` plans where it goes from where the title and card are, `sim.ts` steps what flies (the leading ends, sparks, thrown shards, arcs), `shards.ts` makes the shard meshes, which are facets, `shaders.ts` and `renderer.ts` draw it, `config.ts` holds its constants and budgets, `stream.ts` puts it on a page. `shards-first.ts` and `shaders-first.ts` are the first round's copper leaf and glass, kept one switch away: `/lab/stream?shards=first`, or the switch at the foot of that page |
 | `src/stream-core/` | The sketch of the stream Brandon picked, at `/lab/stream-core`: shards of copper and glass riding a core of light. Panel A, the wave of light, is his pick and the floor to beat. Panel B is the arc he passed over. A reference: do not build on it or change it. `?reach=0.5` sets how far the stream has run |
 | `src/stream-facets/` | A quick study at `/lab/stream-facets`: two looks for the stream's shards, cut and jagged, circling one line of light. Click a panel to strike it |
+| `src/components/lab/WorkDraft.tsx` | A wireframe of the Work section at `/lab/work-draft`: three layouts round a line that stands in for the stream and follows the scroll. `?v=a`, `b` or `c` opens one, and `?whole` draws the whole line for a still. A sketch to choose from, not something to build on |
 | `src/stream-ideas/` | An earlier study at `/lab/stream-ideas`: three rough ideas (threads, copper leaf, ink). Its `route.ts` and `gl.ts` are used by the sketch above. Set aside |
 | `src/pour/`, `src/pour-looks/` | The stream's first attempt, as molten metal, at `/lab/pour` and `/lab/pour-looks`. Set aside and kept as a record |
 | `src/hooks/` | `window.__site`, present only with `?hook=1`. The screenshot scripts drive pages through it. `__site.call(name, ...)` runs a tool a module registered, such as `plateHover` |
