@@ -112,6 +112,7 @@ Everything visual has to pass all six.
 - The stream looking pasted over something it is supposed to touch
 - The stream reading as water, lava or fire
 - Shards that read as confetti or paper: flat, evenly lit, all one size
+- Shards that read as low poly models: bare flat faces with nothing on them
 - Shards buried in glare, or so many that the core is lost among them
 - Shards bunched up where the stream lies along something or hooks round it
 - A strike with no shards thrown, or thrown shards that do not bounce
@@ -144,6 +145,7 @@ The core of light with shards that runs down the site. It is the most important 
 
 - **The core** is light with depth: a pale hot center falling through hot and flame to ember. It is steady, and swells and thins slowly as it runs. It reads as light, never as a tube, a neon sign or wire.
 - **The shards** are facets: chunky cut pieces with five to eight flat faces, like rough cut gems or broken crystal, no two alike, in many sizes with most of them small. They are abstract. Nobody has to be able to say what they are made of.
+- **A facet has detail to find.** Flat faces alone read as a low poly rock, which is what one of the first round's reviews called the shards. Up close each one has more: edges cut back so they catch a hairline of light, a fine grain or faint lines across a solid face, and flaws and a glow inside a clear one. From a distance none of that shows and it is simply a cut piece catching the light.
 - **Two materials, one family of shapes.** Any facet can be solid or clear. A solid one is dark until a face turns to the light, and then that whole face flashes. A clear one lets the light through, glows inside and is brightest along its edges. The two are told apart by how they take the light, never by their shape.
 - **They belong to the core.** They ride round it and it is their light. A shard in front of the core shows its dark side against it. A shard behind it shows its lit face.
 - **Many, but one thing.** The eye reads the core first and then finds the shards. It never reads as a cloud of loose parts.
@@ -157,7 +159,7 @@ The core of light with shards that runs down the site. It is the most important 
 
 One shot, alone on a blank page at `/lab/stream`, on the sketch's route: down from the top, parting on a title, both sides round its ends, one side landing on a card, running along it and off its end. It follows the page's own scroll. It passes when all of these are true:
 
-1. Paused on any frame and enlarged three times, a shard is a solid object with flat faces, hard edges and a lit side, and a solid one and a clear one take the light differently. Naming a material is not part of the test.
+1. Paused on any frame and enlarged three times, a shard is a solid object with flat faces, hard edges and a lit side, and a solid one and a clear one take the light differently. There is finer detail on it to find, and it does not read as a low poly model. Naming a material is not part of the test.
 2. The core reads as light with depth.
 3. Beside the sketch it is plainly the better picture. Beside the PC Builder images it is not the weaker work.
 4. It lights what it passes, and every highlight agrees with where the light is.
