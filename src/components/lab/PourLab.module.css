@@ -52,6 +52,15 @@
   gap: var(--space-4);
 }
 
+/* On a narrow screen the buttons stack, so they stay inside the gap between the two falls. */
+@media (max-width: 37.5rem) {
+  .buttons {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+}
+
 .seed {
   font-family: var(--font-mono);
   font-size: var(--step--2);

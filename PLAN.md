@@ -16,8 +16,8 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 
 - **Phase:** 2, the pour
 - **Where:** Claude Code on Brandon's Mac, with Fable (`LOG.md`, top entry)
-- **Built and shown:** the test shot, at `/lab/pour`. Two independent reviews of its stills failed it against the bar. `LOG.md` says where it falls short
-- **Waiting on Brandon:** his verdict on the test shot, and whether to keep going this way or rethink
+- **Built and shown:** the test shot, at `/lab/pour`. Three independent reviews of its stills failed it against the bar, each on whether a paused frame looks like a photograph. `LOG.md`, top entry, says where it falls short
+- **Waiting on Brandon:** his verdict on the motion, and his say on Fable's recommendation: keep the physics, rebuild how the pour is drawn and lit
 
 ## Phase 0 · Foundation
 

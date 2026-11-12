@@ -21,20 +21,23 @@ export const POUR = {
   // Below this fraction of resting density a particle counts as a bead on its own.
   aloneBelow: 0.34,
 
-  adhesion: 3200,
-  adhesionBand: 2.2,
+  adhesion: 15000,
+  adhesionBand: 3,
   // Per unit of distance slid, so the pull grows with the square of the speed.
-  wallDrag: 0.03,
+  wallDrag: 0.055,
   wallFriction: 0.22,
   beadBounce: 0.34,
 
-  stream: { width: 25, speed: 560, lean: 0.5, sway: 6, swayAngle: 0.04, waver: 0.14 },
-  pour: { swell: 0.14, gush: 0.4, minSeconds: 6.2, maxSeconds: 7.6, tail: 1.5, lastDrops: 3 },
+  stream: { width: 25, speed: 560, lean: 0.42, sway: 6, swayAngle: 0.04, waver: 0.14 },
+  // No two pours come in the same: each is this much wider or narrower, lands this far either side along the slab (as a
+  // share of its length), and leans this much more or less, in radians.
+  vary: { width: 0.14, landing: 0.2, lean: 0.1 },
+  pour: { swell: 0.14, gush: 0.4, minSeconds: 6.2, maxSeconds: 7.6, tail: 1.5 },
 
   // Spatter: the share of hard landing metal that is thrown back, how much more off a bare slab, how fast as a fraction of
   // the landing speed, how wide the fan in radians, how fine the gouts (per unit) and how often they change (per second),
   // and how long thrown metal flies before the body can take it back.
-  splash: { share: 0.045, bare: 7, slow: 0.2, fast: 0.56, fan: 2.2, grain: 0.2, beat: 60, flight: 0.07 },
+  splash: { share: 0.045, bare: 9, slow: 0.24, fast: 0.62, fan: 2.2, grain: 0.2, beat: 60, flight: 0.07 },
 
   cool: { core: 0.06, exposed: 0.45, contact: 0.12, fadeBelow: 0.2, fadeRate: 3 },
 
@@ -46,9 +49,9 @@ export const POUR = {
     minJolt: 240,
     burst: 0.3,
     perImpact: 0.07,
-    bareBoost: 3,
+    bareBoost: 9,
     spread: 0.5,
-    life: [0.28, 1.1],
+    life: [0.22, 0.7],
     beadLife: [0.9, 2.4],
     beadShare: 0.16,
     drag: 0.7,
@@ -57,7 +60,7 @@ export const POUR = {
     shutter: 1 / 42,
   },
 
-  heat: { cell: 3, gain: 5, loss: 0.3, spread: 34 },
+  heat: { cell: 3, gain: 7, loss: 0.3, spread: 34 },
 } as const;
 
 export interface PourBudget {
@@ -74,12 +77,13 @@ export const POUR_SLOW = 0.2;
 export const POUR_STILL_AT = 2.6;
 
 // The particle budget Brandon asked for before the first build. Mac is high. A phone is mid, or low if it is slow.
-// The stream is 25 units wide where it comes in, so it is about 10 particles across on a Mac, 7.5 on mid and 6 on low.
-// Measured on an M4 Pro with npm run perf: high peaks near 4,900 particles and 3.7 ms of solver in a 16.7 ms frame.
+// The stream is 25 units wide where it comes in, so it is about 8 particles across on a Mac, 6 on mid and 5 on low.
+// Each spacing is set so that the most a pour needs at once, measured over several pours with no cap, is about 85 percent
+// of maxFluid on the screen that needs most: a tall screen has longer falls and needs more than a wide one.
 export const POUR_BUDGET: Record<Exclude<Tier, 'static'>, PourBudget> = {
-  high: { spacing: 2.6, maxFluid: 6000, maxSparks: 500, pixelRatio: 2 },
-  mid: { spacing: 3.3, maxFluid: 3600, maxSparks: 300, pixelRatio: 2 },
-  low: { spacing: 4, maxFluid: 2400, maxSparks: 180, pixelRatio: 2 },
+  high: { spacing: 3, maxFluid: 6000, maxSparks: 500, pixelRatio: 2 },
+  mid: { spacing: 4.2, maxFluid: 3600, maxSparks: 300, pixelRatio: 2 },
+  low: { spacing: 5.2, maxFluid: 2400, maxSparks: 180, pixelRatio: 2 },
 };
 
 // Live only: the most time the solver may take from one frame. Past it the pour slows down instead of dropping frames.

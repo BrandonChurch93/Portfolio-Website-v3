@@ -27,7 +27,7 @@ const TALL = { w: 720 };
 
 // The slab: half its thickness, its corner radius, its length on a wide screen and as a share of a tall one, and how far
 // along it the pour lands. More of the pour runs on the way it was already heading, so that side is the longer one.
-const SLAB = { half: 15, corner: 5, wide: 420, tall: 0.42, landing: 0.46 };
+const SLAB = { half: 15, corner: 2.5, wide: 420, tall: 0.62, landing: 0.5 };
 
 export function layout(cssW: number, cssH: number, flight: { lean: number; speed: number; gravity: number }): Scene {
   const lean = flight.lean;

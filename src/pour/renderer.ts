@@ -8,8 +8,8 @@ import { BODY_FRAG, COVER_FRAG, DOWN_FRAG, FIELD_FRAG, FIELD_VERT, FINAL_FRAG, F
 // A particle's dot in the field reaches this many spacings, and a body's surface bulges this many units toward the viewer.
 const DOT_REACH = 3.1;
 // How far into a body its roundness reaches, in units, and how strongly that and the field's fine ripples tilt the surface.
-const ROUND_REACH = 4.5;
-const BULGE = 2.6;
+const ROUND_REACH = 7;
+const BULGE = 2.2;
 const RIPPLE = 0.9;
 // The weight of a particle in a body never goes past what this fraction of the resting density would give it.
 const THINNEST = 0.3;
@@ -24,7 +24,7 @@ const GLOW_LEVELS = 6;
 // halo. Only the finest copy is ever sampled, after every wider one has been added into it, so it is always smooth.
 const GLOW_GAIN = [1.5, 1.6, 1.5, 1.3, 1.1];
 const MAX_SLABS = 2;
-const PARTICLE_FLOATS = 6;
+const PARTICLE_FLOATS = 7;
 const SPARK_FLOATS = 6;
 
 // The palette's light colors as one ramp, from nothing to the hottest. The stops are positions along x / (1 + x), where
@@ -151,7 +151,7 @@ export class PourRenderer {
       }
       this.uniforms[name] = u;
     };
-    make('field', FIELD_VERT, FIELD_FRAG, ['aPos', 'aData']);
+    make('field', FIELD_VERT, FIELD_FRAG, ['aPos', 'aData', 'aGrain']);
     make('cover', FULL_VERT, COVER_FRAG, ['a']);
     make('body', FULL_VERT, BODY_FRAG, ['a']);
     make('spark', SPARK_VERT, SPARK_FRAG, ['aCorner', 'aSpark', 'aHeat']);
@@ -175,6 +175,8 @@ export class PourRenderer {
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, stride, 0);
     gl.enableVertexAttribArray(1);
     gl.vertexAttribPointer(1, 4, gl.FLOAT, false, stride, 8);
+    gl.enableVertexAttribArray(2);
+    gl.vertexAttribPointer(2, 1, gl.FLOAT, false, stride, 24);
 
     this.sparkVao = gl.createVertexArray()!;
     gl.bindVertexArray(this.sparkVao);
@@ -309,6 +311,7 @@ export class PourRenderer {
       data[o + 3] = sim.size[i] * (inBody + (bead - inBody) * alone);
       data[o + 4] = sim.skin[i];
       data[o + 5] = 1 + (BEAD.reach - 1) * alone;
+      data[o + 6] = sim.grain[i];
     }
     gl.disable(gl.DEPTH_TEST);
     gl.disable(gl.CULL_FACE);

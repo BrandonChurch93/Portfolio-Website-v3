@@ -14,7 +14,7 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 **What was done**
 
 - The repo was cloned into Claude Code on his Mac. `npm run shot` prints `hardware` (Apple M4 Pro), so filmstrips here are a fair test of motion.
-- The test shot is built at `/lab/pour`: the pour comes in from above, lands on a bronze ledge, splashes, pools, overflows both ends and drips, then tapers off and leaves the ledge warm. Two controls: Pour again, Slow motion.
+- The test shot is built at `/lab/pour`: the pour comes in from above, lands on a bronze ledge, splashes, pools, overflows both ends and drips, then thins to a thread, stops, and leaves the ledge warm. Two controls: Pour again, Slow motion. `?seed=<n>` pours a chosen pour again exactly.
 - New code is in `src/pour/`. New tool: `npm run perf`. Real foundry photographs with credits are in `reference/pour/`. Stills are in `reference/studies/03-pour-*.jpg`.
 
 **How it is built**
@@ -22,10 +22,12 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 - **Motion** (`sim.ts`): particles in the flat plane of the page. Where they are packed, a grid keeps the body from being squeezed or stretched (the method film liquid tools use, PIC and FLIP, in 2D). Where they are few they fly free as beads. 240 fixed steps a second, every random number from the seed.
 - **Why not the first solver:** a position based solver was tried first, since it has cohesion built in. At the landing speed it either frothed or heaped up like something thick. It cannot turn a fast landing into a clean sheet at a step rate a browser can afford. The grid solver can.
 - **Spatter:** a smooth sheet on a smooth plate just spreads, so a hard landing throws part of itself back as real particles, in gouts that share a direction for a moment. Without this there is no splash at all.
-- **Slab drag** acts on the grid cell beside a slab and grows with the square of the speed. This is what makes it pool and overflow gently. With it on the particles instead, fast metal skimmed over a stuck film.
-- **Surface** (`renderer.ts`, `shaders.ts`): each particle adds a soft dot to a field, and the surface is drawn where the field crosses a level. A blurred copy of the coverage gives the body its round back. One WebGL2 context.
-- **Color:** each particle carries a temperature. Everything that glows goes through one ramp built from the palette's light colors, so nothing emitted can be off the palette. Hot metal shows only the ramp.
-- **Light:** the body's light is spread wide and used to light the page and the ledge. The ledge mirrors the metal lying on it and holds a grid of warmth that fades.
+- **Slab drag** acts on the grid cells above a slab, weaker each cell up, and grows with the square of the speed. This is what makes the metal pool and spill gently. With it on the particles, or on one cell only, fast metal skimmed over a stuck film and left the ends in wide arcs.
+- **Adhesion** draws metal onto a slab's top and ends, not its underside, so the overflow runs down the end faces, lets go at the bottom corner and falls straight.
+- **Variety:** each pour has its own width, lean and landing place along the ledge, from its seed, so which end spills first and how much changes from pour to pour.
+- **Surface** (`renderer.ts`, `shaders.ts`): each particle adds a soft dot to a field, and the surface is drawn where the field crosses a level. A blurred copy of the coverage says how much metal is behind each pixel.
+- **Color:** each particle carries a temperature. How bright the metal looks follows that and how thick it is: a thick body is blown out to the palette's pale, a thread or a bead is orange. No edge is drawn. Everything that glows goes through one ramp built from the palette's light colors, so nothing emitted can be off the palette.
+- **Light:** the body's light is spread wide and used to light the page and the ledge. The ledge mirrors the metal lying on it and holds a grid of warmth that fades. Only the finest copy of the spread light is ever sampled: sampling the coarse copies directly drew boxes.
 - **Clock:** `pour.ts` steps the simulation from `src/world/clock.ts`. With the clock frozen at a time, the same seed draws the same frame. Checked: two stills at the same seed and time are identical files, and a different seed gives a different still.
 
 **The budget, and what the phone gives up**
@@ -33,50 +35,58 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 | | Mac (high) | Phone (mid) | Slow phone (low) |
 |---|---|---|---|
 | Fluid particles, most at once | 6,000 | 3,600 | 2,400 |
-| Particles across the stream | about 10 | about 7.5 | about 6 |
+| Particles across the stream | about 8 | about 6 | about 5 |
 | Sparks and beads | 500 | 300 | 180 |
 | Pixel density | up to 2x | 2x, not the phone's 3x | 2x |
 
-- So the phone gives up: finer particles (softer detail in the splash), some sparks, and a third of its pixel density. Physics, colors and light are the same.
-- The first budget said the phone would also get a lower resolution glow. That was not built. It was not needed.
+- So the phone gives up: finer particles (softer detail in the splash and thinner threads), some sparks, and a third of its pixel density. Physics, colors and light are the same.
+- The budget told to Brandon before building also had a lower resolution glow on the phone, and 1,200 sparks on the Mac. Neither was built: the glow did not need it, and a real pour throws few sparks.
+- A tall screen has longer falls and needs more particles than a wide one. The phone's first spacing starved the spout and broke the stream into pieces. Each spacing is now set so the most a pour needs, measured with no cap over six pours, is about 85 percent of the budget.
 - If a device cannot keep up, the pour runs a little slow instead of dropping frames (`POUR_FRAME_MS`).
 
-**Measured with `npm run perf`, hardware**
+**Measured with `npm run perf`, hardware, 9 seconds each**
 
-- Mac: 60 frames a second, no long frames, the solver about 4.3 ms of each 16.7 ms frame, 4,760 particles at peak.
-- Phone view with the processor slowed 4 times: 60 frames a second, no long frames.
-- Phone view on the low tier with the processor slowed 6 times: 60 frames a second, no long frames.
-- It also loads and draws in Playwright's WebKit at iPad size with no errors. WebKit is the engine every iPad browser uses.
-- A real phone has not been tried.
+| Screen | Frames a second | Frames over 25 ms | Solver, of a 16.7 ms frame | Particles at peak |
+|---|---|---|---|---|
+| Desktop, high | 60 | 0 | 3.1 ms | 4,240 |
+| Tablet, high | 60 | 0 | 3.6 ms | 4,900 |
+| Phone, mid, processor slowed 4 times | 60 | 0 | 8.8 ms | 2,690 |
+| Phone, low, processor slowed 6 times | 60 | 0 | 9.6 ms | 1,970 |
 
-**Where it stands against the bar**
+- It also loads and draws in Playwright's WebKit at iPad size, both ways up, with no errors. WebKit is the engine every iPad browser uses.
+- A real phone and a real iPad have not been tried. The slowed processor stands in for a phone's. It does not stand in for a phone's graphics chip.
 
-- Fable's own judgment: not at the bar. The motion is close. The material is not a photograph yet.
-- An independent reviewer (Opus, shown only stills and the real photographs) failed the first version on these points, and a second round was built against them:
-  - the run-off flew out in two wide arcs like a horseshoe. Now the stream comes in slower, pools, and overflows the ends nearly straight down
-  - the stream was a straight rod of one width. Now it curves and thins to about a third as it falls
-  - the metal was a flat fill with a darker rim, close to yellow in places. Now hot metal is pale at its heart, deep orange only at thin edges, and never off the ramp
-  - the ledge looked like tan wood and the glow had boxy edges, which was a bug from sampling a tiny copy of the glow. Now the ledge is dark bronze with a lit top edge, and only the finest copy of the glow is sampled
-  - sparks were an even spray of short dashes. Now they are fewer, longer, and leave in bursts
+**Independent reviews**
 
-**Half finished, and known to be short of the bar**
+Each reviewer was a fresh Opus agent shown only stills and the real photographs, told to look for reasons to fail it.
 
-- Paused frames still read as a rendering, not a photograph. The body has a soft halo and little surface detail. The stream shows one faint oxide streak and no twist.
-- The falls off the ledge ends are thin and break into strings before they break into drops. Nothing models surface tension, which is what would gather a thin fall into round drops.
-- Metal that runs down the ledge's end faces is one particle thick and draws as a thin line hugging the corner.
-- The page is lit only faintly. The two buttons are not lit by the pour at all: `plates.setWater` in `src/metal/renderer.ts` is still not called. That is the plan's later item, "Lighting what it passes".
-- On a tall screen the pour is laid out for a 720 unit wide scene, so it is bolder there than on a desktop.
-- Not done: scroll, cards, the title split, pooling as its own item, a real phone.
+- **First review, of the first version: fail.** The run-off flew out in two wide arcs like a horseshoe. The stream was a straight rod. The metal was a flat fill with a darker rim. The ledge looked like tan wood. The glow had boxy edges. Sparks looked like a default emitter.
+- **Second review, of the second version: fail.** Every shape still had an even orange outline, which is what made it a drawing. The overflow still left in arcs and was the same bell every pour. The ledge read as a rounded card with a glowing outline. The end of the pour was a floating rod. The phone's falls were cut off by the screen and fell through the buttons.
+- **Third review, of the third version: fail.** What it credited: the mound and crown at the first landing have real shape, drops neck and pinch off at the ledge's corners, the stream breaks into beads as the pour ends, and the color stays on the palette. What it failed:
+  - the material. The stream is a smooth pale tube in a soft even halo, which reads as neon. It wants a hard silhouette, highlights and ropy texture along the stream, a tight halo, and cooled drops that are opaque and dark, not see-through amber
+  - the overflow. A wide arc and a straight line of drips at each end together draw a table with legs, the same every pour, and the stream's own path barely changes between pours
+  - the light. Nothing in the scene answers a white hot mass: the ledge's face stays muddy brown, and the page, title and buttons get none
+  - the phone, which it called plainly the lesser view: chunky fragments and a gritty splash
+- After that review two small things were changed and not reviewed again: the last drops that fell after the pour ended were removed, because all three reviewers read them as beads hanging in the air, and the halo was tightened.
+
+**Where it stands**
+
+- Not at the bar, by Fable's judgment and by three independent reviews. Point 1 of the test (a paused frame looks like a photograph of molten metal) failed all three times.
+- The motion is the stronger half. The drawing is the weaker half.
+- Three rounds of adjusting the same renderer did not pass point 1. `QUALITY.md` says to stop fixing the same way at that point. Fable's recommendation to Brandon is to keep the physics and rebuild how it is drawn and lit, after research: a hard edged surface with real highlights and texture that follows the flow, light that actually falls on the ledge, the page and the buttons with shadows, and a cooled skin that is opaque. The overflow also needs surface tension in the solver, which is what gathers a thin fall into round drops and lets metal sheet over a lip.
+- Not done at all: scroll, cards, the title split, pooling as its own item, lighting the buttons (`plates.setWater` in `src/metal/renderer.ts` is still not called), a real phone.
 
 **Things the next session would otherwise rediscover**
 
 - The solver's grid is lined up with the first slab's top and near end. A second slab that is not on the grid will hold metal up to half a cell off its drawn surface. Phase 3 needs many slabs, so this has to be solved then, most likely with a finer grid near slabs or with partly filled cells.
 - 2D makes a falling stream thin in proportion to its speed, which is more than a real round stream thins. A stream that is fast where it lands is always much thinner than the pool it feeds. This cannot be tuned away. It is why the stream comes in slowly and wide.
-- How much of the pour runs back off the near end of a level slab depends only on the angle it lands at. At this lean about 40 percent runs back. That is why the ledge is centered under the landing and overflows both ends.
+- How much of the pour runs back off the near end of a level slab depends only on the angle it lands at. That is why the ledge is centered under the landing and spills from both ends.
 - `POUR.calm` and `POUR.lively` are how much of a particle's own motion survives a step. High values give spray and ragged falls that read as lightning. Low values give smooth, heavy falls. The splash comes from the spatter, not from these.
 - `gl.getContext` on a canvas whose context was lost returns the lost context. `mountPour` makes its own canvas and removes it on dispose, so React's double mount in development is safe.
 - The shaders' `LEVEL` is the field value at which the surface is drawn. A particle alone must peak above it to be seen, which is what `BEAD` in `renderer.ts` sets.
-- For looking at the simulation without the browser, bundle `src/pour/sim.ts` with esbuild and step it in Node. It runs anywhere and takes a second.
+- A flat metal face square to the lamp mirrors the whole lamp and washes out to tan. The ledge takes the lamp's glint only where its surface turns.
+- For looking at the simulation without the browser, bundle `src/pour/sim.ts` with esbuild and step it in Node. It takes a second, and it is how the particle need per screen was measured.
+- In zsh a variable holding several flags is passed as one argument. Use `${=flags}` when looping `npm run perf` over screens.
 
 ## 2026-11-11 · Handoff to Claude Code: the pour (Fable, web chat)
 

@@ -31,6 +31,8 @@ export class PourSim {
   readonly vy: Float32Array;
   readonly temp: Float32Array;
   readonly skin: Float32Array;
+  // A fixed random number per particle. Drawn, it becomes ripples that travel with the metal.
+  readonly grain: Float32Array;
   readonly size: Float32Array;
   // Density as a fraction of the density at rest. Low means exposed: at the surface, or a bead alone.
   readonly dens: Float32Array;
@@ -80,7 +82,10 @@ export class PourSim {
   private rnd: Rng = rng(1);
   private emitPhase = 0;
   private rowParity = 0;
-  private drops: { at: number; len: number; flow: number }[] = [];
+  // This pour's own width, landing place and lean.
+  private wide = 1;
+  private shift = 0;
+  private tilt = 0;
   private heatScratch: Float32Array[] = [];
   private sd = new Float32Array(3);
 
@@ -90,7 +95,7 @@ export class PourSim {
     this.spacing = budget.spacing;
     const n = this.max;
     const f = () => new Float32Array(n);
-    this.x = f(); this.y = f(); this.vx = f(); this.vy = f(); this.temp = f(); this.skin = f(); this.size = f(); this.dens = f();
+    this.x = f(); this.y = f(); this.vx = f(); this.vy = f(); this.temp = f(); this.skin = f(); this.grain = f(); this.size = f(); this.dens = f();
     this.touch = new Uint8Array(n);
     this.thrown = f();
     const m = this.maxSparks;
@@ -151,50 +156,39 @@ export class PourSim {
     this.rowParity = 0;
     for (const hgrid of this.heat) hgrid.fill(0);
     const p = POUR.pour;
+    const vary = POUR.vary;
+    const first = this.scene.slabs[0];
+    this.wide = 1 + this.rnd.range(-vary.width, vary.width);
+    this.shift = first ? this.rnd.range(-vary.landing, vary.landing) * first.hx * 2 : 0;
+    this.tilt = this.rnd.range(-vary.lean, vary.lean);
     this.duration = this.rnd.range(p.minSeconds, p.maxSeconds);
-    this.drops = [];
-    let at = this.duration + this.rnd.range(0.12, 0.3);
-    for (let i = 0; i < p.lastDrops; i++) {
-      this.drops.push({ at, len: this.rnd.range(0.012, 0.022), flow: this.rnd.range(0.34, 0.6) });
-      at += this.rnd.range(0.16, 0.34) * (1 + i * 0.55);
-    }
   }
 
   get time(): number {
     return this.steps * POUR_STEP;
   }
 
-  // Seconds after which nothing more will come from the spout.
-  get spent(): number {
-    const last = this.drops[this.drops.length - 1];
-    return last ? last.at + last.len : this.duration;
-  }
-
   // True once the spout is spent and everything it poured has gone or gone cold.
   get done(): boolean {
-    return this.time > this.spent && this.n === 0 && this.sparkCount === 0;
+    return this.time > this.duration && this.n === 0 && this.sparkCount === 0;
   }
 
   // How wide the stream is now, as a fraction of its full width. This is the hand tipping the crucible.
   private flow(t: number): number {
     const p = POUR.pour;
     const s = this.seed;
-    if (t > this.duration) {
-      for (const dr of this.drops) if (t >= dr.at && t < dr.at + dr.len) return dr.flow;
-      return 0;
-    }
+    if (t > this.duration) return 0;
     const rise = Math.min(1, t / p.swell);
     const swell = rise * rise * (3 - 2 * rise) + p.gush * Math.sin(Math.min(1, t / (p.swell * 3)) * Math.PI);
     const waver = 1 + POUR.stream.waver * noise1(t * 1.6, s, 1) + POUR.stream.waver * 0.45 * noise1(t * 5.3, s, 2);
     const left = this.duration - t;
+    // The pour ends as a crucible empties: the stream thins to a thread, and the thread to drops.
     let tail = 1;
     if (left < p.tail) {
       const k = left / p.tail;
-      tail = 0.24 + 0.76 * k * k;
-      const sputter = noise1(t * 10.5, s, 3);
-      if (sputter > -0.25 + 1.25 * k) tail = 0;
+      tail = 0.1 + 0.9 * k * k;
     }
-    return swell * waver * tail;
+    return swell * waver * tail * this.wide;
   }
 
   private emit(): void {
@@ -209,19 +203,21 @@ export class PourSim {
       return;
     }
     const sp = this.scene.spout;
-    const a = st.swayAngle * noise1(t * 0.9, this.seed, 5);
+    const a = st.swayAngle * noise1(t * 0.9, this.seed, 5) + this.tilt;
     const ca = Math.cos(a);
     const sa = Math.sin(a);
     const dx = sp.dx * ca - sp.dy * sa;
     const dy = sp.dx * sa + sp.dy * ca;
-    const ox = sp.x + st.sway * noise1(t * 0.7, this.seed, 6);
+    const ox = sp.x + this.shift + st.sway * noise1(t * 0.7, this.seed, 6);
     const width = st.width * flow;
     const count = Math.max(1, Math.round(width / this.spacing));
     while (this.emitPhase >= gap) {
       this.emitPhase -= gap;
       this.rowParity ^= 1;
       for (let k = 0; k < count; k++) {
-        if (this.n >= this.max) return;
+        // The budget is set so this never happens. If it does, the metal that has fallen farthest gives up its place:
+        // a fall that ends a little early is a smaller fault than a stream with holes in it.
+        if (this.n >= this.max) this.remove(this.lowest());
         const across = (k - (count - 1) / 2 + (this.rowParity ? 0.25 : -0.25)) * this.spacing;
         const i = this.n++;
         const j = this.spacing * 0.12;
@@ -231,8 +227,9 @@ export class PourSim {
         this.vy[i] = dy * speed;
         this.temp[i] = 1;
         // Films of oxide ride on the stream as long streaks: the same place across it, for a while.
-        const film = noise2((across / st.width) * 1.7 + 20, t * 2.2, this.seed);
+        const film = noise2((across / st.width) * 1.7 + 20 + t * 1.1, t * 2.2, this.seed);
         this.skin[i] = Math.min(1, Math.max(0, (film - 0.62) / 0.12));
+        this.grain[i] = this.rnd.next();
         this.size[i] = 1;
         this.dens[i] = 1;
         this.touch[i] = 0;
@@ -270,7 +267,8 @@ export class PourSim {
           if (Math.abs(x[i] - s.cx) > s.hx + band + rp || Math.abs(y[i] - s.cy) > s.hy + band + rp) continue;
           slabDistance(s, x[i], y[i], sd);
           const gapTo = sd[0] - rp;
-          if (gapTo < band && gapTo > -rp) {
+          // Not onto the underside: metal that has run down an end lets go at the bottom corner and falls.
+          if (gapTo < band && gapTo > -rp && sd[2] < 0.5) {
             const pull = POUR.adhesion * (1 - Math.max(0, gapTo) / band) * dt;
             vx[i] -= sd[1] * pull;
             vy[i] -= sd[2] * pull;
@@ -288,11 +286,17 @@ export class PourSim {
     }
   }
 
+  private lowest(): number {
+    let at = 0;
+    for (let i = 1; i < this.n; i++) if (this.y[i] > this.y[at]) at = i;
+    return at;
+  }
+
   private remove(i: number): void {
     const l = --this.n;
     if (i === l) return;
     this.x[i] = this.x[l]; this.y[i] = this.y[l]; this.vx[i] = this.vx[l]; this.vy[i] = this.vy[l];
-    this.temp[i] = this.temp[l]; this.skin[i] = this.skin[l]; this.size[i] = this.size[l]; this.dens[i] = this.dens[l];
+    this.temp[i] = this.temp[l]; this.skin[i] = this.skin[l]; this.grain[i] = this.grain[l]; this.size[i] = this.size[l]; this.dens[i] = this.dens[l];
     this.touch[i] = this.touch[l];
     this.thrown[i] = this.thrown[l];
   }
@@ -443,10 +447,12 @@ export class PourSim {
     // A slab holds back the metal sliding over it, and harder the faster it slides: a landing is slowed at once, and a
     // slow layer is left to run. It acts on the whole cell beside the slab, so the layer slows as one and nothing
     // skims over a stuck film.
+    // The hold reaches a few cells up from the slab, weaker each cell, the way a real layer drags on the layer above it.
     const hold = POUR.wallDrag * POUR_STEP;
     for (let k = 0; k < bodies; k++) {
       const c = body[k];
-      if (solid[c + nx] || solid[c - nx]) u[c] /= 1 + hold * Math.abs(u[c]);
+      const over = solid[c + nx] || solid[c - nx] ? 1 : solid[c + 2 * nx] ? 0.7 : solid[c + 3 * nx] ? 0.45 : solid[c + 4 * nx] ? 0.25 : 0;
+      if (over > 0) u[c] /= 1 + hold * over * Math.abs(u[c]);
       if (solid[c + 1] || solid[c - 1]) v[c] /= 1 + hold * Math.abs(v[c]);
     }
     for (let round = 0; round < POUR.solveRounds; round++) {
@@ -587,7 +593,10 @@ export class PourSim {
     const cy = Math.min(h - 1, Math.max(0, ((y - (s.cy - s.hy)) / POUR.heat.cell) | 0));
     const grid = this.heat[slab];
     const at = cx + cy * w;
-    grid[at] = Math.min(1, grid[at] + POUR.heat.gain * t * POUR_STEP);
+    // The hottest metal warms the slab far more than metal that has already cooled, so the slab is hottest under the
+    // landing and less so toward its ends.
+    const t2 = t * t;
+    grid[at] = Math.min(1, grid[at] + POUR.heat.gain * t2 * t2 * POUR_STEP);
   }
 
   private stepHeat(): void {
@@ -676,7 +685,7 @@ export class PourSim {
         }
       }
       const age = Math.max(0, slife[i] / smax[i]);
-      sheat[i] = sbead[i] ? 0.18 + 0.95 * age * age : 0.4 + 0.8 * Math.sqrt(age);
+      sheat[i] = sbead[i] ? 0.18 + 0.95 * age * age : 1.2 * Math.sqrt(age);
       if (slife[i] <= 0 || sx[i] < b.x0 || sx[i] > b.x1 || sy[i] > b.y1) {
         const l = --this.sparkCount;
         sx[i] = sx[l]; sy[i] = sy[l]; svx[i] = svx[l]; svy[i] = svy[l];
