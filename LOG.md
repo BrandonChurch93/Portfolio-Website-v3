@@ -100,6 +100,23 @@ Every riding shard was recorded thirty times a second for thirty seconds with th
 
 - Nothing. Waiting on his look.
 
+## 2026-11-12 · After the stream: his ideas for the sections, and the order (Fable, web chat)
+
+**What Brandon said**
+
+- The stream is "almost certainly the finalized base". He is ready to move on.
+- He wants to go section by section, with rough drafts in the web chat, and a final pass over approved things such as the buttons before the full build. His ideas for Work, the 3D pieces and the cards are in `BRIEF.md`, Open 15. He was clear they are not decisions.
+
+**What Fable proposed. Not agreed yet**
+
+- The page top to bottom: hero, Work, Skills, About, Contact.
+- Start with Work, not the hero: the stream's test shot is already Work's title and a card, the card is needed before any other section can be drawn, and his clearest idea is about Work. The hero comes later, with the city tied in and the opening redone.
+- First a rough draft of the Work section here, then the card's look, then on down the page.
+
+**Half finished**
+
+- Nothing. He had Fable turned down for this talk. No sketches yet.
+
 ## 2026-11-12 · The stream's test shot is approved (Fable, web chat)
 
 **What Brandon said**

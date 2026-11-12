@@ -271,6 +271,7 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
 - He is told exactly what he is and is not approving at each step.
 - The building happens in Claude Code on his Mac, with Fable, from Phase 2 on. Planning can still happen in the web chat. Both read and write this repo. (Nov 11)
 - Every message to him ends with a clear, simple recommendation.
+- Before the full build of the page there is a final pass over what is already approved, because the stream may change it: "now that we have the stream in place, I may want to update things we've already talked about like the buttons". (Nov 12)
 - When something is ready to show him: run a production build, commit, push to `main`, and give him the live link. He is often on his iPad, which cannot open localhost. (Nov 11)
 
 ## Open
@@ -291,6 +292,12 @@ Each line has Fable's recommendation where there is one. None of these are rules
 12. **What ties the bottom of the page together.** Recommendation: the stream ends by feeding the rocket's launch.
 13. **The rocket as built.** He has not judged it yet.
 14. **Whether the site has to meet Section 508** (WCAG 2.0, levels A and AA). He asked whether the buttons do, out of curiosity. Recommendation: yes, checked as each part is built, because the engineers who read the site will check. The buttons' results are in `LOG.md`.
+
+15. **His ideas for the sections, now that the stream exists.** Rough drafts in his words, none decided: "This is just stuff I'm thinking of, it might not look good." (Nov 12)
+    - Work: the stream "hits work and then splits and then it goes down each of the sides and then it hits the side of the project cards as they load in so it's timed perfectly", "going down each side, symmetrical framing".
+    - The 3D pieces: "it'd be really cool if the stream hits that section of the screen, and then the actual art comes into life from that like it's the catalyst and the animation opens and closes for that 3-D object based on the stream's positioning".
+    - The look of the site updated to work with the stream, "like the card we just used in the demo". "I love how the stream hit it." "We also need to exactly figure out what the cards will look like."
+16. **The order the sections are worked in.** He wants them taken one at a time: "my idea should go section by section". Fable's list and recommended starting point are in `LOG.md`. Not agreed yet.
 
 ## Dropped
 
