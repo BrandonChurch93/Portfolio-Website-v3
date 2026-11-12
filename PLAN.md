@@ -14,7 +14,7 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 
 ## Now
 
-- **Phase:** 2, the stream. Its test shot is approved
+- **Phase:** 2, the stream. Its test shot is approved, and he calls it "almost certainly the finalized base" (Nov 12). He is ready to move on to what comes next, which is not decided yet
 - **His words (Nov 12):** "This looks great to me. If there is any improvements to be made, it'll be very tiny ones, but I think for right now this is good to move on with." Earlier the same day: "I think we nailed this and we build everything else off of this stream"
 - **Where it is:** `/lab/stream`, built in Claude Code on Brandon's Mac. `LOG.md` has each round's account
 - **Not decided:** what comes next. Fable's recommendation, which he agreed to in talk but has not started: draw the stream's route down the whole page first, then sketch the layout around it, then design the components as surfaces the stream and the cursor light. The city and the opening get revisited with the hero (`BRIEF.md`, Hero)

@@ -151,6 +151,12 @@ Said after scrolling the second round at `/lab/stream`, with the facets in. The 
 - Found and fixed the same day, and waiting on his look (`LOG.md`, top entry). The cause, by measurement: thrown shards that had come back down onto the surface were being carried along it by the flow and off its ends together. The shards riding the stream were not part of it. The flow no longer moves a thrown shard at all.
 - A note on the line above that says one thrown the way the stream runs "can still ride along and spill off that end": since this fix it spills off that end only if its own momentum takes it there. That is how Fable fixed the fault, not a ruling of his, and it is his to overturn.
 
+**The stream is the finished base (Nov 12)**
+
+- After the fix for shards vanishing and jumping on objects, and the lone shard dropping off the end again: "This looks great! All my issues have been fixed." "This is almost certainly the finalized base with pretty much all the polish."
+- It may still be tweaked: "we might have to tweak it slightly to accommodate some of the new ideas I already have in my head for the upcoming sections". He is ready to move on.
+- Riding shards now go faster where there are fewer of them: on an object, down the stem above the title, and where the stream strikes. Claude Code flagged that as his to overturn. He saw it and raised no objection.
+
 **How it is built**
 
 He added these while the stream was a simulated liquid. They hold for anything in the stream that is simulated: shards thrown loose, sparks.
