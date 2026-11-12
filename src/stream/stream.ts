@@ -370,8 +370,10 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       const far = R.f[o + 2] * (1 + K.spread * hold) * (1 + (K.flare + K.flareFast * e) * Math.exp(-lead / (K.flareOver * u)));
       const side = far * Math.sin(round), z = far * Math.cos(round);
       // On an object all of them ride the one side of the core, and on the inside of a turn they are squeezed
-      // together. Enough are taken away in both places that they lie no thicker there than on a straight run.
-      grown *= Math.max(0, Math.min(1, (R.f[o + 17] - K.thin * hold - Math.max(0, side * br.bend[here])) / 0.08 + 1));
+      // together. Enough are taken away in both places, and where the stream hooks round an object, that they lie no
+      // thicker there than on a straight run.
+      const hook = Math.min(1, Math.abs(br.bend[here]) * K.hook * u) * br.calm[here];
+      grown *= Math.max(0, Math.min(1, (R.f[o + 17] - K.thin * Math.max(hold, hook) - Math.max(0, side * br.bend[here])) / 0.08 + 1));
       if (grown <= 0.02) continue;
       let x = cx - ty * side, y = cy + tx * side;
       // Nothing rides through the title or the card: what would is turned back off the nearer face.

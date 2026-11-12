@@ -304,7 +304,7 @@ export class StreamSim {
             // long enough to be seen falling from it. Nothing comes to rest and nothing is left lying on an object.
             const way = b === boxes[1] ? Math.sign(lip.x - (b.l + b.r) / 2) : Math.sign(x - (b.l + b.r) / 2) || 1;
             const carry = K.carry * u * (0.5 + this.looseSeed[i]);
-            vx += (way * carry - vx) * (1 - Math.exp(-9 * dt));
+            vx += (way * carry - vx) * (1 - Math.exp(-12 * dt));
             // It does not slide: every so often it catches on a point and skips.
             const skip = hash(i, at_, 7) < K.skip * dt;
             vy = skip ? -(0.6 + 0.9 * hash(i, at_, 8)) * K.settle * u : 0;

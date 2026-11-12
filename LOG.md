@@ -2,6 +2,95 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-12 · The stream's test shot, second round: facets (Fable, Claude Code on Brandon's Mac)
+
+**What Brandon said**
+
+- He was away for this session: "Work straight through until it is finished and live, without waiting for me. Where a decision would be mine, make the call you would recommend, write it in LOG.md, and keep going."
+- Four changes, from his verdict in `BRIEF.md`: the shards rebuilt as jagged facets in a solid and a clear material, the first round's shards kept one switch away, about a quarter fewer shards where the stream lies along or hooks over an object, and more presence at the size of the whole page.
+- "Keep the strike. Shards blasting off and bouncing is my favorite part. Make it better if you can see how, but do not lose it. The sparks are right as they are. Do not change the core, the leading ends, the scroll or the cursor beyond what this needs."
+- Nothing below has his verdict yet.
+
+**What was built**
+
+- **The shards are facets** (`src/stream/shards.ts`). Each is the tightest skin round a small body and three or four points pulled far out of it, one further than the rest, so every point ends in a needle and no piece is the same on both sides. A notched piece has a second lobe grown out of the same body at a slant. 24 kinds in three sizes: a small one keeps more body, a large one is more needle. The shape is taken from panel B of `/lab/stream-facets` and built new, without three.js.
+- **One family of shapes in two materials** (`SOLID_FRAG` and `CLEAR_FRAG` in `src/stream/shaders.ts`). 45 in every 100 are clear.
+  - Solid: every face is a flat mirror of dark metal. The core is a line, so a face shows none of it or all of it: it is dark until it turns to the light, and then the whole face flashes.
+  - Clear: what is behind it shows through, dimmed and shifted by each face. It holds light through its body, each face its own amount and most in the middle of a face, and every edge is a step brighter than the body beside it.
+  - Nothing is drawn on a surface. What there is to find is in the light: a hairline where the bevel between two faces catches the core, and a glint on the points. Each vertex carries the bevels of its face's three edges for this.
+- **The first round's shards are one switch away.** `/lab/stream?shards=first`, or the switch at the foot of the test page, which swaps the two where they stand without moving the scroll. Their meshes and shaders are in `shards-first.ts` and `shaders-first.ts`.
+- **Fewer shards on objects**, and the cause.
+  - Per length of route the count was the same everywhere, about 36 to every 100 px. On an object the shards cannot go round the far side of the core, so every one of them rode the one open side: twice as thick on the ground. They were also folded back off the surface into seven tenths of the room, the two sides both carried their full number where they part, the inside of each turn squeezed them together, and a knot could sit on an object.
+  - Now: a share of them is taken away along an object and where the stream hooks round one (`shards.thin`, `shards.hook`), the rest ride wider (`shards.spread`), each side brings in its second half only as the two draw apart, the inside of a turn is thinned by how tight it is, and there are no knots within reach of an object (`route.calm`).
+  - Measured with `streamCount`, shards to every 100 px of route at rest, first round then now: straight runs 36 and 37 (unchanged). Title top 36 to 24 and 33 to 22. Where it parts 35 to 22. Title corners 35 to 25 and 37 to 25. Card top 42 to 26. The bend where it lands on the card is 29 now and was not measured before.
+  - At rest each landing throws half as many as it did (`loose.trickle`). They landed on the bend and stayed in the count there. The number thrown when a leading end arrives is unchanged.
+- **The strike**, kept and pushed a little (`sim.ts`, `moveLoose`).
+  - A bounce keeps more of the fall (`loose.bounce` 0.58, was 0.46), a different share each time, and leaves a little sideways, as an uneven piece would. They are thrown a tenth faster.
+  - A thrown facet that has stopped bouncing is carried along the surface by the flow, quickly, and off the end, where it falls and fades. In the first round it faded where it lay, on top of the object. That was part of the bunching.
+  - `streamThrown` lists every thrown shard, and a plot of their paths (`reference/studies/09-stream-facets-thrown-paths.jpg`) shows the fan, the bounces and the spill off both ends of the title and the end of the card.
+- **A little more presence on a wide screen**, from heat alone: the heart of the core is a third hotter, and the page takes a little more of its light (`GLOW.more` in `renderer.ts`). It scales with the width of the screen (`presence` in `config.ts`): a phone gets none of it, because the stream is already large against a phone's screen. The clear facets add to it: they glow, where the first round's glass was mostly outline. A wider glow and more light in the body of the ribbon were both tried and both taken back out: see the reviews.
+- **So the core is not hidden:** the knots along a free run are a little gentler (`shards.wave`), and shards pass across the face of the core quicker than they pass its sides (`shards.aside`). Facets are solid, and a knot of them at full strength hid the core.
+- Stills are `reference/studies/09-stream-facets-*.jpg`.
+
+**Budget**
+
+| | Mac (high) | Phone (mid) | Slow phone (low) |
+|---|---|---|---|
+| Shards to every 100 units of route | 55 | 38 | 26 |
+| Thrown shards in the air | 260 | 120 | 60 |
+| Sparks | 700 | 300 | 160 |
+| Pixel density, up to | 2x, 9.6M pixels | 3x, 3.8M pixels | 1.5x, 1.7M pixels |
+| Fibres in the core | 9 | 7 | 7 |
+
+- Unchanged from the first round but for one line: a clear facet takes one sample of what is behind it on every tier. The first round's glass took three on the Mac. Three read as noise inside a facet.
+- Measured (`npm run perf`, hardware, the page scrolled up and down without stopping): 16.7 ms every frame, none over 25 ms, on desktop, 4K, tablet, the phone view slowed four times and the low tier phone view slowed six times. The stream's own work on the processor peaks at about 1.5 ms on desktop and 3.8 ms on the slowest phone setup.
+- WebKit at iPad size and phone size: draws, no errors, both looks.
+- Not measured, as before: a real phone and a real iPad.
+
+**Calls made for Brandon. Each is his to overturn**
+
+1. The switch swaps the shards and nothing else. Both looks get this round's thinning on objects, strike and presence, so the two are compared like for like.
+2. On an object there are about a third fewer shards per length of route, not the quarter he named: 35 in 100 fewer on the title's top, 38 where it parts, 30 at its corners, 39 on the card's top. The bar asks that they lie no thicker on the ground there than on a straight run, and by the measure it takes a third, with them riding four tenths wider, to get there. `shards.thin` is the number: at 0.38 it measured his quarter.
+3. Each landing throws half as many at rest. The burst when a leading end arrives is untouched.
+4. A facet near the cursor turns half way toward it, not all the way as a leaf did (`shards.face`). Turned all the way it showed only its broadest face, flat on, and a patch of them read as paper.
+5. The facets are a little thicker than the sketch's, a notched piece shares one body, and fewer are notched (`NOTCHED` in `shards.ts`). In the sketch's own proportions reviewers read the thin ones as folded paper and the notched ones as two pieces. The handoff said to drop the notch if it read as two. It is kept, rarer.
+6. Sizes: a facet reaches from 4.5 to 17 pixels from its center on a desktop, the same as the first round's shards. It is mostly points, so it covers less.
+7. The core's design is untouched. On a wide screen its heart is a third hotter, and that is the only thing done to it. How much presence that buys is modest. The next step would be a paler, more plainly braided core at page size, which means changing the core he approved, so it is left for him.
+8. The leading ends, the scroll rules, the sparks, the route and the lighting of the title and card are unchanged.
+
+**Reviewed, and failed each time**
+
+Fresh Opus reviewers, stills and filmstrips only, told to find reasons to fail it against `QUALITY.md` as it now stands, and told plainly that no shard has to read as a named material. Four rounds, eight reports. All eight failed it overall. The last change has not been reviewed.
+
+- **Round 1, three reviewers.** Passed: the strike, the cursor, the phone, reduced motion, the light on what it passes. Failed: the clear facets as wire outlines, some with garbled pixels inside. Thin pieces as folded paper. The core as a neon line at page size, made worse by a wider glow added for presence. Clumps at the parting and the title's corners. Knots of facets hiding the core. One reviewer failed it for racing along the title and the card: that is the first round's rule that the end may run up to 1.8 times the scroll along a level stretch, which he asked not to be changed.
+- **Round 2, two reviewers,** after the glow was taken back out, the clear material rebuilt, the pieces thickened and the knots calmed. Passed: palette, phone, reduced motion, the scroll back up, the bounce and spill of the strike. Failed: the clear facets as a flat fill inside an outline. The pieces now too blunt, near regular pyramids. Notched pieces as two stuck together. Objects still about a third thicker on the ground than a straight run. Thrown shards crowding the card for a second and a half after a strike.
+- **Round 3, two reviewers,** after the shapes went back to needles, the clear material became a lit body, objects were thinned to a third fewer and thrown shards were swept off sooner. The motion reviewer failed it narrowly: the title top, the parting, the strike and the leading end passed, a knot remained at the bend where the stream lands on the card, and thrown shards still rattled along the card. The stills reviewer failed it: some pieces as origami, the two materials not far enough apart, notched pieces as two, the shards as dark specks at page size.
+- **After round 3:** the solid was made darker with a harder flash, the clear given bright edges again over a glowing body, the pieces thickened a little, notches made rarer, hooks round objects thinned, the resting trickle halved and thrown shards carried off faster.
+- **Round 4, one reviewer, all eleven conditions.** Ten passed: a shard as a solid object with the two materials told apart (with a flaw: the clear facets' lit ridges read as folds in paper), the core at zoom, the light on what it passes, the leading end, the landings and the bunching, the motion, the cursor (weakly), the palette, the phone and the speed, reduced motion. One failed, and with it the round: beside the sketch at page size. The presence had come from more light in the body of the ribbon, which thickened the core into a smooth orange band and hid the fibres the first round had.
+- **After round 4, and not reviewed since:** the extra light in the ribbon's body was taken out, so the core's fibres are as they were in the first round and only its heart is hotter. A clear facet's bright edge now runs round its outline only. A ridge between two faces that both look at the eye lights only where it catches the core.
+- **What no round passed:** at the size of the whole page the reviewers read the core as a neon outline and prefer the sketch's pale braided core. That is the core he approved, and it is a question for him, not a change made here.
+
+**Fable's own judgment**
+
+- At the bar: the strike, with the bounce and the spill now measured and not just seen. The two materials at three times zoom, which read as dark metal and as lit amber and are told apart at a glance. The title top and the card top, which are no thicker than a straight run by measure. The phone. The speed.
+- Not at the bar, or not proven: whether a notched piece reads as one piece when it tumbles, which stills cannot settle. Small random clumps still form on any run, because the shards are placed by chance. Edges step at four times zoom, which is the limit of four samples to a pixel. At page size on a wide screen it has only a little more presence than the first round, and the sketch's core is still the paler, more braided one.
+- The reviewers judge stills. He judges it moving. The first round failed eight reviews and he said it was nailed. The reviews above are reported as they came, not argued with.
+
+**Half finished**
+
+- Nothing. Waiting on his verdict: facets or the first round's shards, whether the bunching on objects is gone, whether the strike is still his favorite part.
+
+**Things the next session would otherwise rediscover**
+
+- A value given to each corner of a triangle is not the value in the middle of it. The distance from a facet's center, sent per corner to light its points, lit whole faces whose three corners were all tips. It is worked out per pixel now (`tipAt`).
+- Adding two warm lights walks the color toward yellow once red is full. The clear facets join what shows through them and what they hold by keeping the brighter, as the light buffer does.
+- More glow is not more presence. A wider, stronger halo made the core a neon tube at page size, and more light in the body of the ribbon hid its fibres and made it a band. Heat reads as presence: a paler center.
+- The cursor's light is small. A flat face mirrors it only when lined up almost exactly, so its highlight has to be narrow or every facet turned to it goes pale at once.
+- To compare how thick the shards lie in two places, count them against the length of route through each place (`streamCount` returns it), not against the width of the box drawn round it. Where the stream parts, two sides and the run above them are all in one box.
+- The shape has a narrow window. The sketch's proportions with its thin depth read as folded paper. More body read as blunt pyramids. Long needles on a small body read as slivers with no faces. What is there now is the sketch's proportions, one point longer than the rest, a little more depth.
+- A `for` loop over strings of flags in zsh does not split them into words. The perf runs for the other screen sizes silently ran as desktop until each was written out.
+- A production build run while the dev server is up can leave duplicate files such as `routes.d 2.ts` in `.next/types`, and the type check then fails on them. Delete the duplicates.
+
 ## 2026-11-12 · Brandon's verdict on the test shot, and the handoff for the second round (Fable, web chat)
 
 **What Brandon said**

@@ -64,10 +64,10 @@ const GLOW = {
   nearGain: 1.8,
   page: 0.2,
   deep: 130,
-  // On a wide screen the stream is small against the page, and it is given more presence there, from heat and not
-  // from haze: a hotter heart, more light in the body of the ribbon where it lies flat, and a little more light on
-  // the page. A wider glow was tried and read as a neon tube. Each number is what is added at full presence.
-  more: { page: 0.04, heart: 0.34, body: 1.1 },
+  // On a wide screen the stream is small against the page, and it is given more presence there, from heat alone: a
+  // hotter heart and a little more light on the page. A wider glow was tried and read as a neon tube. More light in
+  // the body of the ribbon was tried and hid its fibres. Each number is what is added at full presence.
+  more: { page: 0.04, heart: 0.34 },
 };
 
 // A shard's vertex, part by part: position, normal, edge distances, tag, and the bevel of each edge.
@@ -330,7 +330,6 @@ export class StreamRenderer {
     gl.uniform4fv(P.core.u('uView'), f.view);
     gl.uniform1f(P.core.u('uTime'), f.time);
     gl.uniform1f(P.core.u('uHeart'), 1 + GLOW.more.heart * f.presence);
-    gl.uniform1f(P.core.u('uBody'), 1 + GLOW.more.body * f.presence);
     gl.bindVertexArray(this.coreArray);
     for (let b = 0; b < 2; b++) {
       if (f.coreRuns[b * 2 + 1] < 3) continue;

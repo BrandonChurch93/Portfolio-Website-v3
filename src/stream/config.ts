@@ -75,6 +75,7 @@ export const STREAM = {
     thin: 0.44,
     spread: 0.42,
     apart: 56,          // the two sides carry their full number of shards once they are this far apart
+    hook: 70,           // a turn this tight or tighter, near an object, is thinned as much as a run that lies on one
   },
 
   // Sizes, as the distance from a shard's center to its farthest point: the smallest and the largest. A facet is
@@ -87,12 +88,12 @@ export const STREAM = {
     bounce: 0.58,       // the share of its fall a bounce keeps, give or take a quarter
     grip: 0.72,         // how much sideways speed a bounce keeps
     settle: 120,        // falling slower than this it no longer bounces
-    carry: 290,         // how fast the flow carries one along a surface once it has stopped bouncing, give or take a half
-    skip: 1.6,          // times a second one being carried catches and skips
+    carry: 400,         // how fast the flow carries one along a surface once it has stopped bouncing, give or take a half
+    skip: 0.8,          // times a second one being carried catches and skips
     spill: 0.65,        // seconds it is given to fall once it has been carried off the end
     life: [1.3, 2.6] as [number, number],
     fade: 0.3,          // the share of its life over which it shrinks away at the end
-    trickle: 5,         // thrown each second at a landing at rest
+    trickle: 2.5,       // thrown each second at a landing at rest
     burst: 70,          // thrown when the leading end arrives at speed
   },
 

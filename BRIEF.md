@@ -48,7 +48,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 
 ### The stream
 
-- **Where it stands (Nov 12):** what the stream is has been picked and the finished version has an agreement. The test shot is built in Claude Code on his Mac and both of its check-ins are pushed: a paused frame at `/lab/stream?hold` and the same shot moving at `/lab/stream`. He has not judged either yet. Calls Fable made for him while building are listed in `LOG.md` and are his to overturn. None of them is a rule.
+- **Where it stands (Nov 12):** what the stream is has been picked and the finished version has an agreement. The first test shot has his verdict, below. The second round is built in Claude Code on his Mac and pushed: the shot moving at `/lab/stream` and a paused frame at `/lab/stream?hold`, with facets in two materials. The first round's shards are one switch away: the switch at the foot of that page, or `/lab/stream?shards=first`. He has not judged the second round yet. Calls Fable made for him while building are listed in `LOG.md` and are his to overturn. None of them is a rule.
 - It is the most important thing on the site. "It's probably like the most important thing on the site to get right." (Nov 11)
 - It is called the stream, which is his own word for it. It is never called water, in anything written for a model or shown to a visitor. His reason: "if I call it water, then the model is gonna build it as if it acts like water". It is not called the pour either: that was its name while it was going to be molten metal. (Nov 11)
 
@@ -112,7 +112,7 @@ He said these while the stream was still going to be a liquid. They all still ho
 
 **His verdict on the test shot, and what changes (Nov 12)**
 
-Said after the first night's build at `/lab/stream`, with both check-ins live. None of this has been built yet.
+Said after the first night's build at `/lab/stream`, with both check-ins live. The second round was built to this the same day and is waiting on his verdict.
 
 - "This is coming together. Awesome. I'm really loving the way it's coming together." And: "I think we nailed this and we build everything else off of this stream."
 - The strikes are his favorite part: "when it crashes the ground or in this case the word work, particles actually fly off of them and bounce around like it actually struck the ground, which is awesome. I definitely don't want to lose that effect." In exact terms: shards must still blast off and bounce at a strike. That protects the effect, not the code. He does not want it frozen: "I also don't wanna hinder him from pushing it further."

@@ -57,7 +57,7 @@ void main(){ vAlong = aAlong; gl_Position = clip(aPos, 0.0); }`;
 
 export const coreFrag = (strands: number) => `${HEAD}
 in vec3 vAlong;
-uniform float uTime, uEnergy, uHeart, uBody;
+uniform float uTime, uEnergy, uHeart;
 uniform vec2 uOwn;   // a shift that gives each side its own strands, and where along the route they begin
 out vec4 frag;
 ${NOISE}
@@ -74,7 +74,7 @@ void main(){
   float span = wide * abs(face) + 0.6;
   float sum = 0.0;
   // The sheet between the fibres: a faint body, feathered at its edge.
-  sum += 0.1 * uBody * smoothstep(span + 2.6, span * 0.55, abs(x)) * (0.35 + 0.65 * abs(face)) * begun;
+  sum += 0.1 * smoothstep(span + 2.6, span * 0.55, abs(x)) * (0.35 + 0.65 * abs(face)) * begun;
   for (int j = 0; j < ${strands}; j++){
     float f = float(j), a = hash1(f + 1.0), b = hash1(f + 7.3), c = hash1(f + 13.9);
     // The fibres crowd toward the middle of the band and thin out toward its edges, and no two are the same
@@ -401,8 +401,8 @@ void main(){
   vec3 toward = coreFrom(fall, plane);
   float lampI = lampLight(Ll);
   vec3 B = bevelAt(line);
-  float flash = coreBand(N, toward, plane, 0.22) * 8.0;
-  float sheen = coreBand(N, toward, plane, 0.5) * 1.0;
+  float flash = coreBand(N, toward, plane, 0.2) * 9.0;
+  float sheen = coreBand(N, toward, plane, 0.34) * 0.45;
   float turned = max(dot(N, toward), 0.0);
   // The cursor is a small light, so a flat face mirrors it only when it lines up almost exactly. Turned toward it,
   // a few faces flash and the rest only warm, and the faces beside them stay dark: the shape is never lost.
@@ -458,9 +458,11 @@ void main(){
   held = 0.8 * (1.0 - exp(-held * (0.22 + 0.78 * deep) / 0.42)) + 0.03 * room(reflect(-V, N));
   float toLamp = max(dot(B, Ll), 0.0);
   float glint = coreBand(N, toward, plane, 0.07) * 2.8 * fall + ggx(max(dot(N, normalize(Ll + V)), 0.0), 0.1) * max(dot(N, Ll), 0.0) * 0.1 * lampI;
-  // An edge burns only where its bevel catches the core or the cursor. The rest are left to the body beside them, so
-  // the piece is never an outline.
-  float edge = fall * 2.8 * coreBand(B, toward, plane, 0.42) + lampI * 0.4 * toLamp * toLamp * toLamp;
+  // It is brightest along its edges. Round its outline, where a face turns away from the eye, the edge is a step
+  // brighter than the body beside it. A ridge between two faces that both look at the eye burns only where its bevel
+  // catches the core or the cursor: lit all the time, those ridges read as folds in paper.
+  float rim = 1.0 - smoothstep(0.1, 0.55, B.z);
+  float edge = (held * 1.5 + 0.1 * min(fall, 1.0)) * rim + fall * 2.8 * coreBand(B, toward, plane, 0.42) + lampI * 0.4 * toLamp * toLamp * toLamp;
   float point = tipAt() * (1.6 * fall + 0.7 * lampI);
   col = max(col, ramp(held));
   col = max(col, ramp(glint + point));

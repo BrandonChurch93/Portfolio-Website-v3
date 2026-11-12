@@ -13,6 +13,8 @@ export const VERTEX_FLOATS = 19;
 const CLASSES = [{ upTo: 0.15, kinds: 10 }, { upTo: 0.5, kinds: 7 }, { upTo: 1, kinds: 7 }];
 export const FACET_KINDS = CLASSES.reduce((n, c) => n + c.kinds, 0);
 export const FIRST_KINDS = 8;
+// The share of pieces that are notched: of the smallest, and how much more of the largest.
+const NOTCHED = [0.12, 0.4];
 
 export type Look = 'facets' | 'first';
 
@@ -78,9 +80,9 @@ function facet(r: () => number, big: number): number[] {
   const points: V3[] = [];
   for (let i = 0, n = 3 + Math.floor(r() * 2); i < n; i++) { const p = ball(), k = i === 0 ? 1.25 + 0.45 * r() : 0.8 + 0.6 * r(); points.push([p[0] * k, p[1] * k, p[2] * k]); }
   // Flattened, but never to a sheet: a thin one shows two faces and reads as folded paper.
-  const squash: V3 = [1, 0.5 + 0.3 * r(), 0.44 + 0.2 * r()];
+  const squash: V3 = [1, 0.5 + 0.3 * r(), 0.56 + 0.2 * r()];
   const parts = [lobe(body, points, squash)];
-  if (r() < 0.25 + 0.55 * big) {
+  if (r() < NOTCHED[0] + NOTCHED[1] * big) {
     // A notched piece has a second lobe grown from the same body at a slant, so the two share a heart and part only
     // toward their points. Two whole splinters crossed read as two pieces stuck together.
     const slant = r() * Math.PI * 2;
