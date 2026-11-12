@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import type { Finish } from '../metal/finishes';
+import type { Finish, HoverStyle } from '../metal/finishes';
 import type { PlateKind } from '../metal/mask';
 import { plates, type PlatePhoto } from '../metal/renderer';
 import styles from './Plate.module.css';
@@ -18,6 +18,7 @@ export interface PlateProps {
   tilt?: boolean;
   // The pointer is on the plate, or it has focus. x and y are where it came in, CSS px from the plate's top left.
   hover?: { on: boolean; x: number; y: number };
+  hoverStyle?: HoverStyle;
   // What screen readers and search read. Defaults to the plate's words. The words are always in the DOM.
   children?: ReactNode;
 }
@@ -27,7 +28,7 @@ const MAX_TILT = 0.06;
 const MAX_TILT_CONTROL = 0.05;
 
 // A lit metal plate. Its words are painted into the metal and also kept in the DOM.
-export function Plate({ finish, kind = 'plate', label, big, facts, photo, className, style, tilt = true, hover, children }: PlateProps) {
+export function Plate({ finish, kind = 'plate', label, big, facts, photo, className, style, tilt = true, hover, hoverStyle, children }: PlateProps) {
   const host = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'failed'>('loading');
@@ -42,12 +43,13 @@ export function Plate({ finish, kind = 'plate', label, big, facts, photo, classN
       canvas: c,
       spec: { finish, kind, label, big, facts, window: !!photo },
       photo,
+      hoverStyle,
       onState: (s) => setState(s),
     });
     return off;
     // The spec is fixed for a plate's life; a new photo or new words make a new plate.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finish, kind, label, big, facts, photoKey]);
+  }, [finish, kind, label, big, facts, photoKey, hoverStyle]);
 
   useEffect(() => {
     const h = host.current;
@@ -55,6 +57,7 @@ export function Plate({ finish, kind = 'plate', label, big, facts, photo, classN
     const move = (e: PointerEvent) => {
       if (e.pointerType === 'touch') return;
       const r = h.getBoundingClientRect();
+      plates.setPointer(h, e.clientX - r.left, e.clientY - r.top);
       const max = kind === 'control' ? MAX_TILT_CONTROL : MAX_TILT;
       plates.setTilt(h, -((e.clientY - r.top) / r.height - 0.5) * max, ((e.clientX - r.left) / r.width - 0.5) * max * 1.2);
     };

@@ -142,7 +142,6 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 - Nothing is approved as "fine if the final is better". If it is not at the bar when he sees it, it is not done.
 - He is told exactly what he is and is not approving at each step.
 - Every message to him ends with a clear, simple recommendation.
-- On the buttons' hover he said "I wish you gave me a few different options". Until he says otherwise, Fable reads that as: where there is a real choice in how something looks or moves, show him a few options side by side, not one. (Nov 11)
 
 ## Open
 
@@ -164,7 +163,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
 14. **What the stream is made of, and what it is called.** What the second build drew does not read as water to him. Recommendation: settle this first in Phase 2, from real studies he can look at, not from a description.
 15. **Where the building happens.** Recommendation: planning in the web chat, building in Claude Code on his Mac with Fable, because it can see what it renders.
 16. **Whether the site has to meet Section 508** (WCAG 2.0, levels A and AA). He asked whether the buttons do, out of curiosity. Recommendation: yes, checked as each part is built, because the engineers who read the site will check. The buttons' results are in `LOG.md`.
-17. **The buttons' hover.** He likes the glow that follows the cursor and is lukewarm on the rest. Recommendation: a few options side by side on `/lab/buttons`, all keeping that glow.
+17. **The buttons' hover.** He likes the glow that follows the cursor. Of the light that runs round the border: "Yes it did start in different places, but ultimately I'm looking for something different with the hover effects." He wants a few different hover effects to choose from. That remark was about the hover only, not a rule for how everything is shown. (Nov 11) Three options are built and waiting on him at `/lab/buttons`: Heat, Pull and Catch.
 
 ## Dropped
 

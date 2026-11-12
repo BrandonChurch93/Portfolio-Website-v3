@@ -14,7 +14,7 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 ## Now
 
 - **Phase:** 1, color and light
-- **Waiting on Brandon:** his go ahead to build a few hover options for the buttons, side by side at `/lab/buttons`. He likes how the buttons look and the glow that follows the cursor. The rest of the hover is not settled (`BRIEF.md`, Open 17)
+- **Waiting on Brandon:** which hover he wants for the buttons. Three options, Heat, Pull and Catch, are under "Hover options" at `/lab/buttons`, below the first hover. He likes how the buttons look and the glow that follows the cursor (`BRIEF.md`, Open 17)
 - **Next for Fable:** Phase 2, the water, opening with what the stream is made of
 
 ## Phase 0 · Foundation

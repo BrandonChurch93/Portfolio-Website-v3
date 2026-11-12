@@ -3,7 +3,7 @@ import { registry, stats } from '../hooks/registry';
 import { lamp } from '../lamp/lamp';
 import { clock } from '../world/clock';
 import { tiers } from '../world/tier';
-import { CONTROL_RING, FINISHES, GLOW, INK } from './finishes';
+import { CONTROL_RING, FINISHES, GLOW, HEAT, HEAT_COLORS, INK, type HoverStyle } from './finishes';
 import { MASK_FONTS, paintMask, type Mask, type PlateSpec } from './mask';
 import { distanceField } from './sdf';
 import { BAKE, LIGHT, VERT } from './shaders';
@@ -20,6 +20,7 @@ export interface PlateEntry {
   canvas: HTMLCanvasElement;
   spec: PlateSpec;
   photo?: PlatePhoto;
+  hoverStyle?: HoverStyle;
   onState?: (state: 'ready' | 'failed') => void;
 }
 
@@ -41,6 +42,9 @@ interface Plate extends PlateEntry {
   water: { x: number; y: number; z: number; k: number };
   // The pointer's light: v runs 0 to 1 toward goal; x and y are where the pointer came in, CSS px in the plate.
   hover: { v: number; goal: number; x: number; y: number; pinned: boolean };
+  // Where the pointer is now, CSS px in the plate, and the warmth it has left: the first point rides with the pointer.
+  pointer: { x: number; y: number };
+  heat: { x: number; y: number; k: number }[];
   seed: number;
 }
 
@@ -84,6 +88,8 @@ function texture(gl: GL, w: number, h: number, internal: number, format: number,
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   return t;
 }
+
+const MODES: Record<HoverStyle, number> = { run: 0, heat: 1, catch: 2, pull: 3 };
 
 const DESIGN_MM = { thick: 3.4, bevel: 5.2, cutDepth: 1.7, cutWall: 0.95, panelDepth: 2.4, raise: 2.4, windowDepth: 20 };
 
@@ -173,7 +179,7 @@ class PlateRenderer {
     const p: Plate = {
       ...entry, ctx, cssW: 0, cssH: 0, dpr: 1, mask: null, b0: null, b1: null, photoTex: null, photoAspect: 1, videoEl: null,
       visible: false, bakeGen: 0, sig: '', tilt: { x: 0, y: 0, gx: 0, gy: 0 }, water: { x: 0, y: 0, z: 26, k: 0 },
-      hover: { v: 0, goal: 0, x: 0, y: 0, pinned: false },
+      hover: { v: 0, goal: 0, x: 0, y: 0, pinned: false }, pointer: { x: 0, y: 0 }, heat: [],
       seed: seedOf(entry.spec),
     };
     this.plates.add(p);
@@ -208,7 +214,13 @@ class PlateRenderer {
     const p = this.byHost.get(host);
     if (!p) return;
     if (on && p.hover.v < 0.02) { p.hover.x = x; p.hover.y = y; }
+    if (on && p.hover.goal === 0) { p.pointer.x = x; p.pointer.y = y; }
     p.hover.goal = on ? 1 : 0;
+  }
+
+  setPointer(host: Element, x: number, y: number): void {
+    const p = this.byHost.get(host);
+    if (p) { p.pointer.x = x; p.pointer.y = y; }
   }
 
   // The water near a plate: where it is (viewport CSS px) and how much it lights it, 0 to 1.
@@ -375,10 +387,32 @@ class PlateRenderer {
       if (frozen || this.still) h.v = h.goal;
       else h.v = h.goal > h.v ? Math.min(h.goal, h.v + dt / 0.5) : Math.max(h.goal, h.v - dt / 0.32);
     }
+    for (const p of this.plates) if (p.hoverStyle === 'heat') this.warm(p, dt, frozen || this.still);
     for (const [p, r] of rects) this.draw(p, false, r);
     this.frameMs = performance.now() - t0;
     stats.metalMs = this.frameMs;
     stats.plates = this.plates.size;
+  }
+
+  // Warmth builds under the pointer, is left behind in points as the pointer moves on, and fades.
+  private warm(p: Plate, dt: number, whole: boolean): void {
+    const on = p.hover.goal > 0;
+    const H = p.heat;
+    if (!H.length) { if (!on) return; H.push({ x: p.pointer.x, y: p.pointer.y, k: 0 }); }
+    const fade = Math.exp(-dt / HEAT.fade);
+    for (let i = 1; i < H.length; i++) H[i].k *= fade;
+    const live = H[0];
+    if (on) {
+      const last = H[1] ?? live;
+      if (H.length === 1 || Math.hypot(p.pointer.x - last.x, p.pointer.y - last.y) > HEAT.step) H.splice(1, 0, { x: live.x, y: live.y, k: live.k * 0.9 });
+      live.x = p.pointer.x;
+      live.y = p.pointer.y;
+      live.k = whole ? 1 : Math.min(1, live.k + dt / HEAT.build);
+    } else {
+      live.k = whole ? 0 : live.k * fade;
+    }
+    if (H.length > HEAT.points) H.length = HEAT.points;
+    if (!on && H.every((h) => h.k < 0.004)) H.length = 0;
   }
 
   private draw(p: Plate, force: boolean, rect?: DOMRect): void {
@@ -389,6 +423,7 @@ class PlateRenderer {
     const video = p.videoEl && p.videoEl.readyState >= 2;
     const sig = [Math.round(L.px), Math.round(L.py), Math.round(r.left), Math.round(r.top), clock.view.w, clock.view.h,
       p.tilt.x.toFixed(3), p.tilt.y.toFixed(3), p.water.k.toFixed(3), Math.round(p.water.x), Math.round(p.water.y), p.hover.v.toFixed(3), !!p.photoTex,
+      p.hoverStyle === 'catch' && p.hover.v > 0 ? `${Math.round(p.pointer.x)}:${Math.round(p.pointer.y)}` : '', p.heat.map((h) => `${Math.round(h.x)}:${Math.round(h.y)}:${h.k.toFixed(2)}`).join('|'),
       video ? p.videoEl!.currentTime.toFixed(3) : ''].join();
     if (!force && sig === p.sig) return;
     if (tiers.get() === 'static' && p.sig && !force) return;
@@ -423,6 +458,13 @@ class PlateRenderer {
     gl.uniform1f(l.u('uRing'), p.spec.kind === 'control' ? CONTROL_RING : 0);
     gl.uniform1f(l.u('uSoft'), p.spec.kind === 'control' ? FINISHES[p.spec.finish].soft ?? 0 : 0);
     gl.uniform1f(l.u('uInlay'), p.spec.kind === 'control' ? FINISHES[p.spec.finish].inlay ?? 0 : 0);
+    gl.uniform1i(l.u('uMode'), MODES[p.hoverStyle ?? 'run']);
+    gl.uniform2f(l.u('uPointer'), p.pointer.x * p.dpr, p.pointer.y * p.dpr);
+    const heat = new Float32Array(HEAT.points * 3);
+    p.heat.forEach((h, i) => heat.set([h.x * p.dpr, h.y * p.dpr, h.k], i * 3));
+    gl.uniform3fv(l.u('uHeat'), heat);
+    gl.uniform3fv(l.u('uHeatC'), HEAT_COLORS.flat());
+    gl.uniform1f(l.u('uHeatFace'), FINISHES[p.spec.finish].heat ?? 0);
     const F = FINISHES[p.spec.finish];
     gl.uniform3fv(l.u('uF0a'), F.a);
     gl.uniform3fv(l.u('uF0b'), F.b);

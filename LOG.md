@@ -2,6 +2,48 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-11 · Buttons: three hover options (Fable, web chat)
+
+**What Brandon said**
+
+- The wish for "a few different options" was about the hover effects only. It is not a rule for how everything is shown. `BRIEF.md` is corrected.
+- Of the light that runs round the border: "Yes it did start in different places, but ultimately I'm looking for something different with the hover effects."
+
+**What was built**
+
+Three more things a button can do under the pointer, beside the first one. All keep the glow that follows the cursor, which is the part he likes. They are under "Hover options" on `/lab/buttons`. The first three rows of that page still show the first hover.
+
+| Option | What it does | Where |
+|---|---|---|
+| `run` (the first) | Light runs round the cut border from where the pointer came in. The button lifts | light shader, `uMode` 0 |
+| A · `heat` | The metal glows orange where the pointer is. Points of warmth are left behind as the pointer moves and fade, so there is a trail that cools. The cut border glows near the heat. The accent's words go pale hot. No lift, and the lamp does not close in | `warm()` in `src/metal/renderer.ts`, `uMode` 1, `HEAT` and `HEAT_COLORS` in `finishes.ts` |
+| B · `pull` | The button follows the pointer by up to 9px across and 5px down on a slightly under damped spring, and its shadow stays most of the way behind | `usePull` in `src/components/MetalButton.tsx`, `uMode` 3 |
+| C · `catch` | Nothing plays. The cut border, the rubbed edges and the accent's words light only within reach of the pointer | `uMode` 2 |
+
+- `MetalButton` takes `hover="run" | "heat" | "pull" | "catch"`. The default is still `run`.
+- `Plate` now tells the renderer where the pointer is on every move (`plates.setPointer`).
+
+**How it was judged (Fable, software stills at 2x)**
+
+- `reference/studies/02-buttons-hover-options.jpg`: heat, pull, catch from top to bottom, primary then accent, three states each. For heat the states are: pointer resting, straight after a sweep to the right, a quarter second after leaving.
+- Heat on the face is kept to the deep colors (ember to flame). Run to the pale end it read as haze. Only the accent's words and the border go pale.
+- Text contrast in every state shot: primary 6.0 to 6.7, accent 5.1 to 6.5 (medians, needs 4.5).
+- Not judged: all of the motion. How fast heat builds and fades, how the pull's spring feels, whether catch is too quiet. Those are his to try.
+
+**When he chooses**
+
+Delete what he did not pick: the unused members of `HoverStyle`, their `uMode` branches in the light shader, `MODES` in the renderer, and for the options not chosen `warm()`, `HEAT`, `usePull` and the `data-hover` rules in `MetalButton.module.css`. Then drop the "Hover options" section from the page.
+
+**Still open from the 508 check below**
+
+- With reduced motion the metal is static, so none of these show. Fix it with whichever hover he picks.
+- The accent's thin contrast margin where the lamp's bright spot sits beside the words.
+
+**Waiting on Brandon**
+
+1. Which hover: A, B, C, the first one, or a mix (pull can be combined with heat or catch).
+2. Whether the water gets built in Claude Code on his Mac.
+
 ## 2026-11-11 · Buttons: his verdict on the second pass, and a 508 check (Fable, web chat)
 
 **What Brandon said**

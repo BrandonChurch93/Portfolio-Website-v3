@@ -14,8 +14,18 @@
   transition: transform var(--dur-2) var(--ease-settle);
 }
 
-.button:hover {
+.button[data-hover='run']:hover {
   transform: translateY(-3px);
+}
+
+/* Pull: the spring in MetalButton.tsx moves it, so nothing here eases it. Its shadow stays most of the way behind. */
+.button[data-hover='pull'] {
+  transform: translate(var(--pull-x, 0px), var(--pull-y, 0px));
+  transition: none;
+}
+
+.button[data-hover='pull'] [data-plate-shadow] {
+  translate: calc(var(--pull-x, 0px) * -0.7) calc(var(--pull-y, 0px) * -0.7);
 }
 
 /* Lifted toward the light, its shadow spreads and falls further. */
@@ -23,7 +33,7 @@
   transition: opacity var(--dur-3) var(--ease-settle), scale var(--dur-2) var(--ease-settle);
 }
 
-.button:hover [data-plate-shadow] {
+.button[data-hover='run']:hover [data-plate-shadow] {
   scale: 1.07 1.28;
 }
 
@@ -34,6 +44,10 @@
 .button:active {
   transform: translateY(1px);
   transition-duration: var(--dur-1);
+}
+
+.button[data-hover='pull']:active {
+  transform: translate(var(--pull-x, 0px), calc(var(--pull-y, 0px) + 1px));
 }
 
 .button:focus-visible {
