@@ -121,7 +121,8 @@ Said after the first night's build at `/lab/stream`, with both check-ins live. N
 - The shards stop being copper leaf and glass. "The particles look abstract. There's no way to look at and be like oh yeah that's glass and a copper leaf. Nobody will ever get that." What matters to him: "there's something with substance there in the stream and when it hits the ground, they fly off and bounce around." This replaces the agreement's lines about copper and glass, and the test that a shard must read as one or the other.
 - There are still two kinds, a solid one and a clear one, because the contrast between dark and bright gives depth. They are one family of shapes in two materials: "Same family shapes, two materials."
 - The shape is facets, with five to eight flat faces, in many sizes. "I like the facets idea, we can go with." He passed over hexagons, thin plates and panes, and chips of the letters.
-- How the facets look is not decided. He wondered aloud about "sharp jagged pieces and all different shapes, kind of low poly", and Fable wrote that in as a ruling. It was not one: "I was just making conversation and asking what the final look will be. I wasn't telling you exactly how it should look." Two looks are side by side at `/lab/stream-facets` for him to choose from: A, cut (chunky, bevelled edges, a grain on the solid ones, flaws inside the clear ones) and B, jagged (sharp splinters, low poly, detail only in the light). (Nov 12)
+- The facets' look is the jagged one, as reworked: panel B at `/lab/stream-facets`. "Yes the re-worked jagged was my favorite." Sharp pieces with three or four needle points and flat faces, the larger ones notched, nothing on the surface, the detail only in the light. On size, his words about the first try: "I don't like how some of them are really big", and he likes a range of sizes without the oversized ones. He passed over A, the chunky cut look. The study is a rough sketch of shape only, and he knows it. (Nov 12)
+- How that was reached, so it is not repeated: he first wondered aloud about "sharp jagged pieces", and Fable wrote that in as a ruling before he had made one. "I was just making conversation." A question from him is not a ruling.
 - He likes the raised lettering of WORK and how the stream plays on it. Once the stream is finished he wants the components and the layout approached again "with this component always in mind". Fable's reading, which he agreed with: every element on the site is a surface that the stream and the cursor light, and nothing else has a glow of its own.
 
 **How it is built**
@@ -263,6 +264,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
 
 - Shards that have to read as copper leaf and as glass. They are abstract facets in a solid and a clear material (Nov 12)
 - Hexagons, thin plates and panes, and chips of the letters as the shape of the shards. He picked facets (Nov 12)
+- Chunky cut facets with detail on their surface. He picked the jagged look (Nov 12)
 - The client work section
 - The process section
 - The "More rooms" section and the separate room pages

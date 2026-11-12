@@ -17,7 +17,7 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **Phase:** 2, the stream
 - **Where:** Claude Code on Brandon's Mac, with Fable. `LOG.md`, top entry, is the handoff for this round
 - **His verdict on the first test shot (Nov 12):** "I think we nailed this and we build everything else off of this stream." With changes. They are in `BRIEF.md`, The stream, under "His verdict on the test shot, and what changes"
-- **Being built, the second round:** the shards rebuilt as facets in two materials, fewer of them where the stream lies on an object, the strike kept and free to be pushed further, more presence at the size of the whole page
+- **Being built, the second round:** the shards rebuilt as jagged facets (the look he picked at `/lab/stream-facets`) in two materials, fewer of them where the stream lies on an object, the strike kept and free to be pushed further, more presence at the size of the whole page
 - **Next thing Brandon sees:** the second round at `/lab/stream`, with the first round's shards one switch away to compare
 - **Not to be built yet:** the route down the whole site, the layout, anything touching the 3D pieces, the city, the opening
 

@@ -22,8 +22,11 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 
 **If you are the session in Claude Code, this is the second round**
 
-1. **Rebuild the shards as facets.** Five to eight flat faces, no two alike, many sizes, most of them small, about the footprint the shards have now. Which of two looks they take is his to pick at `/lab/stream-facets` (`src/stream-facets/`): A, cut, or B, jagged. `BRIEF.md` says which once he has. Do not start this item before it does.
-   - Whichever he picks, what fails is a toy: faces all one tone, soft edges, rounded lumps.
+1. **Rebuild the shards as facets, in the jagged look he picked.** It is the right hand panel at `/lab/stream-facets`. Open it, strike it, and read `jagged()` in `src/stream-facets/facets.ts` for how its shapes are made: a small core with three or four points pulled far out so each ends in a needle, larger pieces made of two of those fused at an angle, small pieces given more body, and every piece scaled so none reaches further than its size allows.
+   - The sketch settles the shape only. Its lighting and bounce are stand-ins: yours are better. Build the shapes new in `src/stream/shards.ts`.
+   - Sizes: a range, most of them small, none oversized. About the footprint the shards have now.
+   - Nothing on the surface. The detail is in the light: every face its own tone, edges crisp enough to catch a hairline of light, points that glint. What fails is a toy: faces all one tone, soft edges, rounded lumps.
+   - One thing Fable could not check in a still: whether a notched piece reads as one piece or as two stuck together when it tumbles. Look at that in motion and drop the notch if it reads as two.
 2. **Two materials on the same shapes.** Any facet can be solid or clear. Solid: dark until a face turns to the light, then the whole face flashes. Clear: carries the light through, glows inside, brightest on its edges. Keep the color coming only from how a shard is lit. Find the mix by eye, starting from what it is now.
 3. **Keep the first round's shards one switch away**, for example `/lab/stream?shards=first`, so he can put the two side by side. He loves what he has. If the facets are not plainly better, he needs to be able to see that for himself.
 4. **Thin the shards where the stream lies along or hooks over an object**: the top of the title, its two corners, the top of the card. About a quarter fewer there, evenly spaced, no clumps. Leave the straight runs and the number thrown at a strike as they are. Find the cause before turning a number down. Two guesses from reading your log, not your code: each landing keeps throwing a few shards while the page is still, and the two sides' riders overlap where they part.
@@ -51,9 +54,11 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 - "I think I like the jagged ones", B, more. But "I don't like how some of them are really big", he likes A's sizing more while still liking a range of sizes, and he "was also hoping they'd be a bit more jagged".
 - Panel B was reworked to that and A left alone: B's pieces now reach no further than A's at the same size, each has three or four needle points, larger ones are two splinters fused at an angle so the outline has a notch, and small ones keep more body so they still flash. He has not judged the reworked B yet, so the look is still not a ruling.
 
+- His verdict on the reworked B: "Yes the re-worked jagged was my favorite." It is in `BRIEF.md` now.
+
 **Half finished**
 
-- Waiting on his verdict on the reworked B at `/lab/stream-facets`. No prompt has gone to Claude Code yet.
+- Nothing. The prompt for this round went to Brandon to paste.
 
 ## 2026-11-12 · The stream's test shot (Fable, Claude Code on Brandon's Mac)
 
