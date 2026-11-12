@@ -76,6 +76,9 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
   - "The mainstream is blasted back multiple times due to this puddling", and from "the way the particles can bounce backwards and hit the stream, pushing it back".
   - "Instead of looking like a refined beautiful hot liquid metal, this looks more like mud splashing around and puddling up."
 - In exact terms: the metal must not heap up where it lands, nothing it throws may knock the falling stream off its line, and the whole of it has to read as refined, not as a mess. (Fable's restatement, Nov 11)
+- His verdict on the three looks at `/lab/pour-looks` (Nov 11): "I think the best looking one is A, but if being honest it's still about a 5.5/10." And: "Maybe the Liquid Metal isn't the right direction."
+- What he is looking for now, in his words: "less something realistic in terms of what would make sense and more of something abstract that doesn't have a secret meaning that looks really cool with hyper detailed graphics". So molten metal is no longer settled. What the stream is made of is open again. (Nov 11)
+- Nothing new is to be built for the stream until he says so. He wants to talk it through first. (Nov 11)
 - He wants something special about the stream itself. "Think like how plasma looks that liquid metal color, but with shiny stuff all in it, or maybe something else. I'm open to options." (Nov 11)
 - It does not move fast. On the site its speed is "capped at the user scroll rate", and "it should be a smooth experience". He said this when the look study ran at a real falling speed and "everything is just moving too fast". (Nov 11)
 - The simulation is stepped from the one clock (`src/world/clock.ts`) with a fixed timestep and a seed, so any frame can be frozen and shot again exactly. Each new pour takes a new seed, so no two splashes match. (Nov 11)

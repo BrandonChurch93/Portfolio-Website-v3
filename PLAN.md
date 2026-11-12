@@ -18,7 +18,7 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **Where:** Claude Code on Brandon's Mac, with Fable (`LOG.md`, top entry)
 - **Built and shown:** the test shot, at `/lab/pour`. Three independent reviews of its stills failed it against the bar, each on whether a paused frame looks like a photograph. `LOG.md`, top entry, says where it falls short
 - **Brandon's verdict on the test shot (Nov 11):** it puddles, the stream gets knocked back by its own splash, and it reads as mud, not refined metal (`BRIEF.md`, The pour)
-- **Waiting on Brandon:** which look he picks at `/lab/pour-looks` (Sun metal with flecks, Mirror, or all three). Then one prompt goes to the session in Claude Code covering both the behavior and the look
+- **Waiting on Brandon:** what the stream is. He scored the best of the three looks 5.5 out of 10 and thinks liquid metal may be the wrong direction. He wants something abstract and hyper detailed, and is talking it through in the web chat. Build nothing for the stream until he says so (`BRIEF.md`, The pour)
 
 ## Phase 0 · Foundation
 
