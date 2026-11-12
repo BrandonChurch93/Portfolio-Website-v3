@@ -35,6 +35,9 @@ export const STREAM = {
     // The route counts as lying on an object when it is within the first distance of one, and as clear of it by the second.
     hold: [8, 46] as [number, number],
     calm: 170,          // within this distance of an object the shards keep no knots
+    // The room a shard has to each side of the route: an object further off than cap does not count, the first
+    // soft units of room count for most, and a change in it is spread over this much of the route.
+    room: { cap: 240, soft: 40, over: 90 },
   },
 
   head: {
@@ -60,6 +63,7 @@ export const STREAM = {
     // strength hides the core.
     wave: [0.6, 0.9] as [number, number],
     aside: 0.18,        // how much quicker they pass in front of the core and behind it than they pass its sides
+    round: 0.3,         // how rounded the turn is where one kept off an object swings back out
     flare: 1.25,        // how far they are thrown wide at the leading end, at rest
     flareFast: 2.6,     // and more with its energy
     flareOver: 46,      // the flare dies away over this distance behind the leading end
@@ -71,11 +75,12 @@ export const STREAM = {
     // broadest face, flat on, and loses its shape.
     face: { facets: 0.5, first: 0.85 } as Record<'facets' | 'first', number>,
     // Where the stream lies along an object its shards cannot go round the far side of the core, so all of them ride
-    // the near side and are twice as thick there. This share of them is taken away, and the rest ride this much wider.
-    thin: 0.44,
+    // the near side and would be twice as thick there. So there are this share fewer to a length of route on an
+    // object, reached by each riding through faster, and they ride this much wider.
+    thin: 0.4,
     spread: 0.42,
     apart: 56,          // the two sides carry their full number of shards once they are this far apart
-    hook: 70,           // a turn this tight or tighter, near an object, is thinned as much as a run that lies on one
+    hook: 100,           // a turn this tight or tighter, near an object, is thinned as much as a run that lies on one
   },
 
   // Sizes, as the distance from a shard's center to its farthest point: the smallest and the largest. A facet is
@@ -88,6 +93,12 @@ export const STREAM = {
     bounce: 0.58,       // the share of its fall a bounce keeps, give or take a quarter
     grip: 0.72,         // how much sideways speed a bounce keeps
     settle: 120,        // falling slower than this it no longer bounces
+    // For the single shard thrown at rest only: how fast the flow carries it along a surface once it has stopped
+    // bouncing, give or take a half, how many times a second it catches and skips on the way, and the seconds it
+    // is given to fall once it has been carried off the end.
+    carry: 400,
+    skip: 0.8,
+    spill: 0.65,
     skid: 6,            // how quickly one that has stopped bouncing slows, per second
     fades: 0.9,         // seconds one that has stopped bouncing is given before it is gone
     life: [1.3, 2.6] as [number, number],
@@ -96,6 +107,7 @@ export const STREAM = {
     // how hard it is thrown against a strike at full speed.
     now: [3, 6] as [number, number],
     toss: 0.45,
+    lone: 4,            // seconds it lives: long enough to be whole still when the flow takes it and sets its life again
     // Thrown when a leading end arrives: the fewest, and how many more at full speed.
     burst: [4.5, 52] as [number, number],
   },

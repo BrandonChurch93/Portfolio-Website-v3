@@ -6,7 +6,7 @@ import { tiers } from '../world/tier';
 import { STREAM, STREAM_BUDGET, STREAM_STEP, unitFor, type StreamBudget } from './config';
 import { hash, seeded } from './rand';
 import { CORE_FLOATS, INSTANCE_FLOATS, KINDS, LAYERS, STREAK_FLOATS, StreamRenderer, type CardShape, type Frame, type TitleField } from './renderer';
-import { at, buildRoute, type Box, type Route } from './route';
+import { along, at, buildRoute, riddenAt, type Box, type Route } from './route';
 import { CORE_HALF } from './shaders';
 import { buildShards, facetKind, FIRST_KINDS, type Look } from './shards';
 import { FORK_FLOATS, LOOSE_FLOATS, SPARK_FLOATS, StreamSim } from './sim';
@@ -34,27 +34,27 @@ const HOLD_TIME = 20;
 const STILL_TIME = 20;
 const TAU = Math.PI * 2;
 const tmp = new Float32Array(4);
+// How much of its full size a thrown shard has: it grows as it is thrown and shrinks away over the end of its life.
+const thrownShare = (age: number, life: number) => Math.min(1, age / 0.07) * Math.min(1, (life - age) / (life * S.loose.fade));
 
 interface Riders {
   n: number;
   branch: Uint8Array;
-  spare: Uint8Array;
   clear: Uint8Array;
   kind: Uint8Array;
-  // at, pace, orbit radius, phase, sway rate, sway phase, size, spin rate, spin phase, then its spin axis, its starting turn, its own number, and a second number of its own
+  // at, pace, orbit radius, phase, sway rate, sway phase, size, spin rate, spin phase, then its spin axis, its starting turn and its own number
   f: Float32Array;
 }
-const RIDER = 18;
+const RIDER = 17;
 
 function makeRiders(route: Route, budget: StreamBudget, look: Look): Riders {
   const r = seeded(S.seed * 131 + 5), u = route.unit, K = S.shards, sizes = S.sizes[look];
-  const counts = route.branches.map((b) => Math.round((budget.per100 * b.len) / (100 * u)));
+  const counts = route.branches.map((b) => Math.round((budget.per100 * b.rideLen) / (100 * u)));
   const n = counts[0] + counts[1];
-  const out: Riders = { n, branch: new Uint8Array(n), spare: new Uint8Array(n), clear: new Uint8Array(n), kind: new Uint8Array(n), f: new Float32Array(n * RIDER) };
+  const out: Riders = { n, branch: new Uint8Array(n), clear: new Uint8Array(n), kind: new Uint8Array(n), f: new Float32Array(n * RIDER) };
   for (let i = 0; i < n; i++) {
     const o = i * RIDER, clear = r() < K.clear;
     out.branch[i] = i < counts[0] ? 0 : 1;
-    out.spare[i] = r() < 0.5 ? 1 : 0;
     out.clear[i] = clear ? 1 : 0;
     const pick = r();
     // Many small, a few large enough to show every face.
@@ -67,7 +67,7 @@ function makeRiders(route: Route, budget: StreamBudget, look: Look): Riders {
       // an order to it and never reads as a cloud of loose parts.
       r(), 0.7 + 0.65 * r(), (K.near + (K.far - K.near) * r() ** 2.1) * u, (Math.floor(r() * 3) * TAU) / 3 + (r() + r() - 1) * 0.55, 0.3 + 0.7 * r(), r() * TAU,
       (sizes[0] + (sizes[1] - sizes[0]) * big) * u * (clear && look === 'first' ? 1.12 : 1), (0.25 + 0.95 * r()) * (r() < 0.5 ? -1 : 1), r() * TAU,
-      a[0] / al, a[1] / al, a[2] / al, q[0] / ql, q[1] / ql, q[2] / ql, q[3] / ql, r(), hash(i, 77, S.seed),
+      a[0] / al, a[1] / al, a[2] / al, q[0] / ql, q[1] / ql, q[2] / ql, q[3] / ql, r(),
     ], o);
   }
   return out;
@@ -197,6 +197,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   const populate = () => {
     if (!route) return;
     riders = makeRiders(route, budget, look);
+    if (probe) probe = new Float32Array(riders.n * PROBE);
     sim = new StreamSim(route, budget, S.seed, S.sizes[look]);
     const most = riders.n + budget.loose;
     shards = new Float32Array(most * INSTANCE_FLOATS);
@@ -344,45 +345,51 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       count[key]++;
     };
 
+    const heads = [riddenAt(route.branches[0], sim.head[0]), riddenAt(route.branches[1], sim.head[1])];
     for (let i = 0; i < R.n; i++) {
       const o = i * RIDER, b = R.branch[i], br = route.branches[b], head = sim.head[b];
-      const d = (R.f[o] * br.len + t * K.flow * u * R.f[o + 1]) % br.len;
+      const po = i * PROBE;
+      if (probe && po + PROBE <= probe.length) probe.fill(0, po, po + PROBE);
+      // Nothing takes a shard out of the stream between its start and the leading end. Fewer on an object comes
+      // from how fast they ride there (route.ts), not from hiding any.
+      const ridden = (R.f[o] * br.rideLen + t * K.flow * u * R.f[o + 1]) % br.rideLen, d = along(br, ridden);
       const lead = head - d;
       if (lead <= 0) continue;
-      const here = Math.min(br.n - 1, Math.floor(d / br.step));
-      let grown = Math.min(1, lead / (K.grow * u));
-      // Where the two sides part they share the same ground, so each brings in its second half only as they draw apart.
-      if (R.spare[i]) grown *= Math.max(0, Math.min(1, br.apart[here] / (K.apart * u)));
-      if (grown <= 0.02) continue;
+      const fi = Math.min(br.n - 1.001, d / br.step), here = Math.floor(fi), part = fi - here;
+      const mix = (a: Float32Array) => a[here] + (a[here + 1] - a[here]) * part;
+      // By distance ridden, so it takes as long to grow where it rides faster.
+      let grown = Math.min(1, (heads[b] - ridden) / (K.grow * u));
       at(br, d, tmp);
+      const hold = mix(br.hold);
+      if (probe && po + PROBE <= probe.length) { probe[po + 3] = grown; probe[po + 5] = hold; probe[po + 8] = tmp[0]; probe[po + 9] = tmp[1]; }
+      if (grown <= 0.02) continue;
       if (tmp[1] < top - 70 * u || tmp[1] > bottom + 70 * u) continue;
       const cx = tmp[0], cy = tmp[1], tx = tmp[2], ty = tmp[3];
-      const e = sim.energy[b], hold = br.hold[here];
+      const e = sim.energy[b];
       // They gather and thin along the route in slow waves, so the stream has knots and open stretches. Along an
-      // object there are no knots: they are spread evenly.
-      const free = 0.5 + 0.5 * Math.sin(d / (K.clump * u) - t * 0.22 + 2 * Math.sin(d / (K.clump * 3.6 * u)));
-      const wave = free + (0.5 - free) * Math.max(hold, br.calm[here]);
-      grown *= Math.max(0, Math.min(1, (K.wave[0] + (K.wave[1] - K.wave[0]) * wave - R.f[o + 16]) / 0.1 + 1));
+      // object there are no knots. The knots travel with the shards, so they go by distance ridden.
+      const free = 0.5 + 0.5 * Math.sin(ridden / (K.clump * u) - t * 0.22 + 2 * Math.sin(ridden / (K.clump * 3.6 * u)));
+      const wave = free + (0.5 - free) * mix(br.level);
+      const wv = Math.max(0, Math.min(1, (K.wave[0] + (K.wave[1] - K.wave[0]) * wave - R.f[o + 16]) / 0.1 + 1));
+      grown *= wv;
+      if (probe && po + PROBE <= probe.length) probe[po + 4] = wv;
       if (grown <= 0.02) continue;
       // They go round the core, but quicker across its face than past its sides, so the core is never hidden for long.
       const turn = R.f[o + 3] + t * K.orbit + (d * TAU) / (K.wind * u) + 0.4 * Math.sin(t * R.f[o + 4] + R.f[o + 5]);
       const round = turn + K.aside * Math.sin(2 * turn);
       const far = R.f[o + 2] * (1 + K.spread * hold) * (1 + (K.flare + K.flareFast * e) * Math.exp(-lead / (K.flareOver * u)));
-      const side = far * Math.sin(round), z = far * Math.cos(round);
-      // On an object all of them ride the one side of the core, and on the inside of a turn they are squeezed
-      // together. Enough are taken away in both places, and where the stream hooks round an object, that they lie no
-      // thicker there than on a straight run.
-      const hook = Math.min(1, Math.abs(br.bend[here]) * K.hook * u) * br.calm[here];
-      grown *= Math.max(0, Math.min(1, (R.f[o + 17] - K.thin * Math.max(hold, hook) - Math.max(0, side * br.bend[here])) / 0.08 + 1));
-      if (grown <= 0.02) continue;
-      let x = cx - ty * side, y = cy + tx * side;
-      // Nothing rides through the title or the card: what would is turned back off the nearer face.
-      for (const box of route.boxes) {
-        const m = R.f[o + 6] * 0.7;
-        if (x <= box.l - m || x >= box.r + m || y <= box.t - m || y >= box.b) continue;
-        const up = y - box.t + m, left = x - box.l + m, right = box.r - x + m;
-        if (up < left && up < right) y = box.t - m - up; else if (left < right) x = box.l - m - left; else x = box.r + m + right;
-      }
+      // It swings out to one side of the core and then the other. With less room on one side than it would swing,
+      // it swings out on the open side both times, and with a little less room, a little: its place never changes
+      // at once, which turning it back off the nearest face of an object did at every corner.
+      const swing = Math.sin(round), back = (Math.sqrt(swing * swing + K.round * K.round) - K.round) / (Math.sqrt(1 + K.round * K.round) - K.round);
+      const body = R.f[o + 6] * 0.7, roomA = mix(br.roomA) - body, roomB = mix(br.roomB) - body;
+      const shutA = Math.max(0, Math.min(1, 1 - roomA / far)), shutB = Math.max(0, Math.min(1, 1 - roomB / far));
+      let side = far * swing;
+      if (shutA > 0 && shutA >= shutB) side = (1 - shutA) * side + shutA * (Math.min(roomA, 0) - far * back);
+      else if (shutB > 0) side = (1 - shutB) * side - shutB * (Math.min(roomB, 0) - far * back);
+      const z = far * Math.cos(round);
+      const x = cx - ty * side, y = cy + tx * side;
+      if (probe && po + PROBE <= probe.length) { probe[po] = x; probe[po + 1] = y; probe[po + 2] = grown; probe[po + 6] = shutA - shutB; probe[po + 7] = side; }
       const spin = R.f[o + 8] + t * R.f[o + 7], h = Math.sin(spin / 2), cw = Math.cos(spin / 2);
       // A larger clear shard near the core throws a sliver of light out past itself, on the far side from the core.
       if (R.clear[i] && R.f[o + 6] > 5.5 * u && glints < GLINTS && Math.abs(side) > 5 * u) {
@@ -417,7 +424,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
         }
       }
       const br = route.branches[bb];
-      const size = Math.abs(p[o + 15]) * Math.min(1, age / 0.07) * Math.min(1, (life - age) / (life * S.loose.fade));
+      const size = Math.abs(p[o + 15]) * thrownShare(age, life);
       const own = sim.looseSeed[i];
       const clear = p[o + 15] < 0 ? 1 : 0;
       const kind = look === 'first' ? Math.floor(own * FIRST_KINDS) : facetKind((Math.abs(p[o + 15]) / u - loosest) / (sizes[1] - sizes[0]), own);
@@ -435,6 +442,12 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     return n;
   };
 
+  // For checking: where each riding shard was drawn in the last frame and what took any of its size away. x, y, the
+  // share of its size shown, the share the leading end leaves it, the share the knots leave it, how much the route
+  // lies on an object there, how much an object shuts one side to it, how far out from the core it is, and the
+  // point of the core it rides.
+  const PROBE = 10;
+  let probe: Float32Array | null = null;
   const runs: [number, number, number, number] = [0, 0, 0, 0];
   const GLINTS = 220;
   const glint = new Float32Array(GLINTS * 6);
@@ -547,10 +560,28 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     }
     return out;
   });
-  // Every thrown shard as its own number, x and y, so a script can follow each one from frame to frame.
-  registry.tool('streamThrown', () => {
+  // streamProbe(true) starts keeping a record of every riding shard, and streamRiders(left, top, right, bottom) gives
+  // the record of those whose point of the core is inside a rectangle: its number, then the fields of the record.
+  registry.tool('streamProbe', (on: boolean) => { probe = on && riders ? new Float32Array(riders.n * PROBE) : null; });
+  registry.tool('streamRiders', (l: number, t: number, r: number, b: number) => {
     const out: number[] = [];
-    if (sim) for (let i = 0; i < sim.looseCount; i++) out.push(sim.looseSeed[i], sim.loose[i * LOOSE_FLOATS], sim.loose[i * LOOSE_FLOATS + 1]);
+    if (probe) for (let i = 0; i * PROBE < probe.length; i++) {
+      const o = i * PROBE, x = probe[o + 8], y = probe[o + 9];
+      if (x < l || x > r || y < t || y > b || (x === 0 && y === 0)) continue;
+      out.push(i);
+      for (let k = 0; k < PROBE; k++) out.push(probe[o + k]);
+    }
+    return out;
+  });
+  // Every thrown shard as its own number, x and y, so a script can follow each one from frame to frame. Asked for
+  // sizes, each is followed by the share of its full size it is drawn at.
+  registry.tool('streamThrown', (sizes?: boolean) => {
+    const out: number[] = [];
+    if (sim) for (let i = 0; i < sim.looseCount; i++) {
+      const o = i * LOOSE_FLOATS, age = sim.loose[o + 13], life = sim.loose[o + 14];
+      out.push(sim.looseSeed[i], sim.loose[o], sim.loose[o + 1]);
+      if (sizes) out.push(thrownShare(age, life));
+    }
     return out;
   });
   // streamPlay(fromScroll, toScroll, fromTime, toTime) scripts a scroll for frozen frames. streamPlay() ends it.

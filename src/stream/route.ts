@@ -17,14 +17,23 @@ export interface Branch {
   ty: Float32Array;
   // The lowest the route has been by each point, so a height on the page gives one distance along it.
   floor: Float32Array;
-  // How much the route lies along an object or hooks round one here, 0 to 1.
+  // How much the route lies along an object here, 0 to 1, how much it is near one in the wider sense, and how
+  // much the knots of shards are evened out.
   hold: Float32Array;
-  // How near an object it is in the wider sense, 0 to 1: near enough that a knot of shards would read as bunched on it.
   calm: Float32Array;
+  level: Float32Array;
   // How sharply it turns here, as one over the radius of the turn. Positive turns toward (-ty, tx).
   bend: Float32Array;
   // How far the other side of the stream is from this point of this side.
   apart: Float32Array;
+  // How far out a shard can swing before it meets an object: toward (-ty, tx), and the other way. Evened out along
+  // the route and never more than the true room, so a shard kept clear by it never changes place at once.
+  roomA: Float32Array;
+  roomB: Float32Array;
+  // How far a shard has ridden by this point. It rides faster where there are to be fewer shards, so none has to
+  // be taken out of the stream to thin them.
+  ride: Float32Array;
+  rideLen: number;
 }
 
 export interface Landing {
@@ -75,6 +84,24 @@ function outside(b: Box, x: number, y: number): number {
   return Math.hypot(dx, dy);
 }
 
+const nearest = (boxes: Box[], x: number, y: number) => boxes.reduce((d, b) => Math.min(d, outside(b, x, y)), Infinity);
+
+// How far from a point, going one way, the nearest object begins. Negative when the point is inside one.
+function room(boxes: Box[], x: number, y: number, dx: number, dy: number, cap: number): number {
+  let best = cap;
+  for (const b of boxes) {
+    let t0 = -Infinity, t1 = Infinity;
+    for (const [o, d, lo, hi] of [[x, dx, b.l, b.r], [y, dy, b.t, b.b]]) {
+      if (Math.abs(d) < 1e-9) { if (o < lo || o > hi) t0 = Infinity; continue; }
+      const p = (lo - o) / d, q = (hi - o) / d;
+      t0 = Math.max(t0, Math.min(p, q));
+      t1 = Math.min(t1, Math.max(p, q));
+    }
+    if (t0 <= t1 && t1 >= 0) best = Math.min(best, t0);
+  }
+  return best;
+}
+
 const ease = (a: number, b: number, v: number) => { const k = Math.max(0, Math.min(1, (v - a) / (b - a))); return k * k * (3 - 2 * k); };
 
 // Evenly spaced points along a line through pts, each pushed sideways by the sway where the page around it is open.
@@ -105,7 +132,8 @@ function branch(pts: number[], boxes: Box[], unit: number, phase: number, splitA
   }
   const p = even(swayed);
   const n = p.length / 2;
-  const out: Branch = { n, len: (n - 1) * step, step, x: new Float32Array(n), y: new Float32Array(n), tx: new Float32Array(n), ty: new Float32Array(n), floor: new Float32Array(n), hold: new Float32Array(n), calm: new Float32Array(n), bend: new Float32Array(n), apart: new Float32Array(n).fill(1e6) };
+  const blank = () => new Float32Array(n);
+  const out: Branch = { n, len: (n - 1) * step, step, x: blank(), y: blank(), tx: blank(), ty: blank(), floor: blank(), hold: blank(), calm: blank(), level: blank(), bend: blank(), apart: blank().fill(1e6), roomA: blank(), roomB: blank(), ride: blank(), rideLen: 0 };
   for (let i = 0; i < n; i++) { out.x[i] = p[i * 2]; out.y[i] = p[i * 2 + 1]; }
   let low = -Infinity;
   for (let i = 0; i < n; i++) {
@@ -115,11 +143,28 @@ function branch(pts: number[], boxes: Box[], unit: number, phase: number, splitA
     out.ty[i] = dy / len;
     low = Math.max(low, out.y[i]);
     out.floor[i] = low;
-    let near = Infinity;
-    for (const box of boxes) near = Math.min(near, outside(box, out.x[i], out.y[i]));
+    const near = nearest(boxes, out.x[i], out.y[i]);
     out.hold[i] = 1 - ease(R.hold[0] * unit, R.hold[1] * unit, near);
     out.calm[i] = 1 - ease(R.hold[1] * unit, R.calm * unit, near);
   }
+  // The true room to each side jumps where an object ends. Shards are kept clear by a version of it that changes
+  // slowly: squeezed so that the first few units count for most, then the least of its neighbours, then their
+  // average. Putting a shard back outside an object by its nearest face moved it at once at every corner.
+  const M = R.room, cap = M.cap * unit, soft = M.soft * unit, wide = Math.max(1, Math.round((M.over * unit) / step));
+  const squeeze = (v: number) => (v < 0 ? v / soft : v / (v + soft)), widen = (q: number) => (q < 0 ? q * soft : (soft * q) / (1 - q));
+  const evened = (from: Float32Array, pick: (sum: number, v: number) => number, start: number, scale: number) => {
+    const to = blank();
+    for (let i = 0; i < n; i++) { let sum = start; for (let k = -wide; k <= wide; k++) sum = pick(sum, from[Math.max(0, Math.min(n - 1, i + k))]); to[i] = sum * scale; }
+    return to;
+  };
+  const rawA = blank(), rawB = blank();
+  for (let i = 0; i < n; i++) {
+    const a = room(boxes, out.x[i], out.y[i], -out.ty[i], out.tx[i], cap), b = room(boxes, out.x[i], out.y[i], out.ty[i], -out.tx[i], cap);
+    // Inside an object the nearer way out is the open side.
+    rawA[i] = squeeze(a < 0 && b < 0 && a < b ? cap : a);
+    rawB[i] = squeeze(a < 0 && b < 0 && b <= a ? cap : b);
+  }
+  [[rawA, out.roomA], [rawB, out.roomB]].forEach(([raw, to]) => to.set(evened(evened(raw, Math.min, Infinity, 1), (sum, v) => sum + v, 0, 1 / (2 * wide + 1)).map(widen)));
   const span = 4;
   for (let i = 0; i < n; i++) {
     const a = Math.max(0, i - span), b = Math.min(n - 1, i + span);
@@ -147,6 +192,20 @@ export function buildRoute(title: Box, card: Box, width: number, bottom: number,
     const d = Math.hypot(branches[0].x[i] - branches[1].x[i], branches[0].y[i] - branches[1].y[i]);
     branches[0].apart[i] = branches[1].apart[i] = d;
   }
+  // Fewer shards to a length of route means each rides through it faster: what goes in has to come out. Hiding a
+  // share of them made them blink as they circled the core. The stem carries what both sides will, so each side's
+  // shards ride it at twice the speed: hiding half of each until the parting made them appear there.
+  const K = STREAM.shards;
+  for (const b of branches) {
+    const together = (i: number) => 0.5 + 0.5 * Math.min(1, b.apart[i] / (K.apart * u));
+    const share = (i: number) => (1 - K.thin * Math.max(b.hold[i], Math.min(1, Math.abs(b.bend[i]) * K.hook * u) * b.calm[i])) * together(i);
+    for (let i = 0; i < b.n; i++) {
+      // Evened out over a longer stretch where they ride faster, so a shard takes as long over it.
+      b.level[i] = Math.max(b.hold[i], 1 - ease(R.hold[1] * u, (R.hold[1] + (R.calm - R.hold[1]) / together(i)) * u, nearest(boxes, b.x[i], b.y[i])));
+      if (i) b.ride[i] = b.ride[i - 1] + b.step * (share(i - 1) + share(i)) / 2;
+    }
+    b.rideLen = b.ride[b.n - 1];
+  }
   const first = (b: Branch, test: (x: number, y: number) => boolean) => { for (let i = 0; i < b.n; i++) if (test(b.x[i], b.y[i])) return i * b.step; return b.len; };
   const L = branches[0];
   const landings: Landing[] = [
@@ -165,6 +224,20 @@ export function at(b: Branch, s: number, out: Float32Array): void {
   out[1] = b.y[i] + (b.y[i + 1] - b.y[i]) * t;
   out[2] = b.tx[i] + (b.tx[i + 1] - b.tx[i]) * t;
   out[3] = b.ty[i] + (b.ty[i + 1] - b.ty[i]) * t;
+}
+
+// How far a shard has ridden when it is this far along a branch.
+export function riddenAt(b: Branch, s: number): number {
+  const f = Math.max(0, Math.min(b.n - 1.001, s / b.step)), i = Math.floor(f);
+  return b.ride[i] + (b.ride[i + 1] - b.ride[i]) * (f - i);
+}
+
+// How far along a branch a shard is when it has ridden this far.
+export function along(b: Branch, ridden: number): number {
+  let lo = 0, hi = b.n - 1;
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (b.ride[mid] <= ridden) lo = mid; else hi = mid; }
+  const a = b.ride[lo], c = b.ride[hi];
+  return (lo + (c > a ? Math.max(0, Math.min(1, (ridden - a) / (c - a))) : 0)) * b.step;
 }
 
 // How far along a branch the stream has run when it has come this far down the page.

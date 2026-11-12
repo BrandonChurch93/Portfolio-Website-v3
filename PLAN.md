@@ -18,7 +18,8 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **His words (Nov 12):** "This looks great to me. If there is any improvements to be made, it'll be very tiny ones, but I think for right now this is good to move on with." Earlier the same day: "I think we nailed this and we build everything else off of this stream"
 - **Where it is:** `/lab/stream`, built in Claude Code on Brandon's Mac. `LOG.md` has each round's account
 - **Not decided:** what comes next. Fable's recommendation, which he agreed to in talk but has not started: draw the stream's route down the whole page first, then sketch the layout around it, then design the components as surfaces the stream and the cursor light. The city and the opening get revisited with the hero (`BRIEF.md`, Hero)
-- **Small things left on the stream, none blocking:** the lone shard at rest no longer drops off the end (`BRIEF.md`, The stream). The rest of Phase 2's list below. A real phone and a real iPad
+- **Built and pushed, waiting on Brandon's look:** three small things he asked for after approving it. The lone shard at rest drops off the far end again. Riding shards on the title and the card stay with the stream. None vanishes, reappears or jumps there. `LOG.md`, top entry, has the cause and the counts, and what else the fix changes, which is his to overturn
+- **Small things left on the stream, none blocking:** the rest of Phase 2's list below. A real phone and a real iPad
 
 ## Phase 0 · Foundation
 
@@ -52,8 +53,7 @@ Study 01 is at `/lab/palette` and Study 02 at `/lab/buttons`. Stills are in `ref
 - [x] The agreement for the finished version (Nov 11)
 - [x] The test shot, first round, at `/lab/stream`: "I think we nailed this", with changes asked for (Nov 12)
 - [x] The test shot, second round and its fixes: jagged facets in two materials, no bunching on objects, fewer thrown at a strike, an occasional shard at rest, thrown shards that keep their momentum, no second wave. "This is good to move on with" (Nov 12)
-- [~] Thrown shards: a quarter fewer at a strike, a single shard now and then at rest, each keeps its own momentum. "Pretty much perfect now across the board minus one thing" (Nov 12)
-- [~] The second wave after a strike: cause found and fixed. Built, waiting on his look
+- [~] After the approval: the lone shard at rest drops off the far end again, and riding shards on the title and the card stay with the stream, with none vanishing, reappearing or jumping. Built, waiting on his look
 
 After he says the shot looks incredible, and not before:
 

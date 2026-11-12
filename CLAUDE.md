@@ -89,7 +89,8 @@ npm run strip -- "/lab/stream?ui=0" --times 1,1.7,2.4,2.8,3.1,3.4,4.3,6 --eval "
 - Images go to `shots/`, which is not committed. Copy one into `reference/` only when it is worth keeping.
 - The scripts print `hardware` or `software`. `QUALITY.md` says what each can be trusted for.
 - `streamPlay(fromScroll, toScroll, fromTime, toTime)` scripts a scroll of the stream's page, so a filmstrip of frozen frames can show it being scrolled. `streamPlay()` ends it.
-- `streamCount(left, top, right, bottom)` counts the shards the last frame drew inside a rectangle of the stream's page, `streamList(left, top, right, bottom)` lists them with whether each was thrown and how far it is from the core, and `streamThrown()` lists every thrown shard with its place. `streamState()` gives the boxes of the title and the card. They are how the bunching on objects, the bounce at a strike and the second wave after one were measured.
+- `streamCount(left, top, right, bottom)` counts the shards the last frame drew inside a rectangle of the stream's page, `streamList(left, top, right, bottom)` lists them with whether each was thrown and how far it is from the core, and `streamThrown()` lists every thrown shard with its place, and `streamThrown(true)` adds the share of its size each is drawn at. `streamState()` gives the boxes of the title and the card. They are how the bunching on objects, the bounce at a strike and the second wave after one were measured.
+- `streamProbe(true)` starts a record of every riding shard, and `streamRiders(left, top, right, bottom)` reads it: each one's place, the share of its size shown, and what took the rest away. Recorded frame after frame, it counts the shards that vanish, reappear or jump.
 
 ## Where things are
 

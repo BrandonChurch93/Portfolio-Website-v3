@@ -9,7 +9,7 @@ import { at, reachFor, type Route } from './route';
 const S = STREAM;
 const tmp = new Float32Array(4);
 const SPARK = 8;   // x, y, vx, vy, age, life, heat, kind (0 a spark, 1 a fine one, 2 one that has burst)
-const LOOSE = 16;  // x, y, z, vx, vy, vz, qx, qy, qz, qw, wx, wy, wz, age, life, size (negative for a clear one)
+const LOOSE = 17;  // x, y, z, vx, vy, vz, qx, qy, qz, qw, wx, wy, wz, age, life, size (negative for a clear one), 1 if the flow will carry it and 2 once it does
 const FORK = 8;    // x, y, angle, reach, age, life, seed, strength
 // A count spread across the whole range of numbers before it is hashed. Hashed as they stand, counts that follow one
 // another gave gaps that were nearly even and shards that mostly went the same way.
@@ -205,7 +205,7 @@ export class StreamSim {
     this.spark(L.x + way * r(4) * 12 * u, L.y - 2 * u, Math.cos(a) * v, Math.sin(a) * v, K.life[0] + (K.life[1] - K.life[0]) * r(5) * r(6), 0.5 + 0.5 * r(7), 0);
   }
 
-  private throwShard(i: number, k: number, hard: number): void {
+  private throwShard(i: number, k: number, hard: number, carried = 0): void {
     if (this.looseCount >= this.budget.loose) return;
     const u = this.route.unit, L = this.route.landings[i], r = (j: number) => this.rnd(5 + i, k, j);
     const way = L.out === 0 ? (r(0) < 0.5 ? -1 : 1) : r(0) < 0.8 ? 1 : -1;
@@ -219,10 +219,10 @@ export class StreamSim {
     const q = [r(6) - 0.5, r(7) - 0.5, r(8) - 0.5, r(9) - 0.5], ql = Math.hypot(q[0], q[1], q[2], q[3]) || 1;
     const spin = 3 + 9 * r(10);
     const w = [r(11) - 0.5, r(12) - 0.5, r(13) - 0.5], wl = Math.hypot(w[0], w[1], w[2]) || 1;
-    const life = S.loose.life[0] + (S.loose.life[1] - S.loose.life[0]) * r(14);
+    const life = carried ? S.loose.lone : S.loose.life[0] + (S.loose.life[1] - S.loose.life[0]) * r(14);
     this.loose.set([
       L.x + way * r(15) * 14 * u, L.y - size - r(16) * 6 * u, (r(17) - 0.5) * 30 * u, vx, vy, (r(18) - 0.5) * 60 * u,
-      q[0] / ql, q[1] / ql, q[2] / ql, q[3] / ql, (w[0] / wl) * spin, (w[1] / wl) * spin, (w[2] / wl) * spin, 0, life, clear ? -size : size,
+      q[0] / ql, q[1] / ql, q[2] / ql, q[3] / ql, (w[0] / wl) * spin, (w[1] / wl) * spin, (w[2] / wl) * spin, 0, life, clear ? -size : size, carried,
     ], o);
     this.looseSeed[this.looseCount++] = r(19);
   }
@@ -237,7 +237,7 @@ export class StreamSim {
 
   private now(i: number): void {
     while (this.nextAt[i] <= this.time) {
-      if (this.nextAt[i] > this.time - STREAM_STEP - 1e-9) this.throwShard(i, scatter(this.nextN[i]), S.loose.toss);
+      if (this.nextAt[i] > this.time - STREAM_STEP - 1e-9) this.throwShard(i, scatter(this.nextN[i]), S.loose.toss, 1);
       this.nextAt[i] += this.gap(i, ++this.nextN[i]);
     }
   }
@@ -302,7 +302,7 @@ export class StreamSim {
   }
 
   private moveLoose(dt: number): void {
-    const K = S.loose, u = this.route.unit, p = this.loose, boxes = this.route.boxes;
+    const K = S.loose, u = this.route.unit, p = this.loose, boxes = this.route.boxes, lip = this.route.landings[2];
     let n = 0;
     for (let i = 0; i < this.looseCount; i++) {
       const o = i * LOOSE;
@@ -331,11 +331,25 @@ export class StreamSim {
           } else {
             // Too slow to bounce. It keeps its own momentum and nothing else moves it: the flow neither turns it
             // round nor carries it along. It skids the way it was going, stops, and fades. One still moving when it
-            // reaches the end of the surface goes off it and falls. Carried along by the flow, every shard that came
-            // back down reached the end in the same second and poured off it together, a second wave after the burst.
-            vy = 0;
-            vx *= Math.exp(-K.skid * dt);
-            life = Math.min(life, age + K.fades);
+            // reaches the end of the surface goes off it and falls. Carried along by the flow, every shard of a burst
+            // that came back down reached the end in the same second and left it together, a second wave.
+            // The one exception is the single shard thrown at rest. Going the way the stream runs, the flow carries
+            // it along the surface and off the far end, where it falls. One at a time cannot make a wave.
+            const way = b === boxes[1] ? Math.sign(lip.x - (b.l + b.r) / 2) : Math.sign(x - (b.l + b.r) / 2) || 1;
+            if (p[o + 16] > 0.5 && vx * way > 0) {
+              const carry = K.carry * u * (0.5 + this.looseSeed[i]);
+              vx += (way * carry - vx) * (1 - Math.exp(-12 * dt));
+              // It does not slide: every so often it catches on a point and skips.
+              const skip = hash(i, at_, 7) < K.skip * dt;
+              vy = skip ? -(0.6 + 0.9 * hash(i, at_, 8)) * K.settle * u : 0;
+              if (skip) { wx += (hash(i, at_, 9) - 0.5) * 12; wz -= way * 6; }
+              // Its life is set once, as the flow takes it. Set again each step, its size wavered as it skipped.
+              if (p[o + 16] < 1.5) { life = age + Math.abs((way > 0 ? b.r : b.l) - x) / carry + K.spill; p[o + 16] = 2; }
+            } else {
+              vy = 0;
+              vx *= Math.exp(-K.skid * dt);
+              life = Math.min(life, age + K.fades);
+            }
             wx *= Math.exp(-4 * dt); wy *= Math.exp(-4 * dt); wz = wz * Math.exp(-4 * dt) - (vx / Math.max(r, 1)) * 0.2 * (1 - Math.exp(-4 * dt));
           }
         } else if (y > b.t + 1) {
@@ -353,7 +367,7 @@ export class StreamSim {
       const w = n * LOOSE;
       p[w] = x; p[w + 1] = y; p[w + 2] = p[o + 2] + p[o + 5] * dt; p[w + 3] = vx; p[w + 4] = vy; p[w + 5] = p[o + 5] * Math.exp(-1.2 * dt);
       p[w + 6] = qx; p[w + 7] = qy; p[w + 8] = qz; p[w + 9] = qw; p[w + 10] = wx; p[w + 11] = wy; p[w + 12] = wz;
-      p[w + 13] = age; p[w + 14] = life; p[w + 15] = p[o + 15];
+      p[w + 13] = age; p[w + 14] = life; p[w + 15] = p[o + 15]; p[w + 16] = p[o + 16];
       this.looseSeed[n++] = this.looseSeed[i];
     }
     this.looseCount = n;

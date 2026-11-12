@@ -2,6 +2,104 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-12 · Riding shards stay with the stream on objects, and the lone shard drops off again (Fable, Claude Code on Brandon's Mac)
+
+**What Brandon said**
+
+- The test shot is approved. These three are in `BRIEF.md`, The stream, at the end of "His verdict on the three changes".
+- "Bring back the drop for the single shard thrown at rest. It should be carried off the far end and fall, as it did before the last fix. That one shard only. The second wave must not come back."
+- "Where the stream lies on the title, where it parts, and on the card, riding shards disappear and reappear, and some look as if they are always falling away from the stream even when there is no strike. On the straight runs they are right. My rule: every shard stays part of the stream unless there is a strike. The only exception is the single shard thrown at rest. Find the cause before you change anything, and tell me what it was. Then fix it so a riding shard on an object stays with the stream just as it does on a straight run. Keep the lower count on objects that I approved, but reach it without any shard popping out or in."
+- "No shard may change place in the moment it appears, and every shard that arrives or leaves does so by a smooth fade. Check it by recording each riding shard across the title and the card and counting how many vanish, reappear or jump. It should be none."
+- "Change nothing else."
+- He has not looked at the result yet.
+
+**What was found**, before anything was changed
+
+Every riding shard was recorded thirty times a second for thirty seconds with the page still and both leading ends well clear (`streamProbe`, `streamRiders`): where it was drawn, how much of its size it had, and what had taken the rest away.
+
+| Where | Vanished | Appeared | Jumped over 6 px in a frame |
+|---|---|---|---|
+| Round the title | 302 | 523 | 169, of 6 to 141 px |
+| Round the card | 219 | 211 | 83, of 6 to 149 px |
+| A straight run | 17 | 15 | 0 |
+
+- Half of them went or came in under a fifth of a second. That is the abrupt fade.
+- **Three causes, all of them Fable's own from the second round, when the shards were thinned on objects.**
+  1. **Thinning by hiding.** The lower count on an object was reached by hiding a share of the shards there. Which ones were hidden also depended on which side of the core each was on as it circled, so a shard blinked out and back in as it went round. 299 of the 302 vanishes at the title and 398 of the 523 appearances were this.
+  2. **Turning a shard back off the nearest face.** A shard that would have been inside the title or the card was put back outside it, off whichever face was nearest. At a corner the nearest face changes from the top to the side, and the shard was moved from one to the other in a single frame. Every jump was this: 167 of the 169 at the title went from the top face to a side face.
+  3. **Half of each side waited for the parting.** The stem carries the shards of both sides, so half of each side's were hidden on the stem and faded in where the stream parts. 124 appearances at the title were this.
+- "Always falling away from the stream" was the first two together: a shard near a corner shrinking away, and one moved from the top face down the side.
+
+**The fix**, in `src/stream/route.ts` and `fillShards` in `src/stream/stream.ts`
+
+- **Nothing takes a riding shard out of the stream any more.** It rides the whole of its side, round and round.
+- **Fewer on an object, by riding faster, not by hiding.** Where there are to be fewer shards to a length of route, each rides through faster, so they come further apart (`Branch.ride`, `along()`). `shards.thin` is the share fewer: 0.4, which measures the same as the 0.44 it was when the hiding had a soft edge. `shards.hook` went from 70 to 100 to keep the corners at his count, now that the extra thinning on the inside of a turn is gone.
+- **Before the parting, the same.** The stem carries what both sides will, so each side's shards ride it at twice the speed, and nothing has to appear where it parts.
+- **Kept off objects without moving at once.** Each point of the route knows how much room there is to each side before an object (`Branch.roomA`, `roomB`): the true room, made to change slowly along the route and never more than the truth. A shard with less room on one side than it would swing swings out on the open side both times, and with a little less room, a little. Its place never changes at once.
+- The knots and the fade at a leading end go by how far a shard has ridden, so each takes as long as it did where shards ride faster. The twist round the core still goes by distance along the route, so the rope of shards is wound as tightly as before, on the stem too.
+
+**The lone shard at rest** (`now()`, `throwShard()` and `moveLoose()` in `sim.ts`)
+
+- The single shard a landing throws at rest carries a mark. Once it has stopped bouncing, and only if it is going the way the stream runs, the flow carries it along the surface and off the far end, where it falls, as before the last fix (`loose.carry`, `loose.skip`, `loose.spill`). One thrown against the stream still skids, stops and fades.
+- Followed for two minutes at rest (`streamThrown(true)`): of 52, 45 went off an end and fell, and the 7 that ended on a surface had all been thrown against the stream.
+- It lives four seconds (`loose.lone`) and its life is set once, as the flow takes it. Before, it could be shrinking away when the flow took it and grow back.
+- Shards thrown by a strike are not carried. The second wave has not come back: leaving each end in the two seconds after the burst, 5, 1, 0 and 4, where the last fix measured 5, 1, 0 and 5.
+
+**The count he asked for**, the same recording after the fix
+
+| Where | Vanished | Appeared | Jumped | Furthest any moved in a thirtieth of a second |
+|---|---|---|---|---|
+| On the title: its top, the parting, both corners | 0 | 0 | 0 | 5.6 px |
+| On the card: the landing, its top, its end | 0 | 0 | 0 | 5.4 px |
+| On the title, phone layout | 0 | 0 | 0 | 4.1 px |
+| On the card, phone layout | 0 | 0 | 0 | 3.6 px |
+
+- "On" is within 50 units of the object, which is as far as the route counts as lying on it or hooking round it. 815 shards passed through the title's zone in the thirty seconds and 418 through the card's.
+- No riding shard has its center inside the title or the card: none at rest in 45 frames down the page, none in any frame of a fast scroll, on desktop or on the phone layout. The build before this one measures the same.
+- On the runs coming up to the title and the card, and on a straight run, the knots still thin and gather the shards as they always have: 1 to 9 went or came in thirty seconds, each over one to two and a half seconds. That is the straight run's own behavior, which he said is right.
+- Where a leading end rests on an object, shards reach it and shrink into it over about a second, as at any leading end. That is the end of the stream, not a shard leaving it. While a leading end moves fast, shards appear behind it as it passes. That is the leading end too, and unchanged.
+
+**The count on objects**, shards to every 100 px of route at rest, as he approved it then now: title top 23.5 and 21.6, now 21.6 and 24.4. Title corners 24.9 and 25.2, now 24.3 and 26.4. Where it parts 21.7, now 21.1. Card top 25.8, now 24.1. The landing bend 29.2, now 26.2. Straight runs and the stem above the title measure the same on the build before this one and on this one (34 and 33, 38 and 37).
+
+**Reviewed**
+
+- One fresh Opus reviewer read the change, told to find how a riding shard could still vanish, reappear or jump, and what else had changed. It confirmed the placement is continuous and that only the lone shard is carried. It found four things, all acted on:
+  1. With nothing turning shards back off a face, some could swing into the title or the card: near corners, on the phone, and when flung wide at a leading end. That first version leaned shards to the open side by a blend that was not exact. It was replaced by the room to each side described above, and the count inside objects is the check.
+  2. The twist round the core had been stretched to half as tight on the stem. It goes by distance along the route again.
+  3. The carried shard could grow back after shrinking. Fixed as above.
+  4. The record of riding shards was not remade when the page was rebuilt. Fixed.
+- Its list of what else changed is the next section.
+
+**Checked**
+
+- Speed while scrolling without stopping: 16.7 ms every frame, none over 25 ms, on desktop, tablet, the phone view slowed four times and the low tier phone view slowed six times.
+- WebKit at iPad and phone size: draws, no errors. Reduced motion: a still, as before.
+- No thrown shard is turned round (0 of 82). The strike throws what it did.
+- Not checked: a real phone and a real iPad.
+
+**What this changes that he did not ask for. Each follows from the fix, and each is his to overturn**
+
+1. **Shards ride faster where there are fewer of them.** On an object about 1.7 times as fast as on a straight run. Down the stem above the title twice as fast, and for a short stretch where it strikes the title about three times. What goes into a stretch of stream has to come out of it: fewer to a length means faster, and one stem feeding two sides means the stem runs at twice the speed. The number of shards on the stem is the same as before. The only other ways are the ones he saw as faults: hiding shards, or having them appear where it parts.
+2. A shard near an object keeps to the open side from about 110 units before the object to about 110 units after it. That is the stretch over which the room to each side is made to change slowly.
+3. On an object a shard swings out and back on the open side with a rounded turn at the surface. It used to be turned back off the surface sharply.
+4. Where the knots sit along the stream has moved, because they now go by distance ridden, and they are longer on the stem. How strong they are is the same.
+5. There are fewer riding shards in all, because none is hidden any more, and which shard rides which side has been dealt again.
+6. The single shard at rest lives four seconds if it never lands, where it lived 1.3 to 2.6.
+
+**Things the next session would otherwise rediscover**
+
+- Riders have no state, so a rule that shows or hides one from where it is this frame will flicker whenever that place wobbles. To have fewer somewhere, change how fast they pass, not which ones show.
+- What goes into a stretch of stream has to come out. Fewer to a length means faster. One stem feeding two sides runs at twice the speed or carries twice the shards.
+- Putting a point back outside a box by its nearest face jumps at every corner, and the true room to one side of a route jumps where an object ends. Squeeze the room so the first few units count for most, take the least of its neighbours, then their average: the result changes slowly and is never more than the truth.
+- A blend toward the open side that only looks at whether an object is near lets shards into it wherever the blend is partial. The reviewer caught that. The room has to be measured.
+- Record every shard and count. `streamProbe(true)` then `streamRiders(left, top, right, bottom)` gives each rider's place, the share of its size shown, and what took the rest. The first table took one run and named all three causes.
+- The live site is the build before the push, so the same script against it gives the before for anything the old build can report.
+- A threshold of 6 px in a thirtieth of a second for a jump is close to how fast shards really move where it strikes the title (5.6 px). The old jumps were up to 149 px.
+
+**Half finished**
+
+- Nothing. Waiting on his look.
+
 ## 2026-11-12 · The stream's test shot is approved (Fable, web chat)
 
 **What Brandon said**
