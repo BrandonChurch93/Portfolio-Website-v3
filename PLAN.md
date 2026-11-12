@@ -14,13 +14,11 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 
 ## Now
 
-- **Phase:** 2, the stream
-- **Where:** Claude Code on Brandon's Mac, with Fable. `LOG.md`, top entry, is this round's account
-- **His verdict on the first test shot (Nov 12):** "I think we nailed this and we build everything else off of this stream." With changes. They are in `BRIEF.md`, The stream, under "His verdict on the test shot, and what changes"
-- **His verdict on the three changes (Nov 12):** "Everything is pretty much perfect now across the board minus one thing." The one thing: after a strike's burst, a second wave of shards leaves the ends of the card and the title. `BRIEF.md`, The stream, under "His verdict on the three changes"
-- **Built and pushed, waiting on Brandon:** the fix for that. The cause was thrown shards that had come back down being carried off the ends by the flow. `LOG.md`, top entry, has what was measured, before and after
-- **What Brandon judges next:** whether a strike is now one burst that dies away, at `/lab/stream`
-- **Not to be built yet:** the route down the whole site, the layout, anything touching the 3D pieces, the city, the opening
+- **Phase:** 2, the stream. Its test shot is approved
+- **His words (Nov 12):** "This looks great to me. If there is any improvements to be made, it'll be very tiny ones, but I think for right now this is good to move on with." Earlier the same day: "I think we nailed this and we build everything else off of this stream"
+- **Where it is:** `/lab/stream`, built in Claude Code on Brandon's Mac. `LOG.md` has each round's account
+- **Not decided:** what comes next. Fable's recommendation, which he agreed to in talk but has not started: draw the stream's route down the whole page first, then sketch the layout around it, then design the components as surfaces the stream and the cursor light. The city and the opening get revisited with the hero (`BRIEF.md`, Hero)
+- **Small things left on the stream, none blocking:** the lone shard at rest no longer drops off the end (`BRIEF.md`, The stream). The rest of Phase 2's list below. A real phone and a real iPad
 
 ## Phase 0 · Foundation
 
@@ -52,8 +50,8 @@ Study 01 is at `/lab/palette` and Study 02 at `/lab/buttons`. Stills are in `ref
 
 - [x] What it is made of: shards riding round a core of light, the core a smooth wave of light. He picked it from two sketches at `/lab/stream-core` (Nov 11). The shards are abstract facets in a solid and a clear material (Nov 12)
 - [x] The agreement for the finished version (Nov 11)
-- [~] The test shot, first round. Built at `/lab/stream` and `/lab/stream?hold`. He is very happy with it and asked for changes (Nov 12)
-- [~] The test shot, second round: facets in two materials, no bunching on objects, the strike kept. Built at `/lab/stream`, with the first round's shards at `/lab/stream?shards=first`. He says the facets stay and the bunching is fixed, and asked for three changes to thrown shards (Nov 12)
+- [x] The test shot, first round, at `/lab/stream`: "I think we nailed this", with changes asked for (Nov 12)
+- [x] The test shot, second round and its fixes: jagged facets in two materials, no bunching on objects, fewer thrown at a strike, an occasional shard at rest, thrown shards that keep their momentum, no second wave. "This is good to move on with" (Nov 12)
 - [~] Thrown shards: a quarter fewer at a strike, a single shard now and then at rest, each keeps its own momentum. "Pretty much perfect now across the board minus one thing" (Nov 12)
 - [~] The second wave after a strike: cause found and fixed. Built, waiting on his look
 

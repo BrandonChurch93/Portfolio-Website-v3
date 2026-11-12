@@ -2,6 +2,23 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-12 · The stream's test shot is approved (Fable, web chat)
+
+**What Brandon said**
+
+- On the fix for the second wave: "This looks great to me. If there is any improvements to be made, it'll be very tiny ones, but I think for right now this is good to move on with."
+- It is in `BRIEF.md`, The stream, and both test shot boxes in `PLAN.md` are ticked on his words.
+
+**Where that leaves things**
+
+- The stream at `/lab/stream` is the base everything else gets built from. He said so earlier today.
+- What comes next is not decided. `PLAN.md`, Now, has Fable's recommended order.
+- One small thing left for him to rule on: whether the lone shard at rest should drop off the end again.
+
+**Half finished**
+
+- Nothing.
+
 ## 2026-11-12 · The second wave after a strike: found and fixed (Fable, Claude Code on Brandon's Mac)
 
 **What Brandon said**
