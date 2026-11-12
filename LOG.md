@@ -2,6 +2,52 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-11 · Buttons approved. What the stream is made of (Fable, web chat)
+
+**What Brandon said**
+
+- "OK, I really like the scale and I like the primary with the most shine!"
+- On the stream: he keeps saying he is not sure water is the right way to look at it, "because if I call it water, then the model is gonna build it as if it acts like water". Candidates he named: lava, molten hot metal, golden water, some type of light, electricity. Each with its own particles: droplets and splashes, or sparks and drips. He wants it nailed down, and the level of quality with it, before the work moves to Claude Code. "It's probably like the most important thing on the site to get right."
+- All of it is in `BRIEF.md`.
+
+**Buttons, as approved**
+
+- The primary uses the `coated` finish. The old `worn` finish is gone.
+- Scale is the only rise. The lift study, the `rise` and `finish` props and the "To compare" rows are gone.
+- Reference stills re-shot: `02-buttons.jpg`, `02-buttons-three-lights.jpg`, `02-buttons-hover.jpg`. `02-buttons-shine.jpg` and `02-buttons-hover-options.jpg` are kept as the record of what he chose between.
+- Text contrast as approved, three lamp places: primary 5.4 to 6.4, accent 5.7 to 5.9.
+- He did not comment on the quicker fade. Treated as fine unless he says otherwise.
+
+**The stream: Fable's recommendation, given to him and waiting on his answer**
+
+Molten metal, the site's own copper, called "the pour".
+
+- It is already the site's material and colors. The palette's light, ember to flame to hot to pale, is the color of heated metal.
+- It makes its own light, so it lights what it passes, the way the cursor does. `plates.setWater()` is already there for this and wants renaming when the name is settled.
+- It is heavy. Weight reads as quality and forgives more than water, which is thin, fast, and known to every eye.
+- Its particles have a life: sparks on landing, beads that roll and cool from pale to dark.
+- It gives the page an end: it can feed the rocket's launch (Open 12).
+- The danger is lava (dark, crusted, slow) and fire. It has to read as a foundry pour.
+- Against the others: glowing water is not a real thing, so there is nothing to match it to. Lava cannot keep up with scrolling. Light alone has no body and is what failed three times. Electricity cannot pool, drip or land.
+
+**The bar proposed for it**
+
+One test shot, alone on a blank page: it falls, hits a ledge, splashes, runs along the ledge and drips off the end. It passes when:
+
+1. Paused on any frame it looks like a photograph of molten metal: a hot core, a cooler skin, highlights on a rounded surface.
+2. It has weight: it speeds up and thins as it falls, piles where it lands, clings to the edge, stretches and snaps into drops.
+3. Every landing leaves something: a splash with shape, sparks, beads, and the ledge lit and warm for a moment after.
+4. Nothing repeats.
+5. It lights what is near it.
+6. It is smooth on his Mac and on a phone.
+
+How to build it, as far as thought through: an authored route for where it goes (the layout needs it to hit exact places), and real particle physics for what the eye checks (falls, landings, drips). A browser cannot run a film grade fluid simulation, and a tube with a glow shader is on the fail list.
+
+**Waiting on Brandon**
+
+1. Molten metal and "the pour", or another candidate studied beside it.
+2. Whether that test shot is the right bar.
+
 ## 2026-11-11 · Buttons: Catch chosen, a quicker fade, scale, and a shinier primary to compare (Fable, web chat)
 
 **What Brandon said**

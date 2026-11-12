@@ -65,6 +65,8 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 - No permanent grid floor behind the page.
 - It has to look incredible.
 - The water drawn inside the second build's pieces (the city's falls, the desk's edge, the rocket's flume) "looks very low quality". He is not sure "water" is even the right name for what is there. (Nov 11)
+- What it is made of is not decided, and the name matters: "if I call it water, then the model is gonna build it as if it acts like water". He named lava, molten hot metal, golden water, some type of light and electricity as candidates. Each would have its own particles: droplets and splashes for water, sparks and drips for molten metal. (Nov 11)
+- He wants what it is made of, and the level of quality, settled in chat before the building moves to Claude Code. "It's probably like the most important thing on the site to get right." (Nov 11)
 
 ### Hero
 
@@ -96,6 +98,8 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 - The hover is Catch: the cut border, the edges and the words light only where the cursor is near. "I think my favorite is catch." Coming in and moving around "feels about perfect". (Nov 11)
 - Still to fix on Catch, in his words: on mouse leave "it takes a bit longer than I'd like for the animation to fade off", and "the button doesn't scale or do anything else. I think we should add some type of lift or scale. I'm leaning more towards a scale". (Nov 11)
 - The cursor's light as it moves around the page "looks amazing" on the dark buttons and is "a lot harder to see" on the bright ones. "I don't want to nerf the secondary buttons." "I wish the primary buttons had a bit more shine to them." He floated darkening the bright button a little and asked whether that would look off. (Nov 11)
+- Under the cursor the button grows a little. "I really like the scale." (Nov 11)
+- The bright button is the shinier one: a little darker, under a clear coat that shows the cursor's light crossing it. "I like the primary with the most shine!" (Nov 11)
 
 ### Skills
 
@@ -144,6 +148,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 - Everything he approves is real code in this repo.
 - Nothing is approved as "fine if the final is better". If it is not at the bar when he sees it, it is not done.
 - He is told exactly what he is and is not approving at each step.
+- The building moves to Claude Code on his Mac once the stream's material and its bar are settled in chat. (Nov 11)
 - Every message to him ends with a clear, simple recommendation.
 
 ## Open
@@ -163,11 +168,8 @@ Each line has Fable's recommendation where there is one. None of these are rules
 11. **Which projects show** in each category on the home page.
 12. **What ties the bottom of the page together.**
 13. **The rocket as built.** He has not judged it yet.
-14. **What the stream is made of, and what it is called.** What the second build drew does not read as water to him. Recommendation: settle this first in Phase 2, from real studies he can look at, not from a description.
-15. **Where the building happens.** Recommendation: planning in the web chat, building in Claude Code on his Mac with Fable, because it can see what it renders.
-16. **Whether the site has to meet Section 508** (WCAG 2.0, levels A and AA). He asked whether the buttons do, out of curiosity. Recommendation: yes, checked as each part is built, because the engineers who read the site will check. The buttons' results are in `LOG.md`.
-17. **Scale or lift on the buttons' hover.** He leans toward scale. Fable recommends scale. Every button on `/lab/buttons` now grows by 4 percent under the pointer, and one row lifts instead, to compare.
-18. **The bright button's shine.** A study sits beside the approved one on `/lab/buttons`: a little darker, under a clear coat that throws the cursor's light back pale. Fable's view: a little darker does not look off, and the dark button shows the light so well because it is dark. The limit is the words, which are dark and need a bright face behind them. See Cards and buttons, Nov 11.
+14. **What the stream is made of, and what it is called.** His candidates are in The water, above. Fable's recommendation (Nov 11): molten metal, the site's own copper, glowing in the palette's light colors, and called "the pour" so that nothing builds it as water. It should look like a foundry pour (bright, clean, quick, throwing sparks and beads), never like lava (dark, crusted, slow) or fire. Golden water is the second choice. Light alone and electricity have no body or weight, and light alone is what failed three times. Not a rule until he agrees.
+15. **The bar for the stream.** Fable's proposal (Nov 11): one test shot alone on a blank page. It falls, hits a ledge, splashes, runs along the ledge and drips off the end. Nothing is built around the stream until he says that shot looks incredible. What it has to show is in `LOG.md`, 2026-11-11.
 
 ## Dropped
 

@@ -2,26 +2,23 @@
 
 import Link from 'next/link';
 import { useState, type CSSProperties, type FocusEvent, type PointerEvent } from 'react';
-import type { Finish } from '../metal/finishes';
 import { Plate } from './Plate';
 import styles from './MetalButton.module.css';
 
 interface Props {
   label: string;
-  // primary: polished copper with the words cut in. accent: dark bronze with the words in copper.
+  // primary: polished copper under a clear coat, with the words cut in. accent: dark bronze with the words in copper.
   variant?: 'primary' | 'accent';
   href?: string;
   download?: boolean;
   onClick?: () => void;
   className?: string;
-  // Studies for Brandon to choose between (BRIEF.md, Cards and buttons, Nov 11). Both go once he has chosen.
-  rise?: 'scale' | 'lift';
-  finish?: Finish;
 }
 
 // A button as a small plate of lit metal. The words are in the metal, and also in the DOM for readers and search.
-// Under the pointer, or with keyboard focus, its cut border, edges and words catch the light where the pointer is near.
-export function MetalButton({ label, variant = 'primary', href, download, onClick, className, rise = 'scale', finish }: Props) {
+// Under the pointer, or with keyboard focus, its cut border, edges and words catch the light where the pointer is near,
+// and it grows a little.
+export function MetalButton({ label, variant = 'primary', href, download, onClick, className }: Props) {
   const [hover, setHover] = useState({ on: false, x: 0, y: 0 });
   const on = {
     onPointerEnter: (e: PointerEvent<HTMLElement>) => {
@@ -36,9 +33,9 @@ export function MetalButton({ label, variant = 'primary', href, download, onClic
     },
     onBlur: () => setHover((h) => ({ ...h, on: false })),
   };
-  const shared = { className: `${styles.button} ${className ?? ''}`, style: { '--chars': label.length } as CSSProperties, 'data-variant': variant, 'data-rise': rise, ...on };
+  const shared = { className: `${styles.button} ${className ?? ''}`, style: { '--chars': label.length } as CSSProperties, 'data-variant': variant, ...on };
   const face = (
-    <Plate finish={finish ?? (variant === 'primary' ? 'worn' : 'bronze')} kind="control" label={label} className={styles.plate} hover={hover}>
+    <Plate finish={variant === 'primary' ? 'coated' : 'bronze'} kind="control" label={label} className={styles.plate} hover={hover}>
       {label}
     </Plate>
   );

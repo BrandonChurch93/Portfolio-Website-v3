@@ -1,6 +1,6 @@
 import { hex, type PaletteName } from '../config/palette';
 
-export type Finish = 'aged' | 'polished' | 'worn' | 'coated' | 'bronze' | 'panel';
+export type Finish = 'aged' | 'polished' | 'coated' | 'bronze' | 'panel';
 
 const lin = (v: number): [number, number, number] => [(v >> 16) & 255, (v >> 8) & 255, v & 255].map((c) => Math.pow(c / 255, 2.2)) as [number, number, number];
 const metal = (name: PaletteName) => lin(hex(name));
@@ -38,17 +38,16 @@ export interface FinishParams {
 
 // The finishes, in copper and bronze.
 //   polished: bright copper, words cut in and filled with dark enamel
-//   worn:     polished copper for a button, gently domed. It reflects one soft light as a bright band through its
-//             middle, where the words are, and the dark of the room along its upper and lower edges. Tarnish keeps
-//             to the rim. Clouds of it on the face were tried and read as dirt
-//   coated:   worn, a little darker and under a clear coat, so the cursor's light shows on it. A study for Brandon
+//   coated:   polished copper for a button, gently domed, under a clear coat. It reflects one soft light as a band
+//             through its middle, where the words are, and the dark of the room along its upper and lower edges.
+//             The band is turned down a little and the coat throws the lamp back pale, so the cursor's light shows
+//             crossing it. Tarnish keeps to the rim. Clouds of it on the face were tried and read as dirt
 //   aged:     darker copper with patina and a double cut border
 //   bronze:   dark bronze, words in bright copper set flush
 //   panel:    brushed copper frame around a sunk dark bronze panel
 export const FINISHES: Record<Finish, FinishParams> = {
   aged: { a: COPPER, b: COPPER_LIGHT, ra: 0.34, rb: 0.3, aniso: 0.45, grain: 0.075, patina: 1, scratch: 1, id: 0 },
   polished: { a: COPPER_LIGHT, b: COPPER_LIGHT, ra: 0.1, rb: 0.1, aniso: 0.08, grain: 0.008, patina: 0.06, scratch: 0.25, id: 1 },
-  worn: { a: COPPER_LIGHT, b: COPPER_LIGHT, ra: 0.09, rb: 0.09, aniso: 0.1, grain: 0.008, patina: 0.6, scratch: 0.3, id: 1, pillow: 6, rimW: 8, faceClean: 1, soft: 1 },
   coated: { a: COPPER_LIGHT, b: COPPER_LIGHT, ra: 0.09, rb: 0.09, aniso: 0.1, grain: 0.008, patina: 0.6, scratch: 0.3, id: 1, pillow: 6, rimW: 8, faceClean: 1, soft: 1, band: 0.72, coat: 0.3 },
   bronze: { a: BRONZE_DEEP, b: COPPER_LIGHT, ra: 0.32, rb: 0.38, aniso: 0.5, grain: 0.04, patina: 0.3, scratch: 0.35, id: 2, inlay: 0.8 },
   panel: { a: COPPER_LIGHT, b: BRONZE_DEEP, ra: 0.26, rb: 0.38, aniso: 0.9, grain: 0.14, patina: 0.12, scratch: 0.3, id: 3 },

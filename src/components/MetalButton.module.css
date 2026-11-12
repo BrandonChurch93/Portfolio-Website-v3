@@ -14,7 +14,7 @@
   --rise-scale: 1.04;
   --ease-rise: cubic-bezier(0.3, 1.45, 0.5, 1);
   /* Leaving: quick, in step with the light going. */
-  transition: scale var(--dur-1) var(--ease-settle), transform var(--dur-1) var(--ease-settle);
+  transition: scale var(--dur-1) var(--ease-settle);
 }
 
 .button [data-plate-shadow] {
@@ -23,14 +23,9 @@
 
 /* Under the pointer it comes toward the light: it grows a little, passes its mark and settles, and its shadow spreads. */
 @media (hover: hover) {
-  .button[data-rise='scale']:hover {
+  .button:hover {
     scale: var(--rise-scale);
     transition: scale 0.32s var(--ease-rise);
-  }
-
-  .button[data-rise='lift']:hover {
-    transform: translateY(-3px);
-    transition: transform 0.32s var(--ease-rise);
   }
 
   .button:hover [data-plate-shadow] {
@@ -39,17 +34,12 @@
   }
 }
 
-.button[data-rise='scale']:focus-visible {
+.button:focus-visible {
   scale: var(--rise-scale);
 }
 
-.button[data-rise='scale']:active {
+.button:active {
   scale: 0.985;
-  transition-duration: var(--dur-1);
-}
-
-.button[data-rise='lift']:active {
-  transform: translateY(1px);
   transition-duration: var(--dur-1);
 }
 

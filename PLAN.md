@@ -14,8 +14,8 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 ## Now
 
 - **Phase:** 1, color and light
-- **Waiting on Brandon:** on the buttons at `/lab/buttons`: whether the hover is right now (Catch, with a quicker fade and a 4 percent scale), scale or lift, and whether the bright button takes the shinier finish shown under "To compare" (`BRIEF.md`, Open 17 and 18)
-- **Next for Fable:** Phase 2, the water, opening with what the stream is made of
+- **Waiting on Brandon:** what the stream is made of and what it is called, and whether the proposed test shot is the right bar for it (`BRIEF.md`, Open 14 and 15). This is being settled in chat
+- **Next for Fable:** once he agrees, write the stream's brief into `BRIEF.md` and `QUALITY.md`, then Phase 2 in Claude Code on his Mac
 
 ## Phase 0 · Foundation
 
@@ -37,13 +37,14 @@ Study 01 is at `/lab/palette` and Study 02 at `/lab/buttons`. Stills are in `ref
 - [x] One carried piece moved to the new palette as a test: the handheld, brass to copper (Nov 11)
 - [x] Type in the new palette (Nov 11)
 - [~] The cursor light: it shifts the light behind the portrait, crosses the handheld's metal and lights both buttons
-- [~] Primary and accent buttons: polished copper with its cut words on a bright band, and dark bronze with copper words. He likes the look and chose Catch for the hover (Nov 11). Its fade, scale and the bright button's shine are with him (`src/components/MetalButton.tsx`)
+- [x] Primary and accent buttons: polished copper under a clear coat with cut words, and dark bronze with copper words. Under the cursor the cuts and words catch its light and the button grows (`src/components/MetalButton.tsx`) (Nov 11)
 
 **Gate:** the portrait, the metal and the water read as one light.
 
-## Phase 2 · The water, on its own
+## Phase 2 · The stream, on its own
 
-- [ ] What the stream is made of: real studies to choose from (`BRIEF.md`, Open)
+- [ ] What the stream is made of and called, settled with Brandon in chat (`BRIEF.md`, Open 14)
+- [ ] The test shot: it falls, hits a ledge, splashes, runs along it and drips off the end (`BRIEF.md`, Open 15)
 - [ ] The body at rest and flowing
 - [ ] Falling
 - [ ] Landing, with a real splash
