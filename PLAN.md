@@ -15,7 +15,7 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 ## Now
 
 - **Phase:** 3 has begun, a section at a time, starting with Work. Phase 2's test shot is approved and he calls the stream "almost certainly the finalized base" (Nov 12). Its small items below stay open and block nothing
-- **In front of Brandon:** three wireframe layouts for the Work section at `/lab/work-draft` (Study 09). A · Frame is his idea as he described it, B · Steps is his idea with the stream landing on each card, C · Middle is one stream winding down between the columns. Fable recommends C. `BRIEF.md`, Open 15, says where each meets the settled rules
+- **In front of Brandon:** three wireframe layouts for the Work section at `/lab/work-draft` (Study 09). A · Frame is his idea as he described it, B · Steps is his idea with the stream landing on each card, C · Middle is one stream winding down between the columns. Fable recommended C. His lean is A and B, not yet one of them, and he is worried the section is so tall that the categories are a long scroll back up. `BRIEF.md`, Open 15, has his words and where each layout meets the settled rules
 - **What he is choosing:** where the stream goes through Work, and with it whether the rows are straight or the right column sits half a row lower. Nothing else on that page is for approval: not the cards' look, not the spacing, not the phone, not how many cards are struck
 - **After his pick:** the card's look, here in the web chat. Then the stream's real route through Work, in Claude Code on his Mac
 - **He is on his iPad for now, with no mouse.** Anything that needs the cursor is confirmed when he is home

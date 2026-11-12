@@ -53,9 +53,15 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 
 - C, said in bold as a change to a settled rule ("split, and run down both sides"), with B as the choice if he wants the two sides kept. Also in bold: A breaks "It never runs straight down", and all three touch every card against "It also should not touch everything".
 
+**What he said after scrolling it (Nov 12)**
+
+- "I think my favorites are one and two." A and B. No pick between them yet.
+- The section is tall, and the categories end up a long scroll above the lower cards. He wondered about reducing the cards. He asked to talk it through with nothing changed.
+- Measured on the draft at 1440 by 900: from the title to the button is about 1800 px in A and about 2180 px in B, two screens and more. A row of cards with its gap is about 500 px. With four cards instead of six it would be about 1300 px in A and about 1680 px in B, so fewer cards alone still leaves the categories off screen from the second row.
+
 **Half finished**
 
-- His pick. Then the card's look, then the real route in Claude Code.
+- His pick between A and B, and what to do about the height. Then the card's look, then the real route in Claude Code.
 
 ## 2026-11-12 · Riding shards stay with the stream on objects, and the lone shard drops off again (Fable, Claude Code on Brandon's Mac)
 
