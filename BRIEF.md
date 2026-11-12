@@ -93,6 +93,9 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 - On the first copper buttons (Nov 11): the words on the bright one are hard to read, because its face is light on the top half and dark on the bottom half, right behind the words. He wants a face that makes sense and does not put that split behind the text, and floated a tarnish look. He also does not love how simple the hover was (the button only lifted).
 - On the second pass (Nov 11): "The buttons do look better." He likes "especially how the mouse moving around changes the glow on them". The other hover effects (the light running round the border, the lift, the accent's words warming) "aren't bad though I don't necessarily love them either". The hover is not settled.
 - "Don't make any changes to the colors for now." He said it when asking whether the buttons are 508 compliant. (Nov 11)
+- The hover is Catch: the cut border, the edges and the words light only where the cursor is near. "I think my favorite is catch." Coming in and moving around "feels about perfect". (Nov 11)
+- Still to fix on Catch, in his words: on mouse leave "it takes a bit longer than I'd like for the animation to fade off", and "the button doesn't scale or do anything else. I think we should add some type of lift or scale. I'm leaning more towards a scale". (Nov 11)
+- The cursor's light as it moves around the page "looks amazing" on the dark buttons and is "a lot harder to see" on the bright ones. "I don't want to nerf the secondary buttons." "I wish the primary buttons had a bit more shine to them." He floated darkening the bright button a little and asked whether that would look off. (Nov 11)
 
 ### Skills
 
@@ -163,7 +166,8 @@ Each line has Fable's recommendation where there is one. None of these are rules
 14. **What the stream is made of, and what it is called.** What the second build drew does not read as water to him. Recommendation: settle this first in Phase 2, from real studies he can look at, not from a description.
 15. **Where the building happens.** Recommendation: planning in the web chat, building in Claude Code on his Mac with Fable, because it can see what it renders.
 16. **Whether the site has to meet Section 508** (WCAG 2.0, levels A and AA). He asked whether the buttons do, out of curiosity. Recommendation: yes, checked as each part is built, because the engineers who read the site will check. The buttons' results are in `LOG.md`.
-17. **The buttons' hover.** He likes the glow that follows the cursor. Of the light that runs round the border: "Yes it did start in different places, but ultimately I'm looking for something different with the hover effects." He wants a few different hover effects to choose from. That remark was about the hover only, not a rule for how everything is shown. (Nov 11) Three options are built and waiting on him at `/lab/buttons`: Heat, Pull and Catch.
+17. **Scale or lift on the buttons' hover.** He leans toward scale. Fable recommends scale. Every button on `/lab/buttons` now grows by 4 percent under the pointer, and one row lifts instead, to compare.
+18. **The bright button's shine.** A study sits beside the approved one on `/lab/buttons`: a little darker, under a clear coat that throws the cursor's light back pale. Fable's view: a little darker does not look off, and the dark button shows the light so well because it is dark. The limit is the words, which are dark and need a bright face behind them. See Cards and buttons, Nov 11.
 
 ## Dropped
 
@@ -180,6 +184,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
 - A gallery with his work on walls
 - Figures that light up on scroll
 - The "laid back, fun to try" voice
+- Three hovers for the buttons: light running round the border, Heat and Pull. He chose Catch (Nov 11)
 - The second build's kit, its screenshot gates and its voice rules. None of them apply here.
 
 ## Reference

@@ -10,8 +10,8 @@ export default function ButtonStudy() {
       <p className={styles.label}>Study 02 · buttons</p>
       <h1 className={styles.title}>Two buttons in lit metal</h1>
       <p className={styles.lede}>
-        Two buttons, and four things they could do under the cursor. On every one the metal brightens where the cursor is. The first three rows
-        show the hover as it was first built. Three other options follow.
+        Move the cursor over one, or tab to it. Its cut border, its edges and its words catch the light where the cursor is near, and it comes a
+        little toward you.
       </p>
 
       <section className={styles.row} aria-labelledby="primary">
@@ -52,46 +52,32 @@ export default function ButtonStudy() {
         </div>
       </section>
 
-      <h2 className={styles.part}>Hover options</h2>
+      <h2 className={styles.part}>To compare</h2>
 
-      <section className={styles.row} aria-labelledby="heat">
+      <section className={styles.row} aria-labelledby="lift">
         <div className={styles.about}>
-          <h3 id="heat" className={styles.name}>A · Heat</h3>
-          <p className={styles.note}>
-            The metal warms where the cursor is and stays warm for a moment after the cursor moves on, so the cursor leaves a trail that cools. The
-            button does not move.
-          </p>
+          <h3 id="lift" className={styles.name}>Lift in place of scale</h3>
+          <p className={styles.note}>The same hover, but the button rises three pixels and does not grow. Every other button on this page grows.</p>
         </div>
         <div className={styles.set}>
-          <MetalButton hover="heat" label="View all work" />
-          <MetalButton hover="heat" variant="accent" label="Source code" />
+          <MetalButton rise="lift" label="View all work" />
+          <MetalButton rise="lift" variant="accent" label="Source code" />
         </div>
       </section>
 
-      <section className={styles.row} aria-labelledby="pull">
+      <section className={styles.row} aria-labelledby="shine">
         <div className={styles.about}>
-          <h3 id="pull" className={styles.name}>B · Pull</h3>
+          <h3 id="shine" className={styles.name}>A primary with more shine</h3>
           <p className={styles.note}>
-            The button is drawn a few pixels toward the cursor, as if by a magnet, and its shadow stays behind. When the cursor leaves it settles back
-            with a little weight.
+            A little darker, under a clear coat that throws the cursor&rsquo;s light back pale. Move the cursor around the page, not on the buttons,
+            and compare the pair on the left with the pair on the right.
           </p>
         </div>
         <div className={styles.set}>
-          <MetalButton hover="pull" label="View all work" />
-          <MetalButton hover="pull" variant="accent" label="Source code" />
-        </div>
-      </section>
-
-      <section className={styles.row} aria-labelledby="catch">
-        <div className={styles.about}>
-          <h3 id="catch" className={styles.name}>C · Catch</h3>
-          <p className={styles.note}>
-            Nothing plays. The cut border, the edges and the words catch the light only where the cursor is near them. The quietest of the three.
-          </p>
-        </div>
-        <div className={styles.set}>
-          <MetalButton hover="catch" label="View all work" />
-          <MetalButton hover="catch" variant="accent" label="Source code" />
+          <MetalButton finish="coated" label="View all work" />
+          <MetalButton finish="coated" label="View live" />
+          <MetalButton label="View all work" />
+          <MetalButton label="View live" />
         </div>
       </section>
     </main>

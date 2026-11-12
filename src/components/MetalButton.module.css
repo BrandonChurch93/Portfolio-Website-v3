@@ -11,43 +11,50 @@
   font: inherit;
   text-decoration: none;
   cursor: pointer;
-  transition: transform var(--dur-2) var(--ease-settle);
+  --rise-scale: 1.04;
+  --ease-rise: cubic-bezier(0.3, 1.45, 0.5, 1);
+  /* Leaving: quick, in step with the light going. */
+  transition: scale var(--dur-1) var(--ease-settle), transform var(--dur-1) var(--ease-settle);
 }
 
-.button[data-hover='run']:hover {
-  transform: translateY(-3px);
-}
-
-/* Pull: the spring in MetalButton.tsx moves it, so nothing here eases it. Its shadow stays most of the way behind. */
-.button[data-hover='pull'] {
-  transform: translate(var(--pull-x, 0px), var(--pull-y, 0px));
-  transition: none;
-}
-
-.button[data-hover='pull'] [data-plate-shadow] {
-  translate: calc(var(--pull-x, 0px) * -0.7) calc(var(--pull-y, 0px) * -0.7);
-}
-
-/* Lifted toward the light, its shadow spreads and falls further. */
 .button [data-plate-shadow] {
-  transition: opacity var(--dur-3) var(--ease-settle), scale var(--dur-2) var(--ease-settle);
+  transition: opacity var(--dur-3) var(--ease-settle), scale var(--dur-1) var(--ease-settle);
 }
 
-.button[data-hover='run']:hover [data-plate-shadow] {
-  scale: 1.07 1.28;
+/* Under the pointer it comes toward the light: it grows a little, passes its mark and settles, and its shadow spreads. */
+@media (hover: hover) {
+  .button[data-rise='scale']:hover {
+    scale: var(--rise-scale);
+    transition: scale 0.32s var(--ease-rise);
+  }
+
+  .button[data-rise='lift']:hover {
+    transform: translateY(-3px);
+    transition: transform 0.32s var(--ease-rise);
+  }
+
+  .button:hover [data-plate-shadow] {
+    scale: 1.07 1.3;
+    transition: opacity var(--dur-3) var(--ease-settle), scale 0.32s var(--ease-rise);
+  }
 }
 
-.button:active [data-plate-shadow] {
-  scale: 0.98 0.86;
+.button[data-rise='scale']:focus-visible {
+  scale: var(--rise-scale);
 }
 
-.button:active {
+.button[data-rise='scale']:active {
+  scale: 0.985;
+  transition-duration: var(--dur-1);
+}
+
+.button[data-rise='lift']:active {
   transform: translateY(1px);
   transition-duration: var(--dur-1);
 }
 
-.button[data-hover='pull']:active {
-  transform: translate(var(--pull-x, 0px), calc(var(--pull-y, 0px) + 1px));
+.button:active [data-plate-shadow] {
+  scale: 0.98 0.86;
 }
 
 .button:focus-visible {
@@ -57,4 +64,13 @@
 
 .plate {
   width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button,
+  .button:hover,
+  .button [data-plate-shadow],
+  .button:hover [data-plate-shadow] {
+    transition: none;
+  }
 }

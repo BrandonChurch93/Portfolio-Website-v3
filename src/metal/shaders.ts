@@ -179,17 +179,14 @@ uniform vec4 uWin;
 uniform float uWinOn, uWinR, uWinDepth, uPhotoAspect, uPhotoOn;
 uniform vec2 uPhotoFocus;
 uniform float uPhotoZoom;
-uniform float uHover;        // 0 to 1: how far light has run round the cut border from where the pointer came in
-uniform vec2 uHoverAt;       // where the pointer came in, device px in the plate
+uniform float uHover;        // 0 to 1: the pointer is on the plate, or it has focus
 uniform vec3 uGlow;          // the light's color, linear
 uniform float uRing;         // design units from the edge to the cut border; 0 when the plate has none
 uniform float uSoft;         // 0 to 1: the room holds one large soft light, as metal plates are photographed
 uniform float uInlay;        // the least an inlaid word shows of its own metal, wherever the lamp is; 0 for none
-uniform int uMode;           // under the pointer: 0 light runs round the border, 1 the metal heats, 2 the cuts catch the light, 3 nothing more
 uniform vec2 uPointer;       // the pointer, device px in the plate
-uniform vec3 uHeat[6];       // points of warmth: x, y (device px) and strength, 0 to 1
-uniform vec3 uHeatC[4];      // heated metal, coolest to hottest, linear
-uniform float uHeatFace;     // how much of the heat the open face shows
+uniform float uBand;         // how bright the one soft light is; 1 as photographed
+uniform float uCoat;         // a clear coat over the metal: how strongly it throws the lamp back; 0 for bare metal
 out vec4 frag;
 
 const float PI = 3.14159265;
@@ -214,7 +211,7 @@ vec3 studio(vec3 R, float rough){
   // The band stays over the words wherever the plate is on the screen.
   float bb = 0.04 + b * 0.7;
   float soft = smoothstep(-0.42 - bb, -0.42 + bb, d.y) * (1.0 - smoothstep(0.42 - bb, 0.42 + bb, d.y)) * (1.0 - smoothstep(1.1, 1.7, abs(d.x)));
-  key = mix(key, soft, uSoft);
+  key = mix(key, soft * uBand, uSoft);
   keyCore *= 1.0 - uSoft;
   strip *= 1.0 - uSoft * 0.6;
   c += vec3(1.0, 0.93, 0.84) * (key * 0.95 + keyCore * 0.6);
@@ -241,18 +238,6 @@ vec3 spec(vec3 N, vec3 V, vec3 L, vec3 T, vec3 B, float rough, float aniso, vec3
   float ax = max(a * (1.0 - aniso * 0.7), 0.0015), ay = min(a * (1.0 + aniso * 2.2), 1.0);
   vec3 F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
   return F * D_aniso(H, N, T, B, ax, ay) * V_smith(nl, nv, a) * nl;
-}
-
-// How far round the edge of the plate a point is, in device px, clockwise from the top left corner. A point belongs
-// to its nearest side, so the sides meet on a 45 degree line from each corner and the light turns a corner cleanly.
-float around(vec2 p){
-  vec2 q = clamp(p, vec2(0.0), uRes);
-  float top = q.y, right = uRes.x - q.x, bottom = uRes.y - q.y, left = q.x;
-  float m = min(min(top, bottom), min(left, right));
-  if (m == top) return q.x;
-  if (m == right) return uRes.x + q.y;
-  if (m == bottom) return 2.0 * uRes.x + uRes.y - q.x;
-  return 2.0 * (uRes.x + uRes.y) - q.y;
 }
 
 vec3 rotX(vec3 v, float a){ float c = cos(a), s = sin(a); return vec3(v.x, c * v.y - s * v.z, s * v.y + c * v.z); }
@@ -296,11 +281,13 @@ void main(){
   vec3 Lv = vec3(uLamp.x, -uLamp.y, uLamp.z) - P;
   float ld = length(Lv);
   vec3 L = Lv / ld;
-  // Under the pointer the lamp comes in close: the metal brightens where it is touched. Heated metal glows of itself,
-  // so there the lamp stays where it was.
-  float fall = uLampI * (1.0 + (uMode == 1 ? 0.0 : 0.9) * uHover) / (1.0 + pow(ld / (max(uView.x, uView.y) * 0.75), 2.0));
+  // Under the pointer the lamp comes in close: the metal brightens where it is touched.
+  float fall = uLampI * (1.0 + 0.9 * uHover) / (1.0 + pow(ld / (max(uView.x, uView.y) * 0.75), 2.0));
   col += spec(N, V, L, T, B, rough, aniso, F0) * fall * vec3(1.0, 0.94, 0.86);
   col += spec(N, V, L, T, B, min(1.0, rough * 1.8 + 0.1), aniso * 0.5, F0) * fall * 0.1 * vec3(1.0, 0.94, 0.86);
+  // A clear coat, as polished copper is lacquered: it throws the lamp back pale and wide, so the cursor's light shows
+  // crossing a face that is already bright, where the metal's own highlight is lost in the band.
+  if (uCoat > 0.0) col += spec(N, V, L, T, B, 0.32, 0.5, vec3(1.0)) * fall * uCoat * uGlow * (1.0 - grime * 0.6);
 
   // Inlaid words keep a floor of their own color and brighten above it, so they read as far from the lamp as a
   // page can put them. The further below the floor the reflection falls, the more of the floor is added.
@@ -328,52 +315,18 @@ void main(){
   vec3 enamel = uInk + studio(R, 0.4) * 0.018 + spec(N, V, L, T, B, 0.42, 0.0, vec3(0.04)) * fall * 0.22;
   col = mix(col, enamel, ink);
 
-  if (uRing > 0.0){
+  // Under the pointer nothing plays. The cut border, the rubbed edges and inlaid words catch the light only where
+  // the pointer is near them.
+  if (uRing > 0.0 && uHover > 0.0){
     float edge = -d / uS;
     float inRing = 1.0 - smoothstep(uRing + 2.5, uRing + 4.5, edge);
     float line = max(ink, metal2) * inRing;
     float beside = exp(-pow((edge - uRing) / 3.4, 2.0)) * (1.0 - line);
-    float words = metal2 * (1.0 - inRing);
-
-    // Run: the pointer's light runs round the cut border, both ways from where it came in, and meets on the far side.
-    // On a plate with inlaid words the words warm with it.
-    if (uMode == 0 && uHover > 0.0){
-      float per = 2.0 * (uRes.x + uRes.y);
-      float gap = abs(around(p) - around(uHoverAt));
-      gap = min(gap, per - gap);
-      float front = uHover * per * 0.5;
-      float lit = smoothstep(0.0, 7.0 * uS, front - gap + 2.0 * uS);
-      float head = exp(-pow((front - gap) / (11.0 * uS), 2.0)) * (1.0 - smoothstep(0.86, 1.0, uHover));
-      col = mix(col, uGlow * (1.5 + 2.6 * head), line * lit);
-      col += uGlow * F0 * beside * lit * (0.5 + 1.2 * head);
-    }
-    if ((uMode == 0 || uMode == 3) && uHover > 0.0) col = mix(col, uGlow * 1.25, words * uHover * 0.8);
-
-    // Heat: the metal glows where the pointer is and has just been, red where it is cooling. Enamel does not glow,
-    // so cut words stay dark against it. Inlaid words run hotter than the face around them.
-    if (uMode == 1){
-      float heat = 0.0;
-      for (int i = 0; i < 6; i++){ vec2 q = (p - uHeat[i].xy) / (21.0 * uS); heat += uHeat[i].z * exp(-dot(q, q)); }
-      heat = 1.0 - exp(-heat * 1.5);
-      if (heat > 0.002){
-        // The face glows in the deep colors only. Run to the pale ones it turns to haze.
-        vec3 deep = mix(uHeatC[0], uHeatC[1], smoothstep(0.05, 0.85, heat));
-        col += deep * heat * uHeatFace * 1.6 * (1.0 - ink) * (1.0 - line) * (1.0 - words);
-        vec3 bright = mix(uHeatC[1], uHeatC[2], smoothstep(0.3, 1.0, heat));
-        col = mix(col, bright * (1.1 + 1.2 * heat), line * smoothstep(0.05, 0.6, heat));
-        // Inlaid words go straight to the pale end, so they gain on the face as it warms behind them.
-        col = mix(col, mix(uHeatC[2], uHeatC[3], min(1.0, heat * 1.4)) * 1.3, words * smoothstep(0.0, 0.35, heat));
-      }
-    }
-
-    // Catch: nothing plays. The cut border, the rubbed edges and the words catch the light only where the pointer is near.
-    if (uMode == 2 && uHover > 0.0){
-      vec2 q = (p - uPointer) / (36.0 * uS);
-      float near = exp(-dot(q, q)) * uHover;
-      col = mix(col, uGlow * (1.3 + 1.5 * near), line * smoothstep(0.02, 0.55, near));
-      col += uGlow * F0 * (beside * 0.9 + wear * 0.7) * near * (1.0 - ink);
-      col = mix(col, uGlow * 1.3, words * smoothstep(0.1, 0.75, near));
-    }
+    vec2 q = (p - uPointer) / (36.0 * uS);
+    float near = exp(-dot(q, q)) * uHover;
+    col = mix(col, uGlow * (1.3 + 1.5 * near), line * smoothstep(0.02, 0.55, near));
+    col += uGlow * F0 * (beside * 0.9 + wear * 0.7) * near * (1.0 - ink);
+    col = mix(col, uGlow * 1.3, metal2 * (1.0 - inRing) * smoothstep(0.1, 0.75, near));
   }
 
   if (uWinOn > 0.5){

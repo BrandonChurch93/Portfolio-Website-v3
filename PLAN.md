@@ -14,7 +14,7 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 ## Now
 
 - **Phase:** 1, color and light
-- **Waiting on Brandon:** which hover he wants for the buttons. Three options, Heat, Pull and Catch, are under "Hover options" at `/lab/buttons`, below the first hover. He likes how the buttons look and the glow that follows the cursor (`BRIEF.md`, Open 17)
+- **Waiting on Brandon:** on the buttons at `/lab/buttons`: whether the hover is right now (Catch, with a quicker fade and a 4 percent scale), scale or lift, and whether the bright button takes the shinier finish shown under "To compare" (`BRIEF.md`, Open 17 and 18)
 - **Next for Fable:** Phase 2, the water, opening with what the stream is made of
 
 ## Phase 0 · Foundation
@@ -37,7 +37,7 @@ Study 01 is at `/lab/palette` and Study 02 at `/lab/buttons`. Stills are in `ref
 - [x] One carried piece moved to the new palette as a test: the handheld, brass to copper (Nov 11)
 - [x] Type in the new palette (Nov 11)
 - [~] The cursor light: it shifts the light behind the portrait, crosses the handheld's metal and lights both buttons
-- [~] Primary and accent buttons: polished copper with its cut words on a bright band, and dark bronze with copper words. He likes the look (Nov 11). The hover is open (`src/components/MetalButton.tsx`)
+- [~] Primary and accent buttons: polished copper with its cut words on a bright band, and dark bronze with copper words. He likes the look and chose Catch for the hover (Nov 11). Its fade, scale and the bright button's shine are with him (`src/components/MetalButton.tsx`)
 
 **Gate:** the portrait, the metal and the water read as one light.
 

@@ -2,6 +2,54 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-11 · Buttons: Catch chosen, a quicker fade, scale, and a shinier primary to compare (Fable, web chat)
+
+**What Brandon said**
+
+- "I think my favorite is catch." Coming in and moving around "feels about perfect".
+- On mouse leave "it takes a bit longer than I'd like for the animation to fade off".
+- "The button doesn't scale or do anything else. I think we should add some type of lift or scale. I'm leaning more towards a scale, but I'm open to recommendations."
+- The cursor's light moving around the page "looks amazing" on the dark buttons and is "a lot harder to see" on the bright ones. "I don't want to nerf the secondary buttons." "I wish the primary buttons had a bit more shine to them. Maybe we could darken the color a bit or something?"
+- All of it is in `BRIEF.md`.
+
+**What changed**
+
+- Catch is the hover. The other three (run, heat, pull) and their code are gone. They are in git at `1dec4d8` if ever wanted, and in `reference/studies/02-buttons-hover-options.jpg`.
+- Leaving: the light goes in 0.2s, most of it at once (`HOVER` in `src/metal/renderer.ts`; the curve is the cube of what is left). It was 0.32s and started slowly, which is why it felt long. Arriving is unchanged, since he called it about perfect.
+- Under the pointer the button grows 4 percent, passes its mark slightly and settles, and its shadow spreads. Pressed, it shrinks to 98.5 percent. Keyboard focus grows it too. `MetalButton.module.css`.
+- With reduced motion the hover light now shows, at once, and the scale has no transition. Before, the static tier never redrew a plate, so nothing showed.
+
+**Two studies on the page, under "To compare". Each goes once he has chosen**
+
+1. `rise="lift"` on `MetalButton`: the button rises 3px and does not grow.
+2. `finish="coated"`: the primary a little darker (`band: 0.72`, the soft light turned down) under a clear coat (`coat: 0.3`) that throws the lamp back pale and wide. In the row the left pair is coated and the right pair is the approved primary.
+
+**Why the bright button shows the lamp less, and what the coat does**
+
+- The eye reads a change against what is already there. The dark button goes from about 1 percent luminance to 4 under the lamp, three times over. The bright one is at about 38 percent and the same light adds a few percent.
+- Two levers: a darker base, and a highlight of another color. The coat's highlight is `pale`, so it reads against orange copper by color as well as brightness.
+- The limit is the words. They are dark, so the face cannot go far down. Coated, text contrast is 5.4 to 8.5 across six lamp places (the approved one is 6.1 to 6.8).
+- First try (`band: 0.8`, `coat: 0.1`) was too weak to see except with the lamp right beside the button.
+- It will not match the dark button. From stills it is clearly visible within a few hundred pixels and faint beyond.
+
+**How it was judged (Fable, software stills at 2x)**
+
+- `reference/studies/02-buttons-hover.jpg`: primary, accent, then the lift study. Columns: at rest, hovered, 90ms after the pointer left.
+- `reference/studies/02-buttons-shine.jpg`: six lamp places, one per row. Left pair coated, right pair approved.
+- The words stay sharp at 4 percent scale in these stills. On a real 2x screen the canvas is being stretched 4 percent, so look for softness there. If there is any, the fix is a second bake at the hovered size, not a smaller scale.
+- Not judged: how the scale and the quicker fade feel.
+
+**Still open from the 508 check**
+
+- The accent's thin contrast margin where the lamp's bright spot sits beside the words. Closing it would dim the very thing he said looks amazing, so it is left alone unless he asks.
+
+**Waiting on Brandon**
+
+1. Is the hover right now.
+2. Scale or lift.
+3. The coated primary, yes or no.
+4. Whether the water gets built in Claude Code on his Mac.
+
 ## 2026-11-11 · Buttons: three hover options (Fable, web chat)
 
 **What Brandon said**
