@@ -200,7 +200,7 @@ export class StreamSim {
     const size = (this.sizes[0] * S.loose.least + (this.sizes[1] - this.sizes[0]) * r(2) ** 1.8) * u;
     // Thrown up and outward in a fan: nearly straight up at its middle, flatter toward the way things leave.
     const lean = -Math.PI / 2 + way * (0.12 + 1.0 * r(3));
-    const v = (150 + 420 * r(4) * (0.4 + 0.6 * r(5))) * u * (0.45 + 0.5 * Math.min(1, hard));
+    const v = (170 + 450 * r(4) * (0.4 + 0.6 * r(5))) * u * (0.45 + 0.5 * Math.min(1, hard));
     const vx = Math.cos(lean) * v, vy = Math.sin(lean) * v;
     const o = this.looseCount * LOOSE;
     const q = [r(6) - 0.5, r(7) - 0.5, r(8) - 0.5, r(9) - 0.5], ql = Math.hypot(q[0], q[1], q[2], q[3]) || 1;
@@ -303,11 +303,11 @@ export class StreamSim {
             // Too slow to bounce, it is carried along the surface with the flow and off the end, and lives just
             // long enough to be seen falling from it. Nothing comes to rest and nothing is left lying on an object.
             const way = b === boxes[1] ? Math.sign(lip.x - (b.l + b.r) / 2) : Math.sign(x - (b.l + b.r) / 2) || 1;
-            const carry = K.carry * u * (0.75 + 0.5 * this.looseSeed[i]);
-            vx += (way * carry - vx) * (1 - Math.exp(-5 * dt));
+            const carry = K.carry * u * (0.5 + this.looseSeed[i]);
+            vx += (way * carry - vx) * (1 - Math.exp(-9 * dt));
             // It does not slide: every so often it catches on a point and skips.
             const skip = hash(i, at_, 7) < K.skip * dt;
-            vy = skip ? -(0.9 + 1.6 * hash(i, at_, 8)) * K.settle * u : 0;
+            vy = skip ? -(0.6 + 0.9 * hash(i, at_, 8)) * K.settle * u : 0;
             if (skip) { wx += (hash(i, at_, 9) - 0.5) * 12; wz -= way * 6; }
             life = age + Math.abs((way > 0 ? b.r : b.l) - x) / carry + K.spill;
             wx *= Math.exp(-4 * dt); wy *= Math.exp(-4 * dt); wz = wz * Math.exp(-4 * dt) - (vx / Math.max(r, 1)) * 0.2 * (1 - Math.exp(-4 * dt));

@@ -2,8 +2,8 @@ import { seeded } from './rand';
 import { firstShards } from './shards-first';
 
 // The shards as small solid meshes, made once from a seed. They are facets: sharp jagged pieces with flat faces and
-// three or four needle points. A larger one is two such splinters fused at an angle, which puts a notch in its
-// outline. The same shapes are drawn in two materials, solid and clear.
+// three or four needle points. A larger one has a second lobe grown out of the same body at a slant, which puts a
+// notch in its outline. The same shapes are drawn in two materials, solid and clear.
 // A vertex is: position, the way its face looks, how far it is from each edge of its face, a mark only the first
 // round's shards use, and for each of those edges the way the bevel between its face and the next one looks.
 // Sizes are in shard radii: the farthest point is 1 from the center.
@@ -39,8 +39,6 @@ const dot = (a: V3, b: V3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 const len = (a: V3) => Math.hypot(a[0], a[1], a[2]);
 const unit = (a: V3): V3 => { const l = len(a) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
-const rotZ = (p: V3, a: number): V3 => [p[0] * Math.cos(a) - p[1] * Math.sin(a), p[0] * Math.sin(a) + p[1] * Math.cos(a), p[2]];
-const rotX = (p: V3, a: number): V3 => [p[0], p[1] * Math.cos(a) - p[2] * Math.sin(a), p[1] * Math.sin(a) + p[2] * Math.cos(a)];
 
 interface Solid { pts: V3[]; faces: [number, number, number][] }
 
@@ -64,21 +62,31 @@ function hull(pts: V3[]): Solid {
   return { pts, faces };
 }
 
-function splinter(r: () => number, big: number): Solid {
-  const ball = (): V3 => { const z = r() * 2 - 1, a = r() * Math.PI * 2, s = Math.sqrt(1 - z * z); return [s * Math.cos(a), s * Math.sin(a), z]; };
-  const pts: V3[] = [], body = 0.44 - 0.2 * big;
-  for (let i = 0; i < 4; i++) { const p = ball(), k = body * (0.7 + 0.3 * r()); pts.push([p[0] * k, p[1] * k, p[2] * k]); }
-  for (let i = 0, n = 3 + Math.floor(r() * 2); i < n; i++) { const p = ball(), k = 0.85 + 0.75 * r(); pts.push([p[0] * k, p[1] * k, p[2] * k]); }
-  const sy = 0.5 + 0.3 * r(), sz = 0.38 + 0.24 * r();
-  return hull(pts.map((p): V3 => [p[0], p[1] * sy, p[2] * sz]));
+// One lobe of a facet: the skin round its body and a few points pulled far out of it.
+function lobe(body: V3[], points: V3[], squash: V3): Solid {
+  return hull([...body, ...points].map((p): V3 => [p[0] * squash[0], p[1] * squash[1], p[2] * squash[2]]));
 }
 
 function facet(r: () => number, big: number): number[] {
-  const parts = [splinter(r, big)];
+  const ball = (): V3 => { const z = r() * 2 - 1, a = r() * Math.PI * 2, s = Math.sqrt(1 - z * z); return [s * Math.cos(a), s * Math.sin(a), z]; };
+  const along = (angle: number, tilt: number, reach: number): V3 => [Math.cos(angle) * Math.cos(tilt) * reach, Math.sin(angle) * Math.cos(tilt) * reach, Math.sin(tilt) * reach];
+  // A small body, and three or four points pulled far out of it, one of them further than the rest, so each ends in
+  // a needle and no piece is the same on both sides. A small piece keeps more body, so it still shows a face.
+  const size = 0.44 - 0.2 * big;
+  const body: V3[] = [];
+  for (let i = 0; i < 4; i++) { const p = ball(), k = size * (0.7 + 0.3 * r()); body.push([p[0] * k, p[1] * k, p[2] * k]); }
+  const points: V3[] = [];
+  for (let i = 0, n = 3 + Math.floor(r() * 2); i < n; i++) { const p = ball(), k = i === 0 ? 1.25 + 0.45 * r() : 0.8 + 0.6 * r(); points.push([p[0] * k, p[1] * k, p[2] * k]); }
+  // Flattened, but never to a sheet: a thin one shows two faces and reads as folded paper.
+  const squash: V3 = [1, 0.5 + 0.3 * r(), 0.44 + 0.2 * r()];
+  const parts = [lobe(body, points, squash)];
   if (r() < 0.25 + 0.55 * big) {
-    const other = splinter(r, big), az = 0.7 + 1.6 * r(), ax = r() * 2, mx = (r() - 0.5) * 0.5, my = (r() - 0.5) * 0.5;
-    other.pts = other.pts.map((p) => add(rotX(rotZ([p[0] * 0.75, p[1] * 0.75, p[2] * 0.75], az), ax), [mx, my, 0]));
-    parts.push(other);
+    // A notched piece has a second lobe grown from the same body at a slant, so the two share a heart and part only
+    // toward their points. Two whole splinters crossed read as two pieces stuck together.
+    const slant = r() * Math.PI * 2;
+    const second: V3[] = [along(slant, (r() - 0.5) * 0.6, 1.0 + 0.5 * r())];
+    if (r() < 0.6) second.push(along(slant + (0.4 + 0.5 * r()) * (r() < 0.5 ? -1 : 1), (r() - 0.5) * 0.9, 0.6 + 0.5 * r()));
+    parts.push(lobe(body, second, squash));
   }
   // Center it on its own corners, and size it so that none of them is further than 1 from the middle. Whatever its
   // shape, a piece reaches no further than its size allows.

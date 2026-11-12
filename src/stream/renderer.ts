@@ -64,9 +64,10 @@ const GLOW = {
   nearGain: 1.8,
   page: 0.2,
   deep: 130,
-  // On a wide screen the stream is small against the page, and it is given more presence there: a hotter heart, a
-  // glow that reaches further and more light on the page. Each is what is added at full presence.
-  more: { near: [0, 0, 0.01, 0.03, 0.04, 0.03, 0.01], nearGain: 0.2, page: 0.06, heart: 0.28 },
+  // On a wide screen the stream is small against the page, and it is given more presence there, from heat and not
+  // from haze: a hotter heart, more light in the body of the ribbon where it lies flat, and a little more light on
+  // the page. A wider glow was tried and read as a neon tube. Each number is what is added at full presence.
+  more: { page: 0.04, heart: 0.34, body: 1.1 },
 };
 
 // A shard's vertex, part by part: position, normal, edge distances, tag, and the bevel of each edge.
@@ -184,7 +185,7 @@ export class StreamRenderer {
       title: compile(gl, G.RELIEF_VERT, G.titleFrag(f), ['aPos']),
       card: compile(gl, G.RELIEF_VERT, G.cardFrag(f), ['aPos']),
       solid: compile(gl, G.SHARD_VERT, G.SOLID_FRAG, shard),
-      clear: compile(gl, G.SHARD_VERT, G.clearFrag(budget.split), shard),
+      clear: compile(gl, G.SHARD_VERT, G.CLEAR_FRAG, shard),
       copper: compile(gl, G.SHARD_VERT, COPPER_FRAG, shard),
       glass: compile(gl, G.SHARD_VERT, glassFrag(budget.split), shard),
       light: compile(gl, G.FULL_VERT, G.lightFrag(f), ['aPos']),
@@ -329,6 +330,7 @@ export class StreamRenderer {
     gl.uniform4fv(P.core.u('uView'), f.view);
     gl.uniform1f(P.core.u('uTime'), f.time);
     gl.uniform1f(P.core.u('uHeart'), 1 + GLOW.more.heart * f.presence);
+    gl.uniform1f(P.core.u('uBody'), 1 + GLOW.more.body * f.presence);
     gl.bindVertexArray(this.coreArray);
     for (let b = 0; b < 2; b++) {
       if (f.coreRuns[b * 2 + 1] < 3) continue;
@@ -372,7 +374,7 @@ export class StreamRenderer {
       gl.activeTexture(gl.TEXTURE1);
       gl.bindTexture(gl.TEXTURE_2D, top ? this.down[k].tex : wider.tex);
       gl.uniform2f(P.up.u('uTexel'), 1 / wider.w, 1 / wider.h);
-      gl.uniform3f(P.up.u('uWeight'), GLOW.near[k] + GLOW.more.near[k] * f.presence, GLOW.wide[k === 0 ? 0 : k + skip], GLOW.close[k]);
+      gl.uniform3f(P.up.u('uWeight'), GLOW.near[k], GLOW.wide[k === 0 ? 0 : k + skip], GLOW.close[k]);
       gl.uniform1f(P.up.u('uTop'), top ? 1 : 0);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }
@@ -419,7 +421,7 @@ export class StreamRenderer {
     gl.bindTexture(gl.TEXTURE_2D, this.light.tex);
     gl.uniform1i(P.light.u('uLight'), 0);
     this.glow(P.light);
-    gl.uniform1f(P.light.u('uNear'), GLOW.nearGain + GLOW.more.nearGain * f.presence);
+    gl.uniform1f(P.light.u('uNear'), GLOW.nearGain);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
     // The title and the card stand in front of the light: where the core lies along one of them, the surface cuts it

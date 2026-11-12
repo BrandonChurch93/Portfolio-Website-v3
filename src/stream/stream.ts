@@ -361,10 +361,12 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       // They gather and thin along the route in slow waves, so the stream has knots and open stretches. Along an
       // object there are no knots: they are spread evenly.
       const free = 0.5 + 0.5 * Math.sin(d / (K.clump * u) - t * 0.22 + 2 * Math.sin(d / (K.clump * 3.6 * u)));
-      const wave = free + (0.5 - free) * hold;
-      grown *= Math.max(0, Math.min(1, (0.5 + 0.5 * wave - R.f[o + 16]) / 0.1 + 1));
+      const wave = free + (0.5 - free) * Math.max(hold, br.calm[here]);
+      grown *= Math.max(0, Math.min(1, (K.wave[0] + (K.wave[1] - K.wave[0]) * wave - R.f[o + 16]) / 0.1 + 1));
       if (grown <= 0.02) continue;
-      const round = R.f[o + 3] + t * K.orbit + (d * TAU) / (K.wind * u) + 0.4 * Math.sin(t * R.f[o + 4] + R.f[o + 5]);
+      // They go round the core, but quicker across its face than past its sides, so the core is never hidden for long.
+      const turn = R.f[o + 3] + t * K.orbit + (d * TAU) / (K.wind * u) + 0.4 * Math.sin(t * R.f[o + 4] + R.f[o + 5]);
+      const round = turn + K.aside * Math.sin(2 * turn);
       const far = R.f[o + 2] * (1 + K.spread * hold) * (1 + (K.flare + K.flareFast * e) * Math.exp(-lead / (K.flareOver * u)));
       const side = far * Math.sin(round), z = far * Math.cos(round);
       // On an object all of them ride the one side of the core, and on the inside of a turn they are squeezed
@@ -517,15 +519,20 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   void ready;
 
   registry.tool('streamState', () => ({ on: host.dataset.stream, look, unit, shards: stats.streamShards, sparks: sim?.sparkCount ?? 0, loose: sim?.looseCount ?? 0, head: sim ? [sim.head[0], sim.head[1]] : [], energy: sim ? [sim.energy[0], sim.energy[1]] : [], riders: riders?.n ?? 0 }));
-  // How many shards the last frame drew inside a rectangle of the page, and how many of those were thrown loose.
+  // How many shards the last frame drew inside a rectangle of the page, how many of those were thrown loose, and how
+  // much of the route runs through it.
   registry.tool('streamCount', (l: number, t: number, r: number, b: number) => {
-    let riding = 0, loose = 0;
+    let riding = 0, loose = 0, length = 0;
+    if (route && sim) for (let k = 0; k < 2; k++) {
+      const br = route.branches[k], last = Math.min(br.n - 1, Math.floor(sim.head[k] / br.step));
+      for (let i = k === 1 ? Math.ceil(route.split / br.step) : 0; i <= last; i++) if (br.x[i] >= l && br.x[i] <= r && br.y[i] >= t && br.y[i] <= b) length += br.step;
+    }
     for (let i = 0; i < stats.streamShards; i++) {
       const o = i * INSTANCE_FLOATS, x = shards[o], y = shards[o + 1];
       if (x < l || x > r || y < t || y > b || shards[o + 3] < 0.5) continue;
       if (shards[o + 14] > 0.5) loose++; else riding++;
     }
-    return { riding, loose };
+    return { riding, loose, length };
   });
   // Every thrown shard as its own number, x and y, so a script can follow each one from frame to frame.
   registry.tool('streamThrown', () => {

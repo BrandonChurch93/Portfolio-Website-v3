@@ -34,6 +34,7 @@ export const STREAM = {
     start: -180,        // where it comes in, above the top of the page
     // The route counts as lying on an object when it is within the first distance of one, and as clear of it by the second.
     hold: [8, 46] as [number, number],
+    calm: 170,          // within this distance of an object the shards keep no knots
   },
 
   head: {
@@ -55,11 +56,15 @@ export const STREAM = {
     orbit: 0.34,        // how fast the whole sheath turns round the core
     wind: 250,          // one full turn of the sheath takes this much of the route
     clump: 95,          // they gather and thin along the route in waves about this long
+    // The share of them that shows in the thinnest stretch and in the thickest knot. A knot of facets at full
+    // strength hides the core.
+    wave: [0.6, 0.9] as [number, number],
+    aside: 0.18,        // how much quicker they pass in front of the core and behind it than they pass its sides
     flare: 1.25,        // how far they are thrown wide at the leading end, at rest
     flareFast: 2.6,     // and more with its energy
     flareOver: 46,      // the flare dies away over this distance behind the leading end
     grow: 16,           // a shard reaches full size this far behind the leading end
-    clear: 0.4,         // the share that is clear, the rest being solid
+    clear: 0.45,        // the share that is clear, the rest being solid
     depth: 0.0011,      // how much nearer shards are drawn larger
     turn: 170,          // within this distance of the cursor a shard turns to face it
     // How far round it turns. A leaf is flat and can turn all the way. A facet turned all the way shows only its
@@ -67,8 +72,8 @@ export const STREAM = {
     face: { facets: 0.5, first: 0.85 } as Record<'facets' | 'first', number>,
     // Where the stream lies along an object its shards cannot go round the far side of the core, so all of them ride
     // the near side and are twice as thick there. This share of them is taken away, and the rest ride this much wider.
-    thin: 0.38,
-    spread: 0.28,
+    thin: 0.44,
+    spread: 0.42,
     apart: 56,          // the two sides carry their full number of shards once they are this far apart
   },
 
@@ -81,9 +86,9 @@ export const STREAM = {
     gravity: 760,
     bounce: 0.58,       // the share of its fall a bounce keeps, give or take a quarter
     grip: 0.72,         // how much sideways speed a bounce keeps
-    settle: 55,         // falling slower than this it no longer bounces
-    carry: 210,         // how fast the flow carries one along a surface once it has stopped bouncing
-    skip: 4,            // times a second one being carried catches and skips
+    settle: 120,        // falling slower than this it no longer bounces
+    carry: 290,         // how fast the flow carries one along a surface once it has stopped bouncing, give or take a half
+    skip: 1.6,          // times a second one being carried catches and skips
     spill: 0.65,        // seconds it is given to fall once it has been carried off the end
     life: [1.3, 2.6] as [number, number],
     fade: 0.3,          // the share of its life over which it shrinks away at the end

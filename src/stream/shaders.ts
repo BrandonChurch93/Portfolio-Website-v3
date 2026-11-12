@@ -57,7 +57,7 @@ void main(){ vAlong = aAlong; gl_Position = clip(aPos, 0.0); }`;
 
 export const coreFrag = (strands: number) => `${HEAD}
 in vec3 vAlong;
-uniform float uTime, uEnergy, uHeart;
+uniform float uTime, uEnergy, uHeart, uBody;
 uniform vec2 uOwn;   // a shift that gives each side its own strands, and where along the route they begin
 out vec4 frag;
 ${NOISE}
@@ -74,7 +74,7 @@ void main(){
   float span = wide * abs(face) + 0.6;
   float sum = 0.0;
   // The sheet between the fibres: a faint body, feathered at its edge.
-  sum += 0.1 * smoothstep(span + 2.6, span * 0.55, abs(x)) * (0.35 + 0.65 * abs(face)) * begun;
+  sum += 0.1 * uBody * smoothstep(span + 2.6, span * 0.55, abs(x)) * (0.35 + 0.65 * abs(face)) * begun;
   for (int j = 0; j < ${strands}; j++){
     float f = float(j), a = hash1(f + 1.0), b = hash1(f + 7.3), c = hash1(f + 13.9);
     // The fibres crowd toward the middle of the band and thin out toward its edges, and no two are the same
@@ -401,15 +401,15 @@ void main(){
   vec3 toward = coreFrom(fall, plane);
   float lampI = lampLight(Ll);
   vec3 B = bevelAt(line);
-  float flash = coreBand(N, toward, plane, 0.17) * 8.0;
-  float sheen = coreBand(N, toward, plane, 0.4) * 0.75;
+  float flash = coreBand(N, toward, plane, 0.22) * 8.0;
+  float sheen = coreBand(N, toward, plane, 0.5) * 1.0;
   float turned = max(dot(N, toward), 0.0);
   // The cursor is a small light, so a flat face mirrors it only when it lines up almost exactly. Turned toward it,
   // a few faces flash and the rest only warm, and the faces beside them stay dark: the shape is never lost.
   float lamp = (ggx(max(dot(N, normalize(Ll + V)), 0.0), 0.1) * 0.11 + 0.07) * max(dot(N, Ll), 0.0) * lampI;
-  float light = room(reflect(-V, N)) * (0.16 + 0.6 * min(fall, 1.0)) + fall * (flash + sheen + 0.06 * turned + 0.01) + lamp;
+  float light = room(reflect(-V, N)) * (0.16 + 0.6 * min(fall, 1.0)) + fall * (flash + sheen + 0.06 * turned + 0.03) + 0.015 + lamp;
   float edge = fall * (coreBand(B, toward, plane, 0.45) * 3.4 + 0.1) + (ggx(max(dot(B, normalize(Ll + V)), 0.0), 0.22) * 0.35 + 0.1) * max(dot(B, Ll), 0.0) * lampI + 0.03;
-  light = mix(light, max(light, edge), line) + tipAt() * (1.3 * fall + 0.6 * lampI);
+  light = mix(light, max(light, edge), line) + tipAt() * (1.8 * fall + 0.6 * lampI);
   vec3 col = mix(uCopper, uF0, 0.3 * clamp(light - 0.6, 0.0, 1.0)) * vec3(1.0, 0.92, 0.8) * light * 1.35;
   // Keep the hue as it gets bright, then let the heart of a flash bleach to pale, as the buttons' highlights do.
   float mx = max(col.r, max(col.g, col.b));
@@ -418,11 +418,12 @@ void main(){
   frag = vec4(col, 1.0);
 }`;
 
-// A clear facet: the same shape, carrying light and not throwing it back. What is behind it shows through, moved by
-// each flat face its own way, so the core behind one breaks into steps. It holds light inside, most in the faces
-// turned from the core, where the light that came in on the near side comes back out. It is brightest on its edges.
-// All of its light is an amount, colored by the ramp, so it stays inside the warm range.
-export const clearFrag = (split: boolean) => `${HEAD}
+// A clear facet: the same shape, carrying light and not throwing it back. What is behind it shows through, dimmed and
+// moved a little by each flat face. It holds light through its body: each face its own amount, most in the faces
+// turned from the core, where the light that came in on the near side comes back out, and deepest in the middle of a
+// face. It is brightest on its edges. All of its light is an amount, colored by the ramp, and its parts are joined by
+// keeping the brighter, never by adding, so it cannot leave the warm range.
+export const CLEAR_FRAG = `${HEAD}
 uniform sampler2D uScene;
 uniform vec2 uRes;
 uniform vec3 uEmber, uFlame, uHot;
@@ -442,29 +443,29 @@ void main(){
   vec3 toward = coreFrom(fall, plane);
   float lampI = lampLight(Ll);
   vec3 B = bevelAt(line);
-  vec2 shift = N.xy * vSize * 1.9;
-  vec2 uv = gl_FragCoord.xy / uRes, to = vec2(shift.x, -shift.y) * uDpr / uRes;
-  vec4 mid = texture(uScene, uv + to);
-  vec3 col = mid.rgb;
-  ${split ? `
-  // It splits what it bends, but only within the warm range: flame on one side, hot on the other.
-  vec3 inner = texture(uScene, uv + to * 0.7).rgb, outer = texture(uScene, uv + to * 1.34).rgb;
-  float lm = dot(mid.rgb, vec3(0.4, 0.45, 0.15)), li = dot(inner, vec3(0.4, 0.45, 0.15)), lo = dot(outer, vec3(0.4, 0.45, 0.15));
-  col = col * 0.7 + (inner + outer) * 0.15 + uFlame * max(lo - lm, 0.0) * 0.9 + uHot * max(li - lm, 0.0) * 0.6;` : ''}
-  col *= vec3(0.86, 0.8, 0.72);
-  // Looking into a face, what shows is the faces behind it, bent: three panes to a face, one against each edge, each
-  // holding its own amount.
-  float away = 0.5 - 0.5 * dot(normalize(N + 1.6 * B), toward);
+  vec2 shift = N.xy * vSize * 0.9;
+  vec4 mid = texture(uScene, gl_FragCoord.xy / uRes + vec2(shift.x, -shift.y) * uDpr / uRes);
+  vec3 col = mid.rgb * vec3(0.8, 0.74, 0.66);
+  // How deep into the face this is: nothing at its edge, 1 in its middle. Looking through the middle of a face the
+  // eye passes through the most of the piece, and that is where the light it holds shows.
+  float deep = pow(smoothstep(0.0, 0.34 * vSize, min(vEdge.x, min(vEdge.y, vEdge.z))), 1.3);
+  float away = 0.5 - 0.5 * dot(N, toward);
   float graze = pow(1.0 - abs(N.z), 3.0);
-  float held = min(fall, 1.5) * (0.07 + 0.52 * away * away * away + 0.12 * graze) + 0.04 * room(reflect(-V, B));
+  // Light spreads inside it, so what it holds falls off with distance more slowly than what a solid face is lit by.
+  float held = min(sqrt(fall), 1.2) * (0.16 + 0.5 * pow(away, 1.5) + 0.08 * graze) + 0.22 * lampI * max(dot(N, Ll), 0.0);
+  // Somewhere inside each face the core shows, wide and soft, as it would in a lens.
+  held += 0.55 * fall * coreBand(N, toward, plane, 0.36);
+  held = 0.8 * (1.0 - exp(-held * (0.22 + 0.78 * deep) / 0.42)) + 0.03 * room(reflect(-V, N));
   float toLamp = max(dot(B, Ll), 0.0);
   float glint = coreBand(N, toward, plane, 0.07) * 2.8 * fall + ggx(max(dot(N, normalize(Ll + V)), 0.0), 0.1) * max(dot(N, Ll), 0.0) * 0.1 * lampI;
-  float edge = fall * (0.4 + 2.6 * coreBand(B, toward, plane, 0.5)) + lampI * (0.12 + 0.8 * toLamp * toLamp) + 0.06;
+  // An edge burns only where its bevel catches the core or the cursor. The rest are left to the body beside them, so
+  // the piece is never an outline.
+  float edge = fall * 2.8 * coreBand(B, toward, plane, 0.42) + lampI * 0.4 * toLamp * toLamp * toLamp;
   float point = tipAt() * (1.6 * fall + 0.7 * lampI);
-  held += 0.16 * lampI * max(dot(N, Ll), 0.0);
-  // Each part takes its color from its own amount of light, so a thin edge stays pale and does not redden as it thins.
-  col += ramp(held + glint + point) * (1.0 - line) + ramp(edge + point) * line;
-  frag = vec4(min(col, uPale), clamp(mid.a + 0.08 + 0.6 * line + min(held, 0.5) + glint, 0.0, 1.0));
+  col = max(col, ramp(held));
+  col = max(col, ramp(glint + point));
+  col = mix(col, max(col, ramp(edge + point)), line);
+  frag = vec4(min(col, uPale), clamp(mid.a + 0.1 + 0.6 * line * min(edge, 1.0) + 1.6 * held + glint, 0.0, 1.0));
 }`;
 
 // ---- the light, given its color and laid into the picture between the shards behind the core and those in front

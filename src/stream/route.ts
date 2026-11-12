@@ -19,6 +19,8 @@ export interface Branch {
   floor: Float32Array;
   // How much the route lies along an object or hooks round one here, 0 to 1.
   hold: Float32Array;
+  // How near an object it is in the wider sense, 0 to 1: near enough that a knot of shards would read as bunched on it.
+  calm: Float32Array;
   // How sharply it turns here, as one over the radius of the turn. Positive turns toward (-ty, tx).
   bend: Float32Array;
   // How far the other side of the stream is from this point of this side.
@@ -103,7 +105,7 @@ function branch(pts: number[], boxes: Box[], unit: number, phase: number, splitA
   }
   const p = even(swayed);
   const n = p.length / 2;
-  const out: Branch = { n, len: (n - 1) * step, step, x: new Float32Array(n), y: new Float32Array(n), tx: new Float32Array(n), ty: new Float32Array(n), floor: new Float32Array(n), hold: new Float32Array(n), bend: new Float32Array(n), apart: new Float32Array(n).fill(1e6) };
+  const out: Branch = { n, len: (n - 1) * step, step, x: new Float32Array(n), y: new Float32Array(n), tx: new Float32Array(n), ty: new Float32Array(n), floor: new Float32Array(n), hold: new Float32Array(n), calm: new Float32Array(n), bend: new Float32Array(n), apart: new Float32Array(n).fill(1e6) };
   for (let i = 0; i < n; i++) { out.x[i] = p[i * 2]; out.y[i] = p[i * 2 + 1]; }
   let low = -Infinity;
   for (let i = 0; i < n; i++) {
@@ -116,6 +118,7 @@ function branch(pts: number[], boxes: Box[], unit: number, phase: number, splitA
     let near = Infinity;
     for (const box of boxes) near = Math.min(near, outside(box, out.x[i], out.y[i]));
     out.hold[i] = 1 - ease(R.hold[0] * unit, R.hold[1] * unit, near);
+    out.calm[i] = 1 - ease(R.hold[1] * unit, R.calm * unit, near);
   }
   const span = 4;
   for (let i = 0; i < n; i++) {
