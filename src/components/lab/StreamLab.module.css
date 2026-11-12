@@ -1,0 +1,66 @@
+.page {
+  position: relative;
+  height: 300vh;
+  height: 300svh;
+  overflow: clip;
+}
+
+.head {
+  position: absolute;
+  top: var(--space-6);
+  left: var(--edge);
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--copper-light);
+}
+
+.name {
+  margin-top: var(--space-2);
+  font-size: var(--step-2);
+  font-weight: 300;
+  color: var(--text-2);
+}
+
+/* The spacing after the last letter is taken back on the left, so the word sits on the page's center line. */
+.title {
+  position: absolute;
+  top: 104vh;
+  top: 104svh;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding-left: 0.3em;
+  font-size: clamp(3.4rem, 7.2vw, 7rem);
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.card {
+  position: absolute;
+  top: 148vh;
+  top: 148svh;
+  right: calc(50% + 1.25rem);
+  width: min(28.75rem, 50vw - 2rem);
+  height: clamp(9rem, 20vw, 18rem);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-3);
+  background: var(--bg-2);
+}
+
+/* Once the stream is drawing, it draws the title and the card itself, lit. The words stay in the page for readers. */
+.page[data-stream='on'] .title {
+  color: transparent;
+}
+
+.page[data-stream='on'] .card {
+  border-color: transparent;
+  background: none;
+}

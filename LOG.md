@@ -2,6 +2,30 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-12 · The stream's test shot (Fable, Claude Code on Brandon's Mac)
+
+**What Brandon said**
+
+- He was asleep for this session and said so: "Work straight through both check-ins in the handoff without waiting for me." "Where a decision would be mine, make the call you would recommend, write it in LOG.md, and keep going. I will judge both check-ins when I am back."
+- Nothing below has his verdict yet.
+
+**The sketch in motion, seen for the first time (hardware, live frames of panel A)**
+
+Works:
+
+- At rest it is alive without being busy: sparks drop steadily from both leading ends and both landings, and the shards drift.
+- Coming down, each leading end throws a wide plume of sparks and the shards flare out round it. It reads as the front of something with energy.
+- Reaching the title, the one line spreads both ways along the top and reads as parting.
+
+Does not work:
+
+- Scrolling back up sheds as many sparks as coming down, and leaves plumes hanging in the air under the retreating ends. It reads as leaking, not as drawing back.
+- The landing on the card is not an event. The end turns the corner and nothing is thrown.
+- The core is the same width and brightness everywhere and nothing travels along it. Zoomed out it reads as a neon outline of the route.
+- Shards come and go at the leading end by changing size. They do not read as thrown.
+- Every spark is the same blunt dash, the same length, in an even fan.
+- At three times zoom the shards are flat tan and grey squares and small triangles, the fine lines of the core are wire, and each leading end is a soft ball.
+
 ## 2026-11-11 · Handoff to Claude Code: the stream (Fable, web chat)
 
 **What Brandon said**
