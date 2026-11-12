@@ -24,6 +24,10 @@ export default function Index() {
           <Link href="/lab/pour">The pour</Link>
           <span className={styles.minor}>Phase 2 · the test shot</span>
         </li>
+        <li>
+          <Link href="/lab/pour-looks">The pour&rsquo;s look</Link>
+          <span className={styles.minor}>Phase 2 · three ways to draw the metal</span>
+        </li>
       </ul>
       <h2 className={styles.group}>Pieces carried from the second build</h2>
       <ul className={styles.list}>

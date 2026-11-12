@@ -187,7 +187,8 @@ Each line has Fable's recommendation where there is one. None of these are rules
     - Sun metal: the surface crawls with bright cells and darker seams, with white hot threads drifting through it, like the surface of the sun. A landing throws up a loop that falls back, not a spray.
     - Mirror: a skin so polished the cursor's light slides along it as a glint, with the glow showing through where the metal is thin.
     - Sparkler: the body stays plain and smooth, and fine branching sparks drift off its whole length, like a Japanese hand sparkler.
-    - Recommendation: Sun metal carrying flecks, which is what he described, with the cursor's glint on top. Decide from moving studies side by side, not from words.
+    - He went with the recommendation: Sun metal carrying flecks, with the cursor's glint. "Sounds good to me. Let's go with your recommendation." He is also "slightly interested in the mercury", and "the idea of it reacting in my mouse cursor sounds really awesome". (Nov 11)
+    - Three of them are drawn side by side on a fixed stream at `/lab/pour-looks`: Sun metal with flecks, Mirror, and all three together. Waiting on his pick. The Sparkler idea is not in it.
 
 ## Dropped
 

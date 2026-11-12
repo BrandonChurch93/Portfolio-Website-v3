@@ -96,6 +96,7 @@ npm run perf -- /lab/pour --vp phone --cpu 4
 | `src/world/` | Shared 3D code: the stage, materials, the clock, quality tiers |
 | `src/lamp/` | The cursor light. One lamp, read by everything that is lit |
 | `src/pour/` | The pour: `sim.ts` is its physics, `renderer.ts` and `shaders.ts` draw it, `scene.ts` lays out what it hits, `config.ts` holds its constants and its particle budget, `pour.ts` runs it from the clock |
+| `src/pour-looks/` | A study of how the pour is drawn, at `/lab/pour-looks`: one fixed stream shape with no physics, drawn three ways by one shader. It is the look to aim the real pour's drawing at once Brandon has picked |
 | `src/hooks/` | `window.__site`, present only with `?hook=1`. The screenshot scripts drive pages through it. `__site.call(name, ...)` runs a tool a module registered, such as `plateHover` |
 | `src/components/PieceView.tsx` | Puts a piece in a page |
 | `src/metal/`, `src/components/Plate.tsx` | Lit metal for the interface: one hidden WebGL context draws every plate from a height field |

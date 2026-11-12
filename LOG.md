@@ -2,6 +2,52 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-11 · Three looks for the pour, side by side (Fable, web chat)
+
+**What Brandon said**
+
+- "Sounds good to me. Let's go with your recommendation." That is Sun metal carrying flecks, with the cursor's glint.
+- He is "slightly interested in the mercury" and asked for a derby if it was no more than medium effort: the recommendation against the mercury, "or maybe even a combination of the three".
+- "The idea of it reacting in my mouse cursor sounds really awesome."
+
+**What was built**
+
+- `/lab/pour-looks`, Study 04. One stream of fixed shape, drawn three ways by one shader (`src/pour-looks/shader.ts`, `uMode`): A, Sun metal with flecks. B, Mirror. C, all three.
+- There is no physics in it and it does not touch `src/pour/`. The shape (`src/pour-looks/path.ts`) is a chain of tapered segments: it falls in an arc, lands near one end of a tilted ledge, runs along it, turns over the far end and falls again, necking into beads low down.
+- The body is round, not flat: its normal comes from how deep a point is inside the silhouette. Patterns are drawn in coordinates that ride with the metal (how long it has been travelling, and where round the body), so they move with the flow and stretch where it speeds up.
+- The light is the site's lamp for a mouse. A finger or pen on a panel holds the light where it touches.
+
+**What each look is made of**
+
+- **Sun metal:** soft bright cells with orange lanes between them, warped so they are not regular, slowly changing. White hot veins drawn out along the flow. Pale in the middle, orange at the limb. Where the fall strikes the ledge the pattern is washed out to plain white hot.
+- **Flecks:** two layers of fine flakes in a grid that rides with the metal. Each has its own tilt and turns slowly, so each flashes at its own moment, and more of them flash near the cursor's light.
+- **Mirror:** copper lightened toward pale, reflecting a dark room with one tall soft light and one strip, bent by ripples and slower waves that ride with the flow. The cursor's light is a hard glint. It gives off almost no light, so the ledge and page stay dark.
+- **All three:** the sun body at 0.7, with the room reflected over it at 0.8 and the glint.
+
+**Tried and thrown out. Do not try these again**
+
+1. Cells drawn as plain outlined polygons. Large, they read as giraffe hide or cracked mud. Small, as snake skin or cobbles. Cells have to be soft glowing blobs with no drawn edge.
+2. A glow worked out from the distance to the nearest part of the stream. It creased along the lines between parts and lit each panel as a box. The far glow is now summed over the whole length and fades before the panel's edge.
+3. A ledge brightened by the metal's light. It turned tan and read as a plank, the same thing the first reviewer in Claude Code said. It is now near black bronze that takes orange light only close to the metal.
+4. A bright rim on the mirror. It drew an outline round the body.
+5. Losing the WebGL context on unmount. In development React mounts twice and the second mount is handed the lost context.
+
+**How it was judged (Fable, software stills at 2x)**
+
+- `reference/studies/04-pour-looks.jpg`: the three panels, and each landing closer up.
+- Three stills 0.12s apart show the cells moving down the stream and changing as they go.
+- Not at the bar as a finished pour, and not meant to be: the shape is stiff and tube like, nothing splashes, and the sun metal's cells still read a little like a hide when frozen and enlarged. It is good enough to choose a direction from.
+- Not judged: any of it in motion, and how it runs on his iPad.
+
+**For the session in Claude Code, once he has picked**
+
+- The look he picks is what the real pour's drawing should aim at. The parts that carry over are the round body from depth inside the silhouette, patterns in coordinates that ride with the flow, a hot washed out landing, a tight halo, and a far glow summed over the whole stream.
+- On particles, the riding coordinates have to come from the particles (each carrying its own age and a random number), not from a path.
+
+**Waiting on Brandon**
+
+1. Which look.
+
 ## 2026-11-11 · Brandon's verdict on the test shot, and what could make the pour special (Fable, web chat)
 
 **What Brandon said**
