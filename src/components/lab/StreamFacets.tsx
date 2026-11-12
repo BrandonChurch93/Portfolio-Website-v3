@@ -6,7 +6,7 @@ import styles from './PourLooks.module.css';
 
 const LOOKS = [
   { name: 'A · Cut', note: 'Chunky pieces, like rough cut gems. Bevelled edges, a fine grain on the solid ones, flaws inside the clear ones.' },
-  { name: 'B · Jagged', note: 'Sharp splinters with a few flat faces, low poly on purpose. Nothing on the surface: a hair line of light on each edge and that is all.' },
+  { name: 'B · Jagged', note: 'Sharp pieces with three or four needle points, some with a notch in them, in the same range of sizes as A. Nothing on the surface: a hair line of light on each edge and that is all.' },
 ];
 
 export function StreamFacets() {

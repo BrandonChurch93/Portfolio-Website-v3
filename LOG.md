@@ -46,9 +46,14 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 
 - Brandon wondered aloud whether the facets should be "sharp jagged pieces, kind of low poly". Fable wrote that into the brief and the bar as his ruling and put it in a prompt. He had not ruled: he was asking. It was taken back out, and the two looks were built as a quick study for him to choose from. A question from him is not a ruling.
 
+**After he tried the two looks (Nov 12)**
+
+- "I think I like the jagged ones", B, more. But "I don't like how some of them are really big", he likes A's sizing more while still liking a range of sizes, and he "was also hoping they'd be a bit more jagged".
+- Panel B was reworked to that and A left alone: B's pieces now reach no further than A's at the same size, each has three or four needle points, larger ones are two splinters fused at an angle so the outline has a notch, and small ones keep more body so they still flash. He has not judged the reworked B yet, so the look is still not a ruling.
+
 **Half finished**
 
-- Waiting on his pick at `/lab/stream-facets`. No prompt has gone to Claude Code yet.
+- Waiting on his verdict on the reworked B at `/lab/stream-facets`. No prompt has gone to Claude Code yet.
 
 ## 2026-11-12 · The stream's test shot (Fable, Claude Code on Brandon's Mac)
 

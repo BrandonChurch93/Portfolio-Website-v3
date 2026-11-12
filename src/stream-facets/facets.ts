@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { ConvexGeometry } from 'three/addons/geometries/ConvexGeometry.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { hex, type PaletteName } from '../config/palette';
 import { lamp } from '../lamp/lamp';
 import { seeded } from '../stream-ideas/route';
@@ -86,19 +87,38 @@ void main(){
   gl_FragColor = vec4(show(heat(clamp(light, 0.0, 1.0))), 1.0);
 }`;
 
-// A lump of a few flat faces: the tightest skin round a handful of points. Chunky keeps them near a ball. Jagged
-// stretches them into splinters and pulls one or two out into a point.
-function lump(r: () => number, jagged: boolean): THREE.BufferGeometry {
+const hull = (pts: THREE.Vector3[]) => new ConvexGeometry(pts).toNonIndexed();
+const ball = (r: () => number) => new THREE.Vector3(r() * 2 - 1, r() * 2 - 1, r() * 2 - 1).normalize();
+
+// Cut: the tightest skin round a handful of points kept near a ball.
+function cut(r: () => number): THREE.BufferGeometry {
   const pts: THREE.Vector3[] = [];
-  const n = jagged ? 5 + Math.floor(r() * 2) : 6 + Math.floor(r() * 3);
-  for (let i = 0; i < n; i++) {
-    const v = new THREE.Vector3(r() * 2 - 1, r() * 2 - 1, r() * 2 - 1).normalize().multiplyScalar(0.7 + 0.3 * r());
-    if (jagged && i < 2) v.multiplyScalar(1.5 + r());
-    pts.push(v);
+  for (let i = 0, n = 6 + Math.floor(r() * 3); i < n; i++) pts.push(ball(r).multiplyScalar(0.7 + 0.3 * r()));
+  return hull(pts).scale(1, 0.75 + 0.25 * r(), 0.6 + 0.3 * r());
+}
+
+// Jagged: a small core with three or four points pulled far out of it, so each ends in a needle. Larger pieces are
+// two of these fused at an angle, which puts a notch in the outline. Small ones keep more body so they still flash.
+function jagged(r: () => number, big: number): THREE.BufferGeometry {
+  const splinter = () => {
+    const pts: THREE.Vector3[] = [], body = 0.44 - 0.2 * big;
+    for (let i = 0; i < 4; i++) pts.push(ball(r).multiplyScalar(body * (0.7 + 0.3 * r())));
+    for (let i = 0, n = 3 + Math.floor(r() * 2); i < n; i++) pts.push(ball(r).multiplyScalar(0.85 + 0.75 * r()));
+    return hull(pts).scale(1, 0.5 + 0.3 * r(), 0.38 + 0.24 * r());
+  };
+  let g = splinter();
+  if (r() < 0.25 + 0.55 * big) {
+    const other = splinter().scale(0.75, 0.75, 0.75).rotateZ(0.7 + 1.6 * r()).rotateX(r() * 2).translate((r() - 0.5) * 0.5, (r() - 0.5) * 0.5, 0);
+    g = mergeGeometries([g, other]) ?? g;
   }
-  const g = new ConvexGeometry(pts).toNonIndexed();
-  if (jagged) g.scale(1, 0.42 + 0.3 * r(), 0.3 + 0.25 * r());
-  else g.scale(1, 0.75 + 0.25 * r(), 0.6 + 0.3 * r());
+  // Whatever its shape, no piece reaches further than a cut one of the same size.
+  g.computeBoundingSphere();
+  const reach = g.boundingSphere?.radius ?? 1;
+  return g.scale(1 / reach, 1 / reach, 1 / reach);
+}
+
+function lump(r: () => number, sharp: boolean, big: number): THREE.BufferGeometry {
+  const g = sharp ? jagged(r, big) : cut(r);
   const count = g.getAttribute('position').count, edge = new Float32Array(count * 3);
   for (let i = 0; i < count; i++) edge[i * 3 + (i % 3)] = 1;
   g.setAttribute('aEdge', new THREE.BufferAttribute(edge, 3));
@@ -125,7 +145,7 @@ export function mountFacets(canvas: HTMLCanvasElement, panels: HTMLElement[]): (
     uBronze: { value: lin('bronze') }, uCopper: { value: lin('copper') }, uCopperLight: { value: lin('copper-light') },
   };
 
-  const sets = [false, true].map((jagged) => {
+  const sets = [false, true].map((sharp) => {
     const scene = new THREE.Scene();
     const lampAt = { value: new THREE.Vector2(9, 9) };
     const core = new THREE.Mesh(new THREE.PlaneGeometry(HALF.w * 2, HALF.h * 2), new THREE.ShaderMaterial({
@@ -140,13 +160,13 @@ export function mountFacets(canvas: HTMLCanvasElement, panels: HTMLElement[]): (
     const r = seeded(31);
     const facets: Facet[] = [];
     for (let i = 0; i < COUNT; i++) {
-      const clear = r() < 0.42;
-      const mesh = new THREE.Mesh(lump(r, jagged), new THREE.ShaderMaterial({
+      const clear = r() < 0.42, big = r() ** 2.4;
+      const mesh = new THREE.Mesh(lump(r, sharp, big), new THREE.ShaderMaterial({
         vertexShader: VERT, fragmentShader: FRAG,
-        uniforms: { ...shared, uClear: { value: clear ? 1 : 0 }, uCut: { value: jagged ? 0 : 1 }, uSeed: { value: r() * 50 }, uLamp: lampAt },
+        uniforms: { ...shared, uClear: { value: clear ? 1 : 0 }, uCut: { value: sharp ? 0 : 1 }, uSeed: { value: r() * 50 }, uLamp: lampAt },
         blending: clear ? THREE.AdditiveBlending : THREE.NormalBlending, depthWrite: !clear, transparent: clear,
       }));
-      mesh.scale.setScalar((0.035 + 0.1 * r() ** 2.4) * (jagged ? 1.25 : 1));
+      mesh.scale.setScalar((0.035 + 0.1 * big) * (sharp ? 1.1 : 1));
       mesh.renderOrder = clear ? 2 : 0;
       scene.add(mesh);
       facets.push({
