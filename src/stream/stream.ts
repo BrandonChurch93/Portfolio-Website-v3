@@ -145,6 +145,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   const build = () => {
     if (!renderer || !renderer.ok || disposed) return;
     const tier = tiers.get();
+    clock.readView();
     const hr = host.getBoundingClientRect();
     const w = Math.max(1, hr.width), h = Math.max(1, canvas.getBoundingClientRect().height);
     const key = `${tier}:${Math.round(w)}:${Math.round(h)}:${Math.round(hr.height)}`;
@@ -291,7 +292,8 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       at(route.branches[b], sim.head[b], tmp);
       const e = sim.energy[b], beat = still ? 0 : 0.12 * Math.sin(t * 9.3 + b * 2.1) * Math.sin(t * 5.1 + b);
       // A fierce point, no bigger than the core is wide. The glow round it is its own light spreading, not a ball.
-      round(tmp[0], tmp[1], (2.2 + 0.9 * e) * u, 7.8 * (1 + beat));
+      round(tmp[0], tmp[1], (2.4 + 0.9 * e) * u, 7.8 * (1 + beat));
+      round(tmp[0], tmp[1], 6 * u, 1.3 * (1 + beat));
     }
     return n / STREAK_FLOATS;
   };

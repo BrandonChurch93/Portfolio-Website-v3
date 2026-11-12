@@ -56,7 +56,7 @@ Does not work:
 | Shards drawn at once, about | 800 | 550 | 380 |
 | Thrown shards in the air | 260 | 120 | 60 |
 | Sparks | 700 | 300 | 160 |
-| Pixel density, up to | 2x, 6.6M pixels | 3x, 3.8M pixels | 1.5x, 1.7M pixels |
+| Pixel density, up to | 2x, 9.6M pixels | 3x, 3.8M pixels | 1.5x, 1.7M pixels |
 | Glass | three samples, warm split | one sample | one sample |
 | Fibres in the core | 9 | 7 | 7 |
 
@@ -67,8 +67,8 @@ Does not work:
 **Calls made for Brandon while he slept. Each is his to overturn**
 
 1. The stand in title is the word WORK in wide spaced capitals. Capitals give the stream one level line to lie on.
-2. How big the stream is: its sheath of shards is about 70 pixels across on a desktop, and shards run from about 8 to 31 pixels. The sketch's ran from 3 to 15, too small to show a face.
-3. The leading end rests two thirds of the way down the screen. It moves no faster than the page was just scrolled, so on a long run along the title or the card it falls behind and finishes the move after the scroll stops. Drawn back up, it may go half again as fast.
+2. How big the stream is: its sheath of shards is about 75 pixels across on a desktop, and shards run from about 8 to 34 pixels. The sketch's ran from 3 to 15, too small to show a face. `scale` in `src/stream/config.ts` sets it.
+3. The leading end rests two thirds of the way down the screen. It goes down the page no faster than the page was just scrolled. Along the title or the card, where the route runs sideways, it may go up to 1.8 times as fast. Held strictly to the scroll's speed there, it fell behind and then crept for two and a half seconds after the scroll stopped, which both reviewers read as sliding. `head.across` in `src/stream/config.ts` is the allowance. Set to 1 it is strict again.
 4. The stream lies on the title and the card, and they are drawn in front of its light, so a surface cuts the core off cleanly. It was first run 15 units above them and reviewers read that as hovering.
 5. The turns of the route are thrown curves with unequal reaches, not arcs of one radius, which read as a neon sign.
 6. A held frame is opened with `?hold`. It scrolls itself to the place, freezes the clock and leaves the page free to scroll and zoom.
@@ -83,6 +83,25 @@ Does not work:
 - After round 3 the copper's facets were made finer with a tight glint, the glass body dimmer, the fibres uneven and crowded to the middle, the title warmed, the round ball removed, and the brightness lifted. That state has not been reviewed.
 - Fable's own judgment. At the bar: the leading end, the light on the title and the card, the landing, the color. Better than the sketch at three times zoom. Not at the bar: the glass, which still reads mostly as bright outlines, and whether the copper reads as leaf. At the size of the whole page the sketch is still the brighter, punchier picture.
 - A fault found by testing in WebKit and fixed: the light was invisible there. WebKit discards any color brighter than its own alpha, so the light now carries an alpha and is laid over the page, not added.
+
+**Check-in 2 · the same shot moving**
+
+- Open `/lab/stream` and scroll. Filmstrips are in `reference/studies/`: `07-stream-scroll-down.jpg`, `07-stream-scroll-back-up.jpg`, and single frames of the two landings, `07-stream-parting.jpg` and `07-stream-landing.jpg`.
+- **Scrolling down.** The leading end keeps to its place on the screen. Its energy rises with the speed of the scroll: more sparks, longer arcs, the shards flung wider. It settles in about two seconds after the scroll stops.
+- **The two landings.** Where a leading end strikes the title or the card there is a flash, a fan of thrown shards and a burst of sparks, more of each the faster it arrived. Thrown shards fall, bounce, skitter along the surface with the flow and spill off its end. None comes to rest. At rest each landing still throws a few a second.
+- **Scrolling back up.** The leading ends draw back along the route with no burst. They are at their resting place about a second after the scroll stops.
+- **The cursor.** Shards within about 170 units turn their faces to it and flash. A finger or a pen puts the light where it touches.
+- **Reduced motion.** A still that follows the scroll: the core, the shards, and one fixed crackle of arc at each leading end. Nothing flies.
+- **Speed** (`npm run perf`, hardware, while the page is scrolled up and down without stopping): 16.7 ms every frame, none over 25 ms, on desktop, wide, 4K, tablet, the phone view with the processor slowed four times, and the low tier phone view slowed six times. The stream's own work on the processor peaks at 1.8 ms on desktop and 2.1 ms on the slowed phone.
+- **WebKit**, the engine of his iPad and of every iPhone browser: loads and draws at iPad size both ways round and at phone size, with no errors.
+- **Not done:** a real phone and a real iPad. `PLAN.md` has that after his verdict.
+- **Reviewed** by two fresh Opus reviewers from filmstrips and single frames. Both failed it overall.
+  - Passed by both: shards near the cursor flash and turn, the reduced motion still, the phone view.
+  - Passed by one each: the leading end, and the landings, both narrowly.
+  - Failed by both: the leading ends crept for seconds after the scroll stopped. The draw back up lagged the scroll, then closed after it stopped. At the size of the whole screen it was not plainly better than the sketch, thinner and dimmer. The paused frame's faults again: a neon read at page size, copper as mottled paper.
+  - Also noted: the energy stopped rising above a middling scroll speed, the resting end was dim after drawing back, and no frame at filmstrip size showed a shard bounce.
+- **Changed after that review, and not reviewed since:** the leading end's speed rule (call 3 above), so it now settles within about half a second of the scroll stopping, down or up. Its energy keeps rising to a faster scroll. The resting end is hotter. Thrown shards are larger. The whole stream is a little larger and brighter (`scale` 1.25).
+- **Fable's own judgment of the motion.** At the bar: the parting on the title and the landing on the card at speed (`07-stream-parting.jpg`, `07-stream-landing.jpg`), the leading end's energy, the cursor. Open: whether the motion of the shards along the core has enough weight, which a filmstrip cannot show and only he can judge in his browser.
 
 **Things the next session would otherwise rediscover**
 

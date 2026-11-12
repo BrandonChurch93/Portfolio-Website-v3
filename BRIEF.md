@@ -48,7 +48,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 
 ### The stream
 
-- **Where it stands (Nov 11):** what the stream is has been picked and the finished version has an agreement. It is being built in Claude Code on his Mac, starting with one test shot. `PLAN.md` says where that is.
+- **Where it stands (Nov 12):** what the stream is has been picked and the finished version has an agreement. The test shot is built in Claude Code on his Mac and both of its check-ins are pushed: a paused frame at `/lab/stream?hold` and the same shot moving at `/lab/stream`. He has not judged either yet. Calls Fable made for him while building are listed in `LOG.md` and are his to overturn. None of them is a rule.
 - It is the most important thing on the site. "It's probably like the most important thing on the site to get right." (Nov 11)
 - It is called the stream, which is his own word for it. It is never called water, in anything written for a model or shown to a visitor. His reason: "if I call it water, then the model is gonna build it as if it acts like water". It is not called the pour either: that was its name while it was going to be molten metal. (Nov 11)
 

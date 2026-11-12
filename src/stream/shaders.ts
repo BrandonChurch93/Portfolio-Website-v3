@@ -86,7 +86,7 @@ void main(){
     float dz = u * depth;
     float w = mix(0.38, 1.05, c * c) * (1.2 - 0.35 * dz);
     float life = 0.12 + 0.88 * smoothstep(-0.4, 0.6, sin(s / mix(50.0, 150.0, a) + f * 2.4 - t * 0.3));
-    float level = mix(0.2, 0.9, b * b) * life * (0.6 + 0.4 * dz);
+    float level = mix(0.24, 1.0, b * b) * life * (0.6 + 0.4 * dz);
     float d = (x - off) / w;
     sum += level * exp(-d * d) * begun;
   }
@@ -94,7 +94,7 @@ void main(){
   // falls away slowly through hot and flame to ember. A sharp even edge is what makes a tube.
   float gather = 1.0 - abs(face);
   float q = x / mix(0.8, 1.4, gather);
-  sum += mix(1.3, 2.8, gather * gather) / pow(1.0 + q * q, 1.6);
+  sum += mix(1.7, 3.0, gather * gather) / pow(1.0 + q * q, 1.6);
   // Light runs down it, and it burns hotter toward its leading end.
   float run = 0.84 + 0.16 * sin(s / 83.0 - t * 2.1) * sin(s / 211.0 - t * 0.9 + 0.8);
   float head = 1.0 - smoothstep(0.0, 120.0, lead);
@@ -292,7 +292,7 @@ void main(){
   // The face: almost black, lifting a little toward its top. The stream washes it warm from where it runs.
   float down = clamp((q.y + uCard.w) / (2.0 * uCard.w), 0.0, 1.0);
   vec3 face = uFace * mix(1.5, 0.75, down) * (1.0 + grain * 0.07);
-  face += uFaceLit * 1.7 * min(lit, 3.5) * (0.25 + 1.2 * max(dot(N, L), 0.0)) * (1.0 + grain * 0.14);
+  face += uFaceLit * 1.7 * min(lit, 3.5) * (0.6 + 0.5 * max(dot(N, L), 0.0)) * (1.0 + grain * 0.14);
   face += uFaceLit * lamp * 0.5 * max(dot(N, Ll), 0.0);
   vec3 bead = uF0 * (0.03 + min(lit, 3.0) * (0.05 + 0.22 * max(dot(N, L), 0.0) + 1.3 * ggx(max(dot(N, H), 0.0), 0.3) * max(dot(N, L), 0.0)));
   bead += uF0 * lamp * (0.25 * max(dot(N, Ll), 0.0) + 3.0 * ggx(max(dot(N, Hl), 0.0), 0.24) * max(dot(N, Ll), 0.0));
@@ -401,7 +401,7 @@ void main(){
   vec3 toward = coreFrom(fall, plane);
   lampI = lampLight(Ll);
   float glint = coreBand(N, toward, plane, 0.14) * 9.0;
-  float sheen = coreBand(flat_, toward, plane, 0.7) * 1.5;
+  float sheen = coreBand(flat_, toward, plane, 0.7) * 1.9;
   float nll = max(dot(N, Ll), 0.0);
   float lamp = (ggx(max(dot(N, normalize(Ll + V)), 0.0), 0.16) * 0.8 + 0.05) * nll * lampI;
   float light = room(reflect(-V, N)) * (0.25 + 0.75 * min(fall, 1.0)) + fall * (glint + sheen + 0.03) + lamp;

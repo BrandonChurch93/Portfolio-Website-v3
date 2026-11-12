@@ -6,7 +6,7 @@ import type { Tier } from '../config/site';
 export const STREAM = {
   seed: 7,
   // How big the whole stream is drawn. At 1 its sheath of shards is about 60 pixels across on a desktop screen.
-  scale: 1.15,
+  scale: 1.25,
   stepsPerSecond: 120,
   // Where on the screen the leading end comes to rest, as a fraction of its height.
   anchor: 0.66,
@@ -22,7 +22,7 @@ export const STREAM = {
     above: 3,           // how far over a surface the core runs: it lies on it
     beside: 62,         // how far out from the title's ends it comes down
     past: 58,           // how far past the card's end it falls
-    edge: 46,           // the nearest it comes to either side of the screen
+    edge: 56,           // the nearest it comes to either side of the screen
     // Each turn: how early it leaves the run it is on, and how late it joins the next.
     turn: { part: [50, 64], left: [92, 150], right: [72, 196], land: [74, 52], lip: [62, 176] },
     sway: 15,           // how far a free run wanders to each side
@@ -32,12 +32,13 @@ export const STREAM = {
   },
 
   head: {
-    follow: 7,          // how hard the leading end is drawn to where the scroll puts it, per second
+    follow: 10,         // how hard the leading end is drawn to where the scroll puts it, per second
     creep: 120,         // the least speed it will finish a move at
-    hold: 0.9,          // seconds the pace of the last scroll is remembered for
+    hold: 0.45,         // seconds the pace of the last scroll is remembered for
+    across: 0.55,       // along a sideways run it may go this much faster than the scroll: 1 over it
     most: 2600,         // it never runs faster than this
     quick: 16,          // how fast its speed can change, per second
-    pace: 900,          // the speed at which its energy is full
+    pace: 1400,         // the speed at which its energy is full
     rise: 14,           // energy builds this fast, per second
     fall: 1.7,          // and settles this fast
   },
@@ -85,7 +86,6 @@ export const STREAM = {
   },
 
   arc: {
-    forks: 5,
     steps: 6,
     life: [0.08, 0.24] as [number, number],
     reach: [22, 74] as [number, number],
@@ -108,7 +108,7 @@ export interface StreamBudget {
 }
 
 export const STREAM_BUDGET: Record<Exclude<Tier, 'static'>, StreamBudget> = {
-  high: { per100: 55, loose: 260, sparks: 700, pixelRatio: 2, pixels: 6.6e6, samples: 4, split: true, levels: 6 },
+  high: { per100: 55, loose: 260, sparks: 700, pixelRatio: 2, pixels: 9.6e6, samples: 4, split: true, levels: 6 },
   mid: { per100: 38, loose: 120, sparks: 300, pixelRatio: 3, pixels: 3.8e6, samples: 4, split: false, levels: 6 },
   low: { per100: 26, loose: 60, sparks: 160, pixelRatio: 1.5, pixels: 1.7e6, samples: 2, split: false, levels: 5 },
 };

@@ -79,6 +79,12 @@ export class StreamSim {
       this.energy[b] = 0;
     }
     this.sparkCount = this.looseCount = this.forkCount = 0;
+    // A still keeps a crackle of arc at each leading end, always the same one.
+    for (let b = 0; b < 2; b++) {
+      if (b === 1 && this.head[1] <= this.route.split) continue;
+      for (let k = 0; k < 7; k++) this.headFork(b, 7 + b, k);
+    }
+    for (let i = 0; i < this.forkCount; i++) { this.forks[i * FORK + 4] = 0.3; this.forks[i * FORK + 5] = 1; }
   }
 
   // Emitters: 0 and 1 the sparks of each leading end, 2 the sparks along the core, 3 and 4 sparks at the strike and
@@ -100,18 +106,20 @@ export class StreamSim {
     const dt = STREAM_STEP, H = S.head, u = this.route.unit;
     this.time += dt;
     this.pace = Math.max(Math.abs(pace), this.pace * Math.exp(-dt / H.hold));
-    const lim = Math.min(H.most * u, Math.max(H.creep * u, this.pace));
     const was = [this.head[0], this.head[1]];
     for (let b = 0; b < 2; b++) {
       const br = this.route.branches[b];
       const err = reachFor(br, line) - this.head[b];
-      // Drawn back up the page it may go quicker than it came: a retreat is not the stream racing.
-      const goal = Math.max(-Math.max(lim * 1.5, H.creep * u * 2.5), Math.min(lim, err * H.follow));
+      // It goes down the page no faster than the page was scrolled. Across the page, along the title or the card,
+      // it may go faster, or it would be left behind by a scroll that has no sideways part to it.
+      at(br, this.head[b], tmp);
+      const lim = Math.min(H.most * u, Math.max(H.creep * u, this.pace)) / Math.max(Math.abs(tmp[3]), H.across);
+      const goal = Math.max(-lim, Math.min(lim, err * H.follow));
       this.speed[b] += (goal - this.speed[b]) * (1 - Math.exp(-H.quick * dt));
       let move = this.speed[b] * dt;
       if (Math.abs(move) > Math.abs(err)) { move = err; this.speed[b] *= 0.5; }
       this.head[b] = Math.max(0, Math.min(br.len, this.head[b] + move));
-      const want = Math.min(1.3, Math.max(0, this.speed[b]) / (H.pace * u));
+      const want = Math.min(1.5, Math.max(0, this.speed[b]) / (H.pace * u));
       this.energy[b] += (want - this.energy[b]) * (1 - Math.exp(-(want > this.energy[b] ? H.rise : H.fall) * dt));
     }
 
@@ -189,7 +197,7 @@ export class StreamSim {
     const u = this.route.unit, L = this.route.landings[i], r = (j: number) => this.rnd(5 + i, k, j);
     const way = L.out === 0 ? (r(0) < 0.5 ? -1 : 1) : r(0) < 0.8 ? 1 : -1;
     const glass = r(1) < S.shards.glass;
-    const size = (S.shards.small + (S.shards.large * 0.8 - S.shards.small) * r(2) ** 2.2) * u;
+    const size = (S.shards.small * 1.3 + (S.shards.large - S.shards.small) * r(2) ** 1.8) * u;
     // Thrown up and outward in a fan: nearly straight up at its middle, flatter toward the way things leave.
     const lean = -Math.PI / 2 + way * (0.12 + 1.0 * r(3));
     const v = (150 + 420 * r(4) * (0.4 + 0.6 * r(5))) * u * (0.45 + 0.5 * Math.min(1, hard));
@@ -216,7 +224,7 @@ export class StreamSim {
     at(this.route.branches[b], this.head[b], tmp);
     // Most reach the way it is going. A few are long and the rest short, so it never makes an even fan.
     const angle = Math.atan2(tmp[3], tmp[2]) + (r(0) + r(1) - 1) * 1.5 + (r(6) < 0.2 ? (r(7) - 0.5) * 3.4 : 0);
-    const reach = (A.reach[0] + (A.reach[1] - A.reach[0]) * r(2) ** 3) * u * (0.7 + 0.9 * en);
+    const reach = (A.reach[0] + (A.reach[1] - A.reach[0]) * r(2) ** 2) * u * (0.85 + 0.45 * en);
     this.fork(tmp[0], tmp[1], angle, reach, A.life[0] + (A.life[1] - A.life[0]) * r(3), r(4) * 1000, 0.55 + 0.45 * r(5));
   }
 
@@ -224,7 +232,7 @@ export class StreamSim {
     const A = S.arc, u = this.route.unit, L = this.route.landings[i], r = (j: number) => this.rnd(e, k, j);
     const way = r(0) < 0.5 ? -1 : 1;
     const angle = -Math.PI / 2 + way * (0.9 + 0.55 * r(1));
-    this.fork(L.x + way * r(2) * 8 * u, L.y - 3 * u, angle, (A.reach[0] + (A.reach[1] - A.reach[0]) * 0.5 * r(3)) * u, A.life[0] + (A.life[1] - A.life[0]) * r(4), r(5) * 1000, 0.4 + 0.4 * r(6));
+    this.fork(L.x + way * r(2) * 8 * u, L.y - 3 * u, angle, (A.reach[0] + (A.reach[1] - A.reach[0]) * 0.25 * r(3)) * u, A.life[0] + (A.life[1] - A.life[0]) * r(4), r(5) * 1000, 0.4 + 0.4 * r(6));
   }
 
   private moveSparks(dt: number): void {

@@ -16,10 +16,3 @@ export function seeded(seed: number): () => number {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-
-// Smooth noise along a line, -1 to 1.
-export function noise(x: number, seed: number): number {
-  const i = Math.floor(x), f = x - i, u = f * f * (3 - 2 * f);
-  const a = hash(i, seed), b = hash(i + 1, seed);
-  return (a + (b - a) * u) * 2 - 1;
-}
