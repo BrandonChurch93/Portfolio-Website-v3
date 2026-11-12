@@ -46,13 +46,30 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 
 - The cursor is a light. It falls on things across the whole site and shows their 3D form. This was his favorite idea from the first look round. (Nov 10)
 
-### The pour
+### The stream
 
-- **Where it stands (Nov 11):** the stream is shards of copper and glass riding round a core of light, and the core is a smooth wave of light. He picked that on Nov 11 from two sketches. The lines about molten metal below record what was agreed and then set aside. Everything about where the stream goes and what it does on the page still holds. The newest lines are at the end of this section. What the finished version has to have was agreed on Nov 11 and is the last item of this section.
-- A stream of molten metal runs down the whole site. "I agree molten metal is the way to go." (Nov 11)
-- It is called the pour. The name is Fable's and he has not objected. It is never called water, in anything written for a model or shown to a visitor. His reason: "if I call it water, then the model is gonna build it as if it acts like water". (Nov 11)
-- It is the site's own copper, melted: it glows in the palette's light colors, ember to flame to hot to pale. It looks like a foundry pour: bright, clean and quick, throwing sparks and beads. It never looks like lava (dark, crusted, slow), fire (flames) or water (thin, clear). (Fable's recommendation, which he agreed to, Nov 11)
+- **Where it stands (Nov 11):** what the stream is has been picked and the finished version has an agreement. It is being built in Claude Code on his Mac, starting with one test shot. `PLAN.md` says where that is.
 - It is the most important thing on the site. "It's probably like the most important thing on the site to get right." (Nov 11)
+- It is called the stream, which is his own word for it. It is never called water, in anything written for a model or shown to a visitor. His reason: "if I call it water, then the model is gonna build it as if it acts like water". It is not called the pour either: that was its name while it was going to be molten metal. (Nov 11)
+
+**What it is**
+
+- He picked A, the wave of light: "This was a tough decision, as they are both really good. But I'm gonna go with option A." (Nov 11)
+- In exact terms (Fable's restatement, Nov 11): the stream has a core of light that is always there and gives it substance. Many small shards belong to that core: they ride round it and are lit by it. Sparks come off it. Its leading end is its brightest and most active part.
+- What he liked in it and what it still needs, in his words (Nov 11):
+  - "What I liked about copperleaf was the fact that it was many particles."
+  - In its most polished version he pictures "some type of light or fluid or something to make it just seem like it has some substance to it".
+  - "I don't want anything to feel like it's 1 million moving parts necessarily. I want there to be like a steady stream or light wave or something", with "a glow behind it" and "particle effects coming off of it".
+  - A picture he offered without committing to it: "a line of electricity and at the very end of that line is always like an animated like spark going off and there's sparks going off around it".
+  - "I'm thinking of something that has energy and power."
+  - Threads was "too much of a solid". Ink "has the same issues": "it's too plain".
+- Of the further ideas Fable described (Nov 11): scales would be "too plain", and he does not want bearings or parts. "Prism's, however, sounds really cool. It might actually be better than Copperleaf."
+- What he is looking for now, in his words: "less something realistic in terms of what would make sense and more of something abstract that doesn't have a secret meaning that looks really cool with hyper detailed graphics". This is why molten metal was set aside. (Nov 11)
+
+**Where it goes and what it does on the page**
+
+He said these while the stream was still going to be a liquid. They all still hold. Where his words describe a liquid ("bounce off and drip down"), the agreement below says what that means for shards.
+
 - It comes off the hero city and runs through the whole site.
 - It moves down the page with the visitor as they scroll.
 - It never runs straight down. It moves around sections and content.
@@ -69,36 +86,12 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 - Nothing is drawn ahead of it to show where it will go.
 - No permanent grid floor behind the page.
 - It has to look incredible.
-- The first thing built is one test shot, alone on a blank page: it falls, hits a ledge, splashes, runs along the ledge and drips off the end. Nothing is built around the pour until he says that shot looks incredible. `QUALITY.md` says what the shot has to show. (Fable's proposal, Nov 11. He went ahead on it without objecting.)
-- What the second build drew inside its pieces (the city's falls, the desk's edge, the rocket's flume) "looks very low quality". The pour replaces all of it. (Nov 11)
-- How the test shot is built, which he said "Go" to (Nov 11): a real particle fluid simulated side on in the flat plane of the page, with gravity, cohesion and adhesion. Only the route is planned. The particles are merged into one rounded body and lit per pixel. Each particle carries a temperature that sets its color on the palette. Its glow lights the ledge and the page, and the ledge keeps a fading heat mark. The test page has two controls: pour again, and slow motion.
-- His verdict on the first test shot (Nov 11). The material is still liquid metal: "the idea here that we're going with is liquid metal". What he saw was not it:
-  - "I definitely don't like how it puddles."
-  - "The mainstream is blasted back multiple times due to this puddling", and from "the way the particles can bounce backwards and hit the stream, pushing it back".
-  - "Instead of looking like a refined beautiful hot liquid metal, this looks more like mud splashing around and puddling up."
-- In exact terms: the metal must not heap up where it lands, nothing it throws may knock the falling stream off its line, and the whole of it has to read as refined, not as a mess. (Fable's restatement, Nov 11)
-- His verdict on the three looks at `/lab/pour-looks` (Nov 11): "I think the best looking one is A, but if being honest it's still about a 5.5/10." And: "Maybe the Liquid Metal isn't the right direction."
-- What he is looking for now, in his words: "less something realistic in terms of what would make sense and more of something abstract that doesn't have a secret meaning that looks really cool with hyper detailed graphics". So molten metal is no longer settled. What the stream is made of is open again. (Nov 11)
-- He asked for nothing more to be built until he had talked it through. He has since asked for sketches twice (the end of this section). (Nov 11)
-- He wants something special about the stream itself. "Think like how plasma looks that liquid metal color, but with shiny stuff all in it, or maybe something else. I'm open to options." (Nov 11)
+- What the second build drew inside its pieces (the city's falls, the desk's edge, the rocket's flume) "looks very low quality". The stream replaces all of it. (Nov 11)
 - It does not move fast. On the site its speed is "capped at the user scroll rate", and "it should be a smooth experience". He said this when the look study ran at a real falling speed and "everything is just moving too fast". (Nov 11)
-- The simulation is stepped from the one clock (`src/world/clock.ts`) with a fixed timestep and a seed, so any frame can be frozen and shot again exactly. Each new pour takes a new seed, so no two splashes match. (Nov 11)
-- A particle budget is set for his Mac and for a phone before building, and what the phone gives up is said out loud. The phone view is checked as the work goes, not at the end. (Nov 11)
-- Three rough sketches of abstract ideas are at `/lab/stream-ideas`: Threads, Copper leaf and Ink. He asked for them rough: "they don't have to be super high res. I just need to get a general idea. Once I choose a general idea, we can work really hard in building that one out really well." (Nov 11)
-- He picked Copper leaf: "I already know I wanna go with the middle option." (Nov 11)
-- What he liked in it and what it still needs, in his words (Nov 11):
-  - "What I liked about copperleaf was the fact that it was many particles."
-  - In its most polished version he pictures "some type of light or fluid or something to make it just seem like it has some substance to it".
-  - "I don't want anything to feel like it's 1 million moving parts necessarily. I want there to be like a steady stream or light wave or something", with "a glow behind it" and "particle effects coming off of it".
-  - A picture he offered without committing to it: "a line of electricity and at the very end of that line is always like an animated like spark going off and there's sparks going off around it".
-  - "I'm thinking of something that has energy and power."
-  - Threads was "too much of a solid". Ink "has the same issues": "it's too plain".
-- Of the further ideas Fable described (Nov 11): scales would be "too plain", and he does not want bearings or parts. "Prism's, however, sounds really cool. It might actually be better than Copperleaf."
-- In exact terms (Fable's restatement, Nov 11): the stream has a core of light that is always there and gives it substance. Many small shards belong to that core: they ride round it and are lit by it. Sparks come off it. Its leading end is its brightest and most active part.
-- He asked to see that two ways: "I'd like to see your recommendation. and then I'd like to see the same thing, but instead of the smooth light, can we go with the arc? I like to compare the two." And: "let's keep it simple for now, and the next iteration will go ultra high quality." Both are at `/lab/stream-core`. (Nov 11)
-- He picked A, the wave of light: "This was a tough decision, as they are both really good. But I'm gonna go with option A." (Nov 11)
-- Before the finished version is built: "I think we need a plan and a concise agreement before we do the handoff to Claude to build it." (Nov 11)
-- The agreement for the finished version. Fable proposed it and he accepted it whole: "I like all your recommendations." (Nov 11)
+
+**The agreement for the finished version**
+
+- Fable proposed it and he accepted it whole: "I like all your recommendations." (Nov 11)
   - **What it is:** a steady wave of light with many copper and glass shards riding round it and sparks coming off it. The arc appears only at the leading end and at the landings.
   - **Where it is built:** Claude Code on his Mac, with Fable, because only hardware can show motion.
   - **What gets built:** one test shot, alone on a blank page, on the sketch's route: down, parting on a title, landing on a card, running off its end.
@@ -115,6 +108,36 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
     7. Shards near the cursor flash and turn toward it.
     8. The phone has a stated budget: what it keeps and what it gives up.
   - **The name:** it is called the stream, as he calls it. "The pour" meant molten metal and is retired. It is still never called water.
+  - **How the sketch is used:** Claude Code is given the sketch at `/lab/stream-core`, its code, its stills and the log's notes as a working reference and the floor to beat. The finished version is built new, in its own folder, not on top of the sketch. The sketch stays as it is so the two can be opened side by side. "I'm in complete agreement with you." (Nov 11)
+
+**How it is built**
+
+He added these while the stream was a simulated liquid. They hold for anything in the stream that is simulated: shards thrown loose, sparks.
+
+- The simulation is stepped from the one clock (`src/world/clock.ts`) with a fixed timestep and a seed, so any frame can be frozen and shot again exactly. Each new pour takes a new seed, so no two splashes match. (Nov 11)
+- A particle budget is set for his Mac and for a phone before building, and what the phone gives up is said out loud. The phone view is checked as the work goes, not at the end. (Nov 11)
+
+**How it got here**
+
+Kept so nobody walks the same road twice. Nothing in this list is a rule now.
+
+- A stream of molten metal runs down the whole site. "I agree molten metal is the way to go." (Nov 11)
+- It is called the pour. The name is Fable's and he has not objected. It is never called water, in anything written for a model or shown to a visitor. His reason: "if I call it water, then the model is gonna build it as if it acts like water". (Nov 11)
+- It is the site's own copper, melted: it glows in the palette's light colors, ember to flame to hot to pale. It looks like a foundry pour: bright, clean and quick, throwing sparks and beads. It never looks like lava (dark, crusted, slow), fire (flames) or water (thin, clear). (Fable's recommendation, which he agreed to, Nov 11)
+- The first thing built is one test shot, alone on a blank page: it falls, hits a ledge, splashes, runs along the ledge and drips off the end. Nothing is built around the pour until he says that shot looks incredible. `QUALITY.md` says what the shot has to show. (Fable's proposal, Nov 11. He went ahead on it without objecting.)
+- How the test shot is built, which he said "Go" to (Nov 11): a real particle fluid simulated side on in the flat plane of the page, with gravity, cohesion and adhesion. Only the route is planned. The particles are merged into one rounded body and lit per pixel. Each particle carries a temperature that sets its color on the palette. Its glow lights the ledge and the page, and the ledge keeps a fading heat mark. The test page has two controls: pour again, and slow motion.
+- His verdict on the first test shot (Nov 11). The material is still liquid metal: "the idea here that we're going with is liquid metal". What he saw was not it:
+  - "I definitely don't like how it puddles."
+  - "The mainstream is blasted back multiple times due to this puddling", and from "the way the particles can bounce backwards and hit the stream, pushing it back".
+  - "Instead of looking like a refined beautiful hot liquid metal, this looks more like mud splashing around and puddling up."
+- In exact terms: the metal must not heap up where it lands, nothing it throws may knock the falling stream off its line, and the whole of it has to read as refined, not as a mess. (Fable's restatement, Nov 11)
+- He wants something special about the stream itself. "Think like how plasma looks that liquid metal color, but with shiny stuff all in it, or maybe something else. I'm open to options." (Nov 11)
+- His verdict on the three looks at `/lab/pour-looks` (Nov 11): "I think the best looking one is A, but if being honest it's still about a 5.5/10." And: "Maybe the Liquid Metal isn't the right direction."
+- He asked for nothing more to be built until he had talked it through. He then asked for sketches twice (the next lines). (Nov 11)
+- Three rough sketches of abstract ideas are at `/lab/stream-ideas`: Threads, Copper leaf and Ink. He asked for them rough: "they don't have to be super high res. I just need to get a general idea. Once I choose a general idea, we can work really hard in building that one out really well." (Nov 11)
+- He picked Copper leaf: "I already know I wanna go with the middle option." (Nov 11)
+- He asked to see a core of light with shards two ways: "I'd like to see your recommendation. and then I'd like to see the same thing, but instead of the smooth light, can we go with the arc? I like to compare the two." And: "let's keep it simple for now, and the next iteration will go ultra high quality." Both are at `/lab/stream-core`. (Nov 11)
+- Before the finished version is built: "I think we need a plan and a concise agreement before we do the handoff to Claude to build it." (Nov 11)
 
 ### Hero
 
@@ -215,10 +238,9 @@ Each line has Fable's recommendation where there is one. None of these are rules
 9. **The résumé.** A page, or only the download button.
 10. **The project page design.**
 11. **Which projects show** in each category on the home page.
-12. **What ties the bottom of the page together.** Recommendation: the pour ends by feeding the rocket's launch.
+12. **What ties the bottom of the page together.** Recommendation: the stream ends by feeding the rocket's launch.
 13. **The rocket as built.** He has not judged it yet.
 14. **Whether the site has to meet Section 508** (WCAG 2.0, levels A and AA). He asked whether the buttons do, out of curiosity. Recommendation: yes, checked as each part is built, because the engineers who read the site will check. The buttons' results are in `LOG.md`.
-15. **How the sketch is used in the handoff.** He asked whether Claude Code is given the sketch at `/lab/stream-core` as a starting reference or builds from the description alone. Recommendation: it is given the sketch, its code, its stills and the log's notes as a working reference and the floor to beat, and the finished version is built new in its own folder, not on top of the sketch. Waiting on his answer.
 
 ## Dropped
 
@@ -228,6 +250,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
 - A featured or flagship card
 - Whole brass plates as cards
 - The faint channel drawn ahead of the stream
+- Molten metal as what the stream is made of. Agreed and then set aside for a core of light with shards (Nov 11)
 - Water, golden water and lava as what the stream is made of (Nov 11). Light and electricity were dropped the same day and came back when he asked to see a core of light and an arc
 - Threads and Ink as what the stream is. He picked Copper leaf (Nov 11)
 - Scales, bearings and parts as what the stream is (Nov 11)

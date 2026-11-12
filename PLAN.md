@@ -15,13 +15,11 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 ## Now
 
 - **Phase:** 2, the stream
-- **Where:** the web chat, for sketches of what the stream is. The session in Claude Code on Brandon's Mac is idle and must not carry on toward liquid metal
-- **What the stream is made of is open again.** He scored the best molten metal look 5.5 out of 10 and asked for abstract ideas (`BRIEF.md`, The pour and Open 15)
-- **Built and shown:** three rough ideas at `/lab/stream-ideas`. He picked Copper leaf and asked for it to have a body of light, energy and power. Then two sketches of that at `/lab/stream-core`: shards riding a core of light, with the core as a wave of light (A) or an arc (B)
-- **His pick (Nov 11):** A, the wave of light. "They are both really good"
-- **Agreed (Nov 11):** what the finished version has to have. "I like all your recommendations." It is the last item of The pour in `BRIEF.md`
-- **Waiting on Brandon:** whether Claude Code is given the sketch as a reference (`BRIEF.md`, Open 15)
-- **Next, once he answers:** write the handoff for Claude Code. That includes renaming the pour to the stream through these documents, rewriting the Phase 2 list below and the pour's section of `QUALITY.md` for what the stream now is, and the prompt he pastes to start the session
+- **Where:** Claude Code on Brandon's Mac, with Fable. `LOG.md`, top entry, is the handoff
+- **Settled (Nov 11):** what the stream is, and the agreement for its finished version (`BRIEF.md`, The stream)
+- **Being built:** the test shot at `/lab/stream`, new, in `src/stream/`. The sketch he picked is at `/lab/stream-core` and is the floor to beat
+- **Next thing Brandon sees:** check-in 1, a paused frame
+- **Not to be built yet:** the route down the whole site, the layout, anything touching the 3D pieces
 
 ## Phase 0 · Foundation
 
@@ -45,28 +43,28 @@ Study 01 is at `/lab/palette` and Study 02 at `/lab/buttons`. Stills are in `ref
 - [~] The cursor light: it shifts the light behind the portrait, crosses the handheld's metal and lights both buttons
 - [x] Primary and accent buttons: polished copper under a clear coat with cut words, and dark bronze with copper words. Under the cursor the cuts and words catch its light and the button grows (`src/components/MetalButton.tsx`) (Nov 11)
 
-**Gate:** the portrait, the metal and the pour read as one light.
+**Gate:** the portrait, the metal and the stream read as one light.
 
-## Phase 2 · The pour, on its own
+## Phase 2 · The stream, on its own
 
-- [x] What it is made of: shards of copper and glass riding round a core of light, the core a smooth wave of light. He picked it from two sketches at `/lab/stream-core` (Nov 11). Molten metal was agreed earlier the same day and set aside
-- [x] The agreement for the finished version (Nov 11). The items below were written for molten metal and get rewritten from it at the handoff
-- [~] The test shot: it falls, hits a ledge, splashes, runs along the ledge and drips off the end (`QUALITY.md`, The pour). Built at `/lab/pour`, stills in `reference/studies/03-pour-*.jpg`. Not at the bar yet by Fable's own judgment
-- [ ] The body at rest and flowing
-- [ ] Falling
-- [ ] Landing, with a real splash, sparks and beads
-- [ ] Running along an edge and dripping off
-- [ ] Landing on a card, bouncing off and dripping down
-- [ ] Splitting on a title and running down both sides
-- [ ] Pooling
-- [ ] Lighting what it passes: the page, the metal buttons, a piece
-- [ ] Following the scroll, down and back up
-- [ ] On a phone
-- [ ] Smooth on his Mac and on a phone
+`BRIEF.md`, The stream, has the agreement. `QUALITY.md`, The stream, has the test it has to pass.
+
+- [x] What it is made of: shards of copper and glass riding round a core of light, the core a smooth wave of light. He picked it from two sketches at `/lab/stream-core` (Nov 11)
+- [x] The agreement for the finished version (Nov 11)
+- [ ] The test shot, check-in 1 · a paused frame: the core, the shards, the light on the page, the leading end at rest
+- [ ] The test shot, check-in 2 · the same shot moving: scrolling down and back up, the leading end, both landings, the cursor, the phone view
+
+After he says the shot looks incredible, and not before:
+
+- [ ] Lighting what it passes beyond the test page: the metal buttons, a 3D piece
+- [ ] Passing in front of some things and behind others
+- [ ] A real phone and a real iPad
+
+Set aside, kept as records: the molten metal test shot at `/lab/pour`, its looks at `/lab/pour-looks`, and the three rough ideas at `/lab/stream-ideas`.
 
 **Gate:** Brandon says it looks incredible. If it cannot get there, we rethink before any layout is built around it.
 
-## Phase 3 · The home page, composed around the pour
+## Phase 3 · The home page, composed around the stream
 
 - [ ] Layout sketches to choose from
 - [ ] The spacing system
@@ -75,7 +73,7 @@ Study 01 is at `/lab/palette` and Study 02 at `/lab/buttons`. Stills are in `ref
 - [ ] Skills
 - [ ] About
 - [ ] Contact and the bottom of the page
-- [ ] The pour's full route down the page
+- [ ] The stream's full route down the page
 - [ ] Phone, tablet, desktop and 4K
 
 **Gate:** Brandon approves the whole page as one composition.
@@ -99,7 +97,7 @@ Study 01 is at `/lab/palette` and Study 02 at `/lab/buttons`. Stills are in `ref
 - [ ] The handheld and the camera in their categories
 - [ ] The PC animation
 - [ ] The software piece
-- [ ] The pour touching the pieces, replacing what the second build drew inside the city, the workbench and the rocket. The code's old names go with it (`LOG.md`, 2026-11-11)
+- [ ] The stream touching the pieces, replacing what the second build drew inside the city, the workbench and the rocket. The code's old names go with it (`LOG.md`, 2026-11-11)
 - [ ] The workbench and the rocket brought up to the bar (see `LOG.md`, 2026-11-11)
 
 ## Phase 6 · Words and pictures

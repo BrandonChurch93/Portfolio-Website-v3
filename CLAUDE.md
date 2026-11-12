@@ -14,7 +14,7 @@ Do not work from what you remember of these. Read them from disk.
 ## Who does what
 
 - **Brandon** decides and approves. He does not arrive with the full picture. He wants a partner who brings ideas and recommendations, not someone who waits for instructions.
-- **Fable** does the creative work itself: color, the pour, layout, cards, how each piece sits in the page. It does not hand these to another model.
+- **Fable** does the creative work itself: color, the stream, layout, cards, how each piece sits in the page. It does not hand these to another model.
 - **Opus** builds contained 3D objects and the remaining pages late in the plan, from finished examples in this repo. Every subagent runs on Opus.
 
 ## How a piece of work goes
@@ -91,14 +91,14 @@ npm run perf -- /lab/pour --vp phone --cpu 4
 | Path | What |
 |---|---|
 | `BRIEF.md`, `PLAN.md`, `QUALITY.md`, `LOG.md` | The record |
-| `reference/` | The portrait, the bar, the rejected second build, the pieces as carried, real foundry pours, stills of each study |
+| `reference/` | The portrait, the bar, the rejected second build, the pieces as carried, stills of each study, and photographs of the real things a study borrowed from, with credits |
 | `src/pieces/` | The 3D pieces, one folder each, behind the contract in `src/world/piece.ts` |
 | `src/world/` | Shared 3D code: the stage, materials, the clock, quality tiers |
 | `src/lamp/` | The cursor light. One lamp, read by everything that is lit |
-| `src/pour/` | The pour: `sim.ts` is its physics, `renderer.ts` and `shaders.ts` draw it, `scene.ts` lays out what it hits, `config.ts` holds its constants and its particle budget, `pour.ts` runs it from the clock |
-| `src/pour-looks/` | A study of how the pour is drawn, at `/lab/pour-looks`: one fixed stream shape with no physics, drawn three ways by one shader. It is the look to aim the real pour's drawing at once Brandon has picked |
-| `src/stream-ideas/` | A study of what the stream could be made of, at `/lab/stream-ideas`: three rough sketches (threads, copper leaf, ink) on one shared route. Its `route.ts` and `gl.ts` are also used by the study below |
-| `src/stream-core/` | A study at `/lab/stream-core`: shards of copper and glass riding a core of light, with the core drawn two ways (a wave of light, an arc). `core.ts` runs it, `shaders.ts` draws it, `route.ts` is its path. `?reach=0.5` sets how far the stream has run |
+| `src/stream/` | The stream, built new from Phase 2. Its test shot is at `/lab/stream`. Nothing is here until the session in Claude Code starts it |
+| `src/stream-core/` | The sketch of the stream Brandon picked, at `/lab/stream-core`: shards of copper and glass riding a core of light. Panel A, the wave of light, is his pick and the floor to beat. Panel B is the arc he passed over. A reference: do not build on it or change it. `?reach=0.5` sets how far the stream has run |
+| `src/stream-ideas/` | An earlier study at `/lab/stream-ideas`: three rough ideas (threads, copper leaf, ink). Its `route.ts` and `gl.ts` are used by the sketch above. Set aside |
+| `src/pour/`, `src/pour-looks/` | The stream's first attempt, as molten metal, at `/lab/pour` and `/lab/pour-looks`. Set aside and kept as a record |
 | `src/hooks/` | `window.__site`, present only with `?hook=1`. The screenshot scripts drive pages through it. `__site.call(name, ...)` runs a tool a module registered, such as `plateHover` |
 | `src/components/PieceView.tsx` | Puts a piece in a page |
 | `src/metal/`, `src/components/Plate.tsx` | Lit metal for the interface: one hidden WebGL context draws every plate from a height field |
@@ -120,7 +120,7 @@ The second build is at https://github.com/BrandonChurch93/Portfolio-Website-v2. 
 - Almost no code comments. Keep one only when it explains a reason someone could otherwise undo.
 - No em dashes in anything the site shows or in these documents. Use a period, a comma or an interpunct (·).
 - This repository is public. Do not commit anything private.
-- The stream of molten metal is called the pour. Never call it water, in a document, a comment, a name in code or anything the site shows. Old code still says water in many places. Rename it as you replace it.
+- The line of light and shards that runs down the site is called the stream. Never call it water, in a document, a comment, a name in code or anything the site shows, and do not call it the pour, which was its name while it was going to be molten metal. Old code still says water in many places, and the set aside studies keep the name pour. Rename the old code as you replace it.
 
 ## When compacting
 

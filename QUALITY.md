@@ -22,6 +22,8 @@ Open these with the Read tool. Do not skip this.
 | `reference/portrait.jpg` | His portrait. Every color on the site has to sit with this photo |
 | `reference/v2/home-full-page.jpg` | The second build's home page, which he rejected. His words are below |
 | `reference/pieces/` | The five pieces carried into this build, as they looked on the day they were carried over |
+| `reference/studies/06-stream-core.jpg` | The sketch of the stream Brandon picked: the left panel, A. The floor the finished stream has to beat |
+| `reference/studies/06-stream-core-moving.jpg` | The same sketch caught while being scrolled, both leading ends shedding sparks |
 
 What to notice in the PC Builder:
 
@@ -42,7 +44,7 @@ What went wrong in the second build's home page, in his words and mine:
 
 ## What he has approved and what he has rejected
 
-This is the real calibration. Every row is his verdict, not a guess. Rows that say water are about the stream as the second build and its previews drew it. The stream is now molten metal: see The pour, below.
+This is the real calibration. Every row is his verdict, not a guess. Rows that say water or the pour are about earlier attempts at the stream: the second build's, and this build's molten metal. What the stream is now is in The stream, below.
 
 | Thing | His verdict | The lesson |
 |---|---|---|
@@ -83,7 +85,7 @@ This list is Fable's reading of the table above. Brandon corrects it when it is 
 
 1. **Detail over count.** Fewer things, each with more to find.
 2. **The real thing.** Real splash, real cars, real photos. Never a stand-in, never a placeholder shown as if it were finished.
-3. **Light is physical.** It comes from somewhere (the cursor, the pour, a lamp) and changes what it lands on.
+3. **Light is physical.** It comes from somewhere (the cursor, the stream, a lamp) and changes what it lands on.
 4. **Motion has weight.** Things speed up when they fall, settle when they land, and never slide or pop.
 5. **Nothing boxed, cut off or cramped.** Pieces sit in the page. Openings use the whole screen. Space is generous and even.
 6. **One light, one palette.** Everything sits with his portrait.
@@ -105,59 +107,78 @@ Everything visual has to pass all six.
 
 ## Fail on sight
 
-- The pour as a glowing tube, moving at one speed, or landing with no shape
-- The pour looking pasted over something it is supposed to touch
-- The pour reading as lava (dark crust, slow creep), as fire (flames) or as water (thin, clear, blue)
-- The pour heaping up into a puddle where it lands, or its own splash knocking the falling stream off its line
-- The pour reading as mud: thick, ragged, thrown about
-- The pour racing. On the site it moves no faster than the visitor scrolls
+- The stream as a glowing tube, a neon sign or wire, moving at one speed, or landing with no shape
+- The stream looking pasted over something it is supposed to touch
+- The stream reading as water, lava or fire
+- Shards that read as confetti or paper: flat, evenly lit, all one size
+- Shards buried in glare, or so many that the core is lost among them
+- A glow with an edge, a glow that reads as a ball, or soft round spots of light
+- Anything the stream throws heaping up where it lands, or knocking the stream off its line
+- The stream reading as a mess: ragged, thrown about, not refined
+- The stream racing. On the site it moves no faster than the visitor scrolls
 - A plain box, cylinder or cone where a real object has form
 - A window, screen or label that is a flat picture
 - Anything cut off by the screen or by another element
 - 3D sitting in a visible rectangle
-- A color off the palette, yellow gold above all
+- A color off the palette: yellow gold above all, and any white, blue or rainbow from the glass
 - Cramped or uneven spacing, misaligned edges, a lone word on the last line of a heading
 - Text that is hard to read over what is behind it
 - A loop you can see repeating
 - A placeholder ("picture to come") in anything shown for approval
 - A phone or 4K view that is plainly the lesser one
 
-## The pour
+## The stream
 
-What the stream is made of is open again (`BRIEF.md`, The pour and Open 15). What follows describes molten metal and applies only if the stream returns to it. Whatever it is made of, these carry over: it makes light and lights what it passes, its particles come from what it is, nothing repeats, it is smooth on his Mac and holds up on a phone, and it moves no faster than the visitor scrolls.
+The core of light with shards that runs down the site. It is the most important thing on it, and the thing that has failed most often: three attempts at a stream were rejected before this build, and this build's molten metal reached 5.5 out of 10 with him. Read `BRIEF.md`, The stream, first.
 
-The stream of molten metal that runs down the site. It is the most important thing on it, and the thing that has failed most often: three attempts at a stream were rejected before this build. Read `BRIEF.md`, The pour, first.
+**The sketch he picked is the floor**
+
+- Open the two stills of it listed at the top of this file, and the live sketch at `/lab/stream-core`. The left panel, A, is what he picked.
+- The finished version has to look plainly better beside it, and keep what he picked: one steady core, many shards that belong to it, copper and glass mixed, sparks, a live leading end.
+- `LOG.md`, the entry "A core of light with shards, two ways", says how the sketch is drawn, what failed on the way to it, and where it falls short.
 
 **What it looks like**
 
-- A foundry pour. Search for photographs and slow motion film of molten bronze and copper being poured, and look at them before building. Do not work from memory of what molten metal looks like.
-- It has a body: a hot pale core, a cooler orange skin, a rounded surface with highlights that move across it.
-- Its colors are the palette's light: ember, flame, hot, pale. Coolest at the edges and in what has been left behind.
-- It makes light. Whatever it passes is lit by it, and stays warm for a moment after.
-- Its particles: sparks that fly and fade, beads that bounce, roll and cool from pale to dark, drips that stretch before they let go.
+- **The core** is light with depth: a pale hot center falling through hot and flame to ember. It is steady, and swells and thins slowly as it runs. It reads as light, never as a tube, a neon sign or wire.
+- **The shards** are objects. Copper leaf is thin torn metal with an edge you can see, lit the way the site's buttons are: dark until it faces a light, then a bright highlight that moves across it. Glass is a splinter with faces. It bends what is behind it and is brightest along its edges.
+- **They belong to the core.** They ride round it and it is their light. A shard in front of the core shows its dark side against it. A shard behind it shows its lit face.
+- **Many, but one thing.** The eye reads the core first and then finds the shards. It never reads as a cloud of loose parts.
+- **It makes light.** The page, the edges of what it passes and the things near it are lit by it, and glass throws small sharp glints onto the page.
+- **Its colors** are the palette's light (ember, flame, hot, pale) and its metal (bronze, copper). Glass splits light only inside that warm range.
+- **The leading end** is its brightest part: a hot point with a short crackle of arc and sparks. It is alive even when the page is still, and stronger the faster it is moving.
+- **Sparks** fly, fall, cool from pale to ember and go out. Some bounce.
 
-**The first test, before anything else is built**
+**The test shot, before anything else is built**
 
-One shot, alone on a blank page under `/lab`: it falls, hits a ledge, splashes, runs along the ledge and drips off the end. It passes when all of these are true:
+One shot, alone on a blank page at `/lab/stream`, on the sketch's route: down from the top, parting on a title, both sides round its ends, one side landing on a card, running along it and off its end. It follows the page's own scroll. It passes when all of these are true:
 
-1. Paused on any frame it looks like a photograph of molten metal, not a glowing shape.
-2. It has weight. It speeds up and thins as it falls, piles up where it lands, clings to the edge, stretches and snaps into drops.
-3. Every landing leaves something: a splash with shape, sparks, beads, and the ledge lit and warm for a moment after.
-4. Nothing repeats. No two splashes are alike.
-5. It lights what is near it.
-6. It is smooth on Brandon's Mac and holds up on a phone.
+1. Paused on any frame and enlarged three times, a shard is an object. It has thickness, an edge and a lit side, and you can tell copper from glass without a label.
+2. The core reads as light with depth.
+3. Beside the sketch it is plainly the better picture. Beside the PC Builder images it is not the weaker work.
+4. It lights what it passes, and every highlight agrees with where the light is.
+5. The leading end is alive at rest, gains energy with the speed of the scroll, and settles when the scrolling stops.
+6. Landings have shape and weight: shards are thrown, bounce and spill off the edge. Nothing heaps up, and nothing thrown knocks the core off its line.
+7. In motion things have weight. Nothing visibly loops. Scrolling back up draws it back cleanly. It never moves faster than the scroll.
+8. Shards near the cursor flash and turn toward it.
+9. Every color is on the palette.
+10. `npm run perf` shows it smooth on his Mac, and the phone view, with its budget said out loud, is not plainly the lesser one.
+11. With reduced motion it is a finished still that still follows the scroll.
 
 **How to build it, as far as it has been thought through**
 
-- Where it goes is planned, because later the layout needs it to hit exact places. What the eye checks (falling, landing, dripping) is real physics on particles, not an animation of a shape.
-- A browser cannot run a film grade fluid simulation. Find out how the best real time work of this kind is done before choosing a method, and say which method you chose and why.
-- A tube with a glow shader is the fail list's first line. Three attempts died there.
+- Build it new, in `src/stream/`. Lift ideas from the sketch, not its code: its shards are flat by construction, and a better version built on top of an approved sketch is something he has already rejected once.
+- Look before building. Find photographs and film of the real things each part borrows from: long exposure trails of light, flakes of copper and gold leaf in a beam, broken glass and crystal lit from behind and the patterns they throw, sparks from a grinder and from a sparkler, an electric arc. Write down what makes each one read as real. Do not work from memory of what they look like.
+- Find out how the best real time work of this kind is done before choosing a method: many lit objects at once, glass that bends what is behind it, glow that neither bands nor boxes. Say in `LOG.md` which method you chose and why.
+- What the sketch proved, and is worth keeping: everything that glows is drawn first as an amount of light and given its color once, through the palette's ramp. Overlapping light is joined by keeping the larger. Faint light fades all the way to nothing. A shard's color comes only from how it is lit.
+- Where the stream goes is planned, because later the layout needs it to hit exact places. What the eye checks (how a thrown shard flies, bounces and spills) is real motion with weight, stepped from the one clock with a seed.
+- On the site, the things it lights are ordinary page elements. Light the title and the card in a way that will still work when they are real headings and real cards.
 
 **How to judge it**
 
-- Filmstrips for every motion, read left to right, and stills at three times zoom.
-- On Brandon's Mac the scripts print `hardware`, so a filmstrip there is a fair test of motion. He still judges the motion himself, in the browser.
-- Put a still beside a real photograph of a pour. If it is plainly the drawing, it fails.
+- Stills at three times zoom, and filmstrips for every motion, read left to right. On his Mac the scripts print `hardware`, so a filmstrip there is a fair test of motion.
+- Put a still beside the sketch's still, and beside the PC Builder images.
+- Before each check-in, have fresh reviewers who have not seen the work being made judge the stills against this section, told to look for reasons to fail it.
+- He judges the motion himself, in his browser.
 
 ## How to judge
 

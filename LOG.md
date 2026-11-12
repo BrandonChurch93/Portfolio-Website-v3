@@ -2,6 +2,78 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-11 · Handoff to Claude Code: the stream (Fable, web chat)
+
+**What Brandon said**
+
+- On the two sketches: "This was a tough decision, as they are both really good. But I'm gonna go with option A."
+- On the agreement for the finished version: "I like all your recommendations."
+- On giving you the sketch as a reference and building new: "I'm in complete agreement with you. I am ready for the handoff."
+
+**Where things stand**
+
+- What the stream is, and what its finished version has to have, are settled. Both are in `BRIEF.md`, The stream. Read The agreement there twice.
+- The test it has to pass is in `QUALITY.md`, The stream.
+- Nothing of the finished stream exists yet. `src/stream/` and `/lab/stream` are yours to start.
+- The documents were renamed in this entry's commit: it is the stream now, not the pour. The set aside studies keep their old names.
+
+**If you are the session in Claude Code, do this first**
+
+1. Pull. Read `BRIEF.md`, `PLAN.md`, `QUALITY.md` (open every image it lists) and this entry.
+2. Check which model you are and tell Brandon. This is Fable's work.
+3. Run `npm run shot -- /lab/stream-core` and open the image. It should print `hardware`. If it prints `software`, tell Brandon before going further.
+4. Watch the sketch move. You are the first model that can. Take filmstrips of `/lab/stream-core` at rest and with `?reach=` stepped from 0.2 to 0.9, and write down in this file what in its motion works and what does not.
+5. Look at the real things, as `QUALITY.md` says, before writing any code.
+6. Choose your method. Tell Brandon in a short list what you chose, why, and the budget for his Mac and for a phone with what the phone gives up. Do not wait for a reply. Carry on.
+7. Build the test shot. Follow "How a piece of work goes" in `CLAUDE.md`.
+
+**The test page**
+
+- `/lab/stream`: a page a few screens tall, empty but for a stand in title and a stand in card, placed so the route is the sketch's: down from the top, parting on the middle of the title, both sides round its ends, the left side landing on the card, running along its top and off its end, both sides carrying on down.
+- The stream follows the page's own scroll. Its leading end stays near one height on the screen as the page moves, eased, and never moves faster than the scroll. At the top of the page it has already come a little way down, so the first screen is not empty. Scrolling back up draws it back.
+- Above its leading end the stream stays where it has run.
+- A finger scrolls this page. Do not take touch away from scrolling the way the sketch's panels do.
+- How big the stream is on a real page is yours to find: big enough that a shard shows its faces, small enough that it never crowds what a visitor would be reading beside it. In the sketch the sheath of shards is about a tenth of a panel wide, the shards run from about 3 to 15 pixels across, and there are about 750 to each side. He agreed to "about its density". Say what you chose.
+
+**The two check-ins. He judges nothing in between**
+
+1. **A paused frame.** A link that opens with the frame held, the stream about two thirds of the way down the route. On a held frame the cursor still moves the light and nothing else moves. He is approving the look: the core, the copper, the glass, the light on the page and on the title and card, the leading end at rest, the color. He is not approving any motion. Send it with stills at three times zoom and one still beside the sketch's.
+2. **The same shot moving.** Scrolling down and back up, the leading end gaining and losing energy, both landings, sparks, shards turning toward the cursor, the phone view, reduced motion, and the numbers from `npm run perf`. This is the one where he says whether it looks incredible.
+
+- For each: a production build, commit, push, the live link, what is at the bar, what is not and why, and exactly what he is approving. Write his verdict into `BRIEF.md` when he gives it.
+- Before each, have fresh Opus reviewers judge the stills, as the last session did. If they fail it, fix it or say so plainly. Do not show him something they failed as if it had passed.
+- If a decision in between is his to make, ask it as one short question with your recommendation.
+
+**What the web chat could not do, and you can**
+
+- See motion. Every still of the sketch was drawn in software. Nobody but Brandon has seen it move.
+- Open the live link and the local site in a real browser, and try WebKit, which is what his iPad runs.
+
+**Things worth knowing**
+
+- The sketch, for reading: `src/stream-core/core.ts` places the shards, runs the sparks and holds the order things are drawn in. `shaders.ts` has the light buffer and the shard coloring. `route.ts` is the path. `src/stream-ideas/route.ts` builds curves and keeps points out of the title and card. The entry below this one says how it all works and lists nine things that failed.
+- The copper has to be the same metal as the buttons. `src/metal/shaders.ts` is how that metal is lit: a highlight from the lamp and a drawn studio reflection.
+- The cursor is `lamp.get()` in `src/lamp/lamp.ts`, in screen pixels. With no cursor the lamp drifts by itself.
+- Time comes from `src/world/clock.ts`. With the clock frozen, dt is 0 and the same frame has to draw every time: seed anything random, and run sparks and loose shards forward a fixed amount from the seed, as the sketch's `warm` does. `npm run shot -- /lab/stream --scroll 40% --t 20` should then give a repeatable still at any scroll.
+- `window.__site` exists with `?hook=1`. A module can offer it a tool by name (`src/hooks/registry.ts`), the way the metal offers `plateHover`.
+- No more than two WebGL contexts on a page. The metal uses one, off the page.
+- Quality tiers are in `src/world/tier.ts`, `tier-choice.ts` and `budget.ts`. `src/pour/config.ts` shows how the last session set a budget per tier.
+- React mounts twice in development. Do not lose the context on unmount, or make your own canvas and remove it, as `mountPour` does.
+- The sketch needs no float render targets. If you use them, have a fallback.
+- `plates.setWater` in `src/metal/renderer.ts` was written so the stream could light a button and nothing calls it. That is for after the test shot is approved. Rename it when you use it.
+- This repository is public. Reference photographs go in `reference/stream/` only if they are free to reuse, with credits, as `reference/pour/CREDITS.md` does.
+- He found a fade that lingered too slow. Things should leave quickly.
+
+**Do not**
+
+- Build on the sketch's code, or change `src/stream-core/`, `src/stream-ideas/`, `src/pour/` or `src/pour-looks/`. They are records.
+- Build the route down the whole site, any layout, or anything that touches the 3D pieces.
+- Change the buttons, the palette or anything else he has approved.
+
+**Half finished**
+
+- Nothing in code.
+
 ## 2026-11-11 · A core of light with shards, two ways (Fable, web chat)
 
 **What Brandon said**
@@ -83,9 +155,9 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 - "Can you confirm that we're going to provide him this as a starting reference? Or would this be a completely Greenfield build with just the description."
 - Fable's answer: the sketch goes along as a working reference and the floor to beat, with its code, stills and the notes above. The finished version is built new, not on top of it. His own verdict on the city is the reason: a better version built on top of an approved sketch was rejected (`QUALITY.md`).
 
-**Waiting on Brandon**
+**His answer**
 
-1. His answer to that. Then the handoff is written: the documents renamed from the pour to the stream, the Phase 2 list and the quality bar's section rewritten for what the stream now is, and the prompt for Claude Code.
+- "I'm in complete agreement with you. I am ready for the handoff." The handoff is the entry above this one.
 
 ## 2026-11-11 · Three rough ideas for what the stream is (Fable, web chat)
 
