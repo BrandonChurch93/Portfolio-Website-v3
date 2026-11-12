@@ -127,11 +127,12 @@ Said after the first night's build at `/lab/stream`, with both check-ins live. T
 
 **His verdict on the second round (Nov 12)**
 
-Said after scrolling the second round at `/lab/stream`, with the facets in. The two changes below have not been built yet.
+Said after scrolling the second round at `/lab/stream`, with the facets in. The three changes below have not been built yet.
 
 - "It's really good! And everything honestly looks good." The bunching is "much better". "The actual particles themselves look really good." The facets stay.
 - A strike throws a few too many: "on a strike a bit too many particles explodes out". How much to cut: "I feel like 50% is probably too much", "maybe 25% less?" In exact terms: about a quarter fewer shards thrown when a leading end arrives at the title or the card. Nothing else about the strike changes.
 - At a landing, while the page is not being scrolled, shards keep flying out. "I do like the periodic piece flying down and bouncing every now and then, but it shouldn't be like a constant stream of things flying out of the stream." In exact terms: at rest a landing throws a single shard now and then, at uneven intervals, never a steady flow.
+- A thrown shard keeps its own momentum, and the flow never turns it round. He saw shards thrown left on the card land short, then get carried right across it and off the far end: "a mysterious force pulls them off to the right side". Agreed with Fable (Nov 12): one thrown with enough force clears the near edge and falls, which he likes "a lot". One that lands short skids a little the way it was going, stops, and fades within about a second. One thrown the way the stream runs can still ride along and spill off that end. The same on the title. Nothing heaps up.
 
 **How it is built**
 
