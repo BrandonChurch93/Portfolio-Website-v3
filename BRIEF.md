@@ -125,6 +125,14 @@ Said after the first night's build at `/lab/stream`, with both check-ins live. T
 - How that was reached, so it is not repeated: he first wondered aloud about "sharp jagged pieces", and Fable wrote that in as a ruling before he had made one. "I was just making conversation." A question from him is not a ruling.
 - He likes the raised lettering of WORK and how the stream plays on it. Once the stream is finished he wants the components and the layout approached again "with this component always in mind". Fable's reading, which he agreed with: every element on the site is a surface that the stream and the cursor light, and nothing else has a glow of its own.
 
+**His verdict on the second round (Nov 12)**
+
+Said after scrolling the second round at `/lab/stream`, with the facets in. The two changes below have not been built yet.
+
+- "It's really good! And everything honestly looks good." The bunching is "much better". "The actual particles themselves look really good." The facets stay.
+- A strike throws a few too many: "on a strike a bit too many particles explodes out". How much to cut: "I feel like 50% is probably too much", "maybe 25% less?" In exact terms: about a quarter fewer shards thrown when a leading end arrives at the title or the card. Nothing else about the strike changes.
+- At a landing, while the page is not being scrolled, shards keep flying out. "I do like the periodic piece flying down and bouncing every now and then, but it shouldn't be like a constant stream of things flying out of the stream." In exact terms: at rest a landing throws a single shard now and then, at uneven intervals, never a steady flow.
+
 **How it is built**
 
 He added these while the stream was a simulated liquid. They hold for anything in the stream that is simulated: shards thrown loose, sparks.
