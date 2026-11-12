@@ -138,7 +138,8 @@ Said after scrolling the second round at `/lab/stream`, with the facets in. The 
 
 - "Everything is pretty much perfect now across the board minus one thing." At a strike "the density is now perfect and everything looks super realistic, except for the very end of the animation".
 - The one thing, in his words: "there's like a sloshing effect". "A lot of the particles are going straight up in the air", and "these ones that go straight up fall straight down, so what happens is after the strike there's this beautiful explosion and then once it ends, there's a bunch of particles that kinda just get pushed off the right side of the card all at once". On WORK the same: after it ends "a bunch of particles get shot out both sides".
-- In exact terms: a strike must be one burst that dies away. There must be no second wave, where shards that went up and came back down are carried off the end of the title or the card together. Not built yet.
+- He is not sure of the cause, and says so: "what if it's not the particles going straight up? What if it's the particles that are on the stream that don't get blasted at all." "Once that's finished, there's like this waterfall effect where it just ejects all the particles currently on the stream at that point." "I don't know the cause."
+- In exact terms: a strike must be one burst that dies away. After the burst there must be no second wave of shards leaving the ends of the title or the card together. What causes the second wave is not known and has to be found before it is fixed. Not built yet.
 
 **How it is built**
 
