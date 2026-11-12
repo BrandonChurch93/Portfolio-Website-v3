@@ -77,6 +77,7 @@ This is the real calibration. Every row is his verdict, not a guess. Rows that s
 | Three looks for molten metal on one fixed stream (`/lab/pour-looks`) | "The best looking one is A, but if being honest it's still about a 5.5/10." "Maybe the Liquid Metal isn't the right direction." It also ran too fast: the stream is "capped at the user scroll rate" | A glowing liquid drawn in a browser tops out as a drawing of one. He would take something abstract that looks incredible over something realistic that looks fair |
 | Three rough ideas: Threads, Copper leaf, Ink (`/lab/stream-ideas`) | Picked Copper leaf, because it is "many particles". Threads was "too much of a solid", Ink "too plain". Copper leaf still needs "substance": "a steady stream or light wave", "a glow behind it", "particle effects coming off of it", "energy and power" | Many small sharp parts read as detail. Parts alone are not enough: they need a body of light to belong to, and the whole has to feel powerful |
 | Two cores for the shards to ride: a wave of light, an arc (`/lab/stream-core`) | "They are both really good." Picked A, the wave | A body of light with many shards belonging to it, sparks coming off and a live leading end is the direction. Given the choice he took the steady core over the restless one |
+| The stream's first test shot, built overnight (`/lab/stream`) | "I'm really loving the way it's coming together." "I think we nailed this." His favorite part is the strike: shards "fly off and bounce around like it actually struck the ground". Sparks: "perfect". Too many shards, bunched, where the stream lies on an object. And: "There's no way to look at and be like oh yeah that's glass and a copper leaf. Nobody will ever get that" | He judges it moving, by weight and by what answers him: the strike, the scroll, the cursor. Eight reviews failed this same shot for materials he never looks for. Do not spend rounds making a shard nameable. Test what he responds to |
 | The pour's first test shot, in motion | "I definitely don't like how it puddles." The stream "is blasted back multiple times". "Instead of looking like a refined beautiful hot liquid metal, this looks more like mud splashing around and puddling up" | Real physics is not enough. It has to be graceful. Metal that heaps, thrashes or hits itself reads as mud |
 
 ## The patterns behind those verdicts
@@ -112,6 +113,8 @@ Everything visual has to pass all six.
 - The stream reading as water, lava or fire
 - Shards that read as confetti or paper: flat, evenly lit, all one size
 - Shards buried in glare, or so many that the core is lost among them
+- Shards bunched up where the stream lies along something or hooks round it
+- A strike with no shards thrown, or thrown shards that do not bounce
 - A glow with an edge, a glow that reads as a ball, or soft round spots of light
 - Anything the stream throws heaping up where it lands, or knocking the stream off its line
 - The stream reading as a mess: ragged, thrown about, not refined
@@ -134,30 +137,32 @@ The core of light with shards that runs down the site. It is the most important 
 **The sketch he picked is the floor**
 
 - Open the two stills of it listed at the top of this file, and the live sketch at `/lab/stream-core`. The left panel, A, is what he picked.
-- The finished version has to look plainly better beside it, and keep what he picked: one steady core, many shards that belong to it, copper and glass mixed, sparks, a live leading end.
+- The finished version has to look plainly better beside it, and keep what he picked: one steady core, many shards that belong to it, two kinds of shard mixed, sparks, a live leading end.
 - `LOG.md`, the entry "A core of light with shards, two ways", says how the sketch is drawn, what failed on the way to it, and where it falls short.
 
 **What it looks like**
 
 - **The core** is light with depth: a pale hot center falling through hot and flame to ember. It is steady, and swells and thins slowly as it runs. It reads as light, never as a tube, a neon sign or wire.
-- **The shards** are objects. Copper leaf is thin torn metal with an edge you can see, lit the way the site's buttons are: dark until it faces a light, then a bright highlight that moves across it. Glass is a splinter with faces. It bends what is behind it and is brightest along its edges.
+- **The shards** are facets: chunky cut pieces with five to eight flat faces, like rough cut gems or broken crystal, no two alike, in many sizes with most of them small. They are abstract. Nobody has to be able to say what they are made of.
+- **Two materials, one family of shapes.** Any facet can be solid or clear. A solid one is dark until a face turns to the light, and then that whole face flashes. A clear one lets the light through, glows inside and is brightest along its edges. The two are told apart by how they take the light, never by their shape.
 - **They belong to the core.** They ride round it and it is their light. A shard in front of the core shows its dark side against it. A shard behind it shows its lit face.
 - **Many, but one thing.** The eye reads the core first and then finds the shards. It never reads as a cloud of loose parts.
-- **It makes light.** The page, the edges of what it passes and the things near it are lit by it, and glass throws small sharp glints onto the page.
-- **Its colors** are the palette's light (ember, flame, hot, pale) and its metal (bronze, copper). Glass splits light only inside that warm range.
+- **It makes light.** The page, the edges of what it passes and the things near it are lit by it.
+- **Its colors** are the palette's light (ember, flame, hot, pale) and its metal (bronze, copper). The clear facets carry light only inside that warm range.
 - **The leading end** is its brightest part: a hot point with a short crackle of arc and sparks. It is alive even when the page is still, and stronger the faster it is moving.
 - **Sparks** fly, fall, cool from pale to ember and go out. Some bounce.
+- **A strike** is the best thing in it. Where the stream hits something, facets blast off it, bounce and spill away as if it had really struck, with sparks among them, more of both the faster it arrives.
 
 **The test shot, before anything else is built**
 
 One shot, alone on a blank page at `/lab/stream`, on the sketch's route: down from the top, parting on a title, both sides round its ends, one side landing on a card, running along it and off its end. It follows the page's own scroll. It passes when all of these are true:
 
-1. Paused on any frame and enlarged three times, a shard is an object. It has thickness, an edge and a lit side, and you can tell copper from glass without a label.
+1. Paused on any frame and enlarged three times, a shard is a solid object with flat faces, hard edges and a lit side, and a solid one and a clear one take the light differently. Naming a material is not part of the test.
 2. The core reads as light with depth.
 3. Beside the sketch it is plainly the better picture. Beside the PC Builder images it is not the weaker work.
 4. It lights what it passes, and every highlight agrees with where the light is.
 5. The leading end is alive at rest, gains energy with the speed of the scroll, and settles when the scrolling stops.
-6. Landings have shape and weight: shards are thrown, bounce and spill off the edge. Nothing heaps up, and nothing thrown knocks the core off its line.
+6. Landings have shape and weight: shards are thrown, bounce and spill off the edge. Nothing heaps up, and nothing thrown knocks the core off its line. Where the stream lies along something or hooks round it, the shards are no thicker on the ground than on a straight run, and they do not bunch.
 7. In motion things have weight. Nothing visibly loops. Scrolling back up draws it back cleanly. It never moves faster than the scroll.
 8. Shards near the cursor flash and turn toward it.
 9. Every color is on the palette.
@@ -167,8 +172,8 @@ One shot, alone on a blank page at `/lab/stream`, on the sketch's route: down fr
 **How to build it, as far as it has been thought through**
 
 - Build it new, in `src/stream/`. Lift ideas from the sketch, not its code: its shards are flat by construction, and a better version built on top of an approved sketch is something he has already rejected once.
-- Look before building. Find photographs and film of the real things each part borrows from: long exposure trails of light, flakes of copper and gold leaf in a beam, broken glass and crystal lit from behind and the patterns they throw, sparks from a grinder and from a sparkler, an electric arc. Write down what makes each one read as real. Do not work from memory of what they look like.
-- Find out how the best real time work of this kind is done before choosing a method: many lit objects at once, glass that bends what is behind it, glow that neither bands nor boxes. Say in `LOG.md` which method you chose and why.
+- Look before building. Find photographs and film of the real things each part borrows from: long exposure trails of light, rough cut gemstones and broken crystal, in solid and in clear, lit from one side and from behind, sparks from a grinder and from a sparkler, an electric arc. Write down what makes each one read as real. Do not work from memory of what they look like.
+- Find out how the best real time work of this kind is done before choosing a method: many lit objects at once, clear ones that carry the light behind them, glow that neither bands nor boxes. Say in `LOG.md` which method you chose and why.
 - What the sketch proved, and is worth keeping: everything that glows is drawn first as an amount of light and given its color once, through the palette's ramp. Overlapping light is joined by keeping the larger. Faint light fades all the way to nothing. A shard's color comes only from how it is lit.
 - Where the stream goes is planned, because later the layout needs it to hit exact places. What the eye checks (how a thrown shard flies, bounces and spills) is real motion with weight, stepped from the one clock with a seed.
 - On the site, the things it lights are ordinary page elements. Light the title and the card in a way that will still work when they are real headings and real cards.
@@ -177,7 +182,7 @@ One shot, alone on a blank page at `/lab/stream`, on the sketch's route: down fr
 
 - Stills at three times zoom, and filmstrips for every motion, read left to right. On his Mac the scripts print `hardware`, so a filmstrip there is a fair test of motion.
 - Put a still beside the sketch's still, and beside the PC Builder images.
-- Before each check-in, have fresh reviewers who have not seen the work being made judge the stills against this section, told to look for reasons to fail it.
+- Before each check-in, have fresh reviewers who have not seen the work being made judge the stills against this section, told to look for reasons to fail it. Give them this section and his words from `BRIEF.md`, and tell them plainly that no shard has to read as a named material.
 - He judges the motion himself, in his browser.
 
 ## How to judge

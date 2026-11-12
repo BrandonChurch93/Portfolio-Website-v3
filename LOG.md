@@ -2,31 +2,48 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
-## 2026-11-12 · Brandon's verdict on the stream's test shot (Fable, web chat)
+## 2026-11-12 · Brandon's verdict on the test shot, and the handoff for the second round (Fable, web chat)
 
 **What Brandon said**
 
-- All of it is in `BRIEF.md`, The stream, under "His verdict on the test shot, and what changes", and two lines under Hero. Read those. In short:
-  - He is very happy with it and wants everything else built off it.
-  - Keep the strikes: shards blasting off and bouncing. Free to improve them.
-  - Sparks are right as they are.
-  - Too many shards, bunched, only where the stream lies along or hooks over an object.
-  - The shards stop being copper leaf and glass. Two materials, solid and clear, one family of shapes: facets.
-  - The opening animation is 5 out of 10 and gets redone later. The city gets revisited later.
+- All of it is in `BRIEF.md`, The stream, under "His verdict on the test shot, and what changes", and two lines at the end of Hero. Read those first. In short:
+  - "I'm really loving the way it's coming together." "I think we nailed this and we build everything else off of this stream."
+  - The strike is his favorite part: shards blasting off and bouncing. Keep it. He does not want it frozen either: "I also don't wanna hinder him from pushing it further."
+  - Sparks, on scroll and at a strike, are right as they are.
+  - Too many shards, bunched, only where the stream lies along or hooks over an object. About a quarter too many there, by his eye. Straight runs and strikes are right.
+  - The shards stop being copper leaf and glass. Two materials, solid and clear, in one family of shapes: facets.
+  - The opening animation is 5 out of 10 and the city needs work. Both come later.
+- He looked at it on his own machine, moving. He had not found the sparks at a strike until he scrolled fast.
 
-**What this does to the bar**
+**What changed in the record**
 
-- `QUALITY.md` still says a shard must read as copper or as glass, and all eight reviews failed the shot mainly on that. That test is wrong now. It has not been rewritten yet: Brandon had Fable turned down for this talk and asked for no code and no prompt. It gets rewritten with the next handoff.
+- `QUALITY.md`, The stream: the shards are described as facets in two materials. Test 1 no longer asks for a shard to read as copper or as glass. Test 6 now covers bunching. The fail list has bunching and a strike with nothing thrown. The verdict table has his verdict and its lesson.
+- All eight reviews last night failed the shot mainly on materials he does not look for. That was the bar's fault, and mine. Reviewers now get told that no shard has to read as a named material.
 
-**Why the shards may bunch on objects. Guesses from the log, not from the code**
+**If you are the session in Claude Code, this is the second round**
 
-- Each landing keeps throwing a few shards even when the page is still.
-- Both sides' riding shards overlap where they part.
+1. **Rebuild the shards as facets.** Chunky cut pieces with five to eight flat faces, like rough cut gems or broken crystal. Irregular, no two alike, some squat and some long. Hard edges, each face lit as one plane. Many sizes, most of them small, about the footprint the shards have now.
+2. **Two materials on the same shapes.** Any facet can be solid or clear. Solid: dark until a face turns to the light, then the whole face flashes. Clear: carries the light through, glows inside, brightest on its edges. Keep the color coming only from how a shard is lit. Find the mix by eye, starting from what it is now.
+3. **Keep the first round's shards one switch away**, for example `/lab/stream?shards=first`, so he can put the two side by side. He loves what he has. If the facets are not plainly better, he needs to be able to see that for himself.
+4. **Thin the shards where the stream lies along or hooks over an object**: the top of the title, its two corners, the top of the card. About a quarter fewer there, evenly spaced, no clumps. Leave the straight runs and the number thrown at a strike as they are. Find the cause before turning a number down. Two guesses from reading your log, not your code: each landing keeps throwing a few shards while the page is still, and the two sides' riders overlap where they part.
+5. **The strike stays.** Thrown shards are the same facets. They must still blast off and bounce. Make it better if you can see how: your own reviewers noted that no filmstrip frame caught a bounce, and a chunky facet should show its weight better than a leaf did.
+6. **Sparks: no changes asked.** Leave them unless you can plainly better them without changing their balance.
+7. **More presence at the size of the whole page**, where you and your reviewers found the sketch still punchier. Not at the cost of anything in this list.
 
-**Not done**
+**Do not**
 
-- No code. No prompt for the session in Claude Code yet.
-- `PLAN.md` is unchanged.
+- Touch the core, the leading ends, the route, the title and card lighting, the scroll rules or the cursor, beyond what the list above needs. He likes all of it.
+- Start on the city, the opening, the layout or any component. They are noted in the brief for later.
+
+**Showing him**
+
+- One check-in this time, the shot moving, with the paused frame beside it. A production build, pushed, the live link, and the switch to the first round's shards.
+- Fresh Opus reviewers first, judging against `QUALITY.md` as it now stands.
+- Say what is at the bar, what is not, and exactly what he is approving: facets or the first round's shards, and whether the bunching is gone.
+
+**Half finished**
+
+- Nothing in code. This entry and the record are the whole of the web chat's work today.
 
 ## 2026-11-12 · The stream's test shot (Fable, Claude Code on Brandon's Mac)
 

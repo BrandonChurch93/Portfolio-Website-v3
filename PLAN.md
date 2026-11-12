@@ -15,12 +15,11 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 ## Now
 
 - **Phase:** 2, the stream
-- **Where:** Claude Code on Brandon's Mac, with Fable. `LOG.md`, top entry, is the handoff
-- **Settled (Nov 11):** what the stream is, and the agreement for its finished version (`BRIEF.md`, The stream)
-- **Built and pushed, waiting on Brandon:** both check-ins of the test shot. Check-in 1, a paused frame, at `/lab/stream?hold`. Check-in 2, the same shot moving, at `/lab/stream`
-- **What its reviewers said:** `LOG.md`, top entry. Independent reviews failed the paused frame three times. The reviews of the moving shot are recorded there too
-- **Next:** Brandon's verdict on each check-in, written into `BRIEF.md`
-- **Not to be built yet:** the route down the whole site, the layout, anything touching the 3D pieces
+- **Where:** Claude Code on Brandon's Mac, with Fable. `LOG.md`, top entry, is the handoff for this round
+- **His verdict on the first test shot (Nov 12):** "I think we nailed this and we build everything else off of this stream." With changes. They are in `BRIEF.md`, The stream, under "His verdict on the test shot, and what changes"
+- **Being built, the second round:** the shards rebuilt as facets in two materials, fewer of them where the stream lies on an object, the strike kept and free to be pushed further, more presence at the size of the whole page
+- **Next thing Brandon sees:** the second round at `/lab/stream`, with the first round's shards one switch away to compare
+- **Not to be built yet:** the route down the whole site, the layout, anything touching the 3D pieces, the city, the opening
 
 ## Phase 0 · Foundation
 
@@ -50,10 +49,10 @@ Study 01 is at `/lab/palette` and Study 02 at `/lab/buttons`. Stills are in `ref
 
 `BRIEF.md`, The stream, has the agreement. `QUALITY.md`, The stream, has the test it has to pass.
 
-- [x] What it is made of: shards of copper and glass riding round a core of light, the core a smooth wave of light. He picked it from two sketches at `/lab/stream-core` (Nov 11)
+- [x] What it is made of: shards riding round a core of light, the core a smooth wave of light. He picked it from two sketches at `/lab/stream-core` (Nov 11). The shards are abstract facets in a solid and a clear material (Nov 12)
 - [x] The agreement for the finished version (Nov 11)
-- [~] The test shot, check-in 1 · a paused frame: the core, the shards, the light on the page, the leading end at rest. At `/lab/stream?hold`. Not at the bar by its reviewers' judgment
-- [~] The test shot, check-in 2 · the same shot moving: scrolling down and back up, the leading end, both landings, the cursor, the phone view. At `/lab/stream`
+- [~] The test shot, first round. Built at `/lab/stream` and `/lab/stream?hold`. He is very happy with it and asked for changes (Nov 12)
+- [ ] The test shot, second round: facets in two materials, no bunching on objects, the strike kept
 
 After he says the shot looks incredible, and not before:
 

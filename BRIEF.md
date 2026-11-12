@@ -92,16 +92,16 @@ He said these while the stream was still going to be a liquid. They all still ho
 **The agreement for the finished version**
 
 - Fable proposed it and he accepted it whole: "I like all your recommendations." (Nov 11)
-  - **What it is:** a steady wave of light with many copper and glass shards riding round it and sparks coming off it. The arc appears only at the leading end and at the landings.
+  - **What it is:** a steady wave of light with many shards riding round it and sparks coming off it. (It said "copper and glass shards" until Nov 12. His verdict below replaced that.) The arc appears only at the leading end and at the landings.
   - **Where it is built:** Claude Code on his Mac, with Fable, because only hardware can show motion.
   - **What gets built:** one test shot, alone on a blank page, on the sketch's route: down, parting on a title, landing on a card, running off its end.
   - **What does not get built:** the route down the whole site, the layout, and anything touching the 3D pieces. Those wait until he says the shot looks incredible.
   - **How he judges it:** two check-ins only. A paused frame first, then the same shot moving.
-  - **Carried over from the sketch:** the mix of copper and glass, about its density, and speed tied to his scroll.
+  - **Carried over from the sketch:** a mix of two kinds of shard, about its density, and speed tied to his scroll.
   - **Better than the sketch:**
-    1. Shards are real objects with thickness and facets. Copper reflects like the buttons. Glass bends the core's light, in the warm palette only, no rainbow.
+    1. Shards are real objects with thickness and facets, in the warm palette only, no rainbow. (Until Nov 12 this also said copper reflects like the buttons and glass bends the core's light. His verdict below replaced that: nobody has to be able to name a material.)
     2. The core is a body of light with depth, not drawn lines.
-    3. The stream lights what it passes: the page, the title and card edges, and small glints thrown by the glass.
+    3. The stream lights what it passes: the page, and the title and card edges.
     4. The leading end is the hero moment: more energy the faster he scrolls, settling when he stops.
     5. Landings have shape and weight: shards scatter, bounce and spill off the edge.
     6. Motion has weight, never visibly loops, and retracts cleanly when he scrolls back up.
