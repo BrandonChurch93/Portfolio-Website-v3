@@ -64,3 +64,46 @@
   border-color: transparent;
   background: none;
 }
+
+/* The switch between the two rounds of shards stays on screen, so they can be swapped at any point of the scroll. */
+.switch {
+  position: fixed;
+  left: var(--edge);
+  bottom: var(--space-5);
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+
+.switchLabel {
+  margin-right: var(--space-2);
+  color: var(--text-3);
+}
+
+.option {
+  min-height: 2.75rem;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-2);
+  background: var(--bg-2);
+  color: var(--text-2);
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.option[aria-pressed='true'] {
+  border-color: var(--copper);
+  color: var(--copper-light);
+}
+
+.option:focus-visible {
+  outline: 2px solid var(--copper-light);
+  outline-offset: 2px;
+}

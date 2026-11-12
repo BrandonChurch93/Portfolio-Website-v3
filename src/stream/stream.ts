@@ -8,7 +8,7 @@ import { hash, seeded } from './rand';
 import { CORE_FLOATS, INSTANCE_FLOATS, KINDS, LAYERS, STREAK_FLOATS, StreamRenderer, type CardShape, type Frame, type TitleField } from './renderer';
 import { at, buildRoute, type Box, type Route } from './route';
 import { CORE_HALF } from './shaders';
-import { buildShards, COPPER_KINDS, GLASS_KINDS } from './shards';
+import { buildShards, facetKind, FIRST_KINDS, type Look } from './shards';
 import { FORK_FLOATS, LOOSE_FLOATS, SPARK_FLOATS, StreamSim } from './sim';
 
 // Puts the stream on a page. It reads where the title and the card are, plans the route round them, and each frame
@@ -16,6 +16,8 @@ import { FORK_FLOATS, LOOSE_FLOATS, SPARK_FLOATS, StreamSim } from './sim';
 // so what it draws stays locked to the page however fast the page is scrolled.
 
 export interface StreamHandle {
+  // Swap between the facets and the first round's shards, where it stands.
+  setLook(look: Look): void;
   dispose(): void;
 }
 
@@ -24,6 +26,7 @@ interface Options {
   card: HTMLElement;
   // Open with the frame held: nothing moves but the cursor's light.
   hold?: boolean;
+  look?: Look;
 }
 
 const S = STREAM;
@@ -36,34 +39,35 @@ interface Riders {
   n: number;
   branch: Uint8Array;
   spare: Uint8Array;
-  glass: Uint8Array;
+  clear: Uint8Array;
   kind: Uint8Array;
-  // at, pace, orbit radius, phase, sway rate, sway phase, size, spin rate, spin phase, then its spin axis, its starting turn and its own number
+  // at, pace, orbit radius, phase, sway rate, sway phase, size, spin rate, spin phase, then its spin axis, its starting turn, its own number, and a second number of its own
   f: Float32Array;
 }
-const RIDER = 17;
+const RIDER = 18;
 
-function makeRiders(route: Route, budget: StreamBudget): Riders {
-  const r = seeded(S.seed * 131 + 5), u = route.unit, K = S.shards;
+function makeRiders(route: Route, budget: StreamBudget, look: Look): Riders {
+  const r = seeded(S.seed * 131 + 5), u = route.unit, K = S.shards, sizes = S.sizes[look];
   const counts = route.branches.map((b) => Math.round((budget.per100 * b.len) / (100 * u)));
   const n = counts[0] + counts[1];
-  const out: Riders = { n, branch: new Uint8Array(n), spare: new Uint8Array(n), glass: new Uint8Array(n), kind: new Uint8Array(n), f: new Float32Array(n * RIDER) };
+  const out: Riders = { n, branch: new Uint8Array(n), spare: new Uint8Array(n), clear: new Uint8Array(n), kind: new Uint8Array(n), f: new Float32Array(n * RIDER) };
   for (let i = 0; i < n; i++) {
-    const o = i * RIDER, glass = r() < K.glass;
+    const o = i * RIDER, clear = r() < K.clear;
     out.branch[i] = i < counts[0] ? 0 : 1;
     out.spare[i] = r() < 0.5 ? 1 : 0;
-    out.glass[i] = glass ? 1 : 0;
-    out.kind[i] = Math.floor(r() * (glass ? GLASS_KINDS : COPPER_KINDS));
+    out.clear[i] = clear ? 1 : 0;
+    const pick = r();
     // Many small, a few large enough to show every face.
     const big = r() ** 3.4;
+    out.kind[i] = look === 'first' ? Math.floor(pick * FIRST_KINDS) : facetKind(big, pick);
     const q = [r() - 0.5, r() - 0.5, r() - 0.5, r() - 0.5], ql = Math.hypot(q[0], q[1], q[2], q[3]) || 1;
     const a = [r() - 0.5, r() - 0.5, r() - 0.5], al = Math.hypot(a[0], a[1], a[2]) || 1;
     out.f.set([
       // Each belongs to one of three bands that wind round the core like the strands of a rope, so the sheath has
       // an order to it and never reads as a cloud of loose parts.
       r(), 0.7 + 0.65 * r(), (K.near + (K.far - K.near) * r() ** 2.1) * u, (Math.floor(r() * 3) * TAU) / 3 + (r() + r() - 1) * 0.55, 0.3 + 0.7 * r(), r() * TAU,
-      (K.small + (K.large - K.small) * big) * u * (glass ? 1.12 : 1), (0.25 + 0.95 * r()) * (r() < 0.5 ? -1 : 1), r() * TAU,
-      a[0] / al, a[1] / al, a[2] / al, q[0] / ql, q[1] / ql, q[2] / ql, q[3] / ql, r(),
+      (sizes[0] + (sizes[1] - sizes[0]) * big) * u * (clear && look === 'first' ? 1.12 : 1), (0.25 + 0.95 * r()) * (r() < 0.5 ? -1 : 1), r() * TAU,
+      a[0] / al, a[1] / al, a[2] / al, q[0] / ql, q[1] / ql, q[2] / ql, q[3] / ql, r(), hash(i, 77, S.seed),
     ], o);
   }
   return out;
@@ -123,13 +127,14 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   host.appendChild(canvas);
   const meshes = buildShards(S.seed);
   let renderer: StreamRenderer | null = new StreamRenderer(canvas, meshes);
+  let look: Look = opts.look ?? 'facets';
   let route: Route | null = null;
   let sim: StreamSim | null = null;
   let riders: Riders | null = null;
   let budget: StreamBudget = STREAM_BUDGET.high;
   let built = '';
   let still = false;
-  let unit = 1;
+  let unit = 1, presence = 1;
   let hostTop = 0, hostH = 1, cssW = 1, cssH = 1;
   let core = new Float32Array(0), streaks = new Float32Array(0), shards = new Float32Array(0), scratch = new Float32Array(0);
   let keys = new Uint8Array(0);
@@ -158,6 +163,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     hostH = hr.height;
     hostTop = hr.top + scrollY;
     unit = unitFor(innerWidth, parseFloat(getComputedStyle(document.documentElement).fontSize) || 16);
+    presence = Math.max(0, Math.min(1, (innerWidth - S.presence[0]) / (S.presence[1] - S.presence[0])));
     const want = Math.min(devicePixelRatio || 1, budget.pixelRatio);
     const dpr = Math.min(want, Math.sqrt(budget.pixels / (cssW * cssH)));
     const made = titleField(opts.title, hr, dpr);
@@ -165,16 +171,11 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     const cardBox: Box = { l: cr.left - hr.left, t: cr.top - hr.top, r: cr.right - hr.left, b: cr.bottom - hr.top };
     const ink: Box = made ? made.ink : (() => { const b = opts.title.getBoundingClientRect(); return { l: b.left - hr.left, t: b.top - hr.top, r: b.right - hr.left, b: b.bottom - hr.top }; })();
     route = buildRoute(ink, cardBox, w, hostH + 260 * unit, unit);
-    riders = makeRiders(route, budget);
-    sim = new StreamSim(route, budget, S.seed);
     const cardShape: CardShape = { x: (cardBox.l + cardBox.r) / 2, y: (cardBox.t + cardBox.b) / 2, hw: (cardBox.r - cardBox.l) / 2, hh: (cardBox.b - cardBox.t) / 2, r: parseFloat(getComputedStyle(opts.card).borderTopLeftRadius) || 0 };
     renderer.configure(budget);
     renderer.resize(Math.round(cssW * dpr), Math.round(cssH * dpr), dpr);
     renderer.setRelief(made ? made.field : null, cardShape);
-    const most = riders.n + budget.loose;
-    shards = new Float32Array(most * INSTANCE_FLOATS);
-    scratch = new Float32Array(most * INSTANCE_FLOATS);
-    keys = new Uint8Array(most);
+    populate();
     const points = route.branches[0].n + route.branches[1].n + 8;
     core = new Float32Array(points * 2 * CORE_FLOATS);
     streaks = new Float32Array((budget.sparks * 12 + 40 * 60 * 6 + 220 * 12 + 120) * STREAK_FLOATS);
@@ -189,7 +190,19 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       scrollTo({ top: y, left: 0, behavior: 'instant' });
     }
     lastLine = heldLine ?? anchorLine(scrollY - hostTop);
-    if (!still) sim.settle(lastLine, clock.now());
+    if (!still) sim?.settle(lastLine, clock.now());
+  };
+
+  // The shards for the look in use: those that ride, and the simulation that throws the loose ones.
+  const populate = () => {
+    if (!route) return;
+    riders = makeRiders(route, budget, look);
+    sim = new StreamSim(route, budget, S.seed, S.sizes[look]);
+    const most = riders.n + budget.loose;
+    shards = new Float32Array(most * INSTANCE_FLOATS);
+    scratch = new Float32Array(most * INSTANCE_FLOATS);
+    keys = new Uint8Array(most);
+    settled = '';
   };
 
   // ---- the core: a ribbon down each side, as far as its leading end
@@ -271,7 +284,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       };
       draw(f[o], f[o + 1], f[o + 2], 0, steps, 0, 1);
     }
-    // What the glass throws onto the page: needles of light that point away from the core, out past a splinter, and
+    // What a clear shard throws onto the page: needles of light that point away from the core, out past it, and
     // come and go as it turns.
     for (let i = 0; i < glints; i++) {
       const o = i * 6, a = glint[o + 4];
@@ -305,12 +318,12 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     const reach2 = (K.turn * u) ** 2;
     let n = 0;
     const count = new Int32Array(LAYERS * KINDS);
-    const place = (x: number, y: number, z: number, size: number, qx: number, qy: number, qz: number, qw: number, cx: number, cy: number, tx: number, ty: number, own: number, lit: number, glass: number, kind: number) => {
+    const place = (x: number, y: number, z: number, size: number, qx: number, qy: number, qz: number, qw: number, cx: number, cy: number, tx: number, ty: number, own: number, lit: number, clear: number, kind: number, thrown: number) => {
       // Near the cursor a shard turns its face toward it, and flashes.
       const dx = lx - x, dy = ly - y, near = Math.exp(-(dx * dx + dy * dy) / reach2) * (0.3 + 0.7 * led);
       if (near > 0.02) {
         const nx = 2 * (qx * qz + qw * qy), ny = 2 * (qy * qz - qw * qx), nz = 1 - 2 * (qx * qx + qy * qy);
-        const dl = Math.hypot(dx, dy, lz - z) || 1, k = near * 0.85;
+        const dl = Math.hypot(dx, dy, lz - z) || 1, k = near * K.face[look];
         let gx = nx + ((dx / dl) - nx) * k, gy = ny + ((dy / dl) - ny) * k, gz = nz + (((lz - z) / dl) - nz) * k;
         const gl = Math.hypot(gx, gy, gz) || 1;
         gx /= gl; gy /= gl; gz /= gl;
@@ -325,8 +338,8 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       sc[o] = x; sc[o + 1] = y; sc[o + 2] = z; sc[o + 3] = size * (1 + z * K.depth / u);
       sc[o + 4] = qx; sc[o + 5] = qy; sc[o + 6] = qz; sc[o + 7] = qw;
       sc[o + 8] = cx; sc[o + 9] = cy; sc[o + 10] = tx; sc[o + 11] = ty;
-      sc[o + 12] = own; sc[o + 13] = lit; sc[o + 14] = 0; sc[o + 15] = near;
-      const key = (glass ? 2 : z < 0 ? 0 : 1) * KINDS + kind;
+      sc[o + 12] = own; sc[o + 13] = lit; sc[o + 14] = thrown; sc[o + 15] = near;
+      const key = (clear ? 2 : z < 0 ? 0 : 1) * KINDS + kind;
       keys[n++] = key;
       count[key]++;
     };
@@ -336,32 +349,39 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       const d = (R.f[o] * br.len + t * K.flow * u * R.f[o + 1]) % br.len;
       const lead = head - d;
       if (lead <= 0) continue;
+      const here = Math.min(br.n - 1, Math.floor(d / br.step));
       let grown = Math.min(1, lead / (K.grow * u));
-      if (R.spare[i]) grown *= Math.max(0, Math.min(1, (d - route.split) / (40 * u)));
+      // Where the two sides part they share the same ground, so each brings in its second half only as they draw apart.
+      if (R.spare[i]) grown *= Math.max(0, Math.min(1, br.apart[here] / (K.apart * u)));
       if (grown <= 0.02) continue;
       at(br, d, tmp);
       if (tmp[1] < top - 70 * u || tmp[1] > bottom + 70 * u) continue;
       const cx = tmp[0], cy = tmp[1], tx = tmp[2], ty = tmp[3];
-      if (cy < top - 70 * u || cy > bottom + 70 * u) continue;
-      const e = sim.energy[b];
-      // They gather and thin along the route in slow waves, so the stream has knots and open stretches.
-      const wave = 0.5 + 0.5 * Math.sin(d / (K.clump * u) - t * 0.22 + 2 * Math.sin(d / (K.clump * 3.6 * u)));
+      const e = sim.energy[b], hold = br.hold[here];
+      // They gather and thin along the route in slow waves, so the stream has knots and open stretches. Along an
+      // object there are no knots: they are spread evenly.
+      const free = 0.5 + 0.5 * Math.sin(d / (K.clump * u) - t * 0.22 + 2 * Math.sin(d / (K.clump * 3.6 * u)));
+      const wave = free + (0.5 - free) * hold;
       grown *= Math.max(0, Math.min(1, (0.5 + 0.5 * wave - R.f[o + 16]) / 0.1 + 1));
       if (grown <= 0.02) continue;
       const round = R.f[o + 3] + t * K.orbit + (d * TAU) / (K.wind * u) + 0.4 * Math.sin(t * R.f[o + 4] + R.f[o + 5]);
-      const far = R.f[o + 2] * (1 + (K.flare + K.flareFast * e) * Math.exp(-lead / (K.flareOver * u)));
+      const far = R.f[o + 2] * (1 + K.spread * hold) * (1 + (K.flare + K.flareFast * e) * Math.exp(-lead / (K.flareOver * u)));
       const side = far * Math.sin(round), z = far * Math.cos(round);
+      // On an object all of them ride the one side of the core, and on the inside of a turn they are squeezed
+      // together. Enough are taken away in both places that they lie no thicker there than on a straight run.
+      grown *= Math.max(0, Math.min(1, (R.f[o + 17] - K.thin * hold - Math.max(0, side * br.bend[here])) / 0.08 + 1));
+      if (grown <= 0.02) continue;
       let x = cx - ty * side, y = cy + tx * side;
       // Nothing rides through the title or the card: what would is turned back off the nearer face.
       for (const box of route.boxes) {
         const m = R.f[o + 6] * 0.7;
         if (x <= box.l - m || x >= box.r + m || y <= box.t - m || y >= box.b) continue;
         const up = y - box.t + m, left = x - box.l + m, right = box.r - x + m;
-        if (up < left && up < right) y = box.t - m - up * 0.7; else if (left < right) x = box.l - m - left * 0.7; else x = box.r + m + right * 0.7;
+        if (up < left && up < right) y = box.t - m - up; else if (left < right) x = box.l - m - left; else x = box.r + m + right;
       }
       const spin = R.f[o + 8] + t * R.f[o + 7], h = Math.sin(spin / 2), cw = Math.cos(spin / 2);
-      // A larger splinter near the core throws a sliver of light out past itself, on the far side from the core.
-      if (R.glass[i] && R.f[o + 6] > 5.5 * u && glints < GLINTS && Math.abs(side) > 5 * u) {
+      // A larger clear shard near the core throws a sliver of light out past itself, on the far side from the core.
+      if (R.clear[i] && R.f[o + 6] > 5.5 * u && glints < GLINTS && Math.abs(side) > 5 * u) {
         const flick = Math.sin(spin * 2.3 + R.f[o + 16] * 40) * Math.sin(spin * 1.1 + R.f[o + 3]);
         const amount = Math.max(0, flick - 0.25) * grown * 1.5 / (1 + Math.abs(side) / (26 * u));
         if (amount > 0.02) {
@@ -375,10 +395,10 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       const bx = R.f[o + 12], by = R.f[o + 13], bz = R.f[o + 14], bw = R.f[o + 15];
       place(x, y, z, R.f[o + 6] * grown,
         cw * bx + ax * bw + ay * bz - az * by, cw * by - ax * bz + ay * bw + az * bx, cw * bz + ax * by - ay * bx + az * bw, cw * bw - ax * bx - ay * by - az * bz,
-        cx, cy, tx, ty, R.f[o + 16], 1, R.glass[i], R.kind[i]);
+        cx, cy, tx, ty, R.f[o + 16], 1, R.clear[i], R.kind[i], 0);
     }
 
-    const p = sim.loose;
+    const p = sim.loose, sizes = S.sizes[look], loosest = sizes[0] * S.loose.least;
     for (let i = 0; i < sim.looseCount; i++) {
       const o = i * LOOSE_FLOATS, age = p[o + 13], life = p[o + 14];
       const x = p[o], y = p[o + 1];
@@ -395,8 +415,9 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       const br = route.branches[bb];
       const size = Math.abs(p[o + 15]) * Math.min(1, age / 0.07) * Math.min(1, (life - age) / (life * S.loose.fade));
       const own = sim.looseSeed[i];
-      const glass = p[o + 15] < 0 ? 1 : 0;
-      place(x, y, p[o + 2], size, p[o + 6], p[o + 7], p[o + 8], p[o + 9], br.x[bi], br.y[bi], br.tx[bi], br.ty[bi], own, 1, glass, Math.floor(own * 7.99));
+      const clear = p[o + 15] < 0 ? 1 : 0;
+      const kind = look === 'first' ? Math.floor(own * FIRST_KINDS) : facetKind((Math.abs(p[o + 15]) / u - loosest) / (sizes[1] - sizes[0]), own);
+      place(x, y, p[o + 2], size, p[o + 6], p[o + 7], p[o + 8], p[o + 9], br.x[bi], br.y[bi], br.tx[bi], br.ty[bi], own, 1, clear, kind, 1);
     }
 
     // Sort into the lots they are drawn in.
@@ -466,7 +487,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     const drawn = fillShards(now, canvasTop, canvasTop + cssH, lx, ly, lz, led);
     const streakCount = fillStreaks(now);
     const f: Frame = {
-      view: [0, canvasTop, cssW, cssH], time: now, unit, lamp: [lx, ly, lz, 0.5 + 0.5 * led], energy: [sim.energy[0], sim.energy[1]], split: route.split / unit,
+      view: [0, canvasTop, cssW, cssH], time: now, unit, lamp: [lx, ly, lz, 0.5 + 0.5 * led], energy: [sim.energy[0], sim.energy[1]], split: route.split / unit, look, presence,
       core, coreRuns: runs, streaks, streakCount, shards, lots,
     };
     renderer.draw(f);
@@ -495,7 +516,23 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   }));
   void ready;
 
-  registry.tool('streamState', () => ({ on: host.dataset.stream, unit, shards: stats.streamShards, sparks: sim?.sparkCount ?? 0, loose: sim?.looseCount ?? 0, head: sim ? [sim.head[0], sim.head[1]] : [], energy: sim ? [sim.energy[0], sim.energy[1]] : [], riders: riders?.n ?? 0 }));
+  registry.tool('streamState', () => ({ on: host.dataset.stream, look, unit, shards: stats.streamShards, sparks: sim?.sparkCount ?? 0, loose: sim?.looseCount ?? 0, head: sim ? [sim.head[0], sim.head[1]] : [], energy: sim ? [sim.energy[0], sim.energy[1]] : [], riders: riders?.n ?? 0 }));
+  // How many shards the last frame drew inside a rectangle of the page, and how many of those were thrown loose.
+  registry.tool('streamCount', (l: number, t: number, r: number, b: number) => {
+    let riding = 0, loose = 0;
+    for (let i = 0; i < stats.streamShards; i++) {
+      const o = i * INSTANCE_FLOATS, x = shards[o], y = shards[o + 1];
+      if (x < l || x > r || y < t || y > b || shards[o + 3] < 0.5) continue;
+      if (shards[o + 14] > 0.5) loose++; else riding++;
+    }
+    return { riding, loose };
+  });
+  // Every thrown shard as its own number, x and y, so a script can follow each one from frame to frame.
+  registry.tool('streamThrown', () => {
+    const out: number[] = [];
+    if (sim) for (let i = 0; i < sim.looseCount; i++) out.push(sim.looseSeed[i], sim.loose[i * LOOSE_FLOATS], sim.loose[i * LOOSE_FLOATS + 1]);
+    return out;
+  });
   // streamPlay(fromScroll, toScroll, fromTime, toTime) scripts a scroll for frozen frames. streamPlay() ends it.
   registry.tool('streamPlay', (y0?: number, y1?: number, t0?: number, t1?: number) => {
     script = y0 === undefined || y1 === undefined ? null : { y0, y1, t0: t0 ?? 1, t1: t1 ?? 2 };
@@ -503,6 +540,12 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   });
 
   return {
+    setLook(next: Look) {
+      if (next === look || disposed) return;
+      look = next;
+      populate();
+      if (!still) sim?.settle(lastLine, clock.now());
+    },
     dispose() {
       disposed = true;
       offFrame();

@@ -17,6 +17,12 @@ export interface Branch {
   ty: Float32Array;
   // The lowest the route has been by each point, so a height on the page gives one distance along it.
   floor: Float32Array;
+  // How much the route lies along an object or hooks round one here, 0 to 1.
+  hold: Float32Array;
+  // How sharply it turns here, as one over the radius of the turn. Positive turns toward (-ty, tx).
+  bend: Float32Array;
+  // How far the other side of the stream is from this point of this side.
+  apart: Float32Array;
 }
 
 export interface Landing {
@@ -97,7 +103,7 @@ function branch(pts: number[], boxes: Box[], unit: number, phase: number, splitA
   }
   const p = even(swayed);
   const n = p.length / 2;
-  const out: Branch = { n, len: (n - 1) * step, step, x: new Float32Array(n), y: new Float32Array(n), tx: new Float32Array(n), ty: new Float32Array(n), floor: new Float32Array(n) };
+  const out: Branch = { n, len: (n - 1) * step, step, x: new Float32Array(n), y: new Float32Array(n), tx: new Float32Array(n), ty: new Float32Array(n), floor: new Float32Array(n), hold: new Float32Array(n), bend: new Float32Array(n), apart: new Float32Array(n).fill(1e6) };
   for (let i = 0; i < n; i++) { out.x[i] = p[i * 2]; out.y[i] = p[i * 2 + 1]; }
   let low = -Infinity;
   for (let i = 0; i < n; i++) {
@@ -107,6 +113,14 @@ function branch(pts: number[], boxes: Box[], unit: number, phase: number, splitA
     out.ty[i] = dy / len;
     low = Math.max(low, out.y[i]);
     out.floor[i] = low;
+    let near = Infinity;
+    for (const box of boxes) near = Math.min(near, outside(box, out.x[i], out.y[i]));
+    out.hold[i] = 1 - ease(R.hold[0] * unit, R.hold[1] * unit, near);
+  }
+  const span = 4;
+  for (let i = 0; i < n; i++) {
+    const a = Math.max(0, i - span), b = Math.min(n - 1, i + span);
+    out.bend[i] = ((out.tx[b] - out.tx[a]) * -out.ty[i] + (out.ty[b] - out.ty[a]) * out.tx[i]) / ((b - a) * step);
   }
   return out;
 }
@@ -126,6 +140,10 @@ export function buildRoute(title: Box, card: Box, width: number, bottom: number,
   // A narrow screen has no room for the route to wander.
   const narrow = width < 600 ? 0.4 : 1;
   const branches: [Branch, Branch] = [branch(left, boxes, u, 0, split, narrow), branch(right, boxes, u, 2.4, split, narrow)];
+  for (let i = 0, n = Math.min(branches[0].n, branches[1].n); i < n; i++) {
+    const d = Math.hypot(branches[0].x[i] - branches[1].x[i], branches[0].y[i] - branches[1].y[i]);
+    branches[0].apart[i] = branches[1].apart[i] = d;
+  }
   const first = (b: Branch, test: (x: number, y: number) => boolean) => { for (let i = 0; i < b.n; i++) if (test(b.x[i], b.y[i])) return i * b.step; return b.len; };
   const L = branches[0];
   const landings: Landing[] = [

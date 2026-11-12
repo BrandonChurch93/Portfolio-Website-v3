@@ -80,6 +80,7 @@ npm run shot -- /lab/buttons --hover '[data-variant="primary"]' --wait 1200
 npm run strip -- "/lab/pour?ui=0" --times 0.62,0.8,1.3,2.2,4.4,7,8,9.6
 npm run perf -- /lab/pour --vp phone --cpu 4
 npm run shot -- "/lab/stream?hold&ui=0"
+npm run shot -- "/lab/stream?hold&ui=0&shards=first"
 npm run strip -- "/lab/stream?ui=0" --times 1,1.7,2.4,2.8,3.1,3.4,4.3,6 --eval "window.__site.call('streamPlay', 150, 1250, 1, 3.4)"
 ```
 
@@ -88,6 +89,7 @@ npm run strip -- "/lab/stream?ui=0" --times 1,1.7,2.4,2.8,3.1,3.4,4.3,6 --eval "
 - Images go to `shots/`, which is not committed. Copy one into `reference/` only when it is worth keeping.
 - The scripts print `hardware` or `software`. `QUALITY.md` says what each can be trusted for.
 - `streamPlay(fromScroll, toScroll, fromTime, toTime)` scripts a scroll of the stream's page, so a filmstrip of frozen frames can show it being scrolled. `streamPlay()` ends it.
+- `streamCount(left, top, right, bottom)` counts the shards the last frame drew inside a rectangle of the stream's page, and `streamThrown()` lists every thrown shard with its place. They are how the bunching on objects and the bounce at a strike were measured.
 
 ## Where things are
 
@@ -98,7 +100,7 @@ npm run strip -- "/lab/stream?ui=0" --times 1,1.7,2.4,2.8,3.1,3.4,4.3,6 --eval "
 | `src/pieces/` | The 3D pieces, one folder each, behind the contract in `src/world/piece.ts` |
 | `src/world/` | Shared 3D code: the stage, materials, the clock, quality tiers |
 | `src/lamp/` | The cursor light. One lamp, read by everything that is lit |
-| `src/stream/` | The stream. Its test shot is at `/lab/stream`, and `/lab/stream?hold` opens it with the frame held. `route.ts` plans where it goes from where the title and card are, `sim.ts` steps what flies (the leading ends, sparks, thrown shards, arcs), `shards.ts` makes the shard meshes, `shaders.ts` and `renderer.ts` draw it, `config.ts` holds its constants and budgets, `stream.ts` puts it on a page |
+| `src/stream/` | The stream. Its test shot is at `/lab/stream`, and `/lab/stream?hold` opens it with the frame held. `route.ts` plans where it goes from where the title and card are, `sim.ts` steps what flies (the leading ends, sparks, thrown shards, arcs), `shards.ts` makes the shard meshes, which are facets, `shaders.ts` and `renderer.ts` draw it, `config.ts` holds its constants and budgets, `stream.ts` puts it on a page. `shards-first.ts` and `shaders-first.ts` are the first round's copper leaf and glass, kept one switch away: `/lab/stream?shards=first`, or the switch at the foot of that page |
 | `src/stream-core/` | The sketch of the stream Brandon picked, at `/lab/stream-core`: shards of copper and glass riding a core of light. Panel A, the wave of light, is his pick and the floor to beat. Panel B is the arc he passed over. A reference: do not build on it or change it. `?reach=0.5` sets how far the stream has run |
 | `src/stream-facets/` | A quick study at `/lab/stream-facets`: two looks for the stream's shards, cut and jagged, circling one line of light. Click a panel to strike it |
 | `src/stream-ideas/` | An earlier study at `/lab/stream-ideas`: three rough ideas (threads, copper leaf, ink). Its `route.ts` and `gl.ts` are used by the sketch above. Set aside |

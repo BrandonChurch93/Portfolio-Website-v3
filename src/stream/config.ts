@@ -14,6 +14,9 @@ export const STREAM = {
   heldAt: 0.57,
   // The canvas is taller than the screen by this much above and below, so a fast scroll never outruns it.
   margin: 110,
+  // Screens narrower than the first width get none of the extra presence a wide page needs, and screens as wide as
+  // the second get all of it.
+  presence: [600, 1400] as [number, number],
   // Frozen or still, sparks and thrown shards are run forward this long from nothing, so the same frame always draws.
   warmSeconds: 3.2,
 
@@ -29,6 +32,8 @@ export const STREAM = {
     swayLong: 640,
     swayShort: 270,
     start: -180,        // where it comes in, above the top of the page
+    // The route counts as lying on an object when it is within the first distance of one, and as clear of it by the second.
+    hold: [8, 46] as [number, number],
   },
 
   head: {
@@ -54,17 +59,32 @@ export const STREAM = {
     flareFast: 2.6,     // and more with its energy
     flareOver: 46,      // the flare dies away over this distance behind the leading end
     grow: 16,           // a shard reaches full size this far behind the leading end
-    glass: 0.4,         // the share that is glass
-    small: 3.4,         // sizes, as the distance from center to tip
-    large: 13.5,
+    clear: 0.4,         // the share that is clear, the rest being solid
     depth: 0.0011,      // how much nearer shards are drawn larger
     turn: 170,          // within this distance of the cursor a shard turns to face it
+    // How far round it turns. A leaf is flat and can turn all the way. A facet turned all the way shows only its
+    // broadest face, flat on, and loses its shape.
+    face: { facets: 0.5, first: 0.85 } as Record<'facets' | 'first', number>,
+    // Where the stream lies along an object its shards cannot go round the far side of the core, so all of them ride
+    // the near side and are twice as thick there. This share of them is taken away, and the rest ride this much wider.
+    thin: 0.38,
+    spread: 0.28,
+    apart: 56,          // the two sides carry their full number of shards once they are this far apart
   },
 
+  // Sizes, as the distance from a shard's center to its farthest point: the smallest and the largest. A facet is
+  // mostly points, so it covers less than a leaf that reaches as far.
+  sizes: { facets: [3.6, 13.5], first: [3.4, 13.5] } as Record<'facets' | 'first', [number, number]>,
+
   loose: {
+    least: 1.3,         // the smallest shard thrown, against the smallest that rides
     gravity: 760,
-    bounce: 0.46,
+    bounce: 0.58,       // the share of its fall a bounce keeps, give or take a quarter
     grip: 0.72,         // how much sideways speed a bounce keeps
+    settle: 55,         // falling slower than this it no longer bounces
+    carry: 210,         // how fast the flow carries one along a surface once it has stopped bouncing
+    skip: 4,            // times a second one being carried catches and skips
+    spill: 0.65,        // seconds it is given to fall once it has been carried off the end
     life: [1.3, 2.6] as [number, number],
     fade: 0.3,          // the share of its life over which it shrinks away at the end
     trickle: 5,         // thrown each second at a landing at rest
@@ -103,7 +123,7 @@ export interface StreamBudget {
   pixelRatio: number;
   pixels: number;       // the canvas never has more than this many
   samples: number;      // multisampling of the shards' edges
-  split: boolean;       // glass takes three samples and splits them warm
+  split: boolean;       // a clear shard takes three samples of what is behind it and splits them warm
   levels: number;       // steps in the glow
 }
 

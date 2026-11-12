@@ -10,7 +10,7 @@ export const LIGHT_MAX = 8;
 // Half the width of the ribbon the core is drawn on, in units.
 export const CORE_HALF = 34;
 
-const HEAD = `#version 300 es
+export const HEAD = `#version 300 es
 precision highp float;
 `;
 
@@ -31,7 +31,7 @@ vec3 ramp(float a){
 }
 `;
 
-const NOISE = `
+export const NOISE = `
 float hash1(float n){ return fract(sin(n * 127.1) * 43758.5453); }
 float hash2(vec2 p){ p = fract(p * vec2(123.34, 456.21)); p += dot(p, p + 45.32); return fract(p.x * p.y); }
 float hash3(vec3 p){ p = fract(p * vec3(0.1031, 0.1030, 0.0973)); p += dot(p, p.yxz + 33.33); return fract((p.x + p.y) * p.z); }
@@ -57,7 +57,7 @@ void main(){ vAlong = aAlong; gl_Position = clip(aPos, 0.0); }`;
 
 export const coreFrag = (strands: number) => `${HEAD}
 in vec3 vAlong;
-uniform float uTime, uEnergy;
+uniform float uTime, uEnergy, uHeart;
 uniform vec2 uOwn;   // a shift that gives each side its own strands, and where along the route they begin
 out vec4 frag;
 ${NOISE}
@@ -94,7 +94,7 @@ void main(){
   // falls away slowly through hot and flame to ember. A sharp even edge is what makes a tube.
   float gather = 1.0 - abs(face);
   float q = x / mix(0.8, 1.4, gather);
-  sum += mix(1.7, 3.0, gather * gather) / pow(1.0 + q * q, 1.6);
+  sum += mix(1.7, 3.0, gather * gather) * uHeart / pow(1.0 + q * q, 1.6);
   // Light runs down it, and it burns hotter toward its leading end.
   float run = 0.84 + 0.16 * sin(s / 83.0 - t * 2.1) * sin(s / 211.0 - t * 0.9 + 0.8);
   float head = 1.0 - smoothstep(0.0, 120.0, lead);
@@ -308,6 +308,7 @@ in vec3 aPos;
 in vec3 aNormal;
 in vec3 aEdge;
 in float aTag;
+in vec3 aBevel0, aBevel1, aBevel2;
 in vec4 iPlace;   // x, y, z, size
 in vec4 iTurn;    // which way it is turned, as a quaternion
 in vec4 iCore;    // the nearest point of the core, and the way the core runs there
@@ -317,20 +318,23 @@ out vec3 vP, vN, vEdge, vObj;
 out float vTag;
 flat out vec4 vCore, vMore;
 flat out float vSize;
+flat out vec3 vB0, vB1, vB2;
 ${CLIP}
 vec3 turn(vec4 q, vec3 v){ return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v); }
 void main(){
   vec3 w = iPlace.xyz + turn(iTurn, aPos * iPlace.w);
   vP = w; vN = turn(iTurn, aNormal); vEdge = aEdge * iPlace.w; vObj = aPos; vTag = aTag;
   vCore = iCore; vMore = iMore; vSize = iPlace.w;
+  vB0 = turn(iTurn, aBevel0); vB1 = turn(iTurn, aBevel1); vB2 = turn(iTurn, aBevel2);
   gl_Position = clip(w.xy, -w.z / uDeep);
 }`;
 
-const SHARD_LIGHT = `
+export const SHARD_LIGHT = `
 in vec3 vP, vN, vEdge, vObj;
 in float vTag;
 flat in vec4 vCore, vMore;
 flat in float vSize;
+flat in vec3 vB0, vB1, vB2;
 uniform float uUnit, uDpr;
 uniform vec3 uLamp;
 uniform float uLampI;
@@ -371,57 +375,54 @@ float edgeLine(float wide){
   float e = min(vEdge.x, min(vEdge.y, vEdge.z));
   return 1.0 - smoothstep(wide * 0.35, wide, e);
 }
+// Where two faces of a facet meet there is a bevel too fine to see, looking halfway between them. This gives the
+// bevel of the edge nearest this point, and how much of a hairline along that edge the point is in.
+// How far out toward a point of the facet this is: nothing through its body, 1 at its farthest tip.
+float tipAt(){ return pow(smoothstep(0.68, 1.0, length(vObj)), 3.0); }
+vec3 bevelAt(out float line){
+  line = edgeLine(1.15 / uDpr + 0.12);
+  vec3 b = vEdge.x <= vEdge.y && vEdge.x <= vEdge.z ? vB0 : (vEdge.y <= vEdge.z ? vB1 : vB2);
+  return normalize(b);
+}
 `;
 
-// Copper leaf. The same metal as the buttons, and like them a mirror. Beaten leaf is crinkled into small facets,
-// each leaning its own way, so the core shows in it as a scatter of facets that blaze beside facets that are dark,
-// and the scatter runs across the leaf as it turns. That jump from one facet to the next is what makes it metal.
-export const COPPER_FRAG = `${HEAD}
+// A solid facet. Every face is a flat mirror of dark metal, the same metal as the buttons. The core is a line, so a
+// face shows either none of it or all of it: it is dark until it turns to the light, and then the whole face flashes.
+// Nothing is drawn on the surface. What there is to find is in the light: each face its own tone, a hairline where
+// the bevel of an edge catches the core, and a glint on the points.
+export const SOLID_FRAG = `${HEAD}
 uniform vec3 uF0, uCopper;
 out vec4 frag;
-${NOISE}${SHARD_LIGHT}
+${SHARD_LIGHT}
 void main(){
-  vec3 flat_ = normalize(vN);
-  // The crinkle: facets a few pixels across, however big the leaf is.
-  float cells = clamp(vSize * uDpr / 1.9, 2.0, 8.0);
-  vec2 g = vObj.xy * cells + vMore.x * 57.0;
-  vec2 ip = floor(g), fp = fract(g), id = ip;
-  float best = 9.0, next = 9.0;
-  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++){
-    vec2 o = vec2(float(i), float(j));
-    vec2 r = o + vec2(hash2(ip + o), hash2(ip + o + 17.3)) - fp;
-    float d = dot(r, r);
-    if (d < best){ next = best; best = d; id = ip + o; } else if (d < next) next = d;
-  }
-  vec3 lean = vec3(hash2(id + 3.1), hash2(id + 9.7), hash2(id + 5.3)) - 0.5;
-  vec3 N = normalize(flat_ + (lean - flat_ * dot(lean, flat_)) * 0.3 * (1.0 - vTag));
-  float crease = smoothstep(0.0, 0.16, sqrt(next) - sqrt(best));
-  float fall, lampI;
+  vec3 N = normalize(vN);
+  float fall, line;
   vec3 plane, Ll;
   vec3 toward = coreFrom(fall, plane);
-  lampI = lampLight(Ll);
-  float glint = coreBand(N, toward, plane, 0.14) * 9.0;
-  float sheen = coreBand(flat_, toward, plane, 0.7) * 1.9;
-  float nll = max(dot(N, Ll), 0.0);
-  float lamp = (ggx(max(dot(N, normalize(Ll + V)), 0.0), 0.16) * 0.8 + 0.05) * nll * lampI;
-  float light = room(reflect(-V, N)) * (0.25 + 0.75 * min(fall, 1.0)) + fall * (glint + sheen + 0.03) + lamp;
-  light *= mix(0.72, 1.0, crease);
-  // A torn edge is bare metal: a thin line of it shows where the light reaches.
-  float line = edgeLine(1.1 / uDpr + 0.2) * (1.0 - vTag);
-  light += line * (0.02 + 0.3 * fall * (0.3 + sheen) + 0.5 * lampI);
-  // Seen edge on, a leaf is a hair of metal, dim but never black against the glow.
-  light = mix(light, 0.06 * fall + light * 0.5, vTag);
+  float lampI = lampLight(Ll);
+  vec3 B = bevelAt(line);
+  float flash = coreBand(N, toward, plane, 0.17) * 8.0;
+  float sheen = coreBand(N, toward, plane, 0.4) * 0.75;
+  float turned = max(dot(N, toward), 0.0);
+  // The cursor is a small light, so a flat face mirrors it only when it lines up almost exactly. Turned toward it,
+  // a few faces flash and the rest only warm, and the faces beside them stay dark: the shape is never lost.
+  float lamp = (ggx(max(dot(N, normalize(Ll + V)), 0.0), 0.1) * 0.11 + 0.07) * max(dot(N, Ll), 0.0) * lampI;
+  float light = room(reflect(-V, N)) * (0.16 + 0.6 * min(fall, 1.0)) + fall * (flash + sheen + 0.06 * turned + 0.01) + lamp;
+  float edge = fall * (coreBand(B, toward, plane, 0.45) * 3.4 + 0.1) + (ggx(max(dot(B, normalize(Ll + V)), 0.0), 0.22) * 0.35 + 0.1) * max(dot(B, Ll), 0.0) * lampI + 0.03;
+  light = mix(light, max(light, edge), line) + tipAt() * (1.3 * fall + 0.6 * lampI);
   vec3 col = mix(uCopper, uF0, 0.3 * clamp(light - 0.6, 0.0, 1.0)) * vec3(1.0, 0.92, 0.8) * light * 1.35;
-  // Keep the hue as it gets bright, then let the heart of a highlight bleach to pale, as the buttons' highlights do.
+  // Keep the hue as it gets bright, then let the heart of a flash bleach to pale, as the buttons' highlights do.
   float mx = max(col.r, max(col.g, col.b));
   col *= (1.0 - exp(-mx * 1.15)) / (mx * 0.955 + 1e-5);
   col = mix(col, uPale, clamp((light - 1.7) * 0.4, 0.0, 0.85));
   frag = vec4(col, 1.0);
 }`;
 
-// Glass. On a dark page a piece of glass is invisible but for three things: its broken edges, which carry light,
-// the bright thing behind it, which it shifts, and the glint of a light it mirrors. Its body is left almost clear.
-export const glassFrag = (split: boolean) => `${HEAD}
+// A clear facet: the same shape, carrying light and not throwing it back. What is behind it shows through, moved by
+// each flat face its own way, so the core behind one breaks into steps. It holds light inside, most in the faces
+// turned from the core, where the light that came in on the near side comes back out. It is brightest on its edges.
+// All of its light is an amount, colored by the ramp, so it stays inside the warm range.
+export const clearFrag = (split: boolean) => `${HEAD}
 uniform sampler2D uScene;
 uniform vec2 uRes;
 uniform vec3 uEmber, uFlame, uHot;
@@ -436,40 +437,34 @@ vec3 ramp(float a){
 }
 void main(){
   vec3 N = normalize(vN);
-  float band = vTag;
-  // What is behind it, seen where the glass bends the eye's line to. Its faces are a little rounded, so the core
-  // behind a splinter is not just moved but bent.
-  vec2 shift = N.xy * vSize * mix(1.5, 2.4, band);
+  float fall, line;
+  vec3 plane, Ll;
+  vec3 toward = coreFrom(fall, plane);
+  float lampI = lampLight(Ll);
+  vec3 B = bevelAt(line);
+  vec2 shift = N.xy * vSize * 1.9;
   vec2 uv = gl_FragCoord.xy / uRes, to = vec2(shift.x, -shift.y) * uDpr / uRes;
   vec4 mid = texture(uScene, uv + to);
   vec3 col = mid.rgb;
-  float alpha = mid.a;
   ${split ? `
   // It splits what it bends, but only within the warm range: flame on one side, hot on the other.
   vec3 inner = texture(uScene, uv + to * 0.7).rgb, outer = texture(uScene, uv + to * 1.34).rgb;
   float lm = dot(mid.rgb, vec3(0.4, 0.45, 0.15)), li = dot(inner, vec3(0.4, 0.45, 0.15)), lo = dot(outer, vec3(0.4, 0.45, 0.15));
   col = col * 0.7 + (inner + outer) * 0.15 + uFlame * max(lo - lm, 0.0) * 0.9 + uHot * max(li - lm, 0.0) * 0.6;` : ''}
-  col *= vec3(0.98, 0.95, 0.9);
-  float fall, lampI;
-  vec3 plane, Ll;
-  vec3 toward = coreFrom(fall, plane);
-  lampI = lampLight(Ll);
-  float fres = 0.04 + 0.96 * pow(1.0 - abs(N.z), 5.0);
-  // The glint: glass is smooth, so it mirrors the core as a thin hard line and the cursor as a point.
-  float glint = coreBand(N, toward, plane, 0.05) * 2.2 * fall * (0.3 + 0.7 * fres + 0.5 * band);
-  glint += ggx(max(dot(N, normalize(Ll + V)), 0.0), 0.08) * max(dot(N, Ll), 0.0) * 0.06 * lampI;
-  // The light it carries shows on its broken edges, each by how squarely it faces the core: the near edge of a
-  // splinter burns and the far edge is almost dark. That difference is what stops it reading as a drawn outline.
-  float facing = pow(max(dot(N, toward), 0.0), 1.4);
-  float carried = fall * (0.15 + 0.85 * facing) + 0.6 * lampI * max(dot(N, Ll), 0.0);
-  float line = edgeLine(0.85 / uDpr + 0.1) * band;
-  // Each part takes its color from its own amount of light and is laid in by how much of the pixel it covers,
-  // so a thin edge stays pale and does not redden as it thins.
-  // Its body is clear but not empty: it holds a faint light, more on the side turned to the core.
-  float faceLight = min(0.02 + 0.25 * room(reflect(-V, N)) + fall * (0.015 + 0.07 * pow(max(dot(N, toward) + 0.35, 0.0), 2.0) + 0.06 * fres), 0.13);
-  float bandLight = 0.05 + 1.3 * carried;
-  col += ramp(mix(faceLight, bandLight, band)) * (1.0 - line) + ramp(0.3 + 3.4 * carried) * line + ramp(glint);
-  frag = vec4(min(col, uPale), clamp(alpha + 0.04 + line * 0.6 + band * 0.3 + glint, 0.0, 1.0));
+  col *= vec3(0.86, 0.8, 0.72);
+  // Looking into a face, what shows is the faces behind it, bent: three panes to a face, one against each edge, each
+  // holding its own amount.
+  float away = 0.5 - 0.5 * dot(normalize(N + 1.6 * B), toward);
+  float graze = pow(1.0 - abs(N.z), 3.0);
+  float held = min(fall, 1.5) * (0.07 + 0.52 * away * away * away + 0.12 * graze) + 0.04 * room(reflect(-V, B));
+  float toLamp = max(dot(B, Ll), 0.0);
+  float glint = coreBand(N, toward, plane, 0.07) * 2.8 * fall + ggx(max(dot(N, normalize(Ll + V)), 0.0), 0.1) * max(dot(N, Ll), 0.0) * 0.1 * lampI;
+  float edge = fall * (0.4 + 2.6 * coreBand(B, toward, plane, 0.5)) + lampI * (0.12 + 0.8 * toLamp * toLamp) + 0.06;
+  float point = tipAt() * (1.6 * fall + 0.7 * lampI);
+  held += 0.16 * lampI * max(dot(N, Ll), 0.0);
+  // Each part takes its color from its own amount of light, so a thin edge stays pale and does not redden as it thins.
+  col += ramp(held + glint + point) * (1.0 - line) + ramp(edge + point) * line;
+  frag = vec4(min(col, uPale), clamp(mid.a + 0.08 + 0.6 * line + min(held, 0.5) + glint, 0.0, 1.0));
 }`;
 
 // ---- the light, given its color and laid into the picture between the shards behind the core and those in front

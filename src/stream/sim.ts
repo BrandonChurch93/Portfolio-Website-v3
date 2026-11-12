@@ -9,7 +9,7 @@ import { at, reachFor, type Route } from './route';
 const S = STREAM;
 const tmp = new Float32Array(4);
 const SPARK = 8;   // x, y, vx, vy, age, life, heat, kind (0 a spark, 1 a fine one, 2 one that has burst)
-const LOOSE = 16;  // x, y, z, vx, vy, vz, qx, qy, qz, qw, wx, wy, wz, age, life, size (negative for glass)
+const LOOSE = 16;  // x, y, z, vx, vy, vz, qx, qy, qz, qw, wx, wy, wz, age, life, size (negative for a clear one)
 const FORK = 8;    // x, y, angle, reach, age, life, seed, strength
 
 export class StreamSim {
@@ -32,7 +32,7 @@ export class StreamSim {
   private readonly count = new Int32Array(16);
   private readonly maxForks = 40;
 
-  constructor(private route: Route, private budget: StreamBudget, private seed: number) {
+  constructor(private route: Route, private budget: StreamBudget, private seed: number, private sizes: [number, number]) {
     this.sparks = new Float32Array(budget.sparks * SPARK);
     this.loose = new Float32Array(budget.loose * LOOSE);
     this.looseSeed = new Float32Array(budget.loose);
@@ -196,8 +196,8 @@ export class StreamSim {
     if (this.looseCount >= this.budget.loose) return;
     const u = this.route.unit, L = this.route.landings[i], r = (j: number) => this.rnd(5 + i, k, j);
     const way = L.out === 0 ? (r(0) < 0.5 ? -1 : 1) : r(0) < 0.8 ? 1 : -1;
-    const glass = r(1) < S.shards.glass;
-    const size = (S.shards.small * 1.3 + (S.shards.large - S.shards.small) * r(2) ** 1.8) * u;
+    const clear = r(1) < S.shards.clear;
+    const size = (this.sizes[0] * S.loose.least + (this.sizes[1] - this.sizes[0]) * r(2) ** 1.8) * u;
     // Thrown up and outward in a fan: nearly straight up at its middle, flatter toward the way things leave.
     const lean = -Math.PI / 2 + way * (0.12 + 1.0 * r(3));
     const v = (150 + 420 * r(4) * (0.4 + 0.6 * r(5))) * u * (0.45 + 0.5 * Math.min(1, hard));
@@ -209,7 +209,7 @@ export class StreamSim {
     const life = S.loose.life[0] + (S.loose.life[1] - S.loose.life[0]) * r(14);
     this.loose.set([
       L.x + way * r(15) * 14 * u, L.y - size - r(16) * 6 * u, (r(17) - 0.5) * 30 * u, vx, vy, (r(18) - 0.5) * 60 * u,
-      q[0] / ql, q[1] / ql, q[2] / ql, q[3] / ql, (w[0] / wl) * spin, (w[1] / wl) * spin, (w[2] / wl) * spin, 0, life, glass ? -size : size,
+      q[0] / ql, q[1] / ql, q[2] / ql, q[3] / ql, (w[0] / wl) * spin, (w[1] / wl) * spin, (w[2] / wl) * spin, 0, life, clear ? -size : size,
     ], o);
     this.looseSeed[this.looseCount++] = r(19);
   }
@@ -278,29 +278,38 @@ export class StreamSim {
     let n = 0;
     for (let i = 0; i < this.looseCount; i++) {
       const o = i * LOOSE;
-      const age = p[o + 13] + dt, life = p[o + 14];
-      if (age >= life) continue;
+      const age = p[o + 13] + dt;
+      if (age >= p[o + 14]) continue;
       const r = Math.abs(p[o + 15]) * 0.55;
       let x = p[o], y = p[o + 1], vx = p[o + 3], vy = p[o + 4] + K.gravity * u * dt;
       const py = y;
       x += vx * dt;
       y += vy * dt;
       let wx = p[o + 10], wy = p[o + 11], wz = p[o + 12];
+      let life = p[o + 14];
       for (const b of boxes) {
         if (x < b.l - r || x > b.r + r || y + r < b.t || y > b.b) continue;
         if (py + r <= b.t + 1 && vy > 0 && x > b.l && x < b.r) {
           y = b.t - r;
-          if (vy > 55 * u) {
-            vy *= -K.bounce;
-            vx *= K.grip;
-            // A bounce turns some of its fall into spin.
-            const k = 0.6 + 0.8 * hash(i, Math.round(age * 997), this.seed);
-            wz = -vx / Math.max(r, 1) * 0.5 * k; wx = wx * 0.5 + (hash(i, 3, Math.round(age * 997)) - 0.5) * 9; wy = wy * 0.5 + (hash(i, 4, Math.round(age * 997)) - 0.5) * 9;
+          const at_ = Math.round(age * 997);
+          if (vy > K.settle * u) {
+            // It lands on a different point of itself each time, so no two bounces keep the same share of the fall
+            // or leave the same way, and each turns some of the fall into spin.
+            const k = 0.75 + 0.5 * hash(i, at_, this.seed);
+            vx = vx * K.grip + (hash(i, 5, at_) - 0.5) * vy * 0.3;
+            vy *= -K.bounce * k;
+            wz = -vx / Math.max(r, 1) * 0.5 * k; wx = wx * 0.5 + (hash(i, 3, at_) - 0.5) * 9; wy = wy * 0.5 + (hash(i, 4, at_) - 0.5) * 9;
           } else {
-            // Too slow to bounce, it skitters along the surface with the flow and off the end. Nothing comes to rest.
-            vy = 0;
+            // Too slow to bounce, it is carried along the surface with the flow and off the end, and lives just
+            // long enough to be seen falling from it. Nothing comes to rest and nothing is left lying on an object.
             const way = b === boxes[1] ? Math.sign(lip.x - (b.l + b.r) / 2) : Math.sign(x - (b.l + b.r) / 2) || 1;
-            vx += (way * 95 * u - vx) * (1 - Math.exp(-3 * dt));
+            const carry = K.carry * u * (0.75 + 0.5 * this.looseSeed[i]);
+            vx += (way * carry - vx) * (1 - Math.exp(-5 * dt));
+            // It does not slide: every so often it catches on a point and skips.
+            const skip = hash(i, at_, 7) < K.skip * dt;
+            vy = skip ? -(0.9 + 1.6 * hash(i, at_, 8)) * K.settle * u : 0;
+            if (skip) { wx += (hash(i, at_, 9) - 0.5) * 12; wz -= way * 6; }
+            life = age + Math.abs((way > 0 ? b.r : b.l) - x) / carry + K.spill;
             wx *= Math.exp(-4 * dt); wy *= Math.exp(-4 * dt); wz = wz * Math.exp(-4 * dt) - (vx / Math.max(r, 1)) * 0.2 * (1 - Math.exp(-4 * dt));
           }
         } else if (y > b.t + 1) {

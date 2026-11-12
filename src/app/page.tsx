@@ -42,11 +42,15 @@ export default function Index() {
         </li>
         <li>
           <Link href="/lab/stream">The stream</Link>
-          <span className={styles.minor}>Phase 2 · the test shot, following the scroll</span>
+          <span className={styles.minor}>Phase 2 · the test shot, second round · facets, following the scroll</span>
         </li>
         <li>
           <Link href="/lab/stream?hold">The stream, held</Link>
-          <span className={styles.minor}>Phase 2 · check-in 1 · a paused frame, only the cursor&rsquo;s light moves</span>
+          <span className={styles.minor}>Phase 2 · a paused frame, only the cursor&rsquo;s light moves</span>
+        </li>
+        <li>
+          <Link href="/lab/stream?shards=first">The stream, with the first round&rsquo;s shards</Link>
+          <span className={styles.minor}>Phase 2 · copper leaf and glass, to compare. The switch on the page swaps the two</span>
         </li>
       </ul>
       <h2 className={styles.group}>Pieces carried from the second build</h2>

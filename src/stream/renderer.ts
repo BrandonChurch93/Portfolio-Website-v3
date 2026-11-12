@@ -2,20 +2,28 @@ import { hex, type PaletteName } from '../config/palette';
 import { COPPER, COPPER_LIGHT } from '../metal/finishes';
 import type { StreamBudget } from './config';
 import * as G from './shaders';
-import { COPPER_KINDS, GLASS_KINDS, VERTEX_FLOATS, type ShardMeshes } from './shards';
+import { COPPER_FRAG, glassFrag } from './shaders-first';
+import { FACET_KINDS, FIRST_KINDS, VERTEX_FLOATS, type Look, type ShardMeshes } from './shards';
 
 // Draws the stream. In order: the light, as amounts, into its own buffer. The glow, by making that buffer smaller
-// step by step and building it back up. Then the picture: the title and the card, the shards behind the core, the
-// light, the shards in front, and last the glass, which redraws what is behind it. Then all of it onto the page.
+// step by step and building it back up. Then the picture: the solid shards behind the core, the light, the title and
+// the card, the solid shards in front, and last the clear ones, which redraw what is behind them. Then all of it onto
+// the page.
 
 type GL = WebGL2RenderingContext;
 
 export const INSTANCE_FLOATS = 16;
 export const CORE_FLOATS = 5;
 export const STREAK_FLOATS = 5;
-// Shards are drawn in three lots, each sorted by kind: copper behind the core, copper in front, glass.
+// Shards are drawn in three lots, each sorted by kind: solid ones behind the core, solid ones in front, clear ones.
 export const LAYERS = 3;
-export const KINDS = Math.max(COPPER_KINDS, GLASS_KINDS);
+export const KINDS = Math.max(FACET_KINDS, FIRST_KINDS);
+// Where each look's meshes begin, and how many kinds it has: the facets are one family in both materials, the first
+// round's copper leaf and glass are two.
+const SETS: Record<Look, { solid: [first: number, kinds: number]; clear: [first: number, kinds: number] }> = {
+  facets: { solid: [0, FACET_KINDS], clear: [0, FACET_KINDS] },
+  first: { solid: [FACET_KINDS, FIRST_KINDS], clear: [FACET_KINDS + FIRST_KINDS, FIRST_KINDS] },
+};
 
 export interface TitleField {
   data: Uint8Array;
@@ -34,6 +42,8 @@ export interface Frame {
   lamp: [number, number, number, number];
   energy: [number, number];
   split: number;                                 // where the two sides part, in units along the route
+  presence: number;                              // 0 on a narrow screen to 1 on a wide one
+  look: Look;
   core: Float32Array;
   coreRuns: [number, number, number, number];   // first vertex and count, for each side
   streaks: Float32Array;
@@ -54,7 +64,13 @@ const GLOW = {
   nearGain: 1.8,
   page: 0.2,
   deep: 130,
+  // On a wide screen the stream is small against the page, and it is given more presence there: a hotter heart, a
+  // glow that reaches further and more light on the page. Each is what is added at full presence.
+  more: { near: [0, 0, 0.01, 0.03, 0.04, 0.03, 0.01], nearGain: 0.2, page: 0.06, heart: 0.28 },
 };
+
+// A shard's vertex, part by part: position, normal, edge distances, tag, and the bevel of each edge.
+const MESH = [3, 3, 3, 1, 3, 3, 3];
 
 interface Target { tex: WebGLTexture; fbo: WebGLFramebuffer; w: number; h: number }
 
@@ -138,10 +154,10 @@ export class StreamRenderer {
     this.shardArray = gl.createVertexArray()!;
     gl.bindVertexArray(this.shardArray);
     fixed(meshes.data);
-    [3, 3, 3, 1].reduce((at, size, i) => { gl.enableVertexAttribArray(i); gl.vertexAttribPointer(i, size, gl.FLOAT, false, VERTEX_FLOATS * 4, at * 4); return at + size; }, 0);
+    MESH.reduce((at, size, i) => { gl.enableVertexAttribArray(i); gl.vertexAttribPointer(i, size, gl.FLOAT, false, VERTEX_FLOATS * 4, at * 4); return at + size; }, 0);
     this.shardBuffer = gl.createBuffer()!;
     gl.bindBuffer(gl.ARRAY_BUFFER, this.shardBuffer);
-    for (let i = 4; i < 8; i++) { gl.enableVertexAttribArray(i); gl.vertexAttribDivisor(i, 1); }
+    for (let i = 0; i < 4; i++) { gl.enableVertexAttribArray(MESH.length + i); gl.vertexAttribDivisor(MESH.length + i, 1); }
     gl.bindVertexArray(null);
 
     gl.bindTexture(gl.TEXTURE_2D, this.sdf);
@@ -159,7 +175,7 @@ export class StreamRenderer {
     if (!this.ok || this.budget === budget) return;
     const gl = this.gl, f = this.float;
     this.budget = budget;
-    const shard = ['aPos', 'aNormal', 'aEdge', 'aTag', 'iPlace', 'iTurn', 'iCore', 'iMore'];
+    const shard = ['aPos', 'aNormal', 'aEdge', 'aTag', 'aBevel0', 'aBevel1', 'aBevel2', 'iPlace', 'iTurn', 'iCore', 'iMore'];
     this.prog = {
       core: compile(gl, G.CORE_VERT, G.coreFrag(budget.split ? 9 : 7), ['aPos', 'aAlong']),
       streak: compile(gl, G.STREAK_VERT, G.STREAK_FRAG, ['aPos', 'aLight']),
@@ -167,8 +183,10 @@ export class StreamRenderer {
       up: compile(gl, G.FULL_VERT, G.upFrag(f), ['aPos']),
       title: compile(gl, G.RELIEF_VERT, G.titleFrag(f), ['aPos']),
       card: compile(gl, G.RELIEF_VERT, G.cardFrag(f), ['aPos']),
-      copper: compile(gl, G.SHARD_VERT, G.COPPER_FRAG, shard),
-      glass: compile(gl, G.SHARD_VERT, G.glassFrag(budget.split), shard),
+      solid: compile(gl, G.SHARD_VERT, G.SOLID_FRAG, shard),
+      clear: compile(gl, G.SHARD_VERT, G.clearFrag(budget.split), shard),
+      copper: compile(gl, G.SHARD_VERT, COPPER_FRAG, shard),
+      glass: compile(gl, G.SHARD_VERT, glassFrag(budget.split), shard),
       light: compile(gl, G.FULL_VERT, G.lightFrag(f), ['aPos']),
       final: compile(gl, G.FULL_VERT, G.finalFrag(f), ['aPos']),
     };
@@ -281,7 +299,7 @@ export class StreamRenderer {
     for (let k = 0; k < kinds; k++) {
       const o = (layer * KINDS + k) * 2, first = f.lots[o], count = f.lots[o + 1];
       if (count <= 0) continue;
-      for (let i = 0; i < 4; i++) gl.vertexAttribPointer(4 + i, 4, gl.FLOAT, false, stride, first * stride + i * 16);
+      for (let i = 0; i < 4; i++) gl.vertexAttribPointer(MESH.length + i, 4, gl.FLOAT, false, stride, first * stride + i * 16);
       const mesh = this.meshes.kinds[firstKind + k];
       gl.drawArraysInstanced(gl.TRIANGLES, mesh.first, mesh.count, count);
     }
@@ -310,6 +328,7 @@ export class StreamRenderer {
     gl.useProgram(P.core.p);
     gl.uniform4fv(P.core.u('uView'), f.view);
     gl.uniform1f(P.core.u('uTime'), f.time);
+    gl.uniform1f(P.core.u('uHeart'), 1 + GLOW.more.heart * f.presence);
     gl.bindVertexArray(this.coreArray);
     for (let b = 0; b < 2; b++) {
       if (f.coreRuns[b * 2 + 1] < 3) continue;
@@ -353,7 +372,7 @@ export class StreamRenderer {
       gl.activeTexture(gl.TEXTURE1);
       gl.bindTexture(gl.TEXTURE_2D, top ? this.down[k].tex : wider.tex);
       gl.uniform2f(P.up.u('uTexel'), 1 / wider.w, 1 / wider.h);
-      gl.uniform3f(P.up.u('uWeight'), GLOW.near[k], GLOW.wide[k === 0 ? 0 : k + skip], GLOW.close[k]);
+      gl.uniform3f(P.up.u('uWeight'), GLOW.near[k] + GLOW.more.near[k] * f.presence, GLOW.wide[k === 0 ? 0 : k + skip], GLOW.close[k]);
       gl.uniform1f(P.up.u('uTop'), top ? 1 : 0);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }
@@ -373,7 +392,7 @@ export class StreamRenderer {
       gl.uniform4fv(p.u('uRect'), rect);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     };
-    const solid = (p: Program, layer: number, kinds: number, firstKind: number) => {
+    const lot = (p: Program, layer: number, kinds: number, firstKind: number) => {
       gl.useProgram(p.p);
       this.lit(p, f);
       gl.uniform1f(p.u('uDeep'), GLOW.deep * f.unit);
@@ -388,7 +407,9 @@ export class StreamRenderer {
       gl.disable(gl.DEPTH_TEST);
       gl.disable(gl.CULL_FACE);
     };
-    solid(P.copper, 0, COPPER_KINDS, 0);
+    const set = SETS[f.look], first = f.look === 'first';
+    const solidProgram = first ? P.copper : P.solid, clearProgram = first ? P.glass : P.clear;
+    lot(solidProgram, 0, set.solid[1], set.solid[0]);
 
     gl.enable(gl.BLEND);
     gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_COLOR, gl.ZERO, gl.ONE);
@@ -398,7 +419,7 @@ export class StreamRenderer {
     gl.bindTexture(gl.TEXTURE_2D, this.light.tex);
     gl.uniform1i(P.light.u('uLight'), 0);
     this.glow(P.light);
-    gl.uniform1f(P.light.u('uNear'), GLOW.nearGain);
+    gl.uniform1f(P.light.u('uNear'), GLOW.nearGain + GLOW.more.nearGain * f.presence);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
     // The title and the card stand in front of the light: where the core lies along one of them, the surface cuts it
@@ -407,7 +428,7 @@ export class StreamRenderer {
     if (this.card) relief(P.card, [this.card.x - this.card.hw - 2, this.card.y - this.card.hh - 2, this.card.hw * 2 + 4, this.card.hh * 2 + 4]);
     if (this.title) relief(P.title, this.title.rect);
 
-    solid(P.copper, 1, COPPER_KINDS, 0);
+    lot(solidProgram, 1, set.solid[1], set.solid[0]);
 
     const resolve = (to: Target) => {
       gl.bindFramebuffer(gl.READ_FRAMEBUFFER, this.scene!.fbo);
@@ -416,12 +437,12 @@ export class StreamRenderer {
     };
     resolve(this.behind);
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.scene.fbo);
-    gl.useProgram(P.glass.p);
+    gl.useProgram(clearProgram.p);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.behind.tex);
-    gl.uniform1i(P.glass.u('uScene'), 0);
-    gl.uniform2f(P.glass.u('uRes'), w, h);
-    solid(P.glass, 2, GLASS_KINDS, COPPER_KINDS);
+    gl.uniform1i(clearProgram.u('uScene'), 0);
+    gl.uniform2f(clearProgram.u('uRes'), w, h);
+    lot(clearProgram, 2, set.clear[1], set.clear[0]);
     resolve(this.whole);
 
     // ---- onto the page
@@ -435,7 +456,7 @@ export class StreamRenderer {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.whole.tex);
     gl.uniform1i(P.final.u('uScene'), 0);
-    gl.uniform1f(P.final.u('uPage'), GLOW.page);
+    gl.uniform1f(P.final.u('uPage'), GLOW.page + GLOW.more.page * f.presence);
     gl.uniform1f(P.final.u('uRelief'), this.title || this.card ? 1 : 0);
     gl.bindVertexArray(this.quad);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
