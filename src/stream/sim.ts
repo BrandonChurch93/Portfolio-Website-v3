@@ -11,6 +11,9 @@ const tmp = new Float32Array(4);
 const SPARK = 8;   // x, y, vx, vy, age, life, heat, kind (0 a spark, 1 a fine one, 2 one that has burst)
 const LOOSE = 16;  // x, y, z, vx, vy, vz, qx, qy, qz, qw, wx, wy, wz, age, life, size (negative for a clear one)
 const FORK = 8;    // x, y, angle, reach, age, life, seed, strength
+// A count spread across the whole range of numbers before it is hashed. Hashed as they stand, counts that follow one
+// another gave gaps that were nearly even and shards that mostly went the same way.
+const scatter = (n: number) => Math.imul(n + 1, 0x9e3779b1) >>> 8;
 
 export class StreamSim {
   time = 0;
@@ -31,6 +34,9 @@ export class StreamSim {
   private readonly phase = new Float64Array(16);
   private readonly count = new Int32Array(16);
   private readonly maxForks = 40;
+  // When each landing next throws its single shard at rest, and which one it is.
+  private readonly nextAt = new Float64Array(2);
+  private readonly nextN = new Int32Array(2);
 
   constructor(private route: Route, private budget: StreamBudget, private seed: number, private sizes: [number, number]) {
     this.sparks = new Float32Array(budget.sparks * SPARK);
@@ -68,6 +74,12 @@ export class StreamSim {
     this.hitAt.fill(-100);
     const rates = this.rates(0, 0);
     for (let e = 0; e < rates.length; e++) { this.phase[e] = rates[e] * from; this.count[e] = Math.floor(this.phase[e]); }
+    for (let i = 0; i < 2; i++) {
+      let n = 0, at = this.gap(i, 0) * (0.3 + 0.5 * i);
+      while (at <= from) at += this.gap(i, ++n);
+      this.nextN[i] = n;
+      this.nextAt[i] = at;
+    }
     while (this.time + STREAM_STEP <= t + 1e-9) this.step(line, 0);
   }
 
@@ -88,7 +100,8 @@ export class StreamSim {
   }
 
   // Emitters: 0 and 1 the sparks of each leading end, 2 the sparks along the core, 3 and 4 sparks at the strike and
-  // the landing, 5 and 6 shards thrown there, 7 and 8 forks at the leading ends, 9 and 10 forks at the landings.
+  // the landing, 5 and 6 the shards thrown there (which have no steady rate: see now()), 7 and 8 forks at the leading
+  // ends, 9 and 10 forks at the landings.
   private rates(e0: number, e1: number): number[] {
     const K = S.sparks, u = this.route.unit;
     const lit = (this.head[0] + Math.max(0, this.head[1] - this.route.split)) / (1000 * u);
@@ -97,7 +110,7 @@ export class StreamSim {
     const one = this.head[1] <= this.route.split ? 0 : 1;
     return [
       K.rest + K.fast * e0 ** 1.4, one * (K.rest + K.fast * e1 ** 1.4), K.along * lit, hit * K.landing, landed * K.landing,
-      hit * S.loose.trickle * 0.7, landed * S.loose.trickle,
+      0, 0,
       S.arc.rate + S.arc.rateFast * e0, one * (S.arc.rate + S.arc.rateFast * e1), hit * 5, landed * 6,
     ];
   }
@@ -132,11 +145,11 @@ export class StreamSim {
     for (let n = this.due(2, rates[2]); n > 0; n--) this.coreSpark(this.count[2]++);
     [strike, land].forEach((L, i) => {
       for (let n = this.due(3 + i, rates[3 + i]); n > 0; n--) this.landSpark(i, this.count[3 + i]++, 1);
-      for (let n = this.due(5 + i, rates[5 + i]); n > 0; n--) this.throwShard(i, this.count[5 + i]++, 0.25);
+      if (this.head[0] >= L.s) this.now(i);
       for (let n = this.due(9 + i, rates[9 + i]); n > 0; n--) this.landFork(i, 9 + i, this.count[9 + i]++);
       if (was[0] < L.s && this.head[0] >= L.s) {
         const hard = Math.min(1, this.speed[0] / (H.pace * u)) ** 0.6;
-        for (let k = Math.round(6 + S.loose.burst * hard); k > 0; k--) this.throwShard(i, this.count[5 + i]++, 0.35 + hard);
+        for (let k = Math.round(S.loose.burst[0] + S.loose.burst[1] * hard); k > 0; k--) this.throwShard(i, this.count[5 + i]++, 0.35 + hard);
         for (let k = Math.round(20 + 90 * hard); k > 0; k--) this.landSpark(i, this.count[3 + i]++, 1 + hard);
         for (let k = 4; k > 0; k--) this.landFork(i, 9 + i, this.count[9 + i]++);
         this.hitAt[i] = this.time;
@@ -212,6 +225,21 @@ export class StreamSim {
       q[0] / ql, q[1] / ql, q[2] / ql, q[3] / ql, (w[0] / wl) * spin, (w[1] / wl) * spin, (w[2] / wl) * spin, 0, life, clear ? -size : size,
     ], o);
     this.looseSeed[this.looseCount++] = r(19);
+  }
+
+  // While a landing is not being struck it throws a single shard now and then, at uneven gaps, never a steady flow.
+  // The gaps are counted out from the start of time, each a hash of its number, so the same moment always throws the
+  // same shard.
+  private gap(i: number, n: number): number {
+    const [least, most] = S.loose.now;
+    return least + (most - least) * hash(scatter(n), 5 + i, this.seed);
+  }
+
+  private now(i: number): void {
+    while (this.nextAt[i] <= this.time) {
+      if (this.nextAt[i] > this.time - STREAM_STEP - 1e-9) this.throwShard(i, scatter(this.nextN[i]), S.loose.toss);
+      this.nextAt[i] += this.gap(i, ++this.nextN[i]);
+    }
   }
 
   private fork(x: number, y: number, angle: number, reach: number, life: number, seed: number, strength: number): void {
@@ -296,20 +324,30 @@ export class StreamSim {
             // It lands on a different point of itself each time, so no two bounces keep the same share of the fall
             // or leave the same way, and each turns some of the fall into spin.
             const k = 0.75 + 0.5 * hash(i, at_, this.seed);
-            vx = vx * K.grip + (hash(i, 5, at_) - 0.5) * vy * 0.3;
+            const kept = vx * K.grip, kicked = kept + (hash(i, 5, at_) - 0.5) * vy * 0.3;
+            vx = kicked * vx < 0 ? kept * 0.3 : kicked;
             vy *= -K.bounce * k;
             wz = -vx / Math.max(r, 1) * 0.5 * k; wx = wx * 0.5 + (hash(i, 3, at_) - 0.5) * 9; wy = wy * 0.5 + (hash(i, 4, at_) - 0.5) * 9;
           } else {
-            // Too slow to bounce, it is carried along the surface with the flow and off the end, and lives just
-            // long enough to be seen falling from it. Nothing comes to rest and nothing is left lying on an object.
+            // Too slow to bounce. It keeps its own momentum, and the flow never turns it round.
             const way = b === boxes[1] ? Math.sign(lip.x - (b.l + b.r) / 2) : Math.sign(x - (b.l + b.r) / 2) || 1;
-            const carry = K.carry * u * (0.5 + this.looseSeed[i]);
-            vx += (way * carry - vx) * (1 - Math.exp(-12 * dt));
-            // It does not slide: every so often it catches on a point and skips.
-            const skip = hash(i, at_, 7) < K.skip * dt;
-            vy = skip ? -(0.6 + 0.9 * hash(i, at_, 8)) * K.settle * u : 0;
-            if (skip) { wx += (hash(i, at_, 9) - 0.5) * 12; wz -= way * 6; }
-            life = age + Math.abs((way > 0 ? b.r : b.l) - x) / carry + K.spill;
+            if (vx * way > 0) {
+              // Going the way the stream runs, it rides along with the flow and off that end, and lives just long
+              // enough to be seen falling from it.
+              const carry = K.carry * u * (0.5 + this.looseSeed[i]);
+              vx += (way * carry - vx) * (1 - Math.exp(-12 * dt));
+              // It does not slide: every so often it catches on a point and skips.
+              const skip = hash(i, at_, 7) < K.skip * dt;
+              vy = skip ? -(0.6 + 0.9 * hash(i, at_, 8)) * K.settle * u : 0;
+              if (skip) { wx += (hash(i, at_, 9) - 0.5) * 12; wz -= way * 6; }
+              life = age + Math.abs((way > 0 ? b.r : b.l) - x) / carry + K.spill;
+            } else {
+              // Going against it, it skids a little the way it was going, stops, and fades. Nothing is left lying
+              // on an object.
+              vy = 0;
+              vx *= Math.exp(-K.skid * dt);
+              life = Math.min(life, age + K.fades);
+            }
             wx *= Math.exp(-4 * dt); wy *= Math.exp(-4 * dt); wz = wz * Math.exp(-4 * dt) - (vx / Math.max(r, 1)) * 0.2 * (1 - Math.exp(-4 * dt));
           }
         } else if (y > b.t + 1) {

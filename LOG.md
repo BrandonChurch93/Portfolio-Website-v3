@@ -2,6 +2,53 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-12 · Thrown shards: fewer at a strike, one now and then at rest, each keeps its momentum (Fable, Claude Code on Brandon's Mac)
+
+**What Brandon said**
+
+- His verdict on the second round is in `BRIEF.md`, The stream. In short: "It's really good!" The facets stay and the bunching is fixed.
+- "Three small changes to the stream."
+  1. "A strike throws a few too many shards. About a quarter fewer when a leading end arrives at the title or the card. Change nothing else about the strike."
+  2. "At rest, a landing should throw a single shard now and then, not a steady flow. Start from one every three to six seconds per landing, at uneven gaps, and tune it by eye."
+  3. "A thrown shard keeps its own momentum. The flow must never turn it around." One with enough force clears the near edge and falls. One that lands short skids a little the way it was going, stops, and fades within about a second. One thrown the way the stream runs can still ride along and spill off that end. The same on the title. Nothing may heap up.
+- He has not looked at the result yet.
+
+**What was built**, all in `src/stream/sim.ts`, with the numbers in `loose` in `config.ts`
+
+1. **A quarter fewer at a strike.** `loose.burst` is the fewest thrown and how many more at full speed: 4.5 and 52, where it was 6 and 70. On the same scripted scroll the title threw 50 and now throws 37, the card 59 and now 43. The sparks, the flash, the arcs, the speed and the bounce are untouched.
+2. **One shard now and then at rest.** The steady rate is gone. Each landing counts out its own gaps from the start of time, each gap a hash of its number, between `loose.now` of 3 and 6 seconds (`gap()` and `now()`). Because the gaps are counted from zero, the same moment still always throws the same shard, so a frozen frame is repeatable. Measured over 30 seconds at rest: the title's gaps were 3.9, 3.0, 3.4, 5.1 and 5.6 seconds, the card's 5.3, 4.0, 3.2, 5.1, 4.0 and 5.1. The two landings do not fall into step.
+   - Tuned by eye: it is thrown a little harder than the old trickle (`loose.toss` 0.45, was 0.25), so the one piece is worth watching: it rises about 70 pixels, bounces once or twice, and goes.
+3. **A thrown shard keeps its own momentum** (`moveLoose`). When it is too slow to bounce:
+   - going the way the stream runs, it rides along with the flow and off that end, as before
+   - going against it, it skids the way it was going (`loose.skid`), stops, and is gone within 0.9 seconds (`loose.fades`)
+   - a bounce can no longer flip which way it is going either
+   - one thrown hard enough against the stream still clears the near edge and falls. That needed no change.
+   - Checked by following every thrown shard through both strikes with `streamThrown`: of 82, none went back more than 12 pixels against the way it set out. 6 skidded to a stop and faded on a surface, 3 cleared the card's left edge and fell, 67 left off an end, 6 were still in the air when the count ended. The longest any lay still before it was gone was 0.83 seconds.
+- Stills: `reference/studies/10-stream-strike-paths.jpg` (every thrown shard's path through both strikes), `10-stream-rest-paths-one-minute.jpg` (a minute at rest), and the two strike filmstrips `10-stream-strike-title.jpg` and `10-stream-strike-card.jpg`. The plot from before the change is `09-stream-facets-thrown-paths.jpg`.
+
+**Checked**
+
+- One fresh Opus reviewer, given his three asks, the plots before and after, the filmstrips and the numbers. It passed all three and found nothing else broken. Its one note, that the gaps at rest were only mildly uneven, was acted on (see below).
+- Speed while scrolling without stopping: 16.7 ms every frame, none over 25 ms, on desktop, tablet, the phone view slowed four times and the low tier phone view slowed six times.
+- WebKit at iPad and phone size: draws, no errors. Reduced motion: unchanged, nothing flies.
+- Not checked: a real phone and a real iPad.
+
+**Calls made for Brandon. Each is his to overturn**
+
+1. The gaps at rest are drawn evenly from the whole of three to six seconds. `loose.now` holds the two ends.
+2. The single shard at rest is thrown harder than the old trickle was. `loose.toss` is the number.
+3. A shard that lands going against the stream is gone 0.9 seconds after it settles. He said "about a second".
+
+**Things the next session would otherwise rediscover**
+
+- The hash in `rand.ts` mixes numbers that follow one another poorly. Gaps hashed from 0, 1, 2 came out nearly even, and seven shards in a row keyed 100000, 100001 and so on mostly went left. `scatter()` in `sim.ts` spreads a count across the whole range before it is hashed. Use it for anything keyed by a small running count.
+- A rate turned into events by adding it up each step gives evenly spaced events. For uneven ones, count the gaps out from the start of time and keep where you are, and set that again in `settle()`.
+- `life = Math.min(life, age + seconds)` shortens a life once and then leaves it, because the age grows. Written with `=` it would push the end away for ever.
+
+**Half finished**
+
+- Nothing. Waiting on his look at the strike and the landings at rest.
+
 ## 2026-11-12 · The stream's test shot, second round: facets (Fable, Claude Code on Brandon's Mac)
 
 **What Brandon said**

@@ -17,8 +17,9 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **Phase:** 2, the stream
 - **Where:** Claude Code on Brandon's Mac, with Fable. `LOG.md`, top entry, is this round's account
 - **His verdict on the first test shot (Nov 12):** "I think we nailed this and we build everything else off of this stream." With changes. They are in `BRIEF.md`, The stream, under "His verdict on the test shot, and what changes"
-- **Built and pushed, waiting on Brandon, the second round:** the shards rebuilt as jagged facets (the look he picked at `/lab/stream-facets`) in two materials, fewer of them where the stream lies on an object, the strike kept and pushed a little, more presence on a wide screen. `LOG.md`, top entry, says what is at the bar and what is not
-- **What Brandon judges next:** the second round at `/lab/stream` and `/lab/stream?hold`, with the first round's shards one switch away to compare: facets or the first round's shards, whether the bunching on objects is gone, whether the strike is still his favorite part
+- **His verdict on the second round (Nov 12):** "It's really good! And everything honestly looks good." The facets stay and the bunching is fixed. Three changes to thrown shards, in `BRIEF.md`, The stream, under "His verdict on the second round"
+- **Built and pushed, waiting on Brandon:** those three changes. A quarter fewer shards thrown at a strike, a single shard now and then at a landing at rest, and a thrown shard keeping its own momentum. `LOG.md`, top entry, has the measurements
+- **What Brandon judges next:** the strike and the landings at rest, at `/lab/stream`
 - **Not to be built yet:** the route down the whole site, the layout, anything touching the 3D pieces, the city, the opening
 
 ## Phase 0 · Foundation
@@ -52,7 +53,8 @@ Study 01 is at `/lab/palette` and Study 02 at `/lab/buttons`. Stills are in `ref
 - [x] What it is made of: shards riding round a core of light, the core a smooth wave of light. He picked it from two sketches at `/lab/stream-core` (Nov 11). The shards are abstract facets in a solid and a clear material (Nov 12)
 - [x] The agreement for the finished version (Nov 11)
 - [~] The test shot, first round. Built at `/lab/stream` and `/lab/stream?hold`. He is very happy with it and asked for changes (Nov 12)
-- [~] The test shot, second round: facets in two materials, no bunching on objects, the strike kept. Built at `/lab/stream`, with the first round's shards at `/lab/stream?shards=first`. Waiting on his verdict
+- [~] The test shot, second round: facets in two materials, no bunching on objects, the strike kept. Built at `/lab/stream`, with the first round's shards at `/lab/stream?shards=first`. He says the facets stay and the bunching is fixed, and asked for three changes to thrown shards (Nov 12)
+- [~] Thrown shards: a quarter fewer at a strike, a single shard now and then at rest, each keeps its own momentum. Built, waiting on his look
 
 After he says the shot looks incredible, and not before:
 

@@ -91,10 +91,16 @@ export const STREAM = {
     carry: 400,         // how fast the flow carries one along a surface once it has stopped bouncing, give or take a half
     skip: 0.8,          // times a second one being carried catches and skips
     spill: 0.65,        // seconds it is given to fall once it has been carried off the end
+    skid: 6,            // how quickly one that lands going against the stream slows, per second
+    fades: 0.9,         // seconds one that has landed going against the stream is given before it is gone
     life: [1.3, 2.6] as [number, number],
     fade: 0.3,          // the share of its life over which it shrinks away at the end
-    trickle: 2.5,       // thrown each second at a landing at rest
-    burst: 70,          // thrown when the leading end arrives at speed
+    // At rest a landing throws one shard now and then: the shortest and the longest gap between two, in seconds, and
+    // how hard it is thrown against a strike at full speed.
+    now: [3, 6] as [number, number],
+    toss: 0.45,
+    // Thrown when a leading end arrives: the fewest, and how many more at full speed.
+    burst: [4.5, 52] as [number, number],
   },
 
   sparks: {

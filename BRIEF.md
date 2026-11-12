@@ -48,7 +48,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 
 ### The stream
 
-- **Where it stands (Nov 12):** what the stream is has been picked and the finished version has an agreement. The first test shot has his verdict, below. The second round is built in Claude Code on his Mac and pushed: the shot moving at `/lab/stream` and a paused frame at `/lab/stream?hold`, with facets in two materials. The first round's shards are one switch away: the switch at the foot of that page, or `/lab/stream?shards=first`. He has not judged the second round yet. Calls Fable made for him while building are listed in `LOG.md` and are his to overturn. None of them is a rule.
+- **Where it stands (Nov 12):** what the stream is has been picked and the finished version has an agreement. The test shot is at `/lab/stream`, with a paused frame at `/lab/stream?hold`. He has judged two rounds of it: the facets stay and the bunching is fixed. His three changes to thrown shards from the second round are built and pushed, and he has not looked at them yet. The first round's shards are still one switch away: the switch at the foot of that page, or `/lab/stream?shards=first`. Calls Fable made for him while building are listed in `LOG.md` and are his to overturn. None of them is a rule.
 - It is the most important thing on the site. "It's probably like the most important thing on the site to get right." (Nov 11)
 - It is called the stream, which is his own word for it. It is never called water, in anything written for a model or shown to a visitor. His reason: "if I call it water, then the model is gonna build it as if it acts like water". It is not called the pour either: that was its name while it was going to be molten metal. (Nov 11)
 
@@ -127,7 +127,7 @@ Said after the first night's build at `/lab/stream`, with both check-ins live. T
 
 **His verdict on the second round (Nov 12)**
 
-Said after scrolling the second round at `/lab/stream`, with the facets in. The three changes below have not been built yet.
+Said after scrolling the second round at `/lab/stream`, with the facets in. The three changes below were built the same day and are waiting on his look.
 
 - "It's really good! And everything honestly looks good." The bunching is "much better". "The actual particles themselves look really good." The facets stay.
 - A strike throws a few too many: "on a strike a bit too many particles explodes out". How much to cut: "I feel like 50% is probably too much", "maybe 25% less?" In exact terms: about a quarter fewer shards thrown when a leading end arrives at the title or the card. Nothing else about the strike changes.
