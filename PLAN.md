@@ -9,13 +9,15 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - Every item is real code in this repo that he can open and look at.
 - Items inside a phase can run side by side. A phase's gate has to pass before the next phase builds on it.
 - Fable builds phases 0 to 6. Opus comes in at phase 7.
+- Phases 0 and 1 were built in the web chat. From phase 2 the building is in Claude Code on Brandon's Mac.
 - `QUALITY.md` is the bar for every item. `LOG.md` has the notes from each session.
 
 ## Now
 
-- **Phase:** 1, color and light
-- **Waiting on Brandon:** what the stream is made of and what it is called, and whether the proposed test shot is the right bar for it (`BRIEF.md`, Open 14 and 15). This is being settled in chat
-- **Next for Fable:** once he agrees, write the stream's brief into `BRIEF.md` and `QUALITY.md`, then Phase 2 in Claude Code on his Mac
+- **Phase:** 2, the pour
+- **Where:** Claude Code on Brandon's Mac, with Fable (`LOG.md`, top entry)
+- **Next for Fable:** the test shot. Read `QUALITY.md`, The pour, first
+- **Waiting on Brandon:** nothing
 
 ## Phase 0 · Foundation
 
@@ -39,26 +41,27 @@ Study 01 is at `/lab/palette` and Study 02 at `/lab/buttons`. Stills are in `ref
 - [~] The cursor light: it shifts the light behind the portrait, crosses the handheld's metal and lights both buttons
 - [x] Primary and accent buttons: polished copper under a clear coat with cut words, and dark bronze with copper words. Under the cursor the cuts and words catch its light and the button grows (`src/components/MetalButton.tsx`) (Nov 11)
 
-**Gate:** the portrait, the metal and the water read as one light.
+**Gate:** the portrait, the metal and the pour read as one light.
 
-## Phase 2 · The stream, on its own
+## Phase 2 · The pour, on its own
 
-- [ ] What the stream is made of and called, settled with Brandon in chat (`BRIEF.md`, Open 14)
-- [ ] The test shot: it falls, hits a ledge, splashes, runs along it and drips off the end (`BRIEF.md`, Open 15)
+- [x] What it is made of: molten metal, called the pour (Nov 11)
+- [ ] The test shot: it falls, hits a ledge, splashes, runs along the ledge and drips off the end (`QUALITY.md`, The pour)
 - [ ] The body at rest and flowing
 - [ ] Falling
-- [ ] Landing, with a real splash
+- [ ] Landing, with a real splash, sparks and beads
 - [ ] Running along an edge and dripping off
 - [ ] Landing on a card, bouncing off and dripping down
 - [ ] Splitting on a title and running down both sides
 - [ ] Pooling
+- [ ] Lighting what it passes: the page, the metal buttons, a piece
 - [ ] Following the scroll, down and back up
 - [ ] On a phone
 - [ ] Smooth on his Mac and on a phone
 
 **Gate:** Brandon says it looks incredible. If it cannot get there, we rethink before any layout is built around it.
 
-## Phase 3 · The home page, composed around the water
+## Phase 3 · The home page, composed around the pour
 
 - [ ] Layout sketches to choose from
 - [ ] The spacing system
@@ -67,7 +70,7 @@ Study 01 is at `/lab/palette` and Study 02 at `/lab/buttons`. Stills are in `ref
 - [ ] Skills
 - [ ] About
 - [ ] Contact and the bottom of the page
-- [ ] The water's full route down the page
+- [ ] The pour's full route down the page
 - [ ] Phone, tablet, desktop and 4K
 
 **Gate:** Brandon approves the whole page as one composition.
@@ -91,7 +94,7 @@ Study 01 is at `/lab/palette` and Study 02 at `/lab/buttons`. Stills are in `ref
 - [ ] The handheld and the camera in their categories
 - [ ] The PC animation
 - [ ] The software piece
-- [ ] The water touching the pieces, replacing the old water drawn inside the city, the workbench and the rocket
+- [ ] The pour touching the pieces, replacing what the second build drew inside the city, the workbench and the rocket. The code's old names go with it (`LOG.md`, 2026-11-11)
 - [ ] The workbench and the rocket brought up to the bar (see `LOG.md`, 2026-11-11)
 
 ## Phase 6 · Words and pictures

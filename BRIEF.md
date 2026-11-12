@@ -46,10 +46,13 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 
 - The cursor is a light. It falls on things across the whole site and shows their 3D form. This was his favorite idea from the first look round. (Nov 10)
 
-### The water
+### The pour
 
-- It is the most important thing on the site. (Nov 11)
-- It is light that behaves like water. It comes off the hero city and runs through the whole site.
+- A stream of molten metal runs down the whole site. "I agree molten metal is the way to go." (Nov 11)
+- It is called the pour. The name is Fable's and he has not objected. It is never called water, in anything written for a model or shown to a visitor. His reason: "if I call it water, then the model is gonna build it as if it acts like water". (Nov 11)
+- It is the site's own copper, melted: it glows in the palette's light colors, ember to flame to hot to pale. It looks like a foundry pour: bright, clean and quick, throwing sparks and beads. It never looks like lava (dark, crusted, slow), fire (flames) or water (thin, clear). (Fable's recommendation, which he agreed to, Nov 11)
+- It is the most important thing on the site. "It's probably like the most important thing on the site to get right." (Nov 11)
+- It comes off the hero city and runs through the whole site.
 - It moves down the page with the visitor as they scroll.
 - It never runs straight down. It moves around sections and content.
 - It shapes the layout. It can run through the middle of a section to make a layout that breaks the usual pattern, as long as the page is still easy to use.
@@ -61,12 +64,12 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
   - pass behind his portrait at an angle, never straight into his head
 - It is not a gimmick that touches a couple of things. It also should not touch everything. (Nov 10 and Nov 11)
 - It has to feel real: a splash with shape and weight, believable physics, particles riding with the flow.
+- Its particles come from what it is. For molten metal he named sparks and drips. (Nov 11)
 - Nothing is drawn ahead of it to show where it will go.
 - No permanent grid floor behind the page.
 - It has to look incredible.
-- The water drawn inside the second build's pieces (the city's falls, the desk's edge, the rocket's flume) "looks very low quality". He is not sure "water" is even the right name for what is there. (Nov 11)
-- What it is made of is not decided, and the name matters: "if I call it water, then the model is gonna build it as if it acts like water". He named lava, molten hot metal, golden water, some type of light and electricity as candidates. Each would have its own particles: droplets and splashes for water, sparks and drips for molten metal. (Nov 11)
-- He wants what it is made of, and the level of quality, settled in chat before the building moves to Claude Code. "It's probably like the most important thing on the site to get right." (Nov 11)
+- The first thing built is one test shot, alone on a blank page: it falls, hits a ledge, splashes, runs along the ledge and drips off the end. Nothing is built around the pour until he says that shot looks incredible. `QUALITY.md` says what the shot has to show. (Fable's proposal, Nov 11. He went ahead on it without objecting.)
+- What the second build drew inside its pieces (the city's falls, the desk's edge, the rocket's flume) "looks very low quality". The pour replaces all of it. (Nov 11)
 
 ### Hero
 
@@ -148,7 +151,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 - Everything he approves is real code in this repo.
 - Nothing is approved as "fine if the final is better". If it is not at the bar when he sees it, it is not done.
 - He is told exactly what he is and is not approving at each step.
-- The building moves to Claude Code on his Mac once the stream's material and its bar are settled in chat. (Nov 11)
+- The building happens in Claude Code on his Mac, with Fable, from Phase 2 on. Planning can still happen in the web chat. Both read and write this repo. (Nov 11)
 - Every message to him ends with a clear, simple recommendation.
 
 ## Open
@@ -166,10 +169,9 @@ Each line has Fable's recommendation where there is one. None of these are rules
 9. **The résumé.** A page, or only the download button.
 10. **The project page design.**
 11. **Which projects show** in each category on the home page.
-12. **What ties the bottom of the page together.**
+12. **What ties the bottom of the page together.** Recommendation: the pour ends by feeding the rocket's launch.
 13. **The rocket as built.** He has not judged it yet.
-14. **What the stream is made of, and what it is called.** His candidates are in The water, above. Fable's recommendation (Nov 11): molten metal, the site's own copper, glowing in the palette's light colors, and called "the pour" so that nothing builds it as water. It should look like a foundry pour (bright, clean, quick, throwing sparks and beads), never like lava (dark, crusted, slow) or fire. Golden water is the second choice. Light alone and electricity have no body or weight, and light alone is what failed three times. Not a rule until he agrees.
-15. **The bar for the stream.** Fable's proposal (Nov 11): one test shot alone on a blank page. It falls, hits a ledge, splashes, runs along the ledge and drips off the end. Nothing is built around the stream until he says that shot looks incredible. What it has to show is in `LOG.md`, 2026-11-11.
+14. **Whether the site has to meet Section 508** (WCAG 2.0, levels A and AA). He asked whether the buttons do, out of curiosity. Recommendation: yes, checked as each part is built, because the engineers who read the site will check. The buttons' results are in `LOG.md`.
 
 ## Dropped
 
@@ -178,7 +180,8 @@ Each line has Fable's recommendation where there is one. None of these are rules
 - The "More rooms" section and the separate room pages
 - A featured or flagship card
 - Whole brass plates as cards
-- The faint channel drawn ahead of the water
+- The faint channel drawn ahead of the stream
+- Water, golden water, lava, light alone and electricity as what the stream is made of. It is molten metal (Nov 11)
 - A permanent grid floor
 - Skills tied to desk objects, and skills in narrow pillars
 - The game board and the orrery

@@ -14,7 +14,7 @@ Do not work from what you remember of these. Read them from disk.
 ## Who does what
 
 - **Brandon** decides and approves. He does not arrive with the full picture. He wants a partner who brings ideas and recommendations, not someone who waits for instructions.
-- **Fable** does the creative work itself: color, the water, layout, cards, how each piece sits in the page. It does not hand these to another model.
+- **Fable** does the creative work itself: color, the pour, layout, cards, how each piece sits in the page. It does not hand these to another model.
 - **Opus** builds contained 3D objects and the remaining pages late in the plan, from finished examples in this repo. Every subagent runs on Opus.
 
 ## How a piece of work goes
@@ -34,6 +34,13 @@ Do not work from what you remember of these. Read them from disk.
 - **`PLAN.md`:** only Brandon's approval ticks a box. Keep the "Now" section true.
 - **`LOG.md`:** add an entry at the end of each piece of work, and before your context gets long. Say what was done, what he said, what is half finished, and anything the next session would otherwise have to rediscover.
 - **Git:** commit and push after each piece of work so every chat sees the same repo. End commit messages with the attribution lines your session gives you.
+
+## Where the work happens
+
+- From Phase 2 the building is in Claude Code on Brandon's Mac, in the VS Code panel. There the screenshot scripts draw with his graphics card, so motion can be judged from filmstrips.
+- The web chat is still used for planning. Its workspace draws in software, so it cannot judge motion.
+- Both read and write this repo. Pull before you start and push when you finish a piece of work.
+- Check which model you are. The creative work in this repo is Fable's. If you are not Fable, say so to Brandon before doing any of it.
 
 ## Working with Brandon
 
@@ -106,6 +113,7 @@ The second build is at https://github.com/BrandonChurch93/Portfolio-Website-v2. 
 - Almost no code comments. Keep one only when it explains a reason someone could otherwise undo.
 - No em dashes in anything the site shows or in these documents. Use a period, a comma or an interpunct (·).
 - This repository is public. Do not commit anything private.
+- The stream of molten metal is called the pour. Never call it water, in a document, a comment, a name in code or anything the site shows. Old code still says water in many places. Rename it as you replace it.
 
 ## When compacting
 

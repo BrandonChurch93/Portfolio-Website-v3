@@ -2,6 +2,48 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-11 · Handoff to Claude Code: the pour (Fable, web chat)
+
+**What Brandon said**
+
+- "I agree molten metal is the way to go."
+- He is opening Claude Code in an empty folder on his desktop to carry on there.
+
+**Where things stand**
+
+- Phase 1 is done apart from one box: the cursor light has not been ticked by him in so many words. He has said its effect on the dark buttons "looks amazing".
+- The buttons are approved and final. Do not change them without asking him.
+- Phase 2 starts now, with the test shot. Nothing of the pour exists yet in this repo. Start clean. Do not start from the second build's stream or from `src/world/lightwater.ts`.
+
+**If you are the session in Claude Code, do this first**
+
+1. Read `BRIEF.md` (The pour), `PLAN.md`, `QUALITY.md` (The pour, and open the images it lists), then this entry.
+2. Run `npm install`, then `npx playwright install chromium`.
+3. Run `npm run shot -- /lab/buttons` and open the image. It should print `hardware`. If it prints `software`, tell Brandon before going further, because nothing about motion can then be judged from this machine's stills.
+4. Look at real molten metal before writing any code. Search for foundry pours of bronze and copper, stills and slow motion.
+5. Find out how the best real time liquid on the web is built. Choose a method and tell Brandon, in a short list, what you chose, why, and what he will see first.
+6. Build the test shot on its own page, `/lab/pour`. Follow "How a piece of work goes" in `CLAUDE.md`.
+
+**What the web chat could not do, and you can**
+
+- See motion. Every still made so far was drawn in software. Use `npm run strip` on everything that moves.
+- Open the preview link and the local site in a real browser.
+
+**Things worth knowing**
+
+- The cursor light and the lit metal already exist: `src/lamp/`, `src/metal/`. The pour should light metal near it. `plates.setWater(host, x, y, k)` in `src/metal/renderer.ts` was written for that and nothing calls it. Rename it when you use it.
+- The palette's light colors are in `src/config/palette.ts`: `ember-deep`, `ember`, `flame`, `hot`, `pale`. The pour uses these and nothing off the palette.
+- Every animation reads time from `src/world/clock.ts`, so a frame can be frozen for a still. The pour has to as well, or it cannot be shot.
+- No more than two WebGL contexts on a page. The metal uses one, off the page.
+- The code says water in about 175 places across 20 files: the piece contract's `setWaterLight`, `src/world/lightwater.ts`, `waterAmber3d` in `src/config/site.ts`, `uWater` in the metal shaders, and what the second build drew inside the city, the workbench and the rocket. That is all old. It is replaced in Phase 5. Rename as you replace. New code never uses the word.
+- Brandon wants options when a choice is about a hover effect. He did not ask for options on everything.
+- He found a fade that lingered on the way out too slow. Things should leave quickly.
+
+**Half finished**
+
+- Nothing in code.
+- From the 508 check two entries down: the dark button's thin contrast margin under the lamp is left alone on purpose.
+
 ## 2026-11-11 · Buttons approved. What the stream is made of (Fable, web chat)
 
 **What Brandon said**

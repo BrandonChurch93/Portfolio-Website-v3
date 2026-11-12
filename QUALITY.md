@@ -42,7 +42,7 @@ What went wrong in the second build's home page, in his words and mine:
 
 ## What he has approved and what he has rejected
 
-This is the real calibration. Every row is his verdict, not a guess.
+This is the real calibration. Every row is his verdict, not a guess. Rows that say water are about the stream as the second build and its previews drew it. The stream is now molten metal: see The pour, below.
 
 | Thing | His verdict | The lesson |
 |---|---|---|
@@ -79,7 +79,7 @@ This list is Fable's reading of the table above. Brandon corrects it when it is 
 
 1. **Detail over count.** Fewer things, each with more to find.
 2. **The real thing.** Real splash, real cars, real photos. Never a stand-in, never a placeholder shown as if it were finished.
-3. **Light is physical.** It comes from somewhere (the cursor, the water, a lamp) and changes what it lands on.
+3. **Light is physical.** It comes from somewhere (the cursor, the pour, a lamp) and changes what it lands on.
 4. **Motion has weight.** Things speed up when they fall, settle when they land, and never slide or pop.
 5. **Nothing boxed, cut off or cramped.** Pieces sit in the page. Openings use the whole screen. Space is generous and even.
 6. **One light, one palette.** Everything sits with his portrait.
@@ -101,8 +101,9 @@ Everything visual has to pass all six.
 
 ## Fail on sight
 
-- Water that is a glowing tube, moves at one speed, or lands with no shape
-- Water that looks pasted over something it is supposed to touch
+- The pour as a glowing tube, moving at one speed, or landing with no shape
+- The pour looking pasted over something it is supposed to touch
+- The pour reading as lava (dark crust, slow creep), as fire (flames) or as water (thin, clear, blue)
 - A plain box, cylinder or cone where a real object has form
 - A window, screen or label that is a flat picture
 - Anything cut off by the screen or by another element
@@ -113,6 +114,41 @@ Everything visual has to pass all six.
 - A loop you can see repeating
 - A placeholder ("picture to come") in anything shown for approval
 - A phone or 4K view that is plainly the lesser one
+
+## The pour
+
+The stream of molten metal that runs down the site. It is the most important thing on it, and the thing that has failed most often: three attempts at a stream were rejected before this build. Read `BRIEF.md`, The pour, first.
+
+**What it looks like**
+
+- A foundry pour. Search for photographs and slow motion film of molten bronze and copper being poured, and look at them before building. Do not work from memory of what molten metal looks like.
+- It has a body: a hot pale core, a cooler orange skin, a rounded surface with highlights that move across it.
+- Its colors are the palette's light: ember, flame, hot, pale. Coolest at the edges and in what has been left behind.
+- It makes light. Whatever it passes is lit by it, and stays warm for a moment after.
+- Its particles: sparks that fly and fade, beads that bounce, roll and cool from pale to dark, drips that stretch before they let go.
+
+**The first test, before anything else is built**
+
+One shot, alone on a blank page under `/lab`: it falls, hits a ledge, splashes, runs along the ledge and drips off the end. It passes when all of these are true:
+
+1. Paused on any frame it looks like a photograph of molten metal, not a glowing shape.
+2. It has weight. It speeds up and thins as it falls, piles up where it lands, clings to the edge, stretches and snaps into drops.
+3. Every landing leaves something: a splash with shape, sparks, beads, and the ledge lit and warm for a moment after.
+4. Nothing repeats. No two splashes are alike.
+5. It lights what is near it.
+6. It is smooth on Brandon's Mac and holds up on a phone.
+
+**How to build it, as far as it has been thought through**
+
+- Where it goes is planned, because later the layout needs it to hit exact places. What the eye checks (falling, landing, dripping) is real physics on particles, not an animation of a shape.
+- A browser cannot run a film grade fluid simulation. Find out how the best real time work of this kind is done before choosing a method, and say which method you chose and why.
+- A tube with a glow shader is the fail list's first line. Three attempts died there.
+
+**How to judge it**
+
+- Filmstrips for every motion, read left to right, and stills at three times zoom.
+- On Brandon's Mac the scripts print `hardware`, so a filmstrip there is a fair test of motion. He still judges the motion himself, in the browser.
+- Put a still beside a real photograph of a pour. If it is plainly the drawing, it fails.
 
 ## How to judge
 
