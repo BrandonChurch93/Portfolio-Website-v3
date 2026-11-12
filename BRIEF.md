@@ -110,6 +110,19 @@ He said these while the stream was still going to be a liquid. They all still ho
   - **The name:** it is called the stream, as he calls it. "The pour" meant molten metal and is retired. It is still never called water.
   - **How the sketch is used:** Claude Code is given the sketch at `/lab/stream-core`, its code, its stills and the log's notes as a working reference and the floor to beat. The finished version is built new, in its own folder, not on top of the sketch. The sketch stays as it is so the two can be opened side by side. "I'm in complete agreement with you." (Nov 11)
 
+**His verdict on the test shot, and what changes (Nov 12)**
+
+Said after the first night's build at `/lab/stream`, with both check-ins live. None of this has been built yet.
+
+- "This is coming together. Awesome. I'm really loving the way it's coming together." And: "I think we nailed this and we build everything else off of this stream."
+- The strikes are his favorite part: "when it crashes the ground or in this case the word work, particles actually fly off of them and bounce around like it actually struck the ground, which is awesome. I definitely don't want to lose that effect." In exact terms: shards must still blast off and bounce at a strike. That protects the effect, not the code. He does not want it frozen: "I also don't wanna hinder him from pushing it further."
+- Sparks, on scroll and at a strike: "I think they're perfect", "the balance is really good". No changes asked. Improvements are allowed.
+- Shards on the straight runs: the number "looks OK". At a strike: "pretty spot on". Where the stream lies along or hooks over an object, such as the top of WORK and its corners, there are too many and they bunch: "it just looks like more on places where the stream is hooking or grabbing a 3-D object". He called it nitpicky and does not want the number cut by much overall.
+- The shards stop being copper leaf and glass. "The particles look abstract. There's no way to look at and be like oh yeah that's glass and a copper leaf. Nobody will ever get that." What matters to him: "there's something with substance there in the stream and when it hits the ground, they fly off and bounce around." This replaces the agreement's lines about copper and glass, and the test that a shard must read as one or the other.
+- There are still two kinds, a solid one and a clear one, because the contrast between dark and bright gives depth. They are one family of shapes in two materials: "Same family shapes, two materials."
+- The shape is facets: chunky cut pieces with five to eight flat faces, like rough cut gems or broken crystal, in many sizes. "I like the facets idea, we can go with." He passed over hexagons, thin plates and panes, and chips of the letters.
+- He likes the raised lettering of WORK and how the stream plays on it. Once the stream is finished he wants the components and the layout approached again "with this component always in mind". Fable's reading, which he agreed with: every element on the site is a surface that the stream and the cursor light, and nothing else has a glow of its own.
+
 **How it is built**
 
 He added these while the stream was a simulated liquid. They hold for anything in the stream that is simulated: shards thrown loose, sparks.
@@ -147,6 +160,9 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
 - At rest the text sits about a third of the way down. On a desktop it is fine if half the city or a little more shows.
 - He wants camera movement and a real moment of awe.
 - No PC parts in the hero.
+
+- The opening animation as carried from the second build is "five out of 10 at best" and "definitely needs to be redone". The city itself "looks good" and "could still use some work". The city gets revisited anyway so it ties in with the stream. (Nov 12)
+- An idea to revisit with the hero, not decided: his first thought was the city breaking apart into the stream as the visitor scrolls. Fable's twist, which he asked to have noted: building, not breaking. The city assembles out of the stream's facets in the opening, and the stream carries the same pieces on down the page. (Nov 12)
 
 ### Work
 
@@ -244,6 +260,8 @@ Each line has Fable's recommendation where there is one. None of these are rules
 
 ## Dropped
 
+- Shards that have to read as copper leaf and as glass. They are abstract facets in a solid and a clear material (Nov 12)
+- Hexagons, thin plates and panes, and chips of the letters as the shape of the shards. He picked facets (Nov 12)
 - The client work section
 - The process section
 - The "More rooms" section and the separate room pages

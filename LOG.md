@@ -2,6 +2,32 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-12 · Brandon's verdict on the stream's test shot (Fable, web chat)
+
+**What Brandon said**
+
+- All of it is in `BRIEF.md`, The stream, under "His verdict on the test shot, and what changes", and two lines under Hero. Read those. In short:
+  - He is very happy with it and wants everything else built off it.
+  - Keep the strikes: shards blasting off and bouncing. Free to improve them.
+  - Sparks are right as they are.
+  - Too many shards, bunched, only where the stream lies along or hooks over an object.
+  - The shards stop being copper leaf and glass. Two materials, solid and clear, one family of shapes: facets.
+  - The opening animation is 5 out of 10 and gets redone later. The city gets revisited later.
+
+**What this does to the bar**
+
+- `QUALITY.md` still says a shard must read as copper or as glass, and all eight reviews failed the shot mainly on that. That test is wrong now. It has not been rewritten yet: Brandon had Fable turned down for this talk and asked for no code and no prompt. It gets rewritten with the next handoff.
+
+**Why the shards may bunch on objects. Guesses from the log, not from the code**
+
+- Each landing keeps throwing a few shards even when the page is still.
+- Both sides' riding shards overlap where they part.
+
+**Not done**
+
+- No code. No prompt for the session in Claude Code yet.
+- `PLAN.md` is unchanged.
+
 ## 2026-11-12 · The stream's test shot (Fable, Claude Code on Brandon's Mac)
 
 **What Brandon said**
