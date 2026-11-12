@@ -26,6 +26,8 @@ uniform float uRad, uInset, uThick, uBevel;
 uniform int uFinish;         // 0 aged, 1 polished, 2 bronze, 3 panel
 uniform float uCutDepth, uCutWall, uPanelDepth, uRaise;
 uniform float uGrain, uPatina, uSeed, uScratch, uPillow;
+uniform float uRimW;         // design units the tarnish reaches in from the edge
+uniform float uFaceClean;    // 0 to 1: how free of tarnish the open face stays
 uniform vec4 uScrew[6];      // x, y, radius, slot angle (below -5: rivet, no slot)
 uniform vec4 uWin;           // center x, y, half w, half h (device px)
 uniform float uWinOn, uWinR, uWinDepth;
@@ -59,7 +61,10 @@ float height(vec2 p){
   float x = clamp(-d / uBevel, 0.0, 1.0);
   float h = uThick * sqrt(1.0 - (1.0 - x) * (1.0 - x));
   // A small control has a gently domed face, so it reflects a gradient of the room instead of one flat tone.
-  if (uPillow > 0.0){ vec2 c = (p - uRes * 0.5) / (uRes * 0.5); h += uPillow * (1.0 - min(1.0, c.x * c.x * 0.35 + c.y * c.y)) * x; }
+  if (uPillow > 0.0){
+    vec2 c = (p - uRes * 0.5) / (uRes * 0.5);
+    h += uPillow * (1.0 - min(1.0, c.x * c.x * 0.35 + c.y * c.y)) * x;
+  }
   vec2 m = sdf(p);
   float cutT = clamp(-m.r / uCutWall, 0.0, 1.0);
   float cut = cutT * cutT * (3.0 - 2.0 * cutT);
@@ -133,11 +138,11 @@ void main(){
   float drift = fbm(q * 0.0045 + uSeed * 3.1);
   float speck = smoothstep(0.64, 0.92, noise(q * 0.34 + uSeed)) * 0.55 + smoothstep(0.72, 0.96, noise(q * 1.1 + uSeed * 2.0)) * 0.4;
   float pat = drift * 0.5 + speck * 0.5;
-  float rim = smoothstep(64.0, 3.0, -d / uS);
+  float rim = smoothstep(uRimW, uRimW * 0.047, -d / uS);
   float groove = (uFinish < 2) ? exp(-pow((m.r + 1.2 * uS) / (1.8 * uS), 2.0)) : 0.0;
   float near = 0.0;
   for (int i = 0; i < 6; i++){ vec4 s = uScrew[i]; if (s.z > 0.0) near = max(near, smoothstep(2.6, 1.3, length(p - s.xy) / s.z)); }
-  float grime = uPatina * clamp(rim * (0.9 + 0.4 * drift) + groove * 0.5 + near * 0.55 + speck * 0.06 + (drift - 0.5) * 0.2, 0.0, 1.0) * (1.0 - inMetal2 * 0.65);
+  float grime = uPatina * clamp(rim * (0.9 + 0.4 * drift) + groove * 0.5 + near * 0.55 + (speck * 0.06 + (drift - 0.5) * 0.2) * (1.0 - uFaceClean), 0.0, 1.0) * (1.0 - inMetal2 * 0.65);
   float cavity = clamp(groove * 0.6 + smoothstep(1.0 * uS, -2.0 * uS, -d) * 0.0, 0.0, 1.0);
   // Wear: the crest of the bevel and the lips of the cuts are rubbed bright by hands.
   float crest = exp(-pow((-d - uBevel * 0.85) / (uBevel * 0.35), 2.0));
@@ -174,6 +179,12 @@ uniform vec4 uWin;
 uniform float uWinOn, uWinR, uWinDepth, uPhotoAspect, uPhotoOn;
 uniform vec2 uPhotoFocus;
 uniform float uPhotoZoom;
+uniform float uHover;        // 0 to 1: how far light has run round the cut border from where the pointer came in
+uniform vec2 uHoverAt;       // where the pointer came in, device px in the plate
+uniform vec3 uGlow;          // the light's color, linear
+uniform float uRing;         // design units from the edge to the cut border; 0 when the plate has none
+uniform float uSoft;         // 0 to 1: the room holds one large soft light, as metal plates are photographed
+uniform float uInlay;        // the least an inlaid word shows of its own metal, wherever the lamp is; 0 for none
 out vec4 frag;
 
 const float PI = 3.14159265;
@@ -193,6 +204,14 @@ vec3 studio(vec3 R, float rough){
   float strip = panel(d, vec2(0.36, -0.7), vec2(0.5, 0.9), b);
   float card = panel(d, vec2(-1.0, -0.5), vec2(0.9, -0.05), b * 1.6);
   vec3 c = vec3(0.022, 0.019, 0.016) + vec3(0.15, 0.125, 0.1) * smoothstep(-0.4, 1.4, d.y);
+  // One wide soft light straight in front, as polished bars are photographed. A domed face reflects it as a bright
+  // band through its middle, where the words are, and reflects the dark room along its upper and lower edges.
+  // The band stays over the words wherever the plate is on the screen.
+  float bb = 0.04 + b * 0.7;
+  float soft = smoothstep(-0.42 - bb, -0.42 + bb, d.y) * (1.0 - smoothstep(0.42 - bb, 0.42 + bb, d.y)) * (1.0 - smoothstep(1.1, 1.7, abs(d.x)));
+  key = mix(key, soft, uSoft);
+  keyCore *= 1.0 - uSoft;
+  strip *= 1.0 - uSoft * 0.6;
   c += vec3(1.0, 0.93, 0.84) * (key * 0.95 + keyCore * 0.6);
   c += vec3(1.0, 0.82, 0.6) * strip * 0.8;
   c += vec3(0.62, 0.44, 0.25) * card * 0.4;
@@ -217,6 +236,18 @@ vec3 spec(vec3 N, vec3 V, vec3 L, vec3 T, vec3 B, float rough, float aniso, vec3
   float ax = max(a * (1.0 - aniso * 0.7), 0.0015), ay = min(a * (1.0 + aniso * 2.2), 1.0);
   vec3 F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
   return F * D_aniso(H, N, T, B, ax, ay) * V_smith(nl, nv, a) * nl;
+}
+
+// How far round the edge of the plate a point is, in device px, clockwise from the top left corner. A point belongs
+// to its nearest side, so the sides meet on a 45 degree line from each corner and the light turns a corner cleanly.
+float around(vec2 p){
+  vec2 q = clamp(p, vec2(0.0), uRes);
+  float top = q.y, right = uRes.x - q.x, bottom = uRes.y - q.y, left = q.x;
+  float m = min(min(top, bottom), min(left, right));
+  if (m == top) return q.x;
+  if (m == right) return uRes.x + q.y;
+  if (m == bottom) return 2.0 * uRes.x + uRes.y - q.x;
+  return 2.0 * (uRes.x + uRes.y) - q.y;
 }
 
 vec3 rotX(vec3 v, float a){ float c = cos(a), s = sin(a); return vec3(v.x, c * v.y - s * v.z, s * v.y + c * v.z); }
@@ -249,7 +280,9 @@ void main(){
   float rough = clamp(mix(uRa, uRb, metal2) + grime * 0.26 + roughVar - wear * 0.1, 0.06, 0.95);
   float aniso = uAniso * (1.0 - metal2 * 0.6) * (1.0 - grime * 0.5);
 
-  vec3 R = reflect(-V, N);
+  // Under the one soft light the room is seen from straight in front, so the band it makes on a domed face stays
+  // over the words wherever the plate is on the screen. The lamp still sees the plate from where the viewer is.
+  vec3 R = reflect(-normalize(mix(V, vec3(0.0, 0.0, 1.0), uSoft)), N);
   vec3 col = studio(R, rough) * F0 * (1.0 - cavity * 0.55);
   // Real brass is never a perfect mirror: micro scratches scatter a little of the whole room, so a plate that
   // reflects the dark floor still keeps enough light for its enamel words to read.
@@ -258,9 +291,18 @@ void main(){
   vec3 Lv = vec3(uLamp.x, -uLamp.y, uLamp.z) - P;
   float ld = length(Lv);
   vec3 L = Lv / ld;
-  float fall = uLampI / (1.0 + pow(ld / (max(uView.x, uView.y) * 0.75), 2.0));
+  // Under the pointer the lamp comes in close: the metal brightens where it is touched.
+  float fall = uLampI * (1.0 + 0.9 * uHover) / (1.0 + pow(ld / (max(uView.x, uView.y) * 0.75), 2.0));
   col += spec(N, V, L, T, B, rough, aniso, F0) * fall * vec3(1.0, 0.94, 0.86);
   col += spec(N, V, L, T, B, min(1.0, rough * 1.8 + 0.1), aniso * 0.5, F0) * fall * 0.1 * vec3(1.0, 0.94, 0.86);
+
+  // Inlaid words keep a floor of their own color and brighten above it, so they read as far from the lamp as a
+  // page can put them. The further below the floor the reflection falls, the more of the floor is added.
+  if (uInlay > 0.0){
+    vec3 least = uF0b * uInlay;
+    vec3 W = vec3(0.2126, 0.7152, 0.0722);
+    col += least * exp(-dot(col, W) / dot(least, W)) * metal2;
+  }
 
   float spill = 0.0;
   if (uWaterI > 0.0){
@@ -279,6 +321,24 @@ void main(){
   // Enamel: a black glassy fill. Dark, with its own small sharp highlight.
   vec3 enamel = uInk + studio(R, 0.4) * 0.018 + spec(N, V, L, T, B, 0.42, 0.0, vec3(0.04)) * fall * 0.22;
   col = mix(col, enamel, ink);
+
+  // The pointer's light runs round the cut border, both ways from where it came in, and meets on the far side.
+  // On a plate with inlaid words the words warm with it.
+  if (uHover > 0.0 && uRing > 0.0){
+    float edge = -d / uS;
+    float inRing = 1.0 - smoothstep(uRing + 2.5, uRing + 4.5, edge);
+    float per = 2.0 * (uRes.x + uRes.y);
+    float gap = abs(around(p) - around(uHoverAt));
+    gap = min(gap, per - gap);
+    float front = uHover * per * 0.5;
+    float lit = smoothstep(0.0, 7.0 * uS, front - gap + 2.0 * uS);
+    float head = exp(-pow((front - gap) / (11.0 * uS), 2.0)) * (1.0 - smoothstep(0.86, 1.0, uHover));
+    float line = max(ink, metal2) * inRing;
+    vec3 glow = uGlow * (1.5 + 2.6 * head);
+    col = mix(col, glow, line * lit);
+    col += uGlow * F0 * exp(-pow((edge - uRing) / 3.4, 2.0)) * lit * (0.5 + 1.2 * head) * (1.0 - line);
+    col = mix(col, uGlow * 1.25, metal2 * (1.0 - inRing) * uHover * 0.8);
+  }
 
   if (uWinOn > 0.5){
     float dw = sdBox(p - uWin.xy, uWin.zw, uWinR);

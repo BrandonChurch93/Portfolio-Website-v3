@@ -90,6 +90,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 - Keep the tags and the text. The second build lost them.
 - The second build's spacing was far too cramped.
 - He likes the second build's brass buttons, the Download PDF one most. He wants a primary and an accent, and both react to the light.
+- On the first copper buttons (Nov 11): the words on the bright one are hard to read, because its face is light on the top half and dark on the bottom half, right behind the words. He wants a face that makes sense and does not put that split behind the text, and floated a tarnish look. He also does not love how simple the hover was (the button only lifted). A second pass is at `/lab/buttons`, waiting on him.
 
 ### Skills
 

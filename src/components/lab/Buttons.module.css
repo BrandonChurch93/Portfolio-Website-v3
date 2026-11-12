@@ -1,7 +1,7 @@
 .main {
   min-height: 100vh;
   min-height: 100svh;
-  padding: var(--space-9) var(--edge) var(--space-10);
+  padding: var(--space-8) var(--edge) var(--space-10);
 }
 
 .label {
@@ -32,8 +32,8 @@
   grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
   gap: var(--space-8);
   align-items: center;
-  margin-top: var(--space-8);
-  padding-top: var(--space-8);
+  margin-top: var(--space-7);
+  padding-top: var(--space-7);
   border-top: 1px solid var(--line);
 }
 

@@ -16,14 +16,18 @@ export interface PlateProps {
   className?: string;
   style?: CSSProperties;
   tilt?: boolean;
+  // The pointer is on the plate, or it has focus. x and y are where it came in, CSS px from the plate's top left.
+  hover?: { on: boolean; x: number; y: number };
   // What screen readers and search read. Defaults to the plate's words. The words are always in the DOM.
   children?: ReactNode;
 }
 
 const MAX_TILT = 0.06;
+// A button leans in its light only (src/metal/renderer.ts), so its words stay sharp under the pointer.
+const MAX_TILT_CONTROL = 0.05;
 
 // A lit metal plate. Its words are painted into the metal and also kept in the DOM.
-export function Plate({ finish, kind = 'plate', label, big, facts, photo, className, style, tilt = true, children }: PlateProps) {
+export function Plate({ finish, kind = 'plate', label, big, facts, photo, className, style, tilt = true, hover, children }: PlateProps) {
   const host = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'failed'>('loading');
@@ -51,17 +55,22 @@ export function Plate({ finish, kind = 'plate', label, big, facts, photo, classN
     const move = (e: PointerEvent) => {
       if (e.pointerType === 'touch') return;
       const r = h.getBoundingClientRect();
-      plates.setTilt(h, -((e.clientY - r.top) / r.height - 0.5) * MAX_TILT, ((e.clientX - r.left) / r.width - 0.5) * MAX_TILT * 1.2);
+      const max = kind === 'control' ? MAX_TILT_CONTROL : MAX_TILT;
+      plates.setTilt(h, -((e.clientY - r.top) / r.height - 0.5) * max, ((e.clientX - r.left) / r.width - 0.5) * max * 1.2);
     };
     const leave = () => plates.setTilt(h, 0, 0);
     h.addEventListener('pointermove', move);
     h.addEventListener('pointerleave', leave);
     return () => { h.removeEventListener('pointermove', move); h.removeEventListener('pointerleave', leave); };
-  }, [tilt]);
+  }, [tilt, kind]);
+
+  useEffect(() => {
+    if (host.current) plates.setHover(host.current, !!hover?.on, hover?.x, hover?.y);
+  }, [hover?.on, hover?.x, hover?.y, state]);
 
   return (
     <div ref={host} className={`${styles.plate} ${className ?? ''}`} style={style} data-kind={kind} data-finish={finish} data-state={state}>
-      <div className={styles.shadow} aria-hidden="true" />
+      <div className={styles.shadow} data-plate-shadow="" aria-hidden="true" />
       <canvas ref={canvas} className={styles.canvas} aria-hidden="true" />
       <div className={state === 'failed' ? styles.plain : 'visually-hidden'} data-plate-text="">
         {children ?? (

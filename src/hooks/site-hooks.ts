@@ -13,6 +13,7 @@ export interface SiteHooks {
   tier(name: Tier | null): void;
   opening(t: number): void;
   piece(name: string): PieceHandle;
+  call(name: string, ...args: unknown[]): unknown;
   info(): { tier: Tier; frozen: boolean; time: number; scrollY: number; probeMs: number | null; lamp: { x: number; y: number }; stats: Record<string, number> };
 }
 
@@ -104,6 +105,12 @@ export function installHooks(): void {
       const p = registry.getPiece(name);
       if (!p) throw new Error(`piece: ${name} is not mounted on this page`);
       return p;
+    },
+    // Calls something a module registered by name (src/hooks/registry.ts, tool): for example 'plateHover'.
+    call(name, ...args) {
+      const fn = registry.getTool(name) as ((...a: unknown[]) => unknown) | undefined;
+      if (!fn) throw new Error(`call: nothing on this page offers ${name}`);
+      return fn(...args);
     },
     info() {
       const l = lamp.get();

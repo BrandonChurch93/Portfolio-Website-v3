@@ -3,7 +3,7 @@ import { registry, stats } from '../hooks/registry';
 import { lamp } from '../lamp/lamp';
 import { clock } from '../world/clock';
 import { tiers } from '../world/tier';
-import { FINISHES, INK } from './finishes';
+import { CONTROL_RING, FINISHES, GLOW, INK } from './finishes';
 import { MASK_FONTS, paintMask, type Mask, type PlateSpec } from './mask';
 import { distanceField } from './sdf';
 import { BAKE, LIGHT, VERT } from './shaders';
@@ -39,6 +39,8 @@ interface Plate extends PlateEntry {
   sig: string;
   tilt: { x: number; y: number; gx: number; gy: number };
   water: { x: number; y: number; z: number; k: number };
+  // The pointer's light: v runs 0 to 1 toward goal; x and y are where the pointer came in, CSS px in the plate.
+  hover: { v: number; goal: number; x: number; y: number; pinned: boolean };
   seed: number;
 }
 
@@ -99,6 +101,7 @@ class PlateRenderer {
   private ro: ResizeObserver | null = null;
   private byHost = new Map<Element, Plate>();
   private started = false;
+  private still = false;
   private broken = false;
   private fontsReady: Promise<unknown> | null = null;
   frameMs = 0;
@@ -148,9 +151,19 @@ class PlateRenderer {
   private start(): void {
     if (this.started) return;
     this.started = true;
-    clock.onFrame(() => this.frame());
+    this.still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    clock.onFrame((_t, dt) => this.frame(dt));
     tiers.subscribe(() => { for (const p of this.plates) this.measure(p); });
     registry.onFreeze((t) => (t === null ? this.resumeVideos() : this.seekVideos(t)));
+    // Test hook: hold the pointer's light on a plate part way round, 0 to 1, as if it came in at x, y (CSS px).
+    registry.tool('plateHover', ((selector: string, v: number, x = 0, y = 0) => {
+      const el = document.querySelector(selector);
+      const host = el?.matches('[data-kind]') ? el : el?.querySelector('[data-kind]');
+      const p = host ? this.byHost.get(host) : undefined;
+      if (!p) throw new Error(`plateHover: no plate at ${selector}`);
+      p.hover = { v, goal: v, x, y, pinned: true };
+      p.sig = '';
+    }) as (...args: never[]) => unknown);
   }
 
   add(entry: PlateEntry): () => void {
@@ -160,6 +173,7 @@ class PlateRenderer {
     const p: Plate = {
       ...entry, ctx, cssW: 0, cssH: 0, dpr: 1, mask: null, b0: null, b1: null, photoTex: null, photoAspect: 1, videoEl: null,
       visible: false, bakeGen: 0, sig: '', tilt: { x: 0, y: 0, gx: 0, gy: 0 }, water: { x: 0, y: 0, z: 26, k: 0 },
+      hover: { v: 0, goal: 0, x: 0, y: 0, pinned: false },
       seed: seedOf(entry.spec),
     };
     this.plates.add(p);
@@ -187,6 +201,14 @@ class PlateRenderer {
   setTilt(host: Element, x: number, y: number): void {
     const p = this.byHost.get(host);
     if (p) { p.tilt.gx = x; p.tilt.gy = y; }
+  }
+
+  // The pointer is on a plate (or it has focus), or has left. x and y are where it came in, CSS px in the plate.
+  setHover(host: Element, on: boolean, x = 0, y = 0): void {
+    const p = this.byHost.get(host);
+    if (!p) return;
+    if (on && p.hover.v < 0.02) { p.hover.x = x; p.hover.y = y; }
+    p.hover.goal = on ? 1 : 0;
   }
 
   // The water near a plate: where it is (viewport CSS px) and how much it lights it, 0 to 1.
@@ -238,8 +260,10 @@ class PlateRenderer {
 
   private measure(p: Plate): void {
     const r = p.host.getBoundingClientRect();
-    // Plates keep crisp words: the device's own ratio up to 3x, except on the low tier (1.5x). They redraw only on change.
-    const dpr = Math.min(devicePixelRatio || 1, tiers.get() === 'low' ? 1.5 : 3);
+    // Plates keep crisp words: the device's own ratio up to 3x, and never under 2x, because at 1x the cut walls of
+    // small letters swallow their strokes. On a 1x screen the browser scales the plate down, which smooths it.
+    // The low tier caps at 2x. Plates redraw only on change.
+    const dpr = Math.min(Math.max(devicePixelRatio || 1, 2), tiers.get() === 'low' ? 2 : 3);
     const cssW = Math.round(r.width * 100) / 100;
     const cssH = Math.round(r.height * 100) / 100;
     if (cssW < 4 || cssH < 4) return;
@@ -287,10 +311,12 @@ class PlateRenderer {
     gl.uniform1f(b.u('uCutWall'), Math.max(0.55, DESIGN_MM.cutWall * S));
     gl.uniform1f(b.u('uPanelDepth'), DESIGN_MM.panelDepth * S);
     gl.uniform1f(b.u('uRaise'), DESIGN_MM.raise * S);
-    gl.uniform1f(b.u('uGrain'), p.spec.kind === 'control' ? Math.max(F.grain, 0.05) : F.grain);
+    gl.uniform1f(b.u('uGrain'), p.spec.kind === 'control' && F.pillow === undefined ? Math.max(F.grain, 0.05) : F.grain);
     gl.uniform1f(b.u('uPatina'), F.patina);
     gl.uniform1f(b.u('uScratch'), F.scratch * (p.spec.kind === 'control' ? 0.25 : 1));
-    gl.uniform1f(b.u('uPillow'), p.spec.kind === 'control' ? 5 * S : 0);
+    gl.uniform1f(b.u('uPillow'), p.spec.kind === 'control' ? (F.pillow ?? 5) * S : 0);
+    gl.uniform1f(b.u('uRimW'), p.spec.kind === 'control' ? F.rimW ?? 64 : 64);
+    gl.uniform1f(b.u('uFaceClean'), p.spec.kind === 'control' ? F.faceClean ?? 0 : 0);
     gl.uniform1f(b.u('uSeed'), p.seed);
     const sc = new Float32Array(24);
     mask.screws.slice(0, 6).forEach((s, i) => sc.set(s, i * 4));
@@ -324,7 +350,7 @@ class PlateRenderer {
     gl.uniform1f(prog.u('uWinDepth'), DESIGN_MM.windowDepth * mask.S);
   }
 
-  private frame(): void {
+  private frame(dt = 0): void {
     if (!this.gl || this.broken) return;
     const t0 = performance.now();
     const frozen = clock.isFrozen();
@@ -338,8 +364,16 @@ class PlateRenderer {
       if (Math.abs(dx) + Math.abs(dy) > 1e-5) {
         p.tilt.x += dx * k;
         p.tilt.y += dy * k;
-        p.canvas.style.transform = `rotateX(${(p.tilt.x * 57.2958).toFixed(3)}deg) rotateY(${(p.tilt.y * 57.2958).toFixed(3)}deg)`;
+        // A button leans in its light only. Turning its canvas as well moved it under half a pixel and softened its words.
+        if (p.spec.kind !== 'control') p.canvas.style.transform = `rotateX(${(p.tilt.x * 57.2958).toFixed(3)}deg) rotateY(${(p.tilt.y * 57.2958).toFixed(3)}deg)`;
       }
+    }
+    // The light runs round a border in about half a second and drains a little faster. A frozen clock shows it whole.
+    for (const p of this.plates) {
+      const h = p.hover;
+      if (h.pinned || h.v === h.goal) continue;
+      if (frozen || this.still) h.v = h.goal;
+      else h.v = h.goal > h.v ? Math.min(h.goal, h.v + dt / 0.5) : Math.max(h.goal, h.v - dt / 0.32);
     }
     for (const [p, r] of rects) this.draw(p, false, r);
     this.frameMs = performance.now() - t0;
@@ -354,7 +388,7 @@ class PlateRenderer {
     const L = lamp.get();
     const video = p.videoEl && p.videoEl.readyState >= 2;
     const sig = [Math.round(L.px), Math.round(L.py), Math.round(r.left), Math.round(r.top), clock.view.w, clock.view.h,
-      p.tilt.x.toFixed(3), p.tilt.y.toFixed(3), p.water.k.toFixed(3), Math.round(p.water.x), Math.round(p.water.y), !!p.photoTex,
+      p.tilt.x.toFixed(3), p.tilt.y.toFixed(3), p.water.k.toFixed(3), Math.round(p.water.x), Math.round(p.water.y), p.hover.v.toFixed(3), !!p.photoTex,
       video ? p.videoEl!.currentTime.toFixed(3) : ''].join();
     if (!force && sig === p.sig) return;
     if (tiers.get() === 'static' && p.sig && !force) return;
@@ -382,6 +416,13 @@ class PlateRenderer {
     gl.uniform3f(l.u('uWater'), p.water.x, p.water.y, p.water.z);
     gl.uniform1f(l.u('uWaterI'), p.water.k * 8.0);
     gl.uniform2f(l.u('uTilt'), p.tilt.x, p.tilt.y);
+    // Eased at both ends, so the light sets off and arrives gently.
+    gl.uniform1f(l.u('uHover'), p.hover.v * p.hover.v * (3 - 2 * p.hover.v));
+    gl.uniform2f(l.u('uHoverAt'), p.hover.x * p.dpr, p.hover.y * p.dpr);
+    gl.uniform3fv(l.u('uGlow'), GLOW);
+    gl.uniform1f(l.u('uRing'), p.spec.kind === 'control' ? CONTROL_RING : 0);
+    gl.uniform1f(l.u('uSoft'), p.spec.kind === 'control' ? FINISHES[p.spec.finish].soft ?? 0 : 0);
+    gl.uniform1f(l.u('uInlay'), p.spec.kind === 'control' ? FINISHES[p.spec.finish].inlay ?? 0 : 0);
     const F = FINISHES[p.spec.finish];
     gl.uniform3fv(l.u('uF0a'), F.a);
     gl.uniform3fv(l.u('uF0b'), F.b);

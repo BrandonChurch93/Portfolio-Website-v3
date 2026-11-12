@@ -11,6 +11,9 @@
 //   --scroll <id | pixels | n%>         scroll to an element, a position or a fraction of the page
 //   --piece <name> --view <az,el,dist>  place that piece's camera for a close look
 //   --piece <name> --progress <0..1>    set that piece's scroll progress
+//   --hover <selector>                  move the pointer onto that element, from its left
+//   --eval <js>                         run this in the page first. $t is replaced by the time
+//   --nofreeze                          with --t or a strip's times, pass the time to --eval only and leave the clock running
 //   --tier high|mid|low|static          force a quality tier
 //   --scale <n>                         pixel ratio, overriding the screen size's own
 //   --wait <ms>                         wait this long before capturing

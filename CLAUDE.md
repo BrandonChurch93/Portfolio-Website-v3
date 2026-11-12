@@ -68,6 +68,7 @@ Examples:
 npm run shot -- /lab/piece/city --t 12
 npm run shot -- /lab/piece/handheld --vp phone --lamp 0.3,0.4
 npm run strip -- "/lab/piece/city?entrance=1&label=0" --opening --times 0.4,1.2,2,2.8,3.6,4.4,5.2,7
+npm run shot -- /lab/buttons --hover '[data-variant="primary"]' --wait 1200
 ```
 
 - The scripts use the dev server if it is running and start one if it is not.
@@ -84,7 +85,7 @@ npm run strip -- "/lab/piece/city?entrance=1&label=0" --opening --times 0.4,1.2,
 | `src/pieces/` | The 3D pieces, one folder each, behind the contract in `src/world/piece.ts` |
 | `src/world/` | Shared 3D code: the stage, materials, the clock, quality tiers |
 | `src/lamp/` | The cursor light. One lamp, read by everything that is lit |
-| `src/hooks/` | `window.__site`, present only with `?hook=1`. The screenshot scripts drive pages through it |
+| `src/hooks/` | `window.__site`, present only with `?hook=1`. The screenshot scripts drive pages through it. `__site.call(name, ...)` runs a tool a module registered, such as `plateHover` |
 | `src/components/PieceView.tsx` | Puts a piece in a page |
 | `src/metal/`, `src/components/Plate.tsx` | Lit metal for the interface: one hidden WebGL context draws every plate from a height field |
 | `src/components/MetalButton.tsx` | The primary and accent buttons |

@@ -10,6 +10,7 @@ export interface PieceHandle {
 
 const pieces = new Map<string, PieceHandle>();
 let opening: ((t: number) => void) | null = null;
+const tools = new Map<string, (...args: never[]) => unknown>();
 const pending = new Set<Promise<unknown>>();
 const freezers = new Set<(t: number | null) => Promise<void> | void>();
 
@@ -29,6 +30,13 @@ export const registry = {
   },
   getOpening(): ((t: number) => void) | null {
     return opening;
+  },
+  // A module offers the test hooks something to call by name, without the hooks having to import the module.
+  tool(name: string, fn: (...args: never[]) => unknown): void {
+    tools.set(name, fn);
+  },
+  getTool(name: string): ((...args: never[]) => unknown) | undefined {
+    return tools.get(name);
   },
   // Things with a clock of their own (video) follow freeze(t) through these.
   onFreeze(fn: (t: number | null) => Promise<void> | void): () => void {

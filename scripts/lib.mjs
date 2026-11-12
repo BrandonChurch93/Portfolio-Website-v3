@@ -19,7 +19,7 @@ const SOFTWARE = /swiftshader|llvmpipe|software/i;
 export function parseArgs(argv) {
   const flags = {};
   const rest = [];
-  const bare = new Set(['full', 'headed', 'png', 'opening']);
+  const bare = new Set(['full', 'headed', 'png', 'opening', 'nofreeze']);
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (!a.startsWith('--')) { rest.push(a); continue; }
@@ -119,7 +119,14 @@ export async function apply(page, flags, t) {
   }
   if (flags.lamp) { const [x, y] = nums(flags.lamp); await page.evaluate(([a, b]) => window.__site.lamp(a, b), [x, y]); }
   const time = t ?? (flags.t !== undefined ? Number(flags.t) : undefined);
-  if (time !== undefined) {
+  if (flags.eval) await page.evaluate(String(flags.eval).replaceAll('$t', String(time ?? 0)));
+  if (flags.hover) {
+    const box = await page.locator(flags.hover).first().boundingBox();
+    if (!box) throw new Error(`--hover: nothing matches ${flags.hover}`);
+    await page.mouse.move(box.x - 40, box.y + box.height * 0.5);
+    await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.55, { steps: 8 });
+  }
+  if (time !== undefined && !flags.nofreeze) {
     if (flags.opening) await page.evaluate((v) => window.__site.opening(v), time);
     else await page.evaluate((v) => window.__site.freeze(v), time);
   }

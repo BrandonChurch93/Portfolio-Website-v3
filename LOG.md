@@ -8,19 +8,62 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 
 - On Study 01: "an overall improvement for the colors. Looks good." The palette and the portrait on the page are approved and in `BRIEF.md`.
 
-**What was built**
+**First pass**
 
 - The lit metal system from the second build, brought across whole: `src/metal/` and `src/components/Plate.tsx`. It is the system behind the buttons he liked.
-- `src/metal/finishes.ts` now takes its metals from the palette: copper-light, copper, bronze-deep. No brass is left in it.
+- `src/metal/finishes.ts` takes its metals from the palette: copper-light, copper, bronze-deep. No brass is left in it.
 - `src/components/MetalButton.tsx`: one component, two variants. `primary` is bright copper with the words cut in and filled dark. `accent` is dark bronze with the words in copper, set flush. It renders a link when given `href` and a button when not.
 - `/lab/buttons`: the study.
 
-**How it was judged (Fable, from software stills at pixel ratio 2)**
+**What Brandon said about the first pass**
 
-- Both read as lit metal, not as gradients: a studio reflection across the face, a bevel, a cut border, a shadow that falls away from the light.
-- The highlight moves with the lamp. `reference/studies/02-buttons-three-lights.jpg` shows three lamp positions.
-- The words are readable on both.
-- Not judged: hover, press and the tilt toward the cursor, which need a real pointer. They are his to try.
+- "The text on the brighter buttons is hard to read." He put it down to the face: "Light on the top half, dark on the bottom half."
+- "I don't love how simple the hover effect is." It only lifted.
+- He floated "a tarnish look or something that doesn't go behind the text".
+- All of it is in `BRIEF.md` under Cards and buttons.
+
+**Second pass: the primary's face**
+
+Tried and thrown out, in order. Do not try these again:
+
+1. A brushed satin face. It read as wood.
+2. An evenly lit flat face. It read as peach plastic.
+3. His tarnish idea, as clouds of tarnish at the ends and corners, kept clear of the words. At button size it read as dirt smudges.
+4. A wide, soft band of light. Still flat orange.
+
+Kept:
+
+- Polished copper, gently domed (`pillow: 6`), reflecting one wide soft light from straight in front (`soft: 1` in `finishes.ts`, `uSoft` in the light shader). The dome turns that light into a bright band through the middle of the face, where the words are, with the dark of the room along the upper and lower edges. The band is fixed to the button, so it stays behind the words wherever the button is on the screen.
+- Tarnish only in the rim (`rimW: 8`, `faceClean: 1`).
+
+**Second pass: the hover, on both buttons**
+
+- Light in the palette's `pale` runs round the cut border, both ways from where the pointer came in, and meets on the far side. About half a second in, a little faster out.
+- The lamp closes in, so the metal brightens under the pointer and the bright spot follows it across the face.
+- The button lifts 3px and its shadow spreads.
+- On the accent the copper words warm to the light's color.
+- Keyboard focus sets it off from the left edge. Reduced motion shows it complete, with no run.
+- A button no longer turns its canvas toward the pointer. The turn moved it under half a pixel and blurred its words in the stills. It leans in its light only. Larger plates still turn.
+
+**Found while judging, and fixed**
+
+- At pixel ratio 1 the cut words went soft and grey. Plates now bake at 2x or more on every screen.
+- The accent's words dimmed far from the lamp: 2.6 to 1 against the face on a phone. Inlaid words now keep a floor of their own color (`inlay: 0.8`). Measured word to face contrast is now 4.5 to 5.4 on the accent and 5.4 to 5.9 on the primary, at three lamp positions on desktop and on a phone.
+- The running light drew a wedge across the face of a wide button, because a point's place round the edge was taken from the center. It is now taken from the nearest side.
+
+**How it was judged (Fable, from software stills at pixel ratio 2 and a phone at 3)**
+
+- Stills in `reference/studies/`: `02-buttons.jpg` (the page), `02-buttons-three-lights.jpg` (three lamp positions), `02-buttons-hover.jpg` (six stages of the running light), `02-buttons-under-pointer.jpg` (the pointer at three places on a hovered button).
+- Both read as lit metal. The words are sharp and readable on both, at rest and hovered.
+- Not judged: how the hover moves, the press, and how the lift feels. Those need a real pointer and are his to try.
+- My own doubt: the primary is calmer than the first pass. It gave up the hard reflection that made it look most like metal, in exchange for words that read. If he finds it too plain, the next thing to try is a brighter, narrower band, not tarnish.
+
+**Tools added**
+
+- `npm run shot -- <route> --hover <selector>` moves a real pointer onto an element. Add `--wait 1200` so the light has finished its run.
+- `--eval <js>` runs script in the page first, with `$t` replaced by the time. `--nofreeze` passes the time to `--eval` and leaves the clock running.
+- `window.__site.call('plateHover', selector, v, x, y)` holds the running light on a plate at `v`, 0 to 1, as if the pointer came in at x, y. Six stages of it:
+  `npm run shot -- /lab/buttons --t 0.4 --nofreeze --eval "window.__site.call('plateHover','[data-variant=\"primary\"]',\$t,0,24)" --wait 300`
 
 **Things worth knowing**
 
@@ -28,10 +71,12 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 - `plates.setWater()` exists so the stream can light metal near it. Nothing calls it yet. The new water should.
 - A button's width comes from its label's length (`--chars` in `MetalButton.module.css`).
 - The words on a plate are drawn in Sora 600. The fonts are loaded before a plate is baked.
+- On a touch screen there is no hover. What a tap shows has not been checked.
 
 **Waiting on Brandon**
 
-1. His verdict on the two buttons.
+1. His verdict on the second pass of the two buttons.
+2. Whether the water gets built in Claude Code on his Mac.
 
 **Next**
 

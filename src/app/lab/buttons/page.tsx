@@ -9,12 +9,18 @@ export default function ButtonStudy() {
     <main className={styles.main}>
       <p className={styles.label}>Study 02 · buttons</p>
       <h1 className={styles.title}>Two buttons in lit metal</h1>
-      <p className={styles.lede}>Move the cursor, or touch the screen. Both are lit by the same light as everything else on the page.</p>
+      <p className={styles.lede}>
+        Move the cursor over one, or tab to it. Light runs round its cut border from where the cursor came in and meets on the far side. The metal
+        brightens under the cursor and the button lifts.
+      </p>
 
       <section className={styles.row} aria-labelledby="primary">
         <div className={styles.about}>
           <h2 id="primary" className={styles.name}>Primary</h2>
-          <p className={styles.note}>Bright copper. The words are cut into the metal and filled dark. For the one thing a section most wants pressed.</p>
+          <p className={styles.note}>
+            Polished copper, gently domed. A bright band runs through its middle, so the words always sit on bright metal. The words are cut in and
+            filled dark.
+          </p>
         </div>
         <div className={styles.set}>
           <MetalButton label="View all work" />
@@ -26,7 +32,7 @@ export default function ButtonStudy() {
       <section className={styles.row} aria-labelledby="accent">
         <div className={styles.about}>
           <h2 id="accent" className={styles.name}>Accent</h2>
-          <p className={styles.note}>Dark bronze. The words are copper, set flush. For the second choice beside a primary, and for quieter actions.</p>
+          <p className={styles.note}>Dark bronze. The words are copper, set flush, and warm to the color of the light under the cursor. For the second choice beside a primary.</p>
         </div>
         <div className={styles.set}>
           <MetalButton variant="accent" label="Source code" />

@@ -58,6 +58,7 @@ This is the real calibration. Every row is his verdict, not a guess.
 | Second brass cards, really lit | "Look really good" | Metal has to be lit, per pixel |
 | Whole page of brass plates | "Amateurish". Lost the tags and text | A good part repeated everywhere is a bad page. Never trade information for looks |
 | Brass buttons in the second build | Likes them, Download PDF most | Small lit metal controls work |
+| First copper buttons in this build | "The text on the brighter buttons is hard to read": the face was "light on the top half, dark on the bottom half". "I don't love how simple the hover effect is" | A reflection never puts its light and dark edge behind words. A hover that only lifts is not enough |
 | Workbench rough draft | "I really like the rough draft". Final must be much better | Approved as an idea, not as finished |
 | Handheld | "I actually really like" it | Roughly the level for a contained piece |
 | Camera | Happy to keep it | Acceptable |

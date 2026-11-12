@@ -15,7 +15,20 @@
 }
 
 .button:hover {
-  transform: translateY(-2px);
+  transform: translateY(-3px);
+}
+
+/* Lifted toward the light, its shadow spreads and falls further. */
+.button [data-plate-shadow] {
+  transition: opacity var(--dur-3) var(--ease-settle), scale var(--dur-2) var(--ease-settle);
+}
+
+.button:hover [data-plate-shadow] {
+  scale: 1.07 1.28;
+}
+
+.button:active [data-plate-shadow] {
+  scale: 0.98 0.86;
 }
 
 .button:active {
