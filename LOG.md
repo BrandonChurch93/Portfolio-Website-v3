@@ -2,6 +2,30 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-11 · Brandon's verdict on the test shot, and what could make the pour special (Fable, web chat)
+
+**What Brandon said**
+
+- He watched the test shot on his iPad. His words are in `BRIEF.md`, The pour: it puddles, the stream is "blasted back multiple times", it "looks more like mud splashing around and puddling up" than "a refined beautiful hot liquid metal".
+- It is still liquid metal.
+- He wants something special about the stream: "how plasma looks that liquid metal color, but with shiny stuff all in it, or maybe something else". He asked for a few options.
+
+**What was done**
+
+- His verdict is in `BRIEF.md`, the verdict table and the fail list in `QUALITY.md`, and `PLAN.md`.
+- Four ideas were given to him with real photographs to stand in for each (goldstone glass, the sun's surface, liquid mercury, a Japanese hand sparkler). They are listed in `BRIEF.md`, Open, last item. No code changed.
+- An earlier message from the web chat gave him a prompt for the rebuild (height field and normals, the agreed shot with a longer ledge, a lit ledge, dark cooled drops). He asked for it to be set aside. Do not treat it as agreed.
+
+**What his verdict means for the build, as far as thought through**
+
+- The third review credited the motion. Brandon, watching it move, did not. His eye is the test, and stills cannot see thrashing.
+- Heaping and blow back both come from metal arriving faster than it can leave. A level ledge with drag makes a pool by design. The metal needs somewhere to go.
+- "Refined" is about restraint: a stream that holds its line, a landing that turns the flow and sends it on, little thrown about.
+
+**Waiting on Brandon**
+
+1. Which idea, or mix, makes the pour special.
+
 ## 2026-11-11 · The pour's test shot, first build (Fable, Claude Code on Brandon's Mac)
 
 **What Brandon said**

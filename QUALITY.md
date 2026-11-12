@@ -72,6 +72,7 @@ This is the real calibration. Every row is his verdict, not a guess. Rows that s
 | Portrait small, on the left, in a frame | "Looks really bad". Wants it big, right, reacting to the mouse | A photo has to feel part of the page |
 | Draft copy in a light, fun voice | "Not even how I talk" | Do not write his voice for him |
 | Faint line showing where the water will go | Does not want it | No scaffolding on screen |
+| The pour's first test shot, in motion | "I definitely don't like how it puddles." The stream "is blasted back multiple times". "Instead of looking like a refined beautiful hot liquid metal, this looks more like mud splashing around and puddling up" | Real physics is not enough. It has to be graceful. Metal that heaps, thrashes or hits itself reads as mud |
 
 ## The patterns behind those verdicts
 
@@ -104,6 +105,8 @@ Everything visual has to pass all six.
 - The pour as a glowing tube, moving at one speed, or landing with no shape
 - The pour looking pasted over something it is supposed to touch
 - The pour reading as lava (dark crust, slow creep), as fire (flames) or as water (thin, clear, blue)
+- The pour heaping up into a puddle where it lands, or its own splash knocking the falling stream off its line
+- The pour reading as mud: thick, ragged, thrown about
 - A plain box, cylinder or cone where a real object has form
 - A window, screen or label that is a flat picture
 - Anything cut off by the screen or by another element

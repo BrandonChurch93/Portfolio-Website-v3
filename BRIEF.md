@@ -71,6 +71,12 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 - The first thing built is one test shot, alone on a blank page: it falls, hits a ledge, splashes, runs along the ledge and drips off the end. Nothing is built around the pour until he says that shot looks incredible. `QUALITY.md` says what the shot has to show. (Fable's proposal, Nov 11. He went ahead on it without objecting.)
 - What the second build drew inside its pieces (the city's falls, the desk's edge, the rocket's flume) "looks very low quality". The pour replaces all of it. (Nov 11)
 - How the test shot is built, which he said "Go" to (Nov 11): a real particle fluid simulated side on in the flat plane of the page, with gravity, cohesion and adhesion. Only the route is planned. The particles are merged into one rounded body and lit per pixel. Each particle carries a temperature that sets its color on the palette. Its glow lights the ledge and the page, and the ledge keeps a fading heat mark. The test page has two controls: pour again, and slow motion.
+- His verdict on the first test shot (Nov 11). The material is still liquid metal: "the idea here that we're going with is liquid metal". What he saw was not it:
+  - "I definitely don't like how it puddles."
+  - "The mainstream is blasted back multiple times due to this puddling", and from "the way the particles can bounce backwards and hit the stream, pushing it back".
+  - "Instead of looking like a refined beautiful hot liquid metal, this looks more like mud splashing around and puddling up."
+- In exact terms: the metal must not heap up where it lands, nothing it throws may knock the falling stream off its line, and the whole of it has to read as refined, not as a mess. (Fable's restatement, Nov 11)
+- He wants something special about the stream itself. "Think like how plasma looks that liquid metal color, but with shiny stuff all in it, or maybe something else. I'm open to options." (Nov 11)
 - The simulation is stepped from the one clock (`src/world/clock.ts`) with a fixed timestep and a seed, so any frame can be frozen and shot again exactly. Each new pour takes a new seed, so no two splashes match. (Nov 11)
 - A particle budget is set for his Mac and for a phone before building, and what the phone gives up is said out loud. The phone view is checked as the work goes, not at the end. (Nov 11)
 
@@ -176,6 +182,12 @@ Each line has Fable's recommendation where there is one. None of these are rules
 12. **What ties the bottom of the page together.** Recommendation: the pour ends by feeding the rocket's launch.
 13. **The rocket as built.** He has not judged it yet.
 14. **Whether the site has to meet Section 508** (WCAG 2.0, levels A and AA). He asked whether the buttons do, out of curiosity. Recommendation: yes, checked as each part is built, because the engineers who read the site will check. The buttons' results are in `LOG.md`.
+15. **What makes the pour special.** His words are in The pour, above. Fable's four ideas (Nov 11), none chosen yet:
+    - Flecked: fine bright flakes ride inside the metal and flash as they tumble, like the copper flakes in goldstone glass.
+    - Sun metal: the surface crawls with bright cells and darker seams, with white hot threads drifting through it, like the surface of the sun. A landing throws up a loop that falls back, not a spray.
+    - Mirror: a skin so polished the cursor's light slides along it as a glint, with the glow showing through where the metal is thin.
+    - Sparkler: the body stays plain and smooth, and fine branching sparks drift off its whole length, like a Japanese hand sparkler.
+    - Recommendation: Sun metal carrying flecks, which is what he described, with the cursor's glint on top. Decide from moving studies side by side, not from words.
 
 ## Dropped
 
