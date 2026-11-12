@@ -14,11 +14,11 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 
 ## Now
 
-- **Phase:** 2, the pour
-- **Where:** Claude Code on Brandon's Mac, with Fable (`LOG.md`, top entry)
-- **Built and shown:** the test shot, at `/lab/pour`. Three independent reviews of its stills failed it against the bar, each on whether a paused frame looks like a photograph. `LOG.md`, top entry, says where it falls short
-- **Brandon's verdict on the test shot (Nov 11):** it puddles, the stream gets knocked back by its own splash, and it reads as mud, not refined metal (`BRIEF.md`, The pour)
-- **Waiting on Brandon:** what the stream is. He scored the best of the three looks 5.5 out of 10 and thinks liquid metal may be the wrong direction. He wants something abstract and hyper detailed, and is talking it through in the web chat. Build nothing for the stream until he says so (`BRIEF.md`, The pour)
+- **Phase:** 2, the stream
+- **Where:** the web chat, for sketches of what the stream is. The session in Claude Code on Brandon's Mac is idle and must not carry on toward liquid metal
+- **What the stream is made of is open again.** He scored the best molten metal look 5.5 out of 10 and asked for abstract ideas (`BRIEF.md`, The pour and Open 15)
+- **Built and shown:** three rough ideas at `/lab/stream-ideas`. He picked Copper leaf and asked for it to have a body of light, energy and power. Then two sketches of that at `/lab/stream-core`: shards riding a core of light, with the core as a wave of light (A) or an arc (B)
+- **Waiting on Brandon:** A or B. He has said the next version after his pick is the high quality one
 
 ## Phase 0 · Foundation
 
@@ -46,7 +46,7 @@ Study 01 is at `/lab/palette` and Study 02 at `/lab/buttons`. Stills are in `ref
 
 ## Phase 2 · The pour, on its own
 
-- [x] What it is made of: molten metal, called the pour (Nov 11)
+- [~] What it is made of. Molten metal was agreed on Nov 11 and reopened the same day. Sketches so far: `/lab/pour-looks`, `/lab/stream-ideas`, `/lab/stream-core`. Waiting on his pick between the two at `/lab/stream-core`
 - [~] The test shot: it falls, hits a ledge, splashes, runs along the ledge and drips off the end (`QUALITY.md`, The pour). Built at `/lab/pour`, stills in `reference/studies/03-pour-*.jpg`. Not at the bar yet by Fable's own judgment
 - [ ] The body at rest and flowing
 - [ ] Falling

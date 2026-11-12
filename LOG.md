@@ -2,6 +2,103 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-11 · A core of light with shards, two ways (Fable, web chat)
+
+**What Brandon said**
+
+- On Copper leaf, the sketch he picked: "what I liked about copperleaf was the fact that it was many particles". In its polished version he pictures "some type of light or fluid or something to make it just seem like it has some substance", "a steady stream or light wave", "a glow behind it", "particle effects coming off of it", "something that has energy and power". Not "1 million moving parts".
+- He offered a picture without committing to it: "a line of electricity and at the very end of that line is always like an animated like spark going off and there's sparks going off around it".
+- Of Fable's further ideas: scales "too plain", no to bearings (his message reads "Barney", taken to mean bearings) and to parts. "Prism's, however, sounds really cool. It might actually be better than Copperleaf."
+- Then: "Can you create another Derby? I'd like to see your recommendation. and then I'd like to see the same thing, but instead of the smooth light, can we go with the arc? I like to compare the two. Once again, let's keep it simple for now, and the next iteration will go ultra high quality."
+- All of it is in `BRIEF.md`, The pour.
+
+**Fable's recommendation, which he asked to see**
+
+- A core of light runs the route. Shards of copper and of glass ride round it and are lit by it. Sparks come off it. Its leading end is the brightest part, with a short crackle of arc. Landings throw a burst.
+- The core is a smooth wave of light. The arc is kept for the leading end and the landings.
+
+**What was built**
+
+- `/lab/stream-core`, Study 06. Two panels on one WebGL context (`src/stream-core/`). A is the recommendation. B is the same with an arc for its core.
+- A slider labelled Scroll stands in for scrolling: it sets how far the stream has run, and the leading end eases after it. `?reach=0.5` sets it for a still.
+- The route (`route.ts`) is one line down to the middle of the title, where it parts and runs both ways along the title's top. The left side lands on the card, runs along it and falls off its end. Both sides share the trunk exactly, so one line comes down and two leave.
+- Shared by both panels: 750 shards to each side, the sparks, the forks at each leading end, the glow at the leading ends and at the two landings.
+- Only the core differs. A: one steady line that swells and thins, three finer lines winding round it and fading in and out, and a faint haze. B: two jagged lines to each side made from noise at four scales that eases from one shape to the next, a faint haze, and short branches thrown off the sides seven times a second.
+
+**How it is drawn. Worth keeping for the high quality version**
+
+- Everything that glows is first drawn as an amount of light, not a color, into one 8 bit texture: sharp light in red, soft light in green, both stored as square roots, joined with the MAX blend so overlaps never add up or crease. Color comes once, from the total, through the palette's heat ramp. Faint light fades all the way to nothing, so a glow has no edge. No float render targets are needed.
+- Each strand of a core is a ribbon with its center line in the middle, so a tight bend folds over itself harmlessly under MAX.
+- Shards are placed on the CPU each frame: along the route, circling the core (side to side is the sine of its angle, depth is the cosine). Those behind the core are drawn before the light, those in front after it. Each is lit from the direction of the core, so one in front shows its dark side and one behind shows its lit side.
+- A shard's color comes only from how brightly it is lit: copper runs dark bronze, copper, pale. Glass runs through the same heat ramp as the light. That is what keeps every shard on the palette.
+- Sparks are a small seeded particle system on the CPU: steady from each leading end, many more while the leading end is moving, a few along the whole core, steady from the two landings, and a burst when the leading end first reaches a landing. They fall, slow, and bounce once off the title and the card.
+
+**Tried and thrown out. Do not try these again**
+
+1. 520 shards to a side sitting on the core and lit strongly. The stream turned into a white tube covered in confetti.
+2. Soft round spots of light thrown by the glass onto the page. They read as bokeh balls.
+3. A wide glow at each leading end. It read as an orange ball.
+4. Cutting the heat ramp off at its dark end. The glow had a visible edge.
+5. Shard colors made by multiplying a metal color by a light color. Dark ones went maroon and mid ones went grey beige, both off the palette.
+6. One pixel lines for sparks and forks. They were faint and jagged. They are thin soft quads now.
+7. Grain added to the light, not scaled by it. Each panel showed as a faint box.
+8. 170 shards to a side made them an afterthought. 1100 hid the difference between the two cores. 750 is where it settled.
+9. Two sides drawn as two lines side by side down to the title. A core has to come down as one line and part.
+
+**How it was judged (Fable, software)**
+
+- Stills at 2x of the whole page, at five points down the route, at two times, and at three times zoom. `reference/studies/06-stream-core.jpg` is both panels at rest. `06-stream-core-moving.jpg` is a frame taken while the slider was being dragged, with both leading ends shedding sparks.
+- Phone and tablet layouts. A production build.
+- The page was also run live with the slider dragged in steps. Nothing errored. It ran at 2 frames a second in software, twice the look study's rate there, which says nothing about how it feels.
+- Not judged by me: any of it in motion. That is the whole difference between A and B, and it is his to judge.
+
+**Where it falls short of the bar. It is a sketch and he asked for one**
+
+- The shards are flat pieces with a gradient. Close up they are paper, not metal and not glass. Glass does not bend or split the light behind it.
+- A's fine lines read a little like wire in a still.
+- Landings are a glow and a spray of sparks. Nothing has shape or weight yet.
+- The core lights the page only as a glow laid over it. The title and card do not catch it on their edges.
+- The title and the card are plain boxes.
+
+**A note on how this was started**
+
+- He had set a rule that nothing is built while he has Fable turned down ("don't make any code changes until you're back in extra"). His message asking for this derby did not say he had turned it back up. It asked for a build, so Fable built, and said so at the top of the reply.
+
+**Waiting on Brandon**
+
+1. A or B. He has said the version after his pick is the high quality one.
+
+## 2026-11-11 · Three rough ideas for what the stream is (Fable, web chat)
+
+**What Brandon said**
+
+- After scoring the best molten metal look 5.5 out of 10: "Maybe the Liquid Metal isn't the right direction." He wants "something abstract that doesn't have a secret meaning that looks really cool with hyper detailed graphics".
+- Of the ideas Fable listed he liked three and asked for a derby: "they don't have to be super high res. I just need to get a general idea. Once I choose a general idea, we can work really hard in building that one out really well. I'm not even sure if I'll go with one of these three options."
+- He stopped the work before it was pushed, having seen the stills in the chat: "I already know I wanna go with the middle option." That is Copper leaf.
+
+**What was built**
+
+- `/lab/stream-ideas`, Study 05 (`src/stream-ideas/`). Three panels on one WebGL context, all on one route (`route.ts`): down onto a title, round both of its ends, and the left side onto a card and off its end. A speed slider, starting at 30 percent.
+- **A · Threads:** 420 strands to each side, drawn as hair lines that add up into a count of how many lie over each pixel. Color comes from the count. A light runs down each strand.
+- **B · Copper leaf:** 4500 small torn squares to each side, placed on the CPU each frame and drawn as instanced quads. Each tumbles and flashes when it faces a fixed light or the cursor.
+- **C · Ink:** a real fluid on a 120 by 192 grid carrying finer ink (360 by 576). The ink is heavier than what it falls through, and it fades in a few seconds. Moving the cursor through it stirs it. It needs float render targets. Without them the panel shows the plain page.
+
+**Tried and thrown out. Do not try these again**
+
+1. Threads kept to the route's own width. They merged into a flat pale tube. They need to fan wider than the route.
+2. Strong running lights on the threads. The whole thing washed out to beige.
+3. Shards lit softly from all sides. They read as cork or confetti. Polished metal is near black until it faces a light.
+4. Ink with no weight, or ink that never fades. It either never falls or floods the panel.
+
+**How it was judged (Fable, software stills at 2x)**
+
+- `reference/studies/05-stream-ideas.jpg`: the three panels.
+- Rough by request. None of it was judged in motion.
+
+**Since then**
+
+- `gl.ts` (the palette as uniforms, a program builder) and `route.ts` (the curve builder, keeping points out of the title and card) were split out so Study 06 could share them.
+
 ## 2026-11-11 · Three looks for the pour, side by side (Fable, web chat)
 
 **What Brandon said**

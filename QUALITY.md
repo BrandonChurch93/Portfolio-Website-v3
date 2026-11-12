@@ -72,6 +72,8 @@ This is the real calibration. Every row is his verdict, not a guess. Rows that s
 | Portrait small, on the left, in a frame | "Looks really bad". Wants it big, right, reacting to the mouse | A photo has to feel part of the page |
 | Draft copy in a light, fun voice | "Not even how I talk" | Do not write his voice for him |
 | Faint line showing where the water will go | Does not want it | No scaffolding on screen |
+| Three looks for molten metal on one fixed stream (`/lab/pour-looks`) | "The best looking one is A, but if being honest it's still about a 5.5/10." "Maybe the Liquid Metal isn't the right direction." It also ran too fast: the stream is "capped at the user scroll rate" | A glowing liquid drawn in a browser tops out as a drawing of one. He would take something abstract that looks incredible over something realistic that looks fair |
+| Three rough ideas: Threads, Copper leaf, Ink (`/lab/stream-ideas`) | Picked Copper leaf, because it is "many particles". Threads was "too much of a solid", Ink "too plain". Copper leaf still needs "substance": "a steady stream or light wave", "a glow behind it", "particle effects coming off of it", "energy and power" | Many small sharp parts read as detail. Parts alone are not enough: they need a body of light to belong to, and the whole has to feel powerful |
 | The pour's first test shot, in motion | "I definitely don't like how it puddles." The stream "is blasted back multiple times". "Instead of looking like a refined beautiful hot liquid metal, this looks more like mud splashing around and puddling up" | Real physics is not enough. It has to be graceful. Metal that heaps, thrashes or hits itself reads as mud |
 
 ## The patterns behind those verdicts
@@ -120,6 +122,8 @@ Everything visual has to pass all six.
 - A phone or 4K view that is plainly the lesser one
 
 ## The pour
+
+What the stream is made of is open again (`BRIEF.md`, The pour and Open 15). What follows describes molten metal and applies only if the stream returns to it. Whatever it is made of, these carry over: it makes light and lights what it passes, its particles come from what it is, nothing repeats, it is smooth on his Mac and holds up on a phone, and it moves no faster than the visitor scrolls.
 
 The stream of molten metal that runs down the site. It is the most important thing on it, and the thing that has failed most often: three attempts at a stream were rejected before this build. Read `BRIEF.md`, The pour, first.
 

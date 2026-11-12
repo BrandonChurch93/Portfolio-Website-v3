@@ -48,6 +48,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 
 ### The pour
 
+- **Where it stands (Nov 11):** what the stream is made of is open again. The lines about molten metal below record what was agreed and then set aside. Everything about where the stream goes and what it does on the page still holds. The newest lines are at the end of this section, and Open 15 has the short version.
 - A stream of molten metal runs down the whole site. "I agree molten metal is the way to go." (Nov 11)
 - It is called the pour. The name is Fable's and he has not objected. It is never called water, in anything written for a model or shown to a visitor. His reason: "if I call it water, then the model is gonna build it as if it acts like water". (Nov 11)
 - It is the site's own copper, melted: it glows in the palette's light colors, ember to flame to hot to pale. It looks like a foundry pour: bright, clean and quick, throwing sparks and beads. It never looks like lava (dark, crusted, slow), fire (flames) or water (thin, clear). (Fable's recommendation, which he agreed to, Nov 11)
@@ -78,11 +79,23 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 - In exact terms: the metal must not heap up where it lands, nothing it throws may knock the falling stream off its line, and the whole of it has to read as refined, not as a mess. (Fable's restatement, Nov 11)
 - His verdict on the three looks at `/lab/pour-looks` (Nov 11): "I think the best looking one is A, but if being honest it's still about a 5.5/10." And: "Maybe the Liquid Metal isn't the right direction."
 - What he is looking for now, in his words: "less something realistic in terms of what would make sense and more of something abstract that doesn't have a secret meaning that looks really cool with hyper detailed graphics". So molten metal is no longer settled. What the stream is made of is open again. (Nov 11)
-- Nothing new is to be built for the stream until he says so. He wants to talk it through first. (Nov 11)
+- He asked for nothing more to be built until he had talked it through. He has since asked for sketches twice (the end of this section). (Nov 11)
 - He wants something special about the stream itself. "Think like how plasma looks that liquid metal color, but with shiny stuff all in it, or maybe something else. I'm open to options." (Nov 11)
 - It does not move fast. On the site its speed is "capped at the user scroll rate", and "it should be a smooth experience". He said this when the look study ran at a real falling speed and "everything is just moving too fast". (Nov 11)
 - The simulation is stepped from the one clock (`src/world/clock.ts`) with a fixed timestep and a seed, so any frame can be frozen and shot again exactly. Each new pour takes a new seed, so no two splashes match. (Nov 11)
 - A particle budget is set for his Mac and for a phone before building, and what the phone gives up is said out loud. The phone view is checked as the work goes, not at the end. (Nov 11)
+- Three rough sketches of abstract ideas are at `/lab/stream-ideas`: Threads, Copper leaf and Ink. He asked for them rough: "they don't have to be super high res. I just need to get a general idea. Once I choose a general idea, we can work really hard in building that one out really well." (Nov 11)
+- He picked Copper leaf: "I already know I wanna go with the middle option." (Nov 11)
+- What he liked in it and what it still needs, in his words (Nov 11):
+  - "What I liked about copperleaf was the fact that it was many particles."
+  - In its most polished version he pictures "some type of light or fluid or something to make it just seem like it has some substance to it".
+  - "I don't want anything to feel like it's 1 million moving parts necessarily. I want there to be like a steady stream or light wave or something", with "a glow behind it" and "particle effects coming off of it".
+  - A picture he offered without committing to it: "a line of electricity and at the very end of that line is always like an animated like spark going off and there's sparks going off around it".
+  - "I'm thinking of something that has energy and power."
+  - Threads was "too much of a solid". Ink "has the same issues": "it's too plain".
+- Of the further ideas Fable described (Nov 11): scales would be "too plain", and he does not want bearings or parts. "Prism's, however, sounds really cool. It might actually be better than Copperleaf."
+- In exact terms (Fable's restatement, Nov 11): the stream has a core of light that is always there and gives it substance. Many small shards belong to that core: they ride round it and are lit by it. Sparks come off it. Its leading end is its brightest and most active part.
+- He asked to see that two ways: "I'd like to see your recommendation. and then I'd like to see the same thing, but instead of the smooth light, can we go with the arc? I like to compare the two." And: "let's keep it simple for now, and the next iteration will go ultra high quality." Both are at `/lab/stream-core`. (Nov 11)
 
 ### Hero
 
@@ -186,13 +199,11 @@ Each line has Fable's recommendation where there is one. None of these are rules
 12. **What ties the bottom of the page together.** Recommendation: the pour ends by feeding the rocket's launch.
 13. **The rocket as built.** He has not judged it yet.
 14. **Whether the site has to meet Section 508** (WCAG 2.0, levels A and AA). He asked whether the buttons do, out of curiosity. Recommendation: yes, checked as each part is built, because the engineers who read the site will check. The buttons' results are in `LOG.md`.
-15. **What makes the pour special.** His words are in The pour, above. Fable's four ideas (Nov 11), none chosen yet:
-    - Flecked: fine bright flakes ride inside the metal and flash as they tumble, like the copper flakes in goldstone glass.
-    - Sun metal: the surface crawls with bright cells and darker seams, with white hot threads drifting through it, like the surface of the sun. A landing throws up a loop that falls back, not a spray.
-    - Mirror: a skin so polished the cursor's light slides along it as a glint, with the glow showing through where the metal is thin.
-    - Sparkler: the body stays plain and smooth, and fine branching sparks drift off its whole length, like a Japanese hand sparkler.
-    - He went with the recommendation: Sun metal carrying flecks, with the cursor's glint. "Sounds good to me. Let's go with your recommendation." He is also "slightly interested in the mercury", and "the idea of it reacting in my mouse cursor sounds really awesome". (Nov 11)
-    - Three of them are drawn side by side on a fixed stream at `/lab/pour-looks`: Sun metal with flecks, Mirror, and all three together. Waiting on his pick. The Sparkler idea is not in it.
+15. **What the stream is made of.** Open again since Nov 11. His words are in The pour, above. Where it stands:
+    - Molten metal: the best of three looks at `/lab/pour-looks` scored 5.5 out of 10 with him, and he doubts the direction. Before that he had gone with Fable's recommendation of Sun metal carrying flecks, with the cursor's glint.
+    - Abstract ideas: from three rough sketches at `/lab/stream-ideas` he picked Copper leaf, and wants it to have a body of light, energy and power. He also likes the sound of glass shards.
+    - Two sketches of that are at `/lab/stream-core`. In both, shards of copper and glass ride round a core of light. In A the core is a smooth wave of light that crackles only at its leading end. In B it is an arc.
+    - Waiting on his pick between A and B. Recommendation: A, because the stream runs beside everything a visitor reads and he asked for a smooth experience, with the arc kept for the leading end and the landings.
 
 ## Dropped
 
@@ -202,7 +213,9 @@ Each line has Fable's recommendation where there is one. None of these are rules
 - A featured or flagship card
 - Whole brass plates as cards
 - The faint channel drawn ahead of the stream
-- Water, golden water, lava, light alone and electricity as what the stream is made of. It is molten metal (Nov 11)
+- Water, golden water and lava as what the stream is made of (Nov 11). Light and electricity were dropped the same day and came back when he asked to see a core of light and an arc
+- Threads and Ink as what the stream is. He picked Copper leaf (Nov 11)
+- Scales, bearings and parts as what the stream is (Nov 11)
 - A permanent grid floor
 - Skills tied to desk objects, and skills in narrow pillars
 - The game board and the orrery

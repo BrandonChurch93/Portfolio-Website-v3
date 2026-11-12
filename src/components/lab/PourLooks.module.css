@@ -59,6 +59,11 @@
   margin-top: var(--space-6);
 }
 
+.pair {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 58rem;
+}
+
 .canvas {
   position: absolute;
   inset: 0;

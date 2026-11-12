@@ -97,6 +97,8 @@ npm run perf -- /lab/pour --vp phone --cpu 4
 | `src/lamp/` | The cursor light. One lamp, read by everything that is lit |
 | `src/pour/` | The pour: `sim.ts` is its physics, `renderer.ts` and `shaders.ts` draw it, `scene.ts` lays out what it hits, `config.ts` holds its constants and its particle budget, `pour.ts` runs it from the clock |
 | `src/pour-looks/` | A study of how the pour is drawn, at `/lab/pour-looks`: one fixed stream shape with no physics, drawn three ways by one shader. It is the look to aim the real pour's drawing at once Brandon has picked |
+| `src/stream-ideas/` | A study of what the stream could be made of, at `/lab/stream-ideas`: three rough sketches (threads, copper leaf, ink) on one shared route. Its `route.ts` and `gl.ts` are also used by the study below |
+| `src/stream-core/` | A study at `/lab/stream-core`: shards of copper and glass riding a core of light, with the core drawn two ways (a wave of light, an arc). `core.ts` runs it, `shaders.ts` draws it, `route.ts` is its path. `?reach=0.5` sets how far the stream has run |
 | `src/hooks/` | `window.__site`, present only with `?hook=1`. The screenshot scripts drive pages through it. `__site.call(name, ...)` runs a tool a module registered, such as `plateHover` |
 | `src/components/PieceView.tsx` | Puts a piece in a page |
 | `src/metal/`, `src/components/Plate.tsx` | Lit metal for the interface: one hidden WebGL context draws every plate from a height field |

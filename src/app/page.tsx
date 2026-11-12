@@ -28,6 +28,14 @@ export default function Index() {
           <Link href="/lab/pour-looks">The pour&rsquo;s look</Link>
           <span className={styles.minor}>Phase 2 · three ways to draw the metal</span>
         </li>
+        <li>
+          <Link href="/lab/stream-ideas">Ideas for the stream</Link>
+          <span className={styles.minor}>Phase 2 · threads, copper leaf and ink, as rough sketches</span>
+        </li>
+        <li>
+          <Link href="/lab/stream-core">A core of light, two ways</Link>
+          <span className={styles.minor}>Phase 2 · shards riding a wave of light, and the same on an arc</span>
+        </li>
       </ul>
       <h2 className={styles.group}>Pieces carried from the second build</h2>
       <ul className={styles.list}>
