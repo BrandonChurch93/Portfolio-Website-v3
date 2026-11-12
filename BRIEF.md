@@ -77,6 +77,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
   - "Instead of looking like a refined beautiful hot liquid metal, this looks more like mud splashing around and puddling up."
 - In exact terms: the metal must not heap up where it lands, nothing it throws may knock the falling stream off its line, and the whole of it has to read as refined, not as a mess. (Fable's restatement, Nov 11)
 - He wants something special about the stream itself. "Think like how plasma looks that liquid metal color, but with shiny stuff all in it, or maybe something else. I'm open to options." (Nov 11)
+- It does not move fast. On the site its speed is "capped at the user scroll rate", and "it should be a smooth experience". He said this when the look study ran at a real falling speed and "everything is just moving too fast". (Nov 11)
 - The simulation is stepped from the one clock (`src/world/clock.ts`) with a fixed timestep and a seed, so any frame can be frozen and shot again exactly. Each new pour takes a new seed, so no two splashes match. (Nov 11)
 - A particle budget is set for his Mac and for a phone before building, and what the phone gives up is said out loud. The phone view is checked as the work goes, not at the end. (Nov 11)
 

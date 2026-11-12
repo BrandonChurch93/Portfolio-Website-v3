@@ -107,6 +107,7 @@ Everything visual has to pass all six.
 - The pour reading as lava (dark crust, slow creep), as fire (flames) or as water (thin, clear, blue)
 - The pour heaping up into a puddle where it lands, or its own splash knocking the falling stream off its line
 - The pour reading as mud: thick, ragged, thrown about
+- The pour racing. On the site it moves no faster than the visitor scrolls
 - A plain box, cylinder or cone where a real object has form
 - A window, screen or label that is a flat picture
 - Anything cut off by the screen or by another element

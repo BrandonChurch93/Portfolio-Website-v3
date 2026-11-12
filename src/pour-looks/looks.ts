@@ -17,7 +17,7 @@ const COLORS: [string, PaletteName][] = [
 const MAX_RATIO = 2;
 
 // Draws the same stream once in each panel, each in its own look. One WebGL context for all of them.
-export function mountLooks(canvas: HTMLCanvasElement, panels: HTMLElement[]): () => void {
+export function mountLooks(canvas: HTMLCanvasElement, panels: HTMLElement[], speed: () => number): () => void {
   const gl = canvas.getContext('webgl2', { antialias: false, alpha: false });
   if (!gl) return () => undefined;
   const shader = (type: number, src: string) => {
@@ -47,7 +47,7 @@ export function mountLooks(canvas: HTMLCanvasElement, panels: HTMLElement[]): ()
   gl.uniform4f(u('uLedge'), LEDGE.x, LEDGE.y, LEDGE.half, LEDGE.thick);
   gl.uniform1f(u('uTilt'), LEDGE.tilt);
   for (const [name, color] of COLORS) gl.uniform3fv(u(name), lin(color));
-  const loc = { res: u('uRes'), origin: u('uOrigin'), light: u('uLight'), time: u('uTime'), mode: u('uMode') };
+  const loc = { res: u('uRes'), origin: u('uOrigin'), light: u('uLight'), time: u('uTime'), turn: u('uTurn'), mode: u('uMode') };
 
   // A finger or a pen holds the light where it last touched. A mouse hands it back to the lamp.
   let held: { x: number; y: number } | null = null;
@@ -57,7 +57,11 @@ export function mountLooks(canvas: HTMLCanvasElement, panels: HTMLElement[]): ()
   host.addEventListener('pointermove', point);
 
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const off = clock.onFrame(() => {
+  // The flow runs at whatever speed is asked, without jumping when the speed changes. A frozen clock gives the same
+  // frame every time.
+  let flow = 0;
+  const off = clock.onFrame((t, dt) => {
+    flow = clock.isFrozen() ? t * speed() : flow + dt * speed();
     const box = canvas.getBoundingClientRect();
     if (box.bottom < 0 || box.top > innerHeight || box.width < 2) return;
     const ratio = Math.min(devicePixelRatio || 1, MAX_RATIO);
@@ -65,7 +69,8 @@ export function mountLooks(canvas: HTMLCanvasElement, panels: HTMLElement[]): ()
     if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
     const L = lamp.get();
     const light = held ?? { x: L.px, y: L.py };
-    gl.uniform1f(loc.time, still ? 2 : clock.now());
+    gl.uniform1f(loc.time, still ? 2 : flow);
+    gl.uniform1f(loc.turn, still ? 2 : t);
     gl.disable(gl.SCISSOR_TEST);
     gl.viewport(0, 0, w, h);
     gl.clearColor(ground[0], ground[1], ground[2], 1);

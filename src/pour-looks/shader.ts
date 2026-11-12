@@ -9,7 +9,8 @@ precision highp float;
 uniform vec2 uRes;           // the panel, device px
 uniform vec2 uOrigin;        // the panel's lower left in the canvas, device px
 uniform vec2 uLight;         // the cursor's light, in panel units
-uniform float uTime;
+uniform float uTime;          // how far the flow has run, in seconds at full speed
+uniform float uTurn;          // real seconds, for what keeps turning however slowly the metal flows
 uniform int uMode;           // 0 sun metal with flecks, 1 mirror, 2 all three
 uniform vec4 uEnds[${SEGMENTS}];
 uniform vec4 uShape[${SEGMENTS}];
@@ -173,7 +174,7 @@ void main(){
       float vn = fbm(ride * vec2(8.0, 66.0) + warp * 0.9 + vec2(0.0, uTime * 0.07));
       float vein = pow(1.0 - abs(vn * 2.0 - 1.0), 7.0);
       float temp = mix(0.32, 0.8, pow(nz, 0.7)) * gran + vein * 0.3 * nz * apart;
-      m += heat(temp) * (mirror ? 0.7 : 1.0);
+      m += heat(temp);
 
       // Flecks: fine flakes riding in the metal. Each has its own tilt and turns slowly, so each flashes at its own
       // moment, and more of them flash where the cursor's light is.
@@ -186,7 +187,7 @@ void main(){
           vec2 at = 0.3 + 0.4 * hash2(id + 5.3);
           float size = mix(0.09, 0.17, hash(id + 9.9));
           float far = length(f - at);
-          float turn = uTime * (0.5 + 1.5 * rnd.y) + 6.283 * hash(id + 2.2);
+          float turn = uTurn * (0.5 + 1.5 * rnd.y) + 6.283 * hash(id + 2.2);
           vec3 tiltN = normalize(Nr + 0.8 * vec3(cos(turn), sin(turn * 1.3), 0.0) * (0.4 + 0.6 * rnd.y));
           float flash = pow(max(dot(tiltN, H), 0.0), 14.0) * (0.5 + 3.0 * near) + pow(max(dot(tiltN, normalize(vec3(-0.35, 0.5, 0.8))), 0.0), 20.0);
           float core = smoothstep(size, size * 0.2, far), bloom = smoothstep(0.42, 0.0, far) * 0.3;
@@ -201,7 +202,12 @@ void main(){
       vec3 R = reflect(-V, Nr);
       float fres = pow(1.0 - Nr.z, 4.0);
       vec3 F = mix(mix(uCopper, uPale, 0.35), vec3(1.0, 0.95, 0.88), fres * 0.5);
-      m += room(R) * F * (sun ? 0.8 : 1.0);
+      vec3 shown = room(R) * F;
+      // Over the sun metal the skin is a real mirror: where it shows the room's lights it hides the glow under it, and
+      // where it shows the dark of the room the glow comes through, deeper and more orange than with no skin at all.
+      // The lights do not hide it wholly, or they lie on it as flat cream stripes.
+      if (sun) m *= 0.5 * (1.0 - 0.62 * clamp(dot(shown, vec3(0.3, 0.5, 0.2)) * 1.4, 0.0, 1.0));
+      m += shown * (sun ? 0.8 : 1.0);
       m += uPale * (pow(max(dot(Nr, H), 0.0), 240.0) * 6.0 + pow(max(dot(Nr, H), 0.0), 30.0) * 0.6) * (0.3 + 1.5 * near);
       if (!sun) m += uFlame * 0.03 * (1.0 - nz);
     } else {
