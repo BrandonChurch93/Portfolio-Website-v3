@@ -37,6 +37,10 @@ export default function Index() {
           <span className={styles.minor}>Phase 2 · shards riding a wave of light, and the same on an arc</span>
         </li>
         <li>
+          <Link href="/lab/stream-facets">Two looks for the facets</Link>
+          <span className={styles.minor}>Phase 2 · the shards as cut pieces, and as jagged splinters</span>
+        </li>
+        <li>
           <Link href="/lab/stream">The stream</Link>
           <span className={styles.minor}>Phase 2 · the test shot, following the scroll</span>
         </li>

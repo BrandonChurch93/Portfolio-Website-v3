@@ -22,8 +22,8 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 
 **If you are the session in Claude Code, this is the second round**
 
-1. **Rebuild the shards as facets.** His words for the look: "sharp jagged pieces and all different shapes, kind of low poly". Five to eight flat faces meeting at hard edges and points, like something that shattered. No two alike, some squat and some long splinters. Many sizes, most of them small, about the footprint the shards have now.
-   - Low poly is the look he wants, so do not add surface texture to escape it. The detail is in the light: every face its own tone, edges crisp enough to catch a hairline of light, points that glint. What fails is a toy: faces all one tone, soft edges, rounded lumps.
+1. **Rebuild the shards as facets.** Five to eight flat faces, no two alike, many sizes, most of them small, about the footprint the shards have now. Which of two looks they take is his to pick at `/lab/stream-facets` (`src/stream-facets/`): A, cut, or B, jagged. `BRIEF.md` says which once he has. Do not start this item before it does.
+   - Whichever he picks, what fails is a toy: faces all one tone, soft edges, rounded lumps.
 2. **Two materials on the same shapes.** Any facet can be solid or clear. Solid: dark until a face turns to the light, then the whole face flashes. Clear: carries the light through, glows inside, brightest on its edges. Keep the color coming only from how a shard is lit. Find the mix by eye, starting from what it is now.
 3. **Keep the first round's shards one switch away**, for example `/lab/stream?shards=first`, so he can put the two side by side. He loves what he has. If the facets are not plainly better, he needs to be able to see that for himself.
 4. **Thin the shards where the stream lies along or hooks over an object**: the top of the title, its two corners, the top of the card. About a quarter fewer there, evenly spaced, no clumps. Leave the straight runs and the number thrown at a strike as they are. Find the cause before turning a number down. Two guesses from reading your log, not your code: each landing keeps throwing a few shards while the page is still, and the two sides' riders overlap where they part.
@@ -42,9 +42,13 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 - Fresh Opus reviewers first, judging against `QUALITY.md` as it now stands.
 - Say what is at the bar, what is not, and exactly what he is approving: facets or the first round's shards, and whether the bunching is gone.
 
+**A mistake to know about**
+
+- Brandon wondered aloud whether the facets should be "sharp jagged pieces, kind of low poly". Fable wrote that into the brief and the bar as his ruling and put it in a prompt. He had not ruled: he was asking. It was taken back out, and the two looks were built as a quick study for him to choose from. A question from him is not a ruling.
+
 **Half finished**
 
-- Nothing in code. This entry and the record are the whole of the web chat's work today.
+- Waiting on his pick at `/lab/stream-facets`. No prompt has gone to Claude Code yet.
 
 ## 2026-11-12 · The stream's test shot (Fable, Claude Code on Brandon's Mac)
 

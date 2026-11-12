@@ -144,8 +144,8 @@ The core of light with shards that runs down the site. It is the most important 
 **What it looks like**
 
 - **The core** is light with depth: a pale hot center falling through hot and flame to ember. It is steady, and swells and thins slowly as it runs. It reads as light, never as a tube, a neon sign or wire.
-- **The shards** are facets: sharp, jagged pieces, all different shapes, low poly on purpose. Each has a handful of flat faces, five to eight, meeting at hard edges and points, like something that shattered. Many sizes, most of them small. They are abstract. Nobody has to be able to say what they are made of.
-- **The detail is in the light, not on the surface.** Few faces is the look he asked for. What keeps a facet from reading as a toy is how it is lit: every face its own tone, edges crisp enough to catch a hairline of light, points that glint. No surface texture is needed.
+- **The shards** are facets: pieces with a handful of flat faces, five to eight, no two alike, in many sizes with most of them small. They are abstract. Nobody has to be able to say what they are made of.
+- **Their look is not decided yet.** Two are side by side at `/lab/stream-facets`: cut (chunky, with detail on the surface) and jagged (sharp splinters, low poly, with the detail only in the light). `BRIEF.md` says which he picks. Until it does, build neither into the stream.
 - **Two materials, one family of shapes.** Any facet can be solid or clear. A solid one is dark until a face turns to the light, and then that whole face flashes. A clear one lets the light through, glows inside and is brightest along its edges. The two are told apart by how they take the light, never by their shape.
 - **They belong to the core.** They ride round it and it is their light. A shard in front of the core shows its dark side against it. A shard behind it shows its lit face.
 - **Many, but one thing.** The eye reads the core first and then finds the shards. It never reads as a cloud of loose parts.
@@ -159,7 +159,7 @@ The core of light with shards that runs down the site. It is the most important 
 
 One shot, alone on a blank page at `/lab/stream`, on the sketch's route: down from the top, parting on a title, both sides round its ends, one side landing on a card, running along it and off its end. It follows the page's own scroll. It passes when all of these are true:
 
-1. Paused on any frame and enlarged three times, a shard is a sharp solid object: flat faces each lit as its own plane, crisp edges, a lit side. A solid one and a clear one take the light differently. Naming a material is not part of the test, and neither is surface texture.
+1. Paused on any frame and enlarged three times, a shard is a solid object: flat faces each lit as its own plane, crisp edges, a lit side. A solid one and a clear one take the light differently. Naming a material is not part of the test.
 2. The core reads as light with depth.
 3. Beside the sketch it is plainly the better picture. Beside the PC Builder images it is not the weaker work.
 4. It lights what it passes, and every highlight agrees with where the light is.
