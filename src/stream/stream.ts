@@ -163,7 +163,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     const cr = opts.card.getBoundingClientRect();
     const cardBox: Box = { l: cr.left - hr.left, t: cr.top - hr.top, r: cr.right - hr.left, b: cr.bottom - hr.top };
     const ink: Box = made ? made.ink : (() => { const b = opts.title.getBoundingClientRect(); return { l: b.left - hr.left, t: b.top - hr.top, r: b.right - hr.left, b: b.bottom - hr.top }; })();
-    route = buildRoute(ink, cardBox, hostH + 260 * unit, unit);
+    route = buildRoute(ink, cardBox, w, hostH + 260 * unit, unit);
     riders = makeRiders(route, budget);
     sim = new StreamSim(route, budget, S.seed);
     const cardShape: CardShape = { x: (cardBox.l + cardBox.r) / 2, y: (cardBox.t + cardBox.b) / 2, hw: (cardBox.r - cardBox.l) / 2, hh: (cardBox.b - cardBox.t) / 2, r: parseFloat(getComputedStyle(opts.card).borderTopLeftRadius) || 0 };
@@ -176,7 +176,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     keys = new Uint8Array(most);
     const points = route.branches[0].n + route.branches[1].n + 8;
     core = new Float32Array(points * 2 * CORE_FLOATS);
-    streaks = new Float32Array((budget.sparks * 6 + 40 * 60 * 6 + 220 * 12 + 120) * STREAK_FLOATS);
+    streaks = new Float32Array((budget.sparks * 12 + 40 * 60 * 6 + 220 * 12 + 120) * STREAK_FLOATS);
     host.dataset.stream = made ? 'on' : 'off';
     settled = '';
     if (opts.hold) {
@@ -244,22 +244,25 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       let tx = p[o + 2] * sh, ty = p[o + 3] * sh;
       const len = Math.hypot(tx, ty), least = 2.2 * u;
       if (len < least) { const k = least / (len || 1); tx *= k; ty *= k; }
-      const w = (fine ? 0.6 : 1.05) * u;
-      streak(p[o], p[o + 1], a, w, p[o] - tx, p[o + 1] - ty, 0, w * 0.3);
+      // A long fine streak that bends back along the way it has fallen, bright at its head and gone at its tail.
+      const w = (fine ? 0.45 : 0.8) * u, sag = 0.5 * S.sparks.gravity * u * sh * sh;
+      const hx = p[o] - tx * 0.45, hy = p[o + 1] - ty * 0.45 + sag * 0.2;
+      streak(p[o], p[o + 1], a, w, hx, hy, a * 0.45, w * 0.7);
+      streak(hx, hy, a * 0.45, w * 0.7, p[o] - tx, p[o + 1] - ty + sag, 0, w * 0.25);
     }
     const f = sim.forks;
     for (let i = 0; i < sim.forkCount; i++) {
       const o = i * FORK_FLOATS, age = f[o + 4] / f[o + 5], seed = Math.floor(f[o + 6]);
       // A fork is one jagged line that thins to nothing, with a shorter one thrown off its side. It keeps its shape
       // for its short life and only dims.
-      const strength = f[o + 7] * (1 - age) ** 1.2 * 5.5;
+      const strength = f[o + 7] * (1 - age) ** 1.2 * 8;
       const steps = S.arc.steps, each = f[o + 3] / steps;
       const draw = (x: number, y: number, angle: number, from: number, count: number, salt: number, gain: number) => {
         for (let j = from; j < from + count; j++) {
           const a = angle + (hash(j, seed, salt) - 0.5) * 1.5;
           const x1 = x + Math.cos(a) * each, y1 = y + Math.sin(a) * each;
           const k0 = 1 - (j / (from + count)) * 0.9, k1 = 1 - ((j + 1) / (from + count)) * 0.9;
-          streak(x, y, strength * gain * k0, (0.2 + 0.85 * k0) * u, x1, y1, strength * gain * k1, (0.2 + 0.85 * k1) * u);
+          streak(x, y, strength * gain * k0, (0.16 + 0.55 * k0) * u, x1, y1, strength * gain * k1, (0.16 + 0.55 * k1) * u);
           // It splits as it goes, and each branch splits again, finer and fainter.
           if (salt < 30 && hash(j, seed, salt + 40) < (salt === 0 ? 0.55 : 0.3)) draw(x1, y1, angle + (hash(j, seed, salt + 9) < 0.5 ? -1 : 1) * (0.5 + 0.7 * hash(j, seed, salt + 5)), j + 1, salt === 0 ? 3 : 2, salt + 20 + j, gain * 0.55);
           x = x1; y = y1;
@@ -287,9 +290,8 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       if (b === 1 && sim.head[1] <= route.split) continue;
       at(route.branches[b], sim.head[b], tmp);
       const e = sim.energy[b], beat = still ? 0 : 0.12 * Math.sin(t * 9.3 + b * 2.1) * Math.sin(t * 5.1 + b);
-      // A fierce point, and a fainter light round it that swells with its energy.
-      round(tmp[0], tmp[1], (3.3 + 1.2 * e) * u, 4 * (1 + beat));
-      round(tmp[0], tmp[1], (9 + 7 * e) * u, (1.1 + 1.3 * e) * (1 + beat));
+      // A fierce point, no bigger than the core is wide. The glow round it is its own light spreading, not a ball.
+      round(tmp[0], tmp[1], (2.2 + 0.9 * e) * u, 7.8 * (1 + beat));
     }
     return n / STREAK_FLOATS;
   };
@@ -350,9 +352,10 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       let x = cx - ty * side, y = cy + tx * side;
       // Nothing rides through the title or the card: what would is turned back off the nearer face.
       for (const box of route.boxes) {
-        if (x <= box.l || x >= box.r || y <= box.t || y >= box.b) continue;
-        const up = y - box.t, left = x - box.l, right = box.r - x;
-        if (up < left && up < right) y = box.t - up * 0.7; else if (left < right) x = box.l - left * 0.7; else x = box.r + right * 0.7;
+        const m = R.f[o + 6] * 0.7;
+        if (x <= box.l - m || x >= box.r + m || y <= box.t - m || y >= box.b) continue;
+        const up = y - box.t + m, left = x - box.l + m, right = box.r - x + m;
+        if (up < left && up < right) y = box.t - m - up * 0.7; else if (left < right) x = box.l - m - left * 0.7; else x = box.r + m + right * 0.7;
       }
       const spin = R.f[o + 8] + t * R.f[o + 7], h = Math.sin(spin / 2), cw = Math.cos(spin / 2);
       // A larger splinter near the core throws a sliver of light out past itself, on the far side from the core.

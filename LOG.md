@@ -26,6 +26,73 @@ Does not work:
 - Every spark is the same blunt dash, the same length, in an even fan.
 - At three times zoom the shards are flat tan and grey squares and small triangles, the fine lines of the core are wire, and each leading end is a soft ball.
 
+**The real things, looked at before any of the look was built** (`reference/stream/`, with credits)
+
+- **Light trails.** A long exposure of a swung lamp is a ribbon of many fine strands lying side by side. It burns out to a flat pale band where they overlap and feathers into single hairs at its edges. Nothing in it has one width for long.
+- **Metal leaf.** Flakes are angular and torn, not round. Up close the leaf is crinkled into small facets, and a facet is either blown out or dark, with little between. That jump is what reads as metal.
+- **Broken glass.** On a dark ground the body of a shard is invisible. What shows is its edges, as thin bright lines of uneven strength, and a faint sheen on a face. Shards are thin plates with points.
+- **Caustics.** Light thrown by glass is bright curves with cusps, never soft spots.
+- **Grinder sparks.** Long, hair fine, nearly parallel streaks from one point, dense at the source, some bursting into short forks at their ends.
+- **Arcs.** A white hot root and many hair fine filaments that branch, thin and fade.
+
+**The method, and why**
+
+- **Shards are real meshes**, made once from a seed (`shards.ts`): copper leaf is a thin torn sheet with slight folds, glass a thin plate with slanted broken edges. Sixteen kinds, drawn as instances with multisampling. A flat card can never show a face, an edge and a lit side.
+- **Each is lit per pixel by the core as a long line of light.** What a mirror shows of a line is a band across the face, which slides as the shard turns. A point light gave spots and read as paper. The copper takes the buttons' metal values from `src/metal/finishes.ts`.
+- **Glass redraws what is behind it.** Everything else is drawn into a texture first, and each splinter samples it shifted by its own faces. The split is kept to flame and hot.
+- **The core is a ribbon of fibres that turns as it runs** (`coreFrag`). Flat on, it is a wide soft band. Edge on, it gathers to one fierce line. This came third: a line with a glow read as a neon tube, and loose crossing strands read as a tangle of wire.
+- **Everything that glows is an amount of light**, joined by keeping the larger, and colored once by `ramp()`. Kept from the sketch.
+- **One blur chain gives three lights** (Jimenez's 13 tap down, tent up): the glow that hugs the core, a wide light for the page, and a close light with a steep falloff for what the stream touches.
+- **The title is real page text.** Its letters are drawn into a distance field (`titleField` in `stream.ts`, using `src/metal/edt.ts`) and lit as raised shapes. The DOM text stays for readers and is made transparent once the stream is drawing. Any heading can be lit this way.
+- **The canvas is laid over the page and rides with it**, a little taller than the screen, so what it draws stays locked to the page during a fast scroll.
+- **What flies is simulated** (`sim.ts`): 120 fixed steps a second from the one clock, every random choice a hash of a counter. `settle()` runs it forward from nothing, so a frozen frame at a time and a scroll position always draws the same.
+- **Where it goes is planned** (`route.ts`) from where the title and the card really are.
+
+**Budget**
+
+| | Mac (high) | Phone (mid) | Slow phone (low) |
+|---|---|---|---|
+| Shards to every 100 units of route | 55 | 38 | 26 |
+| Shards drawn at once, about | 800 | 550 | 380 |
+| Thrown shards in the air | 260 | 120 | 60 |
+| Sparks | 700 | 300 | 160 |
+| Pixel density, up to | 2x, 6.6M pixels | 3x, 3.8M pixels | 1.5x, 1.7M pixels |
+| Glass | three samples, warm split | one sample | one sample |
+| Fibres in the core | 9 | 7 | 7 |
+
+- This differs from what Brandon was told before building. The phone keeps its full 3x density, because at 2x the reviewers found it soft. The shard counts are higher on every tier.
+- Measured (`npm run perf`, hardware): 16.7 ms every frame on desktop and on the phone view with the processor slowed four times, none over 25 ms. The stream's own work on the processor is 1.4 ms on desktop and 2.2 ms on the slowed phone.
+- Not measured: a real phone's graphics chip. The canvas is multisampled and that is the part most likely to cost there.
+
+**Calls made for Brandon while he slept. Each is his to overturn**
+
+1. The stand in title is the word WORK in wide spaced capitals. Capitals give the stream one level line to lie on.
+2. How big the stream is: its sheath of shards is about 70 pixels across on a desktop, and shards run from about 8 to 31 pixels. The sketch's ran from 3 to 15, too small to show a face.
+3. The leading end rests two thirds of the way down the screen. It moves no faster than the page was just scrolled, so on a long run along the title or the card it falls behind and finishes the move after the scroll stops. Drawn back up, it may go half again as fast.
+4. The stream lies on the title and the card, and they are drawn in front of its light, so a surface cuts the core off cleanly. It was first run 15 units above them and reviewers read that as hovering.
+5. The turns of the route are thrown curves with unequal reaches, not arcs of one radius, which read as a neon sign.
+6. A held frame is opened with `?hold`. It scrolls itself to the place, freezes the clock and leaves the page free to scroll and zoom.
+
+**Check-in 1 · a paused frame**
+
+- Pushed. Open `/lab/stream?hold`. Stills are in `reference/studies/07-stream-*.jpg`, with `07-stream-beside-sketch.jpg` beside the sketch.
+- Three rounds of two fresh Opus reviewers, told to find reasons to fail it against `QUALITY.md`, the sketch, the PC Builder and the photographs. All six reports failed it overall.
+  - Round 1 failed everything: a neon tube, copper as paper or bark, glass as amber tiles, a weak leading end, the stream hovering over the card, an unlit title.
+  - Round 2, after the first rebuild: the card's lighting passed. Copper read as low poly rock, glass as empty outlines, the core as a tube inside a tangle of strands.
+  - Round 3, after the second rebuild: the leading end passed with both. Still failing: copper as mottled camouflage, glass as outlines or flat fills, the fibres as a cable on the phone, the title not warmed, a round ball at the hot point.
+- After round 3 the copper's facets were made finer with a tight glint, the glass body dimmer, the fibres uneven and crowded to the middle, the title warmed, the round ball removed, and the brightness lifted. That state has not been reviewed.
+- Fable's own judgment. At the bar: the leading end, the light on the title and the card, the landing, the color. Better than the sketch at three times zoom. Not at the bar: the glass, which still reads mostly as bright outlines, and whether the copper reads as leaf. At the size of the whole page the sketch is still the brighter, punchier picture.
+- A fault found by testing in WebKit and fixed: the light was invisible there. WebKit discards any color brighter than its own alpha, so the light now carries an alpha and is laid over the page, not added.
+
+**Things the next session would otherwise rediscover**
+
+- Page coordinates are y down, so a mesh wound counter clockwise is clockwise on screen. The shards are drawn with `frontFace(CW)`.
+- A point light on small tumbling facets is almost never mirrored to the eye. A long line is, which is why `coreBand()` works from the plane that holds the shard and the line.
+- `sin(s / k)` has a wavelength of two pi times k. Strands with k of 64 to 170 ran side by side for hundreds of pixels and read as wire.
+- Riding shards are placed by formula from the time and the leading ends, so they need no state. Only sparks, thrown shards and arcs are stepped.
+- `npm run strip` with `streamPlay` gives a repeatable filmstrip of a scroll. See the example in `CLAUDE.md`.
+- Wikimedia limits requests: two sessions searching at once both got empty answers.
+
 ## 2026-11-11 · Handoff to Claude Code: the stream (Fable, web chat)
 
 **What Brandon said**

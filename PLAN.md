@@ -17,8 +17,8 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **Phase:** 2, the stream
 - **Where:** Claude Code on Brandon's Mac, with Fable. `LOG.md`, top entry, is the handoff
 - **Settled (Nov 11):** what the stream is, and the agreement for its finished version (`BRIEF.md`, The stream)
-- **Being built:** the test shot at `/lab/stream`, new, in `src/stream/`. The sketch he picked is at `/lab/stream-core` and is the floor to beat
-- **Next thing Brandon sees:** check-in 1, a paused frame
+- **Built and pushed, waiting on Brandon:** check-in 1, a paused frame, at `/lab/stream?hold`. Three rounds of independent review failed it. `LOG.md`, top entry, says on what
+- **Next thing Brandon sees:** check-in 1, then check-in 2, the same shot moving, at `/lab/stream`
 - **Not to be built yet:** the route down the whole site, the layout, anything touching the 3D pieces
 
 ## Phase 0 · Foundation
@@ -51,7 +51,7 @@ Study 01 is at `/lab/palette` and Study 02 at `/lab/buttons`. Stills are in `ref
 
 - [x] What it is made of: shards of copper and glass riding round a core of light, the core a smooth wave of light. He picked it from two sketches at `/lab/stream-core` (Nov 11)
 - [x] The agreement for the finished version (Nov 11)
-- [ ] The test shot, check-in 1 · a paused frame: the core, the shards, the light on the page, the leading end at rest
+- [~] The test shot, check-in 1 · a paused frame: the core, the shards, the light on the page, the leading end at rest. At `/lab/stream?hold`. Not at the bar by its reviewers' judgment
 - [ ] The test shot, check-in 2 · the same shot moving: scrolling down and back up, the leading end, both landings, the cursor, the phone view
 
 After he says the shot looks incredible, and not before:

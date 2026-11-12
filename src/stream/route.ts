@@ -70,7 +70,7 @@ function outside(b: Box, x: number, y: number): number {
 const ease = (a: number, b: number, v: number) => { const k = Math.max(0, Math.min(1, (v - a) / (b - a))); return k * k * (3 - 2 * k); };
 
 // Evenly spaced points along a line through pts, each pushed sideways by the sway where the page around it is open.
-function branch(pts: number[], boxes: Box[], unit: number, phase: number, splitAt: number): Branch {
+function branch(pts: number[], boxes: Box[], unit: number, phase: number, splitAt: number, narrow: number): Branch {
   const R = STREAM.route, step = R.sample * unit;
   const even = (p: number[]): number[] => {
     const out = [p[0], p[1]];
@@ -92,7 +92,7 @@ function branch(pts: number[], boxes: Box[], unit: number, phase: number, splitA
     let open = 1;
     for (const box of boxes) open = Math.min(open, ease(26 * unit, 170 * unit, outside(box, base[i], base[i + 1])));
     const own = phase * ease(splitAt, splitAt + 240 * unit, s);
-    const sway = R.sway * unit * open * (Math.sin((Math.PI * 2 * s) / (R.swayLong * unit) + 0.6 + own) + 0.45 * Math.sin((Math.PI * 2 * s) / (R.swayShort * unit) + 2.1 + own * 1.7));
+    const sway = R.sway * unit * narrow * open * (Math.sin((Math.PI * 2 * s) / (R.swayLong * unit) + 0.6 + own) + 0.45 * Math.sin((Math.PI * 2 * s) / (R.swayShort * unit) + 2.1 + own * 1.7));
     swayed.push(base[i] + (-dy / len) * sway, base[i + 1] + (dx / len) * sway);
   }
   const p = even(swayed);
@@ -111,18 +111,21 @@ function branch(pts: number[], boxes: Box[], unit: number, phase: number, splitA
   return out;
 }
 
-export function buildRoute(title: Box, card: Box, bottom: number, unit: number): Route {
+export function buildRoute(title: Box, card: Box, width: number, bottom: number, unit: number): Route {
   const R = STREAM.route, u = unit;
   const cx = (title.l + title.r) / 2;
   const top = title.t - R.above * u, shelf = card.t - R.above * u;
-  const xl = title.l - R.beside * u, xr = title.r + R.beside * u, off = card.r + R.past * u;
+  // On a narrow screen the sides keep clear of the screen's edges, so the sheath of shards is never cut off.
+  const xl = Math.max(title.l - R.beside * u, Math.min(title.l - 8 * u, R.edge * u)), xr = Math.min(title.r + R.beside * u, Math.max(title.r + 8 * u, width - R.edge * u)), off = card.r + R.past * u;
   const T = R.turn;
   const start: Corner = [cx, R.start * u, 0, 0];
   const left = trace([start, [cx, top, T.part[0] * u, T.part[1] * u], [xl, top, T.left[0] * u, T.left[1] * u], [xl, shelf, T.land[0] * u, T.land[1] * u], [off, shelf, T.lip[0] * u, T.lip[1] * u], [off, bottom, 0, 0]]);
   const right = trace([start, [cx, top, T.part[0] * u, T.part[1] * u], [xr, top, T.right[0] * u, T.right[1] * u], [xr, bottom, 0, 0]]);
   const boxes = [title, card];
   const split = top - T.part[0] * u - R.start * u;
-  const branches: [Branch, Branch] = [branch(left, boxes, u, 0, split), branch(right, boxes, u, 2.4, split)];
+  // A narrow screen has no room for the route to wander.
+  const narrow = width < 600 ? 0.4 : 1;
+  const branches: [Branch, Branch] = [branch(left, boxes, u, 0, split, narrow), branch(right, boxes, u, 2.4, split, narrow)];
   const first = (b: Branch, test: (x: number, y: number) => boolean) => { for (let i = 0; i < b.n; i++) if (test(b.x[i], b.y[i])) return i * b.step; return b.len; };
   const L = branches[0];
   const landings: Landing[] = [

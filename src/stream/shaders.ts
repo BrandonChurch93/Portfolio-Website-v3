@@ -6,7 +6,7 @@
 // overlap, and is given its color once, by ramp(). Shards are solid and are lit, never tinted.
 
 // How bright the light buffer can go. It is stored as a square root so faint light keeps its steps.
-export const LIGHT_MAX = 4;
+export const LIGHT_MAX = 8;
 // Half the width of the ribbon the core is drawn on, in units.
 export const CORE_HALF = 34;
 
@@ -64,43 +64,37 @@ ${NOISE}
 void main(){
   float x = vAlong.x, lead = vAlong.z, t = uTime;
   float begun = smoothstep(uOwn.y, uOwn.y + 34.0, vAlong.y), s = vAlong.y + uOwn.x;
-  // It has a rhythm. Every few hundred units it gathers into a knot, thin and fierce, and between the knots it
-  // opens into a loose braid of fine strands with almost nothing at its middle. Knots and braids travel slowly
-  // down it. A line of one width and one brightness is a tube. This is never the same for long.
-  float beat = 0.5 + 0.5 * sin(s / 52.0 - t * 0.3 + 0.9 * sin(s / 131.0 - t * 0.11));
-  float tip = smoothstep(0.0, 110.0, lead);
-  float open = smoothstep(0.0, 0.3, beat) * tip;
+  // The core is a ribbon of light: a band of fine fibres lying side by side, which turns slowly as it runs. Seen
+  // flat it is a wide soft band with every fibre showing. Seen on edge all of it gathers into one fierce line.
+  // So its width and its brightness are never the same for long, and the fibres always make one smooth form.
+  float tip = smoothstep(0.0, 120.0, lead);
+  float twist = s / 58.0 - t * 0.36 + 1.3 * sin(s / 143.0 - t * 0.12);
+  float face = cos(twist), depth = sin(twist);
+  float wide = mix(10.0, 20.0, 0.5 + 0.5 * sin(s / 97.0 - t * 0.21 + 1.0)) * mix(0.25, 1.0, tip);
+  float span = wide * abs(face) + 0.6;
   float sum = 0.0;
-  // Veils: three wide, faint ribbons of light that drift across the braid and feather its edge.
-  for (int j = 0; j < 3; j++){
-    float f = float(j), a = hash1(f + 31.0), b = hash1(f + 37.3), c = hash1(f + 43.9);
-    float turn = s / mix(22.0, 46.0, b) + c * 6.283 + t * mix(-0.3, 0.3, a);
-    float off = mix(4.0, 10.0, a) * open * sin(turn);
-    float w = mix(2.6, 6.0, c) * (0.45 + 0.55 * open) * (1.0 + 0.3 * cos(turn));
-    float life = 0.3 + 0.7 * smoothstep(-0.2, 0.7, sin(s / mix(70.0, 150.0, a) + f * 2.1 - t * 0.25));
-    float d = (x - off) / w;
-    sum += mix(0.05, 0.15, b) * life * exp(-d * d) * begun;
-  }
-  // Hairs: fine bright strands that swing out and cross back over the middle every few lengths of a shard, each
-  // coming and going. None of them runs beside another for long, which is what would make it wire.
+  // The sheet between the fibres: a faint body, feathered at its edge.
+  sum += 0.1 * smoothstep(span + 2.6, span * 0.55, abs(x)) * (0.35 + 0.65 * abs(face)) * begun;
   for (int j = 0; j < ${strands}; j++){
-    float f = float(j), a = hash1(f + 1.0), b = hash1(f + 7.3), c = hash1(f + 13.9), e = hash1(f + 21.7);
-    float turn = s / mix(9.0, 24.0, b) + c * 6.283 + t * mix(-0.5, 0.5, e);
-    float amp = mix(4.0, 16.0, a) * open;
-    float off = amp * sin(turn) + amp * 0.3 * sin(s / mix(5.0, 9.0, c) + a * 6.283 - t * 0.7);
-    float depth = cos(turn);
-    // A strand passing behind is softer and dimmer than one passing in front.
-    float w = mix(0.45, 0.85, e) * (1.25 - 0.4 * depth);
-    float life = 0.25 + 0.75 * smoothstep(-0.3, 0.7, sin(s / mix(40.0, 110.0, a) + f * 2.4 - t * 0.33));
-    float level = mix(0.34, 0.8, b) * life * (0.5 + 0.5 * depth);
+    float f = float(j), a = hash1(f + 1.0), b = hash1(f + 7.3), c = hash1(f + 13.9);
+    // The fibres crowd toward the middle of the band and thin out toward its edges, and no two are the same
+    // distance apart, the same width or the same strength. Evenly spaced, they would be a cable.
+    float u0 = (f + 0.5) / ${strands}.0 * 2.0 - 1.0 + (a - 0.5) * 0.5;
+    float u = sign(u0) * pow(abs(u0), 1.7);
+    float off = u * wide * face + 1.5 * sin(s / mix(17.0, 31.0, b) + c * 6.283 - t * 0.4);
+    // A fibre on the far side of the ribbon is softer and dimmer than one on the near side.
+    float dz = u * depth;
+    float w = mix(0.38, 1.05, c * c) * (1.2 - 0.35 * dz);
+    float life = 0.12 + 0.88 * smoothstep(-0.4, 0.6, sin(s / mix(50.0, 150.0, a) + f * 2.4 - t * 0.3));
+    float level = mix(0.2, 0.9, b * b) * life * (0.6 + 0.4 * dz);
     float d = (x - off) / w;
     sum += level * exp(-d * d) * begun;
   }
-  // The heart of it: fierce in a knot, where its light falls away slowly through hot and flame to ember with no
-  // edge, and only one strand among the others where the braid is open.
-  float w0 = mix(1.5, 0.75, open);
-  float q = x / w0;
-  sum += mix(3.0, 0.8, open) / pow(1.0 + q * q, 1.6);
+  // The heart of it, one fibre in the middle of the band: fierce where the ribbon is on edge, and there its light
+  // falls away slowly through hot and flame to ember. A sharp even edge is what makes a tube.
+  float gather = 1.0 - abs(face);
+  float q = x / mix(0.8, 1.4, gather);
+  sum += mix(1.3, 2.8, gather * gather) / pow(1.0 + q * q, 1.6);
   // Light runs down it, and it burns hotter toward its leading end.
   float run = 0.84 + 0.16 * sin(s / 83.0 - t * 2.1) * sin(s / 211.0 - t * 0.9 + 0.8);
   float head = 1.0 - smoothstep(0.0, 120.0, lead);
@@ -234,7 +228,7 @@ float titleFar(vec2 p){
 export const titleFrag = (float: boolean) => `${HEAD}
 ${packing(float)}
 in vec2 vP;
-uniform vec3 uText, uEmber, uPale;
+uniform vec3 uText, uEmber, uFlame, uHot, uPale;
 out vec4 frag;
 ${CLIP}${LIT}${TITLE_FIELD}
 void main(){
@@ -249,14 +243,14 @@ void main(){
   vec3 N = normalize(vec3(grad * edge * 1.9, 1.0));
   vec2 amount;
   vec3 L = streamLight(vP, amount);
-  float lit = amount.y * 6.0 + amount.x * 9.0;
+  float lit = amount.y * 11.0 + amount.x * 9.0;
   float face = max(dot(N, L), 0.0);
   vec3 H = normalize(L + vec3(0.0, 0.0, 1.0));
   // Unlit it is a calm warm grey, easy to read. Where the stream is close it comes up to full and warms, and the
   // edges that face the stream burn.
-  vec3 col = uText * 0.34;
-  col += mix(uText, uPale, 0.7) * min(lit, 1.5) * (0.1 + 0.6 * face);
-  col += uPale * pow(max(dot(N, H), 0.0), 10.0) * min(lit, 3.0) * 1.3 * edge;
+  vec3 col = uText * 0.27;
+  col += mix(uHot, uFlame, 0.35) * min(lit, 1.8) * (0.12 + 0.7 * face);
+  col += mix(uPale, uHot, 0.3) * pow(max(dot(N, H), 0.0), 8.0) * min(lit, 3.5) * 1.7 * edge;
   col *= 1.0 - 0.55 * edge * (1.0 - face) * clamp(lit * 2.0, 0.0, 1.0);
   vec3 Lv = vec3(uLamp.xy - vP, uLamp.z);
   float ld = length(Lv);
@@ -351,7 +345,7 @@ vec3 coreFrom(out float fall, out vec3 plane){
   vec3 across = C - T * dot(C, T);
   float near = length(across);
   vec3 toward = across / max(near, 1e-3);
-  fall = vMore.y * 1.6 / (1.0 + near / (18.0 * uUnit));
+  fall = vMore.y * 2.2 / (1.0 + pow(near / (14.0 * uUnit), 1.5));
   plane = normalize(cross(T, toward));
   return toward;
 }
@@ -379,24 +373,39 @@ float edgeLine(float wide){
 }
 `;
 
-// Copper leaf. The same metal as the buttons, and like them a mirror: each facet of the crumpled leaf shows either
-// the core, as a bright band that slides across it as it turns, or the dark of the room. There is almost nothing
-// between the two, and that jump from facet to facet is what makes it metal and not paper.
+// Copper leaf. The same metal as the buttons, and like them a mirror. Beaten leaf is crinkled into small facets,
+// each leaning its own way, so the core shows in it as a scatter of facets that blaze beside facets that are dark,
+// and the scatter runs across the leaf as it turns. That jump from one facet to the next is what makes it metal.
 export const COPPER_FRAG = `${HEAD}
 uniform vec3 uF0, uCopper;
 out vec4 frag;
-${SHARD_LIGHT}
+${NOISE}${SHARD_LIGHT}
 void main(){
-  vec3 N = normalize(vN);
+  vec3 flat_ = normalize(vN);
+  // The crinkle: facets a few pixels across, however big the leaf is.
+  float cells = clamp(vSize * uDpr / 1.9, 2.0, 8.0);
+  vec2 g = vObj.xy * cells + vMore.x * 57.0;
+  vec2 ip = floor(g), fp = fract(g), id = ip;
+  float best = 9.0, next = 9.0;
+  for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++){
+    vec2 o = vec2(float(i), float(j));
+    vec2 r = o + vec2(hash2(ip + o), hash2(ip + o + 17.3)) - fp;
+    float d = dot(r, r);
+    if (d < best){ next = best; best = d; id = ip + o; } else if (d < next) next = d;
+  }
+  vec3 lean = vec3(hash2(id + 3.1), hash2(id + 9.7), hash2(id + 5.3)) - 0.5;
+  vec3 N = normalize(flat_ + (lean - flat_ * dot(lean, flat_)) * 0.3 * (1.0 - vTag));
+  float crease = smoothstep(0.0, 0.16, sqrt(next) - sqrt(best));
   float fall, lampI;
   vec3 plane, Ll;
   vec3 toward = coreFrom(fall, plane);
   lampI = lampLight(Ll);
-  float glint = coreBand(N, toward, plane, 0.2) * 6.0;
-  float sheen = coreBand(N, toward, plane, 0.62) * 1.3;
+  float glint = coreBand(N, toward, plane, 0.14) * 9.0;
+  float sheen = coreBand(flat_, toward, plane, 0.7) * 1.5;
   float nll = max(dot(N, Ll), 0.0);
-  float lamp = (ggx(max(dot(N, normalize(Ll + V)), 0.0), 0.2) * 0.7 + 0.05) * nll * lampI;
-  float light = room(reflect(-V, N)) * (0.3 + 0.7 * min(fall, 1.0)) + fall * (glint + sheen + 0.03) + lamp;
+  float lamp = (ggx(max(dot(N, normalize(Ll + V)), 0.0), 0.16) * 0.8 + 0.05) * nll * lampI;
+  float light = room(reflect(-V, N)) * (0.25 + 0.75 * min(fall, 1.0)) + fall * (glint + sheen + 0.03) + lamp;
+  light *= mix(0.72, 1.0, crease);
   // A torn edge is bare metal: a thin line of it shows where the light reaches.
   float line = edgeLine(1.1 / uDpr + 0.2) * (1.0 - vTag);
   light += line * (0.02 + 0.3 * fall * (0.3 + sheen) + 0.5 * lampI);
@@ -456,7 +465,8 @@ void main(){
   float line = edgeLine(0.85 / uDpr + 0.1) * band;
   // Each part takes its color from its own amount of light and is laid in by how much of the pixel it covers,
   // so a thin edge stays pale and does not redden as it thins.
-  float faceLight = 0.01 + 0.22 * room(reflect(-V, N)) + fall * 0.05 * fres;
+  // Its body is clear but not empty: it holds a faint light, more on the side turned to the core.
+  float faceLight = min(0.02 + 0.25 * room(reflect(-V, N)) + fall * (0.015 + 0.07 * pow(max(dot(N, toward) + 0.35, 0.0), 2.0) + 0.06 * fres), 0.13);
   float bandLight = 0.05 + 1.3 * carried;
   col += ramp(mix(faceLight, bandLight, band)) * (1.0 - line) + ramp(0.3 + 3.4 * carried) * line + ramp(glint);
   frag = vec4(min(col, uPale), clamp(alpha + 0.04 + line * 0.6 + band * 0.3 + glint, 0.0, 1.0));
@@ -516,6 +526,8 @@ void main(){
   float grain = noise2(p * 2.3 / uUnit) * 0.6 + hash2(floor(p * uDpr)) * 0.4;
   vec3 page = ramp(amount * uPage * mix(0.16, 1.0, shade)) * (0.8 + 0.4 * grain);
   vec3 col = scene.rgb + page * (1.0 - scene.a);
-  col = pow(min(col, uPale), vec3(1.0 / 2.2)) + dither(gl_FragCoord.xy);
-  frag = vec4(col, scene.a);
+  col = max(pow(min(col, uPale), vec3(1.0 / 2.2)) + dither(gl_FragCoord.xy), 0.0);
+  // Light is laid over the page, not added to it: WebKit throws away any color brighter than its own alpha, so every
+  // pixel of light carries the alpha of its brightest channel. Over a page this dark the two look the same.
+  frag = vec4(col, max(scene.a, max(col.r, max(col.g, col.b))));
 }`;

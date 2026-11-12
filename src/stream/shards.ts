@@ -54,15 +54,15 @@ function leaf(b: Builder, r: () => number): void {
   for (let i = 0; i < corners; i++) {
     const p = cs[i], q = cs[(i + 1) % corners];
     ring.push(p);
-    const cuts = Math.floor(r() * 1.8);
+    const cuts = 1 + Math.floor(r() * 1.8);
     for (let k = 1; k <= cuts; k++) {
       const t = (k + (r() - 0.5) * 0.5) / (cuts + 1);
       // A tear pulls the side in. Now and then it is a deep notch.
-      const pull = 1 - (r() < 0.3 ? 0.25 + 0.25 * r() : 0.04 * r());
+      const pull = 1 - (r() < 0.24 ? 0.18 + 0.26 * r() : 0.05 * r());
       ring.push([(p[0] + (q[0] - p[0]) * t) * pull, (p[1] + (q[1] - p[1]) * t) * pull]);
     }
   }
-  const folds = [0, 1, 2].map(() => { const a = r() * Math.PI; return { x: Math.cos(a), y: Math.sin(a), at: (r() - 0.5) * 0.7, deep: (0.2 + 0.26 * r()) * (r() < 0.5 ? -1 : 1) }; });
+  const folds = [0, 1, 2].map(() => { const a = r() * Math.PI; return { x: Math.cos(a), y: Math.sin(a), at: (r() - 0.5) * 0.7, deep: (0.07 + 0.11 * r()) * (r() < 0.5 ? -1 : 1) }; });
   const lift = (x: number, y: number) => folds.reduce((z, f) => z + f.deep * Math.abs(x * f.x + y * f.y - f.at), 0) - 0.12;
   const thick = 0.034;
   const n = ring.length;

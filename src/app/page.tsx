@@ -36,6 +36,14 @@ export default function Index() {
           <Link href="/lab/stream-core">A core of light, two ways</Link>
           <span className={styles.minor}>Phase 2 · shards riding a wave of light, and the same on an arc</span>
         </li>
+        <li>
+          <Link href="/lab/stream">The stream</Link>
+          <span className={styles.minor}>Phase 2 · the test shot, following the scroll</span>
+        </li>
+        <li>
+          <Link href="/lab/stream?hold">The stream, held</Link>
+          <span className={styles.minor}>Phase 2 · check-in 1 · a paused frame, only the cursor&rsquo;s light moves</span>
+        </li>
       </ul>
       <h2 className={styles.group}>Pieces carried from the second build</h2>
       <ul className={styles.list}>

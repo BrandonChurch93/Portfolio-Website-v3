@@ -79,12 +79,15 @@ npm run strip -- "/lab/piece/city?entrance=1&label=0" --opening --times 0.4,1.2,
 npm run shot -- /lab/buttons --hover '[data-variant="primary"]' --wait 1200
 npm run strip -- "/lab/pour?ui=0" --times 0.62,0.8,1.3,2.2,4.4,7,8,9.6
 npm run perf -- /lab/pour --vp phone --cpu 4
+npm run shot -- "/lab/stream?hold&ui=0"
+npm run strip -- "/lab/stream?ui=0" --times 1,1.7,2.4,2.8,3.1,3.4,4.3,6 --eval "window.__site.call('streamPlay', 150, 1250, 1, 3.4)"
 ```
 
 - The scripts use the dev server if it is running and start one if it is not.
 - They need a browser. If one is missing they say so: run `npx playwright install chromium`.
 - Images go to `shots/`, which is not committed. Copy one into `reference/` only when it is worth keeping.
 - The scripts print `hardware` or `software`. `QUALITY.md` says what each can be trusted for.
+- `streamPlay(fromScroll, toScroll, fromTime, toTime)` scripts a scroll of the stream's page, so a filmstrip of frozen frames can show it being scrolled. `streamPlay()` ends it.
 
 ## Where things are
 
@@ -95,7 +98,7 @@ npm run perf -- /lab/pour --vp phone --cpu 4
 | `src/pieces/` | The 3D pieces, one folder each, behind the contract in `src/world/piece.ts` |
 | `src/world/` | Shared 3D code: the stage, materials, the clock, quality tiers |
 | `src/lamp/` | The cursor light. One lamp, read by everything that is lit |
-| `src/stream/` | The stream, built new from Phase 2. Its test shot is at `/lab/stream`. Nothing is here until the session in Claude Code starts it |
+| `src/stream/` | The stream. Its test shot is at `/lab/stream`, and `/lab/stream?hold` opens it with the frame held. `route.ts` plans where it goes from where the title and card are, `sim.ts` steps what flies (the leading ends, sparks, thrown shards, arcs), `shards.ts` makes the shard meshes, `shaders.ts` and `renderer.ts` draw it, `config.ts` holds its constants and budgets, `stream.ts` puts it on a page |
 | `src/stream-core/` | The sketch of the stream Brandon picked, at `/lab/stream-core`: shards of copper and glass riding a core of light. Panel A, the wave of light, is his pick and the floor to beat. Panel B is the arc he passed over. A reference: do not build on it or change it. `?reach=0.5` sets how far the stream has run |
 | `src/stream-ideas/` | An earlier study at `/lab/stream-ideas`: three rough ideas (threads, copper leaf, ink). Its `route.ts` and `gl.ts` are used by the sketch above. Set aside |
 | `src/pour/`, `src/pour-looks/` | The stream's first attempt, as molten metal, at `/lab/pour` and `/lab/pour-looks`. Set aside and kept as a record |

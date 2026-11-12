@@ -105,7 +105,8 @@ export class StreamSim {
     for (let b = 0; b < 2; b++) {
       const br = this.route.branches[b];
       const err = reachFor(br, line) - this.head[b];
-      const goal = Math.max(-lim, Math.min(lim, err * H.follow));
+      // Drawn back up the page it may go quicker than it came: a retreat is not the stream racing.
+      const goal = Math.max(-Math.max(lim * 1.5, H.creep * u * 2.5), Math.min(lim, err * H.follow));
       this.speed[b] += (goal - this.speed[b]) * (1 - Math.exp(-H.quick * dt));
       let move = this.speed[b] * dt;
       if (Math.abs(move) > Math.abs(err)) { move = err; this.speed[b] *= 0.5; }
@@ -161,7 +162,7 @@ export class StreamSim {
     const side = r(0) < 0.5 ? -1 : 1, back = 0.15 + 1.1 * e, wide = (0.35 + r(1)) * side;
     const dx = -tmp[2] * back - tmp[3] * wide, dy = -tmp[3] * back + tmp[2] * wide, len = Math.hypot(dx, dy) || 1;
     const a = Math.atan2(dy / len, dx / len) + (r(2) + r(3) - 1) * 0.75;
-    const v = (K.speed[0] + (K.speed[1] - K.speed[0]) * r(4) * r(5)) * u * (0.55 + 0.9 * e);
+    const v = (K.speed[0] + (K.speed[1] - K.speed[0]) * r(4) * r(5)) * u * (0.9 + 0.7 * e);
     this.spark(tmp[0], tmp[1], Math.cos(a) * v, Math.sin(a) * v, K.life[0] + (K.life[1] - K.life[0]) * r(6) * r(7), 0.55 + 0.45 * r(8), 0);
   }
 
@@ -213,8 +214,9 @@ export class StreamSim {
   private headFork(b: number, e: number, k: number): void {
     const A = S.arc, u = this.route.unit, en = this.energy[b], r = (j: number) => this.rnd(e, k, j);
     at(this.route.branches[b], this.head[b], tmp);
-    const angle = Math.atan2(tmp[3], tmp[2]) + (r(0) + r(1) - 1) * 2.3;
-    const reach = (A.reach[0] + (A.reach[1] - A.reach[0]) * r(2) ** 2) * u * (0.7 + 0.9 * en);
+    // Most reach the way it is going. A few are long and the rest short, so it never makes an even fan.
+    const angle = Math.atan2(tmp[3], tmp[2]) + (r(0) + r(1) - 1) * 1.5 + (r(6) < 0.2 ? (r(7) - 0.5) * 3.4 : 0);
+    const reach = (A.reach[0] + (A.reach[1] - A.reach[0]) * r(2) ** 3) * u * (0.7 + 0.9 * en);
     this.fork(tmp[0], tmp[1], angle, reach, A.life[0] + (A.life[1] - A.life[0]) * r(3), r(4) * 1000, 0.55 + 0.45 * r(5));
   }
 
