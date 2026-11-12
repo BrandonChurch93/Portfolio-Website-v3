@@ -69,7 +69,7 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 - "This was a tough decision, as they are both really good. But I'm gonna go with option A."
 - He asked what Fable recommends, whether to go back to Claude Code, and what would be improved. "I think we need a plan and a concise agreement before we do the handoff to Claude to build it."
 
-**What Fable proposed. Not agreed yet**
+**What Fable proposed. He agreed to all of it: "I like all your recommendations." It is now in `BRIEF.md`**
 
 - Build it in Claude Code on his Mac, with Fable, because only hardware can show motion.
 - What gets better than the sketch: shards as real objects with thickness and facets, copper lit like the buttons, glass that bends the core's light inside the warm palette. The core as a body of light with depth. The stream lighting what it passes. A leading end with more energy the faster he scrolls. Landings with shape and weight. Motion with weight that never visibly loops and retracts cleanly on scrolling up. Shards that flash and turn toward the cursor. A stated budget for a phone.
@@ -78,9 +78,14 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 - Carried from the sketch: the mix of copper and glass, about this density, speed tied to his scroll.
 - The name: retire "the pour", which meant molten metal, and call it the stream as he does.
 
+**His question before starting**
+
+- "Can you confirm that we're going to provide him this as a starting reference? Or would this be a completely Greenfield build with just the description."
+- Fable's answer: the sketch goes along as a working reference and the floor to beat, with its code, stills and the notes above. The finished version is built new, not on top of it. His own verdict on the city is the reason: a better version built on top of an approved sketch was rejected (`QUALITY.md`).
+
 **Waiting on Brandon**
 
-1. Agreement to that list, or his changes to it. Then it goes into `BRIEF.md` and a handoff prompt is written for Claude Code.
+1. His answer to that. Then the handoff is written: the documents renamed from the pour to the stream, the Phase 2 list and the quality bar's section rewritten for what the stream now is, and the prompt for Claude Code.
 
 ## 2026-11-11 · Three rough ideas for what the stream is (Fable, web chat)
 

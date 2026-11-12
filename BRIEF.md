@@ -48,7 +48,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 
 ### The pour
 
-- **Where it stands (Nov 11):** the stream is shards of copper and glass riding round a core of light, and the core is a smooth wave of light. He picked that on Nov 11 from two sketches. The lines about molten metal below record what was agreed and then set aside. Everything about where the stream goes and what it does on the page still holds. The newest lines are at the end of this section. What the finished version has to have is not agreed yet (Open 15).
+- **Where it stands (Nov 11):** the stream is shards of copper and glass riding round a core of light, and the core is a smooth wave of light. He picked that on Nov 11 from two sketches. The lines about molten metal below record what was agreed and then set aside. Everything about where the stream goes and what it does on the page still holds. The newest lines are at the end of this section. What the finished version has to have was agreed on Nov 11 and is the last item of this section.
 - A stream of molten metal runs down the whole site. "I agree molten metal is the way to go." (Nov 11)
 - It is called the pour. The name is Fable's and he has not objected. It is never called water, in anything written for a model or shown to a visitor. His reason: "if I call it water, then the model is gonna build it as if it acts like water". (Nov 11)
 - It is the site's own copper, melted: it glows in the palette's light colors, ember to flame to hot to pale. It looks like a foundry pour: bright, clean and quick, throwing sparks and beads. It never looks like lava (dark, crusted, slow), fire (flames) or water (thin, clear). (Fable's recommendation, which he agreed to, Nov 11)
@@ -98,6 +98,23 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 - He asked to see that two ways: "I'd like to see your recommendation. and then I'd like to see the same thing, but instead of the smooth light, can we go with the arc? I like to compare the two." And: "let's keep it simple for now, and the next iteration will go ultra high quality." Both are at `/lab/stream-core`. (Nov 11)
 - He picked A, the wave of light: "This was a tough decision, as they are both really good. But I'm gonna go with option A." (Nov 11)
 - Before the finished version is built: "I think we need a plan and a concise agreement before we do the handoff to Claude to build it." (Nov 11)
+- The agreement for the finished version. Fable proposed it and he accepted it whole: "I like all your recommendations." (Nov 11)
+  - **What it is:** a steady wave of light with many copper and glass shards riding round it and sparks coming off it. The arc appears only at the leading end and at the landings.
+  - **Where it is built:** Claude Code on his Mac, with Fable, because only hardware can show motion.
+  - **What gets built:** one test shot, alone on a blank page, on the sketch's route: down, parting on a title, landing on a card, running off its end.
+  - **What does not get built:** the route down the whole site, the layout, and anything touching the 3D pieces. Those wait until he says the shot looks incredible.
+  - **How he judges it:** two check-ins only. A paused frame first, then the same shot moving.
+  - **Carried over from the sketch:** the mix of copper and glass, about its density, and speed tied to his scroll.
+  - **Better than the sketch:**
+    1. Shards are real objects with thickness and facets. Copper reflects like the buttons. Glass bends the core's light, in the warm palette only, no rainbow.
+    2. The core is a body of light with depth, not drawn lines.
+    3. The stream lights what it passes: the page, the title and card edges, and small glints thrown by the glass.
+    4. The leading end is the hero moment: more energy the faster he scrolls, settling when he stops.
+    5. Landings have shape and weight: shards scatter, bounce and spill off the edge.
+    6. Motion has weight, never visibly loops, and retracts cleanly when he scrolls back up.
+    7. Shards near the cursor flash and turn toward it.
+    8. The phone has a stated budget: what it keeps and what it gives up.
+  - **The name:** it is called the stream, as he calls it. "The pour" meant molten metal and is retired. It is still never called water.
 
 ### Hero
 
@@ -201,7 +218,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
 12. **What ties the bottom of the page together.** Recommendation: the pour ends by feeding the rocket's launch.
 13. **The rocket as built.** He has not judged it yet.
 14. **Whether the site has to meet Section 508** (WCAG 2.0, levels A and AA). He asked whether the buttons do, out of curiosity. Recommendation: yes, checked as each part is built, because the engineers who read the site will check. The buttons' results are in `LOG.md`.
-15. **The agreement for the finished stream.** What it is made of is settled (The pour, above): he picked A at `/lab/stream-core`. He wants "a plan and a concise agreement" before it is handed to Claude Code. Fable's proposed list is in `LOG.md`, top entry. None of it is a rule until he agrees to it.
+15. **How the sketch is used in the handoff.** He asked whether Claude Code is given the sketch at `/lab/stream-core` as a starting reference or builds from the description alone. Recommendation: it is given the sketch, its code, its stills and the log's notes as a working reference and the floor to beat, and the finished version is built new in its own folder, not on top of the sketch. Waiting on his answer.
 
 ## Dropped
 
