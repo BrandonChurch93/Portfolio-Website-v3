@@ -15,8 +15,9 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 ## Now
 
 - **Phase:** 3 has begun, a section at a time, starting with Work. Phase 2's test shot is approved and he calls the stream "almost certainly the finalized base" (Nov 12). Its small items below stay open and block nothing
-- **In front of Brandon:** three wireframe layouts for the Work section at `/lab/work-draft` (Study 09). A · Frame is his idea as he described it, B · Steps is his idea with the stream landing on each card, C · Middle is one stream winding down between the columns. Fable recommended C. His lean is A and B, not yet one of them, and he is worried the section is so tall that the categories are a long scroll back up. `BRIEF.md`, Open 15, has his words and where each layout meets the settled rules
-- **What he is choosing:** where the stream goes through Work, and with it whether the rows are straight or the right column sits half a row lower. Nothing else on that page is for approval: not the cards' look, not the spacing, not the phone, not how many cards are struck
+- **In front of Brandon:** the second round of the Work wireframe at `/lab/work-draft` (Study 09), with A · Frame and B · Steps in the switch. New in it: a category bar with room that the stream lands on, a slim top bar the categories dock into once they scroll off, working categories, and four cards. `BRIEF.md`, Open 15, has his words so far and what is Fable's call
+- **What he is deciding:** A or B. Whether the site gets the slim top bar with the categories docking into it. Whether the stream lands on the category bar. Nothing else on that page is for approval: not the cards' look, not the spacing, not the phone, not what else lives in the top bar
+- **Where he stands:** his lean is A and B over C, with no pick between them. He wanted the look of the section settled further before choosing, which is what this round is for
 - **After his pick:** the card's look, here in the web chat. Then the stream's real route through Work, in Claude Code on his Mac
 - **He is on his iPad for now, with no mouse.** Anything that needs the cursor is confirmed when he is home
 - **Where the stream is:** `/lab/stream`, built in Claude Code on Brandon's Mac. `LOG.md` has each round's account

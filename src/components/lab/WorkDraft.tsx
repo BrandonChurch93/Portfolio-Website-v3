@@ -17,15 +17,18 @@ interface Strike { line: number; at: number; x: number; y: number; card: number;
 interface Plan { w: number; h: number; lines: Line[]; strikes: Strike[] }
 
 const VARIANTS: { id: Variant; name: string; note: string }[] = [
-  { id: 'a', name: 'A · Frame', note: 'Your idea as you described it. The stream parts on WORK, runs down both sides of the grid, and strikes the side of each card as it passes. The two sides meet again on the button.' },
-  { id: 'b', name: 'B · Steps', note: 'Your idea, with the right column half a row lower. Each side lands on top of its first card as it did in the test shot, runs off the end and down the side, then swings off the foot and lands on the corner of the next. The cards wake one at a time, left then right.' },
-  { id: 'c', name: 'C · Middle', note: 'One stream instead of two. The two sides close again under the title, and the stream winds down the middle of the section, landing on the inner corner of each card in turn, left then right.' },
+  { id: 'a', name: 'A · Frame', note: 'The stream parts on WORK, lands on the category bar, runs off its ends and then straight down both sides of the grid, lighting the side of each card as it passes. The two sides meet again on the button.' },
+  { id: 'b', name: 'B · Steps', note: 'The right column sits half a row lower. The stream parts on WORK, lands on the category bar, then on top of the first card on each side, and from there on the corner of each card in turn. The cards wake one at a time, left then right.' },
+  { id: 'c', name: 'C · Middle', note: 'One stream instead of two, winding down the middle. Not in the switch: open it with ?v=c.' },
 ];
+const SHOWN: Variant[] = ['a', 'b'];
 
-const CARDS = ['Project one', 'Project two', 'Project three', 'Project four', 'Project five', 'Project six'];
 const CATEGORIES = ['Software', 'Games', '3D art', 'Photography'];
+const NUMBERS = ['01', '02', '03', '04'];
+const SECTIONS = ['Work', 'Skills', 'About', 'Contact'];
 // How far down the screen the leading end is held.
 const HEAD_AT = 0.62;
+const BUTTON = -1, BAR = -2;
 
 // A line through the points with its corners rounded, as a run of short straight pieces.
 function line(nodes: Node[], radius: number): Line {
@@ -79,18 +82,14 @@ function nearest(l: Line, x: number, y: number): number {
 function plan(v: Variant, w: number, h: number, T: Box, K: Box, C: Box[], B: Box): Plan {
   const cx = w / 2, one = Math.abs(C[0].l - C[1].l) < 40 && Math.abs(C[0].t - C[1].t) > 40;
   const G = { l: Math.min(...C.map((c) => c.l)), r: Math.max(...C.map((c) => c.r)) };
-  const xl = Math.min(T.l, K.l) - 28, xr = Math.max(T.r, K.r) + 28, top = T.t - 12;
+  const top = T.t - 12;
   const lines: Line[] = [line([[cx, 0], [cx, top]], 0)];
   const strikes: Strike[] = [];
   const add = (nodes: Node[], radius: number) => lines.push(line(nodes, radius)) - 1;
   const mark = (li: number, x: number, y: number, card: number, lit: Lit) => strikes.push({ line: li, at: nearest(lines[li], x, y), x, y, card, lit });
-  const BUTTON = -1, HUG = 8, SHARP = 5;
+  const HUG = 8, SHARP = 5;
   const order = C.map((c, i) => ({ c, i })).sort((p, q) => p.c.t - q.c.t);
   const litSide = (side: number): Lit => (side < 0 ? 'l' : 'r');
-  const shield = (join: number) => {
-    add([[cx, top], [xl, top], [xl, K.b + 8], [cx, join]], 22);
-    add([[cx, top], [xr, top], [xr, K.b + 8], [cx, join]], 22);
-  };
 
   // Down a run of cards. It lands on top of the first as it did in the test shot, runs off its end and down its
   // side, swings off its foot and lands on the top corner of the next.
@@ -117,8 +116,11 @@ function plan(v: Variant, w: number, h: number, T: Box, K: Box, C: Box[], B: Box
   };
 
   if (v === 'c') {
-    shield(K.b + 62);
-    const nodes: Node[] = [[cx, K.b + 62]];
+    const xl = Math.min(T.l, K.l) - 28, xr = Math.max(T.r, K.r) + 28, join = K.b + 62;
+    const left = add([[cx, top], [xl, top], [xl, K.b + 8], [cx, join]], 22);
+    add([[cx, top], [xr, top], [xr, K.b + 8], [cx, join]], 22);
+    mark(left, xl, K.t, BAR, 'l');
+    const nodes: Node[] = [[cx, join]];
     const lands = one ? weave(nodes, null, order, -1, 12) : [];
     if (!one) order.forEach(({ c }, n) => {
       const x = c.cx < cx ? c.r + HUG : c.l - HUG, from = nodes[nodes.length - 1];
@@ -137,15 +139,26 @@ function plan(v: Variant, w: number, h: number, T: Box, K: Box, C: Box[], B: Box
     [-1, 1].forEach((side) => {
       const mine = order.filter((q) => (one ? q.i % 2 === (side < 0 ? 0 : 1) : side < 0 ? q.c.cx < cx : q.c.cx > cx));
       const gap = one ? 16 : v === 'a' ? 12 : 64;
-      const xt = side < 0 ? xl : xr, out = side < 0 ? G.l - gap : G.r + gap;
-      const nodes: Node[] = [[cx, top], [xt, top], [xt, K.b + 6, 30]];
+      const out = side < 0 ? G.l - gap : G.r + gap;
+      const titleEnd = side < 0 ? T.l - 28 : T.r + 28, barEnd = side < 0 ? K.l - HUG : K.r + HUG;
+      const nodes: Node[] = [[cx, top], [titleEnd, top]];
+      let bar: Pt;
+      if (side < 0 ? titleEnd > K.l + 40 : titleEnd < K.r - 40) {
+        bar = [titleEnd + side * 14, K.t - 7];
+        nodes.push([bar[0], bar[1], SHARP], [barEnd, K.t - 7, 16], [barEnd, K.b + 12, 30]);
+      } else {
+        const past = side < 0 ? Math.min(titleEnd, barEnd) : Math.max(titleEnd, barEnd);
+        bar = [past, K.t - 14];
+        nodes.push([titleEnd, T.b + 8, 30], [past, K.t - 14, 30], [past, K.b + 12, 30]);
+      }
       const lands = v === 'a' ? [] : weave(nodes, one ? order[0] : mine[0], mine, side, gap - HUG);
-      if (v === 'a') nodes.push([out, K.b + 84]);
+      if (v === 'a') nodes.push([out, K.b + 96]);
       const bx = side < 0 ? B.l - 2 : B.r + 2;
       if (v === 'a' || one) nodes.push([out, B.cy, 26]);
       else nodes.push([bx + side * 70, B.cy, 60]);
       nodes.push([bx, B.cy]);
       const li = add(nodes, v === 'a' ? 26 : 20);
+      mark(li, bar[0], bar[1], BAR, 't');
       if (v === 'a') for (const { c, i } of mine) mark(li, out, c.t + 30, i, litSide(side));
       lands.forEach((q) => mark(li, q.x, q.y, q.i, q.lit));
       mark(li, bx, B.cy, BUTTON, 't');
@@ -157,11 +170,17 @@ function plan(v: Variant, w: number, h: number, T: Box, K: Box, C: Box[], B: Box
 
 export function WorkDraft() {
   const [v, setV] = useState<Variant>('a');
+  const [cat, setCat] = useState(CATEGORIES[0]);
   const [drawn, setDrawn] = useState<Plan | null>(null);
+  const main = useRef<HTMLElement>(null);
   const stage = useRef<HTMLDivElement>(null);
+  const hero = useRef<HTMLDivElement>(null);
+  const work = useRef<HTMLElement>(null);
   const title = useRef<HTMLHeadingElement>(null);
   const cats = useRef<HTMLDivElement>(null);
+  const grid = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLSpanElement>(null);
+  const bar = useRef<HTMLDivElement>(null);
   const cards = useRef<(HTMLElement | null)[]>([]);
   const groups = useRef<(SVGGElement | null)[]>([]);
   const heads = useRef<(SVGGElement | null)[]>([]);
@@ -174,13 +193,14 @@ export function WorkDraft() {
     const asked = new URLSearchParams(location.search).get('v');
     if (asked === 'a' || asked === 'b' || asked === 'c') setV(asked);
     whole.current = new URLSearchParams(location.search).has('whole');
+    if (whole.current) main.current?.setAttribute('data-whole', '');
   }, []);
 
   useEffect(() => {
     const measure = () => {
       const s = stage.current, t = title.current, k = cats.current, b = button.current;
       const cs = cards.current.filter((c): c is HTMLElement => !!c);
-      if (!s || !t || !k || !b || cs.length < CARDS.length) return;
+      if (!s || !t || !k || !b || cs.length < NUMBERS.length) return;
       const o = s.getBoundingClientRect();
       const box = (el: Element): Box => {
         const r = el.getBoundingClientRect();
@@ -239,26 +259,54 @@ export function WorkDraft() {
       if (on) lit.add(k.card);
     });
     cards.current.forEach((c, i) => c?.classList.toggle(styles.awake, lit.has(i)));
-    button.current?.classList.toggle(styles.awake, lit.has(-1));
+    button.current?.classList.toggle(styles.awake, lit.has(BUTTON));
+    cats.current?.classList.toggle(styles.awake, lit.has(BAR));
+
+    const top = bar.current, h = hero.current, k = cats.current, w = work.current;
+    if (top && h && k && w && !whole.current) {
+      const on = h.getBoundingClientRect().bottom < innerHeight * 0.5;
+      const under = k.getBoundingClientRect().bottom < top.offsetHeight + 4;
+      const inside = w.getBoundingClientRect().bottom > top.offsetHeight + 140;
+      top.classList.toggle(styles.on, on);
+      top.classList.toggle(styles.docked, on && under && inside);
+    }
   }), []);
 
+  const pickFromBar = (name: string) => {
+    setCat(name);
+    const g = grid.current, top = bar.current;
+    if (g && top) scrollTo({ top: scrollY + g.getBoundingClientRect().top - top.offsetHeight - 72, behavior: 'smooth' });
+  };
+
   return (
-    <main className={styles.main}>
+    <main ref={main} className={styles.main}>
       <header className={styles.intro}>
         <p className={styles.label}>Study 09 · the Work section, laid out</p>
-        <h1 className={styles.heading}>Work, three ways</h1>
+        <h1 className={styles.heading}>Work, two ways</h1>
         <p className={styles.lede}>
-          Wireframes, to choose a layout from. The line stands in for the stream and its leading end follows your scroll. A card wakes when the
-          line reaches it. Nothing here is the real stream, a real card or a real project.
+          A wireframe, to choose a layout from. The line stands in for the stream and its leading end follows your scroll. The category bar,
+          each card and the button wake when the line reaches them. Once the category bar has scrolled off the top, the categories move into
+          the bar at the top of the screen. Nothing here is the real stream, a real card or a real project.
         </p>
+        <p className={styles.note}>{VARIANTS.find((o) => o.id === v)?.note}</p>
       </header>
 
+      <div ref={bar} className={styles.bar}>
+        <span className={styles.barName}>Brandon Church</span>
+        <div className={styles.barCats}>
+          <span className={styles.barSection}>Work</span>
+          {CATEGORIES.map((c) => (
+            <button key={c} type="button" className={styles.barCat} aria-pressed={cat === c} onClick={() => pickFromBar(c)}>{c}</button>
+          ))}
+        </div>
+        <div className={styles.barLinks}>{SECTIONS.map((n) => <span key={n}>{n}</span>)}</div>
+      </div>
+
       <div className={styles.switch} role="group" aria-label="Layout">
-        {VARIANTS.map((o) => (
+        {VARIANTS.filter((o) => SHOWN.includes(o.id)).map((o) => (
           <button key={o.id} type="button" className={styles.choice} aria-pressed={v === o.id} onClick={() => setV(o.id)}>{o.name}</button>
         ))}
       </div>
-      <p className={styles.note}>{VARIANTS.find((o) => o.id === v)?.note}</p>
 
       <div ref={stage} className={styles.stage} data-v={v}>
         {drawn && (
@@ -295,20 +343,24 @@ export function WorkDraft() {
           </svg>
         )}
 
-        <div className={styles.standIn}>Hero · the city · not drawn here</div>
+        <div ref={hero} className={styles.standIn}>Hero · the city · not drawn here</div>
 
-        <section className={styles.work}>
+        <section ref={work} className={styles.work}>
           <h2 ref={title} className={styles.title}>Work</h2>
-          <div ref={cats} className={styles.cats}>
-            {CATEGORIES.map((c, i) => <span key={c} className={i === 0 ? styles.catOn : styles.cat}>{c}</span>)}
+          <div ref={cats} className={styles.cats} data-lit="t" role="group" aria-label="Category">
+            {CATEGORIES.map((c) => (
+              <button key={c} type="button" className={styles.cat} aria-pressed={cat === c} onClick={() => setCat(c)}>{c}</button>
+            ))}
           </div>
-          <div className={styles.grid}>
-            {CARDS.map((name, i) => (
-              <article key={name} ref={(el) => { cards.current[i] = el; }} className={styles.card}>
-                <div className={styles.picture} />
-                <h3 className={styles.name}>{name}</h3>
-                <p className={styles.text}>One line on what it is and why it mattered.</p>
-                <p className={styles.tags}><span>Tag</span><span>Tag</span><span>Tag</span></p>
+          <div ref={grid} className={styles.grid}>
+            {NUMBERS.map((n, i) => (
+              <article key={n} ref={(el) => { cards.current[i] = el; }} className={styles.card}>
+                <div key={cat} className={styles.inner}>
+                  <div className={styles.picture} />
+                  <h3 className={styles.name}>{cat} · {n}</h3>
+                  <p className={styles.text}>One line on what it is and why it mattered.</p>
+                  <p className={styles.tags}><span>Tag</span><span>Tag</span><span>Tag</span></p>
+                </div>
               </article>
             ))}
           </div>

@@ -2,6 +2,46 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-12 · The Work draft, second round: a category bar, a top bar, four cards (Fable, web chat)
+
+**What Brandon said**
+
+- His favorites are A and B. "It's still hard for me to choose between the two."
+- The section is tall, and the categories end up a long scroll above the lower cards.
+- The category row was "really squished at the top". He does not want the categories as an overlay on top of the cards, unless they pin into a nav bar at the top.
+- He asked what the standards are and what would look best. Fable recommended a roomier category row, a slim top bar the categories dock into, and four cards, and he turned Fable up to build it. He has not ruled on any of it.
+
+**What was built**, all in `src/components/lab/WorkDraft.tsx` and its styles
+
+- The stream hooks over WORK alone. The first round had drawn the hook round the title and the categories together, which is what squeezed them.
+- The categories are a bar of their own: a plate the width of 46rem with four equal tabs, each over 44 px tall. It is faint until the stream lands on it, like a card.
+- **Fable's call:** the stream drops from the ends of the title onto the category bar, runs along its top and off its ends, then goes on. Title, bar and grid step wider each time, so the stream steps out with them. On a screen too narrow for that it passes the bar's ends without landing.
+- A slim top bar, fixed, 3.5rem tall. It stays hidden until the hero block is half off the screen. When the category bar has scrolled under it, the four categories fade into its middle beside the word Work, and they leave when the foot of Work reaches the top. Tapping one there swaps the cards and scrolls the first row back to 128 px from the top. Under 1100 px wide the section links give way to the categories, and under 700 px the name does too and the row can be swiped.
+- The categories work. Each shows four stand in cards named for it.
+- Four cards, not six.
+- The layout switch moved to the foot of the screen, since the top now belongs to the top bar. It holds A and B. C still opens with `?v=c`.
+- Stills: `reference/studies/14-work-draft-two-layouts.jpg` and `14-work-draft-category-bar-and-top-bar.jpg`.
+
+**Measured at 1440 by 900**
+
+- From the title to the button: about 1415 px in A, about 1720 px in B. The first round was about 1800 and 2180.
+- On an iPad held upright, A's whole grid and button fit on one screen below the top bar.
+
+**Checked**
+
+- Live, with the clock running, at iPad upright and at phone width: scrolled down in steps, the categories docked, a tap on Games in the top bar swapped the cards and brought the first row to 128 px. No errors.
+- The top bar was 86% solid at first and card titles showed through it. It is 94% now.
+
+**What is not right yet**
+
+- The phone is still only roughed in: one column with both sides at the screen's edges, and the category bar swipes.
+- B's foot, where the left side sweeps a long way in to the button under the short column, is its roughest part.
+- What else lives in the top bar is a stand in.
+
+**Half finished**
+
+- His verdict on this round: A or B, the top bar, and the stream landing on the category bar.
+
 ## 2026-11-12 · The Work section, drawn three ways (Fable, web chat)
 
 **What Brandon said**
