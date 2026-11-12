@@ -20,6 +20,10 @@ export default function Index() {
           <Link href="/lab/buttons">Buttons</Link>
           <span className={styles.minor}>Phase 1 · primary and accent in lit metal</span>
         </li>
+        <li>
+          <Link href="/lab/pour">The pour</Link>
+          <span className={styles.minor}>Phase 2 · the test shot</span>
+        </li>
       </ul>
       <h2 className={styles.group}>Pieces carried from the second build</h2>
       <ul className={styles.list}>

@@ -68,6 +68,7 @@ All run from the repo folder.
 | `npm run typecheck` | Type check only |
 | `npm run shot -- <route>` | A still of a page. Options are listed at the top of `scripts/shot.mjs` |
 | `npm run strip -- <route> --times 0,1,2,3` | A filmstrip of motion. Options are at the top of `scripts/strip.mjs` |
+| `npm run perf -- <route>` | Frame times over a few seconds of live running. `--cpu 4` slows the processor to stand in for a phone. Options are at the top of `scripts/perf.mjs` |
 
 Examples:
 
@@ -76,6 +77,8 @@ npm run shot -- /lab/piece/city --t 12
 npm run shot -- /lab/piece/handheld --vp phone --lamp 0.3,0.4
 npm run strip -- "/lab/piece/city?entrance=1&label=0" --opening --times 0.4,1.2,2,2.8,3.6,4.4,5.2,7
 npm run shot -- /lab/buttons --hover '[data-variant="primary"]' --wait 1200
+npm run strip -- "/lab/pour?ui=0" --times 0.62,0.8,1.3,2.2,4.4,7,8,9.6
+npm run perf -- /lab/pour --vp phone --cpu 4
 ```
 
 - The scripts use the dev server if it is running and start one if it is not.
@@ -88,10 +91,11 @@ npm run shot -- /lab/buttons --hover '[data-variant="primary"]' --wait 1200
 | Path | What |
 |---|---|
 | `BRIEF.md`, `PLAN.md`, `QUALITY.md`, `LOG.md` | The record |
-| `reference/` | The portrait, the bar, the rejected second build, the pieces as carried, stills of each study |
+| `reference/` | The portrait, the bar, the rejected second build, the pieces as carried, real foundry pours, stills of each study |
 | `src/pieces/` | The 3D pieces, one folder each, behind the contract in `src/world/piece.ts` |
 | `src/world/` | Shared 3D code: the stage, materials, the clock, quality tiers |
 | `src/lamp/` | The cursor light. One lamp, read by everything that is lit |
+| `src/pour/` | The pour: `sim.ts` is its physics, `renderer.ts` and `shaders.ts` draw it, `scene.ts` lays out what it hits, `config.ts` holds its constants and its particle budget, `pour.ts` runs it from the clock |
 | `src/hooks/` | `window.__site`, present only with `?hook=1`. The screenshot scripts drive pages through it. `__site.call(name, ...)` runs a tool a module registered, such as `plateHover` |
 | `src/components/PieceView.tsx` | Puts a piece in a page |
 | `src/metal/`, `src/components/Plate.tsx` | Lit metal for the interface: one hidden WebGL context draws every plate from a height field |

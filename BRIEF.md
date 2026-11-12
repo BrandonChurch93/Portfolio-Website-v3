@@ -70,6 +70,9 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 - It has to look incredible.
 - The first thing built is one test shot, alone on a blank page: it falls, hits a ledge, splashes, runs along the ledge and drips off the end. Nothing is built around the pour until he says that shot looks incredible. `QUALITY.md` says what the shot has to show. (Fable's proposal, Nov 11. He went ahead on it without objecting.)
 - What the second build drew inside its pieces (the city's falls, the desk's edge, the rocket's flume) "looks very low quality". The pour replaces all of it. (Nov 11)
+- How the test shot is built, which he said "Go" to (Nov 11): a real particle fluid simulated side on in the flat plane of the page, with gravity, cohesion and adhesion. Only the route is planned. The particles are merged into one rounded body and lit per pixel. Each particle carries a temperature that sets its color on the palette. Its glow lights the ledge and the page, and the ledge keeps a fading heat mark. The test page has two controls: pour again, and slow motion.
+- The simulation is stepped from the one clock (`src/world/clock.ts`) with a fixed timestep and a seed, so any frame can be frozen and shot again exactly. Each new pour takes a new seed, so no two splashes match. (Nov 11)
+- A particle budget is set for his Mac and for a phone before building, and what the phone gives up is said out loud. The phone view is checked as the work goes, not at the end. (Nov 11)
 
 ### Hero
 
@@ -153,6 +156,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 - He is told exactly what he is and is not approving at each step.
 - The building happens in Claude Code on his Mac, with Fable, from Phase 2 on. Planning can still happen in the web chat. Both read and write this repo. (Nov 11)
 - Every message to him ends with a clear, simple recommendation.
+- When something is ready to show him: run a production build, commit, push to `main`, and give him the live link. He is often on his iPad, which cannot open localhost. (Nov 11)
 
 ## Open
 

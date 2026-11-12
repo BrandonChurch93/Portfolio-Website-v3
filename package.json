@@ -10,7 +10,8 @@
     "start": "next start -p 5331 -H 127.0.0.1",
     "typecheck": "tsc --noEmit",
     "shot": "node scripts/shot.mjs",
-    "strip": "node scripts/strip.mjs"
+    "strip": "node scripts/strip.mjs",
+    "perf": "node scripts/perf.mjs"
   },
   "license": "UNLICENSED",
   "dependencies": {

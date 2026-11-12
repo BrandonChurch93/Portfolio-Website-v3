@@ -16,8 +16,8 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 
 - **Phase:** 2, the pour
 - **Where:** Claude Code on Brandon's Mac, with Fable (`LOG.md`, top entry)
-- **Next for Fable:** the test shot. Read `QUALITY.md`, The pour, first
-- **Waiting on Brandon:** nothing
+- **Built and shown:** the test shot, at `/lab/pour`. Two independent reviews of its stills failed it against the bar. `LOG.md` says where it falls short
+- **Waiting on Brandon:** his verdict on the test shot, and whether to keep going this way or rethink
 
 ## Phase 0 · Foundation
 
@@ -27,7 +27,7 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - [x] Project set up and running (Nov 11)
 - [x] Carried over from the second build: city, workbench, handheld, camera, rocket, the cursor light. They look fine to him (Nov 11)
 - [x] Each piece opens on its own page (`/lab/piece/<name>`) (Nov 11)
-- [~] Screenshot and filmstrip tools (`npm run shot`, `npm run strip`)
+- [~] Screenshot and filmstrip tools (`npm run shot`, `npm run strip`), and a frame time tool (`npm run perf`)
 - [x] A preview link that updates on every push: https://portfolio-website-v3-wheat.vercel.app (Nov 11)
 
 ## Phase 1 · Color and light
@@ -46,7 +46,7 @@ Study 01 is at `/lab/palette` and Study 02 at `/lab/buttons`. Stills are in `ref
 ## Phase 2 · The pour, on its own
 
 - [x] What it is made of: molten metal, called the pour (Nov 11)
-- [ ] The test shot: it falls, hits a ledge, splashes, runs along the ledge and drips off the end (`QUALITY.md`, The pour)
+- [~] The test shot: it falls, hits a ledge, splashes, runs along the ledge and drips off the end (`QUALITY.md`, The pour). Built at `/lab/pour`, stills in `reference/studies/03-pour-*.jpg`. Not at the bar yet by Fable's own judgment
 - [ ] The body at rest and flowing
 - [ ] Falling
 - [ ] Landing, with a real splash, sparks and beads
