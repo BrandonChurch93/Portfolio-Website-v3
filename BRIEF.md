@@ -90,7 +90,9 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 - Keep the tags and the text. The second build lost them.
 - The second build's spacing was far too cramped.
 - He likes the second build's brass buttons, the Download PDF one most. He wants a primary and an accent, and both react to the light.
-- On the first copper buttons (Nov 11): the words on the bright one are hard to read, because its face is light on the top half and dark on the bottom half, right behind the words. He wants a face that makes sense and does not put that split behind the text, and floated a tarnish look. He also does not love how simple the hover was (the button only lifted). A second pass is at `/lab/buttons`, waiting on him.
+- On the first copper buttons (Nov 11): the words on the bright one are hard to read, because its face is light on the top half and dark on the bottom half, right behind the words. He wants a face that makes sense and does not put that split behind the text, and floated a tarnish look. He also does not love how simple the hover was (the button only lifted).
+- On the second pass (Nov 11): "The buttons do look better." He likes "especially how the mouse moving around changes the glow on them". The other hover effects (the light running round the border, the lift, the accent's words warming) "aren't bad though I don't necessarily love them either". The hover is not settled.
+- "Don't make any changes to the colors for now." He said it when asking whether the buttons are 508 compliant. (Nov 11)
 
 ### Skills
 
@@ -140,6 +142,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 - Nothing is approved as "fine if the final is better". If it is not at the bar when he sees it, it is not done.
 - He is told exactly what he is and is not approving at each step.
 - Every message to him ends with a clear, simple recommendation.
+- On the buttons' hover he said "I wish you gave me a few different options". Until he says otherwise, Fable reads that as: where there is a real choice in how something looks or moves, show him a few options side by side, not one. (Nov 11)
 
 ## Open
 
@@ -160,6 +163,8 @@ Each line has Fable's recommendation where there is one. None of these are rules
 13. **The rocket as built.** He has not judged it yet.
 14. **What the stream is made of, and what it is called.** What the second build drew does not read as water to him. Recommendation: settle this first in Phase 2, from real studies he can look at, not from a description.
 15. **Where the building happens.** Recommendation: planning in the web chat, building in Claude Code on his Mac with Fable, because it can see what it renders.
+16. **Whether the site has to meet Section 508** (WCAG 2.0, levels A and AA). He asked whether the buttons do, out of curiosity. Recommendation: yes, checked as each part is built, because the engineers who read the site will check. The buttons' results are in `LOG.md`.
+17. **The buttons' hover.** He likes the glow that follows the cursor and is lukewarm on the rest. Recommendation: a few options side by side on `/lab/buttons`, all keeping that glow.
 
 ## Dropped
 

@@ -2,6 +2,78 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-11 · Buttons: his verdict on the second pass, and a 508 check (Fable, web chat)
+
+**What Brandon said**
+
+- "The buttons do look better." He likes "especially how the mouse moving around changes the glow on them".
+- The other hover effects "aren't bad though I don't necessarily love them either". "I wish you gave me a few different options."
+- "Can you verify these are 508 compliant? Don't make any changes to the colors for now just curious."
+- All of it is in `BRIEF.md`. No code changed in this entry.
+
+**What 508 means here**
+
+Section 508's test for web content is WCAG 2.0, levels A and AA. It has not moved to 2.1 or 2.2 (checked Nov 11 2026).
+
+**What was checked, and how**
+
+Headless Chrome against `/lab/buttons`, software rendering. Scripts were scratch files and are not in the repo.
+
+| Check | Result |
+|---|---|
+| Role and name (4.1.2, 1.1.1) | Pass. Each is a native `button` whose name is its label. The canvas is hidden from assistive technology and the words are real text in the DOM |
+| axe-core 4.14, rules tagged WCAG 2.0 A, AA and Section 508 | 0 violations, 0 needing review, 18 rules passed |
+| Keyboard (2.1.1, 2.1.2, 2.4.3) | Pass. Tab reaches all eight in reading order, Enter and Space both press, no trap |
+| Focus visible (2.4.7) | Pass. A 2px outline in `flame`, 5px off the button, about 8.5 to 1 against the page |
+| Text contrast (1.4.3), needs 4.5 to 1 because the label is 14px at weight 600 | Pass on a normal reading. See below |
+| Zoom to 200 percent (1.4.4) | Pass. No sideways scroll, nothing clipped. The plate is redrawn sharp at the new size |
+| Text only at 200 percent (1.4.4) | Pass. The button and its words double |
+| Flashing (2.3.1) | Pass. The light makes one pass |
+| Forced colors (Windows high contrast) | The buttons keep their metal and stay readable, and the focus outline shows. They do not take the system's colors. Not a 2.0 requirement |
+| No WebGL | Falls back to plain text in an outlined shape, focusable, readable. Primary and accent look the same there |
+| Reduced motion | The metal is static (the `static` tier never redraws a plate after its first draw), so there is no hover light and no response to the cursor. The lift and the focus outline remain. Not a failure, but not what was intended |
+
+**Contrast, measured**
+
+Text color against the face behind it, medians, after the buttons have faded in:
+
+| State | Primary | Accent |
+|---|---|---|
+| At rest, lamp in nine places, 2x | 6.1 to 6.7 | 5.3 to 6.1 |
+| Lamp in each corner, 2x | 6.1 to 6.6 | 5.7 to 5.9 |
+| Lamp resting on the button, no hover | 6.3 to 7.0 | 5.8 to 6.0 |
+| Pointer on it, three places | 6.2 to 6.3 | 5.9 to 6.5 |
+| Light part way round | 6.2 | 6.7 to 9.6 |
+| Keyboard focus | 6.1 | 9.8 |
+| 1x screen | 5.6 to 5.8 | 5.0 to 5.6 |
+| 4K at 1x, lamp in the far corners | 5.1 to 5.6 | 5.3 to 5.7 |
+| Phone at 3x, lamp as far as the screen allows | 5.8 | 5.8 to 5.9 |
+
+- Lowest anywhere: 5.0, the accent on a 1x screen.
+- A stricter reading, the lightest tenth of the face beside the dimmer quarter of each letter, dips under 4.5 on the accent where the lamp's bright spot sits on the bronze beside the words: 3.9 at worst at 2x. An auditor who hunts for the worst pair of pixels could dispute the accent. The primary holds 4.4 to 5.5 on that reading.
+- To close it without touching the palette: keep the bronze a little darker right behind the words under the lamp, or let the words gain more than the face does. He said no color changes for now, so nothing was changed.
+
+**The two things that are not a clean pass**
+
+1. Images of text (1.4.5, AA). The words are drawn into the canvas. That is allowed when the look cannot be made with real text, and words cut into lit metal cannot. They also scale with zoom and text size and have a real text twin. It is still the one point an auditor could argue. A forced colors rule that swaps in the plain version would strengthen it.
+2. The accent's thin margin under the lamp, above.
+
+**Not checked**
+
+- A real screen reader (VoiceOver, NVDA, JAWS). The accessibility tree is right, which is what they read.
+- Anything beyond the two buttons. Site wide, anything that moves by itself for more than five seconds (the water, the pieces, the lamp's slow drift on touch screens) will need a way to pause it (2.2.2, level A).
+
+**Measuring traps found**
+
+- A plate fades in after load. A shot taken in the first second or so reads darker than it is. Wait about two seconds first.
+- A plate more than 300px outside the viewport is not redrawn, so a full page shot shows stale metal down the page. Scroll the button into view and shoot the viewport.
+
+**Waiting on Brandon**
+
+1. A go ahead to build a few hover options side by side, all keeping the glow that follows the cursor.
+2. Whether to close the accent's contrast margin once the hover is chosen.
+3. Whether the water gets built in Claude Code on his Mac.
+
 ## 2026-11-11 · Study 02, buttons (Fable, web chat)
 
 **What Brandon said first**
@@ -42,7 +114,7 @@ Kept:
 - The lamp closes in, so the metal brightens under the pointer and the bright spot follows it across the face.
 - The button lifts 3px and its shadow spreads.
 - On the accent the copper words warm to the light's color.
-- Keyboard focus sets it off from the left edge. Reduced motion shows it complete, with no run.
+- Keyboard focus sets it off from the left edge. With reduced motion the metal does not redraw at all, so there is no light (see the entry above this one). The button still lifts and the focus outline still shows.
 - A button no longer turns its canvas toward the pointer. The turn moved it under half a pixel and blurred its words in the stills. It leans in its light only. Larger plates still turn.
 
 **Found while judging, and fixed**

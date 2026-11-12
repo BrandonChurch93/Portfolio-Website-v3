@@ -59,6 +59,7 @@ This is the real calibration. Every row is his verdict, not a guess.
 | Whole page of brass plates | "Amateurish". Lost the tags and text | A good part repeated everywhere is a bad page. Never trade information for looks |
 | Brass buttons in the second build | Likes them, Download PDF most | Small lit metal controls work |
 | First copper buttons in this build | "The text on the brighter buttons is hard to read": the face was "light on the top half, dark on the bottom half". "I don't love how simple the hover effect is" | A reflection never puts its light and dark edge behind words. A hover that only lifts is not enough |
+| Second copper buttons | "The buttons do look better". He likes "especially how the mouse moving around changes the glow on them". The light running round the border, the lift and the warming words "aren't bad though I don't necessarily love them either". "I wish you gave me a few different options" | Light that answers the cursor's every move is what he responds to. An effect that plays by itself on arrival is weaker. Where there is a choice, show options |
 | Workbench rough draft | "I really like the rough draft". Final must be much better | Approved as an idea, not as finished |
 | Handheld | "I actually really like" it | Roughly the level for a contained piece |
 | Camera | Happy to keep it | Acceptable |

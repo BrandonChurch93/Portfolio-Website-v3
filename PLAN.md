@@ -14,7 +14,7 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 ## Now
 
 - **Phase:** 1, color and light
-- **Waiting on Brandon:** his verdict on the second pass of Study 02, the buttons, at `/lab/buttons`. The first pass was hard to read and its hover too simple (`LOG.md`)
+- **Waiting on Brandon:** his go ahead to build a few hover options for the buttons, side by side at `/lab/buttons`. He likes how the buttons look and the glow that follows the cursor. The rest of the hover is not settled (`BRIEF.md`, Open 17)
 - **Next for Fable:** Phase 2, the water, opening with what the stream is made of
 
 ## Phase 0 · Foundation
@@ -37,7 +37,7 @@ Study 01 is at `/lab/palette` and Study 02 at `/lab/buttons`. Stills are in `ref
 - [x] One carried piece moved to the new palette as a test: the handheld, brass to copper (Nov 11)
 - [x] Type in the new palette (Nov 11)
 - [~] The cursor light: it shifts the light behind the portrait, crosses the handheld's metal and lights both buttons
-- [~] Primary and accent buttons, second pass: polished copper with its cut words on a bright band, and dark bronze with copper words. Under the pointer, light runs round the border (`src/components/MetalButton.tsx`)
+- [~] Primary and accent buttons: polished copper with its cut words on a bright band, and dark bronze with copper words. He likes the look (Nov 11). The hover is open (`src/components/MetalButton.tsx`)
 
 **Gate:** the portrait, the metal and the water read as one light.
 
