@@ -308,6 +308,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
         - Fable recommended C.
         - His lean after scrolling them (Nov 12): "I think my favorites are one and two." That is A and B, the two that keep both sides. He has not picked between them, and C is not his lean. Not decided.
         - His worry about both: the section takes up a lot of the screen, so a visitor among the cards "will have to scroll up pretty significantly to take a look at the categories". He wondered about "reducing the cards" and is not sure how to fix it. In exact terms: the category row is far above the lower cards, and getting back to it is a long scroll. Being talked through, nothing agreed.
+        - Still no pick (Nov 12): "It's still hard for me to choose between the two." He wants the look of the section settled further first. The category row in the draft is "really squished at the top" and "I don't really love the way that looks". On pinning the categories: "I don't know how I feel about an overlay of the categories going on top of the cards", unless they pin to the top into a nav bar. He asked what the standards are and what would look best. Whether the site has a top bar at all is not in this brief yet.
 16. **The order the sections are worked in.** He wants them taken one at a time: "my idea should go section by section". Work is first: he asked for its rough draft ("I would love to see a rough draft", Nov 12). The order of the rest is not agreed. Fable's list is in `LOG.md`.
 
 ## Dropped
