@@ -64,9 +64,23 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 
 - He had set a rule that nothing is built while he has Fable turned down ("don't make any code changes until you're back in extra"). His message asking for this derby did not say he had turned it back up. It asked for a build, so Fable built, and said so at the top of the reply.
 
+**His pick (Nov 11)**
+
+- "This was a tough decision, as they are both really good. But I'm gonna go with option A."
+- He asked what Fable recommends, whether to go back to Claude Code, and what would be improved. "I think we need a plan and a concise agreement before we do the handoff to Claude to build it."
+
+**What Fable proposed. Not agreed yet**
+
+- Build it in Claude Code on his Mac, with Fable, because only hardware can show motion.
+- What gets better than the sketch: shards as real objects with thickness and facets, copper lit like the buttons, glass that bends the core's light inside the warm palette. The core as a body of light with depth. The stream lighting what it passes. A leading end with more energy the faster he scrolls. Landings with shape and weight. Motion with weight that never visibly loops and retracts cleanly on scrolling up. Shards that flash and turn toward the cursor. A stated budget for a phone.
+- What gets built: one test shot alone on a blank page, on the sketch's route. Nothing around it until he says it looks incredible.
+- Two check-ins: a paused frame, then the same shot moving.
+- Carried from the sketch: the mix of copper and glass, about this density, speed tied to his scroll.
+- The name: retire "the pour", which meant molten metal, and call it the stream as he does.
+
 **Waiting on Brandon**
 
-1. A or B. He has said the version after his pick is the high quality one.
+1. Agreement to that list, or his changes to it. Then it goes into `BRIEF.md` and a handoff prompt is written for Claude Code.
 
 ## 2026-11-11 · Three rough ideas for what the stream is (Fable, web chat)
 

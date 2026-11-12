@@ -48,7 +48,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 
 ### The pour
 
-- **Where it stands (Nov 11):** what the stream is made of is open again. The lines about molten metal below record what was agreed and then set aside. Everything about where the stream goes and what it does on the page still holds. The newest lines are at the end of this section, and Open 15 has the short version.
+- **Where it stands (Nov 11):** the stream is shards of copper and glass riding round a core of light, and the core is a smooth wave of light. He picked that on Nov 11 from two sketches. The lines about molten metal below record what was agreed and then set aside. Everything about where the stream goes and what it does on the page still holds. The newest lines are at the end of this section. What the finished version has to have is not agreed yet (Open 15).
 - A stream of molten metal runs down the whole site. "I agree molten metal is the way to go." (Nov 11)
 - It is called the pour. The name is Fable's and he has not objected. It is never called water, in anything written for a model or shown to a visitor. His reason: "if I call it water, then the model is gonna build it as if it acts like water". (Nov 11)
 - It is the site's own copper, melted: it glows in the palette's light colors, ember to flame to hot to pale. It looks like a foundry pour: bright, clean and quick, throwing sparks and beads. It never looks like lava (dark, crusted, slow), fire (flames) or water (thin, clear). (Fable's recommendation, which he agreed to, Nov 11)
@@ -96,6 +96,8 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 - Of the further ideas Fable described (Nov 11): scales would be "too plain", and he does not want bearings or parts. "Prism's, however, sounds really cool. It might actually be better than Copperleaf."
 - In exact terms (Fable's restatement, Nov 11): the stream has a core of light that is always there and gives it substance. Many small shards belong to that core: they ride round it and are lit by it. Sparks come off it. Its leading end is its brightest and most active part.
 - He asked to see that two ways: "I'd like to see your recommendation. and then I'd like to see the same thing, but instead of the smooth light, can we go with the arc? I like to compare the two." And: "let's keep it simple for now, and the next iteration will go ultra high quality." Both are at `/lab/stream-core`. (Nov 11)
+- He picked A, the wave of light: "This was a tough decision, as they are both really good. But I'm gonna go with option A." (Nov 11)
+- Before the finished version is built: "I think we need a plan and a concise agreement before we do the handoff to Claude to build it." (Nov 11)
 
 ### Hero
 
@@ -199,11 +201,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
 12. **What ties the bottom of the page together.** Recommendation: the pour ends by feeding the rocket's launch.
 13. **The rocket as built.** He has not judged it yet.
 14. **Whether the site has to meet Section 508** (WCAG 2.0, levels A and AA). He asked whether the buttons do, out of curiosity. Recommendation: yes, checked as each part is built, because the engineers who read the site will check. The buttons' results are in `LOG.md`.
-15. **What the stream is made of.** Open again since Nov 11. His words are in The pour, above. Where it stands:
-    - Molten metal: the best of three looks at `/lab/pour-looks` scored 5.5 out of 10 with him, and he doubts the direction. Before that he had gone with Fable's recommendation of Sun metal carrying flecks, with the cursor's glint.
-    - Abstract ideas: from three rough sketches at `/lab/stream-ideas` he picked Copper leaf, and wants it to have a body of light, energy and power. He also likes the sound of glass shards.
-    - Two sketches of that are at `/lab/stream-core`. In both, shards of copper and glass ride round a core of light. In A the core is a smooth wave of light that crackles only at its leading end. In B it is an arc.
-    - Waiting on his pick between A and B. Recommendation: A, because the stream runs beside everything a visitor reads and he asked for a smooth experience, with the arc kept for the leading end and the landings.
+15. **The agreement for the finished stream.** What it is made of is settled (The pour, above): he picked A at `/lab/stream-core`. He wants "a plan and a concise agreement" before it is handed to Claude Code. Fable's proposed list is in `LOG.md`, top entry. None of it is a rule until he agrees to it.
 
 ## Dropped
 
@@ -216,6 +214,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
 - Water, golden water and lava as what the stream is made of (Nov 11). Light and electricity were dropped the same day and came back when he asked to see a core of light and an arc
 - Threads and Ink as what the stream is. He picked Copper leaf (Nov 11)
 - Scales, bearings and parts as what the stream is (Nov 11)
+- An arc as the whole core of the stream. He picked the wave of light. The arc stays where A has it, at the leading end (Nov 11)
 - A permanent grid floor
 - Skills tied to desk objects, and skills in narrow pillars
 - The game board and the orrery

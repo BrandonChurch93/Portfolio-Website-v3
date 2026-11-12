@@ -18,7 +18,8 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **Where:** the web chat, for sketches of what the stream is. The session in Claude Code on Brandon's Mac is idle and must not carry on toward liquid metal
 - **What the stream is made of is open again.** He scored the best molten metal look 5.5 out of 10 and asked for abstract ideas (`BRIEF.md`, The pour and Open 15)
 - **Built and shown:** three rough ideas at `/lab/stream-ideas`. He picked Copper leaf and asked for it to have a body of light, energy and power. Then two sketches of that at `/lab/stream-core`: shards riding a core of light, with the core as a wave of light (A) or an arc (B)
-- **Waiting on Brandon:** A or B. He has said the next version after his pick is the high quality one
+- **His pick (Nov 11):** A, the wave of light. "They are both really good"
+- **Next:** he wants a plan and a concise agreement before the finished version is handed to Claude Code. Fable has proposed one in the web chat (`LOG.md`, top entry). Waiting on him to agree or change it. Nothing is built until he does
 
 ## Phase 0 · Foundation
 
@@ -46,7 +47,8 @@ Study 01 is at `/lab/palette` and Study 02 at `/lab/buttons`. Stills are in `ref
 
 ## Phase 2 · The pour, on its own
 
-- [~] What it is made of. Molten metal was agreed on Nov 11 and reopened the same day. Sketches so far: `/lab/pour-looks`, `/lab/stream-ideas`, `/lab/stream-core`. Waiting on his pick between the two at `/lab/stream-core`
+- [x] What it is made of: shards of copper and glass riding round a core of light, the core a smooth wave of light. He picked it from two sketches at `/lab/stream-core` (Nov 11). Molten metal was agreed earlier the same day and set aside
+- [ ] The agreement for the finished version. The items below were written for molten metal and get rewritten from it
 - [~] The test shot: it falls, hits a ledge, splashes, runs along the ledge and drips off the end (`QUALITY.md`, The pour). Built at `/lab/pour`, stills in `reference/studies/03-pour-*.jpg`. Not at the bar yet by Fable's own judgment
 - [ ] The body at rest and flowing
 - [ ] Falling
