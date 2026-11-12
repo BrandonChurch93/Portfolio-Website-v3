@@ -88,11 +88,8 @@ export const STREAM = {
     bounce: 0.58,       // the share of its fall a bounce keeps, give or take a quarter
     grip: 0.72,         // how much sideways speed a bounce keeps
     settle: 120,        // falling slower than this it no longer bounces
-    carry: 400,         // how fast the flow carries one along a surface once it has stopped bouncing, give or take a half
-    skip: 0.8,          // times a second one being carried catches and skips
-    spill: 0.65,        // seconds it is given to fall once it has been carried off the end
-    skid: 6,            // how quickly one that lands going against the stream slows, per second
-    fades: 0.9,         // seconds one that has landed going against the stream is given before it is gone
+    skid: 6,            // how quickly one that has stopped bouncing slows, per second
+    fades: 0.9,         // seconds one that has stopped bouncing is given before it is gone
     life: [1.3, 2.6] as [number, number],
     fade: 0.3,          // the share of its life over which it shrinks away at the end
     // At rest a landing throws one shard now and then: the shortest and the longest gap between two, in seconds, and

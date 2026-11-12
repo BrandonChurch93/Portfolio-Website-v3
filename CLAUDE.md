@@ -89,7 +89,7 @@ npm run strip -- "/lab/stream?ui=0" --times 1,1.7,2.4,2.8,3.1,3.4,4.3,6 --eval "
 - Images go to `shots/`, which is not committed. Copy one into `reference/` only when it is worth keeping.
 - The scripts print `hardware` or `software`. `QUALITY.md` says what each can be trusted for.
 - `streamPlay(fromScroll, toScroll, fromTime, toTime)` scripts a scroll of the stream's page, so a filmstrip of frozen frames can show it being scrolled. `streamPlay()` ends it.
-- `streamCount(left, top, right, bottom)` counts the shards the last frame drew inside a rectangle of the stream's page, and `streamThrown()` lists every thrown shard with its place. They are how the bunching on objects and the bounce at a strike were measured.
+- `streamCount(left, top, right, bottom)` counts the shards the last frame drew inside a rectangle of the stream's page, `streamList(left, top, right, bottom)` lists them with whether each was thrown and how far it is from the core, and `streamThrown()` lists every thrown shard with its place. `streamState()` gives the boxes of the title and the card. They are how the bunching on objects, the bounce at a strike and the second wave after one were measured.
 
 ## Where things are
 

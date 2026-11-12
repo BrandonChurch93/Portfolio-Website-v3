@@ -520,7 +520,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   }));
   void ready;
 
-  registry.tool('streamState', () => ({ on: host.dataset.stream, look, unit, shards: stats.streamShards, sparks: sim?.sparkCount ?? 0, loose: sim?.looseCount ?? 0, head: sim ? [sim.head[0], sim.head[1]] : [], energy: sim ? [sim.energy[0], sim.energy[1]] : [], riders: riders?.n ?? 0 }));
+  registry.tool('streamState', () => ({ on: host.dataset.stream, look, unit, shards: stats.streamShards, sparks: sim?.sparkCount ?? 0, loose: sim?.looseCount ?? 0, head: sim ? [sim.head[0], sim.head[1]] : [], energy: sim ? [sim.energy[0], sim.energy[1]] : [], riders: riders?.n ?? 0, boxes: route?.boxes ?? [], landings: route?.landings.map((L) => ({ kind: L.kind, x: L.x, y: L.y })) ?? [] }));
   // How many shards the last frame drew inside a rectangle of the page, how many of those were thrown loose, and how
   // much of the route runs through it.
   registry.tool('streamCount', (l: number, t: number, r: number, b: number) => {
@@ -535,6 +535,17 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       if (shards[o + 14] > 0.5) loose++; else riding++;
     }
     return { riding, loose, length };
+  });
+  // Every shard the last frame drew inside a rectangle of the page: x, y, whether it was thrown, and how far it is
+  // from the core it belongs to.
+  registry.tool('streamList', (l: number, t: number, r: number, b: number) => {
+    const out: number[] = [];
+    for (let i = 0; i < stats.streamShards; i++) {
+      const o = i * INSTANCE_FLOATS, x = shards[o], y = shards[o + 1];
+      if (x < l || x > r || y < t || y > b || shards[o + 3] < 0.5) continue;
+      out.push(x, y, shards[o + 14], Math.hypot(x - shards[o + 8], y - shards[o + 9]));
+    }
+    return out;
   });
   // Every thrown shard as its own number, x and y, so a script can follow each one from frame to frame.
   registry.tool('streamThrown', () => {

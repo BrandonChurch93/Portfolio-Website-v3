@@ -2,6 +2,74 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-12 · The second wave after a strike: found and fixed (Fable, Claude Code on Brandon's Mac)
+
+**What Brandon said**
+
+- His verdict on the three changes is in `BRIEF.md`, The stream: "Everything is pretty much perfect now across the board minus one thing."
+- "The burst at a strike looks right. But once it has finished there is a second wave: a group of shards leaves the right end of the card all at once, like a waterfall, and the same off both ends of the title. A strike should be one burst that dies away."
+- "I do not know the cause, so find it before you change anything. Measure which shards make up that second wave. They may be thrown shards that came back down, or shards riding the stream that were never thrown, or something in how shards are handed back to the stream after a strike. Tell me what you found."
+- "Then fix that cause. Keep everything else about the strike: the number thrown, the bounce, the skid and fade for ones that land short, and the single shard at rest. Check it by counting the shards that leave each end in the two seconds after the burst has finished, before and after your fix."
+- He has not looked at the fix yet.
+
+**What was found**, before anything was changed
+
+Every shard was followed through both strikes of the same scripted scroll, sixty times a second. Thrown shards by their own number (`streamThrown`), and the ones riding the stream by counting them in the zone just past each end (`streamList`).
+
+- **It was thrown shards that had come back down.** Of the 80 thrown at the two strikes, 58 landed back on the surface and then left an end. Only 8 flew straight off an end. 11 faded on a surface.
+- The 58 left at about 400 px a second, between 0.6 and 2.1 seconds after the strike, at the height of the surface. That is the speed the flow carried a landed shard at. At the card, 29 of the 43 thrown went off the right end that way.
+- **It was not the shards riding the stream.** Past the card's right end they appear as the leading end goes by and then hold steady at 72 to 79. At most 4 were flung wide of the core, for a moment, as the leading end passed. None left.
+- **Nothing is handed back to the stream.** A thrown shard is never turned back into a riding one. It fades.
+- The cause in one line: once a thrown shard stopped bouncing, the flow sped it up and carried it to the end of the surface. Most of a burst comes back down on the surface, so most of it reached the end in the same second and poured off together. That carrying was Fable's own addition in the second round, to clear thrown shards off an object quickly.
+
+**The fix**, in `moveLoose` in `src/stream/sim.ts`
+
+- The flow no longer moves a thrown shard at all. One that has stopped bouncing keeps its own momentum: it skids the way it was going, stops, and fades within 0.9 seconds. It is the rule the ones that landed going against the stream already followed, now for all of them. One still moving when it reaches the end of a surface goes off it and falls.
+- Untouched: the number thrown (37 at the title and 43 at the card on this scroll, before and after), the launch, the bounce, the skid and fade (`loose.skid`, `loose.fades`), the sparks, and when and how hard the single shard at rest is thrown.
+- `loose.carry`, `loose.skip` and `loose.spill` are gone from `config.ts`. Nothing uses them.
+
+**The count he asked for**: shards leaving each end in the two seconds after the burst has finished. The burst is taken as finished 0.9 seconds after the strike, when the last shard that flies straight off an end has gone.
+
+| End | Before | After |
+|---|---|---|
+| Title, left | 11 | 5 |
+| Title, right | 7 | 1 |
+| Card, left | 0 | 0 |
+| Card, right | 23 | 5 |
+
+- The most leaving one end in any half second after the burst: 13 before (the card's right end), 5 after (the title's left end).
+- Thrown shards that landed and then left an end, at any time: 13, 16, 2 and 29 before. 5, 6, 2 and 9 after. The ones that still leave do it on their own momentum, at 85 to 330 px a second, within 0.7 seconds of landing: a shard that came down near the end and skidded or bounced off it.
+- On a faster scroll, after the fix: 7, 4, 0 and 5.
+- Thrown shards that end by fading on a surface: 11 before, 49 after. On the card's top after the strike on it there are 12 at half a second, 20 from 0.75 to 1.25 seconds, 14 at 1.5, 4 at 2 seconds and none by 2.5, beside about 27 riding. They are spread along it where they came down, and nothing lies still for more than 0.88 seconds.
+- No thrown shard is turned round (0 of 82).
+- Stills: `reference/studies/11-stream-after-the-burst-before-and-after.jpg` is the one to open first. `11-stream-strike-paths-one-burst.jpg` is every thrown shard's path after the fix. `10-stream-strike-paths.jpg` is the same plot before it, with the bundles pouring off the ends. `11-stream-strike-card.jpg` and `11-stream-strike-title.jpg` are the filmstrips, `11-stream-rest-paths.jpg` forty seconds at rest.
+
+**Checked**
+
+- One fresh Opus reviewer, given his words, what was found, the counts, the path plots before and after and the filmstrips. It passed the cause as fitting the plots, the burst as unchanged arc for arc, no new fault, and the single shard at rest. It passed the second wave as gone on the plots, and said the rendered filmstrips of the card looked the same before and after.
+- So the ends were filmed after the burst, before (the live site, still the old build) and after, at the same moments. Frame for frame they do look alike: a group moving together does not show in one frame, and a few of the burst's own shards are still falling past each end in both. What shows it is `reference/studies/11-stream-after-the-burst-before-and-after.jpg`: only the paths taken in the two seconds after each burst. Before, thick bundles run along both tops and pour off the ends. After, they are gone.
+- A shard that ends in mid-air shrinks to nothing over the last three tenths of its life, so none blinks out.
+- Speed while scrolling without stopping: 16.7 ms every frame, none over 25 ms, on desktop, the phone view slowed four times and the low tier phone view slowed six times.
+- WebKit at iPad and phone size: draws, no errors.
+- Not checked: a real phone and a real iPad.
+
+**One thing this changes that he did not ask for. His to overturn**
+
+- The single shard at rest is thrown exactly as before, at the same uneven gaps, and still bounces. But it used to be carried along and off the far end, where it fell. Now it skids, stops and fades like any other, unless its own momentum takes it over an edge. In forty seconds at rest none left an end. Taking the push away from a strike's shards and leaving it on this one would mean two rules for the same thing, so it follows the one rule. If he misses the piece dropping off the end, that one shard can be carried again without bringing the wave back.
+- This also narrows a line in the brief, that one thrown the way the stream runs "can still ride along and spill off that end". It now does so only on its own momentum. `BRIEF.md` says so beside that line.
+
+**Things the next session would otherwise rediscover**
+
+- To find which shards do something, follow them one by one. `streamThrown` gives each thrown shard its own number, so a path can be built for each across frozen frames, and `streamList` gives every drawn shard with whether it was thrown. The answer here was in the first table: 58 of 80.
+- A thrown shard's first frames are within a few pixels of the surface it was thrown from. Counting "has touched the surface" from its birth marks every shard as landed. Count a landing only once it has been in the air and is coming down.
+- Clearing something away by sweeping it all one way at one speed makes it arrive together. That is a second event. Letting each thing end where it is does not.
+- A group of things moving together does not show in a still, or in two stills side by side. Plot the paths over the stretch of time in question.
+- The live site is the build before the one being worked on, until the push. The same script run against it and against the dev server gives a true before and after.
+
+**Half finished**
+
+- Nothing. Waiting on his look at the strike.
+
 ## 2026-11-12 · Thrown shards: fewer at a strike, one now and then at rest, each keeps its momentum (Fable, Claude Code on Brandon's Mac)
 
 **What Brandon said**

@@ -302,7 +302,7 @@ export class StreamSim {
   }
 
   private moveLoose(dt: number): void {
-    const K = S.loose, u = this.route.unit, p = this.loose, boxes = this.route.boxes, lip = this.route.landings[2];
+    const K = S.loose, u = this.route.unit, p = this.loose, boxes = this.route.boxes;
     let n = 0;
     for (let i = 0; i < this.looseCount; i++) {
       const o = i * LOOSE;
@@ -329,25 +329,13 @@ export class StreamSim {
             vy *= -K.bounce * k;
             wz = -vx / Math.max(r, 1) * 0.5 * k; wx = wx * 0.5 + (hash(i, 3, at_) - 0.5) * 9; wy = wy * 0.5 + (hash(i, 4, at_) - 0.5) * 9;
           } else {
-            // Too slow to bounce. It keeps its own momentum, and the flow never turns it round.
-            const way = b === boxes[1] ? Math.sign(lip.x - (b.l + b.r) / 2) : Math.sign(x - (b.l + b.r) / 2) || 1;
-            if (vx * way > 0) {
-              // Going the way the stream runs, it rides along with the flow and off that end, and lives just long
-              // enough to be seen falling from it.
-              const carry = K.carry * u * (0.5 + this.looseSeed[i]);
-              vx += (way * carry - vx) * (1 - Math.exp(-12 * dt));
-              // It does not slide: every so often it catches on a point and skips.
-              const skip = hash(i, at_, 7) < K.skip * dt;
-              vy = skip ? -(0.6 + 0.9 * hash(i, at_, 8)) * K.settle * u : 0;
-              if (skip) { wx += (hash(i, at_, 9) - 0.5) * 12; wz -= way * 6; }
-              life = age + Math.abs((way > 0 ? b.r : b.l) - x) / carry + K.spill;
-            } else {
-              // Going against it, it skids a little the way it was going, stops, and fades. Nothing is left lying
-              // on an object.
-              vy = 0;
-              vx *= Math.exp(-K.skid * dt);
-              life = Math.min(life, age + K.fades);
-            }
+            // Too slow to bounce. It keeps its own momentum and nothing else moves it: the flow neither turns it
+            // round nor carries it along. It skids the way it was going, stops, and fades. One still moving when it
+            // reaches the end of the surface goes off it and falls. Carried along by the flow, every shard that came
+            // back down reached the end in the same second and poured off it together, a second wave after the burst.
+            vy = 0;
+            vx *= Math.exp(-K.skid * dt);
+            life = Math.min(life, age + K.fades);
             wx *= Math.exp(-4 * dt); wy *= Math.exp(-4 * dt); wz = wz * Math.exp(-4 * dt) - (vx / Math.max(r, 1)) * 0.2 * (1 - Math.exp(-4 * dt));
           }
         } else if (y > b.t + 1) {
