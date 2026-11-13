@@ -2,6 +2,40 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-12 · Brandon's sketch of the stream and the cards, built (Fable, web chat)
+
+**What Brandon said**
+
+- He drew the Work section with the stream in red and sent it. "I think the first row is good how it hits the top and kind of rolls off the side, but the second row I kind of want it to weave out and then come in and hit the middle of the two cards." "Don't take it too literal."
+- He has not given a verdict on the second round's top bar, the category bar or the landing on it. In his drawing the stream does step out at the category bar on its way down.
+
+**The drawing, read closely**
+
+- A title, a wider bar under it, and four cards in two straight rows. It was drawn with a mirror down the middle, so both sides match.
+- The stream comes down the middle, parts on the title, runs down its sides, steps out at the bar and slants out to the first row.
+- It meets each first row card on top, right at the outer corner, and rolls off the side.
+- It bows outward as it goes down, widest near the foot of the first row, and stays out past the gap.
+- It then slants in and touches the outer side of the second row's card a little below halfway, and slants out again and off the bottom of the page.
+- "Hit the middle of the two cards" is read as the middle of each card's side, which is what the drawing shows. It is not the gap between the two cards.
+
+**What was built**, in `weave()` in `src/components/lab/WorkDraft.tsx`
+
+- After the first card's corner the stream leaves the side after about 54 px and swings out as far as the margin allows, up to 84 px, by the foot of that card.
+- For every card after the first it holds wide to just above the card, slants in to strike the outer side at the card's middle, and slants out again to a little below its foot. The strike is a sharp turn, so it reads as a bounce.
+- **S · Your sketch** is new: straight rows, both sides mirrored, the cards waking in pairs. It opens first. `?v=s`.
+- B · Steps has the same second row, with its right column half a row lower as before.
+- The landing on the first card now holds at every width. On an iPad held upright the category bar is as wide as the grid, and the stream used to miss the top of the first card and strike its side.
+- Still: `reference/studies/15-work-draft-his-sketch-and-steps.jpg`, S on the left and B on the right.
+
+**How it reads**
+
+- S makes one clear figure: shoulders at the title and the bar, out round the first row, in at the waist of the second, and in to the button. It has A's symmetry without A's straight runs, and B's landings without B's uneven foot.
+- B's foot is still its roughest part.
+
+**Half finished**
+
+- His pick: S, A or B. The top bar and the landing on the category bar are still his to rule on.
+
 ## 2026-11-12 · The Work draft, second round: a category bar, a top bar, four cards (Fable, web chat)
 
 **What Brandon said**

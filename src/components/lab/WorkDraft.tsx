@@ -9,7 +9,7 @@ import styles from './WorkDraft.module.css';
 
 type Pt = [number, number];
 type Node = [x: number, y: number, radius?: number];
-type Variant = 'a' | 'b' | 'c';
+type Variant = 'a' | 'b' | 'c' | 's';
 type Lit = 'l' | 'r' | 't';
 interface Box { l: number; t: number; r: number; b: number; cx: number; cy: number }
 interface Line { pts: Pt[]; cum: number[]; total: number; d: string }
@@ -18,10 +18,11 @@ interface Plan { w: number; h: number; lines: Line[]; strikes: Strike[] }
 
 const VARIANTS: { id: Variant; name: string; note: string }[] = [
   { id: 'a', name: 'A · Frame', note: 'The stream parts on WORK, lands on the category bar, runs off its ends and then straight down both sides of the grid, lighting the side of each card as it passes. The two sides meet again on the button.' },
-  { id: 'b', name: 'B · Steps', note: 'The right column sits half a row lower. The stream parts on WORK, lands on the category bar, then on top of the first card on each side, and from there on the corner of each card in turn. The cards wake one at a time, left then right.' },
+  { id: 'b', name: 'B · Steps', note: 'The right column sits half a row lower. The stream parts on WORK, lands on the category bar, then on top of the first card on each side and rolls off its end. It swings out wide, comes back in and strikes the side of the next card halfway down. The cards wake one at a time, left then right.' },
+  { id: 's', name: 'S · Your sketch', note: 'Your drawing. The same stream as B on straight rows, so the two sides mirror each other: onto the top of the first row and off its ends, out wide, then in to strike the side of each card in the second row halfway down.' },
   { id: 'c', name: 'C · Middle', note: 'One stream instead of two, winding down the middle. Not in the switch: open it with ?v=c.' },
 ];
-const SHOWN: Variant[] = ['a', 'b'];
+const SHOWN: Variant[] = ['a', 'b', 's'];
 
 const CATEGORIES = ['Software', 'Games', '3D art', 'Photography'];
 const NUMBERS = ['01', '02', '03', '04'];
@@ -91,26 +92,24 @@ function plan(v: Variant, w: number, h: number, T: Box, K: Box, C: Box[], B: Box
   const order = C.map((c, i) => ({ c, i })).sort((p, q) => p.c.t - q.c.t);
   const litSide = (side: number): Lit => (side < 0 ? 'l' : 'r');
 
-  // Down a run of cards. It lands on top of the first as it did in the test shot, runs off its end and down its
-  // side, swings off its foot and lands on the top corner of the next.
+  // Down a run of cards. It lands on top of the first as it did in the test shot and rolls off its end. From there
+  // it swings out wide, comes back in and strikes the side of each card after that halfway down, then leaves outward.
   const weave = (nodes: Node[], first: { c: Box; i: number } | null, run: { c: Box; i: number }[], side: number, swing: number) => {
     const hug = (c: Box) => (side < 0 ? c.l - HUG : c.r + HUG);
     const lands: { x: number; y: number; i: number; lit: Lit }[] = [];
     const from = nodes[nodes.length - 1];
     let rest = run;
     if (first) {
-      const c = first.c, y = c.t - 7, at = from[0] + side * Math.min(90, 0.2 * (y - from[1]));
-      if (at > c.l + 30 && at < c.r - 30) {
-        nodes.push([at, y, SHARP], [hug(c), y, 16], [hug(c), c.b - 44, 44], [hug(c) + side * swing, c.b + 30, 60]);
-        if (run.includes(first)) lands.push({ x: at, y, i: first.i, lit: 't' });
-        rest = run.filter((q) => q !== first);
-      }
+      const c = first.c, y = c.t - 7;
+      const at = Math.max(c.l + 30, Math.min(c.r - 30, from[0] + side * Math.min(90, 0.2 * (y - from[1]))));
+      nodes.push([at, y, SHARP], [hug(c), y, 16], [hug(c), c.t + 54, 70], [hug(c) + side * swing, c.b - 50, 110]);
+      if (run.includes(first)) lands.push({ x: at, y, i: first.i, lit: 't' });
+      rest = run.filter((q) => q !== first);
     }
-    rest.forEach(({ c, i }, n) => {
-      const last = nodes[nodes.length - 1], x = hug(c), lean = c.t - 6 - Math.abs(x - last[0]) * 0.9;
-      if (n === 0 && rest.length === run.length && lean > last[1] + 24) nodes.push([last[0], lean, 40]);
-      nodes.push([x, c.t - 6, 30], [x, c.b - 44, 44], [x + side * swing, c.b + 30, 60]);
-      lands.push({ x, y: c.t - 6, i, lit: litSide(side) });
+    rest.forEach(({ c, i }) => {
+      const x = hug(c), wide = x + side * swing, mid = (c.t + c.b) / 2;
+      nodes.push([wide, c.t - 12, 90], [x, mid, SHARP], [wide + side * 12, c.b + 28, 90]);
+      lands.push({ x, y: mid, i, lit: litSide(side) });
     });
     return lands;
   };
@@ -138,7 +137,8 @@ function plan(v: Variant, w: number, h: number, T: Box, K: Box, C: Box[], B: Box
   } else {
     [-1, 1].forEach((side) => {
       const mine = order.filter((q) => (one ? q.i % 2 === (side < 0 ? 0 : 1) : side < 0 ? q.c.cx < cx : q.c.cx > cx));
-      const gap = one ? 16 : v === 'a' ? 12 : 64;
+      const room = (side < 0 ? G.l : w - G.r) - 22;
+      const gap = one ? 16 : v === 'a' ? 12 : Math.max(32, Math.min(92, room));
       const out = side < 0 ? G.l - gap : G.r + gap;
       const titleEnd = side < 0 ? T.l - 28 : T.r + 28, barEnd = side < 0 ? K.l - HUG : K.r + HUG;
       const nodes: Node[] = [[cx, top], [titleEnd, top]];
@@ -169,7 +169,7 @@ function plan(v: Variant, w: number, h: number, T: Box, K: Box, C: Box[], B: Box
 }
 
 export function WorkDraft() {
-  const [v, setV] = useState<Variant>('a');
+  const [v, setV] = useState<Variant>('s');
   const [cat, setCat] = useState(CATEGORIES[0]);
   const [drawn, setDrawn] = useState<Plan | null>(null);
   const main = useRef<HTMLElement>(null);
@@ -191,7 +191,7 @@ export function WorkDraft() {
 
   useEffect(() => {
     const asked = new URLSearchParams(location.search).get('v');
-    if (asked === 'a' || asked === 'b' || asked === 'c') setV(asked);
+    if (asked === 'a' || asked === 'b' || asked === 'c' || asked === 's') setV(asked);
     whole.current = new URLSearchParams(location.search).has('whole');
     if (whole.current) main.current?.setAttribute('data-whole', '');
   }, []);
@@ -282,7 +282,7 @@ export function WorkDraft() {
     <main ref={main} className={styles.main}>
       <header className={styles.intro}>
         <p className={styles.label}>Study 09 · the Work section, laid out</p>
-        <h1 className={styles.heading}>Work, two ways</h1>
+        <h1 className={styles.heading}>Work, laid out</h1>
         <p className={styles.lede}>
           A wireframe, to choose a layout from. The line stands in for the stream and its leading end follows your scroll. The category bar,
           each card and the button wake when the line reaches them. Once the category bar has scrolled off the top, the categories move into

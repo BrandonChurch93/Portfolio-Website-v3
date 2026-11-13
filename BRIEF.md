@@ -315,6 +315,11 @@ Each line has Fable's recommendation where there is one. None of these are rules
             - A slim top bar, hidden while the hero is on screen. Once the category bar has scrolled off the top, the four categories show in the top bar beside the section's name, and leave when Work is left. Tapping one there swaps the cards and brings the first row back. Nothing floats over the cards. The top bar is new to this brief, and what else lives in it is not being decided here.
             - Four cards to a category, which the brief already allows.
             - C is out of the switch, since it is not his lean, and still opens with `?v=c`.
+        - **His sketch of how the stream meets the cards (Nov 12).** He drew it and said: "I think the first row is good how it hits the top and kind of rolls off the side, but the second row I kind of want it to weave out and then come in and hit the middle of the two cards." And: "Don't take it too literal."
+            - In exact terms, from the drawing: on the first row nothing changes. The stream lands on top of the card near its outer corner and rolls off the side. From there it does not stay against the card. It swings out wide, widest about where the two rows meet, then comes back in on a slant and strikes the outer side of the second row's card about halfway down, and leaves outward again. Both sides do the same, mirrored.
+            - Built the same day at `/lab/work-draft`, as he drew it: **S · Your sketch**, on straight rows with the two sides mirrored, so the cards wake in pairs. B · Steps has the same second row with its right column half a row lower. His drawing had straight rows, and that may be the drawing tool's mirror and not a choice, so both are there to compare. It is not a ruling on straight rows.
+            - Not taken from the drawing: there the stream runs off the bottom corners. In the draft it comes back in to the View all work button.
+            - S takes A's straight rows and B's landings, and it breaks no rule about where the stream goes. Fable recommends it. Not decided.
 16. **The order the sections are worked in.** He wants them taken one at a time: "my idea should go section by section". Work is first: he asked for its rough draft ("I would love to see a rough draft", Nov 12). The order of the rest is not agreed. Fable's list is in `LOG.md`.
 
 ## Dropped
