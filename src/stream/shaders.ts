@@ -1,3 +1,5 @@
+import { ROOM, SPEC } from '../metal/shaders';
+
 // GLSL for the stream. WebGL2.
 // Positions are CSS pixels of the page, y down, z toward the eye. uView is the part of the page the canvas covers:
 // left, top, width, height. Lengths that set the look are in stream units (uUnit CSS pixels each).
@@ -55,15 +57,18 @@ out vec3 vAlong;
 ${CLIP}
 void main(){ vAlong = aAlong; gl_Position = clip(aPos, 0.0); }`;
 
-export const coreFrag = (strands: number) => `${HEAD}
+// ends: the route has a place where the two sides meet again, and a side's own strands fade out there as they faded
+// in where the sides parted. Without it the shader is the test shot's, letter for letter.
+export const coreFrag = (strands: number, ends = false) => `${HEAD}
 in vec3 vAlong;
 uniform float uTime, uEnergy, uHeart;
-uniform vec2 uOwn;   // a shift that gives each side its own strands, and where along the route they begin
+uniform vec2 uOwn;   // a shift that gives each side its own strands, and where along the route they begin${ends ? `
+uniform float uEnd;  // where along the route they end` : ''}
 out vec4 frag;
 ${NOISE}
 void main(){
   float x = vAlong.x, lead = vAlong.z, t = uTime;
-  float begun = smoothstep(uOwn.y, uOwn.y + 34.0, vAlong.y), s = vAlong.y + uOwn.x;
+  float begun = smoothstep(uOwn.y, uOwn.y + 34.0, vAlong.y)${ends ? ' * (1.0 - smoothstep(uEnd - 34.0, uEnd, vAlong.y))' : ''}, s = vAlong.y + uOwn.x;
   // The core is a ribbon of light: a band of fine fibres lying side by side, which turns slowly as it runs. Seen
   // flat it is a wide soft band with every fibre showing. Seen on edge all of it gathers into one fierce line.
   // So its width and its brightness are never the same for long, and the fibres always make one smooth form.
@@ -301,6 +306,157 @@ void main(){
   frag = vec4(min(col, vec3(1.0)) * cov, cov);
 }`;
 
+// ---- the posts and the rail: the buttons' metal, standing in the page, for the stream to meet
+//
+// Each is worked out as a surface with real form, as a height and the way it slopes, and lit by the same code the
+// buttons are lit by (src/metal/shaders.ts): the room they reflect, the cursor, and with them the stream.
+
+const FITTING = `
+uniform vec3 uF0, uCopper, uPale, uHot, uFlame;
+const vec3 INK = vec3(0.006, 0.005, 0.004);
+float bell(float x){ return exp(-x * x); }
+// N is the way the surface faces and T the way it was turned or brushed, both with y down the page.
+vec3 fitting(vec2 p, vec3 N, vec3 T, vec3 F0, float rough, float aniso){
+  vec3 V = vec3(0.0, 0.0, 1.0);
+  // The metal's own code works with y up.
+  vec3 n = vec3(N.x, -N.y, N.z), t0 = vec3(T.x, -T.y, T.z), t = normalize(t0 - n * dot(t0, n)), b = cross(n, t);
+  // At rest it is dark metal in a dark room: enough to be found, and to be read as a made thing.
+  vec3 col = (studio(reflect(-V, n), rough) * 0.75 + vec3(0.16, 0.14, 0.12) * 0.3) * F0;
+  // The cursor: close, it flares. From across the screen it still finds the turning marks.
+  vec3 Lv = vec3(uLamp.xy - p, uLamp.z);
+  float away = length(Lv.xy);
+  float lamp = uLampI * (2.6 / (1.0 + (away / (230.0 * uUnit)) * (away / (230.0 * uUnit))) + 0.45 / (1.0 + (away / (900.0 * uUnit)) * (away / (900.0 * uUnit))));
+  vec3 Ll = normalize(vec3(Lv.x, -Lv.y, Lv.z));
+  col += (spec(n, V, Ll, t, b, rough, aniso, F0) + spec(n, V, Ll, t, b, min(1.0, rough * 1.8 + 0.1), aniso * 0.5, F0) * 0.2) * lamp * 0.6 * vec3(1.0, 0.94, 0.86);
+  // The stream: a long warm light lying beside it, low over the page.
+  vec2 amount;
+  vec3 Ls = streamLight(p, amount);
+  float lit = amount.y * 6.0 + amount.x * 8.0;
+  vec3 ls = vec3(Ls.x, -Ls.y, Ls.z);
+  vec3 warm = mix(uFlame, uHot, 0.5);
+  float toward = max(dot(n, ls), 0.0);
+  col += spec(n, V, ls, t, b, rough, aniso, F0) * min(lit, 4.0) * 0.26 * warm;
+  col += spec(n, V, ls, t, b, min(1.0, rough * 2.2 + 0.2), aniso * 0.4, F0) * min(lit, 4.0) * 0.2 * warm;
+  col += F0 * warm * min(lit, 3.5) * (0.035 + 0.3 * toward * toward);
+  // Keep the hue as it gets bright, then let the heart of a highlight bleach to pale, as the buttons' do.
+  float mx = max(col.r, max(col.g, col.b));
+  if (mx > 1e-5) col *= (1.0 - exp(-mx * 1.15)) / (mx * 0.955);
+  return mix(col, uPale, clamp((mx - 2.2) * 0.3, 0.0, 0.8));
+}
+// A slotted head, as the buttons' plates are screwed down with: how far the surface rises going out from its middle
+// (g), and how much of this point is the dark of its slot.
+float head(vec2 q, float R, float turn, float px, out vec2 g){
+  float rho = length(q) / R;
+  vec2 er = q / max(length(q), 1e-4), sd = vec2(cos(turn), sin(turn)), sn = vec2(-sd.y, sd.x);
+  float across = dot(q, sn) / R, wide = 0.15, reach = 1.0 - smoothstep(0.74, 0.8, rho);
+  g = er * (-0.5 * rho - 1.7 * smoothstep(0.72, 1.0, rho)) + sn * sign(across) * bell((abs(across) - wide) / 0.07) * reach * 1.3;
+  return (1.0 - smoothstep(wide - px, wide + px, abs(across))) * reach;
+}
+`;
+
+// A post: a copper stud seen end on. From its edge inward: a rim turned down to the page and milled like a coin's, a
+// flat land, a ring cut in and filled with enamel as the buttons' border is, a dish, and a boss in the middle with a
+// slot across it. The whole face was turned on a lathe, so a light near it throws two fans across it that follow the
+// light round.
+export const postFrag = (float: boolean) => `${HEAD}
+${packing(float)}
+in vec2 vP;
+uniform vec4 uPost;        // its center, its radius, and a number of its own
+out vec4 frag;
+uniform float uSoft, uBand;   // read by the buttons' room
+${CLIP}${LIT}${NOISE}${ROOM}${SPEC}${FITTING}
+void main(){
+  vec2 q = vP - uPost.xy;
+  float R = uPost.z, d = length(q), rho = d / R;
+  float cov = clamp(0.5 - (d - R) * uDpr, 0.0, 1.0);
+  if (cov <= 0.0){ frag = vec4(0.0); return; }
+  vec2 er = q / max(d, 1e-4), et = vec2(-er.y, er.x);
+  float px = 1.0 / (R * uDpr);
+  float rim = smoothstep(0.855, 0.93, rho);
+  float cut = smoothstep(0.635 - px, 0.635 + px, rho) * (1.0 - smoothstep(0.7 - px, 0.7 + px, rho));
+  float dish = smoothstep(0.36, 0.41, rho) * (1.0 - smoothstep(0.59, 0.635, rho));
+  float boss = 1.0 - smoothstep(0.33, 0.37, rho);
+  // How steeply the surface rises going outward.
+  float rise = -1.5 * rim + 0.6 * dish - 1.3 * smoothstep(0.2, 0.345, rho) * boss - 0.3 * rho * boss;
+  rise += 1.5 * (bell((rho - 0.705) / 0.014) - bell((rho - 0.63) / 0.014));
+  // The lathe's marks: fine rings, no two the same width.
+  float marks = (noise2(vec2(d * 1.5 / uUnit, uPost.w * 7.0)) - 0.5) * 0.16 * smoothstep(40.0, 70.0, R * uDpr);
+  rise += marks * (1.0 - cut) * (1.0 - 0.6 * rim);
+  vec2 g = er * rise, gs;
+  float slot = head(q, R * 0.3, uPost.w, px / 0.3, gs);
+  g = mix(g, gs, 1.0 - smoothstep(0.26, 0.3, rho));
+  vec3 N = normalize(vec3(-g, 1.0));
+  // The milled rim: only when it is large enough to be drawn.
+  float milled = sin(atan(q.y, q.x) * 44.0) * rim * (1.0 - smoothstep(0.985, 1.0, rho)) * smoothstep(34.0, 60.0, R * uDpr);
+  N = normalize(N + vec3(et * milled * 0.55, 0.0));
+  // Crests are rubbed bright. Patina keeps to the dish, the foot of the rim and the edges of the cut.
+  float wear = clamp(bell((rho - 0.865) / 0.022) + 0.8 * bell((rho - 0.345) / 0.024) + 0.5 * bell((rho - 0.72) / 0.012), 0.0, 1.0);
+  float cloud = noise2(q * 0.55 / uUnit + uPost.w * 31.0);
+  float grime = clamp(dish * (0.3 + 0.5 * smoothstep(0.44, 0.62, rho)) + rim * smoothstep(0.92, 1.0, rho) * 0.8 + 0.3 * cloud * (1.0 - boss), 0.0, 1.0);
+  vec3 F0 = mix(uCopper, uF0, 0.45 + 0.5 * wear) * (1.0 - grime * 0.45);
+  float rough = clamp(0.22 + 0.2 * grime - 0.1 * wear + 0.08 * dish - 0.07 * boss, 0.08, 0.9);
+  vec3 col = fitting(vP, N, vec3(et, 0.0), F0, rough, 0.75 * (1.0 - 0.5 * rim));
+  col = mix(col, INK + col * 0.05, max(cut, slot) * 0.95);
+  frag = vec4(min(col, vec3(1.0)) * cov, cov);
+}`;
+
+// The rail, seen from the front: a slim bar with a section to it. Along its top a round bead, polished, which the
+// stream lies on. Below that a flat web set a little back, brushed along its length, with one fine line cut in and
+// filled with enamel. Along its foot a smaller bead. It is carried on a stud at each end, a small brother of the
+// posts, set low so that its top is level with the rail's and nothing stands in the stream's way.
+export const RAIL_STUD = 1.8;   // a stud's radius, against half the rail's thickness
+export const railFrag = (float: boolean) => `${HEAD}
+${packing(float)}
+in vec2 vP;
+uniform vec4 uRail;        // the line down its middle: its high end, then its low end
+uniform vec2 uRailSize;    // half its thickness, and a number of its own
+out vec4 frag;
+uniform float uSoft, uBand;   // read by the buttons' room
+${CLIP}${LIT}${NOISE}${ROOM}${SPEC}${FITTING}
+void main(){
+  vec2 a = uRail.xy, ab = uRail.zw - a;
+  float len = length(ab), W = uRailSize.x, R = W * ${RAIL_STUD.toFixed(2)};
+  vec2 e = ab / len, n = e.x >= 0.0 ? vec2(e.y, -e.x) : vec2(-e.y, e.x);
+  vec2 q = vP - a;
+  float along = dot(q, e), across = dot(q, n), k = clamp(along, 0.0, len);
+  // The stud at the nearer end.
+  bool high = along < len * 0.5;
+  vec2 qs = (high ? q : q - ab) + n * (R - W);
+  float ds = length(qs), rho = ds / R;
+  float d = min(length(q - e * k) - W, ds - R);
+  float cov = clamp(0.5 - d * uDpr, 0.0, 1.0);
+  if (cov <= 0.0){ frag = vec4(0.0); return; }
+  float px = 1.0 / (W * uDpr), c = across / W;
+  float stud = clamp(0.5 - (ds - R) * uDpr, 0.0, 1.0);
+  float top = smoothstep(0.16, 0.24, c), foot = 1.0 - smoothstep(-0.6, -0.52, c), web = (1.0 - top) * (1.0 - foot);
+  float ct = clamp((c - 0.6) / 0.4, -1.0, 1.0), cf = clamp((c + 0.78) / 0.22, -1.0, 1.0);
+  // How steeply the surface rises going up across the bar: over the two beads, and into and out of the cut line.
+  float rise = -1.0 * ct / sqrt(max(1.0 - ct * ct, 0.1)) * top - 0.7 * cf / sqrt(max(1.0 - cf * cf, 0.1)) * foot;
+  float cut = (1.0 - smoothstep(0.05 - px, 0.05 + px, abs(c + 0.2))) * web;
+  rise += 1.3 * (bell((c + 0.13) / 0.03) - bell((c + 0.27) / 0.03)) * web;
+  // Brushed along its length: long fine streaks.
+  float grain = (noise2(vec2(along * 0.05 / uUnit + uRailSize.y, across * 2.6 / uUnit)) - 0.5) + 0.5 * (noise2(vec2(along * 0.16 / uUnit, across * 6.0 / uUnit + uRailSize.y)) - 0.5);
+  rise += grain * 0.22 * web;
+  // The stud: a rim turned down to the page, a land, a cut ring, and a slotted head in the middle.
+  vec2 er = qs / max(ds, 1e-4), et = vec2(-er.y, er.x), gh;
+  float pr = 1.0 / (R * uDpr);
+  float rim = smoothstep(0.8, 0.9, rho), ring = smoothstep(0.52 - pr, 0.52 + pr, rho) * (1.0 - smoothstep(0.6 - pr, 0.6 + pr, rho));
+  float lathe = (noise2(vec2(ds * 2.6 / uUnit, uRailSize.y * 5.0 + (high ? 0.0 : 9.0))) - 0.5) * 0.2;
+  float up = -1.5 * rim + lathe * (1.0 - ring) + 1.4 * (bell((rho - 0.61) / 0.02) - bell((rho - 0.51) / 0.02));
+  float slot = head(qs, R * 0.48, uRailSize.y * (high ? 1.0 : -1.7) + 0.6, pr / 0.48, gh);
+  vec2 gs = mix(er * up, gh, 1.0 - smoothstep(0.44, 0.5, rho));
+  vec3 N = normalize(vec3(-mix(n * rise, gs, stud), 1.0));
+  // The rail is in the stud's shade where it runs in under its rim.
+  float under = (1.0 - stud) * bell(max(ds - R, 0.0) / (0.35 * W));
+  float wear = mix(clamp(top * (0.55 + 0.45 * smoothstep(0.5, 1.0, c)) + 0.5 * foot, 0.0, 1.0), clamp(bell((rho - 0.82) / 0.04) + 0.7 * bell((rho - 0.46) / 0.04), 0.0, 1.0), stud);
+  float grime = mix(clamp(web * (0.3 + 0.4 * noise2(vec2(along * 0.02 / uUnit, uRailSize.y * 9.0))) + 0.9 * bell((c - 0.14) / 0.09) + 0.7 * bell((c + 0.5) / 0.08) + 0.25 * web + under, 0.0, 1.0), clamp(rim * smoothstep(0.9, 1.0, rho) * 0.8 + 0.25, 0.0, 1.0), stud);
+  vec3 F0 = mix(uCopper, uF0, 0.4 + 0.55 * wear) * (1.0 - grime * 0.45);
+  float rough = clamp(0.27 + 0.2 * grime - 0.16 * wear, 0.08, 0.9);
+  vec3 col = fitting(vP, N, mix(vec3(e, 0.0), vec3(et, 0.0), stud), F0, rough, mix(0.8, 0.7, stud));
+  col = mix(col, INK + col * 0.05, max(cut * (1.0 - stud), max(slot, ring) * stud) * 0.95) * (1.0 - 0.5 * under);
+  frag = vec4(min(col, vec3(1.0)) * cov, cov);
+}`;
+
 // ---- shards
 
 export const SHARD_VERT = `${HEAD}
@@ -490,16 +646,32 @@ void main(){
 
 // ---- the last pass: the picture, the stream's light on the page with the shadows of the title and the card in it
 
-export const finalFrag = (float: boolean) => `${HEAD}
+// How many of each thing stand on the page for the stream to light. One card and nothing else is the test shot,
+// and its shaders are then the test shot's, letter for letter.
+export interface Shapes { cards: number; posts: number; rails: number }
+const plain = (n: Shapes) => n.cards <= 1 && !n.posts && !n.rails;
+
+const RAIL_FIELD = `
+float sdRail(vec2 p, vec4 r, float thick){ vec2 e = r.zw - r.xy; float k = clamp(dot(p - r.xy, e) / dot(e, e), 0.0, 1.0); return length(p - r.xy - e * k) - thick; }
+`;
+
+export const finalFrag = (float: boolean, n: Shapes = { cards: 1, posts: 0, rails: 0 }) => `${HEAD}
 ${packing(float)}
 in vec2 vUv;
 uniform sampler2D uScene;
-uniform vec4 uCard;
-uniform float uCardR, uPage, uRelief;
+${plain(n) ? `uniform vec4 uCard;
+uniform float uCardR, uPage, uRelief;` : `uniform vec4 uCards[${Math.max(1, n.cards)}];
+uniform float uCardRs[${Math.max(1, n.cards)}];
+uniform vec3 uPosts[${Math.max(1, n.posts)}];
+uniform vec4 uRails[${Math.max(1, n.rails)}];
+uniform float uRailHalf, uPage, uRelief;`}
 out vec4 frag;
-${CLIP}${LIT}${RAMP}${NOISE}${TITLE_FIELD}
+${CLIP}${LIT}${RAMP}${NOISE}${TITLE_FIELD}${plain(n) ? '' : RAIL_FIELD}
 float shapes(vec2 p){
-  float d = sdBox(p - uCard.xy, uCard.zw, uCardR);
+  ${plain(n) ? 'float d = sdBox(p - uCard.xy, uCard.zw, uCardR);' : `float d = 1e6;
+  for (int i = 0; i < ${n.cards}; i++) d = min(d, sdBox(p - uCards[i].xy, uCards[i].zw, uCardRs[i]));
+  for (int i = 0; i < ${n.posts}; i++) d = min(d, length(p - uPosts[i].xy) - uPosts[i].z);
+  for (int i = 0; i < ${n.rails}; i++) d = min(d, sdRail(p, uRails[i], uRailHalf));`}
   if (p.x > uSdfRect.x - 90.0 && p.x < uSdfRect.x + uSdfRect.z + 90.0 && p.y > uSdfRect.y - 90.0 && p.y < uSdfRect.y + uSdfRect.w + 90.0) d = min(d, titleFar(p));
   return d;
 }

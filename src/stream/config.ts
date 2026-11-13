@@ -40,6 +40,37 @@ export const STREAM = {
     room: { cap: 240, soft: 40, over: 90 },
   },
 
+  // The route through Work (routeThroughWork in route.ts). Lengths in units.
+  work: {
+    // Onto the category bar and onto the top of the first row's card: how far the fall leans the way it will run, the
+    // least it keeps between where it lands and the end, the turn onto the top (how early it leaves the fall, how late
+    // it joins the run), how far short of the end it begins to leave the top, how far past the end it is thrown, and
+    // how far down the fall that turn is still felt.
+    bar: { lean: 12, least: 60, land: [36, 30] as [number, number], early: 4, past: 30, fall: 84 },
+    card: { lean: 6, least: 56, land: [38, 30] as [number, number], early: 12, past: 34, fall: 170 },
+    // The post: how far above its middle the stream meets it, as an angle, how tight the turn is there, how much of
+    // what ran into it it gives back, and how much of a throw the fall from it to the card's side is.
+    post: { at: 0.75, turn: 14, spring: 0.8, bow: 0.35 },
+    // The side of the second row's card: how far down it the stream strikes, as a share, how tight the turn, how
+    // much of its sideways going it keeps, and how much of a throw the fall from it to the rail is.
+    side: { at: 0.46, turn: 14, spring: 0.9, bow: 0.45 },
+    // The rail: half its thickness, how far in from its high end the stream lands and the turn there, how far short of
+    // the button its low end stops, how far past that end the stream still runs straight, and the turn off it.
+    rail: { half: 9, in: 30, land: [46, 40] as [number, number], gap: 14, over: 4, off: [8, 30] as [number, number] },
+    // The meeting: how steeply each side comes down to the middle from the rail's end, how much of that stretch is a
+    // bow, how far down the two take to turn into one, and how near they are when they count as met.
+    meet: { slope: 0.28, bow: 0.8, fall: 38, near: 10 },
+    // A shard thrown by a strike is let fall this far below where it was thrown, and then goes. The section is tall,
+    // and without this what a strike high up throws rains down the whole of both margins.
+    fall: 430,
+    // Each contact: how strong it is against a full strike, how many sparks it keeps while the stream lies on it
+    // against the test shot's landing, forks of arc each second, and how many times longer than the test shot's it
+    // waits between the single shards it throws at rest.
+    contact: {
+      title: [1, 1, 5, 2.2], bar: [0.3, 0.6, 3, 4], card: [1, 1, 6, 2.2], post: [0.3, 1.3, 4, 4], side: [0.8, 1.2, 5, 2.6], rail: [0.3, 0.6, 3, 4], meet: [0.2, 0.5, 2, 4],
+    } as Record<string, readonly [number, number, number, number]>,
+  },
+
   head: {
     follow: 10,         // how hard the leading end is drawn to where the scroll puts it, per second
     creep: 120,         // the least speed it will finish a move at

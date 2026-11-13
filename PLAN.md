@@ -15,7 +15,7 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 ## Now
 
 - **Phase:** 3, a section at a time, starting with Work
-- **Handed to Claude Code (Nov 12):** the stream's real route through Work, at a new page `/lab/work`, with the posts and the rail as real objects. `BRIEF.md`, The stream, "The stream through Work", is the agreement. `QUALITY.md`, "The stream through Work", is the test. The prompt Brandon was given is in `LOG.md`, top entry
+- **Built by Claude Code (Nov 12), waiting on his look:** the stream's real route through Work, at `/lab/work`, with the posts and the rail as real objects. `BRIEF.md`, The stream, "The stream through Work", is the agreement. `QUALITY.md`, "The stream through Work", is the test. What was built, what is at the bar and what is not, and the calls made for him are in `LOG.md`, top entry
 - **In the web chat meanwhile:** the card's look (`BRIEF.md`, Open 19), then Work on a phone (Open 18)
 - **His words:** "Yeah, I think that plan is pretty solid." Of the rail: "Looks good in theory but I would need to see it actual rendered using our actual assets to be sure"
 - **What he judges when `/lab/work` is up:** whether the posts and the rail work as real things, and whether every turn of the stream looks caused and not forced
@@ -74,7 +74,7 @@ Set aside, kept as records: the molten metal test shot at `/lab/pour`, its looks
 - [ ] Layout sketches for the other sections
 - [ ] The spacing system
 - [ ] Hero
-- [ ] Work · the stream's real route with the posts and the rail, at `/lab/work` (Claude Code)
+- [~] Work · the stream's real route with the posts and the rail, at `/lab/work` (Claude Code)
 - [ ] Work · the card's look (web chat)
 - [ ] Work · the category bar, and the top bar it may dock into
 - [ ] Work · on a phone

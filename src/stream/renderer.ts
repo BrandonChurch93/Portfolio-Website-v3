@@ -34,6 +34,10 @@ export interface TitleField {
 }
 
 export interface CardShape { x: number; y: number; hw: number; hh: number; r: number }
+// A post and a rail as they are drawn: where the route has them (route.ts), each with a number of its own, which
+// turns its slots and moves its marks so that no two are alike.
+export interface PostShape { x: number; y: number; r: number; own: number }
+export interface RailShape { ax: number; ay: number; bx: number; by: number; half: number; own: number }
 
 export interface Frame {
   view: [number, number, number, number];
@@ -42,6 +46,7 @@ export interface Frame {
   lamp: [number, number, number, number];
   energy: [number, number];
   split: number;                                 // where the two sides part, in units along the route
+  end: number;                                   // where the second side's own core ends, if the two meet again
   presence: number;                              // 0 on a narrow screen to 1 on a wide one
   look: Look;
   core: Float32Array;
@@ -93,6 +98,9 @@ function compile(gl: GL, vs: string, fs: string, attribs: string[]) {
   for (const [name, color] of [['uEmber', 'ember'], ['uFlame', 'flame'], ['uHot', 'hot'], ['uPale', 'pale'], ['uText', 'text'], ['uFace', 'bg-2'], ['uFaceLit', 'bronze-deep']] as [string, PaletteName][]) gl.uniform3fv(u(name), lin(color));
   gl.uniform3fv(u('uF0'), COPPER_LIGHT);
   gl.uniform3fv(u('uCopper'), COPPER);
+  // What the buttons' room code reads (src/metal/shaders.ts): the room as it is, with no one soft light in front.
+  gl.uniform1f(u('uSoft'), 0);
+  gl.uniform1f(u('uBand'), 1);
   return { p, u };
 }
 
@@ -103,6 +111,8 @@ export class StreamRenderer {
   private gl: GL;
   private float = false;
   private budget: StreamBudget | null = null;
+  private shapes: G.Shapes = { cards: 1, posts: 0, rails: 0 };
+  private ends = false;
   private prog: Record<string, Program> = {};
   private quad!: WebGLVertexArrayObject;
   private coreArray!: WebGLVertexArrayObject;
@@ -119,7 +129,9 @@ export class StreamRenderer {
   private whole: Target | null = null;
   private sdf: WebGLTexture;
   private title: TitleField | null = null;
-  private card: CardShape | null = null;
+  private cards: CardShape[] = [];
+  private posts: PostShape[] = [];
+  private rails: RailShape[] = [];
   private w = 0;
   private h = 0;
   private dpr = 1;
@@ -171,14 +183,19 @@ export class StreamRenderer {
     for (const [k, v] of [[gl.TEXTURE_MIN_FILTER, mode], [gl.TEXTURE_MAG_FILTER, mode], [gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE], [gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE]]) gl.texParameteri(gl.TEXTURE_2D, k, v);
   }
 
-  // Programs that depend on the budget are built again when it changes.
-  configure(budget: StreamBudget): void {
-    if (!this.ok || this.budget === budget) return;
+  // Programs that depend on the budget, or on how many things stand on the page, are built again when those change.
+  // ends: the two sides of the stream meet again.
+  configure(budget: StreamBudget, shapes: G.Shapes = { cards: 1, posts: 0, rails: 0 }, ends = false): void {
+    const same = this.budget === budget && this.ends === ends && this.shapes.cards === shapes.cards && this.shapes.posts === shapes.posts && this.shapes.rails === shapes.rails;
+    if (!this.ok || same) return;
     const gl = this.gl, f = this.float;
+    for (const old of Object.values(this.prog)) gl.deleteProgram(old.p);
     this.budget = budget;
+    this.shapes = shapes;
+    this.ends = ends;
     const shard = ['aPos', 'aNormal', 'aEdge', 'aTag', 'aBevel0', 'aBevel1', 'aBevel2', 'iPlace', 'iTurn', 'iCore', 'iMore'];
     this.prog = {
-      core: compile(gl, G.CORE_VERT, G.coreFrag(budget.split ? 9 : 7), ['aPos', 'aAlong']),
+      core: compile(gl, G.CORE_VERT, G.coreFrag(budget.split ? 9 : 7, ends), ['aPos', 'aAlong']),
       streak: compile(gl, G.STREAK_VERT, G.STREAK_FRAG, ['aPos', 'aLight']),
       down: compile(gl, G.FULL_VERT, G.downFrag(f), ['aPos']),
       up: compile(gl, G.FULL_VERT, G.upFrag(f), ['aPos']),
@@ -189,8 +206,10 @@ export class StreamRenderer {
       copper: compile(gl, G.SHARD_VERT, COPPER_FRAG, shard),
       glass: compile(gl, G.SHARD_VERT, glassFrag(budget.split), shard),
       light: compile(gl, G.FULL_VERT, G.lightFrag(f), ['aPos']),
-      final: compile(gl, G.FULL_VERT, G.finalFrag(f), ['aPos']),
+      final: compile(gl, G.FULL_VERT, G.finalFrag(f, shapes), ['aPos']),
     };
+    if (shapes.posts) this.prog.post = compile(gl, G.RELIEF_VERT, G.postFrag(f), ['aPos']);
+    if (shapes.rails) this.prog.rail = compile(gl, G.RELIEF_VERT, G.railFrag(f), ['aPos']);
     this.w = 0;
   }
 
@@ -246,9 +265,11 @@ export class StreamRenderer {
     this.scene = { fbo, color, depth };
   }
 
-  setRelief(title: TitleField | null, card: CardShape | null): void {
+  setRelief(title: TitleField | null, cards: CardShape[], posts: PostShape[] = [], rails: RailShape[] = []): void {
     this.title = title;
-    this.card = card;
+    this.cards = cards;
+    this.posts = posts;
+    this.rails = rails;
     if (!this.ok || !title) return;
     const gl = this.gl;
     gl.bindTexture(gl.TEXTURE_2D, this.sdf);
@@ -273,7 +294,7 @@ export class StreamRenderer {
     gl.uniform1f(p.u('uLampI'), f.lamp[3]);
   }
 
-  private field(p: Program, unit: number): void {
+  private field(p: Program, unit: number, c: CardShape | undefined = this.cards[0]): void {
     const gl = this.gl, t = this.title;
     gl.activeTexture(gl.TEXTURE2);
     gl.bindTexture(gl.TEXTURE_2D, this.sdf);
@@ -281,7 +302,6 @@ export class StreamRenderer {
     gl.uniform4fv(p.u('uSdfRect'), t ? t.rect : [-1e6, -1e6, 1, 1]);
     gl.uniform3fv(p.u('uSdfRange'), t ? t.range : [1, 1e4, 0]);
     gl.uniform2f(p.u('uSdfTexel'), t ? 1 / t.w : 1, t ? 1 / t.h : 1);
-    const c = this.card;
     gl.uniform4f(p.u('uCard'), c ? c.x : -1e6, c ? c.y : -1e6, c ? c.hw : 1, c ? c.hh : 1);
     gl.uniform1f(p.u('uCardR'), c ? c.r : 1);
     gl.uniform1f(p.u('uUnit'), unit);
@@ -335,6 +355,7 @@ export class StreamRenderer {
       if (f.coreRuns[b * 2 + 1] < 3) continue;
       gl.uniform1f(P.core.u('uEnergy'), f.energy[b]);
       gl.uniform2f(P.core.u('uOwn'), b * 1777, b * f.split);
+      if (this.ends) gl.uniform1f(P.core.u('uEnd'), b ? f.end : 1e6);
       gl.drawArrays(gl.TRIANGLE_STRIP, f.coreRuns[b * 2], f.coreRuns[b * 2 + 1]);
     }
     if (f.streakCount > 0) {
@@ -385,11 +406,11 @@ export class StreamRenderer {
     gl.clearDepth(1);
     gl.depthMask(true);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    const relief = (p: Program, rect: number[]) => {
+    const relief = (p: Program, rect: number[], card?: CardShape) => {
       gl.useProgram(p.p);
       this.lit(p, f);
       this.glow(p);
-      this.field(p, f.unit);
+      this.field(p, f.unit, card);
       gl.uniform4fv(p.u('uRect'), rect);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     };
@@ -426,8 +447,21 @@ export class StreamRenderer {
     // The title and the card stand in front of the light: where the core lies along one of them, the surface cuts it
     // off cleanly, and that line is what makes it rest there.
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-    if (this.card) relief(P.card, [this.card.x - this.card.hw - 2, this.card.y - this.card.hh - 2, this.card.hw * 2 + 4, this.card.hh * 2 + 4]);
+    for (const c of this.cards) relief(P.card, [c.x - c.hw - 2, c.y - c.hh - 2, c.hw * 2 + 4, c.hh * 2 + 4], c);
     if (this.title) relief(P.title, this.title.rect);
+    // The posts and the rail stand in front of the light as the card does.
+    for (const r of P.rail ? this.rails : []) {
+      gl.useProgram(P.rail.p);
+      gl.uniform4f(P.rail.u('uRail'), r.ax, r.ay, r.bx, r.by);
+      gl.uniform2f(P.rail.u('uRailSize'), r.half, r.own);
+      const pad = r.half * G.RAIL_STUD * 2 + 2;
+      relief(P.rail, [Math.min(r.ax, r.bx) - pad, Math.min(r.ay, r.by) - pad, Math.abs(r.bx - r.ax) + pad * 2, Math.abs(r.by - r.ay) + pad * 2]);
+    }
+    for (const o of P.post ? this.posts : []) {
+      gl.useProgram(P.post.p);
+      gl.uniform4f(P.post.u('uPost'), o.x, o.y, o.r, o.own);
+      relief(P.post, [o.x - o.r - 2, o.y - o.r - 2, o.r * 2 + 4, o.r * 2 + 4]);
+    }
 
     lot(solidProgram, 1, set.solid[1], set.solid[0]);
 
@@ -458,7 +492,16 @@ export class StreamRenderer {
     gl.bindTexture(gl.TEXTURE_2D, this.whole.tex);
     gl.uniform1i(P.final.u('uScene'), 0);
     gl.uniform1f(P.final.u('uPage'), GLOW.page + GLOW.more.page * f.presence);
-    gl.uniform1f(P.final.u('uRelief'), this.title || this.card ? 1 : 0);
+    gl.uniform1f(P.final.u('uRelief'), this.title || this.cards.length ? 1 : 0);
+    if (this.shapes.cards > 1 || this.shapes.posts || this.shapes.rails) {
+      const n = this.shapes;
+      const far = [-1e6, -1e6, 1, 1];
+      gl.uniform4fv(P.final.u('uCards[0]'), Array.from({ length: Math.max(1, n.cards) }, (_, i) => { const c = this.cards[i]; return c ? [c.x, c.y, c.hw, c.hh] : far; }).flat());
+      gl.uniform1fv(P.final.u('uCardRs[0]'), Array.from({ length: Math.max(1, n.cards) }, (_, i) => this.cards[i]?.r ?? 1));
+      gl.uniform3fv(P.final.u('uPosts[0]'), Array.from({ length: Math.max(1, n.posts) }, (_, i) => { const o = this.posts[i]; return o ? [o.x, o.y, o.r] : [-1e6, -1e6, 1]; }).flat());
+      gl.uniform4fv(P.final.u('uRails[0]'), Array.from({ length: Math.max(1, n.rails) }, (_, i) => { const r = this.rails[i]; return r ? [r.ax, r.ay, r.bx, r.by] : far; }).flat());
+      gl.uniform1f(P.final.u('uRailHalf'), this.rails[0]?.half ?? 1);
+    }
     gl.bindVertexArray(this.quad);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     gl.bindVertexArray(null);

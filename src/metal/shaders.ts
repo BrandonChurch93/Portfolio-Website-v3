@@ -1,6 +1,6 @@
 // GLSL for the plate renderer. WebGL2.
 // Coordinates inside a plate are device pixels from the top left. The bake runs once per plate size and writes
-// everything that does not depend on the lamp; the light pass runs when the lamp, the scroll or the water change.
+// everything that does not depend on the lamp; the light pass runs when the lamp, the scroll or the stream change.
 
 export const VERT = `#version 300 es
 in vec2 a;
@@ -159,37 +159,10 @@ void main(){
 
 // ---- light -------------------------------------------------------------------------------------
 
-export const LIGHT = `#version 300 es
-${COMMON}
-uniform sampler2D uB0, uB1, uPhoto;
-uniform vec2 uRes;
-uniform float uS, uDpr;
-uniform vec2 uOrigin;        // plate top left in the viewport, CSS px
-uniform vec2 uView;          // viewport size, CSS px
-uniform float uRad, uInset;
-uniform vec3 uLamp;          // CSS px, x right, y down, z toward the viewer
-uniform float uLampI;
-uniform float uGlare;         // how strongly the glass over a photo glares, 0 to 1
-uniform vec3 uWater;         // CSS px
-uniform float uWaterI;
-uniform vec2 uTilt;          // radians: about x, about y
-uniform vec3 uF0a, uF0b, uInk;
-uniform float uRa, uRb, uAniso;
-uniform vec4 uWin;
-uniform float uWinOn, uWinR, uWinDepth, uPhotoAspect, uPhotoOn;
-uniform vec2 uPhotoFocus;
-uniform float uPhotoZoom;
-uniform float uHover;        // 0 to 1: the pointer is on the plate, or it has focus
-uniform vec3 uGlow;          // the light's color, linear
-uniform float uRing;         // design units from the edge to the cut border; 0 when the plate has none
-uniform float uSoft;         // 0 to 1: the room holds one large soft light, as metal plates are photographed
-uniform float uInlay;        // the least an inlaid word shows of its own metal, wherever the lamp is; 0 for none
-uniform vec2 uPointer;       // the pointer, device px in the plate
-uniform float uBand;         // how bright the one soft light is; 1 as photographed
-uniform float uCoat;         // a clear coat over the metal: how strongly it throws the lamp back; 0 for bare metal
-out vec4 frag;
-
-const float PI = 3.14159265;
+// The room a piece of metal reflects and the way it throws a light back. The stream's posts and rail are lit by the
+// same code (src/stream/shaders.ts), so they are the buttons' metal and not a likeness of it.
+// studio() reads two uniforms, uSoft and uBand.
+export const ROOM = `const float PI = 3.14159265;
 
 float panel(vec2 d, vec2 lo, vec2 hi, float b){
   return smoothstep(lo.x - b, lo.x + b, d.x) * (1.0 - smoothstep(hi.x - b, hi.x + b, d.x)) * smoothstep(lo.y - b, lo.y + b, d.y) * (1.0 - smoothstep(hi.y - b, hi.y + b, d.y));
@@ -220,7 +193,9 @@ vec3 studio(vec3 R, float rough){
   return c;
 }
 
-float D_aniso(vec3 H, vec3 N, vec3 T, vec3 B, float ax, float ay){
+`;
+
+export const SPEC = `float D_aniso(vec3 H, vec3 N, vec3 T, vec3 B, float ax, float ay){
   float x = dot(H, T) / ax, y = dot(H, B) / ay, z = dot(H, N);
   float k = x * x + y * y + z * z;
   return 1.0 / (PI * ax * ay * k * k);
@@ -240,7 +215,39 @@ vec3 spec(vec3 N, vec3 V, vec3 L, vec3 T, vec3 B, float rough, float aniso, vec3
   return F * D_aniso(H, N, T, B, ax, ay) * V_smith(nl, nv, a) * nl;
 }
 
-vec3 rotX(vec3 v, float a){ float c = cos(a), s = sin(a); return vec3(v.x, c * v.y - s * v.z, s * v.y + c * v.z); }
+`;
+
+export const LIGHT = `#version 300 es
+${COMMON}
+uniform sampler2D uB0, uB1, uPhoto;
+uniform vec2 uRes;
+uniform float uS, uDpr;
+uniform vec2 uOrigin;        // plate top left in the viewport, CSS px
+uniform vec2 uView;          // viewport size, CSS px
+uniform float uRad, uInset;
+uniform vec3 uLamp;          // CSS px, x right, y down, z toward the viewer
+uniform float uLampI;
+uniform float uGlare;         // how strongly the glass over a photo glares, 0 to 1
+uniform vec3 uStream;         // CSS px
+uniform float uStreamI;
+uniform vec2 uTilt;          // radians: about x, about y
+uniform vec3 uF0a, uF0b, uInk;
+uniform float uRa, uRb, uAniso;
+uniform vec4 uWin;
+uniform float uWinOn, uWinR, uWinDepth, uPhotoAspect, uPhotoOn;
+uniform vec2 uPhotoFocus;
+uniform float uPhotoZoom;
+uniform float uHover;        // 0 to 1: the pointer is on the plate, or it has focus
+uniform vec3 uGlow;          // the light's color, linear
+uniform float uRing;         // design units from the edge to the cut border; 0 when the plate has none
+uniform float uSoft;         // 0 to 1: the room holds one large soft light, as metal plates are photographed
+uniform float uInlay;        // the least an inlaid word shows of its own metal, wherever the lamp is; 0 for none
+uniform vec2 uPointer;       // the pointer, device px in the plate
+uniform float uBand;         // how bright the one soft light is; 1 as photographed
+uniform float uCoat;         // a clear coat over the metal: how strongly it throws the lamp back; 0 for bare metal
+out vec4 frag;
+
+${ROOM}${SPEC}vec3 rotX(vec3 v, float a){ float c = cos(a), s = sin(a); return vec3(v.x, c * v.y - s * v.z, s * v.y + c * v.z); }
 vec3 rotY(vec3 v, float a){ float c = cos(a), s = sin(a); return vec3(c * v.x + s * v.z, v.y, -s * v.x + c * v.z); }
 
 void main(){
@@ -298,15 +305,15 @@ void main(){
   }
 
   float spill = 0.0;
-  if (uWaterI > 0.0){
-    vec3 Wv = vec3(uWater.x, -uWater.y, uWater.z) - P;
+  if (uStreamI > 0.0){
+    vec3 Wv = vec3(uStream.x, -uStream.y, uStream.z) - P;
     float wd = length(Wv);
-    float wf = uWaterI / (1.0 + pow(wd / 170.0, 2.0));
+    float wf = uStreamI / (1.0 + pow(wd / 170.0, 2.0));
     col += spec(N, V, Wv / wd, T, B, rough, aniso, F0) * wf * vec3(1.0, 0.5, 0.14);
-    // The water is a long bright source beside the plate: its light grazes the metal and warms the near side,
+    // The stream is a long bright source beside the plate: its light grazes the metal and warms the near side,
     // strongest on bevels that face it.
     col += mix(F0, vec3(dot(F0, vec3(0.33))), 0.5) * wf * vec3(1.0, 0.36, 0.05) * (0.3 + 1.3 * max(dot(N, Wv / wd), 0.0)) * (0.35 + 1.1 * exp(-wd / 80.0));
-    // Spill the plate's own exposure does not swallow: warm light that lands on it, strongest near the water and
+    // Spill the plate's own exposure does not swallow: warm light that lands on it, strongest near the stream and
     // on the bevel facing it.
     spill = wf * (0.25 + 1.6 * pow(max(dot(N, Wv / wd), 0.0), 2.0)) * exp(-wd / 160.0) * 0.08;
   }

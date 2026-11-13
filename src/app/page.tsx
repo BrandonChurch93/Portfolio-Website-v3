@@ -56,6 +56,10 @@ export default function Index() {
           <Link href="/lab/stream?shards=first">The stream, with the first round&rsquo;s shards</Link>
           <span className={styles.minor}>Phase 2 · copper leaf and glass, to compare. The switch on the page swaps the two</span>
         </li>
+        <li>
+          <Link href="/lab/work">The stream through Work</Link>
+          <span className={styles.minor}>Phase 3 · the real stream on its route through the Work section, with the posts and the rail. The cards are stand ins</span>
+        </li>
       </ul>
       <h2 className={styles.group}>Pieces carried from the second build</h2>
       <ul className={styles.list}>

@@ -1,0 +1,217 @@
+.page {
+  position: relative;
+  overflow: clip;
+}
+
+.head {
+  position: absolute;
+  top: var(--space-6);
+  left: var(--edge);
+  max-width: 26rem;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--copper-light);
+}
+
+.name {
+  margin-top: var(--space-2);
+  font-size: var(--step-2);
+  font-weight: 300;
+  color: var(--text-2);
+}
+
+.note {
+  margin-top: var(--space-3);
+  font-size: var(--step--1);
+  line-height: var(--lead-body);
+  color: var(--text-3);
+}
+
+/* The section is laid out from the middle outward: the grid, then room beside it for the stream to swing out, then a
+   post, then a margin. Every part reads its place from these. */
+.section {
+  --side: clamp(7.6rem, 15.5vw, 15rem);
+  --grid: min(60rem, 100vw - 2 * var(--side));
+  --gap: clamp(1.25rem, 2.8vw, 2.5rem);
+  --post: clamp(2.9rem, 5.2vw, 4.5rem);
+  --swing: clamp(3rem, 10.6vw - 2.3rem, 7.25rem);
+  --drop: clamp(2.2rem, 4.2vw, 3.6rem);
+  position: relative;
+  display: grid;
+  justify-items: center;
+  padding: 98vh 0 92vh;
+  padding: 98svh 0 92svh;
+}
+
+/* The spacing after the last letter is taken back on the left, so the word sits on the page's center line. */
+.title {
+  padding-left: 0.3em;
+  font-size: clamp(3.2rem, 6.4vw, 6.2rem);
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  width: calc(var(--grid) * 0.6 + 9rem);
+  min-height: 3.5rem;
+  margin-top: clamp(3.6rem, 6.6vw, 5.6rem);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-3);
+  background: var(--bg-2);
+}
+
+/* The words sit over the stream's canvas, which draws the bar itself. */
+.category {
+  position: relative;
+  z-index: 4;
+  min-height: var(--touch);
+  padding: 0 var(--space-2);
+  border: 0;
+  background: none;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color var(--dur-1) var(--ease-settle);
+}
+
+.category:hover {
+  color: var(--text-2);
+}
+
+.category[aria-pressed='true'] {
+  color: var(--copper-light);
+}
+
+.category:focus-visible {
+  outline: var(--focus);
+  outline-offset: -4px;
+  border-radius: var(--radius-2);
+}
+
+.grid {
+  display: grid;
+  gap: clamp(3rem, 5.4vw, 4.6rem);
+  width: var(--grid);
+  margin-top: clamp(4.4rem, 8vw, 6.6rem);
+}
+
+.row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap);
+}
+
+.card {
+  aspect-ratio: 1.2;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-3);
+  background: var(--bg-2);
+}
+
+/* A post stands beside each side of the grid, level with the foot of the first row. */
+.post {
+  position: absolute;
+  bottom: calc(var(--post) * -0.5 + 0.5rem);
+  width: var(--post);
+  height: var(--post);
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, var(--bronze), var(--bronze-deep) 70%);
+}
+
+.post[data-side='left'] {
+  right: calc(100% + var(--swing));
+}
+
+.post[data-side='right'] {
+  left: calc(100% + var(--swing));
+}
+
+/* The rail's box: its top corners are the two high ends, each under a post, and its bottom is the height of the low
+   ends beside the button. The stream draws the rail from it. */
+.foot {
+  position: relative;
+  width: calc(var(--grid) + 2 * var(--swing) + var(--post));
+  height: var(--drop);
+  margin-top: clamp(4.6rem, 8vw, 6.4rem);
+}
+
+.rail {
+  position: absolute;
+  inset: 0;
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.button {
+  position: absolute;
+  left: 50%;
+  bottom: 1.25rem;
+  translate: -50% 0;
+}
+
+/* Once the stream is drawing, it draws the title, the bar, the cards, the posts and the rail itself, lit. */
+.page[data-stream='on'] .title {
+  color: transparent;
+}
+
+.page[data-stream='on'] .bar,
+.page[data-stream='on'] .card {
+  border-color: transparent;
+  background: none;
+}
+
+.page[data-stream='on'] .post,
+.page[data-stream='on'] .rail {
+  border-color: transparent;
+  background: none;
+}
+
+/* Too narrow for two columns. One column, no posts and no rail: a stand in until the phone's route is designed. */
+@media (max-width: 719px) {
+  .section {
+    --side: 4.6rem;
+    --grid: calc(100vw - 2 * var(--side));
+  }
+
+  .bar {
+    grid-template-columns: 1fr 1fr;
+    width: calc(var(--grid) + 2.4rem);
+  }
+
+  .row {
+    grid-template-columns: 1fr;
+    gap: clamp(3rem, 5.4vw, 4.6rem);
+  }
+
+  .post,
+  .rail {
+    display: none;
+  }
+
+  .foot {
+    display: grid;
+    justify-items: center;
+    width: var(--grid);
+    height: auto;
+  }
+
+  .button {
+    position: static;
+    translate: none;
+  }
+}

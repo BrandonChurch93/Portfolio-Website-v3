@@ -1,19 +1,21 @@
 import { registry, stats } from '../hooks/registry';
 import { lamp } from '../lamp/lamp';
 import { signedDistance } from '../metal/edt';
+import { plates } from '../metal/renderer';
 import { clock } from '../world/clock';
 import { tiers } from '../world/tier';
 import { STREAM, STREAM_BUDGET, STREAM_STEP, unitFor, type StreamBudget } from './config';
 import { hash, seeded } from './rand';
 import { CORE_FLOATS, INSTANCE_FLOATS, KINDS, LAYERS, STREAK_FLOATS, StreamRenderer, type CardShape, type Frame, type TitleField } from './renderer';
-import { along, at, buildRoute, riddenAt, type Box, type Route } from './route';
+import { along, at, buildRoute, riddenAt, routeThroughWork, UP, type Box, type Route } from './route';
 import { CORE_HALF } from './shaders';
 import { buildShards, facetKind, FIRST_KINDS, type Look } from './shards';
 import { FORK_FLOATS, LOOSE_FLOATS, SPARK_FLOATS, StreamSim } from './sim';
 
-// Puts the stream on a page. It reads where the title and the card are, plans the route round them, and each frame
+// Puts the stream on a page. It reads where things are on the page, plans the route round them, and each frame
 // places every shard, steps what flies, and draws. The canvas rides with the page, a little taller than the screen,
 // so what it draws stays locked to the page however fast the page is scrolled.
+// Given a title and a card it runs the test shot's route. Given the Work section it runs the route through Work.
 
 export interface StreamHandle {
   // Swap between the facets and the first round's shards, where it stands.
@@ -21,10 +23,20 @@ export interface StreamHandle {
   dispose(): void;
 }
 
+// The Work section's parts, as they are on the page. A post or the rail that is not shown is left out of the route.
+export interface WorkParts {
+  bar: HTMLElement;
+  cards: HTMLElement[];
+  posts: HTMLElement[];
+  rail: HTMLElement;
+  button: HTMLElement;
+}
+
 interface Options {
   title: HTMLElement;
-  card: HTMLElement;
-  // Open with the frame held: nothing moves but the cursor's light.
+  card?: HTMLElement;
+  work?: WorkParts;
+  // Open with the frame held: nothing moves but the cursor's light. The test shot only.
   hold?: boolean;
   look?: Look;
 }
@@ -141,6 +153,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   const lots = new Int32Array(LAYERS * KINDS * 2);
   let lastLine = 0, settled = '', spent = 0;
   let heldLine: number | null = null;
+  let buttonPlate: Element | null = null;
   let touch: { x: number; y: number } | null = null;
   let script: { y0: number; y1: number; t0: number; t1: number } | null = null;
   let disposed = false;
@@ -167,21 +180,33 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     const want = Math.min(devicePixelRatio || 1, budget.pixelRatio);
     const dpr = Math.min(want, Math.sqrt(budget.pixels / (cssW * cssH)));
     const made = titleField(opts.title, hr, dpr);
-    const cr = opts.card.getBoundingClientRect();
-    const cardBox: Box = { l: cr.left - hr.left, t: cr.top - hr.top, r: cr.right - hr.left, b: cr.bottom - hr.top };
-    const ink: Box = made ? made.ink : (() => { const b = opts.title.getBoundingClientRect(); return { l: b.left - hr.left, t: b.top - hr.top, r: b.right - hr.left, b: b.bottom - hr.top }; })();
-    route = buildRoute(ink, cardBox, w, hostH + 260 * unit, unit);
-    const cardShape: CardShape = { x: (cardBox.l + cardBox.r) / 2, y: (cardBox.t + cardBox.b) / 2, hw: (cardBox.r - cardBox.l) / 2, hh: (cardBox.b - cardBox.t) / 2, r: parseFloat(getComputedStyle(opts.card).borderTopLeftRadius) || 0 };
-    renderer.configure(budget);
-    renderer.resize(Math.round(cssW * dpr), Math.round(cssH * dpr), dpr);
-    renderer.setRelief(made ? made.field : null, cardShape);
+    const boxOf = (el: HTMLElement): Box => { const r = el.getBoundingClientRect(); return { l: r.left - hr.left, t: r.top - hr.top, r: r.right - hr.left, b: r.bottom - hr.top }; };
+    const shapeOf = (el: HTMLElement): CardShape => { const b = boxOf(el); return { x: (b.l + b.r) / 2, y: (b.t + b.b) / 2, hw: (b.r - b.l) / 2, hh: (b.b - b.t) / 2, r: parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0 }; };
+    const shown = (el: HTMLElement) => el.getClientRects().length > 0;
+    const ink: Box = made ? made.ink : boxOf(opts.title);
+    const cardBox: Box = opts.card ? boxOf(opts.card) : ink;
+    const bottom = hostH + 260 * unit;
+    const W = opts.work;
+    if (W) {
+      const posts = W.posts.filter(shown).map((el) => { const b = boxOf(el); return { x: (b.l + b.r) / 2, y: (b.t + b.b) / 2, r: (b.r - b.l) / 2 }; });
+      route = routeThroughWork({ title: ink, bar: boxOf(W.bar), cards: W.cards.filter(shown).map(boxOf), posts, rail: shown(W.rail) ? boxOf(W.rail) : null, button: shown(W.button) ? boxOf(W.button) : null, width: w, bottom, unit });
+      renderer.configure(budget, { cards: 1 + W.cards.length, posts: route.posts.length, rails: route.rails.length }, route.join[0] < Infinity);
+      renderer.resize(Math.round(cssW * dpr), Math.round(cssH * dpr), dpr);
+      renderer.setRelief(made ? made.field : null, [W.bar, ...W.cards.filter(shown)].map(shapeOf), route.posts.map((o, i) => ({ ...o, own: 0.7 + i * 2.3 })), route.rails.map((r, i) => ({ ...r, own: 1.3 + i * 3.1 })));
+      buttonPlate = route.join[0] < Infinity ? W.button.querySelector('[data-kind]') : null;
+    } else {
+      route = buildRoute(ink, cardBox, w, bottom, unit);
+      renderer.configure(budget);
+      renderer.resize(Math.round(cssW * dpr), Math.round(cssH * dpr), dpr);
+      renderer.setRelief(made ? made.field : null, opts.card ? [shapeOf(opts.card)] : []);
+    }
     populate();
     const points = route.branches[0].n + route.branches[1].n + 8;
     core = new Float32Array(points * 2 * CORE_FLOATS);
-    streaks = new Float32Array((budget.sparks * 12 + 40 * 60 * 6 + 220 * 12 + 120) * STREAK_FLOATS);
+    streaks = new Float32Array((budget.sparks * 12 + (sim?.maxForks ?? 40) * 60 * 6 + 220 * 12 + 120 + route.landings.length * 18) * STREAK_FLOATS);
     host.dataset.stream = made ? 'on' : 'off';
     settled = '';
-    if (opts.hold) {
+    if (opts.hold && !W) {
       // Held about two thirds of the way down the route: the left side has landed and run the card's top, the right
       // side is level with it.
       heldLine = cardBox.t - (S.route.above - 7) * unit;
@@ -214,8 +239,10 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       const br = route.branches[b], head = sim.head[b];
       const first = n;
       const from = b === 1 ? Math.max(0, route.split - 6 * unit) : 0;
+      // The second side's own core runs from the parting to where the two sides meet again.
+      const to = b === 1 ? Math.min(head, route.join[1]) : head;
       if (head > from + 1) {
-        const i0 = Math.floor(from / br.step), i1 = Math.floor(head / br.step);
+        const i0 = Math.floor(from / br.step), i1 = Math.floor(to / br.step);
         const push = (x: number, y: number, tx: number, ty: number, s: number) => {
           const w = CORE_HALF * unit;
           core[n++] = x - ty * w; core[n++] = y + tx * w; core[n++] = -CORE_HALF; core[n++] = s / unit; core[n++] = (head - s) / unit;
@@ -226,8 +253,8 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
           if (br.y[i] > bottom + 80) continue;
           push(br.x[i], br.y[i], br.tx[i], br.ty[i], i * br.step);
         }
-        at(br, head, tmp);
-        push(tmp[0], tmp[1], tmp[2], tmp[3], head);
+        at(br, to, tmp);
+        push(tmp[0], tmp[1], tmp[2], tmp[3], to);
       }
       runs[b * 2] = first / CORE_FLOATS;
       runs[b * 2 + 1] = (n - first) / CORE_FLOATS;
@@ -294,15 +321,25 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       streak(x - dx * len, y - dy * len, 0, 0.2 * u, x, y, a, 0.5 * u);
       streak(x, y, a, 0.5 * u, x + dx * len * 1.6, y + dy * len * 1.6, 0, 0.2 * u);
     }
-    // Where a leading end strikes the title or the card there is a flash, gone in a moment.
-    for (let i = 0; i < 2; i++) {
+    // Where a leading end strikes something there is a flash, gone in a moment.
+    for (let i = 0; i < route.landings.length; i++) {
       const L = route.landings[i];
-      if (sim.head[0] < L.s) continue;
+      if (sim.head[L.side] < L.s) continue;
+      // Where the stream glances off a post or off the side of a card it touches at one point, and that point burns
+      // for as long as the stream is there: it is what shows the thing is turning it.
+      if (L.kind === 'post' || L.kind === 'side') {
+        const beat = still ? 0 : 0.2 * Math.sin(t * 11.7 + i * 1.9) * Math.sin(t * 6.3 + i);
+        const x = L.x + Math.cos(L.face) * S.route.above * u, y = L.y + Math.sin(L.face) * S.route.above * u;
+        round(x, y, 2.1 * u, 4.4 * (1 + beat));
+        round(x, y, 5 * u, 0.8 * (1 + beat));
+      }
       const struck = sim.hit[i] * Math.exp(-(sim.time - sim.hitAt[i]) / 0.14);
-      if (struck > 0.02) round(L.x, L.y - S.route.above * u, (4 + 9 * struck) * u, 3.2 * struck);
+      if (struck <= 0.02) continue;
+      if (L.face === UP) round(L.x, L.y - S.route.above * u, (4 + 9 * struck) * u, 3.2 * struck);
+      else round(L.x + Math.cos(L.face) * S.route.above * u, L.y + Math.sin(L.face) * S.route.above * u, (4 + 9 * struck) * u, 3.2 * struck);
     }
     for (let b = 0; b < 2; b++) {
-      if (b === 1 && sim.head[1] <= route.split) continue;
+      if (b === 1 && (sim.head[1] <= route.split || sim.head[1] >= route.join[1])) continue;
       at(route.branches[b], sim.head[b], tmp);
       const e = sim.energy[b], beat = still ? 0 : 0.12 * Math.sin(t * 9.3 + b * 2.1) * Math.sin(t * 5.1 + b);
       // A fierce point, no bigger than the core is wide. The glow round it is its own light spreading, not a ball.
@@ -385,7 +422,13 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       const body = R.f[o + 6] * 0.7, roomA = mix(br.roomA) - body, roomB = mix(br.roomB) - body;
       const shutA = Math.max(0, Math.min(1, 1 - roomA / far)), shutB = Math.max(0, Math.min(1, 1 - roomB / far));
       let side = far * swing;
-      if (shutA > 0 && shutA >= shutB) side = (1 - shutA) * side + shutA * (Math.min(roomA, 0) - far * back);
+      if (shutA > 0 && shutB > 0) {
+        // Something on both sides, as between a post and a card. Kept off each as above, each of the two also held
+        // inside the room the other side has, and the two weighed by how shut each side is. Choosing the more shut
+        // side outright moved a shard across the core at once whenever the two changed places.
+        const offA = (1 - shutA) * side + shutA * (Math.min(roomA, 0) - far * back), offB = (1 - shutB) * side - shutB * (Math.min(roomB, 0) - far * back);
+        side = (shutA * (offA < 0 ? offA * (1 - shutB) : offA) + shutB * (offB > 0 ? offB * (1 - shutA) : offB)) / (shutA + shutB);
+      } else if (shutA > 0) side = (1 - shutA) * side + shutA * (Math.min(roomA, 0) - far * back);
       else if (shutB > 0) side = (1 - shutB) * side - shutB * (Math.min(roomB, 0) - far * back);
       const z = far * Math.cos(round);
       const x = cx - ty * side, y = cy + tx * side;
@@ -417,7 +460,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       // Lit by the nearest stretch of core.
       let best = 1e12, bi = 0, bb = 0;
       for (let b = 0; b < 2; b++) {
-        const br = route.branches[b], last = Math.min(br.n - 1, Math.floor(sim.head[b] / br.step));
+        const br = route.branches[b], last = Math.min(br.n - 1, Math.floor((b === 1 ? Math.min(sim.head[1], route.join[1]) : sim.head[0]) / br.step));
         for (let k = b === 1 ? Math.floor(route.split / br.step) : 0; k <= last; k += 5) {
           const dx = br.x[k] - x, dy = br.y[k] - y, d2 = dx * dx + dy * dy;
           if (d2 < best) { best = d2; bi = k; bb = b; }
@@ -504,10 +547,16 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     const drawn = fillShards(now, canvasTop, canvasTop + cssH, lx, ly, lz, led);
     const streakCount = fillStreaks(now);
     const f: Frame = {
-      view: [0, canvasTop, cssW, cssH], time: now, unit, lamp: [lx, ly, lz, 0.5 + 0.5 * led], energy: [sim.energy[0], sim.energy[1]], split: route.split / unit, look, presence,
+      view: [0, canvasTop, cssW, cssH], time: now, unit, lamp: [lx, ly, lz, 0.5 + 0.5 * led], energy: [sim.energy[0], sim.energy[1]], split: route.split / unit, end: route.join[1] / unit, look, presence,
       core, coreRuns: runs, streaks, streakCount, shards, lots,
     };
     renderer.draw(f);
+    // The button stands where the two sides meet, and is lit from there once they have.
+    if (buttonPlate) {
+      const meet = route.landings[route.landings.length - 1];
+      const near = Math.max(0, Math.min(1, (sim.head[0] - meet.s + 150 * unit) / (150 * unit)));
+      plates.setStream(buttonPlate, meet.x, meet.y + hostTop - clock.view.y, still ? Math.round(near) * 0.3 : near * 0.3);
+    }
     spent += (performance.now() - began - spent) * 0.1;
     stats.streamMs = spent;
     stats.streamShards = drawn;
@@ -530,16 +579,20 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     offTier = tiers.subscribe(build);
     resized.observe(host);
     resized.observe(canvas);
+  }).catch((e: unknown) => {
+    // A stream that cannot start says so, and the page shows what it has without it.
+    console.error(e);
+    host.dataset.stream = 'off';
   }));
   void ready;
 
-  registry.tool('streamState', () => ({ on: host.dataset.stream, look, unit, shards: stats.streamShards, sparks: sim?.sparkCount ?? 0, loose: sim?.looseCount ?? 0, head: sim ? [sim.head[0], sim.head[1]] : [], energy: sim ? [sim.energy[0], sim.energy[1]] : [], riders: riders?.n ?? 0, boxes: route?.boxes ?? [], landings: route?.landings.map((L) => ({ kind: L.kind, x: L.x, y: L.y })) ?? [] }));
+  registry.tool('streamState', () => ({ on: host.dataset.stream, look, unit, shards: stats.streamShards, sparks: sim?.sparkCount ?? 0, loose: sim?.looseCount ?? 0, head: sim ? [sim.head[0], sim.head[1]] : [], energy: sim ? [sim.energy[0], sim.energy[1]] : [], riders: riders?.n ?? 0, boxes: route?.boxes ?? [], landings: route?.landings.map((L) => ({ kind: L.kind, side: L.side, s: L.s, x: L.x, y: L.y })) ?? [], posts: route?.posts ?? [], rails: route?.rails ?? [], split: route?.split ?? 0, join: route ? route.join.map((j) => (j < Infinity ? j : -1)) : [] }));
   // How many shards the last frame drew inside a rectangle of the page, how many of those were thrown loose, and how
   // much of the route runs through it.
   registry.tool('streamCount', (l: number, t: number, r: number, b: number) => {
     let riding = 0, loose = 0, length = 0;
     if (route && sim) for (let k = 0; k < 2; k++) {
-      const br = route.branches[k], last = Math.min(br.n - 1, Math.floor(sim.head[k] / br.step));
+      const br = route.branches[k], last = Math.min(br.n - 1, Math.floor((k === 1 ? Math.min(sim.head[1], route.join[1]) : sim.head[0]) / br.step));
       for (let i = k === 1 ? Math.ceil(route.split / br.step) : 0; i <= last; i++) if (br.x[i] >= l && br.x[i] <= r && br.y[i] >= t && br.y[i] <= b) length += br.step;
     }
     for (let i = 0; i < stats.streamShards; i++) {

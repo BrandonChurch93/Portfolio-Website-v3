@@ -2,6 +2,116 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-12 · The stream through Work, built at `/lab/work` (Fable, Claude Code on Brandon's Mac)
+
+**What Brandon said**
+
+- The handoff prompt in the entry below. "Work without check-ins until there is a page I can scroll."
+- He has not seen it. Nothing here has his verdict.
+
+**What was built**
+
+- **The page.** `/lab/work` (`src/components/lab/WorkLab.tsx`): the title, the category bar, four cards in two rows, a post beside each side, a rail under the grid, the button. The page only lays these out. The stream reads where they are and plans its route from them.
+- **The stream can now run any route of this kind.** `routeThroughWork` in `src/stream/route.ts`, beside the test shot's `buildRoute`. New to the stream: any number of landings on either side, each with its own strength. Round posts and sloping rails as things it can meet, beside boxes. The two sides meeting again and going on as one. Falls drawn as throws, bent by their own weight. Thrown shards and sparks bouncing off posts and rails.
+- **The posts and the rail are drawn by the stream's renderer**, in front of the light, the way the title and the card are (`postFrag`, `railFrag` in `src/stream/shaders.ts`). They are lit by the buttons' own code: the room and the highlight functions are now exported from `src/metal/shaders.ts` and used by both.
+  - A post, from its edge inward: a rim turned down and milled like a coin's, a flat land, a ring cut in and filled with enamel as the buttons' border is, a dish, a boss with a slot. Turned on a lathe, so its highlights run in rings.
+  - The rail: a round bead along the top that the stream lies on, a web set back and brushed along its length with one enamel line, a smaller bead along the foot. It is carried on a stud at each end, set low so its top is level with the rail's.
+- **The button is lit by the stream** once the two sides have met under it (`plates.setStream`, which was `setWater` from the second build and is renamed).
+- Stills: `reference/studies/18-work-*.jpg`.
+
+**The route as built, and what causes each turn**
+
+1. Down the middle, strikes WORK, parts. As the test shot.
+2. Along the title's top and over its end. As the test shot.
+3. Onto the category bar: it comes down leaning outward and lands a little in from the bar's end. Cause: the bar. Runs out and off the end. Cause: the end.
+4. Onto the top of the first row's card, out along it and thrown off the end. Cause: the card, then its end.
+5. Falls in a bow to the post. A throw: the turn stands halfway out to the post.
+6. Meets the post on its shoulder, on the side toward the cards, and comes off it inward. Cause: the post. A point burns where it touches, for as long as the stream is there.
+7. Runs straight in to the side of the second row's card and strikes it a little above halfway. Comes off outward. Cause: the card's side. A point burns there too.
+8. Falls onto the high end of the rail, turns and runs downhill. Cause: the slope.
+9. Off the rail's low end beside the button it keeps going the way it was, the two sides pass under the button and meet each other below it. Cause: the way each was going, and the other side.
+10. One stream goes on down.
+
+- **Weakest, and why:**
+  - **The meeting.** It happens in the air about 60 px under the button, not on the button. The stream has to get from two rails to one line, and the only things there to turn it are its own momentum and the other side. The wireframe had the line arrive at the button's ends and leave from under it, which a stream with a body cannot do without passing through the button.
+  - **The landings on the bar and on the first card are short**: about 80 and 100 px of run. There is no more room: from the title's end to the post is 480 px on a 1440 screen, shared between the hook, two landings, two throws and the swing out to the post.
+  - **The turn at the post is about 35 degrees.** The post is level with the foot of the first row and the strike is halfway down the second, so the line between them is steep.
+
+**Strikes**
+
+- Strength, against a full strike: title 1, card top 1, card side 0.8, category bar 0.3, post 0.3, rail 0.3, the meeting 0.2 (`work.contact` in `config.ts`).
+- Thrown in one steady scroll down the whole section, at about 420 px a second: title 21, each card top 35 and 37, each card side 29 and 27, each bar end 10 and 11, each post 9 and 10, each rail 10 and 9, the meeting 3.
+- The two sides are the same route. They differ in: how far each leans onto a landing (so they do not land in the same instant), the number each landing throws, every shard and spark, and the sway of the free runs.
+- At rest, the single shard each landing throws: 56 in a minute over all twelve landings. A 900 px screen holds three to five landings, so about one every two to three seconds on screen, as on the test shot.
+- A shard thrown by a strike is let fall 430 units below where it was thrown and then goes (`work.fall`). Without it, what the card tops throw fell the whole height of the section down both margins. The test shot has no such limit.
+
+**Measured**
+
+| | |
+|---|---|
+| `/lab/stream` before and after | 20 frozen frames, desktop, tablet, phone, wide, low tier, both looks, scrolled down and back up: every pixel the same, and every shard's place the same number for number. The before set was taken twice first, and the two agreed, so a frozen frame is repeatable. The reduced motion still differs in 4 pixels of 5 million by one step, which is its cursor light: it is not frozen. The two before sets differed there by 747 |
+| Every shader the test shot and the buttons use | Letter for letter what it was, apart from the buttons' light uniform being renamed from water to stream |
+| Riding shards on the Work route, 1440 wide, recorded 30 times a second | On the title, the bar, both rows, both posts, both rails and under the button: 0 vanished, 0 appeared, 0 jumped. The furthest any moved in a thirtieth of a second: 5.6 px. On free runs the knots thin and gather them over 1.2 s or more, as on the test shot |
+| The same at 834 wide | 0, 0, 0. Furthest 5.0 px |
+| Riding shards with their center inside a card, the bar, the button, a post or a rail | 0 in any frame, both widths |
+| Frame time, scrolling the whole page down and up without stopping | 16.7 ms every frame, none over 25 ms, on desktop and at iPad size. The stream's own work on the processor: 1.8 ms |
+| WebKit at 1194 by 834 and 834 wide | Draws, no errors |
+
+**The budget for two full sides, out loud**
+
+- Unchanged from the test shot: 55 riding shards to every 100 units of route, 260 thrown shards in the air, 700 sparks, on his Mac.
+- What the Work route uses: about 3,200 riding shards on the whole route, of which about 720 are on a 900 px screen at once. 158 thrown shards at most in a scroll. Sparks reach 594 to 663 of the 700 in a fast scroll through several strikes, so a few are dropped at the peak. Nothing else comes near its limit.
+
+**Reviewed**
+
+- **Three fresh Opus reviewers of the pictures. All three failed it.** Two on the first build, one after the fixes.
+  - Fixed after the first two: the turn at the post was a 15 degree kink (the stream now reaches its widest at the post and turns about 35 degrees, with a burning point). The stream hugged the side of the second row's card (the posts and the rail's high ends are further out, so the weave is about 115 px wide). The rail's top highlight was blown out and read as the stream lying across its face. The lighter contacts were as loud as the heavy ones. Thrown shards rained down both margins. The button was not lit. The posts crowded the screen's edge on an iPad.
+  - **What the third still failed, and has not been fixed:** the rail reads as a fluted bar between two studs, without brackets or other form. The meeting is in the air below the button. The landings on the bar and the first card are corner grazes. The iPad view is cramped, with the posts about 34 px from the screen's edge. The posts and rail were a duller brown than the buttons (brightened since, not reviewed again). In the filmstrips every stop shows the same crackle of the leading end, so the difference in strength reads less than the counts say.
+  - One finding was a misreading: shards "bouncing off nothing" beside each post are the fan the post throws, bouncing off the side of the first row's card.
+- **One Opus reviewer of the code.** It found that the single stream after the meeting was never drawn: a not-a-number in the tail's points, which every picture before it had hidden because the leading end happened to sit at the meeting. Fixed, and the tail is in every measurement above. Also fixed from it: on a phone the landing on the bar was drawn in the air beside the bar, old WebGL programs were not freed when the layout changed, the buffer for forks of arc was sized for the test shot, and squares in the new shaders were taken with a power function that some phones leave undefined for negative numbers.
+  - Left from it: the studs at the rail's ends are drawn but nothing bounces off them, and they cast no shadow.
+
+**Fable's own judgment**
+
+- **At the bar:** that every turn but the meeting is at something that can be seen. The posts as objects, enlarged. The strikes on the card tops and sides. Riding shards on every new object. Speed. The test shot untouched.
+- **Not at the bar:** the rail as an object. The meeting. The iPad view, which is the desktop one squeezed. The posts beside the PC Builder: they have form, but one small part does not carry the weight a whole rig does.
+- **Not proven:** whether the whole figure reads as a stream meeting things or as a lit outline round the grid. Reviewers of stills read it as an outline. It was his sketch, and he judges it moving.
+
+**Calls made for Brandon. Each is his to overturn**
+
+1. The two sides meet under the button, not on it, and the button sits above the gap between the rail's two low ends.
+2. The rail is in two halves with a gap in the middle. Its high ends stand under the posts.
+3. The posts are level with the foot of the first row, their centers just below its bottom edge. Their size: 72 px across on a desktop.
+4. The stream strikes the second row's card at 46 percent of the way down its side, not 50.
+5. The title is a little smaller than on the test shot (92 px against 104 on a 1440 screen), to give the landings room.
+6. The stand in card is 460 by 383 on a desktop, taller than the test shot's. The grid is 960 wide.
+7. A point of light burns where the stream touches a post or the side of a card. It is new, and it is only on this page.
+8. The button takes the stream's light. That changes how an approved button looks while the stream is under it: warmer. Its colors are not changed.
+9. The strengths of the contacts, listed under Strikes. The agreement named which are lighter. The numbers are Fable's.
+10. The limit on how far a thrown shard falls.
+11. On a phone: the stream parts on the title and falls past the bar and the single column on both sides, close to the screen's edges. It does not land on the bar, because the fall comes down past the bar's end. That is less than the stand in the agreement describes.
+12. The metal is the buttons' copper, darker than the bright button: aged, not coated. A bright surface shows light less, and these have to show the stream's.
+
+**Not checked**
+
+- A real iPad and a real phone.
+- The page with a real card in it.
+- Reduced motion beyond one still, which draws.
+
+**Things the next session would otherwise rediscover**
+
+- **Take the leading end past the thing you are checking.** With the screen 2300 or 2600 px tall the leading end sat exactly on the meeting, and a stream that ended there looked the same as one that had only got that far.
+- **A fold toward the open side needs both sides.** A shard with an object on each side was thrown from one side of the core to the other whenever the nearer one changed. It is now held off each, kept inside the other's room, and the two weighed by how shut each is.
+- **A turn reads as caused when three things are true:** the line is at its widest or narrowest there, it changes direction by 30 degrees or more, and something happens at the point. A 15 degree kink beside a post reads as passing it.
+- **Tight turns throw riding shards round fast.** Under about 30 units of radius at the end of a top, the ones on the outside moved 7 to 10 px in a thirtieth of a second.
+- A frozen frame of the stream is repeatable to the pixel, so a refactor can be proven by photographs. `scratchpad` tools are not in the repo: the method is to save PNGs of a fixed list of frozen frames with `streamList` and `streamThrown` dumped beside each, twice before and once after.
+- A stream that fails to start now says so in the console. Before, an error in the first build was swallowed.
+- `half` is a reserved word in GLSL.
+
+**Half finished**
+
+- Nothing is uncommitted. Waiting on his look.
+
 ## 2026-11-12 · Handoff to Claude Code: the stream through Work (Fable, web chat)
 
 **What Brandon said**

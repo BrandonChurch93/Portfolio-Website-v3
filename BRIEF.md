@@ -48,7 +48,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 
 ### The stream
 
-- **Where it stands (Nov 12):** the stream's test shot is approved, and he calls it "almost certainly the finalized base" (see "The stream is the finished base" below). It is at `/lab/stream`, with a paused frame at `/lab/stream?hold`. The three small things he asked for after approving it are built, and he has looked: "All my issues have been fixed." The first round's shards are still one switch away: the switch at the foot of that page, or `/lab/stream?shards=first`. Calls Fable made for him while building are listed in `LOG.md` and are his to overturn. None of them is a rule.
+- **Where it stands (Nov 12):** the stream through Work is built at `/lab/work` and waiting on his look: the real stream on the agreed route, with the posts and the rail as real objects. What is at the bar and what is not, and every call Fable made for him while building it, are in `LOG.md`, top entry. None of those calls is a rule. The stream's test shot is approved, and he calls it "almost certainly the finalized base" (see "The stream is the finished base" below). It is at `/lab/stream`, with a paused frame at `/lab/stream?hold`. The three small things he asked for after approving it are built, and he has looked: "All my issues have been fixed." The first round's shards are still one switch away: the switch at the foot of that page, or `/lab/stream?shards=first`. Calls Fable made for him while building are listed in `LOG.md` and are his to overturn. None of them is a rule.
 - It is the most important thing on the site. "It's probably like the most important thing on the site to get right." (Nov 11)
 - It is called the stream, which is his own word for it. It is never called water, in anything written for a model or shown to a visitor. His reason: "if I call it water, then the model is gonna build it as if it acts like water". It is not called the pour either: that was its name while it was going to be molten metal. (Nov 11)
 
@@ -200,6 +200,11 @@ Worked out in a wireframe at `/lab/work-draft` over the day. How it got there is
 - **His ruling:** the top bar and the categories docking into it. They are not part of the stream and stay out of this build. Not ruled on yet (Open 17).
 - The phone's route. One column has not been designed (Open 18).
 - Six cards, the hero above, Skills below, or the route down the rest of the page.
+
+**Built (Nov 12), waiting on his look**
+
+- At `/lab/work`, by Claude Code on his Mac. The test shot at `/lab/stream` was photographed before any shared code was touched and after: 20 frozen frames agree pixel for pixel.
+- He has not seen it. Nothing about it is settled until he says so.
 
 **What stays exactly as approved**
 

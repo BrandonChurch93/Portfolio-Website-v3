@@ -38,7 +38,7 @@ interface Plate extends PlateEntry {
   bakeGen: number;
   sig: string;
   tilt: { x: number; y: number; gx: number; gy: number };
-  water: { x: number; y: number; z: number; k: number };
+  stream: { x: number; y: number; z: number; k: number };
   // The pointer is on the plate or it has focus: v runs 0 to 1 toward goal. pointer is where it is, CSS px in the plate.
   hover: { v: number; goal: number; pinned: boolean };
   pointer: { x: number; y: number };
@@ -93,7 +93,7 @@ const HOVER = { rise: 0.5, fall: 0.2 };
 const DESIGN_MM = { thick: 3.4, bevel: 5.2, cutDepth: 1.7, cutWall: 0.95, panelDepth: 2.4, raise: 2.4, windowDepth: 20 };
 
 // The one plate renderer: a single WebGL2 context, off the page, that draws every plate and copies it to the plate's
-// own canvas. Plates bake once per size and redraw only when the lamp, their place in the viewport, the water or
+// own canvas. Plates bake once per size and redraw only when the lamp, their place in the viewport, the stream or
 // their tilt changed.
 class PlateRenderer {
   private gl: GL | null = null;
@@ -178,7 +178,7 @@ class PlateRenderer {
     if (!ctx) { entry.onState?.('failed'); return () => undefined; }
     const p: Plate = {
       ...entry, ctx, cssW: 0, cssH: 0, dpr: 1, mask: null, b0: null, b1: null, photoTex: null, photoAspect: 1, videoEl: null,
-      visible: false, bakeGen: 0, sig: '', tilt: { x: 0, y: 0, gx: 0, gy: 0 }, water: { x: 0, y: 0, z: 26, k: 0 },
+      visible: false, bakeGen: 0, sig: '', tilt: { x: 0, y: 0, gx: 0, gy: 0 }, stream: { x: 0, y: 0, z: 26, k: 0 },
       hover: { v: 0, goal: 0, pinned: false }, pointer: { x: 0, y: 0 }, hovered: '',
       seed: seedOf(entry.spec),
     };
@@ -222,10 +222,10 @@ class PlateRenderer {
     if (p) { p.pointer.x = x; p.pointer.y = y; }
   }
 
-  // The water near a plate: where it is (viewport CSS px) and how much it lights it, 0 to 1.
-  setWater(host: Element, x: number, y: number, k: number): void {
+  // The stream near a plate: where it is (viewport CSS px) and how much it lights it, 0 to 1.
+  setStream(host: Element, x: number, y: number, k: number): void {
     const p = this.byHost.get(host);
-    if (p) { p.water.x = x; p.water.y = y; p.water.k = k; }
+    if (p) { p.stream.x = x; p.stream.y = y; p.stream.k = k; }
   }
 
   private loadPhoto(p: Plate, photo: PlatePhoto): void {
@@ -399,7 +399,7 @@ class PlateRenderer {
     const L = lamp.get();
     const video = p.videoEl && p.videoEl.readyState >= 2;
     const sig = [Math.round(L.px), Math.round(L.py), Math.round(r.left), Math.round(r.top), clock.view.w, clock.view.h,
-      p.tilt.x.toFixed(3), p.tilt.y.toFixed(3), p.water.k.toFixed(3), Math.round(p.water.x), Math.round(p.water.y), p.hover.v.toFixed(3), !!p.photoTex,
+      p.tilt.x.toFixed(3), p.tilt.y.toFixed(3), p.stream.k.toFixed(3), Math.round(p.stream.x), Math.round(p.stream.y), p.hover.v.toFixed(3), !!p.photoTex,
       p.hover.v > 0 ? `${Math.round(p.pointer.x)}:${Math.round(p.pointer.y)}` : '',
       video ? p.videoEl!.currentTime.toFixed(3) : ''].join();
     if (!force && sig === p.sig) return;
@@ -428,8 +428,8 @@ class PlateRenderer {
     gl.uniform1f(l.u('uLampI'), 1.15 + 0.3 * L.led);
     // A portrait's glass glares softly: the lamp's spot should not sit on a face.
     gl.uniform1f(l.u('uGlare'), p.spec.kind === 'frame' ? 0.06 : 1);
-    gl.uniform3f(l.u('uWater'), p.water.x, p.water.y, p.water.z);
-    gl.uniform1f(l.u('uWaterI'), p.water.k * 8.0);
+    gl.uniform3f(l.u('uStream'), p.stream.x, p.stream.y, p.stream.z);
+    gl.uniform1f(l.u('uStreamI'), p.stream.k * 8.0);
     gl.uniform2f(l.u('uTilt'), p.tilt.x, p.tilt.y);
     // Arriving, it eases at both ends. Leaving, most of the light is gone at once and the last of it tails off.
     const hv = p.hover.v;
