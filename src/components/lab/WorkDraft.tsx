@@ -9,12 +9,12 @@ import styles from './WorkDraft.module.css';
 
 type Pt = [number, number];
 type Node = [x: number, y: number, radius?: number];
-type Variant = 'a' | 'b' | 'c' | 's' | 'p';
+type Variant = 'a' | 'b' | 'c' | 's' | 'p' | 'r';
 type Lit = 'l' | 'r' | 't';
 interface Box { l: number; t: number; r: number; b: number; cx: number; cy: number }
 interface Line { pts: Pt[]; cum: number[]; total: number; d: string }
 interface Strike { line: number; at: number; x: number; y: number; card: number; lit: Lit }
-interface Post { x: number; y: number; r: number; id: number }
+interface Post { x: number; y: number; r: number; id: number; rail?: Pt }
 interface Plan { w: number; h: number; lines: Line[]; strikes: Strike[]; posts: Post[] }
 
 const VARIANTS: { id: Variant; name: string; note: string }[] = [
@@ -22,9 +22,10 @@ const VARIANTS: { id: Variant; name: string; note: string }[] = [
   { id: 'b', name: 'B · Steps', note: 'The right column sits half a row lower. The stream parts on WORK, lands on the category bar, then on top of the first card on each side and rolls off its end. It swings out wide, comes back in and strikes the side of the next card halfway down. The cards wake one at a time, left then right.' },
   { id: 's', name: 'S · Your sketch', note: 'Your drawing. The same stream as B on straight rows, so the two sides mirror each other: onto the top of the first row and off its ends, out wide, then in to strike the side of each card in the second row halfway down.' },
   { id: 'p', name: 'P · With posts', note: 'Your sketch with a metal post beside each side. The stream leaves the end of the first card, meets the post and is turned in by it, toward the side of the card below. The discs are stand ins for the posts.' },
+  { id: 'r', name: 'R · With a rail', note: 'The posts, and a rail under the grid in place of the hook. After the second row the stream simply falls, lands on the high end of a rail that slopes down to the middle, and runs downhill along it. The two sides meet on the button at the low point. The discs and the rail are stand ins.' },
   { id: 'c', name: 'C · Middle', note: 'One stream instead of two, winding down the middle. Not in the switch: open it with ?v=c.' },
 ];
-const SHOWN: Variant[] = ['s', 'p'];
+const SHOWN: Variant[] = ['p', 'r'];
 
 const CATEGORIES = ['Software', 'Games', '3D art', 'Photography'];
 const NUMBERS = ['01', '02', '03', '04'];
@@ -152,7 +153,7 @@ function plan(v: Variant, w: number, h: number, T: Box, K: Box, C: Box[], B: Box
     [-1, 1].forEach((side) => {
       const mine = order.filter((q) => (one ? q.i % 2 === (side < 0 ? 0 : 1) : side < 0 ? q.c.cx < cx : q.c.cx > cx));
       const room = (side < 0 ? G.l : w - G.r) - 22;
-      const post = v === 'p' && !one ? Math.max(14, Math.min(36, (room - 30) / 3)) : 0;
+      const post = (v === 'p' || v === 'r') && !one ? Math.max(14, Math.min(36, (room - 30) / 3)) : 0;
       const gap = one ? 16 : v === 'a' ? 12 : Math.max(32, Math.min(post ? 112 : 92, room - post * 2));
       const out = side < 0 ? G.l - gap : G.r + gap;
       const titleEnd = side < 0 ? T.l - 28 : T.r + 28, barEnd = side < 0 ? K.l - HUG : K.r + HUG;
@@ -169,14 +170,25 @@ function plan(v: Variant, w: number, h: number, T: Box, K: Box, C: Box[], B: Box
       const lands = v === 'a' ? [] : weave(nodes, one ? order[0] : mine[0], mine, side, gap - HUG, post);
       if (v === 'a') nodes.push([out, K.b + 96]);
       const bx = side < 0 ? B.l - 2 : B.r + 2;
-      if (v === 'a' || one) nodes.push([out, B.cy, 26]);
+      let end: Pt = [bx, B.cy];
+      if (v === 'r' && !one && mine.length > 1) {
+        nodes.pop();
+        const hit = nodes[nodes.length - 1], swing = gap - HUG, id = POST - posts.length;
+        const land = hit[0] + side * swing * 0.8, high = land + side * 34;
+        const length = Math.abs(bx - high), top = B.cy - Math.min(64, length * 0.11);
+        const y = top + (B.cy - top) * (Math.abs(land - high) / length) - 7;
+        end = [bx, B.cy - 7];
+        nodes.push([hit[0] + side * swing * 0.5, hit[1] + (y - hit[1]) * 0.5, 260], [land, y, SHARP]);
+        posts.push({ x: high, y: top, r: 12, id, rail: [bx, B.cy] });
+        lands.push({ x: land, y, i: id, lit: 't' });
+      } else if (v === 'a' || one) nodes.push([out, B.cy, 26]);
       else nodes.push([bx + side * 70, B.cy, 60]);
-      nodes.push([bx, B.cy]);
+      nodes.push(end);
       const li = add(nodes, v === 'a' ? 26 : 20);
       mark(li, bar[0], bar[1], BAR, 't');
       if (v === 'a') for (const { c, i } of mine) mark(li, out, c.t + 30, i, litSide(side));
       lands.forEach((q) => mark(li, q.x, q.y, q.i, q.lit));
-      mark(li, bx, B.cy, BUTTON, 't');
+      mark(li, end[0], end[1], BUTTON, 't');
     });
   }
   add([[cx, B.b + 2], [cx, h]], 0);
@@ -184,7 +196,7 @@ function plan(v: Variant, w: number, h: number, T: Box, K: Box, C: Box[], B: Box
 }
 
 export function WorkDraft() {
-  const [v, setV] = useState<Variant>('p');
+  const [v, setV] = useState<Variant>('r');
   const [cat, setCat] = useState(CATEGORIES[0]);
   const [drawn, setDrawn] = useState<Plan | null>(null);
   const main = useRef<HTMLElement>(null);
@@ -207,7 +219,7 @@ export function WorkDraft() {
 
   useEffect(() => {
     const asked = new URLSearchParams(location.search).get('v');
-    if (asked === 'a' || asked === 'b' || asked === 'c' || asked === 's' || asked === 'p') setV(asked);
+    if (asked === 'a' || asked === 'b' || asked === 'c' || asked === 's' || asked === 'p' || asked === 'r') setV(asked);
     whole.current = new URLSearchParams(location.search).has('whole');
     if (whole.current) main.current?.setAttribute('data-whole', '');
   }, []);
@@ -337,6 +349,7 @@ export function WorkDraft() {
             </defs>
             {drawn.posts.map((q, i) => (
               <g key={`${v}-p${i}`} ref={(el) => { studs.current[i] = el; }} className={styles.post} transform={`translate(${q.x.toFixed(1)} ${q.y.toFixed(1)})`}>
+                {q.rail && <line x1="0" y1="0" x2={q.rail[0] - q.x} y2={q.rail[1] - q.y} className={styles.rail} />}
                 <circle r={q.r} className={styles.postBody} />
                 <circle r={q.r * 0.72} className={styles.postRing} />
                 <circle r={q.r * 0.4} className={styles.postRing} />

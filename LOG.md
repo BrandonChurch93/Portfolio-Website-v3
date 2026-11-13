@@ -2,6 +2,30 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-12 · A rail for the foot of Work, proposed and drawn (Fable, web chat)
+
+**What Brandon said**
+
+- Of the posts: "Yeah, this looks good."
+- Of the foot: "The last hook though below the 2nd row of cards is still kind of weird and happening for pretty much no reason. I don't mind it if the stream's actually like move naturally and kind of switch directions, but that's too much. What do you propose?"
+
+**What was weighed**
+
+- Letting the two sides fall on out of Work and meet in the next section. It removes the hook, but it only moves the question to Skills, and Work would end with nothing closing it.
+- A second pair of posts to turn the sides in. The button is some 400 px in and only 150 px down, which is too flat for anything thrown to reach, so it would still need something to carry it.
+- A rail that slopes down to the middle. Downhill is the plainest cause there is, it is one object, and it is the shelf he raised himself. This is the one drawn.
+
+**What was built**, in `plan()` in `src/components/lab/WorkDraft.tsx`
+
+- **R · With a rail**, `?v=r`, which opens first. P is beside it. S is out of the switch and opens by `?v=s`.
+- After the strike on the second row's card the stream bows out and down and lands on the rail 34 px in from its high end. The rail drops about a ninth of its length, at most 64 px, to the side of the button. The stream lies on it the way it lies on a card's top, and the two sides meet on the button.
+- The rail is a line with a small stud at its high end, faint until the stream lands. Stand ins.
+- Still: `reference/studies/17-work-draft-rail-at-the-foot.jpg`, R on the left and P on the right.
+
+**Half finished**
+
+- His verdict on the rail.
+
 ## 2026-11-12 · Posts that turn the stream in, drawn for Brandon to see (Fable, web chat)
 
 **What Brandon said**
