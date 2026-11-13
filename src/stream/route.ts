@@ -67,6 +67,10 @@ export interface Landing {
 }
 
 export interface Route extends Solids {
+  // The rails' finials, and a bar over the title with its own, as straight solids: what is thrown bounces off them
+  // and they throw shadows, but the route is not planned round them. over is that bar, when there is one.
+  fins: Rail[];
+  over: Rail | null;
   branches: [Branch, Branch];
   split: number;
   // How far along each side the two meet again and go on as one. Infinity when they never do.
@@ -301,12 +305,27 @@ export function buildRoute(title: Box, card: Box, width: number, bottom: number,
     { kind: 'strike', side: 0, s: split + T.part[0] * u * 0.9, x: cx, y: title.t, out: 0, face: UP, force: 1, glow: 1, arc: 5, every: 1 },
     { kind: 'land', side: 0, s: first(L, (x, y) => y > shelf - T.land[0] * u * 0.3 && x < cx - (title.r - title.l) / 2), x: xl + T.land[1] * u * 0.2, y: card.t, out: 1, face: UP, force: 1, glow: 1, arc: 6, every: 1 },
   ];
-  return { branches, split, join: [Infinity, Infinity], landings, ...S, flows: [0, 1], fall: Infinity, unit };
+  return { branches, split, join: [Infinity, Infinity], landings, ...S, fins: [], over: null, flows: [0, 1], fall: Infinity, unit };
+}
+
+// A finial's blade for a stone this wide on a rail this thick: its length and half its width, in halves of the
+// rail's thickness.
+export function bladeFor(stone: number, half: number): [number, number] {
+  const F = STREAM.work.finial;
+  return [Math.max(1.5, (stone * F.long) / half - F.collar), (stone * F.wide) / half];
+}
+// A finial as two straight solids, running out from an end of a rail: its collar, and its blade, which is taken as
+// thinner than its widest part and shorter than its point.
+function finial(x: number, y: number, ex: number, ey: number, half: number, blade: [number, number]): Rail[] {
+  const c = STREAM.work.finial.collar * half, tip = c + blade[0] * half * 0.78;
+  return [{ ax: x, ay: y, bx: x + ex * c, by: y + ey * c, half: half * 1.3 }, { ax: x + ex * c, ay: y + ey * c, bx: x + ex * tip, by: y + ey * tip, half: half * blade[1] * 0.45 }];
 }
 
 // What the Work section puts in the stream's way, as it lies on the page.
 export interface WorkPlan {
   title: Box;
+  // A bar over the title, as the box it stands in, or nothing.
+  over: Box | null;
   bar: Box;
   // By rows, the left one first. A single column on a screen too narrow for two.
   cards: Box[];
@@ -330,12 +349,21 @@ export interface WorkPlan {
 export function routeThroughWork(P: WorkPlan): Route {
   const R = STREAM.route, W = STREAM.work, T = R.turn, u = P.unit;
   const cx = (P.title.l + P.title.r) / 2;
-  const top = P.title.t - R.above * u, shelf = P.bar.t - R.above * u;
   const two = P.cards.length >= 4 && P.posts.length === 2 && !!P.rail && !!P.button;
+  const half = W.rail.half * u;
+  // A bar over the title is the rail's own bar, level, with a blade at each end. The stream strikes it and not the
+  // word, runs out along it and comes down off a blade's point. To the route it is one box, blades and all.
+  const span = (W.finial.collar + W.over.blade) * half;
+  const over: Rail | null = two && P.over ? { ax: P.over.l, ay: (P.over.t + P.over.b) / 2, bx: P.over.r, by: (P.over.t + P.over.b) / 2, half } : null;
+  const lid: Box | null = over ? { l: over.ax - span, t: over.ay - half, r: over.bx + span, b: over.ay + half } : null;
+  const head = lid ?? P.title;
+  const top = head.t - R.above * u, shelf = P.bar.t - R.above * u;
   const start: Corner = [cx, R.start * u, 0, 0], part: Corner = [cx, top, T.part[0] * u, T.part[1] * u];
-  const rails: Rail[] = two ? [-1, 1].map((way) => ({ ax: way < 0 ? P.rail!.l : P.rail!.r, ay: P.rail!.t, bx: (way < 0 ? P.button!.l : P.button!.r) + way * W.rail.gap * u, by: P.rail!.b, half: W.rail.half * u })) : [];
-  const S: Solids = { boxes: two ? [P.title, P.bar, ...P.cards.slice(0, 4), P.button!] : [P.title, P.bar, ...P.cards], posts: two ? P.posts : [], rails };
-  const flows = S.boxes.map((_, i) => (two && i === 2 ? -1 : two && i === 3 ? 1 : 0));
+  const rails: Rail[] = two ? [-1, 1].map((way) => ({ ax: way < 0 ? P.rail!.l : P.rail!.r, ay: P.rail!.t, bx: (way < 0 ? P.button!.l : P.button!.r) + way * W.rail.gap * u, by: P.rail!.b, half })) : [];
+  const fins: Rail[] = rails.flatMap((r, i) => { const f = railFrame(r); return finial(r.ax, r.ay, -f.ex, -f.ey, half, bladeFor(P.posts[i].r * 2, half)); });
+  if (over) fins.push(over, ...finial(over.ax, over.ay, -1, 0, half, [W.over.blade, W.over.wide]), ...finial(over.bx, over.by, 1, 0, half, [W.over.blade, W.over.wide]));
+  const S: Solids = { boxes: two ? [P.title, ...(lid ? [lid] : []), P.bar, ...P.cards.slice(0, 4), P.button!] : [P.title, P.bar, ...P.cards], posts: two ? P.posts : [], rails };
+  const flows = S.boxes.map((b) => (two && b === P.cards[0] ? -1 : two && b === P.cards[1] ? 1 : 0));
   const split = top - T.part[0] * u - R.start * u;
   const narrow = roam(P.width);
   // A place the stream meets something, before it is known how far along the side that is: the point of the route to
@@ -348,7 +376,7 @@ export function routeThroughWork(P: WorkPlan): Route {
 
   const side = (way: number) => {
     const hook = way < 0 ? T.left : T.right;
-    const xh = beside(P.title, P.width, u, way);
+    const xh = lid ? (way < 0 ? lid.l - W.over.beside * u : lid.r + W.over.beside * u) : beside(P.title, P.width, u, way);
     const corners: Corner[] = [start, part, [xh, top, hook[0] * u, hook[1] * u]];
     const marks: Mark[] = [];
     // Onto a top: it comes down leaning the way it is to run, never nearer the end than it needs to run at all. Then
@@ -396,13 +424,18 @@ export function routeThroughWork(P: WorkPlan): Route {
     const fall = Math.hypot(hit[0] - thrown, hit[1] - (A.t - R.above * u)) || 1;
     const fromPost = off([(hit[0] - thrown) / fall, (hit[1] - (A.t - R.above * u)) / fall], -way * cos, -sin, W.post.spring);
     const struck: [number, number] = [(way < 0 ? B.l : B.r) + way * R.above * u, B.t + (B.b - B.t) * W.side.at];
-    const atSide = bow(hit, fromPost, struck, W.post.bow);
-    corners.push([struck[0], struck[1], W.side.turn * u, W.side.turn * u]);
-    marks.push(mark('side', way < 0 ? B.l : B.r, struck[1], 0, way < 0 ? Math.PI : 0, C.side, struck));
+    bow(hit, fromPost, struck, W.post.bow);
+    corners.push([struck[0], struck[1], W.side.turn[0] * u, W.side.turn[1] * u]);
+    // What a strike on an upright side throws goes mostly up and out, so that it rises, falls and has somewhere to
+    // land. Thrown evenly up and down, half of it only fell away.
+    marks.push(mark('side', way < 0 ? B.l : B.r, struck[1], way < 0 ? 1 : -1, way < 0 ? Math.PI : 0, C.side, struck));
     const f = railFrame(rail), lift = rail.half + R.above * u;
     const on = (d: number): [number, number] => [rail.ax + f.ex * d + f.nx * lift, rail.ay + f.ey * d + f.ny * lift];
     const land = on(W.rail.in * u), low = on(f.len + W.rail.over * u), met = (W.rail.in + W.rail.land[1] * 0.2) * u;
-    bow(struck, off(atSide, way, 0, W.side.spring), land, W.side.bow);
+    // It is thrown back out from the side more squarely than it came in, goes that way a little, and then its own
+    // weight bends it down to the rail. Without the stretch going out it only slid down beside the card.
+    const leg = W.side.leg * u;
+    corners.push([struck[0] + way * Math.sin(W.side.kick) * leg, struck[1] + Math.cos(W.side.kick) * leg, leg * W.side.ease[0], leg * W.side.ease[1]]);
     corners.push([land[0], land[1], W.rail.land[0] * u, W.rail.land[1] * u], [low[0], low[1], W.rail.off[0] * u, W.rail.off[1] * u]);
     marks.push(mark('rail', rail.ax + f.ex * met + f.nx * rail.half, rail.ay + f.ey * met + f.ny * rail.half, way < 0 ? 1 : -1, Math.atan2(f.ny, f.nx), C.rail, on(met * 2 - W.rail.in * u)));
     const across = Math.abs(cx - low[0]), my = low[1] + across * W.meet.slope;
@@ -434,7 +467,7 @@ export function routeThroughWork(P: WorkPlan): Route {
   }
   rides(branches, S, u);
 
-  const landings: Landing[] = [{ ...met('strike', cx, P.title.t, 0, UP, C.title), side: 0, s: split + T.part[0] * u * 0.9 }];
+  const landings: Landing[] = [{ ...met('strike', cx, head.t, 0, UP, C.title), side: 0, s: split + T.part[0] * u * 0.9 }];
   sides.forEach((s, b) => {
     const br = branches[b];
     let from = split;
@@ -451,7 +484,7 @@ export function routeThroughWork(P: WorkPlan): Route {
     const br = branches[0], s = first(br, (x) => Math.abs(x - cx) < W.meet.near * u, landings.filter((l) => l.side === 0).at(-1)!.s + 40 * u);
     landings.push({ ...met('meet', cx, br.y[Math.min(br.n - 1, Math.round(s / br.step))], 0, -UP, C.meet), side: 0, s });
   }
-  return { branches, split, join, landings, ...S, flows, fall: W.fall * u, unit: u };
+  return { branches, split, join, landings, ...S, fins, over, flows, fall: W.fall * u, unit: u };
 }
 
 // The place this far along a branch: x, y, and the direction of travel there.

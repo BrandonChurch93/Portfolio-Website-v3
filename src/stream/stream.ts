@@ -1,13 +1,14 @@
 import { registry, stats } from '../hooks/registry';
 import { lamp } from '../lamp/lamp';
 import { signedDistance } from '../metal/edt';
+import { CARD } from '../metal/mask';
 import { plates } from '../metal/renderer';
 import { clock } from '../world/clock';
 import { tiers } from '../world/tier';
 import { STREAM, STREAM_BUDGET, STREAM_STEP, unitFor, type StreamBudget } from './config';
 import { hash, seeded } from './rand';
-import { CORE_FLOATS, INSTANCE_FLOATS, KINDS, LAYERS, STREAK_FLOATS, StreamRenderer, type CardShape, type Frame, type TitleField } from './renderer';
-import { along, at, buildRoute, riddenAt, routeThroughWork, UP, type Box, type Route } from './route';
+import { CORE_FLOATS, INSTANCE_FLOATS, KINDS, LAYERS, STREAK_FLOATS, StreamRenderer, type CardShape, type Frame, type PlateCard, type TitleField } from './renderer';
+import { along, at, bladeFor, buildRoute, railFrame, riddenAt, routeThroughWork, UP, type Box, type Route } from './route';
 import { CORE_HALF } from './shaders';
 import { buildShards, facetKind, FIRST_KINDS, type Look } from './shards';
 import { FORK_FLOATS, LOOSE_FLOATS, SPARK_FLOATS, StreamSim } from './sim';
@@ -20,11 +21,18 @@ import { FORK_FLOATS, LOOSE_FLOATS, SPARK_FLOATS, StreamSim } from './sim';
 export interface StreamHandle {
   // Swap between the facets and the first round's shards, where it stands.
   setLook(look: Look): void;
+  // Whether the stones' faces light when the stream reaches them.
+  setFaces(on: boolean): void;
+  // Plan the route again: something on the page has come or gone without the page changing size.
+  refresh(): void;
   dispose(): void;
 }
 
 // The Work section's parts, as they are on the page. A post or the rail that is not shown is left out of the route.
+// A card that holds a lit plate of its own (src/components/WorkCard.tsx) is a project card: the stream meets it and
+// lights it, and does not draw it. over is a bar that may stand over the title.
 export interface WorkParts {
+  over?: HTMLElement;
   bar: HTMLElement;
   cards: HTMLElement[];
   posts: HTMLElement[];
@@ -39,6 +47,8 @@ interface Options {
   // Open with the frame held: nothing moves but the cursor's light. The test shot only.
   hold?: boolean;
   look?: Look;
+  // Whether the stones' faces light when the stream reaches them. They do unless this says not.
+  faces?: boolean;
 }
 
 const S = STREAM;
@@ -58,6 +68,33 @@ interface Riders {
   f: Float32Array;
 }
 const RIDER = 17;
+
+// A project card on the page: its plate, the element the pointer turns, its box at rest, and what the plate
+// renderer has said of it so far.
+interface Card {
+  host: Element;
+  turned: HTMLElement;
+  shape: CardShape;
+  inset: number;
+  deep: number;         // how far off the eye is taken to be, for the turn
+  baked: number;
+  bake: string;
+  win: [number, number, number, number];
+  frame: number;
+  rim: number;
+  scale: number;
+  // Frames left in which its size on the page is still read: it goes on growing or shrinking a moment after the
+  // pointer has come or gone.
+  watch: number;
+  // The landings that are on it.
+  landings: number[];
+}
+const FLAT: Float32Array = new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1]);
+// A card turned by its page: about x, then about y, grown, and seen from deep off. By columns.
+function turnOf(ax: number, ay: number, grown: number, deep: number): Float32Array {
+  const ca = Math.cos(ax), sa = Math.sin(ax), cb = Math.cos(ay), sb = Math.sin(ay);
+  return new Float32Array([grown * cb, grown * sa * sb, (grown * sb * ca) / deep, 0, grown * ca, (-grown * sa) / deep, 0, 0, 1]);
+}
 
 function makeRiders(route: Route, budget: StreamBudget, look: Look): Riders {
   const r = seeded(S.seed * 131 + 5), u = route.unit, K = S.shards, sizes = S.sizes[look];
@@ -154,6 +191,15 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   let lastLine = 0, settled = '', spent = 0;
   let heldLine: number | null = null;
   let buttonPlate: Element | null = null;
+  let cards: Card[] = [];
+  // The cards the pointer has turned or grown this frame: what lies on one of them goes with it.
+  const bent: { c: Card; m: Float32Array }[] = [];
+  let version = 0;
+  // For a close still: the most device pixels the canvas may draw to a CSS pixel, in place of the budget's.
+  let sharp = 0;
+  let faces = opts.faces !== false;
+  // The landing on each stone, in the order the stones are drawn.
+  let stones: number[] = [];
   let touch: { x: number; y: number } | null = null;
   let script: { y0: number; y1: number; t0: number; t1: number } | null = null;
   let disposed = false;
@@ -166,7 +212,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     clock.readView();
     const hr = host.getBoundingClientRect();
     const w = Math.max(1, hr.width), h = Math.max(1, canvas.getBoundingClientRect().height);
-    const key = `${tier}:${Math.round(w)}:${Math.round(h)}:${Math.round(hr.height)}`;
+    const key = `${tier}:${Math.round(w)}:${Math.round(h)}:${Math.round(hr.height)}:${version}`;
     if (key === built) return;
     built = key;
     still = tier === 'static';
@@ -177,8 +223,8 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     hostTop = hr.top + scrollY;
     unit = unitFor(innerWidth, parseFloat(getComputedStyle(document.documentElement).fontSize) || 16);
     presence = Math.max(0, Math.min(1, (innerWidth - S.presence[0]) / (S.presence[1] - S.presence[0])));
-    const want = Math.min(devicePixelRatio || 1, budget.pixelRatio);
-    const dpr = Math.min(want, Math.sqrt(budget.pixels / (cssW * cssH)));
+    const want = Math.min(devicePixelRatio || 1, sharp || budget.pixelRatio);
+    const dpr = Math.min(want, Math.sqrt((sharp ? 3.2e7 : budget.pixels) / (cssW * cssH)));
     const made = titleField(opts.title, hr, dpr);
     const boxOf = (el: HTMLElement): Box => { const r = el.getBoundingClientRect(); return { l: r.left - hr.left, t: r.top - hr.top, r: r.right - hr.left, b: r.bottom - hr.top }; };
     const shapeOf = (el: HTMLElement): CardShape => { const b = boxOf(el); return { x: (b.l + b.r) / 2, y: (b.t + b.b) / 2, hw: (b.r - b.l) / 2, hh: (b.b - b.t) / 2, r: parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0 }; };
@@ -187,12 +233,37 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     const cardBox: Box = opts.card ? boxOf(opts.card) : ink;
     const bottom = hostH + 260 * unit;
     const W = opts.work;
+    cards = [];
     if (W) {
       const posts = W.posts.filter(shown).map((el) => { const b = boxOf(el); return { x: (b.l + b.r) / 2, y: (b.t + b.b) / 2, r: (b.r - b.l) / 2 }; });
-      route = routeThroughWork({ title: ink, bar: boxOf(W.bar), cards: W.cards.filter(shown).map(boxOf), posts, rail: shown(W.rail) ? boxOf(W.rail) : null, button: shown(W.button) ? boxOf(W.button) : null, width: w, bottom, unit });
-      renderer.configure(budget, { cards: 1 + W.cards.length, posts: route.posts.length, rails: route.rails.length }, route.join[0] < Infinity);
+      // A project card's metal begins a little inside its box, and that is the edge the stream meets.
+      const plain: HTMLElement[] = [];
+      const edges = W.cards.filter(shown).map((el) => {
+        const host = el.querySelector('[data-kind="card"]'), b = boxOf(el), k = (b.r - b.l) / CARD.width;
+        if (!host || !host.parentElement) { plain.push(el); return b; }
+        const inset = 1.5 * k, seat = inset + S.work.seat * k;
+        cards.push({
+          host, turned: host.parentElement, inset, shape: { x: (b.l + b.r) / 2, y: (b.t + b.b) / 2, hw: (b.r - b.l) / 2, hh: (b.b - b.t) / 2, r: CARD.radius * k },
+          deep: parseFloat(getComputedStyle(el).perspective) || 1e6, baked: -1, bake: '', win: [0, 0, 1, 1], frame: 0, rim: 0, scale: 1, watch: 0, landings: [],
+        });
+        return { l: b.l + seat, t: b.t + seat, r: b.r - seat, b: b.b - seat };
+      });
+      route = routeThroughWork({ title: ink, over: W.over && shown(W.over) ? boxOf(W.over) : null, bar: boxOf(W.bar), cards: edges, posts, rail: shown(W.rail) ? boxOf(W.rail) : null, button: shown(W.button) ? boxOf(W.button) : null, width: w, bottom, unit });
+      for (const c of cards) {
+        const near = (x: number, y: number) => Math.hypot(Math.max(Math.abs(x - c.shape.x) - c.shape.hw, 0), Math.max(Math.abs(y - c.shape.y) - c.shape.hh, 0)) < 6 * unit;
+        c.landings = route.landings.flatMap((L, i) => ((L.kind === 'land' || L.kind === 'side') && near(L.x, L.y) ? [i] : []));
+      }
+      const reliefs = [W.bar, ...plain].map(shapeOf), stood = cards.map((c) => ({ ...c.shape, hw: c.shape.hw - c.inset, hh: c.shape.hh - c.inset }));
+      // The two halves of the rail are one drawing in a mirror: the same marks, a blade on the outer end, a cap on the
+      // inner one, and two keels under each.
+      const K = S.work.keel;
+      const drawn = route.rails.map((r, i) => { const long = railFrame(r).len / r.half; return { ...r, own: 1.3, blade: bladeFor(route!.posts[i].r * 2, r.half), ends: [1, 0] as [number, number], keel: [K.at[0] * long, K.at[1] * long, K.size] as [number, number, number] }; });
+      if (route.over) { const O = S.work.over, long = railFrame(route.over).len / route.over.half; drawn.push({ ...route.over, own: 4.7, blade: [O.blade, O.wide], ends: [1, 1], keel: [O.at[0] * long, O.at[1] * long, O.size] }); }
+      const bars = [...route.rails, ...route.fins];
+      renderer.configure(budget, { cards: reliefs.length + stood.length, posts: route.posts.length, rails: bars.length, plates: cards.length, drawn: drawn.length }, route.join[0] < Infinity);
       renderer.resize(Math.round(cssW * dpr), Math.round(cssH * dpr), dpr);
-      renderer.setRelief(made ? made.field : null, [W.bar, ...W.cards.filter(shown)].map(shapeOf), route.posts.map((o, i) => ({ ...o, own: 0.7 + i * 2.3 })), route.rails.map((r, i) => ({ ...r, own: 1.3 + i * 3.1 })));
+      renderer.setRelief(made ? made.field : null, reliefs, route.posts.map((o, i) => ({ ...o, own: i ? -1 : 1 })), drawn, stood, bars);
+      stones = route.landings.flatMap((L, i) => (L.kind === 'post' ? [i] : []));
       buttonPlate = route.join[0] < Infinity ? W.button.querySelector('[data-kind]') : null;
     } else {
       route = buildRoute(ink, cardBox, w, bottom, unit);
@@ -231,6 +302,66 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     settled = '';
   };
 
+  // ---- the project cards as they stand this frame
+  const platesNow = (): PlateCard[] => {
+    bent.length = 0;
+    const keep = new Set<string>();
+    const out = cards.map((c) => {
+      const st = plates.cardOf(c.host);
+      let turn = FLAT, tiltX = 0, tiltY = 0, flare = 0, warm = 0, fx = 0, fy = 0;
+      if (st) {
+        if (st.baked !== c.baked) {
+          const bake = plates.bakeOf(c.host, (key) => renderer!.hasBake(key));
+          if (bake) {
+            const m = bake.mask, k = (2 * c.shape.hw) / m.w, win = m.win ?? [0, 0, 0, 0];
+            c.baked = st.baked;
+            c.bake = bake.key;
+            c.win = [(win[0] - m.w / 2) * k, (win[1] - m.h / 2) * k, win[2] * k, win[3] * k];
+            c.frame = m.bezel * k;
+            c.rim = m.bead * k;
+            if (bake.b0 && bake.b1) renderer!.setBake(bake.key, bake.w, bake.h, bake.b0, bake.b1);
+          }
+        }
+        if (st.awake > 0 || st.turnX !== 0 || st.turnY !== 0) c.watch = 40;
+        if (c.watch > 0) { c.watch--; c.scale = parseFloat(getComputedStyle(c.turned).scale) || 1; } else c.scale = 1;
+        if (c.scale !== 1 || st.turnX !== 0 || st.turnY !== 0) {
+          turn = turnOf(st.turnX, st.turnY, c.scale, c.deep);
+          tiltX = st.turnX;
+          tiltY = st.turnY;
+          bent.push({ c, m: turn });
+        }
+      }
+      // A full strike: the rim flares, and the picture warms toward its own colors and settles back within a second.
+      if (sim && !still) for (const i of c.landings) {
+        const since = sim.time - sim.hitAt[i], hard = sim.hit[i];
+        if (since < 0 || since > 1.2) continue;
+        const f = hard * Math.exp(-since / S.struck.flare);
+        if (f > flare) { flare = f; fx = route!.landings[i].x - c.shape.x; fy = route!.landings[i].y - c.shape.y; }
+        warm = Math.max(warm, S.struck.warm * hard * (since < S.struck.rise ? since / S.struck.rise : Math.exp(-(since - S.struck.rise) / S.struck.settle)));
+      }
+      plates.setWarm(c.host, warm < 0.01 ? 0 : warm);
+      if (c.bake) keep.add(c.bake);
+      return { ...c.shape, inset: c.inset, turn, tiltX, tiltY, bake: c.bake, win: c.win, frame: c.frame, rim: c.rim, unit: (2 * c.shape.hw) / CARD.width, flare, struck: [fx, fy] as [number, number] };
+    });
+    if (cards.length) renderer!.keepBakes(keep);
+    return out;
+  };
+
+  // What lies on a card goes with it when the pointer turns and grows it: a point within a few units of the card is
+  // carried as if fixed to the card's own plane, and one further off less, until it is not moved at all.
+  const bend = (x: number, y: number, out: Float32Array): void => {
+    out[0] = x; out[1] = y;
+    for (const { c, m } of bent) {
+      const s = c.shape, dx = Math.max(Math.abs(x - s.x) - s.hw, 0), dy = Math.max(Math.abs(y - s.y) - s.hh, 0), d = Math.hypot(dx, dy) / unit;
+      if (d >= S.struck.carry[1]) continue;
+      const k = d <= S.struck.carry[0] ? 1 : 1 - ((d - S.struck.carry[0]) / (S.struck.carry[1] - S.struck.carry[0])) ** 2 * (3 - (2 * (d - S.struck.carry[0])) / (S.struck.carry[1] - S.struck.carry[0]));
+      const qx = x - s.x, qy = y - s.y, w = m[2] * qx + m[5] * qy + 1;
+      out[0] += ((m[0] * qx + m[3] * qy) / w - qx) * k;
+      out[1] += ((m[1] * qx + m[4] * qy) / w - qy) * k;
+    }
+  };
+  const moved = new Float32Array(2);
+
   // ---- the core: a ribbon down each side, as far as its leading end
   const fillCore = (top: number, bottom: number, runs: [number, number, number, number]): void => {
     if (!route || !sim) return;
@@ -245,8 +376,10 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
         const i0 = Math.floor(from / br.step), i1 = Math.floor(to / br.step);
         const push = (x: number, y: number, tx: number, ty: number, s: number) => {
           const w = CORE_HALF * unit;
-          core[n++] = x - ty * w; core[n++] = y + tx * w; core[n++] = -CORE_HALF; core[n++] = s / unit; core[n++] = (head - s) / unit;
-          core[n++] = x + ty * w; core[n++] = y - tx * w; core[n++] = CORE_HALF; core[n++] = s / unit; core[n++] = (head - s) / unit;
+          let ax = x - ty * w, ay = y + tx * w, bx = x + ty * w, by = y - tx * w;
+          if (bent.length) { bend(ax, ay, moved); ax = moved[0]; ay = moved[1]; bend(bx, by, moved); bx = moved[0]; by = moved[1]; }
+          core[n++] = ax; core[n++] = ay; core[n++] = -CORE_HALF; core[n++] = s / unit; core[n++] = (head - s) / unit;
+          core[n++] = bx; core[n++] = by; core[n++] = CORE_HALF; core[n++] = s / unit; core[n++] = (head - s) / unit;
         };
         for (let i = i0; i <= i1; i++) {
           if (br.y[i] < top - 80 && br.floor[Math.min(br.n - 1, i + 40)] < top - 80) continue;
@@ -266,7 +399,11 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     if (!route || !sim) return 0;
     let n = 0;
     const u = unit, out = streaks;
-    const vert = (x: number, y: number, across: number, amount: number, along: number) => { if (n + 5 > out.length) return; out[n++] = x; out[n++] = y; out[n++] = across; out[n++] = amount; out[n++] = along; };
+    const vert = (x: number, y: number, across: number, amount: number, along: number) => {
+      if (n + 5 > out.length) return;
+      if (bent.length) { bend(x, y, moved); x = moved[0]; y = moved[1]; }
+      out[n++] = x; out[n++] = y; out[n++] = across; out[n++] = amount; out[n++] = along;
+    };
     const streak = (x0: number, y0: number, a0: number, w0: number, x1: number, y1: number, a1: number, w1: number) => {
       const dx = x1 - x0, dy = y1 - y0, l = Math.hypot(dx, dy) || 1, nx = (-dy / l) * 1.5, ny = (dx / l) * 1.5;
       vert(x0 - nx * w0, y0 - ny * w0, -1.5, a0, 0); vert(x0 + nx * w0, y0 + ny * w0, 1.5, a0, 0); vert(x1 - nx * w1, y1 - ny * w1, -1.5, a1, 0);
@@ -373,6 +510,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
         qx = ox; qy = oy; qz = oz; qw = ow;
       }
       const o = n * INSTANCE_FLOATS;
+      if (bent.length) { bend(cx, cy, moved); cx = moved[0]; cy = moved[1]; bend(x, y, moved); x = moved[0]; y = moved[1]; }
       sc[o] = x; sc[o + 1] = y; sc[o + 2] = z; sc[o + 3] = size * (1 + z * K.depth / u);
       sc[o + 4] = qx; sc[o + 5] = qy; sc[o + 6] = qz; sc[o + 7] = qw;
       sc[o + 8] = cx; sc[o + 9] = cy; sc[o + 10] = tx; sc[o + 11] = ty;
@@ -542,13 +680,16 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     const led = touch ? 1 : L.led;
     const lx = touch ? touch.x : L.px, ly = (touch ? touch.y : L.py + clock.view.y) - hostTop;
     const lz = 120 * unit;
+    const stood = platesNow();
     fillCore(canvasTop, canvasTop + cssH, runs);
     glints = 0;
     const drawn = fillShards(now, canvasTop, canvasTop + cssH, lx, ly, lz, led);
     const streakCount = fillStreaks(now);
     const f: Frame = {
       view: [0, canvasTop, cssW, cssH], time: now, unit, lamp: [lx, ly, lz, 0.5 + 0.5 * led], energy: [sim.energy[0], sim.energy[1]], split: route.split / unit, end: route.join[1] / unit, look, presence,
-      core, coreRuns: runs, streaks, streakCount, shards, lots,
+      core, coreRuns: runs, streaks, streakCount, shards, lots, plates: stood,
+      // A lit face is never quite steady: it breathes a little, as coals do.
+      lit: stones.map((i) => (faces ? sim!.on[i] * (still ? 1 : 0.92 + 0.08 * Math.sin(now * 2.3 + i) * Math.sin(now * 1.1 + i * 1.7)) : 0)),
     };
     renderer.draw(f);
     // The button stands where the two sides meet, and is lit from there once they have.
@@ -571,12 +712,14 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
 
   let offFrame = () => {};
   let offTier = () => {};
-  const resized = new ResizeObserver(() => build());
+  // A plan that cannot be made says so, and the page shows what it has without the stream.
+  const plan = () => { try { build(); } catch (e) { console.error(e); host.dataset.stream = 'off'; } };
+  const resized = new ResizeObserver(plan);
   const ready = registry.track(document.fonts.ready.then(() => document.fonts.load(getComputedStyle(opts.title).font || '600 16px Sora')).catch(() => undefined).then(() => {
     if (disposed) return;
     build();
     offFrame = clock.onFrame(frame);
-    offTier = tiers.subscribe(build);
+    offTier = tiers.subscribe(plan);
     resized.observe(host);
     resized.observe(canvas);
   }).catch((e: unknown) => {
@@ -587,6 +730,9 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   void ready;
 
   registry.tool('streamState', () => ({ on: host.dataset.stream, look, unit, shards: stats.streamShards, sparks: sim?.sparkCount ?? 0, loose: sim?.looseCount ?? 0, head: sim ? [sim.head[0], sim.head[1]] : [], energy: sim ? [sim.energy[0], sim.energy[1]] : [], riders: riders?.n ?? 0, boxes: route?.boxes ?? [], landings: route?.landings.map((L) => ({ kind: L.kind, side: L.side, s: L.s, x: L.x, y: L.y })) ?? [], posts: route?.posts ?? [], rails: route?.rails ?? [], split: route?.split ?? 0, join: route ? route.join.map((j) => (j < Infinity ? j : -1)) : [] }));
+  // The route itself: how far apart its points are, and each side's points as x and y, for measuring how the stream
+  // comes to a thing and leaves it.
+  registry.tool('streamRoute', () => ({ step: route?.branches[0].step ?? 0, sides: route ? route.branches.map((b) => Array.from({ length: b.n * 2 }, (_, i) => (i % 2 ? b.y[i >> 1] : b.x[i >> 1]))) : [] }));
   // How many shards the last frame drew inside a rectangle of the page, how many of those were thrown loose, and how
   // much of the route runs through it.
   registry.tool('streamCount', (l: number, t: number, r: number, b: number) => {
@@ -637,6 +783,10 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     }
     return out;
   });
+  // streamPlan() plans the route again from where things are on the page now. streamSharp(n) lets the canvas draw
+  // at up to n device pixels to a CSS pixel, for a close still, and streamSharp() puts the budget back.
+  registry.tool('streamPlan', () => { version++; plan(); });
+  registry.tool('streamSharp', (n?: number) => { sharp = n ?? 0; version++; plan(); });
   // streamPlay(fromScroll, toScroll, fromTime, toTime) scripts a scroll for frozen frames. streamPlay() ends it.
   registry.tool('streamPlay', (y0?: number, y1?: number, t0?: number, t1?: number) => {
     script = y0 === undefined || y1 === undefined ? null : { y0, y1, t0: t0 ?? 1, t1: t1 ?? 2 };
@@ -649,6 +799,13 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       look = next;
       populate();
       if (!still) sim?.settle(lastLine, clock.now());
+    },
+    setFaces(on: boolean) {
+      faces = on;
+    },
+    refresh() {
+      version++;
+      plan();
     },
     dispose() {
       disposed = true;

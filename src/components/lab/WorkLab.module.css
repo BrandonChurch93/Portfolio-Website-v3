@@ -32,15 +32,20 @@
   color: var(--text-3);
 }
 
-/* The section is laid out from the middle outward: the grid, then room beside it for the stream to swing out, then a
-   post, then a margin. Every part reads its place from these. */
+/* The section is laid out from the screen's edge inward: a margin nothing stands in, a stone, the room the stream
+   swings out through, and the grid takes what is left. Every part reads its place from these.
+   --post is the post of the first build, which the stone is measured against: 15 percent wider. --swing is the first
+   build's, unchanged, so the stream comes no closer to the cards than it did. */
 .section {
-  --side: clamp(7.6rem, 15.5vw, 15rem);
-  --grid: min(60rem, 100vw - 2 * var(--side));
-  --gap: clamp(1.25rem, 2.8vw, 2.5rem);
+  --margin: 3rem;
   --post: clamp(2.9rem, 5.2vw, 4.5rem);
+  --stone: calc(var(--post) * 1.15);
   --swing: clamp(3rem, 10.6vw - 2.3rem, 7.25rem);
+  --grid: min(60rem, 100vw - 2 * (var(--margin) + var(--stone) + var(--swing)));
+  --gap: clamp(1.25rem, 2.8vw, 2.5rem);
   --drop: clamp(2.2rem, 4.2vw, 3.6rem);
+  /* How far in under the stone the rail's high end stands, so that the point of its finial clears the margin. */
+  --tuck: 0.5rem;
   position: relative;
   display: grid;
   justify-items: center;
@@ -50,6 +55,7 @@
 
 /* The spacing after the last letter is taken back on the left, so the word sits on the page's center line. */
 .title {
+  position: relative;
   padding-left: 0.3em;
   font-size: clamp(3.2rem, 6.4vw, 6.2rem);
   font-weight: 600;
@@ -58,6 +64,21 @@
   text-transform: uppercase;
   white-space: nowrap;
   color: var(--text);
+}
+
+/* A bar over the word, for looking at with and without. It takes no room of its own, so the page does not move
+   when it is switched on. The stream draws it: this is only where it stands. */
+.over {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 0.06em);
+  width: calc(100% - 0.25em);
+  height: 1.4rem;
+  translate: -50% 0;
+}
+
+.over[hidden] {
+  display: none;
 }
 
 .bar {
@@ -104,7 +125,7 @@
 
 .grid {
   display: grid;
-  gap: clamp(3rem, 5.4vw, 4.6rem);
+  gap: clamp(3.4rem, 6vw, 5.2rem);
   width: var(--grid);
   margin-top: clamp(4.4rem, 8vw, 6.6rem);
 }
@@ -116,39 +137,33 @@
   gap: var(--gap);
 }
 
-.card {
-  aspect-ratio: 1.2;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-3);
-  background: var(--bg-2);
-}
-
-/* A post stands beside each side of the grid, level with the foot of the first row. */
-.post {
+/* A stone stands beside each side of the grid, level with the foot of the first row. Its near edge is where the
+   post's was, and it is wider on the side away from the cards. The stream draws it: this is only where it stands. */
+.stone {
   position: absolute;
   bottom: calc(var(--post) * -0.5 + 0.5rem);
-  width: var(--post);
-  height: var(--post);
+  width: var(--stone);
+  height: var(--stone);
   border: 1px solid var(--line-strong);
   border-radius: 50%;
   background: radial-gradient(circle at 40% 35%, var(--bronze), var(--bronze-deep) 70%);
 }
 
-.post[data-side='left'] {
+.stone[data-side='left'] {
   right: calc(100% + var(--swing));
 }
 
-.post[data-side='right'] {
+.stone[data-side='right'] {
   left: calc(100% + var(--swing));
 }
 
-/* The rail's box: its top corners are the two high ends, each under a post, and its bottom is the height of the low
-   ends beside the button. The stream draws the rail from it. */
+/* The rail's box: its top corners are the two high ends, each a little in under a stone, and its bottom is the
+   height of the low ends beside the button. The stream draws the rail from it, with a finial beyond each high end. */
 .foot {
   position: relative;
-  width: calc(var(--grid) + 2 * var(--swing) + var(--post));
+  width: calc(var(--grid) + 2 * (var(--swing) + var(--tuck)));
   height: var(--drop);
-  margin-top: clamp(4.6rem, 8vw, 6.4rem);
+  margin-top: clamp(5rem, 8.6vw, 7rem);
 }
 
 .rail {
@@ -164,42 +179,92 @@
   translate: -50% 0;
 }
 
-/* Once the stream is drawing, it draws the title, the bar, the cards, the posts and the rail itself, lit. */
+/* Once the stream is drawing, it draws the title, the bar, the stones and the rail itself, lit. A card is its own
+   lit plate, and the stream only lays its light on it. */
 .page[data-stream='on'] .title {
   color: transparent;
 }
 
-.page[data-stream='on'] .bar,
-.page[data-stream='on'] .card {
+.page[data-stream='on'] .bar {
   border-color: transparent;
   background: none;
 }
 
-.page[data-stream='on'] .post,
+.page[data-stream='on'] .stone,
 .page[data-stream='on'] .rail {
   border-color: transparent;
   background: none;
 }
 
-/* Too narrow for two columns. One column, no posts and no rail: a stand in until the phone's route is designed. */
-@media (max-width: 719px) {
+/* The two switches stay on screen, so each can be thrown at any point of the scroll. */
+.switches {
+  position: fixed;
+  left: var(--edge);
+  bottom: var(--space-5);
+  z-index: 5;
+  display: grid;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+
+.switch {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.switchLabel {
+  min-width: 9.5rem;
+  color: var(--text-3);
+}
+
+.option {
+  min-height: 2.75rem;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-2);
+  background: var(--bg-2);
+  color: var(--text-2);
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.option[aria-pressed='true'] {
+  border-color: var(--copper);
+  color: var(--copper-light);
+}
+
+.option:focus-visible {
+  outline: 2px solid var(--copper-light);
+  outline-offset: 2px;
+}
+
+/* Too narrow for two cards of at least 340 px side by side with the stream's room and the margin kept: under 1100 px
+   a card would be narrower than that. One column, no stones and no rail: a stand in until the route for a narrow
+   screen is designed. */
+@media (max-width: 1099px) {
   .section {
-    --side: 4.6rem;
-    --grid: calc(100vw - 2 * var(--side));
+    --grid: min(30rem, 100vw - 9.2rem);
   }
 
   .bar {
     grid-template-columns: 1fr 1fr;
-    width: calc(var(--grid) + 2.4rem);
+    width: min(calc(var(--grid) + 2.4rem), 100vw - 6rem);
   }
 
   .row {
     grid-template-columns: 1fr;
-    gap: clamp(3rem, 5.4vw, 4.6rem);
+    gap: clamp(3.4rem, 6vw, 5.2rem);
   }
 
-  .post,
-  .rail {
+  .stone,
+  .rail,
+  .over {
     display: none;
   }
 
@@ -213,5 +278,13 @@
   .button {
     position: static;
     translate: none;
+  }
+
+  .switches {
+    font-size: 0.6875rem;
+  }
+
+  .switchLabel {
+    min-width: 0;
   }
 }

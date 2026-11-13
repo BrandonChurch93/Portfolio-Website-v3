@@ -1,6 +1,6 @@
 import { STREAM, STREAM_STEP, type StreamBudget } from './config';
 import { hash } from './rand';
-import { at, railFrame, reachFor, UP, type Landing, type Route } from './route';
+import { at, railFrame, reachFor, UP, type Landing, type Rail, type Route } from './route';
 
 // Everything in the stream that moves by its own weight: the two leading ends, the sparks, the shards thrown loose at
 // a landing, and the forks of arc. It only ever moves in fixed steps, and every random choice is a hash of a counter,
@@ -32,6 +32,9 @@ export class StreamSim {
   // When each landing was last struck by a leading end, and how hard.
   readonly hitAt: Float64Array;
   readonly hit: Float32Array;
+  // How long the stream has been on each landing, as a warmth from 0 to 1 that comes up when a leading end reaches
+  // it and dies away once the stream has drawn back.
+  readonly on: Float32Array;
   sparkCount = 0;
   looseCount = 0;
   forkCount = 0;
@@ -42,6 +45,8 @@ export class StreamSim {
   // When each landing next throws its single shard at rest, and which one it is.
   private readonly nextAt: Float64Array;
   private readonly nextN: Int32Array;
+  // Every straight solid on the page, the rails first, and each one's own directions.
+  private readonly bars: Rail[];
   private readonly frames: ReturnType<typeof railFrame>[];
 
   constructor(private route: Route, private budget: StreamBudget, private seed: number, private sizes: [number, number]) {
@@ -53,11 +58,13 @@ export class StreamSim {
     this.forks = new Float32Array(this.maxForks * FORK);
     this.hitAt = new Float64Array(landings).fill(-100);
     this.hit = new Float32Array(landings);
+    this.on = new Float32Array(landings);
     this.phase = new Float64Array(emitters);
     this.count = new Int32Array(emitters);
     this.nextAt = new Float64Array(landings);
     this.nextN = new Int32Array(landings);
-    this.frames = route.rails.map(railFrame);
+    this.bars = [...route.rails, ...route.fins];
+    this.frames = this.bars.map(railFrame);
   }
 
   // Whether the second side's leading end is its own: past the parting, and not yet where the two sides meet again.
@@ -102,6 +109,7 @@ export class StreamSim {
     this.phase.fill(0);
     this.count.fill(0);
     this.hitAt.fill(-100);
+    this.route.landings.forEach((L, i) => { this.on[i] = this.head[L.side] >= L.s ? 1 : 0; });
     const rates = this.rates(0, 0);
     for (let e = 0; e < rates.length; e++) { this.phase[e] = rates[e] * from; this.count[e] = Math.floor(this.phase[e]); }
     for (let i = 0; i < this.route.landings.length; i++) {
@@ -122,6 +130,7 @@ export class StreamSim {
     }
     this.joined();
     this.sparkCount = this.looseCount = this.forkCount = 0;
+    this.route.landings.forEach((L, i) => { this.on[i] = this.head[L.side] >= L.s ? 1 : 0; });
     // A still keeps a crackle of arc at each leading end, always the same one.
     for (let b = 0; b < 2; b++) {
       if (b === 1 && !this.own()) continue;
@@ -179,6 +188,8 @@ export class StreamSim {
     for (let n = this.due(2, rates[2]); n > 0; n--) this.coreSpark(this.count[2]++);
     this.route.landings.forEach((L, i) => {
       const sparks = emitter(i, SPARKS), shards = emitter(i, SHARDS), forks = emitter(i, FORKS), b = L.side;
+      const reached = this.head[b] >= L.s ? 1 : 0;
+      this.on[i] += (reached - this.on[i]) * (1 - Math.exp(-(reached ? S.warmth[0] : S.warmth[1]) * dt));
       for (let n = this.due(sparks, rates[sparks]); n > 0; n--) this.landSpark(i, this.count[sparks]++, 1);
       if (this.head[b] >= L.s) this.now(i);
       for (let n = this.due(forks, rates[forks]); n > 0; n--) this.landFork(i, forks, this.count[forks]++);
@@ -339,7 +350,7 @@ export class StreamSim {
         if (into < 0) { vx -= (1 + K.bounce) * into * nx; vy -= (1 + K.bounce) * into * ny; }
       }
       for (let k = 0; k < this.frames.length; k++) {
-        const rail = this.route.rails[k], f = this.frames[k], ox = x - rail.ax, oy = y - rail.ay, along = ox * f.ex + oy * f.ey, out = ox * f.nx + oy * f.ny;
+        const rail = this.bars[k], f = this.frames[k], ox = x - rail.ax, oy = y - rail.ay, along = ox * f.ex + oy * f.ey, out = ox * f.nx + oy * f.ny;
         if (along < 0 || along > f.len || Math.abs(out) >= rail.half) continue;
         const face = out >= 0 ? 1 : -1, into = (vx * f.nx + vy * f.ny) * face, back = face * rail.half - out;
         x += f.nx * back; y += f.ny * back;
@@ -443,7 +454,7 @@ export class StreamSim {
       // A rail is a slope. A shard bounces off it square to the slope. One too slow to bounce skids the way it was
       // going, stops and fades, as on a card. The single shard thrown at rest is carried downhill and off the low end.
       for (let k = 0; k < this.frames.length; k++) {
-        const rail = this.route.rails[k], f = this.frames[k], ox = x - rail.ax, oy = y - rail.ay, along = ox * f.ex + oy * f.ey, out = ox * f.nx + oy * f.ny, reach = rail.half + r;
+        const rail = this.bars[k], f = this.frames[k], ox = x - rail.ax, oy = y - rail.ay, along = ox * f.ex + oy * f.ey, out = ox * f.nx + oy * f.ny, reach = rail.half + r;
         if (along < 0 || along > f.len || Math.abs(out) >= reach) continue;
         const face = out >= 0 ? 1 : -1, into = (vx * f.nx + vy * f.ny) * face, back = face * reach - out;
         x += f.nx * back; y += f.ny * back;

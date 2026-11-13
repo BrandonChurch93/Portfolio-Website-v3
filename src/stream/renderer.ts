@@ -1,9 +1,10 @@
 import { hex, type PaletteName } from '../config/palette';
-import { COPPER, COPPER_LIGHT } from '../metal/finishes';
-import type { StreamBudget } from './config';
+import { COPPER, COPPER_LIGHT, FINISHES } from '../metal/finishes';
+import { STREAM, type StreamBudget } from './config';
 import * as G from './shaders';
 import { COPPER_FRAG, glassFrag } from './shaders-first';
 import { FACET_KINDS, FIRST_KINDS, VERTEX_FLOATS, type Look, type ShardMeshes } from './shards';
+import { STONE } from './stone';
 
 // Draws the stream. In order: the light, as amounts, into its own buffer. The glow, by making that buffer smaller
 // step by step and building it back up. Then the picture: the solid shards behind the core, the light, the title and
@@ -34,10 +35,27 @@ export interface TitleField {
 }
 
 export interface CardShape { x: number; y: number; hw: number; hh: number; r: number }
-// A post and a rail as they are drawn: where the route has them (route.ts), each with a number of its own, which
-// turns its slots and moves its marks so that no two are alike.
+// A stone and a rail as they are drawn: where the route has them (route.ts). A stone's own is 1, or -1 for the one
+// that is the other in a mirror. A rail's own is a number that moves its marks.
 export interface PostShape { x: number; y: number; r: number; own: number }
-export interface RailShape { ax: number; ay: number; bx: number; by: number; half: number; own: number }
+// blade: a blade's length and half its width, in halves of the rail's thickness. ends: whether its high end has a
+// blade and whether its low end has. keel: how far along each of its two brackets is, the same way, and how large
+// a bracket is against the rail's own, with no brackets when that is nothing.
+export interface RailShape { ax: number; ay: number; bx: number; by: number; half: number; own: number; blade: [number, number]; ends: [number, number]; keel: [number, number, number] }
+// A straight piece of something solid that throws a shadow: the line down its middle and half its thickness.
+export interface Bar { ax: number; ay: number; bx: number; by: number; half: number }
+// A project card as it stands this frame. It is a lit plate of its own in the page, and the stream cuts itself off
+// where it stands and lays its light on it. x, y, hw and hh are its box at rest. inset is how far inside that box its
+// metal begins and r the radius of its corners. turn maps a point of the card at rest, from its center, to where
+// the pointer has turned and grown it to, as a 3 by 3 matrix by columns. tiltX and tiltY are the same turn as
+// angles, for its light. bake names its relief (setBake). win is its picture's window, from its center, frame the
+// width of the frame round that, rim the width of its edge, and unit one of the card's own design units. flare is
+// how hard it has just been struck, and struck where, from its center.
+export interface PlateCard {
+  x: number; y: number; hw: number; hh: number; inset: number; r: number;
+  turn: Float32Array; tiltX: number; tiltY: number;
+  bake: string; win: [number, number, number, number]; frame: number; rim: number; unit: number; flare: number; struck: [number, number];
+}
 
 export interface Frame {
   view: [number, number, number, number];
@@ -55,6 +73,8 @@ export interface Frame {
   streakCount: number;
   shards: Float32Array;
   lots: Int32Array;                              // first and count for each layer and kind
+  plates?: PlateCard[];                          // the project cards on the page
+  lit?: number[];                                // how far each stone's face is lit from inside, 0 to 1
 }
 
 const lin = (name: PaletteName): [number, number, number] => {
@@ -127,11 +147,20 @@ export class StreamRenderer {
   private scene: { fbo: WebGLFramebuffer; color: WebGLRenderbuffer; depth: WebGLRenderbuffer } | null = null;
   private behind: Target | null = null;
   private whole: Target | null = null;
+  // How much of each pixel a project card covers, and each card's relief by name.
+  private mask: Target | null = null;
+  private bakes = new Map<string, { b0: WebGLTexture; b1: WebGLTexture }>();
+  // The sun stone's carving.
+  private stone: [WebGLTexture, WebGLTexture] | null = null;
   private sdf: WebGLTexture;
+  private none: WebGLTexture | null = null;
   private title: TitleField | null = null;
   private cards: CardShape[] = [];
+  // The project cards' boxes at rest: they are not drawn here, but they throw shadows in the stream's light.
+  private stood: CardShape[] = [];
   private posts: PostShape[] = [];
   private rails: RailShape[] = [];
+  private bars: Bar[] = [];
   private w = 0;
   private h = 0;
   private dpr = 1;
@@ -176,6 +205,10 @@ export class StreamRenderer {
     gl.bindTexture(gl.TEXTURE_2D, this.sdf);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG8, 1, 1, 0, gl.RG, gl.UNSIGNED_BYTE, new Uint8Array([255, 255]));
     this.filter(gl.LINEAR);
+    this.none = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.none);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, 1, 1, 0, gl.RED, gl.UNSIGNED_BYTE, new Uint8Array([0]));
+    this.filter(gl.NEAREST);
   }
 
   private filter(mode: number): void {
@@ -186,7 +219,7 @@ export class StreamRenderer {
   // Programs that depend on the budget, or on how many things stand on the page, are built again when those change.
   // ends: the two sides of the stream meet again.
   configure(budget: StreamBudget, shapes: G.Shapes = { cards: 1, posts: 0, rails: 0 }, ends = false): void {
-    const same = this.budget === budget && this.ends === ends && this.shapes.cards === shapes.cards && this.shapes.posts === shapes.posts && this.shapes.rails === shapes.rails;
+    const same = this.budget === budget && this.ends === ends && this.shapes.cards === shapes.cards && this.shapes.posts === shapes.posts && this.shapes.rails === shapes.rails && !this.shapes.plates === !shapes.plates && !this.shapes.drawn === !shapes.drawn;
     if (!this.ok || same) return;
     const gl = this.gl, f = this.float;
     for (const old of Object.values(this.prog)) gl.deleteProgram(old.p);
@@ -208,9 +241,54 @@ export class StreamRenderer {
       light: compile(gl, G.FULL_VERT, G.lightFrag(f), ['aPos']),
       final: compile(gl, G.FULL_VERT, G.finalFrag(f, shapes), ['aPos']),
     };
-    if (shapes.posts) this.prog.post = compile(gl, G.RELIEF_VERT, G.postFrag(f), ['aPos']);
-    if (shapes.rails) this.prog.rail = compile(gl, G.RELIEF_VERT, G.railFrag(f), ['aPos']);
+    if (shapes.plates) {
+      this.prog.hole = compile(gl, G.PLATE_VERT, G.PLATE_HOLE_FRAG, ['aPos']);
+      this.prog.plate = compile(gl, G.PLATE_VERT, G.plateLightFrag(f), ['aPos']);
+      const C = FINISHES.card, u = this.prog.plate.u;
+      gl.uniform3fv(u('uMetalA'), C.a);
+      gl.uniform3fv(u('uMetalB'), C.b);
+      gl.uniform3f(u('uRough'), C.ra, C.rb, C.aniso);
+    }
+    if (shapes.posts) {
+      this.prog.post = compile(gl, G.RELIEF_VERT, G.stoneFrag(f), ['aPos']);
+      if (!this.stone) this.stone = this.carve();
+    }
+    if (shapes.drawn ?? shapes.rails) this.prog.rail = compile(gl, G.RELIEF_VERT, G.railFrag(f), ['aPos']);
     this.w = 0;
+  }
+
+  // The sun stone, carved once into two pictures (stone.ts), with smaller copies of each for drawing it small.
+  private carve(): [WebGLTexture, WebGLTexture] {
+    const gl = this.gl, size = STONE.size;
+    const carver = compile(gl, G.FULL_VERT, G.STONE_BAKE_FRAG, ['aPos']);
+    const fbo = gl.createFramebuffer()!;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    const made = [0, 1].map((i) => {
+      const t = gl.createTexture()!;
+      gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.texStorage2D(gl.TEXTURE_2D, Math.floor(Math.log2(size)) + 1, gl.RGBA8, size, size);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + i, gl.TEXTURE_2D, t, 0);
+      return t;
+    }) as [WebGLTexture, WebGLTexture];
+    gl.drawBuffers([gl.COLOR_ATTACHMENT0, gl.COLOR_ATTACHMENT1]);
+    gl.viewport(0, 0, size, size);
+    gl.disable(gl.BLEND);
+    gl.disable(gl.DEPTH_TEST);
+    gl.useProgram(carver.p);
+    gl.bindVertexArray(this.quad);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.deleteFramebuffer(fbo);
+    gl.deleteProgram(carver.p);
+    const fine = gl.getExtension('EXT_texture_filter_anisotropic');
+    for (const t of made) {
+      gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.generateMipmap(gl.TEXTURE_2D);
+      this.filter(gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+      if (fine) gl.texParameterf(gl.TEXTURE_2D, fine.TEXTURE_MAX_ANISOTROPY_EXT, 4);
+    }
+    return made;
   }
 
   private target(w: number, h: number, format: number, linear = true): Target {
@@ -237,7 +315,8 @@ export class StreamRenderer {
     this.w = w; this.h = h; this.dpr = dpr;
     this.canvas.width = w;
     this.canvas.height = h;
-    [this.light, this.behind, this.whole, ...this.down, ...this.up].forEach((t) => this.free(t));
+    [this.light, this.behind, this.whole, this.mask, ...this.down, ...this.up].forEach((t) => this.free(t));
+    this.mask = this.shapes.plates ? this.target(w, h, gl.R8) : null;
     if (this.scene) { gl.deleteFramebuffer(this.scene.fbo); gl.deleteRenderbuffer(this.scene.color); gl.deleteRenderbuffer(this.scene.depth); }
     this.light = this.target(w, h, gl.RGBA8);
     this.behind = this.target(w, h, gl.SRGB8_ALPHA8);
@@ -265,9 +344,12 @@ export class StreamRenderer {
     this.scene = { fbo, color, depth };
   }
 
-  setRelief(title: TitleField | null, cards: CardShape[], posts: PostShape[] = [], rails: RailShape[] = []): void {
+  // bars: every straight solid that throws a shadow, the rails and their finials among them.
+  setRelief(title: TitleField | null, cards: CardShape[], posts: PostShape[] = [], rails: RailShape[] = [], stood: CardShape[] = [], bars: Bar[] = []): void {
     this.title = title;
     this.cards = cards;
+    this.stood = stood;
+    this.bars = bars;
     this.posts = posts;
     this.rails = rails;
     if (!this.ok || !title) return;
@@ -276,6 +358,30 @@ export class StreamRenderer {
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG8, title.w, title.h, 0, gl.RG, gl.UNSIGNED_BYTE, title.data);
     this.filter(gl.LINEAR);
+  }
+
+  // A card's relief, as the plate renderer baked it: two pictures, bottom row first. Cards of one size share one.
+  hasBake(key: string): boolean {
+    return this.bakes.has(key);
+  }
+
+  setBake(key: string, w: number, h: number, b0: Uint8Array, b1: Uint8Array): void {
+    if (!this.ok || this.bakes.has(key)) return;
+    const gl = this.gl;
+    const make = (data: Uint8Array) => {
+      const t = gl.createTexture()!;
+      gl.bindTexture(gl.TEXTURE_2D, t);
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
+      this.filter(gl.LINEAR);
+      return t;
+    };
+    this.bakes.set(key, { b0: make(b0), b1: make(b1) });
+  }
+
+  // Reliefs no card on the page uses any more are let go.
+  keepBakes(keys: Set<string>): void {
+    for (const [key, t] of this.bakes) if (!keys.has(key)) { this.gl.deleteTexture(t.b0); this.gl.deleteTexture(t.b1); this.bakes.delete(key); }
   }
 
   private fill(buffer: WebGLBuffer, data: Float32Array, floats: number, key: 'core' | 'streaks' | 'shards'): void {
@@ -399,6 +505,30 @@ export class StreamRenderer {
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }
 
+    // ---- where the project cards stand
+    const plates = P.hole && this.mask ? f.plates ?? [] : [];
+    const plate = (p: Program, c: PlateCard) => {
+      gl.uniform4f(p.u('uBox'), c.x, c.y, c.hw, c.hh);
+      gl.uniform2f(p.u('uRound'), c.inset, c.r);
+      gl.uniformMatrix3fv(p.u('uTurn'), false, c.turn);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    };
+    if (this.mask) {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.mask.fbo);
+      gl.viewport(0, 0, w, h);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.useProgram(P.hole.p);
+      gl.uniform4fv(P.hole.u('uView'), f.view);
+      gl.uniform1f(P.hole.u('uDpr'), this.dpr);
+      gl.enable(gl.BLEND);
+      gl.blendEquation(gl.MAX);
+      gl.blendFunc(gl.ONE, gl.ONE);
+      for (const c of plates) plate(P.hole, c);
+      gl.blendEquation(gl.FUNC_ADD);
+      gl.disable(gl.BLEND);
+    }
+
     // ---- the picture
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.scene.fbo);
     gl.viewport(0, 0, w, h);
@@ -444,6 +574,33 @@ export class StreamRenderer {
     gl.uniform1f(P.light.u('uNear'), GLOW.nearGain);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
+    // A project card stands in front of the light too, but it is not drawn here: everything behind it is taken out
+    // of the picture, so the card in the page shows, and then the stream's light on it is laid in.
+    if (plates.length) {
+      gl.useProgram(P.hole.p);
+      gl.blendFunc(gl.ZERO, gl.ONE_MINUS_SRC_ALPHA);
+      for (const c of plates) plate(P.hole, c);
+      gl.useProgram(P.plate.p);
+      this.lit(P.plate, f);
+      this.glow(P.plate);
+      gl.uniform1i(P.plate.u('uB0'), 3);
+      gl.uniform1i(P.plate.u('uB1'), 4);
+      gl.blendFuncSeparate(gl.ONE, gl.ONE, gl.ZERO, gl.ONE);
+      for (const c of plates) {
+        const bake = this.bakes.get(c.bake);
+        if (!bake) continue;
+        gl.activeTexture(gl.TEXTURE3);
+        gl.bindTexture(gl.TEXTURE_2D, bake.b0);
+        gl.activeTexture(gl.TEXTURE4);
+        gl.bindTexture(gl.TEXTURE_2D, bake.b1);
+        gl.uniform4fv(P.plate.u('uWin'), c.win);
+        gl.uniform3f(P.plate.u('uFrame'), c.frame, c.rim, c.unit);
+        gl.uniform2f(P.plate.u('uTilt'), c.tiltX, c.tiltY);
+        gl.uniform3f(P.plate.u('uFlare'), c.flare, c.struck[0], c.struck[1]);
+        plate(P.plate, c);
+      }
+    }
+
     // The title and the card stand in front of the light: where the core lies along one of them, the surface cuts it
     // off cleanly, and that line is what makes it rest there.
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
@@ -454,14 +611,23 @@ export class StreamRenderer {
       gl.useProgram(P.rail.p);
       gl.uniform4f(P.rail.u('uRail'), r.ax, r.ay, r.bx, r.by);
       gl.uniform2f(P.rail.u('uRailSize'), r.half, r.own);
-      const pad = r.half * G.RAIL_STUD * 2 + 2;
+      gl.uniform4f(P.rail.u('uEnds'), r.blade[0], r.blade[1], r.ends[0], r.ends[1]);
+      gl.uniform3fv(P.rail.u('uKeel'), r.keel);
+      const pad = r.half * (STREAM.work.finial.collar + r.blade[0] + Math.max(r.blade[1], 3.3 * r.keel[2] + 1.6)) + 2;
       relief(P.rail, [Math.min(r.ax, r.bx) - pad, Math.min(r.ay, r.by) - pad, Math.abs(r.bx - r.ax) + pad * 2, Math.abs(r.by - r.ay) + pad * 2]);
     }
-    for (const o of P.post ? this.posts : []) {
+    if (P.post && this.stone) this.posts.forEach((o, i) => {
       gl.useProgram(P.post.p);
       gl.uniform4f(P.post.u('uPost'), o.x, o.y, o.r, o.own);
+      gl.uniform1f(P.post.u('uLit'), f.lit?.[i] ?? 0);
+      gl.activeTexture(gl.TEXTURE5);
+      gl.bindTexture(gl.TEXTURE_2D, this.stone![0]);
+      gl.uniform1i(P.post.u('uT0'), 5);
+      gl.activeTexture(gl.TEXTURE6);
+      gl.bindTexture(gl.TEXTURE_2D, this.stone![1]);
+      gl.uniform1i(P.post.u('uT1'), 6);
       relief(P.post, [o.x - o.r - 2, o.y - o.r - 2, o.r * 2 + 4, o.r * 2 + 4]);
-    }
+    });
 
     lot(solidProgram, 1, set.solid[1], set.solid[0]);
 
@@ -496,11 +662,15 @@ export class StreamRenderer {
     if (this.shapes.cards > 1 || this.shapes.posts || this.shapes.rails) {
       const n = this.shapes;
       const far = [-1e6, -1e6, 1, 1];
-      gl.uniform4fv(P.final.u('uCards[0]'), Array.from({ length: Math.max(1, n.cards) }, (_, i) => { const c = this.cards[i]; return c ? [c.x, c.y, c.hw, c.hh] : far; }).flat());
-      gl.uniform1fv(P.final.u('uCardRs[0]'), Array.from({ length: Math.max(1, n.cards) }, (_, i) => this.cards[i]?.r ?? 1));
+      const boxes = [...this.cards, ...this.stood];
+      gl.uniform4fv(P.final.u('uCards[0]'), Array.from({ length: Math.max(1, n.cards) }, (_, i) => { const c = boxes[i]; return c ? [c.x, c.y, c.hw, c.hh] : far; }).flat());
+      gl.uniform1fv(P.final.u('uCardRs[0]'), Array.from({ length: Math.max(1, n.cards) }, (_, i) => boxes[i]?.r ?? 1));
       gl.uniform3fv(P.final.u('uPosts[0]'), Array.from({ length: Math.max(1, n.posts) }, (_, i) => { const o = this.posts[i]; return o ? [o.x, o.y, o.r] : [-1e6, -1e6, 1]; }).flat());
-      gl.uniform4fv(P.final.u('uRails[0]'), Array.from({ length: Math.max(1, n.rails) }, (_, i) => { const r = this.rails[i]; return r ? [r.ax, r.ay, r.bx, r.by] : far; }).flat());
-      gl.uniform1f(P.final.u('uRailHalf'), this.rails[0]?.half ?? 1);
+      gl.uniform4fv(P.final.u('uRails[0]'), Array.from({ length: Math.max(1, n.rails) }, (_, i) => { const r = this.bars[i]; return r ? [r.ax, r.ay, r.bx, r.by] : far; }).flat());
+      gl.uniform1fv(P.final.u('uRailHalves[0]'), Array.from({ length: Math.max(1, n.rails) }, (_, i) => this.bars[i]?.half ?? 1));
+      gl.activeTexture(gl.TEXTURE3);
+      gl.bindTexture(gl.TEXTURE_2D, this.mask ? this.mask.tex : this.none);
+      gl.uniform1i(P.final.u('uMask'), 3);
     }
     gl.bindVertexArray(this.quad);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);

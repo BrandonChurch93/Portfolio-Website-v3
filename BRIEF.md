@@ -48,7 +48,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 
 ### The stream
 
-- **Where it stands (Nov 13):** the stream through Work is built at `/lab/work`, and he has looked ("His first look at the build", below). The second pass on that page is agreed and handed to Claude Code: the real card, the Sun stones and the Blades ("The second pass on the Work page", below). What was at the bar in the first build and what was not, and every call Fable made for him while building it, are in `LOG.md`, "The stream through Work, built at `/lab/work`". None of those calls is a rule. The stream's test shot is approved, and he calls it "almost certainly the finalized base" (see "The stream is the finished base" below). It is at `/lab/stream`, with a paused frame at `/lab/stream?hold`. The three small things he asked for after approving it are built, and he has looked: "All my issues have been fixed." The first round's shards are still one switch away: the switch at the foot of that page, or `/lab/stream?shards=first`. Calls Fable made for him while building are listed in `LOG.md` and are his to overturn. None of them is a rule.
+- **Where it stands (Nov 13):** the stream through Work is built at `/lab/work`, and he has looked ("His first look at the build", below). The second pass on that page is agreed and built: the real card, the Sun stones and the Blades ("The second pass on the Work page", below). He has not seen it. Its account, with every call made for him, is in `LOG.md`, "The second pass on the Work page, built". What was at the bar in the first build and what was not, and every call Fable made for him while building it, are in `LOG.md`, "The stream through Work, built at `/lab/work`". None of those calls is a rule. The stream's test shot is approved, and he calls it "almost certainly the finalized base" (see "The stream is the finished base" below). It is at `/lab/stream`, with a paused frame at `/lab/stream?hold`. The three small things he asked for after approving it are built, and he has looked: "All my issues have been fixed." The first round's shards are still one switch away: the switch at the foot of that page, or `/lab/stream?shards=first`. Calls Fable made for him while building are listed in `LOG.md` and are his to overturn. None of them is a rule.
 - It is the most important thing on the site. "It's probably like the most important thing on the site to get right." (Nov 11)
 - It is called the stream, which is his own word for it. It is never called water, in anything written for a model or shown to a visitor. His reason: "if I call it water, then the model is gonna build it as if it acts like water". It is not called the pour either: that was its name while it was going to be molten metal. (Nov 11)
 
@@ -307,6 +307,12 @@ Worked out in a wireframe at `/lab/work-draft` over the day. How it got there is
 14. The section's spacing is set again for the taller card. As picked, a card is 510 px tall at 460 wide, against the stand in's 383.
 15. The link reads "Case study".
 16. No check-ins on the way. Claude Code works until there is a page he can scroll, as it did for the first build.
+
+**Built (Nov 13), waiting on his look**
+
+- At `/lab/work`, by Claude Code on his Mac. The test shot at `/lab/stream` and the approved buttons were photographed before any shared code was touched and after: 20 frozen frames of the test shot and 7 stills of the buttons agree pixel for pixel.
+- He has not seen it. Nothing about it is settled until he says so. The two things built only for him to judge are each behind a switch on the page: the stones' lit faces, and the bar over WORK.
+- Found while measuring, and his to rule on: "Case study" in its resting color falls to about 3.6 to 1 against the card's face when the cursor's own light pools behind it. That is the card as he picked it, on `/lab/work-cards` too, and not the stream. It was not changed. Fable recommends a lighter resting color for those two words.
 
 **How it is built**
 

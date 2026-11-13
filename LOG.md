@@ -2,6 +2,109 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · The second pass on the Work page, built at `/lab/work` (Fable, Claude Code on Brandon's Mac)
+
+**What was asked.** The prompt is in the entry below. In short: the real card where the stand ins were, with the stream meeting it. The Sun stone made new in place of each post. Blade finials, no studs, the right a mirror of the left. A real strike on the second row, with its cause found first. Room on an iPad held sideways. A bar over WORK behind a switch. The frame rate with real cards measured, its cause found and fixed.
+
+**What is on the page**
+
+- Four `WorkCard`s with `CARD_LOOK` as he picked it, the Software four. A sun stone beside each side at the foot of the first row. The rail with a Blade on each outer end. Two switches at the foot of the screen: the stones' faces (light, or stay dark), and a bar over WORK (off when the page opens). `?faces=0` and `?over=1` open with a switch thrown.
+- Under 1100 px wide the page is the one column stand in: below that two cards would each be under 340 px. An iPad held sideways (1194) gets two cards of 371 px. An iPad held upright gets the stand in.
+
+**How the card and the stream were brought together. The handoff left this to the builder, after measuring**
+
+- The card stays a lit plate of its own, under the stream's canvas. It is the card he picked by construction, and it is drawn at twice the pixels on every screen. Drawn by the stream it would have been drawn at the canvas's pixels, which fall to one and a half on a wide screen.
+- The stream cuts itself off where a card stands (`PLATE_HOLE_FRAG`, and a mask the last pass reads so no page light is laid on a card).
+- The stream lays its own light on the card (`plateLightFrag`): on the metal of the rim, the frame and the band, a wash on the face close inside the rim, and a wash on the picture. It knows which way each part of the card faces from the card's own bake, which the plate renderer reads back out once for each size (`plates.bakeOf`). So the light on a card comes from the same field of light that lights the title, the stones and the rail.
+- A card turns and grows under the pointer. The stream reads the turn from the plate renderer (`plates.cardOf`) and the size from the page, makes the same map the page makes (checked against the browser: the two agree to 0.06 px), cuts and lights the card through that map, and carries with the card whatever lies within 10 units of it (`bend` in `stream.ts`). So the stream stays on the rim while the card moves.
+- A full strike: the rim flares along a stretch round where it was struck, and the picture warms toward its own colors (`plates.setWarm`) and is back in bronze within about a second.
+- The stream takes the crest of a card's rim for its edge, 2.4 of the card's units inside its outline (`work.seat`). A reviewer found the core hovering 5 to 7 px above the rim before that.
+
+**What made the second row a graze. Measured on the first build before anything was changed (`streamRoute`)**
+
+- The angle between the stream and the surface it meets, arriving and leaving: the title 90 and 12 degrees. The bar 77 and 7. A card's top 82 and 9. A post 56 and 13. **The side of the second row's card 17 and 18.** It turned 35 degrees in all, round a curve of 14 units, 3 units off the surface. Every other contact turns 65 to 90.
+- What it threw there rose 10 px on average, against 30 to 40 at the title and the tops: half the fan went down, and there is nothing under a side to bounce on.
+- The layout bounds the angle. From where the stream leaves the stone to a point 40 percent down the card's side is about 126 px across and 325 down, so a straight line arrives at 21 degrees at best. A stone level with the foot of the first row and a strike about halfway down cannot give more.
+- What changed: the run from the stone is straight (a bow in it only made it shallower). The strike is at 40 percent of the way down, not 46. The stream comes to a point on the rim, is thrown back out at 60 degrees to the side for 50 units, and then falls to the rail. It is a full strike and throws a third more than a card's top does, mostly up and out, so what it throws rises, falls onto the rail and bounces there. The rim flares and the picture warms.
+- A reviewer of the stills after this passed it as a strike, marginally: the burst is now comparable to the first row's, and the contact is still one sharp point.
+
+**What cost the frame rate. Measured, not guessed**
+
+- His Mac is an M4 Pro. Its own screen and his 5K screen both draw 120 frames a second, so a frame is 8.3 ms. The screenshot tools draw 60 and show nothing: the drop does not appear in them.
+- Every plate on screen was lit again in full on every frame in which the cursor's light moved a pixel. That light follows the pointer and drifts on its own otherwise, so it was nearly every frame, pointer or not.
+- Lighting costs 1.0 to 1.6 ms a megapixel. A card 460 px wide is 0.94 megapixels. On `/lab/work-cards` that was 5 to 7.7 ms a frame at a laptop's window and 8.4 ms at a 2560 wide one: more than a whole frame on its own.
+- The copy from the hidden canvas to the card's own was 0.2 ms. It was not the cost.
+- What changed: a card has its own form of the light pass (`LIGHT_CARD`). Most of a card is not metal, and where a point is wholly its face or wholly its picture none of the metal's light is worked out for it. On a screen that draws more than about 90 frames a second a card at rest is lit on every other frame, half the cards on each. The buttons' light pass is letter for letter what it was (`LIGHT`, checked as text).
+- After, in a real window on his screen at 120 a second, scrolling the whole section with the pointer moving over the cards: 1440 by 860: 120 frames a second, 8.33 ms on average, the worst 10.3, none over 20. 1700 by 980: 118 to 119, with a few frames in eight seconds taking two refreshes during strikes. `/lab/work-cards` at 1700 by 980: 120, the worst 10.4.
+- In the tools at 60 a second: 16.7 ms every frame. At an iPad's size with the processor slowed four times: 58.3 frames a second, 13 of 466 frames late. What it gives up there is those frames: the stream's own work is 12 ms of the 16.7.
+
+**The sun stone (`src/stream/stone.ts`)**
+
+- Made new. It is carved once into two pictures a thousand pixels across (which way each point faces, how high, how shut in, how rubbed, how tarnished, where the eyes and mouth go through) and lit from those every frame, with smaller copies for drawing it small. So it is sharp at any size and does not crawl as the page moves.
+- Cut the way the real ones are: a few flat levels with upright walls. I looked at a photograph of the Aztec sun stone in the Museo Nacional de Antropologia (Wikimedia Commons, by El Comandante, CC BY-SA 3.0) before designing it. Nothing is copied from it, and the photograph is not in the repo.
+- From the rim in: a land with a bevel down to a lip, sixteen plates, a row of beads, twenty glyphs (ten kinds, none a letter or a number), a raised ring, and the face: a brow, lidded eyes, a wedge of a nose, lips, ear spools, a band with three jewels, and a tongue that is a blade, the finials' own shape. Four great rays cross both rings and run out onto the rim, four lesser ones stand between.
+- Lit by the room, the cursor and the stream. The two moving lights throw shadows across the carving. The side toward the stream is flooded warm.
+- The eyes and mouth go through to a hollow. Lit, the hollow glows in the stream's colors, hottest at its heart, and the light spills onto the lids, the lips and the tongue. It comes up over about a second when the stream reaches the stone and dies more slowly when the stream draws back (`STREAM.warmth`), and it breathes a little.
+- The right stone is the left in a mirror: the same carving, sampled flipped.
+
+**The rail**
+
+- The bar is as it was. Each outer end has a turned collar and a blade: a leaf, full near its root and drawn to a point, with a rib. Each inner end stands no higher than the bar: two lines cut round it and a cap, so nothing is in the stream's way where it leaves.
+- It is carried on two brackets to each half: a strap round the bar's foot on a short blade fixed flat to the page below the bar. Nothing stands above the bar.
+- The finials are solid to what is thrown, and throw shadows (`route.fins`).
+- The right half is the left in a mirror: both are drawn in the rail's own directions with the same marks.
+
+**The bar over WORK**
+
+- The rail's own bar, level, sitting just over the word, a blade at each end, two small brackets. The stream strikes it dead center, runs out along it and comes down off the blades' points. The word is lit from above. It takes no room on the page, so nothing moves when it is switched.
+
+**Checked**
+
+- `/lab/stream`: 20 frozen frames agree with the before stills pixel for pixel and number for number. The reduced motion still never repeats, as before.
+- The approved buttons: 7 stills agree pixel for pixel, and their two shaders agree as text.
+- The card on `/lab/work-cards`: 5 pixels of 5 million differ, by one level.
+- Riding shards at 1440: none vanish, appear or jump on anything, and none is inside anything. One on a free run moved 6.4 px in a thirtieth of a second, where the count's limit is 6. At 1194: on the first row's two cards 8 and 15 of about 190 moved 6.5 to 6.8 px in that time. Nothing vanishes or appears there.
+- Landings, as route within 10 units of the surface. At 1440: the bar 71 px, the first card 60. The first build had 75 and 68: at exactly 1440 the grid is 14 px narrower, to keep the stones 48 px from the screen's edge. At 1728: 74 and 69.
+- Contrast of every word, measured from the screen (each frame taken twice, with the cards' words and without, each word judged against the lightest ground under it): with the stream lying on the first row, and through both strikes, every word passes. The least is "Case study" at 4.6 to 5 to 1. The stream's wash is gone 16 units in from a card's edge, and the words begin at 18, so the stream takes no contrast from any word.
+- Not the stream's doing, and not changed: "Case study" in its resting color falls to 3.5 to 3.6 to 1 when the cursor's own light pools right behind it. It does that on `/lab/work-cards` too.
+- Use: 22 stops for the keyboard, 13 of them the cards' links, each shows focus and scrolls into view. Clicks reach the words and the links: the canvas takes none. With reduced motion nothing turns and the colors still come back. On a touch screen nothing turns and the row nearest the middle is awake.
+- WebKit at an iPad's size, sideways and upright: draws, no errors.
+
+**What three fresh reviewers said. Opus, shown only the stills, told to look for reasons to fail it**
+
+- Two judged a first state. They failed the stone against the PC Builder (no edge, glyphs like dice and tally marks, matte, a face of rectangles, flat lit eyes, and it did not take the stream's light), the blade (a spear tip), the keels (pucks with cones that carried nothing), the bar over WORK (no blades showing, floating, the word dim), the second row (still a graze: it left almost straight down), the stream hovering over the card's rim, and the rim lit evenly all round.
+- All of that was worked on. A third judged the state after. Fixed: the stone takes the stream's light, the button is clear of the rail. Better but not fixed, in its words: the lit eyes still read as flat fills, the stone is still "a shaded coin seen face on" and the weaker work beside the PC Builder, the finial reads as "a bullet or acorn", the brackets "read as hardware and visibly carry nothing", the bar over WORK floats and its blades are lost in the glow, the rim barely falls off away from the stream, the second row's contact is still one hard point, and the stream meets the rail in a smooth bend with no landing shape.
+- After that review three small things changed and no reviewer has seen them: the outer ring's spots and strokes became glyphs, the brackets lost their two pearls, and more of the face's inner light spills onto it.
+- Its verdicts on the 22 tests: passes 10, 12, 13, 15 (weakly), 17, 18 (marginally), 20 (weakly). Fails 4, 11, 14, 16, 19 (likely), 21. The rest it could not tell from stills.
+
+**My judgment**
+
+- At the bar: the card is the card he picked and the stream meets it. The strike on the second row is a strike. The right is the mirror of the left. The frame rate. The test shot and the buttons untouched.
+- Not at the bar: the stone as an object beside the PC Builder. It is far past the sketch and it is still a relief seen face on. The brackets. The bar over WORK. The landing on the rail. A card's shadow, which no still shows: a card throws one only where the stream's light reaches the page beside it, and the page round the cards is mostly dark.
+
+**Calls made for him. Each is his to overturn. The sixteen in the agreement were built as written, with these notes**
+
+1. Call 5 and 6: the rail's inner ends have two cut lines and a cap, not the finial's full collar. A collar's rings stand above the bar, in the stream's way where it leaves. What carries the rail is two brackets a half, each a strap on a blade shaped plate below the bar.
+2. Call 12: the bar over WORK sits just above the word, not a little wider than it with room between. Its blades are smaller than the rail's. Wider, the stream came down past the ends of the category bar and missed it.
+3. The strike on the second row is at 40 percent of the way down the card's side, not 46: it keeps the hardest light beside the picture and not beside the words.
+4. The stream's light on a card: full on the rim, the frame and close inside the rim, a share on the picture and the band, none under the words.
+5. A strike warms a picture 80 percent of the way to its own colors. A white screenshot goes pale for that moment.
+6. The stone's glyphs are abstract, ten kinds. Its tongue is a blade.
+7. The stone's face comes up in about a second and dies in about two.
+8. At exactly 1440 wide the grid is 946 px, not 960, so the stones stand 48 px from the edge.
+9. On a 120 a second screen, cards at rest are lit 60 times a second.
+
+**Not checked**
+
+- A real iPad or phone. His own browsers. The page with new pictures or loops.
+
+**For the next session**
+
+- `streamRoute`, `streamPlan` and `streamSharp(n)` are new tools (`CLAUDE.md`, Commands). The section's top padding is `98svh`, so where things are on the page changes with the screen's height: read it from `streamState`, do not hard code it.
+- The measuring tools of this pass were scratch files and are not in the repo: a contrast tool (two screenshots a frame, words on and off, transitions off), a count of riders, the angle a route meets each thing at, and frame times in a real window at 120 a second (Playwright, headed).
+- A frozen clock draws each frame once and the plates before the stream, so `plates.setWarm` draws the card again when the clock is frozen. Without that a filmstrip shows each card's warmth one frame late.
+- GLSL will not take `half` as a name. It cost two rounds.
+
 ## 2026-11-13 · Handoff to Claude Code: the second pass on the Work page (Fable, web chat)
 
 **What Brandon said**

@@ -22,7 +22,8 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **His verdict on the card derby (Nov 13):** the layout is C · Data plate. Cast and Etched are dropped. Toned is the best of the three and he does not love it: the hard part is the pictures themselves. The hover is underwhelming, and he is unsure of the streak of light on the glass. He wants "Case study" with the arrow in the bottom right corner. The two rounds that followed are in `BRIEF.md`, Cards and buttons
 - **His picks from the card's third round (Nov 13):** the plain fade, 3 degrees, leaning away, 1.5 percent, the deep edge. `CARD_LOOK` holds them
 - **Handed to Claude Code (Nov 13):** the second pass on the Work page, at `/lab/work`. `BRIEF.md`, The stream, "The second pass on the Work page" is the agreement, and `QUALITY.md` has its tests. The prompt he was given is in `LOG.md`, top entry
-- **In front of Brandon:** nothing until that build reports
+- **Built in Claude Code (Nov 13):** the second pass, at `/lab/work`. `LOG.md`, top entry, has its account: what is at the bar, what is not, what three fresh reviewers said, and every call made for him
+- **In front of Brandon:** the second pass at `/lab/work`, waiting on his look. Two things on it are built only for him to judge, each behind a switch: the stones' lit faces, and a bar over WORK
 - **He is open to the stone's face lighting** and wants to see it in action before he rules, so it gets built on the real page
 - **In that pass:** the real card with the stream meeting it, the Sun stones made new and a little larger with a face that lights, Blade finials, the right side mirroring the left, a real strike on the second row, room on an iPad held sideways, a bar over WORK behind a switch, and the frame rate with real cards
 - **Still to do in the web chat:** Work on a phone (Open 18). It now covers every screen too narrow for two real cards, which takes in an iPad held upright
@@ -83,7 +84,7 @@ Set aside, kept as records: the molten metal test shot at `/lab/pour`, its looks
 - [ ] Hero
 - [~] Work · the stream's real route with the posts and the rail, at `/lab/work` (Claude Code)
 - [~] Work · the card's look (web chat). The layout is picked: C · Data plate. How it answers the pointer is picked (Nov 13). Its pictures, and how it takes the stream, are open
-- [~] Work · the second pass at `/lab/work`: the real card, the Sun stones, the Blades (Claude Code). Handed over Nov 13
+- [~] Work · the second pass at `/lab/work`: the real card, the Sun stones, the Blades (Claude Code). Built Nov 13, waiting on his look
 - [ ] Work · the category bar, and the top bar it may dock into
 - [ ] Work · on a phone
 - [ ] Work · the whole section, with the real card in it

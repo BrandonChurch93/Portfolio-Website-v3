@@ -255,7 +255,10 @@ vec3 spec(vec3 N, vec3 V, vec3 L, vec3 T, vec3 B, float rough, float aniso, vec3
 
 `;
 
-export const LIGHT = `#version 300 es
+// The light pass, in two forms. A card's is the same light with one difference: most of a card is not metal, and
+// where a point is wholly its face or wholly its picture, none of the metal's light is worked out for it. Every
+// other plate is lit by the first form, which is letter for letter what the approved buttons were lit by.
+const light = (card: boolean) => `#version 300 es
 ${COMMON}
 uniform sampler2D uB0, uB1, uPhoto;
 uniform vec2 uRes;
@@ -289,7 +292,8 @@ uniform int uReveal;         // how a card's picture gets its colors back: 0 a f
 uniform float uPush;         // how far the picture comes closer while the card is awake, as a share of its size
 uniform vec3 uFace, uFaceLit;
 uniform vec3 uRamp[5];       // the tones a card's picture rests in, dark to light, linear
-uniform sampler2D uLoop;     // a card's loop: the picture in motion, shown in place of it while the card is awake
+${card ? `uniform float uWarm;         // how far a strike of the stream has warmed a card's picture toward its own colors
+uniform sampler2D uLoop;` : `uniform sampler2D uLoop;`}     // a card's loop: the picture in motion, shown in place of it while the card is awake
 uniform float uLoopOn;
 out vec4 frag;
 ${WINDOW}
@@ -335,7 +339,42 @@ void main(){
   // A card's band is brushed along its length.
   aniso = mix(aniso, 0.55, metal2 * uCard);
 
+${card ? `  // Most of a card is not metal: its face, and its picture under glass. Where a point is wholly one of those,
+  // nothing of the metal's light is kept, so none of it is worked out. A card is about a million such points, and
+  // lighting every one as metal first was most of what a card cost to draw.
+  bool metal = true;
+  if (uCard > 0.5) metal = !(ink > 0.9999 || (uWinOn > 0.5 && winD(p) < -2.2 * uS));
+
   // Under the one soft light the room is seen from straight in front, so the band it makes on a domed face stays
+  // over the words wherever the plate is on the screen. The lamp still sees the plate from where the viewer is.
+  vec3 R = reflect(-normalize(mix(V, vec3(0.0, 0.0, 1.0), uSoft)), N);
+  vec3 col = vec3(0.0);
+  vec3 Lv = vec3(uLamp.x, -uLamp.y, uLamp.z) - P;
+  float ld = length(Lv);
+  vec3 L = Lv / ld;
+  // Under the pointer the lamp comes in close: the metal brightens where it is touched.
+  float fall = uLampI * (1.0 + 0.9 * uHover) / (1.0 + pow(ld / (max(uView.x, uView.y) * 0.75), 2.0));
+  if (metal){
+    col = studio(R, rough) * F0 * (1.0 - cavity * 0.55);
+    // Real brass is never a perfect mirror: micro scratches scatter a little of the whole room, so a plate that
+    // reflects the dark floor still keeps enough light for its enamel words to read.
+    col += F0 * vec3(0.16, 0.14, 0.12) * (1.0 - cavity * 0.55);
+    col += spec(N, V, L, T, B, rough, aniso, F0) * fall * vec3(1.0, 0.94, 0.86);
+    col += spec(N, V, L, T, B, min(1.0, rough * 1.8 + 0.1), aniso * 0.5, F0) * fall * 0.1 * vec3(1.0, 0.94, 0.86);
+    // A clear coat, as polished copper is lacquered: it throws the lamp back pale and wide, so the cursor's light
+    // shows crossing a face that is already bright, where the metal's own highlight is lost in the band.
+    if (uCoat > 0.0) col += spec(N, V, L, T, B, 0.32, 0.5, vec3(1.0)) * fall * uCoat * uGlow * (1.0 - grime * 0.6);
+
+    // Inlaid words keep a floor of their own color and brighten above it, so they read as far from the lamp as a
+    // page can put them. The further below the floor the reflection falls, the more of the floor is added.
+    if (uInlay > 0.0){
+      vec3 least = uF0b * uInlay;
+      vec3 W = vec3(0.2126, 0.7152, 0.0722);
+      col += least * exp(-dot(col, W) / dot(least, W)) * metal2;
+    }
+  }
+
+` : `  // Under the one soft light the room is seen from straight in front, so the band it makes on a domed face stays
   // over the words wherever the plate is on the screen. The lamp still sees the plate from where the viewer is.
   vec3 R = reflect(-normalize(mix(V, vec3(0.0, 0.0, 1.0), uSoft)), N);
   vec3 col = studio(R, rough) * F0 * (1.0 - cavity * 0.55);
@@ -362,7 +401,7 @@ void main(){
     col += least * exp(-dot(col, W) / dot(least, W)) * metal2;
   }
 
-  float spill = 0.0;
+`}  float spill = 0.0;
   float streamOn = 0.0;
   vec3 streamDir = vec3(0.0, 0.0, 1.0);
   if (uStreamI > 0.0){
@@ -371,18 +410,25 @@ void main(){
     float wf = uStreamI / (1.0 + pow(wd / 170.0, 2.0));
     streamOn = wf;
     streamDir = Wv / wd;
-    col += spec(N, V, Wv / wd, T, B, rough, aniso, F0) * wf * vec3(1.0, 0.5, 0.14);
+${card ? `    if (metal){
+      col += spec(N, V, Wv / wd, T, B, rough, aniso, F0) * wf * vec3(1.0, 0.5, 0.14);
+      // The stream is a long bright source beside the plate: its light grazes the metal and warms the near side,
+      // strongest on bevels that face it.
+      col += mix(F0, vec3(dot(F0, vec3(0.33))), 0.5) * wf * vec3(1.0, 0.36, 0.05) * (0.3 + 1.3 * max(dot(N, Wv / wd), 0.0)) * (0.35 + 1.1 * exp(-wd / 80.0));
+    }
+` : `    col += spec(N, V, Wv / wd, T, B, rough, aniso, F0) * wf * vec3(1.0, 0.5, 0.14);
     // The stream is a long bright source beside the plate: its light grazes the metal and warms the near side,
     // strongest on bevels that face it.
     col += mix(F0, vec3(dot(F0, vec3(0.33))), 0.5) * wf * vec3(1.0, 0.36, 0.05) * (0.3 + 1.3 * max(dot(N, Wv / wd), 0.0)) * (0.35 + 1.1 * exp(-wd / 80.0));
-    // Spill the plate's own exposure does not swallow: warm light that lands on it, strongest near the stream and
+`}    // Spill the plate's own exposure does not swallow: warm light that lands on it, strongest near the stream and
     // on the bevel facing it.
     spill = wf * (0.25 + 1.6 * pow(max(dot(N, Wv / wd), 0.0), 2.0)) * exp(-wd / 160.0) * 0.08;
   }
 
   // Enamel: a black glassy fill. Dark, with its own small sharp highlight.
-  if (uCard > 0.5){
-    // A card's face: almost black, lifting a little toward its top, with the cursor's light pooling on it and the
+${card ? `  if (uCard > 0.5 && ink > 0.0){
+    // A card's face: almost black` : `  if (uCard > 0.5){
+    // A card's face: almost black`}, lifting a little toward its top, with the cursor's light pooling on it and the
     // stream washing it warm. It sits a hair below the bead and the picture's frame, which shade it where they meet.
     float dwf = uWinOn > 0.5 ? winD(p) : 1e5;
     float seat = 1.0 - 0.45 * exp(-max(dwf - uBezel, 0.0) / (3.5 * uS)) - 0.35 * exp(-max(-d - uBead, 0.0) / (2.6 * uS));
@@ -396,13 +442,21 @@ void main(){
     vec2 rimOff = vec2(L.x, -L.y) / max(L.z, 0.2) * uRimH * 1.5;
     float rimShade = smoothstep(-1.4 * uS, 1.4 * uS, sdBox(p + rimOff - uRes * 0.5, uRes * 0.5 - uInset - uBead, max(uRad - uBead, 0.0)));
     faceCol *= 1.0 - 0.6 * rimShade;
-    col = mix(col, faceCol * seat, ink);
+${card ? `    col = mix(col, faceCol * seat, ink);
+  }
+  if (uCard > 0.5){
+    // Under the pointer the bead and the frame catch the light where the pointer is near, as the buttons' edges do.
+    if (uHover > 0.0 && metal){
+      vec2 qc = (p - uPointer) / (120.0 * uS);
+      col += uGlow * F0 * (0.35 + 1.1 * wear) * exp(-dot(qc, qc)) * uHover * 1.6 * (1.0 - ink);
+    }
+` : `    col = mix(col, faceCol * seat, ink);
     // Under the pointer the bead and the frame catch the light where the pointer is near, as the buttons' edges do.
     if (uHover > 0.0){
       vec2 qc = (p - uPointer) / (120.0 * uS);
       col += uGlow * F0 * (0.35 + 1.1 * wear) * exp(-dot(qc, qc)) * uHover * 1.6 * (1.0 - ink);
     }
-  } else {
+`}  } else {
     vec3 enamel = uInk + studio(R, 0.4) * 0.018 + spec(N, V, L, T, B, 0.42, 0.0, vec3(0.04)) * fall * 0.22;
     col = mix(col, enamel, ink);
   }
@@ -466,21 +520,27 @@ void main(){
           // The lights of the picture come back first and its darks last.
           shown = smoothstep(0.0, 0.35, uHover * 1.35 - (1.0 - l));
         }
-        under = mix(rest, under, shown);
+${card ? `        under = mix(rest, under, max(shown, uWarm));` : `        under = mix(rest, under, shown);`}
       }
       // The wall: brass, facing into the window, lit by the lamp when it faces it.
       vec2 wn = normalize(p - uWin.xy + 1e-3);
       vec3 WN = normalize(vec3(-wn.x, wn.y, 0.25));
       // The wall faces into the window; the side that faces the lamp catches it, the far side falls into shade.
-      vec3 wall = studio(reflect(-V, WN), 0.45) * uF0a * 0.25 + uF0a * max(dot(WN, L), 0.0) * fall * 0.55 + spec(WN, V, L, T, B, 0.4, 0.0, uF0a) * fall * 0.6;
+${card ? `      if (wallSeen > 0.0){
+        vec3 wall = studio(reflect(-V, WN), 0.45) * uF0a * 0.25 + uF0a * max(dot(WN, L), 0.0) * fall * 0.55 + spec(WN, V, L, T, B, 0.4, 0.0, uF0a) * fall * 0.6;
+        under = mix(under, wall, wallSeen);
+      }
+` : `      vec3 wall = studio(reflect(-V, WN), 0.45) * uF0a * 0.25 + uF0a * max(dot(WN, L), 0.0) * fall * 0.55 + spec(WN, V, L, T, B, 0.4, 0.0, uF0a) * fall * 0.6;
       under = mix(under, wall, wallSeen);
-      // Glass: a faint reflection of the room, and a soft glare where the lamp catches it.
+`}      // Glass: a faint reflection of the room, and a soft glare where the lamp catches it.
       vec3 G = vec3(0.0, 0.0, 1.0);
       float fr = 0.04 + 0.96 * pow(1.0 - max(dot(G, V), 0.0), 5.0);
       float smudge = 0.0;
       if (uCard < 0.5) smudge = fbm(p / uS * 0.03 + 4.0) * 0.08;
-      vec3 glass = studio(reflect(-V, G), 0.08 + smudge) * fr * 0.4 + spec(G, V, L, vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), 0.12 + smudge, 0.0, vec3(0.04)) * fall * 0.55 * uGlare * vec3(1.0, 0.84, 0.62);
-      col = mix(col, under + glass, inside);
+${card ? `      vec3 glass = studio(reflect(-V, G), 0.08 + smudge) * fr * 0.4;
+      if (uGlare > 0.0) glass += spec(G, V, L, vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), 0.12 + smudge, 0.0, vec3(0.04)) * fall * 0.55 * uGlare * vec3(1.0, 0.84, 0.62);
+` : `      vec3 glass = studio(reflect(-V, G), 0.08 + smudge) * fr * 0.4 + spec(G, V, L, vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), 0.12 + smudge, 0.0, vec3(0.04)) * fall * 0.55 * uGlare * vec3(1.0, 0.84, 0.62);
+`}      col = mix(col, under + glass, inside);
     }
   }
 
@@ -492,3 +552,5 @@ void main(){
   col = pow(max(col, 0.0), vec3(1.0 / 2.2));
   frag = vec4(col * cov, cov);
 }`;
+export const LIGHT = light(false);
+export const LIGHT_CARD = light(true);

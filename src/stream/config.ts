@@ -49,14 +49,32 @@ export const STREAM = {
     bar: { lean: 12, least: 60, land: [36, 30] as [number, number], early: 4, past: 30, fall: 84 },
     card: { lean: 6, least: 56, land: [38, 30] as [number, number], early: 12, past: 34, fall: 170 },
     // The post: how far above its middle the stream meets it, as an angle, how tight the turn is there, how much of
-    // what ran into it it gives back, and how much of a throw the fall from it to the card's side is.
-    post: { at: 0.75, turn: 14, spring: 0.8, bow: 0.35 },
-    // The side of the second row's card: how far down it the stream strikes, as a share, how tight the turn, how
-    // much of its sideways going it keeps, and how much of a throw the fall from it to the rail is.
-    side: { at: 0.46, turn: 14, spring: 0.9, bow: 0.45 },
+    // what ran into it it gives back, and how much of a throw the run from it to the card's side is. That run is
+    // straight: any bow in it brings the stream to the side at a shallower angle, and it then only grazes it.
+    post: { at: 0.75, turn: 14, spring: 0.8, bow: 0 },
+    // The side of the second row's card: how far down it the stream strikes, as a share. The turn there: how early
+    // it leaves its run in and how late it joins its run out. Tight, so the stream comes to a point on the rim. kick
+    // is the angle to the card's side at which it is thrown back out, leg how far it goes that way before its own
+    // weight takes it, and ease how that turn down is rounded, as shares of the leg: how soon it begins, and how far
+    // down the fall it is still felt.
+    side: { at: 0.4, turn: [9, 12] as [number, number], kick: 1.05, leg: 50, ease: [0.52, 2.2] as [number, number] },
     // The rail: half its thickness, how far in from its high end the stream lands and the turn there, how far short of
     // the button its low end stops, how far past that end the stream still runs straight, and the turn off it.
-    rail: { half: 9, in: 30, land: [46, 40] as [number, number], gap: 14, over: 4, off: [8, 30] as [number, number] },
+    rail: { half: 9, in: 30, land: [27, 32] as [number, number], gap: 22, over: 4, off: [8, 30] as [number, number] },
+    // A project card's rim is rounded over, so its crest stands this far inside its outline, in the card's own
+    // units. The stream takes the crest for the card's edge, and so lies on the rim and not over its shoulder.
+    seat: 2.4,
+    // A finial on an end of the rail. collar: how long its collar is, in halves of the rail's thickness. long: how
+    // long the whole finial is, collar and blade, as a share of the stone's width, and wide: half a blade's width, the
+    // same way. It is measured against the stone so that the stone stays the larger thing on every screen.
+    finial: { collar: 1.75, long: 0.82, wide: 0.2 },
+    // The brackets the rail is carried on: how far along each half of the rail they are, as shares of its length,
+    // and how large one is against the rail's own.
+    keel: { at: [0.17, 0.83] as [number, number], size: 1 },
+    // A bar over the title: its blades are smaller than the rail's, their length and half their width in halves of
+    // the bar's thickness, the stream comes down this far beyond a blade's point, and its brackets are small, so
+    // they stop short of the word.
+    over: { blade: 3.1, wide: 1.2, beside: 14, at: [0.2, 0.8] as [number, number], size: 0.3 },
     // The meeting: how steeply each side comes down to the middle from the rail's end, how much of that stretch is a
     // bow, how far down the two take to turn into one, and how near they are when they count as met.
     meet: { slope: 0.28, bow: 0.8, fall: 38, near: 10 },
@@ -67,9 +85,19 @@ export const STREAM = {
     // against the test shot's landing, forks of arc each second, and how many times longer than the test shot's it
     // waits between the single shards it throws at rest.
     contact: {
-      title: [1, 1, 5, 2.2], bar: [0.3, 0.6, 3, 4], card: [1, 1, 6, 2.2], post: [0.3, 1.3, 4, 4], side: [0.8, 1.2, 5, 2.6], rail: [0.3, 0.6, 3, 4], meet: [0.2, 0.5, 2, 4],
+      title: [1, 1, 5, 2.2], bar: [0.3, 0.6, 3, 4], card: [1, 1, 6, 2.2], post: [0.3, 1.3, 4, 4], side: [1.3, 1.3, 8, 2.6], rail: [0.4, 0.7, 3, 4], meet: [0.2, 0.5, 2, 4],
     } as Record<string, readonly [number, number, number, number]>,
   },
+
+  // How fast a thing the stream has reached warms to it, each second, and how fast it cools once the stream has
+  // drawn back. A stone's face is lit by this: it comes up like a coal catching and dies like one going out.
+  warmth: [3.4, 1.5] as [number, number],
+
+  // A project card that a leading end has just struck. Its rim flares, and dies away over the first number of
+  // seconds. Its picture warms this far toward its own colors, reached in rise seconds and settled back to bronze
+  // over a few times settle. And while the pointer has the card turned or grown, what lies within the first number
+  // of units of it is carried with it whole, and what lies further off less, out to the second.
+  struck: { flare: 0.3, warm: 0.8, rise: 0.1, settle: 0.26, carry: [10, 70] as [number, number] },
 
   head: {
     follow: 10,         // how hard the leading end is drawn to where the scroll puts it, per second

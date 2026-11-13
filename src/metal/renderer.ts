@@ -6,7 +6,7 @@ import { tiers } from '../world/tier';
 import { CONTROL_RING, FACE, FACE_LIT, FINISHES, GLOW, INK, RAMP } from './finishes';
 import { MASK_FONTS, paintMask, type Mask, type PlateSpec } from './mask';
 import { distanceField } from './sdf';
-import { BAKE, LIGHT, VERT } from './shaders';
+import { BAKE, LIGHT, LIGHT_CARD, VERT } from './shaders';
 
 export interface PlatePhoto {
   src: string; // an image URL, or a video URL when video is true
@@ -58,6 +58,22 @@ interface Plate extends PlateEntry {
   pointer: { x: number; y: number };
   hovered: string;
   seed: number;
+  // How many times it has been baked, and how far a strike of the stream has warmed a card's picture toward its
+  // own colors.
+  baked: number;
+  warm: number;
+}
+
+// A card's relief as it was baked, read back out so that something else can light it too: the stream lays its own
+// light on a card from this. Two pictures, bottom row first, as wide and as tall as the card in device pixels.
+// Cards of one size and edge bake alike and share a key, and the pictures are left out for a key already held.
+export interface CardBake {
+  key: string;
+  w: number;
+  h: number;
+  b0: Uint8Array | null;   // normal x, normal y, cavity, wear
+  b1: Uint8Array | null;   // second metal, face, grime, roughness
+  mask: Mask;
 }
 
 type GL = WebGL2RenderingContext;
@@ -116,6 +132,7 @@ class PlateRenderer {
   private glCanvas: HTMLCanvasElement | null = null;
   private bake: ReturnType<typeof program> | null = null;
   private light: ReturnType<typeof program> | null = null;
+  private lightCard: ReturnType<typeof program> | null = null;
   private quad: WebGLVertexArrayObject | null = null;
   private plates = new Set<Plate>();
   private io: IntersectionObserver | null = null;
@@ -123,6 +140,7 @@ class PlateRenderer {
   private byHost = new Map<Element, Plate>();
   private started = false;
   private still = false;
+  private odd = false;
   private broken = false;
   private fontsReady: Promise<unknown> | null = null;
   frameMs = 0;
@@ -141,6 +159,7 @@ class PlateRenderer {
       this.glCanvas = c;
       this.bake = program(gl, BAKE);
       this.light = program(gl, LIGHT);
+      this.lightCard = program(gl, LIGHT_CARD);
       this.quad = gl.createVertexArray();
       gl.bindVertexArray(this.quad);
       const buf = gl.createBuffer();
@@ -197,7 +216,7 @@ class PlateRenderer {
       area: entry.spec.kind === 'card' ? entry.host.closest<HTMLElement>('[data-plate-area]') : null,
       visible: false, bakeGen: 0, sig: '', tilt: { x: 0, y: 0, gx: 0, gy: 0 }, stream: { x: 0, y: 0, z: 26, k: 0 },
       hover: { v: 0, goal: 0, pinned: false }, pointer: { x: 0, y: 0 }, hovered: '',
-      seed: seedOf(entry.spec),
+      seed: seedOf(entry.spec), baked: 0, warm: 0,
     };
     this.plates.add(p);
     this.byHost.set(entry.host, p);
@@ -244,6 +263,43 @@ class PlateRenderer {
   setStream(host: Element, x: number, y: number, k: number): void {
     const p = this.byHost.get(host);
     if (p) { p.stream.x = x; p.stream.y = y; p.stream.k = k; }
+  }
+
+  // How far a strike of the stream has warmed a card's picture toward its own colors, 0 to 1.
+  setWarm(host: Element, v: number): void {
+    const p = this.byHost.get(host);
+    if (!p || p.warm === v) return;
+    p.warm = v;
+    // A frozen clock draws each frame once, and the plates before the stream: the card is drawn again here, so a
+    // frozen frame shows the warmth of its own moment and not of the one before.
+    if (clock.isFrozen() && p.visible && p.mask) this.draw(p, false);
+  }
+
+  // A card as it is this frame: how it is turned, in radians as its page turns it, how awake it is, and how many
+  // times it has been baked.
+  cardOf(host: Element): { turnX: number; turnY: number; awake: number; baked: number } | null {
+    const p = this.byHost.get(host);
+    return p && p.area ? { turnX: p.tilt.x, turnY: p.tilt.y, awake: p.hover.v, baked: p.baked } : null;
+  }
+
+  // A card's relief, read back out of its last bake. held says which keys the asker has already.
+  bakeOf(host: Element, held: (key: string) => boolean): CardBake | null {
+    const p = this.byHost.get(host), gl = this.gl;
+    if (!p || !gl || !p.mask || !p.b0 || !p.b1 || !p.baked) return null;
+    const { w, h } = p.mask, key = `${w}:${h}:${p.mask.strip ? p.mask.strip[3] : 0}:${p.mask.deep ? 1 : 0}:${p.seed}`;
+    if (held(key)) return { key, w, h, b0: null, b1: null, mask: p.mask };
+    const fbo = gl.createFramebuffer();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+    const take = (t: WebGLTexture) => {
+      const out = new Uint8Array(w * h * 4);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+      gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, out);
+      return out;
+    };
+    const b0 = take(p.b0), b1 = take(p.b1);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.deleteFramebuffer(fbo);
+    return { key, w, h, b0, b1, mask: p.mask };
   }
 
   private loadPhoto(p: Plate, photo: PlatePhoto): void {
@@ -370,6 +426,7 @@ class PlateRenderer {
     gl.deleteFramebuffer(fbo);
     gl.deleteTexture(sdf);
     p.mask = mask;
+    p.baked++;
     p.canvas.width = mask.w;
     p.canvas.height = mask.h;
     p.sig = '';
@@ -439,7 +496,16 @@ class PlateRenderer {
       if (want && v.paused) v.play().catch(() => undefined);
       else if (!want && !v.paused && p.hover.v === 0) { v.pause(); v.currentTime = 0; }
     }
-    for (const [p, r] of rects) this.draw(p, false, r);
+    // On a screen that draws more than about ninety frames a second, a card that is at rest is lit again on every
+    // other frame, half the cards on each: the lamp's light on it is still followed sixty times a second, and the
+    // cost of lighting four cards a frame is halved. A card that is awake, turning or warming is lit every frame.
+    const quick = dt > 0 && dt < 0.011;
+    this.odd = !this.odd;
+    let nth = 0;
+    for (const [p, r] of rects) {
+      if (quick && p.area && p.sig && p.hover.v === 0 && p.hover.goal === 0 && p.warm === 0 && Math.abs(p.tilt.x) + Math.abs(p.tilt.y) < 1e-4 && (nth++ % 2 === 0) === this.odd) continue;
+      this.draw(p, false, r);
+    }
     this.frameMs = performance.now() - t0;
     stats.metalMs = this.frameMs;
     stats.plates = this.plates.size;
@@ -453,7 +519,7 @@ class PlateRenderer {
     const video = p.videoEl && p.videoEl.readyState >= 2;
     const loop = !!p.loopEl && p.loopEl.readyState >= 2 && p.hover.v > 0 && !this.still;
     const sig = [Math.round(L.px), Math.round(L.py), Math.round(r.left), Math.round(r.top), clock.view.w, clock.view.h,
-      p.tilt.x.toFixed(3), p.tilt.y.toFixed(3), p.stream.k.toFixed(3), Math.round(p.stream.x), Math.round(p.stream.y), p.hover.v.toFixed(3), !!p.photoTex,
+      p.tilt.x.toFixed(3), p.tilt.y.toFixed(3), p.stream.k.toFixed(3), Math.round(p.stream.x), Math.round(p.stream.y), p.hover.v.toFixed(3), p.warm.toFixed(3), !!p.photoTex,
       p.hover.v > 0 ? `${Math.round(p.pointer.x)}:${Math.round(p.pointer.y)}` : '',
       video ? p.videoEl!.currentTime.toFixed(3) : '', loop ? p.loopEl!.currentTime.toFixed(3) : ''].join();
     if (!force && sig === p.sig) return;
@@ -464,7 +530,8 @@ class PlateRenderer {
     p.sig = sig;
     if (video) this.uploadVideo(p);
     if (loop) p.loopTex = this.uploadFrame(p.loopEl!, p.loopTex);
-    const l = this.light!;
+    const card = p.spec.kind === 'card';
+    const l = card ? this.lightCard! : this.light!;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.useProgram(l.p);
     gl.bindVertexArray(this.quad);
@@ -485,11 +552,11 @@ class PlateRenderer {
     gl.uniform1f(l.u('uLampI'), 1.15 + 0.3 * L.led);
     // A portrait's glass glares softly: the lamp's spot should not sit on a face.
     // A card's glass throws no glare back: a spot or a streak of light crossing the picture read as decoration.
-    const card = p.spec.kind === 'card';
     gl.uniform1f(l.u('uGlare'), p.spec.kind === 'frame' ? 0.06 : card ? 0 : 1);
     gl.uniform1f(l.u('uCard'), card ? 1 : 0);
     gl.uniform1i(l.u('uReveal'), card ? REVEALS[p.look?.reveal ?? 'fade'] : 0);
     gl.uniform1f(l.u('uPush'), card ? p.look?.push ?? 0 : 0);
+    gl.uniform1f(l.u('uWarm'), card ? p.warm : 0);
     gl.uniform1f(l.u('uRimH'), mask.bead * (mask.deep ? 0.42 : 0.5));
     if (card) {
       gl.uniform3fv(l.u('uFace'), FACE);
