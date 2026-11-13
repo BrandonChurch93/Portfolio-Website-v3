@@ -219,6 +219,13 @@ Worked out in a wireframe at `/lab/work-draft` over the day. How it got there is
 - On a screen too narrow for two columns the page does the least: the stream parts on the title, lands on the category bar and falls past the single column on both sides. That is a stand in, not a design.
 - No check-ins on the way. Claude Code works until there is a page he can scroll, as it did for the second round of the test shot.
 
+**His first look at the build at `/lab/work` (Nov 12). Being talked through, nothing agreed yet**
+
+- The screws: "they're just kind of not positioned coherently with one another". The post on the left "looks really good" and "I'd like the one on the right to mirror it so it's symmetrical". The ones at the foot "are just all over the place. We need to give them symmetry as well." In exact terms: the slots in the two posts and the four studs on the rails point in unrelated directions. The right side should be the mirror of the left.
+- The top: "how many collisions there are at the top so close together. You barely scroll and it all just kind of happens." "This isn't an issue of everything being too close together, or at least I don't think it is. The spacing looks fine. It's just it's a lot happening all at once." And: "so many turns in a short a period of time". In exact terms: the strike on the title, the two landings on the category bar and the two on the first row all come within about 360 px of scroll, with six turns on each side.
+- He also named "the stream being so close to the word work".
+- He asked for Fable's honest thoughts and for no changes. Fable's answer: the landing on the category bar was Fable's own call and is the one to take out. Not agreed.
+
 **How it is built**
 
 He added these while the stream was a simulated liquid. They hold for anything in the stream that is simulated: shards thrown loose, sparks.
