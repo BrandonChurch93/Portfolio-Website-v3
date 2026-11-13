@@ -16,7 +16,9 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 
 - **Phase:** 3 has begun, a section at a time, starting with Work. Phase 2's test shot is approved and he calls the stream "almost certainly the finalized base" (Nov 12). Its small items below stay open and block nothing
 - **In front of Brandon:** the Work wireframe at `/lab/work-draft` (Study 09), now opening on R · With a rail: the posts he liked, and Fable's proposal for the foot, a rail under the grid that slopes down to the button, in place of the hook he called weird. P · With posts is beside it in the switch. S, A and B still open by their links. `BRIEF.md`, Open 15, has his words and what is Fable's call
-- **What he is deciding:** whether the rail answers the foot. Whether the site gets the slim top bar with the categories docking into it. Whether the stream lands on the category bar. Nothing else on that page is for approval
+- **His verdict on the rail:** good in theory, and he has to see it with the real stream and real objects to be sure. The wireframe has done its job
+- **Not decided:** what comes next. Fable recommends the stream's route through Work in Claude Code first, with the test shot's card standing in, and the card's look in the web chat alongside
+- **Still his to rule on before a handoff:** Whether the site gets the slim top bar with the categories docking into it. Whether the stream lands on the category bar. Nothing else on that page is for approval
 - **Where he stands:** he likes his own sketch best, with the posts ("this looks good"), on one condition: the stream has to look organic and not forced. The hook at the foot failed that
 - **After his pick:** the card's look, here in the web chat. Then the stream's real route through Work, in Claude Code on his Mac
 - **He is on his iPad for now, with no mouse.** Anything that needs the cursor is confirmed when he is home
