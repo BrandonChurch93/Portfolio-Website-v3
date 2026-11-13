@@ -45,6 +45,10 @@ export default function Index() {
           <span className={styles.minor}>Phase 2 · the test shot, second round · facets, following the scroll</span>
         </li>
         <li>
+          <Link href="/lab/work-finials">Three finials</Link>
+          <span className={styles.minor}>Phase 3 · what finishes the ends of the rail</span>
+        </li>
+        <li>
           <Link href="/lab/work-guardians">Three guardians</Link>
           <span className={styles.minor}>Phase 3 · statues in place of the posts and the rail&rsquo;s end pieces</span>
         </li>

@@ -2,6 +2,28 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-12 · The Sun stone picked, and a derby of finials (Fable, web chat)
+
+**What Brandon said**
+
+- "By far the best one here is the Sunstone! I actually really like it though I'd hope it would be much better quality in the finalized version?" For the posts.
+- The heads on the rail: he does not love any, and "the poles don't have to have heads on them".
+- The lit face: "I'm open to the lit face, but I'm curious to see it in action."
+- The rail's ends: not plain. "Think of like a super fancy high-end curtain rod, how it has like the things on each side."
+
+**What Fable told him about quality**
+
+- What he picked is the direction, and nothing is approved until the finished stone is on the real page. The sun stone is rings, glyphs and rays, so it can be made at full quality in code, with no imported sculpt. An idea put to him, not agreed: glyphs of his own in the rings, one for each kind of work he does.
+
+**What was built**
+
+- Study 12 at `/lab/work-finials` (`src/work-objects/finials.ts`): the page's bar with a finial at each end, seen from the side. Blade, Orb, Steps. Each begins with the same collar of a ring, a neck and a ring.
+- Still: `reference/studies/21-work-finials-derby.jpg`.
+
+**Half finished**
+
+- His pick of a finial. Then the prompt for Claude Code, when he turns Fable up.
+
 ## 2026-11-12 · A second derby: statues in place of hardware (Fable, web chat)
 
 **What Brandon said**
