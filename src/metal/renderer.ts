@@ -18,11 +18,18 @@ export interface PlatePhoto {
   loop?: string;
 }
 
+// How a card's picture gets its own colors back as the card wakes: all at once, behind a soft edge that crosses it,
+// or its lights first. push: how far the picture comes closer while the card is awake, as a share of its size.
+export type PlateReveal = 'fade' | 'sweep' | 'lights';
+const REVEALS: Record<PlateReveal, number> = { fade: 0, sweep: 1, lights: 2 };
+export interface PlateLook { reveal?: PlateReveal; push?: number }
+
 export interface PlateEntry {
   host: HTMLElement;
   canvas: HTMLCanvasElement;
   spec: PlateSpec;
   photo?: PlatePhoto;
+  look?: PlateLook;
   onState?: (state: 'ready' | 'failed') => void;
 }
 
@@ -39,6 +46,8 @@ interface Plate extends PlateEntry {
   videoEl: HTMLVideoElement | null;
   loopEl: HTMLVideoElement | null;
   loopTex: WebGLTexture | null;
+  // A card turns as one thing, words and all: the element that holds both is turned, not the plate's own canvas.
+  area: HTMLElement | null;
   visible: boolean;
   bakeGen: number;
   sig: string;
@@ -94,6 +103,8 @@ function texture(gl: GL, w: number, h: number, internal: number, format: number,
 
 // Seconds for the pointer's light to come up, and to go once the pointer has left.
 const HOVER = { rise: 0.5, fall: 0.2 };
+// A card wakes quicker than a button's light comes up: its picture changing is a bigger event, and it must not drag.
+const WAKE = { rise: 0.3, fall: 0.22 };
 
 const DESIGN_MM = { thick: 3.4, bevel: 5.2, cutDepth: 1.7, cutWall: 0.95, panelDepth: 2.4, raise: 2.4, windowDepth: 20 };
 
@@ -183,6 +194,7 @@ class PlateRenderer {
     if (!ctx) { entry.onState?.('failed'); return () => undefined; }
     const p: Plate = {
       ...entry, ctx, cssW: 0, cssH: 0, dpr: 1, mask: null, b0: null, b1: null, photoTex: null, photoAspect: 1, videoEl: null, loopEl: null, loopTex: null,
+      area: entry.spec.kind === 'card' ? entry.host.closest<HTMLElement>('[data-plate-area]') : null,
       visible: false, bakeGen: 0, sig: '', tilt: { x: 0, y: 0, gx: 0, gy: 0 }, stream: { x: 0, y: 0, z: 26, k: 0 },
       hover: { v: 0, goal: 0, pinned: false }, pointer: { x: 0, y: 0 }, hovered: '',
       seed: seedOf(entry.spec),
@@ -212,7 +224,7 @@ class PlateRenderer {
   // Tilt toward the cursor, a few degrees, eased in frame().
   setTilt(host: Element, x: number, y: number): void {
     const p = this.byHost.get(host);
-    if (p) { p.tilt.gx = x; p.tilt.gy = y; }
+    if (p && !(this.still && p.area)) { p.tilt.gx = x; p.tilt.gy = y; }
   }
 
   // The pointer is on a plate (or it has focus), or has left. x and y are where it is, CSS px in the plate.
@@ -334,7 +346,7 @@ class PlateRenderer {
     gl.uniform1i(b.u('uFinish'), F.id);
     gl.uniform1f(b.u('uThick'), DESIGN_MM.thick * S);
     // A card's bead is rubbed bright along its crest, which is half way across it.
-    gl.uniform1f(b.u('uBevel'), mask.bead ? mask.bead / 1.7 : DESIGN_MM.bevel * S);
+    gl.uniform1f(b.u('uBevel'), mask.bead ? mask.bead * (mask.deep ? 0.53 : 0.588) : DESIGN_MM.bevel * S);
     // Fine lettering at low pixel density gets a shallower cut, so its shading does not thicken or double the strokes.
     gl.uniform1f(b.u('uCutDepth'), DESIGN_MM.cutDepth * S * Math.min(1, Math.max(0.45, (S - 0.35) / 1.3)));
     gl.uniform1f(b.u('uCutWall'), Math.max(0.55, DESIGN_MM.cutWall * S));
@@ -347,6 +359,7 @@ class PlateRenderer {
     gl.uniform1f(b.u('uRimW'), p.spec.kind === 'control' ? F.rimW ?? 64 : p.spec.kind === 'card' ? 0.6 : 64);
     gl.uniform1f(b.u('uFaceClean'), p.spec.kind === 'control' ? F.faceClean ?? 0 : 0);
     gl.uniform1f(b.u('uSeed'), p.seed);
+    gl.uniform1f(b.u('uRim'), mask.deep ? 1 : 0);
     const strip = mask.strip ?? [0, 0, 0, 0];
     gl.uniform4f(b.u('uStrip'), strip[0], strip[1], strip[2], strip[3]);
     const sc = new Float32Array(24);
@@ -399,7 +412,10 @@ class PlateRenderer {
         p.tilt.x += dx * k;
         p.tilt.y += dy * k;
         // A button leans in its light only. Turning its canvas as well moved it under half a pixel and softened its words.
-        if (p.spec.kind !== 'control') p.canvas.style.transform = `rotateX(${(p.tilt.x * 57.2958).toFixed(3)}deg) rotateY(${(p.tilt.y * 57.2958).toFixed(3)}deg)`;
+        if (p.area) {
+          p.area.style.setProperty('--turn-x', `${(p.tilt.x * 57.2958).toFixed(3)}deg`);
+          p.area.style.setProperty('--turn-y', `${(p.tilt.y * 57.2958).toFixed(3)}deg`);
+        } else if (p.spec.kind !== 'control') p.canvas.style.transform = `rotateX(${(p.tilt.x * 57.2958).toFixed(3)}deg) rotateY(${(p.tilt.y * 57.2958).toFixed(3)}deg)`;
       }
     }
     // The light comes up as the pointer arrives and goes quickly when it leaves. A frozen clock shows it whole.
@@ -407,7 +423,10 @@ class PlateRenderer {
       const h = p.hover;
       if (h.pinned || h.v === h.goal) continue;
       if (frozen || this.still) h.v = h.goal;
-      else h.v = h.goal > h.v ? Math.min(h.goal, h.v + dt / HOVER.rise) : Math.max(h.goal, h.v - dt / HOVER.fall);
+      else {
+        const T = p.spec.kind === 'card' ? WAKE : HOVER;
+        h.v = h.goal > h.v ? Math.min(h.goal, h.v + dt / T.rise) : Math.max(h.goal, h.v - dt / T.fall);
+      }
     }
     // A card's loop plays while the card is awake, and goes back to its first frame once the card is at rest again.
     // A frozen clock seeks it instead (seekVideos).
@@ -469,6 +488,9 @@ class PlateRenderer {
     const card = p.spec.kind === 'card';
     gl.uniform1f(l.u('uGlare'), p.spec.kind === 'frame' ? 0.06 : card ? 0 : 1);
     gl.uniform1f(l.u('uCard'), card ? 1 : 0);
+    gl.uniform1i(l.u('uReveal'), card ? REVEALS[p.look?.reveal ?? 'fade'] : 0);
+    gl.uniform1f(l.u('uPush'), card ? p.look?.push ?? 0 : 0);
+    gl.uniform1f(l.u('uRimH'), mask.bead * (mask.deep ? 0.42 : 0.5));
     if (card) {
       gl.uniform3fv(l.u('uFace'), FACE);
       gl.uniform3fv(l.u('uFaceLit'), FACE_LIT);
@@ -476,7 +498,9 @@ class PlateRenderer {
     }
     gl.uniform3f(l.u('uStream'), p.stream.x, p.stream.y, p.stream.z);
     gl.uniform1f(l.u('uStreamI'), p.stream.k * 8.0);
-    gl.uniform2f(l.u('uTilt'), p.tilt.x, p.tilt.y);
+    // A card is turned on the page as well as in its light, and the page's y runs down where the light's runs up:
+    // the turn about x has to change sign for the two to agree.
+    gl.uniform2f(l.u('uTilt'), p.area ? -p.tilt.x : p.tilt.x, p.tilt.y);
     // Arriving, it eases at both ends. Leaving, most of the light is gone at once and the last of it tails off.
     const hv = p.hover.v;
     gl.uniform1f(l.u('uHover'), p.hover.goal >= hv ? hv * hv * (3 - 2 * hv) : hv * hv * hv);

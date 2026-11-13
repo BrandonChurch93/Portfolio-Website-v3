@@ -2,6 +2,40 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · The card's third round: it turns, and four ways for its colors to come back (Fable, web chat)
+
+**What Brandon said.** His words are in `BRIEF.md`, Cards and buttons, "The third round". In short: keep it simple, show how far the card turns and how the light moves round it, a few ways for the colors to come back because the circle from the pointer is not good, and the low frame rate is for the final build.
+
+**What was built**
+
+- The card turns. `Plate` takes `turn`, radians at the card's edge, below zero to lean toward the pointer. The renderer already eased a tilt for the light (`setTilt`, `uTilt`). For a card it now writes the same eased turn as `--turn-x` and `--turn-y` on the card, and `.turn` in `WorkCard.module.css` turns the plate and the words together. The card itself stays still and is what the pointer is read on, so it never turns out from under the pointer.
+- **The light and the page disagree about x.** The page's y runs down and the light's runs up, so a card's turn about x goes to the shader with its sign changed (`renderer.ts`, where `uTilt` is set). The buttons, which lean in their light only, are left as they were.
+- A card wakes on its own times (`WAKE`, 0.3 s up and 0.22 down), not the buttons' (`HOVER`).
+- How the colors come back is `uReveal`: a fade, a sweep or lights first. "Coming closer" is the fade with `uPush`, which draws the picture 4.5 percent closer while the card is awake.
+- The deep edge: `CardShape.edge`. The bake has a second profile for a card's edge (`uRim`): rounded outside, flat on its crest, cut at a slant in to the face. The picture's window moves in to clear it and sits deeper (9 units to the thin edge's 5). The face takes a shadow from the edge on the side the light comes from, for both edges, longer for the deep one.
+- With the card turned, the eye's line into the picture's window turns too, so a little more of one wall shows. It is under two units at ten degrees with the deep edge and less than a pixel with the thin one.
+- The foot: a thin line, Live, Evals and Code on the left, "Case study" on the right. The band has the kind on the left and the year on the right.
+- The glass's smudge noise is skipped on a card, where nothing uses it now.
+- The page is one card with five switches, and the grid below following them.
+- Stills: `reference/studies/25-work-card-third-round-turned.jpg` (ten degrees, thin and deep), `25-...-colors-half-back.jpg` (the four ways, half way through), `25-...-grid-deep-edge.jpg`.
+
+**Checked**
+
+- Held turned at ten degrees both ways, each way for the colors half way through (the `plateHover` tool pins a plate part awake), the deep edge up close, the grid, an iPad held sideways.
+- The approved buttons, before and after, both with `--wait 3000`: no pixel differs.
+
+**Not judged**
+
+- How any of it moves. This workspace draws in software.
+
+**The frame rate he saw**
+
+- Not looked into, at his word. What is known: while the pointer moves, every plate on screen is lit again each frame and then copied from the one hidden WebGL canvas to its own canvas, and a card is about a megapixel. On `/lab/work` the stream's own canvas is a third thing drawing. For Claude Code: measure with `npm run perf`, find the cause, then decide whether cards stay plates of their own or are drawn with the stream.
+
+**Half finished**
+
+- His picks. Then the prompt for Claude Code.
+
 ## 2026-11-13 · A plan for the card's third round (Fable, web chat)
 
 **What Brandon said.** His words are in `BRIEF.md`, Cards and buttons, "What he wants from the third round". He asked to think it through before anything changes. Nothing was changed. Only the record.

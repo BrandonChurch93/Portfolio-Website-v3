@@ -43,12 +43,55 @@
   color: var(--text-3);
 }
 
-.pair {
+.bench {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 33rem));
-  gap: var(--space-7);
-  align-items: stretch;
-  margin-top: var(--space-6);
+  grid-template-columns: minmax(0, 33rem) minmax(0, 1fr);
+  gap: var(--space-8);
+  align-items: start;
+  margin-top: var(--space-7);
+}
+
+.choices {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.choiceName {
+  margin-bottom: var(--space-2);
+  font-size: var(--step--1);
+  color: var(--text-2);
+}
+
+.switch {
+  display: inline-flex;
+  flex-wrap: wrap;
+  border: 1px solid var(--line-strong);
+  border-radius: 1.4rem;
+  overflow: hidden;
+}
+
+.switch button {
+  min-height: var(--touch);
+  padding: 0 var(--space-4);
+  border: 0;
+  background: none;
+  color: var(--text-3);
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.switch button[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--copper-light) 14%, transparent);
+  color: var(--pale);
+}
+
+.switch button:focus-visible {
+  outline: var(--focus);
+  outline-offset: -4px;
+  border-radius: 1.4rem;
 }
 
 /* The Work section's own grid (src/components/lab/WorkLab.module.css): its width, its gaps and the room it leaves
@@ -62,9 +105,9 @@
   margin: var(--space-7) auto 0;
 }
 
-@media (max-width: 900px) {
-  .pair {
-    grid-template-columns: minmax(0, 1fr);
+@media (max-width: 1000px) {
+  .bench {
+    grid-template-columns: minmax(0, 33rem);
   }
 }
 

@@ -342,7 +342,20 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     - **More of an object.** "What do you think about more of a 3D effect when you hover it: it scales up, and you could drag your mouse along the sides of the card to turn the perspective of it in 3D? That's kind of more like what I was envisioning for this." In exact terms: under the pointer the card grows and turns in depth, following where the pointer is on it.
     - "I'm open to additional changes as well to give it more of a 3D look, whether that means increasing the border slightly, having it turn inward to make it look like it has more 3D depth, a bigger box shadow behind it that will appear when the light source hits it."
     - What comes after: "After this next iteration, we should probably hand it over to Claude Code and have him build it onto the site so we can fine tune from there."
-- **What a card's loop and picture need. Fable's spec, his to change:** one recording a project, of the product doing the one thing that makes it worth a look. Twice as wide as it is tall, 1600 by 800 or larger. Four to eight seconds, ending close enough to where it starts to cut cleanly. MP4, H.264, no sound. The browser zoomed in before recording, so one part fills the frame and its type reads at the card's size. The picture is the first frame, saved as an image.
+- **The third round, built on his word (Nov 13).** He reloaded: "Yes, that light is gone." What he asked for:
+    - "For the third round, we don't have to go overboard. We can keep it pretty simple. I just want to get an idea of how much degrees it will turn and how the light will look shimmering around the card."
+    - **The way the colors came back is out.** "One thing I don't like though is the animation that makes the screenshots actual color. It's like not very good. I don't like that it comes from a circle. It seems like it lags a bit." The colors spreading from the pointer are in Dropped.
+    - "What I'd like to see is a few variations of that and a few variations of the different tilts or 3D effects that you propose, and then once I pick the ones I want we can do a handoff to Claude Code and have him add this to the work page."
+    - The frame rate: "The frame rate is a bit low already when hovering the cards. It's probably a code issue, because I don't think we have anything too crazy on this, and it doesn't really need to be fixed because we're about to code the final version in Claude Code anyways." Not fixed here. It goes in the handoff as something to measure and find the cause of.
+    - Built at `/lab/work-cards`, one card with a switch for each choice and the grid below it. **Waiting on his picks:**
+        - How the picture's colors come back: A · Fade. B · Fade, with the picture coming a little closer. C · Sweep, behind a soft slanted edge from the left. D · Lights first, the picture's darks last.
+        - How far the card turns under the pointer: none, 3, 6 or 10 degrees at its edge.
+        - Which way it leans: the side under the pointer goes away, or comes toward the pointer.
+        - How much it grows: 1.5, 3 or 5 percent.
+        - The edge: the thin bead, or a wide rim that turns in to a face that sits lower and throws a shadow onto it.
+    - Built as he asked at 10:43: the thin line under the tags, with Live, Evals and Code on its left and the case study on its right. The band keeps the kind of project on its left and the year on its right.
+    - Fable's call, his to overturn: the link reads "Case study". He said "case study" and then "view project". "View project" could as well mean the running site, which is the confusion he raised himself.
+ one recording a project, of the product doing the one thing that makes it worth a look. Twice as wide as it is tall, 1600 by 800 or larger. Four to eight seconds, ending close enough to where it starts to cut cleanly. MP4, H.264, no sound. The browser zoomed in before recording, so one part fills the frame and its type reads at the card's size. The picture is the first frame, saved as an image.
 - **What was in front of him at first: the card derby at `/lab/work-cards` (Study 14).**
     - How the picture rests: 1 · Toned, 2 · Cast, 3 · Etched. Fable recommends Toned. **Cast leans against "Brass is an accent on it, not the whole card"**, because the picture is the largest thing on the card.
     - The layout: A · Set in (the picture inside the card with its own frame). B · Edge to edge (the picture fills the top of the card to the bead). C · Data plate (edge to edge, with a band of dark bronze under the picture that carries the kind, the year and the links, and no footer). Fable recommends C.
@@ -477,6 +490,8 @@ Each line has Fable's recommendation where there is one. None of these are rules
 - A featured or flagship card
 - Whole brass plates as cards
 - A card's picture cast as a relief in metal, or etched as lines (Nov 13)
+- A streak or spot of the cursor's light on a card's picture (Nov 13)
+- A card's colors coming back as a circle spreading from the pointer (Nov 13)
 - The faint channel drawn ahead of the stream
 - Molten metal as what the stream is made of. Agreed and then set aside for a core of light with shards (Nov 11)
 - Water, golden water and lava as what the stream is made of (Nov 11). Light and electricity were dropped the same day and came back when he asked to see a core of light and an arc

@@ -36,7 +36,8 @@ uniform float uGrain, uPatina, uSeed, uScratch, uPillow;
 uniform float uRimW;         // design units the tarnish reaches in from the edge
 uniform float uFaceClean;    // 0 to 1: how free of tarnish the open face stays
 uniform vec4 uScrew[6];      // x, y, radius, slot angle (below -5: rivet, no slot)
-uniform float uBead, uBezel;  // a card's edge bead and the frame round its window, device px
+uniform float uBead, uBezel;  // a card's edge and the frame round its window, device px
+uniform float uRim;          // a card's edge: 0 a thin half round bead, 1 a wide rim that turns in to a lower face
 uniform vec4 uStrip;         // a card's band of bronze: center x, y, half w, half h. No band when its width is 0
 float stripD(vec2 p){ return uStrip.z > 0.0 ? sdBox(p - uStrip.xy, uStrip.zw, 1.2 * uS) : 1e5; }
 ${WINDOW}layout(location = 0) out vec4 o0; // normal x, normal y, cavity, wear
@@ -68,8 +69,13 @@ float height(vec2 p){
   float d = plateD(p);
   float x = clamp(-d / uBevel, 0.0, 1.0);
   float h = uThick * sqrt(1.0 - (1.0 - x) * (1.0 - x));
-  // A card's edge is a half round bead. Inside it the face lies flat and lower.
-  if (uFinish == 4){ float t = clamp(-d / uBead, 0.0, 1.0) * 2.0 - 1.0; h = 0.5 * uBead * sqrt(max(1.0 - t * t, 0.0)); }
+  // A card's edge is a half round bead, or a wide rim: rounded on the outside, flat along its crest, and cut at a
+  // slant on the inside down to the face. Inside either the face lies flat and lower.
+  if (uFinish == 4){
+    float e = clamp(-d / uBead, 0.0, 1.0);
+    if (uRim > 0.5){ float o = 1.0 - clamp(e / 0.34, 0.0, 1.0); h = 0.42 * uBead * min(sqrt(max(1.0 - o * o, 0.0)), clamp((1.0 - e) / 0.44, 0.0, 1.0)); }
+    else { float t = e * 2.0 - 1.0; h = 0.5 * uBead * sqrt(max(1.0 - t * t, 0.0)); }
+  }
   // A small control has a gently domed face, so it reflects a gradient of the room instead of one flat tone.
   if (uPillow > 0.0){
     vec2 c = (p - uRes * 0.5) / (uRes * 0.5);
@@ -278,6 +284,9 @@ uniform float uBand;         // how bright the one soft light is; 1 as photograp
 uniform float uCoat;         // a clear coat over the metal: how strongly it throws the lamp back; 0 for bare metal
 uniform float uCard;         // 1 on a project card: a dark face inside a metal bead, round a picture
 uniform float uBead, uBezel;
+uniform float uRimH;         // how far a card's edge stands above its face, device px
+uniform int uReveal;         // how a card's picture gets its colors back: 0 a fade, 1 a sweep, 2 lights first
+uniform float uPush;         // how far the picture comes closer while the card is awake, as a share of its size
 uniform vec3 uFace, uFaceLit;
 uniform vec3 uRamp[5];       // the tones a card's picture rests in, dark to light, linear
 uniform sampler2D uLoop;     // a card's loop: the picture in motion, shown in place of it while the card is awake
@@ -383,6 +392,10 @@ void main(){
     faceCol += uFaceLit * uLampI * (0.3 * pool + 0.015) * max(dot(N, L), 0.0) * (1.0 + 0.6 * uHover);
     faceCol += spec(N, V, L, T, B, 0.5, 0.0, vec3(0.04)) * fall * 0.2 * vec3(1.0, 0.84, 0.66);
     faceCol += uFaceLit * 1.7 * min(streamOn, 3.5) * (0.6 + 0.5 * max(dot(N, streamDir), 0.0)) * (1.0 + grainF * 0.14);
+    // The edge stands above the face and throws a shadow onto it, on the side the light comes from.
+    vec2 rimOff = vec2(L.x, -L.y) / max(L.z, 0.2) * uRimH * 1.5;
+    float rimShade = smoothstep(-1.4 * uS, 1.4 * uS, sdBox(p + rimOff - uRes * 0.5, uRes * 0.5 - uInset - uBead, max(uRad - uBead, 0.0)));
+    faceCol *= 1.0 - 0.6 * rimShade;
     col = mix(col, faceCol * seat, ink);
     // Under the pointer the bead and the frame catch the light where the pointer is near, as the buttons' edges do.
     if (uHover > 0.0){
@@ -413,7 +426,8 @@ void main(){
     float inside = clamp(-dw / (0.9 * uS) - 1.4, 0.0, 1.0);
     if (inside > 0.0){
       // Sight line: where the eye meets the glass floor, and whether the near wall hides it.
-      vec3 Vd = V;
+      // A card turns under the pointer, and the picture lies below its face, so the eye sees further under one wall.
+      vec3 Vd = uCard > 0.5 ? rotX(rotY(V, -uTilt.y), -uTilt.x) : V;
       float depthPx = uWinDepth;
       vec2 seeOff = vec2(-Vd.x, Vd.y) / max(Vd.z, 0.3) * depthPx;
       float wallSeen = smoothstep(-0.6 * uS, 0.6 * uS, winD(p + seeOff));
@@ -429,7 +443,7 @@ void main(){
         float wa = uWin.z / uWin.w;
         vec2 span = (wa > uPhotoAspect ? vec2(1.0, uPhotoAspect / wa) : vec2(wa / uPhotoAspect, 1.0)) / max(uPhotoZoom, 1.0);
         vec2 c = clamp(uPhotoFocus, span * 0.5, 1.0 - span * 0.5);
-        puv = c + (puv - 0.5) * span;
+        puv = c + (puv - 0.5) * span / (1.0 + uPush * uHover);
         still = pow(texture(uPhoto, puv).rgb, vec3(2.2));
         photo = uLoopOn > 0.5 ? pow(texture(uLoop, puv).rgb, vec3(2.2)) : still;
       }
@@ -437,15 +451,21 @@ void main(){
       // A card's picture is lit by the lamp's own warm light, so its whites are the site's off white.
       vec3 under = photo * mix(vec3(1.0), vec3(1.0, 0.955, 0.895), uCard) * (0.42 + 0.95 * onPrint) * mix(0.12, 1.0, lit) * ao;
       if (uCard > 0.5 && uPhotoOn > 0.5){
-        // At rest a card's picture is shown in the site's metals. Under the pointer its own colors come back,
-        // spreading from where the pointer is. Every picture rests at about the same weight: a light one is held
-        // down and a dark one lifted a little, so a white page rests as bronze and not as a lamp. The picture's
-        // smallest mip is its average.
+        // At rest a card's picture is shown in the site's metals. Under the pointer its own colors come back.
+        // Every picture rests at about the same weight: a light one is held down and a dark one lifted a little,
+        // so a white page rests as bronze and not as a lamp. The picture's smallest mip is its average.
         float l = pow(dot(still, vec3(0.2126, 0.7152, 0.0722)), 1.0 / 2.2);
         float mean = pow(dot(pow(textureLod(uPhoto, vec2(0.5), 20.0).rgb, vec3(2.2)), vec3(0.2126, 0.7152, 0.0722)), 1.0 / 2.2);
         vec3 rest = ramp(l * clamp(0.4 / max(mean, 0.05), 0.56, 1.2)) * (0.45 + 0.8 * onPrint) * mix(0.12, 1.0, lit) * ao;
-        float reach = uHover * (length(uRes) / uS + 60.0);
-        float shown = uHover > 0.0 ? smoothstep(reach, reach - 54.0, length(p - uPointer) / uS) : 0.0;
+        float shown = uHover;
+        if (uReveal == 1){
+          // A soft slanted edge crosses the picture from its left.
+          float across = (p.x - (uWin.x - uWin.z)) / (2.0 * uWin.z) + 0.18 * (p.y - uWin.y) / uWin.w;
+          shown = 1.0 - smoothstep(-0.3, 0.0, across - mix(-0.35, 1.55, uHover));
+        } else if (uReveal == 2){
+          // The lights of the picture come back first and its darks last.
+          shown = smoothstep(0.0, 0.35, uHover * 1.35 - (1.0 - l));
+        }
         under = mix(rest, under, shown);
       }
       // The wall: brass, facing into the window, lit by the lamp when it faces it.
@@ -457,7 +477,8 @@ void main(){
       // Glass: a faint reflection of the room, and a soft glare where the lamp catches it.
       vec3 G = vec3(0.0, 0.0, 1.0);
       float fr = 0.04 + 0.96 * pow(1.0 - max(dot(G, V), 0.0), 5.0);
-      float smudge = fbm(p / uS * 0.03 + 4.0) * 0.08;
+      float smudge = 0.0;
+      if (uCard < 0.5) smudge = fbm(p / uS * 0.03 + 4.0) * 0.08;
       vec3 glass = studio(reflect(-V, G), 0.08 + smudge) * fr * 0.4 + spec(G, V, L, vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), 0.12 + smudge, 0.0, vec3(0.04)) * fall * 0.55 * uGlare * vec3(1.0, 0.84, 0.62);
       col = mix(col, under + glass, inside);
     }

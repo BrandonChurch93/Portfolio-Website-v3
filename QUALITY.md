@@ -89,6 +89,7 @@ This is the real calibration. Every row is his verdict, not a guess. Rows that s
 | A card's picture toned in bronze | "It's just better than the other ones." "The hard part here is making the cards look good with the pictures that we're using" | A treatment cannot rescue a dull picture. A whole page of an interface, shrunk, is a dull picture |
 | The card under the cursor: its colors return, its edges catch, it grows a little | "Slightly underwhelming" | Too little happens, and the reward is only as good as the picture |
 | A streak of light crossing the picture's glass with the cursor | "It doesn't look bad but it doesn't really look great either" | Light added for its own sake reads as decoration |
+| A card's colors coming back as a circle spreading from the pointer | "Not very good." "I don't like that it comes from a circle. It seems like it lags a bit" | A change that shows its own shape, and takes its time, reads as an effect and as lag |
 | The pour's first test shot, in motion | "I definitely don't like how it puddles." The stream "is blasted back multiple times". "Instead of looking like a refined beautiful hot liquid metal, this looks more like mud splashing around and puddling up" | Real physics is not enough. It has to be graceful. Metal that heaps, thrashes or hits itself reads as mud |
 
 ## The patterns behind those verdicts

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type FocusEvent, type PointerEvent } from 'react';
 import type { WorkItem } from '../content/work';
-import { CARD, cardPicture } from '../metal/mask';
+import { CARD, cardPicture, type CardEdge } from '../metal/mask';
 import { Plate } from './Plate';
 import styles from './WorkCard.module.css';
 
@@ -10,8 +10,24 @@ import styles from './WorkCard.module.css';
 // card, and the section, shorter.
 export const PICTURE_ASPECT = 2;
 
+// The choices still open on the card, each with the value it has until one is picked.
+// reveal: how the picture's own colors come back: all at once, all at once while the picture comes closer, behind a
+// soft edge that crosses it, or its lights first. turn: how far the card turns under the pointer, in degrees at its
+// edge. lean: whether the side under the pointer goes away from it or comes toward it. grow: the share of its size the
+// card grows by while it is awake. edge: a thin bead, or a wide rim that turns in.
+export interface CardLook {
+  reveal: 'fade' | 'push' | 'sweep' | 'lights';
+  turn: number;
+  lean: 'away' | 'toward';
+  grow: number;
+  edge: CardEdge;
+}
+export const CARD_LOOK: CardLook = { reveal: 'fade', turn: 6, lean: 'away', grow: 0.03, edge: 'thin' };
+const PUSH = 0.045;
+
 interface Props {
   item: WorkItem;
+  look?: CardLook;
   // Hold the card as it is under the pointer, with the pointer at this point of the card, 0 to 1. For stills.
   held?: [number, number];
   className?: string;
@@ -49,14 +65,15 @@ function watchTouch(): void {
 // At rest the picture is shown in the site's metals. Under the pointer, with keyboard focus, or nearest the middle of
 // a touch screen, its own colors come back and its loop plays, the bead and the rail catch the light, and the card
 // grows a little.
-// The whole card opens the case study, and says so in its corner. Live, Evals and Code go elsewhere: with the pointer
-// on one of them the corner goes quiet and that link lights, so it is always plain where a click leads.
-export function WorkCard({ item, held, className }: Props) {
+// It also turns in depth with the pointer, words and all, and the light on its metal turns with it.
+// The whole card opens the case study, and says so at its foot. Live, Evals and Code go elsewhere: with the pointer
+// on one of them the case study's words go quiet and that link lights, so it is always plain where a click leads.
+export function WorkCard({ item, look = CARD_LOOK, held, className }: Props) {
   const el = useRef<HTMLElement>(null);
   const band = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState({ on: false, x: 0, y: 0 });
   const [stripH, setStripH] = useState(0);
-  const shape = { aspect: PICTURE_ASPECT, stripH: stripH || undefined };
+  const shape = { aspect: PICTURE_ASPECT, stripH: stripH || undefined, edge: look.edge };
   const picture = cardPicture(shape);
 
   // The plate draws the band where the page laid it out: on a narrow card its words wrap and it grows.
@@ -106,44 +123,47 @@ export function WorkCard({ item, held, className }: Props) {
     onBlur: () => setHover((h) => ({ ...h, on: false })),
   };
 
-  const vars = { '--card-w': CARD.width, '--pic': picture, '--strip': CARD.strip, '--radius': CARD.radius } as CSSProperties;
+  const vars = { '--card-w': CARD.width, '--pic': picture, '--strip': CARD.strip, '--radius': CARD.radius, '--grow': look.grow } as CSSProperties;
+  const turn = ((look.turn * Math.PI) / 180) * (look.lean === 'toward' ? -1 : 1);
+  const plateLook = { reveal: look.reveal === 'push' ? 'fade' as const : look.reveal, push: look.reveal === 'push' ? PUSH : 0 };
   return (
     <article ref={el} className={`${styles.card} ${className ?? ''}`} data-awake={hover.on} data-plate-area="" style={vars} {...on}>
-      <Plate finish="card" kind="card" card={shape} photo={item.picture} hover={hover} tilt={false} className={styles.plate}>
-        <span role="img" aria-label={item.picture.alt} />
-      </Plate>
-      <div className={styles.inner}>
-        <div className={styles.picture} />
-        <div ref={band} className={styles.strip}>
-          <p className={styles.meta}>
+      <div className={styles.turn}>
+        <Plate finish="card" kind="card" card={shape} photo={item.picture} look={plateLook} turn={turn} pinned={!!held} hover={hover} tilt={false} className={styles.plate}>
+          <span role="img" aria-label={item.picture.alt} />
+        </Plate>
+        <div className={styles.inner}>
+          <div className={styles.picture} />
+          <div ref={band} className={styles.strip}>
             <span>{item.kind}</span>
-            <span aria-hidden="true">·</span>
             <span>{item.year}</span>
-          </p>
-          <ul className={styles.links}>
-            {item.links.map((l) => (
-              <li key={l.label}>
-                <a href={l.href} target="_blank" rel="noopener noreferrer">
-                  {l.label}
-                  <span aria-hidden="true" className={styles.out}>↗</span>
-                  <span className="visually-hidden"> of {item.name} (opens in a new tab)</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className={styles.words}>
-          <h3 className={styles.title}>
-            <a href={item.page} className={styles.open}>
-              {item.name}
-              <span className="visually-hidden">, case study</span>
-            </a>
-          </h3>
-          <p className={styles.line}>{item.line}</p>
-          <ul className={styles.tags}>
-            {item.tags.map((t) => <li key={t}>{t}</li>)}
-          </ul>
-          <p className={styles.go} aria-hidden="true">Case study <span className={styles.arrow}>→</span></p>
+          </div>
+          <div className={styles.words}>
+            <h3 className={styles.title}>
+              <a href={item.page} className={styles.open}>
+                {item.name}
+                <span className="visually-hidden">, case study</span>
+              </a>
+            </h3>
+            <p className={styles.line}>{item.line}</p>
+            <ul className={styles.tags}>
+              {item.tags.map((t) => <li key={t}>{t}</li>)}
+            </ul>
+            <div className={styles.foot}>
+              <ul className={styles.links}>
+                {item.links.map((l) => (
+                  <li key={l.label}>
+                    <a href={l.href} target="_blank" rel="noopener noreferrer">
+                      {l.label}
+                      <span aria-hidden="true" className={styles.out}>↗</span>
+                      <span className="visually-hidden"> of {item.name} (opens in a new tab)</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <span className={styles.go} aria-hidden="true">Case study <span className={styles.arrow}>→</span></span>
+            </div>
+          </div>
         </div>
       </div>
     </article>

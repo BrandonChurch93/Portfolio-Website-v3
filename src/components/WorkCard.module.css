@@ -4,13 +4,29 @@
   position: relative;
   display: grid;
   container-type: inline-size;
+  perspective: 1100px;
+}
+
+/* The card stays where it is and what is in it turns, so it never turns out from under the pointer. The plate
+   renderer eases the turn and writes it here, in step with the light on the metal. */
+.turn {
+  position: relative;
+  display: grid;
+  transform: rotateX(var(--turn-x, 0deg)) rotateY(var(--turn-y, 0deg));
   transition: scale var(--dur-1) var(--ease-settle);
+  will-change: transform;
 }
 
 @media (hover: hover) {
-  .card[data-awake='true'] {
-    scale: 1.012;
+  .card[data-awake='true'] .turn {
+    scale: calc(1 + var(--grow));
     transition: scale 0.32s cubic-bezier(0.3, 1.45, 0.5, 1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turn {
+    transition: none;
   }
 }
 
@@ -22,12 +38,6 @@
 /* The page is almost black, so a card throws no shadow worth drawing, and one would only dim the words below it. */
 .card .plate [data-plate-shadow] {
   display: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .card {
-    transition: none;
-  }
 }
 
 .inner {
@@ -48,7 +58,7 @@
   height: calc(var(--u) * var(--pic));
 }
 
-/* The band of bronze under the picture. The plate draws it, and the card's facts lie on it. */
+/* The band of bronze under the picture. The plate draws it, and the kind of project and its year lie on it. */
 .strip {
   display: flex;
   flex-wrap: wrap;
@@ -59,22 +69,88 @@
   padding: 0.35em calc(var(--u) * 22);
   font-family: var(--font-mono);
   font-size: max(10.5px, calc(var(--u) * 11));
+  line-height: 1.4;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--copper-light);
+}
+
+.words {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--u) * 15) calc(var(--u) * 22) 0;
+}
+
+.title {
+  font-size: max(19px, calc(var(--u) * 23));
+  font-weight: 600;
+  letter-spacing: -0.028em;
+  line-height: 1.15;
+}
+
+/* The whole card opens the case study. */
+.open {
+  text-decoration: none;
+  outline: none;
+}
+
+.open::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.line {
+  margin-top: calc(var(--u) * 9);
+  font-size: max(13.5px, calc(var(--u) * 14.5));
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--u) * 5);
+  margin: calc(var(--u) * 15) 0 calc(var(--u) * 14);
+  padding: 0;
+  list-style: none;
+}
+
+.tags li {
+  padding: 0.34em 0.62em 0.3em;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: max(10px, calc(var(--u) * 10.5));
+  line-height: 1.3;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+/* The foot: a thin line, then where a click can lead. The links that leave the site are on the left. The case study,
+   which the whole card opens, is on the right: it lights while the pointer is on the card and goes quiet while the
+   pointer is on one of the links. */
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 calc(var(--u) * 12);
+  margin-top: auto;
+  padding-bottom: calc(var(--u) * 4);
+  border-top: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: max(10.5px, calc(var(--u) * 11));
   letter-spacing: var(--track-label);
   text-transform: uppercase;
 }
 
-.meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 0.55em;
-  line-height: 1.4;
-  color: var(--copper-light);
-}
-
-/* The links keep a full touch target without making the band taller: the target reaches past the band. */
 .links {
   display: flex;
-  margin: calc((1.6em - var(--touch)) / 2) -0.7em;
+  margin: 0 0 0 -0.7em;
   padding: 0;
   list-style: none;
 }
@@ -116,72 +192,8 @@
   translate: 0.14em -0.14em;
 }
 
-.words {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: calc(var(--u) * 15) calc(var(--u) * 22) calc(var(--u) * 15);
-}
-
-.title {
-  font-size: max(19px, calc(var(--u) * 23));
-  font-weight: 600;
-  letter-spacing: -0.028em;
-  line-height: 1.15;
-}
-
-/* The whole card opens the case study. */
-.open {
-  text-decoration: none;
-  outline: none;
-}
-
-.open::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-}
-
-.line {
-  margin-top: calc(var(--u) * 9);
-  font-size: max(13.5px, calc(var(--u) * 14.5));
-  line-height: 1.55;
-  color: var(--text-2);
-}
-
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: calc(var(--u) * 5);
-  margin-top: calc(var(--u) * 15);
-  padding: 0;
-  list-style: none;
-}
-
-.tags li {
-  padding: 0.34em 0.62em 0.3em;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  font-family: var(--font-mono);
-  font-size: max(10px, calc(var(--u) * 10.5));
-  line-height: 1.3;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-2);
-}
-
-/* Where the card leads, in its bottom right corner. It lights while the pointer is on the card and goes quiet while
-   the pointer is on a link that leads somewhere else. */
 .go {
-  align-self: flex-end;
-  margin-top: auto;
-  padding-top: calc(var(--u) * 16);
-  font-family: var(--font-mono);
-  font-size: max(10.5px, calc(var(--u) * 11));
-  line-height: 1.4;
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
+  margin-left: auto;
   white-space: nowrap;
   color: var(--text-3);
   transition: color var(--dur-2) var(--ease-settle), opacity var(--dur-2) var(--ease-settle);

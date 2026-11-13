@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Finish } from '../metal/finishes';
 import type { CardShape, PlateKind } from '../metal/mask';
-import { plates, type PlatePhoto } from '../metal/renderer';
+import { plates, type PlateLook, type PlatePhoto } from '../metal/renderer';
 import styles from './Plate.module.css';
 
 export interface PlateProps {
@@ -13,8 +13,13 @@ export interface PlateProps {
   big?: string;
   facts?: string;
   photo?: PlatePhoto;
-  // A project card's shape.
+  // A project card: its shape, how its picture's colors come back, and how far it turns under the pointer, in
+  // radians at its edge. A turn below zero leans toward the pointer and not away from it.
   card?: CardShape;
+  look?: PlateLook;
+  turn?: number;
+  // Held as it is under the pointer, for a still: the card is held turned as well.
+  pinned?: boolean;
   className?: string;
   style?: CSSProperties;
   tilt?: boolean;
@@ -29,7 +34,7 @@ const MAX_TILT = 0.06;
 const MAX_TILT_CONTROL = 0.05;
 
 // A lit metal plate. Its words are painted into the metal and also kept in the DOM.
-export function Plate({ finish, kind = 'plate', label, big, facts, photo, card, className, style, tilt = true, hover, children }: PlateProps) {
+export function Plate({ finish, kind = 'plate', label, big, facts, photo, card, look, turn = 0, pinned, className, style, tilt = true, hover, children }: PlateProps) {
   const host = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'failed'>('loading');
@@ -44,12 +49,13 @@ export function Plate({ finish, kind = 'plate', label, big, facts, photo, card, 
       canvas: c,
       spec: { finish, kind, label, big, facts, window: !!photo, card },
       photo,
+      look,
       onState: (s) => setState(s),
     });
     return off;
     // The spec is fixed for a plate's life; a new photo or new words make a new plate.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finish, kind, label, big, facts, photoKey, card?.aspect, card?.stripH]);
+  }, [finish, kind, label, big, facts, photoKey, card?.aspect, card?.stripH, card?.edge, look?.reveal, look?.push]);
 
   useEffect(() => {
     const h = host.current;
@@ -67,19 +73,32 @@ export function Plate({ finish, kind = 'plate', label, big, facts, photo, card, 
     return () => { h.removeEventListener('pointermove', move); h.removeEventListener('pointerleave', leave); };
   }, [tilt, kind]);
 
-  // A card's words lie over its plate, so the pointer is followed on whatever the card marks as its area.
+  // A card's words lie over its plate, so the pointer is followed on whatever the card marks as its area. The area
+  // itself stays still while the card turns inside it, so the card never turns out from under the pointer.
   useEffect(() => {
     const h = host.current;
     if (!h || kind !== 'card') return;
     const area = h.closest<HTMLElement>('[data-plate-area]') ?? h;
     const move = (e: PointerEvent) => {
       if (e.pointerType === 'touch') return;
-      const r = h.getBoundingClientRect();
-      plates.setPointer(h, e.clientX - r.left, e.clientY - r.top);
+      const r = area.getBoundingClientRect();
+      const x = e.clientX - r.left;
+      const y = e.clientY - r.top;
+      plates.setPointer(h, x, y);
+      if (turn) plates.setTilt(h, -(y / r.height - 0.5) * 2 * turn, (x / r.width - 0.5) * 2 * turn);
     };
+    const leave = () => plates.setTilt(h, 0, 0);
     area.addEventListener('pointermove', move);
-    return () => area.removeEventListener('pointermove', move);
-  }, [kind]);
+    area.addEventListener('pointerleave', leave);
+    return () => { area.removeEventListener('pointermove', move); area.removeEventListener('pointerleave', leave); plates.setTilt(h, 0, 0); };
+  }, [kind, turn]);
+
+  useEffect(() => {
+    const h = host.current;
+    if (!h || kind !== 'card' || !turn || !pinned || !hover?.on || state !== 'ready') return;
+    const r = (h.closest<HTMLElement>('[data-plate-area]') ?? h).getBoundingClientRect();
+    plates.setTilt(h, -(hover.y / r.height - 0.5) * 2 * turn, (hover.x / r.width - 0.5) * 2 * turn);
+  }, [kind, turn, pinned, hover?.on, hover?.x, hover?.y, state]);
 
   useEffect(() => {
     if (host.current) plates.setHover(host.current, !!hover?.on, hover?.x, hover?.y);

@@ -5,28 +5,30 @@ export type PlateKind = 'plate' | 'bar' | 'placard' | 'control' | 'frame' | 'car
 // A project card's shape. Everything on it is worked out from the card's width alone, so the page can leave the same
 // room. One design unit is a CSS pixel on a card CARD.width wide.
 // aspect: the picture's width over its height. stripH: the band's height in CSS pixels as the page laid it out, when
-// its words needed more room than the design gives.
-export interface CardShape { aspect: number; stripH?: number }
+// its words needed more room than the design gives. edge: a thin bead, or a wide rim that turns in to a lower face.
+export type CardEdge = 'thin' | 'deep';
+export interface CardShape { aspect: number; stripH?: number; edge?: CardEdge }
 
 export const CARD = {
   width: 460,
   radius: 18,
-  bead: 2.6,
-  // The picture fills the top of the card to the bead. pad: from the card's edge to the picture. winR and winRb: the
-  // window's top and bottom corners. bezel: the metal frame round the window, which under the picture is a rail.
-  // depth: how far the picture sits below the face. strip: the height of the band of dark bronze under the picture,
-  // which carries the card's facts.
-  pad: 3.8,
-  winR: 14.2,
+  // The picture fills the top of the card to its edge. winRb: the window's bottom corners. bezel: the metal frame
+  // round the window, which under the picture is a rail. strip: the height of the band of dark bronze under the
+  // picture, which carries the card's facts.
   winRb: 0.01,
   bezel: 3.4,
-  depth: 5,
   strip: 36,
+  // rim: how wide the edge is. pad: from the card's edge to the picture. depth: how far the picture sits below the face.
+  edges: {
+    thin: { rim: 2.6, pad: 3.8, depth: 5 },
+    deep: { rim: 6.4, pad: 7.4, depth: 9 },
+  },
 } as const;
 
 // Design units from the top of a card to the foot of its picture's rail, where the band begins.
 export function cardPicture(shape: CardShape): number {
-  return CARD.pad + (CARD.width - 2 * CARD.pad) / shape.aspect + CARD.bezel;
+  const pad = CARD.edges[shape.edge ?? 'thin'].pad;
+  return pad + (CARD.width - 2 * pad) / shape.aspect + CARD.bezel;
 }
 
 export interface PlateSpec {
@@ -50,8 +52,9 @@ export interface Mask {
   winRb: number; // the window's lower corners. The same as winR on everything but a card
   winDepth: number; // design units. 0 for the plates' own depth
   strip: [number, number, number, number] | null; // a card's band of bronze: center x, y, half w, half h in device px
-  bead: number; // a card's edge bead and the frame round its window, device px. 0 on everything else
+  bead: number; // a card's edge and the frame round its window, device px. 0 on everything else
   bezel: number;
+  deep: boolean; // a card's edge is the wide rim, not the thin bead
   screws: [number, number, number, number][];
   radius: number;
 }
@@ -160,6 +163,7 @@ export function paintMask(spec: PlateSpec, cssW: number, cssH: number, dpr: numb
   let bead = 0;
   let bezel = 0;
   let strip: Mask['strip'] = null;
+  let deep = false;
 
   const border = (inset: number, rad: number, lw: number) => {
     g.lineWidth = lw * S;
@@ -172,15 +176,17 @@ export function paintMask(spec: PlateSpec, cssW: number, cssH: number, dpr: numb
     // A card carries no words in its metal: they are in the page, over it. Its face, bead, rail and band are worked
     // out in the shader from these numbers.
     const shape = spec.card ?? { aspect: 2 };
+    const E = CARD.edges[shape.edge ?? 'thin'];
+    deep = shape.edge === 'deep';
     S = (cssW / CARD.width) * dpr;
     radius = CARD.radius * S;
-    const ww = CARD.width - 2 * CARD.pad;
+    const ww = CARD.width - 2 * E.pad;
     const wh = ww / shape.aspect;
-    win = [w / 2, (CARD.pad + wh / 2) * S, (ww / 2) * S, (wh / 2) * S];
-    winR = CARD.winR * S;
+    win = [w / 2, (E.pad + wh / 2) * S, (ww / 2) * S, (wh / 2) * S];
+    winR = (CARD.radius - E.pad) * S;
     winRb = CARD.winRb * S;
-    winDepth = CARD.depth;
-    bead = CARD.bead * S;
+    winDepth = E.depth;
+    bead = E.rim * S;
     bezel = CARD.bezel * S;
     const sh = Math.max(CARD.strip * S, (shape.stripH ?? 0) * dpr);
     strip = [w / 2, cardPicture(shape) * S + sh / 2, (ww / 2) * S, sh / 2];
@@ -264,5 +270,5 @@ export function paintMask(spec: PlateSpec, cssW: number, cssH: number, dpr: numb
     if (f === 'aged') { const r = small ? 14 * S : o * 1.2; const rr = (small ? 3.6 : 5.2) * S; screws = [[r, r, rr, -9], [w - r, r, rr, -9], [r, h - r, rr, -9], [w - r, h - r, rr, -9]]; }
   }
   winR = winR || 10 * S;
-  return { w, h, S, glyphs: alpha(g, w, h), panel: alpha(pn, w, h), win, winR, winRb: winRb || winR, winDepth, strip, bead, bezel, screws, radius };
+  return { w, h, S, glyphs: alpha(g, w, h), panel: alpha(pn, w, h), win, winR, winRb: winRb || winR, winDepth, strip, bead, bezel, deep, screws, radius };
 }
