@@ -2,6 +2,30 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-12 · A second derby: statues in place of hardware (Fable, web chat)
+
+**What Brandon said**
+
+- Of the first derby: "I didn't necessarily love any of these." The rail's bar is his favorite as it is. The knobs are what he does not love. "I think you're looking at like contractual type assets. Where I'm thinking more like statues and art." He floated an Egyptian head or a gargoyle: facing out where the posts are, in profile at the ends of the rail looking each way, with eyes and mouth that light when the stream hits. Not a decision.
+- Fable suggested Art Deco to sit with the hero's city. He set the city aside: it "is going to need a massive overhaul", and the site is built on the stream, not on it. "I would love to see another derby."
+
+**What was built**
+
+- Study 11 at `/lab/work-guardians` (`src/work-objects/guardians.ts`), on the first derby's canvas and lighting (`HEAD`, `SHADE` and `mountObjects` are now shared from `objects.ts`).
+- Three families: Pharaoh, Gargoyle, Sun stone. Each is a mask worked out as a height from simple shapes, and a head in profile cut from an outline of a dozen or so points. On the rail the bar is the page's own, and the heads sit at its ends looking outward.
+- Eyes and mouths are openings. They are dark with the stream off and take the stream's colors with it on.
+- Still: `reference/studies/20-work-guardians-derby.jpg`.
+
+**To know**
+
+- A whole page of it is too slow for this workspace's software drawing: a full page still timed out. Each statue is skipped outside its own bounds, and stills are taken a screen at a time.
+- The heads on the rail are drawn about eight times the bar's half thickness so they can be read. On the page they would be much smaller, which is a question for whichever family he picks.
+- These are sketches of a direction. A face written in code will not hold up enlarged. Open 5, real models, is the way to make the real ones, and "Figures that light up on scroll" is on the Dropped list, which he would be bringing back.
+
+**Half finished**
+
+- His pick.
+
 ## 2026-11-12 · His first look at `/lab/work`, and a derby of posts and rails (Fable, web chat)
 
 **What Brandon said**, all of it in `BRIEF.md`, The stream, "His first look at the build"

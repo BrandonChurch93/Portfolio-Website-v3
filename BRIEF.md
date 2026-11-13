@@ -235,6 +235,8 @@ Worked out in a wireframe at `/lab/work-draft` over the day. How it got there is
     - What he is after, in his words: "I think you're looking at like contractual type assets. Where I'm thinking more like statues and art." Fable reads "contractual" as construction: hardware and fittings.
     - An idea, not a ruling: "Think like an ancient Egypt's styled head, or like a gargoyle head, or something cool like that's what I'm envisioning." If heads: where the posts are now they face the visitor, and "when the light hits them, their mouth and eyes turn red or something". On the rails "the faces should be on the side looking each direction". And: "Not saying I wanna go with the faces, I'm just thinking about something a lot cooler than what we have right now."
     - In exact terms: the rail's bar stays as it is. The posts and the rail's end pieces stop being hardware and become small sculptures. What they depict is not decided.
+- **The city is not a reason to choose a style (Nov 12).** Fable suggested Art Deco because it would sit with the hero's city of the future. His answer: "I don't think we should consider the city. Yes we spent the time to build it but it's not like it's a masterpiece that we're building the whole site off of. That's the stream. The city is going to need a massive overhaul and the current version will probably just be shown as a draft anyways." So what goes with the stream decides, not the city.
+- **A second derby, of statues, is at `/lab/work-guardians` (Study 11), waiting on his pick.** He asked for it: "I would love to see another derby." Three families, each as a mask facing out where a post stands and as a pair of heads in profile at the ends of the rail, looking outward, with eyes and mouths that light when the stream is on: 1 · Pharaoh. 2 · Gargoyle. 3 · Sun stone, a carved disc with a face at its center, and feathered serpents on the rail. They are rough reliefs written in code, drawn larger than on the page. The real ones would need real sculpts, which is Open 5.
 
 **How it is built**
 
@@ -274,6 +276,7 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
 - He wants camera movement and a real moment of awe.
 - No PC parts in the hero.
 
+- The city as built is not what the site is built on. "It's not like it's a masterpiece that we're building the whole site off of. That's the stream." It "is going to need a massive overhaul and the current version will probably just be shown as a draft anyways". (Nov 12)
 - The opening animation as carried from the second build is "five out of 10 at best" and "definitely needs to be redone". The city itself "looks good" and "could still use some work". The city gets revisited anyway so it ties in with the stream. (Nov 12)
 - An idea to revisit with the hero, not decided: his first thought was the city breaking apart into the stream as the visitor scrolls. Fable's twist, which he asked to have noted: building, not breaking. The city assembles out of the stream's facets in the opening, and the stream carries the same pieces on down the page. (Nov 12)
 

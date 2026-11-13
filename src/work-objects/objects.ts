@@ -11,7 +11,7 @@ const VERT = `#version 300 es
 in vec2 a;
 void main(){ gl_Position = vec4(a, 0.0, 1.0); }`;
 
-const FRAG = `#version 300 es
+export const HEAD = `#version 300 es
 precision highp float;
 uniform vec2 uSize;
 uniform float uDpr, uStream, uSoft, uBand;
@@ -32,8 +32,9 @@ float dome(float x){ return sqrt(max(1.0 - x * x, 0.0)); }
 float seg(vec2 p, vec2 a, vec2 b, out vec2 near){
   vec2 ab = b - a; float k = clamp(dot(p - a, ab) / dot(ab, ab), 0.0, 1.0);
   near = a + ab * k; return length(p - near);
-}
+}`;
 
+const DESIGNS = `
 // ---- the turning objects, in units of their radius
 
 float knobH(vec2 r){
@@ -145,8 +146,9 @@ float railSdf(int id, vec2 q, float len){
   if (id == 0) return min(length(vec2(x, q.y)) - 1.0, min(length(vec2(q.x, q.y + 0.8)), length(vec2(q.x - len, q.y + 0.8))) - 1.8);
   if (id == 1) return trussSdf(q, len);
   return max(length(vec2(x, max(abs(q.y) - 1.2, 0.0))) - 0.4 - step(0.0, 0.0), -slotAt(q, len) - 0.0);
-}
+}`;
 
+export const SHADE = `
 // ---- the buttons' metal, as the posts and the rail on the Work page are lit
 
 vec3 shade(vec2 p, vec3 N, vec3 T, vec3 F0, float rough, float aniso, vec3 Ls, float lit){
@@ -174,8 +176,9 @@ vec3 heat(float x){
   c = mix(c, uPale, smoothstep(0.65, 1.0, x));
   return pow(c * min(1.0, x / 0.22), vec3(1.0 / 2.2));
 }
-float glowOf(float d, float w){ return bell(d / w) + 0.3 / (1.0 + (d / (w * 3.0)) * (d / (w * 3.0))) * bell(d / (w * 12.0)); }
+float glowOf(float d, float w){ return bell(d / w) + 0.3 / (1.0 + (d / (w * 3.0)) * (d / (w * 3.0))) * bell(d / (w * 12.0)); }`;
 
+const FRAG = `${HEAD}${DESIGNS}${SHADE}
 void main(){
   vec2 p = vec2(gl_FragCoord.x, uSize.y * uDpr - gl_FragCoord.y) / uDpr;
   int id = -1; vec4 t = vec4(0.0);
@@ -310,10 +313,10 @@ export interface Objects {
   dispose(): void;
 }
 
-export function mountObjects(canvas: HTMLCanvasElement, tiles: HTMLElement[]): Objects {
+export function mountObjects(canvas: HTMLCanvasElement, tiles: HTMLElement[], frag = FRAG): Objects {
   const gl = canvas.getContext('webgl2', { antialias: false, alpha: false });
   if (!gl) return { stream() {}, dispose() {} };
-  const { p, u } = program(gl, VERT, FRAG);
+  const { p, u } = program(gl, VERT, frag);
   const quad = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, quad);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
