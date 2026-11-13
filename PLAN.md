@@ -17,12 +17,12 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **Phase:** 3, a section at a time, starting with Work
 - **Built in Claude Code (Nov 12):** the stream's real route through Work at `/lab/work`, with posts and a rail as real objects. `LOG.md` has its account, including what it judged not at the bar
 - **His first look, in his words, is in `BRIEF.md`**, The stream, "His first look at the build". In short: the strikes at the top stay, he likes them. The screws need to mirror, right to left. The strike on the second row feels like a graze. The word WORK is fighting the stream for attention, and he wonders about a metal bar over it
-- **His pick from the second derby (Nov 12):** the Sun stone, for the posts. No heads on the rail, which keeps its bar and loses its knobs. What finishes the rail's ends is not decided
+- **His pick from the second derby (Nov 12):** the Sun stone, for the posts. No heads on the rail, which keeps its bar and loses its knobs
 - **His pick (Nov 12):** the Blade, for the ends of the rail. And the Sun stones 10 to 20% larger, growing away from the cards, with the stream no closer to the cards than it is now
-- **In front of Brandon:** Fable's proposal for the card (`LOG.md`, Nov 12, "The Blade picked"). He said yes to settling the card now and asked what Fable proposes before any work. The card derby waits on his answer and on him turning Fable up
+- **In front of Brandon:** the card derby at `/lab/work-cards` (Study 14), built on the proposal he approved. Two picks: how the picture rests (Toned, Cast or Etched) and the layout (A · Set in, B · Edge to edge, C · Data plate). Fable recommends Toned and C
 - **He is open to the stone's face lighting** and wants to see it in action before he rules, so it gets built on the real page
 - **After his pick:** one prompt to Claude Code: the sun stones as real objects, a little larger, with a face that lights, Blade finials on the rail, a stronger strike on the second row, more margin on an iPad, a bar over WORK to compare with and without, and the card once he has picked it
-- **Still to do in the web chat:** the card's look (`BRIEF.md`, Open 19), then Work on a phone (Open 18)
+- **Still to do in the web chat:** Work on a phone (Open 18). It now also covers an iPad held upright, where two columns leave each card 272 px and the card needs about 340
 - **Not ruled on:** the slim top bar with the categories docking into it (Open 17). The bar over WORK
 - **The wireframe** is at `/lab/work-draft`, opening on R, the layout that was agreed. It has done its job. It shows the order of the stops and nothing else
 - **Where the stream is:** `/lab/stream`, approved. It must keep drawing what it draws today
@@ -79,7 +79,7 @@ Set aside, kept as records: the molten metal test shot at `/lab/pour`, its looks
 - [ ] The spacing system
 - [ ] Hero
 - [~] Work · the stream's real route with the posts and the rail, at `/lab/work` (Claude Code)
-- [ ] Work · the card's look (web chat)
+- [~] Work · the card's look (web chat). Built as real plates and shown as a derby at `/lab/work-cards`. Waiting on his picks
 - [ ] Work · the category bar, and the top bar it may dock into
 - [ ] Work · on a phone
 - [ ] Work · the whole section, with the real card in it

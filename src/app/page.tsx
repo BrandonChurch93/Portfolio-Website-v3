@@ -45,6 +45,10 @@ export default function Index() {
           <span className={styles.minor}>Phase 2 · the test shot, second round · facets, following the scroll</span>
         </li>
         <li>
+          <Link href="/lab/work-cards">The card</Link>
+          <span className={styles.minor}>Phase 3 · the project card with the real words and pictures · three layouts, three ways for the picture to rest</span>
+        </li>
+        <li>
           <Link href="/lab/work-pairing">Blade or Steps</Link>
           <span className={styles.minor}>Phase 3 · the sun stone beside the rail with each finial</span>
         </li>

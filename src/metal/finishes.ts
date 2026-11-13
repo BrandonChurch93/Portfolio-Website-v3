@@ -1,6 +1,6 @@
 import { hex, type PaletteName } from '../config/palette';
 
-export type Finish = 'aged' | 'polished' | 'coated' | 'bronze' | 'panel';
+export type Finish = 'aged' | 'polished' | 'coated' | 'bronze' | 'panel' | 'card';
 
 const lin = (v: number): [number, number, number] => [(v >> 16) & 255, (v >> 8) & 255, v & 255].map((c) => Math.pow(c / 255, 2.2)) as [number, number, number];
 const metal = (name: PaletteName) => lin(hex(name));
@@ -45,13 +45,22 @@ export interface FinishParams {
 //   aged:     darker copper with patina and a double cut border
 //   bronze:   dark bronze, words in bright copper set flush
 //   panel:    brushed copper frame around a sunk dark bronze panel
+//   card:     a project card. Copper only as its edge bead and the frame round its picture, and on one layout a
+//             band of dark bronze under the picture. The face is not metal
 export const FINISHES: Record<Finish, FinishParams> = {
   aged: { a: COPPER, b: COPPER_LIGHT, ra: 0.34, rb: 0.3, aniso: 0.45, grain: 0.075, patina: 1, scratch: 1, id: 0 },
   polished: { a: COPPER_LIGHT, b: COPPER_LIGHT, ra: 0.1, rb: 0.1, aniso: 0.08, grain: 0.008, patina: 0.06, scratch: 0.25, id: 1 },
   coated: { a: COPPER_LIGHT, b: COPPER_LIGHT, ra: 0.09, rb: 0.09, aniso: 0.1, grain: 0.008, patina: 0.6, scratch: 0.3, id: 1, pillow: 6, rimW: 8, faceClean: 1, soft: 1, band: 0.72, coat: 0.3 },
   bronze: { a: BRONZE_DEEP, b: COPPER_LIGHT, ra: 0.32, rb: 0.38, aniso: 0.5, grain: 0.04, patina: 0.3, scratch: 0.35, id: 2, inlay: 0.8 },
   panel: { a: COPPER_LIGHT, b: BRONZE_DEEP, ra: 0.26, rb: 0.38, aniso: 0.9, grain: 0.14, patina: 0.12, scratch: 0.3, id: 3 },
+  card: { a: COPPER, b: BRONZE_DEEP, ra: 0.2, rb: 0.44, aniso: 0.25, grain: 0.02, patina: 0.5, scratch: 0, id: 4 },
 };
+
+// A card's face, and the warmth light raises on it. The stream's own card is drawn with the same two colors.
+export const FACE = metal('bg-2');
+export const FACE_LIT = metal('bronze-deep');
+// The tones a card's picture is mapped onto at rest, dark to light.
+export const RAMP = new Float32Array([...metal('bg'), ...metal('bronze-deep'), ...metal('bronze'), ...metal('copper'), ...metal('copper-light')]);
 
 export const INK: [number, number, number] = [0.006, 0.005, 0.004];
 

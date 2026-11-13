@@ -1,6 +1,32 @@
 import type { Finish } from './finishes';
 
-export type PlateKind = 'plate' | 'bar' | 'placard' | 'control' | 'frame';
+export type PlateKind = 'plate' | 'bar' | 'placard' | 'control' | 'frame' | 'card';
+
+// A project card's shape. The picture's window is worked out from the card's width alone, so the page can leave the
+// same room for it. One design unit is a CSS pixel on a card CARD.width wide.
+export type CardLayout = 'set' | 'edge' | 'band';
+// stripH: the band's height in CSS pixels as the page laid it out, when its words needed more room than the design gives.
+export interface CardShape { layout: CardLayout; aspect: number; stripH?: number }
+
+export const CARD = {
+  width: 460,
+  radius: 18,
+  bead: 2.6,
+  // pad: from the card's edge to the picture. winR and winRb: the window's top and bottom corners. bezel: the metal
+  // frame round the window. depth: how far the picture sits below the face. strip: the height of a band of dark
+  // bronze under the picture, which carries the card's facts.
+  layouts: {
+    set: { pad: 15, winR: 7, winRb: 7, bezel: 4.2, depth: 6, strip: 0 },
+    edge: { pad: 3.8, winR: 14.2, winRb: 0.01, bezel: 3.4, depth: 5, strip: 0 },
+    band: { pad: 3.8, winR: 14.2, winRb: 0.01, bezel: 3.4, depth: 5, strip: 36 },
+  },
+} as const;
+
+// Design units from the top of a card to the foot of its picture's bezel, where the words can begin.
+export function cardPicture(shape: CardShape): number {
+  const L = CARD.layouts[shape.layout];
+  return L.pad + (CARD.width - 2 * L.pad) / shape.aspect + L.bezel;
+}
 
 export interface PlateSpec {
   finish: Finish;
@@ -9,6 +35,7 @@ export interface PlateSpec {
   big?: string;
   facts?: string;
   window?: boolean;
+  card?: CardShape;
 }
 
 export interface Mask {
@@ -19,6 +46,11 @@ export interface Mask {
   panel: Uint8ClampedArray; // coverage 0 to 255: the sunk panel
   win: [number, number, number, number] | null; // center x, y, half w, half h in device px
   winR: number;
+  winRb: number; // the window's lower corners. The same as winR on everything but a card
+  winDepth: number; // design units. 0 for the plates' own depth
+  strip: [number, number, number, number] | null; // a card's band of bronze: center x, y, half w, half h in device px
+  bead: number; // a card's edge bead and the frame round its window, device px. 0 on everything else
+  bezel: number;
   screws: [number, number, number, number][];
   radius: number;
 }
@@ -121,7 +153,12 @@ export function paintMask(spec: PlateSpec, cssW: number, cssH: number, dpr: numb
   let radius: number;
   let win: Mask['win'] = null;
   let screws: Mask['screws'] = [];
-  const winR = 0;
+  let winR = 0;
+  let winRb = 0;
+  let winDepth = 0;
+  let bead = 0;
+  let bezel = 0;
+  let strip: Mask['strip'] = null;
 
   const border = (inset: number, rad: number, lw: number) => {
     g.lineWidth = lw * S;
@@ -130,7 +167,26 @@ export function paintMask(spec: PlateSpec, cssW: number, cssH: number, dpr: numb
     g.stroke();
   };
 
-  if (spec.kind === 'bar' || spec.kind === 'control') {
+  if (spec.kind === 'card') {
+    // A card carries no words in its metal: they are in the page, over it. Its face, bead and bezel are worked out
+    // in the shader from these numbers.
+    const shape = spec.card ?? { layout: 'set', aspect: 16 / 9 };
+    const L = CARD.layouts[shape.layout];
+    S = (cssW / CARD.width) * dpr;
+    radius = CARD.radius * S;
+    const ww = CARD.width - 2 * L.pad;
+    const wh = ww / shape.aspect;
+    win = [w / 2, (L.pad + wh / 2) * S, (ww / 2) * S, (wh / 2) * S];
+    winR = L.winR * S;
+    winRb = L.winRb * S;
+    winDepth = L.depth;
+    bead = CARD.bead * S;
+    bezel = L.bezel * S;
+    if (L.strip) {
+      const sh = Math.max(L.strip * S, (shape.stripH ?? 0) * dpr);
+      strip = [w / 2, cardPicture(shape) * S + sh / 2, (ww / 2) * S, sh / 2];
+    }
+  } else if (spec.kind === 'bar' || spec.kind === 'control') {
     const D = DESIGN[spec.kind];
     S = (cssH / D.height) * dpr;
     radius = D.radius * S;
@@ -209,5 +265,6 @@ export function paintMask(spec: PlateSpec, cssW: number, cssH: number, dpr: numb
     if (f === 'polished') screws = small ? [[14 * S, 14 * S, 4.2 * S, 0.9], [w - 14 * S, 14 * S, 4.2 * S, 0.5], [14 * S, h - 14 * S, 4.2 * S, 1.6], [w - 14 * S, h - 14 * S, 4.2 * S, 2.2]] : [[16 * S, 16 * S, 7 * S, 0.6], [w - 16 * S, 16 * S, 7 * S, 2.1], [16 * S, h - 16 * S, 7 * S, 1.3], [w - 16 * S, h - 16 * S, 7 * S, 2.8]];
     if (f === 'aged') { const r = small ? 14 * S : o * 1.2; const rr = (small ? 3.6 : 5.2) * S; screws = [[r, r, rr, -9], [w - r, r, rr, -9], [r, h - r, rr, -9], [w - r, h - r, rr, -9]]; }
   }
-  return { w, h, S, glyphs: alpha(g, w, h), panel: alpha(pn, w, h), win, winR: winR || 10 * S, screws, radius };
+  winR = winR || 10 * S;
+  return { w, h, S, glyphs: alpha(g, w, h), panel: alpha(pn, w, h), win, winR, winRb: winRb || winR, winDepth, strip, bead, bezel, screws, radius };
 }

@@ -8,6 +8,7 @@ import process from 'node:process';
 export const VIEWPORTS = {
   phone: { width: 390, height: 844, scale: 3, touch: true },
   tablet: { width: 834, height: 1194, scale: 2, touch: true },
+  'tablet-wide': { width: 1194, height: 834, scale: 2, touch: true },
   desktop: { width: 1440, height: 900, scale: 2, touch: false },
   wide: { width: 1920, height: 1080, scale: 1, touch: false },
   '4k': { width: 3840, height: 2160, scale: 1, touch: false },

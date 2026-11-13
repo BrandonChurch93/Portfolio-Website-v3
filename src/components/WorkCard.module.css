@@ -1,0 +1,235 @@
+/* Every size inside a card is in design units: one unit is a CSS pixel on a card 460 wide, so a card is the same
+   card at any width. Words keep a least size, so on a narrow card they stay readable and the card grows taller. */
+.card {
+  position: relative;
+  display: grid;
+  container-type: inline-size;
+  transition: scale var(--dur-1) var(--ease-settle);
+}
+
+@media (hover: hover) {
+  .card[data-awake='true'] {
+    scale: 1.012;
+    transition: scale 0.32s cubic-bezier(0.3, 1.45, 0.5, 1);
+  }
+}
+
+.card .plate {
+  position: absolute;
+  inset: 0;
+}
+
+/* The page is almost black, so a card throws no shadow worth drawing, and one would only dim the words below it. */
+.card .plate [data-plate-shadow] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+}
+
+.inner {
+  --u: calc(100cqw / var(--card-w));
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  border-radius: calc(var(--u) * var(--radius));
+  padding-bottom: calc(var(--u) * 8);
+}
+
+.card:has(.open:focus-visible) .inner {
+  outline: var(--focus);
+  outline-offset: var(--focus-offset);
+}
+
+.picture {
+  height: calc(var(--u) * var(--pic));
+}
+
+.words {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--u) * 17) calc(var(--u) * 18) 0;
+}
+
+.card[data-layout='edge'] .words,
+.card[data-layout='band'] .words {
+  padding-inline: calc(var(--u) * 22);
+}
+
+/* The band of bronze under the picture. The plate draws it, and the card's facts lie on it. */
+.strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 calc(var(--u) * 12);
+  min-height: calc(var(--u) * var(--strip));
+  padding: 0.35em calc(var(--u) * 22);
+  font-family: var(--font-mono);
+  font-size: max(10.5px, calc(var(--u) * 11));
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+
+/* The links keep a full touch target without making the band taller: the target reaches past the band. */
+.strip .links {
+  margin-block: calc((1.6em - var(--touch)) / 2);
+  margin-right: -0.7em;
+}
+
+.card[data-layout='band'] .words {
+  padding-top: calc(var(--u) * 15);
+  padding-bottom: calc(var(--u) * 12);
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.55em;
+  font-family: var(--font-mono);
+  font-size: max(10.5px, calc(var(--u) * 11));
+  line-height: 1.4;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--copper-light);
+}
+
+.title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: calc(var(--u) * 12);
+  margin-top: calc(var(--u) * 8);
+  font-size: max(19px, calc(var(--u) * 23));
+  font-weight: 600;
+  letter-spacing: -0.028em;
+  line-height: 1.15;
+}
+
+/* The whole card opens the project. */
+.open {
+  text-decoration: none;
+  outline: none;
+}
+
+.open::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.line {
+  margin-top: calc(var(--u) * 9);
+  font-size: max(13.5px, calc(var(--u) * 14.5));
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--u) * 5);
+  margin-bottom: calc(var(--u) * 14);
+  margin-top: calc(var(--u) * 15);
+  padding: 0;
+  list-style: none;
+}
+
+.tags li {
+  padding: 0.34em 0.62em 0.3em;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: max(10px, calc(var(--u) * 10.5));
+  line-height: 1.3;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0 calc(var(--u) * 12);
+  margin-top: auto;
+  border-top: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: max(10.5px, calc(var(--u) * 11));
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+
+.links {
+  display: flex;
+  margin: 0 0 0 -0.7em;
+  padding: 0;
+  list-style: none;
+}
+
+.links a {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  min-height: var(--touch);
+  padding: 0 0.7em;
+  color: var(--copper-light);
+  text-decoration: none;
+  transition: color var(--dur-1) var(--ease-settle);
+}
+
+.links a:hover {
+  color: var(--pale);
+}
+
+.links a:focus-visible {
+  outline: var(--focus);
+  outline-offset: -4px;
+  border-radius: var(--radius-1);
+}
+
+.out {
+  font-family: var(--font-body);
+  font-size: 1.1em;
+  letter-spacing: 0;
+}
+
+.go {
+  margin-left: auto;
+  color: var(--text-3);
+  white-space: nowrap;
+  transition: color var(--dur-2) var(--ease-settle);
+}
+
+.arrow {
+  display: inline-block;
+  font-family: var(--font-body);
+  letter-spacing: 0;
+  transition: translate var(--dur-2) var(--ease-settle);
+}
+
+.card[data-awake='true'] .go {
+  color: var(--pale);
+}
+
+.card[data-awake='true'] .arrow {
+  translate: 0.25em 0;
+}
+
+.title .go {
+  font-size: 0.85em;
+  font-weight: 400;
+}
+
+.card[data-layout='band'] .title {
+  margin-top: 0;
+}

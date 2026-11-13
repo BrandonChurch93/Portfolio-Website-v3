@@ -78,6 +78,7 @@ npm run shot -- /lab/piece/city --t 12
 npm run shot -- /lab/piece/handheld --vp phone --lamp 0.3,0.4
 npm run strip -- "/lab/piece/city?entrance=1&label=0" --opening --times 0.4,1.2,2,2.8,3.6,4.4,5.2,7
 npm run shot -- /lab/buttons --hover '[data-variant="primary"]' --wait 1200
+npm run shot -- "/lab/work-cards?layout=band" --vp tablet-wide --scroll grid --wait 3500
 npm run strip -- "/lab/pour?ui=0" --times 0.62,0.8,1.3,2.2,4.4,7,8,9.6
 npm run perf -- /lab/pour --vp phone --cpu 4
 npm run shot -- "/lab/stream?hold&ui=0"
@@ -91,6 +92,7 @@ npm run strip -- "/lab/work?ui=0" --times 1.45,1.6,1.75,1.9,2.1,2.4 --cols 3 --t
 - They need a browser. If one is missing they say so: run `npx playwright install chromium`.
 - Images go to `shots/`, which is not committed. Copy one into `reference/` only when it is worth keeping.
 - The scripts print `hardware` or `software`. `QUALITY.md` says what each can be trusted for.
+- A plate fades in over about a second, and the lamp is a place on the screen, not on the page. So give a still of plates `--wait 3000`, and shoot a long page a screen at a time with `--scroll`: on a `--full` still everything below the first screen is far from the lamp and comes out dark.
 - `streamPlay(fromScroll, toScroll, fromTime, toTime)` scripts a scroll of the stream's page, so a filmstrip of frozen frames can show it being scrolled. `streamPlay()` ends it.
 - `streamCount(left, top, right, bottom)` counts the shards the last frame drew inside a rectangle of the stream's page, `streamList(left, top, right, bottom)` lists them with whether each was thrown and how far it is from the core, and `streamThrown()` lists every thrown shard with its place, and `streamThrown(true)` adds the share of its size each is drawn at. `streamState()` gives what the route is planned round (the boxes, the posts and the rails), every landing with its kind, its side and how far along the side it is, and where the two sides part and meet. They are how the bunching on objects, the bounce at a strike and the second wave after one were measured.
 - `streamProbe(true)` starts a record of every riding shard, and `streamRiders(left, top, right, bottom)` reads it: each one's place, the share of its size shown, and what took the rest away. Recorded frame after frame, it counts the shards that vanish, reappear or jump.
@@ -114,8 +116,9 @@ npm run strip -- "/lab/work?ui=0" --times 1.45,1.6,1.75,1.9,2.1,2.4 --cols 3 --t
 | `src/pour/`, `src/pour-looks/` | The stream's first attempt, as molten metal, at `/lab/pour` and `/lab/pour-looks`. Set aside and kept as a record |
 | `src/hooks/` | `window.__site`, present only with `?hook=1`. The screenshot scripts drive pages through it. `__site.call(name, ...)` runs a tool a module registered, such as `plateHover` |
 | `src/components/PieceView.tsx` | Puts a piece in a page |
-| `src/metal/`, `src/components/Plate.tsx` | Lit metal for the interface: one hidden WebGL context draws every plate from a height field |
+| `src/metal/`, `src/components/Plate.tsx` | Lit metal for the interface: one hidden WebGL context draws every plate from a height field. A project card is one of its plates (`kind="card"`, `finish="card"`): a copper bead round a dark face, a picture in a sunk window, and on one layout a band of dark bronze. `CARD` in `mask.ts` holds a card's design sizes |
 | `src/components/MetalButton.tsx` | The primary and accent buttons |
+| `src/components/WorkCard.tsx`, `src/content/work.ts` | The project card and the projects on it, with the live site's own words and screenshots (`public/media/work/`). The card's words are in the page, over its plate. Three layouts (`set`, `edge`, `band`) and four ways for the picture to rest (`toned`, `cast`, `etched`, `true`). The derby is at `/lab/work-cards`: `?layout=band&tone=toned` opens its grid on one. Nothing is picked yet |
 | `src/app/lab/` | Pages for looking at one thing alone |
 | `src/config/palette.ts` | Every color, defined once. The interface gets them as CSS variables, 3D as numbers |
 | `src/styles/tokens.css`, `src/config/site.ts` | Type, spacing and other constants, each defined once |

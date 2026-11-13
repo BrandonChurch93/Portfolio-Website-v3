@@ -15,6 +15,13 @@ float fbm(vec2 p){ float a = 0.5, s = 0.0; for (int i = 0; i < 5; i++){ s += a *
 float sdBox(vec2 p, vec2 b, float r){ vec2 q = abs(p) - b + r; return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r; }
 `;
 
+// The window a picture sits in. A card's window may have other corners at its foot than at its head.
+const WINDOW = `
+uniform vec4 uWin;           // center x, y, half w, half h (device px)
+uniform float uWinOn, uWinR, uWinRb, uWinDepth;
+float winD(vec2 p){ vec2 q = p - uWin.xy; return sdBox(q, uWin.zw, q.y > 0.0 ? uWinRb : uWinR); }
+`;
+
 // ---- bake --------------------------------------------------------------------------------------
 
 export const BAKE = `#version 300 es
@@ -23,15 +30,16 @@ uniform sampler2D uSdf;      // r: words and lines, g: panel. Signed distance in
 uniform vec2 uRes;           // plate size, device px
 uniform float uS;            // device px per design unit
 uniform float uRad, uInset, uThick, uBevel;
-uniform int uFinish;         // 0 aged, 1 polished, 2 bronze, 3 panel
+uniform int uFinish;         // 0 aged, 1 polished, 2 bronze, 3 panel, 4 card
 uniform float uCutDepth, uCutWall, uPanelDepth, uRaise;
 uniform float uGrain, uPatina, uSeed, uScratch, uPillow;
 uniform float uRimW;         // design units the tarnish reaches in from the edge
 uniform float uFaceClean;    // 0 to 1: how free of tarnish the open face stays
 uniform vec4 uScrew[6];      // x, y, radius, slot angle (below -5: rivet, no slot)
-uniform vec4 uWin;           // center x, y, half w, half h (device px)
-uniform float uWinOn, uWinR, uWinDepth;
-layout(location = 0) out vec4 o0; // normal x, normal y, cavity, wear
+uniform float uBead, uBezel;  // a card's edge bead and the frame round its window, device px
+uniform vec4 uStrip;         // a card's band of bronze: center x, y, half w, half h. No band when its width is 0
+float stripD(vec2 p){ return uStrip.z > 0.0 ? sdBox(p - uStrip.xy, uStrip.zw, 1.2 * uS) : 1e5; }
+${WINDOW}layout(location = 0) out vec4 o0; // normal x, normal y, cavity, wear
 layout(location = 1) out vec4 o1; // second metal, enamel, grime, rough offset
 
 vec2 sdf(vec2 p){ return texture(uSdf, p / uRes).rg; }
@@ -60,6 +68,8 @@ float height(vec2 p){
   float d = plateD(p);
   float x = clamp(-d / uBevel, 0.0, 1.0);
   float h = uThick * sqrt(1.0 - (1.0 - x) * (1.0 - x));
+  // A card's edge is a half round bead. Inside it the face lies flat and lower.
+  if (uFinish == 4){ float t = clamp(-d / uBead, 0.0, 1.0) * 2.0 - 1.0; h = 0.5 * uBead * sqrt(max(1.0 - t * t, 0.0)); }
   // A small control has a gently domed face, so it reflects a gradient of the room instead of one flat tone.
   if (uPillow > 0.0){
     vec2 c = (p - uRes * 0.5) / (uRes * 0.5);
@@ -74,7 +84,7 @@ float height(vec2 p){
     // Brass set flush into bronze: no step at all; the two metals meet by color and gloss alone.
     // The bronze is cast, so its face carries a faint broad unevenness that makes highlights wander.
     h += (fbm(p / uS * 0.014 + uSeed) - 0.5) * 0.55 * uS;
-  } else {
+  } else if (uFinish == 3){
     float panT = clamp(-m.g / (uCutWall * 1.6), 0.0, 1.0);
     h -= uPanelDepth * panT * panT * (3.0 - 2.0 * panT);
     // Letters stand proud. Small strokes are only a few pixels wide, so the wall is narrow and centered on the glyph
@@ -84,9 +94,16 @@ float height(vec2 p){
   }
   h -= scratches(p) * 0.12 * uS;
   if (uWinOn > 0.5){
-    float dw = sdBox(p - uWin.xy, uWin.zw, uWinR);
-    h += 1.4 * uS * smoothstep(9.0 * uS, 6.0 * uS, dw) * smoothstep(-0.6 * uS, 1.6 * uS, dw);
+    float dw = winD(p);
+    // A card's window has a flat topped frame with a chamfer on each side.
+    if (uFinish == 4) h = max(h, 1.5 * uS * smoothstep(uBezel + 0.5 * uS, uBezel - 0.7 * uS, dw) * smoothstep(-0.3 * uS, 0.9 * uS, dw));
+    else h += 1.4 * uS * smoothstep(9.0 * uS, 6.0 * uS, dw) * smoothstep(-0.6 * uS, 1.6 * uS, dw);
     h -= uWinDepth * clamp(-dw / (2.0 * uS), 0.0, 1.0);
+  }
+  // The band stands a little proud of the face, with a chamfer, and is cast, so its face is faintly uneven.
+  if (uFinish == 4 && uStrip.z > 0.0){
+    float ds = stripD(p);
+    h = max(h, (1.1 * uS + (fbm(p / uS * 0.014 + uSeed) - 0.5) * 0.5 * uS) * smoothstep(0.4 * uS, -0.9 * uS, ds));
   }
   for (int i = 0; i < 6; i++){
     vec4 s = uScrew[i];
@@ -125,10 +142,20 @@ void main(){
   if (uFinish == 0 || uFinish == 1) ink = cov;
   if (uFinish == 2) inMetal2 = cov;
   if (uFinish == 3) inMetal2 = clamp(0.5 - m.g, 0.0, 1.0) * (1.0 - cov);
+  // A card's face is everything inside the bead but the window and its frame. It is not metal.
+  float face = 0.0;
+  float dwc = 1e5;
+  if (uFinish == 4){
+    if (uWinOn > 0.5) dwc = winD(p);
+    float inStrip = clamp(0.5 - stripD(p), 0.0, 1.0) * clamp(-plateD(p) - uBead + 0.5, 0.0, 1.0);
+    face = clamp(-plateD(p) - uBead + 0.5, 0.0, 1.0) * clamp(dwc - uBezel + 0.5, 0.0, 1.0) * (1.0 - inStrip);
+    ink = face;
+    inMetal2 = inStrip * clamp(dwc - uBezel + 0.5, 0.0, 1.0);
+  }
   float blast = (uFinish == 3) ? inMetal2 : 0.0;
   vec2 bead = vec2(noise(q * 1.9 + 3.0) - 0.5, noise(q * 1.9 + 11.0) - 0.5) + vec2(hash(q * 5.3) - 0.5, hash(q * 5.3 + 4.0) - 0.5) * 0.6;
   float letterTop = (uFinish == 3) ? cov * clamp(0.5 - m.g, 0.0, 1.0) : 0.0;
-  N = normalize(N + vec3(0.0, g * uGrain * mix(1.0, 0.35, inMetal2) * (1.0 - blast) * (1.0 - letterTop * 0.85), 0.0) + vec3(hash(q * 3.7) - 0.5, hash(q * 3.7 + 9.0) - 0.5, 0.0) * 0.012 + vec3(bead * 0.09 * blast, 0.0));
+  N = normalize(N + vec3(0.0, g * uGrain * mix(1.0, 0.35, inMetal2) * (1.0 - blast) * (1.0 - letterTop * 0.85) * (1.0 - face), 0.0) + vec3(hash(q * 3.7) - 0.5, hash(q * 3.7 + 9.0) - 0.5, 0.0) * 0.012 + vec3(bead * 0.09 * blast, 0.0) + vec3(bead * 0.022 * face, 0.0) + vec3(0.0, g * 0.05 * (uFinish == 4 ? inMetal2 : 0.0), 0.0));
 
   // Enamel fills the cut to a flat surface; only the metal lip around it keeps the groove wall.
   N = normalize(mix(N, vec3(0.0, 0.0, 1.0), smoothstep(0.0, 1.0, clamp(-m.r - 0.35 * uS, 0.0, 1.0)) * ink));
@@ -149,6 +176,11 @@ void main(){
   float lip = exp(-pow((m.r - 0.6 * uS) / (0.9 * uS), 2.0));
   // Raised letter tops are rubbed bright by hands, like the bevel crest.
   float wear = clamp((crest * 0.8 + lip * 0.6) * (0.4 + 0.6 * uPatina) + letterTop * 0.7, 0.0, 1.0);
+  if (uFinish == 4){
+    // The frame's two edges are rubbed bright, and tarnish sits where it meets the face.
+    wear = clamp(wear + 0.55 * exp(-pow((dwc - 0.5 * uS) / (0.7 * uS), 2.0)) + 0.4 * exp(-pow((dwc - uBezel + 0.6 * uS) / (0.6 * uS), 2.0)), 0.0, 1.0);
+    grime = clamp(grime + uPatina * 0.5 * exp(-pow((dwc - uBezel * 0.55) / (uBezel * 0.3), 2.0)) * (0.5 + drift), 0.0, 1.0);
+  }
   float head = 0.0;
   for (int i = 0; i < 6; i++){ vec4 s = uScrew[i]; if (s.z > 0.0) head = max(head, smoothstep(1.02, 0.9, length(p - s.xy) / s.z)); }
   float roughVar = (speck - 0.25) * 0.05 * uPatina + scratches(p) * 0.18 - head * 0.3;
@@ -233,8 +265,7 @@ uniform float uStreamI;
 uniform vec2 uTilt;          // radians: about x, about y
 uniform vec3 uF0a, uF0b, uInk;
 uniform float uRa, uRb, uAniso;
-uniform vec4 uWin;
-uniform float uWinOn, uWinR, uWinDepth, uPhotoAspect, uPhotoOn;
+uniform float uPhotoAspect, uPhotoOn;
 uniform vec2 uPhotoFocus;
 uniform float uPhotoZoom;
 uniform float uHover;        // 0 to 1: the pointer is on the plate, or it has focus
@@ -245,9 +276,23 @@ uniform float uInlay;        // the least an inlaid word shows of its own metal,
 uniform vec2 uPointer;       // the pointer, device px in the plate
 uniform float uBand;         // how bright the one soft light is; 1 as photographed
 uniform float uCoat;         // a clear coat over the metal: how strongly it throws the lamp back; 0 for bare metal
+uniform float uCard;         // 1 on a project card: a dark face inside a metal bead, round a picture
+uniform float uBead, uBezel;
+uniform vec3 uFace, uFaceLit;
+uniform int uTone;           // how a card's picture is shown at rest: 0 as it is, 1 toned, 2 cast, 3 etched
+uniform vec3 uRamp[5];       // the tones a picture is mapped onto, dark to light, linear
 out vec4 frag;
+${WINDOW}
+${ROOM}${SPEC}// A picture's tones mapped onto the palette's metals, dark to light.
+vec3 ramp(float l){
+  vec3 c = mix(uRamp[0], uRamp[1], smoothstep(0.0, 0.3, l));
+  c = mix(c, uRamp[2], smoothstep(0.3, 0.62, l));
+  c = mix(c, uRamp[3], smoothstep(0.62, 0.86, l));
+  return mix(c, uRamp[4], smoothstep(0.86, 1.0, l));
+}
+float lumAt(vec2 uv){ return pow(dot(pow(texture(uPhoto, uv, 1.2).rgb, vec3(2.2)), vec3(0.2126, 0.7152, 0.0722)), 1.0 / 2.2); }
 
-${ROOM}${SPEC}vec3 rotX(vec3 v, float a){ float c = cos(a), s = sin(a); return vec3(v.x, c * v.y - s * v.z, s * v.y + c * v.z); }
+vec3 rotX(vec3 v, float a){ float c = cos(a), s = sin(a); return vec3(v.x, c * v.y - s * v.z, s * v.y + c * v.z); }
 vec3 rotY(vec3 v, float a){ float c = cos(a), s = sin(a); return vec3(c * v.x + s * v.z, v.y, -s * v.x + c * v.z); }
 
 void main(){
@@ -272,10 +317,14 @@ void main(){
   vec3 B = cross(N, T);
 
   vec3 F0 = mix(uF0a, uF0b, metal2);
+  // A card's band stays dark wherever the lamp is, so the words on it always read.
+  F0 *= 1.0 - 0.5 * metal2 * uCard;
   F0 *= 1.0 - grime * 0.58;
   F0 = mix(F0, F0 * 1.12 + 0.02, wear * 0.5);
   float rough = clamp(mix(uRa, uRb, metal2) + grime * 0.26 + roughVar - wear * 0.1, 0.06, 0.95);
   float aniso = uAniso * (1.0 - metal2 * 0.6) * (1.0 - grime * 0.5);
+  // A card's band is brushed along its length.
+  aniso = mix(aniso, 0.55, metal2 * uCard);
 
   // Under the one soft light the room is seen from straight in front, so the band it makes on a domed face stays
   // over the words wherever the plate is on the screen. The lamp still sees the plate from where the viewer is.
@@ -305,10 +354,14 @@ void main(){
   }
 
   float spill = 0.0;
+  float streamOn = 0.0;
+  vec3 streamDir = vec3(0.0, 0.0, 1.0);
   if (uStreamI > 0.0){
     vec3 Wv = vec3(uStream.x, -uStream.y, uStream.z) - P;
     float wd = length(Wv);
     float wf = uStreamI / (1.0 + pow(wd / 170.0, 2.0));
+    streamOn = wf;
+    streamDir = Wv / wd;
     col += spec(N, V, Wv / wd, T, B, rough, aniso, F0) * wf * vec3(1.0, 0.5, 0.14);
     // The stream is a long bright source beside the plate: its light grazes the metal and warms the near side,
     // strongest on bevels that face it.
@@ -319,8 +372,27 @@ void main(){
   }
 
   // Enamel: a black glassy fill. Dark, with its own small sharp highlight.
-  vec3 enamel = uInk + studio(R, 0.4) * 0.018 + spec(N, V, L, T, B, 0.42, 0.0, vec3(0.04)) * fall * 0.22;
-  col = mix(col, enamel, ink);
+  if (uCard > 0.5){
+    // A card's face: almost black, lifting a little toward its top, with the cursor's light pooling on it and the
+    // stream washing it warm. It sits a hair below the bead and the picture's frame, which shade it where they meet.
+    float dwf = uWinOn > 0.5 ? winD(p) : 1e5;
+    float seat = 1.0 - 0.45 * exp(-max(dwf - uBezel, 0.0) / (3.5 * uS)) - 0.35 * exp(-max(-d - uBead, 0.0) / (2.6 * uS));
+    float grainF = noise(p / uS * 1.7) - 0.5;
+    vec3 faceCol = uFace * mix(1.5, 0.8, p.y / uRes.y) * (1.0 + grainF * 0.07);
+    float pool = 1.0 / (1.0 + pow(length(uLamp.xy - css) / (150.0 * uS / uDpr), 2.0));
+    faceCol += uFaceLit * uLampI * (0.3 * pool + 0.015) * max(dot(N, L), 0.0) * (1.0 + 0.6 * uHover);
+    faceCol += spec(N, V, L, T, B, 0.5, 0.0, vec3(0.04)) * fall * 0.2 * vec3(1.0, 0.84, 0.66);
+    faceCol += uFaceLit * 1.7 * min(streamOn, 3.5) * (0.6 + 0.5 * max(dot(N, streamDir), 0.0)) * (1.0 + grainF * 0.14);
+    col = mix(col, faceCol * seat, ink);
+    // Under the pointer the bead and the frame catch the light where the pointer is near, as the buttons' edges do.
+    if (uHover > 0.0){
+      vec2 qc = (p - uPointer) / (120.0 * uS);
+      col += uGlow * F0 * (0.35 + 1.1 * wear) * exp(-dot(qc, qc)) * uHover * 1.6 * (1.0 - ink);
+    }
+  } else {
+    vec3 enamel = uInk + studio(R, 0.4) * 0.018 + spec(N, V, L, T, B, 0.42, 0.0, vec3(0.04)) * fall * 0.22;
+    col = mix(col, enamel, ink);
+  }
 
   // Under the pointer nothing plays. The cut border, the rubbed edges and inlaid words catch the light only where
   // the pointer is near them.
@@ -337,30 +409,69 @@ void main(){
   }
 
   if (uWinOn > 0.5){
-    float dw = sdBox(p - uWin.xy, uWin.zw, uWinR);
+    float dw = winD(p);
     float inside = clamp(-dw / (0.9 * uS) - 1.4, 0.0, 1.0);
     if (inside > 0.0){
       // Sight line: where the eye meets the glass floor, and whether the near wall hides it.
       vec3 Vd = V;
       float depthPx = uWinDepth;
       vec2 seeOff = vec2(-Vd.x, Vd.y) / max(Vd.z, 0.3) * depthPx;
-      float wallSeen = smoothstep(-0.6 * uS, 0.6 * uS, sdBox(p + seeOff - uWin.xy, uWin.zw, uWinR));
+      float wallSeen = smoothstep(-0.6 * uS, 0.6 * uS, winD(p + seeOff));
       vec2 lampOff = vec2(L.x, -L.y) / max(L.z, 0.15) * depthPx * 3.2;
       float pen = 0.8 * uS + length(lampOff) * 0.1;
-      float lit = 1.0 - smoothstep(-pen, pen, sdBox(p + lampOff - uWin.xy, uWin.zw, uWinR) + 0.6 * uS);
+      float lit = 1.0 - smoothstep(-pen, pen, winD(p + lampOff) + 0.6 * uS);
       float ao = smoothstep(0.0, 14.0 * uS, -dw) * 0.3 + 0.7;
       vec3 photo = vec3(0.05, 0.045, 0.04);
+      vec2 puv = vec2(0.5);
+      vec2 pstep = vec2(0.0);
       if (uPhotoOn > 0.5){
-        vec2 puv = (p - (uWin.xy - uWin.zw)) / (2.0 * uWin.zw);
+        puv = (p - (uWin.xy - uWin.zw)) / (2.0 * uWin.zw);
         // Cover the window, zoomed by uPhotoZoom, centered on the focus point but never past the picture's edge.
         float wa = uWin.z / uWin.w;
         vec2 span = (wa > uPhotoAspect ? vec2(1.0, uPhotoAspect / wa) : vec2(wa / uPhotoAspect, 1.0)) / max(uPhotoZoom, 1.0);
         vec2 c = clamp(uPhotoFocus, span * 0.5, 1.0 - span * 0.5);
         puv = c + (puv - 0.5) * span;
+        pstep = span / (2.0 * uWin.zw) * uS;
         photo = pow(texture(uPhoto, puv).rgb, vec3(2.2));
       }
       float onPrint = fall * max(dot(vec3(0.0, 0.0, 1.0), L), 0.0);
-      vec3 under = photo * (0.42 + 0.95 * onPrint) * mix(0.12, 1.0, lit) * ao;
+      // A card's picture is lit by the lamp's own warm light, so its whites are the site's off white.
+      vec3 under = photo * mix(vec3(1.0), vec3(1.0, 0.955, 0.895), uCard) * (0.42 + 0.95 * onPrint) * mix(0.12, 1.0, lit) * ao;
+      if (uTone > 0 && uPhotoOn > 0.5){
+        // At rest a card's picture is shown in the site's metals. Under the pointer its own colors come back,
+        // spreading from where the pointer is.
+        float l = pow(dot(photo, vec3(0.2126, 0.7152, 0.0722)), 1.0 / 2.2);
+        vec3 rest;
+        if (uTone == 1){
+          // Every picture rests at about the same weight: a light one is held down and a dark one lifted a little,
+          // so a white page rests as bronze and not as a lamp. The picture's smallest mip is its average.
+          float mean = pow(dot(pow(textureLod(uPhoto, vec2(0.5), 20.0).rgb, vec3(2.2)), vec3(0.2126, 0.7152, 0.0722)), 1.0 / 2.2);
+          rest = ramp(l * clamp(0.4 / max(mean, 0.05), 0.56, 1.2)) * (0.45 + 0.8 * onPrint) * mix(0.12, 1.0, lit) * ao;
+        } else if (uTone == 2){
+          // Cast: light parts stand proud of dark ones, in one metal, lit as the plate is.
+          float lx = lumAt(puv + vec2(pstep.x * 1.4, 0.0)) - lumAt(puv - vec2(pstep.x * 1.4, 0.0));
+          float ly = lumAt(puv + vec2(0.0, pstep.y * 1.4)) - lumAt(puv - vec2(0.0, pstep.y * 1.4));
+          vec3 Nc = normalize(vec3(-lx * 2.4, ly * 2.4, 1.0));
+          vec3 Tc = normalize(vec3(1.0, 0.0, 0.0) - Nc * Nc.x);
+          vec3 Fc = mix(uRamp[1], uRamp[3], smoothstep(0.05, 0.95, l));
+          rest = studio(reflect(-V, Nc), 0.32) * Fc + Fc * vec3(0.16, 0.14, 0.12) + spec(Nc, V, L, Tc, cross(Nc, Tc), 0.32, 0.2, Fc) * fall * vec3(1.0, 0.94, 0.86);
+          rest *= mix(0.3, 1.0, lit) * ao;
+        } else {
+          // Etched: copper lines on a dark ground, wider where the picture is lighter.
+          vec2 pd = (p - uWin.xy) / uS;
+          float f = abs(fract((pd.x * 0.5 + pd.y * 0.866) / 3.0) - 0.5) * 2.0;
+          float amt = smoothstep(0.06, 0.98, l);
+          float aa = 0.34 / uS;
+          float line = smoothstep(amt * 0.9 + aa, amt * 0.9 - aa, f) * smoothstep(0.02, 0.08, amt);
+          vec3 Fl = uRamp[3];
+          vec3 Nl = vec3(0.0, 0.0, 1.0);
+          vec3 lineCol = studio(reflect(-V, Nl), 0.24) * Fl + Fl * vec3(0.2, 0.17, 0.14) + spec(Nl, V, L, vec3(0.866, -0.5, 0.0), vec3(0.5, 0.866, 0.0), 0.24, 0.7, Fl) * fall * vec3(1.0, 0.94, 0.86);
+          rest = mix(uInk * 2.0, lineCol, line) * mix(0.3, 1.0, lit) * ao;
+        }
+        float reach = uHover * (length(uRes) / uS + 60.0);
+        float shown = uHover > 0.0 ? smoothstep(reach, reach - 54.0, length(p - uPointer) / uS) : 0.0;
+        under = mix(rest, under, shown);
+      }
       // The wall: brass, facing into the window, lit by the lamp when it faces it.
       vec2 wn = normalize(p - uWin.xy + 1e-3);
       vec3 WN = normalize(vec3(-wn.x, wn.y, 0.25));
@@ -371,7 +482,12 @@ void main(){
       vec3 G = vec3(0.0, 0.0, 1.0);
       float fr = 0.04 + 0.96 * pow(1.0 - max(dot(G, V), 0.0), 5.0);
       float smudge = fbm(p / uS * 0.03 + 4.0) * 0.08;
-      vec3 glass = studio(reflect(-V, G), 0.08 + smudge) * fr * 0.4 + spec(G, V, L, vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), 0.12 + smudge, 0.0, vec3(0.04)) * fall * 0.55 * uGlare * vec3(1.0, 0.84, 0.62);
+      // On a card the glass is clean and throws the lamp back as a long slanted streak, so the cursor's light
+      // crosses the picture as a sheen. A round spot of light on it read as a smudge.
+      float gr = mix(0.12 + smudge, 0.3, uCard);
+      vec3 gT = mix(vec3(1.0, 0.0, 0.0), vec3(0.819, 0.574, 0.0), uCard);
+      vec3 gB = mix(vec3(0.0, 1.0, 0.0), vec3(-0.574, 0.819, 0.0), uCard);
+      vec3 glass = studio(reflect(-V, G), 0.08 + smudge) * fr * 0.4 + spec(G, V, L, gT, gB, gr, uCard, vec3(0.04)) * fall * 0.55 * uGlare * vec3(1.0, 0.84, 0.62);
       col = mix(col, under + glass, inside);
     }
   }

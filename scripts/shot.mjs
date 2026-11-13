@@ -2,7 +2,7 @@
 //
 //   npm run shot -- <route> [options]
 //
-//   --vp phone|tablet|desktop|wide|4k   screen size (default desktop)
+//   --vp phone|tablet|tablet-wide|desktop|wide|4k   screen size (default desktop)
 //   --out <file>                        where to save (default shots/<route>-<vp>.jpg)
 //   --full                              the whole page, not only the first screen
 //   --t <seconds>                       hold every animation at this time

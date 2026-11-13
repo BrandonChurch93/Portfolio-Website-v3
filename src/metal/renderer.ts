@@ -3,7 +3,7 @@ import { registry, stats } from '../hooks/registry';
 import { lamp } from '../lamp/lamp';
 import { clock } from '../world/clock';
 import { tiers } from '../world/tier';
-import { CONTROL_RING, FINISHES, GLOW, INK } from './finishes';
+import { CONTROL_RING, FACE, FACE_LIT, FINISHES, GLOW, INK, RAMP } from './finishes';
 import { MASK_FONTS, paintMask, type Mask, type PlateSpec } from './mask';
 import { distanceField } from './sdf';
 import { BAKE, LIGHT, VERT } from './shaders';
@@ -15,11 +15,16 @@ export interface PlatePhoto {
   zoom?: number; // 1 covers the window; more crops in further around the focus
 }
 
+// How a card's picture is shown until the pointer is on it: as it is, or in the site's metals.
+export type PlateTone = 'true' | 'toned' | 'cast' | 'etched';
+const TONES: Record<PlateTone, number> = { true: 0, toned: 1, cast: 2, etched: 3 };
+
 export interface PlateEntry {
   host: HTMLElement;
   canvas: HTMLCanvasElement;
   spec: PlateSpec;
   photo?: PlatePhoto;
+  tone?: PlateTone;
   onState?: (state: 'ready' | 'failed') => void;
 }
 
@@ -316,7 +321,8 @@ class PlateRenderer {
     const S = mask.S;
     gl.uniform1i(b.u('uFinish'), F.id);
     gl.uniform1f(b.u('uThick'), DESIGN_MM.thick * S);
-    gl.uniform1f(b.u('uBevel'), DESIGN_MM.bevel * S);
+    // A card's bead is rubbed bright along its crest, which is half way across it.
+    gl.uniform1f(b.u('uBevel'), mask.bead ? mask.bead / 1.7 : DESIGN_MM.bevel * S);
     // Fine lettering at low pixel density gets a shallower cut, so its shading does not thicken or double the strokes.
     gl.uniform1f(b.u('uCutDepth'), DESIGN_MM.cutDepth * S * Math.min(1, Math.max(0.45, (S - 0.35) / 1.3)));
     gl.uniform1f(b.u('uCutWall'), Math.max(0.55, DESIGN_MM.cutWall * S));
@@ -326,9 +332,11 @@ class PlateRenderer {
     gl.uniform1f(b.u('uPatina'), F.patina);
     gl.uniform1f(b.u('uScratch'), F.scratch * (p.spec.kind === 'control' ? 0.25 : 1));
     gl.uniform1f(b.u('uPillow'), p.spec.kind === 'control' ? (F.pillow ?? 5) * S : 0);
-    gl.uniform1f(b.u('uRimW'), p.spec.kind === 'control' ? F.rimW ?? 64 : 64);
+    gl.uniform1f(b.u('uRimW'), p.spec.kind === 'control' ? F.rimW ?? 64 : p.spec.kind === 'card' ? 0.6 : 64);
     gl.uniform1f(b.u('uFaceClean'), p.spec.kind === 'control' ? F.faceClean ?? 0 : 0);
     gl.uniform1f(b.u('uSeed'), p.seed);
+    const strip = mask.strip ?? [0, 0, 0, 0];
+    gl.uniform4f(b.u('uStrip'), strip[0], strip[1], strip[2], strip[3]);
     const sc = new Float32Array(24);
     mask.screws.slice(0, 6).forEach((s, i) => sc.set(s, i * 4));
     gl.uniform4fv(b.u('uScrew'), sc);
@@ -358,7 +366,10 @@ class PlateRenderer {
     gl.uniform4f(prog.u('uWin'), win[0], win[1], win[2], win[3]);
     gl.uniform1f(prog.u('uWinOn'), mask.win ? 1 : 0);
     gl.uniform1f(prog.u('uWinR'), mask.winR);
-    gl.uniform1f(prog.u('uWinDepth'), DESIGN_MM.windowDepth * mask.S);
+    gl.uniform1f(prog.u('uWinRb'), mask.winRb);
+    gl.uniform1f(prog.u('uWinDepth'), (mask.winDepth || DESIGN_MM.windowDepth) * mask.S);
+    gl.uniform1f(prog.u('uBead'), mask.bead);
+    gl.uniform1f(prog.u('uBezel'), mask.bezel);
   }
 
   private frame(dt = 0): void {
@@ -428,6 +439,14 @@ class PlateRenderer {
     gl.uniform1f(l.u('uLampI'), 1.15 + 0.3 * L.led);
     // A portrait's glass glares softly: the lamp's spot should not sit on a face.
     gl.uniform1f(l.u('uGlare'), p.spec.kind === 'frame' ? 0.06 : 1);
+    const card = p.spec.kind === 'card';
+    gl.uniform1f(l.u('uCard'), card ? 1 : 0);
+    gl.uniform1i(l.u('uTone'), card ? TONES[p.tone ?? 'true'] : 0);
+    if (card) {
+      gl.uniform3fv(l.u('uFace'), FACE);
+      gl.uniform3fv(l.u('uFaceLit'), FACE_LIT);
+      gl.uniform3fv(l.u('uRamp'), RAMP);
+    }
     gl.uniform3f(l.u('uStream'), p.stream.x, p.stream.y, p.stream.z);
     gl.uniform1f(l.u('uStreamI'), p.stream.k * 8.0);
     gl.uniform2f(l.u('uTilt'), p.tilt.x, p.tilt.y);

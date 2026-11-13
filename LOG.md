@@ -2,6 +2,54 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-12 · The card: a derby at `/lab/work-cards` (Fable, web chat)
+
+**What Brandon said**
+
+- On the proposal: "No, everything in the proposal is fine."
+- "Maybe you could figure out if there are any data points that could be important or nice to have that we don't, and maybe it makes sense in the layout of the card itself."
+- "Maybe you could also give me a few different variants, but only ones that are top-tier. I don't just want variants for the sake of it."
+- "You're in extra. You have my approval to go ahead and build."
+
+**What was built**
+
+- The card is a plate of the site's lit metal, not a mock: `kind="card"`, `finish="card"` in `src/metal/`. One canvas a card, lit by the lamp, with the hooks the plates already had for the pointer (`setHover`, `setPointer`) and for the stream (`setStream`).
+    - `mask.ts`: `CARD` holds the design sizes (460 units across, one unit a CSS pixel at that width). Three layouts: `set`, `edge`, `band`. `cardPicture()` gives where the words start.
+    - `shaders.ts`, bake: a half round bead on the edge, a flat face inside it that is not metal, a flat topped frame round the window, and on `band` a strip of bronze. All worked out in the shader, no painted mask.
+    - `shaders.ts`, light: the face (near black, lifting toward its top, the lamp pooling on it, the stream washing it), the bead and frame catching the pointer, and the picture: `toned`, `cast`, `etched` or `true`, with its own colors spreading from the pointer as `uHover` rises.
+    - Toned levels every picture to about the same weight from the picture's smallest mip, which is its average. Without that the three white screenshots rested as bright copper panels.
+- `src/components/WorkCard.tsx`: the words in the page over the plate, in design units through container query units, each with a least size. The whole card is the link, and Live, Evals and Code sit above it.
+- `src/content/work.ts`: the four projects on his live home page, with the live site's descriptions, kinds and tags word for word, and links from the second build's content file. Pictures copied from the second build's `public/media/` to `public/media/work/`.
+- The derby page, `src/components/lab/WorkCards.tsx`: three ways for the picture to rest on two pictures, the three layouts at rest and under the cursor, and the grid at the Work page's own sizes with switches for layout and picture.
+- `tablet-wide` (1194 by 834) is a new size for the screenshot scripts: an iPad held sideways.
+- Stills: `reference/studies/23-work-cards-three-layouts.jpg`, `23-work-cards-how-the-picture-rests.jpg`, `23-work-cards-grid-data-plate.jpg`.
+
+**What Fable saw, and judged**
+
+- Toned is the one. Cast doubles the edges of small type and turns a busy picture to texture. Etched loses small type altogether. Both are shown as they are.
+- All three layouts hold at the page's size. C is the shortest and puts the facts where they are read at a glance. A has two copper outlines, one inside the other, and is the boxiest.
+- Sizes on a 1440 screen, where a card is 460 wide: A and B are about 498 tall, C about 477. The stand in on `/lab/work` is 383. So the section grows by about 230 px with A or B and 190 with C. The stream plans its route from the boxes.
+- The words on C's band: copper light on the bronze measured 3.0 to 1 at the band's brightest. The band was darkened and roughened, and now measures 4.9 to 1 at its brightest with the pointer on the card.
+- A round glare on the picture's glass read as a smudge, and the bar fails "soft round spots of light". It is now a long slanted streak.
+- An iPad held upright gives two columns of 272 px on the Work page. A card with a description needs about 340. The derby's grid goes to one column there. On the real page that is the phone's layout to design (Open 18).
+
+**Not at the bar, or not judged**
+
+- Motion. The colors spreading from the pointer, the bead catching and the card growing run on the live page, but this workspace draws in software, so none of it has been judged. It is for Claude Code on his Mac.
+- The strike. `setStream` lights a card's bead and face, but the derby has no stream. How a card takes a strike is judged on `/lab/work`.
+- The card beside the PC Builder images (test six) was not done.
+
+**For the next session**
+
+- The approved buttons draw exactly as before: a still of `/lab/buttons` before and after, both with `--wait 3000`, differs by nothing. A first comparison differed by up to 19 levels only because a plate's canvas fades in for about a second and the two stills caught it at different points. Wait before comparing plates.
+- On a `--full` still the lamp stays in the first screen, so cards far down the page come out dark. Shoot a screen at a time.
+- A plate's seed comes from its words. Do not add anything to the string in `seedOf` or every button's patina changes.
+- The Design System Extractor has only a Code link in what could be found. The years are all shown as 2026 and were not confirmed.
+
+**Half finished**
+
+- His two picks. Then one prompt for Claude Code: the card into `/lab/work` with the stream striking it, the sun stones a little larger with a face that lights, Blade finials, right mirroring left, a stronger strike on the second row, more room on an iPad, and a bar over WORK to compare with and without.
+
 ## 2026-11-12 · The Blade picked, the stone a little larger, and a proposal for the card (Fable, web chat)
 
 **What Brandon said**
