@@ -2,6 +2,56 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · Handoff to Claude Code: the surge when the category changes (Fable, web chat)
+
+**What Brandon said**
+
+- After playing the wireframe: "I like it, let's go with surge and medium."
+
+**What changed in the record. No code changed**
+
+- `BRIEF.md`, The stream: "When the category changes: the agreement for the build". Open 20 is marked decided. What he passed over is in Dropped.
+- The agreement records that his pick makes the surge the exception to "capped at the user scroll rate", which now reads as a line about the leading end.
+- `QUALITY.md`: a row in the table, and thirteen tests under "When the category changes".
+- `PLAN.md`: Now, and a line under Phase 3.
+
+**What Fable can tell from reading the code. Check before believing it**
+
+- The wireframe is `src/work-surge/surge.ts`. Its timings are in `SWAP` and in `step()`: the front runs from the bar's contact to the meeting at a steady speed, and each stop fires as the front passes its place on the route. It is a sketch on a 2D canvas. Take its order and numbers, not its code.
+- On `/lab/work` the category bar's buttons only set a word for screen readers today (`WorkLab.tsx`). The four cards are always `software` from `src/content/work.ts`.
+- `streamPlan()` already plans the route again from where things are on the page. `bend` in `stream.ts` already carries the stream with a card that moves under the pointer, and `plates.setWarm` and the flare on the rim already exist for a strike. A strike today is made by a leading end arriving. A strike with the stream already lying there is new.
+- A card is a plate with its own canvas and a picture loaded for it. Whether the change is two cards crossing or one card whose contents change is the builder's to choose. The stream cuts itself off where a card stands, so a card that is partly gone needs that cut to follow it.
+- The surge is a second thing moving along a route that is otherwise still. The riding shards' places are worked out from the route each frame, so a kink in the line carries them with it. Check that with `streamProbe`.
+- The small round from "His look at the second pass" (faces lit, no bar over WORK, the button centered) may or may not be on the page yet. The prompt says to do it first where it is not.
+
+**The prompt Brandon was given**
+
+```
+Pull main, then read BRIEF.md, PLAN.md, QUALITY.md and the top entry of LOG.md from disk, as CLAUDE.md says.
+
+If the three changes in BRIEF.md, The stream, "His look at the second pass" are not on /lab/work yet, do them first: the stones' faces stay lit and their switch goes, the bar over WORK comes out everywhere, and the View all work button is centered by eye between the second row and the V of the rail.
+
+Then build what the stream does when the category changes, on /lab/work. BRIEF.md, The stream, "When the category changes" is the agreement: the law, the six steps, what gets built and what does not, and which calls are Fable's. QUALITY.md, "When the category changes", is the test. I picked the surge at 0.7 seconds from the wireframe at /lab/work-surge. Open it and play it before you start. Take its order and its timing, not its code.
+
+Hold to these:
+- /lab/stream and the approved buttons must draw what they draw today. Take stills before you touch shared code and compare after.
+- Everything in the stream I approved stays. Riding shards stay with the stream, and only the strikes throw any.
+- The stream never comes apart while a card is changing.
+- A card is always readable, and its new words can be read as soon as it seats.
+- Leave the phone and every screen under 1100 px alone, apart from the cards changing there.
+- The cards for Games, 3D art and Photography are stand ins. Say so on the page.
+- Where the agreement lists something as Fable's call, build it and list it in your report as mine to overturn. If you depart from one, say which and why.
+- Before you report, have fresh Opus reviewers who have not seen the work being made judge filmstrips of it against QUALITY.md, told to look for reasons to fail it.
+
+Work without check-ins until there is a page I can use. Then run a production build, commit, push, and confirm the deploy is ready.
+
+Report in lists: the link, what is at the bar, what is not and why, every call you made for me, and exactly what I am approving. End with one clear recommendation.
+```
+
+**Half finished**
+
+- The build. His word on what the second pass's report asked and he has not answered: the card with the stream on it, the second row's strike, a lighter resting color for "Case study", the brackets and the finial.
+
 ## 2026-11-13 · A derby of the surge, as a wireframe (Fable, web chat)
 
 **What Brandon said**

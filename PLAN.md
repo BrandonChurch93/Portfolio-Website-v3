@@ -25,7 +25,7 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **Built in Claude Code (Nov 13):** the second pass, at `/lab/work`. `LOG.md`, top entry, has its account: what is at the bar, what is not, what three fresh reviewers said, and every call made for him
 - **His look at the second pass (Nov 13):** the stones' faces light. No bar over WORK. The View all work button should sit centered between the second row and the V of the rail. A phone needs major work, and that waits for one mobile pass after every section is finished
 - **Going to Claude Code:** a small round for those three changes. The prompt is in `LOG.md`, top entry
-- **In front of Brandon:** a derby of what the stream does when the category changes, at `/lab/work-surge` (Study 15): a surge at three lengths, or all four cards at once. A wireframe, for order and timing (`BRIEF.md`, Open 20)
+- **His pick (Nov 13):** when the category changes, the surge, at 0.7 seconds. Picked from the wireframe at `/lab/work-surge`. The agreement for building it on `/lab/work` is in `BRIEF.md`, The stream, "When the category changes", and the prompt is in `LOG.md`, top entry
 - **Still waiting on his word:** the card with the stream on it, the second row's strike, the stone and the rail's fittings as objects, and a lighter resting color for "Case study"
 - **He is open to the stone's face lighting** and wants to see it in action before he rules, so it gets built on the real page
 - **In that pass:** the real card with the stream meeting it, the Sun stones made new and a little larger with a face that lights, Blade finials, the right side mirroring the left, a real strike on the second row, room on an iPad held sideways, a bar over WORK behind a switch, and the frame rate with real cards
@@ -87,6 +87,7 @@ Set aside, kept as records: the molten metal test shot at `/lab/pour`, its looks
 - [ ] Hero
 - [~] Work · the stream's real route with the posts and the rail, at `/lab/work` (Claude Code)
 - [~] Work · the card's look (web chat). The layout is picked: C · Data plate. How it answers the pointer is picked (Nov 13). Its pictures, and how it takes the stream, are open
+- [~] Work · what the stream does when the category changes: the surge at 0.7 seconds, picked from a wireframe (Nov 13). To be built on `/lab/work` (Claude Code)
 - [~] Work · the second pass at `/lab/work`: the real card, the Sun stones, the Blades (Claude Code). Built Nov 13, waiting on his look
 - [ ] Work · the category bar, and the top bar it may dock into
 - [ ] Work · the whole section, with the real card in it

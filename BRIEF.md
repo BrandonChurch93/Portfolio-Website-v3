@@ -324,6 +324,60 @@ Said after scrolling it at `/lab/work`, as feedback for Claude Code. One word of
 - **A phone needs major work, and that work waits.** "One thing that needs major work is the layout and experience on mobile. The category selection for one is really bad looks, and the 2 streams do not re-intersect. Were we intentionally holding off on mobile to see what the entire [garbled: Fable reads it as layout] would look like as a whole first? That may actually be a better plan. Let's add that to the documentation to do a mobile pass when we are finished with all the sections." His ruling is under How we work, "The mobile pass".
 - **Not said yet, so not settled:** the card with the stream on it. The second row's strike. The stone as an object, the Blade and what carries the rail, which the build's own account puts short of the bar. "Case study" at rest falling to about 3.6 to 1 when the cursor's light pools behind it. The calls Claude Code made for him.
 
+**When the category changes: the agreement for the build (Nov 13)**
+
+- How it got here is in Open 20. He asked how the stream should answer a change of category, "something very realistic with its physics". Fable proposed a surge. He tried it as a wireframe at `/lab/work-surge` and picked: "I like it, let's go with surge and medium."
+- In exact terms: A · Surge, taking 0.7 seconds from the bar to the button. He passed over B · All at once, and the lengths of 0.45 and 1.1 seconds.
+- **His pick changes how one settled line is read.** "Its speed is capped at the user scroll rate" was said of the stream running down the page. The surge runs faster than the scroll, he was told so in bold, and he picked it after watching it. So the cap holds for the leading end, and a surge through a stream that is already there is the exception.
+- It is built in Claude Code on his Mac, on `/lab/work`. The wireframe settled the order and the length and nothing else. `QUALITY.md`, "When the category changes", is the test.
+
+**The law**
+
+- The stream reacts only where it is. Whenever what it lies on changes, it has to land again.
+
+**What happens, in order**
+
+1. **The press.** Picking a category knocks the bar. The stream jumps where it rests on the bar, which is at the bar's two ends, the end nearer the press first and harder. A light contact, as the bar's always is.
+2. **The surge.** From each end a swell of light and a kink in the line run down that side at a steady speed, reaching the meeting under the button 0.7 seconds later.
+3. **Each stop answers as the front passes it.** The first row's card lets go. The stone's face flares. The second row's card lets go. A light burst on the rail. A small strike where the two sides meet, and the button takes the light.
+4. **A card's change.** The old card drops away and is gone. The new card comes up from below, under the stream, and the stream strikes it the moment it seats: on its top in the first row, on its side in the second. It is the same strike the scroll makes, with the rim flaring and the picture warming to its own colors and settling back to bronze.
+5. **Between the two cards** the stream has nothing under it. It sags where the card was and springs back at the strike. It is never left hanging in the air or cut.
+6. **Where the new cards are a different height,** the stream below settles onto its new line with weight.
+
+**What gets built**
+
+- The category bar working: picking a category changes the four cards.
+- The six steps above, on the real stream, with the real cards.
+- Stand in cards for Games, 3D art and Photography, said to be stand ins on the page. At least one set is a different height from Software's, so the settle can be judged.
+
+**What does not get built**
+
+- Real projects for the other three categories.
+- The look of the category bar. It stays the stand in it is.
+- The top bar and the categories docking into it (Open 17).
+- A phone, or any screen under 1100 px. There the cards change and nothing else is asked for (How we work, "The mobile pass").
+- The All work page.
+
+**What stays exactly as approved**
+
+- Everything in the stream he has approved. Riding shards stay with the stream: only the strikes throw any. Thrown shards keep their momentum. There is no second wave.
+- A card is always readable. Its new words can be read as soon as it seats.
+- The card as he picked it, and what it does under the pointer.
+- `/lab/stream` and the approved buttons draw what they draw today.
+
+**Fable's calls in this agreement. He has not ruled on them and can overturn any**
+
+1. A card's change does not stretch with the surge. In the wireframe the old card is gone in 0.09 s and the stream strikes the new one 0.18 s after the old one let go. Those are where to start, tuned by eye.
+2. The old card drops about 16 px as it goes, and the new one rises about 26.
+3. A surge's strike on a card is as strong as the scroll's strike at an ordinary pace. The lighter contacts keep their strengths against it.
+4. The surge also runs up from the bar toward WORK and dies before it reaches the word.
+5. The surge goes only as far as the stream has. Cards the stream has not reached change quietly, with no strike. If the stream has not reached the bar, nothing plays.
+6. A second press cuts in: every card goes straight to the newest category, and nothing queues.
+7. With reduced motion the cards change and nothing else moves.
+8. A press from the keyboard is the same press. A screen reader is told which category is showing.
+9. A row keeps the height of its taller card, and the section's height changes smoothly, never in a jump.
+10. No check-ins on the way.
+
 **How it is built**
 
 He added these while the stream was a simulated liquid. They hold for anything in the stream that is simulated: shards thrown loose, sparks.
@@ -572,7 +626,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
 18. **Work on a phone.** **Decided Nov 13: it waits for the mobile pass** (Settled, How we work). What follows is how it stood. One column. Its route for the stream, and whether posts and a rail have any place there, are not designed. Recommendation: sketch it in the web chat next to the card, while the two column route is being built. It now covers every screen too narrow for two real cards side by side with the stream's room beside them, which takes in an iPad held upright (Nov 13).
 19. **The card's look.** "We still haven't decided on the card design yet." To be designed in the web chat. Settled so far is under Cards and buttons. He asked on Nov 12 whether to settle it now, so it goes into the next pass in Claude Code with the stones and the finials, and said yes. He approved Fable's proposal as the base the same night (Settled, Cards and buttons). Still open: which way the picture rests and which layout, from the derby at `/lab/work-cards`. Also open, and his to supply: the Design System Extractor's live link, the year of each project if 2026 is wrong for any, and which four projects go on the home page. **Nov 13:** the layout is settled as C · Data plate, Cast and Etched are dropped, the streak of light is cut and the case study link is named in the corner. Still open: his word on the second round. The hover, which he found underwhelming: Fable's answer is the loop and the stream's strike, and neither can be judged until there are recordings and the card is on `/lab/work`. The page's name, "Case study" for now. His to supply: a recording for each project, the Design System Extractor's live link, the year of each project if 2026 is wrong for any, and which four projects go on the home page. **Nov 13, later:** how the card answers the pointer is settled by his picks from the third round. How it takes the stream is judged on `/lab/work` once the second pass is built.
 
-20. **What the stream does when the category changes.** His words (Nov 13): "I think we should also figure out how the stream animation reacts to categories being changed. I'm thinking something very realistic with its physics. What do you propose?" Fable's proposal, put to him the same day. Talk only, nothing built, not agreed:
+20. **What the stream does when the category changes.** **Decided Nov 13: the surge, at 0.7 seconds.** What is settled is in The stream, "When the category changes". What follows is how it got there. His words (Nov 13): "I think we should also figure out how the stream animation reacts to categories being changed. I'm thinking something very realistic with its physics. What do you propose?" Fable's proposal, put to him the same day. Talk only, nothing built, not agreed:
     - The law: the stream reacts only where it is, and whenever what it lies on changes, it has to land again. Nothing plays where there is no stream.
     - The press: choosing a category is a blow on the bar at the place that was pressed. The stream lying on the bar jumps there, with a small burst of shards and sparks, as a light contact.
     - The surge: a swell of light runs out along the stream from that place, both ways, and on down each side. The side nearer the press gets it first.
@@ -603,6 +657,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
 - A streak or spot of the cursor's light on a card's picture (Nov 13)
 - A metal bar over WORK, or under it. "I don't want the bar above work" (Nov 13)
 - A card's colors coming back as a circle spreading from the pointer (Nov 13)
+- All four cards changing at once when the category changes, with nothing travelling. A surge of 0.45 or 1.1 seconds. He picked the surge at 0.7 (Nov 13)
 - For the card: its colors coming back as a sweep, lights first, or with the picture coming closer. The card leaning toward the cursor. The thin bead as its edge. He picked the fade, leaning away and the deep edge (Nov 13)
 - The faint channel drawn ahead of the stream
 - Molten metal as what the stream is made of. Agreed and then set aside for a core of light with shards (Nov 11)

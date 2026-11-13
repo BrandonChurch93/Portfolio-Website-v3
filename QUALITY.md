@@ -95,6 +95,7 @@ This is the real calibration. Every row is his verdict, not a guess. Rows that s
 | A bar over WORK for the stream to strike in place of the word | "I don't want the bar above work" | He wondered about it aloud, saw it, and cut it. Building the idea behind a switch settled it in one look |
 | The View all work button low in the space between the cards and the rail | "Raising it up slightly or lowering the bars some would make it look more centered" | A thing that stands in an open pocket is centered in it by eye, not hung from the nearest object |
 | The one column stand in for Work on a phone | "Needs major work." The category bar "is really bad looks", and the two sides of the stream never meet again | A stand in he can open gets judged as the design. A phone is designed as a whole page, in its own pass, not squeezed out of each section as it is built |
+| What the stream does when the category changes, as a wireframe: a surge down each side at three lengths, or all four cards at once | "I like it, let's go with surge and medium" | A change that travels from where he pressed, with each thing answering in turn, beats everything changing together. He took the middle length. He could not find how to play the study at first: a study's main control is never only inside the drawing |
 | The pour's first test shot, in motion | "I definitely don't like how it puddles." The stream "is blasted back multiple times". "Instead of looking like a refined beautiful hot liquid metal, this looks more like mud splashing around and puddling up" | Real physics is not enough. It has to be graceful. Metal that heaps, thrashes or hits itself reads as mud |
 
 ## The patterns behind those verdicts
@@ -248,6 +249,24 @@ The section:
 20. **An iPad held sideways** is not the desktop squeezed.
 21. Dropped Nov 13. He does not want a bar over WORK.
 22. **`/lab/stream` and the approved buttons are unchanged.** Stills from before and after agree.
+
+**When the category changes**
+
+`BRIEF.md`, The stream, "When the category changes", has what happens and what is built. It passes when everything above still holds and all of these are true:
+
+1. **It starts at the press.** The bar's knock is on screen in the frame after the press, and the first row has changed within about 0.3 seconds.
+2. **It travels.** In a filmstrip the front can be followed from the bar's end to the button, at a steady speed, in 0.7 seconds. The side nearer the press leads.
+3. **Each stop answers when the front reaches it, and not before.**
+4. **A card's strike is a strike.** Beside the scroll's strike on the same card it is not the weaker one. What it throws bounces and spills as it does there.
+5. **The stream never comes apart.** While a card is away the stream sags and holds together. No frame shows it cut, hanging straight in the air where a card was, or sunk into a card.
+6. **Riding shards stay.** Through a whole surge none vanish, appear or jump, measured as before.
+7. **Different heights.** Changing to a taller or shorter set, the stream below reaches its new line with weight: it overshoots a little and settles. It never jumps, and the page does not jolt.
+8. **Only where the stream is.** Pressed with the leading end above the cards, the cards change and nothing strikes them.
+9. **Pressed again, and again quickly,** it never queues, doubles or leaves a card half changed.
+10. **It never feels slow.** The new cards' words can be read as soon as each seats. What is left after that (pieces falling, pictures settling) holds nothing up.
+11. **With reduced motion** the cards change and nothing else moves. From the keyboard it works the same, and a screen reader hears which category is showing.
+12. **Smooth.** `npm run perf` through a run of presses: every frame at the screen's rate on his Mac. If four strikes at once reach a limit, what is dropped is said out loud.
+13. **`/lab/stream` and the approved buttons are unchanged.**
 
 **How to judge it**
 
