@@ -48,7 +48,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 
 ### The stream
 
-- **Where it stands (Nov 12):** the stream through Work is built at `/lab/work` and waiting on his look: the real stream on the agreed route, with the posts and the rail as real objects. What is at the bar and what is not, and every call Fable made for him while building it, are in `LOG.md`, top entry. None of those calls is a rule. The stream's test shot is approved, and he calls it "almost certainly the finalized base" (see "The stream is the finished base" below). It is at `/lab/stream`, with a paused frame at `/lab/stream?hold`. The three small things he asked for after approving it are built, and he has looked: "All my issues have been fixed." The first round's shards are still one switch away: the switch at the foot of that page, or `/lab/stream?shards=first`. Calls Fable made for him while building are listed in `LOG.md` and are his to overturn. None of them is a rule.
+- **Where it stands (Nov 13):** the stream through Work is built at `/lab/work`, and he has looked ("His first look at the build", below). The second pass on that page is agreed and handed to Claude Code: the real card, the Sun stones and the Blades ("The second pass on the Work page", below). What was at the bar in the first build and what was not, and every call Fable made for him while building it, are in `LOG.md`, "The stream through Work, built at `/lab/work`". None of those calls is a rule. The stream's test shot is approved, and he calls it "almost certainly the finalized base" (see "The stream is the finished base" below). It is at `/lab/stream`, with a paused frame at `/lab/stream?hold`. The three small things he asked for after approving it are built, and he has looked: "All my issues have been fixed." The first round's shards are still one switch away: the switch at the foot of that page, or `/lab/stream?shards=first`. Calls Fable made for him while building are listed in `LOG.md` and are his to overturn. None of them is a rule.
 - It is the most important thing on the site. "It's probably like the most important thing on the site to get right." (Nov 11)
 - It is called the stream, which is his own word for it. It is never called water, in anything written for a model or shown to a visitor. His reason: "if I call it water, then the model is gonna build it as if it acts like water". It is not called the pour either: that was its name while it was going to be molten metal. (Nov 11)
 
@@ -245,6 +245,69 @@ Worked out in a wireframe at `/lab/work-draft` over the day. How it got there is
 - **His pick (Nov 12): the Blade**, for the ends of the rail. "I like the blade the best."
 - **The Sun stone a little larger (Nov 12).** "I also would like to increase the size of the Sunstone, maybe just a simple 10 or 20%, to show off the beautiful detail on it. I think it would go a long way. Of course you wouldn't want to compromise the layout or the spacing between the stream and the cards. I wouldn't want it any closer." In exact terms: each stone is 10 to 20% wider than the post is now on `/lab/work`. The stream stays as far from the cards as it is today, and the layout does not change. The stream passes between the post and the card and touches the post's inner side, so the stone keeps that point of contact and grows away from the cards. Not settled: where the room comes from on an iPad, where the posts are already about 34 px from the screen's edge.
 
+**The second pass on the Work page: the agreement for the build (Nov 13)**
+
+- He asked for it: "Let's go ahead and write up the handoff document so this can be built into the current working work page." It was always going to be one pass: "We can update that next pass in Claude Code as well with these other updates." (Nov 12)
+- It is built in Claude Code on his Mac, on the page that is there now, `/lab/work`. Everything in it has his word behind it somewhere above. This part gathers it into one list, and says which lines are his rulings, which are Fable's calls, and which are built only for him to judge.
+- `QUALITY.md`, "The second pass on the Work page", is the test it has to pass.
+
+**What gets built**
+
+1. **The real card in place of the four stand ins.** `WorkCard` as he picked it (Cards and buttons, "His picks from the third round"): the data plate, the picture resting in bronze, the foot row, the fade, 3 degrees, leaning away, 1.5 percent, the deep edge. The four projects in `src/content/work.ts`, with the pictures that are there now.
+2. **The stream meeting the real card.** Everything the stream does to the stand in, it does to the real card. It lands on the first row's card and runs out along its top. It strikes the side of the second row's card. It lights the rim and the face from where it is. What it throws bounces off the card. The card throws its shadow across the page in the stream's light. "It will light up the card and the card will react to it in certain ways."
+3. **The Sun stone in place of each post.** A carved disc with a face at its center, ringed by tabs, glyphs and rays. Made new, at full quality: "I'd hope it would be much better quality in the finalized version". 10 to 20 percent wider than the post is today. It keeps the point where the stream touches it and grows away from the cards.
+4. **The stone's face lighting, for him to judge.** Its eyes and mouth are dark until the stream reaches the stone, lit in the stream's colors while the stream is on it, and dark again once it has drawn back. A switch on the page turns it off, so he can see the stone both ways.
+5. **Blade finials on the rail.** The rail keeps its bar and loses its studs.
+6. **The right side is the mirror of the left**: the stones, and the ends of the rail.
+7. **A real strike on the second row.** "It doesn't feel powerful enough. It feels like a graze." What makes it a graze is found by measurement first and said in the report. Then it is fixed.
+8. **Room on an iPad held sideways.** The first build was the desktop squeezed, with the posts about 34 px from the screen's edge.
+9. **A bar over WORK, behind a switch that is off when the page opens**, for him to compare with and without. His idea, not his ruling: "I wonder if putting like a metal bar on top of it or something".
+10. **The frame rate with real cards on the page.** Measured, the cause found and said, and fixed. He saw it drop on `/lab/work-cards`.
+
+**What does not get built**
+
+- The phone's route, an iPad held upright, and any screen too narrow for two cards (Open 18). They keep the one column stand in the page has today.
+- The top bar and the categories docking into it (Open 17).
+- The category bar changing what the cards show. It stays a stand in, and the four cards are the Software four.
+- A project's own page. "Case study" goes to that project's page on his live site for now.
+- New pictures, and loops. He is retaking them. The card can already play a loop, and none exists.
+- A second bar under WORK.
+- Any light on the page that comes from the cursor.
+- Six cards, the hero above, Skills below, or the route down the rest of the page.
+
+**What stays exactly as approved**
+
+- Everything in the stream he has approved, as listed under "The stream through Work".
+- The route through Work: its stops and their order. The strikes at the top stay: "It actually looks really good." The landing on the category bar stays.
+- The stream comes no closer to the cards than it is today. "I wouldn't want it any closer."
+- The rail's bar: "the one we have now is my favorite because of its form factor".
+- The card: its layout, its band, its foot row, the toned picture, his five picks and the words from his live site.
+- The test shot at `/lab/stream` draws what it draws today. The approved buttons draw what they draw today wherever the stream is not on them.
+
+**Built only for him to judge. Neither is a rule until he says**
+
+- The stone's lit face. "Figures that light up on scroll" is in Dropped, and it stays there until he has seen this and says so. "I'm open to the lit face, but I'm curious to see it in action."
+- The bar over WORK. With it on, the stream strikes the bar and not the word, which changes "hit the work title dead center, split, and run down both sides". That line stands. The bar is a switch for him to look at.
+
+**Fable's calls in this agreement. He has not ruled on them and can overturn any**
+
+1. The stone starts 15 percent wider, tuned by eye within his 10 to 20.
+2. The stone is carved metal, the copper the posts are in now. What he picked in the derby was drawn in that metal.
+3. The stone's glyphs are abstract. Glyphs of his own, one for each kind of work he does, was an idea put to him and not agreed.
+4. Where the stone's room comes from: the page's outer margin first. Where that is already tight, the grid gives up the width. Never the space between the stream and the cards.
+5. Two Blades, not four: one on each outer, high end of the rail, pointing outward, as on a curtain rod. The low ends beside the button are where the stream leaves the rail, and they finish with the finial's collar and no blade.
+6. What carries the rail, now the studs are gone, is designed in the Blade's family so the bar does not float. Not a stud with a slot.
+7. The Blade is sized against the stone, not against the bar, so the stone stays the larger thing on every screen.
+8. What a full strike does to a card: the rim flares where it is struck, and the picture warms toward its own colors and settles back to bronze within about a second. He approved the second half with the card's proposal, whose line for it was: "The stream's strike lights the lip and warms the picture for a moment."
+9. A card's shadow in the stream's light is the shadow he was open to: "a bigger box shadow behind it that will appear when the light source hits it". Nothing is added to make one where there is no light.
+10. Two columns only where each card is at least 340 px wide, with the stream's room and the margin kept. Under that the page is the one column stand in. Today the change is at 720 px. It moves up, so an iPad held upright gets the stand in until Open 18 is designed.
+11. On an iPad held sideways nothing stands nearer the screen's edge than 48 px.
+12. The bar over WORK is the rail's own bar, level, a little wider than the word, with a Blade at each end. The stream strikes it dead center, parts, runs out along it and hooks over its ends. The word sits under it and is lit from above.
+13. No bar under WORK. With the category bar just below, it would make three bars in a stack.
+14. The section's spacing is set again for the taller card. As picked, a card is 510 px tall at 460 wide, against the stand in's 383.
+15. The link reads "Case study".
+16. No check-ins on the way. Claude Code works until there is a page he can scroll, as it did for the first build.
+
 **How it is built**
 
 He added these while the stream was a simulated liquid. They hold for anything in the stream that is simulated: shards thrown loose, sparks.
@@ -355,7 +418,16 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
         - The edge: the thin bead, or a wide rim that turns in to a face that sits lower and throws a shadow onto it.
     - Built as he asked at 10:43: the thin line under the tags, with Live, Evals and Code on its left and the case study on its right. The band keeps the kind of project on its left and the year on its right.
     - Fable's call, his to overturn: the link reads "Case study". He said "case study" and then "view project". "View project" could as well mean the running site, which is the confusion he raised himself.
- one recording a project, of the product doing the one thing that makes it worth a look. Twice as wide as it is tall, 1600 by 800 or larger. Four to eight seconds, ending close enough to where it starts to cut cleanly. MP4, H.264, no sound. The browser zoomed in before recording, so one part fills the frame and its type reads at the card's size. The picture is the first frame, saved as an image.
+- **His picks from the third round (Nov 13).** "These are the settings I want to go with." From the switches at `/lab/work-cards`:
+    - The picture's colors come back as A · Fade: the whole picture at once.
+    - The card turns 3 degrees at its edge under the pointer.
+    - It leans away: the side under the pointer goes back.
+    - It grows 1.5 percent.
+    - The edge is Deep: the wide rim that turns in to a face that sits lower, and throws a shadow onto it.
+    - `CARD_LOOK` in `src/components/WorkCard.tsx` holds them, and the study page opens on them and keeps its switches. Still: `reference/studies/26-work-card-as-picked.jpg`.
+    - What he passed over is in Dropped. The amounts can still be tuned once the card is on the Work page: "have him build it onto the site so we can fine tune from there".
+    - What comes next, in his words: "Let's go ahead and write up the handoff document so this can be built into the current working work page." The agreement for that build is in The stream, "The second pass on the Work page".
+- **What a card's loop and picture need. Fable's spec, his to change:** one recording a project, of the product doing the one thing that makes it worth a look. Twice as wide as it is tall, 1600 by 800 or larger. Four to eight seconds, ending close enough to where it starts to cut cleanly. MP4, H.264, no sound. The browser zoomed in before recording, so one part fills the frame and its type reads at the card's size. The picture is the first frame, saved as an image.
 - **What was in front of him at first: the card derby at `/lab/work-cards` (Study 14).**
     - How the picture rests: 1 · Toned, 2 · Cast, 3 · Etched. Fable recommends Toned. **Cast leans against "Brass is an accent on it, not the whole card"**, because the picture is the largest thing on the card.
     - The layout: A · Set in (the picture inside the card with its own frame). B · Edge to edge (the picture fills the top of the card to the bead). C · Data plate (edge to edge, with a band of dark bronze under the picture that carries the kind, the year and the links, and no footer). Fable recommends C.
@@ -476,8 +548,8 @@ Each line has Fable's recommendation where there is one. None of these are rules
         - **What comes next is not decided (Nov 12).** "We still haven't decided on the card design yet. Should we settle that first before handing this over to Claude code or continue with the stream interaction first with Claude code and finish the cards afterwards?" Fable's answer: the stream's route first in Claude Code, with the test shot's plain card standing in for all four, and the card designed in the web chat alongside. Not agreed yet.
 16. **The order the sections are worked in.** He wants them taken one at a time: "my idea should go section by section". Work is first, and within Work the stream's route is built before the card is finished (Settled, "The stream through Work", Nov 12). The order of the rest is not agreed. Fable's list is in `LOG.md`.
 17. **The slim top bar, with the categories docking into it.** Drawn in the wireframe at `/lab/work-draft`: hidden during the hero, and once the category bar has scrolled off, the four categories show in it beside the section's name. He would accept the categories pinned into a bar at the top and does not want them floating over the cards. He has not ruled on the bar. Recommendation: yes.
-18. **Work on a phone.** One column. Its route for the stream, and whether posts and a rail have any place there, are not designed. Recommendation: sketch it in the web chat next to the card, while the two column route is being built.
-19. **The card's look.** "We still haven't decided on the card design yet." To be designed in the web chat. Settled so far is under Cards and buttons. He asked on Nov 12 whether to settle it now, so it goes into the next pass in Claude Code with the stones and the finials, and said yes. He approved Fable's proposal as the base the same night (Settled, Cards and buttons). Still open: which way the picture rests and which layout, from the derby at `/lab/work-cards`. Also open, and his to supply: the Design System Extractor's live link, the year of each project if 2026 is wrong for any, and which four projects go on the home page. **Nov 13:** the layout is settled as C · Data plate, Cast and Etched are dropped, the streak of light is cut and the case study link is named in the corner. Still open: his word on the second round. The hover, which he found underwhelming: Fable's answer is the loop and the stream's strike, and neither can be judged until there are recordings and the card is on `/lab/work`. The page's name, "Case study" for now. His to supply: a recording for each project, the Design System Extractor's live link, the year of each project if 2026 is wrong for any, and which four projects go on the home page.
+18. **Work on a phone.** One column. Its route for the stream, and whether posts and a rail have any place there, are not designed. Recommendation: sketch it in the web chat next to the card, while the two column route is being built. It now covers every screen too narrow for two real cards side by side with the stream's room beside them, which takes in an iPad held upright (Nov 13).
+19. **The card's look.** "We still haven't decided on the card design yet." To be designed in the web chat. Settled so far is under Cards and buttons. He asked on Nov 12 whether to settle it now, so it goes into the next pass in Claude Code with the stones and the finials, and said yes. He approved Fable's proposal as the base the same night (Settled, Cards and buttons). Still open: which way the picture rests and which layout, from the derby at `/lab/work-cards`. Also open, and his to supply: the Design System Extractor's live link, the year of each project if 2026 is wrong for any, and which four projects go on the home page. **Nov 13:** the layout is settled as C · Data plate, Cast and Etched are dropped, the streak of light is cut and the case study link is named in the corner. Still open: his word on the second round. The hover, which he found underwhelming: Fable's answer is the loop and the stream's strike, and neither can be judged until there are recordings and the card is on `/lab/work`. The page's name, "Case study" for now. His to supply: a recording for each project, the Design System Extractor's live link, the year of each project if 2026 is wrong for any, and which four projects go on the home page. **Nov 13, later:** how the card answers the pointer is settled by his picks from the third round. How it takes the stream is judged on `/lab/work` once the second pass is built.
 
 ## Dropped
 
@@ -492,6 +564,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
 - A card's picture cast as a relief in metal, or etched as lines (Nov 13)
 - A streak or spot of the cursor's light on a card's picture (Nov 13)
 - A card's colors coming back as a circle spreading from the pointer (Nov 13)
+- For the card: its colors coming back as a sweep, lights first, or with the picture coming closer. The card leaning toward the cursor. The thin bead as its edge. He picked the fade, leaning away and the deep edge (Nov 13)
 - The faint channel drawn ahead of the stream
 - Molten metal as what the stream is made of. Agreed and then set aside for a core of light with shards (Nov 11)
 - Water, golden water and lava as what the stream is made of (Nov 11). Light and electricity were dropped the same day and came back when he asked to see a core of light and an arc

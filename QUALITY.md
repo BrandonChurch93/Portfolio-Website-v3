@@ -90,6 +90,7 @@ This is the real calibration. Every row is his verdict, not a guess. Rows that s
 | The card under the cursor: its colors return, its edges catch, it grows a little | "Slightly underwhelming" | Too little happens, and the reward is only as good as the picture |
 | A streak of light crossing the picture's glass with the cursor | "It doesn't look bad but it doesn't really look great either" | Light added for its own sake reads as decoration |
 | A card's colors coming back as a circle spreading from the pointer | "Not very good." "I don't like that it comes from a circle. It seems like it lags a bit" | A change that shows its own shape, and takes its time, reads as an effect and as lag |
+| The card under the pointer, with a switch for each choice: four ways for its colors to come back, four amounts of turn, two leans, three sizes, two edges | "These are the settings I want to go with": the plain fade, 3 degrees, leaning away, 1.5 percent, the deep edge | Given a range he took the quietest motion on offer and the heaviest object. A card's presence comes from its form and its light, not from how far it moves |
 | The pour's first test shot, in motion | "I definitely don't like how it puddles." The stream "is blasted back multiple times". "Instead of looking like a refined beautiful hot liquid metal, this looks more like mud splashing around and puddling up" | Real physics is not enough. It has to be graceful. Metal that heaps, thrashes or hits itself reads as mud |
 
 ## The patterns behind those verdicts
@@ -208,6 +209,41 @@ The first place the stream meets a whole section. `BRIEF.md`, "The stream throug
 7. **Scrolled back up,** it draws back cleanly through every stop.
 8. **The test shot at `/lab/stream` is unchanged.** Stills of it from before and after agree.
 9. **`npm run perf`** shows it smooth on his Mac with both sides running the whole section, and at an iPad's size. The budget for two full sides is said out loud.
+
+**The second pass on the Work page**
+
+The real card, the Sun stones and the Blades go into `/lab/work`. `BRIEF.md`, "The second pass on the Work page", has what is built and what is not. It passes when the nine tests above still hold on the page and all of these are true.
+
+The card:
+
+1. **It is the card he picked.** Beside `reference/studies/26-work-card-as-picked.jpg` it is the same card. Under the pointer its colors fade back, it turns 3 degrees leaning away, and it grows 1.5 percent.
+2. **It is always readable.** With the stream lying on its top, and in the brightest frame of a strike, every word on it still passes contrast. Measure it, do not judge it by eye. The card is never dark waiting for the stream.
+3. **It can be used.** Every link is reached and worked from the keyboard, focus shows, and nothing the stream draws takes a click.
+4. **One light.** The part of the rim nearest the stream is the brightest part of the card, and it falls off with distance. What the stream lights and what the cursor lights each agree with where that light is. No part of the card is lit from a direction nothing is in.
+5. **The stream meets it as it met the stand in.** It lies on the rim: not above it, not sunk into the face. That holds at rest, and with the card turned and grown under the pointer. What a strike throws bounces off the card's real edges. Riding shards: none vanish, appear or jump, measured as they were for the first build.
+6. **A full strike** is the strongest thing that happens to a card. The rim flares where it is struck, the picture warms and settles, and nothing about it reads as a flash or a blink.
+7. **The card throws a shadow** across the page in the stream's light, and none where there is no light to throw it.
+8. **Smooth under the pointer.** `npm run perf` on `/lab/work`, with the pointer moving over the cards while the page scrolls: every frame at the screen's rate on his Mac. At an iPad's size with `--cpu 4`, what it gives up is said out loud.
+9. **With reduced motion** nothing turns and no loop plays. The colors still come back for a pointer or for keyboard focus.
+10. **On a touch screen** nothing turns, and the cards nearest the middle of the screen are awake.
+
+The stones and the rail:
+
+11. **The stone is a carving.** Enlarged three times: rings that step in depth, glyphs with cut edges, rays, and a face that is a face. Beside the sketch (`reference/studies/20-work-guardians-derby.jpg`, `22-work-pairing.jpg`) it is plainly the better object. Beside the PC Builder's parts it is not the weaker work.
+12. **At the page's size** the face and the rings read. The glyphs may be texture.
+13. **It belongs with nothing touching it.** With the stream elsewhere it sits in the page, lit by the cursor, not in a rectangle and not floating.
+14. **The lit face.** The eyes and mouth are openings with depth, dark without the stream and lit from inside with it, in the stream's colors and no other. The light comes up as the stream arrives and dies as it leaves, with weight, never like a switch. It does not read as a toy, a mask from a film or a cartoon.
+15. **The Blade** has a ridge that catches the light and a clean outline at the page's size. The stone is the larger thing beside it, on a desktop and on an iPad.
+16. **The rail sits.** Without its studs it is still carried by something, and that something is not hardware.
+17. **The right side is the left side in a mirror.** One laid over the other, flipped, the stones and the rail's ends agree.
+
+The section:
+
+18. **The second row's strike is a strike.** Beside the strike on a card's top it is not the weaker one. The report says what made it a graze.
+19. **Spacing.** With the taller card nothing is cramped or uneven, no landing is shorter than it was, and every turn still has a cause.
+20. **An iPad held sideways** is not the desktop squeezed.
+21. **The bar over WORK**, switched on: the strike is on the bar, the word under it is still lit and still reads as the title, and the top of the section is calmer than without it. Switched off, the page is as it was.
+22. **`/lab/stream` and the approved buttons are unchanged.** Stills from before and after agree.
 
 **How to judge it**
 

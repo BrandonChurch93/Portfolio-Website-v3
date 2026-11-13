@@ -10,7 +10,7 @@ import styles from './WorkCard.module.css';
 // card, and the section, shorter.
 export const PICTURE_ASPECT = 2;
 
-// The choices still open on the card, each with the value it has until one is picked.
+// The choices the card was tried with at /lab/work-cards. CARD_LOOK is what Brandon picked.
 // reveal: how the picture's own colors come back: all at once, all at once while the picture comes closer, behind a
 // soft edge that crosses it, or its lights first. turn: how far the card turns under the pointer, in degrees at its
 // edge. lean: whether the side under the pointer goes away from it or comes toward it. grow: the share of its size the
@@ -22,7 +22,7 @@ export interface CardLook {
   grow: number;
   edge: CardEdge;
 }
-export const CARD_LOOK: CardLook = { reveal: 'fade', turn: 6, lean: 'away', grow: 0.03, edge: 'thin' };
+export const CARD_LOOK: CardLook = { reveal: 'fade', turn: 3, lean: 'away', grow: 0.015, edge: 'deep' };
 const PUSH = 0.045;
 
 interface Props {

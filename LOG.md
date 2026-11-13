@@ -2,6 +2,92 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · Handoff to Claude Code: the second pass on the Work page (Fable, web chat)
+
+**What Brandon said**
+
+- With a picture of the five switches set to A · Fade, 3°, Away from the cursor, 1.5% and Deep: "These are the settings I want to go with. Let's go ahead and write up the handoff document so this can be built into the current working work page."
+
+**What changed in the record**
+
+- `BRIEF.md`, Cards and buttons: "His picks from the third round". What he passed over is in Dropped. A heading the last entry's edit had cut off ("What a card's loop and picture need") is back.
+- `BRIEF.md`, The stream: a new part, "The second pass on the Work page: the agreement for the build". Ten things that get built, what does not, what stays as approved, two things built only for him to judge, and sixteen calls of Fable's set apart from his rulings.
+- `QUALITY.md`: his picks are in the table. "The second pass on the Work page" is a new set of 22 tests.
+- `PLAN.md`: Now, and a line for this pass under Phase 3.
+- `CARD_LOOK` in `src/components/WorkCard.tsx` is his picks, so `/lab/work-cards` opens on them. Nothing else in the code changed. Stills: `reference/studies/26-work-card-as-picked.jpg` (held under the pointer) and `26-work-card-as-picked-grid.jpg`.
+
+**Two things in the agreement that go against a line in the brief. He was told both in bold**
+
+- The stone's lit face, against "Figures that light up on scroll" in Dropped. Built with a switch, for him to judge.
+- The bar over WORK, against "hit the work title dead center, split, and run down both sides". Behind a switch that is off when the page opens.
+
+**Sizes measured today**
+
+| Screen | The card as picked | The stand in on `/lab/work` |
+|---|---|---|
+| 1440 wide | 460 by 510 | 460 by 383 |
+| 1194 wide (an iPad held sideways) | 395 by 500 in the first row, 474 in the second | |
+
+- A row takes the height of its taller card. Two rows of real cards make the section about 254 px taller on a desktop.
+- A card's corners are 18 units at 460 wide (`CARD.radius` in `src/metal/mask.ts`). The stand in's are `--radius-3`.
+
+**What Fable can tell from reading the code. Check before believing it**
+
+- **Two renderers, and today they do not share a light.** On `/lab/work` the stream's renderer draws the four stand in cards itself (`cardFrag` in `src/stream/shaders.ts`), in its own canvas over the page (`z-index: 3`). It lights them pixel by pixel from its own field of light (`streamLight`) and lets them throw shadows in the last pass (`shapes` in `finalFrag`). The real card is a plate: its own 2D canvas, drawn by the one hidden WebGL context in `src/metal/renderer.ts`, with its words in the page. That context knows the stream only as one point of light (`plates.setStream(host, x, y, k)`, `uStream`). That is how the button under the meeting is lit.
+- **So there are two ways to bring them together, and the choice is the builder's, after measuring.**
+    1. The card stays a plate, under the stream's canvas. The stream stops drawing a body for it, and still counts it as a shape: for shadows, for bounces, and so that no light is laid over its face. The plate is taught more of the stream than one point: the stretch of route beside it and the leading end. The turn stays in CSS, as it is.
+    2. The stream's renderer draws the card's metal itself, from the card's own bake and light, with its picture and its loop. The page keeps only the words, turned by CSS to match. One field of light, one canvas, and no copying from canvas to canvas.
+- **The frame rate he saw on `/lab/work-cards` was not looked into.** What is known: while the pointer moves, every plate on screen is lit again each frame and then copied from the hidden canvas to its own (`drawImage` in `renderer.ts`), and a card is about a megapixel at a pixel ratio of two. Which of those costs the time is not known. Measure before choosing between the two ways above.
+- **The route can go on being planned from the card's box.** A card turns and grows on `.turn`, inside the `article`. The `article` itself never moves, so its `getBoundingClientRect` is the card at rest. `mountStream` takes `work.cards` as elements and reads each one's box and corner radius (`shapeOf` in `src/stream/stream.ts`). `WorkCard` has no `data-part` and passes no ref out yet.
+- **A card that turns under the stream.** Grown 1.5 percent and turned 3 degrees, a card's top edge moves by up to about 7 px on a desktop. The stream lies 3 units over a surface (`route.above`). Whether that shows as the stream sinking into the rim is for his Mac to say (test 5).
+- **Two columns are decided by the route, not only by the style sheet.** `routeThroughWork` runs the full route only with four cards, two posts, the rail and the button all shown (`two` in `src/stream/route.ts`). The style sheet hides the posts and the rail under 720 px. Moving that width up moves both.
+- **The stone can stay round to the stream.** A post is a circle to the route, to the bounces and to the shadows (`uPosts`: a center and a radius). The sun stone's outline is a circle. Its tabs and rays are inside the rim.
+- **The sketch of the stone** is `sun()` in `STATUES`, `src/work-objects/guardians.ts`, and the Blade is in `FINIAL`, `src/work-objects/finials.ts`. Both are floors to beat, drawn large for a derby. At the page's size the stone was about 70 px across, where its glyphs are texture and only the face and the rings read.
+- **The posts and the rail are drawn by `postFrag` and `railFrag`**, with the rail's studs sized by `RAIL_STUD`. The rail is two halves with a gap under the button.
+- **The graze, as far as is known.** The first build's log says the turn at the post is about 35 degrees and the line from the post to the card's side is steep, so the stream meets the side at a shallow angle. The strike is at 46 percent of the way down the side (`work.side.at`), and a card that is 127 px taller puts that point about 58 px lower, which makes the line steeper unless something else moves. None of this is confirmed as the cause.
+- **A bar over WORK** would be one more box above the title in `routeThroughWork`. `/lab/stream` uses `buildRoute`, which nothing here needs to touch.
+- **Comparing plates.** A plate's canvas fades in for about a second, so stills of the buttons are compared only after `--wait 3000`. The command that has been used each round: `npm run shot -- /lab/buttons --t 3 --lamp 0.3,0.4 --scale 1 --wait 3000 --png`, before and after, and no pixel may differ. A plate's seed comes from its words: nothing may be added to the string in `seedOf`.
+
+**The prompt Brandon was given**
+
+```
+Pull main, then read BRIEF.md, PLAN.md, QUALITY.md and the top entry of LOG.md from disk, as CLAUDE.md says.
+
+Build the second pass on the Work page, at /lab/work. BRIEF.md, The stream, "The second pass on the Work page" is the agreement: what gets built, what does not, what stays as approved, and which calls are Fable's. QUALITY.md, "The second pass on the Work page", is the test it has to pass. The top entry of LOG.md has what the web chat could tell from reading the code. Check it before you rely on it.
+
+In short:
+- The real card (WorkCard, with CARD_LOOK as I picked it) replaces the four stand ins, and the stream meets it: lands on it, strikes it, lights it, and the card throws its shadow.
+- The Sun stone replaces each post, made new at full quality, 10 to 20 percent wider, growing away from the cards. Its face lights when the stream reaches it, with a switch to turn that off.
+- Blade finials on the rail's outer ends. The studs go. The right side mirrors the left.
+- The strike on the second row has to land as a strike. Find what makes it a graze before you change anything, and tell me the cause.
+- More room on an iPad held sideways.
+- A bar over WORK behind a switch, off when the page opens.
+- Measure the frame rate with real cards on the page, find the cause of the drop I saw on /lab/work-cards, and fix it.
+
+Hold to these:
+- /lab/stream and the approved buttons must draw what they draw today. Take stills before you touch shared code and compare after.
+- The stream stays as approved, and it comes no closer to the cards than it is now.
+- A card is always readable and usable: every word and every link, with the stream on it and during a strike.
+- The stone is made new. The derby's sketch in src/work-objects is the floor to beat, not something to build on.
+- Do not design the phone's route, an iPad held upright, the top bar or a project's page. Do not change the pictures.
+- Where the agreement lists something as Fable's call, build it and list it in your report as mine to overturn. If you depart from one, say which and why.
+- Before you report, have fresh Opus reviewers who have not seen the work being made judge the stills against QUALITY.md, told to look for reasons to fail it.
+
+Work without check-ins until there is a page I can scroll. Then run a production build, commit, push, and confirm the deploy is ready.
+
+Report in lists: the link, what is at the bar, what is not and why, what made the second row a graze, what cost the frame rate, every call you made for me, and exactly what I am approving. End with one clear recommendation.
+```
+
+**For the web chat, next**
+
+- Work on a phone, and on any screen too narrow for two cards (Open 18).
+- His recordings, when he has them: the spec is in `BRIEF.md`, Cards and buttons.
+- A push from here and a push from Claude Code can cross. Pull with a rebase before every commit.
+
+**Half finished**
+
+- The build itself. Nothing from this session is uncommitted.
+
 ## 2026-11-13 · The card's third round: it turns, and four ways for its colors to come back (Fable, web chat)
 
 **What Brandon said.** His words are in `BRIEF.md`, Cards and buttons, "The third round". In short: keep it simple, show how far the card turns and how the light moves round it, a few ways for the colors to come back because the circle from the pointer is not good, and the low frame rate is for the final build.
@@ -34,7 +120,7 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 
 **Half finished**
 
-- His picks. Then the prompt for Claude Code.
+- His picks. Then the prompt for Claude Code. Both are in the entry above.
 
 ## 2026-11-13 · A plan for the card's third round (Fable, web chat)
 
