@@ -9,27 +9,29 @@ import styles from './WorkDraft.module.css';
 
 type Pt = [number, number];
 type Node = [x: number, y: number, radius?: number];
-type Variant = 'a' | 'b' | 'c' | 's';
+type Variant = 'a' | 'b' | 'c' | 's' | 'p';
 type Lit = 'l' | 'r' | 't';
 interface Box { l: number; t: number; r: number; b: number; cx: number; cy: number }
 interface Line { pts: Pt[]; cum: number[]; total: number; d: string }
 interface Strike { line: number; at: number; x: number; y: number; card: number; lit: Lit }
-interface Plan { w: number; h: number; lines: Line[]; strikes: Strike[] }
+interface Post { x: number; y: number; r: number; id: number }
+interface Plan { w: number; h: number; lines: Line[]; strikes: Strike[]; posts: Post[] }
 
 const VARIANTS: { id: Variant; name: string; note: string }[] = [
   { id: 'a', name: 'A · Frame', note: 'The stream parts on WORK, lands on the category bar, runs off its ends and then straight down both sides of the grid, lighting the side of each card as it passes. The two sides meet again on the button.' },
   { id: 'b', name: 'B · Steps', note: 'The right column sits half a row lower. The stream parts on WORK, lands on the category bar, then on top of the first card on each side and rolls off its end. It swings out wide, comes back in and strikes the side of the next card halfway down. The cards wake one at a time, left then right.' },
   { id: 's', name: 'S · Your sketch', note: 'Your drawing. The same stream as B on straight rows, so the two sides mirror each other: onto the top of the first row and off its ends, out wide, then in to strike the side of each card in the second row halfway down.' },
+  { id: 'p', name: 'P · With posts', note: 'Your sketch with a metal post beside each side. The stream leaves the end of the first card, meets the post and is turned in by it, toward the side of the card below. The discs are stand ins for the posts.' },
   { id: 'c', name: 'C · Middle', note: 'One stream instead of two, winding down the middle. Not in the switch: open it with ?v=c.' },
 ];
-const SHOWN: Variant[] = ['a', 'b', 's'];
+const SHOWN: Variant[] = ['s', 'p'];
 
 const CATEGORIES = ['Software', 'Games', '3D art', 'Photography'];
 const NUMBERS = ['01', '02', '03', '04'];
 const SECTIONS = ['Work', 'Skills', 'About', 'Contact'];
 // How far down the screen the leading end is held.
 const HEAD_AT = 0.62;
-const BUTTON = -1, BAR = -2;
+const BUTTON = -1, BAR = -2, POST = -3;
 
 // A line through the points with its corners rounded, as a run of short straight pieces.
 function line(nodes: Node[], radius: number): Line {
@@ -86,6 +88,7 @@ function plan(v: Variant, w: number, h: number, T: Box, K: Box, C: Box[], B: Box
   const top = T.t - 12;
   const lines: Line[] = [line([[cx, 0], [cx, top]], 0)];
   const strikes: Strike[] = [];
+  const posts: Post[] = [];
   const add = (nodes: Node[], radius: number) => lines.push(line(nodes, radius)) - 1;
   const mark = (li: number, x: number, y: number, card: number, lit: Lit) => strikes.push({ line: li, at: nearest(lines[li], x, y), x, y, card, lit });
   const HUG = 8, SHARP = 5;
@@ -94,21 +97,32 @@ function plan(v: Variant, w: number, h: number, T: Box, K: Box, C: Box[], B: Box
 
   // Down a run of cards. It lands on top of the first as it did in the test shot and rolls off its end. From there
   // it swings out wide, comes back in and strikes the side of each card after that halfway down, then leaves outward.
-  const weave = (nodes: Node[], first: { c: Box; i: number } | null, run: { c: Box; i: number }[], side: number, swing: number) => {
+  // With a post, the stream is thrown off the end of the first card, meets the post and is turned in by it.
+  const weave = (nodes: Node[], first: { c: Box; i: number } | null, run: { c: Box; i: number }[], side: number, swing: number, post = 0) => {
     const hug = (c: Box) => (side < 0 ? c.l - HUG : c.r + HUG);
     const lands: { x: number; y: number; i: number; lit: Lit }[] = [];
     const from = nodes[nodes.length - 1];
-    let rest = run;
+    let rest = run, turned = false;
     if (first) {
       const c = first.c, y = c.t - 7;
       const at = Math.max(c.l + 30, Math.min(c.r - 30, from[0] + side * Math.min(90, 0.2 * (y - from[1]))));
-      nodes.push([at, y, SHARP], [hug(c), y, 16], [hug(c), c.t + 54, 70], [hug(c) + side * swing, c.b - 50, 110]);
-      if (run.includes(first)) lands.push({ x: at, y, i: first.i, lit: 't' });
       rest = run.filter((q) => q !== first);
+      nodes.push([at, y, SHARP]);
+      if (post && rest.length) {
+        const wide = hug(c) + side * swing, py = c.b - 34, id = POST - posts.length;
+        nodes.push([hug(c) + side * swing * 0.42, y, swing * 0.42 + 8], [hug(c) + side * swing * 0.86, y + (py - y) * 0.5, 260], [wide, py, SHARP]);
+        posts.push({ x: wide + side * (post + 5), y: py, r: post, id });
+        lands.push({ x: wide, y: py, i: id, lit: litSide(side) });
+        turned = true;
+      } else nodes.push([hug(c), y, 16], [hug(c), c.t + 54, 70], [hug(c) + side * swing, c.b - 50, 110]);
+      if (run.includes(first)) lands.push({ x: at, y, i: first.i, lit: 't' });
     }
-    rest.forEach(({ c, i }) => {
+    rest.forEach(({ c, i }, n) => {
       const x = hug(c), wide = x + side * swing, mid = (c.t + c.b) / 2;
-      nodes.push([wide, c.t - 12, 90], [x, mid, SHARP], [wide + side * 12, c.b + 28, 90]);
+      const last = nodes[nodes.length - 1];
+      if (turned && n === 0) nodes.push([last[0] + (x - last[0]) * 0.62, last[1] + (mid - last[1]) * 0.5, 260]);
+      else nodes.push([wide, c.t - 12, 90]);
+      nodes.push([x, mid, SHARP], [wide + side * 12, c.b + 28, 90]);
       lands.push({ x, y: mid, i, lit: litSide(side) });
     });
     return lands;
@@ -138,7 +152,8 @@ function plan(v: Variant, w: number, h: number, T: Box, K: Box, C: Box[], B: Box
     [-1, 1].forEach((side) => {
       const mine = order.filter((q) => (one ? q.i % 2 === (side < 0 ? 0 : 1) : side < 0 ? q.c.cx < cx : q.c.cx > cx));
       const room = (side < 0 ? G.l : w - G.r) - 22;
-      const gap = one ? 16 : v === 'a' ? 12 : Math.max(32, Math.min(92, room));
+      const post = v === 'p' && !one ? Math.max(14, Math.min(36, (room - 30) / 3)) : 0;
+      const gap = one ? 16 : v === 'a' ? 12 : Math.max(32, Math.min(post ? 112 : 92, room - post * 2));
       const out = side < 0 ? G.l - gap : G.r + gap;
       const titleEnd = side < 0 ? T.l - 28 : T.r + 28, barEnd = side < 0 ? K.l - HUG : K.r + HUG;
       const nodes: Node[] = [[cx, top], [titleEnd, top]];
@@ -151,7 +166,7 @@ function plan(v: Variant, w: number, h: number, T: Box, K: Box, C: Box[], B: Box
         bar = [past, K.t - 14];
         nodes.push([titleEnd, T.b + 8, 30], [past, K.t - 14, 30], [past, K.b + 12, 30]);
       }
-      const lands = v === 'a' ? [] : weave(nodes, one ? order[0] : mine[0], mine, side, gap - HUG);
+      const lands = v === 'a' ? [] : weave(nodes, one ? order[0] : mine[0], mine, side, gap - HUG, post);
       if (v === 'a') nodes.push([out, K.b + 96]);
       const bx = side < 0 ? B.l - 2 : B.r + 2;
       if (v === 'a' || one) nodes.push([out, B.cy, 26]);
@@ -165,11 +180,11 @@ function plan(v: Variant, w: number, h: number, T: Box, K: Box, C: Box[], B: Box
     });
   }
   add([[cx, B.b + 2], [cx, h]], 0);
-  return { w, h, lines, strikes };
+  return { w, h, lines, strikes, posts };
 }
 
 export function WorkDraft() {
-  const [v, setV] = useState<Variant>('s');
+  const [v, setV] = useState<Variant>('p');
   const [cat, setCat] = useState(CATEGORIES[0]);
   const [drawn, setDrawn] = useState<Plan | null>(null);
   const main = useRef<HTMLElement>(null);
@@ -185,13 +200,14 @@ export function WorkDraft() {
   const groups = useRef<(SVGGElement | null)[]>([]);
   const heads = useRef<(SVGGElement | null)[]>([]);
   const marks = useRef<(SVGGElement | null)[]>([]);
+  const studs = useRef<(SVGGElement | null)[]>([]);
   const live = useRef<{ plan: Plan; at: number[] } | null>(null);
   const whole = useRef(false);
   const half = useRef(0);
 
   useEffect(() => {
     const asked = new URLSearchParams(location.search).get('v');
-    if (asked === 'a' || asked === 'b' || asked === 'c' || asked === 's') setV(asked);
+    if (asked === 'a' || asked === 'b' || asked === 'c' || asked === 's' || asked === 'p') setV(asked);
     whole.current = new URLSearchParams(location.search).has('whole');
     if (whole.current) main.current?.setAttribute('data-whole', '');
   }, []);
@@ -261,6 +277,7 @@ export function WorkDraft() {
     cards.current.forEach((c, i) => c?.classList.toggle(styles.awake, lit.has(i)));
     button.current?.classList.toggle(styles.awake, lit.has(BUTTON));
     cats.current?.classList.toggle(styles.awake, lit.has(BAR));
+    L.plan.posts.forEach((q, i) => studs.current[i]?.classList.toggle(styles.awake, lit.has(q.id)));
 
     const top = bar.current, h = hero.current, k = cats.current, w = work.current;
     if (top && h && k && w && !whole.current) {
@@ -318,6 +335,14 @@ export function WorkDraft() {
                 <stop offset="1" stopColor="var(--ember)" stopOpacity="0" />
               </radialGradient>
             </defs>
+            {drawn.posts.map((q, i) => (
+              <g key={`${v}-p${i}`} ref={(el) => { studs.current[i] = el; }} className={styles.post} transform={`translate(${q.x.toFixed(1)} ${q.y.toFixed(1)})`}>
+                <circle r={q.r} className={styles.postBody} />
+                <circle r={q.r * 0.72} className={styles.postRing} />
+                <circle r={q.r * 0.4} className={styles.postRing} />
+                <circle r={q.r * 0.12} className={styles.postCap} />
+              </g>
+            ))}
             {drawn.lines.map((l, i) => (
               <g key={`${v}-${i}`} ref={(el) => { groups.current[i] = el; }} className={styles.line}>
                 <path d={l.d} className={styles.haze} strokeDasharray="0 99999" />

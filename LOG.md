@@ -2,6 +2,30 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-12 · Posts that turn the stream in, drawn for Brandon to see (Fable, web chat)
+
+**What Brandon said**
+
+- "I like option a the best, but we need to make sure the streams look organic and not forced." He sent the left half of the last still, which is S, with a scribble beside each side at the foot of the first row. Fable reads "option a" as S. Not confirmed.
+- "What if we added one of those background 3d objects I mentioned like 2 metal cylinders giving the stream a reason to turn into the center of the 2 row of cards."
+
+**What was built**, in `weave()` in `src/components/lab/WorkDraft.tsx`
+
+- **P · With posts**, `?v=p`, which opens first. S is beside it in the switch. A and B are out of the switch and still open by `?v=a` and `?v=b`.
+- A post stands just outside each side, 34 px above the foot of the first row's card. The stream no longer runs down that card's side. It leaves the end of the card's top with the way it was going, bows down like something thrown, touches the post's inner face and is turned in, then bows in to strike the side of the second row's card halfway down as in S.
+- The post is a disc with rings, faint until the stream reaches it. It is a stand in and says so on the page.
+- The stage's side padding is wider in P so the posts have room on an iPad held upright. The post's size and the swing are worked out from the room there is.
+- Still: `reference/studies/16-work-draft-with-posts.jpg`, P on the left and S on the right.
+
+**How it reads**
+
+- The turn in now has a cause, and so does the swing out: the stream is thrown off the card's end. The line is harder than S's, with a sharp turn at the post. It reads as two bounces, post then card.
+- The sweep in to the button still has no cause in either.
+
+**Half finished**
+
+- His verdict on the posts, and his word on what "option a" meant.
+
 ## 2026-11-12 · Brandon's sketch of the stream and the cards, built (Fable, web chat)
 
 **What Brandon said**

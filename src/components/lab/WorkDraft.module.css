@@ -230,6 +230,32 @@
   fill: var(--pale);
 }
 
+.post {
+  opacity: 0.3;
+  transition: opacity var(--dur-2) var(--ease-settle);
+}
+
+.post.awake {
+  opacity: 1;
+}
+
+.postBody {
+  fill: var(--bronze-deep);
+  stroke: var(--copper);
+  stroke-width: 1.5;
+}
+
+.postRing {
+  fill: none;
+  stroke: var(--copper-light);
+  stroke-width: 1;
+  opacity: 0.45;
+}
+
+.postCap {
+  fill: var(--copper-light);
+}
+
 .standIn {
   display: grid;
   place-items: center;
@@ -292,6 +318,10 @@
   gap: var(--space-8) var(--space-7);
   max-width: 62rem;
   margin: 7rem auto 0;
+}
+
+.stage[data-v='p'] {
+  padding: 0 clamp(7.5rem, 12vw, 10rem);
 }
 
 .stage[data-v='b'] .grid,
@@ -448,7 +478,8 @@
     scrollbar-width: none;
   }
 
-  .stage {
+  .stage,
+  .stage[data-v='p'] {
     padding: 0 1.75rem;
   }
 

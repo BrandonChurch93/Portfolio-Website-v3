@@ -15,9 +15,9 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 ## Now
 
 - **Phase:** 3 has begun, a section at a time, starting with Work. Phase 2's test shot is approved and he calls the stream "almost certainly the finalized base" (Nov 12). Its small items below stay open and block nothing
-- **In front of Brandon:** the Work wireframe at `/lab/work-draft` (Study 09), now opening on S · Your sketch: his own drawing of how the stream meets the cards, on straight rows with the two sides mirrored. A · Frame and B · Steps are beside it in the switch. `BRIEF.md`, Open 15, has his words, the drawing in exact terms, and what is Fable's call
-- **What he is deciding:** S, A or B. Whether the site gets the slim top bar with the categories docking into it. Whether the stream lands on the category bar. Nothing else on that page is for approval: not the cards' look, not the spacing, not the phone, not what else lives in the top bar
-- **Where he stands:** his lean is A and B over C, with no pick between them. He wanted the look of the section settled further before choosing, which is what this round is for
+- **In front of Brandon:** the Work wireframe at `/lab/work-draft` (Study 09), now opening on P · With posts: his sketch with a post beside each side that turns the stream in, which he asked to see. S · Your sketch is beside it in the switch. A and B still open by their links. `BRIEF.md`, Open 15, has his words and what is Fable's call
+- **What he is deciding:** whether the posts stay. Whether "option a" meant S, as Fable read it. Whether the site gets the slim top bar with the categories docking into it. Whether the stream lands on the category bar. Nothing else on that page is for approval
+- **Where he stands:** he likes his own sketch best, as Fable reads him, on one condition: the stream has to look organic and not forced
 - **After his pick:** the card's look, here in the web chat. Then the stream's real route through Work, in Claude Code on his Mac
 - **He is on his iPad for now, with no mouse.** Anything that needs the cursor is confirmed when he is home
 - **Where the stream is:** `/lab/stream`, built in Claude Code on Brandon's Mac. `LOG.md` has each round's account
