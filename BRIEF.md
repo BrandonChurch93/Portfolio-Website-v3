@@ -225,6 +225,10 @@ Worked out in a wireframe at `/lab/work-draft` over the day. How it got there is
 - The top: "how many collisions there are at the top so close together. You barely scroll and it all just kind of happens." "This isn't an issue of everything being too close together, or at least I don't think it is. The spacing looks fine. It's just it's a lot happening all at once." And: "so many turns in a short a period of time". In exact terms: the strike on the title, the two landings on the category bar and the two on the first row all come within about 360 px of scroll, with six turns on each side.
 - He also named "the stream being so close to the word work".
 - He asked for Fable's honest thoughts and for no changes. Fable's answer: the landing on the category bar was Fable's own call and is the one to take out. Not agreed.
+- **He took the worry about the top back (Nov 12).** "Upon further review, I actually don't mind there's so many strikes at the top because when you do it, it makes a ton of particle effects that fall all over the section, making it feel 3D. It actually looks really good." So the landing on the category bar stays, and Fable's answer above is withdrawn.
+- What he does not love there: "how much of the word work is fighting for your attention". An idea, not a ruling: "I wonder if putting like a metal bar on top of it or something, maybe even one below it as well for symmetry, would look good. I'm not 100% sure."
+- The strike on the second row: "It doesn't feel powerful enough. It feels like a graze." He wants it improved. The cause is not confirmed.
+- The posts and the rails: "I also don't mind the 2 objects that the stream bounces off of and the 2 rails, but I wonder if we could derby some new designs and see if maybe there are some better options that would look cooler." A derby of designs is wanted. Not built yet.
 
 **How it is built**
 
