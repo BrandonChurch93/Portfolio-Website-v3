@@ -2,6 +2,33 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-12 · The Blade picked, the stone a little larger, and a proposal for the card (Fable, web chat)
+
+**What Brandon said**
+
+- "I like the blade the best."
+- "I also would like to increase the size of the Sunstone, maybe just a simple 10 or 20%, to show off the beautiful detail on it." The layout and the spacing between the stream and the cards must not be compromised: "I wouldn't want it any closer."
+- "Yes, I'm ready for the card. Before we get to work on it, what exactly do you propose? We should build these out with the content they're actually going to have on them. For now we can just do a placeholder image."
+- His live site shows its pictures black and white until hovered. "It'd be cool if we could do something similar, but with like a bronze effect or something that matches our color scheme."
+
+**What Fable proposed for the card. Talk only, nothing built, none of it a rule**
+
+- What is on it, top to bottom: the picture in a 16 by 10 window sunk a little into the card. A small label of the kind of project and the year. The title. The description from his live site. Up to four tags. The whole card is the link, with a small arrow in the lower corner.
+- What it is made of: the dark plate from the stream's test shot, which he liked. Metal only as accents: a thin copper lip all round, which is what the stream lands on and strikes, and the bezel round the picture. The buttons' metal and lighting.
+- His bronze idea as three states. At rest the picture is in bronze tones. Under the cursor, or with keyboard focus, it shows its true colors, the lip catches the light as the buttons do, and the card grows a little. On a touch screen, where nothing hovers, the card nearest the middle of the screen shows its colors.
+- A card is always readable. The stream's strike lights the lip and warms the picture for a moment. It does not hide a card until the stream arrives.
+- The one thing a derby should settle is how the picture is made bronze: 1 · Toned, the picture's lights and darks mapped onto the copper and bronze, under the bright button's clear coat so the cursor's light crosses it. 2 · Cast, the picture as a shallow relief in metal. 3 · Etched, the picture as engraved lines. Fable expects Toned to win. Cast leans against "Brass is an accent on it, not the whole card", and was said to him in bold.
+- Content for the derby: the four on his live home page today (Proactive UI for AI Glasses, Ask the Claude Docs, Design System Extractor, Generative UI for GitHub) with their real descriptions and tags. Which four end up on the home page is his call and does not change the design.
+- Pictures: his real screenshots are in the second build's public repo (`public/media/` there: `glasses`, `claude-docs`, `dse`, `genui`). Fable proposed using them in place of a blank, because a bronze effect cannot be judged on a blank.
+
+**For the build, found while reading the page**
+
+- The stream passes between the post and the card and touches the post's inner side (`reference/studies/18-work-post-turns-the-stream.jpg`). So a larger stone keeps that point of contact and grows away from the cards. On an iPad that takes room the posts do not have: they are about 34 px from the screen's edge. It goes in the same prompt as the iPad's margins.
+
+**Half finished**
+
+- His answer on the proposal. Then the card derby at `/lab/work-cards`, when he turns Fable up. Then the one prompt for Claude Code.
+
 ## 2026-11-12 · Blade or Steps, beside the sun stone (Fable, web chat)
 
 **What Brandon said**
