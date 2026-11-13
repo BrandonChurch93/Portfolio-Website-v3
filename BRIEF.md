@@ -228,7 +228,8 @@ Worked out in a wireframe at `/lab/work-draft` over the day. How it got there is
 - **He took the worry about the top back (Nov 12).** "Upon further review, I actually don't mind there's so many strikes at the top because when you do it, it makes a ton of particle effects that fall all over the section, making it feel 3D. It actually looks really good." So the landing on the category bar stays, and Fable's answer above is withdrawn.
 - What he does not love there: "how much of the word work is fighting for your attention". An idea, not a ruling: "I wonder if putting like a metal bar on top of it or something, maybe even one below it as well for symmetry, would look good. I'm not 100% sure."
 - The strike on the second row: "It doesn't feel powerful enough. It feels like a graze." He wants it improved. The cause is not confirmed.
-- The posts and the rails: "I also don't mind the 2 objects that the stream bounces off of and the 2 rails, but I wonder if we could derby some new designs and see if maybe there are some better options that would look cooler." A derby of designs is wanted. Not built yet.
+- The posts and the rails: "I also don't mind the 2 objects that the stream bounces off of and the 2 rails, but I wonder if we could derby some new designs and see if maybe there are some better options that would look cooler." A derby of designs is wanted.
+- **The derby is at `/lab/work-objects` (Study 10), waiting on his pick.** He kept Fable on high for it: "I think that is enough effort right now for a derby of this scale." For the turning object: 1 · Knob, which is what is on the page now, redrawn. 2 · Wheel, a flywheel with a pierced web and a nut. 3 · Facet, a cut stud in a bezel. For the rail: 1 · Bar, as now. 2 · Truss, an open girder. 3 · Channel, slotted, with the stream inside it. They are drawn larger than on the page, and the stream beside them is a stand in.
 
 **How it is built**
 

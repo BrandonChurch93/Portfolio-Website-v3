@@ -45,6 +45,10 @@ export default function Index() {
           <span className={styles.minor}>Phase 2 · the test shot, second round · facets, following the scroll</span>
         </li>
         <li>
+          <Link href="/lab/work-objects">Three posts, three rails</Link>
+          <span className={styles.minor}>Phase 3 · designs for the things the stream meets in Work</span>
+        </li>
+        <li>
           <Link href="/lab/work-draft">Work, three ways</Link>
           <span className={styles.minor}>Phase 3 · a wireframe of the Work section round the stream, three layouts</span>
         </li>

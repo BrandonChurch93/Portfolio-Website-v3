@@ -1,0 +1,121 @@
+.main {
+  min-height: 100svh;
+  padding: var(--space-8) var(--edge) var(--space-10);
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--copper-light);
+}
+
+.title {
+  margin-top: var(--space-4);
+  font-size: clamp(2.2rem, 1rem + 3vw, 4rem);
+  font-weight: 300;
+  letter-spacing: var(--track-display);
+  line-height: 1.05;
+}
+
+.lede {
+  margin-top: var(--space-5);
+  max-width: 44rem;
+  font-size: var(--step-1);
+  color: var(--text-2);
+}
+
+.toggle {
+  min-height: var(--touch);
+  margin-top: var(--space-6);
+  padding: 0 var(--space-5);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.toggle[aria-pressed='true'] {
+  border-color: var(--flame);
+  color: var(--pale);
+}
+
+.toggle:focus-visible {
+  outline: var(--focus);
+  outline-offset: var(--focus-offset);
+}
+
+.stage {
+  position: relative;
+  max-width: 76rem;
+  margin-top: var(--space-6);
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.group {
+  position: relative;
+  padding-top: var(--space-6);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  font-weight: 400;
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.posts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-5);
+  margin-top: var(--space-4);
+}
+
+.rails {
+  display: grid;
+  gap: var(--space-5);
+  margin-top: var(--space-4);
+}
+
+.item {
+  position: relative;
+}
+
+.post {
+  aspect-ratio: 1 / 1;
+}
+
+.rail {
+  height: clamp(11rem, 20vw, 15rem);
+}
+
+.name {
+  margin-top: var(--space-3);
+  font-size: var(--step-1);
+  font-weight: 500;
+}
+
+.note {
+  margin-top: var(--space-2);
+  max-width: 34rem;
+  color: var(--text-2);
+}
+
+@media (max-width: 700px) {
+  .posts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
