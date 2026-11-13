@@ -15,11 +15,12 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 ## Now
 
 - **Phase:** 3, a section at a time, starting with Work
-- **Built by Claude Code (Nov 12), waiting on his look:** the stream's real route through Work, at `/lab/work`, with the posts and the rail as real objects. `BRIEF.md`, The stream, "The stream through Work", is the agreement. `QUALITY.md`, "The stream through Work", is the test. What was built, what is at the bar and what is not, and the calls made for him are in `LOG.md`, top entry
-- **In the web chat meanwhile:** the card's look (`BRIEF.md`, Open 19), then Work on a phone (Open 18)
-- **His words:** "Yeah, I think that plan is pretty solid." Of the rail: "Looks good in theory but I would need to see it actual rendered using our actual assets to be sure"
-- **What he judges when `/lab/work` is up:** whether the posts and the rail work as real things, and whether every turn of the stream looks caused and not forced
-- **Not ruled on:** the slim top bar with the categories docking into it (Open 17). The calls Fable made inside the agreement, which are listed there
+- **Built in Claude Code (Nov 12):** the stream's real route through Work at `/lab/work`, with posts and a rail as real objects. `LOG.md` has its account, including what it judged not at the bar
+- **His first look, in his words, is in `BRIEF.md`**, The stream, "His first look at the build". In short: the strikes at the top stay, he likes them. The screws need to mirror, right to left. The strike on the second row feels like a graze. The word WORK is fighting the stream for attention, and he wonders about a metal bar over it
+- **In front of Brandon:** a derby of designs for the posts and the rail at `/lab/work-objects` (Study 10): three of each, to pick from
+- **After his pick:** one prompt to Claude Code: the winning designs, mirrored screws, a stronger strike on the second row, more margin on an iPad, and a bar over WORK to compare with and without
+- **Still to do in the web chat:** the card's look (`BRIEF.md`, Open 19), then Work on a phone (Open 18)
+- **Not ruled on:** the slim top bar with the categories docking into it (Open 17). The bar over WORK
 - **The wireframe** is at `/lab/work-draft`, opening on R, the layout that was agreed. It has done its job. It shows the order of the stops and nothing else
 - **Where the stream is:** `/lab/stream`, approved. It must keep drawing what it draws today
 - **Small things left on the stream, none blocking:** the rest of Phase 2's list below

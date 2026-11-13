@@ -2,6 +2,39 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-12 · His first look at `/lab/work`, and a derby of posts and rails (Fable, web chat)
+
+**What Brandon said**, all of it in `BRIEF.md`, The stream, "His first look at the build"
+
+- The screws point every way. The left post is right, the right should mirror it, and the rail's studs should mirror each other.
+- First: too much happens at the top in a short scroll. Then, on a second look: "I actually don't mind there's so many strikes at the top", the shards they throw make it "feel 3D. It actually looks really good." Fable had answered that the landing on the category bar should come out. That answer is withdrawn.
+- "How much of the word work is fighting for your attention." He wonders about a metal bar over it, and maybe one under.
+- The strike on the second row "feels like a graze".
+- He wants a derby of other designs for the posts and the rails.
+
+**What was built**
+
+- Study 10 at `/lab/work-objects` (`src/work-objects/objects.ts`): one canvas, six designs, each a height worked out per pixel with its slope taken by differences, lit by a copy of the Work page's own lighting for its posts and rail (`fitting` in `src/stream/shaders.ts`), with the buttons' room and highlights from `src/metal/shaders.ts`.
+- The turning object: Knob (as now, redrawn), Wheel, Facet. The rail: Bar (as now, redrawn), Truss, Channel.
+- A switch turns the stand in stream on and off. The lamp is the site's own, so on an iPad it drifts and leans to the last tap.
+- Still: `reference/studies/19-work-objects-derby.jpg`, stream on at the left, off at the right.
+
+**To know**
+
+- The metal's numbers are linear and have to be encoded at the end. Drawn raw they come out dark red.
+- The two marked "as now" are redrawn from the description in the entry below, not drawn by the page's shader. They are close, not the same.
+- A wide glow clipped by its tile shows the tile as a box. The glow fades toward the tile's edges.
+
+**Fable's thoughts for the next prompt to Claude Code, none agreed**
+
+- The second row's strike: the entry below says the line from the post to the card is steep, so the stream meets the side at a shallow angle. That may be why it reads as a graze. Not confirmed. Ask for the cause first.
+- A bar over WORK would change what the test shot does, where the stream strikes the word itself. It has to be shown with and without before he rules.
+- On an iPad the posts are about 34 px from the screen's edge.
+
+**Half finished**
+
+- His pick from the derby. Then the prompt.
+
 ## 2026-11-12 · The stream through Work, built at `/lab/work` (Fable, Claude Code on Brandon's Mac)
 
 **What Brandon said**
