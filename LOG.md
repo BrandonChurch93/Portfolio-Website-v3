@@ -2,6 +2,39 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · A derby of the surge, as a wireframe (Fable, web chat)
+
+**What Brandon said**
+
+- "So your recommendation is the surge? Can you make a derby, a simple one showing that off. To do that right the animation will need to be long enough to appreciate it but fast enough where it doesn't feel slow to the user. Seems tough to pull off."
+
+**What was built**
+
+- Study 15 at `/lab/work-surge` (`src/work-surge/surge.ts`, `src/components/lab/WorkSurge.tsx`). The Work section drawn on one canvas in design units, with the route's stops laid out as they are on `/lab/work`, a line for the stream and drawn cards. Only the category bar's four buttons are in the page.
+- A · Surge: the bar is knocked, the stream jumps at the bar's two ends (the nearer one first), and a kink and a swell of light run down each side at a steady speed. As the front passes a stop, that stop answers: the first row's card lets go, the stone flares, the second row's card lets go, a small burst on the rail, a small burst at the meeting. Its length from the bar to the button is 0.45, 0.7 or 1.1 seconds.
+- B · All at once: the knock, then all four cards let go together. Nothing travels.
+- A card's change is the same in both and does not stretch with the surge: the old card drops and is gone in 0.09 s, the new one comes up from below, and the stream strikes it 0.18 s after the old one let go. The edge flares, the picture goes to its own colors and is back in bronze within a second. While the card is away the line sags, and it springs back at the strike.
+- Playback at real speed or a quarter. The whole section fitted to the screen, or at its real size, where it scrolls.
+- With reduced motion the cards change and nothing else moves.
+- Still: `reference/studies/28-work-surge-one-press.jpg`, eight frames of one press at 0.7 s.
+
+**How the timing works out, which is the answer to his worry**
+
+- The first row lets go about a tenth of the way through the surge, so it has changed within about 0.3 s of the press at any of the three lengths. The length mostly sets when the second row changes: about 0.45, 0.6 and 0.85 s after the press.
+- At the section's real size the bar and the first row are on screen together and the second row is mostly below it. So what a visitor watches is the knock and the first row.
+- What is left to enjoy after the cards have changed costs the visitor nothing: thrown pieces falling and the pictures settling back to bronze.
+
+**To know**
+
+- Everything on the canvas is a replay of the presses up to a time (`SurgeSim.advance`), stepped at 120 a second with hashed randomness, so a frozen frame repeats and `surgePress` can script a press for a filmstrip.
+- The canvas is redrawn only while something is moving.
+- Not judged: how it feels. This workspace draws in software.
+- Left out: cards of different heights, so the stream settling onto a new line is not shown.
+
+**Half finished**
+
+- His pick.
+
 ## 2026-11-13 · What the stream does when the category changes: a proposal (Fable, web chat)
 
 **What Brandon said**

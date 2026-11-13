@@ -584,6 +584,10 @@ Each line has Fable's recommendation where there is one. None of these are rules
     - Passed over: the stream drawing back up to the bar and running down again. It is the most literal, and it makes the visitor wait.
     - **Against a settled line, said to him in bold:** the surge runs faster than the scroll, and "its speed is capped at the user scroll rate". Fable reads that line as being about the leading end. His to say.
     - It is motion, so it can only be judged built, on his Mac.
+    - **A correction to the press (Nov 13).** The stream does not lie along the whole bar. It rests on the bar's two ends. So the press knocks the bar, and the stream jumps where it rests, at both ends, the end nearer the press first and harder. The surge runs down from there.
+    - **He asked to see it (Nov 13).** "So your recommendation is the surge? Can you make a derby, a simple one showing that off. To do that right the animation will need to be long enough to appreciate it but fast enough where it doesn't feel slow to the user. Seems tough to pull off."
+    - **The derby is at `/lab/work-surge` (Study 15), waiting on his pick.** A wireframe of the section with a line standing in for the stream. A · Surge, at three lengths from the bar to the button: 0.45, 0.7 and 1.1 seconds. B · All at once: the bar is knocked and all four cards change together, with nothing travelling. It plays at real speed or a quarter of it, and shows the whole section or the section at its real size.
+    - What the sketch leaves out: cards of different heights, so the stream settling onto a new line is not in it. The real stream, its shards and its light.
 
 ## Dropped
 
