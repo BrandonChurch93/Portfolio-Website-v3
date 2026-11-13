@@ -18,9 +18,10 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **Built in Claude Code (Nov 12):** the stream's real route through Work at `/lab/work`, with posts and a rail as real objects. `LOG.md` has its account, including what it judged not at the bar
 - **His first look, in his words, is in `BRIEF.md`**, The stream, "His first look at the build". In short: the strikes at the top stay, he likes them. The screws need to mirror, right to left. The strike on the second row feels like a graze. The word WORK is fighting the stream for attention, and he wonders about a metal bar over it
 - **His pick from the second derby (Nov 12):** the Sun stone, for the posts. No heads on the rail, which keeps its bar and loses its knobs. What finishes the rail's ends is not decided
-- **In front of Brandon:** a derby of three finials for the ends of the rail at `/lab/work-finials` (Study 12). He wants the ends decorated, like a fine curtain rod
+- **In front of Brandon:** Blade or Steps for the ends of the rail, each beside the sun stone at `/lab/work-pairing` (Study 13). The Orb is out. He thinks the Blade looks best alone. Fable's read with the stone beside it: the Blade
+- **His question:** whether to settle the card's look now, so it goes into the same prompt. Fable's recommendation is yes. It waits on his answer and on him turning Fable up
 - **He is open to the stone's face lighting** and wants to see it in action before he rules, so it gets built on the real page
-- **After his pick:** one prompt to Claude Code: the sun stones as real objects with a face that lights, the finials, a stronger strike on the second row, more margin on an iPad, and a bar over WORK to compare with and without
+- **After his pick:** one prompt to Claude Code: the sun stones as real objects with a face that lights, the finials, a stronger strike on the second row, more margin on an iPad, and a bar over WORK to compare with and without, and the card if it is settled by then
 - **Still to do in the web chat:** the card's look (`BRIEF.md`, Open 19), then Work on a phone (Open 18)
 - **Not ruled on:** the slim top bar with the categories docking into it (Open 17). The bar over WORK
 - **The wireframe** is at `/lab/work-draft`, opening on R, the layout that was agreed. It has done its job. It shows the order of the stops and nothing else

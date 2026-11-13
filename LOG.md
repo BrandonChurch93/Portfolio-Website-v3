@@ -2,6 +2,30 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-12 · Blade or Steps, beside the sun stone (Fable, web chat)
+
+**What Brandon said**
+
+- "Could you actually put the sun stones next to the blades and the steps. I'm trying to figure out between those two. Standalone, I think the blades look the best, but you may have a point that the steps may actually look better with the Sunstone."
+- "Should we go ahead and figure out what the finalized versions of the cards will look like? We can update that next pass in Claude Code as well with these other updates."
+
+**What was built**
+
+- Study 13 at `/lab/work-pairing` (`src/work-objects/pairing.ts`, `src/components/lab/WorkPairing.tsx`): the sun stone beside the rail, once with Blade finials and once with Steps. Each is drawn large, and again at the size it has on the page: the stone as wide as `--post` on `/lab/work`, the bar 18 px thick.
+- `STATUES` in `guardians.ts` and `FINIAL` in `finials.ts` are exported so the pairing draws the same stone and the same finials as the derbies.
+- Still: `reference/studies/22-work-pairing.jpg`.
+
+**What Fable saw, and told him**
+
+- Large, the Steps read as the weights on a barbell. At the page's size they read as the thread of a bolt, which is the hardware he turned down in the first derby. The Blade keeps a clean outline at both sizes.
+- Fable had said the Steps might suit the stone better. Side by side that did not hold up, and Fable said so.
+- At the page's size the stone is about 70 px across, so its glyphs are texture and only the face and the rings read. Worth knowing before the real stone is built.
+- On an iPad the post is narrower (about 50 px) while the rail keeps its 18 px, so either finial comes out as large as the stone or larger. The stone should stay the bigger thing. For the build: a larger stone, or finials sized against the stone, not against the bar.
+
+**Half finished**
+
+- His pick between the two. His answer on the card. Then the prompt for Claude Code, when he turns Fable up.
+
 ## 2026-11-12 · The Sun stone picked, and a derby of finials (Fable, web chat)
 
 **What Brandon said**

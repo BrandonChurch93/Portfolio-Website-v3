@@ -3,7 +3,7 @@ import { HEAD, SHADE, mountObjects, type Objects } from './objects';
 // A third derby: what finishes the ends of the rail, now that its knobs are going and it gets no heads. Brandon's
 // picture is a fine curtain rod and the pieces on its ends. Three finials on the page's own bar, seen from the side.
 
-const FINIALS = `
+export const FINIAL = `
 // How high the surface stands here and how far outside the piece this point is, in units of half the bar's
 // thickness. a runs outward from the bar's end, c runs across.
 float finial(int k, float a, float c, out float sd, out float ink){
@@ -48,7 +48,9 @@ float finial(int k, float a, float c, out float sd, out float ink){
   ink = smoothstep(0.06, 0.02, abs(fract(t / 1.25) - 0.0)) * step(t, 5.0) * step(0.3, t) + smoothstep(0.07, 0.03, abs(y - (r - 0.45))) * step(tier, 0.5) * step(0.2, fract(t / 1.25)) * step(fract(t / 1.25), 0.8);
   return h;
 }
+`;
 
+const FINIALS = `${FINIAL}
 float scene(int k, vec4 t, vec2 p, out float sd, out float ink, out vec2 along, out float W){
   W = t.w * 0.05;
   vec2 A = t.xy + vec2(t.z * 0.24, t.w * 0.44), B = A + vec2(t.z * 0.52, t.z * 0.52 * 0.085);

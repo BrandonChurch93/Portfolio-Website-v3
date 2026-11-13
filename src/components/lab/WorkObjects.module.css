@@ -102,6 +102,14 @@
   height: clamp(11rem, 20vw, 15rem);
 }
 
+.pair {
+  height: clamp(16rem, 30vw, 24rem);
+}
+
+.actual {
+  height: calc(clamp(2.9rem, 5.2vw, 4.5rem) * 2);
+}
+
 .name {
   margin-top: var(--space-3);
   font-size: var(--step-1);
