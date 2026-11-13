@@ -2,6 +2,58 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-12 · Handoff to Claude Code: the stream through Work (Fable, web chat)
+
+**What Brandon said**
+
+- Of the rail: "Looks good in theory but I would need to see it actual rendered using our actual assets to be sure."
+- "We still haven't decided on the card design yet. Should we settle that first before handing this over to Claude code or continue with the stream interaction first with Claude code and finish the cards afterwards?"
+- To Fable's answer, the stream first with the card alongside, and to the six rulings that needed his yes: "Yeah, I think that plan is pretty solid." "Go ahead and update the documentation and give me the handoff prompt."
+
+**What changed in the record**
+
+- `BRIEF.md`, The stream: a new part, "The stream through Work: the agreement for the build". It has the section top to bottom, the route in seven steps, what is built and what is not, what stays as approved, and Fable's own calls set apart from his rulings.
+- `BRIEF.md`: Work is written in as the exception to "It also should not touch everything". Work's settled lines gain four cards in straight rows and the category bar. Open gains 17 (the top bar), 18 (Work on a phone) and 19 (the card's look).
+- `QUALITY.md`: his verdicts on the wireframes, his sketch, the posts, the hook and the rail are in the table. Two lines are added to the fail list. "The stream through Work" is a new set of nine tests.
+- `PLAN.md`: Now, and Phase 3's Work is split into its parts. Phase 2's last waiting item is ticked on his words, "All my issues have been fixed".
+
+**What the real stream cannot do yet, as far as Fable can tell from reading `src/stream/`. Check before believing it**
+
+- `buildRoute()` in `route.ts` takes one title and one card and makes two sides, of which only the left lands on anything. The route through Work needs many stops on each side.
+- Its landings are of three kinds: a strike, a land and a lip. Nothing yet meets a side face, a round post or a slope.
+- The two sides part and never meet again. Step 7 needs them to meet and go on as one.
+- What a strike throws bounces off boxes. The posts are round and the rail slopes.
+- The posts and the rail are new objects in the page. `src/metal/` draws the buttons' metal from a height field, which may be the way to make them.
+
+**The prompt Brandon was given**
+
+```
+Pull main, then read BRIEF.md, PLAN.md, QUALITY.md and the top entry of LOG.md from disk, as CLAUDE.md says.
+
+Build the stream through Work: the real stream running through the Work section, on a new page at /lab/work. BRIEF.md, The stream, "The stream through Work" is the agreement: the section, the route, what is built and what is not. QUALITY.md, "The stream through Work", is the test it has to pass.
+
+Hold to these:
+- /lab/stream is approved and must draw what it draws today. Take stills of it before you touch shared code, and compare after.
+- Every turn the stream makes needs a cause that can be seen. If you cannot make one look caused, do not force it. Say which turn and why in your report.
+- The posts and the rail are real objects in the buttons' metal, lit by the stream and by the cursor. A plain cylinder or bar fails.
+- The wireframe at /lab/work-draft?v=r gives the order of the stops and nothing else. Do not build on its code or copy its look.
+- Do not design the card, the top bar or the phone's route. Those are being decided in the web chat. Use the stand ins the agreement names.
+- Where the agreement lists something as Fable's call, build it and list it in your report as mine to overturn.
+
+Work without check-ins until there is a page I can scroll. Then run a production build, commit, push, and confirm the deploy is ready.
+
+Report in lists: the link, what is at the bar, what is not and why, every call you made for me, and exactly what I am approving. End with one clear recommendation.
+```
+
+**For the web chat, next**
+
+- The card's look, then Work on a phone. Both while Claude Code builds.
+- A push from here and a push from Claude Code can cross. Pull with a rebase before every commit.
+
+**Half finished**
+
+- The build itself. Nothing from this session is uncommitted.
+
 ## 2026-11-12 · A rail for the foot of Work, proposed and drawn (Fable, web chat)
 
 **What Brandon said**

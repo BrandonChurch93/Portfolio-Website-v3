@@ -79,6 +79,11 @@ This is the real calibration. Every row is his verdict, not a guess. Rows that s
 | Two cores for the shards to ride: a wave of light, an arc (`/lab/stream-core`) | "They are both really good." Picked A, the wave | A body of light with many shards belonging to it, sparks coming off and a live leading end is the direction. Given the choice he took the steady core over the restless one |
 | The stream's first test shot, built overnight (`/lab/stream`) | "I'm really loving the way it's coming together." "I think we nailed this." His favorite part is the strike: shards "fly off and bounce around like it actually struck the ground". Sparks: "perfect". Too many shards, bunched, where the stream lies on an object. And: "There's no way to look at and be like oh yeah that's glass and a copper leaf. Nobody will ever get that" | He judges it moving, by weight and by what answers him: the strike, the scroll, the cursor. Eight reviews failed this same shot for materials he never looks for. Do not spend rounds making a shard nameable. Test what he responds to |
 | Two looks for the facets: cut, and jagged (`/lab/stream-facets`) | Jagged. First try: "I don't like how some of them are really big", and he "was also hoping they'd be a bit more jagged". Reworked: "the re-worked jagged was my favorite" | Sharper wins, and a range of sizes is good only without outliers. When he wonders aloud, show him both and let him pick. Do not write the wondering down as a ruling |
+| Wireframes of Work round a stand in line (`/lab/work-draft`): both sides straight down, both sides landing on each card, one stream down the middle | "My favorites are one and two", the two that keep both sides. He could not choose between them until he drew it himself | He wants the stream on both sides of the work, mirrored |
+| His own sketch of it: off the top of the first row, out wide, in to strike the side of the second | "I like option a the best, but we need to make sure the streams look organic and not forced" | A route is right when each turn looks caused. Shape alone is not enough |
+| A post beside each side that turns the stream in | "Yeah, this looks good" | An object in the way is a reason he accepts for a turn |
+| The stream hooking in to the button below the cards with nothing there | "Kind of weird and happening for pretty much no reason", "that's too much" | A turn with no cause fails, however smooth |
+| A sloping rail in its place, as a line in a wireframe | "Looks good in theory but I would need to see it actual rendered using our actual assets to be sure" | A wireframe can settle where things go. It cannot settle whether an object works |
 | The pour's first test shot, in motion | "I definitely don't like how it puddles." The stream "is blasted back multiple times". "Instead of looking like a refined beautiful hot liquid metal, this looks more like mud splashing around and puddling up" | Real physics is not enough. It has to be graceful. Metal that heaps, thrashes or hits itself reads as mud |
 
 ## The patterns behind those verdicts
@@ -121,6 +126,8 @@ Everything visual has to pass all six.
 - Anything the stream throws heaping up where it lands, or knocking the stream off its line
 - The stream reading as a mess: ragged, thrown about, not refined
 - The stream racing. On the site it moves no faster than the visitor scrolls
+- The stream turning where nothing makes it turn
+- A post, rail or shelf for the stream that is a plain cylinder or bar, or that looks placed there only to steer it
 - A plain box, cylinder or cone where a real object has form
 - A window, screen or label that is a flat picture
 - Anything cut off by the screen or by another element
@@ -181,6 +188,20 @@ One shot, alone on a blank page at `/lab/stream`, on the sketch's route: down fr
 - What the sketch proved, and is worth keeping: everything that glows is drawn first as an amount of light and given its color once, through the palette's ramp. Overlapping light is joined by keeping the larger. Faint light fades all the way to nothing. A shard's color comes only from how it is lit.
 - Where the stream goes is planned, because later the layout needs it to hit exact places. What the eye checks (how a thrown shard flies, bounces and spills) is real motion with weight, stepped from the one clock with a seed.
 - On the site, the things it lights are ordinary page elements. Light the title and the card in a way that will still work when they are real headings and real cards.
+
+**The stream through Work**
+
+The first place the stream meets a whole section. `BRIEF.md`, "The stream through Work", has the route and what is and is not built. It passes when the test shot's eleven still hold on this page and all of these are true:
+
+1. **Every turn has a cause.** Pause on any turn and it is plain what made it: something landed on, something that turned it, a slope, or the way it was already going. A turn that needs explaining fails.
+2. **The posts and the rail are objects.** Enlarged three times they have form and detail. They are in the buttons' metal, lit by the stream and by the cursor's light, and they sit in the page, not in a rectangle. They look as if they belong there whether or not the stream is touching them.
+3. **Where the stream lies on something** (the category bar, a card's top, the rail) it does what it does on the test shot's card: no bunching, and every riding shard stays with it.
+4. **What a strike throws** bounces off whatever is really there, the posts and the rail included, and nothing heaps up.
+5. **It reads as one stream meeting things in turn.** Scrolled steadily from the title to the button, the contacts differ in strength with how hard the stream arrives. It never reads as a string of equal bursts, or as a mess.
+6. **The two sides match in route and never in detail.**
+7. **Scrolled back up,** it draws back cleanly through every stop.
+8. **The test shot at `/lab/stream` is unchanged.** Stills of it from before and after agree.
+9. **`npm run perf`** shows it smooth on his Mac with both sides running the whole section, and at an iPad's size. The budget for two full sides is said out loud.
 
 **How to judge it**
 

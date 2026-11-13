@@ -81,6 +81,7 @@ He said these while the stream was still going to be a liquid. They all still ho
   - interact with some of the 3D objects
   - pass behind his portrait at an angle, never straight into his head
 - It is not a gimmick that touches a couple of things. It also should not touch everything. (Nov 10 and Nov 11)
+    - Work is the agreed exception (Nov 12). There the stream meets the title, the category bar, every card, both posts, the rail and the button. The rule still holds for the rest of the site.
 - It has to feel real: a splash with shape and weight, believable physics, particles riding with the flow.
 - Its particles come from what it is. For molten metal he named sparks and drips. (Nov 11)
 - Nothing is drawn ahead of it to show where it will go.
@@ -157,6 +158,62 @@ Said after scrolling the second round at `/lab/stream`, with the facets in. The 
 - It may still be tweaked: "we might have to tweak it slightly to accommodate some of the new ideas I already have in my head for the upcoming sections". He is ready to move on.
 - Riding shards now go faster where there are fewer of them: on an object, down the stem above the title, and where the stream strikes. Claude Code flagged that as his to overturn. He saw it and raised no objection.
 
+**The stream through Work: the agreement for the build (Nov 12)**
+
+Worked out in a wireframe at `/lab/work-draft` over the day. How it got there is in Open 15 and in `LOG.md`. What is settled is here.
+
+- He agreed to the plan and to the list of rulings it needed: "Yeah, I think that plan is pretty solid." The six lines marked **His ruling** below are that list.
+- **The order of the work.** The stream's route through Work is built first, in Claude Code on his Mac, with the test shot's plain card standing in for all four cards. The card's look is designed in the web chat alongside. Then the real card is dropped into the built page and he judges the two together. His question was whether to settle the card first. The reasons for this order: the stream only needs to know where each card is, and plans its route from those boxes, so a new card costs no stream work. The card's main job is how it takes the stream's light, which can only be judged once the stream is hitting it.
+- **Why it has to be built to be judged.** Of the posts in the wireframe: "Yeah, this looks good." Of the rail: "Looks good in theory but I would need to see it actual rendered using our actual assets to be sure."
+- **His condition.** "We need to make sure the streams look organic and not forced." Of the turn the rail replaces: it was "happening for pretty much no reason". And: "I don't mind it if the stream's actually like move naturally and kind of switch directions." In exact terms: every turn the stream makes has a cause that can be seen. It lands on something, something turns it, it runs downhill, or it is carried by the way it was already going.
+
+**The section, top to bottom**
+
+- The title, WORK, centered, with the raised lettering of the test shot.
+- The category bar, a bar of its own below the title: Software, Games, 3D art, Photography. It is wider than the title and narrower than the grid.
+- **His ruling:** four cards, in two straight rows of two, both sides mirrored, as in his sketch.
+- **His ruling:** a post beside each side of the grid, level with the foot of the first row. The posts are copper studs in the buttons' metal, seen end on.
+- **His ruling:** a rail under the grid, in the same metal, sloping down from each side to the middle.
+- The View all work button, at the rail's low point.
+
+**The route, the same on both sides, mirrored**
+
+1. The stream comes down the middle, strikes WORK dead center and parts. Each side runs along the top of the title and hooks over its end, as in the test shot.
+2. **His ruling:** it drops onto the category bar, runs out along its top and off its end.
+3. It falls onto the top of the first row's card, toward the card's outer end, runs out along the top and is thrown off the end. "I think the first row is good how it hits the top and kind of rolls off the side."
+4. It falls in a bow, meets the post, and the post turns it in.
+5. It strikes the outer side of the second row's card about halfway down and leaves outward. "The second row I kind of want it to weave out and then come in and hit the middle of the two cards."
+6. It falls onto the high end of the rail and runs downhill along it.
+7. The two sides meet at the button. One stream goes on down from there.
+
+- **His ruling:** this is the exception to "It also should not touch everything."
+
+**What gets built**
+
+- One page, `/lab/work`, that he can scroll: the section above with the real stream on this route, on a desktop and on an iPad.
+- The posts and the rail as real objects with form and detail, lit by the stream and by the cursor's light. `QUALITY.md` fails a plain cylinder or bar.
+- Stand ins, said plainly on the page or in the report: the test shot's card four times, a category bar in the same plate as that card, and one of the approved buttons.
+
+**What does not get built**
+
+- The card's real look. It is being designed in the web chat.
+- **His ruling:** the top bar and the categories docking into it. They are not part of the stream and stay out of this build. Not ruled on yet (Open 17).
+- The phone's route. One column has not been designed (Open 18).
+- Six cards, the hero above, Skills below, or the route down the rest of the page.
+
+**What stays exactly as approved**
+
+- Everything in the stream he has approved: the core, the facets, the sparks, how many shards a strike throws, the single shard at rest, thrown shards keeping their momentum, no second wave, riding shards staying with the stream on objects, and a speed no faster than the scroll.
+- The test shot at `/lab/stream`. It draws what it draws today.
+
+**Fable's calls in this agreement. He has not ruled on them and can overturn any**
+
+- A contact is as strong as the arrival. Falling onto a card is a full strike. Meeting the post, landing on the rail and landing on the category bar are lighter. So the section reads as one stream meeting things in turn, not as a string of equal bursts.
+- Where the two sides meet at the button there is one small strike.
+- The two sides match in route and never in detail, as two strikes never match.
+- On a screen too narrow for two columns the page does the least: the stream parts on the title, lands on the category bar and falls past the single column on both sides. That is a stand in, not a design.
+- No check-ins on the way. Claude Code works until there is a page he can scroll, as it did for the second round of the test shot.
+
 **How it is built**
 
 He added these while the stream was a simulated liquid. They hold for anything in the stream that is simulated: shards thrown loose, sparks.
@@ -203,6 +260,8 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
 - One section. A centered title. No featured card.
 - Categories at the top, Software first: Software, Games, 3D art, Photography. A project lives in one category only, and Brandon says which.
 - Four or six items per category on the home page.
+- On the home page: four, in two straight rows of two. The categories are a bar of their own below the title. (Nov 12)
+- How the stream runs through the section is in The stream, "The stream through Work". (Nov 12)
 - A View more button goes to an All work page with the same categories, showing everything. There are no separate pages for games, photography or 3D art.
 - 3D art stays visible while we build and is hidden before launch if he has nothing to show.
 - Photography is one category. He picks the photos. Boudoir is never named as its own category.
@@ -296,6 +355,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
 
 15. **His ideas for the sections, now that the stream exists.** Rough drafts in his words, none decided: "This is just stuff I'm thinking of, it might not look good." (Nov 12)
     - Work: the stream "hits work and then splits and then it goes down each of the sides and then it hits the side of the project cards as they load in so it's timed perfectly", "going down each side, symmetrical framing".
+        - **Decided Nov 12.** What came of this is in Settled, The stream, "The stream through Work". The lines under the Work item below are how it got there, kept as history.
     - The 3D pieces: "it'd be really cool if the stream hits that section of the screen, and then the actual art comes into life from that like it's the catalyst and the animation opens and closes for that 3-D object based on the stream's positioning".
     - The look of the site updated to work with the stream, "like the card we just used in the demo". "I love how the stream hit it." "We also need to exactly figure out what the cards will look like."
     - The stream as the reason things arrive: "I feel like the stream could be used to give life to each of the page and play part onto why these sections and potentially some of the individual components are coming on screen."
@@ -332,7 +392,10 @@ Each line has Fable's recommendation where there is one. None of these are rules
             - It is one more object on each side for the stream to touch, and like the posts it has to be a real object with form, not a plain bar.
             - His verdict on the rail (Nov 12): "Looks good in theory but I would need to see it actual rendered using our actual assets to be sure." So the wireframe has gone as far as it can. The rail and the posts are judged next as real objects with the real stream.
         - **What comes next is not decided (Nov 12).** "We still haven't decided on the card design yet. Should we settle that first before handing this over to Claude code or continue with the stream interaction first with Claude code and finish the cards afterwards?" Fable's answer: the stream's route first in Claude Code, with the test shot's plain card standing in for all four, and the card designed in the web chat alongside. Not agreed yet.
-16. **The order the sections are worked in.** He wants them taken one at a time: "my idea should go section by section". Work is first: he asked for its rough draft ("I would love to see a rough draft", Nov 12). The order of the rest is not agreed. Fable's list is in `LOG.md`.
+16. **The order the sections are worked in.** He wants them taken one at a time: "my idea should go section by section". Work is first, and within Work the stream's route is built before the card is finished (Settled, "The stream through Work", Nov 12). The order of the rest is not agreed. Fable's list is in `LOG.md`.
+17. **The slim top bar, with the categories docking into it.** Drawn in the wireframe at `/lab/work-draft`: hidden during the hero, and once the category bar has scrolled off, the four categories show in it beside the section's name. He would accept the categories pinned into a bar at the top and does not want them floating over the cards. He has not ruled on the bar. Recommendation: yes.
+18. **Work on a phone.** One column. Its route for the stream, and whether posts and a rail have any place there, are not designed. Recommendation: sketch it in the web chat next to the card, while the two column route is being built.
+19. **The card's look.** "We still haven't decided on the card design yet." To be designed in the web chat. Settled so far is under Cards and buttons.
 
 ## Dropped
 

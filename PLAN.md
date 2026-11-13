@@ -14,16 +14,15 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 
 ## Now
 
-- **Phase:** 3 has begun, a section at a time, starting with Work. Phase 2's test shot is approved and he calls the stream "almost certainly the finalized base" (Nov 12). Its small items below stay open and block nothing
-- **In front of Brandon:** the Work wireframe at `/lab/work-draft` (Study 09), now opening on R · With a rail: the posts he liked, and Fable's proposal for the foot, a rail under the grid that slopes down to the button, in place of the hook he called weird. P · With posts is beside it in the switch. S, A and B still open by their links. `BRIEF.md`, Open 15, has his words and what is Fable's call
-- **His verdict on the rail:** good in theory, and he has to see it with the real stream and real objects to be sure. The wireframe has done its job
-- **Not decided:** what comes next. Fable recommends the stream's route through Work in Claude Code first, with the test shot's card standing in, and the card's look in the web chat alongside
-- **Still his to rule on before a handoff:** Whether the site gets the slim top bar with the categories docking into it. Whether the stream lands on the category bar. Nothing else on that page is for approval
-- **Where he stands:** he likes his own sketch best, with the posts ("this looks good"), on one condition: the stream has to look organic and not forced. The hook at the foot failed that
-- **After his pick:** the card's look, here in the web chat. Then the stream's real route through Work, in Claude Code on his Mac
-- **He is on his iPad for now, with no mouse.** Anything that needs the cursor is confirmed when he is home
-- **Where the stream is:** `/lab/stream`, built in Claude Code on Brandon's Mac. `LOG.md` has each round's account
-- **Small things left on the stream, none blocking:** the rest of Phase 2's list below. A real phone and a real iPad
+- **Phase:** 3, a section at a time, starting with Work
+- **Handed to Claude Code (Nov 12):** the stream's real route through Work, at a new page `/lab/work`, with the posts and the rail as real objects. `BRIEF.md`, The stream, "The stream through Work", is the agreement. `QUALITY.md`, "The stream through Work", is the test. The prompt Brandon was given is in `LOG.md`, top entry
+- **In the web chat meanwhile:** the card's look (`BRIEF.md`, Open 19), then Work on a phone (Open 18)
+- **His words:** "Yeah, I think that plan is pretty solid." Of the rail: "Looks good in theory but I would need to see it actual rendered using our actual assets to be sure"
+- **What he judges when `/lab/work` is up:** whether the posts and the rail work as real things, and whether every turn of the stream looks caused and not forced
+- **Not ruled on:** the slim top bar with the categories docking into it (Open 17). The calls Fable made inside the agreement, which are listed there
+- **The wireframe** is at `/lab/work-draft`, opening on R, the layout that was agreed. It has done its job. It shows the order of the stops and nothing else
+- **Where the stream is:** `/lab/stream`, approved. It must keep drawing what it draws today
+- **Small things left on the stream, none blocking:** the rest of Phase 2's list below
 
 ## Phase 0 · Foundation
 
@@ -57,7 +56,7 @@ Study 01 is at `/lab/palette` and Study 02 at `/lab/buttons`. Stills are in `ref
 - [x] The agreement for the finished version (Nov 11)
 - [x] The test shot, first round, at `/lab/stream`: "I think we nailed this", with changes asked for (Nov 12)
 - [x] The test shot, second round and its fixes: jagged facets in two materials, no bunching on objects, fewer thrown at a strike, an occasional shard at rest, thrown shards that keep their momentum, no second wave. "This is good to move on with" (Nov 12)
-- [~] After the approval: the lone shard at rest drops off the far end again, and riding shards on the title and the card stay with the stream, with none vanishing, reappearing or jumping. Built, waiting on his look
+- [x] After the approval: the lone shard at rest drops off the far end again, and riding shards on the title and the card stay with the stream, with none vanishing, reappearing or jumping. "This looks great! All my issues have been fixed" (Nov 12)
 
 After he says the shot looks incredible, and not before:
 
@@ -71,10 +70,15 @@ Set aside, kept as records: the molten metal test shot at `/lab/pour`, its looks
 
 ## Phase 3 · The home page, composed around the stream
 
-- [~] Layout sketches to choose from · Work: three wireframes at `/lab/work-draft`, waiting on his pick (Nov 12)
+- [x] Work's layout, chosen from wireframes at `/lab/work-draft`: his own sketch on straight rows, with a post beside each side and a rail at the foot. The posts and the rail are still to be judged as real objects (Nov 12)
+- [ ] Layout sketches for the other sections
 - [ ] The spacing system
 - [ ] Hero
-- [ ] Work
+- [ ] Work · the stream's real route with the posts and the rail, at `/lab/work` (Claude Code)
+- [ ] Work · the card's look (web chat)
+- [ ] Work · the category bar, and the top bar it may dock into
+- [ ] Work · on a phone
+- [ ] Work · the whole section, with the real card in it
 - [ ] Skills
 - [ ] About
 - [ ] Contact and the bottom of the page
