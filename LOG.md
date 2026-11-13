@@ -2,6 +2,29 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · His verdict on the card derby, and what the picture should be (Fable, web chat)
+
+**What Brandon said.** His words are in `BRIEF.md`, Cards and buttons, "His verdict on the card derby". In short:
+
+- C · Data plate is the layout. Cast and Etched are out. Toned is the best of the three, not loved.
+- "The hard part here is making the cards look good with the pictures that we're using." He asked whether a picture of the project is customary at all, when many of his projects are a dashboard.
+- On C he could not tell the arrow leads to the case study. He wants "Case study" with the arrow in the bottom right corner, lit while the pointer is on the card and quiet while it is on Live, Evals or Code.
+- The hover is slightly underwhelming. He is unsure of the streak of light on the glass.
+- He expects the stream to do much of the work of bringing a card to life.
+- "Let's hold up on changing anything for the moment." Nothing was changed. Only the record.
+
+**What Fable told him. Talk only, none of it a rule**
+
+- A picture is customary, and for his readers it is the quickest way to see what kind of thing a project is. The trouble is the pictures, not the bronze: three of the four are whole pages of a light interface shrunk to about 450 px, so their type cannot be read and they rest as flat panels. The glasses picture works because it is a scene.
+- Two ways to fix the picture, which go together. Tight crops: one telling part of each product at a size where it reads. A short loop: the picture plays a few seconds of the product in use when the card wakes, and rests as a still. The plates already take video (`PlatePhoto.video` in `src/metal/renderer.ts`). The loop also gives the hover something worth pointing for.
+- The streak: cut it. Fable added it and it is decoration.
+- The hover: it underwhelms because the card grows by 1.2 percent where a button grows by 4, and the one real event is the colors returning, which on three cards is a white page. Leave it quiet otherwise and let the stream's strike be the card's moment. Motion cannot be judged in this workspace, so the hover and the strike are tuned on his Mac.
+- "Case study" in the bottom right corner: agreed, as he described it. It puts a short row back at the foot of the card.
+
+**Half finished**
+
+- His answer on the picture, and his word that changes can start.
+
 ## 2026-11-12 · The card: a derby at `/lab/work-cards` (Fable, web chat)
 
 **What Brandon said**

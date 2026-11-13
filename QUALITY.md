@@ -84,6 +84,11 @@ This is the real calibration. Every row is his verdict, not a guess. Rows that s
 | A post beside each side that turns the stream in | "Yeah, this looks good" | An object in the way is a reason he accepts for a turn |
 | The stream hooking in to the button below the cards with nothing there | "Kind of weird and happening for pretty much no reason", "that's too much" | A turn with no cause fails, however smooth |
 | A sloping rail in its place, as a line in a wireframe | "Looks good in theory but I would need to see it actual rendered using our actual assets to be sure" | A wireframe can settle where things go. It cannot settle whether an object works |
+| The card as lit metal, three layouts (`/lab/work-cards`) | Picked C · Data plate: "I genuinely like that one a lot" | A band of metal that carries the facts earns its place. Where a click leads has to be plain: he could not tell the arrow led to the case study |
+| A card's picture cast as a relief, or etched as lines | "Look really bad", "pretty much unusable" | A treatment that costs the picture its detail fails, however physical it is |
+| A card's picture toned in bronze | "It's just better than the other ones." "The hard part here is making the cards look good with the pictures that we're using" | A treatment cannot rescue a dull picture. A whole page of an interface, shrunk, is a dull picture |
+| The card under the cursor: its colors return, its edges catch, it grows a little | "Slightly underwhelming" | Too little happens, and the reward is only as good as the picture |
+| A streak of light crossing the picture's glass with the cursor | "It doesn't look bad but it doesn't really look great either" | Light added for its own sake reads as decoration |
 | The pour's first test shot, in motion | "I definitely don't like how it puddles." The stream "is blasted back multiple times". "Instead of looking like a refined beautiful hot liquid metal, this looks more like mud splashing around and puddling up" | Real physics is not enough. It has to be graceful. Metal that heaps, thrashes or hits itself reads as mud |
 
 ## The patterns behind those verdicts

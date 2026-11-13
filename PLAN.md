@@ -19,7 +19,8 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **His first look, in his words, is in `BRIEF.md`**, The stream, "His first look at the build". In short: the strikes at the top stay, he likes them. The screws need to mirror, right to left. The strike on the second row feels like a graze. The word WORK is fighting the stream for attention, and he wonders about a metal bar over it
 - **His pick from the second derby (Nov 12):** the Sun stone, for the posts. No heads on the rail, which keeps its bar and loses its knobs
 - **His pick (Nov 12):** the Blade, for the ends of the rail. And the Sun stones 10 to 20% larger, growing away from the cards, with the stream no closer to the cards than it is now
-- **In front of Brandon:** the card derby at `/lab/work-cards` (Study 14), built on the proposal he approved. Two picks: how the picture rests (Toned, Cast or Etched) and the layout (A · Set in, B · Edge to edge, C · Data plate). Fable recommends Toned and C
+- **His verdict on the card derby (Nov 13):** the layout is C · Data plate. Cast and Etched are dropped. Toned is the best of the three and he does not love it: the hard part is the pictures themselves. The hover is underwhelming, and he is unsure of the streak of light on the glass. He wants "Case study" with the arrow in the bottom right corner. **Nothing changes until he says**
+- **In front of Brandon:** what the picture on a card should be, and the hover. Talk only. Fable's proposals are in `LOG.md` (Nov 13)
 - **He is open to the stone's face lighting** and wants to see it in action before he rules, so it gets built on the real page
 - **After his pick:** one prompt to Claude Code: the sun stones as real objects, a little larger, with a face that lights, Blade finials on the rail, a stronger strike on the second row, more margin on an iPad, a bar over WORK to compare with and without, and the card once he has picked it
 - **Still to do in the web chat:** Work on a phone (Open 18). It now also covers an iPad held upright, where two columns leave each card 272 px and the card needs about 340
@@ -79,7 +80,7 @@ Set aside, kept as records: the molten metal test shot at `/lab/pour`, its looks
 - [ ] The spacing system
 - [ ] Hero
 - [~] Work · the stream's real route with the posts and the rail, at `/lab/work` (Claude Code)
-- [~] Work · the card's look (web chat). Built as real plates and shown as a derby at `/lab/work-cards`. Waiting on his picks
+- [~] Work · the card's look (web chat). The layout is picked: C · Data plate. The picture, the hover and the case study link are open
 - [ ] Work · the category bar, and the top bar it may dock into
 - [ ] Work · on a phone
 - [ ] Work · the whole section, with the real card in it
