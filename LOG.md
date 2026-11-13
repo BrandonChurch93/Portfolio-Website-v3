@@ -2,6 +2,25 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · A plan for the card's third round (Fable, web chat)
+
+**What Brandon said.** His words are in `BRIEF.md`, Cards and buttons, "What he wants from the third round". He asked to think it through before anything changes. Nothing was changed. Only the record.
+
+**What Fable put to him. Talk only**
+
+- He was looking at the first round: the line of light is already cut in what is deployed, and Set in is no longer on the page.
+- The foot: a thin line under the tags, then one row with Live, Evals and Code on the left and the link to the project's page on the right. The band keeps the kind on its left and the year on its right. Fable recommends "Case study" over "View project": "View project" could as well mean the running site, which is the confusion he raised himself.
+- Turning in depth: yes. The whole card turns with the pointer, words and all, up to about five degrees, and the light on its metal turns with it. The plates already carry a tilt (`setTilt`, `uTilt`). The picture sits below the face, so as the card turns more of the window's wall shows on one side.
+- Growing: about 3 percent, up from 1.2.
+- The edge: wider, with a bevel that turns in to a face that sits lower, and the edge throwing a shadow onto the face on the side the light comes from.
+- A shadow behind the card: a dark shadow does not show on a page that is almost black. It needs light on the page to fall across. On the Work page the stream gives that, and cards already throw shadows in its light. Fable recommends leaving it for that page. A pool of the cursor's light on the page to make a shadow show would be a soft round spot of light, which the bar fails.
+- On a touch screen nothing hovers, so nothing turns. The cards nearest the middle still wake.
+- Motion cannot be judged here. Fable builds it, checks stills of the card held turned, and its feel is tuned in Claude Code on his Mac.
+
+**Half finished**
+
+- His go ahead, and his word on the link's name. Then the third round, then the prompt for Claude Code.
+
 ## 2026-11-13 · The card's second round: the streak cut, the case study link, loops wired (Fable, web chat)
 
 **What Brandon said**
