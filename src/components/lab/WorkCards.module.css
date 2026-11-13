@@ -43,98 +43,12 @@
   color: var(--text-3);
 }
 
-.tones {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--space-6);
-  margin-top: var(--space-6);
-}
-
-.item {
-  display: grid;
-  gap: var(--space-4);
-  align-content: start;
-}
-
-/* A card 460 wide with only its picture in it, at the 'set' layout: the picture and its margin above and below. */
-.tile {
-  position: relative;
-  aspect-ratio: 460 / 245;
-}
-
-.tile .tilePlate {
-  position: absolute;
-  inset: 0;
-}
-
-.name {
-  margin-top: var(--space-2);
-  font-size: var(--step-1);
-  font-weight: 500;
-}
-
-.note {
-  max-width: 34rem;
-  color: var(--text-2);
-}
-
-.layout {
-  margin-top: var(--space-7);
-}
-
-.layout .name {
-  margin-top: var(--space-5);
-}
-
-.layout .note {
-  margin-top: var(--space-2);
-}
-
 .pair {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 33rem));
   gap: var(--space-7);
   align-items: stretch;
-}
-
-.switches {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4) var(--space-6);
-  margin-top: var(--space-5);
-}
-
-.switch {
-  display: flex;
-  flex-wrap: wrap;
-  border: 1px solid var(--line-strong);
-  border-radius: 1.4rem;
-  overflow: hidden;
-}
-
-.switch button {
-  min-height: var(--touch);
-  padding: 0 var(--space-5);
-  border: 0;
-  background: none;
-  color: var(--text-3);
-  font: inherit;
-  font-family: var(--font-mono);
-  font-size: var(--step--1);
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-  cursor: pointer;
-}
-
-.switch button[aria-pressed='true'] {
-  background: color-mix(in srgb, var(--copper-light) 14%, transparent);
-  color: var(--pale);
-}
-
-.switch button:focus-visible {
-  outline: var(--focus);
-  outline-offset: -4px;
-  border-radius: 1.4rem;
+  margin-top: var(--space-6);
 }
 
 /* The Work section's own grid (src/components/lab/WorkLab.module.css): its width, its gaps and the room it leaves
@@ -149,10 +63,6 @@
 }
 
 @media (max-width: 900px) {
-  .tones {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .pair {
     grid-template-columns: minmax(0, 1fr);
   }

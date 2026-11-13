@@ -78,7 +78,7 @@ npm run shot -- /lab/piece/city --t 12
 npm run shot -- /lab/piece/handheld --vp phone --lamp 0.3,0.4
 npm run strip -- "/lab/piece/city?entrance=1&label=0" --opening --times 0.4,1.2,2,2.8,3.6,4.4,5.2,7
 npm run shot -- /lab/buttons --hover '[data-variant="primary"]' --wait 1200
-npm run shot -- "/lab/work-cards?layout=band" --vp tablet-wide --scroll grid --wait 3500
+npm run shot -- /lab/work-cards --vp tablet-wide --scroll grid --wait 3500
 npm run strip -- "/lab/pour?ui=0" --times 0.62,0.8,1.3,2.2,4.4,7,8,9.6
 npm run perf -- /lab/pour --vp phone --cpu 4
 npm run shot -- "/lab/stream?hold&ui=0"
@@ -116,9 +116,9 @@ npm run strip -- "/lab/work?ui=0" --times 1.45,1.6,1.75,1.9,2.1,2.4 --cols 3 --t
 | `src/pour/`, `src/pour-looks/` | The stream's first attempt, as molten metal, at `/lab/pour` and `/lab/pour-looks`. Set aside and kept as a record |
 | `src/hooks/` | `window.__site`, present only with `?hook=1`. The screenshot scripts drive pages through it. `__site.call(name, ...)` runs a tool a module registered, such as `plateHover` |
 | `src/components/PieceView.tsx` | Puts a piece in a page |
-| `src/metal/`, `src/components/Plate.tsx` | Lit metal for the interface: one hidden WebGL context draws every plate from a height field. A project card is one of its plates (`kind="card"`, `finish="card"`): a copper bead round a dark face, a picture in a sunk window, and on one layout a band of dark bronze. `CARD` in `mask.ts` holds a card's design sizes |
+| `src/metal/`, `src/components/Plate.tsx` | Lit metal for the interface: one hidden WebGL context draws every plate from a height field. A project card is one of its plates (`kind="card"`, `finish="card"`): a copper bead round a dark face, a picture in a sunk window over a band of dark bronze. `CARD` in `mask.ts` holds a card's design sizes |
 | `src/components/MetalButton.tsx` | The primary and accent buttons |
-| `src/components/WorkCard.tsx`, `src/content/work.ts` | The project card and the projects on it, with the live site's own words and screenshots (`public/media/work/`). The card's words are in the page, over its plate. Three layouts (`set`, `edge`, `band`) and four ways for the picture to rest (`toned`, `cast`, `etched`, `true`). The derby is at `/lab/work-cards`: `?layout=band&tone=toned` opens its grid on one. Nothing is picked yet |
+| `src/components/WorkCard.tsx`, `src/content/work.ts` | The project card and the projects on it, with the live site's own words and screenshots (`public/media/work/`). The card's words are in the page, over its plate. One layout, the data plate he picked: a picture that rests in bronze, a band of bronze with the kind, the year and the links, and "Case study" in the corner. A project's `picture.loop` is a short video that plays in place of the picture while the card is awake. None exists yet: Brandon is retaking the pictures. The study is at `/lab/work-cards` |
 | `src/app/lab/` | Pages for looking at one thing alone |
 | `src/config/palette.ts` | Every color, defined once. The interface gets them as CSS variables, 3D as numbers |
 | `src/styles/tokens.css`, `src/config/site.ts` | Type, spacing and other constants, each defined once |

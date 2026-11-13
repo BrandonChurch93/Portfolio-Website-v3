@@ -1,5 +1,6 @@
 // The projects on the Work cards. The words are the live site's own (brandonchurchportfolio.com), and the pictures
-// are its screenshots. Brandon says which category a project is in, and he rewrites the words.
+// are its screenshots, cropped to one telling part. Brandon is retaking the pictures, says which category a project
+// is in, and rewrites the words.
 
 export interface WorkLink {
   label: 'Live' | 'Evals' | 'Code';
@@ -14,7 +15,8 @@ export interface WorkItem {
   line: string;
   tags: string[];
   // focus: the part of the picture that stays in view when it is cropped, 0 to 1. zoom: how far it is cropped in.
-  picture: { src: string; alt: string; focus?: [number, number]; zoom?: number };
+  // loop: a short video of the same view, which plays while the card is awake. Its first frame is the picture.
+  picture: { src: string; alt: string; focus?: [number, number]; zoom?: number; loop?: string };
   page: string;
   links: WorkLink[];
 }
@@ -69,8 +71,9 @@ export const software: WorkItem[] = [
     tags: ['Live Component Capture', 'MCP Server', 'Stripe Billing'],
     picture: {
       src: '/media/work/dse.webp',
-      alt: 'A Design System Extractor run showing a live site with its extracted palette, stats and components',
-      focus: [0.5, 0.3],
+      alt: 'A Design System Extractor run: the counts of colors, type styles and components it found, and the palette it extracted',
+      focus: [0.67, 0.3],
+      zoom: 1.75,
     },
     page: `${LIVE_SITE}/design-system-extractor`,
     links: [{ label: 'Code', href: `${GITHUB}/design-system-extractor` }],
@@ -84,8 +87,9 @@ export const software: WorkItem[] = [
     tags: ['Generative UI', 'Live Rewrites', 'Public Evals'],
     picture: {
       src: '/media/work/genui.webp',
-      alt: 'A composed answer about a GitHub repo: open pull requests, pull requests awaiting review, failing checks, a review queue and a CI duration chart',
-      focus: [0.5, 0.2],
+      alt: 'A composed answer about a GitHub repo: a sentence that sums it up, then open pull requests, pull requests awaiting review and failing checks',
+      focus: [0.36, 0.6],
+      zoom: 1.3,
     },
     page: `${LIVE_SITE}/generative-ui-github`,
     links: [

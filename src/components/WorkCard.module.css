@@ -37,7 +37,6 @@
   display: flex;
   flex-direction: column;
   border-radius: calc(var(--u) * var(--radius));
-  padding-bottom: calc(var(--u) * 8);
 }
 
 .card:has(.open:focus-visible) .inner {
@@ -47,18 +46,6 @@
 
 .picture {
   height: calc(var(--u) * var(--pic));
-}
-
-.words {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  padding: calc(var(--u) * 17) calc(var(--u) * 18) 0;
-}
-
-.card[data-layout='edge'] .words,
-.card[data-layout='band'] .words {
-  padding-inline: calc(var(--u) * 22);
 }
 
 /* The band of bronze under the picture. The plate draws it, and the card's facts lie on it. */
@@ -76,42 +63,74 @@
   text-transform: uppercase;
 }
 
-/* The links keep a full touch target without making the band taller: the target reaches past the band. */
-.strip .links {
-  margin-block: calc((1.6em - var(--touch)) / 2);
-  margin-right: -0.7em;
-}
-
-.card[data-layout='band'] .words {
-  padding-top: calc(var(--u) * 15);
-  padding-bottom: calc(var(--u) * 12);
-}
-
 .meta {
   display: flex;
   flex-wrap: wrap;
   gap: 0 0.55em;
-  font-family: var(--font-mono);
-  font-size: max(10.5px, calc(var(--u) * 11));
   line-height: 1.4;
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
   color: var(--copper-light);
 }
 
-.title {
+/* The links keep a full touch target without making the band taller: the target reaches past the band. */
+.links {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: calc(var(--u) * 12);
-  margin-top: calc(var(--u) * 8);
+  margin: calc((1.6em - var(--touch)) / 2) -0.7em;
+  padding: 0;
+  list-style: none;
+}
+
+.links a {
+  position: relative;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  min-height: var(--touch);
+  padding: 0 0.7em;
+  color: var(--copper-light);
+  text-decoration: none;
+  transition: color var(--dur-1) var(--ease-settle);
+}
+
+.links a:hover,
+.links a:focus-visible {
+  color: var(--pale);
+}
+
+.links a:focus-visible {
+  outline: var(--focus);
+  outline-offset: -4px;
+  border-radius: var(--radius-1);
+}
+
+.out {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: 1.1em;
+  letter-spacing: 0;
+  transition: translate var(--dur-2) var(--ease-settle);
+}
+
+.links a:hover .out,
+.links a:focus-visible .out {
+  translate: 0.14em -0.14em;
+}
+
+.words {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--u) * 15) calc(var(--u) * 22) calc(var(--u) * 15);
+}
+
+.title {
   font-size: max(19px, calc(var(--u) * 23));
   font-weight: 600;
   letter-spacing: -0.028em;
   line-height: 1.15;
 }
 
-/* The whole card opens the project. */
+/* The whole card opens the case study. */
 .open {
   text-decoration: none;
   outline: none;
@@ -135,7 +154,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: calc(var(--u) * 5);
-  margin-bottom: calc(var(--u) * 14);
   margin-top: calc(var(--u) * 15);
   padding: 0;
   list-style: none;
@@ -153,61 +171,20 @@
   color: var(--text-2);
 }
 
-.foot {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0 calc(var(--u) * 12);
+/* Where the card leads, in its bottom right corner. It lights while the pointer is on the card and goes quiet while
+   the pointer is on a link that leads somewhere else. */
+.go {
+  align-self: flex-end;
   margin-top: auto;
-  border-top: 1px solid var(--line);
+  padding-top: calc(var(--u) * 16);
   font-family: var(--font-mono);
   font-size: max(10.5px, calc(var(--u) * 11));
+  line-height: 1.4;
   letter-spacing: var(--track-label);
   text-transform: uppercase;
-}
-
-.links {
-  display: flex;
-  margin: 0 0 0 -0.7em;
-  padding: 0;
-  list-style: none;
-}
-
-.links a {
-  position: relative;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4em;
-  min-height: var(--touch);
-  padding: 0 0.7em;
-  color: var(--copper-light);
-  text-decoration: none;
-  transition: color var(--dur-1) var(--ease-settle);
-}
-
-.links a:hover {
-  color: var(--pale);
-}
-
-.links a:focus-visible {
-  outline: var(--focus);
-  outline-offset: -4px;
-  border-radius: var(--radius-1);
-}
-
-.out {
-  font-family: var(--font-body);
-  font-size: 1.1em;
-  letter-spacing: 0;
-}
-
-.go {
-  margin-left: auto;
-  color: var(--text-3);
   white-space: nowrap;
-  transition: color var(--dur-2) var(--ease-settle);
+  color: var(--text-3);
+  transition: color var(--dur-2) var(--ease-settle), opacity var(--dur-2) var(--ease-settle);
 }
 
 .arrow {
@@ -222,14 +199,16 @@
 }
 
 .card[data-awake='true'] .arrow {
-  translate: 0.25em 0;
+  translate: 0.3em 0;
 }
 
-.title .go {
-  font-size: 0.85em;
-  font-weight: 400;
+.card:has(.links a:hover) .go,
+.card:has(.links a:focus-visible) .go {
+  color: var(--text-3);
+  opacity: 0.55;
 }
 
-.card[data-layout='band'] .title {
-  margin-top: 0;
+.card:has(.links a:hover) .arrow,
+.card:has(.links a:focus-visible) .arrow {
+  translate: 0 0;
 }

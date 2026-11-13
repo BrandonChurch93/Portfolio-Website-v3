@@ -2,8 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type FocusEvent, type PointerEvent } from 'react';
 import type { WorkItem } from '../content/work';
-import { CARD, cardPicture, type CardLayout } from '../metal/mask';
-import type { PlateTone } from '../metal/renderer';
+import { CARD, cardPicture } from '../metal/mask';
 import { Plate } from './Plate';
 import styles from './WorkCard.module.css';
 
@@ -13,8 +12,6 @@ export const PICTURE_ASPECT = 2;
 
 interface Props {
   item: WorkItem;
-  layout?: CardLayout;
-  tone?: PlateTone;
   // Hold the card as it is under the pointer, with the pointer at this point of the card, 0 to 1. For stills.
   held?: [number, number];
   className?: string;
@@ -47,31 +44,34 @@ function watchTouch(): void {
   ask();
 }
 
-// A project card. Its plate is lit metal round a dark face and a picture, and its words are in the page over it.
+// A project card. Its plate is lit metal round a dark face and a picture, with a band of bronze that carries its
+// facts, and its words are in the page over it.
 // At rest the picture is shown in the site's metals. Under the pointer, with keyboard focus, or nearest the middle of
-// a touch screen, its own colors come back, the bead and the frame catch the light, and the card grows a little.
-export function WorkCard({ item, layout = 'set', tone = 'toned', held, className }: Props) {
+// a touch screen, its own colors come back and its loop plays, the bead and the rail catch the light, and the card
+// grows a little.
+// The whole card opens the case study, and says so in its corner. Live, Evals and Code go elsewhere: with the pointer
+// on one of them the corner goes quiet and that link lights, so it is always plain where a click leads.
+export function WorkCard({ item, held, className }: Props) {
   const el = useRef<HTMLElement>(null);
-  const [hover, setHover] = useState({ on: false, x: 0, y: 0 });
   const band = useRef<HTMLDivElement>(null);
+  const [hover, setHover] = useState({ on: false, x: 0, y: 0 });
   const [stripH, setStripH] = useState(0);
-  const shape = { layout, aspect: PICTURE_ASPECT, stripH: stripH || undefined };
+  const shape = { aspect: PICTURE_ASPECT, stripH: stripH || undefined };
   const picture = cardPicture(shape);
-  const strip = CARD.layouts[layout].strip;
 
   // The plate draws the band where the page laid it out: on a narrow card its words wrap and it grows.
   useEffect(() => {
     const b = band.current;
     if (!b) return;
     const read = () => {
-      const design = (b.parentElement!.offsetWidth / CARD.width) * strip;
+      const design = (b.parentElement!.offsetWidth / CARD.width) * CARD.strip;
       setStripH(b.offsetHeight > design + 1 ? Math.round(b.offsetHeight * 2) / 2 : 0);
     };
     read();
     const ro = new ResizeObserver(read);
     ro.observe(b);
     return () => ro.disconnect();
-  }, [strip]);
+  }, []);
 
   useEffect(() => {
     const card = el.current;
@@ -106,51 +106,44 @@ export function WorkCard({ item, layout = 'set', tone = 'toned', held, className
     onBlur: () => setHover((h) => ({ ...h, on: false })),
   };
 
-  const vars = { '--card-w': CARD.width, '--pic': picture, '--strip': strip, '--radius': CARD.radius } as CSSProperties;
-  const meta = (
-    <p className={styles.meta}>
-      <span>{item.kind}</span>
-      <span aria-hidden="true">·</span>
-      <span>{item.year}</span>
-    </p>
-  );
-  const links = (
-    <ul className={styles.links}>
-      {item.links.map((l) => (
-        <li key={l.label}>
-          <a href={l.href} target="_blank" rel="noopener noreferrer">
-            {l.label}
-            <span aria-hidden="true" className={styles.out}>↗</span>
-            <span className="visually-hidden"> of {item.name} (opens in a new tab)</span>
-          </a>
-        </li>
-      ))}
-    </ul>
-  );
+  const vars = { '--card-w': CARD.width, '--pic': picture, '--strip': CARD.strip, '--radius': CARD.radius } as CSSProperties;
   return (
-    <article ref={el} className={`${styles.card} ${className ?? ''}`} data-layout={layout} data-awake={hover.on} data-plate-area="" style={vars} {...on}>
-      <Plate finish="card" kind="card" card={shape} tone={tone} photo={{ src: item.picture.src, focus: item.picture.focus, zoom: item.picture.zoom }} hover={hover} tilt={false} className={styles.plate}>
+    <article ref={el} className={`${styles.card} ${className ?? ''}`} data-awake={hover.on} data-plate-area="" style={vars} {...on}>
+      <Plate finish="card" kind="card" card={shape} photo={item.picture} hover={hover} tilt={false} className={styles.plate}>
         <span role="img" aria-label={item.picture.alt} />
       </Plate>
       <div className={styles.inner}>
         <div className={styles.picture} />
-        {strip ? <div ref={band} className={styles.strip}>{meta}{links}</div> : null}
+        <div ref={band} className={styles.strip}>
+          <p className={styles.meta}>
+            <span>{item.kind}</span>
+            <span aria-hidden="true">·</span>
+            <span>{item.year}</span>
+          </p>
+          <ul className={styles.links}>
+            {item.links.map((l) => (
+              <li key={l.label}>
+                <a href={l.href} target="_blank" rel="noopener noreferrer">
+                  {l.label}
+                  <span aria-hidden="true" className={styles.out}>↗</span>
+                  <span className="visually-hidden"> of {item.name} (opens in a new tab)</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
         <div className={styles.words}>
-          {strip ? null : meta}
           <h3 className={styles.title}>
-            <a href={item.page} className={styles.open}>{item.name}</a>
-            {strip ? <span className={`${styles.go} ${styles.arrow}`} aria-hidden="true">→</span> : null}
+            <a href={item.page} className={styles.open}>
+              {item.name}
+              <span className="visually-hidden">, case study</span>
+            </a>
           </h3>
           <p className={styles.line}>{item.line}</p>
           <ul className={styles.tags}>
             {item.tags.map((t) => <li key={t}>{t}</li>)}
           </ul>
-          {strip ? null : (
-            <div className={styles.foot}>
-              {links}
-              <span className={styles.go} aria-hidden="true">View project <span className={styles.arrow}>→</span></span>
-            </div>
-          )}
+          <p className={styles.go} aria-hidden="true">Case study <span className={styles.arrow}>→</span></p>
         </div>
       </div>
     </article>

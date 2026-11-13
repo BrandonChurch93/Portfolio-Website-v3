@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Finish } from '../metal/finishes';
 import type { CardShape, PlateKind } from '../metal/mask';
-import { plates, type PlatePhoto, type PlateTone } from '../metal/renderer';
+import { plates, type PlatePhoto } from '../metal/renderer';
 import styles from './Plate.module.css';
 
 export interface PlateProps {
@@ -13,9 +13,8 @@ export interface PlateProps {
   big?: string;
   facts?: string;
   photo?: PlatePhoto;
-  // A project card: its shape, and how its picture is shown until the pointer is on it.
+  // A project card's shape.
   card?: CardShape;
-  tone?: PlateTone;
   className?: string;
   style?: CSSProperties;
   tilt?: boolean;
@@ -30,11 +29,11 @@ const MAX_TILT = 0.06;
 const MAX_TILT_CONTROL = 0.05;
 
 // A lit metal plate. Its words are painted into the metal and also kept in the DOM.
-export function Plate({ finish, kind = 'plate', label, big, facts, photo, card, tone, className, style, tilt = true, hover, children }: PlateProps) {
+export function Plate({ finish, kind = 'plate', label, big, facts, photo, card, className, style, tilt = true, hover, children }: PlateProps) {
   const host = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'failed'>('loading');
-  const photoKey = photo ? `${photo.src}|${photo.video ? 'v' : 'i'}` : '';
+  const photoKey = photo ? `${photo.src}|${photo.video ? 'v' : 'i'}|${photo.loop ?? ''}|${photo.focus?.join() ?? ''}|${photo.zoom ?? ''}` : '';
 
   useEffect(() => {
     const h = host.current;
@@ -45,13 +44,12 @@ export function Plate({ finish, kind = 'plate', label, big, facts, photo, card, 
       canvas: c,
       spec: { finish, kind, label, big, facts, window: !!photo, card },
       photo,
-      tone,
       onState: (s) => setState(s),
     });
     return off;
     // The spec is fixed for a plate's life; a new photo or new words make a new plate.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finish, kind, label, big, facts, photoKey, card?.layout, card?.aspect, card?.stripH, tone]);
+  }, [finish, kind, label, big, facts, photoKey, card?.aspect, card?.stripH]);
 
   useEffect(() => {
     const h = host.current;

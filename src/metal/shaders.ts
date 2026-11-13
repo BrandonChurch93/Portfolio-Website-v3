@@ -279,8 +279,9 @@ uniform float uCoat;         // a clear coat over the metal: how strongly it thr
 uniform float uCard;         // 1 on a project card: a dark face inside a metal bead, round a picture
 uniform float uBead, uBezel;
 uniform vec3 uFace, uFaceLit;
-uniform int uTone;           // how a card's picture is shown at rest: 0 as it is, 1 toned, 2 cast, 3 etched
-uniform vec3 uRamp[5];       // the tones a picture is mapped onto, dark to light, linear
+uniform vec3 uRamp[5];       // the tones a card's picture rests in, dark to light, linear
+uniform sampler2D uLoop;     // a card's loop: the picture in motion, shown in place of it while the card is awake
+uniform float uLoopOn;
 out vec4 frag;
 ${WINDOW}
 ${ROOM}${SPEC}// A picture's tones mapped onto the palette's metals, dark to light.
@@ -290,7 +291,6 @@ vec3 ramp(float l){
   c = mix(c, uRamp[3], smoothstep(0.62, 0.86, l));
   return mix(c, uRamp[4], smoothstep(0.86, 1.0, l));
 }
-float lumAt(vec2 uv){ return pow(dot(pow(texture(uPhoto, uv, 1.2).rgb, vec3(2.2)), vec3(0.2126, 0.7152, 0.0722)), 1.0 / 2.2); }
 
 vec3 rotX(vec3 v, float a){ float c = cos(a), s = sin(a); return vec3(v.x, c * v.y - s * v.z, s * v.y + c * v.z); }
 vec3 rotY(vec3 v, float a){ float c = cos(a), s = sin(a); return vec3(c * v.x + s * v.z, v.y, -s * v.x + c * v.z); }
@@ -422,52 +422,28 @@ void main(){
       float lit = 1.0 - smoothstep(-pen, pen, winD(p + lampOff) + 0.6 * uS);
       float ao = smoothstep(0.0, 14.0 * uS, -dw) * 0.3 + 0.7;
       vec3 photo = vec3(0.05, 0.045, 0.04);
-      vec2 puv = vec2(0.5);
-      vec2 pstep = vec2(0.0);
+      vec3 still = photo;
       if (uPhotoOn > 0.5){
-        puv = (p - (uWin.xy - uWin.zw)) / (2.0 * uWin.zw);
+        vec2 puv = (p - (uWin.xy - uWin.zw)) / (2.0 * uWin.zw);
         // Cover the window, zoomed by uPhotoZoom, centered on the focus point but never past the picture's edge.
         float wa = uWin.z / uWin.w;
         vec2 span = (wa > uPhotoAspect ? vec2(1.0, uPhotoAspect / wa) : vec2(wa / uPhotoAspect, 1.0)) / max(uPhotoZoom, 1.0);
         vec2 c = clamp(uPhotoFocus, span * 0.5, 1.0 - span * 0.5);
         puv = c + (puv - 0.5) * span;
-        pstep = span / (2.0 * uWin.zw) * uS;
-        photo = pow(texture(uPhoto, puv).rgb, vec3(2.2));
+        still = pow(texture(uPhoto, puv).rgb, vec3(2.2));
+        photo = uLoopOn > 0.5 ? pow(texture(uLoop, puv).rgb, vec3(2.2)) : still;
       }
       float onPrint = fall * max(dot(vec3(0.0, 0.0, 1.0), L), 0.0);
       // A card's picture is lit by the lamp's own warm light, so its whites are the site's off white.
       vec3 under = photo * mix(vec3(1.0), vec3(1.0, 0.955, 0.895), uCard) * (0.42 + 0.95 * onPrint) * mix(0.12, 1.0, lit) * ao;
-      if (uTone > 0 && uPhotoOn > 0.5){
+      if (uCard > 0.5 && uPhotoOn > 0.5){
         // At rest a card's picture is shown in the site's metals. Under the pointer its own colors come back,
-        // spreading from where the pointer is.
-        float l = pow(dot(photo, vec3(0.2126, 0.7152, 0.0722)), 1.0 / 2.2);
-        vec3 rest;
-        if (uTone == 1){
-          // Every picture rests at about the same weight: a light one is held down and a dark one lifted a little,
-          // so a white page rests as bronze and not as a lamp. The picture's smallest mip is its average.
-          float mean = pow(dot(pow(textureLod(uPhoto, vec2(0.5), 20.0).rgb, vec3(2.2)), vec3(0.2126, 0.7152, 0.0722)), 1.0 / 2.2);
-          rest = ramp(l * clamp(0.4 / max(mean, 0.05), 0.56, 1.2)) * (0.45 + 0.8 * onPrint) * mix(0.12, 1.0, lit) * ao;
-        } else if (uTone == 2){
-          // Cast: light parts stand proud of dark ones, in one metal, lit as the plate is.
-          float lx = lumAt(puv + vec2(pstep.x * 1.4, 0.0)) - lumAt(puv - vec2(pstep.x * 1.4, 0.0));
-          float ly = lumAt(puv + vec2(0.0, pstep.y * 1.4)) - lumAt(puv - vec2(0.0, pstep.y * 1.4));
-          vec3 Nc = normalize(vec3(-lx * 2.4, ly * 2.4, 1.0));
-          vec3 Tc = normalize(vec3(1.0, 0.0, 0.0) - Nc * Nc.x);
-          vec3 Fc = mix(uRamp[1], uRamp[3], smoothstep(0.05, 0.95, l));
-          rest = studio(reflect(-V, Nc), 0.32) * Fc + Fc * vec3(0.16, 0.14, 0.12) + spec(Nc, V, L, Tc, cross(Nc, Tc), 0.32, 0.2, Fc) * fall * vec3(1.0, 0.94, 0.86);
-          rest *= mix(0.3, 1.0, lit) * ao;
-        } else {
-          // Etched: copper lines on a dark ground, wider where the picture is lighter.
-          vec2 pd = (p - uWin.xy) / uS;
-          float f = abs(fract((pd.x * 0.5 + pd.y * 0.866) / 3.0) - 0.5) * 2.0;
-          float amt = smoothstep(0.06, 0.98, l);
-          float aa = 0.34 / uS;
-          float line = smoothstep(amt * 0.9 + aa, amt * 0.9 - aa, f) * smoothstep(0.02, 0.08, amt);
-          vec3 Fl = uRamp[3];
-          vec3 Nl = vec3(0.0, 0.0, 1.0);
-          vec3 lineCol = studio(reflect(-V, Nl), 0.24) * Fl + Fl * vec3(0.2, 0.17, 0.14) + spec(Nl, V, L, vec3(0.866, -0.5, 0.0), vec3(0.5, 0.866, 0.0), 0.24, 0.7, Fl) * fall * vec3(1.0, 0.94, 0.86);
-          rest = mix(uInk * 2.0, lineCol, line) * mix(0.3, 1.0, lit) * ao;
-        }
+        // spreading from where the pointer is. Every picture rests at about the same weight: a light one is held
+        // down and a dark one lifted a little, so a white page rests as bronze and not as a lamp. The picture's
+        // smallest mip is its average.
+        float l = pow(dot(still, vec3(0.2126, 0.7152, 0.0722)), 1.0 / 2.2);
+        float mean = pow(dot(pow(textureLod(uPhoto, vec2(0.5), 20.0).rgb, vec3(2.2)), vec3(0.2126, 0.7152, 0.0722)), 1.0 / 2.2);
+        vec3 rest = ramp(l * clamp(0.4 / max(mean, 0.05), 0.56, 1.2)) * (0.45 + 0.8 * onPrint) * mix(0.12, 1.0, lit) * ao;
         float reach = uHover * (length(uRes) / uS + 60.0);
         float shown = uHover > 0.0 ? smoothstep(reach, reach - 54.0, length(p - uPointer) / uS) : 0.0;
         under = mix(rest, under, shown);
@@ -482,12 +458,7 @@ void main(){
       vec3 G = vec3(0.0, 0.0, 1.0);
       float fr = 0.04 + 0.96 * pow(1.0 - max(dot(G, V), 0.0), 5.0);
       float smudge = fbm(p / uS * 0.03 + 4.0) * 0.08;
-      // On a card the glass is clean and throws the lamp back as a long slanted streak, so the cursor's light
-      // crosses the picture as a sheen. A round spot of light on it read as a smudge.
-      float gr = mix(0.12 + smudge, 0.3, uCard);
-      vec3 gT = mix(vec3(1.0, 0.0, 0.0), vec3(0.819, 0.574, 0.0), uCard);
-      vec3 gB = mix(vec3(0.0, 1.0, 0.0), vec3(-0.574, 0.819, 0.0), uCard);
-      vec3 glass = studio(reflect(-V, G), 0.08 + smudge) * fr * 0.4 + spec(G, V, L, gT, gB, gr, uCard, vec3(0.04)) * fall * 0.55 * uGlare * vec3(1.0, 0.84, 0.62);
+      vec3 glass = studio(reflect(-V, G), 0.08 + smudge) * fr * 0.4 + spec(G, V, L, vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), 0.12 + smudge, 0.0, vec3(0.04)) * fall * 0.55 * uGlare * vec3(1.0, 0.84, 0.62);
       col = mix(col, under + glass, inside);
     }
   }

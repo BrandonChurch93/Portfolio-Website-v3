@@ -13,18 +13,16 @@ export interface PlatePhoto {
   video?: boolean;
   focus?: [number, number]; // which part of the picture stays in view when it is cropped, 0 to 1
   zoom?: number; // 1 covers the window; more crops in further around the focus
+  // A card's loop: a short video of the same view, played in place of the picture while the card is awake. Its first
+  // frame should be the picture, so nothing jumps when it starts.
+  loop?: string;
 }
-
-// How a card's picture is shown until the pointer is on it: as it is, or in the site's metals.
-export type PlateTone = 'true' | 'toned' | 'cast' | 'etched';
-const TONES: Record<PlateTone, number> = { true: 0, toned: 1, cast: 2, etched: 3 };
 
 export interface PlateEntry {
   host: HTMLElement;
   canvas: HTMLCanvasElement;
   spec: PlateSpec;
   photo?: PlatePhoto;
-  tone?: PlateTone;
   onState?: (state: 'ready' | 'failed') => void;
 }
 
@@ -39,6 +37,8 @@ interface Plate extends PlateEntry {
   photoTex: WebGLTexture | null;
   photoAspect: number;
   videoEl: HTMLVideoElement | null;
+  loopEl: HTMLVideoElement | null;
+  loopTex: WebGLTexture | null;
   visible: boolean;
   bakeGen: number;
   sig: string;
@@ -182,7 +182,7 @@ class PlateRenderer {
     const ctx = entry.canvas.getContext('2d');
     if (!ctx) { entry.onState?.('failed'); return () => undefined; }
     const p: Plate = {
-      ...entry, ctx, cssW: 0, cssH: 0, dpr: 1, mask: null, b0: null, b1: null, photoTex: null, photoAspect: 1, videoEl: null,
+      ...entry, ctx, cssW: 0, cssH: 0, dpr: 1, mask: null, b0: null, b1: null, photoTex: null, photoAspect: 1, videoEl: null, loopEl: null, loopTex: null,
       visible: false, bakeGen: 0, sig: '', tilt: { x: 0, y: 0, gx: 0, gy: 0 }, stream: { x: 0, y: 0, z: 26, k: 0 },
       hover: { v: 0, goal: 0, pinned: false }, pointer: { x: 0, y: 0 }, hovered: '',
       seed: seedOf(entry.spec),
@@ -203,8 +203,9 @@ class PlateRenderer {
     this.io?.unobserve(p.host);
     this.ro?.unobserve(p.host);
     const gl = this.gl;
-    if (gl) { if (p.b0) gl.deleteTexture(p.b0); if (p.b1) gl.deleteTexture(p.b1); if (p.photoTex) gl.deleteTexture(p.photoTex); }
+    if (gl) { if (p.b0) gl.deleteTexture(p.b0); if (p.b1) gl.deleteTexture(p.b1); if (p.photoTex) gl.deleteTexture(p.photoTex); if (p.loopTex) gl.deleteTexture(p.loopTex); }
     p.videoEl?.pause();
+    p.loopEl?.pause();
     p.bakeGen++;
   }
 
@@ -249,6 +250,17 @@ class PlateRenderer {
       }));
       v.play().catch(() => undefined);
       return;
+    }
+    if (photo.loop) {
+      // Only its size and length are fetched until the card first wakes.
+      const v = document.createElement('video');
+      v.muted = true;
+      v.loop = true;
+      v.playsInline = true;
+      v.preload = 'metadata';
+      v.crossOrigin = 'anonymous';
+      v.src = photo.loop;
+      p.loopEl = v;
     }
     const im = new Image();
     im.decoding = 'async';
@@ -397,6 +409,17 @@ class PlateRenderer {
       if (frozen || this.still) h.v = h.goal;
       else h.v = h.goal > h.v ? Math.min(h.goal, h.v + dt / HOVER.rise) : Math.max(h.goal, h.v - dt / HOVER.fall);
     }
+    // A card's loop plays while the card is awake, and goes back to its first frame once the card is at rest again.
+    // A frozen clock seeks it instead (seekVideos).
+    if (!frozen) for (const p of this.plates) {
+      const v = p.loopEl;
+      if (!v) continue;
+      // Once the card is on screen the rest of the loop may be fetched, so it starts at once when the card wakes.
+      if (p.visible && v.preload !== 'auto' && !this.still) v.preload = 'auto';
+      const want = p.hover.goal > 0 && p.visible && !this.still;
+      if (want && v.paused) v.play().catch(() => undefined);
+      else if (!want && !v.paused && p.hover.v === 0) { v.pause(); v.currentTime = 0; }
+    }
     for (const [p, r] of rects) this.draw(p, false, r);
     this.frameMs = performance.now() - t0;
     stats.metalMs = this.frameMs;
@@ -409,10 +432,11 @@ class PlateRenderer {
     const r = rect ?? p.host.getBoundingClientRect();
     const L = lamp.get();
     const video = p.videoEl && p.videoEl.readyState >= 2;
+    const loop = !!p.loopEl && p.loopEl.readyState >= 2 && p.hover.v > 0 && !this.still;
     const sig = [Math.round(L.px), Math.round(L.py), Math.round(r.left), Math.round(r.top), clock.view.w, clock.view.h,
       p.tilt.x.toFixed(3), p.tilt.y.toFixed(3), p.stream.k.toFixed(3), Math.round(p.stream.x), Math.round(p.stream.y), p.hover.v.toFixed(3), !!p.photoTex,
       p.hover.v > 0 ? `${Math.round(p.pointer.x)}:${Math.round(p.pointer.y)}` : '',
-      video ? p.videoEl!.currentTime.toFixed(3) : ''].join();
+      video ? p.videoEl!.currentTime.toFixed(3) : '', loop ? p.loopEl!.currentTime.toFixed(3) : ''].join();
     if (!force && sig === p.sig) return;
     // The static tier does not follow the lamp, but a plate still answers the pointer or focus on it.
     const hovered = `${p.hover.v.toFixed(3)}:${Math.round(p.pointer.x)}:${Math.round(p.pointer.y)}`;
@@ -420,6 +444,7 @@ class PlateRenderer {
     p.hovered = hovered;
     p.sig = sig;
     if (video) this.uploadVideo(p);
+    if (loop) p.loopTex = this.uploadFrame(p.loopEl!, p.loopTex);
     const l = this.light!;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.useProgram(l.p);
@@ -431,6 +456,8 @@ class PlateRenderer {
     gl.activeTexture(gl.TEXTURE0); gl.bindTexture(gl.TEXTURE_2D, p.b0); gl.uniform1i(l.u('uB0'), 0);
     gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, p.b1); gl.uniform1i(l.u('uB1'), 1);
     gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, p.photoTex ?? p.b0); gl.uniform1i(l.u('uPhoto'), 2);
+    gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, loop && p.loopTex ? p.loopTex : p.b0); gl.uniform1i(l.u('uLoop'), 3);
+    gl.uniform1f(l.u('uLoopOn'), loop && p.loopTex ? 1 : 0);
     this.common(l, p, mask);
     gl.uniform1f(l.u('uDpr'), p.dpr);
     gl.uniform2f(l.u('uOrigin'), r.left, r.top);
@@ -438,10 +465,10 @@ class PlateRenderer {
     gl.uniform3f(l.u('uLamp'), L.px, L.py, LAMP.depth * Math.max(clock.view.w, clock.view.h * 0.8));
     gl.uniform1f(l.u('uLampI'), 1.15 + 0.3 * L.led);
     // A portrait's glass glares softly: the lamp's spot should not sit on a face.
-    gl.uniform1f(l.u('uGlare'), p.spec.kind === 'frame' ? 0.06 : 1);
+    // A card's glass throws no glare back: a spot or a streak of light crossing the picture read as decoration.
     const card = p.spec.kind === 'card';
+    gl.uniform1f(l.u('uGlare'), p.spec.kind === 'frame' ? 0.06 : card ? 0 : 1);
     gl.uniform1f(l.u('uCard'), card ? 1 : 0);
-    gl.uniform1i(l.u('uTone'), card ? TONES[p.tone ?? 'true'] : 0);
     if (card) {
       gl.uniform3fv(l.u('uFace'), FACE);
       gl.uniform3fv(l.u('uFaceLit'), FACE_LIT);
@@ -480,31 +507,44 @@ class PlateRenderer {
   }
 
   private uploadVideo(p: Plate): void {
+    p.photoTex = this.uploadFrame(p.videoEl!, p.photoTex);
+  }
+
+  private uploadFrame(v: HTMLVideoElement, tex: WebGLTexture | null): WebGLTexture {
     const gl = this.gl!;
-    const v = p.videoEl!;
-    if (!p.photoTex) {
-      p.photoTex = gl.createTexture();
-      gl.bindTexture(gl.TEXTURE_2D, p.photoTex);
+    let t = tex;
+    if (!t) {
+      t = gl.createTexture()!;
+      gl.bindTexture(gl.TEXTURE_2D, t);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     }
-    gl.bindTexture(gl.TEXTURE_2D, p.photoTex);
+    gl.bindTexture(gl.TEXTURE_2D, t);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, v);
+    return t;
   }
 
   // Frozen clock: the video shows the frame at t, so a shot of it is repeatable.
   async seekVideos(t: number): Promise<void> {
     const waits: Promise<void>[] = [];
     for (const p of this.plates) {
-      const v = p.videoEl;
-      if (!v || !v.duration) continue;
-      v.pause();
-      const target = t % v.duration;
-      if (Math.abs(v.currentTime - target) < 1e-3) continue;
-      waits.push(new Promise((res) => { v.addEventListener('seeked', () => res(), { once: true }); v.currentTime = target; }));
+      for (const v of [p.videoEl, p.hover.goal > 0 ? p.loopEl : null]) {
+        if (!v) continue;
+        if (!v.duration) {
+          // A loop that has not been asked for yet has only its size: fetch it, then show the frame.
+          if (v !== p.loopEl) continue;
+          v.preload = 'auto';
+          waits.push(new Promise((res) => { v.addEventListener('loadeddata', () => res(), { once: true }); v.addEventListener('error', () => res(), { once: true }); v.load(); }));
+          continue;
+        }
+        v.pause();
+        const target = t % v.duration;
+        if (Math.abs(v.currentTime - target) < 1e-3) continue;
+        waits.push(new Promise((res) => { v.addEventListener('seeked', () => res(), { once: true }); v.currentTime = target; }));
+      }
     }
     await Promise.all(waits);
     for (const p of this.plates) p.sig = '';

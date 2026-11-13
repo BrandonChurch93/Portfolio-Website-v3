@@ -2,30 +2,31 @@ import type { Finish } from './finishes';
 
 export type PlateKind = 'plate' | 'bar' | 'placard' | 'control' | 'frame' | 'card';
 
-// A project card's shape. The picture's window is worked out from the card's width alone, so the page can leave the
-// same room for it. One design unit is a CSS pixel on a card CARD.width wide.
-export type CardLayout = 'set' | 'edge' | 'band';
-// stripH: the band's height in CSS pixels as the page laid it out, when its words needed more room than the design gives.
-export interface CardShape { layout: CardLayout; aspect: number; stripH?: number }
+// A project card's shape. Everything on it is worked out from the card's width alone, so the page can leave the same
+// room. One design unit is a CSS pixel on a card CARD.width wide.
+// aspect: the picture's width over its height. stripH: the band's height in CSS pixels as the page laid it out, when
+// its words needed more room than the design gives.
+export interface CardShape { aspect: number; stripH?: number }
 
 export const CARD = {
   width: 460,
   radius: 18,
   bead: 2.6,
-  // pad: from the card's edge to the picture. winR and winRb: the window's top and bottom corners. bezel: the metal
-  // frame round the window. depth: how far the picture sits below the face. strip: the height of a band of dark
-  // bronze under the picture, which carries the card's facts.
-  layouts: {
-    set: { pad: 15, winR: 7, winRb: 7, bezel: 4.2, depth: 6, strip: 0 },
-    edge: { pad: 3.8, winR: 14.2, winRb: 0.01, bezel: 3.4, depth: 5, strip: 0 },
-    band: { pad: 3.8, winR: 14.2, winRb: 0.01, bezel: 3.4, depth: 5, strip: 36 },
-  },
+  // The picture fills the top of the card to the bead. pad: from the card's edge to the picture. winR and winRb: the
+  // window's top and bottom corners. bezel: the metal frame round the window, which under the picture is a rail.
+  // depth: how far the picture sits below the face. strip: the height of the band of dark bronze under the picture,
+  // which carries the card's facts.
+  pad: 3.8,
+  winR: 14.2,
+  winRb: 0.01,
+  bezel: 3.4,
+  depth: 5,
+  strip: 36,
 } as const;
 
-// Design units from the top of a card to the foot of its picture's bezel, where the words can begin.
+// Design units from the top of a card to the foot of its picture's rail, where the band begins.
 export function cardPicture(shape: CardShape): number {
-  const L = CARD.layouts[shape.layout];
-  return L.pad + (CARD.width - 2 * L.pad) / shape.aspect + L.bezel;
+  return CARD.pad + (CARD.width - 2 * CARD.pad) / shape.aspect + CARD.bezel;
 }
 
 export interface PlateSpec {
@@ -168,24 +169,21 @@ export function paintMask(spec: PlateSpec, cssW: number, cssH: number, dpr: numb
   };
 
   if (spec.kind === 'card') {
-    // A card carries no words in its metal: they are in the page, over it. Its face, bead and bezel are worked out
-    // in the shader from these numbers.
-    const shape = spec.card ?? { layout: 'set', aspect: 16 / 9 };
-    const L = CARD.layouts[shape.layout];
+    // A card carries no words in its metal: they are in the page, over it. Its face, bead, rail and band are worked
+    // out in the shader from these numbers.
+    const shape = spec.card ?? { aspect: 2 };
     S = (cssW / CARD.width) * dpr;
     radius = CARD.radius * S;
-    const ww = CARD.width - 2 * L.pad;
+    const ww = CARD.width - 2 * CARD.pad;
     const wh = ww / shape.aspect;
-    win = [w / 2, (L.pad + wh / 2) * S, (ww / 2) * S, (wh / 2) * S];
-    winR = L.winR * S;
-    winRb = L.winRb * S;
-    winDepth = L.depth;
+    win = [w / 2, (CARD.pad + wh / 2) * S, (ww / 2) * S, (wh / 2) * S];
+    winR = CARD.winR * S;
+    winRb = CARD.winRb * S;
+    winDepth = CARD.depth;
     bead = CARD.bead * S;
-    bezel = L.bezel * S;
-    if (L.strip) {
-      const sh = Math.max(L.strip * S, (shape.stripH ?? 0) * dpr);
-      strip = [w / 2, cardPicture(shape) * S + sh / 2, (ww / 2) * S, sh / 2];
-    }
+    bezel = CARD.bezel * S;
+    const sh = Math.max(CARD.strip * S, (shape.stripH ?? 0) * dpr);
+    strip = [w / 2, cardPicture(shape) * S + sh / 2, (ww / 2) * S, sh / 2];
   } else if (spec.kind === 'bar' || spec.kind === 'control') {
     const D = DESIGN[spec.kind];
     S = (cssH / D.height) * dpr;

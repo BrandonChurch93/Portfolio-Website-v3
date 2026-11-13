@@ -45,8 +45,8 @@ export interface FinishParams {
 //   aged:     darker copper with patina and a double cut border
 //   bronze:   dark bronze, words in bright copper set flush
 //   panel:    brushed copper frame around a sunk dark bronze panel
-//   card:     a project card. Copper only as its edge bead and the frame round its picture, and on one layout a
-//             band of dark bronze under the picture. The face is not metal
+//   card:     a project card. Copper only as its edge bead and the rail under its picture, with a band of dark
+//             bronze below that for its facts. The face is not metal
 export const FINISHES: Record<Finish, FinishParams> = {
   aged: { a: COPPER, b: COPPER_LIGHT, ra: 0.34, rb: 0.3, aniso: 0.45, grain: 0.075, patina: 1, scratch: 1, id: 0 },
   polished: { a: COPPER_LIGHT, b: COPPER_LIGHT, ra: 0.1, rb: 0.1, aniso: 0.08, grain: 0.008, patina: 0.06, scratch: 0.25, id: 1 },

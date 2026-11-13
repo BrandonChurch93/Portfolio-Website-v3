@@ -2,6 +2,45 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · The card's second round: the streak cut, the case study link, loops wired (Fable, web chat)
+
+**What Brandon said**
+
+- "No matter what I need to retake pictures, so these will not be the pictures that will be used in the final version. I'm open to pictures or loops. Maybe even both, though if we had to choose one I'm leaning more loops."
+- He asked for a recommendation, and said to go ahead with the next round of changes.
+
+**What was built**
+
+- The streak of light on the glass is gone: a card's glass throws no glare back (`uGlare` is 0 for a card in `src/metal/renderer.ts`).
+- "Case study" with the arrow sits in the card's bottom right corner. It is a label, not a second link: the title's link still covers the whole card, and reads "name, case study" to a screen reader. `:has()` in `WorkCard.module.css` turns it quiet while the pointer or focus is on Live, Evals or Code.
+- The card is one layout and one treatment. `CARD` in `mask.ts` is flat, `CardShape` is the picture's aspect and the band's measured height, and Cast, Etched and the layouts A and B are out of the shaders, the mask and the component.
+- A loop: `picture.loop` in `src/content/work.ts`, `PlatePhoto.loop` in the renderer. The plate keeps the picture as its still, fetches only the loop's size until the card is on screen, plays it while the card is awake, and rewinds it once the card is at rest. The picture's own colors spread from the pointer as before, and what they reveal is the loop. With motion turned off it never plays.
+- Two stand in pictures are cropped tight with `focus` and `zoom`: the Design System Extractor to its counts and palette, Generative UI to its composed answer.
+- The page is now the card at rest and under the cursor, and the grid at the page's size.
+- Stills: `reference/studies/24-work-card-second-round.jpg` (at rest, under the cursor, the cursor on Live) and `24-work-card-second-round-grid.jpg`.
+
+**How the loop was tested**
+
+- With a four second clip made from the glasses picture, which was not committed. Frozen at two times, a held card drew two different frames and a resting card drew its bronze still both times. Live, a card's loop was paused at rest, playing under the pointer, and paused at its first frame after the pointer left.
+- This workspace ran that page at half a frame a second, so nothing about how a loop looks or what it costs was learned here. That is for his Mac.
+- The test clip was WebM, because the workspace's browser has no H.264. His loops should be MP4 with H.264, which an iPad plays.
+
+**Sizes**
+
+- A card 460 wide is now about 488 tall, with the corner's row. The stand in on `/lab/work` is 383, so the section grows by about 210 px.
+
+**Checked**
+
+- The approved buttons, before and after, both with `--wait 3000`: no pixel differs.
+
+**Not judged**
+
+- Motion of any kind, and a real loop. The hover is as it was, less the streak. Whether it still underwhelms waits on real loops and on the stream striking the card.
+
+**Half finished**
+
+- His word on this round. His recordings. Then the one prompt for Claude Code.
+
 ## 2026-11-13 · His verdict on the card derby, and what the picture should be (Fable, web chat)
 
 **What Brandon said.** His words are in `BRIEF.md`, Cards and buttons, "His verdict on the card derby". In short:
