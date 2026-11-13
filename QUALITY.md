@@ -91,6 +91,10 @@ This is the real calibration. Every row is his verdict, not a guess. Rows that s
 | A streak of light crossing the picture's glass with the cursor | "It doesn't look bad but it doesn't really look great either" | Light added for its own sake reads as decoration |
 | A card's colors coming back as a circle spreading from the pointer | "Not very good." "I don't like that it comes from a circle. It seems like it lags a bit" | A change that shows its own shape, and takes its time, reads as an effect and as lag |
 | The card under the pointer, with a switch for each choice: four ways for its colors to come back, four amounts of turn, two leans, three sizes, two edges | "These are the settings I want to go with": the plain fade, 3 degrees, leaning away, 1.5 percent, the deep edge | Given a range he took the quietest motion on offer and the heaviest object. A card's presence comes from its form and its light, not from how far it moves |
+| The Sun stone's eyes and mouth lighting when the stream reaches it. A fresh reviewer of the stills had failed them as "flat fills" | "The stone faces light on looks good" | He judges it moving, as the stream arrives. A still of a light coming up shows the least of it |
+| A bar over WORK for the stream to strike in place of the word | "I don't want the bar above work" | He wondered about it aloud, saw it, and cut it. Building the idea behind a switch settled it in one look |
+| The View all work button low in the space between the cards and the rail | "Raising it up slightly or lowering the bars some would make it look more centered" | A thing that stands in an open pocket is centered in it by eye, not hung from the nearest object |
+| The one column stand in for Work on a phone | "Needs major work." The category bar "is really bad looks", and the two sides of the stream never meet again | A stand in he can open gets judged as the design. A phone is designed as a whole page, in its own pass, not squeezed out of each section as it is built |
 | The pour's first test shot, in motion | "I definitely don't like how it puddles." The stream "is blasted back multiple times". "Instead of looking like a refined beautiful hot liquid metal, this looks more like mud splashing around and puddling up" | Real physics is not enough. It has to be graceful. Metal that heaps, thrashes or hits itself reads as mud |
 
 ## The patterns behind those verdicts
@@ -242,7 +246,7 @@ The section:
 18. **The second row's strike is a strike.** Beside the strike on a card's top it is not the weaker one. The report says what made it a graze.
 19. **Spacing.** With the taller card nothing is cramped or uneven, no landing is shorter than it was, and every turn still has a cause.
 20. **An iPad held sideways** is not the desktop squeezed.
-21. **The bar over WORK**, switched on: the strike is on the bar, the word under it is still lit and still reads as the title, and the top of the section is calmer than without it. Switched off, the page is as it was.
+21. Dropped Nov 13. He does not want a bar over WORK.
 22. **`/lab/stream` and the approved buttons are unchanged.** Stills from before and after agree.
 
 **How to judge it**

@@ -48,7 +48,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 
 ### The stream
 
-- **Where it stands (Nov 13):** the stream through Work is built at `/lab/work`, and he has looked ("His first look at the build", below). The second pass on that page is agreed and built: the real card, the Sun stones and the Blades ("The second pass on the Work page", below). He has not seen it. Its account, with every call made for him, is in `LOG.md`, "The second pass on the Work page, built". What was at the bar in the first build and what was not, and every call Fable made for him while building it, are in `LOG.md`, "The stream through Work, built at `/lab/work`". None of those calls is a rule. The stream's test shot is approved, and he calls it "almost certainly the finalized base" (see "The stream is the finished base" below). It is at `/lab/stream`, with a paused frame at `/lab/stream?hold`. The three small things he asked for after approving it are built, and he has looked: "All my issues have been fixed." The first round's shards are still one switch away: the switch at the foot of that page, or `/lab/stream?shards=first`. Calls Fable made for him while building are listed in `LOG.md` and are his to overturn. None of them is a rule.
+- **Where it stands (Nov 13):** the stream through Work is built at `/lab/work`, and he has looked ("His first look at the build", below). The second pass on that page is agreed and built: the real card, the Sun stones and the Blades ("The second pass on the Work page", below). He has looked ("His look at the second pass", below): the stones' faces light, there is no bar over WORK, the View all work button moves, and phones wait for one pass at the end. Its account, with every call made for him, is in `LOG.md`, "The second pass on the Work page, built". What was at the bar in the first build and what was not, and every call Fable made for him while building it, are in `LOG.md`, "The stream through Work, built at `/lab/work`". None of those calls is a rule. The stream's test shot is approved, and he calls it "almost certainly the finalized base" (see "The stream is the finished base" below). It is at `/lab/stream`, with a paused frame at `/lab/stream?hold`. The three small things he asked for after approving it are built, and he has looked: "All my issues have been fixed." The first round's shards are still one switch away: the switch at the foot of that page, or `/lab/stream?shards=first`. Calls Fable made for him while building are listed in `LOG.md` and are his to overturn. None of them is a rule.
 - It is the most important thing on the site. "It's probably like the most important thing on the site to get right." (Nov 11)
 - It is called the stream, which is his own word for it. It is never called water, in anything written for a model or shown to a visitor. His reason: "if I call it water, then the model is gonna build it as if it acts like water". It is not called the pour either: that was its name while it was going to be molten metal. (Nov 11)
 
@@ -314,12 +314,22 @@ Worked out in a wireframe at `/lab/work-draft` over the day. How it got there is
 - He has not seen it. Nothing about it is settled until he says so. The two things built only for him to judge are each behind a switch on the page: the stones' lit faces, and the bar over WORK.
 - Found while measuring, and his to rule on: "Case study" in its resting color falls to about 3.6 to 1 against the card's face when the cursor's own light pools behind it. That is the card as he picked it, on `/lab/work-cards` too, and not the stream. It was not changed. Fable recommends a lighter resting color for those two words.
 
+**His look at the second pass (Nov 13)**
+
+Said after scrolling it at `/lab/work`, as feedback for Claude Code. One word of his message came through garbled and is marked.
+
+- **The stones' faces light.** "The stone faces light on looks good." In exact terms: the eyes and mouth of each Sun stone light when the stream reaches it, as built. This is the one exception to "Figures that light up on scroll" in Dropped. The switch can come off the page.
+- **No bar over WORK.** "I don't want the bar above work." It is in Dropped. The stream strikes the word, as it always has.
+- **The View all work button sits off center.** "I also think we should reposition the view all button. It looks like raising it up slightly or lowering the bars some would make it look more centered." In exact terms: the button stands in the pocket between the foot of the second row of cards and the V the two halves of the rail make. Today it sits low in that pocket, close over the place where the two sides of the stream meet, with much more room above it than below. It should read as centered there, by raising the button a little, by lowering the rail a little, or both.
+- **A phone needs major work, and that work waits.** "One thing that needs major work is the layout and experience on mobile. The category selection for one is really bad looks, and the 2 streams do not re-intersect. Were we intentionally holding off on mobile to see what the entire [garbled: Fable reads it as layout] would look like as a whole first? That may actually be a better plan. Let's add that to the documentation to do a mobile pass when we are finished with all the sections." His ruling is under How we work, "The mobile pass".
+- **Not said yet, so not settled:** the card with the stream on it. The second row's strike. The stone as an object, the Blade and what carries the rail, which the build's own account puts short of the bar. "Case study" at rest falling to about 3.6 to 1 when the cursor's light pools behind it. The calls Claude Code made for him.
+
 **How it is built**
 
 He added these while the stream was a simulated liquid. They hold for anything in the stream that is simulated: shards thrown loose, sparks.
 
 - The simulation is stepped from the one clock (`src/world/clock.ts`) with a fixed timestep and a seed, so any frame can be frozen and shot again exactly. Each new pour takes a new seed, so no two splashes match. (Nov 11)
-- A particle budget is set for his Mac and for a phone before building, and what the phone gives up is said out loud. The phone view is checked as the work goes, not at the end. (Nov 11)
+- A particle budget is set for his Mac and for a phone before building, and what the phone gives up is said out loud. The phone view is checked as the work goes, not at the end. (Nov 11) **Changed Nov 13:** how a phone looks and where the stream runs on it now wait for the mobile pass (How we work, "The mobile pass"). The budget for a phone is still set out loud.
 
 **How it got here**
 
@@ -492,6 +502,11 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
 - Every message to him ends with a clear, simple recommendation.
 - He and Fable are free to change course: "me and you have the freedom to pivot and recommend new things". When Fable recommends something that goes against a rule agreed here, it is laid out plainly in the chat, in bold, naming the rule: "they need to be explicitly laid out here in the chat maybe even bold so I make sure I see them". The rule stands until he changes it. Claude Code builds to the rules as written: "Claude code is our executioner." (Nov 12)
 - Before the full build of the page there is a final pass over what is already approved, because the stream may change it: "now that we have the stream in place, I may want to update things we've already talked about like the buttons". (Nov 12)
+- **The mobile pass (Nov 13).** Phones are designed in one pass, after every section is finished: "Let's add that to the documentation to do a mobile pass when we are finished with all the sections." His reason: the phone is better judged once the whole page can be seen. In exact terms:
+    - Until that pass, a screen too narrow for a section's layout shows a plain stand in. On Work that is every screen under 1100 px wide, which takes in an iPad held upright.
+    - A stand in is not designed, not polished and not shown to him for approval. What he saw of it on Work is why: the category bar "is really bad looks" and the two sides of the stream never meet again.
+    - The pass covers every section together: the layout, the category bar, and the stream's route on one column.
+    - Fable's recommendation, not agreed: the phone's speed is still measured as each section is built, so nothing is made that a phone cannot run. That is a cost check and needs no design.
 - When something is ready to show him: run a production build, commit, push to `main`, and give him the live link. He is often on his iPad, which cannot open localhost. (Nov 11)
 
 ## Open
@@ -554,7 +569,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
         - **What comes next is not decided (Nov 12).** "We still haven't decided on the card design yet. Should we settle that first before handing this over to Claude code or continue with the stream interaction first with Claude code and finish the cards afterwards?" Fable's answer: the stream's route first in Claude Code, with the test shot's plain card standing in for all four, and the card designed in the web chat alongside. Not agreed yet.
 16. **The order the sections are worked in.** He wants them taken one at a time: "my idea should go section by section". Work is first, and within Work the stream's route is built before the card is finished (Settled, "The stream through Work", Nov 12). The order of the rest is not agreed. Fable's list is in `LOG.md`.
 17. **The slim top bar, with the categories docking into it.** Drawn in the wireframe at `/lab/work-draft`: hidden during the hero, and once the category bar has scrolled off, the four categories show in it beside the section's name. He would accept the categories pinned into a bar at the top and does not want them floating over the cards. He has not ruled on the bar. Recommendation: yes.
-18. **Work on a phone.** One column. Its route for the stream, and whether posts and a rail have any place there, are not designed. Recommendation: sketch it in the web chat next to the card, while the two column route is being built. It now covers every screen too narrow for two real cards side by side with the stream's room beside them, which takes in an iPad held upright (Nov 13).
+18. **Work on a phone.** **Decided Nov 13: it waits for the mobile pass** (Settled, How we work). What follows is how it stood. One column. Its route for the stream, and whether posts and a rail have any place there, are not designed. Recommendation: sketch it in the web chat next to the card, while the two column route is being built. It now covers every screen too narrow for two real cards side by side with the stream's room beside them, which takes in an iPad held upright (Nov 13).
 19. **The card's look.** "We still haven't decided on the card design yet." To be designed in the web chat. Settled so far is under Cards and buttons. He asked on Nov 12 whether to settle it now, so it goes into the next pass in Claude Code with the stones and the finials, and said yes. He approved Fable's proposal as the base the same night (Settled, Cards and buttons). Still open: which way the picture rests and which layout, from the derby at `/lab/work-cards`. Also open, and his to supply: the Design System Extractor's live link, the year of each project if 2026 is wrong for any, and which four projects go on the home page. **Nov 13:** the layout is settled as C · Data plate, Cast and Etched are dropped, the streak of light is cut and the case study link is named in the corner. Still open: his word on the second round. The hover, which he found underwhelming: Fable's answer is the loop and the stream's strike, and neither can be judged until there are recordings and the card is on `/lab/work`. The page's name, "Case study" for now. His to supply: a recording for each project, the Design System Extractor's live link, the year of each project if 2026 is wrong for any, and which four projects go on the home page. **Nov 13, later:** how the card answers the pointer is settled by his picks from the third round. How it takes the stream is judged on `/lab/work` once the second pass is built.
 
 ## Dropped
@@ -569,6 +584,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
 - Whole brass plates as cards
 - A card's picture cast as a relief in metal, or etched as lines (Nov 13)
 - A streak or spot of the cursor's light on a card's picture (Nov 13)
+- A metal bar over WORK, or under it. "I don't want the bar above work" (Nov 13)
 - A card's colors coming back as a circle spreading from the pointer (Nov 13)
 - For the card: its colors coming back as a sweep, lights first, or with the picture coming closer. The card leaning toward the cursor. The thin bead as its edge. He picked the fade, leaning away and the deep edge (Nov 13)
 - The faint channel drawn ahead of the stream
@@ -582,7 +598,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
 - The game board and the orrery
 - The sculpture as built
 - A gallery with his work on walls
-- Figures that light up on scroll
+- Figures that light up on scroll. The Sun stones' faces are the one exception: he saw them lit and said they look good (Nov 13)
 - The "laid back, fun to try" voice
 - Three hovers for the buttons: light running round the border, Heat and Pull. He chose Catch (Nov 11)
 - The second build's kit, its screenshot gates and its voice rules. None of them apply here.

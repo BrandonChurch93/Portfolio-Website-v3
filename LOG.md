@@ -2,6 +2,54 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · His look at the second pass: faces lit, no bar, the button, and phones last (Fable, web chat)
+
+**What Brandon said.** He brought Claude Code's report and his answer to it, not yet sent. His words are in `BRIEF.md`, The stream, "His look at the second pass". In short:
+
+- "The stone faces light on looks good."
+- "I don't want the bar above work."
+- The View all work button should sit more centered: raise it a little or lower the rail a little.
+- A phone needs major work. He asked whether mobile was being held off on purpose, said that may be the better plan, and asked for it to be written down: one mobile pass when every section is finished.
+
+**What Fable told him**
+
+- Yes, the phone was held off on purpose. The agreement for the second pass lists the phone's route under what does not get built, and the page calls its one column a stand in. What he saw (a category bar in two rows, two sides that never meet) is that stand in, not a design.
+- Fable's plan had been to sketch Work on a phone next. His plan is the better one: the stream is one line down the whole page, so its route on one column cannot be settled a section at a time.
+- **His ruling changes a settled line: "The phone view is checked as the work goes, not at the end."** It is changed in the brief, with his date.
+- Fable's recommendation, not agreed: keep measuring speed at a phone's size as each section is built.
+- Still not answered from Claude Code's report: the card with the stream on it, the second row's strike, the stone and the rail's fittings as objects, a lighter resting color for "Case study", and the calls. Fable's view, from the stills: the stone holds up and does not need another round on a reviewer's word alone. The four brackets under the rail and the finial's shape are the two things worth a second look.
+
+**What changed in the record. No code changed**
+
+- `BRIEF.md`: "His look at the second pass". The mobile pass under How we work. The bar over WORK in Dropped. The stones' faces written in as the exception to "Figures that light up on scroll". Open 18 marked as waiting for the mobile pass.
+- `PLAN.md`: Now. "Work · on a phone" is gone from Phase 3, and the mobile pass is its last item but one.
+- `QUALITY.md`: four rows in the table. Test 21 dropped.
+- `CLAUDE.md`: a line under Working with Brandon about the mobile pass.
+
+**For the button, from the still `reference/studies/27-work-second-pass-foot-rail-and-finials.jpg`**
+
+- At 1440 wide there is about 150 px between the foot of the second row and the top of the button, and the stream passes about 50 px under the button's foot. The rail's inner ends are level with the button's lower half.
+
+**The prompt Brandon was given**
+
+```
+Pull main, then read the top entry of LOG.md and BRIEF.md, The stream, "His look at the second pass".
+
+Three changes on /lab/work:
+
+1. The stones' faces stay lit. Take the faces switch off the page.
+2. I do not want the bar over WORK. Take it out everywhere: the switch, ?over, and its code in the page, the route and the renderer.
+3. The View all work button sits too low in the space between the second row of cards and the V the two halves of the rail make. Center it in that space by eye. Raise the button a little, lower the rail a little, or both, whichever reads best on the screen. The two sides still meet under it and still light it.
+
+Leave the phone and every screen under 1100 px alone. Mobile is now one pass after every section is finished (BRIEF.md, How we work, "The mobile pass").
+
+/lab/stream and the approved buttons must still draw what they draw today. Then build, commit, push and confirm the deploy. Report in a short list, with a still of the foot before and after, and end with one recommendation.
+```
+
+**Half finished**
+
+- His word on what he has not answered. Nothing from this session is uncommitted.
+
 ## 2026-11-13 · The second pass on the Work page, built at `/lab/work` (Fable, Claude Code on Brandon's Mac)
 
 **What was asked.** The prompt is in the entry below. In short: the real card where the stand ins were, with the stream meeting it. The Sun stone made new in place of each post. Blade finials, no studs, the right a mirror of the left. A real strike on the second row, with its cause found first. Room on an iPad held sideways. A bar over WORK behind a switch. The frame rate with real cards measured, its cause found and fixed.

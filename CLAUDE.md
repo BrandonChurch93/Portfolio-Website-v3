@@ -54,6 +54,7 @@ Do not work from what you remember of these. Read them from disk.
 - When he has to do something himself, give only the steps needed right now, as a numbered list. No "if this, then that" branches.
 - For a command, say it goes in VS Code's integrated terminal and give the exact text to paste. He prefers the Claude Code panel in VS Code to the terminal when either would do.
 - Do not bring up timelines or how long things will take.
+- Phones are designed in one pass after every section is finished (`BRIEF.md`, How we work, "The mobile pass"). Until then a narrow screen shows a plain stand in. Do not design it, polish it or show it to him section by section.
 - When his own browser has to be checked or operated, give that to an Opus agent.
 - He rewrites the site's copy himself. Draft copy only when he asks.
 

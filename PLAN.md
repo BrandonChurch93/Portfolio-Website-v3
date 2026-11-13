@@ -23,11 +23,13 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **His picks from the card's third round (Nov 13):** the plain fade, 3 degrees, leaning away, 1.5 percent, the deep edge. `CARD_LOOK` holds them
 - **Handed to Claude Code (Nov 13):** the second pass on the Work page, at `/lab/work`. `BRIEF.md`, The stream, "The second pass on the Work page" is the agreement, and `QUALITY.md` has its tests. The prompt he was given is in `LOG.md`, top entry
 - **Built in Claude Code (Nov 13):** the second pass, at `/lab/work`. `LOG.md`, top entry, has its account: what is at the bar, what is not, what three fresh reviewers said, and every call made for him
-- **In front of Brandon:** the second pass at `/lab/work`, waiting on his look. Two things on it are built only for him to judge, each behind a switch: the stones' lit faces, and a bar over WORK
+- **His look at the second pass (Nov 13):** the stones' faces light. No bar over WORK. The View all work button should sit centered between the second row and the V of the rail. A phone needs major work, and that waits for one mobile pass after every section is finished
+- **Going to Claude Code:** a small round for those three changes. The prompt is in `LOG.md`, top entry
+- **Still waiting on his word:** the card with the stream on it, the second row's strike, the stone and the rail's fittings as objects, and a lighter resting color for "Case study"
 - **He is open to the stone's face lighting** and wants to see it in action before he rules, so it gets built on the real page
 - **In that pass:** the real card with the stream meeting it, the Sun stones made new and a little larger with a face that lights, Blade finials, the right side mirroring the left, a real strike on the second row, room on an iPad held sideways, a bar over WORK behind a switch, and the frame rate with real cards
-- **Still to do in the web chat:** Work on a phone (Open 18). It now covers every screen too narrow for two real cards, which takes in an iPad held upright
-- **Not ruled on:** the slim top bar with the categories docking into it (Open 17). The bar over WORK
+- **Not now:** anything for a phone or a screen under 1100 px. It is one pass at the end of Phase 3
+- **Not ruled on:** the slim top bar with the categories docking into it (Open 17)
 - **The wireframe** is at `/lab/work-draft`, opening on R, the layout that was agreed. It has done its job. It shows the order of the stops and nothing else
 - **Where the stream is:** `/lab/stream`, approved. It must keep drawing what it draws today
 - **Small things left on the stream, none blocking:** the rest of Phase 2's list below
@@ -86,13 +88,13 @@ Set aside, kept as records: the molten metal test shot at `/lab/pour`, its looks
 - [~] Work · the card's look (web chat). The layout is picked: C · Data plate. How it answers the pointer is picked (Nov 13). Its pictures, and how it takes the stream, are open
 - [~] Work · the second pass at `/lab/work`: the real card, the Sun stones, the Blades (Claude Code). Built Nov 13, waiting on his look
 - [ ] Work · the category bar, and the top bar it may dock into
-- [ ] Work · on a phone
 - [ ] Work · the whole section, with the real card in it
 - [ ] Skills
 - [ ] About
 - [ ] Contact and the bottom of the page
 - [ ] The stream's full route down the page
-- [ ] Phone, tablet, desktop and 4K
+- [ ] The mobile pass: every section on a phone and on any screen too narrow for its layout, designed together once every section is finished. His ruling, Nov 13. Until then those screens show plain stand ins
+- [ ] A tablet held sideways, desktop and 4K
 
 **Gate:** Brandon approves the whole page as one composition.
 
