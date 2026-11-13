@@ -2,6 +2,21 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · What the stream does when the category changes: a proposal (Fable, web chat)
+
+**What Brandon said**
+
+- "I think we should also figure out how the stream animation reacts to categories being changed. I'm thinking something very realistic with its physics. What do you propose?"
+
+**What Fable proposed. Talk only, nothing built**
+
+- It is in `BRIEF.md`, Open 20: a press on the bar, a surge along the stream, and the stream landing again on each new card as a strike.
+- For whoever builds it: `streamPlan()` already plans the route again from where things are, a strike can already be placed on a card (`plates.setWarm`, the flare on the rim), and `bend` in `stream.ts` already carries the stream with a card that moves. The other three categories have no cards yet, so a test needs stand in cards of a different height, said plainly on the page.
+
+**Half finished**
+
+- His answer.
+
 ## 2026-11-13 · His look at the second pass: faces lit, no bar, the button, and phones last (Fable, web chat)
 
 **What Brandon said.** He brought Claude Code's report and his answer to it, not yet sent. His words are in `BRIEF.md`, The stream, "His look at the second pass". In short:
