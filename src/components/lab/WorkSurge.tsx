@@ -85,13 +85,19 @@ export function WorkSurge() {
         <p className={styles.label}>Study 15 · when the category changes</p>
         <h1 className={styles.title}>The surge</h1>
         <p className={styles.lede}>
-          Pick a category on the bar. The bar is knocked, the stream resting on its two ends jumps, and a surge runs down each side.
+          Pick a category below, or on the bar in the drawing. The bar is knocked, the stream resting on its two ends jumps, and a surge runs down each side.
           Each card lets go as the surge reaches it, and the stream strikes the new card as it comes up.
         </p>
         <p className={styles.note}>
           A wireframe. The line stands in for the stream, and every card outside Software is a stand in. Judge the order and the
           timing, not the look.
         </p>
+        <div className={styles.play}>
+          <p className={styles.playName}>Play it · pick a different category</p>
+          <div className={styles.switch} role="group" aria-label="Play it: pick a different category">
+            {CATEGORIES.map((name, i) => <button key={name} type="button" aria-pressed={category === i} onClick={() => press(i)}>{name}</button>)}
+          </div>
+        </div>
         <Switch label="What happens" choices={MODES} value={mode} set={setMode} />
         <Switch label="How long the surge takes, bar to button" choices={LENGTHS} value={length} set={setLength} />
         <Switch label="Playback" choices={RATES} value={rate} set={setRate} />

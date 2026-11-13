@@ -15,6 +15,7 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 - B · All at once: the knock, then all four cards let go together. Nothing travels.
 - A card's change is the same in both and does not stretch with the surge: the old card drops and is gone in 0.09 s, the new one comes up from below, and the stream strikes it 0.18 s after the old one let go. The edge flares, the picture goes to its own colors and is back in bronze within a second. While the card is away the line sags, and it springs back at the strike.
 - Playback at real speed or a quarter. The whole section fitted to the screen, or at its real size, where it scrolls.
+- He could not find how to play it: the only way was the category names on the drawn bar, which are a few pixels tall when the whole section is fitted to the screen. A marked row of four category buttons, "Play it", is now at the top of the switches. A study's main control is never only inside the drawing.
 - With reduced motion the cards change and nothing else moves.
 - Still: `reference/studies/28-work-surge-one-press.jpg`, eight frames of one press at 0.7 s.
 

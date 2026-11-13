@@ -40,6 +40,22 @@
   color: var(--text-3);
 }
 
+.play {
+  margin-top: var(--space-6);
+  padding: var(--space-4);
+  border: 1px solid var(--copper);
+  border-radius: var(--radius-3);
+}
+
+.playName {
+  margin-bottom: var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--copper-light);
+}
+
 .choice {
   margin-top: var(--space-5);
 }
