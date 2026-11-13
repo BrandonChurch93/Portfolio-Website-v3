@@ -230,6 +230,11 @@ Worked out in a wireframe at `/lab/work-draft` over the day. How it got there is
 - The strike on the second row: "It doesn't feel powerful enough. It feels like a graze." He wants it improved. The cause is not confirmed.
 - The posts and the rails: "I also don't mind the 2 objects that the stream bounces off of and the 2 rails, but I wonder if we could derby some new designs and see if maybe there are some better options that would look cooler." A derby of designs is wanted.
 - **The derby is at `/lab/work-objects` (Study 10), waiting on his pick.** He kept Fable on high for it: "I think that is enough effort right now for a derby of this scale." For the turning object: 1 · Knob, which is what is on the page now, redrawn. 2 · Wheel, a flywheel with a pierced web and a nut. 3 · Facet, a cut stud in a bezel. For the rail: 1 · Bar, as now. 2 · Truss, an open girder. 3 · Channel, slotted, with the stream inside it. They are drawn larger than on the page, and the stream beside them is a stand in.
+- **His verdict on the derby (Nov 12):** "I didn't necessarily love any of these."
+    - The rail: "the one we have now is my favorite because of its form factor". What he does not love is "the two knobs", which would "be so much cooler if they were something else".
+    - What he is after, in his words: "I think you're looking at like contractual type assets. Where I'm thinking more like statues and art." Fable reads "contractual" as construction: hardware and fittings.
+    - An idea, not a ruling: "Think like an ancient Egypt's styled head, or like a gargoyle head, or something cool like that's what I'm envisioning." If heads: where the posts are now they face the visitor, and "when the light hits them, their mouth and eyes turn red or something". On the rails "the faces should be on the side looking each direction". And: "Not saying I wanna go with the faces, I'm just thinking about something a lot cooler than what we have right now."
+    - In exact terms: the rail's bar stays as it is. The posts and the rail's end pieces stop being hardware and become small sculptures. What they depict is not decided.
 
 **How it is built**
 
