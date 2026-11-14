@@ -2,6 +2,25 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · The seventh round ruled, and options for the three small things (Fable, web chat)
+
+**What Brandon said**
+
+- What a row's strike throws lands on the row's borders, which are treated as solid things. Nothing of a row, its 3D thing included, shows before its strike.
+- A border down the left of the rows for the stream to bounce off: he is 50-50, and it is parked for Claude Code if the turn looks soft.
+- The PC turned glass side out looks good. The reflector is fine for now. Yes to the strikes at the rows and the rocking.
+- He wants to work on the derby: what the three stand ins are, with several options for each row. He is unsure of the middle one.
+- All of it is in `BRIEF.md`, Settled.
+
+**What was done**
+
+- Nothing built. Three options for each row were put to him, with a pick for each. `BRIEF.md`, Open 28, "The derby of the three small things".
+
+**For the next session**
+
+- When he says which options go in: build the derby as rough 3D on its own page under `/lab`, each thing about 90 units across at the page's size and also large, lit by the cursor's light. Stills need `--t` and a held clock, as `/lab/desk` does.
+- Skills and About as drawn in `/lab/skills-about-draft` have nothing left unruled but the three things. The prompt for Claude Code waits for his go.
+
 ## 2026-11-14 · The fuller draft's seventh round: strikes at the rows, a hook for the headphones (Fable, web chat)
 
 **What Brandon said**
