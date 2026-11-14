@@ -522,6 +522,28 @@ Left open:
 - **Whether a card stays awake.** He found that a card, once woken, never sleeps again, and had thought the agreement was that a card is blank whenever the stream is not on it. What was agreed was Fable's wording, which he confirmed: "The stream's first strike wakes it, for good." He is "50-50" now: blank whenever the stream is not there "makes more sense, especially if we have a cool animation of them changing". Fable's view, not agreed: a card should sleep again when the stream draws back above it. Everything else the stream does undoes itself when the page is scrolled back up, and a card in the top two thirds of the screen would still be awake to read.
 - Not answered: the stream being turned down ahead of the surge's front.
 
+**A card sleeps again, and the change is an animation both ways (Nov 13)**
+
+- "For the cards go back to sleep: yes. I think they should have a shifting animation for both opening and ending."
+- In exact terms: a card is awake while the stream has reached it, and asleep when it has not. When the page is scrolled back up and the stream draws back above a card, that card goes back to sleep. Waking and going to sleep are each a designed change from one state to the other, not a cut and not a plain fade.
+- This replaces "The stream's first strike wakes it, for good" and "Scrolling back up never puts a card back to sleep", which were Fable's wording.
+- Still Fable's calls, not yet answered: under the pointer or with keyboard focus a sleeping card is awake.
+- What the change looks like is not decided. It goes with the blank's design, below.
+
+**What he wants the blank to be (Nov 13). Not decided: ideas first, then a derby in the web chat**
+
+- "What I'm envisioning is highly mirrored metal, super reflective, but obviously like a placeholder blank card. I do want there to be some detail on it. I wasn't expecting him to put like a sun or something. I don't hate that, but I was thinking more of like, you know how a skeleton loader has like content on it, something kind of like that, but instead of it actually moving like a skeleton loader it's like etched on the card or something. I don't know. I also want you to come up with your own ideas, something creative. Let's put them here before we jump straight into the derby."
+- In exact terms: a mirror finish, far more reflective than the blank that was built. Plainly a blank. Some detail, and his first thought for it is the card's layout as plain shapes, as a skeleton loader shows them, cut into the metal and still.
+- **This changes a line of "A sleeping card is a blank".** That line says a sleeping card shows "no band, no window". Shapes that stand for the layout, the same on every card, are what he is now describing. A card's own picture and words still never show.
+- He is holding the prompt for Claude Code until everything open is answered: "I only want to go to Claude Code once we have everything figured out that's open."
+- Fable's ideas, put to him the same day. Talk only:
+    - Why the built blank falls short: a mirror shows what is round it, and it was given one soft sheen on a flat brown. A mirror finish needs hard edged bands of light and dark that slide as the cursor's light moves and as the card turns.
+    - A · Etched layout, his idea: the layout engraved as hairlines. It wakes as each engraved shape becomes the thing it stands for.
+    - B · The mould: the same layout as shallow pockets sunk into the mirror, like a tray. It wakes as each pocket fills.
+    - C · Doors: the face is two mirrored doors that meet at a fine seam with a latch at the middle. They slide apart into the rim to wake and close to sleep.
+    - D · Engine turned: a mirror cut with a fine turned pattern, as on a watch dial, that throws moving bands of light. No hint of the layout. It wakes as a band of light crosses from the strike with the content behind it.
+    - A small stamped hallmark, as on silver, could go on any of them in place of the sun.
+
 **How it is built**
 
 He added these while the stream was a simulated liquid. They hold for anything in the stream that is simulated: shards thrown loose, sparks.

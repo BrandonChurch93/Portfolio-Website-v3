@@ -2,6 +2,27 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · Cards sleep again, and ideas for the blank (Fable, web chat)
+
+**What Brandon said.** His words are in `BRIEF.md`, The stream, "A card sleeps again" and "What he wants the blank to be".
+
+- He is not sending the prompt in the entry below until everything open is answered.
+- Cards go back to sleep: yes, with a shifting animation for waking and for sleeping.
+- The blank: a mirror finish, plainly a placeholder, with detail. His thought is the layout as a skeleton loader shows it, etched and still. He asked for Fable's own ideas before any derby.
+
+**What Fable put to him. Talk only, nothing built**
+
+- Four ideas (etched layout, the mould, doors, engine turned), each with how it wakes and sleeps, and a list of the small things from Claude Code's reports that still want a yes or no.
+- The prompt in the entry below is out of date once he answers: it says not to touch the sleeping cards and to wake them for good.
+
+**For the derby, when he says go**
+
+- A still of metal can be judged in this workspace. The card's blank is the `uAsleep` branch of the card's light shader in `src/metal/shaders.ts`, with `blankMark` for the line and the sun. The built blank's own note: a flat polished face reflects the dark room and comes out black, so it was given a color of its own.
+
+**Half finished**
+
+- His reaction to the ideas, and his answers to the list.
+
 ## 2026-11-13 · His look at the third pass, after the blank: four rulings (Fable, web chat)
 
 **What Brandon said.** His words are in `BRIEF.md`, The stream, "His look at the third pass, after the blank".
