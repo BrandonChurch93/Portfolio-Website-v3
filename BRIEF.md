@@ -946,6 +946,15 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     - Fable's call, his to overturn: the tablet and the pencil are modeled to read as his, and carry no maker's mark, as with the headphones.
     - It settles Open 5 for this piece, and "One fixed light" above gives way as Open 28 said it would: the PC is a third light, and the desk's own lights are fixed once it is lit.
 - **The headphones hang at the right of the Skills title (Nov 14).** "What if we put the headphones next to skills title to the right?" In the words' column, beside the title, not over the desk. Of the site's own design.
+- **He is willing to approve the desk's design as it stands, for the real build to make much better (Nov 14).** "OK, the desk isn't bad, assuming that Claude Code is going to make this look much better. I think I'm willing to approve the current design." "As far as the desk, you don't have to keep iterating on it, because I know Fable in Claude Code is going to do a whole bunch of work to make this look a lot better. It's important to say where I think the short sides are so they can be iterated on."
+    - In exact terms: what is on the desk and where it stands is agreed, as the second round at `/lab/desk` shows it. There are no more rounds of the rough draft in the web chat. The look of it is not approved: everything on the desk is made to the bar in the real build, in Claude Code, and judged there.
+    - Where it falls short, in his words, for that build:
+        - "The keyboard and mouse still kind of look mid. Same thing with the camera."
+        - "The computer could still use a lot of work. It actually doesn't look great at all."
+    - **He likes the PC being glass and see through.** "But I kinda like the idea of it being glass and see-through. Maybe if it was turned so we're seeing the side of it instead of the front?" The glass is a like. The turn is a question, not a ruling. Fable's answer is in Open 29.
+- **The stream at the desk is open again (Nov 14).** "Another thing I don't love about the desk section is the actual stream that comes down kind of hits the desk in the middle. The stream is pretty noticeable and powerful, so it's gonna steal the show over the scene. Maybe it should come in at a different angle and interact with the desk differently? It running down the edge of the desk was your idea that I was 50-50 on from the beginning, not necessarily something I was wanting to 100% stick with, so I'm open to other options."
+    - In exact terms: in the drafts the stream comes into Skills at the middle of the page, lands near the middle of the desk's front edge, runs the edge to the desk's near end and falls off it down the left side. He does not love the landing in the middle, and expects the stream to take the eye from the scene on the desk. He does not hold to the run along the front edge.
+    - It puts one line in question: "a bronze front edge that carries the stream", in the third of the five calls above. It is not replaced until he picks a route. Fable's options are in Open 29.
 
 ### About
 
@@ -958,6 +967,12 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     - His idea for the route, not a ruling: "I don't know if that means running the surge on the bottom of the last skill and then having it hook around behind my character or what to do there so it doesn't get in the way of the about me section. I'm open to suggestions." Fable's route is in Open 28.
 - **His portrait stands beside the words, level with them (Nov 14).** "On the about section, I feel like my profile picture should be next to the content. Currently, my profile picture sits a good ways above it. I'd like it to be more centered."
     - In exact terms: in the fuller draft his head was about 330 units above the About title and the words began level with his chest. The portrait and the words are to stand side by side, centered on each other top to bottom.
+- **The stream does not come in over his head (Nov 14).** "I definitely don't like the stream coming in directly over my head."
+    - In exact terms: in the third round the rail ended over his head and the stream dropped from its end into the top of his hair. That is out. It still passes behind him and still stays off the tabs.
+    - **His idea for the route. He asked for thoughts, so it is a direction and not a ruling.** "We could put more sun stones or 3D objects for the stream to bounce off of: one kind of where it starts to turn diagonal now, that it hits and goes more towards the right while still falling slightly, just less of a diagonal grade, and then another that it hits that makes it come in at a sharp diagonal angle, preferably right behind my left shoulder, where my trap is, in between my neck and my delt, so right in the middle of my trap, and it should go directly through my body diagonally." "We don't have to use the sun stones. We can figure out other props, maybe more office stuff that makes sense, but I don't know. What are your thoughts?"
+    - In exact terms, as Fable reads it: two things for the stream to strike. The first stands at the left under the last row of skills, where the rail's high end is now, and turns the stream to the right on a slope gentler than the rail's 8 degrees. The second stands up and to the left of his portrait and turns it steeply down to the right. The stream goes in behind the shoulder at the left of the picture as it is looked at, half way between his neck and the point of that shoulder, crosses behind his chest on that same line, and comes out low at the picture's right.
+    - "My left shoulder" is read as the shoulder at the left of the picture, which is his own right. The stream comes from the left, and the shoulder at the picture's right can only be reached by going over his head. Said to him, his to correct.
+    - What the two things are is not ruled. Fable's thoughts are in Open 28.
 
 ### Contact
 
@@ -991,6 +1006,7 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
 - How he wants to be positioned: someone who takes a product from zero to done (meets the client, understands the problem, designs it, builds it, tests it with users, ships it), works well with teams, and has spent countless hours evaluating, red teaming and improving frontier AI models. (Nov 10)
 - Project pages hold video, click through screenshots, clear live and code links, more detail, and the year.
 - Python stays on the site.
+- **What Skills and About say is to be talked through (Nov 14).** "As far as the content of the skill section and the about section, that's probably something that we should discuss. Did you take a look at my résumé earlier? What did you think?" Fable's answer, and what is his to decide, is Open 30.
 
 ### How we work
 
@@ -1379,6 +1395,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
 - The "laid back, fun to try" voice
 - Three hovers for the buttons: light running round the border, Heat and Pull. He chose Catch (Nov 11)
 - The second build's kit, its screenshot gates and its voice rules. None of them apply here.
+- In About: the rail ending over his head, with the stream falling off its end into the top of his head. "I definitely don't like the stream coming in directly over my head." (Nov 14)
 
 ## Reference
 
