@@ -913,6 +913,17 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
 - **The skills on the live site are out of date, and his résumé is the newer source (Nov 14).** "Are we limiting the number of skills we have to fit the layout? It just seems a bit lighter than what's currently on my portfolio, which, to be honest, my current portfolio is way out of date. I have much more skills now that I'm capitalizing on versus back when I originally built the portfolio. I can share my résumé with you." He shared it.
     - Nothing was cut for the layout: the live site lists 48 skills and the fuller draft carried all 48. It read lighter because the live site gives each skill a chip with an icon and the draft set them as running lines. His résumé lists 77, in six groups.
     - It changes Open 6 and Words, "His live site's content is the base", for the lists of skills: the résumé's lists are the base. Which skills the site ends up showing is his to say.
+- **The desk as drawn in the second round is right (Nov 14).** "Yeah, everything looks good here." Its proportions stand: about 2 m long, 0.78 deep and 0.74 tall, seen from the front left and above, about 860 units wide on the page.
+- **The lists of skills are the résumé's, as the second round shows them (Nov 14).** The same approval. He did not ask for any of the skills that are on the live site and not on the résumé. They stay off until he says otherwise, and the words are still his to rewrite.
+- **The desk as a 3D piece: the five calls, agreed with one addition (Nov 14).** "The only thing that looked potentially off was on the desk you didn't mention the Apple pencil next to the iPad Pro. Besides that, everything looks good that you mentioned."
+    1. It is made in code in this repo, as his PC Builder was.
+    2. On it: the monitor, the lamp, the keyboard and mouse, his iPad Pro with the Apple Pencil next to it, and his camera. Nothing new.
+    3. The desk itself: a dark timber top, a bronze front edge that carries the stream, two drawers with the knob he chose for the sleeping card.
+    4. Under it: his PC Builder's case, lit in the site's ember.
+    5. The headphones are their own small piece by the title, of the site's own design.
+    - In exact terms, his addition: Fable's list said "a tablet". The tablet is his iPad Pro, and its pencil lies beside it.
+    - Fable's call, his to overturn: the tablet and the pencil are modeled to read as his, and carry no maker's mark, as with the headphones.
+    - It settles Open 5 for this piece, and "One fixed light" above gives way as Open 28 said it would: the PC is a third light, and the desk's own lights are fixed once it is lit.
 - **The headphones hang at the right of the Skills title (Nov 14).** "What if we put the headphones next to skills title to the right?" In the words' column, beside the title, not over the desk. Of the site's own design.
 
 ### About
@@ -920,6 +931,8 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
 - A big portrait on the right that reacts to the mouse and feels like part of the page, with something like an aura.
 - Tabs: about me, what I want to do, my plans for the future.
 - **His portrait fades in and the content appears when the stream reaches a point (Nov 14).** His words are under Skills, above: "it hits a certain point and my profile picture fades in and the content appears". Until then About is not on the page.
+- **The stream passes beside him, not behind his shoulders (Nov 14).** "Yeah, everything looks good here." Said of the fuller draft's second round, which opens with the stream falling off the end of the tabs' bar between the words and his portrait, after he was told in bold that it takes the place of the sloping rail behind his shoulders he had approved in the rough draft, and that Fable recommended it.
+    - With it: the title and the tabs stand on a level bar the stream runs along, the words hang under it, and a change of tab sends a pulse along the bar. Approved as drawn. Behind his shoulders is in Dropped.
 - **His portrait stands beside the words, level with them (Nov 14).** "On the about section, I feel like my profile picture should be next to the content. Currently, my profile picture sits a good ways above it. I'd like it to be more centered."
     - In exact terms: in the fuller draft his head was about 330 units above the About title and the words began level with his chest. The portrait and the words are to stand side by side, centered on each other top to bottom.
 
@@ -1251,7 +1264,8 @@ Each line has Fable's recommendation where there is one. None of these are rules
         - Gone from the page: the rows beside the desk and their switch.
         - What is not right yet, plainly: the bar is level, so the stream crosses it in about half a second however slowly the page is scrolled. The right side under his portrait and the left side under a short tab's words are empty. The lamp's head is a box.
         - Stills: `reference/studies/41-skills-about-draft-2-*.jpg`.
-    - **The desk as a 3D piece: five calls put to him, with Fable's pick for each. Waiting on his answer.** How it is made: in code in this repo, as his PC Builder was, or modeled through Blender on his gaming PC and loaded as a file (Open 5). What sits on it: the monitor, lamp, keyboard and mouse, a tablet and his camera, nothing new. The desk itself: a dark timber top, a bronze front edge that carries the stream, two drawers with the knob he chose. The PC under it: his PC Builder's case brought over, lit in the site's ember. The headphones: their own small piece by the title, the site's own design. Fable's pick is the first of each. After his answer: three rough desks to choose from. His `3d-asset-playbook` skill is the method.
+    - **His verdict on the second round (Nov 14): "Yeah, everything looks good here."** The stream beside him, the desk's proportions and the résumé's skills are in Settled. So are the five calls on the desk, with the Apple Pencil added beside his iPad Pro.
+    - **The desk as a 3D piece: five calls put to him, with Fable's pick for each. Answered Nov 14: all five agreed, with the pencil added** (Settled, Skills). How it is made: in code in this repo, as his PC Builder was, or modeled through Blender on his gaming PC and loaded as a file (Open 5). What sits on it: the monitor, lamp, keyboard and mouse, a tablet and his camera, nothing new. The desk itself: a dark timber top, a bronze front edge that carries the stream, two drawers with the knob he chose. The PC under it: his PC Builder's case brought over, lit in the site's ember. The headphones: their own small piece by the title, the site's own design. Fable's pick is the first of each. After his answer: three rough desks to choose from. His `3d-asset-playbook` skill is the method.
 
 ## Dropped
 
@@ -1272,6 +1286,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
 - A change of course that rises to a point and drives off, C in the path derby. "I definitely don't like the point shoot" (Nov 13)
 - Cards of different sizes, and a second row of tags on a card (Nov 13)
 - The rows of skills in a column beside the desk, as the mirror of About. He picked the rows under the desk (Nov 14)
+- A sloping rail across About, and the stream passing behind his shoulders. He kept the stream beside him, with his portrait centered on the words (Nov 14)
 - All four cards changing at once when the category changes, with nothing travelling. A surge of 0.45 or 0.7 seconds. He picked 0.7 from the wireframe, saw it on the real page, and changed to 1.1 (Nov 13)
 - For the card: its colors coming back as a sweep, lights first, or with the picture coming closer. The card leaning toward the cursor. The thin bead as its edge. He picked the fade, leaning away and the deep edge (Nov 13)
 - The faint channel drawn ahead of the stream
