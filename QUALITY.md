@@ -97,6 +97,10 @@ This is the real calibration. Every row is his verdict, not a guess. Rows that s
 | The one column stand in for Work on a phone | "Needs major work." The category bar "is really bad looks", and the two sides of the stream never meet again | A stand in he can open gets judged as the design. A phone is designed as a whole page, in its own pass, not squeezed out of each section as it is built |
 | What the stream does when the category changes, as a wireframe: a surge down each side at three lengths, or all four cards at once | "I like it, let's go with surge and medium" | A change that travels from where he pressed, with each thing answering in turn, beats everything changing together. He took the middle length. He could not find how to play the study at first: a study's main control is never only inside the drawing |
 | The surge on the real page at 0.7 seconds | "Everything looks really good." "I wish I would've went with the long one from earlier" | A length picked on a wireframe is a starting point. On the real stream there is more to watch, and he wanted longer to watch it |
+| The surge starting at the end of the bar nearer the press, so the two cards of a row changed a split second apart | "I just meant cards in the same row have a split second difference." He wanted both started from fixed spots on the stream | A stagger nobody asked for reads as a fault, however well caused. Fable also misread which stagger he meant: restate before answering |
+| The surge's front as a swell of light and a kink in the line | "It's not noticeable enough." "It needs to have more power to it" | The fresh reviewers had failed the same thing. A change in brightness along a line that is already bright does not carry. It needs a body |
+| Cards lit and readable ahead of the stream, changing with nothing touching them | The second row "looks horrible". He chose cards that sleep as "a bronze template" until the stream reaches them | What the stream has not reached should not look as if it has. He would sooner hold a card back, beautifully, than show it out of step |
+| A path of straight runs and hard corners, as a proposal | "A big deviation." "I actually like the swing. It's kind of unpredictable." What he minds is "harsher bows" that "take away the momentum of the power right before a strike". He wants "intentional directed power choosing its next course", not "a ballerina or flowing water" | He named a feeling and Fable answered with a geometry. The wander is life. A round turn spends the power, and a turn that gathers to a point keeps it. Ask what is wrong before proposing what replaces it |
 | The pour's first test shot, in motion | "I definitely don't like how it puddles." The stream "is blasted back multiple times". "Instead of looking like a refined beautiful hot liquid metal, this looks more like mud splashing around and puddling up" | Real physics is not enough. It has to be graceful. Metal that heaps, thrashes or hits itself reads as mud |
 
 ## The patterns behind those verdicts
@@ -268,6 +272,12 @@ The section:
 11. **With reduced motion** the cards change and nothing else moves. From the keyboard it works the same, and a screen reader hears which category is showing.
 12. **Smooth.** `npm run perf` through a run of presses: every frame at the screen's rate on his Mac. If four strikes at once reach a limit, what is dropped is said out loud.
 13. **`/lab/stream` and the approved buttons are unchanged.**
+14. **Both sides together.** The two cards of a row let go in the same frame, wherever on the bar the press was.
+15. **The front has power.** It is the brightest, most alive thing on the screen while it runs: a hard point, arc reaching off it, the shards opening round it and closing behind. Beside the stream's own leading end at a fast scroll it is not the weaker one. It never reads as a ball of glow.
+16. **A sleeping card is beautiful.** Alone on the screen, with no stream near it, it is a finished object in bronze that an engineer would look closer at. It does not read as a card that is switched off, greyed out or still loading.
+17. **Waking.** The stream's first strike wakes a card, and the change from asleep to awake has weight: it is lit by the strike, not faded up. It stays awake when the page is scrolled back up.
+18. **A sleeping card can still be used.** Under the pointer or with keyboard focus it is awake and passes contrast. A screen reader gets its words. With reduced motion, and where the stream cannot run, no card is ever asleep.
+19. **A press on a row the stream has not reached** changes sleeping cards for sleeping cards, and nothing about it looks left behind.
 
 **How to judge it**
 

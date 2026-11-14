@@ -165,3 +165,34 @@
     width: 100%;
   }
 }
+
+.go {
+  min-height: var(--touch);
+  padding: 0 var(--space-5);
+  border: 1px solid var(--copper);
+  border-radius: 1.4rem;
+  background: color-mix(in srgb, var(--copper-light) 14%, transparent);
+  color: var(--pale);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.go:focus-visible {
+  outline: var(--focus);
+  outline-offset: var(--focus-offset);
+}
+
+.drag {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  font-size: var(--step--1);
+  color: var(--text-3);
+}
+
+.drag input {
+  width: 100%;
+  accent-color: var(--copper);
+}

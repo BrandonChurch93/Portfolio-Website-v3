@@ -34,8 +34,9 @@ const KINDS = [['UX STUDY', 'RAG CHATBOT', 'MCP SERVER & CLI', 'AGENT-COMPOSED']
 const HUES = [[205, 42, 24, 216], [282, 332, 150, 196], [172, 14, 262, 96], [356, 44, 190, 304]];
 
 interface Path { x: Float32Array; y: Float32Array; nx: Float32Array; ny: Float32Array; n: number }
+type Corner = [x: number, y: number, radius: number];
 
-function trace(pts: [number, number, number][]): Path {
+function trace(pts: Corner[]): Path {
   const raw: number[] = [pts[0][0], pts[0][1]];
   let px = pts[0][0], py = pts[0][1];
   for (let i = 1; i < pts.length - 1; i++) {
@@ -64,12 +65,16 @@ function trace(pts: [number, number, number][]): Path {
     need -= left;
   }
   const n = xs.length, p: Path = { x: Float32Array.from(xs), y: Float32Array.from(ys), nx: new Float32Array(n), ny: new Float32Array(n), n };
-  for (let i = 0; i < n; i++) {
-    const a = Math.max(0, i - 1), b = Math.min(n - 1, i + 1);
+  normals(p);
+  return p;
+}
+
+function normals(p: Path): void {
+  for (let i = 0; i < p.n; i++) {
+    const a = Math.max(0, i - 1), b = Math.min(p.n - 1, i + 1);
     const tx = p.x[b] - p.x[a], ty = p.y[b] - p.y[a], l = Math.hypot(tx, ty) || 1;
     p.nx[i] = -ty / l; p.ny[i] = tx / l;
   }
-  return p;
 }
 
 const mirror = (p: Path): Path => ({ x: p.x.map((v) => STAGE.w - v), y: p.y, nx: p.nx.map((v) => -v), ny: p.ny, n: p.n });
@@ -79,18 +84,65 @@ function nearest(p: Path, x: number, y: number): number {
   return best;
 }
 
-// The left side of the route as it is on the Work page, stop by stop. The right side is its mirror.
-const LEFT = trace([
-  [CX, -60, 0], [CX, 49, 30], [506, 49, 40], [452, 112, 50], [418, 211, 22], [366, 211, 26], [336, 300, 60],
-  [322, 383, 24], [246, 383, 30], [150, 640, 120], [128, 876, 12], [247, 1174, 8], [196, 1252, 50],
-  [150, 1592, 26], [611, 1654, 40], [CX, 1706, 30], [CX, STAGE.h + 40, 0],
-]);
-const SIDES = [LEFT, mirror(LEFT)];
-const AT = {
-  title: nearest(LEFT, CX, 49), bar: nearest(LEFT, 392, 211), top0: nearest(LEFT, 322, 383), top1: nearest(LEFT, 246, 383),
-  stone: nearest(LEFT, 128, 876), side: nearest(LEFT, 247, 1174), rail: nearest(LEFT, 150, 1592), meet: nearest(LEFT, CX, 1706),
+// The left side of the route, stop by stop, each corner with how round it is. The right side is its mirror.
+// plain is the surge study's own line. The other three are the path study's: the page's route as it is now, redrawn
+// by hand, a route of straight runs and hard corners, and one that keeps the wander of a free run, comes straight in
+// to every strike, and turns by rising to a point.
+export type PathName = 'plain' | 'now' | 'ricochet' | 'driven';
+const END = STAGE.h + 40;
+const CORNERS: Record<PathName, Corner[]> = {
+  plain: [
+    [CX, -60, 0], [CX, 49, 30], [506, 49, 40], [452, 112, 50], [418, 211, 22], [366, 211, 26], [336, 300, 60],
+    [322, 383, 24], [246, 383, 30], [150, 640, 120], [128, 876, 12], [247, 1174, 8], [196, 1252, 50],
+    [150, 1592, 26], [611, 1654, 40], [CX, 1706, 30], [CX, END, 0],
+  ],
+  now: [
+    [CX, -60, 0], [CX, 49, 34], [506, 49, 46], [450, 120, 70], [418, 211, 26], [366, 211, 34], [334, 300, 70],
+    [322, 383, 28], [246, 383, 44], [150, 600, 160], [128, 876, 14], [247, 1174, 10], [190, 1262, 70],
+    [150, 1592, 30], [611, 1654, 46], [CX, 1706, 34], [CX, END, 0],
+  ],
+  ricochet: [
+    [CX, -60, 0], [CX, 49, 5], [506, 49, 5], [418, 211, 5], [366, 211, 5], [322, 383, 5], [246, 383, 5],
+    [128, 876, 5], [247, 1174, 5], [150, 1592, 5], [611, 1654, 5], [CX, 1706, 5], [CX, END, 0],
+  ],
+  driven: [
+    [CX, -60, 0], [CX, 49, 10], [506, 49, 30], [484, 46, 40], [466, 27, 2], [418, 211, 5], [366, 211, 30], [350, 208, 30], [337, 192, 2],
+    [322, 383, 5], [246, 383, 30], [226, 380, 36], [205, 359, 2], [128, 876, 5], [247, 1174, 5], [200, 1158, 40], [172, 1131, 2],
+    [150, 1592, 5], [611, 1654, 40], [CX, 1706, 12], [CX, END, 0],
+  ],
 };
-const TOP = (AT.top0 + AT.top1) >> 1;
+// How far a free run wanders to each side, and how far from anything it touches the wander begins and is whole.
+const SWAY: Record<PathName, [number, number, number]> = { plain: [0, 0, 1], now: [15, 30, 120], ricochet: [0, 0, 1], driven: [13, 90, 230] };
+const MARKS = {
+  title: [CX, 49], titleEnd: [506, 49], barIn: [418, 211], bar: [392, 211], barEnd: [366, 211], top0: [322, 383], top1: [246, 383],
+  stone: [128, 876], side: [247, 1174], rail: [150, 1592], meet: [CX, 1706],
+} as const;
+type Marks = Record<keyof typeof MARKS, number>;
+interface Built { sides: [Path, Path]; at: Marks; top: number; floor: Float32Array }
+
+function build(name: PathName): Built {
+  const p = trace(CORNERS[name]);
+  const at = Object.fromEntries(Object.entries(MARKS).map(([k, [x, y]]) => [k, nearest(p, x, y)])) as Marks;
+  const [amp, from, full] = SWAY[name];
+  if (amp) {
+    const held = [[at.title, at.titleEnd], [at.barIn, at.barEnd], [at.top0, at.top1], [at.stone, at.stone], [at.side, at.side], [at.rail, at.meet]];
+    const x = p.x.slice(), y = p.y.slice();
+    for (let i = 0; i < p.n; i++) {
+      let d = Infinity;
+      for (const [a, b] of held) d = Math.min(d, i < a ? a - i : i > b ? i - b : 0);
+      const k = Math.max(0, Math.min(1, (d * STEP - from) / (full - from))), m = k * k * (3 - 2 * k), run = i * STEP;
+      const w = amp * m * (0.6 * Math.sin((run / 640) * 6.283 + 1.3) + 0.4 * Math.sin((run / 270) * 6.283 + 4.1));
+      x[i] += p.nx[i] * w; y[i] += p.ny[i] * w;
+    }
+    p.x = x; p.y = y;
+    normals(p);
+  }
+  // The lowest the route has been by each point: the leading end is as far along as the scroll's line has got past.
+  const floor = new Float32Array(p.n);
+  let low = -Infinity;
+  for (let i = 0; i < p.n; i++) { low = Math.max(low, p.y[i]); floor[i] = low; }
+  return { sides: [p, mirror(p)], at, top: (at.top0 + at.top1) >> 1, floor };
+}
 
 interface Bit { x: number; y: number; vx: number; vy: number; rot: number; spin: number; size: number; born: number; life: number; kind: number; rest: number }
 interface CardState { from: number; to: number; at: number; struck: number; pending: boolean }
@@ -109,11 +161,36 @@ export class SurgeSim {
   private knock = -9;
   private met = -9;
   private quiet = 0;
+  private sides!: [Path, Path];
+  private at!: Marks;
+  private top = 0;
+  private n = 0;
+  private floor!: Float32Array;
+  private ghost: [Path, Path] | null = null;
+  private head = 0;
+  // The scroll's line, in units down the stage: the stream is drawn as far as its leading end has run to keep up
+  // with it. Null draws the whole stream.
+  line: number | null = null;
 
-  constructor() { this.reset(); }
+  constructor(path: PathName = 'plain') { this.setPath(path); this.reset(); }
+
+  setPath(name: PathName, ghost = false): void {
+    const b = build(name);
+    this.sides = b.sides; this.at = b.at; this.top = b.top; this.floor = b.floor; this.n = b.sides[0].n;
+    this.sx = [new Float32Array(this.n), new Float32Array(this.n)];
+    this.sy = [new Float32Array(this.n), new Float32Array(this.n)];
+    this.ghost = ghost && name !== 'now' ? build('now').sides : null;
+    this.head = Math.min(this.head, this.n - 1);
+  }
+
+  // Back to the top, for running the stream down again.
+  rewind(): void {
+    this.head = 0; this.bits = [];
+    for (const c of this.cards) c.struck = -9;
+  }
 
   private reset(): void {
-    this.t = 0; this.cat = 0; this.count = 0; this.done = 0; this.quiet = 0;
+    this.t = 0; this.cat = 0; this.count = 0; this.done = 0; this.quiet = 0; this.head = 0;
     this.cards = CARDS.map(() => ({ from: 0, to: 0, at: -9, struck: -9, pending: false }));
     this.surges = []; this.bits = []; this.stone = [-9, -9]; this.knock = -9; this.met = -9;
   }
@@ -148,7 +225,7 @@ export class SurgeSim {
     }
     const x = BAR.l + ((p.cat + 0.5) * (BAR.r - BAR.l)) / 4;
     for (let side = 0; side < 2; side++) {
-      const far = Math.abs(x - SIDES[side].x[AT.bar]) / (BAR.r - BAR.l);
+      const far = Math.abs(x - this.sides[side].x[this.at.bar]) / (BAR.r - BAR.l);
       this.surges.push({ side, t0: this.t + far * 0.14 * (p.mode === 'surge' ? p.T : 0.3), T: p.T, mode: p.mode, cat: p.cat, near: 1 - far, fired: 0 });
     }
   }
@@ -170,29 +247,55 @@ export class SurgeSim {
   }
 
   private strike(i: number): void {
-    const side = i % 2, p = SIDES[side], out = side === 0 ? Math.PI : 0;
+    const side = i % 2, p = this.sides[side], out = side === 0 ? Math.PI : 0;
     this.cards[i].struck = this.t;
-    if (i < 2) this.burst(p.x[TOP], p.y[TOP] - 4, -Math.PI / 2 + (side === 0 ? -0.35 : 0.35), 1.1, 24, 22, 1);
-    else this.burst(p.x[AT.side] + (side === 0 ? -4 : 4), p.y[AT.side], out + (side === 0 ? 0.6 : -0.6), 0.9, 28, 24, 1);
+    if (i < 2) this.burst(p.x[this.top], p.y[this.top] - 4, -Math.PI / 2 + (side === 0 ? -0.35 : 0.35), 1.1, 24, 22, 1);
+    else this.burst(p.x[this.at.side] + (side === 0 ? -4 : 4), p.y[this.at.side], out + (side === 0 ? 0.6 : -0.6), 0.9, 28, 24, 1);
+  }
+
+  // What a leading end does as it reaches each stop on its way down.
+  private arrive(k: string): void {
+    for (let side = 0; side < 2; side++) {
+      const p = this.sides[side], out = side === 0 ? -1 : 1;
+      if (k === 'title' && side === 0) this.burst(CX, 46, -Math.PI / 2, 1.3, 18, 22, 1);
+      else if (k === 'barIn') { this.knock = this.t; this.burst(p.x[this.at.barIn], p.y[this.at.barIn] - 3, -Math.PI / 2, 0.9, 6, 10, 0.6); }
+      else if (k === 'top0') this.strike(side);
+      else if (k === 'stone') { this.stone[side] = this.t; this.burst(p.x[this.at.stone], p.y[this.at.stone], -Math.PI / 2 + out * 1.1, 0.8, 5, 12, 0.6); }
+      else if (k === 'side') this.strike(side + 2);
+      else if (k === 'rail') this.burst(p.x[this.at.rail], p.y[this.at.rail] - 4, -Math.PI / 2, 0.9, 6, 12, 0.6);
+      else if (k === 'meet' && side === 0) { this.met = this.t; this.burst(CX, 1706, Math.PI / 2, 1.2, 4, 14, 0.5); }
+    }
   }
 
   private step(): void {
     const t = this.t;
+    if (this.line !== null) {
+      let lo = 0, hi = this.n - 1;
+      while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (this.floor[mid] <= this.line) lo = mid; else hi = mid - 1; }
+      const was = this.head;
+      this.head = lo > was ? Math.min(lo, was + (1400 / STEP) * H) : lo;
+      if (this.head > was) {
+        for (const [k, i] of Object.entries(this.at)) if (i > was && i <= this.head) this.arrive(k);
+        const h = Math.floor(this.head);
+        for (let side = 0; side < 2; side++) if (side === 0 || h > this.at.title) this.burst(this.sides[side].x[h], this.sides[side].y[h], Math.PI / 2, 2.4, 0, 1, 0.45);
+        this.quiet = Math.max(this.quiet, t + 2.6);
+      }
+    }
     for (const s of this.surges) {
       const e = t - s.t0;
       if (e < 0) continue;
-      const p = SIDES[s.side], row = [s.side, s.side + 2];
-      if (!(s.fired & 1)) { s.fired |= 1; this.knock = t; this.burst(p.x[AT.bar], p.y[AT.bar] - 3, -Math.PI / 2, 0.9, Math.round(4 + 6 * s.near), Math.round(6 + 8 * s.near), 0.55 + 0.3 * s.near); }
+      const p = this.sides[s.side], row = [s.side, s.side + 2];
+      if (!(s.fired & 1)) { s.fired |= 1; this.knock = t; this.burst(p.x[this.at.bar], p.y[this.at.bar] - 3, -Math.PI / 2, 0.9, Math.round(4 + 6 * s.near), Math.round(6 + 8 * s.near), 0.55 + 0.3 * s.near); }
       if (s.mode === 'together') {
         if (e >= 0.04 && !(s.fired & 2)) { s.fired |= 2; this.letGo(row[0], s.cat); this.letGo(row[1], s.cat); }
         continue;
       }
-      const front = AT.bar + ((AT.meet - AT.bar) * e) / s.T;
-      if (front >= AT.top0 && !(s.fired & 2)) { s.fired |= 2; this.letGo(row[0], s.cat); }
-      if (front >= AT.stone && !(s.fired & 4)) { s.fired |= 4; this.stone[s.side] = t; this.burst(p.x[AT.stone], p.y[AT.stone], s.side === 0 ? -0.5 : Math.PI + 0.5, 0.8, 4, 10, 0.5); }
-      if (front >= AT.side - 6 && !(s.fired & 8)) { s.fired |= 8; this.letGo(row[1], s.cat); }
-      if (front >= AT.rail && !(s.fired & 16)) { s.fired |= 16; this.burst(p.x[AT.rail], p.y[AT.rail] - 4, -Math.PI / 2, 0.9, 5, 10, 0.5); }
-      if (front >= AT.meet && !(s.fired & 32)) { s.fired |= 32; this.met = t; this.burst(CX, 1706, Math.PI / 2, 1.2, 3, 12, 0.5); }
+      const front = this.at.bar + ((this.at.meet - this.at.bar) * e) / s.T;
+      if (front >= this.at.top0 && !(s.fired & 2)) { s.fired |= 2; this.letGo(row[0], s.cat); }
+      if (front >= this.at.stone && !(s.fired & 4)) { s.fired |= 4; this.stone[s.side] = t; this.burst(p.x[this.at.stone], p.y[this.at.stone], s.side === 0 ? -0.5 : Math.PI + 0.5, 0.8, 4, 10, 0.5); }
+      if (front >= this.at.side - 6 && !(s.fired & 8)) { s.fired |= 8; this.letGo(row[1], s.cat); }
+      if (front >= this.at.rail && !(s.fired & 16)) { s.fired |= 16; this.burst(p.x[this.at.rail], p.y[this.at.rail] - 4, -Math.PI / 2, 0.9, 5, 10, 0.5); }
+      if (front >= this.at.meet && !(s.fired & 32)) { s.fired |= 32; this.met = t; this.burst(CX, 1706, Math.PI / 2, 1.2, 3, 12, 0.5); }
     }
     this.surges = this.surges.filter((s) => t - s.t0 < (s.mode === 'surge' ? s.T + 0.4 : 0.4));
     this.cards.forEach((c, i) => { if (c.pending && t >= c.at + SWAP.strike) { c.pending = false; this.strike(i); } });
@@ -227,8 +330,8 @@ export class SurgeSim {
 
   // ---- drawing
 
-  private sx = [new Float32Array(LEFT.n), new Float32Array(LEFT.n)];
-  private sy = [new Float32Array(LEFT.n), new Float32Array(LEFT.n)];
+  private sx: Float32Array[] = [];
+  private sy: Float32Array[] = [];
 
   // How far the stream is off its line where a card has let go: it sags, and springs back as the new card strikes it.
   private give(c: CardState): number {
@@ -240,23 +343,23 @@ export class SurgeSim {
   }
 
   private bend(side: number): void {
-    const p = SIDES[side], x = this.sx[side], y = this.sy[side];
+    const p = this.sides[side], x = this.sx[side], y = this.sy[side];
     x.set(p.x); y.set(p.y);
     const g0 = this.give(this.cards[side]) * 9, g1 = this.give(this.cards[side + 2]) * 8;
-    if (g0) for (let i = AT.top0 - 10; i <= AT.top1 + 10; i++) { const k = Math.min(1, (i - AT.top0 + 10) / 10, (AT.top1 + 10 - i) / 10); y[i] += g0 * k; }
-    if (g1) for (let i = AT.side - 16; i <= AT.side + 16; i++) { const k = 1 - Math.abs(i - AT.side) / 16; x[i] += (side === 0 ? 1 : -1) * g1 * k * k; }
+    if (g0) for (let i = this.at.top0 - 10; i <= this.at.top1 + 10; i++) { const k = Math.min(1, (i - this.at.top0 + 10) / 10, (this.at.top1 + 10 - i) / 10); y[i] += g0 * k; }
+    if (g1) for (let i = this.at.side - 16; i <= this.at.side + 16; i++) { const k = 1 - Math.abs(i - this.at.side) / 16; x[i] += (side === 0 ? 1 : -1) * g1 * k * k; }
     for (const s of this.surges) {
       if (s.side !== side || s.mode !== 'surge') continue;
       const e = this.t - s.t0;
       if (e < 0) continue;
-      const v = (AT.meet - AT.bar) / s.T, fade = Math.max(0, Math.min(1, (s.T + 0.25 - e) / 0.25));
+      const v = (this.at.meet - this.at.bar) / s.T, fade = Math.max(0, Math.min(1, (s.T + 0.25 - e) / 0.25));
       const wave = (front: number, amp: number) => {
         const a = Math.max(1, Math.floor(front - 40)), b = Math.min(p.n - 2, Math.ceil(front + 40));
         for (let i = a; i <= b; i++) { const u = (i - front) / 12, w = -u * Math.exp(-u * u) * 2.33 * amp; x[i] += p.nx[i] * w; y[i] += p.ny[i] * w; }
       };
-      wave(AT.bar + v * e, 7 * fade);
-      const up = AT.bar - v * e;
-      if (up > AT.title) wave(up, 4 * (up - AT.title) / (AT.bar - AT.title));
+      wave(this.at.bar + v * e, 7 * fade);
+      const up = this.at.bar - v * e;
+      if (up > this.at.title) wave(up, 4 * (up - this.at.title) / (this.at.bar - this.at.title));
     }
   }
 
@@ -292,18 +395,27 @@ export class SurgeSim {
       }
     });
 
+    if (this.ghost) for (const g of this.ghost) {
+      ctx.lineWidth = 2; ctx.strokeStyle = rgba(C['copper-light'], 0.4); ctx.setLineDash([7, 7]);
+      ctx.beginPath(); ctx.moveTo(g.x[0], g.y[0]); for (let i = 1; i < g.n; i++) ctx.lineTo(g.x[i], g.y[i]); ctx.stroke();
+      ctx.setLineDash([]);
+    }
     ctx.globalCompositeOperation = 'lighter';
+    const end = this.line === null ? this.n - 1 : Math.floor(this.head);
     for (let side = 0; side < 2; side++) {
       this.bend(side);
-      const x = this.sx[side], y = this.sy[side], from = side === 0 ? 0 : AT.title;
+      const x = this.sx[side], y = this.sy[side], from = side === 0 ? 0 : this.at.title;
       const line = (a: number, b: number) => { ctx.beginPath(); ctx.moveTo(x[a], y[a]); for (let i = a + 1; i <= b; i++) ctx.lineTo(x[i], y[i]); ctx.stroke(); };
-      for (const [w, col] of [[36, rgba(C.flame, 0.045)], [18, rgba(C.flame, 0.1)], [8, rgba(C.hot, 0.5)], [2.6, C.pale]] as [number, string][]) { ctx.lineWidth = w; ctx.strokeStyle = col; line(from, LEFT.n - 1); }
+      if (end > from) for (const [w, col] of [[36, rgba(C.flame, 0.045)], [18, rgba(C.flame, 0.1)], [8, rgba(C.hot, 0.5)], [2.6, C.pale]] as [number, string][]) { ctx.lineWidth = w; ctx.strokeStyle = col; line(from, end); }
+      if (this.line !== null && end > from && end < this.n - 1) {
+        for (const [r, col] of [[26, rgba(C.flame, 0.16)], [11, rgba(C.hot, 0.6)], [4.5, C.pale]] as [number, string][]) { ctx.beginPath(); ctx.arc(x[end], y[end], r, 0, 6.3); ctx.fillStyle = col; ctx.fill(); }
+      }
       for (const s of this.surges) {
         if (s.side !== side || s.mode !== 'surge') continue;
         const e = t - s.t0;
         if (e < 0) continue;
-        const front = AT.bar + ((AT.meet - AT.bar) * e) / s.T, fade = Math.max(0, Math.min(1, (s.T + 0.3 - e) / 0.3));
-        for (let a = Math.max(AT.bar, Math.floor(front - 80)); a < Math.min(LEFT.n - 4, front + 6); a += 3) {
+        const front = this.at.bar + ((this.at.meet - this.at.bar) * e) / s.T, fade = Math.max(0, Math.min(1, (s.T + 0.3 - e) / 0.3));
+        for (let a = Math.max(this.at.bar, Math.floor(front - 80)); a < Math.min(this.n - 4, front + 6); a += 3) {
           const d = a - front, b = Math.exp(-((d / (d > 0 ? 3 : 30)) ** 2)) * fade;
           ctx.lineWidth = 6 + 16 * b; ctx.strokeStyle = rgba(C.pale, 0.55 * b); line(a, a + 3);
           ctx.lineWidth = 30 + 40 * b; ctx.strokeStyle = rgba(C.flame, 0.1 * b); line(a, a + 3);
@@ -313,10 +425,10 @@ export class SurgeSim {
       for (const i of [side, side + 2]) {
         const v = t - this.cards[i].struck;
         if (v < 0 || v > 0.9) continue;
-        const f = Math.exp(-v / 0.22), p = SIDES[side];
+        const f = Math.exp(-v / 0.22), p = this.sides[side];
         ctx.lineWidth = 5; ctx.strokeStyle = rgba(C.pale, 0.9 * f);
         ctx.beginPath();
-        if (i < 2) { ctx.moveTo(p.x[TOP] - 120, CARDS[i].y); ctx.lineTo(p.x[TOP] + 120, CARDS[i].y); } else { const ex = side === 0 ? CARDS[i].x : CARDS[i].x + CARD.w; ctx.moveTo(ex, p.y[AT.side] - 110); ctx.lineTo(ex, p.y[AT.side] + 110); }
+        if (i < 2) { ctx.moveTo(p.x[this.top] - 120, CARDS[i].y); ctx.lineTo(p.x[this.top] + 120, CARDS[i].y); } else { const ex = side === 0 ? CARDS[i].x : CARDS[i].x + CARD.w; ctx.moveTo(ex, p.y[this.at.side] - 110); ctx.lineTo(ex, p.y[this.at.side] + 110); }
         ctx.stroke(); ctx.lineWidth = 22; ctx.strokeStyle = rgba(C.flame, 0.22 * f); ctx.stroke();
       }
     }

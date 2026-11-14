@@ -2,6 +2,48 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · Three things agreed, and a derby of the stream's path (Fable, web chat)
+
+**What Brandon said.** His words are in `BRIEF.md`: The stream, "Three changes to the surge and the cards", and Open 24.
+
+- Fable had misread the stagger. He meant the two cards of one row changing a split second apart, because the surge started from where he clicked. Start both from fixed spots on the stream. No toggle.
+- The front: yes to Fable's proposal.
+- Sleeping cards: yes, confirmed.
+- The path: not a ricochet. He likes the swing. The round bows spend the power before a strike. A change of course should rise to a point and blast off. It needs a derby of as now, the ricochet and a hybrid.
+
+**What was built**
+
+- Study 16 at `/lab/work-path` (`src/components/lab/WorkPath.tsx`), on Study 15's stage. `SurgeSim` in `src/work-surge/surge.ts` now takes a path by name and can run a leading end down it: `setPath`, `line`, `rewind`. Study 15 draws what it drew, on the path named `plain`.
+- The three paths are lists of corners with a roundness each (`CORNERS`), and a free run's wander is added afterwards and held off near anything the stream touches (`SWAY`).
+- The leading end is as far along as the scroll's line has got past (`floor`, the lowest the route has been by each point). So where the route goes sideways or back up, the leading end runs that stretch at once, up to a top speed. On C that makes it flick up to each point and drive down without anything being scripted. The real stream places its leading end the same way, so the same should fall out of it there.
+- Stills: `reference/studies/30-work-path-*.jpg`.
+
+**What Fable saw**
+
+- C's points at the ends of the title, the bar and the first row stack one above another and read a little like a pagoda's eaves at rest. B is the cleanest and the nearest to a neon outline. A is a redrawing by hand, close to the page and not the same.
+
+**The prompt Brandon was given, for the three agreed changes**
+
+```
+Pull main and read BRIEF.md, The stream, "Three changes to the surge and the cards", and QUALITY.md, "When the category changes", tests 14 to 19.
+
+Three changes on /lab/work:
+
+1. Both sides of the surge start together, each from where that side of the stream rests on the bar, wherever I press. The two cards of a row change in the same frame. Take out the nearer side going first.
+
+2. Give the surge's front power. Make it a second leading end racing down the stream: a hard hot point, forks of arc off it, sparks behind it, the riding shards flung wide as it passes and closing behind it, and the core burning pale in its wake. I have to be able to follow it from the bar to the button. Never a ball of glow, and nothing off the palette.
+
+3. Cards the stream has not reached are asleep: a blank of the card in bronze, with its rim, band and picture window there and unlit, and its picture and words low. Make it beautiful as it is, not a card turned down. The stream's first strike wakes a card for good. A press on a sleeping row changes sleeping cards for sleeping cards. The brief lists the calls Fable made about the pointer, the keyboard and reduced motion.
+
+Do not change the stream's path. That is being decided separately.
+
+/lab/stream and the approved buttons must still draw what they draw today. Have fresh Opus reviewers judge it against tests 14 to 19 before you report. Then build, commit, push, confirm the deploy, and report in a short list ending with one recommendation.
+```
+
+**Half finished**
+
+- His pick of a path. The three changes, once he sends the prompt.
+
 ## 2026-11-13 · Sleeping cards, the stagger, the front and the path: four proposals (Fable, web chat)
 
 **What Brandon said.** His words are in `BRIEF.md`, Open 21 to 24. In short:
