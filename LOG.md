@@ -11,19 +11,20 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 **What Fable told him**
 
 - Nothing else has to be answered first.
-- From stills Fable had recommended B and rated D last: satin where he had asked for a mirror, a dark fan that can read as a smudge, a boss that can read as a ring. He saw it moving, and his pick stands. The two faults go to the builder as things to fix.
+- From stills Fable had recommended B and rated D last: satin where he had asked for a mirror, a dark fan that can read as a smudge, a boss that can read as a ring. He saw it moving, and his pick stands. Fable first wrote those two into the prompt as faults to fix. That was wrong, and he caught it: see below.
 - D shows nothing of the layout, so it replaces his own first thought, the layout etched as a skeleton loader shows it. The brief says so.
 - Three calls Fable made in the agreement so the builder is not guessing: the band starts at the strike, a card under the pointer wakes and sleeps by the same change, and a blank is never brighter than the stream beside it.
 
 **What changed in the record. No code changed**
 
 - `BRIEF.md`, The stream: "His pick of a blank: D · Engine turned" and "The fourth pass on the Work page: the agreement for the build". Dropped has the three blanks he passed over and the sun. Open 21 notes what has been decided since.
-- `QUALITY.md`: a row in the table, and thirteen tests under "The fourth pass on the Work page".
+- `QUALITY.md`: two rows in the table, and fourteen tests under "The fourth pass on the Work page".
 - `PLAN.md`: Now, and two lines under Phase 3.
 - The prompt under "His look at the third pass, after the blank" was never sent. The prompt here replaces it.
 
 **What Fable can tell from reading the code and the earlier reports. Check before believing it**
 
+- The shadow he likes in the study is not a cast shadow. It is the dark of the room showing where the rays run along the lights' bands and do not smear them, so it pivots on the handle. A rebuild that lights the dial another way could lose it without meaning to. The handle is the dome at the end of design 3 in `face`, 24 units across, with two rings cut round it.
 - The dial in the study is design 3 of `face` in `src/work-blanks/blanks.ts`, and its fans are in `main`: thirteen samples of `room` smeared along the tangent, times a fine ripple, `sin(k.x * 240.0)`. Near the middle those rays are finer than a pixel. Nothing filters them. On a page that scrolls that is where crawl and moiré would come from.
 - The built blank is the `uAsleep` branch of the card's light shader in `src/metal/shaders.ts`, with `blankMark` for the line and the sun. Its own note: the lamp's highlight on a blank must not use the card's normal or tangents, which come from the card's relief.
 - The stream's light on a card (`plateLightFrag`) is off while a card is asleep. The dial needs it on, in the dial's own way.
@@ -33,6 +34,13 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 - The stone's aim is `work.post.aim`, `low` and `far` in `src/stream/config.ts`. The budgets went up to 400 thrown shards and 1200 sparks for the stones and may be able to come back down.
 - The bolt's strokes are hashed per side in `routeThroughWork(P, true)`. The right side's are the ones he likes.
 - The picture's warming at a strike is `plates.setWarm`.
+
+**He stopped the first version before sending it, so the prompt below is the second**
+
+- The first version's item 6 told the builder to fix two things in D: "the dark fan can read as a smudge, and the boss can read as a ring".
+- Both are what he likes. The centre piece is a handle to him, "some decadent handle on a piece of furniture", and he likes how 3D it is. The dark area "actually looks like a shadow", and the light on D is "why I chose it". He was afraid the builder would make it worse or remove it, "which I feel like he could have gotten from what you just gave him". He was right.
+- His words are in `BRIEF.md`, The stream, "What he likes in D, and what must not be lost". Item 6 now tells the builder to keep both and where it can go further. Test 4 was turned round and test 14 added.
+- The lesson is in `QUALITY.md`'s table: ask what he likes about a pick before telling a builder to change any of it.
 
 **The prompt Brandon was given**
 
@@ -48,7 +56,7 @@ The nine, in the order to do them:
 3. The bolt runs only from where the stream lands on the category bar to where the two sides meet under the button. Above the bar, put the path back the way it was before the bolt: down to WORK, the strike on it, along its top, over its ends and down to the bar. Below the meeting, the way it was too. Then take the path switch and ?path=now off the page.
 4. A strike must not bring a card's picture into color. The rim still flares. Only the pointer and keyboard focus color a picture.
 5. A card is asleep whenever the stream is not on it. It wakes at the strike. When I scroll back up and the stream draws back above it, it goes back to sleep.
-6. The blank. I picked D · Engine turned from the derby at /lab/work-blanks, so open that page first. This is a goal, not a spec: a plate turned like a watch dial, in our bronze, with fine rays round a boss at the middle and the card's polished edge round it, lit by long lights that stand off the screen, so the fans of light turn as I scroll and as the stream comes near. The study is the floor to beat. Two things in it to fix: the dark fan can read as a smudge, and the boss can read as a ring. Build it in the card's own plate, not as a canvas over the cards. Find a photograph of a real engine turned dial to judge it against, and keep it in reference/ with its credit.
+6. The blank. I picked D · Engine turned from the derby at /lab/work-blanks, so open that page first. This is a goal, not a spec: a plate turned like a watch dial, in our bronze, with fine rays round the handle at the middle and the card's polished edge round it, lit by long lights that stand off the screen. I picked it for how real the light is on it. Keep the two things I like most. The raised piece at the middle reads to me as a decadent handle on an antique cabinet door: keep it that 3D, make it richer if you can, and never make it flatter or plainer. The dark area that swings off it reads as a shadow: keep it, deepen it if you can, and never remove it, weaken it or tidy it away. Where you can go further is making the whole card feel like a real object in real 3D space. The study is the floor to beat, and the brief says what makes the shadow in it. Build it in the card's own plate, not as a canvas over the cards. Find a photograph of a real engine turned dial to judge it against, and keep it in reference/ with its credit.
 7. The change between asleep and awake is a band of light. It starts where the stream strikes the card and crosses away from it, with the dial ahead of it and the card behind. Going back to sleep, the band runs back. A sleeping card under the pointer or with keyboard focus wakes the same way.
 8. When I press a category, a row the stream has not reached does nothing at all. No drop, no rise, no strike, no flash, no waking. It stays blanks.
 9. Give "Case study" a lighter resting color, so it passes contrast with the cursor's light behind it.

@@ -587,13 +587,25 @@ Left open:
 **His pick of a blank: D · Engine turned (Nov 13)**
 
 - "My favorite by far is option D!" Said after opening the derby at `/lab/work-blanks`.
-- In exact terms: a sleeping card is the engine turned blank. Fine turned rays round a boss at the card's middle, inside the card's own polished edge, with no hint of the card's layout. It wakes as a band of light crosses it with the card behind, and goes back to sleep as the band runs back.
+- In exact terms: a sleeping card is the engine turned blank. Fine turned rays round a raised piece at the card's middle (the handle, below), inside the card's own polished edge, with no hint of the card's layout. It wakes as a band of light crosses it with the card behind, and goes back to sleep as the band runs back.
 - Fable had recommended B · The mould, and from stills had rated D the weakest of the four. He judged them live and moving, which the web chat cannot. His pick stands.
 - What the pick replaces:
     - The blank as built, with a line and a sun cut into it.
     - His first thought for it, the card's layout etched as a skeleton loader shows it, and a mirror finish over the whole face. D is satin rays inside a mirror edge. So "no band, no window" in "A sleeping card is a blank" stands again as written: a blank shows nothing of the layout.
     - A · Etched layout, B · The mould and C · Facets, which are passed over.
 - Taken with the pick, not said in so many words, and his to overturn: the long lights off the screen, which he asked about and which light D in the study, and D's own change, the band of light.
+
+**What he likes in D, and what must not be lost (Nov 13)**
+
+Fable had told the builder to fix two things in D: a boss that "can read as a ring" and a dark fan that "can read as a smudge". He stopped the prompt before sending it. Both are what he likes.
+
+- **The handle.** "Is that the handle you're referring to? Currently I actually enjoy how it looks 3D. I'm not opposed to making it better, but I don't necessarily want to lose the essence of it. What it looks like to me is like a handle on a swinging door on an antique china cabinet or something, some decadent handle on a piece of furniture. I really like the vibe of that."
+    - In exact terms: the raised round piece at the middle of the dial stays, and it is called the handle. It reads as a turned handle on a fine piece of furniture, with real depth. It may be made richer. It is never made flatter, plainer or smaller, and never taken away.
+- **The shadow.** "The smudge you're referring to, it actually looks like a shadow. The background interacts with the light much higher quality than the other three cards. That's why I chose it." "I want to keep the dark area that's obviously a shadow and improve upon it further if that's even possible. I don't want to make it worse, or possibly remove it."
+    - In exact terms: the dark area that runs out from the handle and swings as the light moves stays, and it reads as a shadow. It may be deepened. It is never removed, weakened or tidied away.
+    - What it is in the study, so that it is kept on purpose: not a cast shadow. The rays smear the room's lights round the dial, except where they run along the lights' bands, and there the dark of the room shows through. So it pivots on the handle as the scroll and the cursor's light move.
+- **Where it can go further.** "I'm definitely open to improving it even further, by making it feel like the user is looking at something in real 3D space, because of how the interactions of the light reflect on it are hyperrealistic."
+    - In exact terms: the light on the dial is why he picked it. More of that is welcome: the card reading as a real object in real space. Nothing that makes the light on it less real.
 
 **The fourth pass on the Work page: the agreement for the build (Nov 13)**
 
@@ -613,10 +625,11 @@ One round in Claude Code, on `/lab/work`. It takes in everything he has ruled si
 
 **The blank is a goal. The study is the floor to beat, not a drawing to copy**
 
-- What it has to be: an engine turned plate as a watchmaker turns a dial, in the site's bronze. Fine rays round the card's middle, a boss at the middle, the card's polished edge round it. The lights off the screen smear across the rays into fans, and the fans turn as the page scrolls, as the cursor's light moves beside the card, and as the stream comes near.
-- Two faults in the study, to fix: its dark fan can read as a smudge, and its boss can read as a ring or a hole.
-- Fixed: nothing of the card's layout or content. The card's size and its edge. Rays about the middle, with a boss.
-- Free: how fine the rays are, how the fans fall, the boss's form, a groove inside the edge, where the lights stand and how bright they are.
+- What it has to be: an engine turned plate as a watchmaker turns a dial, in the site's bronze. Fine rays round the card's middle, the handle at the middle, the card's polished edge round it. The lights off the screen smear across the rays into fans, and the fans turn as the page scrolls, as the cursor's light moves beside the card, and as the stream comes near.
+- Kept from the study, and only ever made better ("What he likes in D", above): the handle, with its depth, and the dark area that reads as a shadow and swings on the handle.
+- Where the builder can go further: the whole card reading as a real object in real space, by how the light behaves on it.
+- Fixed: nothing of the card's layout or content. The card's size and its edge. Rays about the middle, with the handle. The shadow.
+- Free: how fine the rays are, a groove inside the edge, where the lights stand and how bright they are, and anything that makes the handle richer or the light more real.
 - It is built in the card's plate (`src/metal/`), where it takes the cursor's light and the stream's. The study's canvas laid over the cards is not the way.
 
 **The change is a goal too**
