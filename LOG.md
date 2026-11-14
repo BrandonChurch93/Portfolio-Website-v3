@@ -2,6 +2,61 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · Handoff to Claude Code: the third pass on the Work page (Fable, web chat)
+
+**What Brandon said**
+
+- "I looked through the four options. I think Bolt is my favorite. I'm willing to give that one a shot."
+- He had not sent either prompt written earlier in the day, and asked for one prompt with all the context and updates.
+
+**What changed in the record. No code changed**
+
+- `BRIEF.md`, The stream: "The path through Work: Bolt, to try on the real stream", and "The third pass on the Work page", which lists the six changes of this round and where each is agreed. Open 24 is marked decided.
+- `QUALITY.md`: a row in the table, and nine tests under "The path through Work as a bolt".
+- `PLAN.md`: Now, and a line under Phase 3.
+- The two prompts in the entries below ("Three things agreed" and "One size of card") were never sent. The prompt here replaces both.
+
+**What Fable can tell from reading the code. Check before believing it**
+
+- The wireframe's Bolt is `HARD` (the corners) and `strokes` (the wander) in `src/work-surge/surge.ts`, with its numbers in `SWAY.bolt`. It is a hand drawn route on a canvas. The real route is planned from where things are on the page, so only its rules carry over.
+- The real route's wander is `route.sway`, `swayLong` and `swayShort` in `src/stream/config.ts`, and `buildRoute` for the test shot reads the same block. The test shot has to keep its sway, so Bolt needs its own numbers under `work`.
+- The first build's log: turns tighter than about 30 units throw the riding shards round fast. A hard corner and a knot between two strokes are both far tighter. What the riders do there at rest needs deciding and measuring with `streamProbe`.
+- With one size of card a row never changes height, so `warp` and the bow of what hangs beside a row in `src/stream/surge.ts` have nothing left to do.
+- The surge's front runs along whatever the route is. On straight strokes it should be easier to follow than on a curve, which was the test the first build failed.
+
+**The prompt Brandon was given**
+
+```
+Pull main, then read BRIEF.md, PLAN.md, QUALITY.md and the top entry of LOG.md from disk, as CLAUDE.md says.
+
+Build the third pass on the Work page, at /lab/work. BRIEF.md, The stream, "The third pass on the Work page" lists the six changes and points to where each is agreed. QUALITY.md has their tests: "When the category changes", tests 14 to 21, and "The path through Work as a bolt".
+
+The six, in the order to do them:
+
+1. One size of card. Every card in every category is the same size at a given width, the Software card sets it, and tags are one row. Take out the stream settling onto a new height. Measure how many characters a title, a description and a row of tags hold, and write it into the brief for me.
+2. The path becomes Bolt. Open /lab/work-path and pick E · Bolt before you start: the same stops, hard corners, straight in to every strike, and a wander of short uneven straight strokes on the free runs. Take its shape and its numbers, not its code. Keep today's path one switch away so I can compare the two on the real stream.
+3. A full strike on each Sun stone, much more powerful than now, thrown inward so it lands on the tops of the second row's cards and bounces there.
+4. Cards the stream has not reached are asleep: a blank of the card in bronze, beautiful as it is. The stream's first strike wakes a card for good.
+5. Both sides of the surge start together, each from where that side rests on the bar, wherever I press.
+6. The surge's front becomes a second leading end: a hard hot point, forks of arc, sparks, the riding shards flung wide and closing behind it, and a pale wake. I have to be able to follow it from the bar to the button.
+
+Hold to these:
+- /lab/stream and the approved buttons must draw what they draw today. Take stills before you touch shared code and compare after. The new path is for the route through Work only.
+- Everything else I approved in the stream stays: its look, its shards, its sparks, riding shards staying with the stream, no second wave.
+- It must still read as the stream. Never a neon sign, a wire or a circuit drawn on the page.
+- Leave the phone and every screen under 1100 px alone.
+- Where the brief lists something as Fable's call, build it and list it in your report as mine to overturn. If you depart from one, say which and why.
+- Before you report, have fresh Opus reviewers who have not seen the work being made judge stills and filmstrips against QUALITY.md, told to look for reasons to fail it.
+
+Work without check-ins until there is a page I can scroll. Then run a production build, commit, push, and confirm the deploy is ready.
+
+Report in lists: the link, what is at the bar, what is not and why, every call you made for me, and exactly what I am approving. End with one clear recommendation.
+```
+
+**Half finished**
+
+- The build. Nothing from this session is uncommitted.
+
 ## 2026-11-13 · One size of card, a stronger strike on the stone, and two more paths (Fable, web chat)
 
 **What Brandon said.** His words are in `BRIEF.md`: Cards and buttons, "One size of card". The stream, "Three changes to the surge and the cards", item 4. Open 24.

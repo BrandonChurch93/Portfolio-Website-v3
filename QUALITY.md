@@ -102,6 +102,7 @@ This is the real calibration. Every row is his verdict, not a guess. Rows that s
 | Cards lit and readable ahead of the stream, changing with nothing touching them | The second row "looks horrible". He chose cards that sleep as "a bronze template" until the stream reaches them | What the stream has not reached should not look as if it has. He would sooner hold a card back, beautifully, than show it out of step |
 | A path of straight runs and hard corners, as a proposal | "A big deviation." "I actually like the swing. It's kind of unpredictable." What he minds is "harsher bows" that "take away the momentum of the power right before a strike". He wants "intentional directed power choosing its next course", not "a ballerina or flowing water" | He named a feeling and Fable answered with a geometry. The wander is life. A round turn spends the power, and a turn that gathers to a point keeps it. Ask what is wrong before proposing what replaces it |
 | Three paths as a wireframe: as now, a ricochet, and turns that rise to a point | "I definitely don't like the point shoot." Ricochet "is not bad", and it and the path as now are "about the same level" | Fable built his words ("went up a little bit to a point and then blasted downwards") as a literal shape, and he did not like the shape. A feeling he describes is not a drawing to trace |
+| Two more paths in the same wireframe: the ricochet with the swing put back, and the ricochet with a wander of short straight strokes | "I think Bolt is my favorite. I'm willing to give that one a shot" | He took the one with the most character. The swing he said he liked, he liked more as strokes than as curves. A pick from a wireframe is a trial until it is on the real stream |
 | Cards whose height followed their words, with room for two rows of tags | "We need to make all cards the same size", with the Software card as the standard and one row of tags | One size, held everywhere. The words fit the card |
 | The stream meeting the Sun stone as a light contact | "Should be much more powerful." It should "blast particles on top of the second row of cards", which "would really make this feel like a 3D environment" | What a strike throws is how he reads depth. Where something stands in a good place to throw onto something else, it should |
 | The pour's first test shot, in motion | "I definitely don't like how it puddles." The stream "is blasted back multiple times". "Instead of looking like a refined beautiful hot liquid metal, this looks more like mud splashing around and puddling up" | Real physics is not enough. It has to be graceful. Metal that heaps, thrashes or hits itself reads as mud |
@@ -283,6 +284,20 @@ The section:
 19. **A press on a row the stream has not reached** changes sleeping cards for sleeping cards, and nothing about it looks left behind.
 20. **One size.** At any width every card in every category measures the same, with one row of tags and no room left for a second.
 21. **The stone's strike.** Beside the strike on a card's top it is not the weaker one. What it throws crosses the gap between the rows, lands on the tops of the second row's cards and bounces there. Nothing heaps up, and no card's words are covered for longer than a piece takes to pass.
+
+**The path through Work as a bolt**
+
+`BRIEF.md`, The stream, "The path through Work: Bolt", has what it is. The wireframe he picked it from is `/lab/work-path`, E. It passes when "The stream through Work" above still holds and all of these are true:
+
+1. **The same stops, in the same order.** Every turn is now a strike or the end of something, so every turn has a cause.
+2. **Straight in.** The last stretch before every strike is straight: no curve and no wander.
+3. **Hard corners.** At a contact the line turns at a point. Nothing bows, and nothing hooks round an end.
+4. **The wander is strokes.** Straight, uneven in length and in reach, no two runs alike. It never reads as a regular zigzag, and it does not move.
+5. **It is still the stream.** A body of light with shards belonging to it. Never a neon sign, a wire, or a circuit drawn on the page. Enlarged three times at a corner, the core holds together: no gap in it and no knot of glow.
+6. **Riding shards.** None vanish, appear or jump, at the corners and the knots included, and none bunch at a corner. Measured as before.
+7. **The power is kept.** With the switch thrown back and forth on the same strike, the strike on the bolt is not the weaker one. This is what he asked the path for.
+8. **Scrolled back up,** it draws back cleanly through every corner.
+9. **`/lab/stream` is unchanged,** and `npm run perf` is as smooth as it was.
 
 **How to judge it**
 

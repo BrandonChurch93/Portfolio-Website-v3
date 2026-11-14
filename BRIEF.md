@@ -432,6 +432,40 @@ How each got here is in Open 21 to 23. `QUALITY.md`, "When the category changes"
     - What still holds: nothing heaps up, thrown shards keep their momentum, there is no second wave, and what the budget drops is said out loud.
     - Fable's call, his to overturn: what lands on a sleeping card bounces off it and does not wake it. Only the stream wakes a card.
 
+**The path through Work: Bolt, to try on the real stream (Nov 13)**
+
+How it got here is in Open 24. From the path derby at `/lab/work-path`: "I looked through the four options. I think Bolt is my favorite. I'm willing to give that one a shot."
+
+- In exact terms, on the route through Work:
+    - The stops and their order stay as they are.
+    - Every contact is a hard corner. The stream arrives straight, strikes at a point and leaves straight. No round bows.
+    - On a free run it wanders in short straight strokes that change side by uneven amounts at uneven distances, like a bolt. That takes the place of the smooth sway.
+    - The wander dies away before every strike, so the last stretch in is straight.
+    - Where it lies on something it runs straight.
+- What it is not: a change to what the stream is. The core is still the steady wave of light he picked, with its shards and sparks. Only where it goes changes. "An arc as the whole core" stays in Dropped.
+- **It is a trial, and it leaves the approved test shot alone.** The sway and the rounded turns are part of what he approved at `/lab/stream`. Bolt is built for the route through Work only, and `/lab/stream` draws what it draws today.
+- **It changes one line of the route he agreed:** "Each side runs along the top of the title and hooks over its end, as in the test shot." On Work it now breaks off the end straight for the next stop.
+- Fable's calls, his to overturn:
+    1. Today's path stays one switch away on `/lab/work`, so he can compare the two on the real stream. The switch comes out when he rules.
+    2. The strokes are fixed in place. They do not flicker or form again. Given the choice he took a steady core over a restless one.
+    3. The wireframe's numbers are where to start: a knot every 50 to 130 units, up to 17 units to each side, the wander beginning 60 units from anything the stream touches and whole by 150.
+    4. How the stream leaves the side of the second row's card is the builder's to shape, so that strike stays a strike.
+    5. The lunge is not in it. It was a switch in the derby and he did not pick it.
+
+**The third pass on the Work page (Nov 13)**
+
+One round in Claude Code, on `/lab/work`. He had not sent either of the two prompts written earlier in the day, so this round takes in everything since his look at the surge. In the order it is built:
+
+1. One size of card, one row of tags (Cards and buttons, "One size of card").
+2. The path becomes Bolt, with today's path one switch away (above).
+3. A full strike on each Sun stone, thrown onto the tops of the second row ("Three changes to the surge and the cards", item 4).
+4. Cards the stream has not reached are asleep (the same, item 3).
+5. Both sides of the surge start together (the same, item 1).
+6. The surge's front becomes a second leading end (the same, item 2).
+
+- Not in it: a phone or any screen under 1100 px. The lunge. The top bar. Real projects for the other three categories. New pictures.
+- Its tests are in `QUALITY.md`: "When the category changes", tests 14 to 21, and "The path through Work as a bolt".
+
 **How it is built**
 
 He added these while the stream was a simulated liquid. They hold for anything in the stream that is simulated: shards thrown loose, sparks.
@@ -723,7 +757,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
     - Fable's proposal, not agreed: the front is a second leading end, racing down a stream that is already there. A hard hot point, forks of arc reaching off it, sparks shed behind it, the riding shards flung wide as it passes and closing behind it, and the core burning pale for a stretch in its wake. Every part of that is already in the stream he approved, at its own leading end.
     - What it must not be, from his own earlier verdicts: a soft ball of glow, or a color off the palette. Both fail on sight in `QUALITY.md`.
     - **Against a settled line, said to him in bold:** "The arc appears only at the leading end and at the landings."
-24. **The stream's path.** His words (Nov 13): "The next thing that I really don't love currently is the trajectory of the streams. The strikes feel really good on really good lined up places, but the stream still kind of curves and bends in a way that seems unnatural. And the goal here isn't to keep it 100% natural, like water falling in a perfect stream with gravity. I don't know the properties of this material that we built. All I can say is I want it to feel powerful as you go through the site, with its angles and how it hits things and bounces, and currently it's a bit wavy, which takes away that powerful feeling. The stream itself looks really powerful. I love that. It's just the path of it currently could be heavily adjusted."
+24. **The stream's path.** **Decided Nov 13: Bolt, as a trial on the route through Work.** Settled in The stream, "The path through Work: Bolt". What follows is how it got there. His words (Nov 13): "The next thing that I really don't love currently is the trajectory of the streams. The strikes feel really good on really good lined up places, but the stream still kind of curves and bends in a way that seems unnatural. And the goal here isn't to keep it 100% natural, like water falling in a perfect stream with gravity. I don't know the properties of this material that we built. All I can say is I want it to feel powerful as you go through the site, with its angles and how it hits things and bounces, and currently it's a bit wavy, which takes away that powerful feeling. The stream itself looks really powerful. I love that. It's just the path of it currently could be heavily adjusted."
     - In exact terms: between the things it touches the stream sways from side to side, falls in bows, and rounds its turns. He wants straight, driven runs and hard angles where it hits and bounces. The stream's own look is not in question.
     - Fable's proposal, not agreed: a path of ricochets. Free runs are straight, with no sway. A contact is a hard corner: it arrives straight, strikes at a point and leaves straight at an angle that answers the one it came in at. Where it lies on something it runs dead straight and breaks off the end. The stops through Work and their order stay as they are.
     - The risk, said to him: a straight glowing line with sharp corners can read as a neon sign or a wire, which fails on sight. The runs are straight like something thrown, not ruled, and it is the body of the stream, its shards and its strikes that keep it from being a tube.
