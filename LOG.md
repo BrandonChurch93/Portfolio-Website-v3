@@ -2,6 +2,19 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · The second row when a category is picked, and what is there before the stream arrives (Fable, web chat)
+
+**What Brandon said.** His words are in `BRIEF.md`, Open 21. The second row "looks horrible" on a press, because the stream has not reached it. He wondered about hiding cards the stream is not touching, and about making that a theme for the site. "Kind of 50-50, undecided." He asked to brainstorm.
+
+**What Fable put to him. Talk only, nothing built**
+
+- The cause, the two ways (asleep, hidden), the rule it would become for the site, and the two settled lines either one changes. All in Open 21.
+- Fable recommends asleep, tried behind a switch on `/lab/work` beside hidden and as now, before anything is committed to for the site.
+
+**Half finished**
+
+- His answer.
+
 ## 2026-11-13 · The surge at 1.1 seconds (Fable, Claude Code on Brandon's Mac)
 
 **What was asked.** "In src/stream/config.ts, change the surge's length from 0.7 to 1.1. Build, commit and push." Only that was done.
