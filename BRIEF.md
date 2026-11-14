@@ -865,11 +865,17 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
 - Skills are never tied to objects on the desk.
 - Skills read in wide rows, not narrow columns.
 - One animation for skills. Nothing is hidden behind a category.
+- **The desk and the section's content come onto the page when the stream reaches them (Nov 14).** "I also want the surge to drive the appearance of these sections: it hits a certain point and my profile picture fades in and the content appears, something similar with the desk as well."
+    - In exact terms: Skills is not on the page until the stream's leading end reaches a point. Then the desk appears and the section's content with it. He wrote "the surge". Fable reads it as the stream's leading end as the visitor scrolls, not the surge a change of category sends through Work, and said so to him.
+    - It sets "One fixed light" above aside for the arrival only, as Fable reads it: the desk is dark until the stream reaches it, and once lit its lights are fixed and choosing a skill never relights it.
+    - Where the points are, and whether things go away again when the stream draws back, are not ruled. Fable's calls are in Open 28.
+- **The headphones hang at the right of the Skills title (Nov 14).** "What if we put the headphones next to skills title to the right?" In the words' column, beside the title, not over the desk. Of the site's own design.
 
 ### About
 
 - A big portrait on the right that reacts to the mouse and feels like part of the page, with something like an aura.
 - Tabs: about me, what I want to do, my plans for the future.
+- **His portrait fades in and the content appears when the stream reaches a point (Nov 14).** His words are under Skills, above: "it hits a certain point and my profile picture fades in and the content appears". Until then About is not on the page.
 
 ### Contact
 
@@ -1022,6 +1028,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
     - Fable's answer: a mix. What the stream strikes and wakes is each section's main object, about one a section. Words a visitor has to read, the hero and his portrait never sleep. Each thing wakes in its own way, not as a copy of the cards' blank. The sketch carries a switch, all awake, the mix, all asleep, so he can judge it over the whole page.
     - **His answer (Nov 14): "Let's go with your recommendation."** The mix is what the sketch at `/lab/home` opens on, with Nothing and Everything one press away. He decides the theme once he has scrolled it.
     - **His lean (Nov 13): asleep, as something beautiful.** "I like that they can look like a bronze template or something. We can make them really beautiful." In exact terms: a card the stream has not reached is not hidden. It rests as a blank of itself in bronze, and the stream wakes it. It gets built for him to judge. The settled lines it goes against stand until he has seen it and says so. The theme for the whole site is still not committed to.
+    - **Nov 14, for Skills and About:** ruled. Each is brought onto the page by the stream (Settled, Skills and About). Whether the whole site works this way is still his to say.
 22. **Whether the cards change one after another or together.** **Decided Nov 13: both sides start together, and no switch.** Fable misread his first message as being about the rows. Settled in The stream, "Three changes to the surge and the cards". What follows is how it stood. His words (Nov 13): "The card switching is staggered, which makes me believe the actual animation is staggered too. I'm curious why this was chosen. I'm assuming the idea was to have it slightly staggered so the particle effects, explosions, would be more noticeable or more theatrical. However, this makes the cards not on the stream look really bad, and maybe the ones on the stream could look better if that wasn't the case. I'm not 100% sure. Maybe we could add in a button to toggle that on and off, to sync it up or something, so I can see both results."
     - Why it is staggered, as Fable told him: it is what the surge is. Each card changes when the front reaches it, the first row before the second and the side nearer the press before the other. He picked that over "All at once" in the wireframe. The reason was cause, not show. The cost is the one he saw: a card the stream has not reached waits for a front that never comes to it.
     - Fable's proposal, not agreed: a switch on `/lab/work`. One way is as now. The other: all four cards change at the press, and the surge still runs down and strikes each card as it passes.
@@ -1145,6 +1152,21 @@ Each line has Fable's recommendation where there is one. None of these are rules
         - Skills, "One fixed light: the desk lamp and the lit monitor": the PC is a third light, and a desk asleep until the stream lands is dark at first. Fable's suggestion if he wants both: the line becomes "the desk's own lights are fixed, and choosing a skill never relights it".
         - 3D pieces, the PC "cut from the home page's design": it comes back for the PC only.
         - `QUALITY.md`, fail on sight, "any white, blue or rainbow": the PC Builder's lights are blue and purple. Under this desk they are the palette's.
+    - **His answer (Nov 14): two changes, and go.** "What if we put the headphones next to skills title to the right? I also want the surge to drive the appearance of these sections: it hits a certain point and my profile picture fades in and the content appears, something similar with the desk as well. If that sounds good, you're welcome to build the rough draft." Both changes are in Settled, Skills and About.
+    - **The rough draft, built on his word (Nov 14). In front of him. Nothing in it is picked.** At `/lab/skills-about`, Study 21, built in the web chat. A wireframe of the two sections at the page's size: a line for the stream whose leading end follows the scroll, the desk scene as outlines, his real portrait, and grey bars for most words.
+        - What the stream does, in order: comes in at the middle. As it nears the desk, the desk comes out of the dark. It lands on the desk, and the lamp, the screen and the PC come on and the title and headphones appear. It runs the front edge and the four rows come on one after another. It is thrown off the far corner and falls down the left side. It lands on the rail, and About's words appear and his portrait fades in. It passes behind his shoulders and the light behind him comes up. It leaves at the right.
+        - Three switches at the foot of the screen: the rows beside the desk or under it, everything appearing with the stream or all showing, and the numbers on the drawing on or off. `?rows=under`, `?appear=all`, `?notes=0`, `?whole` and `?ui=0` open it on those.
+        - Rows under it draws the other reading of "the length of the desk": a desk as long as the rows are wide, the title and headphones over its right half, the PC under its far end, and the stream landing on the middle of its front edge.
+        - The words: the four competencies' names and the line under each are his live site's, as they stand. The live site's About is one block with no tabs, so About's text is grey bars under the brief's three tabs.
+    - Fable's calls in the build, his to overturn:
+        - The desk comes out of the dark a little before the stream lands, 170 units above it, so the stream has something to land on. Its lights and the words wait for the landing.
+        - About's words and his portrait come on where the stream lands on the rail, at the section's left. The light behind him waits until the stream is behind his shoulders.
+        - Everything goes away again when the stream draws back above its point, as a card goes back to sleep.
+        - The rail is on the page from the start, like Work's.
+        - The headphones, the PC and the desk are plain outlines, none of them a design.
+    - What is not in it, said to him: the look, motion, the 3D, phones. A tab change is not drawn.
+    - What it showed: along the desk's front edge the stream's end travels much further than the page scrolls, because the edge is nearly level. The four rows come on within about 90 units of scroll.
+    - Stills: `reference/studies/38-skills-about-*.jpg`.
 
 ## Dropped
 

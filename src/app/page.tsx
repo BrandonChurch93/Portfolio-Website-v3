@@ -13,6 +13,10 @@ export default function Index() {
       <h2 className={styles.group}>Studies</h2>
       <ul className={styles.list}>
         <li>
+          <Link href="/lab/skills-about">Skills and About, as a pair</Link>
+          <span className={styles.minor}>Phase 3 · a rough draft of the two sections: the desk with the PC under it, the headphones by the title, the rail behind his portrait, and each section dark until the stream reaches it</span>
+        </li>
+        <li>
           <Link href="/lab/accomplishments">Accomplishments, a derby in three parts</Link>
           <span className={styles.minor}>Phase 3 · three layouts for the section, the cards each is made of, and five ways to show the companies, in bronze relief. Set aside: not what he pictured</span>
         </li>

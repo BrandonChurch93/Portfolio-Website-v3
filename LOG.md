@@ -2,6 +2,47 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · Study 21: Skills and About as a pair, a rough draft (Fable, web chat)
+
+**What Brandon said**
+
+- "What if we put the headphones next to skills title to the right? I also want the surge to drive the appearance of these sections it hits a certain point and my profile picture fades in and the content appears, something similar with the desk as well."
+- "If that sounds good, your welcome to build to rough draft"
+- "The surge" is read as the stream's leading end as the visitor scrolls. Said to him.
+
+**What was built**
+
+- `/lab/skills-about`: one SVG 1460 units wide, as the page sketch is. `src/skills-about/plan.ts` holds the places, the stream's one line and the cues, which are the lengths along the line where its leading end brings something on. `src/components/lab/SkillsAbout.tsx` draws it and follows the scroll.
+- It uses `line`, `nearest`, `reach` and `point` from `src/page-sketch/plan.ts`. `line` and `nearest` were not exported before. `/lab/home` is unchanged.
+- Two desks are drawn (`DESKS`): beside the rows, and a longer one with the rows under it. Each has the PC under its right end.
+- `BRIEF.md`, Open 28, lists what the stream does in order, the switches, and every call made for him.
+
+**Where the words came from**
+
+- The four competencies' names and taglines were read from brandonchurchportfolio.com. The fetch gave the taglines in quotes and the body text only in summary, so the body is grey bars.
+- The live site's About is one block under "How I got here", with no tabs. It still says twelve years and 40+ clients, which the brief has down for correction. None of it is on the wireframe.
+
+**What was looked at**
+
+- Stills of both ways of laying out Skills and of About with the whole line drawn, at a wide screen, a tablet held sideways and a phone (for breakage only).
+- Stills at six points of the scroll with the stream leading: nothing, the desk out of the dark, the landing, the rows, the rail's landing with the portrait, the light behind him.
+- A live page: scrolled down and back up, with what is showing read off the page at each stop. Things come on in order and go away again on the way back. The three switches pressed. No errors.
+- Judged by the six tests for a sketch in `QUALITY.md`. The longest free fall is from the desk's far corner to the rail, about 400 units, with a wander.
+
+**What is not right yet, plainly**
+
+- Along the desk's nearly level front edge the stream's end outruns the scroll, so the four rows come on almost together. On the real page that run needs slowing or the rows need another cue.
+- With the rows under the long desk, the right half of the desk is close to bare and the stream lands on the middle of an edge, not on a corner.
+- The headphones are a plain outline. Their design, and the hook they hang from on a page with no wall, are not solved.
+- A tab change is not drawn.
+
+**Waiting on him**
+
+- His look at the draft. His pick of the rows beside the desk or under a longer one, which still goes against "Skills read in wide rows, not narrow columns".
+- Whether the points where things appear feel right, and whether they should go away again on the way back up.
+- Then the desk as a 3D piece of its own, made new: drafts, his pick, the build.
+- He has not yet looked at Claude Code's fourth pass or the knob.
+
 ## 2026-11-14 · Skills and About: his notes for the desk, and a proposal put to him (Fable, web chat)
 
 **What Brandon said**

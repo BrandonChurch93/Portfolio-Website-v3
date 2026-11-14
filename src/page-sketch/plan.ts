@@ -9,7 +9,7 @@ export const CX = W / 2;
 
 export type Pt = [number, number];
 // A corner of the route: where it is, how round the turn is, and how far the run that arrives at it wanders.
-type Corner = [x: number, y: number, radius?: number, sway?: number];
+export type Corner = [x: number, y: number, radius?: number, sway?: number];
 export interface Line { pts: Pt[]; cum: number[]; total: number; d: string }
 export interface Strike { id: string; line: number; at: number; x: number; y: number }
 
@@ -30,7 +30,7 @@ export const CONTACT = { h: 700, pad: { x: CX, y: 440, rx: 215, ry: 70 }, flume:
 export const FOOT = { h: 220 };
 export const CITY = { lip: 104, top: 470 };
 
-function line(nodes: Corner[]): Line {
+export function line(nodes: Corner[]): Line {
   const out: Pt[] = [];
   const run = (a: Pt, b: Pt, sway: number, seed: number) => {
     const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
@@ -77,7 +77,7 @@ export function point(l: Line, len: number): Pt {
   return [l.pts[i][0] + (l.pts[i + 1][0] - l.pts[i][0]) * f, l.pts[i][1] + (l.pts[i + 1][1] - l.pts[i][1]) * f];
 }
 
-function nearest(l: Line, x: number, y: number): number {
+export function nearest(l: Line, x: number, y: number): number {
   let best = 0, bd = Infinity;
   for (let i = 0; i < l.pts.length; i++) {
     const d = Math.hypot(l.pts[i][0] - x, l.pts[i][1] - y);

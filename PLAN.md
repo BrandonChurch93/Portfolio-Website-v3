@@ -47,7 +47,8 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **His verdict on the accomplishments derby (Nov 14):** not what he pictured. He sees that section as mostly written content, not badges. It is set aside until he brings it back, and it will sit between Work and Skills. `BRIEF.md`, Open 26
 - **Agreed (Nov 14):** Skills and About are worked on as a pair, the stream comes into Skills at the middle, and a wireframe of the pair comes first. He wants Fable's proposal before anything is built
 - **His notes for the desk (Nov 14):** a longer desk to match the skills beside it, the PC under it, a pair of headphones hanging on the page near the skills. And a ruling: the 3D work is made new for this design, not recolored. `BRIEF.md`, Settled, 3D pieces, and Open 28
-- **Put to him (Nov 14):** Fable's proposal for the pair, `BRIEF.md`, Open 28. If he approves, the first thing built is a wireframe at `/lab/skills-about`, Study 21. Waiting on his word
+- **His answer to the proposal (Nov 14):** the headphones hang at the right of the Skills title, and the stream brings each of the two sections onto the page: the desk and Skills' content, then his portrait and About's content. Both are in `BRIEF.md`, Settled. And go for the rough draft
+- **In front of Brandon (Nov 14):** the rough draft of Skills and About as a pair at `/lab/skills-about`, Study 21, built in the web chat. A wireframe: where things sit, where the stream goes, and what it brings onto the page. Waiting on his look, and on his pick of the rows beside the desk or under a longer one. After it: the desk as a 3D piece, made new. `BRIEF.md`, Open 28
 - **Built in Claude Code (Nov 14):** the fourth pass and the knob on the blank, at `/lab/work` and `/lab/work-blank`. He has not looked yet
 - **Next, once he has looked again:** his word on Open 26 and 27 and on the rest of the sketch, then the first section after Work is refined. Fable's proposed order: Skills, About, Contact and the footer, the hero
 - **His word on D (Nov 13):** the raised piece at the middle is a handle to him and stays as 3D as it is. The dark area reads as a shadow, is why he chose D, and stays. Both may only be made better. `BRIEF.md`, The stream, "What he likes in D, and what must not be lost"
@@ -125,6 +126,7 @@ Set aside, kept as records: the molten metal test shot at `/lab/pour`, its looks
 - [~] Work · the knob at the middle of the blank: an antique cabinet knob at the dead center, standing off the card, in place of the handle as first built (Claude Code). Built Nov 14, waiting on his look
 - [ ] Work · the category bar, and the top bar it may dock into
 - [ ] Work · the whole section, with the real card in it
+- [~] Skills and About, as a pair: a rough draft of both at `/lab/skills-about`, with each brought onto the page by the stream (web chat, Nov 14). Waiting on his look
 - [ ] Skills
 - [ ] About
 - [ ] Contact and the bottom of the page
