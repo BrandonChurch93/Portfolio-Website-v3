@@ -2,6 +2,37 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · Study 24: a derby of the things in the rows of skills (Fable, web chat)
+
+**What Brandon said**
+
+- "All right, let's go with all your recommendations for the skill sections. Let's go ahead and do the derby, please, so I can see them in action. Can you also include the surge coming in and striking them so I can see how you're proposing the assembling animation happens."
+
+**What was built**
+
+- `/lab/skill-things`: six rough 3D things, two a row, each struck by a line for the stream and put together from the strike. `BRIEF.md`, Open 28, "The derby of six".
+- It has a renderer and lights of its own, not the shared stage, to keep a rough derby small. The real things are pieces in `src/pieces/` behind the piece contract.
+
+**What was looked at**
+
+- Stills with every strike held at 1.05 seconds and with everything put together. A live page: it struck all six, struck one again on a press, no errors.
+
+**What went wrong on the way**
+
+- The tower's walls were on the side toward the viewer, so its lit rooms could not be seen. The line for the stream was four times too thick and took over each thing.
+
+**What is not right yet, plainly**
+
+- Rough forms only. Motion was not watched.
+
+**Waiting on him**
+
+- One thing for each row.
+
+**For the next session**
+
+- After his picks: the three things are designed in full and get a kit for an Opus builder, as the desk does. Each is about 160 units across on the page, in rows about 180 tall, hidden until its strike, with shards landing on the row's borders. The fuller draft at `/lab/skills-about-draft` still draws them as outlines at 92.
+
 ## 2026-11-14 · A second set of options for the three small things (Fable, web chat)
 
 **What Brandon said**

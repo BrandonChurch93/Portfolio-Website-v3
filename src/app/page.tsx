@@ -17,6 +17,10 @@ export default function Index() {
           <span className={styles.minor}>Phase 3 · the desk for Skills, made new: your pick, the bench, with a mat, an ultrawide, a gaming keyboard and mouse and a PC like your PC Builder&rsquo;s roughed in. Drag to look round it</span>
         </li>
         <li>
+          <Link href="/lab/skill-things">The things in the rows of skills, a derby</Link>
+          <span className={styles.minor}>Phase 3 · six rough 3D things, two for each row of skills, each struck by the stream and put together from the strike. Press one to strike it again</span>
+        </li>
+        <li>
           <Link href="/lab/skills-about-draft">Skills and About, a fuller draft</Link>
           <span className={styles.minor}>Phase 3 · the pair with your words and the motion roughed in, seventh round: the stream strikes each row of skills, the headphones hang on a hook, and your portrait is the ground of About</span>
         </li>
