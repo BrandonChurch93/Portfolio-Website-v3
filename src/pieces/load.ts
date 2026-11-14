@@ -12,6 +12,7 @@ export const pieceLoaders: Record<string, () => Promise<PieceFactory>> = {
   cpu: () => import('./cpu/index').then((m) => m.createCpu),
   reflector: () => import('./reflector/index').then((m) => m.createReflector),
   'studio-light': () => import('./studio-light/index').then((m) => m.createStudioLight),
+  desk: () => import('./desk/index').then((m) => m.createDesk),
 };
 
 export function loaderFor(name: string): (() => Promise<PieceFactory>) | undefined {

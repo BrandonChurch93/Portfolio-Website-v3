@@ -2,6 +2,85 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · Skills and About, the first build (Fable, Claude Code)
+
+**What Brandon said**
+
+- The first prompt, two entries below. What he cares about most, in his words: "Nobody can read a word of About before my portrait, the studio light's light and the glow are fully up." "The stream comes in over my own left shoulder, along the line I drew." "At the desk the stream strikes the lamp and nothing else." "Nothing of a row shows before its strike." "The CPU is hyper detailed, at the standard of my PC Builder's parts, in our colors only. I am on the fence about it being made out of the stream's shards."
+- Nothing since. No verdict on any of it yet.
+- While this was being built the web chat added the desk to the round (the entry below): items 27 to 30 and tests 29 to 42, with a second prompt for him to paste here with his PC Builder screenshot. Neither the prompt nor the screenshot had reached this session when the first build was pushed. The record on main was read and the work goes on from it.
+
+**Before anything else**
+
+- Nothing in the folder was uncommitted. Main was pulled with rebase: 18 commits from the web chat, no conflicts, nothing to push.
+- Pulled again before the first commit: the web chat's two commits for the desk. `PLAN.md` conflicted and both sides' lines were kept.
+- Baseline stills were taken before any shared code was touched: 20 of `/lab/work` and `/lab/work-blank`, 21 of `/lab/stream`, 7 of the buttons, 4 of the card study.
+
+**What was built**
+
+- `/lab/skills`, Study 25: items 1 to 26 of the agreement. Items 27 to 30, the desk, are not built: the page shows the rough bench. `BRIEF.md`, Settled, "The first build, as built" has the five places it departs from the agreement, every call made for him, what is not at the bar, and the numbers.
+- The stream's planner for it, `routeThroughSkills` in `src/stream/route-skills.ts`, beside `routeThroughWork`.
+- Three pieces behind the piece contract, each by an Opus builder from a kit in `reference/kits/`: `src/pieces/cpu/`, `src/pieces/reflector/`, `src/pieces/studio-light/`. Each opens alone at `/lab/piece/<name>`. Four rounds for the reflector, three for the studio light. The CPU is committed at its second round.
+- Toward the desk: `src/pieces/desk/`, the frame of the real piece at `/lab/piece/desk`. One stage, each thing a part in its own file behind `part.ts`, every part still the rough's own form through `parts/rough.ts`. `reference/kits/desk.md` is what its builders share. No builder has been started.
+
+**How it is put together, for whoever touches it next**
+
+- **The stream's shared code was added to, not changed.** Everything new is optional and nothing in Work or the test shot has it:
+    - `route.ts`: a route may carry `cues` and `dark` stretches, a branch may carry `haste`, a landing may carry a `name` and its own `fall`. `trace`, `wander`, `measure`, `rides`, `lengthTo` and `roam` are exported for the new planner.
+    - `sim.ts`: `since`, how long the leading end has been past each cue, which runs back when the stream draws back. The pace on a thrown run. A landing's own fall.
+    - `stream.ts`: a page may hand `mountStream` a `plan` in place of a title and a card or the Work section. `Planned` is what it gets back: the route, the rails to draw each frame, a call in every frame once the leading end has moved (`after`), and the places no shard is drawn (`off`). The handle gained `since`, `follow`, `struck`, `reached`, `nearest`, `pulse`, `strike`, `replan` and `runs`.
+- **One stream, not two sides.** The route has two branches because everything downstream expects two. Both are the same line and never part (`split` is past the end), so the second side draws nothing and each carries half the shards, as on Work's stem.
+- **Everything the stream brings on is a function of one number,** the seconds its leading end has been past a cue (`SHOW` in `src/skills/stage.ts`). That is why it reverses exactly and why a frozen frame is always the same picture. Each cue is followed only as long as what it brings on takes, so things begin to go the moment the stream draws back above it.
+- **How the stream is hidden behind him.** His portrait is above the stream's canvas. Under it, `.cover` is his own outline filled with the page's ground and a second copy of the light, and it leans with him. So nothing on the board may make a stacking context: no `container-type`, no transform, no opacity on the board or its sections.
+- **The pieces are placed by their anchors.** A piece says where the stream meets it, across and down from its host's middle in host heights, and the page puts the host so that point is on the route. The lens of the studio light is put on the line he drew, and the strike follows from the piece.
+- **A piece compiles nothing after mount.** The CPU hitched the page for 160 ms until it drew every state once at mount.
+- **The bench is the rough draft's own scene** (`src/desk-drafts/scene.ts`), with `light` and `where` added. Its picture only lightens the page (`mix-blend-mode: lighten`) and fades before its edges: its own ground was a shade darker than the page's.
+
+**What was looked at**
+
+- Stills, filmstrips and real frames of everything that moves, as the memory note says. The scratch scripts are not in the repo. What they did can be redone with the commands in `CLAUDE.md`: a scroll at a set speed driven from inside the page, and `streamCues`, `streamList` and `skillsOff` read every frame.
+- WebKit at an iPad's size held sideways: the whole page and each piece alone. No errors.
+
+**What was measured, in a live page at 1440 by 900**
+
+- The numbers are in `BRIEF.md`, Settled, "The first build, as built", under "Measured". In short: no word of About before the full effect in any frame at 300, 600 and 900 px a second or after a flick. The text is whole with About's title 290 px down the screen at 300 px a second and 75 px down at 600, and after the title has left the screen at 900. Nothing of a row before its strike. No shard over the desk's things, his outline, the tabs or the words in any frame. Things go away in the reverse order with nothing turning back. No frame over 25 ms down and back up, and 5 of 802 with the processor slowed four times.
+- Work is as it was: 51 of 52 stills the same pixel for pixel. The one that differs is Work with reduced motion, which is not steady from one taking to the next in the code as it was either: taken twice from a checkout of the commit before this pass, served beside the repo, it differed from itself in 386,570 pixels by up to 5 levels.
+
+**What the fresh reviewers said**
+
+- **About and the route (tests 1 to 6, 13 to 19, 23), first look:** 11 of 13 passed. Tests 3 and 17 failed on one fault: the stream came back under his portrait along a straight cut across his shirt. It also found a stall of 150 ms or more on a scroll, the studio light's wall plate 15 px from the screen's edge, the reflector's strike reading as a ring drawn on the dish, and the barn doors' faces as flat fills.
+- **Its second look, after the fixes:** tests 3 and 17 pass, the stall is gone (it was the CPU compiling a shader at first use), the studio light has 40 px to the edge. Still short: the barn doors' lower left leaf is close to one flat brown. New: the reflector's strike, remade as light spilling along its rings, read as ripples on water. That went back to its builder a fourth time. The stream's tip under him was a pale line with no color, which is why the stream is now drawn again from nothing at the foot of his portrait and not shown through his fading picture.
+- **Skills, the CPU and the frame rate (tests 7 to 12, 20 to 28):** passed 7, 9, 10, 11, 12, 23, 26, 27 and 28. Failed:
+    - **8, the desk is what is looked at.** The stream is the brightest and largest thing at the desk, its core runs over the lamp's arm, and shards bunch at the shade. It also caught the leading end resting on the shade and sparking with the lamp still dark.
+    - **20, the CPU as a thing.** Weaker than the PC Builder's parts: one amber wash, a lid that glows like a lit panel, traces that cannot be seen at rest.
+    - **21, three ways, each whole.** Flash shows the canvas as a lit rectangle for about 150 ms. Shards is a spreading circle with parts popping in. It would pick Band as built, and Flash once its rectangle is gone.
+    - **22, a shard can be followed.** It could not follow one.
+    - **24** it could not judge: it was shown no stills from before. The stills were compared by Fable, pixel for pixel.
+    - **25 at its strictest:** frames of 36, 29 and 25 ms with the processor slowed four times.
+- **What was done about those before the push.** The strike on the lamp keeps fewer sparks and throws less. The leading end no longer rests just above a strike (`snap`). The CPU stands higher so its board is in the middle of its row, and the stream meets it a little short of its corner (`rise`, `shy`). The CPU's faults went back to its builder as a third round, which was still running at the push. Test 8 is still failed in Fable's own judgment: the stream is the brightest thing in the picture at the lamp, and it crosses the carried lamp's stem on its way out. The real lamp is made for the strike.
+- No fresh reviewer has looked since those changes.
+
+**What went wrong on the way**
+
+- A script that set a scroll and then only waited saw a stream that had barely moved. The test browser draws nothing when nothing asks for a frame. It looked like a fault in the stream for a while.
+- `--wheel` in `npm run live` scrolled at about a tenth of the speed asked for, with three builders using the machine. Scrolls at a set speed are driven from inside the page now.
+- The first count of shards over the things the stream must stay off found them on the desk, on his head and on About's words: thrown shards, which the route's clearance says nothing about.
+- The cues' lengths were set before the route existed, so they never took. Things went away a second late and out of order until that was found.
+- The side by side baseline server could not find its packages through a link. It needed a copy of them.
+- The studio light's wall plate was lengthened in its second round to carry a cable box, and stood 15 px from the screen's edge. The cable is gone.
+
+**Not checked**
+
+- A real iPad, a real phone, a 4K screen, a screen reader read aloud. Safari itself: WebKit through the test browser stands in for it.
+- The stand in under 1100 px is plain on purpose and was only checked for not being broken.
+
+**For the next session**
+
+- His verdicts go into `BRIEF.md` as he gives them: the five departures, the calls, his pick of a way for the CPU to come to life once its third round is in.
+- After his pick: the screen with its back off and the palette and brush, from kits written like the CPU's.
+- **The desk.** A builder a thing (the bench and the mat, the lamp, the monitor, the keyboard and the mouse, the iPad and its pencil, the camera, the PC, the headphones), each replacing its file in `src/pieces/desk/parts/`, from `reference/kits/desk.md` and a few lines of its own. The PC is brought over from his PC Builder's code, which is public: `src/world/parts/caseAtrium.ts` and the parts beside it there. His screenshot of the build has not been seen by Claude Code. The lamp's arm goes on the side away from where the stream leaves. Then the desk piece gets a clear ground, and `/lab/skills` takes it in place of `mountDesk`: it needs its lights turned up by `stage.ts` (`setLights`) and the place of its lamp's shade (`where`). Tests 29 to 42, with three kinds of fresh reviewers each round.
+- Parked, his idea: a border down the left of the rows for the stream to bounce off, if the turn at a row looks soft to him.
+
 ## 2026-11-14 · The desk joins the round, and Contact is next (Fable, web chat)
 
 **What Brandon said**

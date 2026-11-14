@@ -22,8 +22,11 @@ export const SKILLS = {
   // The line the stream falls down beside the rows.
   spine: 124,
   rows: { l: 190, r: 1310, t: 872, least: 180 },
-  // A row's thing: the room it is given, how tall its host is, and how far left of the row's edge the stream meets it.
-  thing: { w: 160, host: 220, wide: 300, meet: 4 },
+  // A row's thing: the room it is given, how tall and wide its host is, how far left of the row's edge the stream
+  // meets it, and how far above the row's middle, in host heights. The CPU is struck at its near left corner, which
+  // is that far above the middle of the board as it is seen, so its host stands that much higher and the board sits
+  // in the middle of its row.
+  thing: { w: 160, host: 220, wide: 300, meet: 4, rise: 0.09 },
   foot: 44,
 } as const;
 
@@ -44,9 +47,9 @@ export const ABOUT = {
   words: { l: 190, w: 470, title: 262, tabs: 358, text: 429 },
   portrait: { x: 500, y: 100, w: 900, h: 873 },
   // How far under the foot of his portrait the stream is still on its line through him, and how far down his
-  // portrait its riding shards are taken up again: where his outline has begun to let the stream back in.
+  // portrait it is drawn again: at its foot, where his picture has faded away.
   under: 16,
-  shows: 0.9,
+  shows: 0.99,
   // The glow behind him, as the draft has it: the middle of it down his portrait, and how far it reaches each way.
   glow: { at: 0.42, rx: 590, ry: 440 },
   // The light the studio light throws: how far past where the stream goes in behind him it reaches, and how wide it

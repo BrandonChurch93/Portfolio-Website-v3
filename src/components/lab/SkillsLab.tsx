@@ -130,7 +130,7 @@ export function SkillsLab() {
             </svg>
           </div>
           <div className={styles.desk} data-part="desk" aria-hidden="true" style={at(SKILLS.desk.x, SKILLS.desk.y, SKILLS.desk.w, SKILLS.desk.h)} />
-          <div className={styles.rows} style={{ marginLeft: u(SKILLS.rows.l), width: u(SKILLS.rows.r - SKILLS.rows.l), paddingTop: u(SKILLS.rows.t), paddingBottom: u(SKILLS.foot), '--thing': K.w, '--least': SKILLS.rows.least, '--meet': K.meet, '--wide': K.wide, '--host': K.host } as CSSProperties}>
+          <div className={styles.rows} style={{ marginLeft: u(SKILLS.rows.l), width: u(SKILLS.rows.r - SKILLS.rows.l), paddingTop: u(SKILLS.rows.t), paddingBottom: u(SKILLS.foot), '--thing': K.w, '--least': SKILLS.rows.least, '--meet': K.meet, '--wide': K.wide, '--host': K.host, '--rise': K.rise } as CSSProperties}>
             {COMPETENCIES.map((c, i) => (
               <article key={c.name} className={styles.row} data-part="row">
                 <div className={styles.thing} aria-hidden="true">

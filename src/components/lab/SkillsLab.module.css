@@ -150,12 +150,13 @@
 
 /* The thing's host is larger than its place, so what flies in at its strike is not cut off. It stands so that the
    point the stream meets it at is on the stream's route: --ax and --ay are that point, from the host's middle, in
-   host heights (src/world/struck.ts), and --meet is how far left of the row's edge the stream meets it. */
+   host heights (src/world/struck.ts), --meet is how far left of the row's edge the stream meets it, and --rise how
+   far above the row's middle. */
 .thingHost {
   position: absolute;
   z-index: 2;
   left: calc(var(--u) * (0 - var(--meet) - var(--wide) / 2 - var(--host) * var(--ax, -0.36)));
-  top: calc(50% - var(--u) * var(--host) * (0.5 + var(--ay, 0)));
+  top: calc(50% - var(--u) * var(--host) * (0.5 + var(--ay, 0) + var(--rise)));
   width: calc(var(--u) * var(--wide));
   height: calc(var(--u) * var(--host));
   pointer-events: none;
@@ -244,8 +245,7 @@
 }
 
 /* His own outline, filled with the page's ground and the same light as under the stream, over the stream: behind
-   him the stream is not seen. It lets the stream back in under him, little by little, over the stretch where his
-   picture fades away: let back in at a line, the stream came back along a straight cut across his shirt. It leans
+   him the stream is not seen. Its own foot fades, so the stream's light under him never ends at a line. It leans
    with his portrait, and the light inside it leans back, so the light stays where it is on the page. */
 .cover {
   position: absolute;
@@ -253,8 +253,8 @@
   overflow: hidden;
   background: var(--bg);
   pointer-events: none;
-  -webkit-mask-image: url('/media/portrait-cut-960.webp'), linear-gradient(#000 82%, rgb(0 0 0 / 0.72) 88%, rgb(0 0 0 / 0.3) 94%, transparent 99%);
-  mask-image: url('/media/portrait-cut-960.webp'), linear-gradient(#000 82%, rgb(0 0 0 / 0.72) 88%, rgb(0 0 0 / 0.3) 94%, transparent 99%);
+  -webkit-mask-image: url('/media/portrait-cut-960.webp'), linear-gradient(#000 84%, rgb(0 0 0 / 0.5) 90%, transparent 95%);
+  mask-image: url('/media/portrait-cut-960.webp'), linear-gradient(#000 84%, rgb(0 0 0 / 0.5) 90%, transparent 95%);
   -webkit-mask-size: 100% auto, 100% 100%;
   mask-size: 100% auto, 100% 100%;
   -webkit-mask-repeat: no-repeat;

@@ -627,7 +627,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     let k = 1;
     for (const d of route!.dark!) {
       if (core && !d.core) continue;
-      const over = (core ? 3 : S.skills.hide) * unit, into = Math.min(s - d.from, d.to - s);
+      const before = s < (d.from + d.to) / 2, over = core ? d.ease?.[before ? 0 : 1] ?? 3 * unit : S.skills.hide * unit, into = Math.min(s - d.from, d.to - s);
       if (into > -over) k = Math.min(k, Math.max(0, -into / over));
     }
     return k;
@@ -689,6 +689,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     const p = sim.sparks;
     for (let i = 0; i < sim.sparkCount; i++) {
       const o = i * SPARK_FLOATS, age = p[o + 4] / p[o + 5], fine = p[o + 7] === 1;
+      if (planned?.off?.(p[o], p[o + 1])) continue;
       // It leaves pale, cools through hot and flame to ember, and goes out.
       const a = p[o + 6] * (1.9 * (1 - age) ** 1.7 + 0.04) * (fine ? 0.8 : 1);
       const sh = S.sparks.shutter * (fine ? 0.6 : 1);

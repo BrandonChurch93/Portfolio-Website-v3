@@ -44,6 +44,7 @@ export interface FaceUniforms {
   uOn: { value: number };
   uFlash: { value: number };
   uSpill: { value: number };
+  uFan: { value: THREE.Vector2 };
   uBend: { value: THREE.Matrix3 };
   uAxisV: { value: THREE.Vector3 };
   uGoal: { value: THREE.Vector3 };
@@ -80,6 +81,7 @@ function faceChunks(u: FaceUniforms): Chunks {
     head: /* glsl */ `
 varying vec3 vAxZ;
 uniform float uOn, uFlash, uSpill;
+uniform vec2 uFan;
 uniform vec2 uView;
 vec3 fToView(vec3 v){ return v.x * vAxX + v.y * vAxY + v.z * vAxZ; }
 vec2 fHash(vec2 p){ p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3))); return fract(sin(p) * 43758.5453); }
@@ -144,24 +146,25 @@ float fPx(){ return max(sqrt(length(dFdx(vObj)) * length(dFdy(vObj))), 1e-4); }
   }`,
     emissive: /* glsl */ `
   { float r = length(vObj.xz); float px = fPx();
-    float ringT = fRings(r, px);
     vec2 dir = vObj.xz / max(r, 1e-3);
-    float streak = pow(abs(dot(dir, uView)), 6.0) * smoothstep(6.0, 30.0, r);
-    float core = exp(-pow(r / 21.0, 2.0)), mid = exp(-pow(r / 66.0, 2.0)), wide = exp(-pow(r / 150.0, 2.0));
-    float bands = 0.5 + 0.5 * clamp(ringT * 1.1 + 0.5, 0.0, 1.0);
-    float pool = (core * 1.15 + (mid * 0.42 + wide * 0.09 + streak * mid * 0.16) * bands) * uOn;
-    float lip = exp(-pow((r - ${(RF.FACE - 3).toFixed(1)}) / 3.2, 2.0)) * 0.16 * uOn;
-    // At the strike the light spills from the middle along the spinning rings, in uneven streaks that reach further
-    // some ways than others and along some rings than others, and sinks back into the pool. Nothing in it travels.
-    float reach = 45.0 + 150.0 * pow(wNoise(vec3(dir * 1.7, 3.0)), 1.6);
-    float streaks = smoothstep(0.35, 0.85, wNoise(vec3(dir * 2.2, r * 0.11))) * (0.55 + 0.45 * clamp(ringT * 1.1 + 0.5, 0.0, 1.0));
-    float spill = exp(-pow(r / reach, 2.0)) * streaks * smoothstep(8.0, 26.0, r) * uSpill;
-    float flash = exp(-pow(r / 58.0, 2.0)) * uFlash;
-    float k = pool + lip * (1.0 + uSpill * 0.8) + spill * 1.15 + flash * 0.95;
-    vec3 c = mix(${ember}, ${flame}, smoothstep(0.0, 0.18, k));
-    c = mix(c, ${hot}, smoothstep(0.18, 0.6, k));
-    c = mix(c, ${pale}, smoothstep(0.6, 1.2, k));
-    totalEmissiveRadiance += c * min(k, 1.1) * 0.62;
+    // The stream's light on spun metal is a streak across the rings: two fans opposite each other through the middle,
+    // along uFan, never a ring. They glitter where the pebbling catches them and are broken along their length.
+    vec3 b = fPebble(vObj.xz);
+    float kd = fPebK(px, b.z);
+    float q = dot(b.xy, b.xy) / (b.z * b.z);
+    float glint = 1.0 - 0.55 * kd + 0.55 * kd * (0.3 + 1.5 * fract(b.z * 7.31)) * (1.0 - smoothstep(0.15, 1.05, q)) * 1.8;
+    float grain = 0.55 + 0.9 * wNoise(vec3(vObj.xz * 0.06, 5.0));
+    float fan = pow(abs(dot(dir, uFan)), mix(42.0, 9.0, uSpill));
+    float fans = fan * smoothstep(4.0, 30.0, r) * exp(-pow(r / mix(150.0, 240.0, uSpill), 2.0)) * glint * grain;
+    float warm = exp(-pow(r / 95.0, 2.0)) * 0.1;
+    float pool = (fans * 0.85 + warm) * uOn;
+    float strike = fans * uFlash * 2.4;
+    float lip = exp(-pow((r - ${(RF.FACE - 3).toFixed(1)}) / 3.2, 2.0)) * (0.05 + 0.5 * pow(abs(dot(dir, uFan)), 10.0)) * (uOn * 0.5 + uFlash);
+    float k = pool + strike + lip;
+    vec3 c = mix(${ember}, ${flame}, smoothstep(0.0, 0.2, k));
+    c = mix(c, ${hot}, smoothstep(0.2, 0.75, k));
+    c = mix(c, ${pale}, smoothstep(1.1, 1.7, k));
+    totalEmissiveRadiance += c * min(k, 1.1) * 0.68;
   }`,
   };
 }
@@ -356,7 +359,7 @@ export async function buildReflector(): Promise<ReflectorModel> {
 
   await pause();
   // ---- materials ---------------------------------------------------------------------------------------------
-  const face: FaceUniforms = { uOn: { value: 0 }, uFlash: { value: 0 }, uSpill: { value: 0 }, uBend: { value: new THREE.Matrix3() }, uAxisV: { value: new THREE.Vector3(0, 0, 1) }, uGoal: { value: new THREE.Vector3(0, 0, 1) }, uCurve: { value: 1 }, uLampD: { value: new THREE.Vector3(0, 1, 0) }, uView: { value: new THREE.Vector2(0, 1) } };
+  const face: FaceUniforms = { uOn: { value: 0 }, uFlash: { value: 0 }, uSpill: { value: 0 }, uFan: { value: new THREE.Vector2(1, 0) }, uBend: { value: new THREE.Matrix3() }, uAxisV: { value: new THREE.Vector3(0, 0, 1) }, uGoal: { value: new THREE.Vector3(0, 0, 1) }, uCurve: { value: 1 }, uLampD: { value: new THREE.Vector3(0, 1, 0) }, uView: { value: new THREE.Vector2(0, 1) } };
   const copperFace = metal({ name: 'rfFace', color: hex('copper'), rough: 0.2, tarnish: 0.08, patina: PATINA, aniso: 0.3, anisoRot: Math.PI / 2, extra: faceChunks(face) });
   copperFace.userData.uniforms = face;
   copperFace.envMapIntensity = 0.42;

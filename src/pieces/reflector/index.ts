@@ -30,7 +30,10 @@ const CURVE = 1.7;
 // The room's lights on the arm, in millimetres, and their strengths.
 const ROOM = [{ at: [-900, 700, 1100] as const, k: 0.55 }, { at: [-150, 900, 60] as const, k: 0.9 }];
 // The stream on the face: its light's strength, the strike's flash and the ring of light that runs out from it.
-const STREAM = { light: 0.13, flash: 0.14, spill: 0.32, end: 1.6 };
+const STREAM = { light: 0.13, flash: 0.2, spill: 0.26, end: 1.6 };
+// Where the stream's light lies on the face: along the line from where the stream comes from (straight above) to where it
+// leaves (to the right, falling 4 degrees), laid on the face. As the dish gives, the fans swing this many times its turn.
+const FAN = { from: [0, 1, 0] as const, to: [Math.cos((-4 * Math.PI) / 180), Math.sin((-4 * Math.PI) / 180), 0] as const, swing: 5 };
 // The knock: the dish gives on its ball head, struck from above, as a weight on a stiff joint does. Its largest turn in
 // degrees before the decay, how fast it rings, and how fast that dies. About the middle of the face, which stays put.
 const KNOCK = { deg: 2.4, hz: 9, decay: 0.09 };
@@ -154,6 +157,7 @@ export function createReflector(): StruckPiece {
   // The dish turned by the knock about the middle of its face, the upper bar turned about the knuckle just enough to
   // keep the ball in its clamp, and the chain carried between them.
   const qRest = new THREE.Quaternion();
+  const fanRest = new THREE.Vector2(1, 0);
   const knockAxis = new THREE.Vector3();
   const tmp = { q: new THREE.Quaternion(), q2: new THREE.Quaternion(), v: new THREE.Vector3(), w: new THREE.Vector3() };
   const knock = (nod: number) => {
@@ -185,6 +189,7 @@ export function createReflector(): StruckPiece {
     model.face.uOn.value = s.on;
     model.face.uFlash.value = s.flash;
     model.face.uSpill.value = s.spill;
+    model.face.uFan.value.copy(fanRest).rotateAround(new THREE.Vector2(), s.nod * FAN.swing);
     if (streamLight) streamLight.intensity = STREAM.light * (s.on + s.flash * 1.6);
     stage.hideForClay(model.root);
   };
@@ -231,6 +236,11 @@ export function createReflector(): StruckPiece {
       model = await buildReflector();
       qRest.copy(model.dish.quaternion);
       knockAxis.set(dishAxis().z, 0, -dishAxis().x).normalize();
+      {
+        const n = dishAxis(), f = new THREE.Vector3(...FAN.to).sub(new THREE.Vector3(...FAN.from));
+        f.addScaledVector(n, -f.dot(n)).applyQuaternion(qRest.clone().invert());
+        fanRest.set(f.x, f.z).normalize();
+      }
       stage.wireEdges = 14;
       stage.wireDensity = 0.6;
       const s = stage.scene;

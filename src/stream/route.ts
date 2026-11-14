@@ -85,8 +85,9 @@ export interface Landing {
 // the stream draws back above it.
 export interface Cue { name: string; s: number; over: number }
 // A stretch the stream runs behind or inside something: its riding shards are not drawn there, and with core
-// neither is its core.
-export interface Dark { from: number; to: number; core: boolean }
+// neither is its core. ease is over how far the core is let go before the stretch and taken up again after it,
+// where that is not a few units.
+export interface Dark { from: number; to: number; core: boolean; ease?: [number, number] }
 
 export interface Route extends Solids {
   // The rails' finials, as straight solids: what is thrown bounces off them and they throw shadows, but the route

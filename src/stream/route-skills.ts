@@ -40,8 +40,8 @@ export interface SkillsPlan {
   // The studio light: where the stream strikes its barrel and the way the barrel faces there, and the middle of its
   // lens, which it leaves from.
   light: { strike: Pt; face: number; lens: Pt };
-  // Behind him: where it goes in under his outline, where its riding shards are taken up again, and where it comes
-  // out under the foot of his portrait.
+  // Behind him: where it goes in under his outline, where it is drawn again, and where it comes out under the foot
+  // of his portrait. Between the first two it is not drawn at all.
   enter: Pt;
   shows: Pt;
   out: Pt;
@@ -113,6 +113,13 @@ export function routeThroughSkills(P: SkillsPlan): Route {
       low = Math.max(low, b.y[i] - lead);
       b.floor[i] = low;
     }
+    // Just above a strike a height on the page gives the strike itself, so the leading end never rests there.
+    for (const L of landings) {
+      const at = Math.min(b.n - 1, Math.ceil(L.s / b.step) + 1);
+      let from = at;
+      while (from > 0 && b.floor[at] - b.floor[from - 1] < K.snap * u) from--;
+      for (let i = from; i <= at; i++) b.floor[i] = b.floor[from];
+    }
   }
 
   const O = K.over;
@@ -127,6 +134,6 @@ export function routeThroughSkills(P: SkillsPlan): Route {
     { name: 'behind', s: enter, over: O.behind },
     { name: 'under', s: out, over: O.under },
   ];
-  const dark: Dark[] = [{ from: light.s + 2 * u, to: lens - 2 * u, core: true }, { from: enter + K.hide * u, to: shows, core: false }];
+  const dark: Dark[] = [{ from: light.s + 2 * u, to: lens - 2 * u, core: true }, { from: enter + K.hide * u, to: shows, core: true, ease: [3 * u, K.grow * k] }];
   return { branches, split: br.len + 1e6, join: [Infinity, Infinity], landings, ...S, fins: [], flows: [], fall: K.fall * k, unit: u, cues, dark };
 }

@@ -1115,22 +1115,23 @@ One round in Claude Code. It takes in everything he ruled on Nov 14 for the two 
 
 **The first build, as built (Nov 14). In front of him. Nothing in it is approved.**
 
-At `/lab/skills`, Study 25, built in Claude Code by Fable. The reflector, the studio light and the CPU were each made by an Opus builder from a kit (`reference/kits/`), with Fable judging, in three rounds for the first two and two for the CPU. All 26 items are built. What follows is where it departs from what is written above, the calls made for him, and what is not at the bar.
+At `/lab/skills`, Study 25, built in Claude Code by Fable. The reflector, the studio light and the CPU were each made by an Opus builder from a kit (`reference/kits/`), with Fable judging: four rounds for the reflector, three for the studio light, and two for the CPU, whose third is under way. Items 1 to 26 are built. Items 27 to 30, the desk, joined the round while this was being built and are not: the desk on the page is still the rough bench. What follows is where it departs from what is written above, the calls made for him, and what is not at the bar.
 
 *Where it departs from a line above. Each was said to him in bold.*
 
 1. **The stream runs faster than the scroll on two runs.** From the reflector to the studio light it takes 0.3 seconds, and from the studio light to behind his shoulder 0.26, however slowly the page is scrolled. It goes against The stream, "On the site it moves no faster than the visitor scrolls". Item 23 gave the builder the first run. The second is Fable's. Carried at the scroll's pace, at 600 px a second the words came on after About's title had left the screen.
 2. **Thrown by the studio light, the stream's leading end runs ahead of the scroll,** by 15.5 percent of the screen's height, about 140 px on a screen 900 tall, until it is under his portrait. Everywhere else its end rests two thirds of the way down the screen. Same reason.
 3. **The words come on the moment the glow is whole,** 0.26 seconds after the stream goes in behind him, where "Fable's calls" above has them half a second after the glow. The gate he asked for stands: no word shows until his portrait, the studio light's light and the glow are all whole.
-4. **The stream is let back in under him little by little,** over the last sixth of his portrait, down to its foot, where item 6 has it come back "under him where the picture has faded away". His picture fades over that same stretch. Let back in at one height it came back along a straight cut across his shirt, which a fresh reviewer failed.
+4. **Behind him the stream is not drawn at all,** from just inside his outline at his neck to the foot of his portrait, where it is drawn again from nothing over about 70 units, as it is where it begins. Item 6 has it "hidden by his own outline". It still is, at his neck, and its light still rims him there. Shown through his fading picture lower down, it came back along a straight cut across his shirt, which a fresh reviewer failed, and then as a pale line with no color.
 5. **The studio light has no cable.** The kit asked for one. Inside the room the light has at the screen's right edge it could only be a stub, so it was dropped.
 
 *Fable's calls in the build, his to overturn*
 
 - **The route.**
     - It comes straight down the middle of the page, as it leaves Work, until 150 units above Skills, and bows from there to the lamp.
-    - It strikes the top of the lamp's shade on its upper left, so what it throws goes up and to the left, away from the desk. That strike is lighter than a card's (0.7 of one), so the desk keeps the eye.
-    - At each row it turns in from 62 units above the row's middle to 62 below, and meets the thing at its left most point.
+    - It strikes the top of the lamp's shade on its upper left, so what it throws goes up and to the left, away from the desk. That strike is lighter than a card's (0.7 of one), keeps half the sparks while the stream lies on it and throws a single shard a quarter as often, so the desk keeps the eye.
+    - Its leading end never comes to rest within 22 units above a thing it is about to strike: it goes on and strikes. Resting just short, it sat on the lamp's shade throwing sparks with the lamp dark.
+    - At each row it turns in from 62 units above the row's middle to 62 below, and meets the thing 6 units short of its left most point, so its core lies against the thing and not over it. The CPU is met at its near left corner, which is a little above the middle of the board as it is seen, so the CPU stands that much higher and the board sits in the middle of its row.
     - A row's strike faces up and a little to the right, the way the stream is going, so what it throws goes into the row. Nothing is aimed at a border: the pieces land where they fall.
     - In the studio light the stream goes in at the barrel's upper left side and comes out at the middle of the lens, about 50 px away on a 1440 wide screen. Between the two it is not drawn.
 - **What the stream is never drawn over.** The monitor, the mat with everything on it, the PC, the block of About's words, and his outline. A shard whose place is over one of those is not drawn. What the lamp, the reflector and the studio light throw is also let fall less far than what a row throws (60, 24 and 12 units against 150), so it does not rain on the desk, the words or him.
@@ -1150,11 +1151,31 @@ At `/lab/skills`, Study 25, built in Claude Code by Fable. The reflector, the st
 
 *What is not at the bar, plainly*
 
-CPUNOTES
+- **The desk. None of its ten things is made.** What is on the page is the rough bench from `/lab/desk`, as the first 26 items agreed. Items 27 to 30 joined the round after this build was under way. What exists toward them: the piece's frame (`src/pieces/desk/`, at `/lab/piece/desk`), which draws the rough's own forms behind a contract of parts so each thing can be made in its own file and seen alone (`?only=keyboard`), and the builders' kit (`reference/kits/desk.md`). The headphones are an outline.
+- **Test 8, the desk is what is looked at. Failed by a fresh reviewer, and Fable agrees.** When the stream strikes the lamp it is the brightest and largest thing in the picture, and on its way out its core crosses the lamp's stem. The strike was made lighter after the reviewer looked. It is still the brightest thing there. The lamp is a carried stand in whose stem is on the side the stream leaves by. The real lamp is made for the strike, with its arm on the other side, and a desk at the bar holds more of the eye than a rough one.
+- **The CPU. Tests 20, 21 and 22 failed by a fresh reviewer.** What is on the page is its second round.
+    - As a thing it is the weaker work beside the PC Builder's parts: one amber wash over everything, so capacitors, chokes and board read as one brown, a lid that glows evenly like a lit panel, and traces that cannot be seen with the stream off.
+    - Band is the only way that reads as finished.
+    - Flash shows the piece's canvas as a lit rectangle for about 150 ms.
+    - Shards is closer to a spreading circle with parts popping in than to shards that become parts. No one shard can be followed from the strike to its part. The load plate and the lever appear where they stand.
+    - Its third round is with its builder on exactly these.
+- **The second and third rows strike empty places,** as item 14 agreed. A reviewer who was not told read them as strikes on nothing.
+- **Scrolled at 900 px a second,** About's title has left the top of the screen by the time the last of the text is whole. The text itself is still in the upper half.
+- **The studio light.** The lower left leaf of its barn doors is close to one flat brown. It throws no shadow on the wall behind it. No cable.
+- **The reflector.** Its give on its arm when struck is too small to see at the page's size. The arm's wear is thin.
+- **Test 25 at its strictest.** With the processor slowed four times, 5 of 802 frames took over 25 ms, the worst 36. At full speed, none.
+- **What a thrown shard does at a row.** A quarter of a second after the last strike, 9 of 103 thrown shards were within 14 px of a border. The rest are still falling or have gone. They land where they fall and fade: nothing is aimed at a border.
+- **Not checked:** a real iPad, a real phone, a 4K screen, a screen reader read aloud, Safari itself.
 
 *Measured, in a live page, on a screen 1440 by 900*
 
-MEASURED
+- **Nobody reads About early.** A word showing before his portrait, the studio light's light and the glow were all whole: 0 frames of 371 at 300 px a second, 0 of 261 at 600, 0 of 224 at 900, and 0 of 173 after a flick.
+- **Where About's title is on the screen when the last of the text is whole.** At 300 px a second, 290 px down. At 600, 76 px down. At 900 it has already left the top of the screen, 168 px above it, with the text still in the upper half. After a flick of 1500 px, the text is whole 0.8 seconds after the page comes to rest.
+- **Nothing of a row before its strike.** 0 frames for each of the three rows, of 182.
+- **Off the things it must stay off.** In every frame of a scroll from top to foot, 331 frames at 500 px a second and 185 at 900, no shard riding or thrown is drawn over the monitor, the mat, the PC, his outline, the tabs or About's words.
+- **It goes away again.** Scrolled back up at 600 px a second: the text, the tabs and the title go first, then the glow, then his portrait and the studio light's light, then the last row. Nothing turned back on its way out. Rocked 60 px each way across the studio light's strike seven times, nothing flickered.
+- **Frame times.** The whole page scrolled down and back up at 450 px a second: 808 frames, none over 25 ms. With the processor slowed four times: 5 of 802 over 25 ms, the worst 36.
+- **Work is as it was.** 51 of 52 stills taken before and after are the same pixel for pixel: 19 of 20 of `/lab/work` and `/lab/work-blank`, all 21 of `/lab/stream`, the 7 of the buttons and the 4 of the card study. The one that differs is Work with reduced motion, which also differs from itself when it is taken twice from the code as it was.
 
 ### Contact
 

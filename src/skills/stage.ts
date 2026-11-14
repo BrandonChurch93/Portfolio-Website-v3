@@ -2,6 +2,7 @@ import { BAY, DESK, MAT, SCREEN } from '../desk-drafts/desks';
 import type { DeskScene } from '../desk-drafts/scene';
 import { registry } from '../hooks/registry';
 import { lamp } from '../lamp/lamp';
+import { STREAM } from '../stream/config';
 import type { RailShape } from '../stream/renderer';
 import type { Cue, Rail } from '../stream/route';
 import { routeThroughSkills } from '../stream/route-skills';
@@ -77,8 +78,8 @@ const AGAIN = 0.8;
 const PULSE = { run: 0.46, swap: 0.62 };
 
 // His outline, for keeping the stream off him: how wide the picture of it is kept, how solid a place has to be to
-// count as him, and how far down his portrait his outline stops hiding the stream, where his picture has faded away.
-const OUTLINE = { w: 300, solid: 40, foot: ABOUT.shows };
+// count as him, and how far down his portrait his outline keeps the stream's shards and sparks off him.
+const OUTLINE = { w: 300, solid: 40, foot: 1 };
 // The block of About's words, as far down as it can reach, in the board's units from the top of About.
 const WORDS_FOOT = 1000;
 
@@ -170,7 +171,7 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
       title: S0 + SKILLS.cue * k,
       lamp: { ...(shade ? { x: D.l + shade[0] * (D.r - D.l), y: D.t + shade[1] * (D.b - D.t) } : on(342, 296, S0)), face: SHADE_FACE },
       spine: B.l + SKILLS.spine * k,
-      rows: boxes.map((r) => ({ x: B.l + (R.l - SKILLS.thing.meet) * k, y: (r.t + r.b) / 2 })),
+      rows: boxes.map((r, i) => ({ x: B.l + (R.l - SKILLS.thing.meet) * k - STREAM.skills.shy * c.unit, y: (r.t + r.b) / 2 - (i ? 0 : SKILLS.thing.rise * SKILLS.thing.host * k) })),
       rules,
       reflector: { ...face, face: -ABOUT.reflector.face * RAD },
       light: { strike, face: Math.atan2(-Math.cos(a), -Math.sin(a)), lens },

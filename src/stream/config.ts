@@ -107,6 +107,12 @@ export const STREAM = {
     row: { over: 62, turn: [22, 3] as [number, number] },
     // How tight the turn at a strike is, in the stream's own units.
     corner: 5,
+    // The leading end never comes to rest within this far above a thing it is about to strike, in the stream's own
+    // units: it goes on and strikes. Resting just short, it sat on the lamp's shade throwing sparks with the lamp dark.
+    snap: 22,
+    // And it meets a row's thing this far short of the thing's own edge, so its core lies against the thing and not
+    // over it.
+    shy: 6,
     // The desk comes out of the dark when the leading end is this far short of the lamp.
     near: 170,
     // Below his portrait: the turn it takes to fall again, how far to the left it then drifts, and over how far down.
@@ -126,10 +132,13 @@ export const STREAM = {
     // How far in from each end of a stretch behind or inside something its riding shards are let go and taken up
     // again, in the stream's own units.
     hide: 24,
+    // Under his portrait the stream is drawn again from nothing over this far, in the board's units, as it is at
+    // its start. Shown through his fading picture, its core came back first as a pale line with no color.
+    grow: 70,
     // How a row's strike faces: up and a little to the right, so that what it throws goes into the row.
     rowFace: -1.12,
     // Each contact, as in work.contact.
-    contact: { lamp: [0.7, 0.8, 4, 3], row: [0.8, 1, 5, 2.6], reflector: [1.15, 1.3, 6, 2.6], light: [1, 1.2, 6, 2.6] } as Record<string, readonly [number, number, number, number]>,
+    contact: { lamp: [0.7, 0.5, 2, 4], row: [0.8, 1, 5, 2.6], reflector: [1.15, 1.3, 6, 2.6], light: [1, 1.2, 6, 2.6] } as Record<string, readonly [number, number, number, number]>,
     // How many seconds of each thing's coming the page follows (src/skills/stage.ts reads them back).
     over: { title: 0.6, near: 0.9, lamp: 1.4, row: 1.6, reflector: 0.6, light: 0.8, behind: 1.2, under: 0.6 } as Record<string, number>,
   },
