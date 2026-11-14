@@ -2,6 +2,61 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · Study 19: the accomplishments derby (Fable, web chat)
+
+**What Brandon said**
+
+- "Let's go with your recommendation and start a derby, this should include multiple layout options for that section, card options for the content, and multiple options for the logo section layout and design. Turned you up, go ahead and build this"
+- The recommendation he means is the one on the marks: one material, struck into bronze in a row, not a cloud of grey logos. A, B and D were the layouts left standing.
+
+**What was built**
+
+- `/lab/accomplishments`, in three parts: three layouts at the page's size with a line for the stream, seven cards close up, and five ways to show the marks. `BRIEF.md`, Open 26, lists each one. Two switches at the foot of the screen: Polished or Antique, and the stream's line on or off.
+- Every piece is a relief: a height worked out per pixel and lit, not a picture.
+    - `src/accomplishments/arts.ts` draws each piece as shapes on a 2D canvas (a medal, a slanted plate, a drawer front, the bar, a token, the hallmarks, a stamp). `relief.ts` reads back how much of each pixel a shape covers. `compose.ts` measures every shape from its own edge (`src/metal/edt.ts`), gives it a profile across that distance, and writes height, satin, patina and coverage. That arithmetic runs in up to three workers (`relief.worker.ts`), and on the page if a worker cannot start.
+    - `stage.ts` draws the pieces: one canvas over each part of the page, one float texture a piece. It reflects the blanks' room (`ROOM`, now exported from `src/work-blanks/blanks.ts`, which draws exactly what it drew) plus one wide soft light in front, takes the cursor's light, throws a shadow from what stands high, darkens hollows, and gives satin metal a grain. The metal is the palette's `copper-light`.
+    - `layouts.ts` holds each layout's places and the stream's line through it, in a frame 1240 units wide.
+
+**What it took to look like metal. Worth knowing before the next relief**
+
+- First round: everything one mid brown. The blanks' room is thin slanted lights in a dark room, which suits a whole mirrored card and leaves a small flat face dark. One wide soft light straight in front, as `src/metal/shaders.ts` lights the buttons, is what made faces bright and bevels dark.
+- The tint carried over from the blanks study was a pale tan. The approved plates use the palette's metals, so this does too.
+- Figures with flat tops read as outlines. Rounded over their whole width they carry a highlight.
+- Teeth along every slanted edge at the size shown. Each relief is now worked at up to three times that and averaged down.
+- Shimmer where a tight bevel reflects a hard edged light: the lights are softened by how fast the reflection turns across a pixel (`fwidth`).
+- Antique as a matte floor read as clay. It is now a dark patina everywhere but the high points, which stay bright.
+- Working the reliefs out on the page held it for 16.5 seconds in all in this workspace, 1.2 seconds for the worst piece. In workers the page's own share is 1.3 seconds in all and 0.1 for the worst. Those are this workspace's numbers, not his Mac's.
+
+**Fable's calls, his to overturn**
+
+- A is a switchback, not a stair one way: the stream comes in at the middle, and a one way stair of long plates would carry it off the page.
+- Everything on a slanted plate leans with it. Fable had told him "words level inside them".
+- A has three plates, B and D four.
+- Stand ins: 00 for every figure but 10 years, four labels (years, projects, clients, products), six made up marks. No real company's mark is anywhere in the code.
+
+**What was looked at**
+
+- Stills of every part at a wide screen and at two pixels to a point, both finishes, a tablet held sideways and a phone (for breakage only), the cursor's light held over a medal, and close crops of a medal and a knob at three times zoom. `reference/studies/36-accomplishments-*.jpg`.
+- A live page: both switches pressed, the three jump links, all 38 reliefs built, no errors. The one 404 in the console is the site's missing favicon, which every page has. The production build was run and the page checked on it, and `/lab/work-blanks` was shot again to see it had not changed.
+- All of it drawn in software. Nothing here moves but the cursor's light, so there is no motion to judge.
+
+**What is at the bar and what is not**
+
+- At it, as a derby of form: the three layouts, the cards and the marks as lit metal, on palette, sharp at three times zoom on a screen with two pixels to a point.
+- Not at it: nothing is struck or woken, the stream is a line, B's first stroke comes in on a slant with nothing drawn to cause it, and on a screen with one pixel to a point the tightest bevels still shimmer a little.
+- Not measured: the frame rate on his Mac and on his iPad. Each part draws only when the light, the scroll or a piece has changed.
+
+**Waiting on him**
+
+- Whether the section goes in at all. It goes against "the site never repeats the résumé", said to him in bold again.
+- If it does: a layout, a card, a way to show the marks, a finish. Fable recommends B · Struck medals, the beaded medal, the marks struck into one bar, Polished.
+- His to supply if it does: the figures, what each counts, the lines beside them, and which companies he may name in public.
+
+**Not touched**
+
+- `/lab/home` still shows the plain strip behind its switch. The picked layout goes onto the sketch once he has picked.
+- The two prompts he holds for Claude Code (the fourth pass, and the handle) are as they were.
+
 ## 2026-11-14 · The sketch, second round: three pieces cut, and two of his questions drawn (Fable, web chat)
 
 **What Brandon said**

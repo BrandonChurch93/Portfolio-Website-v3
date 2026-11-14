@@ -1,0 +1,385 @@
+.main {
+  min-height: 100svh;
+  padding: var(--space-8) var(--edge) var(--space-10);
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--copper-light);
+}
+
+.title {
+  margin-top: var(--space-4);
+  font-size: clamp(2.2rem, 1rem + 3vw, 4rem);
+  font-weight: 300;
+  letter-spacing: var(--track-display);
+  line-height: 1.05;
+}
+
+.lede {
+  margin-top: var(--space-5);
+  max-width: 46rem;
+  font-size: var(--step-1);
+  color: var(--text-2);
+}
+
+.caveats {
+  margin-top: var(--space-5);
+  padding-left: 1.1rem;
+  max-width: 46rem;
+  color: var(--text-2);
+}
+
+.caveats li + li {
+  margin-top: var(--space-1);
+}
+
+.jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.jump a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch);
+  padding: 0 var(--space-5);
+  border: 1px solid var(--copper);
+  border-radius: 1.4rem;
+  background: color-mix(in srgb, var(--copper-light) 14%, transparent);
+  color: var(--pale);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: 0.04em;
+  text-decoration: none;
+}
+
+.jump a:focus-visible,
+.choice:focus-visible {
+  outline: var(--focus);
+  outline-offset: var(--focus-offset);
+}
+
+.part {
+  margin-top: var(--space-9);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--line);
+  font-size: var(--step-4);
+  font-weight: 300;
+  letter-spacing: var(--track-tight);
+  scroll-margin-top: var(--space-5);
+}
+
+.partNote {
+  margin-top: var(--space-3);
+  max-width: 46rem;
+  color: var(--text-2);
+}
+
+.option {
+  margin-top: var(--space-8);
+}
+
+.name {
+  font-size: var(--step-2);
+  font-weight: 500;
+  letter-spacing: var(--track-tight);
+}
+
+.note {
+  margin-top: var(--space-2);
+  max-width: 46rem;
+  font-size: var(--step--1);
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+.bronze {
+  position: relative;
+}
+
+/* The reliefs are drawn on one canvas over their places. It takes no clicks. */
+.canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.metal {
+  display: block;
+}
+
+.frame {
+  width: 100%;
+  max-width: 1240px;
+  margin: var(--space-6) auto 0;
+  container-type: inline-size;
+}
+
+.placed {
+  position: absolute;
+}
+
+.word {
+  position: absolute;
+  height: 0.56cqw;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 20%, transparent);
+}
+
+.word[data-heavy='true'] {
+  height: 0.86cqw;
+  background: color-mix(in srgb, var(--copper-light) 62%, transparent);
+}
+
+.stream {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  transition: opacity var(--dur-2) linear;
+}
+
+.stream[data-on='false'] {
+  opacity: 0;
+}
+
+.stream path {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: miter;
+  stroke-miterlimit: 6;
+}
+
+.haze {
+  stroke: var(--ember);
+  stroke-width: 26;
+  opacity: 0.32;
+}
+
+.glow {
+  stroke: var(--flame);
+  stroke-width: 10;
+  opacity: 0.3;
+}
+
+.body {
+  stroke: var(--hot);
+  stroke-width: 3.6;
+  opacity: 0.85;
+}
+
+.core {
+  stroke: var(--pale);
+  stroke-width: 1.5;
+}
+
+.strike line {
+  stroke: var(--hot);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+
+.flare {
+  fill: var(--flame);
+  opacity: 0.16;
+}
+
+.dot {
+  fill: var(--pale);
+}
+
+.cards {
+  margin-top: var(--space-7);
+  max-width: 1240px;
+  margin-inline: auto;
+}
+
+.cards + .cards {
+  margin-top: var(--space-8);
+}
+
+.rowOne,
+.rowTwo,
+.rowThree {
+  display: grid;
+  gap: var(--space-8) var(--space-7);
+}
+
+.rowTwo {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+}
+
+.rowThree {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+}
+
+.tile + .tile {
+  margin-top: 0;
+}
+
+.cards > .tile + .tile {
+  margin-top: var(--space-8);
+}
+
+.plate,
+.drawer,
+.medal,
+.bar,
+.band,
+.tokens,
+.named,
+.cloud {
+  margin-top: var(--space-5);
+}
+
+.plate {
+  width: min(100%, 1000px);
+}
+
+.drawer {
+  width: min(100%, 580px);
+}
+
+.medal {
+  width: min(100%, 300px);
+}
+
+.bar {
+  width: min(100%, 900px);
+}
+
+.band {
+  width: min(100%, 470px);
+}
+
+.tokens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5) 2.75rem;
+}
+
+.token {
+  width: 6.25rem;
+}
+
+.named {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-6) var(--space-7);
+  max-width: 1000px;
+}
+
+@media (max-width: 899px) {
+  .named {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.credit {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.stamp {
+  flex: none;
+  width: 4.5rem;
+}
+
+.lines {
+  display: grid;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.lines i {
+  display: block;
+  height: 0.45rem;
+  width: 86%;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 20%, transparent);
+}
+
+.lines i:last-child {
+  width: 58%;
+}
+
+.lines i[data-heavy='true'] {
+  height: 0.7rem;
+  width: 46%;
+  background: color-mix(in srgb, var(--copper-light) 62%, transparent);
+}
+
+.cloud {
+  position: relative;
+  width: min(100%, 900px);
+  aspect-ratio: 900 / 250;
+}
+
+.panel {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  z-index: 6;
+  width: max-content;
+  max-width: calc(100vw - 2 * var(--space-4));
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--line-strong);
+  border-radius: 1.75rem;
+  background: color-mix(in srgb, var(--bg-2) 94%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transform: translateX(-50%);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1) var(--space-5);
+}
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.groupName {
+  margin-right: var(--space-2);
+  font-size: var(--step--1);
+  color: var(--text-2);
+}
+
+.choice {
+  min-height: 2.5rem;
+  padding: 0 var(--space-4);
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.choice[aria-pressed='true'] {
+  color: var(--pale);
+  background: color-mix(in srgb, var(--ember) 55%, transparent);
+  box-shadow: inset 0 0 0 1px var(--flame);
+}

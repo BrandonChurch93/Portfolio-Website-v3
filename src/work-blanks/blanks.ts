@@ -7,6 +7,25 @@ import { MAX_RATIO, program } from '../stream-ideas/gl';
 // only shows what is round it, so the blanks reflect a room of long lights that stand off the screen: the bands
 // slide as the page scrolls, as a card turns under the pointer, and with the cursor's own light.
 
+// The room every mirror in the studies shows. The accomplishments derby reflects the same one.
+export const ROOM = `// The room the mirror shows: long lights standing off the screen, hard edged, and the cursor's light as a small
+// panel of its own. d is where a reflected ray looks, up and to the right.
+vec3 room(vec2 d, float blur, vec2 dl){
+  float t = d.y + d.x * 0.38, e = 0.006 + blur;
+  // Each light is a gradient, as a photographer's are: one hard edge, and a fall away from it.
+  float wide = smoothstep(-0.275 - e, -0.275 + e, t) * (1.0 - smoothstep(-0.15 - e, -0.15 + e, t)) * mix(1.0, 0.4, clamp((t + 0.275) / 0.125, 0.0, 1.0));
+  float line = smoothstep(-0.375 - e, -0.375 + e, t) * (1.0 - smoothstep(-0.352 - e, -0.352 + e, t));
+  float high = (1.0 - smoothstep(0.32 - e, 0.32 + e, t)) * pow(smoothstep(0.0, 0.32, t), 1.6);
+  float thin = smoothstep(0.4 - e, 0.4 + e, t) * (1.0 - smoothstep(0.42 - e, 0.42 + e, t));
+  float far = smoothstep(0.85 - e, 0.85 + e, t) * (1.0 - smoothstep(1.5, 2.0, t));
+  float low = 1.0 - smoothstep(-0.75, -0.5, t);
+  vec3 col = mix(vec3(0.01, 0.007, 0.005), vec3(0.085, 0.055, 0.034), smoothstep(-0.9, 0.6, t));
+  col += vec3(1.0, 0.9, 0.78) * (0.9 * wide + 0.55 * line + 0.78 * high + 0.45 * thin + 0.7 * far) + vec3(0.6, 0.4, 0.24) * 0.4 * low;
+  vec2 kk = d - dl; float tl = kk.y + kk.x * 0.38;
+  col += vec3(1.0, 0.88, 0.7) * 1.15 * (1.0 - smoothstep(0.03 - e, 0.03 + e, abs(tl))) * (1.0 - smoothstep(0.1 - e, 0.1 + e, abs(kk.x)));
+  return col;
+}`;
+
 const VERT = `#version 300 es
 in vec2 a;
 void main(){ gl_Position = vec4(a, 0.0, 1.0); }`;
@@ -91,23 +110,7 @@ float face(vec2 p, int design, float H, float edge, out vec4 k){
   return h * inside + rim;
 }
 
-// The room the mirror shows: long lights standing off the screen, hard edged, and the cursor's light as a small
-// panel of its own. d is where a reflected ray looks, up and to the right.
-vec3 room(vec2 d, float blur, vec2 dl){
-  float t = d.y + d.x * 0.38, e = 0.006 + blur;
-  // Each light is a gradient, as a photographer's are: one hard edge, and a fall away from it.
-  float wide = smoothstep(-0.275 - e, -0.275 + e, t) * (1.0 - smoothstep(-0.15 - e, -0.15 + e, t)) * mix(1.0, 0.4, clamp((t + 0.275) / 0.125, 0.0, 1.0));
-  float line = smoothstep(-0.375 - e, -0.375 + e, t) * (1.0 - smoothstep(-0.352 - e, -0.352 + e, t));
-  float high = (1.0 - smoothstep(0.32 - e, 0.32 + e, t)) * pow(smoothstep(0.0, 0.32, t), 1.6);
-  float thin = smoothstep(0.4 - e, 0.4 + e, t) * (1.0 - smoothstep(0.42 - e, 0.42 + e, t));
-  float far = smoothstep(0.85 - e, 0.85 + e, t) * (1.0 - smoothstep(1.5, 2.0, t));
-  float low = 1.0 - smoothstep(-0.75, -0.5, t);
-  vec3 col = mix(vec3(0.01, 0.007, 0.005), vec3(0.085, 0.055, 0.034), smoothstep(-0.9, 0.6, t));
-  col += vec3(1.0, 0.9, 0.78) * (0.9 * wide + 0.55 * line + 0.78 * high + 0.45 * thin + 0.7 * far) + vec3(0.6, 0.4, 0.24) * 0.4 * low;
-  vec2 kk = d - dl; float tl = kk.y + kk.x * 0.38;
-  col += vec3(1.0, 0.88, 0.7) * 1.15 * (1.0 - smoothstep(0.03 - e, 0.03 + e, abs(tl))) * (1.0 - smoothstep(0.1 - e, 0.1 + e, abs(kk.x)));
-  return col;
-}
+${ROOM}
 
 void main(){
   vec2 px = vec2(gl_FragCoord.x, uSize.y * uDpr - gl_FragCoord.y) / uDpr;

@@ -360,6 +360,23 @@ The section:
 5. **Each 3D piece is drawn at the size and outline it would have,** and none is cut off or behind words.
 6. **It says what it is not.** Look, motion, words and the design of any piece are not being judged, and anything that goes against a settled line is named.
 
+## A derby of reliefs
+
+`BRIEF.md`, Open 26, has what the derby at `/lab/accomplishments` holds. It is judged for layout and for the look of each piece, not for motion. It is worth showing when all of these are true:
+
+1. **Each layout is shaped by what the stream does there.** The stream lands on something, is carried or turned by it, and every turn has a cause. Where one does not, it is said.
+2. **Each piece reads as metal without a label.** Polish can be told from satin and raised from cut, a face turned to the viewer is bright and a bevel is dark, and what stands high throws a shadow.
+3. **It is the palette's copper.** Not tan, and not yellow gold.
+4. **Figures and labels read at the page's size,** and at three times zoom a bevel is smooth, with no teeth along a slanted edge.
+5. **No mark is a real company's,** and every stand in is named on the page.
+6. **The page keeps answering while the reliefs are worked out.** `info().stats.reliefMax` is the longest any one piece held the page, in milliseconds.
+
+What the build taught, for the next relief:
+
+- A small relief lit only by thin lights reads as dull brown. One wide soft light straight in front is what makes a flat polished face bright and its bevels dark.
+- A figure with a flat top reads as an outline. Rounded like a pillow it carries a highlight along every stroke.
+- A relief worked out at the size it is shown has teeth along every slanted edge. Worked out finer and averaged down, it has none.
+
 ## How to show Brandon something
 
 1. Say what it is and where to open it.
