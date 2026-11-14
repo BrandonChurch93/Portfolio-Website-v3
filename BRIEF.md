@@ -432,25 +432,34 @@ How each got here is in Open 21 to 23. `QUALITY.md`, "When the category changes"
     - What still holds: nothing heaps up, thrown shards keep their momentum, there is no second wave, and what the budget drops is said out loud.
     - Fable's call, his to overturn: what lands on a sleeping card bounces off it and does not wake it. Only the stream wakes a card.
 
+5. **Where surges meet, something happens (Nov 13).** "If we have a second surge coming down the stream, what happens when that surge touches the current one? I feel like there should be an animation for that: fusing together, or having some type of interaction, a burst of energy out the end. I'm not sure, but that's definitely worth adding in there before the next working session."
+    - Fable's reading, which he has not confirmed: the surge's front is a second leading end, and "the current one" is the stream's own leading end. So:
+    - When the front reaches the stream's leading end, the two fuse and the end throws a burst of energy forward, out of the end: arc, sparks, its shards flung wide. Then it settles back to how it rests. The front never just stops or fades where the stream ends.
+    - Where the two sides' fronts arrive under the button they fuse into one, with a burst, and one front goes on down.
+    - Not changed by this: a second press while a surge is still running. The later press still cuts the earlier surge off, which was Claude Code's call.
+    - Fable's call, his to overturn: the burst is light, arc and sparks. It throws no shards loose, since only a strike does that.
+
 **The path through Work: Bolt, to try on the real stream (Nov 13)**
 
 How it got here is in Open 24. From the path derby at `/lab/work-path`: "I looked through the four options. I think Bolt is my favorite. I'm willing to give that one a shot."
 
-- In exact terms, on the route through Work:
-    - The stops and their order stay as they are.
-    - Every contact is a hard corner. The stream arrives straight, strikes at a point and leaves straight. No round bows.
-    - On a free run it wanders in short straight strokes that change side by uneven amounts at uneven distances, like a bolt. That takes the place of the smooth sway.
-    - The wander dies away before every strike, so the last stretch in is straight.
-    - Where it lies on something it runs straight.
-- What it is not: a change to what the stream is. The core is still the steady wave of light he picked, with its shards and sparks. Only where it goes changes. "An arc as the whole core" stays in Dropped.
-- **It is a trial, and it leaves the approved test shot alone.** The sway and the rounded turns are part of what he approved at `/lab/stream`. Bolt is built for the route through Work only, and `/lab/stream` draws what it draws today.
-- **It changes one line of the route he agreed:** "Each side runs along the top of the title and hooks over its end, as in the test shot." On Work it now breaks off the end straight for the next stop.
-- Fable's calls, his to overturn:
-    1. Today's path stays one switch away on `/lab/work`, so he can compare the two on the real stream. The switch comes out when he rules.
-    2. The strokes are fixed in place. They do not flicker or form again. Given the choice he took a steady core over a restless one.
-    3. The wireframe's numbers are where to start: a knot every 50 to 130 units, up to 17 units to each side, the wander beginning 60 units from anything the stream touches and whole by 150.
-    4. How the stream leaves the side of the second row's card is the builder's to shape, so that strike stays a strike.
-    5. The lunge is not in it. It was a switch in the derby and he did not pick it.
+- **The builder works to a goal here, not to a drawing (Nov 13).** "Should we give him the freedom to make Bolt as good as it can be? I don't know how to word the strict criteria to give him. The plan we just made, I don't know how much thought and reasoning you put into it, and that wasn't in production, so it seems natural to explain to him what the goal is and have him work towards that, outside of super containerized rules. I'm just talking about the path here." Fable's answer: yes. The wireframe was a quick sketch on a route drawn by hand, and Fable could not judge it moving.
+- **The goal, in his words:**
+    - "I want it to feel powerful as you go through the site, with its angles and how it hits things and bounces."
+    - "Intentional directed power choosing its next course", not "a ballerina or flowing water".
+    - The power is not lost before a strike. What he minded in the path as it was: "harsher bows that look unnatural and take away the momentum of the power right before a strike".
+    - "I actually like the swing. It's kind of unpredictable."
+    - "The stream itself looks really powerful. I love that." Only where it goes changes.
+- **What he picked, as the place to start:** E in the wireframe. Hard corners where it strikes, straight in to every strike, and a wander of short straight strokes, uneven in length and reach, on the free runs. Its shape and its numbers are a sketch. None of them is a rule.
+- **What is fixed:**
+    - The stops through Work and their order.
+    - What the stream is: the steady core he picked, its shards and its sparks. "An arc as the whole core" stays in Dropped.
+    - Riding shards stay with the stream, and it still reads as the stream, never as a neon sign, a wire or a circuit drawn on the page.
+    - **The approved test shot is left alone.** The sway and the rounded turns are part of what he approved at `/lab/stream`. Bolt is for the route through Work only.
+    - Today's path stays one switch away on `/lab/work`, so he can compare the two on the real stream. Fable's call. The switch comes out when he rules.
+- **What the builder is free with:** everything else about the path. Where and how sharply it turns, how it comes in to and leaves each strike, what the wander is made of and whether it holds still, and every number.
+- **It changes one line of the route he agreed:** "Each side runs along the top of the title and hooks over its end, as in the test shot." On Work it may now leave the end another way.
+- Not in it: the lunge. It was a switch in the derby and he did not pick it.
 
 **The third pass on the Work page (Nov 13)**
 
@@ -462,9 +471,10 @@ One round in Claude Code, on `/lab/work`. He had not sent either of the two prom
 4. Cards the stream has not reached are asleep (the same, item 3).
 5. Both sides of the surge start together (the same, item 1).
 6. The surge's front becomes a second leading end (the same, item 2).
+7. Where surges meet: the two sides' fronts fuse under the button, and the front bursts out of the stream's leading end (the same, item 5).
 
 - Not in it: a phone or any screen under 1100 px. The lunge. The top bar. Real projects for the other three categories. New pictures.
-- Its tests are in `QUALITY.md`: "When the category changes", tests 14 to 21, and "The path through Work as a bolt".
+- Its tests are in `QUALITY.md`: "When the category changes", tests 14 to 23, and "The path through Work as a bolt".
 
 **How it is built**
 

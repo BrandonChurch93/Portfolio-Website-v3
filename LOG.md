@@ -24,21 +24,27 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 - With one size of card a row never changes height, so `warp` and the bow of what hangs beside a row in `src/stream/surge.ts` have nothing left to do.
 - The surge's front runs along whatever the route is. On straight strokes it should be easier to follow than on a curve, which was the test the first build failed.
 
+**He asked for two changes before sending it, so the prompt below is the second version**
+
+- The path: "Should we give him the freedom to make Bolt as good as it can be?" Yes. The brief's Bolt part now gives the goal in his words, what is fixed and what the builder is free with, and the tests are about the feeling, not the shape.
+- "What happens when that surge touches the current one?" Fable read "the current one" as the stream's own leading end, said so, and wrote in both that and the two sides' fronts meeting under the button ("Three changes to the surge and the cards", item 5). He has not confirmed the reading.
+
 **The prompt Brandon was given**
 
 ```
 Pull main, then read BRIEF.md, PLAN.md, QUALITY.md and the top entry of LOG.md from disk, as CLAUDE.md says.
 
-Build the third pass on the Work page, at /lab/work. BRIEF.md, The stream, "The third pass on the Work page" lists the six changes and points to where each is agreed. QUALITY.md has their tests: "When the category changes", tests 14 to 21, and "The path through Work as a bolt".
+Build the third pass on the Work page, at /lab/work. BRIEF.md, The stream, "The third pass on the Work page" lists the seven changes and points to where each is agreed. QUALITY.md has their tests: "When the category changes", tests 14 to 23, and "The path through Work as a bolt".
 
-The six, in the order to do them:
+The seven, in the order to do them:
 
 1. One size of card. Every card in every category is the same size at a given width, the Software card sets it, and tags are one row. Take out the stream settling onto a new height. Measure how many characters a title, a description and a row of tags hold, and write it into the brief for me.
-2. The path becomes Bolt. Open /lab/work-path and pick E · Bolt before you start: the same stops, hard corners, straight in to every strike, and a wander of short uneven straight strokes on the free runs. Take its shape and its numbers, not its code. Keep today's path one switch away so I can compare the two on the real stream.
+2. The path. This one is a goal, not a spec. I want the stream to feel powerful as it goes through the section: directed power choosing its next course, carrying its momentum into every strike, still a little unpredictable. Not a ballerina, not flowing water. I picked E · Bolt at /lab/work-path as the place to start, so open it first. It is a quick sketch. Make the path as good as it can be on the real stream, and change anything about it that gets closer to that feeling. The brief says the few things that are fixed. Keep today's path one switch away so I can compare the two.
 3. A full strike on each Sun stone, much more powerful than now, thrown inward so it lands on the tops of the second row's cards and bounces there.
 4. Cards the stream has not reached are asleep: a blank of the card in bronze, beautiful as it is. The stream's first strike wakes a card for good.
 5. Both sides of the surge start together, each from where that side rests on the bar, wherever I press.
 6. The surge's front becomes a second leading end: a hard hot point, forks of arc, sparks, the riding shards flung wide and closing behind it, and a pale wake. I have to be able to follow it from the bar to the button.
+7. Where surges meet, something happens. The two sides' fronts fuse under the button with a burst. When the front reaches the stream's leading end the two fuse and energy bursts out of the end. It never just stops or fades.
 
 Hold to these:
 - /lab/stream and the approved buttons must draw what they draw today. Take stills before you touch shared code and compare after. The new path is for the route through Work only.

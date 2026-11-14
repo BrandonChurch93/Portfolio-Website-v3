@@ -284,20 +284,21 @@ The section:
 19. **A press on a row the stream has not reached** changes sleeping cards for sleeping cards, and nothing about it looks left behind.
 20. **One size.** At any width every card in every category measures the same, with one row of tags and no room left for a second.
 21. **The stone's strike.** Beside the strike on a card's top it is not the weaker one. What it throws crosses the gap between the rows, lands on the tops of the second row's cards and bounces there. Nothing heaps up, and no card's words are covered for longer than a piece takes to pass.
+22. **The two fronts meet.** Under the button the two sides' fronts become one, with a burst, and one front goes on down.
+23. **The front reaches the end.** At the stream's leading end the front fuses with it and energy bursts forward out of the end, then the end settles to how it rests. The front never just stops or fades.
 
 **The path through Work as a bolt**
 
-`BRIEF.md`, The stream, "The path through Work: Bolt", has what it is. The wireframe he picked it from is `/lab/work-path`, E. It passes when "The stream through Work" above still holds and all of these are true:
+`BRIEF.md`, The stream, "The path through Work: Bolt", has the goal in his words, what is fixed and what the builder is free with. The wireframe he picked it from is `/lab/work-path`, E. Its shape and numbers are a sketch, and nothing about them is a test. It passes when "The stream through Work" above still holds and all of these are true:
 
-1. **The same stops, in the same order.** Every turn is now a strike or the end of something, so every turn has a cause.
-2. **Straight in.** The last stretch before every strike is straight: no curve and no wander.
-3. **Hard corners.** At a contact the line turns at a point. Nothing bows, and nothing hooks round an end.
-4. **The wander is strokes.** Straight, uneven in length and in reach, no two runs alike. It never reads as a regular zigzag, and it does not move.
-5. **It is still the stream.** A body of light with shards belonging to it. Never a neon sign, a wire, or a circuit drawn on the page. Enlarged three times at a corner, the core holds together: no gap in it and no knot of glow.
-6. **Riding shards.** None vanish, appear or jump, at the corners and the knots included, and none bunch at a corner. Measured as before.
-7. **The power is kept.** With the switch thrown back and forth on the same strike, the strike on the bolt is not the weaker one. This is what he asked the path for.
-8. **Scrolled back up,** it draws back cleanly through every corner.
-9. **`/lab/stream` is unchanged,** and `npm run perf` is as smooth as it was.
+1. **It feels powerful.** Scrolled through the section, the stream reads as directed power that chooses its next course, not as something flowing or dancing. An engineer would stop and scroll it again.
+2. **The power is kept into every strike.** Nothing spends it just before: no slow bow, no drift. With the switch thrown back and forth on the same strike, the strike on the new path is the stronger one.
+3. **It is unpredictable, and never regular.** No two runs alike. Nothing reads as a pattern, a zigzag or a drawn shape.
+4. **Every turn has a cause,** and the stops and their order are as they were.
+5. **It is still the stream.** A body of light with shards belonging to it. Never a neon sign, a wire, or a circuit drawn on the page. Enlarged three times at its sharpest turn, the core holds together.
+6. **Riding shards.** None vanish, appear or jump anywhere on it, and none bunch at a turn. Measured as before.
+7. **Scrolled back up,** it draws back cleanly.
+8. **`/lab/stream` is unchanged,** and `npm run perf` is as smooth as it was.
 
 **How to judge it**
 
