@@ -15,23 +15,24 @@ export type DeskRoute = 'lamp' | 'edge';
 
 // About: the stream stays off his head and off the words, and strikes two things. first is under the last row of
 // skills at the left, where the stream comes down, and sends it to the right at a gentle grade, over the top of
-// About. The second, a studio light up and to the right of his portrait, throws it down at a steep angle to go in
-// behind his own left shoulder, which is at the right of the picture, half way along the trapezius. It crosses
-// behind his chest on that line and comes out under him. The light behind him is thrown by the studio light. The
-// title, the tabs and the words hang under the first run. enter is where it goes in, as shares of his portrait.
+// About. The second, a studio light up and to the right of his portrait, throws it down and to the left along the
+// line he drew: close by his jaw, in at the side of his neck over his own left shoulder, behind the whole of his
+// chest, and out at the lower left of his portrait. The light behind him is thrown by the studio light. The title,
+// the tabs and the words hang under the first run. enter is how far down his portrait the stream goes in behind him.
 // Angles are in degrees under level, and everything is measured down from the top of About.
 export const ABOUT = {
   first: { x: 124, y: 40, grade: 4 },
-  enter: { fx: 0.722, fy: 0.54, angle: 64 },
+  enter: { fy: 0.47, angle: 52 },
   words: { l: 190, w: 470, title: 167, tabs: 263, text: 334 },
 };
 
 // Two ways his portrait stands. beside: a figure beside the words. back: large, blended into the ground behind the
 // section, as it was in the first derby's third look, which he asked to see again.
 export type Look = 'beside' | 'back';
-export const LOOKS: Record<Look, { h: number; lean: number; portrait: { x: number; y: number; w: number; h: number } }> = {
-  beside: { h: 790, lean: 14, portrait: { x: 764, y: 172, w: 580, h: 562 } },
-  back: { h: 1010, lean: 40, portrait: { x: 500, y: 100, w: 900, h: 873 } },
+// light is how far across the page the studio light stands.
+export const LOOKS: Record<Look, { h: number; lean: number; light: number; portrait: { x: number; y: number; w: number; h: number } }> = {
+  beside: { h: 790, lean: 14, light: 1353, portrait: { x: 764, y: 172, w: 580, h: 562 } },
+  back: { h: 1010, lean: 40, light: 1366, portrait: { x: 500, y: 100, w: 900, h: 873 } },
 };
 
 const RAD = Math.PI / 180;
@@ -42,15 +43,13 @@ const GRADE = Math.tan(ABOUT.first.grade * RAD), LEAN = 1 / Math.tan(ABOUT.enter
 // How high the first run is over a place under it.
 export const runAt = (x: number) => ABOUT.first.y + (x - ABOUT.first.x) * GRADE;
 // The two strikes, where the stream goes in behind him, and the way it is thrown, which is down and to the left.
-// The studio light stands where the gentle run from the first meets the steep line down to his shoulder.
 export function turns(look: Look) {
-  const P = LOOKS[look].portrait;
-  const enter: Pt = [fix(P.x + P.w * ABOUT.enter.fx), fix(P.y + P.h * ABOUT.enter.fy)];
-  const x = fix((enter[0] + (enter[1] - ABOUT.first.y + ABOUT.first.x * GRADE) * LEAN) / (1 + GRADE * LEAN));
+  const { portrait: P, light } = LOOKS[look];
+  const second: Pt = [light, fix(runAt(light))], y = fix(P.y + P.h * ABOUT.enter.fy);
   return {
     first: [ABOUT.first.x, ABOUT.first.y] as Pt,
-    second: [x, fix(runAt(x))] as Pt,
-    enter,
+    second,
+    enter: [fix(second[0] - (y - second[1]) * LEAN), y] as Pt,
     along: [-Math.cos(ABOUT.enter.angle * RAD), Math.sin(ABOUT.enter.angle * RAD)] as Pt,
   };
 }

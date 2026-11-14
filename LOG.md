@@ -17,6 +17,7 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 **What was built**
 
 - `/lab/skills-about-draft`, fifth round. `BRIEF.md`, Open 28, has every part and what is not right.
+- While it was being pushed he marked up a still: the studio light stays where it is and points along a line he drew, which crosses behind his whole chest to the lower left of his portrait. His drawing is `reference/studies/45-his-line-for-the-stream-behind-him.jpg`, the ruling is in `BRIEF.md`, Settled, About, and the page is changed to it: 52 degrees where it had 64.
 
 **What was looked at**
 
