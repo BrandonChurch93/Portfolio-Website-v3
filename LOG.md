@@ -2,6 +2,53 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · His look at the third pass, after the blank: four rulings (Fable, web chat)
+
+**What Brandon said.** His words are in `BRIEF.md`, The stream, "His look at the third pass, after the blank".
+
+- The stones throw far too much, all one way. About half as much, scattered, with nothing aimed.
+- The left path mirrors the right.
+- The bolt only from the category bar to the meeting. The old path into WORK, over it and down to the bar, and again below the meeting. No bolt in other sections.
+- A strike must not color a card's picture.
+- The blank "does not look great". He suggested a derby in the web chat.
+- He thought the sleeping cards were not showing, then found the reason himself: a woken card stays awake. He is 50-50 on whether it should.
+
+**What Fable told him**
+
+- "Wakes for good" was Fable's wording in the agreement, which he confirmed. It was not Claude Code's assumption.
+- The aimed throw was Fable's misreading of "blast particles on top of the second row".
+- Bolt for Work only is not a bad idea, and going back to the old way into WORK is possible.
+
+**For whoever builds it. Check before believing it**
+
+- The stone's aim is `work.post.aim`, `low` and `far` in `src/stream/config.ts`. The budgets went from 260 to 400 thrown shards and 900 to 1200 sparks to make room for the stones.
+- The bolt's strokes are hashed per side in `routeThroughWork(P, true)`. The right side's are the ones he likes.
+- The picture's warming at a strike is `plates.setWarm`.
+
+**The prompt Brandon was given**
+
+```
+Pull main and read BRIEF.md, The stream, "His look at the third pass, after the blank".
+
+Four changes on /lab/work:
+
+1. The Sun stones throw far too much, and all one way. Cut what a stone's strike throws by a little more than half, and let it scatter in every direction like any other strike. Take the aim out. A few pieces should reach the tops of the second row by chance and bounce there. Nothing should look targeted.
+
+2. The left path must be the exact mirror of the right. The right side is the one I like.
+
+3. The bolt runs only from where the stream lands on the category bar to where the two sides meet under the button. Before that, put the path back the way it was: down to WORK, the strike on it, along its top, over its ends and down to the bar. Below the meeting, the way it was too. Make the join on the bar clean.
+
+4. A strike must not bring a card's picture into color. The rim still flares. Only the pointer and keyboard focus color a picture.
+
+Do not change the sleeping cards. That is being decided separately.
+
+/lab/stream and the approved buttons must still draw what they draw today. Build, commit, push, confirm the deploy, and report in a short list ending with one recommendation.
+```
+
+**Half finished**
+
+- The derby of the blank, in the web chat. His word on whether a card sleeps again.
+
 ## 2026-11-13 · The sleeping card becomes a blank (Fable, Claude Code on Brandon's Mac)
 
 **What he said, on seeing the third pass:** the sleeping cards "look really bad". He never wanted them to show what the card will hold. He wants a metal card that is completely blank, shiny and smooth, perhaps with a design on it. The ruling is in `BRIEF.md`, The stream, "A sleeping card is a blank".

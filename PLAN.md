@@ -35,6 +35,8 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **His look at the third pass (Nov 13):** the sleeping cards look really bad. A sleeping card is to be a blank metal card, shiny and smooth, with none of its content, perhaps with a design. `BRIEF.md`, The stream, "A sleeping card is a blank". He has not ruled on the rest
 - **Built in Claude Code (Nov 13):** the blank, with a line and a sun cut into it. Waiting on his look
 - **In front of Brandon:** the third pass at `/lab/work` with the blank sleeping card
+- **His look at the third pass (Nov 13):** the stones throw about half as much and scatter it, the left path mirrors the right, the bolt runs only from the category bar to the meeting, and a strike no longer colors a picture. A prompt for those four is in `LOG.md`, top entry
+- **Next in the web chat:** a derby of the sleeping card's blank. Open: whether a card sleeps again when the stream draws back
 - **Still waiting on his word:** whether he can follow the surge's front down the sides, the settle onto a new height, the line added to the card's stylesheet. And from before: the card with the stream on it, the second row's strike, the stone and the rail's fittings as objects, and a lighter resting color for "Case study"
 - **He is open to the stone's face lighting** and wants to see it in action before he rules, so it gets built on the real page
 - **In that pass:** the real card with the stream meeting it, the Sun stones made new and a little larger with a face that lights, Blade finials, the right side mirroring the left, a real strike on the second row, room on an iPad held sideways, a bar over WORK behind a switch, and the frame rate with real cards

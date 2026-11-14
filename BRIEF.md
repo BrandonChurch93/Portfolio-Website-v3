@@ -501,6 +501,27 @@ His look at the third pass: "the sleeping cards look really bad. I didn't actual
 - Calls made while building, none of them a rule, are in `LOG.md`, "The third pass on the Work page, built". The ones he is most likely to have a view on: a sleeping card is a blank of polished bronze with a line and a sun cut into it (his ruling above), and it wakes in a tenth of a second, at the strike. The bolt's strokes are fixed for a page and differ on the two sides. The budgets on his Mac went up to make room for the stones' strikes: thrown shards from 260 to 400, sparks from 900 to 1200.
 - What is at the bar and what is not, with what the fresh reviewers said in four rounds, is in the same `LOG.md` entry. In short, the reviewers still fail: the bolt's top half (round the title and the bar it reads as a drawn outline), the front as a hard point, the sleeping card on a real screenshot, the waking, and the burst at the leading end.
 
+**His look at the third pass, after the blank (Nov 13)**
+
+Said to the web chat with Claude Code's report on the blank sleeping card. Four rulings, and two things left open.
+
+1. **The Sun stones throw far too much, and throw it all one way.** "The sun stones are shooting way too many projectiles. We need to tone that down at least 50%, maybe slightly more. When a strike happens it's basically just like a giant handful thrown all in the same direction. They're not scattering. What I wanted was enough exploding from the sunstone that a few would find their way in there and bounce around and look really cool. It's like they're targeting that certain spot, and it's noticeable. It looks off."
+    - In exact terms: a stone's strike throws a little under half of what it throws now, and it scatters as any strike does, in every direction it can go. Nothing is aimed at the gap between the rows. A few pieces get there by chance and bounce on the second row's tops. The aim was Fable's reading of "blast particles on top of the second row", and it was wrong.
+2. **The two sides of the path mirror each other.** "When the path splits there's no longer symmetry between them. They take two different paths on each side, slightly different. They should actually mirror. My favorite is the one on the right. Let's make sure the left path mirrors it perfectly."
+    - In exact terms: the left side's path is the right side's, flipped. This is about the path. What each side throws still differs, as two strikes never match.
+3. **Bolt is for Work, from the category bar down. Nowhere else.** "I don't love what he did with the bolt before it hits work, and then after the work section. I'm OK with utilizing what we made for bolt for the work section, but I don't think I want it to be used in other sections." "The only thing I don't like about the work section in bolt right now is the way it hits the word work. I would prefer if we went back to the old way for that, and then once it drops down to the categories, then we could take on the new path."
+    - In exact terms: the stream comes down to WORK, strikes it, runs along its top, goes over its ends and comes down to the category bar as it did before the bolt. From where it lands on the bar to where the two sides meet under the button, it is the bolt. Below the meeting it is as it was before.
+    - This settles the trial: the bolt stays, for that stretch of Work. It is not the stream's path in any other section.
+    - Fable's answers to his two questions: it is not a bad idea, since it gives the stream one rule, taut where it is striking things and loose where it is falling free. And it can be done, because the route is planned one stop at a time. The place to watch is the join on the bar.
+4. **A strike no longer colors a card's picture.** "When the cards get struck on the first row, which are showing their content and not the placeholder, their image gets color as if you were hovering it. This is jarring and looks bad."
+    - In exact terms: at a strike the card's rim still flares. Its picture stays as it was. Only the pointer and keyboard focus bring a picture's colors back. This takes out "the picture warms toward its own colors and settles back", which came from the card's first proposal.
+
+Left open:
+
+- **The blank's look.** "The placeholder does not look great. Maybe we should derby them here?" To be drawn in the web chat, where a still of metal can be judged.
+- **Whether a card stays awake.** He found that a card, once woken, never sleeps again, and had thought the agreement was that a card is blank whenever the stream is not on it. What was agreed was Fable's wording, which he confirmed: "The stream's first strike wakes it, for good." He is "50-50" now: blank whenever the stream is not there "makes more sense, especially if we have a cool animation of them changing". Fable's view, not agreed: a card should sleep again when the stream draws back above it. Everything else the stream does undoes itself when the page is scrolled back up, and a card in the top two thirds of the screen would still be awake to read.
+- Not answered: the stream being turned down ahead of the surge's front.
+
 **How it is built**
 
 He added these while the stream was a simulated liquid. They hold for anything in the stream that is simulated: shards thrown loose, sparks.
