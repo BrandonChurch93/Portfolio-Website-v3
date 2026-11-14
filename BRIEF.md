@@ -945,6 +945,15 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     - In exact terms, his addition: Fable's list said "a tablet". The tablet is his iPad Pro, and its pencil lies beside it.
     - Fable's call, his to overturn: the tablet and the pencil are modeled to read as his, and carry no maker's mark, as with the headphones.
     - It settles Open 5 for this piece, and "One fixed light" above gives way as Open 28 said it would: the PC is a third light, and the desk's own lights are fixed once it is lit.
+- **The rows of skills are cut down (Nov 14).** "For the skill section, we have three columns. I think we can remove the second column. It doesn't really add anything, and the first column could use some work too. There's like a catchphrase that's super generic underneath each thing that can totally be removed. It doesn't add anything. I also think the category of the row should be centered with the skills. For full stack engineering, we should probably add a gaming subcategory where we go over the gaming skills that I have, and we should review the skills that we have. We don't have to keyword stuff as much as we do on our résumé and really can only list the big important ones."
+    - In exact terms, five changes to each row:
+        1. The middle column, the sentence of proof, goes.
+        2. The line under each skill set's name goes.
+        3. The skill set's name is centered top to bottom against its lists.
+        4. Full-Stack Engineering gets a group for his game development skills.
+        5. The lists are cut to the big, important skills. The résumé's lists are written to be matched by keyword and the site's need not be.
+    - It replaces "The lists of skills are the résumé's, as the second round shows them" below. Which skills stay is his to say. Fable's first cut is in Open 30.
+    - He kept the four skill sets. He did not take up Fable's idea of rows that follow a product's path, so the four stand.
 - **The headphones hang at the right of the Skills title (Nov 14).** "What if we put the headphones next to skills title to the right?" In the words' column, beside the title, not over the desk. Of the site's own design.
 - **He is willing to approve the desk's design as it stands, for the real build to make much better (Nov 14).** "OK, the desk isn't bad, assuming that Claude Code is going to make this look much better. I think I'm willing to approve the current design." "As far as the desk, you don't have to keep iterating on it, because I know Fable in Claude Code is going to do a whole bunch of work to make this look a lot better. It's important to say where I think the short sides are so they can be iterated on."
     - In exact terms: what is on the desk and where it stands is agreed, as the second round at `/lab/desk` shows it. There are no more rounds of the rough draft in the web chat. The look of it is not approved: everything on the desk is made to the bar in the real build, in Claude Code, and judged there.
@@ -959,7 +968,9 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
 ### About
 
 - A big portrait on the right that reacts to the mouse and feels like part of the page, with something like an aura.
-- Tabs: about me, what I want to do, my plans for the future.
+- **Two tabs: Professional, which is the default, and Personal (Nov 14).** "I think I only want 2 options here. As far as selections under about me, what if we just did professional, which is the default, and then personal? Personal is where I could go into my overall goals and the kinds of things I want to do, where professional I can talk about my career."
+    - It replaces the three tabs that stood here: about me, what I want to do, my plans for the future. They are in Dropped.
+- **About's text is a placeholder for now, and is marked as one (Nov 14).** "I'm not super worried about the textual content in the about me. That's something we can come back to later. So for now, the placeholder we have there is fine, but we should definitely mark that as placeholder."
 - **His portrait fades in and the content appears when the stream reaches a point (Nov 14).** His words are under Skills, above: "it hits a certain point and my profile picture fades in and the content appears". Until then About is not on the page.
 - **The stream passes behind his portrait, and that is what lights him. It does not run over the tabs (Nov 14).** "I don't know if I love the surge running over the options to switch the content of the about section. I feel like that would get in the way. I also really like the idea of the surge going behind my picture and that's what makes the orange hue appear behind my picture, just like it did in examples you gave me."
     - In exact terms: the stream goes behind his portrait, and the warm light behind him comes up because it is there. It does not run along, over or through the three tabs, or anything else of About's words.
@@ -973,6 +984,14 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     - In exact terms, as Fable reads it: two things for the stream to strike. The first stands at the left under the last row of skills, where the rail's high end is now, and turns the stream to the right on a slope gentler than the rail's 8 degrees. The second stands up and to the left of his portrait and turns it steeply down to the right. The stream goes in behind the shoulder at the left of the picture as it is looked at, half way between his neck and the point of that shoulder, crosses behind his chest on that same line, and comes out low at the picture's right.
     - "My left shoulder" is read as the shoulder at the left of the picture, which is his own right. The stream comes from the left, and the shoulder at the picture's right can only be reached by going over his head. Said to him, his to correct.
     - What the two things are is not ruled. Fable's thoughts are in Open 28.
+- **It is his own left shoulder, which is at the right of the picture (Nov 14).** "When I was saying my left side of my trap, I meant like the left of where I'm facing, like from my first person perspective, and from that perspective you put it on the right side. But I see the confusion. You put it on the left side as a third person perspective. So if you could just make it come from the other side."
+    - In exact terms: the stream goes in behind the shoulder at the right of the picture as it is looked at, half way along that trapezius, and crosses behind his chest down toward the left. It replaces Fable's reading above. The run from the first thing passes over the top of About to reach the second thing, which stands up and to the right of him.
+- **The second thing is a studio light, and the glow behind him comes out of it (Nov 14).** "I noticed that the object looks like studio light. That's actually kind of brilliant. The glow coming off of my background. Can we extend that glow to look like it's coming out of the light? We don't have to completely redo the glow, as that might compromise the image, but somehow extend it so it looks like it's coming out of the light and put it to my right side?"
+    - In exact terms: the spotlight stays. The warm light behind him is kept as it is and joined to the spotlight by a spread of light from its lens, so the glow reads as thrown by it.
+    - "My right side" is read as the right of the screen as he looks at it, which is where a stream coming in over his own left shoulder puts the light. Said to him, his to correct.
+    - He did not speak of the first thing, the reflector. It stays as drawn and is not ruled.
+- **A variant he asked to see: his portrait as the background (Nov 14).** "Do you remember that hero we kept talking about that I wanted to use for my about me section, where it actually has my face as like the background and the cursor moves it? Can you give me a variant of that too? I still wanna keep the studio light shining on it, the position of the stream coming in from the side and illuminating the background. But I'm just curious what that would look like more like that hero I'm referring to."
+    - In exact terms: the hero he means is the third look of the first derby, where his portrait was large, blended into the dark ground, and moved with the cursor. A second version of About is drawn with his portrait that way, with the studio light and the stream as in the first. Not a ruling: he is curious to see it.
 
 ### Contact
 
@@ -1025,6 +1044,7 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     - A stand in is not designed, not polished and not shown to him for approval. What he saw of it on Work is why: the category bar "is really bad looks" and the two sides of the stream never meet again.
     - The pass covers every section together: the layout, the category bar, and the stream's route on one column.
     - Fable's recommendation, not agreed: the phone's speed is still measured as each section is built, so nothing is made that a phone cannot run. That is a cost check and needs no design.
+- **If the next pass of Skills and About looks good, it goes to Claude Code, and he and Fable plan the next section (Nov 14).** "Everything looks good on the next pass, I think I'm ready to hand it off to Claude Code to start building, and me and you can start planning on the next section."
 - When something is ready to show him: run a production build, commit, push to `main`, and give him the live link. He is often on his iPad, which cannot open localhost. (Nov 11)
 - **The whole page is sketched before the next section is refined (Nov 14).** His words: "I'd like for you to sketch out the remaining scenes for the big 3D objects. We can just put a simple placeholder for now, but what I'd like to do is go from hero all the way down to footer. Then the plan will be to go section by section, probably doing the hero last." "This is why I want to get this in place, so I can look at everything as a whole. We may completely redo an entire section after you do this. Everything is up for refining."
     - In exact terms: one rough sketch of the home page from the hero to the footer, with stand ins for the big 3D pieces. Then each section is refined the way Work is being refined, starting with the one after Work, the hero last.
@@ -1438,6 +1458,9 @@ Each line has Fable's recommendation where there is one. None of these are rules
 - The "laid back, fun to try" voice
 - Three hovers for the buttons: light running round the border, Heat and Pull. He chose Catch (Nov 11)
 - The second build's kit, its screenshot gates and its voice rules. None of them apply here.
+- In About: three tabs (about me, what I want to do, my plans for the future). He wants two, Professional and Personal (Nov 14)
+- In About: the stream going in behind the shoulder at the left of the picture. He meant his own left (Nov 14)
+- In the rows of skills: the sentence of proof in a middle column, and the line under each skill set's name. "It doesn't add anything." (Nov 14)
 - In About: the rail ending over his head, with the stream falling off its end into the top of his head. "I definitely don't like the stream coming in directly over my head." (Nov 14)
 
 ## Reference
