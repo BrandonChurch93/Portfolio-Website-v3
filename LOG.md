@@ -2,6 +2,27 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · Sleeping cards, the stagger, the front and the path: four proposals (Fable, web chat)
+
+**What Brandon said.** His words are in `BRIEF.md`, Open 21 to 24. In short:
+
+- He likes cards that rest as a bronze template until the stream reaches them.
+- He asked why the cards change one after another, thinks it hurts the cards the stream is not on, and wants a button to compare it with all of them together.
+- The surge's front is not noticeable enough and needs more power.
+- The path is too wavy. He wants angles, hits and bounces. The stream's own look he loves.
+
+**What Fable proposed. Talk only, nothing built.** All in Open 21 to 24: sleeping cards as blanks in bronze, a switch for when the cards change, the front as a second leading end, and a path of ricochets. Fable recommends one round in Claude Code that puts all four behind switches at the foot of `/lab/work`, so he can judge each alone and together.
+
+**For whoever builds it, from reading the code. Check before believing it**
+
+- The sway of a free run is `route.sway`, `swayLong` and `swayShort` in `src/stream/config.ts`. The bows are `work.post.bow` and `work.side.bow`, and each turn's two reaches are in `route.turn` and under `work`.
+- The first build's log says turns tighter than about 30 units throw the riding shards round fast. A hard corner is far tighter than that, so what the riders do at a corner at rest needs deciding, not only at a strike.
+- The surge's front, its kink and its swell are in `change` in `config.ts` and drawn from `src/stream/surge.ts` through `sim.setFronts`. The leading end's arc is `arc` in `config.ts`.
+
+**Half finished**
+
+- His go ahead on the four, then the agreement and the prompt.
+
 ## 2026-11-13 · The second row when a category is picked, and what is there before the stream arrives (Fable, web chat)
 
 **What Brandon said.** His words are in `BRIEF.md`, Open 21. The second row "looks horrible" on a press, because the stream has not reached it. He wondered about hiding cards the stream is not touching, and about making that a theme for the site. "Kind of 50-50, undecided." He asked to brainstorm.
