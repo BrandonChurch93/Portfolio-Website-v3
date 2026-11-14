@@ -440,6 +440,15 @@ What the build taught:
 21. **Three ways, each whole.** Each of the three ways of coming to life is a finished piece of motion that can be judged against the others. In real frames of each, the thing is not on the page before its strike, and is never left half made.
 22. **In the shards' way,** a shard can be followed from the strike to the part it becomes.
 
+*Everything*
+
+23. **The site's colors only.** No white, blue or rainbow light anywhere, the CPU and the studio light included.
+24. **Work is as it was.** Stills of `/lab/work`, `/lab/work-blank` and `/lab/stream`, taken before the pass starts at the scrolls this file names for them, agree with stills taken after it.
+25. **Smooth.** `npm run perf` on `/lab/skills`, scrolling through both sections and through a change of tab: every frame at the screen's rate on his Mac. And on a processor slowed four times, nothing is built that a phone could not run.
+26. **Under 1100 px** the page shows a plain stand in and nothing is broken.
+27. **With reduced motion** both sections are on the page, lit, from the start.
+28. **A screen reader** gets the words of both sections whether or not the stream has reached them, and keyboard focus in About brings About on.
+
 *The desk*
 
 29. **Ten finished things.** Each of the ten, alone on the screen at three times its size on the page, is a finished object an engineer would look closer at, and beside `reference/bar/pc-builder-parts.jpg` it is not the weaker one.
@@ -456,15 +465,6 @@ What the build taught:
 40. **Nothing crawls.** Scrolled slowly and fast, the timber's grain, the mat's stitching and the keys hold still: no sparkle, no moiré, no shimmer.
 41. **The cursor's light shows its form.** Moved across the desk, the light picks out edges and depth on every thing, as it does on the 3D card he liked.
 42. **Smooth with the desk in.** Test 25 holds with the finished desk on the page.
-
-*Everything*
-
-23. **The site's colors only.** No white, blue or rainbow light anywhere, the CPU and the studio light included.
-24. **Work is as it was.** Stills of `/lab/work`, `/lab/work-blank` and `/lab/stream`, taken before the pass starts at the scrolls this file names for them, agree with stills taken after it.
-25. **Smooth.** `npm run perf` on `/lab/skills`, scrolling through both sections and through a change of tab: every frame at the screen's rate on his Mac. And on a processor slowed four times, nothing is built that a phone could not run.
-26. **Under 1100 px** the page shows a plain stand in and nothing is broken.
-27. **With reduced motion** both sections are on the page, lit, from the start.
-28. **A screen reader** gets the words of both sections whether or not the stream has reached them, and keyboard focus in About brings About on.
 
 **How to judge it**
 
