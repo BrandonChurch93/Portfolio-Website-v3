@@ -49,6 +49,9 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **His notes for the desk (Nov 14):** a longer desk to match the skills beside it, the PC under it, a pair of headphones hanging on the page near the skills. And a ruling: the 3D work is made new for this design, not recolored. `BRIEF.md`, Settled, 3D pieces, and Open 28
 - **His answer to the proposal (Nov 14):** the headphones hang at the right of the Skills title, and the stream brings each of the two sections onto the page: the desk and Skills' content, then his portrait and About's content. Both are in `BRIEF.md`, Settled. And go for the rough draft
 - **In front of Brandon (Nov 14):** the rough draft of Skills and About as a pair at `/lab/skills-about`, Study 21, built in the web chat. A wireframe: where things sit, where the stream goes, and what it brings onto the page. Waiting on his look, and on his pick of the rows beside the desk or under a longer one. After it: the desk as a 3D piece, made new. `BRIEF.md`, Open 28
+- **His verdict on the rough draft (Nov 14):** "This looks good." The rows beside the desk and the appearing stand as drawn. He asked for two things next: the desk started as a 3D piece, and a fuller draft of the pair with the real words and the motion roughed in, to judge before Claude Code refines the sections
+- **In front of Brandon (Nov 14):** the fuller draft at `/lab/skills-about-draft`, Study 22, built in the web chat. His live site's words, each thing coming on with the stream, a tab change, and buttons for half speed and for playing a section again. What it showed: his real words stand more than twice as tall as the grey bars, so beside the desk the column is about 1170 units against a desk about 470. **Fable now recommends the rows under a long desk, against the line settled that morning.** His pick sets the desk's size. `BRIEF.md`, Open 28
+- **Waiting on him (Nov 14):** the rows beside the desk or under it, and the five calls on the desk as a 3D piece (how it is made, what sits on it, the desk itself, the PC, the headphones). After both: three rough desks to choose from
 - **Built in Claude Code (Nov 14):** the fourth pass and the knob on the blank, at `/lab/work` and `/lab/work-blank`. He has not looked yet
 - **Next, once he has looked again:** his word on Open 26 and 27 and on the rest of the sketch, then the first section after Work is refined. Fable's proposed order: Skills, About, Contact and the footer, the hero
 - **His word on D (Nov 13):** the raised piece at the middle is a handle to him and stays as 3D as it is. The dark area reads as a shadow, is why he chose D, and stays. Both may only be made better. `BRIEF.md`, The stream, "What he likes in D, and what must not be lost"
@@ -126,7 +129,7 @@ Set aside, kept as records: the molten metal test shot at `/lab/pour`, its looks
 - [~] Work · the knob at the middle of the blank: an antique cabinet knob at the dead center, standing off the card, in place of the handle as first built (Claude Code). Built Nov 14, waiting on his look
 - [ ] Work · the category bar, and the top bar it may dock into
 - [ ] Work · the whole section, with the real card in it
-- [~] Skills and About, as a pair: a rough draft of both at `/lab/skills-about`, with each brought onto the page by the stream (web chat, Nov 14). Waiting on his look
+- [~] Skills and About, as a pair: a rough draft of both at `/lab/skills-about`, with each brought onto the page by the stream (web chat, Nov 14). He said "This looks good." A fuller draft with his real words and the motion roughed in at `/lab/skills-about-draft` (web chat, Nov 14). Waiting on his look, and on his pick of where the rows sit
 - [ ] Skills
 - [ ] About
 - [ ] Contact and the bottom of the page

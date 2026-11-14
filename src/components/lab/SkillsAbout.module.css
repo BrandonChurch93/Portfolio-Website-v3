@@ -163,33 +163,6 @@
   stroke: var(--copper-light);
 }
 
-.lit {
-  opacity: 0;
-  transition: opacity var(--dur-2) linear;
-}
-
-.obj[data-on='true'] .lit {
-  opacity: 1;
-}
-
-.glass {
-  fill: color-mix(in srgb, var(--flame) 46%, var(--bg));
-}
-
-.dim {
-  fill: color-mix(in srgb, var(--ember) 62%, var(--bg));
-}
-
-.cone {
-  fill: color-mix(in srgb, var(--hot) 22%, transparent);
-}
-
-.ring {
-  fill: none;
-  stroke: var(--hot);
-  stroke-width: 3;
-}
-
 .aura {
   opacity: 0;
   transition: opacity var(--dur-3) var(--ease-settle);

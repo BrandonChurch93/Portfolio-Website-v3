@@ -2,6 +2,56 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · Study 22: Skills and About, a fuller draft with his words, and the desk's five calls (Fable, web chat)
+
+**What Brandon said**
+
+- "This looks good, I think we can go ahead and start working on that 3D piece. We can also make a higher fidelity draft as well with actual content. This will give me an idea on the animations, timing, surge, everything else before we hand it over to Claude code for a major refinement"
+- Read as: the rough draft is approved as drawn, the rows beside the desk included. The desk starts being planned as a 3D piece. And a fuller draft of the pair is made in the web chat with his real words and the motion roughed in.
+
+**The desk as a 3D piece**
+
+- Five calls were put to him with Fable's pick for each, to answer with "yes to all" or a change to any line: how it is made, what sits on it, the desk itself, the PC, the headphones. `BRIEF.md`, Open 28, has them. No answer yet.
+- His `3d-asset-playbook` skill is the method, inside this repo's rules: a piece lives in `src/pieces/` behind `src/world/piece.ts`, and Opus builds it from a kit.
+- Nothing of the desk is built. The three rough desks wait on his answer and on where the rows sit, which sets the desk's size.
+
+**What was built**
+
+- `/lab/skills-about-draft`, Study 22. `src/skills-about/content.ts` has the words, read from the live site's own repository (`app/data/competencies.js` and `app/components/AboutSection.jsx`), word for word. `src/skills-about/draft.ts` has the places, the line and the cues. `src/components/lab/SkillsAboutDraft.tsx` draws it.
+- The desk, the PC and the headphones moved out of the rough draft into `src/components/lab/DeskOutline.tsx`, which both drafts use. `/lab/skills-about` looks as it did.
+- `BRIEF.md`, Open 28, lists what moves, the switches and every call made for him.
+
+**What it showed**
+
+- His real words stand more than twice as tall as the grey bars. Beside the desk the four skill sets are about 1170 units against a desk scene about 470, and the left side is empty over and under the desk. Under a long desk each is one band and the four are about 610.
+- Cued along the desk's front edge, as the proposal had it, the third and fourth rows came on below the screen. Each row now comes on when the stream's leading end is level with it.
+- On a steady scroll of about 520 px a second the leading end falls behind the scroll for about half a second after the desk and after the rail's landing, then catches up. That is the top speed doing what it was put there for.
+- Fable's recommendation changed: the rows under a long desk. It goes against the line settled this morning and was said to him in bold.
+
+**What was looked at**
+
+- Stills of both layouts with the whole line drawn, at a wide screen. A tablet held sideways and a phone, for breakage only: the phone is the desktop shrunk, which is the plain stand in the brief allows.
+- Stills at six points of the scroll with the stream leading, and one with the rows under the desk.
+- A live page, read off the page at each stop: everything comes on in order, About in its two beats, and all of it goes away again on the way back up. A tab changed by a click and by the arrow keys, with the words changing part way through the pulse. Play again, half speed and the rows switch pressed. No errors.
+- A timed scroll in both layouts, with where the screen was when each thing came on.
+
+**What is not right yet, plainly**
+
+- Motion was not judged. The web chat draws in software. How the drawing in, the beats and the pulse feel is his to say on his own machine.
+- Beside the desk the left side is empty for about 400 units over the desk and about 450 under it.
+- Under the desk the stream still lands on the middle of an edge, and the long desk's right half holds a book and a cup that are not a design.
+- The leading end falls behind the scroll on the two nearly level runs. On the real page the stream may not race, so the desk's front edge wants more slope on the page than the outline has. That is for the desk's design.
+- About's right side is empty under his portrait, and the three tabs hold different amounts: two paragraphs, one, one.
+- The split of About's paragraphs under the tabs is Fable's, and two of its claims are down for correction.
+- Type sizes are a first pass. The small labels are about 11 px at a 1440 wide screen.
+
+**Waiting on him**
+
+- Where the rows sit: beside the desk, as settled this morning, or under a long desk, as Fable now recommends.
+- The five calls on the desk.
+- His look at the draft's motion: the order, the speed, the two beats of About, the pulse on a tab.
+- He has not yet looked at Claude Code's fourth pass or the knob.
+
 ## 2026-11-14 · Study 21: Skills and About as a pair, a rough draft (Fable, web chat)
 
 **What Brandon said**

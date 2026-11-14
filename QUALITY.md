@@ -361,6 +361,15 @@ The section:
 5. **Each 3D piece is drawn at the size and outline it would have,** and none is cut off or behind words.
 6. **It says what it is not.** Look, motion, words and the design of any piece are not being judged, and anything that goes against a settled line is named.
 
+## A draft of a section
+
+`BRIEF.md`, Open 28, has what the draft at `/lab/skills-about-draft` holds. What it taught, for the next section:
+
+- **Grey bars are not words.** The rough draft drew a skill set as two bars about 110 units tall. His real words stand about 250. A layout approved from bars was approved at the wrong size. Put the real words in before anything is sized against them, a 3D piece above all.
+- **What the stream brings on has to be on the screen when it comes.** The stream's leading end sits two thirds of the way down the screen. Anything it brings on more than a third of a screen below itself comes on unseen. Check where the screen is at each cue, not only the order of the cues.
+- **A nearly level run outruns the scroll.** Along the desk's front edge the leading end covers about 600 units of line for 90 of scroll. Either the end is held to a speed and falls behind the scroll, or the thing it runs along is set at more of a slope. How steeply a piece's edge sits on the page is part of the piece's design.
+- The web chat draws in software. Of a draft's motion it can check the order, the cues and that things go away again. How the motion feels is his to judge on his own machine.
+
 ## A derby of reliefs
 
 `BRIEF.md`, Open 26, has what the derby at `/lab/accomplishments` holds. It is judged for layout and for the look of each piece, not for motion. It is worth showing when all of these are true:
