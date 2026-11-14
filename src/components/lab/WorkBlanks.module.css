@@ -1,0 +1,112 @@
+.main {
+  min-height: 100svh;
+  padding: var(--space-8) var(--edge) var(--space-10);
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--copper-light);
+}
+
+.title {
+  margin-top: var(--space-4);
+  font-size: clamp(2.2rem, 1rem + 3vw, 4rem);
+  font-weight: 300;
+  letter-spacing: var(--track-display);
+  line-height: 1.05;
+}
+
+.lede {
+  margin-top: var(--space-5);
+  max-width: 46rem;
+  font-size: var(--step-1);
+  color: var(--text-2);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+
+.go {
+  min-height: var(--touch);
+  padding: 0 var(--space-5);
+  border: 1px solid var(--copper);
+  border-radius: 1.4rem;
+  background: color-mix(in srgb, var(--copper-light) 14%, transparent);
+  color: var(--pale);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.go:focus-visible {
+  outline: var(--focus);
+  outline-offset: var(--focus-offset);
+}
+
+.stage {
+  position: relative;
+  margin-top: var(--space-8);
+}
+
+/* The blanks are drawn on one canvas over the cards. It takes no clicks. */
+.canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* The Work section's own grid, so a blank is seen at the size a card has on that page. */
+.grid {
+  --side: clamp(7.6rem, 15.5vw, 15rem);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-8) clamp(1.25rem, 2.8vw, 2.5rem);
+  width: min(60rem, 100vw - 2 * var(--side));
+  margin: 0 auto;
+}
+
+.item {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+  align-content: start;
+}
+
+.name {
+  font-size: var(--step-1);
+  font-weight: 600;
+}
+
+.note {
+  min-height: 4.8em;
+  font-size: var(--step--1);
+  line-height: var(--lead-body);
+  color: var(--text-3);
+}
+
+.slot {
+  width: 100%;
+}
+
+/* A card under a blank is not there to be used. */
+.slot[data-awake='false'] {
+  pointer-events: none;
+}
+
+@media (max-width: 1000px) {
+  .grid {
+    grid-template-columns: minmax(0, 30rem);
+    justify-content: center;
+  }
+}

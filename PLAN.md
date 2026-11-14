@@ -36,8 +36,10 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **Built in Claude Code (Nov 13):** the blank, with a line and a sun cut into it. Waiting on his look
 - **In front of Brandon:** the third pass at `/lab/work` with the blank sleeping card
 - **His look at the third pass (Nov 13):** the stones throw about half as much and scatter it, the left path mirrors the right, the bolt runs only from the category bar to the meeting, and a strike no longer colors a picture. A prompt for those four is in `LOG.md`, top entry
-- **He is holding the prompt for Claude Code until everything open is answered.** Ruled since: a card sleeps again when the stream draws back, with an animation both ways
-- **Next in the web chat:** his reaction to four ideas for the blank (`BRIEF.md`, The stream, "What he wants the blank to be"), then a derby of them
+- **He is holding the prompt for Claude Code until everything open is answered.** Ruled since: a card sleeps again when the stream draws back, with an animation both ways. A row the stream has not reached does nothing on a press. He agrees with Fable's recommendations on the small things Claude Code's reports left unanswered. `BRIEF.md`, The stream, "His reaction to the ideas, and his answers to what was open"
+- **His reaction to the ideas for the blank (Nov 13):** he likes B · The mould and A · Etched layout, D · Engine turned "sounds cool", and C · Doors is cut for another option
+- **In front of Brandon (Nov 13):** the derby of blanks at `/lab/work-blanks`, Study 17, built in the web chat: A · Etched layout, B · The mould, C · Facets in place of Doors, D · Engine turned, each with its change between asleep and awake, all four lit by long lights that stand off the screen. He picks one, and says whether the lights and the change are right
+- **Next:** once he has picked, one prompt for Claude Code with everything he is holding. The prompt in `LOG.md`, "His look at the third pass, after the blank", is out of date and is not to be sent
 - **Still waiting on his word:** whether he can follow the surge's front down the sides, the settle onto a new height, the line added to the card's stylesheet. And from before: the card with the stream on it, the second row's strike, the stone and the rail's fittings as objects, and a lighter resting color for "Case study"
 - **He is open to the stone's face lighting** and wants to see it in action before he rules, so it gets built on the real page
 - **In that pass:** the real card with the stream meeting it, the Sun stones made new and a little larger with a face that lights, Blade finials, the right side mirroring the left, a real strike on the second row, room on an iPad held sideways, a bar over WORK behind a switch, and the frame rate with real cards
@@ -102,6 +104,7 @@ Set aside, kept as records: the molten metal test shot at `/lab/pour`, its looks
 - [~] Work · what the stream does when the category changes: the surge, picked from a wireframe at 0.7 seconds and changed to 1.1 once he saw it on the page (Nov 13). Built on `/lab/work` Nov 13 (Claude Code), waiting on his look
 - [~] Work · the third pass at `/lab/work`: one size of card, the Bolt path, the stone's strike, sleeping cards, the surge's front (Claude Code). Built Nov 13, waiting on his look
 - [~] Work · the second pass at `/lab/work`: the real card, the Sun stones, the Blades (Claude Code). Built Nov 13, waiting on his look
+- [~] Work · the sleeping card's blank and its change to awake and back: a derby of four at `/lab/work-blanks` (web chat, Nov 13), waiting on his pick
 - [ ] Work · the category bar, and the top bar it may dock into
 - [ ] Work · the whole section, with the real card in it
 - [ ] Skills

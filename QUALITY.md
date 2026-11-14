@@ -110,6 +110,9 @@ This is the real calibration. Every row is his verdict, not a guess. Rows that s
 | The bolt on the fall to WORK and below the section | "I don't love what he did with the bolt before it hits work, and then after." Bolt is for Work from the category bar down, and for no other section | A path can change character where the stream starts striking things. Falling free, it keeps its swing |
 | A struck card's picture warming to its own colors | "Jarring and looks bad" | A card's colors answer the pointer. The stream lights the metal, not the picture |
 | The sleeping card as a blank of polished bronze with a line and a sun | "Does not look great" | Still open. A blank has to be an object worth looking at |
+| A card that stayed awake for good once the stream had struck it | "I could've sworn we agreed to always keep them blank if the wave wasn't touching them." Then: "For the cards go back to sleep: yes. I think they should have a shifting animation for both opening and ending" | What the stream does undoes itself when it draws back. "For good" was Fable's wording, which he had confirmed without it being what he pictured. A change of state is designed both ways |
+| A press playing the change of cards on a row the stream had not reached | "When the light's not touching them they're the placeholder cards, and that animation does not play at all" | What the stream is not touching does nothing |
+| Four ideas for the blank, in words: an etched layout, a mould, two doors, an engine turned dial | "I really like B and A, and D sounds cool too. Let's cut C. I don't love that idea" | He took the two that show the card's layout as plain shapes, which was his own first thought, and passed over the one that was a mechanism. A lean from words, until he has seen them drawn |
 | The pour's first test shot, in motion | "I definitely don't like how it puddles." The stream "is blasted back multiple times". "Instead of looking like a refined beautiful hot liquid metal, this looks more like mud splashing around and puddling up" | Real physics is not enough. It has to be graceful. Metal that heaps, thrashes or hits itself reads as mud |
 
 ## The patterns behind those verdicts
@@ -284,26 +287,29 @@ The section:
 14. **Both sides together.** The two cards of a row let go in the same frame, wherever on the bar the press was.
 15. **The front has power.** It is the brightest, most alive thing on the screen while it runs: a hard point, arc reaching off it, the shards opening round it and closing behind. Beside the stream's own leading end at a fast scroll it is not the weaker one. It never reads as a ball of glow.
 16. **A sleeping card is beautiful.** Alone on the screen, with no stream near it, it is a finished object in bronze that an engineer would look closer at. It does not read as a card that is switched off, greyed out or still loading.
-17. **Waking.** The stream's first strike wakes a card, and the change from asleep to awake has weight: it is lit by the strike, not faded up. It stays awake when the page is scrolled back up.
+17. **Waking, and going back to sleep.** The stream's strike wakes a card, and when the page is scrolled back up and the stream draws back above it the card goes back to sleep (changed Nov 13: it used to stay awake). Each is a designed change with weight, in the blank's own material. Neither is a cut or a plain fade.
 18. **A sleeping card can still be used.** Under the pointer or with keyboard focus it is awake and passes contrast. A screen reader gets its words. With reduced motion, and where the stream cannot run, no card is ever asleep.
-19. **A press on a row the stream has not reached** changes sleeping cards for sleeping cards, and nothing about it looks left behind.
+19. **A press on a row the stream has not reached** does nothing that can be seen there. The blanks stay blanks: no drop, no rise, no strike, no flash, no waking. This holds on every press, since a card sleeps whenever the stream is not on it.
 20. **One size.** At any width every card in every category measures the same, with one row of tags and no room left for a second.
-21. **The stone's strike.** Beside the strike on a card's top it is not the weaker one. What it throws crosses the gap between the rows, lands on the tops of the second row's cards and bounces there. Nothing heaps up, and no card's words are covered for longer than a piece takes to pass.
+21. **The stone's strike** (changed Nov 13). Beside the strike on a card's top it is not the weaker one. It throws a little under half of what the third pass threw, and it scatters, in every direction it can go. Nothing is aimed. A few pieces reach the tops of the second row's cards by chance and bounce there. Nothing heaps up, and no card's words are covered for longer than a piece takes to pass.
 22. **The two fronts meet.** Under the button the two sides' fronts become one, with a burst, and one front goes on down.
 23. **The front reaches the end.** At the stream's leading end the front fuses with it and energy bursts forward out of the end, then the end settles to how it rests. The front never just stops or fades.
+24. **A strike does not color a picture.** At a strike a card's rim flares and its picture stays as it was. Only the pointer and keyboard focus bring a picture's colors back.
 
 **The path through Work as a bolt**
 
 `BRIEF.md`, The stream, "The path through Work: Bolt", has the goal in his words, what is fixed and what the builder is free with. The wireframe he picked it from is `/lab/work-path`, E. Its shape and numbers are a sketch, and nothing about them is a test. It passes when "The stream through Work" above still holds and all of these are true:
 
 1. **It feels powerful.** Scrolled through the section, the stream reads as directed power that chooses its next course, not as something flowing or dancing. An engineer would stop and scroll it again.
-2. **The power is kept into every strike.** Nothing spends it just before: no slow bow, no drift. With the switch thrown back and forth on the same strike, the strike on the new path is the stronger one.
-3. **It is unpredictable, and never regular.** No two runs alike. Nothing reads as a pattern, a zigzag or a drawn shape.
+2. **The power is kept into every strike.** Nothing spends it just before: no slow bow, no drift. Beside a still of the same strike on the path as it was (`reference/studies/`), the strike on the bolt is the stronger one. The switch between the two comes off the page (Nov 13).
+3. **It is unpredictable, and never regular.** No two runs on a side alike. Nothing reads as a pattern, a zigzag or a drawn shape.
 4. **Every turn has a cause,** and the stops and their order are as they were.
 5. **It is still the stream.** A body of light with shards belonging to it. Never a neon sign, a wire, or a circuit drawn on the page. Enlarged three times at its sharpest turn, the core holds together.
 6. **Riding shards.** None vanish, appear or jump anywhere on it, and none bunch at a turn. Measured as before.
 7. **Scrolled back up,** it draws back cleanly.
 8. **`/lab/stream` is unchanged,** and `npm run perf` is as smooth as it was.
+9. **The two sides mirror** (Nov 13). The left side's path is the right side's as the third pass drew it, flipped. Laid over each other, flipped, the two cannot be told apart. What each side throws still differs.
+10. **The bolt is one stretch** (Nov 13). From the landing on the category bar to the meeting under the button the path is the bolt. Above the landing (the fall to WORK, the strike on it, the run along its top, over its ends and down to the bar) and below the meeting, it is the path as it was before the bolt. The change on the bar does not read as a join.
 
 **How to judge it**
 

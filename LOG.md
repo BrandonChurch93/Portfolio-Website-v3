@@ -2,6 +2,55 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · Study 17: a derby of blanks for the sleeping card (Fable, web chat)
+
+**What Brandon said.** His words are in `BRIEF.md`, The stream, "His reaction to the ideas, and his answers to what was open".
+
+- Of the four ideas: he likes B · The mould and A · Etched layout, D · Engine turned "sounds cool", and C · Doors is cut for another option.
+- "The surge looks much better."
+- On a press, a row the stream has not reached stays blanks and plays nothing.
+- He is open to a light off the screen pointed at the cards, so the mirror is in full effect, and asked what Fable thinks.
+- He agrees with Fable's recommendations on everything else that was open.
+- The AI Glasses card is fine: one row of tags, however many fit.
+- "We can go ahead and start the derby now."
+
+**What was built**
+
+- `/lab/work-blanks`: `src/work-blanks/blanks.ts`, `src/components/lab/WorkBlanks.tsx` and its stylesheet, `src/app/lab/work-blanks/page.tsx`.
+- One canvas over four real cards, one fragment shader. Each blank is a height worked out per pixel (`face`), its slopes taken by differences, and the mirror shows a room of long lights that stand off the screen (`room`). The eye stands in front of the middle of the screen, so a flat face shows a different part of the room at each point and the reflections slide as the page scrolls. Under the pointer the face turns 3 degrees. The cursor's light is a small panel in the same room.
+- A · Etched layout and B · The mould share the card's layout as fourteen plain shapes (`S`), put where the real card has its parts, measured from the page: the picture 15 to 445 across and 15 to 226 down, the band 236 to 266, the title 285 to 311, four lines of words 14 tall from 324, 346, 368.5 and 391, the tags 425 to 447, the foot's rule at 461, and the links centered in the foot.
+- C · Facets is ten planes cut into a flat table (`F`). D · Engine turned is a dial: the room smeared round the middle by thirteen samples, fine rays, a boss.
+- Waking, per blank (`shown` and `lit` at the end of the shader): A gives way outward from its lines, B's pockets fill from the foot and then the lands fade, C's planes go one after another, D is crossed by a band of light. Sleeping is the same run backwards. 0.55 seconds, eased.
+- `?wake=0.5` holds all four part woken, and `blankWake(i, amount)` holds one.
+
+**What was looked at, and what was not**
+
+- Stills drawn in software at one pixel to a pixel: all four asleep, and each held at four or five stages of waking. `reference/studies/33-work-blanks-*.jpg`.
+- The buttons, pressed by a script in a live page: wake one, put it back (the picture returns to exactly what it was), wake all, quarter speed.
+- Not looked at: any of it moving. A still at two pixels to a pixel, which times out here because the shader is heavy. The blanks beside the stream, which this page does not have.
+
+**Fable's calls. His to overturn**
+
+- Facets as the idea that replaces Doors.
+- Going back to sleep is the waking run backwards.
+- Where the lights stand, and that each is a gradient with one hard edge.
+- On this page a blank stays asleep under the pointer.
+
+**Worth knowing, so it is not found twice**
+
+- Flat bands of light on a flat face read as cut paper. Each light as a gradient with one hard edge is what made it read as polished metal.
+- The layout's shapes have to sit where the card's parts are. The first set was a few units off and each pocket opened on a slice of the wrong line of words.
+- A's change has to reach the middle of the picture, 106 units from the nearest line. At 80 a strip of mirror was left on a woken card.
+- Slopes taken by differences across the ridge between two facets draw a dotted line. They are now taken on the one facet the point is on (`gFacet`).
+- The card itself carries `data-awake` too. The page's own slots are `main section > div[data-awake]`.
+- In software this page draws about a frame a second, and Playwright's click waits on frames and times out. The script presses the buttons from inside the page.
+- The canvas covers the whole grid, not the screen. Fine for a study. The real blank belongs in the card's own plate: the `uAsleep` branch of the card's light shader in `src/metal/shaders.ts`.
+
+**Half finished**
+
+- His pick of a blank, and his word on the lights and on the change.
+- Then one prompt for Claude Code with everything he is holding: the four rulings in the entry below, cards sleeping again with a designed change both ways, the picked blank with the lights off the screen, a press doing nothing on a row the stream has not reached, and the small things he agreed to (a lighter resting color for "Case study", the path switch off the page).
+
 ## 2026-11-13 · Cards sleep again, and ideas for the blank (Fable, web chat)
 
 **What Brandon said.** His words are in `BRIEF.md`, The stream, "A card sleeps again" and "What he wants the blank to be".
@@ -46,7 +95,7 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 - The bolt's strokes are hashed per side in `routeThroughWork(P, true)`. The right side's are the ones he likes.
 - The picture's warming at a strike is `plates.setWarm`.
 
-**The prompt Brandon was given**
+**The prompt Brandon was given. Out of date and never sent: it says not to change the sleeping cards. One prompt with everything he is holding replaces it once he has picked a blank**
 
 ```
 Pull main and read BRIEF.md, The stream, "His look at the third pass, after the blank".

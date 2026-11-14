@@ -544,6 +544,46 @@ Left open:
     - D · Engine turned: a mirror cut with a fine turned pattern, as on a watch dial, that throws moving bands of light. No hint of the layout. It wakes as a band of light crosses from the strike with the content behind it.
     - A small stamped hallmark, as on silver, could go on any of them in place of the sun.
 
+**His reaction to the ideas, and his answers to what was open (Nov 13)**
+
+- **The ideas.** "For the ideas, I really like B and A, and D sounds cool too. Let's cut C. I don't love that idea, and let's replace the C with another option."
+    - In exact terms: B · The mould and A · Etched layout go to the derby as his favorites, and D · Engine turned goes with them. C · Doors is dropped. A new third idea takes its place, Fable's to choose.
+- **The surge.** "Yes, the surge looks much better." Said of the surge as the third pass built it: both sides together, the front as a second leading end, the fuse under the button and the burst at the leading end.
+- **A row the stream has not reached does nothing on a press.** "Because the second row goes from placeholder to their actual cards the first time the surge hits them, and they stay, they're still having that issue where they're playing that animation. We need to be sure that when the light's not touching them that they're the placeholder cards, and that animation does not play at all."
+    - In exact terms: when a category is pressed, a card the stream has not reached stays a blank and does nothing. No drop, no rise, no strike, no flash, no waking. What it will show when it wakes changes with nothing to see. The surge runs only as far down as the stream has reached.
+    - With cards sleeping again (above) this holds on every press, not only before a card's first strike.
+- **A light off the screen, for the mirror.** "One other thing I'm open to doing is putting an artificial light source in the scene. I'm not sure how taxing that is, but one that's outside of the user's viewport that points at those cards, so the mirror effect is in full effect. I'm not sure what else we can do with them. What do you think?"
+    - Fable's answer: yes, and the derby has it. A mirror shows what stands round it, so what it needs is bright things to reflect, not a light pointed at it. Those are a few long lights that stand off the screen, up and to the right, and they exist only as arithmetic in the card's own shader. Nothing is lit and nothing casts a shadow, so the cost is a few lines of work for each pixel of a sleeping card.
+    - Their reflections slide as the page scrolls and as a card turns under the pointer, and the cursor's light shows in the mirror as a small bright panel of its own.
+    - Not a rule until he has seen it and said so.
+- **"Everything else I agree with your recommendations."** The recommendations were Fable's, on what Claude Code's reports had left unanswered. Settled by this:
+    - The stream's core stays turned down ahead of the surge's front while it runs (`change.hush`).
+    - "Case study" gets a lighter resting color.
+    - A sleeping card still wakes under the pointer or with keyboard focus.
+    - The line added to the card's stylesheet, so a card with no links keeps its foot, stays.
+    - The switch between the bolt and the path as it was comes off `/lab/work`.
+    - The rail's brackets and the finial are left as they are.
+- **Tags: one row, however many fit in it.** "Regarding the glasses card, I see no issues with it. It's four tags that are perfectly fitting in a single row. I don't care how many tags you can fit in a single row, as long as it's one row."
+- "We can go ahead and start the derby now."
+
+**The derby of blanks (Nov 13). In front of him, nothing picked**
+
+- At `/lab/work-blanks`, Study 17, built in the web chat. Four blanks in mirror polished bronze, each over a real card. Each has a button that wakes it and puts it back to sleep, and the page has a quarter speed switch.
+    - **A · Etched layout:** the card's layout as engraved hairlines, in the places the real card has its parts. It wakes as the lines light and the mirror gives way outward from them.
+    - **B · The mould:** the same layout as shallow pockets with satin floors, sunk into the mirror. It wakes as each pocket fills from its foot, then the metal between gives way.
+    - **C · Facets,** the idea that replaces Doors: the face cut into flat planes like one of the stream's shards, each showing a different part of the room, with a polished line along every ridge. No hint of the layout. It wakes as the planes give way one after another.
+    - **D · Engine turned:** fine turned rays round a boss at the middle, which smear the lights into fans. No hint of the layout. It wakes as a band of light crosses it from the top with the card behind.
+- Going back to sleep is the same change run backwards.
+- The lights off the screen are in all four: each is a gradient with one hard edge, as a photographer lights polished metal.
+- What he is choosing: the blank's design, and with it the kind of change between asleep and awake. He is not approving the finished blank. This page is a study drawn by a shader of its own laid over the cards. The builder makes the picked one in the card's own plate (`src/metal/`), where it also takes the stream's light.
+- Fable's judgment, from stills drawn in software at one pixel to a pixel:
+    - A and B read as mirror metal and as a placeholder at once. B has more in it: satin against mirror, and a lit lip on each pocket.
+    - C is the strongest mirror of the four and the least like a placeholder.
+    - D is satin by its nature, the least like a mirror. Its dark fan can read as a smudge and its boss as a ring.
+    - Not judged: any of the four in motion, how fine the lines are on his screen at two pixels to a pixel, and how bright a mirror sits beside the stream, since this page has no stream.
+- On this page a blank stays asleep under the pointer, so the cursor's light can be seen in it. On the Work page a sleeping card wakes under the pointer, so there the cursor's light plays on a blank only from beside it.
+- Stills: `reference/studies/33-work-blanks-*.jpg`.
+
 **How it is built**
 
 He added these while the stream was a simulated liquid. They hold for anything in the stream that is simulated: shards thrown loose, sparks.
@@ -669,6 +709,7 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     - What follows from it: the words are written to fit the card. The card does not grow to fit the words.
     - Fable's calls, his to overturn:
         - A card shows the tags that fit one row, in the order they are written, and no more. On the AI Glasses card that hides the fourth where the card is narrow. Which three it keeps for good is his, since the words are his.
+        - His answer (Nov 13): "Regarding the glasses card, I see no issues with it. It's four tags that are perfectly fitting in a single row. I don't care how many tags you can fit in a single row, as long as it's one row." So the call above stands as a rule: one row, as many tags as fit it, and the AI Glasses card keeps its four where four fit.
         - A title is one line. At any one width the description has the same number of lines on every card, the most a Software card needs there.
         - The stand in cards for the other categories become that size. With every card one size a row never changes height, so the stream settling onto a new height, and its test, come out.
         - Claude Code measures how many characters a title, a description and a row of tags can hold, and writes it here, so he has the numbers when he rewrites the words.
@@ -868,6 +909,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
 - A streak or spot of the cursor's light on a card's picture (Nov 13)
 - A metal bar over WORK, or under it. "I don't want the bar above work" (Nov 13)
 - A card's colors coming back as a circle spreading from the pointer (Nov 13)
+- Doors as the sleeping card: two mirrored doors that meet at a seam with a latch. "Let's cut C. I don't love that idea" (Nov 13)
 - A change of course that rises to a point and drives off, C in the path derby. "I definitely don't like the point shoot" (Nov 13)
 - Cards of different sizes, and a second row of tags on a card (Nov 13)
 - All four cards changing at once when the category changes, with nothing travelling. A surge of 0.45 or 0.7 seconds. He picked 0.7 from the wireframe, saw it on the real page, and changed to 1.1 (Nov 13)
