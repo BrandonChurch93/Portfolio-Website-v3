@@ -101,6 +101,9 @@ This is the real calibration. Every row is his verdict, not a guess. Rows that s
 | The surge's front as a swell of light and a kink in the line | "It's not noticeable enough." "It needs to have more power to it" | The fresh reviewers had failed the same thing. A change in brightness along a line that is already bright does not carry. It needs a body |
 | Cards lit and readable ahead of the stream, changing with nothing touching them | The second row "looks horrible". He chose cards that sleep as "a bronze template" until the stream reaches them | What the stream has not reached should not look as if it has. He would sooner hold a card back, beautifully, than show it out of step |
 | A path of straight runs and hard corners, as a proposal | "A big deviation." "I actually like the swing. It's kind of unpredictable." What he minds is "harsher bows" that "take away the momentum of the power right before a strike". He wants "intentional directed power choosing its next course", not "a ballerina or flowing water" | He named a feeling and Fable answered with a geometry. The wander is life. A round turn spends the power, and a turn that gathers to a point keeps it. Ask what is wrong before proposing what replaces it |
+| Three paths as a wireframe: as now, a ricochet, and turns that rise to a point | "I definitely don't like the point shoot." Ricochet "is not bad", and it and the path as now are "about the same level" | Fable built his words ("went up a little bit to a point and then blasted downwards") as a literal shape, and he did not like the shape. A feeling he describes is not a drawing to trace |
+| Cards whose height followed their words, with room for two rows of tags | "We need to make all cards the same size", with the Software card as the standard and one row of tags | One size, held everywhere. The words fit the card |
+| The stream meeting the Sun stone as a light contact | "Should be much more powerful." It should "blast particles on top of the second row of cards", which "would really make this feel like a 3D environment" | What a strike throws is how he reads depth. Where something stands in a good place to throw onto something else, it should |
 | The pour's first test shot, in motion | "I definitely don't like how it puddles." The stream "is blasted back multiple times". "Instead of looking like a refined beautiful hot liquid metal, this looks more like mud splashing around and puddling up" | Real physics is not enough. It has to be graceful. Metal that heaps, thrashes or hits itself reads as mud |
 
 ## The patterns behind those verdicts
@@ -265,7 +268,7 @@ The section:
 4. **A card's strike is a strike.** Beside the scroll's strike on the same card it is not the weaker one. What it throws bounces and spills as it does there.
 5. **The stream never comes apart.** While a card is away the stream sags and holds together. No frame shows it cut, hanging straight in the air where a card was, or sunk into a card.
 6. **Riding shards stay.** Through a whole surge none vanish, appear or jump, measured as before.
-7. **Different heights.** Changing to a taller or shorter set, the stream below reaches its new line with weight: it overshoots a little and settles. It never jumps, and the page does not jolt.
+7. Dropped Nov 13. Every card is one size, so a row never changes height.
 8. **Only where the stream is.** Pressed with the leading end above the cards, the cards change and nothing strikes them.
 9. **Pressed again, and again quickly,** it never queues, doubles or leaves a card half changed.
 10. **It never feels slow.** The new cards' words can be read as soon as each seats. What is left after that (pieces falling, pictures settling) holds nothing up.
@@ -278,6 +281,8 @@ The section:
 17. **Waking.** The stream's first strike wakes a card, and the change from asleep to awake has weight: it is lit by the strike, not faded up. It stays awake when the page is scrolled back up.
 18. **A sleeping card can still be used.** Under the pointer or with keyboard focus it is awake and passes contrast. A screen reader gets its words. With reduced motion, and where the stream cannot run, no card is ever asleep.
 19. **A press on a row the stream has not reached** changes sleeping cards for sleeping cards, and nothing about it looks left behind.
+20. **One size.** At any width every card in every category measures the same, with one row of tags and no room left for a second.
+21. **The stone's strike.** Beside the strike on a card's top it is not the weaker one. What it throws crosses the gap between the rows, lands on the tops of the second row's cards and bounces there. Nothing heaps up, and no card's words are covered for longer than a piece takes to pass.
 
 **How to judge it**
 

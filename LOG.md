@@ -2,6 +2,42 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · One size of card, a stronger strike on the stone, and two more paths (Fable, web chat)
+
+**What Brandon said.** His words are in `BRIEF.md`: Cards and buttons, "One size of card". The stream, "Three changes to the surge and the cards", item 4. Open 24.
+
+- Every card the same size, the Software card as the standard, one row of tags.
+- The strike on the Sun stone much more powerful, throwing onto the tops of the second row.
+- The path: he does not like the turns that rise to a point. The ricochet "is not bad", level with the path as now. He asked for other ideas.
+
+**What was built**
+
+- The path derby at `/lab/work-path` lost C and gained two. D · Swing and strike is B's corners (`HARD` in `src/work-surge/surge.ts`) with the wander put back and held further off every strike. E · Bolt is B's corners with a wander of straight strokes (`strokes`): it changes side at every knot by an uneven amount, and the knots are unevenly spaced.
+- A switch for the lunge: within 150 units of a strike the leading end goes straight to it (`lunge` on `SurgeSim`).
+- Stills: `reference/studies/30-work-path-d-swing-and-strike.jpg`, `30-...-e-bolt.jpg`. C's still is kept as `30-...-c-point-and-blast-passed-over.jpg`.
+
+**What Fable told him**
+
+- D is the recommendation: the two he rates level, joined, and it answers what he said was wrong with the bows.
+- E is the nearest to a bolt of electricity, and the most likely to read as a drawn zigzag.
+- The lunge is about how the leading end moves, not the path, and it goes against the cap on the stream's speed.
+
+**The add on prompt Brandon was given**
+
+```
+Two more changes on /lab/work. Read BRIEF.md, Cards and buttons, "One size of card", and The stream, "Three changes to the surge and the cards", item 4.
+
+1. Every card in every category is the same size at a given width, and the Software card sets it. Tags are one row only: take out the room for a second row, and show only the tags that fit one row. Make the stand in cards that size too. The stream settling onto a new height is no longer needed, so take it out. Measure how many characters a title, a description and a row of tags can hold, and write that into the brief for me.
+
+2. Make the strike on each Sun stone a full strike, much more powerful than now. Throw what it blasts inward over the gap between the two rows, so it lands on the tops of the second row's cards and bounces there. On the scroll and in a surge.
+
+/lab/stream and the approved buttons must still draw what they draw today. Build, commit, push, confirm the deploy, and report in a short list.
+```
+
+**Half finished**
+
+- His pick of a path.
+
 ## 2026-11-13 · Three things agreed, and a derby of the stream's path (Fable, web chat)
 
 **What Brandon said.** His words are in `BRIEF.md`: The stream, "Three changes to the surge and the cards", and Open 24.

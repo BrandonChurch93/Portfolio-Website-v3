@@ -427,6 +427,11 @@ How each got here is in Open 21 to 23. `QUALITY.md`, "When the category changes"
     - Not committed to: the same idea for the rest of the site. "Kind of 50-50, undecided."
     - Fable's calls, his to overturn: a sleeping card under the pointer or with keyboard focus wakes for as long as that lasts, so it can always be used. With reduced motion, where the stream cannot run, and under 1100 px, every card is awake from the start. A screen reader gets every card's words at all times. The stones and the rail are left as they are: they already rest dark until the stream lights them.
 
+4. **The strike on the Sun stone is much more powerful (Nov 13).** "I also think the strike on the Sunstone should be much more powerful. The positioning that the Sunstone sits is perfect for them to blast particles on top of the second row of cards. This would look awesome. Having particles go in there in between the two rows would really make this feel like a 3D environment."
+    - In exact terms: where the stream meets each stone is a full strike. It was a light contact, at about a third of a full strike, which was Fable's call. What it throws goes inward over the gap between the two rows, comes down on the tops of the second row's cards and bounces there. On the scroll and in a surge.
+    - What still holds: nothing heaps up, thrown shards keep their momentum, there is no second wave, and what the budget drops is said out loud.
+    - Fable's call, his to overturn: what lands on a sleeping card bounces off it and does not wake it. Only the stream wakes a card.
+
 **How it is built**
 
 He added these while the stream was a simulated liquid. They hold for anything in the stream that is simulated: shards thrown loose, sparks.
@@ -546,6 +551,15 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     - `CARD_LOOK` in `src/components/WorkCard.tsx` holds them, and the study page opens on them and keeps its switches. Still: `reference/studies/26-work-card-as-picked.jpg`.
     - What he passed over is in Dropped. The amounts can still be tuned once the card is on the Work page: "have him build it onto the site so we can fine tune from there".
     - What comes next, in his words: "Let's go ahead and write up the handoff document so this can be built into the current working work page." The agreement for that build is in The stream, "The second pass on the Work page".
+- **One size of card, and the Software card is it (Nov 13).** "We need to make all cards the same size. Naturally we should probably use our software development cards as the standard. Every category has a different size. This does limit and set the standard for the amount of content that could be on a card. I currently think the software development cards are pretty much perfect, with one caveat. I think we should keep one row of tags. Currently the AI glasses one breaks that and has four tags that exceed one row, and because we only have one row all the cards should shrink to accommodate this. Currently the other three cards in software engineering have this little space that can accommodate a second row of tags. We should get rid of that and set that as a standard across all categories."
+    - In exact terms: at any one screen width, every card in every category is the same size. The Software card sets it: its picture, its band, a title, its description, one row of tags and its foot. The room a second row of tags takes today comes out of every card.
+    - It changes "Up to four tags" in the approved base to: as many tags as fit one row.
+    - What follows from it: the words are written to fit the card. The card does not grow to fit the words.
+    - Fable's calls, his to overturn:
+        - A card shows the tags that fit one row, in the order they are written, and no more. On the AI Glasses card that hides the fourth where the card is narrow. Which three it keeps for good is his, since the words are his.
+        - A title is one line. At any one width the description has the same number of lines on every card, the most a Software card needs there.
+        - The stand in cards for the other categories become that size. With every card one size a row never changes height, so the stream settling onto a new height, and its test, come out.
+        - Claude Code measures how many characters a title, a description and a row of tags can hold, and writes it here, so he has the numbers when he rewrites the words.
 - **What a card's loop and picture need. Fable's spec, his to change:** one recording a project, of the product doing the one thing that makes it worth a look. Twice as wide as it is tall, 1600 by 800 or larger. Four to eight seconds, ending close enough to where it starts to cut cleanly. MP4, H.264, no sound. The browser zoomed in before recording, so one part fills the frame and its type reads at the card's size. The picture is the first frame, saved as an image.
 - **What was in front of him at first: the card derby at `/lab/work-cards` (Study 14).**
     - How the picture rests: 1 · Toned, 2 · Cast, 3 · Etched. Fable recommends Toned. **Cast leans against "Brass is an accent on it, not the whole card"**, because the picture is the largest thing on the card.
@@ -718,6 +732,9 @@ Each line has Fable's recommendation where there is one. None of these are rules
     - In exact terms: the wander of a free run stays. What goes is the round bow where the stream changes course, and any curve in the last stretch before a strike. A change of course becomes a rise to a point and a drive off the other way. The stream comes straight in to a strike.
     - **The derby is at `/lab/work-path` (Study 16), waiting on his pick.** A wireframe, on the surge study's stage. A · As now, the page's route redrawn by hand. B · Ricochet, straight runs and hard corners. C · Point and blast, his description: it wanders on a free run, comes dead straight in to every strike, and where it changes course it ramps up to a point and drives off. The stream can be run down each or dragged down by hand, and today's path can be shown dashed underneath.
     - What Fable saw in the stills, and told him: in C the turned up points at the ends of the title, the bar and the first row sit one above another, and at rest the three together read a little like the eaves of a pagoda. B reads cleanest and nearest to a neon outline.
+    - **His verdict on the first three (Nov 13):** "I definitely don't like the point shoot, but honestly ricochet is not bad. I feel like both the one we're using now and ricochet are pretty good with one another, about the same level. I'm hoping to hear other ideas though. What do you think would look good?" C is in Dropped. A and B stand level. Nothing is picked.
+    - **Two more, added to the derby the same day, waiting on his pick.** D · Swing and strike: B's hard corners with the swing he likes put back on the long free runs, dying away before every strike, so it arrives and leaves straight. Fable recommends it: it is the two he rates level, joined, and it answers what he said was wrong. E · Bolt: B's corners with a wander made of short straight strokes that change side unevenly.
+    - **One more idea, as a switch on the same page: the lunge.** Over the last stretch before a strike the leading end runs ahead of the scroll and lands it. The path does not change. **It goes against "its speed is capped at the user scroll rate", said to him in bold.**
 
 ## Dropped
 
@@ -733,6 +750,8 @@ Each line has Fable's recommendation where there is one. None of these are rules
 - A streak or spot of the cursor's light on a card's picture (Nov 13)
 - A metal bar over WORK, or under it. "I don't want the bar above work" (Nov 13)
 - A card's colors coming back as a circle spreading from the pointer (Nov 13)
+- A change of course that rises to a point and drives off, C in the path derby. "I definitely don't like the point shoot" (Nov 13)
+- Cards of different sizes, and a second row of tags on a card (Nov 13)
 - All four cards changing at once when the category changes, with nothing travelling. A surge of 0.45 or 0.7 seconds. He picked 0.7 from the wireframe, saw it on the real page, and changed to 1.1 (Nov 13)
 - For the card: its colors coming back as a sweep, lights first, or with the picture coming closer. The card leaning toward the cursor. The thin bead as its edge. He picked the fade, leaning away and the deep edge (Nov 13)
 - The faint channel drawn ahead of the stream

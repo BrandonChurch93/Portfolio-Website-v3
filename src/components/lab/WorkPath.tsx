@@ -9,17 +9,19 @@ import styles from './WorkSurge.module.css';
 const PATHS: { value: PathName; name: string }[] = [
   { value: 'now', name: 'A · As now' },
   { value: 'ricochet', name: 'B · Ricochet' },
-  { value: 'driven', name: 'C · Point and blast' },
+  { value: 'swing', name: 'D · Swing and strike' },
+  { value: 'bolt', name: 'E · Bolt' },
 ];
 const NOTES: Record<string, string> = {
   now: 'The route on the Work page today, redrawn by hand: it wanders on its free runs, falls in bows and rounds every turn.',
   ricochet: 'Straight runs and hard corners, with no wander. It arrives straight, strikes and leaves straight.',
-  driven: 'It still wanders on a free run. It comes dead straight in to every strike. Where it changes course it rises to a point and drives off the other way.',
+  swing: 'B with the swing put back. It wanders on its long free runs, the wander dies away before every strike, and it arrives and leaves straight.',
+  bolt: 'B with a different wander: short straight strokes that change side unevenly, like a bolt. It still comes straight in to every strike.',
 };
 const SECONDS = 4.6;
 
-// Study 16: three paths for the stream through Work, on the wireframe of Study 15. For the shape and its turns only.
-// ?path=driven&at=0.42&ghost=1 opens it on those, and pathAt(share) sets how far down the scroll's line is for a still.
+// Study 16: paths for the stream through Work, on the wireframe of Study 15. For the shape and its turns only.
+// ?path=swing&at=0.42&ghost=1&lunge=1 opens it on those, and pathAt(share) sets how far down the scroll's line is for a still.
 export function WorkPath() {
   const canvas = useRef<HTMLCanvasElement>(null);
   const slider = useRef<HTMLInputElement>(null);
@@ -28,12 +30,14 @@ export function WorkPath() {
   const run = useRef({ pos: 1, playing: false });
   const [path, setPath] = useState<PathName>('now');
   const [ghost, setGhost] = useState(false);
+  const [lunge, setLunge] = useState(false);
 
   useEffect(() => {
     const q = new URLSearchParams(location.search);
     const named = PATHS.find((p) => p.value === q.get('path'))?.value;
     if (named) setPath(named);
     if (q.get('ghost') === '1') setGhost(true);
+    if (q.get('lunge') === '1') setLunge(true);
     const at = q.get('at');
     if (at !== null) run.current.pos = Math.max(0, Math.min(1, Number(at)));
 
@@ -75,8 +79,9 @@ export function WorkPath() {
 
   useEffect(() => {
     sim.current?.setPath(path, ghost);
+    if (sim.current) sim.current.lunge = lunge;
     dirty.current = true;
-  }, [path, ghost]);
+  }, [path, ghost, lunge]);
 
   const play = () => {
     sim.current?.rewind();
@@ -91,7 +96,7 @@ export function WorkPath() {
       <div className={styles.side}>
         <p className={styles.label}>Study 16 · the stream&rsquo;s path</p>
         <h1 className={styles.title}>The path</h1>
-        <p className={styles.lede}>Three paths through the same stops. Flip between them to see where each one turns, then run the stream down each.</p>
+        <p className={styles.lede}>Four paths through the same stops. Flip between them to see where each one turns, then run the stream down each.</p>
         <p className={styles.note}>
           A wireframe. The line stands in for the stream. Judge the shape, the turns and how it comes in to each strike, not the look.
         </p>
@@ -109,6 +114,13 @@ export function WorkPath() {
             <span>Or drag it down yourself</span>
             <input ref={slider} type="range" min={0} max={1000} defaultValue={1000} onInput={(e) => drag(Number(e.currentTarget.value))} />
           </label>
+        </div>
+        <div className={styles.choice}>
+          <p className={styles.choiceName}>The leading end lunges into each strike</p>
+          <div className={styles.switch} role="group" aria-label="The leading end lunges into each strike">
+            <button type="button" aria-pressed={!lunge} onClick={() => setLunge(false)}>Off</button>
+            <button type="button" aria-pressed={lunge} onClick={() => setLunge(true)}>On</button>
+          </div>
         </div>
         <div className={styles.choice}>
           <p className={styles.choiceName}>Today&rsquo;s path as a dashed line underneath</p>

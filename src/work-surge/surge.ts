@@ -85,11 +85,15 @@ function nearest(p: Path, x: number, y: number): number {
 }
 
 // The left side of the route, stop by stop, each corner with how round it is. The right side is its mirror.
-// plain is the surge study's own line. The other three are the path study's: the page's route as it is now, redrawn
-// by hand, a route of straight runs and hard corners, and one that keeps the wander of a free run, comes straight in
-// to every strike, and turns by rising to a point.
-export type PathName = 'plain' | 'now' | 'ricochet' | 'driven';
+// plain is the surge study's own line. The others are the path study's: the page's route as it is now, redrawn by
+// hand. A route of straight runs and hard corners. The same corners with the wander of a free run put back, away
+// from every strike. And the same corners with a wander that is made of short straight strokes.
+export type PathName = 'plain' | 'now' | 'ricochet' | 'swing' | 'bolt';
 const END = STAGE.h + 40;
+const HARD: Corner[] = [
+  [CX, -60, 0], [CX, 49, 5], [506, 49, 5], [418, 211, 5], [366, 211, 5], [322, 383, 5], [246, 383, 5],
+  [128, 876, 5], [247, 1174, 5], [150, 1592, 5], [611, 1654, 5], [CX, 1706, 5], [CX, END, 0],
+];
 const CORNERS: Record<PathName, Corner[]> = {
   plain: [
     [CX, -60, 0], [CX, 49, 30], [506, 49, 40], [452, 112, 50], [418, 211, 22], [366, 211, 26], [336, 300, 60],
@@ -101,18 +105,24 @@ const CORNERS: Record<PathName, Corner[]> = {
     [322, 383, 28], [246, 383, 44], [150, 600, 160], [128, 876, 14], [247, 1174, 10], [190, 1262, 70],
     [150, 1592, 30], [611, 1654, 46], [CX, 1706, 34], [CX, END, 0],
   ],
-  ricochet: [
-    [CX, -60, 0], [CX, 49, 5], [506, 49, 5], [418, 211, 5], [366, 211, 5], [322, 383, 5], [246, 383, 5],
-    [128, 876, 5], [247, 1174, 5], [150, 1592, 5], [611, 1654, 5], [CX, 1706, 5], [CX, END, 0],
-  ],
-  driven: [
-    [CX, -60, 0], [CX, 49, 10], [506, 49, 30], [484, 46, 40], [466, 27, 2], [418, 211, 5], [366, 211, 30], [350, 208, 30], [337, 192, 2],
-    [322, 383, 5], [246, 383, 30], [226, 380, 36], [205, 359, 2], [128, 876, 5], [247, 1174, 5], [200, 1158, 40], [172, 1131, 2],
-    [150, 1592, 5], [611, 1654, 40], [CX, 1706, 12], [CX, END, 0],
-  ],
+  ricochet: HARD,
+  swing: HARD,
+  bolt: HARD,
 };
-// How far a free run wanders to each side, and how far from anything it touches the wander begins and is whole.
-const SWAY: Record<PathName, [number, number, number]> = { plain: [0, 0, 1], now: [15, 30, 120], ricochet: [0, 0, 1], driven: [13, 90, 230] };
+// How far a free run wanders to each side, how far from anything it touches the wander begins and is whole, and
+// whether it wanders in curves or in short straight strokes.
+const SWAY: Record<PathName, [amp: number, from: number, full: number, strokes: boolean]> = {
+  plain: [0, 0, 1, false], now: [15, 30, 120, false], ricochet: [0, 0, 1, false], swing: [15, 80, 220, false], bolt: [17, 60, 150, true],
+};
+const KNOTS: number[] = [0];
+while (KNOTS[KNOTS.length - 1] < 6000) KNOTS.push(KNOTS[KNOTS.length - 1] + 50 + 80 * hash(KNOTS.length, 9));
+// A wander of straight strokes: it changes side at every knot, by an uneven amount, and the knots are unevenly spaced.
+function strokes(run: number): number {
+  let j = 0;
+  while (KNOTS[j + 1] < run) j++;
+  const at = (k: number) => (k % 2 ? 1 : -1) * (0.35 + 0.65 * hash(k, 5));
+  return at(j) + (at(j + 1) - at(j)) * ((run - KNOTS[j]) / (KNOTS[j + 1] - KNOTS[j]));
+}
 const MARKS = {
   title: [CX, 49], titleEnd: [506, 49], barIn: [418, 211], bar: [392, 211], barEnd: [366, 211], top0: [322, 383], top1: [246, 383],
   stone: [128, 876], side: [247, 1174], rail: [150, 1592], meet: [CX, 1706],
@@ -123,7 +133,7 @@ interface Built { sides: [Path, Path]; at: Marks; top: number; floor: Float32Arr
 function build(name: PathName): Built {
   const p = trace(CORNERS[name]);
   const at = Object.fromEntries(Object.entries(MARKS).map(([k, [x, y]]) => [k, nearest(p, x, y)])) as Marks;
-  const [amp, from, full] = SWAY[name];
+  const [amp, from, full, straight] = SWAY[name];
   if (amp) {
     const held = [[at.title, at.titleEnd], [at.barIn, at.barEnd], [at.top0, at.top1], [at.stone, at.stone], [at.side, at.side], [at.rail, at.meet]];
     const x = p.x.slice(), y = p.y.slice();
@@ -131,7 +141,7 @@ function build(name: PathName): Built {
       let d = Infinity;
       for (const [a, b] of held) d = Math.min(d, i < a ? a - i : i > b ? i - b : 0);
       const k = Math.max(0, Math.min(1, (d * STEP - from) / (full - from))), m = k * k * (3 - 2 * k), run = i * STEP;
-      const w = amp * m * (0.6 * Math.sin((run / 640) * 6.283 + 1.3) + 0.4 * Math.sin((run / 270) * 6.283 + 4.1));
+      const w = amp * m * (straight ? strokes(run) : 0.6 * Math.sin((run / 640) * 6.283 + 1.3) + 0.4 * Math.sin((run / 270) * 6.283 + 4.1));
       x[i] += p.nx[i] * w; y[i] += p.ny[i] * w;
     }
     p.x = x; p.y = y;
@@ -171,6 +181,8 @@ export class SurgeSim {
   // The scroll's line, in units down the stage: the stream is drawn as far as its leading end has run to keep up
   // with it. Null draws the whole stream.
   line: number | null = null;
+  // The leading end runs ahead of the scroll over the last stretch before a strike, and lands it.
+  lunge = false;
 
   constructor(path: PathName = 'plain') { this.setPath(path); this.reset(); }
 
@@ -273,6 +285,10 @@ export class SurgeSim {
       let lo = 0, hi = this.n - 1;
       while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (this.floor[mid] <= this.line) lo = mid; else hi = mid - 1; }
       const was = this.head;
+      if (this.lunge) for (const k of ['title', 'barIn', 'top0', 'stone', 'side', 'rail', 'meet'] as const) {
+        const i = this.at[k];
+        if (lo < i && lo >= i - 150 / STEP) lo = i;
+      }
       this.head = lo > was ? Math.min(lo, was + (1400 / STEP) * H) : lo;
       if (this.head > was) {
         for (const [k, i] of Object.entries(this.at)) if (i > was && i <= this.head) this.arrive(k);
