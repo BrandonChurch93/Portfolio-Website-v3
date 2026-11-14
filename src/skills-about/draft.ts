@@ -55,8 +55,9 @@ export function turns() {
 // Where the stream falls beside the rows.
 const SPINE = ABOUT.first.x;
 const NEAR = 170;
-// A row comes on when the stream's leading end is level with its name, this far under the row's top.
-const NAME = 40;
+// At each row the stream turns in this far past the rows' left edge to strike the small thing that stands there,
+// from this far above and below it.
+const TURN = { past: 4, over: 62 };
 // How far under his portrait the stream is still on its line through him.
 const UNDER = 16;
 
@@ -75,9 +76,12 @@ export function draft(tops: number[], tall: number, desk: DeskRoute): Draft {
   const meets: Corner[] = desk === 'lamp'
     ? [[land[0] + 34, land[1] - 150, 130, 6], [land[0], land[1], 5, 3], [SPINE, land[1] + 110, 70, 4]]
     : [[land[0], land[1], 6, 14], [off[0], off[1], 26], [SPINE, off[1] + 190, 90, 3]];
+  // A row is as tall as its words, and the stream strikes it half way down.
+  const strikes = tops.map((t, i): Pt => [SKILLS.rows.l - TURN.past, skills + SKILLS.rows.t + (t + (tops[i + 1] ?? tall)) / 2]);
   const l = line([
     [CX, 0],
     ...meets,
+    ...strikes.flatMap(([x, y]): Corner[] => [[SPINE, y - TURN.over, 22, 3], [x, y, 5], [SPINE, y + TURN.over, 22]]),
     [first[0], about + first[1], 5, 3],
     [second[0], about + second[1], 5],
     [out[0], out[1], 70],
@@ -92,7 +96,7 @@ export function draft(tops: number[], tall: number, desk: DeskRoute): Draft {
       level('title', skills + 96),
       cue('near', land, NEAR),
       cue('desk', land),
-      ...tops.map((t, i) => level(`row${i}`, skills + SKILLS.rows.t + t + NAME)),
+      ...strikes.map((at, i) => cue(`row${i}`, at)),
       cue('about', [first[0], about + first[1]]),
       cue('throw', [second[0], about + second[1]]),
       behind,

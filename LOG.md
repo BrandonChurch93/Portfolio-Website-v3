@@ -2,6 +2,39 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · The fuller draft's seventh round: strikes at the rows, a hook for the headphones (Fable, web chat)
+
+**What Brandon said**
+
+- The stream onto the desk's lamp is fine for now. He will know once he sees it in action.
+- The headphones should hang on a hook as a real pair would, in 3D. He wonders whether they should rock a little when the stream passes.
+- "With the 3D objects, I'd love to do a derby with them."
+- He does not hate the idea of the stream turning slightly in to each of the three rows, with a strike that makes the row visible: more strikes, more of a 3D feeling.
+- "Everything else looks really good though. I'm pretty pleased with the way this is turning out."
+- All of it is in `BRIEF.md`, Settled, pushed before anything was built.
+
+**What was built**
+
+- `/lab/skills-about-draft`, seventh round: the strikes at the rows, and the hook with the rocking. `BRIEF.md`, Open 28.
+
+**What was looked at**
+
+- A still of Skills with the line drawn. A live page scrolled down and back up: each row comes on at its strike, everything goes away again, no errors. The rocking was not watched: it is a CSS animation and motion is not judged here.
+
+**Calls made for him, each said to him**
+
+- The rocking is set off by the strike on the lamp, since the stream does not pass the headphones on this route.
+- The strikes at the rows are worth having only with the 3D things there to be struck.
+
+**Waiting on him**
+
+- Not ruled: the PC turned glass side out, the reflector, the strikes at the rows, the rocking.
+
+**For the next session**
+
+- Next in the web chat: a derby of the small 3D things for the three rows (AI Product Engineering, Full-Stack Engineering, Design Systems & Craft). Three families, each a set of three, rough, about 90 units across on the page, lit by the cursor's light. `BRIEF.md`, Open 28, "Fable's answer on a small 3D thing in each row", has the conditions and a first idea for each.
+- On his go: a prompt for Claude Code to build Skills and About for real from this draft, and the kit for the desk as a piece, with the headphones and their hook as their own small piece.
+
 ## 2026-11-14 · The fuller draft's sixth round: his portrait as About's ground, three rows of skills (Fable, web chat)
 
 **What Brandon said**

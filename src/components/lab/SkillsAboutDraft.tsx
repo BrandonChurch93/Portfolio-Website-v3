@@ -153,13 +153,15 @@ export function SkillsAboutDraft() {
     <main className={styles.main}>
       <header className={styles.head}>
         <p className={styles.label}>Study 22 · Skills and About</p>
-        <h1 className={styles.heading}>A fuller draft, sixth round</h1>
+        <h1 className={styles.heading}>A fuller draft, seventh round</h1>
         <p className={styles.lede}>
           Your portrait as the ground of About with the words even with you, nothing of About readable until the light is
           on you, and three rows of skills. Scroll: the line is the stream. The buttons at the foot of the screen play a
           section again, run it at half speed, or put the stream back on the desk’s front edge.
         </p>
         <ul className={styles.caveats}>
+          <li>Beside the rows the stream turns in to strike the small thing at the left of each row, and the row comes on at its strike.</li>
+          <li>The headphones hang on a hook, and rock on it when the stream strikes the lamp.</li>
           <li>Three skill sets: Product Leadership is out. The numbers are gone, and a row’s groups stand further apart.</li>
           <li>The small outline beside each name is a stand in for a 3D thing you could turn with the cursor. It marks a size and a place. It is a suggestion and nothing agreed, and none of the three is a design.</li>
           <li>The lists are a first cut of your résumé’s: the big ones kept, the doubles and the keywords gone. Game Development is under Full-Stack Engineering. Yours to correct.</li>
@@ -211,7 +213,7 @@ export function SkillsAboutDraft() {
           </defs>
           <g transform={tr(0, p.skills)}>
             <Workbench shown={got('near')} on={got('desk')} sweep={desk === 'lamp'} />
-            <Phones at={SKILLS.phones} shown={got('title')} lively />
+            <Phones at={SKILLS.phones} shown={got('title')} lively struck={got('desk')} />
           </g>
           <ellipse cx={P.x + P.w / 2} cy={top + P.y + P.h * 0.42} rx={590} ry={440} fill={`url(#${aura})`} className={styles.aura} data-on={got('behind')} />
           <polygon points={cone.map(([x, y]) => `${f1(x)},${f1(y)}`).join(' ')} fill={`url(#${beam})`} filter={`url(#${soft})`} className={styles.aura} data-on={got('throw')} />
@@ -240,7 +242,7 @@ export function SkillsAboutDraft() {
             <circle r={6} />
           </g>
           <g mask={`url(#${hidden})`}>
-            {['desk', 'about', 'throw'].map((c) => (
+            {['desk', 'about', 'throw', ...COMPETENCIES.map((_, i) => `row${i}`)].map((c) => (
               <g key={c} className={styles.strike} data-on={got(c)} transform={tr(cue(c).x, cue(c).y)}>
                 <circle r={26} fill={`url(#${flare})`} />
                 {[20, 75, 130, 200, 255, 320].map((a) => <line key={a} x1={0} y1={0} x2={15} y2={0} transform={`rotate(${a})`} />)}

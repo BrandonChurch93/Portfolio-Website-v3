@@ -130,3 +130,25 @@
 @keyframes turn {
   to { transform: rotate(360deg); }
 }
+
+/* The headphones swing about the top of their band, where it sits on the peg. */
+.hang {
+  transform-box: fill-box;
+  transform-origin: 50% 0%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hang[data-struck='true'] {
+    animation: rock calc(var(--slow, 1) * 3s) ease-in-out;
+  }
+}
+
+@keyframes rock {
+  0% { transform: rotate(0deg); }
+  12% { transform: rotate(5deg); }
+  30% { transform: rotate(-3.6deg); }
+  48% { transform: rotate(2.4deg); }
+  65% { transform: rotate(-1.4deg); }
+  82% { transform: rotate(0.6deg); }
+  100% { transform: rotate(0deg); }
+}

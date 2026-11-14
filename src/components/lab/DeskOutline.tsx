@@ -49,17 +49,23 @@ export function Desk({ desk, shown, on, lively }: { desk: DeskPlan; shown: boole
 }
 
 // A pair of over ear headphones hanging from a hook, of the site's own design.
-export function Phones({ at, shown, lively }: { at: { x: number; y: number }; shown: boolean; lively?: boolean }) {
+// The headphones on their hook: a plate on the page's ground with a peg, and the band over the peg. struck sets them
+// rocking on the peg once.
+export function Phones({ at, shown, lively, struck }: { at: { x: number; y: number }; shown: boolean; lively?: boolean; struck?: boolean }) {
   return (
     <g className={styles.obj} data-shown={shown} data-on={shown} data-lively={lively ?? false} transform={`translate(${at.x} ${at.y})`}>
-      <line pathLength={1} x1={0} y1={-16} x2={0} y2={4} className={styles.leg} />
-      <circle pathLength={1} cx={0} cy={4} r={5} className={styles.solid} />
-      <path pathLength={1} d="M-46 92 C-46 30 -26 8 0 8 C26 8 46 30 46 92" className={styles.ink} />
-      <path pathLength={1} d="M-37 92 C-37 38 -21 17 0 17 C21 17 37 38 37 92" className={styles.ink} />
-      <rect pathLength={1} x={-62} y={78} width={32} height={62} rx={13} className={styles.solid} />
-      <rect pathLength={1} x={30} y={78} width={32} height={62} rx={13} className={styles.solid} />
-      <rect pathLength={1} x={-36} y={88} width={8} height={42} rx={4} className={styles.ink} />
-      <rect pathLength={1} x={28} y={88} width={8} height={42} rx={4} className={styles.ink} />
+      <rect pathLength={1} x={-12} y={-6} width={24} height={44} rx={6} className={styles.solid} />
+      <circle pathLength={1} cx={0} cy={1} r={1.6} className={styles.ink} />
+      <circle pathLength={1} cx={0} cy={32} r={1.6} className={styles.ink} />
+      <g className={styles.hang} data-struck={struck ?? false}>
+        <path pathLength={1} d="M-46 92 C-46 30 -26 8 0 8 C26 8 46 30 46 92" className={styles.ink} />
+        <path pathLength={1} d="M-37 92 C-37 38 -21 17 0 17 C21 17 37 38 37 92" className={styles.ink} />
+        <rect pathLength={1} x={-62} y={78} width={32} height={62} rx={13} className={styles.solid} />
+        <rect pathLength={1} x={30} y={78} width={32} height={62} rx={13} className={styles.solid} />
+        <rect pathLength={1} x={-36} y={88} width={8} height={42} rx={4} className={styles.ink} />
+        <rect pathLength={1} x={28} y={88} width={8} height={42} rx={4} className={styles.ink} />
+      </g>
+      <circle pathLength={1} cx={0} cy={22} r={5.5} className={styles.solid} />
     </g>
   );
 }
