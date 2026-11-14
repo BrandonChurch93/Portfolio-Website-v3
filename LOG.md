@@ -2,6 +2,75 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · Handoff to Claude Code: the fourth pass on the Work page (Fable, web chat)
+
+**What Brandon said**
+
+- "My favorite by far is option D! I think I'm ready to go ahead and write that updated prompt addressing all of this and get Claude Code working. Unless there's anything else we need to address?"
+
+**What Fable told him**
+
+- Nothing else has to be answered first.
+- From stills Fable had recommended B and rated D last: satin where he had asked for a mirror, a dark fan that can read as a smudge, a boss that can read as a ring. He saw it moving, and his pick stands. The two faults go to the builder as things to fix.
+- D shows nothing of the layout, so it replaces his own first thought, the layout etched as a skeleton loader shows it. The brief says so.
+- Three calls Fable made in the agreement so the builder is not guessing: the band starts at the strike, a card under the pointer wakes and sleeps by the same change, and a blank is never brighter than the stream beside it.
+
+**What changed in the record. No code changed**
+
+- `BRIEF.md`, The stream: "His pick of a blank: D · Engine turned" and "The fourth pass on the Work page: the agreement for the build". Dropped has the three blanks he passed over and the sun. Open 21 notes what has been decided since.
+- `QUALITY.md`: a row in the table, and thirteen tests under "The fourth pass on the Work page".
+- `PLAN.md`: Now, and two lines under Phase 3.
+- The prompt under "His look at the third pass, after the blank" was never sent. The prompt here replaces it.
+
+**What Fable can tell from reading the code and the earlier reports. Check before believing it**
+
+- The dial in the study is design 3 of `face` in `src/work-blanks/blanks.ts`, and its fans are in `main`: thirteen samples of `room` smeared along the tangent, times a fine ripple, `sin(k.x * 240.0)`. Near the middle those rays are finer than a pixel. Nothing filters them. On a page that scrolls that is where crawl and moiré would come from.
+- The built blank is the `uAsleep` branch of the card's light shader in `src/metal/shaders.ts`, with `blankMark` for the line and the sun. Its own note: the lamp's highlight on a blank must not use the card's normal or tangents, which come from the card's relief.
+- The stream's light on a card (`plateLightFrag`) is off while a card is asleep. The dial needs it on, in the dial's own way.
+- A card's words are in the page, over its plate, and are hidden asleep by `WorkCard.module.css`. A band that crosses the card has to uncover the words in step with the plate, from the same clock.
+- Waking is 0.1 s at the strike today, and `platesNow` in `src/stream/stream.ts` decides which cards are awake, for good. Both change.
+- A press plays the drop and the rise on every row through `mountSwap` in `src/stream/surge.ts`. A sleeping row has to be left out of it.
+- The stone's aim is `work.post.aim`, `low` and `far` in `src/stream/config.ts`. The budgets went up to 400 thrown shards and 1200 sparks for the stones and may be able to come back down.
+- The bolt's strokes are hashed per side in `routeThroughWork(P, true)`. The right side's are the ones he likes.
+- The picture's warming at a strike is `plates.setWarm`.
+
+**The prompt Brandon was given**
+
+```
+Pull main, then read BRIEF.md, PLAN.md, QUALITY.md and the top entry of LOG.md from disk, as CLAUDE.md says.
+
+Build the fourth pass on the Work page, at /lab/work. BRIEF.md, The stream, "The fourth pass on the Work page" is the agreement and points to where each change was ruled. QUALITY.md, "The fourth pass on the Work page" has its tests.
+
+The nine, in the order to do them:
+
+1. The Sun stones throw far too much, and all one way. Cut what a stone's strike throws by a little more than half, and let it scatter in every direction like any other strike. Take the aim out. A few pieces should reach the tops of the second row by chance and bounce there.
+2. The left side of the path must be the exact mirror of the right. The right side is the one I like.
+3. The bolt runs only from where the stream lands on the category bar to where the two sides meet under the button. Above the bar, put the path back the way it was before the bolt: down to WORK, the strike on it, along its top, over its ends and down to the bar. Below the meeting, the way it was too. Then take the path switch and ?path=now off the page.
+4. A strike must not bring a card's picture into color. The rim still flares. Only the pointer and keyboard focus color a picture.
+5. A card is asleep whenever the stream is not on it. It wakes at the strike. When I scroll back up and the stream draws back above it, it goes back to sleep.
+6. The blank. I picked D · Engine turned from the derby at /lab/work-blanks, so open that page first. This is a goal, not a spec: a plate turned like a watch dial, in our bronze, with fine rays round a boss at the middle and the card's polished edge round it, lit by long lights that stand off the screen, so the fans of light turn as I scroll and as the stream comes near. The study is the floor to beat. Two things in it to fix: the dark fan can read as a smudge, and the boss can read as a ring. Build it in the card's own plate, not as a canvas over the cards. Find a photograph of a real engine turned dial to judge it against, and keep it in reference/ with its credit.
+7. The change between asleep and awake is a band of light. It starts where the stream strikes the card and crosses away from it, with the dial ahead of it and the card behind. Going back to sleep, the band runs back. A sleeping card under the pointer or with keyboard focus wakes the same way.
+8. When I press a category, a row the stream has not reached does nothing at all. No drop, no rise, no strike, no flash, no waking. It stays blanks.
+9. Give "Case study" a lighter resting color, so it passes contrast with the cursor's light behind it.
+
+Hold to these:
+- /lab/stream and the approved buttons must draw what they draw today. Take stills before you touch shared code and compare after.
+- The card awake stays exactly as I picked it.
+- Do not change the surge's front, the fuse under the button or the burst at the leading end.
+- The stream stays the brightest thing on the page. A blank is never brighter than the stream beside it.
+- Leave the phone and every screen under 1100 px alone.
+- Where the brief lists something as Fable's call, build it and list it in your report as mine to overturn. If you depart from one, say which and why.
+- Before you report, have fresh Opus reviewers who have not seen the work being made judge stills and filmstrips against QUALITY.md, told to look for reasons to fail it.
+
+Work without check-ins until there is a page I can scroll. Then run a production build, commit, push, and confirm the deploy is ready.
+
+Report in lists: the link, what is at the bar, what is not and why, every call you made for me, and exactly what I am approving. End with one clear recommendation.
+```
+
+**Half finished**
+
+- The build. Nothing from this session is uncommitted.
+
 ## 2026-11-13 · Study 17: a derby of blanks for the sleeping card (Fable, web chat)
 
 **What Brandon said.** His words are in `BRIEF.md`, The stream, "His reaction to the ideas, and his answers to what was open".

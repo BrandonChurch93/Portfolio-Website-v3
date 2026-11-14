@@ -113,6 +113,7 @@ This is the real calibration. Every row is his verdict, not a guess. Rows that s
 | A card that stayed awake for good once the stream had struck it | "I could've sworn we agreed to always keep them blank if the wave wasn't touching them." Then: "For the cards go back to sleep: yes. I think they should have a shifting animation for both opening and ending" | What the stream does undoes itself when it draws back. "For good" was Fable's wording, which he had confirmed without it being what he pictured. A change of state is designed both ways |
 | A press playing the change of cards on a row the stream had not reached | "When the light's not touching them they're the placeholder cards, and that animation does not play at all" | What the stream is not touching does nothing |
 | Four ideas for the blank, in words: an etched layout, a mould, two doors, an engine turned dial | "I really like B and A, and D sounds cool too. Let's cut C. I don't love that idea" | He took the two that show the card's layout as plain shapes, which was his own first thought, and passed over the one that was a mechanism. A lean from words, until he has seen them drawn |
+| Four blanks drawn for a sleeping card: an etched layout, a mould, facets, an engine turned dial. From stills Fable recommended the mould and rated the dial last | "My favorite by far is option D!" | He picked the one with the most life in it when the page moves, which a still cannot show. What moves is judged moving, and by him. A recommendation made from stills is a guess about half of the thing |
 | The pour's first test shot, in motion | "I definitely don't like how it puddles." The stream "is blasted back multiple times". "Instead of looking like a refined beautiful hot liquid metal, this looks more like mud splashing around and puddling up" | Real physics is not enough. It has to be graceful. Metal that heaps, thrashes or hits itself reads as mud |
 
 ## The patterns behind those verdicts
@@ -310,6 +311,24 @@ The section:
 8. **`/lab/stream` is unchanged,** and `npm run perf` is as smooth as it was.
 9. **The two sides mirror** (Nov 13). The left side's path is the right side's as the third pass drew it, flipped. Laid over each other, flipped, the two cannot be told apart. What each side throws still differs.
 10. **The bolt is one stretch** (Nov 13). From the landing on the category bar to the meeting under the button the path is the bolt. Above the landing (the fall to WORK, the strike on it, the run along its top, over its ends and down to the bar) and below the meeting, it is the path as it was before the bolt. The change on the bar does not read as a join.
+
+**The fourth pass on the Work page**
+
+`BRIEF.md`, The stream, "The fourth pass on the Work page", is the agreement. It passes when everything above still holds, with these as changed there: "When the category changes", tests 17, 19, 21 and 24, and "The path through Work as a bolt", tests 9 and 10. And all of these are true:
+
+1. **The blank is an engine turned dial.** Alone on the screen it is a finished object an engineer would look closer at, and beside a photograph of a real turned dial it is not the weaker one. It shows nothing of the card's layout or content.
+2. **Lean in.** At three times zoom the rays are fine and even, and can be told apart. The boss reads as a raised stud, never as a ring or a hole.
+3. **The rays hold still.** Scrolled slowly and fast, and with the cursor moving beside the card, they never crawl, flicker, band or make a moiré.
+4. **The fans are alive, and clean.** They turn with the scroll, with the cursor's light and with the stream coming near. No fan reads as a smudge, a stain or a shadow thrown on the card.
+5. **The stream is still the brightest thing.** With the stream beside a blank, the blank is the quieter of the two. Four blanks on the screen do not pull the eye off the stream.
+6. **Waking.** A band of light starts where the stream strikes the card and crosses away from it, the dial ahead of it and the card behind. It has weight and is lit by the strike. In a filmstrip it is never a plain fade or a soft wipe.
+7. **Going back to sleep.** Scrolled back up, the band runs back the way it came. Scrolled up and down across a card's strike, the card is never left half changed and never flickers between the two.
+8. **Under the pointer and from the keyboard** a sleeping card wakes by the same change and passes contrast awake, and goes back to sleep when the pointer or the focus leaves. A screen reader gets its words asleep or awake.
+9. **A press on a sleeping row** shows nothing there. Pressed with only the first row reached, the first row changes as it does today and the second stays four still blanks.
+10. **The card awake is as he picked it.** Stills of an awake card before and after agree.
+11. **"Case study" at rest** passes 4.5 to 1 with the cursor's light pooled behind it.
+12. **Smooth.** `npm run perf` with four blanks on the screen, scrolling, and through a run of presses: every frame at the screen's rate on his Mac.
+13. **`/lab/stream` and the approved buttons are unchanged.**
 
 **How to judge it**
 

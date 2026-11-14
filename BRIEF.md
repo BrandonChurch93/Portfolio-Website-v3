@@ -48,7 +48,7 @@ Brandon Church's portfolio, third build. This file is the only source of rules f
 
 ### The stream
 
-- **Where it stands (Nov 13):** the stream through Work is built at `/lab/work`, and he has looked ("His first look at the build", below). The second pass on that page is agreed and built: the real card, the Sun stones and the Blades ("The second pass on the Work page", below). He has looked ("His look at the second pass", below): the stones' faces light, there is no bar over WORK, the View all work button moves, and phones wait for one pass at the end. Its account, with every call made for him, is in `LOG.md`, "The second pass on the Work page, built". Those three changes are built, and so is what the stream does when the category changes ("When the category changes", below, with its account in `LOG.md`, "The surge when the category changes, built"). He has seen neither. What was at the bar in the first build and what was not, and every call Fable made for him while building it, are in `LOG.md`, "The stream through Work, built at `/lab/work`". None of those calls is a rule. The stream's test shot is approved, and he calls it "almost certainly the finalized base" (see "The stream is the finished base" below). It is at `/lab/stream`, with a paused frame at `/lab/stream?hold`. The three small things he asked for after approving it are built, and he has looked: "All my issues have been fixed." The first round's shards are still one switch away: the switch at the foot of that page, or `/lab/stream?shards=first`. Calls Fable made for him while building are listed in `LOG.md` and are his to overturn. None of them is a rule.
+- **Where it stands (Nov 13):** the stream through Work is built at `/lab/work`, and he has looked ("His first look at the build", below). The second pass on that page is agreed and built: the real card, the Sun stones and the Blades ("The second pass on the Work page", below). He has looked ("His look at the second pass", below): the stones' faces light, there is no bar over WORK, the View all work button moves, and phones wait for one pass at the end. Its account, with every call made for him, is in `LOG.md`, "The second pass on the Work page, built". Those three changes are built, and so is what the stream does when the category changes ("When the category changes", below, with its account in `LOG.md`, "The surge when the category changes, built"). He has seen neither. What was at the bar in the first build and what was not, and every call Fable made for him while building it, are in `LOG.md`, "The stream through Work, built at `/lab/work`". None of those calls is a rule. The stream's test shot is approved, and he calls it "almost certainly the finalized base" (see "The stream is the finished base" below). It is at `/lab/stream`, with a paused frame at `/lab/stream?hold`. The three small things he asked for after approving it are built, and he has looked: "All my issues have been fixed." The first round's shards are still one switch away: the switch at the foot of that page, or `/lab/stream?shards=first`. Calls Fable made for him while building are listed in `LOG.md` and are his to overturn. None of them is a rule. **Latest (Nov 13):** the third pass is built and he has looked. The fourth pass is agreed ("The fourth pass on the Work page", below) and goes to Claude Code as one round.
 - It is the most important thing on the site. "It's probably like the most important thing on the site to get right." (Nov 11)
 - It is called the stream, which is his own word for it. It is never called water, in anything written for a model or shown to a visitor. His reason: "if I call it water, then the model is gonna build it as if it acts like water". It is not called the pour either: that was its name while it was going to be molten metal. (Nov 11)
 
@@ -584,6 +584,71 @@ Left open:
 - On this page a blank stays asleep under the pointer, so the cursor's light can be seen in it. On the Work page a sleeping card wakes under the pointer, so there the cursor's light plays on a blank only from beside it.
 - Stills: `reference/studies/33-work-blanks-*.jpg`.
 
+**His pick of a blank: D · Engine turned (Nov 13)**
+
+- "My favorite by far is option D!" Said after opening the derby at `/lab/work-blanks`.
+- In exact terms: a sleeping card is the engine turned blank. Fine turned rays round a boss at the card's middle, inside the card's own polished edge, with no hint of the card's layout. It wakes as a band of light crosses it with the card behind, and goes back to sleep as the band runs back.
+- Fable had recommended B · The mould, and from stills had rated D the weakest of the four. He judged them live and moving, which the web chat cannot. His pick stands.
+- What the pick replaces:
+    - The blank as built, with a line and a sun cut into it.
+    - His first thought for it, the card's layout etched as a skeleton loader shows it, and a mirror finish over the whole face. D is satin rays inside a mirror edge. So "no band, no window" in "A sleeping card is a blank" stands again as written: a blank shows nothing of the layout.
+    - A · Etched layout, B · The mould and C · Facets, which are passed over.
+- Taken with the pick, not said in so many words, and his to overturn: the long lights off the screen, which he asked about and which light D in the study, and D's own change, the band of light.
+
+**The fourth pass on the Work page: the agreement for the build (Nov 13)**
+
+One round in Claude Code, on `/lab/work`. It takes in everything he has ruled since the third pass. He held every prompt until all of it was answered: "I only want to go to Claude Code once we have everything figured out that's open."
+
+**What gets built**
+
+1. **The Sun stones' strike:** a little under half of what it throws now, scattered, nothing aimed ("His look at the third pass, after the blank", 1).
+2. **The left side of the path is the right side, flipped** (the same, 2).
+3. **The bolt runs only from the landing on the category bar to the meeting under the button.** Above and below, the path as it was before the bolt (the same, 3). The switch between the two paths, and `?path=now`, come off the page.
+4. **A strike does not color a card's picture** (the same, 4).
+5. **A card is asleep whenever the stream is not on it.** It wakes at the strike and goes back to sleep when the stream draws back above it ("A card sleeps again").
+6. **The blank is D · Engine turned,** made in the card's own plate and lit by long lights that stand off the screen ("His pick of a blank").
+7. **The change between asleep and awake is D's:** a band of light that crosses the card with the card behind it, and runs back to put it to sleep.
+8. **On a press, a row the stream has not reached does nothing** ("His reaction to the ideas").
+9. **"Case study" gets a lighter resting color,** so it passes contrast with the cursor's light behind it.
+
+**The blank is a goal. The study is the floor to beat, not a drawing to copy**
+
+- What it has to be: an engine turned plate as a watchmaker turns a dial, in the site's bronze. Fine rays round the card's middle, a boss at the middle, the card's polished edge round it. The lights off the screen smear across the rays into fans, and the fans turn as the page scrolls, as the cursor's light moves beside the card, and as the stream comes near.
+- Two faults in the study, to fix: its dark fan can read as a smudge, and its boss can read as a ring or a hole.
+- Fixed: nothing of the card's layout or content. The card's size and its edge. Rays about the middle, with a boss.
+- Free: how fine the rays are, how the fans fall, the boss's form, a groove inside the edge, where the lights stand and how bright they are.
+- It is built in the card's plate (`src/metal/`), where it takes the cursor's light and the stream's. The study's canvas laid over the cards is not the way.
+
+**The change is a goal too**
+
+- The band starts where the stream strikes the card and crosses away from it. Going back to sleep it runs back the way it came.
+- It is light with weight, lit by the strike: the dial on one side of it and the card on the other. Never a plain fade, and never a soft wipe.
+- Under the pointer or with keyboard focus a sleeping card wakes by the same change, and goes back to sleep by it when the pointer leaves.
+
+**What does not get built**
+
+- A phone or any screen under 1100 px.
+- The blanks he passed over. A sun, a line or a hallmark on the blank.
+- Anything else on the site sleeping until the stream arrives. That theme is still open (Open 21).
+- A change to the surge's front, the fuse under the button or the burst at the leading end. "The surge looks much better."
+- The top bar. Real projects for the other three categories. New pictures. The lunge.
+
+**What stays exactly as approved**
+
+- `/lab/stream` and the approved buttons, pixel for pixel.
+- The card awake: the data plate, `CARD_LOOK`, one size, one row of tags.
+- The stream's look, its shards and sparks, riding shards staying with it, no second wave.
+- The stones' faces lit. The surge at 1.1 seconds, both sides together, with the core turned down ahead of the front.
+- The rail's brackets and the finial as they are, and the line in the card's stylesheet that keeps a foot on a card with no links.
+
+**Fable's calls in this agreement. He has not ruled on them and can overturn any**
+
+- The band starts at the strike. In the study it starts at the top of the card, since the study has no stream. The idea as first put to him had it crossing "from the strike".
+- A sleeping card under the pointer wakes by the same change and goes back to sleep by it.
+- The blank and its change are given to the builder as goals, as the bolt was.
+- A blank is never brighter than the stream beside it. The lights off the screen are set to suit the page, not copied from the study, which has no stream.
+- Carried from before: what lands on a sleeping card does not wake it, and with reduced motion or under 1100 px no card sleeps.
+
 **How it is built**
 
 He added these while the stream was a simulated liquid. They hold for anything in the stream that is simulated: shards thrown loose, sparks.
@@ -874,6 +939,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
     - **Either way goes against settled lines, said to him in bold:** "A card is always readable. The stream's strike lights it and never hides it", and the test that a card "is never dark waiting for the stream".
     - How to judge it: a switch on `/lab/work` with three settings, as now, asleep and hidden. It is motion, so it is built on his Mac.
     - **Decided Nov 13: asleep.** Settled in The stream, "Three changes to the surge and the cards". The theme for the whole site is still open.
+    - **Decided since (Nov 13):** a card sleeps again when the stream draws back, and the blank is D · Engine turned. The stream, "A card sleeps again" and "His pick of a blank".
     - **His lean (Nov 13): asleep, as something beautiful.** "I like that they can look like a bronze template or something. We can make them really beautiful." In exact terms: a card the stream has not reached is not hidden. It rests as a blank of itself in bronze, and the stream wakes it. It gets built for him to judge. The settled lines it goes against stand until he has seen it and says so. The theme for the whole site is still not committed to.
 22. **Whether the cards change one after another or together.** **Decided Nov 13: both sides start together, and no switch.** Fable misread his first message as being about the rows. Settled in The stream, "Three changes to the surge and the cards". What follows is how it stood. His words (Nov 13): "The card switching is staggered, which makes me believe the actual animation is staggered too. I'm curious why this was chosen. I'm assuming the idea was to have it slightly staggered so the particle effects, explosions, would be more noticeable or more theatrical. However, this makes the cards not on the stream look really bad, and maybe the ones on the stream could look better if that wasn't the case. I'm not 100% sure. Maybe we could add in a button to toggle that on and off, to sync it up or something, so I can see both results."
     - Why it is staggered, as Fable told him: it is what the surge is. Each card changes when the front reaches it, the first row before the second and the side nearer the press before the other. He picked that over "All at once" in the wireframe. The reason was cause, not show. The cost is the one he saw: a card the stream has not reached waits for a front that never comes to it.
@@ -910,6 +976,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
 - A metal bar over WORK, or under it. "I don't want the bar above work" (Nov 13)
 - A card's colors coming back as a circle spreading from the pointer (Nov 13)
 - Doors as the sleeping card: two mirrored doors that meet at a seam with a latch. "Let's cut C. I don't love that idea" (Nov 13)
+- For the sleeping card's blank: the card's layout etched as hairlines, the layout as a mould of pockets, a face cut into facets, and a line and a sun cut into polished bronze. He picked the engine turned dial (Nov 13)
 - A change of course that rises to a point and drives off, C in the path derby. "I definitely don't like the point shoot" (Nov 13)
 - Cards of different sizes, and a second row of tags on a card (Nov 13)
 - All four cards changing at once when the category changes, with nothing travelling. A surge of 0.45 or 0.7 seconds. He picked 0.7 from the wireframe, saw it on the real page, and changed to 1.1 (Nov 13)
