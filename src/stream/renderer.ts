@@ -57,8 +57,8 @@ export interface PlateCard {
   turn: Float32Array; tiltX: number; tiltY: number;
   bake: string; win: [number, number, number, number]; frame: number; rim: number; unit: number; flare: number; struck: [number, number];
   there: number;
-  // How far it is asleep, 0 to 1: a blank, with none of its relief showing.
-  asleep: number;
+  // The two bands that wake it, or nothing for a card that is wholly awake (src/metal/wake.ts).
+  wipes: Float32Array | null;
 }
 
 export interface Frame {
@@ -532,7 +532,6 @@ export class StreamRenderer {
     const plates = P.hole && this.mask ? f.plates ?? [] : [];
     const plate = (p: Program, c: PlateCard) => {
       gl.uniform1f(p.u('uThere'), c.there);
-      gl.uniform1f(p.u('uAsleep'), c.asleep);
       gl.uniform4f(p.u('uBox'), c.x, c.y, c.hw, c.hh);
       gl.uniform2f(p.u('uRound'), c.inset, c.r);
       gl.uniformMatrix3fv(p.u('uTurn'), false, c.turn);
@@ -622,6 +621,8 @@ export class StreamRenderer {
         gl.uniform3f(P.plate.u('uFrame'), c.frame, c.rim, c.unit);
         gl.uniform2f(P.plate.u('uTilt'), c.tiltX, c.tiltY);
         gl.uniform3f(P.plate.u('uFlare'), c.flare, c.struck[0], c.struck[1]);
+        gl.uniform1f(P.plate.u('uBlank'), c.wipes ? 1 : 0);
+        if (c.wipes) gl.uniform3fv(P.plate.u('uWipe[0]'), c.wipes);
         plate(P.plate, c);
       }
     }

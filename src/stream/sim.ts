@@ -1,3 +1,4 @@
+import { WAKE } from '../metal/wake';
 import { STREAM, STREAM_STEP, type StreamBudget } from './config';
 import { hash } from './rand';
 import { at, railFrame, reachFor, UP, type Landing, type Rail, type Route } from './route';
@@ -39,6 +40,9 @@ export class StreamSim {
   // How long the stream has been on each landing, as a warmth from 0 to 1 that comes up when a leading end reaches
   // it and dies away once the stream has drawn back.
   readonly on: Float32Array;
+  // How far the band of light has crossed whatever stands at each landing, 0 to 1: it sets out when a leading
+  // end reaches the landing and runs back when the stream draws back above it.
+  readonly wake: Float32Array;
   sparkCount = 0;
   looseCount = 0;
   forkCount = 0;
@@ -69,6 +73,7 @@ export class StreamSim {
     this.hitAt = new Float64Array(landings).fill(-100);
     this.hit = new Float32Array(landings);
     this.on = new Float32Array(landings);
+    this.wake = new Float32Array(landings);
     this.phase = new Float64Array(emitters);
     this.count = new Int32Array(emitters);
     this.nextAt = new Float64Array(landings);
@@ -122,7 +127,7 @@ export class StreamSim {
     this.count.fill(0);
     this.hitAt.fill(-100);
     this.endAt[0] = this.endAt[1] = this.metAt = -100;
-    this.route.landings.forEach((L, i) => { this.on[i] = this.head[L.side] >= L.s ? 1 : 0; });
+    this.route.landings.forEach((L, i) => { this.on[i] = this.wake[i] = this.head[L.side] >= L.s ? 1 : 0; });
     const rates = this.rates(0, 0);
     for (let e = 0; e < rates.length; e++) { this.phase[e] = rates[e] * from; this.count[e] = Math.floor(this.phase[e]); }
     for (let i = 0; i < this.route.landings.length; i++) {
@@ -143,7 +148,7 @@ export class StreamSim {
     }
     this.joined();
     this.sparkCount = this.looseCount = this.forkCount = 0;
-    this.route.landings.forEach((L, i) => { this.on[i] = this.head[L.side] >= L.s ? 1 : 0; });
+    this.route.landings.forEach((L, i) => { this.on[i] = this.wake[i] = this.head[L.side] >= L.s ? 1 : 0; });
     // A still keeps a crackle of arc at each leading end, always the same one.
     for (let b = 0; b < 2; b++) {
       if (b === 1 && !this.own()) continue;
@@ -205,6 +210,7 @@ export class StreamSim {
       const sparks = emitter(i, SPARKS), shards = emitter(i, SHARDS), forks = emitter(i, FORKS), b = L.side;
       const reached = this.head[b] >= L.s ? 1 : 0;
       this.on[i] += (reached - this.on[i]) * (1 - Math.exp(-(reached ? S.warmth[0] : S.warmth[1]) * dt));
+      this.wake[i] = Math.max(0, Math.min(1, this.wake[i] + ((reached ? 1 : -1) * dt) / WAKE.cross));
       for (let n = this.due(sparks, rates[sparks]); n > 0; n--) this.landSpark(i, this.count[sparks]++, 1);
       if (this.head[b] >= L.s) this.now(i);
       for (let n = this.due(forks, rates[forks]); n > 0; n--) this.landFork(i, forks, this.count[forks]++);
@@ -265,7 +271,9 @@ export class StreamSim {
     // The two sides arrive at the same pace, so each landing past the test shot's two throws a number of its own.
     const own = i < 2 ? 1 : 0.8 + 0.4 * hash(i, 53, this.seed);
     // A contact is as strong as the arrival, and a lighter one throws its share of a full strike.
-    for (let k = Math.round((S.loose.burst[0] + S.loose.burst[1] * hard) * L.force * own * loose); k > 0; k--) this.throwShard(i, this.count[shards]++, (0.35 + hard) * L.force);
+    // A stone throws a share of what a card does.
+    const share = L.kind === 'post' ? S.work.post.throws : 1;
+    for (let k = Math.round((S.loose.burst[0] + S.loose.burst[1] * hard) * L.force * own * loose * share); k > 0; k--) this.throwShard(i, this.count[shards]++, (0.35 + hard) * L.force);
     for (let k = Math.round((20 + 90 * hard) * L.force); k > 0; k--) this.landSpark(i, this.count[sparks]++, 1 + hard);
     for (let k = Math.round(4 * L.force); k > 0; k--) this.landFork(i, forks, this.count[forks]++);
     this.hitAt[i] = this.time;
@@ -363,18 +371,15 @@ export class StreamSim {
     const clear = r(1) < S.shards.clear;
     const size = (this.sizes[0] * S.loose.least + (this.sizes[1] - this.sizes[0]) * r(2) ** 1.8) * u;
     // Thrown out from the surface in a fan: nearly straight out at its middle, flatter toward the way things leave.
-    const lean = L.kind === 'post' ? L.face + (r(3) - 0.42) * 0.7 * (Math.cos(L.face) < 0 ? -1 : 1) : L.face + way * (0.12 + 1.0 * r(3));
-    // A stone throws further than a card does: what it throws has the gap between the rows to cross.
-    const v = (170 + 450 * r(4) * (0.4 + 0.6 * r(5))) * u * (0.45 + 0.5 * Math.min(1, hard)) * (L.kind === 'post' ? S.work.post.far : 1);
+    const lean = L.face + way * (0.12 + 1.0 * r(3));
+    const v = (170 + 450 * r(4) * (0.4 + 0.6 * r(5))) * u * (0.45 + 0.5 * Math.min(1, hard));
     const vx = Math.cos(lean) * v, vy = Math.sin(lean) * v;
     const o = this.looseCount * LOOSE;
     const q = [r(6) - 0.5, r(7) - 0.5, r(8) - 0.5, r(9) - 0.5], ql = Math.hypot(q[0], q[1], q[2], q[3]) || 1;
     const spin = 3 + 9 * r(10);
     const w = [r(11) - 0.5, r(12) - 0.5, r(13) - 0.5], wl = Math.hypot(w[0], w[1], w[2]) || 1;
     const life = carried ? S.loose.lone : S.loose.life[0] + (S.loose.life[1] - S.loose.life[0]) * r(14);
-    if (L.face === UP) { tmp[0] = L.x + way * r(15) * 14 * u; tmp[1] = L.y - size - r(16) * 6 * u; }
-    else if (L.kind === 'post') { tmp[0] = L.x + Math.cos(L.face) * (size + r(16) * 6 * u); tmp[1] = L.y + (S.work.post.low[0] + S.work.post.low[1] * r(15)) * u; }
-    else this.from(L, way * r(15) * 14 * u, size + r(16) * 6 * u, tmp);
+    if (L.face === UP) { tmp[0] = L.x + way * r(15) * 14 * u; tmp[1] = L.y - size - r(16) * 6 * u; } else this.from(L, way * r(15) * 14 * u, size + r(16) * 6 * u, tmp);
     this.loose.set([
       tmp[0], tmp[1], (r(17) - 0.5) * 30 * u, vx, vy, (r(18) - 0.5) * 60 * u,
       q[0] / ql, q[1] / ql, q[2] / ql, q[3] / ql, (w[0] / wl) * spin, (w[1] / wl) * spin, (w[2] / wl) * spin, 0, life, clear ? -size : size, carried, tmp[1],

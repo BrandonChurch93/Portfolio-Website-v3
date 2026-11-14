@@ -64,6 +64,9 @@ export const RAMP = new Float32Array([...metal('bg'), ...metal('bronze-deep'), .
 
 export const INK: [number, number, number] = [0.006, 0.005, 0.004];
 
+// The band of light that wakes a sleeping card: its trail, its body and its bright line, in the stream's colors.
+export const BAND = new Float32Array([...metal('flame'), ...metal('hot'), ...metal('pale')]);
+
 // The light that runs round a button's border under the pointer.
 export const GLOW = metal('pale');
 // Design units from a control's edge to its cut border (src/metal/mask.ts draws it at 5, one unit wide).

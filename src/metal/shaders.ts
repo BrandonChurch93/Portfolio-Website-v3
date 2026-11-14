@@ -2,6 +2,9 @@
 // Coordinates inside a plate are device pixels from the top left. The bake runs once per plate size and writes
 // everything that does not depend on the lamp; the light pass runs when the lamp, the scroll or the stream change.
 
+import { DIAL_SHAPE } from './dial';
+import { WAKE } from './wake';
+
 export const VERT = `#version 300 es
 in vec2 a;
 void main(){ gl_Position = vec4(a, 0.0, 1.0); }`;
@@ -292,8 +295,11 @@ uniform int uReveal;         // how a card's picture gets its colors back: 0 a f
 uniform float uPush;         // how far the picture comes closer while the card is awake, as a share of its size
 uniform vec3 uFace, uFaceLit;
 uniform vec3 uRamp[5];       // the tones a card's picture rests in, dark to light, linear
-${card ? `uniform float uWarm;         // how far a strike of the stream has warmed a card's picture toward its own colors
-uniform float uAsleep;       // how far a card the stream has not reached is asleep: a blank of polished metal
+${card ? `uniform float uAsleep;       // 1 while any of a card is asleep: there it is a blank, an engine turned dial
+uniform vec3 uWipe[2];       // the two bands that wake it: the middle of each one's circle, from the card's middle, and its radius, CSS px
+uniform vec2 uBurn;          // how brightly each band burns
+uniform vec3 uEnd;           // the stream's leading end near a sleeping card: where on the screen, CSS px, and how strongly it lights the blank
+uniform vec3 uCross[3];      // the band's colors: its trail, its body and its bright line
 uniform sampler2D uLoop;` : `uniform sampler2D uLoop;`}     // a card's loop: the picture in motion, shown in place of it while the card is awake
 uniform float uLoopOn;
 out vec4 frag;
@@ -309,12 +315,69 @@ vec3 ramp(float l){
 vec3 rotX(vec3 v, float a){ float c = cos(a), s = sin(a); return vec3(v.x, c * v.y - s * v.z, s * v.y + c * v.z); }
 vec3 rotY(vec3 v, float a){ float c = cos(a), s = sin(a); return vec3(c * v.x + s * v.z, v.y, -s * v.x + c * v.z); }
 
-${card ? `// What is cut into a sleeping card's blank: a fine line inside its edge and a sun at its middle. 1 where it is cut.
-float blankMark(vec2 c, vec2 res, float edge, float s){
-  float r = length(c), a = atan(c.y, c.x), R = 0.105 * res.x;
-  float sun = min(abs(r - R), abs(r - R * 0.6));
-  if (r > R * 1.16 && r < R * 1.48) sun = min(sun, r * abs(sin(a * 8.0)) / 8.0);
-  return 1.0 - smoothstep(0.8 * s, 1.8 * s, min(abs(edge + 13.0 * s), sun));
+${card ? `${DIAL_SHAPE}
+// The lights a sleeping card's blank shows. A mirror shows what stands round it, so what it needs is bright things
+// to reflect: long strips that stand off the screen, up and to the right, as a photographer lights polished metal.
+// Each is a line in the room, at a real place, so what a plate shows of it changes with where the plate is on the
+// screen and how it is turned. Each has a width, and is brighter at one edge than the other.
+const int STRIPS = 6;
+// Where a point of each stands from the middle of the screen, in the camera's own distance from the screen: to
+// the right, up, and out toward the viewer.
+// From the top down: a far wide light, a thin line, the key, then the dark of the room, a second strip, and a
+// low warm bounce. They are the lights the study at /lab/work-blanks was lit by. The key is dark over its lower
+// half and comes up to a hard upper edge, so it is two pieces here. The second strip is bright at its upper edge,
+// by the dark, and falls away below, so nothing under it has a hard edge. The dark between the two is wide: a
+// sleeping card shows it wherever its rays do not smear the lights, and its handle stands in it.
+const vec3 STRIP_AT[STRIPS] = vec3[STRIPS](
+  vec3(0.0, 0.1445, 1.7), vec3(0.0, 0.74, 1.8), vec3(0.0, -0.357, 1.4), vec3(0.0, 0.408, 1.7), vec3(0.0, 3.0, 2.4), vec3(0.0, -1.9, 2.0));
+// Half its width as the plate sees it, and how bright its lower and its upper edge are.
+const vec3 STRIP_IS[STRIPS] = vec3[STRIPS](
+  vec3(0.085, 0.0, 0.17), vec3(0.01, 0.4, 0.4), vec3(0.085, 0.14, 0.78), vec3(0.07, 0.17, 0.82), vec3(0.36, 0.5, 0.24), vec3(0.32, 0.06, 0.1));
+// They all run the same way: a little off level, and away from the viewer as they go. Where a ray of the dial runs
+// the way the lights lie it smears nothing and shows the room as it is: bright toward the key and dark away from
+// it. That dark is the shadow that runs out from the handle, and because the lights run off into the room the
+// line it lies on turns as the plate moves on the screen.
+const vec3 STRIP_RUN = vec3(0.8935, -0.3395, 0.2948);
+
+float stripSum(float t, float w, float v0, float v1){
+  float x = clamp(t + w, 0.0, 2.0 * w);
+  return v0 * x + (v1 - v0) * x * x / (4.0 * w);
+}
+
+// How much of the strips a point shows. R is the way it reflects. A turned ray scatters what it reflects to either
+// side of itself: swing is how R moves as it does, lean how far this flank of the ray leans, spread how far the
+// scatter reaches, and least the blur of a face that is only polished. Taken exactly across the scatter, not by
+// samples, so a fan has no steps in it.
+float strips(vec3 P, vec3 R, vec3 swing, float lean, float spread, float least, vec3 mid, float far){
+  float sum = 0.0;
+  for (int i = 0; i < STRIPS; i++){
+    vec3 n = normalize(cross(mid + far * STRIP_AT[i] - P, STRIP_RUN));
+    float c = dot(swing, n);
+    float t = dot(R, n) + c * lean, h = max(abs(c) * spread, least);
+    vec3 k = STRIP_IS[i];
+    sum += (stripSum(t + h, k.x, k.y, k.z) - stripSum(t - h, k.x, k.y, k.z)) / (2.0 * h);
+  }
+  return sum;
+}
+
+// One strip alone, as a polished face shows it.
+float strip1(int i, vec3 P, vec3 R, float blur, vec3 mid, float far){
+  vec3 n = normalize(cross(mid + far * STRIP_AT[i] - P, STRIP_RUN));
+  vec3 k = STRIP_IS[i];
+  float t = dot(R, n);
+  return (stripSum(t + blur, k.x, k.y, k.z) - stripSum(t - blur, k.x, k.y, k.z)) / (2.0 * blur);
+}
+
+// The shadow the knob throws on the dial, 0 to 1, at a point from the knob's middle. The head stands off the dial
+// on a stem, so its shadow is the head's round shape lying away from the light by reach, joined to the knob's foot
+// by the stem's. Its edge is softer the further it has fallen. That it lies clear of the head is what says how far
+// the head stands off the card. size is how much of the knob is out.
+float knobShadow(vec2 q, vec2 away, float reach, float size){
+  float soft = 2.0 + 0.2 * reach;
+  float head = 1.0 - smoothstep(KNOB_R * size - soft, KNOB_R * size + 0.6 * soft, length(q - away * reach));
+  float t = clamp(dot(q, away) / max(reach, 1e-3), 0.0, 1.0);
+  float stem = 1.0 - smoothstep(KNOB_STEM * size - 0.5 * soft, KNOB_STEM * size + 0.8 * soft, length(q - away * reach * t));
+  return max(head, stem);
 }
 ` : ''}void main(){
   vec2 p = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
@@ -528,7 +591,7 @@ ${card ? `    col = mix(col, faceCol * seat, ink);
           // The lights of the picture come back first and its darks last.
           shown = smoothstep(0.0, 0.35, uHover * 1.35 - (1.0 - l));
         }
-${card ? `        under = mix(rest, under, max(shown, uWarm));` : `        under = mix(rest, under, shown);`}
+        under = mix(rest, under, shown);
       }
       // The wall: brass, facing into the window, lit by the lamp when it faces it.
       vec2 wn = normalize(p - uWin.xy + 1e-3);
@@ -548,34 +611,207 @@ ${card ? `      if (wallSeen > 0.0){
 ${card ? `      vec3 glass = studio(reflect(-V, G), 0.08 + smudge) * fr * 0.4;
       if (uGlare > 0.0) glass += spec(G, V, L, vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), 0.12 + smudge, 0.0, vec3(0.04)) * fall * 0.55 * uGlare * vec3(1.0, 0.84, 0.62);
 ` : `      vec3 glass = studio(reflect(-V, G), 0.08 + smudge) * fr * 0.4 + spec(G, V, L, vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), 0.12 + smudge, 0.0, vec3(0.04)) * fall * 0.55 * uGlare * vec3(1.0, 0.84, 0.62);
-`}${card ? `      // Asleep, a card is a blank of polished metal: no picture, and no dark face under its words.
-      col = mix(col, under + glass, inside * (1.0 - uAsleep));` : `      col = mix(col, under + glass, inside);`}
+`}      col = mix(col, under + glass, inside);
     }
   }
 
-${card ? `  // Asleep, a card is a blank: polished bronze from edge to edge inside its bead, brighter toward its top, one soft
-  // sheen lying across it, the cursor's light pooling on it and the stream warming it. Nothing the card will hold
-  // is on it. Cut into it are a fine line inside the edge and a sun, the stones' own mark.
-  if (uAsleep > 0.0){
-    vec2 q = p / uRes, c = p - uRes * 0.5;
-    float edge = sdBox(c, uRes * 0.5 - uInset - uBead, max(uRad - uBead, 0.0));
-    float within = 1.0 - smoothstep(-1.2 * uS, 1.2 * uS, edge);
-    float grainB = noise(p / uS * 1.7) - 0.5;
-    float sheen = exp(-pow((q.x * 0.55 + q.y - 0.62) / 0.2, 2.0));
-    float poolB = 1.0 / (1.0 + pow(length(uLamp.xy - css) / (150.0 * uS / uDpr), 2.0));
-    float gleam = exp(-pow((q.x * 0.55 + q.y - 0.5) / 0.04, 2.0));
-    vec3 blank = uF0a * (mix(0.3, 0.15, q.y) + 0.3 * sheen + 0.16 * gleam) * (1.0 + grainB * 0.035);
-    blank += uF0a * uLampI * (0.9 * poolB + 0.02) * (1.0 + 0.6 * uHover);
-    // The blank is flat: lit with the card's own relief, the lamp would pick out the frame of a picture that is not there.
-    blank += uF0a * fall * 0.5 * pow(max(normalize(L + V).z, 0.0), 40.0);
-    blank += uF0a * 1.1 * min(streamOn, 3.5);
-    vec2 off = vec2(L.x, -L.y) / max(L.z, 0.2) * uRimH * 1.5;
-    blank *= 1.0 - 0.6 * smoothstep(-1.4 * uS, 1.4 * uS, sdBox(c + off, uRes * 0.5 - uInset - uBead, max(uRad - uBead, 0.0)));
-    vec2 lit = vec2(1.1, 1.1) * uS;
-    float cut = blankMark(c, uRes, edge, uS), up = blankMark(c - lit, uRes, sdBox(c - lit, uRes * 0.5 - uInset - uBead, max(uRad - uBead, 0.0)), uS);
-    blank = blank * (1.0 - 0.6 * cut) + uF0a * 0.3 * max(up - cut, 0.0);
-    col = mix(col, blank, within * uAsleep);
-    spill *= 1.0 - within * uAsleep;
+${card ? `  // Asleep, a card is a blank: an engine turned dial inside the card's own edge. Nothing the card will hold is on
+  // it. A band crosses the card to wake it, and ahead of the band is the dial and behind it the card.
+  if (uAsleep > 0.5){
+    vec2 c = p - uRes * 0.5;
+    vec2 pc = c / uDpr;
+    float unit = uDpr / uS;
+    float ahead = min(length(pc - uWipe[0].xy) - uWipe[0].z, length(pc - uWipe[1].xy) - uWipe[1].z);
+    // The knob draws back into the dial as a band comes to it, and is gone before the band is on it. A band that
+    // crossed it standing cut it in two, as no light cuts a thing. It stands out again when the band has run back
+    // past it. This is how much of it is out, 0 to 1: its size, how far it stands, and its shadow all go by it.
+    float knobIs = smoothstep(KNOB_R + 6.0, KNOB_R + 120.0, min(length(uWipe[0].xy) - uWipe[0].z, length(uWipe[1].xy) - uWipe[1].z) * unit);
+    float sleep = clamp(ahead * uDpr + 0.5, 0.0, 1.0);
+    float into = -sdBox(c, uRes * 0.5 - uInset - uBead, max(uRad - uBead, 0.0));
+    float within = clamp(into + 0.5, 0.0, 1.0);
+    if (sleep * within > 0.0){
+      vec2 q = c / uS;
+      float e = into / uS, rho = length(q), tall = uRes.y / uS * 0.5;
+      vec3 metalD = uRamp[4];
+      vec3 mid = vec3(uView.x * 0.5, -uView.y * 0.5, 0.0);
+      float far = cam.z;
+      // Its lights are kept under the stream's: a blank is never the brightest thing beside it.
+      vec3 white = vec3(1.0, 0.95, 0.88) * 0.8;
+      // The stream's leading end is a light close by, low over the page, and warm.
+      vec3 Ev = vec3(uEnd.x, -uEnd.y, 110.0) - P;
+      float ed = length(Ev), near = uEnd.z / (1.0 + pow(ed / 150.0, 2.0));
+      vec3 E = Ev / ed, ember = mix(uCross[1], uCross[2], 0.5);
+      // The handle's own shadow. It lies away from whichever light is strongest on the handle: the key, the lamp
+      // when the pointer is near, the stream's leading end when that is. So it swings on the handle as they move.
+      // Two lights that pull against each other each fill the other's shadow, and it fades.
+      vec3 atMid = vec3(uOrigin.x + uRes.x * 0.5 / uDpr, -(uOrigin.y + uRes.y * 0.5 / uDpr), 0.0);
+      vec3 keyN = cross(mid + far * STRIP_AT[3] - atMid, STRIP_RUN);
+      vec3 lampTo = vec3(uLamp.x, -uLamp.y, uLamp.z) - atMid, endTo = vec3(uEnd.x, -uEnd.y, 110.0) - atMid;
+      float lampPull = 3.2 * uLampI / (1.0 + pow(length(lampTo.xy) / 420.0, 2.0));
+      float endPull = 2.6 * min(uEnd.z, 1.5) / (1.0 + pow(length(endTo.xy) / 300.0, 2.0));
+      // With nothing near, the knob's light is on the side the dial's bright fan lies on, down and to the left, so
+      // its shadow lies up and to the right, along the dark wedge that runs out from it: the wedge is then the
+      // long end of the knob's own shadow. Thrown the other way, the two were shadows of two different lights.
+      vec2 toLight = -normalize(keyN.xy) + lampPull * normalize(lampTo.xy + 1e-3) + endPull * normalize(endTo.xy + 1e-3);
+      vec2 away = -normalize(vec2(toLight.x, -toLight.y) + 1e-4);
+      float shadowDepth = 0.86 * smoothstep(0.08, 0.55, length(toLight) / (1.0 + lampPull + endPull));
+      // The key stands high, so the head's shadow lies a little over half the head's height from it. A light low
+      // and close throws it further.
+      float shadowLen = KNOB_STAND * (0.92 + 0.3 * min(lampPull + endPull, 1.0)) * knobIs;
+      // Thrown far by a low light it is paler: a round black shape lying clear of the head is a hole in the dial.
+      shadowDepth *= 1.0 - 0.22 * min(lampPull + endPull, 1.0);
+      // The head moves against the dial as the card leans: it stands off the card, and the dial does not.
+      vec2 headAt = KNOB_STAND * knobIs * vec2(sin(uTilt.y), sin(uTilt.x));
+      shadowDepth *= smoothstep(0.0, 0.25, knobIs);
+      // The face is crowned a little, as a struck plate is, so what it shows bends across it.
+      vec2 qn = q / vec2(230.0, tall);
+      vec3 Nf = normalize(vec3(4.8 * qn.x * (1.0 - qn.y * qn.y) / 230.0, -4.8 * qn.y * (1.0 - qn.x * qn.x) / tall, 1.0));
+      Nf = rotY(rotX(Nf, uTilt.x), uTilt.y);
+      vec3 dial;
+      if (e < DIAL_STEP){
+        // The step inside the card's edge: a chamfer down from the edge, a polished ledge that shows the room
+        // sharp, and a fine groove before the rays begin.
+        vec2 out2 = vec2(sdBox(c + vec2(1.0, 0.0), uRes * 0.5 - uInset - uBead, max(uRad - uBead, 0.0)) - sdBox(c - vec2(1.0, 0.0), uRes * 0.5 - uInset - uBead, max(uRad - uBead, 0.0)),
+                         sdBox(c + vec2(0.0, 1.0), uRes * 0.5 - uInset - uBead, max(uRad - uBead, 0.0)) - sdBox(c - vec2(0.0, 1.0), uRes * 0.5 - uInset - uBead, max(uRad - uBead, 0.0)));
+        vec2 inward = -normalize(out2 + 1e-5);
+        float slope = e < 2.0 ? 0.95 : e < 7.4 ? 0.0 : e < 8.4 ? 1.1 : -1.1;
+        vec3 Ne = normalize(vec3(slope * inward.x, -slope * inward.y, 1.0));
+        Ne = rotY(rotX(Ne, uTilt.x), uTilt.y);
+        vec3 Re = reflect(-V, Ne);
+        // Its own frame: the card's is cut from the card's relief, and would draw the frame of a picture that is not there.
+        vec3 Te = normalize(vec3(1.0, 0.0, 0.0) - Ne * Ne.x), Be = cross(Ne, Te);
+        dial = metalD * white * strips(P, Re, vec3(0.0), 0.0, 0.0, 0.012, mid, far);
+        dial += metalD * 0.035;
+        dial += spec(Ne, V, L, Te, Be, 0.14, 0.0, metalD) * fall * 0.8;
+        dial += spec(Ne, V, E, Te, Be, 0.2, 0.0, metalD) * near * ember;
+        dial *= 1.0 - 0.72 * smoothstep(7.4, 8.1, e) * (1.0 - smoothstep(8.5, DIAL_STEP, e));
+      } else {
+        // The rays. Each is a shallow V cut along a line from the middle, so it scatters what it reflects round
+        // the dial and not along itself: the room's lights smear into fans. Where a ray runs the way the lights
+        // lie it smears nothing, and shows the room as it is.
+        vec3 Tr = normalize(vec3(q.x, -q.y, 0.0) / max(rho, 1e-3) + vec3(0.0, 0.0, 1e-4));
+        Tr = rotY(rotX(Tr, uTilt.x), uTilt.y);
+        Tr = normalize(Tr - Nf * dot(Nf, Tr));
+        vec3 Br = cross(Nf, Tr);
+        vec3 Rf = reflect(-V, Nf), swing = 2.0 * cross(Tr, Rf);
+        float cut, which;
+        float flank = dialRays(q, 1.0 / uS, cut, which);
+        float lit0 = strips(P, Rf, swing, 0.03, 0.31, 0.04, mid, far);
+        float lit1 = strips(P, Rf, swing, -0.03, 0.31, 0.04, mid, far);
+        float seen = abs(flank - 0.5) * 2.0;
+        float each = 1.0 + 0.09 * (fract(sin(which * 12.9898) * 43758.5453) - 0.5) * step(0.001, seen);
+        dial = metalD * white * mix(lit1, lit0, flank) * each;
+        // A little of the whole room, scattered by the finest scratches, so no part of it is a hole.
+        dial += metalD * (0.011 + 0.013 * smoothstep(-0.5, 0.6, Rf.y));
+        // The lamp is a light close by: it lies across the rays as a fan of its own, which turns on the handle
+        // as the pointer moves.
+        dial += spec(Nf, V, L, Tr, Br, 0.42, 1.0, metalD) * fall * 0.6 * (1.0 + 0.6 * (flank - 0.5) * sign(dot(Br, L)));
+        // So is the stream's leading end, as it comes down beside the card.
+        dial += (spec(Nf, V, E, Tr, Br, 0.76, 1.0, metalD) * (1.0 + 0.6 * (flank - 0.5) * sign(dot(Br, E))) + metalD * 0.03) * near * ember;
+        dial *= 1.0 - 0.42 * cut;
+        // What stands above the dial shades it: the card's edge, and the handle, on the side away from the lights.
+        dial *= 1.0 - 0.3 * exp(-(e - DIAL_STEP) / 2.6);
+        dial *= 1.0 - shadowDepth * knobShadow(q, away, shadowLen, knobIs);
+        // The head also keeps the room's light off the dial under it and a little way round it. That is wide and
+        // soft because the head is well above the dial: a tight dark line there would set the head down on it.
+        dial *= 1.0 - 0.3 * knobIs * (1.0 - smoothstep(KNOB_R * knobIs - 6.0, KNOB_R * knobIs + 24.0, rho));
+        // And it is darkest close under the head's rim, where least of the room can be seen from the dial.
+        dial *= 1.0 - 0.22 * knobIs * exp(-max(rho - KNOB_R * knobIs, 0.0) / 4.0);
+      }
+      if (knobIs > 0.02 && length(q - headAt) < KNOB_R * knobIs + 1.0){
+        // The knob's head, taken four times to a pixel: its beads are small and every edge of it is a line of
+        // light. It is old bronze: rubbed bright where it stands proud and gone dark where it is low.
+        // A band's light reaches the head before the band does, low and from the side the band comes from.
+        vec3 Lb[2]; float gb[2];
+        for (int i = 0; i < 2; i++){
+          vec2 to = uWipe[i].xy - pc;
+          float ab = (length(to) - uWipe[i].z) * unit;
+          Lb[i] = normalize(vec3(to.x, -to.y, 0.4 * length(to)));
+          gb[i] = uBurn[i] * exp(-max(ab, 0.0) / ${(WAKE.lead * 1.4).toFixed(1)});
+        }
+        // Its bronze is older than the dial's: browner, and less red.
+        vec3 aged = metalD * vec3(0.84, 0.78, 0.62);
+        // The light that throws its shadow, as the head sees it: the way to it, and how bright and how warm it is.
+        float nearLights = min(lampPull + endPull, 1.0);
+        vec3 sun = normalize(vec3(normalize(toLight + 1e-4) * 0.95, 1.0));
+        vec3 sunIs = mix(white, vec3(1.0, 0.86, 0.66), 0.55 * nearLights) * (1.0 + 0.4 * nearLights);
+        vec3 knob = vec3(0.0);
+        float cover = 0.0;
+        for (int j = 0; j < 4; j++){
+          vec2 o = (vec2(float(j & 1), float(j >> 1)) - 0.5) * 0.5 + vec2(0.125, -0.125) * (float(j & 1) * 2.0 - 1.0);
+          vec2 qs = (q + o / uS - headAt) / knobIs;
+          if (length(qs) > KNOB_R) continue;
+          float relief, hollow;
+          vec3 nk = knobFace(qs, relief, hollow);
+          vec3 Nk = rotY(rotX(vec3(nk.x, -nk.y, nk.z), uTilt.x), uTilt.y);
+          vec3 Rk = reflect(-V, Nk);
+          // Its own frame: the card's is cut from the card's relief, and would draw the frame of a picture that is not there.
+          vec3 Tk = normalize(vec3(1.0, 0.0, 0.0) - Nk * Nk.x + vec3(0.0, 1e-4, 0.0)), Bk = cross(Nk, Tk);
+          float low = 1.0 - smoothstep(0.1, 2.0, relief);
+          float pit = clamp(hollow * 0.5, 0.0, 1.0);
+          float cloud = knobAge(qs * 0.21) * 0.6 + knobAge(qs * 0.55 + 7.3) * 0.4;
+          float speck = knobAge(qs * 1.9 + 3.1);
+          // It has not worn evenly.
+          float rubbed = max(clamp(-hollow * 0.6, 0.0, 1.0), 0.85 * smoothstep(1.5, 3.4, relief)) * (0.55 + 0.6 * cloud);
+          // Old bronze is not a mirror. Most of what it gives back is broad, and comes from the same light that
+          // throws the knob's shadow: the key, or the lamp or the stream's end when one is near. So the side of
+          // the dome that faces that light is lit, the far side is dark, and the light on the head moves with
+          // the pointer as its shadow does, on the other side of it.
+          vec3 nd = knobDome(qs);
+          vec3 Nd = rotY(rotX(vec3(nd.x, -nd.y, nd.z), uTilt.x), uTilt.y);
+          float side = pow(max(dot(Nd, sun), 0.0), 2.0);
+          float lit = pow(max(dot(Nk, sun), 0.0), 2.4);
+          vec3 one = mix(aged, metalD, 0.7 * rubbed) * sunIs * 0.42 * lit;
+          // And one broad gleam lies on the dome, part way from its middle toward that light, on whatever stands
+          // proud there. It crosses the head as the light moves.
+          float gleam = pow(max(dot(Nd, normalize(sun + V)), 0.0), 14.0);
+          one += mix(aged, metalD, 0.6) * sunIs * 0.62 * gleam * (0.3 + 0.7 * rubbed);
+          // Where it has been rubbed it is bright metal again, and shows the lights, a little soft.
+          float sheen = strips(P, Rk, vec3(0.0), 0.0, 0.0, mix(0.22, 0.1, rubbed), mid, far);
+          one += metalD * white * mix(0.05, 0.55, rubbed * rubbed) * sheen;
+          one += spec(Nk, V, sun, Tk, Bk, mix(0.46, 0.3, rubbed), 0.0, metalD) * sunIs * mix(0.25, 0.7, rubbed);
+          one += spec(Nk, V, L, Tk, Bk, mix(0.42, 0.3, rubbed), 0.0, metalD) * fall * mix(0.3, 0.7, rubbed);
+          one += spec(Nk, V, E, Tk, Bk, 0.34, 0.0, metalD) * near * ember * mix(0.4, 0.9, rubbed);
+          for (int i = 0; i < 2; i++){
+            if (gb[i] <= 0.0) continue;
+            one += (spec(Nk, V, Lb[i], Tk, Bk, 0.32, 0.0, metalD) + aged * 0.55 * pow(max(dot(Nk, Lb[i]), 0.0), 1.5)) * gb[i] * mix(uCross[1], uCross[2], 0.45);
+          }
+          one *= mix(0.26, 1.3, side) * (1.0 + 0.6 * rubbed);
+          one += aged * (0.016 + 0.02 * smoothstep(-0.2, 0.9, Rk.y));
+          // What is low on it has gone dark and a little green, and the dark has crept into every crease.
+          float dark = max(0.9 * low, 0.85 * pit);
+          one *= mix(vec3(1.0), vec3(0.12, 0.125, 0.1), dark) * (0.6 + 0.52 * cloud + 0.2 * speck);
+          // The head turns under at its rim.
+          one *= 1.0 - 0.75 * smoothstep(KNOB_R - 1.6, KNOB_R, length(qs));
+          knob += one;
+          cover += 1.0;
+        }
+        if (cover > 0.0) dial = mix(dial, knob / cover, cover * 0.25);
+      }
+      col = mix(col, dial, within * sleep);
+      spill *= 1.0 - within * sleep;
+    }
+    // The band itself: a front of light lying just over the card, spreading from where it started. Its bright
+    // line is on the edge between the two. Ahead of it its light lies on the dial, whose rays throw it back
+    // where they lie along the band and not where they point at it. Behind it the card is left as it is.
+    // It is lit where it started, and spends itself as it goes: broad and hot there, a thin line at the far side.
+    for (int i = 0; i < 2; i++){
+      if (uBurn[i] <= 0.0) continue;
+      vec2 from = pc - uWipe[i].xy;
+      float a = (length(from) - uWipe[i].z) * unit;
+      vec2 hc = uRes * 0.5 / uDpr;
+      float gone = length(pc - clamp(uWipe[i].xy, -hc, hc)) * unit;
+      float strong = 0.14 + 0.86 / (1.0 + pow(gone / ${WAKE.spend.toFixed(1)}, 2.0));
+      float core = ${WAKE.core.toFixed(2)} * (0.55 + 2.4 * strong);
+      float line = exp(-pow(a / core, 2.0));
+      float halo = exp(-abs(a) / (core * 3.0));
+      float lead = a > 0.0 ? exp(-a / (${WAKE.lead.toFixed(1)} * (0.5 + 0.9 * strong))) : 0.0;
+      float trail = a < 0.0 ? exp(a / ${WAKE.trail.toFixed(1)}) : 0.0;
+      float glance = 1.0 - abs(dot(normalize(c + 1e-3), normalize(from)));
+      vec3 onDial = mix(uCross[1], uCross[2], 0.3) * uRamp[4] * lead * 2.4 * (0.35 + 1.1 * glance * glance);
+      vec3 onCard = mix(uCross[0], uCross[1], 0.5) * trail * (0.03 + 0.34 * exp(a / 6.0)) * mix(1.0, 0.5, ink);
+      col += uBurn[i] * within * strong * (uCross[2] * line * 3.0 + uCross[1] * halo + mix(onCard, onDial, sleep));
+    }
   }
 
 ` : ''}  // Keep the hue as it gets bright: an exposure curve on the brightest channel scales all three together, so hot

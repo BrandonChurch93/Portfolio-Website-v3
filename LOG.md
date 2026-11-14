@@ -2,6 +2,63 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · The knob on the blank, built (Fable, Claude Code on his Mac)
+
+At `/lab/work`, and alone at `/lab/work-blank`, Study 20. He has not seen it.
+
+**What he said.** His prompt is in the entry "The handle on the blank, as first built", below, and his words are in `BRIEF.md`, The stream, "His look at the handle as Claude Code first built it". In short: the handle was off center, barely stood off the card, and had turned into part of a watch dial. He wants an antique cabinet knob at the dead center that pokes out of the card, like the two photographs he attached, designed for this site and copying neither.
+
+**What was wrong in the first build, now that the code can be seen**
+
+- Off center: the dome was leaned toward the eye by where the card stood on the screen (`lean` in the old `dialKnob`). On a card to one side of the screen the dome's crown sat off the middle of its own rings.
+- A slight raise: the dome was 15 units high in a hollow, with a shadow a few units long. Nothing said it stood off the card.
+- A watch part: a bead, a hollow and a flange set with beads round the dome are the rings of a dial. The web chat's guess is likely right in part: the handle was judged against a photograph of a watch case's centre piece (`reference/blank/rays-round-a-boss-1.jpg`).
+
+**What was built**
+
+- `src/metal/dial.ts`: `knobHead` is the head of the knob as a height worked out per pixel, seen from straight in front. From the rim in: a rolled rim, a channel set with 30 beads, a half round moulding, and a domed face with a rosette in relief. The rosette is eight broad petals with a crease down each, over eight long pointed leaves with a rib, round a plain boss in a collar, and it turns a little as it goes out. `knobFace` takes the way it faces from that height. The old `dialKnob` and its rings are gone. The rays run under the knob to its stem.
+- `LIGHT_CARD` in `src/metal/shaders.ts`:
+  - The head is old bronze. It is lit broadly across its dome from the key, the lamp and the stream's leading end, so the side facing a light is lit and the far side is dark. Where it stands proud it is rubbed bright and shows the lights sharply. Where it is low, and in every crease, it has gone dark.
+  - `knobShadow` is the knob's shadow on the dial: the head's round shape, lying away from the strongest light by a share of how far the head stands off (`DIAL.stand`), joined to the foot by the stem's. Softer and paler the further it is thrown. The strongest light is the lamp when the pointer is near and the stream's leading end when that is. With neither near it is taken to be down and to the left.
+  - `headAt` moves the head against the dial as the card turns under the pointer.
+  - The head is at the card's center. It does not lean with where the card is on the screen.
+- The knob draws back into the dial as a band comes to it (`knobIs`: its size, how far it stands and its shadow all go together) and is gone before the band is on it. It stands out again when the band has run back past it.
+- `/lab/work-blank` is Study 20. Main's page sketch took 18 and its accomplishments derby 19 while this was being built.
+
+**Measured on the production build**
+
+- `/lab/stream`, the buttons and the awake card: as before the work, by the same stills. `BAKE`, `LIGHT`, `ROOM`, `SPEC` and `VERT` are the same letter for letter.
+- Frame times: every frame on time scrolling the page and the four blanks, and through 8 presses in a real window at 120 a second (worst 10.4 ms). With the processor slowed four times at iPad size, 3 frames of 594 over 25 ms on the whole page and none on the blanks.
+- The rays hold still as before (0.15 of 255 for 1 px of scroll).
+
+**Fresh reviewers on the knob, each told to look for reasons to fail it**
+
+- **Round 1.** Dead center, no smaller than the study's, standing off the card by its shadow, the dark wedge kept: passed. Failed as a medallion: the head was flat, its own light barely answered the cursor, it looked new and not aged, and the beads were too fine at one pixel to a pixel. A round black shadow thrown clear of the head by a low light read as a hole. All fair. Reworked: the head domed, lit across from the key and the cursor, aged, 30 larger beads in place of 36, the rosette turned a little, the far thrown shadow made softer and paler.
+- **Round 2.** Still a medal: the face flat, the light on the head fixed while only its shadow followed the cursor, the bronze polished and not old. Reworked: the head is lit broadly from the same light that throws its shadow, domed further, its mirror highlights dulled, mottled.
+- **Round 3.** The light on the head now answered the cursor in all four places, measured (about 85 against 47 from lit side to far side). Still failed as a medal: the dark ground round the flower made the face read as a dish, and nothing was rubbed bright. Reworked a different way: the petals were made broad enough to fill the face, so the flower is the face, and a broad gleam was laid on the dome that crosses it as the light moves.
+- **Round 4.** Every part of test 4 passed: dead center, a furniture knob and not a watch part, plainly off the card and believed without the cursor's light, larger than the study's, on the palette, its own design, the wedge kept and as dark as the study's, readable at one pixel to a pixel, and its light answering the cursor. It would still not have shown it, for three things: held still, the band cut the knob in two. At rest the knob's shadow fell down and to the left while the dark wedge runs up and to the right, two shadows going opposite ways. And the bronze was clean, with a thin rim.
+- **After round 4, not seen by a fresh reviewer:** the knob now draws back into the dial as a band comes to it and is gone before the band is on it, so nothing cuts it. Its light at rest was moved to the side the dial's bright fan lies on, so its shadow lies along the wedge and the two read as one. The rim was widened and the mottle strengthened.
+
+**Calls made for him. None is a rule**
+
+- The rosette's design.
+- The head is 92 of the card's 460 units across, where the study's handle was about 60.
+- The head stands 44 units off the dial. At rest its shadow lies about 40 units up and to the right, along the dark wedge, so the wedge is the long end of the knob's own shadow. The room's key light is on the other side. Lit from there, the knob's shadow fell opposite the wedge and the two read as two lights.
+- The knob draws back into the dial ahead of a band. That is new, and not in what he asked for.
+- Its bronze is a little browner than the dial's.
+- The turned rings are gone. Nothing is round the knob but the rays.
+- It does not lean with where the card is on the screen. A real knob seen from in front of the middle of the screen would, a little. He ruled that off center, so it moves only when the card turns.
+
+**Where it falls short, plainly**
+
+- Seen exactly head on, a round head with a beaded rim and a flower can still be taken for a medal when its shadow is short. Three of four reviewers said so. Its shadow, its dome and its light are what answer that, and he should judge it moving.
+- The knob drawing back before the band is quick: about a tenth of a second on the first row. It may read as the knob vanishing. He has not seen it.
+- At one pixel to a pixel the rays are finer than a pixel for some way round the knob, and fade to a smooth tone there. On his screen, at two pixels to a pixel, they run to the knob.
+- The head's shift as the card turns is small: about 2 units at the 3 degrees a card turns.
+
+**Not committed.** His two photographs. They are a shop's, and the repo is public.
+
+**Reference.** `reference/studies/37-knob-beside-the-study.jpg` and the other `37-` stills.
 ## 2026-11-14 · Study 19: the accomplishments derby (Fable, web chat)
 
 **What Brandon said**
@@ -195,6 +252,85 @@ Pull main first. BRIEF.md, The stream, "His look at the handle as Claude Code fi
 
 - His look at the sketch, and his rulings on it.
 - Claude Code has the fourth pass on `/lab/work`, if he has sent it. This sketch does not touch that page.
+## 2026-11-14 · The fourth pass on the Work page, built (Fable, Claude Code on his Mac)
+
+At `/lab/work`. The blank alone is at `/lab/work-blank`, Study 20. He has not seen it. Nothing here is settled until he says so.
+
+**What was built, in the order he gave**
+
+1. **The Sun stones' strike.** A stone throws 45 percent of what it threw (`work.post.throws`), scattered like any other strike. The aim is gone (`work.post.aim`, `low` and `far` are out of `config.ts`).
+2. **The mirror.** One side is planned, the right, and the left is that side's own points turned over (`routeThroughWork`, `flip`). `measure(..., sampled = true)` keeps the mirrored points as they are: sampling them again cut the corners differently and left the two sides 0.77 px apart.
+3. **The bolt is one stretch.** From the landing on the bar to the meeting (`whole`, `Landing.bolt`). Above and below, the path as it was before the bolt (`wander`). The path switch, `?path=now` and the `bolt` option are off the page and out of `stream.ts`.
+4. **A strike does not color a picture.** `plates.setWarm` is gone. The rim's flare stays.
+5. **Asleep whenever the stream is not on it.** `sim.wake` keeps how far each landing's band has crossed, up at the strike and back down when the stream draws back above it.
+6. **The blank.** An engine turned dial drawn by the card's own plate (`src/metal/dial.ts` for its shape, the `uAsleep` branch of `LIGHT_CARD` for its light). 300 rays, each a shallow V, filtered exactly so they fade where they are finer than about two and a half pixels and never beat against the screen. A turned handle. A polished step inside the card's edge. Long strip lights at real places off the screen, smeared round the dial by the rays exactly and not by samples.
+7. **The band.** `src/metal/wake.ts`. A bowed front that spreads from the struck point, drawn by the plate, with the card's words uncovered in step by a CSS mask (`--veil`). A sleeping card under the pointer or with keyboard focus wakes by a band of its own.
+8. **A press on a sleeping row** changes what it will show in one frame, with nothing to see (`Stops.on`, `Change.unseen` in `surge.ts`).
+9. **"Case study"** at rest is three parts `--text-3` to two parts `--text-2`.
+
+**Measured on the production build, his graphics card**
+
+- `/lab/stream`: 20 frozen frames the same as before the work, pixel for pixel and number for number. The one live frame (`d-static`) differs in pixels and not in numbers, as it does between any two runs.
+- The buttons: 7 stills the same pixel for pixel. `BAKE`, `LIGHT`, `ROOM`, `SPEC` and `VERT` are the same letter for letter.
+- The awake card: 4 stills. One the same. Three differ only in the words "Case study".
+- The mirror: the left is the right turned over to within 0.002 px above the bar and 0.0001 px below it.
+- The right side from the bar to the meeting is the path of the build he looked at when he said the right is the one he likes: every point within 1.7 px of the live site's, which is under the spacing of the points.
+- Under 1100 px the route is point for point what it was (0.000000 px at 390, 834 and 1000 wide).
+- The stone: 23 thrown where it was about 51. 4 reached the second row's top, 3 stayed more than a fifth of a second.
+- A press with the stream at the foot: the same timings as before (0.133, 0.300, stones 0.408, 0.600, 0.767, the meeting 1.108). With only the first row reached: the second row changes in one frame and nothing below the first row is struck.
+- Riding shards at rest: 0 vanished, 0 appeared, 0 jumped.
+- The rays hold still: scrolled 1 px, the picture changes by 0.15 of 255, and what changes that is as fine as a ray is 0.18, against the rays' own ripple of 5.1.
+- Scrolled up and down across the strike, slowly, fast and by a hair: the card is never left half changed.
+- "Case study" at rest with the cursor's light behind it: 5.20 to 1.
+- With reduced motion, and at 834 and 390 wide, no card is ever asleep.
+- Frame times: every frame on time scrolling the page and the blanks. In a real window at 120 a second through 8 presses, worst 10.3 ms. With the processor slowed four times at iPad size, 5 frames of 594 over 25 ms scrolling the whole page, none on the blanks alone.
+- WebKit at iPad size draws the blanks, the band and the cards.
+
+**Three rounds of fresh Opus reviewers, each told to look for reasons to fail it**
+
+- **Round 1.** The handle was flatter than the study's and read as a lens or an eye. The shadow was weaker and did not answer the cursor. The stream's light on a blank was a neon ring. The band did not start at the struck point on the second row and was the same brightness everywhere. The blanks were too bright beside the stream. All fair. Reworked: the lights, the handle, the stream's light as one point light, the band as a front from the struck point, the blank's level.
+- **Round 2.** Blank: tests 4 and 14 failed. The shadow was a broad soft sector and not the study's narrow wedge, it ignored the cursor, and the dome's highlight looped like a ringed planet. Change: test 6 failed on weight (a thin even line) and the band cut the handle flat. Path: the mirror passed, and test 10 was failed for the run from the first row down to the stone reading as the old path.
+  - What was done: the smear was widened so the wedge is narrow and pinned to the handle as in the study. The handle now throws a shadow of its own that swings to the strongest light. The dome shows one light. The stream's light on a blank is a soft fan. The band is broad and hot where it starts and spent by the far side, lights the rays ahead of it, and climbs the handle.
+  - What was not done, and why: the run from the first row to the stone is the right side as he picked it, point for point. It was left alone.
+- **Round 3.** Path: every test passed, and the reviewer would show it. Notes: the stone's strike is now mostly sparks and reads as the lesser one beside a card's, which he asked for and should judge in motion. A faint second line runs beside the core just after the bar's corner. Change: every test passed, test 6 narrowly. Notes: on the first row the band is already the card's full width by the second frame, so that it started at the strike is told more by its brightness than its shape. The cursor's light makes a soft round glow by the handle while the pointer is on a card. On a press the sleeping row does not move, but the light on its dials shifts, because the stream's end bursts beside them. Held still, the band cuts the handle flat. Blank: tests 1, 5 and 14 passed, the handle passed as stronger than the study's, the shadow was judged equal or stronger with the cursor's light away and a little weaker with it near. Failed near the handle on test 2: at one pixel to a pixel the rays fade to a smooth tone for some way round the handle, where they are finer than a pixel.
+- **Then he ruled on the handle himself,** before this was reported. "The knob on the blank, built", at the top, has what was built in answer.
+
+**Calls made for him. None is a rule**
+
+- Where two things he asked for could not both be had: the mirror, and the path above the bar as it was. Before the bolt the two sides were not a mirror above the bar. The build mirrors everywhere, so above the bar the left side is the right side's old path turned over.
+- The word WORK's ink is 2 px right of the page's middle. The mirror is about the word while the stream is on the word, about the button from the bar down, and moves from one to the other on the way down to the bar.
+- The band is drawn by the plate, under the card's words, which are uncovered at its line.
+- The band is a bowed front from the struck point. The pointer's starts where the pointer came onto the card, and keyboard focus starts it at the card's top.
+- The band takes 0.52 s for the stream, 0.36 s coming and 0.28 s going under the pointer.
+- While the pointer's band crosses, the card behind it is whole and in its colors.
+- The handle, as first built: a plain polished dome, a bead, a hollow, a flange set with 32 beads. He rejected it. See "The knob on the blank, built", at the top.
+- Two darks on the handle: the one he picked, and the handle's own shadow, which is what answers the cursor and the stream.
+- The lights are the study's, at real places off the screen. The blank is kept a little darker than the study so the stream stays the brightest thing.
+- The stream's leading end lights a blank as one warm light.
+- A stone throws 45 percent. The budget for thrown shards stays at 400, because three quick presses still reach it.
+- `/lab/work-blank` was added. A blank there stays asleep under the pointer, so it can be looked at.
+
+**Found on the way. The next session would otherwise find these again**
+
+- A first row card is struck on its top, and the stream runs about two thirds of the way down the screen. So a first row card is only ever asleep in the lowest third of the screen. A whole first row blank is never on screen. The second row's are.
+- A band that has not set out must be no circle at all (`band` writes a radius of -1e5). Left at its starting size it uncovered the top of a sleeping card.
+- A highlight on the dial's step or handle must use its own frame (`Te`, `Be`, `Tk`, `Bk`). The card's are cut from the card's relief and draw the frame of a picture that is not there.
+- The stream's glow has a gradient too rough to light rays with: it drew a scribble. The dial takes the leading end as one light (`plates.setEnd`).
+- A sharp mirror dome that shows every light in the room has rings round it and reads as an eye. It shows the key and no more.
+- The handle's shadow has to go as the band takes the handle, or it is left on the dial as a stain.
+- A screenshot is too slow to catch a band live. Hold it with `streamWake` or `blankHold`.
+- The check that reads the band from the words' mask has to take the circle's middle into account. Read as a plain distance, the radius looks like a jump.
+- The dark notch low on the 7 o'clock line, away from the handle, is the room's dark between two lights. The study has it too.
+
+**Not checked**
+
+- A 4K screen and a real iPad. WebKit was checked at iPad size on this Mac.
+- A screen reader, by ear. The words are in the page asleep and awake.
+
+**Reference**
+
+- `reference/blank/`: three photographs of real engine turned metal, with credits.
+- `reference/studies/37-fourth-pass-*.jpg`.
 
 ## 2026-11-13 · Handoff to Claude Code: the fourth pass on the Work page (Fable, web chat)
 

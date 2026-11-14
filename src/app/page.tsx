@@ -89,8 +89,12 @@ export default function Index() {
           <span className={styles.minor}>Phase 2 · copper leaf and glass, to compare. The switch on the page swaps the two</span>
         </li>
         <li>
+          <Link href="/lab/work-blank">The blank</Link>
+          <span className={styles.minor}>Phase 3 · the engine turned blank a sleeping card is, alone, with the band of light that wakes it</span>
+        </li>
+        <li>
           <Link href="/lab/work">The stream through Work</Link>
-          <span className={styles.minor}>Phase 3 · the real stream on its route through the Work section, with the posts and the rail. The cards are stand ins</span>
+          <span className={styles.minor}>Phase 3 · the real stream on its route through the Work section: the cards, the stones, the rail and a working category bar</span>
         </li>
       </ul>
       <h2 className={styles.group}>Pieces carried from the second build</h2>

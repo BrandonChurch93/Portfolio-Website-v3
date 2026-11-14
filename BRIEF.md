@@ -621,6 +621,23 @@ Said to the web chat with a screenshot from his phone, while Claude Code was sti
 - Everything else about D stands: the rays, the shadow that swings off the handle, the band of light.
 - Fable's part in it, said to him: the prompt told the builder to judge the blank against a photograph of a real engine turned dial. That may be what pulled the middle toward a watch part. Not confirmed, since the builder's report has not been seen.
 
+**The knob, built (Nov 14), waiting on his look**
+
+- At `/lab/work`, and alone at `/lab/work-blank`. Built in answer to "His look at the handle as Claude Code first built it". He has not seen it. Nothing about it is settled until he says so.
+- What it is: the head of an antique cabinet knob, seen from straight in front, at the dead center of the card. A rolled rim, a ring of 30 beads, a half round moulding, and a domed face with a rosette in relief: eight broad petals with a crease down each, eight long pointed leaves behind them, a plain boss at the heart. In old bronze: dark where it is low, rubbed bright where it stands proud.
+- How it stands off the card, seen head on:
+  - Its own shadow on the dial. The head stands on a stem, so its shadow is the head's round shape lying clear of the head, away from the strongest light, and swings as the cursor's light and the stream move. With nothing near it lies up and to the right, along the dark wedge he picked the study for, so the wedge reads as the long end of the knob's own shadow.
+  - The light across its dome and its beads: the side facing a light is lit and the far side is dark, and that follows the cursor's light too.
+  - The head moves against the dial as the card turns under the pointer.
+- **Calls made for him. None is a rule:**
+  - The rosette's design, which is this site's own: eight petals over eight leaves, turned a little as it goes out. It copies neither photograph.
+  - The head is 92 of the card's 460 units across. The study's handle was about 60.
+  - The first build leaned the handle's dome toward the eye by where the card stood on the screen, which is what put it off center. That is gone. The head is drawn at the card's center and moves only when the card itself turns.
+  - The turned rings round the first handle are gone. The rays run under the knob to its stem.
+  - Its bronze is a little browner than the dial's, so it reads as a separate, older thing.
+  - The knob draws back into the dial as the band of light comes to it, and is gone before the band is on it. It stands out again when the band has run back past it. A band that crossed it standing cut it in two.
+  - With nothing near, the knob is lit from down and to the left, the side the dial's bright fan lies on. Lit from the other side its shadow fell opposite the wedge, and the two read as shadows of two lights.
+
 **The fourth pass on the Work page: the agreement for the build (Nov 13)**
 
 One round in Claude Code, on `/lab/work`. It takes in everything he has ruled since the third pass. He held every prompt until all of it was answered: "I only want to go to Claude Code once we have everything figured out that's open."
@@ -675,6 +692,28 @@ One round in Claude Code, on `/lab/work`. It takes in everything he has ruled si
 - The blank and its change are given to the builder as goals, as the bolt was.
 - A blank is never brighter than the stream beside it. The lights off the screen are set to suit the page, not copied from the study, which has no stream.
 - Carried from before: what lands on a sleeping card does not wake it, and with reduced motion or under 1100 px no card sleeps.
+
+**The fourth pass, built (Nov 14), waiting on his look**
+
+- At `/lab/work`, by Claude Code on his Mac. All nine are on the page. The blank can be seen alone at `/lab/work-blank`, Study 20, with a button on each card that wakes it and puts it back to sleep.
+- He has not seen it. Nothing about it is settled until he says so.
+- The test shot at `/lab/stream` and the approved buttons were compared with stills from before: every still agrees pixel for pixel. The awake card's stills agree except for the words "Case study", whose color was changed on purpose.
+- Fable's calls in the agreement were built as written: the band starts at the strike, a sleeping card under the pointer or with keyboard focus wakes and sleeps by the same change, no card sleeps with reduced motion or under 1100 px, and what lands on a sleeping card does not wake it. The lights were set for the page.
+- **Where the build had to choose between two things he asked for.** His to overturn:
+  - "The left side must be the exact mirror of the right" and "above the bar, put the path back the way it was". Before the bolt the two sides were not quite a mirror above the bar: each swayed in its own way and leaned a little differently, so that they never landed in the same instant. The build mirrors everywhere the sides are apart. So above the bar the left side is now the right side's old path, turned over, and not its own.
+  - The word WORK's ink is 2 px to the right of the middle of the page, where the bar, the cards, the stones and the button stand. The left side is the right's mirror about the middle of the word while it is on the word, and about the middle of the button from the bar down, and moves from one to the other on its way down to the bar.
+- **Calls made while building.** None is a rule. All are in `LOG.md`, "The fourth pass on the Work page, built". The ones he is most likely to have a view on:
+  - The band of light is drawn by the card's own plate. It lies under the card's words, which are uncovered at its line, and not over them.
+  - The pointer's band sets out from where the pointer came onto the card. With keyboard focus it sets out from the card's top.
+  - The band takes about half a second when the stream wakes a card or leaves it, and about a third under the pointer.
+  - The handle is a knob from antique furniture ("The knob, built", above). As first built it was a polished dome in turned rings, which he rejected.
+  - The lights are the study's own, put at real places off the screen and run off into the room, so the shadow's line turns as the page scrolls.
+  - There are two darks on the handle. The first is the one he picked: the room showing along the rays that run across the lights, a narrow wedge that slides along its line as the page scrolls. The second is new: the knob's own shadow on the dial, the round shape of its head lying away from whichever light is strongest on it. With nothing near it lies along the wedge. With the cursor's light near it lies away from that, and as the stream's leading end passes, away from that. It is what answers the cursor, and what says how far the knob stands off the card.
+  - The stream's leading end lights a blank as one warm light as it comes near, which lies on the rays as a soft fan.
+  - The band is a bowed front that spreads from the struck point. It is broad and hot where it starts and thins to a line by the far side, and it lights the dial's rays ahead of it.
+  - While the pointer's band is crossing a card, the card behind it is whole and in its colors. They are not faded in as well.
+  - A stone throws 45 percent of what it threw. The budget for thrown shards stays at 400: three quick presses still reach it.
+  - "Case study" at rest is three parts the quietest text color to two parts the next one up.
 
 **How it is built**
 

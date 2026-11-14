@@ -3,6 +3,7 @@ import { lamp } from '../lamp/lamp';
 import { signedDistance } from '../metal/edt';
 import { CARD } from '../metal/mask';
 import { plates } from '../metal/renderer';
+import { band, edge, veil, WAKE, type Start } from '../metal/wake';
 import { clock } from '../world/clock';
 import { tiers } from '../world/tier';
 import { STREAM, STREAM_BUDGET, STREAM_STEP, unitFor, type StreamBudget } from './config';
@@ -22,8 +23,6 @@ import type { State, Swap } from './surge';
 export interface StreamHandle {
   // Swap between the facets and the first round's shards, where it stands.
   setLook(look: Look): void;
-  // The Work page's path: the bolt, or the path as it was before it.
-  setBolt(on: boolean): void;
   dispose(): void;
 }
 
@@ -46,8 +45,6 @@ interface Options {
   title: HTMLElement;
   card?: HTMLElement;
   work?: WorkParts;
-  // Whether the route through Work is the bolt. Left out, it is.
-  bolt?: boolean;
   // Open with the frame held: nothing moves but the cursor's light. The test shot only.
   hold?: boolean;
   look?: Look;
@@ -76,7 +73,12 @@ const RIDER = 17;
 interface Card {
   host: Element;
   turned: HTMLElement;
-  asleep: number;
+  // Its two bands (src/metal/renderer.ts, Plate.wipes), and the mask its words wear to be uncovered in step.
+  wipes: Float32Array;
+  veil: string;
+  // The pointer's band: how far across the card it is, 0 to 1, and where on the card's edge it set out from.
+  near: number;
+  from: Start;
   // Which category's it is, which of the four places it stands in, and that place's row.
   cat: number;
   slot: number;
@@ -229,7 +231,6 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   // The cards the pointer has turned or grown this frame: what lies on one of them goes with it.
   const bent: { c: Card; m: Float32Array }[] = [];
   let version = 0;
-  let bolt = opts.bolt ?? true;
   // For a close still: the most device pixels the canvas may draw to a CSS pixel, in place of the budget's.
   let sharp = 0;
   // The landing on each stone, in the order the stones are drawn.
@@ -280,7 +281,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
         if (!plate || !plate.parentElement || !layer) return null;
         const k = el.offsetWidth / CARD.width;
         const c: Card = {
-          host: plate, turned: plate.parentElement, asleep: -1, cat, slot, row, l: rowLeft[row] + layer.offsetLeft + el.offsetLeft, off: layer.offsetTop + el.offsetTop, w: el.offsetWidth, h: el.offsetHeight, r: CARD.radius * k,
+          host: plate, turned: plate.parentElement, wipes: new Float32Array(6), veil: '', near: 0, from: [0, 0, 0, -1], cat, slot, row, l: rowLeft[row] + layer.offsetLeft + el.offsetLeft, off: layer.offsetTop + el.offsetTop, w: el.offsetWidth, h: el.offsetHeight, r: CARD.radius * k,
           shape: { x: 0, y: 0, hw: 0, hh: 0, r: 0 }, inset: 1.5 * k, deep: parseFloat(getComputedStyle(el).perspective) || 1e6, baked: -1, bake: '', win: [0, 0, 1, 1], frame: 0, rim: 0, scale: 1, watch: 0, landings: [],
         };
         cards.push(c);
@@ -296,7 +297,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
         return { l: c.l + seat, t: t + seat, r: c.l + c.w - seat, b: t + c.h - seat };
       });
       const barBox = boxOf(W.bar);
-      route = routeThroughWork({ title: ink, bar: barBox, cards: places, posts, rail: shown(W.rail) ? boxOf(W.rail) : null, button: shown(W.button) ? boxOf(W.button) : null, width: w, bottom, unit }, bolt);
+      route = routeThroughWork({ title: ink, bar: barBox, cards: places, posts, rail: shown(W.rail) ? boxOf(W.rail) : null, button: shown(W.button) ? boxOf(W.button) : null, width: w, bottom, unit });
       const landed = places.map((box) => route!.landings.flatMap((L, i) => ((L.kind === 'land' || L.kind === 'side') && Math.hypot(Math.max(box.l - L.x, 0, L.x - box.r), Math.max(box.t - L.y, 0, L.y - box.b)) < 10 * unit ? [i] : [])));
       for (const c of cards) c.landings = landed[c.slot];
       // Each side's stops, for the surge. Only the full route has them.
@@ -317,6 +318,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       W.swap.bind(A && B ? {
         at: [A, B].map((a) => [share(a, a.top), share(a, a.stone), share(a, a.side - S.change.ahead * unit), share(a, a.rail)]) as [number[], number[]],
         reached: () => !!sim && !still && (sim.head[0] >= A.bar || sim.head[1] >= B.bar),
+        on: (place: number) => { const i = landed[place]?.[0], L = i === undefined ? null : route!.landings[i]; return !!sim && !still && !!L && sim.head[L.side] >= L.s; },
       } : null);
       // The two halves of the rail are one drawing in a mirror: the same marks, a blade on the outer end, a cap on the
       // inner one, and two brackets under each.
@@ -366,6 +368,10 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     settled = '';
   };
 
+  // A pointer's band held part way across the card in a place, for a still: how far, and where it came from.
+  const holds = new Map<number, { a: number; x: number; y: number }>();
+  let stepped = 0;
+
   // ---- the project cards as they stand this frame
   const platesNow = (): PlateCard[] => {
     bent.length = 0;
@@ -378,7 +384,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       const top = rows[c.row].top + c.off + show.dy;
       c.shape = { x: c.l + c.w / 2, y: top + c.h / 2, hw: c.w / 2, hh: c.h / 2, r: c.r };
       const st = plates.cardOf(c.host);
-      let turn = FLAT, tiltX = 0, tiltY = 0, flare = 0, warm = 0, fx = 0, fy = 0;
+      let turn = FLAT, tiltX = 0, tiltY = 0, flare = 0, fx = 0, fy = 0;
       if (st) {
         if (st.baked !== c.baked) {
           const bake = plates.bakeOf(c.host, (key) => renderer!.hasBake(key));
@@ -401,40 +407,57 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
           bent.push({ c, m: turn });
         }
       }
-      // A full strike: the rim flares, and the picture warms toward its own colors and settles back within a second.
+      // A full strike: the rim flares. The picture stays as it was: only the pointer and keyboard focus bring a
+      // picture's colors back.
       if (sim && !still && !show.leaving) for (const i of c.landings) {
         const since = sim.time - sim.hitAt[i], hard = sim.hit[i];
         if (since < 0 || since > 1.2) continue;
         const f = hard * Math.exp(-since / S.struck.flare);
         if (f > flare) { flare = f; fx = route!.landings[i].x - c.shape.x; fy = route!.landings[i].y - c.shape.y; }
-        warm = Math.max(warm, S.struck.warm * hard * (since < S.struck.rise ? since / S.struck.rise : Math.exp(-(since - S.struck.rise) / S.struck.settle)));
       }
-      plates.setWarm(c.host, warm < 0.01 ? 0 : warm);
-      // A card the stream has not reached is asleep, and the stream's first strike wakes it for good. Only where
-      // the stream runs its whole route: with reduced motion or on a narrow screen every card is awake.
-      let asleep = 0;
+      // A card is asleep whenever the stream is not on it: a blank, with nothing the card holds on it. The change
+      // between the two is a band of light that crosses the card with the dial ahead of it and the card behind.
+      // It sets out from where the stream strikes the card, and runs back the way it came when the stream draws
+      // back above it. Under the pointer or with keyboard focus a sleeping card wakes by a band of its own, from
+      // where the pointer came onto it. Only where the stream runs its whole route: with reduced motion or on a
+      // narrow screen no card sleeps.
+      let wipes: Float32Array | null = null;
+      const lit: [number, number] = [0, 0];
       const first = c.landings[0];
       if (sim && !still && first !== undefined && sides[0] && sides[1]) {
-        const L = route!.landings[first], reached = sim.head[L.side] >= L.s;
-        const struck = sim.time - sim.hitAt[first] < 2 ? sim.hitAt[first] : -1e6;
-        // A frozen frame shows what its own moment would: nothing is remembered from a frame taken before it.
-        // It wakes at the strike that first reaches it, not at one that comes when the stream already lies there.
-        // Once awake it stays awake, from one frozen frame to the next as well: the stream drawn back up leaves it so.
-        if (clock.isFrozen()) {
-          asleep = awake[c.slot] ? 0 : reached ? (sim.on[first] < 0.3 ? 1 - Math.min(1, (sim.time - struck) / S.work.wake) : 0) : 1;
-          if (asleep <= 0) awake[c.slot] = true;
-        } else {
-          if (reached && !awake[c.slot]) { awake[c.slot] = true; woke[c.slot] = struck; }
-          asleep = awake[c.slot] ? 1 - Math.min(1, (sim.time - woke[c.slot]) / S.work.wake) : 1;
+        const L = route!.landings[first];
+        const held = holds.get(c.slot);
+        if (held) { c.near = held.a; c.from = edge(c.w * (held.x - 0.5), c.h * (held.y - 0.5), c.shape.hw, c.shape.hh); }
+        else if (st) {
+          if (st.on && c.near <= 0) c.from = edge(st.enterX - st.w / 2, st.enterY - st.h / 2, c.shape.hw, c.shape.hh);
+          c.near = clock.isFrozen() ? (st.on ? 1 : 0) : Math.max(0, Math.min(1, c.near + (st.on ? stepped / WAKE.pointer[0] : -stepped / WAKE.pointer[1])));
         }
+        const across = sim.wake[first];
+        if (across < 1 && c.near < 1) {
+          wipes = c.wipes;
+          const unit = c.w / CARD.width;
+          // The stream's band sets out from where the stream strikes the card, straight out of the face it strikes.
+          const struckAt = edge(L.x - c.shape.x, L.y - c.shape.y, c.shape.hw, c.shape.hh);
+          lit[0] = band(wipes, 0, c.shape.hw, c.shape.hh, unit, [struckAt[0], struckAt[1], Math.cos(L.face), Math.sin(L.face)], across);
+          lit[1] = band(wipes, 1, c.shape.hw, c.shape.hh, unit, c.from, c.near);
+        }
+      } else c.near = 0;
+      if (wipes && sim) {
+        // The leading end on this card's side lights the blank as it comes near.
+        const side = route!.landings[first!].side;
+        at(route!.branches[side], sim.head[side], tmp);
+        plates.setEnd(c.host, tmp[0], tmp[1] + hostTop - clock.view.y, S.work.nearBlank * (0.55 + 0.45 * Math.min(1, sim.energy[side])));
       }
-      asleep = Math.max(0, asleep);
-      plates.setAsleep(c.host, asleep);
-      if (asleep !== c.asleep) { c.asleep = asleep; const el = c.turned.parentElement as HTMLElement; el.style.setProperty('--asleep', asleep.toFixed(3)); el.dataset.asleep = String(asleep > 0.5); }
+      // While the pointer's band is what shows or hides the card, the card's own light under the pointer does not
+      // come and go as well: the card is whole behind the band.
+      plates.setBanded(c.host, !!wipes && (c.near > 0 || !!st?.on));
+      plates.setWipes(c.host, wipes, lit[0], lit[1]);
+      const words = veil(wipes, c.shape.hw, c.shape.hh);
+      if (words !== c.veil) { c.veil = words; (c.turned.parentElement as HTMLElement).style.setProperty('--veil', words); }
       if (c.bake) keep.add(c.bake);
       // Not until it can be seen: a card on its way in that still shows nothing would shade the ground it is not on.
       if (!show.leaving && show.alpha > 0.5) stood.push({ ...c.shape, hw: c.shape.hw - c.inset, hh: c.shape.hh - c.inset });
-      out.push({ ...c.shape, inset: c.inset, turn, tiltX, tiltY, bake: c.bake, win: c.win, frame: c.frame, rim: c.rim, unit: (2 * c.shape.hw) / CARD.width, flare, struck: [fx, fy], there: show.alpha, asleep: c.asleep });
+      out.push({ ...c.shape, inset: c.inset, turn, tiltX, tiltY, bake: c.bake, win: c.win, frame: c.frame, rim: c.rim, unit: (2 * c.shape.hw) / CARD.width, flare, struck: [fx, fy], there: show.alpha, wipes });
     }
     // A card that is waiting keeps its relief, so it is there the moment the card comes in.
     for (const c of cards) if (c.bake) keep.add(c.bake);
@@ -461,8 +484,6 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   // ---- what a change of category does to the line itself. A point this far along a side, where the side runs
   // this way and lies this much on something, is pushed by: the kink of each surge as it passes, the sag where a
   // card is away and the spring off the new one, and the swing of what hangs free below a row that has moved.
-  // When the stream first struck each place a card stands in: from then on the cards there are awake.
-  const woke = [0, 0, 0, 0], awake = [false, false, false, false];
   const running: { b: number; s: number; v: number; left: number; from: number; live: boolean; age: number }[] = [];
   const hush: [number, number] = [0, 0];
   const push = new Float32Array(2), soft = new Float32Array(2), here = new Float32Array(4), fore = new Float32Array(4), aft = new Float32Array(4);
@@ -630,7 +651,8 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       }
       const struck = sim.hit[i] * Math.exp(-(sim.time - sim.hitAt[i]) / 0.14);
       if (struck <= 0.02) continue;
-      const hard = bolt && !!opts.work;
+      // On the bolt a strike has come straight in, and flashes brighter for it.
+      const hard = !!L.bolt;
       const flash = 3.2 * struck * (hard ? S.work.bolt.flash : 1), wide = (4 + 9 * struck) * u * (hard ? 1.25 : 1);
       if (L.face === UP) round(L.x, L.y - S.route.above * u, wide, flash);
       else round(L.x + Math.cos(L.face) * S.route.above * u, L.y + Math.sin(L.face) * S.route.above * u, wide, flash);
@@ -828,6 +850,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
 
   const frame = (t: number, dt: number) => {
     if (!renderer || !route || !sim || disposed) return;
+    stepped = dt;
     const began = performance.now();
     const top = clock.view.y - hostTop;
     // What a change of category is doing this frame: which cards show and where each surge is.
@@ -1034,6 +1057,10 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   // at up to n device pixels to a CSS pixel, for a close still, and streamSharp() puts the budget back.
   registry.tool('streamPlan', () => { version++; plan(); });
   registry.tool('streamSharp', (n?: number) => { sharp = n ?? 0; version++; plan(); });
+  // streamWake(place, amount, x, y) holds the pointer's band part way across the card in a place, for a still: how
+  // far across, 0 to 1, and where the pointer came onto the card, as shares of its width and height.
+  // streamWake(place) lets it go.
+  registry.tool('streamWake', (place: number, a?: number, x = 0.5, y = 0) => { if (a === undefined) holds.delete(place); else holds.set(place, { a, x, y }); settled = ''; });
   // streamPlay(fromScroll, toScroll, fromTime, toTime) scripts a scroll for frozen frames. streamPlay() ends it.
   registry.tool('streamPlay', (y0?: number, y1?: number, t0?: number, t1?: number) => {
     script = y0 === undefined || y1 === undefined ? null : { y0, y1, t0: t0 ?? 1, t1: t1 ?? 2 };
@@ -1041,12 +1068,6 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   });
 
   return {
-    setBolt(on: boolean) {
-      if (on === bolt || disposed) return;
-      bolt = on;
-      version++;
-      plan();
-    },
     setLook(next: Look) {
       if (next === look || disposed) return;
       look = next;

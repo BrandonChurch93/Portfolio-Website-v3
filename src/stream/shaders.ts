@@ -384,7 +384,8 @@ uniform vec3 uMetalA, uMetalB, uFaceLit, uFlame, uHot, uPale;
 uniform vec3 uRough;          // of the metal, of the band, and how brushed the metal is
 uniform vec3 uFlare;          // how hard a leading end has just struck the card, 0 to 1, and where, from its center
 uniform float uThere;         // how much of the card is there, 0 to 1
-uniform float uAsleep;        // 1 while the card is a blank: what is lit here is the relief of a card that is not showing
+uniform float uBlank;         // 1 while any of the card is asleep: there it is a blank, lit by its own plate (src/metal/dial.ts)
+uniform vec3 uWipe[2];        // the two bands that wake it: the middle of each one's circle, from the card's center, and its radius
 out vec4 frag;
 ${CLIP}${LIT}${plateEdge(false)}${NOISE}
 const float PI = 3.14159265;
@@ -396,6 +397,7 @@ void main(){
   vec2 amount;
   vec3 L = streamLight(p, amount);
   float lit = amount.y * 6.0 + amount.x * 8.0;
+  float ahead0 = length(vAt - uWipe[0].xy) - uWipe[0].z, ahead1 = length(vAt - uWipe[1].xy) - uWipe[1].z;
   if (cov <= 0.0 || lit < 0.003){ frag = vec4(0.0); return; }
   vec2 uv = vec2(vAt.x / (2.0 * uBox.z) + 0.5, 0.5 - vAt.y / (2.0 * uBox.w));
   vec4 b0 = texture(uB0, uv), b1 = texture(uB1, uv);
@@ -443,7 +445,11 @@ void main(){
   float reach = 1.0 - smoothstep(-2.0, 2.0, sdBox(vAt - uWin.xy + over, uWin.zw, 0.5));
   vec3 print = uFaceLit * 1.5 * min(lit, ${PLATE_MOST.picture.toFixed(2)}) * (0.35 + 0.65 * reach) * (1.0 + grain * 0.1);
   vec3 col = mix(mix(metal, wash, face), print, picture);
-  frag = vec4(col * cov * uThere * (1.0 - uAsleep), 0.0);
+  // Asleep, what lies inside the card's edge is the dial, and none of the card's relief shows there. The card's
+  // own plate lights the dial, the stream's light on it with the rest (src/metal/shaders.ts).
+  float inside = -sdBox(vAt, uBox.zw - uRound.x - uFrame.y, max(uRound.y - uFrame.y, 0.0));
+  col *= 1.0 - uBlank * clamp(min(ahead0, ahead1) * uDpr + 0.5, 0.0, 1.0) * clamp(inside * uDpr + 0.5, 0.0, 1.0);
+  frag = vec4(col * cov * uThere, 0.0);
 }`;
 
 // ---- the posts and the rail: the buttons' metal, standing in the page, for the stream to meet

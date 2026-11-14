@@ -49,6 +49,11 @@
   display: flex;
   flex-direction: column;
   border-radius: calc(var(--u) * var(--radius));
+  /* A card the stream is not on is asleep: a blank, with none of its words showing. A band of light crosses it to
+     wake it, and the words are uncovered behind the band, in step with the plate under them (--veil is set by the
+     stream). It is a mask and not a clip, so the card can still be pressed anywhere while it wakes. */
+  -webkit-mask-image: var(--veil, none);
+  mask-image: var(--veil, none);
 }
 
 .card:has(.open:focus-visible) .inner {
@@ -84,19 +89,6 @@
 
 /* How many lines the title and the description have on a card this wide: the most a Software card's words take
    there. Measured, not worked out. A wider card's words are larger with it, so from 422 px up nothing changes. */
-.strip,
-.words {
-  /* A card the stream has not reached is asleep, and its words rest low and in bronze (--asleep is set by the
-     stream). Under the pointer or with focus it is awake, so it can always be read and used. */
-  opacity: calc(1 - var(--asleep, 0));
-}
-
-.card[data-awake='true'] .strip,
-.card[data-awake='true'] .words {
-  opacity: 1;
-  filter: none;
-}
-
 .words {
   --title-lines: 2;
   --lines: 9;
@@ -240,7 +232,9 @@
   min-height: var(--touch);
   margin-left: auto;
   white-space: nowrap;
-  color: var(--text-3);
+  /* Lighter than the quietest text: the cursor's light pools on the card's face behind it, and at that text's own
+     color it fell under 4.5 to 1 there. */
+  color: color-mix(in srgb, var(--text-3) 60%, var(--text-2));
   transition: color var(--dur-2) var(--ease-settle), opacity var(--dur-2) var(--ease-settle);
 }
 

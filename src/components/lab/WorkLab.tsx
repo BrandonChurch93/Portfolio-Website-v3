@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { categories } from '../../content/work';
-import { mountStream, type StreamHandle } from '../../stream/stream';
+import { mountStream } from '../../stream/stream';
 import { mountSwap, type Swap } from '../../stream/surge';
 import { MetalButton } from '../MetalButton';
 import { WorkCard } from '../WorkCard';
@@ -17,6 +17,9 @@ const ROWS = [0, 1];
 // The category bar works. Every category's cards are on the page, one set over another in each row, and only one
 // set shows. Picking a category knocks the bar, and a surge runs down the stream from it: each card lets go as the
 // surge reaches it, the new one comes up, and the stream strikes it as it seats (src/stream/surge.ts).
+// A card the stream is not on is asleep: a blank, an engine turned dial with none of the card on it (src/metal/dial.ts).
+// A band of light crosses it to wake it when the stream strikes it, and runs back when the stream draws back above it
+// (src/metal/wake.ts). A row the stream is not on does nothing when a category is picked.
 // Software's cards are the live site's. The cards for the other three categories are stand ins, and the page says
 // so. The category bar's look and the button are stand ins too. ?ui=0 hides the label.
 export function WorkLab() {
@@ -27,33 +30,26 @@ export function WorkLab() {
   const rail = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLDivElement>(null);
   const swap = useRef<Swap | null>(null);
-  const stream = useRef<StreamHandle | null>(null);
-  const [bolt, setBolt] = useState(true);
   const [ui, setUi] = useState(true);
   const [category, setCategory] = useState(0);
 
   useEffect(() => {
     const asked = new URLSearchParams(location.search);
     setUi(asked.get('ui') !== '0');
-    const asBolt = asked.get('path') !== 'now';
-    setBolt(asBolt);
     if (!page.current || !title.current || !bar.current || !grid.current || !rail.current || !button.current) return;
     const all = (what: string, within: Element = grid.current!) => [...within.querySelectorAll<HTMLElement>(what)];
     const rows = all('[data-part="row"]'), layers = rows.map((row) => all('[data-part="layer"]', row));
     const sets = categories.map((_, cat) => rows.flatMap((_row, r) => all('article', layers[r][cat])));
     const cards = mountSwap({ bar: bar.current, rows, layers, cards: sets });
     swap.current = cards;
-    const mounted = mountStream(page.current, { title: title.current, bolt: asBolt, work: { bar: bar.current, rows, sets, swap: cards, posts: all('[data-part="stone"]'), rail: rail.current, button: button.current } });
-    stream.current = mounted;
-    return () => { swap.current = null; stream.current = null; mounted.dispose(); cards.dispose(); };
+    const mounted = mountStream(page.current, { title: title.current, work: { bar: bar.current, rows, sets, swap: cards, posts: all('[data-part="stone"]'), rail: rail.current, button: button.current } });
+    return () => { swap.current = null; mounted.dispose(); cards.dispose(); };
   }, []);
 
   const pick = (index: number) => {
     setCategory(index);
     swap.current?.press(index);
   };
-
-  const path = (on: boolean) => { setBolt(on); stream.current?.setBolt(on); };
 
   return (
     <main ref={page} className={styles.page}>
@@ -92,13 +88,6 @@ export function WorkLab() {
           </div>
         </div>
       </section>
-      {ui && (
-        <div className={styles.switch} role="group" aria-label="The stream's path">
-          <span className={styles.switchLabel}>The path</span>
-          <button type="button" className={styles.option} aria-pressed={bolt} onClick={() => path(true)}>Bolt</button>
-          <button type="button" className={styles.option} aria-pressed={!bolt} onClick={() => path(false)}>As it was</button>
-        </div>
-      )}
     </main>
   );
 }

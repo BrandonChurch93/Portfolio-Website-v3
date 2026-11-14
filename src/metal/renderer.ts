@@ -3,7 +3,7 @@ import { registry, stats } from '../hooks/registry';
 import { lamp } from '../lamp/lamp';
 import { clock } from '../world/clock';
 import { tiers } from '../world/tier';
-import { CONTROL_RING, FACE, FACE_LIT, FINISHES, GLOW, INK, RAMP } from './finishes';
+import { BAND, CONTROL_RING, FACE, FACE_LIT, FINISHES, GLOW, INK, RAMP } from './finishes';
 import { MASK_FONTS, paintMask, type Mask, type PlateSpec } from './mask';
 import { distanceField } from './sdf';
 import { BAKE, LIGHT, LIGHT_CARD, VERT } from './shaders';
@@ -56,14 +56,22 @@ interface Plate extends PlateEntry {
   // The pointer is on the plate or it has focus: v runs 0 to 1 toward goal. pointer is where it is, CSS px in the plate.
   hover: { v: number; goal: number; pinned: boolean };
   pointer: { x: number; y: number };
+  // Where the pointer was when it came onto the plate.
+  enter: { x: number; y: number };
   hovered: string;
   seed: number;
-  // How many times it has been baked, and how far a strike of the stream has warmed a card's picture toward its
-  // own colors.
+  // How many times it has been baked.
   baked: number;
-  warm: number;
-  // How far a card the stream has not reached is asleep, 0 to 1.
-  asleep: number;
+  // A card's two bands (./wake.ts), each a line across it with the card awake behind it and asleep ahead, and how
+  // brightly each burns. And whether any of the card is asleep, and whether a band moved since it was last drawn.
+  wipes: Float32Array;
+  burn: [number, number];
+  blank: boolean;
+  wiping: boolean;
+  // The stream's leading end near a sleeping card: where it is on the screen, CSS px, and how strongly it lights the blank.
+  end: { x: number; y: number; k: number };
+  // A band is showing or hiding the card for the pointer, so the pointer's own light on it is not eased as well.
+  banded: boolean;
   // Whether it is to be drawn at all. A card that is waiting behind another keeps its bake and is not lit.
   shown: boolean;
 }
@@ -220,7 +228,7 @@ class PlateRenderer {
       area: entry.spec.kind === 'card' ? entry.host.closest<HTMLElement>('[data-plate-area]') : null,
       visible: false, bakeGen: 0, sig: '', tilt: { x: 0, y: 0, gx: 0, gy: 0 }, stream: { x: 0, y: 0, z: 26, k: 0 },
       hover: { v: 0, goal: 0, pinned: false }, pointer: { x: 0, y: 0 }, hovered: '',
-      seed: seedOf(entry.spec), baked: 0, warm: 0, asleep: 0, shown: true,
+      seed: seedOf(entry.spec), baked: 0, wipes: new Float32Array(6), burn: [0, 0], blank: false, wiping: false, end: { x: 0, y: 0, k: 0 }, banded: false, enter: { x: 0, y: 0 }, shown: true,
     };
     this.plates.add(p);
     this.byHost.set(entry.host, p);
@@ -254,7 +262,7 @@ class PlateRenderer {
   setHover(host: Element, on: boolean, x = 0, y = 0): void {
     const p = this.byHost.get(host);
     if (!p) return;
-    if (on && p.hover.goal === 0) { p.pointer.x = x; p.pointer.y = y; }
+    if (on && p.hover.goal === 0) { p.pointer.x = x; p.pointer.y = y; p.enter.x = x; p.enter.y = y; }
     p.hover.goal = on ? 1 : 0;
   }
 
@@ -269,21 +277,33 @@ class PlateRenderer {
     if (p) { p.stream.x = x; p.stream.y = y; p.stream.k = k; }
   }
 
-  // How far a strike of the stream has warmed a card's picture toward its own colors, 0 to 1.
-  setWarm(host: Element, v: number): void {
+  // A sleeping card is being woken, or put back to sleep, by the pointer's band. While it is, the light the
+  // pointer brings to a card comes on whole and stays whole until the band has gone back over it: fading as
+  // well, the picture lost its colors before the band reached it.
+  setBanded(host: Element, on: boolean): void {
     const p = this.byHost.get(host);
-    if (!p || p.warm === v) return;
-    p.warm = v;
-    // A frozen clock draws each frame once, and the plates before the stream: the card is drawn again here, so a
-    // frozen frame shows the warmth of its own moment and not of the one before.
-    if (clock.isFrozen() && p.visible && p.mask) this.draw(p, false);
+    if (p) p.banded = on;
   }
 
-  // How far a card the stream has not reached yet is asleep, 0 to 1. Under the pointer or with focus it is awake.
-  setAsleep(host: Element, v: number): void {
+  // The stream's leading end near a sleeping card: where it is on the screen and how strongly it lights the blank.
+  // Called before setWipes, which draws the card again on a frozen clock.
+  setEnd(host: Element, x: number, y: number, k: number): void {
     const p = this.byHost.get(host);
-    if (!p || p.asleep === v) return;
-    p.asleep = v;
+    if (p) { p.end.x = x; p.end.y = y; p.end.k = k; }
+  }
+
+  // A card's two bands (./wake.ts) and how brightly each burns, or nothing for a card that is wholly awake.
+  setWipes(host: Element, wipes: ArrayLike<number> | null, burn0 = 0, burn1 = 0): void {
+    const p = this.byHost.get(host);
+    if (!p) return;
+    let same = p.blank === !!wipes && p.burn[0] === burn0 && p.burn[1] === burn1 && (!wipes || !clock.isFrozen());
+    p.burn[0] = burn0; p.burn[1] = burn1;
+    if (wipes) for (let i = 0; i < 6; i++) { if (Math.abs(p.wipes[i] - wipes[i]) > 0.01) same = false; p.wipes[i] = wipes[i]; }
+    p.blank = !!wipes;
+    if (same) return;
+    p.wiping = true;
+    // A frozen clock draws each frame once, and the plates before the stream: the card is drawn again here, so a
+    // frozen frame shows the band of its own moment and not of the one before.
     if (clock.isFrozen() && p.visible && p.mask) this.draw(p, false);
   }
 
@@ -297,10 +317,10 @@ class PlateRenderer {
   }
 
   // A card as it is this frame: how it is turned, in radians as its page turns it, how awake it is, and how many
-  // times it has been baked.
-  cardOf(host: Element): { turnX: number; turnY: number; awake: number; baked: number } | null {
+  // times it has been baked. Whether the pointer is on it or it has focus, where the pointer came onto it, and its size.
+  cardOf(host: Element): { turnX: number; turnY: number; awake: number; baked: number; on: boolean; enterX: number; enterY: number; w: number; h: number } | null {
     const p = this.byHost.get(host);
-    return p && p.area ? { turnX: p.tilt.x, turnY: p.tilt.y, awake: p.hover.v, baked: p.baked } : null;
+    return p && p.area ? { turnX: p.tilt.x, turnY: p.tilt.y, awake: p.hover.v, baked: p.baked, on: p.hover.goal > 0, enterX: p.enter.x, enterY: p.enter.y, w: p.cssW, h: p.cssH } : null;
   }
 
   // A card's relief, read back out of its last bake. held says which keys the asker has already.
@@ -500,6 +520,7 @@ class PlateRenderer {
     for (const p of this.plates) {
       const h = p.hover;
       if (h.pinned || h.v === h.goal) continue;
+      if (p.banded) { if (h.goal > 0) h.v = h.goal; continue; }
       if (frozen || this.still) h.v = h.goal;
       else {
         const T = p.spec.kind === 'card' ? WAKE : HOVER;
@@ -519,12 +540,12 @@ class PlateRenderer {
     }
     // On a screen that draws more than about ninety frames a second, a card that is at rest is lit again on every
     // other frame, half the cards on each: the lamp's light on it is still followed sixty times a second, and the
-    // cost of lighting four cards a frame is halved. A card that is awake, turning or warming is lit every frame.
+    // cost of lighting four cards a frame is halved. A card that is awake or turning is lit every frame.
     const quick = dt > 0 && dt < 0.011;
     this.odd = !this.odd;
     let nth = 0;
     for (const [p, r] of rects) {
-      if (quick && p.area && p.sig && p.hover.v === 0 && p.hover.goal === 0 && p.warm === 0 && Math.abs(p.tilt.x) + Math.abs(p.tilt.y) < 1e-4 && (nth++ % 2 === 0) === this.odd) continue;
+      if (quick && p.area && p.sig && p.hover.v === 0 && p.hover.goal === 0 && !p.wiping && Math.abs(p.tilt.x) + Math.abs(p.tilt.y) < 1e-4 && (nth++ % 2 === 0) === this.odd) continue;
       this.draw(p, false, r);
     }
     this.frameMs = performance.now() - t0;
@@ -540,7 +561,7 @@ class PlateRenderer {
     const video = p.videoEl && p.videoEl.readyState >= 2;
     const loop = !!p.loopEl && p.loopEl.readyState >= 2 && p.hover.v > 0 && !this.still;
     const sig = [Math.round(L.px), Math.round(L.py), Math.round(r.left), Math.round(r.top), clock.view.w, clock.view.h,
-      p.tilt.x.toFixed(3), p.tilt.y.toFixed(3), p.stream.k.toFixed(3), Math.round(p.stream.x), Math.round(p.stream.y), p.hover.v.toFixed(3), p.warm.toFixed(3), p.asleep.toFixed(3), !!p.photoTex,
+      p.tilt.x.toFixed(3), p.tilt.y.toFixed(3), p.stream.k.toFixed(3), Math.round(p.stream.x), Math.round(p.stream.y), p.hover.v.toFixed(3), p.blank ? `${Array.from(p.wipes, (v) => v.toFixed(1)).join(':')}:${p.burn[0].toFixed(3)}:${p.burn[1].toFixed(3)}:${Math.round(p.end.x)}:${Math.round(p.end.y)}:${p.end.k.toFixed(2)}` : '', !!p.photoTex,
       p.hover.v > 0 ? `${Math.round(p.pointer.x)}:${Math.round(p.pointer.y)}` : '',
       video ? p.videoEl!.currentTime.toFixed(3) : '', loop ? p.loopEl!.currentTime.toFixed(3) : ''].join();
     if (!force && sig === p.sig) return;
@@ -549,6 +570,7 @@ class PlateRenderer {
     if (tiers.get() === 'static' && p.sig && !force && hovered === p.hovered) return;
     p.hovered = hovered;
     p.sig = sig;
+    p.wiping = false;
     if (video) this.uploadVideo(p);
     if (loop) p.loopTex = this.uploadFrame(p.loopEl!, p.loopTex);
     const card = p.spec.kind === 'card';
@@ -577,8 +599,13 @@ class PlateRenderer {
     gl.uniform1f(l.u('uCard'), card ? 1 : 0);
     gl.uniform1i(l.u('uReveal'), card ? REVEALS[p.look?.reveal ?? 'fade'] : 0);
     gl.uniform1f(l.u('uPush'), card ? p.look?.push ?? 0 : 0);
-    gl.uniform1f(l.u('uWarm'), card ? p.warm : 0);
-    if (card) gl.uniform1f(l.u('uAsleep'), p.asleep * (1 - p.hover.v));
+    if (card) {
+      gl.uniform1f(l.u('uAsleep'), p.blank ? 1 : 0);
+      gl.uniform3fv(l.u('uWipe[0]'), p.wipes);
+      gl.uniform2f(l.u('uBurn'), p.burn[0], p.burn[1]);
+      gl.uniform3f(l.u('uEnd'), p.end.x, p.end.y, p.blank ? p.end.k : 0);
+      gl.uniform3fv(l.u('uCross[0]'), BAND);
+    }
     gl.uniform1f(l.u('uRimH'), mask.bead * (mask.deep ? 0.42 : 0.5));
     if (card) {
       gl.uniform3fv(l.u('uFace'), FACE);

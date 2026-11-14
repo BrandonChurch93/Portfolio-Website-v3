@@ -42,31 +42,24 @@ export const STREAM = {
 
   // The route through Work (routeThroughWork in route.ts). Lengths in units.
   work: {
-    // Onto the category bar and onto the top of the first row's card: how far the fall leans the way it will run, the
-    // least it keeps between where it lands and the end, the turn onto the top (how early it leaves the fall, how late
-    // it joins the run), how far short of the end it begins to leave the top, how far past the end it is thrown, and
-    // how far down the fall that turn is still felt.
+    // Onto the category bar: how far the fall leans the way it will run, the least it keeps between where it lands
+    // and the end, and the turn onto the top (how early it leaves the fall, how late it joins the run). Then, where
+    // the page is too narrow for the stones and the rail and the stream goes on down off the bar's end as it falls:
+    // how far short of the end it begins to leave the top, how far past the end it is thrown, and how far down the
+    // fall that turn is still felt.
     bar: { lean: 12, least: 60, land: [36, 30] as [number, number], early: 4, past: 30, fall: 84 },
-    card: { lean: 6, least: 56, land: [38, 30] as [number, number], early: 12, past: 34, fall: 170 },
-    // The post: how far above its middle the stream meets it, as an angle, how tight the turn is there, how much of
-    // what ran into it it gives back, and how much of a throw the run from it to the card's side is. That run is
-    // straight: any bow in it brings the stream to the side at a shallower angle, and it then only grazes it. far:
-    // how much further than a card it throws what its strike throws. aim: the way it throws it, as an angle below
-    // level, inward. low: how far down its own edge from where it is struck the pieces leave it, the least and what
-    // is added: from there the gap between the two rows is straight ahead, and from the shoulder the first row's
-    // card is in the way.
-    post: { at: 0.75, turn: 14, spring: 0.8, bow: 0, far: 1.45, aim: 0.1, low: [20, 34] as [number, number] },
-    // The side of the second row's card: how far down it the stream strikes, as a share. The turn there: how early
-    // it leaves its run in and how late it joins its run out. Tight, so the stream comes to a point on the rim. kick
-    // is the angle to the card's side at which it is thrown back out, leg how far it goes that way before its own
-    // weight takes it, and ease how that turn down is rounded, as shares of the leg: how soon it begins, and how far
-    // down the fall it is still felt.
-    side: { at: 0.4, turn: [9, 12] as [number, number], kick: 1.05, leg: 50, ease: [0.52, 2.2] as [number, number] },
-    // The rail: half its thickness, how far in from its high end the stream lands and the turn there, how far short of
-    // the button its low end stops, how far past that end the stream still runs straight, and the turn off it.
-    rail: { half: 9, in: 30, land: [27, 32] as [number, number], gap: 22, over: 4, off: [8, 30] as [number, number] },
-    // How long a sleeping card takes to wake once the stream has struck it. Short: it is lit by the strike.
-    wake: 0.1,
+    // The least the stream keeps between where it lands on a first row card's top and the card's end.
+    card: { least: 56 },
+    // The post: how far above its middle the stream meets it, as an angle. And the share of a strike's shards a
+    // stone throws. The strike is as hard as ever, and what it throws scatters off the stone as it does off
+    // anything: nothing aims it. A few pieces reach the tops of the second row by chance. Aimed there, they were a
+    // handful thrown one way.
+    post: { at: 0.75, throws: 0.45 },
+    // The side of the second row's card: how far down it the stream strikes, as a share.
+    side: { at: 0.4 },
+    // The rail: half its thickness, how far in from its high end the stream lands, how far short of the button its
+    // low end stops, and how far past that end the stream still runs straight.
+    rail: { half: 9, in: 30, gap: 22, over: 4 },
     // A project card's rim is rounded over, so its crest stands this far inside its outline, in the card's own
     // units. The stream takes the crest for the card's edge, and so lies on the rim and not over its shoulder.
     seat: 2.4,
@@ -77,17 +70,20 @@ export const STREAM = {
     // The brackets the rail is carried on: how far along each half of the rail they are, as shares of its length,
     // and how large one is against the rail's own.
     keel: { at: [0.17, 0.83] as [number, number], size: 1 },
-    // The meeting: how steeply each side comes down to the middle from the rail's end, how much of that stretch is a
-    // bow, how far down the two take to turn into one, and how near they are when they count as met.
-    meet: { slope: 0.28, bow: 0.8, fall: 38, near: 10 },
-    // The path as a bolt, the route through Work only. It runs straight between the things it strikes, turns hard
+    // The meeting: how steeply each side comes down to the middle from the rail's end, and how near they are when
+    // they count as met.
+    meet: { slope: 0.28, near: 10 },
+    // How strongly the stream's leading end lights a sleeping card's blank as it comes near.
+    nearBlank: 3.6,
+    // The path as a bolt: the route through Work from where the stream lands on the category bar to where its two
+    // sides meet under the button, and nowhere else. It runs straight between the things it strikes, turns hard
     // at each, and on a free run goes in short straight strokes. corner: how tight every turn is. past: how far
     // beyond the end of a top it turns down. lead: how far it runs straight out of a strike and straight in to the
     // next. knot: the least and the most between two turns of a free run. reach: how far a turn stands off the
     // straight line. clear: the nearest a turn comes to anything. flip: how often a stroke crosses to the other
     // side of the line, not staying on the side it is on. carry: how far each way along the route its riding shards
-    // take a turn over, so none is thrown round a hard one. force: how much harder it strikes than the path as it
-    // was, having come straight in with nothing spent on a bow. flash: and how much brighter the flash of that strike is.
+    // take a turn over, so none is thrown round a hard one. force: how much harder it strikes than a stream that
+    // has spent itself on a bow, having come straight in. flash: and how much brighter the flash of that strike is.
     bolt: { corner: 7, past: 5, lead: [44, 84] as [number, number], knot: [44, 150] as [number, number], reach: 34, clear: 30, flip: 0.62, carry: 44, force: 1.2, flash: 1.7 },
     // A shard thrown by a strike is let fall this far below where it was thrown, and then goes. The section is tall,
     // and without this what a strike high up throws rains down the whole of both margins.
@@ -173,10 +169,10 @@ export const STREAM = {
   warmth: [3.4, 1.5] as [number, number],
 
   // A project card that a leading end has just struck. Its rim flares, and dies away over the first number of
-  // seconds. Its picture warms this far toward its own colors, reached in rise seconds and settled back to bronze
-  // over a few times settle. And while the pointer has the card turned or grown, what lies within the first number
-  // of units of it is carried with it whole, and what lies further off less, out to the second.
-  struck: { flare: 0.3, warm: 0.8, rise: 0.1, settle: 0.26, carry: [10, 70] as [number, number] },
+  // seconds. Its picture is left as it was: a strike that brought its colors up read as a hover nobody made. And
+  // while the pointer has the card turned or grown, what lies within the first number of units of it is carried
+  // with it whole, and what lies further off less, out to the second.
+  struck: { flare: 0.3, carry: [10, 70] as [number, number] },
 
   head: {
     follow: 10,         // how hard the leading end is drawn to where the scroll puts it, per second
