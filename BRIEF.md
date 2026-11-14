@@ -902,12 +902,17 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
 - One fixed light: the desk lamp and the lit monitor. Choosing a skill never relights the desk.
 - Skills are never tied to objects on the desk.
 - Skills read in wide rows, not narrow columns.
-    - **On the home page the rows sit beside the desk (Nov 14).** He approved the rough draft of Skills and About, which opens with the rows in a column about 490 units wide at the right of the desk, after being told in bold that it goes against the line above: "This looks good." Still one skill set to a row. Fable reads his approval as the line giving way for this layout, and said so to him.
+    - **On the home page the rows sit under the desk (Nov 14).** "I like the content under the desk better." Said after seeing both layouts with his real words in the fuller draft. It replaces the line written that morning from his approval of the rough draft, which had the rows in a column beside the desk. The rows beside the desk are in Dropped.
 - One animation for skills. Nothing is hidden behind a category.
 - **The desk and the section's content come onto the page when the stream reaches them (Nov 14).** "I also want the surge to drive the appearance of these sections: it hits a certain point and my profile picture fades in and the content appears, something similar with the desk as well."
     - In exact terms: Skills is not on the page until the stream's leading end reaches a point. Then the desk appears and the section's content with it. He wrote "the surge". Fable reads it as the stream's leading end as the visitor scrolls, not the surge a change of category sends through Work, and said so to him.
     - It sets "One fixed light" above aside for the arrival only, as Fable reads it: the desk is dark until the stream reaches it, and once lit its lights are fixed and choosing a skill never relights it.
     - Where the points are, and whether things go away again when the stream draws back, are not ruled. Fable's calls are in Open 28.
+- **The desk has a real desk's proportions (Nov 14).** "On the skill section, the desk looks weird. It looks very elongated. I understand this is just a rough draft, but that's something we should probably address."
+    - In exact terms: the long desk in the fuller draft, about 1160 units long on legs about 220 tall, reads as stretched. The desk is to look like a real desk. How long it is, is not ruled.
+- **The skills on the live site are out of date, and his résumé is the newer source (Nov 14).** "Are we limiting the number of skills we have to fit the layout? It just seems a bit lighter than what's currently on my portfolio, which, to be honest, my current portfolio is way out of date. I have much more skills now that I'm capitalizing on versus back when I originally built the portfolio. I can share my résumé with you." He shared it.
+    - Nothing was cut for the layout: the live site lists 48 skills and the fuller draft carried all 48. It read lighter because the live site gives each skill a chip with an icon and the draft set them as running lines. His résumé lists 77, in six groups.
+    - It changes Open 6 and Words, "His live site's content is the base", for the lists of skills: the résumé's lists are the base. Which skills the site ends up showing is his to say.
 - **The headphones hang at the right of the Skills title (Nov 14).** "What if we put the headphones next to skills title to the right?" In the words' column, beside the title, not over the desk. Of the site's own design.
 
 ### About
@@ -915,6 +920,8 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
 - A big portrait on the right that reacts to the mouse and feels like part of the page, with something like an aura.
 - Tabs: about me, what I want to do, my plans for the future.
 - **His portrait fades in and the content appears when the stream reaches a point (Nov 14).** His words are under Skills, above: "it hits a certain point and my profile picture fades in and the content appears". Until then About is not on the page.
+- **His portrait stands beside the words, level with them (Nov 14).** "On the about section, I feel like my profile picture should be next to the content. Currently, my profile picture sits a good ways above it. I'd like it to be more centered."
+    - In exact terms: in the fuller draft his head was about 330 units above the About title and the words began level with his chest. The portrait and the words are to stand side by side, centered on each other top to bottom.
 
 ### Contact
 
@@ -1165,7 +1172,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
         - Where it goes when it comes back, in his words: "the accomplishment section will bridge the gap between them and Work", where "them" is Skills and About. So the order is Work, accomplishments, Skills, About.
         - The page at `/lab/accomplishments` stays up as a record.
         - What Fable took from it: he was asked which layout and never what the section says. The first question when it comes back is what the words are.
-27. **The rows of skills beside the desk, as the mirror of About (Nov 14). His question. Decided the same day: beside the desk** (Settled, Skills). "Should we mirror the about section with the 3D desk object? And have the skills on the right side of it?"
+27. **The rows of skills beside the desk, as the mirror of About (Nov 14). His question. Decided the same day, twice: beside the desk from the rough draft, then under the desk once he saw both with his real words** (Settled, Skills). "Should we mirror the about section with the 3D desk object? And have the skills on the right side of it?"
     - In exact terms: About is words at the left and his portrait at the right. Skills would be its mirror: the desk at the left, and the title with the rows of skills at the right of it.
     - On the sketch: this is how `/lab/home` opens (Skills rows · Beside the desk). The rows across the page under the desk are one press away.
     - **Against a settled line, said to him in bold:** Skills, "Skills read in wide rows, not narrow columns." Beside the desk each row is about 490 units wide and runs to two lines. Under the desk each is 1160 wide and one line. They are still rows, one skill set to a row, and not pillars side by side.
@@ -1229,6 +1236,21 @@ Each line has Fable's recommendation where there is one. None of these are rules
         - The pick sets the desk's size, so it comes before the three rough desks: about 590 units wide beside the rows, about 1160 under them.
         - What is not in it, said to him: the look, the 3D, the stream itself (still a line), phones. Motion was not judged in the web chat, which draws in software: what was checked is the order things come on in, where the screen is when they do, and that they go away again.
         - Stills: `reference/studies/39-skills-about-draft-*.jpg`.
+    - **His verdict on the fuller draft (Nov 14).** Four things, each in Settled, Skills and About: the rows go under the desk. The long desk "looks weird. It looks very elongated." His portrait "should be next to the content", "more centered". And the skills are out of date on the live site, with his résumé as the newer source, which he shared.
+    - **The second round, built on his word (Nov 14). In front of him. Nothing in it is picked.** The same page, `/lab/skills-about-draft`.
+        - **The desk.** Worked out from real sizes and not plotted by eye: 2 m long, 0.78 deep, 0.74 tall, seen from the front left and above with nothing vanishing, 400 units to a metre. About 860 units wide and 620 tall with what stands on it, against the first one's 1160 long on legs 220 tall. Four legs, the PC under its far end, and a monitor, a lamp, a tablet, a keyboard and mouse, a notebook and a mug on it. Its front edge runs down to the left at about 12 degrees, the slope of Work's rail. The stream lands a little right of the middle of that edge. Still outlines, and what stands on it is not a design.
+        - **The skills.** The résumé's 77, word for word, in its six groups under his four skill sets: AI Engineering and AI Evaluation & Safety under AI Product Engineering. Full Stack under Full-Stack Engineering. Frontend & Design and Accessibility under Design Systems & Craft. Client & Product under Product Leadership. Which group goes under which set is Fable's call. Each set's name and the two lines beside it are still the live site's.
+        - On the live site and not on the résumé, his to keep or let go: Three.js, motion design, typography and layout, information architecture, Vercel, data pipelines, AI observability, context engineering, workshop facilitation, hiring and mentorship, zero-to-one launches. The résumé he shared is the one aimed at forward deployed roles.
+        - A row is as tall as its words now, read off the page, so the four are 258, 168, 217 and 168 units tall. A skill never breaks across two lines.
+        - **About.** The title and the tabs stand on a level bar, and the words hang under it. The stream falls down the left of the rows, lands on the bar's left end and runs along it under the tabs. A change of tab sends a pulse along the bar from the tab that was pressed. The bar is the tabs' own, as the category bar is Work's.
+        - Two ways for the stream to pass him, behind a switch (`?about=behind` opens the second):
+            - **Beside him**, which the page opens on. The bar is as long as the words. The stream falls off its end between the words and his portrait, where he is looking, and goes on down the middle of the page toward Contact. His portrait is centered on the words.
+            - **Behind his shoulders.** The bar runs on across the page behind him, as the rail did in the rough draft. His shoulders are about 58 percent of the way down the picture, so with the bar there his head stands about 95 units higher than centered.
+        - **It changes something he approved in the rough draft, said to him in bold:** the sloping rail behind his shoulders is a level bar, and as the page opens the stream no longer passes behind him. Fable recommends beside him, since centered is what he asked for.
+        - What comes on, in order: About's title where the stream lands on the bar, the tabs and the words as it runs under them, his portrait as it leaves the bar's end, the light behind him as it falls beside him.
+        - Gone from the page: the rows beside the desk and their switch.
+        - What is not right yet, plainly: the bar is level, so the stream crosses it in about half a second however slowly the page is scrolled. The right side under his portrait and the left side under a short tab's words are empty. The lamp's head is a box.
+        - Stills: `reference/studies/41-skills-about-draft-2-*.jpg`.
     - **The desk as a 3D piece: five calls put to him, with Fable's pick for each. Waiting on his answer.** How it is made: in code in this repo, as his PC Builder was, or modeled through Blender on his gaming PC and loaded as a file (Open 5). What sits on it: the monitor, lamp, keyboard and mouse, a tablet and his camera, nothing new. The desk itself: a dark timber top, a bronze front edge that carries the stream, two drawers with the knob he chose. The PC under it: his PC Builder's case brought over, lit in the site's ember. The headphones: their own small piece by the title, the site's own design. Fable's pick is the first of each. After his answer: three rough desks to choose from. His `3d-asset-playbook` skill is the method.
 
 ## Dropped
@@ -1249,6 +1271,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
 - For the sleeping card's blank: the card's layout etched as hairlines, the layout as a mould of pockets, a face cut into facets, and a line and a sun cut into polished bronze. He picked the engine turned dial (Nov 13)
 - A change of course that rises to a point and drives off, C in the path derby. "I definitely don't like the point shoot" (Nov 13)
 - Cards of different sizes, and a second row of tags on a card (Nov 13)
+- The rows of skills in a column beside the desk, as the mirror of About. He picked the rows under the desk (Nov 14)
 - All four cards changing at once when the category changes, with nothing travelling. A surge of 0.45 or 0.7 seconds. He picked 0.7 from the wireframe, saw it on the real page, and changed to 1.1 (Nov 13)
 - For the card: its colors coming back as a sweep, lights first, or with the picture coming closer. The card leaning toward the cursor. The thin bead as its edge. He picked the fade, leaning away and the deep edge (Nov 13)
 - The faint channel drawn ahead of the stream

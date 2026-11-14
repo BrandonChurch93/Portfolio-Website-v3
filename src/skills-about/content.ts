@@ -1,6 +1,9 @@
-// The words on the fuller draft of Skills and About. Every line is his live site's, as it stands there
-// (brandon-church-portfolio: app/data/competencies.js and app/components/AboutSection.jsx). He rewrites the copy
-// himself, so nothing here is drafted. Two claims in the third paragraph are down for correction in BRIEF.md, Words:
+// The words on the fuller draft of Skills and About. He rewrites the copy himself, so nothing here is drafted.
+// Each skill set's name, the line under it and its sentence are his live site's, as they stand there
+// (brandon-church-portfolio: app/data/competencies.js). The lists under them are the Skills section of the résumé he
+// shared on Nov 14, word for word, since the live site's lists are out of date: its six groups under his four skill
+// sets, which group goes under which being Fable's call. About's paragraphs are the live site's
+// (app/components/AboutSection.jsx). Two claims in its third paragraph are down for correction in BRIEF.md, Words:
 // the years and the clients.
 
 export interface Competency { name: string; claim: string; proof: string; groups: [label: string, items: string[]][] }
@@ -11,8 +14,8 @@ export const COMPETENCIES: Competency[] = [
     claim: 'AI products that prove their answers.',
     proof: 'If a model is in the product, it gets measured. After hours, the same obsession in hardware.',
     groups: [
-      ['Building', ['Claude Code', 'LLM APIs', 'RAG · hybrid search & re-ranking', 'LangGraph', 'MCP', 'Multi-agent orchestration', 'Context engineering', 'Guardrails & structured outputs']],
-      ['Proving', ['Eval frameworks', 'LLM-as-judge', 'Human-in-the-loop QA', 'AI observability', 'CI-gated evals']],
+      ['AI Engineering', ['Claude Code', 'Claude API', 'OpenAI API', 'Amazon Bedrock', 'Generative AI', 'LLMs', 'RAG', 'Vector Databases (pgvector)', 'AI Agents', 'Agentic AI', 'Tool Use', 'Model Orchestration', 'LangGraph', 'LangChain', 'MCP', 'Prompt Engineering']],
+      ['AI Evaluation & Safety', ['LLM Evaluation', 'Eval Harnesses', 'Golden Question Sets', 'LLM-as-Judge', 'Rubric Design', 'Agent Trajectory Review', 'AI Red Teaming', 'Guardrails', 'Human-in-the-Loop Evaluation', 'Spend and Rate Limits']],
     ],
   },
   {
@@ -20,9 +23,7 @@ export const COMPETENCIES: Competency[] = [
     claim: 'Frontend led. Full stack shipped.',
     proof: 'A decade deep on the front. Behind it, a backend that holds up at federal scale.',
     groups: [
-      ['Frontend', ['React', 'Next.js', 'Angular', 'TypeScript', 'Advanced CSS', 'Three.js', 'Performance']],
-      ['Backend & Data', ['Node', 'Python', 'PostgreSQL', 'Data pipelines']],
-      ['Platforms & Testing', ['Vercel', 'AWS', 'CI/CD', 'Automated testing']],
+      ['Full Stack', ['React', 'TypeScript', 'JavaScript', 'Next.js', 'Node.js', 'Express', 'Python', 'FastAPI', 'REST', 'SQL (PostgreSQL, SQL Server)', 'Supabase', 'AWS', 'Docker', 'GitHub Actions', 'CI/CD', 'Nx and pnpm Monorepos', 'Playwright', 'ServiceNow']],
     ],
   },
   {
@@ -30,8 +31,8 @@ export const COMPETENCIES: Competency[] = [
     claim: 'I make products feel inevitable.',
     proof: 'Tokens to components to motion, built from scratch and built for teams to ship on.',
     groups: [
-      ['Design & Systems', ['Figma', 'UI/UX design', 'Information architecture', 'Typography & layout', 'Motion design', 'User research', 'Design tokens', 'Component libraries']],
-      ['Accessibility', ['WCAG 2.2 & Section 508', 'ARIA', 'Screen reader testing', 'Auditing & remediation']],
+      ['Frontend & Design', ['Angular', 'HTML5', 'CSS3', 'Tailwind CSS', 'Design Tokens', 'Micro-Frontends', 'Core Web Vitals', 'GSAP', 'Figma', 'Claude Design', 'Prototyping in Code', 'Design Systems', 'UI/UX Design', 'User Research', 'Usability Testing']],
+      ['Accessibility', ['WCAG 2.2', 'Section 508', 'ARIA', 'Screen Reader Testing', 'axe', 'Auditing & Remediation', 'VPAT']],
     ],
   },
   {
@@ -39,8 +40,7 @@ export const COMPETENCIES: Competency[] = [
     claim: 'The role changes. The standard doesn’t.',
     proof: 'VP of Product, studio founder, Director roles across federal and Fortune 500.',
     groups: [
-      ['Leading', ['Product strategy', 'Workshop facilitation', 'Stakeholder management', 'Cross-functional leadership', 'Hiring & mentorship']],
-      ['Delivering', ['Zero-to-one launches', 'Federal & enterprise compliance', 'Training & enablement']],
+      ['Client & Product', ['Requirements Gathering', 'Discovery', 'Proofs of Concept', 'Solutions Engineering', 'Stakeholder Management', 'Demos & UAT', 'User Training', 'Product Strategy', 'Roadmaps', 'User Stories', 'Cross-Functional Leadership']],
     ],
   },
 ];

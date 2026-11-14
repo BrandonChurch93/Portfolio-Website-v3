@@ -374,6 +374,9 @@ The section:
 - **What the stream brings on has to be on the screen when it comes.** The stream's leading end sits two thirds of the way down the screen. Anything it brings on more than a third of a screen below itself comes on unseen. Check where the screen is at each cue, not only the order of the cues.
 - **A nearly level run outruns the scroll.** Along the desk's front edge the leading end covers about 600 units of line for 90 of scroll. Either the end is held to a speed and falls behind the scroll, or the thing it runs along is set at more of a slope. How steeply a piece's edge sits on the page is part of the piece's design.
 - The web chat draws in software. Of a draft's motion it can check the order, the cues and that things go away again. How the motion feels is his to judge on his own machine.
+- **A stand in for a 3D piece is worked out from real sizes.** The first long desk was plotted by eye, 1160 units long on legs 220 tall, and he called it elongated. Given a real desk's sizes in metres and one way of looking at it, the outline reads as a desk. `src/skills-about/bench.ts`.
+- **Know where a picture's parts are before laying things against it.** His shoulders are about 58 percent of the way down his portrait and his chin about 47. A line placed at 45 percent ran behind his mouth.
+- **Two things he wants can pull against each other. Draw both and say so.** The stream behind his shoulders and his portrait centered on the words cannot both be had, so the draft carries each behind a switch.
 
 ## A derby of reliefs
 

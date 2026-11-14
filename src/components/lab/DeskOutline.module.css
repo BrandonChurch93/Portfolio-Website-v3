@@ -107,6 +107,17 @@
   }
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  /* A ring drawn on a slanted wall cannot be turned about its middle, so its dashes travel round it. */
+  .obj[data-lively='true'][data-on='true'] .ring.spin {
+    animation: wake calc(var(--slow, 1) * 0.7s) linear both, travel 1.6s linear infinite;
+  }
+}
+
+@keyframes travel {
+  to { stroke-dashoffset: -1; }
+}
+
 @keyframes wake {
   0% { opacity: 0; }
   18% { opacity: 0.8; }

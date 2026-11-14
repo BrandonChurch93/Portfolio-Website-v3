@@ -2,6 +2,59 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · Study 22, second round: his four notes on the fuller draft (Fable, web chat)
+
+**What Brandon said**
+
+- "I like the content under the desk better. couple things though. First off, on the about section, I feel like my profile picture should be next to the content. Currently, my profile picture sits a good ways above it. I'd like it to be more centered"
+- "On the skill section, the desk looks weird. It looks very elongated. I understand this is just a rough draft, but that's something we should probably address"
+- "Also, are we limiting the number of skills we have to fit the layout? it just seems a bit lighter than what's currently on my portfolio, which, to be honest, my current portfolio is way out of date. I have much more skills now that I'm capitalizing on versus back when I originally built the portfolio. I can share my résumé with you"
+- He attached the résumé. All four are in `BRIEF.md`, Settled, Skills and About, and the rows beside the desk are in Dropped.
+
+**His question, answered**
+
+- Nothing was cut for the layout. The live site's `competencies.js` holds 48 skills and the first round carried all 48. The live site sets each as a chip with an icon, the draft set them as running lines, which is why it read lighter. The résumé lists 77 in six groups.
+
+**The résumé**
+
+- Read from his upload, not copied into the repo. Only its Skills section is used, as lists in `src/skills-about/content.ts`. It carries his phone number and email: **nothing else from it goes in this public repo.**
+- It is the résumé aimed at forward deployed roles, so it leaves out things the live site has that this site may want, Three.js and motion design among them. `BRIEF.md`, Open 28, lists them. Which skills the site shows is his.
+
+**What was built**
+
+- The same page, `/lab/skills-about-draft`. `BRIEF.md`, Open 28, "The second round", has what is in it and every call made for him.
+- `src/skills-about/bench.ts` and `src/components/lab/Workbench.tsx`: the desk from real sizes. `DeskOutline.tsx` keeps the first desk for the rough draft, with a new `spin` class for a fan drawn on a slanted wall.
+- `src/skills-about/draft.ts` is one layout now. It takes where the rows start from the page, since a row is as tall as its words, and which way the stream passes his portrait.
+- The rows switch is gone. A new switch sets how the stream passes him.
+
+**What it showed**
+
+- A line behind his shoulders and a portrait centered on the words cannot both be had: his shoulders are about 58 percent of the way down the picture. The first try put the bar at 45 percent and it ran behind his mouth.
+- The stream falling between the words and him lands where he is looking in the photograph, and brings the stream back to the middle of the page before Contact.
+- With the tabs standing on the bar, a change of tab and the pulse it sends are in one place, as a change of category is on Work's bar.
+
+**What was looked at**
+
+- Stills of the whole page with the line drawn, both ways the stream passes him, at a wide screen. A phone, for breakage only.
+- Stills at six points of the scroll with the stream leading.
+- A live page, read off the page at each stop: everything comes on in order and goes away again on the way back up. A tab changed by a click and by the arrow keys, the pulse seen at the bar's end and the words changing after it. Play again, half speed and the new switch pressed. No errors.
+- A timed scroll both ways. At about 520 px a second About's title comes on with the screen's reading line 30 units past the bar, the words 0.2 seconds later, his portrait 0.5 seconds after the title, and all of it is on the screen when it comes.
+
+**What is not right yet, plainly**
+
+- Motion was not judged. The web chat draws in software.
+- The bar is level, so the stream crosses it in about half a second however slowly the page is scrolled. `QUALITY.md` fails a stream that races. On the real page that run needs an answer, as the level category bar does in Work.
+- Under his portrait at the right, and under a short tab's words at the left, the page is empty.
+- The desk's lamp has a box for a head, and what stands on the desk is not a design.
+- The split of About's paragraphs under the tabs is still Fable's, and two of its claims are down for correction.
+
+**Waiting on him**
+
+- How the stream passes his portrait: beside him, as the page opens and as Fable recommends, or behind his shoulders.
+- Which skills the site shows.
+- The five calls on the desk as a 3D piece, unanswered since the morning. After them: three rough desks.
+- He has looked at Claude Code's fourth pass and the knob, and the band of light was mended after it: the next entry down. He has not seen the mended band.
+
 ## 2026-11-14 · The band of light, mended after his look (Fable, Claude Code)
 
 At `/lab/work` and `/lab/work-blank`. He has not seen the mended band.

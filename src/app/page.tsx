@@ -14,7 +14,7 @@ export default function Index() {
       <ul className={styles.list}>
         <li>
           <Link href="/lab/skills-about-draft">Skills and About, a fuller draft</Link>
-          <span className={styles.minor}>Phase 3 · the pair with the live site&rsquo;s words and the motion roughed in: what appears when, in what order and how fast, a tab change, and buttons to play a section again or at half speed</span>
+          <span className={styles.minor}>Phase 3 · the pair with your words and the motion roughed in, second round: the rows under a desk with a real desk&rsquo;s proportions, the skills from your résumé, your portrait beside About&rsquo;s words, and a switch for how the stream passes you</span>
         </li>
         <li>
           <Link href="/lab/skills-about">Skills and About, as a pair</Link>
