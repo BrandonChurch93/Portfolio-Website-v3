@@ -14,36 +14,46 @@ export const SKILLS = { title: [820, 170] as Pt, phones: { x: 1168, y: 58 }, row
 export type DeskRoute = 'lamp' | 'edge';
 
 // About: the stream stays off his head and off the words, and strikes two things. first is under the last row of
-// skills at the left, where the stream comes down, and sends it to the right at a gentle grade. The second, up and to
-// the left of his portrait, throws it down at a steep angle to go in behind the shoulder at the picture's left, half
-// way along the trapezius. It crosses behind his chest on that line, which is what lights him, and comes out under
-// him. The title, the tabs and the words hang under the first run. enter is where it goes in, as shares of his
-// portrait. Angles are in degrees under level, and everything is measured down from the top of About.
+// skills at the left, where the stream comes down, and sends it to the right at a gentle grade, over the top of
+// About. The second, a studio light up and to the right of his portrait, throws it down at a steep angle to go in
+// behind his own left shoulder, which is at the right of the picture, half way along the trapezius. It crosses
+// behind his chest on that line and comes out under him. The light behind him is thrown by the studio light. The
+// title, the tabs and the words hang under the first run. enter is where it goes in, as shares of his portrait.
+// Angles are in degrees under level, and everything is measured down from the top of About.
 export const ABOUT = {
-  h: 790,
   first: { x: 124, y: 40, grade: 4 },
-  enter: { fx: 0.291, fy: 0.54, angle: 58 },
+  enter: { fx: 0.722, fy: 0.54, angle: 64 },
   words: { l: 190, w: 470, title: 167, tabs: 263, text: 334 },
-  portrait: { x: 764, y: 172, w: 580, h: 562 },
+};
+
+// Two ways his portrait stands. beside: a figure beside the words. back: large, blended into the ground behind the
+// section, as it was in the first derby's third look, which he asked to see again.
+export type Look = 'beside' | 'back';
+export const LOOKS: Record<Look, { h: number; lean: number; portrait: { x: number; y: number; w: number; h: number } }> = {
+  beside: { h: 790, lean: 14, portrait: { x: 764, y: 172, w: 580, h: 562 } },
+  back: { h: 1010, lean: 40, portrait: { x: 500, y: 100, w: 900, h: 873 } },
 };
 
 const RAD = Math.PI / 180;
 // Places are kept to a hundredth of a unit, so the page the server draws and the page the browser draws agree.
 const fix = (v: number) => Math.round(v * 100) / 100;
 const GRADE = Math.tan(ABOUT.first.grade * RAD), LEAN = 1 / Math.tan(ABOUT.enter.angle * RAD);
-const ENTER: Pt = [fix(ABOUT.portrait.x + ABOUT.portrait.w * ABOUT.enter.fx), fix(ABOUT.portrait.y + ABOUT.portrait.h * ABOUT.enter.fy)];
-// The second thing stands where the gentle run from the first meets the steep line down to his shoulder.
-const SECOND = fix((ENTER[0] - (ENTER[1] - ABOUT.first.y + ABOUT.first.x * GRADE) * LEAN) / (1 - GRADE * LEAN));
 
 // How high the first run is over a place under it.
 export const runAt = (x: number) => ABOUT.first.y + (x - ABOUT.first.x) * GRADE;
-// The two strikes, where the stream goes in behind him, and the way it is thrown.
-export const TURNS = {
-  first: [ABOUT.first.x, ABOUT.first.y] as Pt,
-  second: [SECOND, fix(runAt(SECOND))] as Pt,
-  enter: ENTER,
-  along: [Math.cos(ABOUT.enter.angle * RAD), Math.sin(ABOUT.enter.angle * RAD)] as Pt,
-};
+// The two strikes, where the stream goes in behind him, and the way it is thrown, which is down and to the left.
+// The studio light stands where the gentle run from the first meets the steep line down to his shoulder.
+export function turns(look: Look) {
+  const P = LOOKS[look].portrait;
+  const enter: Pt = [fix(P.x + P.w * ABOUT.enter.fx), fix(P.y + P.h * ABOUT.enter.fy)];
+  const x = fix((enter[0] + (enter[1] - ABOUT.first.y + ABOUT.first.x * GRADE) * LEAN) / (1 + GRADE * LEAN));
+  return {
+    first: [ABOUT.first.x, ABOUT.first.y] as Pt,
+    second: [x, fix(runAt(x))] as Pt,
+    enter,
+    along: [-Math.cos(ABOUT.enter.angle * RAD), Math.sin(ABOUT.enter.angle * RAD)] as Pt,
+  };
+}
 
 // Where the stream falls beside the rows.
 const SPINE = ABOUT.first.x;
@@ -58,9 +68,9 @@ export interface Draft { h: number; skills: number; about: number; line: Line; c
 
 // tops is how far under the first row each row starts and tall is how tall the four are together, both read off
 // the page, since a row is as tall as its words.
-export function draft(tops: number[], tall: number, desk: DeskRoute): Draft {
-  const skills = LEAD, about = skills + SKILLS.rows.t + tall + SKILLS.foot, h = about + ABOUT.h + TAIL;
-  const P = ABOUT.portrait, { first, second, enter, along } = TURNS;
+export function draft(tops: number[], tall: number, desk: DeskRoute, look: Look): Draft {
+  const skills = LEAD, about = skills + SKILLS.rows.t + tall + SKILLS.foot, h = about + LOOKS[look].h + TAIL;
+  const P = LOOKS[look].portrait, { first, second, enter, along } = turns(look);
   const on = (a: number, up = 0, back = 0): Pt => { const [x, y] = put(a, up, back); return [x, skills + y - 2]; };
   const land = desk === 'lamp' ? on(...LAMP) : on(BENCH.land), off = on(0.012);
   const through = (P.y + P.h + UNDER - enter[1]) / along[1];
@@ -74,7 +84,7 @@ export function draft(tops: number[], tall: number, desk: DeskRoute): Draft {
     [first[0], about + first[1], 5, 3],
     [second[0], about + second[1], 5],
     [out[0], out[1], 70],
-    [out[0] + 44, h, 0, 9],
+    [out[0] - 44, h, 0, 9],
   ]);
   const cue = (id: string, [x, y]: Pt, back = 0): Cue => ({ id, at: nearest(l, x, y) - back, x, y });
   const level = (id: string, y: number): Cue => { const at = reach(l, y), [x] = point(l, at); return { id, at, x, y }; };

@@ -2,6 +2,47 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · The fuller draft's fifth round: his own left shoulder, the studio light's glow, two tabs, shorter rows (Fable, web chat)
+
+**What Brandon said**
+
+- The shoulder he meant is his own left, from where he is facing. Fable had put the stream at the left of the picture.
+- "I noticed that the object looks like studio light. That's actually kind of brilliant." He wants the glow behind him extended so it looks like it comes out of the light, without redoing the glow.
+- Two tabs in About: Professional, the default, and Personal. The text can wait and is to be marked as a placeholder.
+- The rows of skills: the middle column goes, the "super generic" line under each name goes, the name is centered against its lists, a gaming group goes under Full-Stack Engineering, and the lists are reviewed down to "the big important ones".
+- He asked for a variant of About with his portrait as the background, moved by the cursor, as in the first derby's third look, with the studio light and the stream kept.
+- "Everything looks good on the next pass, I think I'm ready to hand it off to Claude Code to start building, and me and you can start planning on the next section."
+- All of it is in `BRIEF.md`, Settled, pushed before anything was built.
+
+**What was built**
+
+- `/lab/skills-about-draft`, fifth round. `BRIEF.md`, Open 28, has every part and what is not right.
+
+**What was looked at**
+
+- Stills of the whole draft with the line drawn, with his portrait beside the words and behind the section. A live page scrolled down and back up on both: everything comes on in order and goes away again, a tab's pulse runs to him, no errors.
+
+**Calls made for him, each said to him**
+
+- "Put it to my right side" is read as the right of the screen.
+- Which 58 skills stay, and the six in the game development group. Three.js was not on the résumé's list.
+- His portrait comes on just after About's title, since the run to him is now long.
+- The first thing is still a reflector. He spoke only of the studio light.
+
+**What is not right yet, plainly**
+
+- The run over the top of About is about 1,230 units and nearly level. On a quick scroll the light behind him is about a second and a half behind About's title.
+- Motion is not judged here.
+
+**Waiting on him**
+
+- His go, and which portrait. Three things he has seen and not ruled: the stream onto the desk's lamp, the PC turned glass side out, the reflector.
+
+**For the next session**
+
+- On his go: a prompt for Claude Code to build Skills and About for real from this draft, and the kit for the desk as a piece, which brings his PC Builder's PC over. Then the next section is planned with him. Fable's proposed order after Skills and About is Contact and the footer, then the hero.
+- His game work, for the game development group: Unreal Engine 5 in C++ and earlier Unity work in C#. He corrects the list.
+
 ## 2026-11-14 · The desk agreed for the real build, a new route into About, and a read of his résumé (Fable, web chat)
 
 **What Brandon said**

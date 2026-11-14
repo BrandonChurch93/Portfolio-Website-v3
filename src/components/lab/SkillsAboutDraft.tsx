@@ -5,7 +5,7 @@ import { READING_LINE } from '../../config/site';
 import { lamp } from '../../lamp/lamp';
 import { nearest, point, reach } from '../../page-sketch/plan';
 import { ABOUT_TABS, COMPETENCIES } from '../../skills-about/content';
-import { ABOUT, SKILLS, TURNS, draft, runAt, type DeskRoute } from '../../skills-about/draft';
+import { ABOUT, LOOKS, SKILLS, draft, runAt, turns, type DeskRoute, type Look } from '../../skills-about/draft';
 import { W } from '../../skills-about/plan';
 import { clock } from '../../world/clock';
 import { Phones } from './DeskOutline';
@@ -19,17 +19,19 @@ const FAR = 2600;
 // How long a tab's pulse takes to reach him, in seconds, and how far along it is when the words change.
 const PULSE = { run: 0.75, swap: 0.45 };
 // Where the rows start and how tall they are until the page has been read.
-const GUESS = { tops: [0, 190, 310, 500], tall: 640 };
+const GUESS = { tops: [0, 130, 260, 390], tall: 500 };
 
+const f1 = (v: number) => v.toFixed(1);
 const tr = (x: number, y: number) => `translate(${x.toFixed(1)} ${y.toFixed(1)})`;
 const ease = (u: number) => 1 - (1 - u) ** 3;
 
 // Study 22: Skills and About as a pair, with his real words and the motion roughed in.
-// ?desk=edge, ?speed=half, ?whole and ?ui=0 open it on those.
+// ?portrait=back, ?desk=edge, ?speed=half, ?whole and ?ui=0 open it on those.
 export function SkillsAboutDraft() {
   const id = useId().replace(/:/g, '');
   const [slow, setSlow] = useState(false);
   const [desk, setDesk] = useState<DeskRoute>('lamp');
+  const [look, setLook] = useState<Look>('beside');
   const [ui, setUi] = useState(true);
   const [whole, setWhole] = useState(false);
   const [reached, setReached] = useState<Set<string>>(new Set());
@@ -39,7 +41,7 @@ export function SkillsAboutDraft() {
   const board = useRef<HTMLDivElement>(null), list = useRef<HTMLDivElement>(null);
   const stream = useRef<SVGGElement>(null), head = useRef<SVGGElement>(null), spark = useRef<SVGGElement>(null);
   const at = useRef(0), replaying = useRef(false), pulse = useRef<{ t: number; from: number } | null>(null);
-  const p = useMemo(() => draft(rows.tops, rows.tall, desk), [rows, desk]);
+  const p = useMemo(() => draft(rows.tops, rows.tall, desk, look), [rows, desk, look]);
   const live = useRef({ p, reached, whole, slow, tab, showing });
   live.current = { p, reached, whole, slow, tab, showing };
 
@@ -47,6 +49,7 @@ export function SkillsAboutDraft() {
     const q = new URLSearchParams(location.search);
     if (q.get('speed') === 'half') setSlow(true);
     if (q.get('desk') === 'edge') setDesk('edge');
+    if (q.get('portrait') === 'back') setLook('back');
     if (q.get('ui') === '0') setUi(false);
     if (q.has('whole')) setWhole(true);
     lamp.bind();
@@ -113,9 +116,12 @@ export function SkillsAboutDraft() {
   }), []);
 
   const got = (c: string) => reached.has(c);
-  const R = SKILLS.rows, P = ABOUT.portrait, T = ABOUT.words, top = p.about;
-  const [fx, fy] = TURNS.first, [sx, sy] = TURNS.second;
-  const flare = `${id}-flare`, aura = `${id}-aura`, hidden = `${id}-hidden`, fade = `${id}-fade`, shade = `${id}-shade`;
+  const R = SKILLS.rows, P = LOOKS[look].portrait, T = ABOUT.words, top = p.about, back = look === 'back';
+  const { first: [fx, fy], second: [sx, sy], enter, along: [ax, ay] } = turns(look);
+  const flare = `${id}-flare`, aura = `${id}-aura`, hidden = `${id}-hidden`, fade = `${id}-fade`, shade = `${id}-shade`, beam = `${id}-beam`, soft = `${id}-soft`;
+  // The light the studio light throws: from its lens, spreading past where the stream goes in behind him.
+  const lens = [sx + ax * 45, top + sy + ay * 45], far = Math.hypot(enter[0] - sx, enter[1] - sy) + (back ? 330 : 190), wide = far * 0.46;
+  const cone = [[lens[0] - ay * 18, lens[1] + ax * 18], [lens[0] + ay * 18, lens[1] - ax * 18], [lens[0] + ax * far + ay * wide, lens[1] + ay * far - ax * wide], [lens[0] + ax * far - ay * wide, lens[1] + ay * far + ax * wide]];
   const cue = (c: string) => p.cues.find((k) => k.id === c)!;
   const place = (x: number, y: number, w?: number): CSSProperties => ({ left: `${(x / W) * 100}%`, top: `${(y / p.h) * 100}%`, width: w ? `${(w / W) * 100}%` : undefined });
   const pick = (i: number) => {
@@ -141,25 +147,26 @@ export function SkillsAboutDraft() {
     <main className={styles.main}>
       <header className={styles.head}>
         <p className={styles.label}>Study 22 · Skills and About</p>
-        <h1 className={styles.heading}>A fuller draft, fourth round</h1>
+        <h1 className={styles.heading}>A fuller draft, fifth round</h1>
         <p className={styles.lede}>
-          The stream onto the desk’s lamp and not along its front edge, and in About two things that turn it so it goes
-          in behind your shoulder. Scroll: the line is the stream. The buttons at the foot of the screen play a section
-          again, run it at half speed, or put the stream back on the desk’s front edge.
+          The stream in over your own left shoulder, the glow thrown by the studio light, two tabs, and the rows of
+          skills cut down. Scroll: the line is the stream. The buttons at the foot of the screen put your portrait
+          behind the section, play a section again, run it at half speed, or put the stream back on the desk’s front
+          edge.
         </p>
         <ul className={styles.caveats}>
-          <li>The lists of skills are your résumé’s, word for word: its six groups under your four skill sets. Each set’s name and the two lines beside it are your live site’s.</li>
-          <li>About’s paragraphs are your live site’s, dealt out under the three tabs. Twelve years and 40+ clients are shown as they stand and are down for correction.</li>
-          <li>At the desk the stream strikes the lamp and falls on past the desk’s near end. The lamp comes on, then the screens, then the PC, left to right. The switch at the foot of the screen puts it back on the front edge to compare.</li>
-          <li>The PC is turned so its long glass side faces you.</li>
-          <li>In About the stream strikes two things. The first, under the last row of skills, sends it to the right on a gentle grade. The second throws it down steeply to go in behind your shoulder at the left of the picture, half way between your neck and the point of the shoulder. It crosses behind you, which is what brings the light up, and comes out under you. It never touches your head, the tabs or the words. A change of tab sends a pulse along it to you.</li>
-          <li>The two things are drawn as a round reflector and a spotlight. That is a suggestion and nothing agreed.</li>
-          <li>The desk, the PC, the headphones, the reflector and the spotlight are outlines. The stream is still a line. Type sizes and spacing are a first pass.</li>
+          <li>Each row of skills is its name and its lists. The sentence beside each name and the line under it are gone, and the name sits centered against its lists.</li>
+          <li>The lists are a first cut of your résumé’s, down from 77 to 58: the big ones kept, the doubles and the keywords gone. Game Development is new under Full-Stack Engineering, and Three.js is added there. Both are yours to correct.</li>
+          <li>About has two tabs, Professional and Personal. Its text is a placeholder: your live site’s paragraphs, dealt out as they stand.</li>
+          <li>The stream runs over the top of About to a studio light at the right, which throws it down to go in behind your own left shoulder, half way between your neck and the point of the shoulder. It crosses behind you and comes out under you. The glow behind you is the one you have seen, joined to the studio light by the light it throws.</li>
+          <li>Portrait, at the foot of the screen, puts your portrait behind the section, large and blended into the ground, moving more with the cursor. The studio light and the stream are the same.</li>
+          <li>At the desk the stream strikes the lamp and falls on past the desk’s near end. The lamp comes on, then the screens, then the PC. The PC’s long glass side faces you.</li>
+          <li>The desk, the PC, the headphones, the reflector and the studio light are outlines. The stream is still a line. Type sizes and spacing are a first pass.</li>
           <li>For judging: where things sit, what appears when, in what order, how fast. Not a phone.</li>
         </ul>
       </header>
 
-      <div ref={board} className={styles.board} style={{ aspectRatio: `${W} / ${p.h}`, '--slow': slow ? 2 : 1 } as CSSProperties}>
+      <div ref={board} className={styles.board} style={{ aspectRatio: `${W} / ${p.h}`, '--slow': slow ? 2 : 1, '--lean': LOOKS[look].lean } as CSSProperties}>
         <svg className={styles.layer} viewBox={`0 0 ${W} ${p.h}`} aria-hidden="true">
           <defs>
             <radialGradient id={flare}>
@@ -181,6 +188,15 @@ export function SkillsAboutDraft() {
               <stop offset="0" stopColor="#fff" stopOpacity="0" />
               <stop offset="1" stopColor="#fff" />
             </linearGradient>
+            <linearGradient id={beam} gradientUnits="userSpaceOnUse" x1={f1(lens[0])} y1={f1(lens[1])} x2={f1(lens[0] + ax * far)} y2={f1(lens[1] + ay * far)}>
+              <stop offset="0" stopColor="var(--hot)" stopOpacity="0.62" />
+              <stop offset="0.2" stopColor="var(--flame)" stopOpacity="0.4" />
+              <stop offset="0.65" stopColor="var(--ember)" stopOpacity="0.36" />
+              <stop offset="1" stopColor="var(--ember)" stopOpacity="0" />
+            </linearGradient>
+            <filter id={soft} x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="20" />
+            </filter>
             <mask id={hidden} maskUnits="userSpaceOnUse" x={0} y={0} width={W} height={p.h}>
               <rect x={0} y={0} width={W} height={p.h} fill="#fff" />
               <image href="/media/portrait-cut-960.webp" x={P.x} y={top + P.y} width={P.w} height={P.h} filter={`url(#${shade})`} className={styles.shade} />
@@ -191,7 +207,8 @@ export function SkillsAboutDraft() {
             <Workbench shown={got('near')} on={got('desk')} sweep={desk === 'lamp'} />
             <Phones at={SKILLS.phones} shown={got('title')} lively />
           </g>
-          <ellipse cx={P.x + P.w / 2} cy={top + P.y + P.h * 0.42} rx={410} ry={290} fill={`url(#${aura})`} className={styles.aura} data-on={got('behind')} />
+          <ellipse cx={P.x + P.w / 2} cy={top + P.y + P.h * 0.42} rx={back ? 590 : 410} ry={back ? 440 : 290} fill={`url(#${aura})`} className={styles.aura} data-on={got('behind')} />
+          <polygon points={cone.map(([x, y]) => `${f1(x)},${f1(y)}`).join(' ')} fill={`url(#${beam})`} filter={`url(#${soft})`} className={styles.aura} data-on={got('throw')} />
           {/* The first thing it strikes: a round reflector seen nearly edge on, its face up and to the right. */}
           <g transform={`${tr(fx, top + fy)} rotate(${45 + ABOUT.first.grade / 2})`} className={styles.prop}>
             <line x1={0} y1={16} x2={0} y2={44} />
@@ -208,8 +225,8 @@ export function SkillsAboutDraft() {
               {[styles.haze, styles.glow, styles.body, styles.core].map((c) => <path key={c} d={p.line.d} className={c} strokeDasharray="0 99999" />)}
             </g>
           </g>
-          {/* The second: a spotlight aimed at his shoulder. The stream goes in at its side and comes out of its lens. */}
-          <g transform={`${tr(sx, top + sy)} rotate(${ABOUT.enter.angle})`} className={styles.prop}>
+          {/* The second: a studio light aimed at his shoulder. The stream goes in at its side and comes out of its lens. */}
+          <g transform={`${tr(sx, top + sy)} rotate(${180 - ABOUT.enter.angle})`} className={styles.prop}>
             <rect x={-46} y={-13} width={12} height={26} rx={3} />
             <rect x={-36} y={-24} width={72} height={48} rx={10} />
             <rect x={36} y={-27} width={9} height={54} rx={2} />
@@ -237,7 +254,7 @@ export function SkillsAboutDraft() {
         </svg>
 
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/media/portrait-cut-960.webp" alt="Brandon Church" className={styles.portrait} data-on={got('portrait')} style={place(P.x, top + P.y, P.w)} />
+        <img src={back ? '/media/portrait-cut-1600.webp' : '/media/portrait-cut-960.webp'} alt="Brandon Church" className={styles.portrait} data-on={got('portrait')} data-look={look} style={place(P.x, top + P.y, P.w)} />
 
         <h2 className={styles.title} data-on={got('title')} style={place(SKILLS.title[0], p.skills + SKILLS.title[1] - 60)}>Skills</h2>
         <div ref={list} className={styles.rows} style={place(R.l, p.skills + R.t, R.r - R.l)}>
@@ -246,10 +263,8 @@ export function SkillsAboutDraft() {
               <div>
                 <p className={`${styles.index} ${styles.reveal}`}>{String(i + 1).padStart(2, '0')}</p>
                 <h3 className={`${styles.name} ${styles.reveal}`}>{c.name}</h3>
-                <p className={`${styles.claim} ${styles.reveal}`} style={{ '--d': 1 } as CSSProperties}>{c.claim}</p>
               </div>
-              <p className={`${styles.proof} ${styles.reveal}`} style={{ '--d': 2 } as CSSProperties}>{c.proof}</p>
-              <dl className={`${styles.groups} ${styles.reveal}`} style={{ '--d': 3 } as CSSProperties}>
+              <dl className={`${styles.groups} ${styles.reveal}`} style={{ '--d': 1 } as CSSProperties}>
                 {c.groups.map(([label, items]) => (
                   <div key={label} className={styles.group2}>
                     <dt>{label}</dt>
@@ -269,6 +284,7 @@ export function SkillsAboutDraft() {
             ))}
           </div>
           <div className={`${styles.panelText} ${styles.reveal}`} role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-tab-${tab}`} data-on={got('words')} data-swapping={showing !== tab} style={{ ...place(T.l, top + T.text, T.w), '--d': 1 } as CSSProperties}>
+            <p className={styles.note}>Placeholder text</p>
             {ABOUT_TABS[showing].text.map((para) => <p key={para.slice(0, 24)}>{para}</p>)}
           </div>
         </section>
@@ -277,6 +293,11 @@ export function SkillsAboutDraft() {
       {ui && (
         <div className={styles.panel}>
           <div className={styles.controls}>
+            <div className={styles.group} role="group" aria-label="How your portrait stands">
+              <span className={styles.groupName}>Portrait</span>
+              <button type="button" className={styles.choice} aria-pressed={!back} onClick={() => setLook('beside')}>Beside the words</button>
+              <button type="button" className={styles.choice} aria-pressed={back} onClick={() => setLook('back')}>Behind the section</button>
+            </div>
             <div className={styles.group} role="group" aria-label="How the stream meets the desk">
               <span className={styles.groupName}>Stream at the desk</span>
               <button type="button" className={styles.choice} aria-pressed={desk === 'lamp'} onClick={() => setDesk('lamp')}>Onto the lamp</button>
