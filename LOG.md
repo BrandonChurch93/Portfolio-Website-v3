@@ -2,6 +2,42 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · The sketch, second round: three pieces cut, and two of his questions drawn (Fable, web chat)
+
+**What Brandon said**
+
+- "Regarding the layout, we no longer need the camera and game, and PC graphics. As of now they are to be preserved but cut from the design."
+- "We should go straight into the skills section after work or add an accomplishments section, note big companies too with logos I've worked with and big career stuff like how many projects I've built and so on."
+- "Should we mirror the about section with the 3D desk object? And have the skills on the right side of it?"
+
+**What changed at `/lab/home`**
+
+- The handheld, the camera and the PC are out of the sketch, and so are their drawings. The stream falls from the meeting under Work's button straight to the desk, about 400 units, and from the desk's corner down the left margin to the rail.
+- Skills opens with the rows beside the desk, under the title: his mirror of About. `SKILLS.beside` and `SKILLS.under` in `plan.ts` hold the two.
+- Two more switches in the foot bar: After Work (Straight to Skills, Accomplishments) and Skills rows (Beside the desk, Under it). `plan(hero, withProof, rows)` lays the page out again for each.
+- The accomplishments strip is `PROOF` in `plan.ts`: four figures and four marks, two either side of the stream, no title.
+- The whole page view draws both sheets at one scale, split at the foot of Work.
+
+**What Fable told him**
+
+- The cut is recorded as settled, in his words, with "as of now" kept.
+- Accomplishments goes against "the site never repeats the résumé". Recommendation: straight into Skills, and if he wants the proof, one quiet strip, not a section.
+- The rows beside the desk go against "Skills read in wide rows, not narrow columns". Recommendation: yes, beside the desk.
+
+**What was looked at**
+
+- Whole page stills of both ways, close stills of Skills each way and of the strip, and the two new switches pressed in a live page. `reference/studies/35-page-sketch-*.jpg`. The first round's stills are renamed `34-page-sketch-first-round-*`.
+
+**Worth knowing**
+
+- Under the desk, the rows start at the page's left margin, so the stream thrown off the desk's corner has to bow out past them before it falls.
+- Two buttons on one page both read "Skills" until the switch was renamed "Straight to Skills".
+
+**Half finished**
+
+- His word on Open 26 and 27, and on the rest of the sketch.
+- Claude Code's fourth pass, then the prompt for the handle in the entry below.
+
 ## 2026-11-14 · The handle on the blank, as first built: a prompt to revisit it (Fable, web chat)
 
 **What Brandon said.** His words are in `BRIEF.md`, The stream, "His look at the handle as Claude Code first built it".

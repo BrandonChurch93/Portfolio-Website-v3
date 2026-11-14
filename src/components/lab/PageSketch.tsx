@@ -2,14 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { READING_LINE, SITE_NAME } from '../../config/site';
-import { ABOUT, CITY, CONTACT, CX, HITS, PIECES, SKILLS, W, WORK, plan, point, reach, type Plan, type Pt } from '../../page-sketch/plan';
+import { ABOUT, CITY, CONTACT, CX, PROOF, SKILLS, W, WORK, plan, point, reach, type Plan, type Pt, type Rows } from '../../page-sketch/plan';
 import { CATEGORIES } from '../../work-surge/surge';
 import { clock } from '../../world/clock';
 import styles from './PageSketch.module.css';
 
 // Study 18: the whole home page as a wireframe, hero to footer. A line stands in for the stream and its leading end
 // follows the scroll. Grey bars stand for words, which are his to write. The 3D pieces are outlines at the size and
-// place they would have. ?sleep=none|mix|all, ?notes=0, ?view=whole and ?ui=0 open it on those.
+// place they would have. ?sleep=none|mix|all, ?after=proof, ?rows=under, ?notes=0, ?view=whole and ?ui=0 open it on those.
 
 type Sleep = 'none' | 'mix' | 'all';
 type View = 'scroll' | 'whole';
@@ -53,51 +53,6 @@ function City() {
   );
 }
 
-function Handheld({ on }: { on: boolean }) {
-  return (
-    <g className={styles.obj} data-on={on}>
-      <ellipse cy={150} rx={230} ry={26} className={`${styles.pool} ${styles.lit}`} />
-      <path d="M-205 150 L-190 78 H190 L205 150 Z" className={styles.solid} />
-      <path d="M-190 78 L-170 52 H170 L190 78 Z" className={styles.solid} />
-      <rect x={-52} y={-148} width={104} height={22} className={styles.solid} />
-      <path d="M-150 -128 H150 L178 -98 V38 L150 66 H-150 L-178 38 V-98 Z" className={styles.solid} />
-      <rect x={-98} y={-104} width={196} height={136} rx={10} className={styles.ink} />
-      <rect x={-84} y={-92} width={168} height={108} rx={4} className={styles.ink} />
-      <rect x={-84} y={-92} width={168} height={108} rx={4} className={`${styles.glass} ${styles.lit}`} />
-      <path d="M-76 8 v-22 h18 v-14 h16 v26 h20 v-34 h18 v22 h22 v-16 h16 v30 h20 v-24 h18 v32" className={`${styles.hot} ${styles.lit}`} />
-      <path d="M-146 -62 h20 v16 h16 v20 h-16 v16 h-20 v-16 h-16 v-20 h16 Z" className={styles.ink} />
-      <circle cx={140} cy={-52} r={13} className={styles.ink} />
-      <circle cx={118} cy={-22} r={13} className={styles.ink} />
-      <circle cx={-134} cy={36} r={14} className={styles.ink} />
-      <circle cx={136} cy={36} r={14} className={styles.ink} />
-      <rect x={-34} y={46} width={26} height={9} rx={4.5} className={styles.ink} />
-      <rect x={8} y={46} width={26} height={9} rx={4.5} className={styles.ink} />
-    </g>
-  );
-}
-
-function Camera({ on }: { on: boolean }) {
-  return (
-    <g className={styles.obj} data-on={on}>
-      <ellipse cx={20} cy={182} rx={150} ry={18} className={`${styles.pool} ${styles.lit}`} />
-      <path d="M36 -20 L-88 176 M48 -20 L118 180 M42 -20 L30 150" className={styles.leg} />
-      <circle cx={42} cy={-36} r={17} className={styles.solid} />
-      <circle cx={64} cy={-34} r={7} className={styles.solid} />
-      <rect x={20} y={-56} width={44} height={8} className={styles.solid} />
-      <rect x={-40} y={-190} width={165} height={16} className={styles.solid} />
-      <rect x={-30} y={-199} width={22} height={10} className={styles.solid} />
-      <rect x={60} y={-199} width={26} height={10} className={styles.solid} />
-      <rect x={-40} y={-176} width={165} height={122} rx={8} className={styles.solid} />
-      <rect x={-30} y={-168} width={26} height={14} className={styles.ink} />
-      <path d="M-40 -152 L-86 -164 V-58 L-40 -70 Z" className={styles.solid} />
-      <ellipse cx={-92} cy={-111} rx={36} ry={54} className={styles.solid} />
-      <ellipse cx={-94} cy={-111} rx={24} ry={38} className={styles.ink} />
-      <ellipse cx={-94} cy={-111} rx={24} ry={38} className={`${styles.glass} ${styles.lit}`} />
-      <path d="M-108 -128 q10 -16 24 -14" className={`${styles.hot} ${styles.lit}`} />
-    </g>
-  );
-}
-
 function Desk({ on }: { on: boolean }) {
   const d = SKILLS.desk, poly = (pts: Pt[]) => quad(pts.map(([x, y]) => d(x, y)));
   const at = (x: number, y: number) => { const [cx, cy] = d(x, y); return { cx, cy }; };
@@ -123,36 +78,6 @@ function Desk({ on }: { on: boolean }) {
       <ellipse {...at(372, 442)} rx={28} ry={7} className={styles.solid} />
       <line x1={d(372, 440)[0]} y1={d(372, 440)[1]} x2={d(362, 250)[0]} y2={d(362, 250)[1]} className={styles.leg} />
       <polygon points={poly([[352, 214], [478, 236], [432, 270], [356, 250]])} className={styles.solid} />
-    </g>
-  );
-}
-
-function Pc({ on }: { on: boolean }) {
-  const { l, t, r, b } = SKILLS.pc;
-  return (
-    <g className={styles.obj} data-on={on}>
-      <ellipse cx={(l + r) / 2} cy={b + 8} rx={170} ry={16} className={`${styles.pool} ${styles.lit}`} />
-      <rect x={l} y={t} width={r - l} height={b - t} rx={10} className={styles.solid} />
-      <rect x={l + 88} y={t + 12} width={r - l - 98} height={234} rx={4} className={styles.ink} />
-      <rect x={l + 88} y={t + 12} width={r - l - 98} height={234} rx={4} className={`${styles.glass} ${styles.lit}`} />
-      <line x1={l + 82} y1={t + 4} x2={l + 82} y2={b - 4} className={styles.ink} />
-      <rect x={l + 88} y={t + 252} width={r - l - 98} height={28} rx={3} className={styles.ink} />
-      {[52, 128, 204].map((y) => (
-        <g key={y}>
-          <circle cx={l + 41} cy={t + y} r={30} className={styles.ink} />
-          <circle cx={l + 41} cy={t + y} r={30} className={`${styles.ring} ${styles.lit}`} />
-          <circle cx={l + 41} cy={t + y} r={9} className={styles.ink} />
-        </g>
-      ))}
-      <circle cx={l + 150} cy={t + 80} r={34} className={styles.ink} />
-      <circle cx={l + 150} cy={t + 80} r={34} className={`${styles.ring} ${styles.lit}`} />
-      <circle cx={l + 150} cy={t + 80} r={8} className={styles.ink} />
-      {[200, 211, 222].map((x) => <rect key={x} x={l + x} y={t + 40} width={6} height={80} className={styles.ink} />)}
-      <rect x={l + 100} y={t + 152} width={132} height={34} rx={4} className={styles.ink} />
-      <circle cx={l + 133} cy={t + 169} r={12} className={styles.ink} />
-      <circle cx={l + 181} cy={t + 169} r={12} className={styles.ink} />
-      <line x1={l + 94} y1={t + 18} x2={r - 16} y2={t + 18} className={`${styles.hot} ${styles.lit}`} />
-      <line x1={l + 100} y1={t + 190} x2={l + 232} y2={t + 190} className={`${styles.hot} ${styles.lit}`} />
     </g>
   );
 }
@@ -237,16 +162,17 @@ interface SheetProps {
   id: string;
   sleep: Sleep;
   notes: boolean;
+  rows: Rows;
   // What the stream has reached. null draws the whole line with everything reached.
   reached: Set<string> | null;
   refs?: { groups: (SVGGElement | null)[]; heads: (SVGGElement | null)[]; rocket: { current: SVGGElement | null } };
 }
 
-function Sheet({ p, id, sleep, notes, reached, refs }: SheetProps) {
+function Sheet({ p, id, sleep, notes, rows: at, reached, refs }: SheetProps) {
   const got = (k: string) => !reached || reached.has(k);
   const lit = (k: string) => sleep === 'none' || got(k);
   const words = (k: string) => sleep !== 'all' || got(`s-${k}`);
-  const H = PIECES.handheld, C = PIECES.camera, R = ABOUT.rail, P = ABOUT.portrait, F = CONTACT.flume, rows = SKILLS.rows;
+  const R = ABOUT.rail, P = ABOUT.portrait, F = CONTACT.flume, rows = SKILLS[at], beside = at === 'beside';
   const fade = `${id}-fade`, flare = `${id}-flare`, aura = `${id}-aura`;
   const dash = reached ? '0 99999' : undefined;
   return (
@@ -309,41 +235,49 @@ function Sheet({ p, id, sleep, notes, reached, refs }: SheetProps) {
         {notes && <Tag x={W - 150} y={WORK.base - 30} end>Work · the one section that is built</Tag>}
       </g>
 
-      <g transform={tr(0, p.pieces)}>
-        <g transform={tr(H.x, H.y)}><Handheld on={lit('handheld')} /></g>
-        <g transform={tr(C.x, C.y)}><Camera on={lit('camera')} /></g>
-        <g className={styles.words} data-on={words('pieces')}>
-          <text x={H.x - H.w / 2} y={H.y + H.h / 2 + 46} className={styles.label}>Games</text>
-          <Bars x={H.x - H.w / 2} y={H.y + H.h / 2 + 62} widths={[250]} />
-          <Bars x={H.x - H.w / 2} y={H.y + H.h / 2 + 88} widths={[96]} />
-          <text x={C.x + C.w / 2 + 8} y={C.y + C.h / 2 + 46} textAnchor="end" className={styles.label}>Photography</text>
-          <Bars x={C.x + C.w / 2 - 242} y={C.y + C.h / 2 + 62} widths={[250]} />
-          <Bars x={C.x + C.w / 2 - 88} y={C.y + C.h / 2 + 88} widths={[96]} />
+      {p.proof !== null && (
+        <g transform={tr(0, p.proof)}>
+          <g className={styles.words} data-on={words('proof')}>
+            {PROOF.figures.map((x) => (
+              <g key={x}>
+                <rect x={x - 62} y={70} width={124} height={50} rx={10} className={styles.heavy} />
+                <Bars x={x - 76} y={136} widths={[152]} />
+              </g>
+            ))}
+            {PROOF.marks.map((x) => (
+              <g key={x}>
+                <rect x={x} y={210} width={PROOF.mark.w} height={PROOF.mark.h} rx={10} className={styles.ink} />
+                <text x={x + PROOF.mark.w / 2} y={243} textAnchor="middle" className={styles.tag}>logo</text>
+              </g>
+            ))}
+          </g>
+          {notes && <Tag x={150} y={30}>accomplishments · his idea · figures and the marks of companies he has worked with · not ruled</Tag>}
         </g>
-        {notes && <Tag x={150} y={4}>between Work and Skills · no title · proposed</Tag>}
-        {notes && <Tag x={H.x - H.w / 2} y={H.y - H.h / 2 - 18}>piece · the handheld · carried · proposed here</Tag>}
-        {notes && <Tag x={C.x + C.w / 2 + 8} y={C.y - C.h / 2 - 22} end>piece · the camera · carried · proposed here</Tag>}
-      </g>
+      )}
 
       <g transform={tr(0, p.skills)}>
         <Desk on={lit('desk')} />
-        <Pc on={lit('pc')} />
         <g className={styles.words} data-on={words('skills')}>
           <text x={SKILLS.title.x} y={SKILLS.title.y} className={styles.title}>SKILLS</text>
           <Bars x={SKILLS.title.x} y={SKILLS.title.y + 40} widths={[440, 400, 300]} />
           {Array.from({ length: rows.n }, (_, i) => {
-            const y = rows.t + i * rows.step;
-            return (
+            const y = rows.t + i * rows.step, w = rows.r - rows.l;
+            return beside ? (
+              <g key={i}>
+                <rect x={rows.l} y={y} width={[150, 190, 130, 170][i]} height={16} rx={8} className={styles.heavy} />
+                <Bars x={rows.l} y={y + 30} widths={[[w, w - 30, w - 10, w - 50][i], [320, 260, 360, 220][i]]} step={20} />
+                <line x1={rows.l} y1={y + 70} x2={rows.r} y2={y + 70} className={styles.rule} />
+              </g>
+            ) : (
               <g key={i}>
                 <rect x={rows.l} y={y + 14} width={[150, 190, 130, 170][i]} height={16} rx={8} className={styles.heavy} />
-                <Bars x={rows.l + 250} y={y + 17} widths={[[560, 520, 590, 480][i]]} />
-                <line x1={rows.l} y1={y + rows.h} x2={rows.r} y2={y + rows.h} className={styles.rule} />
+                <Bars x={rows.l + 280} y={y + 17} widths={[[860, 800, 880, 740][i]]} />
+                <line x1={rows.l} y1={y + 56} x2={rows.r} y2={y + 56} className={styles.rule} />
               </g>
             );
           })}
         </g>
         {notes && <Tag x={SKILLS.desk(1250, 0)[0]} y={68}>piece · the workbench · carried · seen from its other side</Tag>}
-        {notes && <Tag x={SKILLS.pc.r + 24} y={SKILLS.pc.b + 30}>piece · the PC from the PC Builder · new to this site · proposed here</Tag>}
       </g>
 
       <g transform={tr(0, p.about)}>
@@ -422,15 +356,12 @@ function Sheet({ p, id, sleep, notes, reached, refs }: SheetProps) {
             [CX + 28, p.city + CITY.lip + 70, '01 · The stream leaves the city'],
             [CX + 250, p.work + 34, '02 · Strikes WORK dead center and parts'],
             [CX + 30, p.work + WORK.meet + 40, '03 · The two sides meet under the button'],
-            [H.x + HITS.handheld[0] + 34, p.pieces + H.y + HITS.handheld[1] - 8, '04 · Strikes the handheld. It powers on'],
-            [C.x + HITS.camera[0] - 34, p.pieces + C.y + HITS.camera[1] + 64, '05 · Strikes the camera. Its flash fires', true],
-            [CX - 24, p.skills + 40, '06 · Lands on the desk. The lamp and the screen come on', true],
-            [250, p.skills + 474, '07 · Runs down the desk’s front edge'],
-            [SKILLS.pc.l + 66, p.skills + SKILLS.pc.t - 16, '08 · Thrown off the corner onto the PC. It boots'],
-            [R.ax + 150, p.about + R.ay - 14, '09 · Lands on the rail and runs across the page'],
-            [P.x + P.w, p.about + P.y + P.h + 26, '10 · Passes behind his shoulders. The light behind him is the stream', true],
-            [F.ax - 30, p.contact + F.ay - 30, '11 · Falls onto the flume', true],
-            [W - 56, p.contact + CONTACT.pad.y + 40, '12 · Fills the pad. Ignition. The page ends on the launch', true],
+            [CX - 24, p.skills + 40, '04 · Lands on the desk. The lamp and the screen come on', true],
+            [250, p.skills + 474, '05 · Runs down the desk’s front edge and is thrown off its corner'],
+            [R.ax + 150, p.about + R.ay - 14, '06 · Lands on the rail and runs across the page'],
+            [P.x + P.w, p.about + P.y + P.h + 26, '07 · Passes behind his shoulders. The light behind him is the stream', true],
+            [F.ax - 30, p.contact + F.ay - 30, '08 · Falls onto the flume', true],
+            [W - 56, p.contact + CONTACT.pad.y + 40, '09 · Fills the pad. Ignition. The page ends on the launch', true],
           ] as [number, number, string, boolean?][]).map(([x, y, t, end]) => <text key={t} x={x} y={y} textAnchor={end ? 'end' : 'start'} className={styles.note}>{t}</text>)}
         </g>
       )}
@@ -447,10 +378,12 @@ export function PageSketch() {
   const [sleep, setSleep] = useState<Sleep>('mix');
   const [notes, setNotes] = useState(true);
   const [view, setView] = useState<View>('scroll');
+  const [proof, setProof] = useState(false);
+  const [rows, setRows] = useState<Rows>('beside');
   const [ui, setUi] = useState(true);
   const [reached, setReached] = useState<Set<string>>(() => new Set());
   const [here, setHere] = useState(-1);
-  const p = useMemo(() => plan(hero), [hero]);
+  const p = useMemo(() => plan(hero, proof, rows), [hero, proof, rows]);
   const live = useRef({ p, reached, here });
   live.current = { p, reached, here };
 
@@ -458,6 +391,8 @@ export function PageSketch() {
     const q = new URLSearchParams(location.search);
     const s = q.get('sleep');
     if (s === 'none' || s === 'mix' || s === 'all') setSleep(s);
+    if (q.get('after') === 'proof') setProof(true);
+    if (q.get('rows') === 'under') setRows('under');
     if (q.get('notes') === '0') setNotes(false);
     if (q.get('view') === 'whole') setView('whole');
     if (q.get('ui') === '0') setUi(false);
@@ -492,7 +427,7 @@ export function PageSketch() {
     });
     const next = new Set<string>();
     for (const k of P.strikes) if (k.at > 0 ? at.current[k.line] >= k.at - 1 : at.current[k.line] > 1) next.add(k.id);
-    ([['work', P.work + 40], ['pieces', P.pieces + 60], ['skills', P.skills + 120], ['about', P.about + 90], ['contact', P.contact + 120]] as const).forEach(([k, sy]) => { if (y >= sy) next.add(`s-${k}`); });
+    ([['work', P.work + 40], ['proof', P.proof === null ? Infinity : P.proof + 40], ['skills', P.skills + 120], ['about', P.about + 90], ['contact', P.contact + 120]] as const).forEach(([k, sy]) => { if (y >= sy) next.add(`s-${k}`); });
     if (next.size !== was.size || [...next].some((k) => !was.has(k))) setReached(next);
     const lift = next.has('pad') ? Math.min(1, Math.max(0, (y - P.end[1]) / LAUNCH.over)) : 0;
     const rocket = refs.current.rocket.current?.querySelector(`.${styles.rocket}`) as SVGGElement | null;
@@ -514,7 +449,8 @@ export function PageSketch() {
     scrollTo({ top: scrollY + box.top + [p.work, p.skills, p.about, p.contact][i] * scale - 72, behavior: 'smooth' });
   };
 
-  const halves = [[0, p.pieces], [p.pieces, p.h - p.pieces]];
+  const split = p.proof ?? p.skills, tall = Math.max(split, p.h - split);
+  const halves = [[0, tall], [split, tall]];
   return (
     <main className={styles.main} data-view={view}>
       {view === 'scroll' ? (
@@ -526,14 +462,14 @@ export function PageSketch() {
             </nav>
           </div>
           <svg ref={svg} className={styles.sheet} viewBox={`0 0 ${W} ${p.h}`} role="img" aria-label="A wireframe of the whole home page, from the hero to the footer">
-            <Sheet p={p} id="page" sleep={sleep} notes={notes} reached={reached} refs={refs.current} />
+            <Sheet p={p} id="page" sleep={sleep} notes={notes} rows={rows} reached={reached} refs={refs.current} />
           </svg>
         </>
       ) : (
         <div className={styles.whole}>
           {halves.map(([y, h], i) => (
-            <svg key={i} className={styles.half} viewBox={`0 ${y} ${W} ${h}`} role="img" aria-label={i ? 'The page from the two pieces to the footer' : 'The page from the hero to the foot of Work'}>
-              <Sheet p={p} id={`half${i}`} sleep="none" notes={notes} reached={null} />
+            <svg key={i} className={styles.half} viewBox={`0 ${y} ${W} ${h}`} role="img" aria-label={i ? 'The page from below Work to the footer' : 'The page from the hero to the foot of Work'}>
+              <Sheet p={p} id={`half${i}`} sleep="none" notes={notes} rows={rows} reached={null} />
             </svg>
           ))}
         </div>
@@ -546,6 +482,16 @@ export function PageSketch() {
             <div className={styles.group} role="group" aria-label="What sleeps until the stream arrives">
               <span className={styles.groupName}>Sleeps until the stream arrives</span>
               {SLEEPS.map((o) => <button key={o.id} type="button" className={styles.choice} aria-pressed={sleep === o.id} disabled={view === 'whole'} onClick={() => setSleep(o.id)}>{o.name}</button>)}
+            </div>
+            <div className={styles.group} role="group" aria-label="What follows Work">
+              <span className={styles.groupName}>After Work</span>
+              <button type="button" className={styles.choice} aria-pressed={!proof} onClick={() => setProof(false)}>Straight to Skills</button>
+              <button type="button" className={styles.choice} aria-pressed={proof} onClick={() => setProof(true)}>Accomplishments</button>
+            </div>
+            <div className={styles.group} role="group" aria-label="Where the rows of skills sit">
+              <span className={styles.groupName}>Skills rows</span>
+              <button type="button" className={styles.choice} aria-pressed={rows === 'beside'} onClick={() => setRows('beside')}>Beside the desk</button>
+              <button type="button" className={styles.choice} aria-pressed={rows === 'under'} onClick={() => setRows('under')}>Under it</button>
             </div>
             <div className={styles.group} role="group" aria-label="Notes">
               <span className={styles.groupName}>Notes</span>

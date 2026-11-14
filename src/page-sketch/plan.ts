@@ -14,16 +14,16 @@ export interface Line { pts: Pt[]; cum: number[]; total: number; d: string }
 export interface Strike { id: string; line: number; at: number; x: number; y: number }
 
 export const WORK = { h: 1770, top: 49, l: 506, r: 954, base: 142, meet: 1706, bar: BAR, card: CARD, cards: CARDS, stone: STONE, rail: RAIL, button: BUTTON };
-export const PIECES = { h: 770, handheld: { x: 455, y: 215, w: 420, h: 300 }, camera: { x: 905, y: 540, w: 260, h: 380 } };
-// Where the stream strikes each: the handheld's shoulder and the rim of the camera's lens.
-export const HITS = { handheld: [181, -60], camera: [-128, -111] } as const;
+// The accomplishments strip he raised: figures either side of the stream and a row of marks under them.
+export const PROOF = { h: 330, figures: [300, 520, 940, 1160], marks: [262, 478, 842, 1058], mark: { w: 140, h: 56 } };
 // The workbench is drawn from its own still, seen from the other side, at half size.
+export type Rows = 'beside' | 'under';
 export const SKILLS = {
-  h: 1010,
   desk: (x: number, y: number): Pt => [190 + (1250 - x) * 0.5, 35 + y * 0.5],
-  pc: { l: 150, t: 560, r: 400, b: 850 },
-  rows: { l: 470, r: 1310, t: 575, step: 70, h: 56, n: 4 },
   title: { x: 820, y: 205 },
+  // The rows of skills: stacked beside the desk under the title, or across the page under the desk.
+  beside: { h: 790, l: 820, r: 1310, t: 344, step: 88, n: 4 },
+  under: { h: 980, l: 150, r: 1310, t: 610, step: 70, n: 4 },
 };
 export const ABOUT = { h: 620, rail: { ax: 116, ay: 70, bx: 1330, by: 329 }, portrait: { x: 760, y: -90, w: 560, h: 543 }, title: { x: 150, y: 300 } };
 export const CONTACT = { h: 700, pad: { x: CX, y: 440, rx: 215, ry: 70 }, flume: { ax: 1356, ay: 250, bx: 938, by: 418 }, title: { x: 150, y: 170 } };
@@ -92,7 +92,8 @@ export interface Plan {
   text: number;
   city: number;
   work: number;
-  pieces: number;
+  // Where the accomplishments strip starts, or null when the page goes straight from Work to Skills.
+  proof: number | null;
   skills: number;
   about: number;
   contact: number;
@@ -102,11 +103,12 @@ export interface Plan {
   end: Pt;
 }
 
-export function plan(hero: number): Plan {
+export function plan(hero: number, withProof: boolean, rows: Rows): Plan {
   const text = Math.round(hero * 0.33) - 95;
   const city = Math.max(hero + 95, text + 280 + 45 + CITY.top);
   const work = city + CITY.lip + 240 - WORK.top;
-  const pieces = work + WORK.h, skills = pieces + PIECES.h, about = skills + SKILLS.h, contact = about + ABOUT.h, foot = contact + CONTACT.h;
+  const proof = withProof ? work + WORK.h : null, skills = work + WORK.h + (withProof ? PROOF.h : 0);
+  const about = skills + SKILLS[rows].h, contact = about + ABOUT.h, foot = contact + CONTACT.h;
 
   const fall = line([[CX, city + CITY.lip], [CX, work + WORK.top, 0, 13]]);
   // The left side through Work. Above the category bar it is the path as it was, from the bar to the meeting it is
@@ -118,22 +120,17 @@ export function plan(hero: number): Plan {
   const left = line(side.map(([x, y, r]) => [x, work + y, r]));
   const right = line(side.map(([x, y, r]) => [W - x, work + y, r]));
 
-  const H = PIECES.handheld, C = PIECES.camera, R = ABOUT.rail, F = CONTACT.flume;
-  const hit = { handheld: [H.x + HITS.handheld[0], pieces + H.y + HITS.handheld[1]] as Pt, camera: [C.x + HITS.camera[0], pieces + C.y + HITS.camera[1]] as Pt };
+  const R = ABOUT.rail, F = CONTACT.flume;
   const [dx0, dy0] = SKILLS.desk(150, 590), [dx1, dy1] = SKILLS.desk(1250, 718);
   const on = (t: number): Pt => [dx0 + (dx1 - dx0) * t, skills + dy0 + (dy1 - dy0) * t];
   const rail = (x: number): Pt => [x, about + R.ay + ((x - R.ax) / (R.bx - R.ax)) * (R.by - R.ay)];
-  const land = on(0.03), off = on(0.99), P = SKILLS.pc;
+  const land = on(0.03), off = on(0.99);
   const end: Pt = [CONTACT.pad.x + 118, contact + CONTACT.pad.y - 8];
   const down = line([
     [CX, work + WORK.meet],
-    [hit.handheld[0], hit.handheld[1], 5, 9],
-    [hit.camera[0], hit.camera[1], 5, 7],
     [land[0], land[1], 6, 12],
     [off[0], off[1], 30],
-    [P.l + 34, skills + P.t - 3, 5, 3],
-    [P.l - 7, skills + P.t, 12],
-    [P.l - 12, skills + P.b, 60, 4],
+    [124, skills + 500, 70, 3],
     [rail(130)[0], rail(130)[1], 6, 9],
     [rail(R.bx - 4)[0], rail(R.bx - 4)[1], 34],
     [F.ax - 2, about + R.by + 70, 80],
@@ -155,14 +152,11 @@ export function plan(hero: number): Plan {
     mark(`rail${tag}`, li, x(150), work + 1592);
   });
   mark('button', 3, CX, work + WORK.meet);
-  mark('handheld', 3, hit.handheld[0], hit.handheld[1]);
-  mark('camera', 3, hit.camera[0], hit.camera[1]);
   mark('desk', 3, land[0], land[1]);
-  mark('pc', 3, P.l + 34, skills + P.t - 3);
   mark('rail', 3, rail(130)[0], rail(130)[1]);
   mark('portrait', 3, rail(900)[0], rail(900)[1]);
   mark('flume', 3, F.ax - 2, contact + F.ay);
   mark('pad', 3, end[0], end[1]);
 
-  return { h: foot + FOOT.h, hero, text, city, work, pieces, skills, about, contact, foot, lines, strikes, end };
+  return { h: foot + FOOT.h, hero, text, city, work, proof, skills, about, contact, foot, lines, strikes, end };
 }

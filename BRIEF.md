@@ -845,6 +845,9 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
 - Carried over from the second build: the city, the workbench, the handheld (he really likes it), the camera (he is happy to keep it) and the rocket.
 - He looked at the five carried pieces on his own machine and they look fine to him. (Nov 11)
 - He wants the PC from his PC Builder animated somewhere visible on the site. Not in the hero, and not as the piece for the work section.
+- **The handheld, the camera and the PC are cut from the home page's design, and kept (Nov 14).** "Regarding the layout, we no longer need the camera and game, and PC graphics. As of now they are to be preserved but cut from the design."
+    - In exact terms: the handheld, the camera and the PC have no place on the home page. Nothing is deleted: the handheld and the camera stay in `src/pieces/` as carried, and the PC stays in its own project.
+    - "As of now" is his wording. It sets the line above about the PC aside for now, and Open 3 with it.
 - Video and photos never compete with 3D.
 
 ### Words
@@ -999,29 +1002,42 @@ Each line has Fable's recommendation where there is one. None of these are rules
 25. **The whole page, sketched (Nov 14). In front of him. Nothing in it is ruled.** At `/lab/home`, Study 18, built in the web chat on his word (How we work, "The whole page is sketched").
     - What it is: a wireframe of the home page from the hero to the footer. A line stands for the stream and its leading end follows the scroll. Grey bars stand for words, which are his to write. The 3D pieces are outlines at the size and place they would have, and his portrait is the real cut out. A switch sets what sleeps until the stream arrives (Nothing, A mix, Everything), another shows or hides the notes, and a third lays the whole page out on one screen.
     - What it is for: the order of the sections, where each thing sits and how large, where the stream goes and what it meets, and how much of the page sleeps. It is not for look, motion, words or the design of any piece.
+    - **Changed on his word the same night (Nov 14).** He cut the handheld, the camera and the PC from the design (Settled, 3D pieces). The sketch now goes from Work straight into Skills, and what follows is the sketch as it stands. His two questions about it are Open 26 and 27, each behind a switch on the page.
     - **The stream's route, top to bottom.** Every sideways move has something carrying it:
         1. It leaves the lip of the city and falls to WORK.
         2. Through Work as built and ruled.
-        3. The two sides meet under the button. One stream strikes the handheld's shoulder, crosses, and strikes the rim of the camera's lens.
-        4. It lands on the desk's front corner, runs down the desk's front edge, is thrown off the far corner onto the PC, and runs down the PC's side.
+        3. The two sides meet under the button, and one stream falls to the desk.
+        4. It lands on the desk's front corner, runs down the desk's front edge, is thrown off the far corner and falls down the left margin.
         5. It lands on the high end of a rail at the left of About and runs across the page on it, behind his shoulders. It is thrown off the low end at the right.
         6. It falls down the right margin onto the rocket's flume, runs into the pad, and the rocket lifts. The page ends there.
     - **Each section, and where it comes from:**
         - **Hero.** As the brief has it: words a third of the way down, the city along the bottom with a little over half of it showing. The stream starts at the city's lip, so it first shows after about half a screen of scrolling. The idea of the city assembling out of the stream's facets is not drawn.
         - **Work.** As built.
-        - **Between Work and Skills. Fable's proposal, with no title.** The handheld at the left for Games and the camera lower at the right for Photography, each with a line and a link to its category on the All work page. It gives the two carried pieces a home on the home page, and the stream something to cross between.
-        - **Skills.** The workbench at the left, seen from its other side so its front edge runs down to the left. The title and a few lines at the right. Below, the PC from his PC Builder at the left with four wide rows of skills beside it, 840 wide. The PC here is Fable's answer to Open 3.
+        - **Between Work and Skills.** Nothing, as the page opens. The handheld and the camera stood here in the first round and he cut them. An accomplishments strip can be switched in (Open 26).
+        - **Skills.** The workbench at the left, seen from its other side so its front edge runs down to the left. The title and a few lines at the right, with the four rows of skills under them, beside the desk, as the page opens. The rows across the page under the desk are one press away (Open 27). The PC stood under the desk in the first round and he cut it.
         - **About.** The title, the three tabs and the text at the left, his portrait at the right. A rail like Work's runs across the whole section from high at the left to low at the right and passes behind his shoulders, clear of his head. The light behind him is the stream on that rail. The rail is new and is Fable's proposal.
         - **Contact.** The title, a few lines, a copy email button, a Calendly button and links at the left (Open 7's recommendation, no form). The rocket on the center line of the page, under the city, with its tower at its left and the flume coming in from the right. The stream ending in the launch is Open 12's recommendation.
         - **The footer.** A line and his name.
         - **The top bar.** Slim, hidden during the hero, with the four sections in it (Open 17, not ruled). The categories docking into it is not drawn.
-    - **What sleeps in A mix:** the cards, the handheld, the camera, the desk's lamp and screens, the PC and the rocket. The Sun stones' faces light when reached, as settled. Words, the hero and his portrait never sleep. Everything also dims each section's words and his portrait until the stream is there. Nothing leaves all of it on.
+    - **What sleeps in A mix:** the cards, the desk's lamp and screens, and the rocket. The Sun stones' faces light when reached, as settled. Words, the hero and his portrait never sleep. Everything also dims each section's words and his portrait until the stream is there. Nothing leaves all of it on.
     - **Against a settled line, said to him in bold:** Skills, "One fixed light: the desk lamp and the lit monitor." In A mix the lamp and the screens are dark until the stream lands on the desk.
     - **It would change two things he has accepted:** the workbench and the rocket are each drawn from their other side, and he looked at the carried pieces as they are and they look fine to him.
-    - **New things that would need designing as objects in their own right:** the rail in About, which fails on sight if it looks placed there only to steer the stream, and the PC as a piece in this repo.
-    - For whoever builds from it: more than two 3D pieces can share one tall screen (the two pieces and the desk, or the desk and the PC with the camera still in view), and `PIECE_MOUNT.max` is 2 today. The two longest free falls are the camera to the desk, about 670 units, and the rail's end to the flume, about 470.
-    - Fable's proposed order for refining, after Work: Skills together with the two pieces above it, then About, then Contact and the footer, then the hero last, as he said.
-    - Stills: `reference/studies/34-page-sketch-*.jpg`.
+    - **A new thing that would need designing as an object in its own right:** the rail in About, which fails on sight if it looks placed there only to steer the stream.
+    - For whoever builds from it: the longest free fall is the rail's end to the flume, about 470 units.
+    - Fable's proposed order for refining, after Work: Skills, then About, then Contact and the footer, then the hero last, as he said.
+    - Stills: `reference/studies/35-page-sketch-*.jpg` are the sketch as it stands. `34-page-sketch-first-round-*` show the three pieces he cut.
+
+26. **An accomplishments section after Work (Nov 14). His idea, not ruled.** "We should go straight into the skills section after work or add an accomplishments section, note big companies too with logos I've worked with and big career stuff like how many projects I've built and so on."
+    - In exact terms: either Work is followed by Skills, or a section sits between them with the marks of the big companies he has worked with and a few career figures, such as how many projects he has built.
+    - On the sketch: off as the page opens, and one press away at `/lab/home` (After Work · Accomplishments). Drawn as four figures and four marks either side of the stream, with no title. The stream passes between them and touches nothing.
+    - **Against a settled line, said to him in bold:** What this is, "the site never repeats the résumé. It shows the work and says what a résumé cannot." The people who read the site have already read his résumé, and companies and counts are what a résumé holds.
+    - Fable's recommendation: go straight into Skills. If he wants the proof on the page, keep it to one quiet strip with no title, as drawn, and not a section of its own.
+    - His to settle if it goes in: which companies, whether each lets its mark be used, and figures he can stand behind in an interview. Words has the live site's "twelve years" and "40+ clients" down as needing correction.
+27. **The rows of skills beside the desk, as the mirror of About (Nov 14). His question, not ruled.** "Should we mirror the about section with the 3D desk object? And have the skills on the right side of it?"
+    - In exact terms: About is words at the left and his portrait at the right. Skills would be its mirror: the desk at the left, and the title with the rows of skills at the right of it.
+    - On the sketch: this is how `/lab/home` opens (Skills rows · Beside the desk). The rows across the page under the desk are one press away.
+    - **Against a settled line, said to him in bold:** Skills, "Skills read in wide rows, not narrow columns." Beside the desk each row is about 490 units wide and runs to two lines. Under the desk each is 1160 wide and one line. They are still rows, one skill set to a row, and not pillars side by side.
+    - Fable's recommendation: yes, beside the desk. It is shorter by about 190 units, the desk and the words read as one thing, and with the rail between them Skills and About answer each other across the page. The rule stands until he changes it.
 
 ## Dropped
 
