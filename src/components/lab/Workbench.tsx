@@ -34,7 +34,8 @@ function Mug({ along, back }: { along: number; back: number }) {
 }
 
 // The desk scene of the fuller draft, as outlines at a real desk's proportions: four legs, the PC under its far end,
-// and a monitor, a lamp, a tablet, a keyboard, a notebook and a mug on it. A stand in for the 3D piece.
+// and a monitor, a lamp, a tablet with its pencil beside it, a keyboard, a notebook and a mug on it. A stand in for
+// the 3D piece.
 export function Workbench({ shown, on }: { shown: boolean; on: boolean }) {
   const { long: L, deep: D, tall: H, thick: T } = BENCH, floor = -H, pc = { l: 1.5, r: 1.72, f: 0.14, b: 0.62, h: 0.5 };
   const leg = (along: number, back: number): Box => [along, along + 0.06, floor, -T, back, back + 0.06];
@@ -62,6 +63,7 @@ export function Workbench({ shown, on }: { shown: boolean; on: boolean }) {
       <Solid box={[0.18, 0.4, 0.36, 0.42, 0.44, 0.6]} />
       <Solid box={[0.14, 0.44, 0, 0.012, 0.12, 0.34]} />
       <polygon pathLength={1} points={str([put(0.155, 0.012, 0.135), put(0.425, 0.012, 0.135), put(0.425, 0.012, 0.325), put(0.155, 0.012, 0.325)])} className={`${styles.glass} ${styles.lit}`} />
+      <line pathLength={1} x1={put(0.475, 0.012, 0.15)[0]} y1={put(0.475, 0.012, 0.15)[1]} x2={put(0.505, 0.012, 0.31)[0]} y2={put(0.505, 0.012, 0.31)[1]} className={styles.leg} />
       <Solid box={[0.56, 1.02, 0, 0.02, 0.1, 0.24]} />
       <polygon pathLength={1} points={str(round(1.1, 0, 0.19, 0.035, 0.05))} className={styles.solid} />
       <Solid box={[1.36, 1.64, 0, 0.015, 0.1, 0.32]} />

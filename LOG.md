@@ -2,6 +2,46 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · Study 23: three rough desks, and his approval of the second round (Fable, web chat)
+
+**What Brandon said**
+
+- "Yeah, everything looks good here. The only thing that looked potentially off was on the desk you didn't mention the Apple pencil next to the iPad Pro. Besides that, everything looks good that you mentioned"
+- Read as: the second round of the fuller draft is approved as drawn, the stream beside him included. The five calls on the desk are agreed, with the Apple Pencil added beside his iPad Pro. All in `BRIEF.md`, Settled, pushed before anything was built.
+- Fable had written "reply 'beside, yes to all' and I start the three rough desks", so the desks were started.
+
+**What was built**
+
+- `/lab/desk`, Study 23. `src/desk-drafts/` (`desks.ts`, `materials.ts`, `scene.ts`) and `src/components/lab/DeskDrafts.tsx`. `BRIEF.md`, Open 29, has the three desks and every stand in.
+- The things on the desk are the carried workbench's own, taken out of `buildBench()` and moved onto the longer top. The carried piece itself is untouched.
+- The pencil was added to the outline desk in the fuller draft (`Workbench.tsx`).
+
+**What was looked at**
+
+- Each desk from the page's view, with the stream's line on, and from lower down, at a desktop screen. A live page with the clock held: the switch, the stream's line, a drag and the reset. No errors.
+- Judged by the six tests for rough drafts of a 3D piece in `QUALITY.md`, written this session.
+
+**What went wrong on the way, so it is not found again**
+
+- The first timber sparkled at a low angle and showed no grain at the page's size. Both were the same fault: detail finer than a pixel. The shader now leaves it out and has a broad figure of its own.
+- The stream's strip light was given in millimetres inside the scaled root and washed the whole picture out. A light's size is not scaled by its parent.
+- With the stream's light on, a frame in software took so long that the still script timed out. The stage now draws only when something changed while the clock is held, the page tells the hooks when the desks are built (`registry.track`), and stills are taken with `--t 4`.
+- The picture's edge showed as a rectangle. The floor now fades out a little way from the desk and the canvas is masked to an oval.
+
+**What is not right yet, plainly**
+
+- They are rough: no joinery, wear or end grain, plain drawer fronts, one pass of timber.
+- C's steel frames read weakly from the page's view.
+- The PC is a few glowing shapes in a box.
+- Not seen on his machine or an iPad: how fast it draws, and how the drag feels.
+- The knob on the drawers is about 15 px wide in these stills. Its rosette was built from the description of the blank's knob and has not been seen close.
+
+**Waiting on him**
+
+- His pick of a desk, or what to take from each. Fable recommends B with C's rail along its front.
+- Then the desk in full: designed, a kit written, built as a piece by Opus, judged by Fable.
+- He has not seen the mended band of light from Claude Code (the entry below the next).
+
 ## 2026-11-14 · Study 22, second round: his four notes on the fuller draft (Fable, web chat)
 
 **What Brandon said**

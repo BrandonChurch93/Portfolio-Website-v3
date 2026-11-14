@@ -1277,6 +1277,21 @@ Each line has Fable's recommendation where there is one. None of these are rules
     - **His verdict on the second round (Nov 14): "Yeah, everything looks good here."** The stream beside him, the desk's proportions and the résumé's skills are in Settled. So are the five calls on the desk, with the Apple Pencil added beside his iPad Pro.
     - **The desk as a 3D piece: five calls put to him, with Fable's pick for each. Answered Nov 14: all five agreed, with the pencil added** (Settled, Skills). How it is made: in code in this repo, as his PC Builder was, or modeled through Blender on his gaming PC and loaded as a file (Open 5). What sits on it: the monitor, lamp, keyboard and mouse, a tablet and his camera, nothing new. The desk itself: a dark timber top, a bronze front edge that carries the stream, two drawers with the knob he chose. The PC under it: his PC Builder's case brought over, lit in the site's ember. The headphones: their own small piece by the title, the site's own design. Fable's pick is the first of each. After his answer: three rough desks to choose from. His `3d-asset-playbook` skill is the method.
 
+29. **The desk as a 3D piece: three rough desks (Nov 14). In front of him. Nothing in it is picked.** At `/lab/desk`, Study 23, built in the web chat on his word: "everything looks good that you mentioned", after Fable had said the three rough desks came next.
+    - What it is for: choosing the desk's direction. Each is built rough in 3D, in code, at the size and from the side the fuller draft draws it: 2 m long, 0.78 deep, 0.74 tall, seen from the front left and above.
+    - The same in all three, from the five agreed calls: a dark timber top, a bronze front edge that carries the stream, two drawers with the knob he chose for the sleeping card, and the PC under the far end.
+    - **A · Bench.** A joiner's bench. A slab 64 mm thick on two trestles, a stretcher at the back held by bronze wedges, a bronze angle screwed over the front edge, two drawers side by side in a case hung under the slab.
+    - **B · Bureau.** An antique writing table. A top 30 mm thick in a bronze rim with cast corners, a frieze with two drawers each in a bronze bead, tapered legs with bronze collars and shoes, a rosette on each front leg block.
+    - **C · Rail.** Made like Work's hardware. A slab cut to a knife edge on two frames of flat steel bar, Work's own rail standing off the front edge on six posts with a Blade at each end, two drawers one over the other in a steel case.
+    - A switch draws a plain line for the stream: down onto the front edge a little right of the middle, along it to the near end, and off. It rides the angle on A, the rim on B, the rail on C. Off when the page opens.
+    - The view can be dragged round, and a button puts the page's view back.
+    - Stand ins, said on the page: the monitor, lamp, keyboard, mouse, iPad with its pencil, camera, lens and cap are the carried workbench's, moved onto a longer top. They are made new with the desk. The PC is a plain case with three fans, standing in for his PC Builder's.
+    - Fable's recommendation: B, with C's rail and Blades in place of the front run of its rim. The knob he chose is an antique one and belongs on B. B has the most to find close up. And the stream then rides the same rail it rides in Work.
+    - What is not right yet, plainly: these are rough. No joinery, no wear, no end grain, plain drawer fronts, and the timber is one first pass of a shader. The frames on C are thin and read weakly from the page's view. The PC's inside is a few glowing shapes. The stream's line is a wire, which `QUALITY.md` fails for the real stream: it is there to show which edge is ridden and nothing else.
+    - Not judged: how it runs on his machine and on an iPad. The web chat draws in software, where one frame takes seconds.
+    - What comes after his pick: the desk is designed in full and built as a piece in `src/pieces/`, with the things on it made new. `CLAUDE.md` gives the building of a contained 3D object to Opus, from a kit, with Fable designing and judging. His `3d-asset-playbook` skill is the method.
+    - Stills: `reference/studies/42-desk-*.jpg`.
+
 ## Dropped
 
 - Shards that have to read as copper leaf and as glass. They are abstract facets in a solid and a clear material (Nov 12)

@@ -378,6 +378,23 @@ The section:
 - **Know where a picture's parts are before laying things against it.** His shoulders are about 58 percent of the way down his portrait and his chin about 47. A line placed at 45 percent ran behind his mouth.
 - **Two things he wants can pull against each other. Draw both and say so.** The stream behind his shoulders and his portrait centered on the words cannot both be had, so the draft carries each behind a switch.
 
+## Rough drafts of a 3D piece
+
+`BRIEF.md`, Open 29, has what the derby at `/lab/desk` holds. A rough draft of a piece is for choosing a direction. It is worth showing when all of these are true:
+
+1. **Each direction can be told from the others at the page's size,** in one look, and each keeps everything that is settled for the piece.
+2. **Each is built at the size and from the side it will have on the page,** from real sizes, and nothing is cut off.
+3. **Its structure can be seen.** Legs, drawers and edges are lit enough to read, and no part is lost in the dark.
+4. **Nothing sparkles or bands.** A surface worked out in a shader leaves out detail finer than a pixel.
+5. **It does not sit in a rectangle.** Its ground is gone before the picture's edge.
+6. **Every stand in is named on the page,** and what the draft is not for is said.
+
+What the build taught:
+
+- At the page's size a desk 2 m long is drawn at less than half a pixel to the millimetre. Grain 3 mm apart is not seen at all, and the timber needs figure tens of millimetres wide to read as wood.
+- A light's width and height are not scaled with the group that holds it. A strip light given in millimetres under a root scaled by 0.001 was a kilometre long and washed the picture out.
+- In the web chat one frame of a lit scene takes seconds. A page that draws every frame starves the still script, so the stage draws only when something changed while the clock is held, and stills are taken with `--t`.
+
 ## A derby of reliefs
 
 `BRIEF.md`, Open 26, has what the derby at `/lab/accomplishments` holds. It is judged for layout and for the look of each piece, not for motion. It is worth showing when all of these are true:
