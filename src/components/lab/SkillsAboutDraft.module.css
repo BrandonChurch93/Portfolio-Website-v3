@@ -142,15 +142,18 @@
   fill: var(--pale);
 }
 
-/* His portrait leans a little away from the cursor, and comes out of the dark as the stream runs toward him. */
+/* His portrait is the ground of About: large, blended into the page at his left, his right and his foot. It leans
+   away from the cursor and comes out of the dark when the studio light comes on. */
 .portrait {
   position: absolute;
   z-index: 1;
   height: auto;
   opacity: 0;
   pointer-events: none;
-  -webkit-mask-image: linear-gradient(#000 76%, transparent);
-  mask-image: linear-gradient(#000 76%, transparent);
+  -webkit-mask-image: linear-gradient(90deg, transparent 3%, #000 34%, #000 86%, transparent), linear-gradient(#000 68%, transparent);
+  mask-image: linear-gradient(90deg, transparent 3%, #000 34%, #000 86%, transparent), linear-gradient(#000 68%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-composite: intersect;
   transform: translate(calc((var(--mx, 0.5) - 0.5) * var(--u) * var(--lean, 14) * -1), calc((var(--my, 0.5) - 0.5) * var(--u) * var(--lean, 14) * -0.57 + var(--u) * 16));
   transition: opacity calc(var(--slow, 1) * 1.2s) var(--ease-settle), transform 0.7s var(--ease-settle);
 }
@@ -158,18 +161,6 @@
 .portrait[data-on='true'] {
   opacity: 1;
   transform: translate(calc((var(--mx, 0.5) - 0.5) * var(--u) * var(--lean, 14) * -1), calc((var(--my, 0.5) - 0.5) * var(--u) * var(--lean, 14) * -0.57));
-}
-
-/* Behind the section he is large and blended into the ground at his left, his right and his foot. */
-.portrait[data-look='back'] {
-  -webkit-mask-image: linear-gradient(90deg, transparent 3%, #000 34%, #000 86%, transparent), linear-gradient(#000 68%, transparent);
-  mask-image: linear-gradient(90deg, transparent 3%, #000 34%, #000 86%, transparent), linear-gradient(#000 68%, transparent);
-  -webkit-mask-composite: source-in;
-  mask-composite: intersect;
-}
-
-.portrait[data-look='back'][data-on='true'] {
-  opacity: 0.94;
 }
 
 .title {
@@ -200,10 +191,10 @@
 .row {
   position: relative;
   display: grid;
-  grid-template-columns: 300fr 820fr;
-  column-gap: calc(var(--u) * 44);
+  grid-template-columns: calc(var(--u) * 92) 300fr 652fr;
+  column-gap: calc(var(--u) * 30);
   align-items: center;
-  padding: calc(var(--u) * 26) 0;
+  padding: calc(var(--u) * 34) 0;
 }
 
 /* The rule over a row runs out from the side the stream is on. */
@@ -223,15 +214,21 @@
   transition-duration: 0.25s;
 }
 
-.index {
-  font-family: var(--font-mono);
-  font-size: calc(var(--u) * 11.5);
-  letter-spacing: 0.08em;
-  color: var(--copper);
+.thing {
+  width: 100%;
+  fill: none;
+  stroke: var(--copper-light);
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.thing circle {
+  fill: var(--bg-2);
 }
 
 .name {
-  margin-top: calc(var(--u) * 3);
+  margin: 0;
   font-family: var(--font-display);
   font-size: calc(var(--u) * 23);
   font-weight: 600;
@@ -242,7 +239,7 @@
 
 .groups {
   display: grid;
-  gap: calc(var(--u) * 8);
+  gap: calc(var(--u) * 20);
   margin: 0;
 }
 

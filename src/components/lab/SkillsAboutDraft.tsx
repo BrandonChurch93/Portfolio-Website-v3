@@ -5,7 +5,7 @@ import { READING_LINE } from '../../config/site';
 import { lamp } from '../../lamp/lamp';
 import { nearest, point, reach } from '../../page-sketch/plan';
 import { ABOUT_TABS, COMPETENCIES } from '../../skills-about/content';
-import { ABOUT, LOOKS, SKILLS, draft, runAt, turns, type DeskRoute, type Look } from '../../skills-about/draft';
+import { ABOUT, SKILLS, draft, runAt, turns, type DeskRoute } from '../../skills-about/draft';
 import { W } from '../../skills-about/plan';
 import { clock } from '../../world/clock';
 import { Phones } from './DeskOutline';
@@ -19,19 +19,26 @@ const FAR = 2600;
 // How long a tab's pulse takes to reach him, in seconds, and how far along it is when the words change.
 const PULSE = { run: 0.75, swap: 0.45 };
 // Where the rows start and how tall they are until the page has been read.
-const GUESS = { tops: [0, 130, 260, 390], tall: 500 };
+const GUESS = { tops: [0, 160, 320], tall: 480 };
 
 const f1 = (v: number) => v.toFixed(1);
+// Stand ins for a small 3D thing in each row of skills, as plain outlines: joined points, a stack of plates, a
+// block made of blocks. They mark a size and a place and are not designs.
+const THINGS = [
+  <g key="points"><path d="M48 16 L20 40 L32 74 L64 74 L76 40 Z M48 16 L48 48 M20 40 L48 48 L76 40 M32 74 L48 48 L64 74" />{[[48, 16], [20, 40], [76, 40], [32, 74], [64, 74], [48, 48]].map(([x, y]) => <circle key={`${x}-${y}`} cx={x} cy={y} r={4.5} />)}</g>,
+  <path key="plates" d="M48 14 L84 28 L48 42 L12 28 Z M12 44 L48 58 L84 44 M12 60 L48 74 L84 60 M12 28 L12 60 M84 28 L84 60 M48 74 L48 82 M12 60 L12 68 L48 82 L84 68 L84 60" />,
+  <path key="blocks" d="M48 10 L82 29 L82 67 L48 86 L14 67 L14 29 Z M48 48 L48 86 M48 48 L14 29 M48 48 L82 29 M31 19.5 L65 38.5 L65 76.5 M65 19.5 L31 38.5 L31 76.5 M14 48 L48 67 L82 48" />,
+];
+
 const tr = (x: number, y: number) => `translate(${x.toFixed(1)} ${y.toFixed(1)})`;
 const ease = (u: number) => 1 - (1 - u) ** 3;
 
 // Study 22: Skills and About as a pair, with his real words and the motion roughed in.
-// ?portrait=back, ?desk=edge, ?speed=half, ?whole and ?ui=0 open it on those.
+// ?desk=edge, ?speed=half, ?whole and ?ui=0 open it on those.
 export function SkillsAboutDraft() {
   const id = useId().replace(/:/g, '');
   const [slow, setSlow] = useState(false);
   const [desk, setDesk] = useState<DeskRoute>('lamp');
-  const [look, setLook] = useState<Look>('beside');
   const [ui, setUi] = useState(true);
   const [whole, setWhole] = useState(false);
   const [reached, setReached] = useState<Set<string>>(new Set());
@@ -41,7 +48,7 @@ export function SkillsAboutDraft() {
   const board = useRef<HTMLDivElement>(null), list = useRef<HTMLDivElement>(null);
   const stream = useRef<SVGGElement>(null), head = useRef<SVGGElement>(null), spark = useRef<SVGGElement>(null);
   const at = useRef(0), replaying = useRef(false), pulse = useRef<{ t: number; from: number } | null>(null);
-  const p = useMemo(() => draft(rows.tops, rows.tall, desk, look), [rows, desk, look]);
+  const p = useMemo(() => draft(rows.tops, rows.tall, desk), [rows, desk]);
   const live = useRef({ p, reached, whole, slow, tab, showing });
   live.current = { p, reached, whole, slow, tab, showing };
 
@@ -49,7 +56,6 @@ export function SkillsAboutDraft() {
     const q = new URLSearchParams(location.search);
     if (q.get('speed') === 'half') setSlow(true);
     if (q.get('desk') === 'edge') setDesk('edge');
-    if (q.get('portrait') === 'back') setLook('back');
     if (q.get('ui') === '0') setUi(false);
     if (q.has('whole')) setWhole(true);
     lamp.bind();
@@ -116,11 +122,11 @@ export function SkillsAboutDraft() {
   }), []);
 
   const got = (c: string) => reached.has(c);
-  const R = SKILLS.rows, P = LOOKS[look].portrait, T = ABOUT.words, top = p.about, back = look === 'back';
-  const { first: [fx, fy], second: [sx, sy], enter, along: [ax, ay] } = turns(look);
+  const R = SKILLS.rows, P = ABOUT.portrait, T = ABOUT.words, top = p.about;
+  const { first: [fx, fy], second: [sx, sy], enter, along: [ax, ay] } = turns();
   const flare = `${id}-flare`, aura = `${id}-aura`, hidden = `${id}-hidden`, fade = `${id}-fade`, shade = `${id}-shade`, beam = `${id}-beam`, soft = `${id}-soft`;
   // The light the studio light throws: from its lens, spreading past where the stream goes in behind him.
-  const lens = [sx + ax * 45, top + sy + ay * 45], far = Math.hypot(enter[0] - sx, enter[1] - sy) + (back ? 330 : 190), wide = far * 0.46;
+  const lens = [sx + ax * 45, top + sy + ay * 45], far = Math.hypot(enter[0] - sx, enter[1] - sy) + 330, wide = far * 0.46;
   const cone = [[lens[0] - ay * 18, lens[1] + ax * 18], [lens[0] + ay * 18, lens[1] - ax * 18], [lens[0] + ax * far + ay * wide, lens[1] + ay * far - ax * wide], [lens[0] + ax * far - ay * wide, lens[1] + ay * far + ax * wide]];
   const cue = (c: string) => p.cues.find((k) => k.id === c)!;
   const place = (x: number, y: number, w?: number): CSSProperties => ({ left: `${(x / W) * 100}%`, top: `${(y / p.h) * 100}%`, width: w ? `${(w / W) * 100}%` : undefined });
@@ -128,7 +134,7 @@ export function SkillsAboutDraft() {
     if (i === tab) return;
     setTab(i);
     const el = document.getElementById(`${id}-tab-${i}`), on = board.current;
-    if (!el || !on || !got('words')) { pulse.current = null; return; }
+    if (!el || !on || !got('behind')) { pulse.current = null; return; }
     const r = el.getBoundingClientRect(), b = on.getBoundingClientRect();
     const x = ((r.left + r.width / 2 - b.left) / b.width) * W;
     pulse.current = { t: clock.now(), from: nearest(p.line, x, top + runAt(x)) };
@@ -147,26 +153,26 @@ export function SkillsAboutDraft() {
     <main className={styles.main}>
       <header className={styles.head}>
         <p className={styles.label}>Study 22 · Skills and About</p>
-        <h1 className={styles.heading}>A fuller draft, fifth round</h1>
+        <h1 className={styles.heading}>A fuller draft, sixth round</h1>
         <p className={styles.lede}>
-          The stream in over your own left shoulder, the glow thrown by the studio light, two tabs, and the rows of
-          skills cut down. Scroll: the line is the stream. The buttons at the foot of the screen put your portrait
-          behind the section, play a section again, run it at half speed, or put the stream back on the desk’s front
-          edge.
+          Your portrait as the ground of About with the words even with you, nothing of About readable until the light is
+          on you, and three rows of skills. Scroll: the line is the stream. The buttons at the foot of the screen play a
+          section again, run it at half speed, or put the stream back on the desk’s front edge.
         </p>
         <ul className={styles.caveats}>
-          <li>Each row of skills is its name and its lists. The sentence beside each name and the line under it are gone, and the name sits centered against its lists.</li>
-          <li>The lists are a first cut of your résumé’s, down from 77 to 58: the big ones kept, the doubles and the keywords gone. Game Development is new under Full-Stack Engineering, and Three.js is added there. Both are yours to correct.</li>
-          <li>About has two tabs, Professional and Personal. Its text is a placeholder: your live site’s paragraphs, dealt out as they stand.</li>
-          <li>The stream runs over the top of About to a studio light at the right, which throws it down along the line you drew: past your jaw, in at the side of your neck over your own left shoulder, behind your chest, and out at the lower left of your portrait. The glow behind you is the one you have seen, joined to the studio light by the light it throws.</li>
-          <li>Portrait, at the foot of the screen, puts your portrait behind the section, large and blended into the ground, moving more with the cursor. The studio light and the stream are the same.</li>
+          <li>Three skill sets: Product Leadership is out. The numbers are gone, and a row’s groups stand further apart.</li>
+          <li>The small outline beside each name is a stand in for a 3D thing you could turn with the cursor. It marks a size and a place. It is a suggestion and nothing agreed, and none of the three is a design.</li>
+          <li>The lists are a first cut of your résumé’s: the big ones kept, the doubles and the keywords gone. Game Development is under Full-Stack Engineering. Yours to correct.</li>
+          <li>About is in this order: the stream runs over the top and strikes the studio light, the light comes on and you come out of the dark, the stream goes in behind you and the glow comes up, and only then the title, the tabs and the text. Scrolling back up takes it all away again.</li>
+          <li>The block of words is centered on you top to bottom. Its text is a placeholder: your live site’s paragraphs under two tabs.</li>
+          <li>The stream follows the line you drew: past your jaw, in at the side of your neck over your own left shoulder, behind your chest, and out at the lower left.</li>
           <li>At the desk the stream strikes the lamp and falls on past the desk’s near end. The lamp comes on, then the screens, then the PC. The PC’s long glass side faces you.</li>
           <li>The desk, the PC, the headphones, the reflector and the studio light are outlines. The stream is still a line. Type sizes and spacing are a first pass.</li>
           <li>For judging: where things sit, what appears when, in what order, how fast. Not a phone.</li>
         </ul>
       </header>
 
-      <div ref={board} className={styles.board} style={{ aspectRatio: `${W} / ${p.h}`, '--slow': slow ? 2 : 1, '--lean': LOOKS[look].lean } as CSSProperties}>
+      <div ref={board} className={styles.board} style={{ aspectRatio: `${W} / ${p.h}`, '--slow': slow ? 2 : 1, '--lean': ABOUT.lean } as CSSProperties}>
         <svg className={styles.layer} viewBox={`0 0 ${W} ${p.h}`} aria-hidden="true">
           <defs>
             <radialGradient id={flare}>
@@ -207,7 +213,7 @@ export function SkillsAboutDraft() {
             <Workbench shown={got('near')} on={got('desk')} sweep={desk === 'lamp'} />
             <Phones at={SKILLS.phones} shown={got('title')} lively />
           </g>
-          <ellipse cx={P.x + P.w / 2} cy={top + P.y + P.h * 0.42} rx={back ? 590 : 410} ry={back ? 440 : 290} fill={`url(#${aura})`} className={styles.aura} data-on={got('behind')} />
+          <ellipse cx={P.x + P.w / 2} cy={top + P.y + P.h * 0.42} rx={590} ry={440} fill={`url(#${aura})`} className={styles.aura} data-on={got('behind')} />
           <polygon points={cone.map(([x, y]) => `${f1(x)},${f1(y)}`).join(' ')} fill={`url(#${beam})`} filter={`url(#${soft})`} className={styles.aura} data-on={got('throw')} />
           {/* The first thing it strikes: a round reflector seen nearly edge on, its face up and to the right. */}
           <g transform={`${tr(fx, top + fy)} rotate(${45 + ABOUT.first.grade / 2})`} className={styles.prop}>
@@ -254,17 +260,15 @@ export function SkillsAboutDraft() {
         </svg>
 
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={back ? '/media/portrait-cut-1600.webp' : '/media/portrait-cut-960.webp'} alt="Brandon Church" className={styles.portrait} data-on={got('portrait')} data-look={look} style={place(P.x, top + P.y, P.w)} />
+        <img src="/media/portrait-cut-1600.webp" alt="Brandon Church" className={styles.portrait} data-on={got('throw')} style={place(P.x, top + P.y, P.w)} />
 
         <h2 className={styles.title} data-on={got('title')} style={place(SKILLS.title[0], p.skills + SKILLS.title[1] - 60)}>Skills</h2>
         <div ref={list} className={styles.rows} style={place(R.l, p.skills + R.t, R.r - R.l)}>
           {COMPETENCIES.map((c, i) => (
             <article key={c.name} className={styles.row} data-on={got(`row${i}`)}>
-              <div>
-                <p className={`${styles.index} ${styles.reveal}`}>{String(i + 1).padStart(2, '0')}</p>
-                <h3 className={`${styles.name} ${styles.reveal}`}>{c.name}</h3>
-              </div>
-              <dl className={`${styles.groups} ${styles.reveal}`} style={{ '--d': 1 } as CSSProperties}>
+              <svg className={`${styles.thing} ${styles.reveal}`} viewBox="0 0 96 96" aria-hidden="true">{THINGS[i]}</svg>
+              <h3 className={`${styles.name} ${styles.reveal}`} style={{ '--d': 1 } as CSSProperties}>{c.name}</h3>
+              <dl className={`${styles.groups} ${styles.reveal}`} style={{ '--d': 2 } as CSSProperties}>
                 {c.groups.map(([label, items]) => (
                   <div key={label} className={styles.group2}>
                     <dt>{label}</dt>
@@ -277,13 +281,13 @@ export function SkillsAboutDraft() {
         </div>
 
         <section aria-label="About">
-          <h2 className={styles.title} data-on={got('about')} style={place(T.l, top + T.title)}>About</h2>
-          <div className={`${styles.tabs} ${styles.reveal}`} role="tablist" aria-label="About" data-on={got('words')} style={place(T.l, top + T.tabs, T.w)}>
+          <h2 className={styles.title} data-on={got('behind')} style={{ ...place(T.l, top + T.title), transitionDelay: got('behind') ? 'calc(var(--slow, 1) * 0.5s)' : '0s' }}>About</h2>
+          <div className={`${styles.tabs} ${styles.reveal}`} role="tablist" aria-label="About" data-on={got('behind')} style={{ ...place(T.l, top + T.tabs, T.w), '--d': 8 } as CSSProperties}>
             {ABOUT_TABS.map((t, i) => (
               <button key={t.name} type="button" role="tab" id={`${id}-tab-${i}`} aria-selected={tab === i} aria-controls={`${id}-panel`} tabIndex={tab === i ? 0 : -1} className={styles.tab} onClick={() => pick(i)} onKeyDown={(e) => step(e, i)}>{t.name}</button>
             ))}
           </div>
-          <div className={`${styles.panelText} ${styles.reveal}`} role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-tab-${tab}`} data-on={got('words')} data-swapping={showing !== tab} style={{ ...place(T.l, top + T.text, T.w), '--d': 1 } as CSSProperties}>
+          <div className={`${styles.panelText} ${styles.reveal}`} role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-tab-${tab}`} data-on={got('behind')} data-swapping={showing !== tab} style={{ ...place(T.l, top + T.text, T.w), '--d': 10 } as CSSProperties}>
             <p className={styles.note}>Placeholder text</p>
             {ABOUT_TABS[showing].text.map((para) => <p key={para.slice(0, 24)}>{para}</p>)}
           </div>
@@ -293,11 +297,6 @@ export function SkillsAboutDraft() {
       {ui && (
         <div className={styles.panel}>
           <div className={styles.controls}>
-            <div className={styles.group} role="group" aria-label="How your portrait stands">
-              <span className={styles.groupName}>Portrait</span>
-              <button type="button" className={styles.choice} aria-pressed={!back} onClick={() => setLook('beside')}>Beside the words</button>
-              <button type="button" className={styles.choice} aria-pressed={back} onClick={() => setLook('back')}>Behind the section</button>
-            </div>
             <div className={styles.group} role="group" aria-label="How the stream meets the desk">
               <span className={styles.groupName}>Stream at the desk</span>
               <button type="button" className={styles.choice} aria-pressed={desk === 'lamp'} onClick={() => setDesk('lamp')}>Onto the lamp</button>

@@ -2,6 +2,42 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · The fuller draft's sixth round: his portrait as About's ground, three rows of skills (Fable, web chat)
+
+**What Brandon said**
+
+- "Almost perfect." His favorite is his portrait in the background. The words are not even with it: About starts above his head. And nobody should be able to read About before the full effect is in place.
+- Cut Product Leadership: it is better said on the résumé and in the accomplishments section. Drop the numbers. More room between a row's groups.
+- He wonders about a small 3D thing he can interact with in each row, to fill the space beside the name, and asked what Fable thinks.
+- All of it is in `BRIEF.md`, Settled, pushed before anything was built.
+
+**What was built**
+
+- `/lab/skills-about-draft`, sixth round. `BRIEF.md`, Open 28. The portrait beside the words is out of the code.
+
+**What was looked at**
+
+- A still of the whole draft. A live page scrolled down and back up: his portrait comes on at the studio light, then the glow, then About's words, and all of it goes away again. No errors.
+
+**Calls made for him, each said to him**
+
+- Cutting Product Leadership is read as decided, since he went on to speak of three categories.
+- The stand ins beside the names are drawn so he can see the size and the place. They are not agreed.
+- Fable's answer on the 3D things is yes with conditions, and it goes against "One animation for skills", said to him in bold.
+
+**What is not right yet, plainly**
+
+- On a quick scroll About's words come on a second or more after the section is in place, since the stream's end is held to a speed over a long level run.
+- Motion is not judged here.
+
+**Waiting on him**
+
+- His go, and four things not ruled: a 3D thing in each row, the stream onto the lamp, the PC turned, the reflector.
+
+**For the next session**
+
+- On his go: a prompt for Claude Code to build Skills and About for real from this draft, and the kit for the desk as a piece. Then the next section is planned with him.
+
 ## 2026-11-14 · The fuller draft's fifth round: his own left shoulder, the studio light's glow, two tabs, shorter rows (Fable, web chat)
 
 **What Brandon said**

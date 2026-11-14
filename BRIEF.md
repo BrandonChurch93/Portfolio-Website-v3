@@ -1377,6 +1377,22 @@ Each line has Fable's recommendation where there is one. None of these are rules
         - The spread of light is a blurred shape. It shows where the light goes and is not a look.
         - Motion is not judged here.
     - Stills: `reference/studies/45-skills-about-draft-5-*.jpg`.
+    - **His verdict on the fifth round (Nov 14): "Almost perfect."** In Settled, Skills and About: his portrait is the background, the words sit even with him, nobody reads About before the full effect is in place, Product Leadership is cut, the numbers go, and a row's groups stand further apart. He asked what Fable thinks of a small 3D thing in each row.
+    - **The sixth round, built on his word (Nov 14). In front of him.** The same page.
+        - **About.** His portrait behind the section is the only one. The block of words is centered on him top to bottom: the title starts about level with his brow, where it started above his head.
+        - **The order About comes on in.** The stream strikes the first thing and runs over the top. It strikes the studio light: the light's spread comes on and he comes out of the dark. It goes in behind him: the glow comes up. Half a second after that the title, then the tabs, then the text. Nothing of About's words is on the page before then. By the scroll, that is when the line two thirds of the way down the screen reaches his neck, which puts the title in the top third of a screen 900 px tall.
+        - **Skills.** Three rows. No numbers. A row's groups are 20 units apart where they were 8. Each name is on one line.
+        - **A stand in for a small 3D thing beside each name,** 92 units across: joined points, a stack of plates, a block made of blocks. Outlines that mark a size and a place. Not designs, and not agreed.
+    - **Fable's answer on a small 3D thing in each row, which he asked for. Not agreed.**
+        - Yes, with four conditions. One to a row and three in all, made as one family in the site's bronze. Lit by the cursor's light and turning a little toward it, which is the site's own signature. About 90 units across, so the desk stays the piece of the section. Each stands for its skill set and for nothing on the desk.
+        - What each could be, as a start for a derby: for AI Product Engineering, points joined by rods with a light that passes between them. For Full-Stack Engineering, a stack of plates that fans open under the cursor. For Design Systems & Craft, a block made of smaller blocks that comes apart and closes.
+        - What it costs: three more contained pieces to make to the bar, and three more things drawn on a section that already has the desk. The frame rate is measured with them in.
+        - **Against a settled line, said to him in bold:** Skills, "One animation for skills." Three things that answer the cursor are more than one. The line stands until he changes it.
+    - What is not right yet, plainly:
+        - **The stream's end has about 1,700 units of line to cover from the first thing to his neck, and it is held to a speed.** On a quick scroll About's words come on a second or more after the section is in place. Slowly scrolled, they come on as he ruled. How fast the end runs the level stretch is for the real build to set.
+        - The three stand ins are plain outlines and say nothing of the look.
+        - Motion is not judged here.
+    - Still: `reference/studies/46-skills-about-draft-6.jpg`.
     - **The desk as a 3D piece: five calls put to him, with Fable's pick for each. Answered Nov 14: all five agreed, with the pencil added** (Settled, Skills). How it is made: in code in this repo, as his PC Builder was, or modeled through Blender on his gaming PC and loaded as a file (Open 5). What sits on it: the monitor, lamp, keyboard and mouse, a tablet and his camera, nothing new. The desk itself: a dark timber top, a bronze front edge that carries the stream, two drawers with the knob he chose. The PC under it: his PC Builder's case brought over, lit in the site's ember. The headphones: their own small piece by the title, the site's own design. Fable's pick is the first of each. After his answer: three rough desks to choose from. His `3d-asset-playbook` skill is the method.
 
 29. **The desk as a 3D piece: three rough desks (Nov 14). In front of him. Nothing in it is picked.** At `/lab/desk`, Study 23, built in the web chat on his word: "everything looks good that you mentioned", after Fable had said the three rough desks came next.

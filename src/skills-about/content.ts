@@ -1,5 +1,6 @@
 // The words on the fuller draft of Skills and About. He rewrites the copy himself, so nothing here is drafted.
-// Each skill set's name is his live site's (brandon-church-portfolio: app/data/competencies.js). He cut the line
+// Each skill set's name is his live site's (brandon-church-portfolio: app/data/competencies.js). He cut the fourth,
+// Product Leadership, which the résumé and the accomplishments section say better. He cut the line
 // under each name and the sentence beside it. The lists start from the Skills section of the résumé he shared on
 // Nov 14, in its own words, and are cut to the big ones as he asked: which stay is Fable's first cut and his to
 // change. The game development group is new, from what he has said of his game work, and his to correct.
@@ -28,12 +29,6 @@ export const COMPETENCIES: Competency[] = [
     groups: [
       ['Frontend & Design', ['Angular', 'Tailwind CSS', 'Design Systems', 'Design Tokens', 'GSAP', 'Figma', 'Prototyping in Code', 'UI/UX Design', 'User Research', 'Usability Testing']],
       ['Accessibility', ['WCAG 2.2', 'Section 508', 'ARIA', 'Screen Reader Testing', 'Auditing & Remediation']],
-    ],
-  },
-  {
-    name: 'Product Leadership',
-    groups: [
-      ['Client & Product', ['Requirements Gathering', 'Discovery', 'Solutions Engineering', 'Stakeholder Management', 'Demos & UAT', 'Product Strategy', 'Roadmaps', 'Cross-Functional Leadership']],
     ],
   },
 ];
