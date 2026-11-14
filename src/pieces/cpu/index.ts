@@ -65,12 +65,17 @@ const KEY = { power: 2.2, at: [0.3, 0.33, -0.1] as const };
 // streak in its brushing wherever the cursor is.
 const LID = { power: 0.06, reach: 0.34, angle: 0.085 } as const;
 const RIM = { power: 2.2, at: [-0.32, 0.075, -0.05] as const };
-const ENV = 0.62;
-const FILL = 0.12;
-const STRIKE_LIGHT = { base: 0.012, flash: 0.2, life: 0.42 } as const;
+const ENV = 0.36;
+const FILL = 0.04;
+const STRIKE_LIGHT = { base: 0.012, flash: 0.04, life: 0.06 } as const;
+// The flash way's first light: an even wash in the stream's colour that throws no glint, from the strike's side.
+const FLASH_FILL = 4;
 const BAND_LIGHT = 0.03;
 const TURN = { yaw: 5, pitch: 3, omega: 6.5 } as const;
-const MASK = 'linear-gradient(to right, transparent, #000 7%, #000 93%, transparent), linear-gradient(to bottom, transparent, #000 7%, #000 93%, transparent)';
+// The canvas fades out at its rim, and fully outside the middle of the host's height where the row's borders run.
+const MASK = 'linear-gradient(to right, transparent 2%, #000 12%, #000 88%, transparent 98%), linear-gradient(to bottom, transparent 5%, #000 11%, #000 89%, transparent 95%)';
+// The bloom keeps to its finest levels, so a glow stays within a few pixels of what makes it and never fills the canvas.
+const BLOOM_LEVELS = [1.0, 0.45, 0.08, 0, 0];
 
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 const cpuH = (n: number) => { n = (n * 0.1031) % 1; if (n < 0) n += 1; n *= n + 33.33; n *= n + n; return n % 1; };
@@ -114,6 +119,7 @@ export function createCpu(): StruckPiece {
   let rim: THREE.SpotLight | null = null;
   let lidLight: THREE.SpotLight | null = null;
   let fill: THREE.HemisphereLight | null = null;
+  let flashFill: THREE.HemisphereLight | null = null;
   let strikeLight: THREE.PointLight | null = null;
   let bandLight: THREE.PointLight | null = null;
   let shards: THREE.InstancedMesh | null = null;
@@ -187,6 +193,7 @@ export function createCpu(): StruckPiece {
     u.uSeam.value = quiet() ? 0.62 : seam(t);
     u.uBandOn.value = L.band ? 1 : 0;
     if (L.band) u.uBand.value.set(L.band.c[0], L.band.c[1], L.band.r, L.band.k);
+    (model.shadow.material as THREE.ShaderMaterial).uniforms.uShadow.value = L.shadow;
     const seat = (boardMat?.userData.uniforms as { uSeat?: { value: number } } | undefined)?.uSeat;
     if (seat) seat.value = L.seat;
     const room = L.show ? L.room : 0;
@@ -198,6 +205,7 @@ export function createCpu(): StruckPiece {
     stage.lamp.intensity = LAMP.power * room;
     // The strike's flash is the stream's leading end arriving, so it does not wait for the stream to come up.
     const flash = since >= 0 && since < 1.5 ? Math.exp(-since / 0.12) * Math.min(1, since / 0.02) : 0;
+    if (flashFill) flashFill.intensity = L.show ? FLASH_FILL * (L.flash + 0.35 * flash) : 0;
     strikeLight.intensity = L.show ? on * STRIKE_LIGHT.base + STRIKE_LIGHT.flash * flash + STRIKE_LIGHT.life * L.flash : 0;
     model.led.emissiveIntensity = L.show ? L.lights * 2.4 : 0;
     if (L.band) {
@@ -207,7 +215,7 @@ export function createCpu(): StruckPiece {
     } else bandLight.intensity = 0;
     shards.count = L.shards.length;
     L.shards.forEach((s, i) => {
-      tmp.compose(s.p, s.q, one.set(s.s * 1.15 * (1 - 0.75 * s.fold), s.s * 0.8, s.s * 0.8 * (1 - 0.75 * s.fold)));
+      tmp.compose(s.p, s.q, s.size);
       shards!.setMatrixAt(i, tmp);
       shards!.setColorAt(i, color.setRGB(s.glow, 0, 0));
     });
@@ -254,8 +262,9 @@ export function createCpu(): StruckPiece {
       canvas.style.setProperty('-webkit-mask-composite', 'source-in');
       h.appendChild(canvas);
       await Promise.all([`500 20px ${MONO}`, `600 20px ${MONO}`, `700 20px ${MONO}`, `300 20px ${SANS}`, `600 20px ${SANS}`].map((f) => document.fonts.load(f).catch(() => null)));
-      stage = new Stage(h, canvas, { tier: opts.tier, fov: VIEW.fov, near: 0.05, far: 3, env: 'studio', envIntensity: ENV, bloom: { strength: 0.3, threshold: 1.6, radius: 0.32 }, lampTarget: [0, 0, 0], lampAngle: 0.62, exposure: 1.2 });
+      stage = new Stage(h, canvas, { tier: opts.tier, fov: VIEW.fov, near: 0.05, far: 3, env: 'studio', envIntensity: ENV, bloom: { strength: 0.3, threshold: 1.6, radius: 0 }, lampTarget: [0, 0, 0], lampAngle: 0.62, exposure: 1.2 });
       noAO();
+      (stage.bloom.compositeMaterial.uniforms.bloomFactors as { value: number[] }).value = BLOOM_LEVELS;
       stage.lamp.penumbra = 0.9;
       stage.lamp.color.set(hex('pale')).lerp(new THREE.Color(hex('hot')), 0.45);
       stage.lamp.shadow.camera.near = 0.05;
@@ -275,7 +284,7 @@ export function createCpu(): StruckPiece {
       key.castShadow = true;
       key.shadow.mapSize.set(2048, 2048);
       key.shadow.bias = -0.0002;
-      key.shadow.normalBias = 0.0004;
+      key.shadow.normalBias = 0.0012;
       key.shadow.radius = 2.5;
       key.shadow.camera.near = 0.2;
       key.shadow.camera.far = 0.8;
@@ -294,12 +303,13 @@ export function createCpu(): StruckPiece {
       }
       fill = new THREE.HemisphereLight(new THREE.Color(hex('pale')).multiplyScalar(0.6), new THREE.Color(hex('ember-deep')), FILL);
       strikeLight = new THREE.PointLight(hex('hot'), 0, 0, 2);
-      strikeLight.position.set((STRIKE.x + 2) * MM, 9 * MM, (STRIKE.z + 2) * MM);
+      strikeLight.position.set((STRIKE.x - 12) * MM, 4 * MM, (STRIKE.z - 12) * MM);
       bandLight = new THREE.PointLight(hex('hot'), 0, 0, 2);
       // Every light stands in the scene itself and is never hidden, only dimmed: a light that comes or goes changes
       // every program, and three would build them all again in the middle of the strike.
       s.add(strikeLight, bandLight);
-      s.add(key, key.target, fill);
+      flashFill = new THREE.HemisphereLight(new THREE.Color(hex('hot')), new THREE.Color(hex('ember-deep')), 0);
+      s.add(key, key.target, fill, flashFill);
       shards = new THREE.InstancedMesh(shardGeometry(), shardMaterial(), PARTS_MAX);
       shards.setColorAt(0, color.setRGB(0, 0, 0));
       shards.count = 0;

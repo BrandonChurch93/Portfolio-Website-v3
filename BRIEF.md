@@ -1115,7 +1115,7 @@ One round in Claude Code. It takes in everything he ruled on Nov 14 for the two 
 
 **The first build, as built (Nov 14). In front of him. Nothing in it is approved.**
 
-At `/lab/skills`, Study 25, built in Claude Code by Fable. The reflector, the studio light and the CPU were each made by an Opus builder from a kit (`reference/kits/`), with Fable judging: four rounds for the reflector, three for the studio light, and two for the CPU, whose third is under way. Items 1 to 26 are built. Items 27 to 30, the desk, joined the round while this was being built and are not: the desk on the page is still the rough bench. What follows is where it departs from what is written above, the calls made for him, and what is not at the bar.
+At `/lab/skills`, Study 25, built in Claude Code by Fable. The reflector, the studio light and the CPU were each made by an Opus builder from a kit (`reference/kits/`), with Fable judging: four rounds for the reflector, three for the studio light, and three for the CPU. Items 1 to 26 are built. Items 27 to 30, the desk, joined the round while this was being built and are not: the desk on the page is still the rough bench. What follows is where it departs from what is written above, the calls made for him, and what is not at the bar.
 
 *Where it departs from a line above. Each was said to him in bold.*
 
@@ -1153,17 +1153,15 @@ At `/lab/skills`, Study 25, built in Claude Code by Fable. The reflector, the st
 
 - **The desk. None of its ten things is made.** What is on the page is the rough bench from `/lab/desk`, as the first 26 items agreed. Items 27 to 30 joined the round after this build was under way. What exists toward them: the piece's frame (`src/pieces/desk/`, at `/lab/piece/desk`), which draws the rough's own forms behind a contract of parts so each thing can be made in its own file and seen alone (`?only=keyboard`), and the builders' kit (`reference/kits/desk.md`). The headphones are an outline.
 - **Test 8, the desk is what is looked at. Failed by a fresh reviewer, and Fable agrees.** When the stream strikes the lamp it is the brightest and largest thing in the picture, and on its way out its core crosses the lamp's stem. The strike was made lighter after the reviewer looked. It is still the brightest thing there. The lamp is a carried stand in whose stem is on the side the stream leaves by. The real lamp is made for the strike, with its arm on the other side, and a desk at the bar holds more of the eye than a rough one.
-- **The CPU. Tests 20, 21 and 22 failed by a fresh reviewer.** What is on the page is its second round.
-    - As a thing it is the weaker work beside the PC Builder's parts: one amber wash over everything, so capacitors, chokes and board read as one brown, a lid that glows evenly like a lit panel, and traces that cannot be seen with the stream off.
-    - Band is the only way that reads as finished.
-    - Flash shows the piece's canvas as a lit rectangle for about 150 ms.
-    - Shards is closer to a spreading circle with parts popping in than to shards that become parts. No one shard can be followed from the strike to its part. The load plate and the lever appear where they stand.
-    - Its third round is with its builder on exactly these.
+- **The CPU. Tests 20, 21 and 22 were failed by a fresh reviewer on its second round. What is on the page is its third, which no fresh reviewer has judged.**
+    - What the reviewer failed in the second round: one amber wash over everything, a lid that glowed like a lit panel, traces that could not be seen with the stream off, Flash showing the piece's canvas as a lit rectangle, and Shards as a spreading circle with parts popping in and no shard that could be followed.
+    - What the third round changed: the materials are pulled apart (a near black board, copper capacitor tops, dark steel, a bronze lever, a copper lid lit only by the lights). Shards is now made of shards: the board comes as five large jagged pieces that lock together, and every other part flies in as one splinter from the strike, fifteen in all. The rectangle is gone from Flash, checked with the levels pushed up eight times.
+    - What is still short, in Fable's judgment and the builder's own. Shards is dark while it builds, so the pieces are followed by their lit edges, and from half a second to one second five splinters are in the air at once. A part rises out of its splinter in under a tenth of a second, which on the processor can read as growing out of the board. Flash is dark for its first 0.3 seconds and has a small round glow at the strike. The capacitors' rims and the lever's highlights reach past pale toward white in a few pixels. The traces at rest are faint at the page's size. Band is still the surest of the three.
 - **The second and third rows strike empty places,** as item 14 agreed. A reviewer who was not told read them as strikes on nothing.
 - **Scrolled at 900 px a second,** About's title has left the top of the screen by the time the last of the text is whole. The text itself is still in the upper half.
 - **The studio light.** The lower left leaf of its barn doors is close to one flat brown. It throws no shadow on the wall behind it. No cable.
 - **The reflector.** Its give on its arm when struck is too small to see at the page's size. The arm's wear is thin.
-- **Test 25 at its strictest.** With the processor slowed four times, 5 of 802 frames took over 25 ms, the worst 36. At full speed, none.
+- **Test 25 at its strictest.** With the processor slowed four times, 3 of 802 frames took over 25 ms, the worst 41. At full speed, none.
 - **What a thrown shard does at a row.** A quarter of a second after the last strike, 9 of 103 thrown shards were within 14 px of a border. The rest are still falling or have gone. They land where they fall and fade: nothing is aimed at a border.
 - **Not checked:** a real iPad, a real phone, a 4K screen, a screen reader read aloud, Safari itself.
 
@@ -1174,7 +1172,7 @@ At `/lab/skills`, Study 25, built in Claude Code by Fable. The reflector, the st
 - **Nothing of a row before its strike.** 0 frames for each of the three rows, of 182.
 - **Off the things it must stay off.** In every frame of a scroll from top to foot, 331 frames at 500 px a second and 185 at 900, no shard riding or thrown is drawn over the monitor, the mat, the PC, his outline, the tabs or About's words.
 - **It goes away again.** Scrolled back up at 600 px a second: the text, the tabs and the title go first, then the glow, then his portrait and the studio light's light, then the last row. Nothing turned back on its way out. Rocked 60 px each way across the studio light's strike seven times, nothing flickered.
-- **Frame times.** The whole page scrolled down and back up at 450 px a second: 808 frames, none over 25 ms. With the processor slowed four times: 5 of 802 over 25 ms, the worst 36.
+- **Frame times.** The whole page scrolled down and back up at 450 px a second: 808 frames, none over 25 ms. With the processor slowed four times: 3 of 802 over 25 ms, the worst 41.
 - **Work is as it was.** 51 of 52 stills taken before and after are the same pixel for pixel: 19 of 20 of `/lab/work` and `/lab/work-blank`, all 21 of `/lab/stream`, the 7 of the buttons and the 4 of the card study. The one that differs is Work with reduced motion, which also differs from itself when it is taken twice from the code as it was.
 
 ### Contact

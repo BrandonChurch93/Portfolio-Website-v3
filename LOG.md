@@ -20,7 +20,7 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 
 - `/lab/skills`, Study 25: items 1 to 26 of the agreement. Items 27 to 30, the desk, are not built: the page shows the rough bench. `BRIEF.md`, Settled, "The first build, as built" has the five places it departs from the agreement, every call made for him, what is not at the bar, and the numbers.
 - The stream's planner for it, `routeThroughSkills` in `src/stream/route-skills.ts`, beside `routeThroughWork`.
-- Three pieces behind the piece contract, each by an Opus builder from a kit in `reference/kits/`: `src/pieces/cpu/`, `src/pieces/reflector/`, `src/pieces/studio-light/`. Each opens alone at `/lab/piece/<name>`. Four rounds for the reflector, three for the studio light. The CPU is committed at its second round.
+- Three pieces behind the piece contract, each by an Opus builder from a kit in `reference/kits/`: `src/pieces/cpu/`, `src/pieces/reflector/`, `src/pieces/studio-light/`. Each opens alone at `/lab/piece/<name>`. Four rounds for the reflector, three for the studio light, three for the CPU.
 - Toward the desk: `src/pieces/desk/`, the frame of the real piece at `/lab/piece/desk`. One stage, each thing a part in its own file behind `part.ts`, every part still the rough's own form through `parts/rough.ts`. `reference/kits/desk.md` is what its builders share. No builder has been started.
 
 **How it is put together, for whoever touches it next**
@@ -43,7 +43,7 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 
 **What was measured, in a live page at 1440 by 900**
 
-- The numbers are in `BRIEF.md`, Settled, "The first build, as built", under "Measured". In short: no word of About before the full effect in any frame at 300, 600 and 900 px a second or after a flick. The text is whole with About's title 290 px down the screen at 300 px a second and 75 px down at 600, and after the title has left the screen at 900. Nothing of a row before its strike. No shard over the desk's things, his outline, the tabs or the words in any frame. Things go away in the reverse order with nothing turning back. No frame over 25 ms down and back up, and 5 of 802 with the processor slowed four times.
+- The numbers are in `BRIEF.md`, Settled, "The first build, as built", under "Measured". In short: no word of About before the full effect in any frame at 300, 600 and 900 px a second or after a flick. The text is whole with About's title 290 px down the screen at 300 px a second and 75 px down at 600, and after the title has left the screen at 900. Nothing of a row before its strike. No shard over the desk's things, his outline, the tabs or the words in any frame. Things go away in the reverse order with nothing turning back. No frame over 25 ms down and back up, and 3 of 802 with the processor slowed four times.
 - Work is as it was: 51 of 52 stills the same pixel for pixel. The one that differs is Work with reduced motion, which is not steady from one taking to the next in the code as it was either: taken twice from a checkout of the commit before this pass, served beside the repo, it differed from itself in 386,570 pixels by up to 5 levels.
 
 **What the fresh reviewers said**
@@ -57,8 +57,8 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
     - **22, a shard can be followed.** It could not follow one.
     - **24** it could not judge: it was shown no stills from before. The stills were compared by Fable, pixel for pixel.
     - **25 at its strictest:** frames of 36, 29 and 25 ms with the processor slowed four times.
-- **What was done about those before the push.** The strike on the lamp keeps fewer sparks and throws less. The leading end no longer rests just above a strike (`snap`). The CPU stands higher so its board is in the middle of its row, and the stream meets it a little short of its corner (`rise`, `shy`). The CPU's faults went back to its builder as a third round, which was still running at the push. Test 8 is still failed in Fable's own judgment: the stream is the brightest thing in the picture at the lamp, and it crosses the carried lamp's stem on its way out. The real lamp is made for the strike.
-- No fresh reviewer has looked since those changes.
+- **What was done about those before the push.** The strike on the lamp keeps fewer sparks and throws less. The leading end no longer rests just above a strike (`snap`). The CPU stands higher so its board is in the middle of its row, and the stream meets it a little short of its corner (`rise`, `shy`). The CPU's faults went back to its builder as a third round, which is what is on the page: the materials pulled apart, Shards made of fifteen real shards with the board in five pieces, the rectangle gone from Flash. `BRIEF.md`, "The first build, as built", has what is still short in it. Test 8 is still failed in Fable's own judgment: the stream is the brightest thing in the picture at the lamp, and it crosses the carried lamp's stem on its way out. The real lamp is made for the strike.
+- No fresh reviewer has looked since those changes, the CPU's third round included.
 
 **What went wrong on the way**
 
@@ -76,7 +76,7 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 
 **For the next session**
 
-- His verdicts go into `BRIEF.md` as he gives them: the five departures, the calls, his pick of a way for the CPU to come to life once its third round is in.
+- His verdicts go into `BRIEF.md` as he gives them: the five departures, the calls, his pick of a way for the CPU to come to life.
 - After his pick: the screen with its back off and the palette and brush, from kits written like the CPU's.
 - **The desk.** A builder a thing (the bench and the mat, the lamp, the monitor, the keyboard and the mouse, the iPad and its pencil, the camera, the PC, the headphones), each replacing its file in `src/pieces/desk/parts/`, from `reference/kits/desk.md` and a few lines of its own. The PC is brought over from his PC Builder's code, which is public: `src/world/parts/caseAtrium.ts` and the parts beside it there. His screenshot of the build has not been seen by Claude Code. The lamp's arm goes on the side away from where the stream leaves. Then the desk piece gets a clear ground, and `/lab/skills` takes it in place of `mountDesk`: it needs its lights turned up by `stage.ts` (`setLights`) and the place of its lamp's shade (`where`). Tests 29 to 42, with three kinds of fresh reviewers each round.
 - Parked, his idea: a border down the left of the rows for the stream to bounce off, if the turn at a row looks soft to him.

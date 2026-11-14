@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Builder, at, lathe, pause, rbox, xf, type Vec3 } from '../../world/build';
+import { Builder, at, lathe, pause, rbox, seeded, xf, type Vec3 } from '../../world/build';
 import { circle, rounded, rrect, slab, type V } from '../../world/shape';
 import { dielectric, lin, metal } from '../../world/surface';
 import { hex } from '../../config/palette';
@@ -21,6 +21,11 @@ export interface PartDef {
   r: number;
   // A part that swings shut on a hinge: a point on the axis, the axis, and how far open it stands.
   hinge?: { p: Vec3; d: Vec3; open: number };
+  // The row or cluster it flies home with, for the small parts: a handful of shards each seat a whole row.
+  row?: string;
+  // Its extent at rest, filled in as it is built.
+  lo: Vec3;
+  hi: Vec3;
 }
 
 export interface CpuModel {
@@ -116,7 +121,7 @@ export async function buildCpu(): Promise<CpuModel> {
   const etch = lidEtch();
   const lidC = `vec2(${SOCKET.x.toFixed(2)}, ${SOCKET.z.toFixed(2)})`;
   const lid = metal({
-    name: 'cpuLid', color: shade('copper', 1.0), rough: 0.16, brush: 'x', aniso: 0.95, tarnish: 0.12, patina: PATINA,
+    name: 'cpuLid', color: shade('copper', 1.0), rough: 0.12, brush: 'none', aniso: 0.95, tarnish: 0.12, patina: PATINA,
     extra: partChunks({
       head: `uniform sampler2D uEtch; float cpuEtch(vec2 o){ if (vObjN.y < 0.99 || vObj.y < ${(IHS.y2 - 0.02).toFixed(2)}) return 0.0; return texture2D(uEtch, (vObj.xz + o - ${lidC}) / ${ETCH_MM.toFixed(1)} + 0.5).r; }`,
       color: 'float cpuEt = cpuEtch(vec2(0.0));\n  diffuseColor.rgb *= 1.0 - 0.7 * cpuEt;',
@@ -126,8 +131,8 @@ export async function buildCpu(): Promise<CpuModel> {
   });
   lid.userData.uniforms = { ...u, uEtch: { value: etch } };
   // The lid is the brightest thing on the board: its brushing carries the studio's strip lights even with the cursor far off.
-  lid.envMapIntensity = 2.2;
-  const copper = metal({ name: 'cpuCopper', color: shade('copper', 0.85), rough: 0.45, tarnish: 0.2, patina: PATINA, extra: partChunks() });
+  lid.envMapIntensity = 1.1;
+  const copper = metal({ name: 'cpuCopper', color: shade('copper', 0.62), rough: 0.5, tarnish: 0.2, patina: PATINA, extra: partChunks() });
   copper.userData.uniforms = u;
   const bronze = metal({ name: 'cpuBronze', color: hex('bronze'), rough: 0.3, brush: 'radial-z', tarnish: 0.2, patina: PATINA, extra: partChunks() });
   bronze.userData.uniforms = u;
@@ -137,11 +142,12 @@ export async function buildCpu(): Promise<CpuModel> {
     name: 'cpuContacts', color: shade('copper', 0.85), rough: 0.42, extra: partChunks({ emissive: `totalEmissiveRadiance += cpuRamp(uSeam * uGlow) * uSeam * uGlow * 1.5;` }, { bounce: false }),
   });
   contacts.userData.uniforms = u;
-  const can = ink(metal({ name: 'cpuCan', color: shade('bronze-deep', 1.15), rough: 0.3, brush: 'radial-z', tarnish: 0.15, patina: PATINA, extra: partChunks(inkChunks(shade('bronze', 0.55), true)) }));
+  const can = ink(metal({ name: 'cpuCan', color: shade('copper', 0.78), rough: 0.3, brush: 'radial-z', tarnish: 0.15, patina: PATINA, extra: partChunks(inkChunks(shade('bg-3', 1.0), true)) }));
   const plastic = dielectric('cpuPlastic', shade('bg-3', 0.9), 0.38, { coat: 0, vary: 0.08, scale: 0.5, extra: partChunks() });
   plastic.userData.uniforms = u;
-  const ferrite = ink(dielectric('cpuFerrite', shade('bg-3', 1.35), 0.93, { vary: 0.16, scale: 1.6, extra: partChunks(inkChunks(shade('copper-light', 0.9), false)) }));
+  const ferrite = ink(dielectric('cpuFerrite', shade('bg', 2.0), 0.93, { vary: 0.16, scale: 1.6, extra: partChunks(inkChunks(shade('copper-light', 0.9), false)) }));
   const epoxy = ink(dielectric('cpuEpoxy', shade('bg-3', 0.62), 0.64, { coat: 0, vary: 0.06, scale: 0.9, extra: partChunks(inkChunks(hex('text-3'), false)) }));
+  ferrite.specularIntensity = 0.3;
   const substrate = dielectric('cpuSubstrate', shade('bronze-deep', 0.42), 0.55, { coat: 0.12, vary: 0.05, scale: 0.4, extra: partChunks() });
   substrate.userData.uniforms = u;
   const ceramic = dielectric('cpuCeramic', shade('bronze-deep', 1.1), 0.62, { vary: 0.12, scale: 2.0, extra: partChunks() });
@@ -168,12 +174,15 @@ export async function buildCpu(): Promise<CpuModel> {
   // ---- parts ------------------------------------------------------------------------------------------------
   const b = new Builder();
   const parts: PartDef[] = [];
-  const part = (d: PartDef) => { parts.push(d); return parts.length - 1; };
+  const part = (d: Omit<PartDef, 'lo' | 'hi'>) => { parts.push({ ...d, lo: [Infinity, Infinity, Infinity], hi: [-Infinity, -Infinity, -Infinity] }); return parts.length - 1; };
   const inked = new Set<THREE.Material>([can, ferrite, epoxy]);
   const add = (i: number, geo: THREE.BufferGeometry, mat: THREE.Material, m?: THREE.Matrix4) => {
     const hasInk = !!geo.userData.printed;
     const g = geo.index ? geo.toNonIndexed() : geo;
     if (m) g.applyMatrix4(m);
+    g.computeBoundingBox();
+    const bb = g.boundingBox!, pd = parts[i];
+    for (let k = 0; k < 3; k++) { pd.lo[k] = Math.min(pd.lo[k], bb.min.getComponent(k)); pd.hi[k] = Math.max(pd.hi[k], bb.max.getComponent(k)); }
     if (inked.has(mat) && !hasInk) g.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(g.getAttribute('position').count * 2), 2));
     const n = g.getAttribute('position').count, cell = new Float32Array(n * 4);
     for (let k = 0; k < n; k++) cell[k * 4 + 3] = i;
@@ -183,10 +192,11 @@ export async function buildCpu(): Promise<CpuModel> {
   const box = (w: number, h: number, d: number) => new THREE.BoxGeometry(w, h, d);
 
   // The board, its plated holes.
-  const iBoard = part({ kind: 'board', c: [0, -0.8, 0], r: 78 });
-  {
-    const sq = rounded(rrect(0, 0, BOARD.half * 2, BOARD.half * 2, 0.6));
-    add(iBoard, flat(flip(sq), HOLES.map(([x, z]) => circle(x, z, HOLE.r, 48)).map(flip), -BOARD.thick, 0, 0.1, 1), board);
+  // The board in a few large pieces with jagged seams, that fly in as shards and close edge to edge into the square.
+  for (const piece of boardPieces()) {
+    const i = part({ kind: 'board', c: [piece.c[0], -0.8, piece.c[1]], r: piece.r });
+    const holes = HOLES.filter((h) => inside(h, piece.outline)).map(([x, z]) => flip(circle(x, z, HOLE.r, 48)));
+    add(i, flat(flip(piece.outline.map(([x, z]) => new THREE.Vector2(x, z))), holes, -BOARD.thick, 0, 0), board);
   }
   await pause();
 
@@ -305,7 +315,7 @@ export async function buildCpu(): Promise<CpuModel> {
   await pause();
 
   // The power header in the corner the stream strikes: eight keyed cavities with a pin in each, a latch ramp.
-  const iEps = part({ kind: 'round', c: [EPS.x, EPS.h / 2, EPS.z], r: 10 });
+  const iEps = part({ kind: 'round', c: [EPS.x, EPS.h / 2, EPS.z], r: 10, row: 'eps' });
   {
     const outl = rounded(rrect(0, 0, EPS.w, EPS.d, 0.7));
     const holes: THREE.Vector2[][] = [];
@@ -327,7 +337,7 @@ export async function buildCpu(): Promise<CpuModel> {
   // The power stages.
   const iPhase: number[] = [];
   for (const [n, ph] of PHASES.entries()) {
-    const i = part({ kind: 'round', c: [ph.choke[0], 2.5, ph.choke[1]], r: 9 });
+    const i = part({ kind: 'round', c: [ph.choke[0], 2.5, ph.choke[1]], r: 9, row: ph.turn ? 'left' : 'top' });
     iPhase.push(i);
     const turn = (x: number, y: number, z: number, cx: number, cz: number) => xf({ p: [cx + (ph.turn ? z : x), y, cz + (ph.turn ? -x : z)], r: [0, ph.turn, 0].map((v) => (v ? Math.PI / 2 : 0)) as Vec3 });
     const [cx, cz] = ph.choke;
@@ -353,7 +363,7 @@ export async function buildCpu(): Promise<CpuModel> {
   await pause();
 
   // The fan header: a base, a friction wall behind the pins, four pins with pointed tips.
-  const iFan = part({ kind: 'round', c: [FAN.x, 3, FAN.z], r: 6 });
+  const iFan = part({ kind: 'round', c: [FAN.x, 3, FAN.z], r: 6, row: 'front' });
   {
     add(iFan, rbox(10.2, 2.4, 2.6, 0.25, 2), plastic, at(FAN.x, 1.2, FAN.z + 0.4));
     add(iFan, rbox(10.2, 5.9, 0.85, 0.25, 2), plastic, at(FAN.x, 2.95, FAN.z - 2.35));
@@ -379,20 +389,20 @@ export async function buildCpu(): Promise<CpuModel> {
       lead(pos(out + 0.62 + step, 0.08), [0, -(dir + a), 0], [0.62, 0.16, 0.22]);
     }
   };
-  const iQfp = part({ kind: 'round', c: [QFP.x, 1, QFP.z], r: 6 });
+  const iQfp = part({ kind: 'round', c: [QFP.x, 1, QFP.z], r: 6, row: 'right' });
   add(iQfp, printed(rbox(QFP.w, 1.3, QFP.w, 0.16, 1), 'qfp', QFP.w, QFP.w), epoxy, at(QFP.x, 0.3 + 0.65, QFP.z));
   for (let s = 0; s < 4; s++) gull(iQfp, QFP.x, QFP.z, 0, 0.92, QFP.w / 2, 0.42, 0.5, 12, s);
-  const iQfn = part({ kind: 'round', c: [QFN.x, 0.5, QFN.z], r: 4 });
+  const iQfn = part({ kind: 'round', c: [QFN.x, 0.5, QFN.z], r: 4, row: 'front' });
   add(iQfn, printed(rbox(QFN.w, 0.85, QFN.w, 0.08, 1), 'qfn', QFN.w, QFN.w), epoxy, at(QFN.x, 0.43, QFN.z));
   for (let s = 0; s < 4; s++) for (let k = 0; k < 10; k++) {
     const t = -2.25 + k * 0.5, o = QFN.w / 2 + 0.01;
     const [dx, dz] = s === 0 ? [t, -o] : s === 1 ? [o, t] : s === 2 ? [-t, o] : [-o, -t];
     add(iQfn, box(s % 2 ? 0.08 : 0.24, 0.2, s % 2 ? 0.24 : 0.08), copper, at(QFN.x + dx, 0.1, QFN.z + dz));
   }
-  const iSoic = part({ kind: 'round', c: [SOIC.x, 0.8, SOIC.z], r: 4 });
+  const iSoic = part({ kind: 'round', c: [SOIC.x, 0.8, SOIC.z], r: 4, row: 'front' });
   add(iSoic, printed(rbox(4.9, 1.45, 3.9, 0.14, 1), 'soic', 4.9, 3.9), epoxy, at(SOIC.x, 0.2 + 0.72, SOIC.z));
   for (const s of [1, 3]) gull(iSoic, SOIC.x, SOIC.z, Math.PI / 2, 0.85, 1.95, 0.55, 1.27, 4, s);
-  const iLed = part({ kind: 'round', c: [LED.x, 0.4, LED.z], r: 2 });
+  const iLed = part({ kind: 'round', c: [LED.x, 0.4, LED.z], r: 2, row: 'eps' });
   add(iLed, box(1.0, 0.55, 0.8), ledM, at(LED.x, 0.3, LED.z));
   for (const s of [-1, 1]) add(iLed, box(0.32, 0.58, 0.82), copper, at(LED.x + s * 0.64, 0.3, LED.z));
   await pause();
@@ -401,7 +411,7 @@ export async function buildCpu(): Promise<CpuModel> {
   const smalls = smallParts();
   const groups = new Map<number, number>();
   for (const p of smalls) {
-    if (!groups.has(p.group)) groups.set(p.group, part({ kind: 'round', c: [p.x, 0.4, p.z], r: 6 }));
+    if (!groups.has(p.group)) groups.set(p.group, part({ kind: 'round', c: [p.x, 0.4, p.z], r: 6, row: SMALL_ROWS[p.group] }));
     const i = groups.get(p.group)!;
     const [w, h, d] = SMALL_SIZE[p.kind];
     const ry = p.turn ? Math.PI / 2 : 0;
@@ -439,13 +449,59 @@ export async function buildCpu(): Promise<CpuModel> {
   return { root, parts, u, meshes, shadow, led, contacts };
 }
 
+// Which row each run of small parts flies home with.
+const SMALL_ROWS = ['top', 'left', 'right', 'right', 'right', 'front', 'front', 'front', 'right'];
+
+// The board's pieces: seams run from under the socket out to the edges, jagged, clear of the holes. Each piece is its
+// outline (x, z) going round, its middle and its reach.
+function boardPieces(): { outline: P2[]; c: P2; r: number }[] {
+  const H = BOARD.half, mid: P2 = [SOCKET.x, SOCKET.z];
+  const ends: P2[] = [[-H, -6], [-4, -H], [H, -26], [34, H], [-24, H]];
+  const rnd = seeded(515);
+  const seam = (e: P2): P2[] => {
+    const pts: P2[] = [mid];
+    const n = 5;
+    for (let k = 1; k < n; k++) {
+      const t = k / n, x = mid[0] + (e[0] - mid[0]) * t, z = mid[1] + (e[1] - mid[1]) * t;
+      const dx = e[0] - mid[0], dz = e[1] - mid[1], l = Math.hypot(dx, dz);
+      const j = (rnd() - 0.5) * 5;
+      pts.push([x - (dz / l) * j, z + (dx / l) * j]);
+    }
+    pts.push(e);
+    return pts;
+  };
+  const ang = (p: P2) => Math.atan2(p[1] - mid[1], p[0] - mid[0]);
+  const corners: P2[] = [[-H, -H], [H, -H], [H, H], [-H, H]];
+  const sorted = ends.slice().sort((a, b) => ang(a) - ang(b));
+  // Each seam is drawn once, so the two pieces either side of it meet exactly.
+  const seams = new Map(sorted.map((e) => [e, seam(e)] as const));
+  return sorted.map((e, k) => {
+    const next = sorted[(k + 1) % sorted.length];
+    const a0 = ang(e), a1 = ang(next) + (k === sorted.length - 1 ? Math.PI * 2 : 0);
+    const between = corners.map((c) => { let a = ang(c); while (a < a0) a += Math.PI * 2; return { c, a }; }).filter((x) => x.a < a1).sort((x, y) => x.a - y.a).map((x) => x.c);
+    const outline: P2[] = [...seams.get(e)!, ...between, ...seams.get(next)!.slice().reverse().slice(0, -1)];
+    const c: P2 = [outline.reduce((s, p) => s + p[0], 0) / outline.length, outline.reduce((s, p) => s + p[1], 0) / outline.length];
+    const r = Math.max(...outline.map((p) => Math.hypot(p[0] - c[0], p[1] - c[1])));
+    return { outline, c, r };
+  });
+}
+
+function inside(p: P2, poly: P2[]): boolean {
+  let hit = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const [xi, zi] = poly[i], [xj, zj] = poly[j];
+    if ((zi > p[1]) !== (zj > p[1]) && p[0] < ((xj - xi) * (p[1] - zi)) / (zj - zi) + xi) hit = !hit;
+  }
+  return hit;
+}
+
 // The board: solder mask over copper. Traces and planes show through the mask as a lighter, raised tone; pads and
 // rings are bare copper; the ink is a warm pale; the cut edge shows the layers; the plated holes are copper.
 function boardMaterial(u: Shared, art: THREE.Texture): THREE.MeshPhysicalMaterial {
-  const m = new THREE.MeshPhysicalMaterial({ color: shade('bg', 0.9), roughness: 0.85, clearcoat: 0.22, clearcoatRoughness: 0.16, metalness: 0 });
+  const m = new THREE.MeshPhysicalMaterial({ color: shade('bg', 0.7), roughness: 0.2, metalness: 0, anisotropy: 0.9 });
   m.name = 'cpuBoard';
-  m.envMapIntensity = 0.4;
-  m.specularIntensity = 0.05;
+  m.envMapIntensity = 0.12;
+  m.specularIntensity = 0.12;
   const holes = HOLES.map(([x, z]) => `vec2(${x.toFixed(1)}, ${z.toFixed(1)})`).join(', ');
   const own = {
     head: /* glsl */ `
@@ -463,7 +519,7 @@ float cpuEdgeMask(){ float y = -vObj.y; return 1.0 - smoothstep(0.02, 0.04, y) *
   float cpuT = cpuTop();
   float cpuCu = cpuA.r * cpuT, cpuSilk = cpuA.g * cpuT, cpuPad = cpuA.b * cpuT;
   vec3 cpuCol = diffuseColor.rgb;
-  cpuCol = mix(cpuCol, cpuCol * 1.3 + ${lin(hex('copper'))} * 0.022, cpuCu);
+  cpuCol = mix(cpuCol, cpuCol * 1.2 + ${lin(hex('copper'))} * 0.11, cpuCu);
   cpuCol *= 1.0 - 0.5 * cpuP.a * cpuSeat * cpuT;
   cpuCol = mix(cpuCol, ${lin(shade('text-3', 0.92))}, cpuSilk);
   float cpuEdge = 1.0 - cpuT - cpuHole();
@@ -481,16 +537,15 @@ float cpuEdgeMask(){ float y = -vObj.y; return 1.0 - smoothstep(0.02, 0.04, y) *
     vec4 az0 = texture2D(uArt, cpuBuv(vec2(0.0, -e))), az1 = texture2D(uArt, cpuBuv(vec2(0.0, e)));
     float gx = dot(ax1.rgb - ax0.rgb, vec3(0.5, 0.35, 0.2)), gz = dot(az1.rgb - az0.rgb, vec3(0.5, 0.35, 0.2));
     vec3 axZ = normalize(cross(vAxX, vAxY));
-    normal = normalize(normal - (gx * vAxX + gz * axZ) * 0.22);
+    normal = normalize(normal - (gx * vAxX + gz * axZ) * 1.0);
   }`,
     emissive: /* glsl */ `
   if (uGlow > 0.001 && cpuT > 0.5) {
     float g = 0.0;
     if (cpuP.r > 0.08) g += cpuWave(cpuP.g / cpuP.r, floor(cpuP.b / cpuP.r * 8.0)) * cpuA.r * min(1.0, cpuP.r * 1.4) * 1.7;
     vec4 ph = textureLod(uPulse, cpuBuv(vec2(0.0)), 2.6);
-    if (ph.r > 0.03) g += cpuWave(ph.g / ph.r, floor(ph.b / ph.r * 8.0)) * ph.r * 0.6;
-    g = min(g, 1.12) * uGlow;
-    totalEmissiveRadiance += cpuRamp(g) * g * 2.9;
+    g = min(g, 1.08) * uGlow;
+    totalEmissiveRadiance += cpuRamp(g) * g * 2.3;
   }`,
   };
   const ch = partChunks(own, { bounce: false });
@@ -528,23 +583,17 @@ function shadowMaterial(u: Shared): THREE.ShaderMaterial {
     transparent: true,
     depthWrite: false,
     vertexShader: /* glsl */ `
-${'attribute vec4 cell;\nuniform highp sampler2D uParts;\nvarying vec3 vCpuP;\nvarying vec4 vReveal;'}
+varying vec3 vCpuP;
 void main(){
-  vReveal = texelFetch(uParts, ivec2(4, 0), 0);
-  vec4 r0 = texelFetch(uParts, ivec2(0, 0), 0), r1 = texelFetch(uParts, ivec2(1, 0), 0), r2 = texelFetch(uParts, ivec2(2, 0), 0);
-  vec3 q = position;
-  vec3 p = vec3(dot(r0.xyz, q) + r0.w, dot(r1.xyz, q) + r1.w, dot(r2.xyz, q) + r2.w);
-  vCpuP = q;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
+  vCpuP = position;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }`,
     fragmentShader: /* glsl */ `
 uniform float uBandOn, uShadow;
 uniform vec4 uBand;
 varying vec3 vCpuP;
-varying vec4 vReveal;
 void main(){
   if (uBandOn > 0.5 && length(vCpuP.xz - uBand.xy) > uBand.z) discard;
-  if (vReveal.w < 9e4 && length(vCpuP.xz - vReveal.xz) > vReveal.w) discard;
   vec2 q = abs(vCpuP.xz) - vec2(${(BOARD.half - 4).toFixed(1)});
   float sd = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - 4.0;
   float a = (1.0 - smoothstep(-3.0, 10.0, sd)) * 0.72 * uShadow;

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { seeded, type Vec3 } from '../../world/build';
 import type { Way } from '../../world/struck';
-import { BOARD, STRIKE } from './layout';
+import { BOARD, SOCKET, STRIKE } from './layout';
 import type { PartDef } from './model';
 import { PART_TEXELS } from './shading';
 
@@ -9,14 +9,13 @@ import { PART_TEXELS } from './shading';
 // is, how hot it is, the shards in flight, and how the lights stand. Run back, the same numbers take it away again.
 
 export const LIFE: Record<Way, number> = { shards: 1.2, band: 0.85, flash: 0.75 };
-// When the board has finished laying itself out from the struck corner, in the shards way.
-const BOARD_LAY = 0.27;
 
 // When the lights come on, in each way.
 const LIGHTS: Record<Way, [number, number]> = { shards: [0.98, 1.2], band: [0.6, 0.85], flash: [0.58, 0.75] };
 
-// fold: how far its needle points have drawn in as it becomes its part, 0 to 1.
-export interface ShardAt { p: THREE.Vector3; q: THREE.Quaternion; s: number; glow: number; fold: number }
+// A shard in flight: where it is, how it is turned, its half size along its own length, depth and breadth, and how
+// brightly its edges burn.
+export interface ShardAt { p: THREE.Vector3; q: THREE.Quaternion; size: THREE.Vector3; glow: number }
 
 export interface LifeAt {
   show: boolean;
@@ -30,6 +29,8 @@ export interface LifeAt {
   front: number;
   // The contact darkening under the parts, once they are down.
   seat: number;
+  // How much of the board's shadow is under it: the board's pieces that have come home.
+  shadow: number;
   // The processor is in its seat: the lid's own light comes up with it.
   lid: number;
   band: { c: [number, number]; r: number; k: number } | null;
@@ -43,6 +44,28 @@ const outCubic = (k: number) => 1 - (1 - k) ** 3;
 const ID = new THREE.Quaternion();
 
 // Each part's own numbers for the ways: a tumble axis and spin, a lift and tilt for the flash, a size for its shard.
+interface Flier {
+  parts: number[];
+  go: number;
+  land: number;
+  board: boolean;
+  target: THREE.Vector3;
+  q: THREE.Quaternion;
+  size: THREE.Vector3;
+  along: Map<number, number>;
+  rise: number;
+  axis: THREE.Vector3;
+  spin: number;
+  arc: number;
+  bow: number;
+}
+// The rows of small parts, each one shard.
+const ROWS = ['eps', 'left', 'top', 'front', 'right'];
+// How long a part takes to rise out of its shard, and a board piece to slide home; when the plate and lever shut.
+const RISE = 0.09;
+const SLIDE = 0.06;
+const SHUT = { plate: [0.6, 0.7] as [number, number], lever: [0.71, 0.81] as [number, number] };
+const SEAM_MID: [number, number] = [SOCKET.x, SOCKET.z];
 interface Own { axis: THREE.Vector3; spin: number; lift: number; tilt: THREE.Vector3; shard: number; heat: number; rank: number; dist: number; arc: number; bow: number }
 
 export class Life {
@@ -52,8 +75,9 @@ export class Life {
   private q = new THREE.Quaternion();
   private v = new THREE.Vector3();
   private shardPool: ShardAt[] = [];
+  private fliers: Flier[] = [];
+  private boardCount = 1;
   readonly strike = new THREE.Vector3(STRIKE.x, STRIKE.y + 1.5, STRIKE.z);
-  private layFrom = new THREE.Vector3(STRIKE.x + 7, 0, STRIKE.z + 7);
 
   constructor(private parts: PartDef[]) {
     const r = seeded(4711);
@@ -71,7 +95,54 @@ export class Life {
       return { axis, heat, arc, bow, spin: 6 + r() * 5, lift: p.kind === 'round' ? 2.4 + r() * 4.6 : p.kind === 'cpu' ? 11 : p.kind === 'body' ? 2.6 : p.kind === 'frame' ? 1.6 : 0, tilt, shard, rank: 0, dist: dist(p) };
     });
     this.order.forEach((i, k) => { this.own[i].rank = this.order.length > 1 ? k / (this.order.length - 1) : 0; });
-    for (let i = 0; i < parts.length; i++) this.shardPool.push({ p: new THREE.Vector3(), q: new THREE.Quaternion(), s: 0, glow: 0, fold: 0 });
+    for (let i = 0; i < parts.length; i++) this.shardPool.push({ p: new THREE.Vector3(), q: new THREE.Quaternion(), size: new THREE.Vector3(), glow: 0 });
+    this.fliers = this.plan(r);
+    this.boardCount = parts.filter((p) => p.kind === 'board').length;
+  }
+
+  // What flies in the shards way, and when: each board piece, each large part, and each row of small parts.
+  private plan(r: () => number): Flier[] {
+    const P = this.parts;
+    const units: { parts: number[]; at: [number, number] }[] = [];
+    const boards = P.map((p, i) => ({ p, i })).filter((x) => x.p.kind === 'board').sort((a, b) => Math.hypot(a.p.c[0] - STRIKE.x, a.p.c[2] - STRIKE.z) - Math.hypot(b.p.c[0] - STRIKE.x, b.p.c[2] - STRIKE.z));
+    boards.forEach((b, k) => units.push({ parts: [b.i], at: [k * 0.035, 0.2 + k * 0.035] }));
+    const one = (kind: string, at: [number, number]) => { const i = P.findIndex((p) => p.kind === kind); if (i >= 0) units.push({ parts: [i], at }); };
+    one('frame', [0.17, 0.37]);
+    one('body', [0.23, 0.43]);
+    one('cpu', [0.29, 0.5]);
+    one('plate', [0.34, 0.54]);
+    one('lever', [0.4, 0.6]);
+    ROWS.forEach((row, k) => {
+      const parts = P.map((p, i) => ({ p, i })).filter((x) => x.p.row === row).map((x) => x.i);
+      if (parts.length) units.push({ parts, at: [0.5 + k * 0.06, 0.7 + k * 0.05] });
+    });
+    return units.map(({ parts, at }) => {
+      const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+      for (const i of parts) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], P[i].lo[k]); hi[k] = Math.max(hi[k], P[i].hi[k]); }
+      const dim = [hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]];
+      const centre = new THREE.Vector3((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2);
+      // Its long way and its broad way at rest, turned as it stands when it arrives (the plate open, the lever up).
+      const longX = dim[0] >= dim[2];
+      let A = new THREE.Vector3(longX ? 1 : 0, 0, longX ? 0 : 1), B = new THREE.Vector3(longX ? 0 : 1, 0, longX ? 1 : 0);
+      const hinge = P[parts[0]].hinge;
+      if (hinge) {
+        const rot = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(...hinge.d), hinge.open), hp = new THREE.Vector3(...hinge.p);
+        A = A.applyQuaternion(rot); B = B.applyQuaternion(rot);
+        centre.sub(hp).applyQuaternion(rot).add(hp);
+      }
+      const C = new THREE.Vector3().crossVectors(B, A);
+      const q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(A, C, B));
+      const len = Math.max(dim[0], dim[2]), wide = Math.min(dim[0], dim[2]);
+      const size = new THREE.Vector3(len * 0.55, Math.max(0.6, Math.min(dim[1], wide) * 0.45), Math.max(1.2, wide * 0.42));
+      const axisDir = longX ? 0 : 2;
+      const along = new Map<number, number>();
+      for (const i of parts) along.set(i, len > 0 ? Math.abs(P[i].c[axisDir] - (axisDir === 0 ? lo[0] : lo[2])) / len : 0);
+      const isBoard = P[parts[0]].kind === 'board';
+      return {
+        parts, go: at[0], land: at[1], board: isBoard, target: centre, q: isBoard ? ID.clone() : q, size, along, rise: parts.length > 1 ? 0.08 : 0,
+        axis: new THREE.Vector3(r() - 0.5, r() - 0.5, r() - 0.5).normalize(), spin: (isBoard ? 3 : 5) + r() * 3, arc: 0.7 + 0.6 * r(), bow: (r() < 0.5 ? -1 : 1) * (0.4 + 0.6 * r()),
+      };
+    });
   }
 
   // Writes each part's transform (three rows), heat and how far it is uncovered into out, five texels a part, and
@@ -82,7 +153,7 @@ export class Life {
     const [l0, l1] = LIGHTS[way];
     const res: LifeAt = {
       show: age > 0, room: 1, flash: 0, lights: whole ? 1 : smooth(span(age, l0, l1)), front: whole ? 9 : ((age - l0) / (l1 - l0)) * 1.08,
-      seat: 1, lid: 1, band: null, shards: [],
+      seat: 1, shadow: 1, lid: 1, band: null, shards: [],
     };
     for (let i = 0; i < this.parts.length; i++) this.write(out, i, this.m.identity(), 0);
     if (!res.show) { for (let i = 0; i < this.parts.length; i++) this.write(out, i, this.m.makeScale(0, 0, 0), 0); return res; }
@@ -104,7 +175,7 @@ export class Life {
   }
 
   // A part's pose: moved by off, turned by q and scaled by s about its own middle, and swung about its hinge.
-  private pose(i: number, off: THREE.Vector3, q: THREE.Quaternion, s: number, swing: number): THREE.Matrix4 {
+  private pose(i: number, off: THREE.Vector3, q: THREE.Quaternion, s: number, swing: number, rise = 1): THREE.Matrix4 {
     const p = this.parts[i], c = new THREE.Vector3(...p.c);
     const m = new THREE.Matrix4().makeTranslation(-c.x, -c.y, -c.z);
     if (p.hinge && swing) {
@@ -112,82 +183,81 @@ export class Life {
       const h = new THREE.Matrix4().makeTranslation(hp.x, hp.y, hp.z).multiply(new THREE.Matrix4().makeRotationAxis(hd, swing)).multiply(new THREE.Matrix4().makeTranslation(-hp.x, -hp.y, -hp.z));
       m.multiply(h);
     }
+    // Risen this far out of its shard, from its own base, in its own rest frame.
+    if (rise !== 1) m.multiply(new THREE.Matrix4().makeTranslation(0, p.lo[1], 0).multiply(new THREE.Matrix4().makeScale(1, rise, 1)).multiply(new THREE.Matrix4().makeTranslation(0, -p.lo[1], 0)));
     const r = new THREE.Matrix4().compose(new THREE.Vector3(c.x + off.x, c.y + off.y, c.z + off.z), q, new THREE.Vector3(s, s, s));
     return r.multiply(m);
   }
 
-  // The shards way: each part leaves the strike as a hot shard and flies an arc with weight, tumbling. Over the last
-  // short stretch its points fold in and the part unfolds from where it touches down (the plate from its hinge, the
-  // lever from its pivot), drops the last millimetre and stops hard. The board's shard lands just inside the struck
-  // corner and the board lays itself out from there. Then the socket, the processor, the plate closing, the lever
-  // latching, a run of the parts round it, and the lights.
+  // The shards way, made of shards. Every part leaves the strike point at the board's left corner and flies home.
+  // The board comes as a few large pieces of itself that turn flat in flight and slide the last millimetres in, so
+  // their seams close. Every other part comes as one dark splinter, the stream's kind, sized and turned to what it
+  // carries: the plate standing open, the lever raised, the processor, each row of small parts. It lands, folds flat,
+  // and the part rises out of it with a small hard stop; a row rises along its length. Then the plate shuts, the
+  // lever latches, and the lights come on.
   private shards(age: number, out: Float32Array, res: LifeAt) {
-    const sched = (i: number): { go: number; land: number; shut?: [number, number] } => {
-      const p = this.parts[i], o = this.own[i];
-      switch (p.kind) {
-        case 'board': return { go: 0, land: 0.09 };
-        case 'frame': return { go: 0.1, land: 0.3 };
-        case 'body': return { go: 0.15, land: 0.35 };
-        case 'cpu': return { go: 0.22, land: 0.46 };
-        case 'plate': return { go: 0.28, land: 0.48, shut: [0.5, 0.62] };
-        case 'lever': return { go: 0.34, land: 0.54, shut: [0.64, 0.75] };
-        default: { const go = 0.42 + o.rank * 0.34; return { go, land: go + 0.16 + o.dist * 0.0007 }; }
-      }
-    };
-    res.seat = smooth(span(age, 0.82, 1.0));
-    res.lid = smooth(span(age, 0.4, 0.5));
-    const lay = this.layFrom;
-    for (let i = 0; i < this.parts.length; i++) {
-      const p = this.parts[i], o = this.own[i], s = sched(i);
-      const c = new THREE.Vector3(...p.c);
-      // Where its shard touches down: the board just inside the corner, a hinged part at its hinge, any other on its
-      // side facing the strike.
-      const dir = new THREE.Vector3(c.x - this.strike.x, 0, c.z - this.strike.z).normalize();
-      const touch = p.kind === 'board' ? lay.clone() : p.hinge ? new THREE.Vector3(...p.hinge.p) : c.clone().addScaledVector(dir, -p.r * 0.7);
-      if (p.kind !== 'board') touch.y = c.y + 1.5;
-      if (age < s.go) { this.write(out, i, this.m.makeScale(0, 0, 0), 0); continue; }
-      const swing = p.hinge && s.shut ? p.hinge.open * (age < s.shut[0] ? 1 : age < s.shut[1] ? 1 - span(age, ...s.shut) ** 2 : 0) + this.rebound(age, s.shut[1], p.hinge.open * 0.035, 0.1) : 0;
-      if (p.kind === 'board') {
-        if (age < s.land) this.flight(i, age, s.go, s.land, touch, 0.035, res);
-        const k = outCubic(span(age, s.land - 0.035, BOARD_LAY));
-        this.write(out, i, this.m.identity(), 0, k >= 1 ? undefined : [lay.x, lay.y, lay.z, k * 175]);
+    res.seat = smooth(span(age, 0.86, 1.02));
+    res.lid = smooth(span(age, 0.5, 0.6));
+    let home = 0;
+    for (let i = 0; i < this.parts.length; i++) this.write(out, i, this.m.makeScale(0, 0, 0), 0);
+    for (const f of this.fliers) {
+      const u = span(age, f.go, f.land);
+      if (age < f.go) continue;
+      const d = f.target.clone().sub(this.strike);
+      const dist = Math.hypot(d.x, d.z);
+      const H = Math.min(22, (f.board ? 9 : 8) + 0.1 * dist) * f.arc;
+      const side = new THREE.Vector3(-d.z, 0, d.x).normalize().multiplyScalar(f.bow * (2 + 0.06 * dist) * Math.sin(Math.PI * u));
+      const pos = this.strike.clone().addScaledVector(d, u).add(side).add(new THREE.Vector3(0, H * 4 * u * (1 - u), 0));
+      const tumble = new THREE.Quaternion().setFromAxisAngle(f.axis, f.spin * (1 - u) ** 1.3);
+      const turned = new THREE.Quaternion().slerpQuaternions(tumble.multiply(f.q), f.q, smooth(span(u, 0.45, 1)));
+      if (f.board) {
+        // A piece of the board is its own shard: it flies turned, lands a little out from its place and slides in.
+        const i = f.parts[0], p = this.parts[i], c = new THREE.Vector3(...p.c);
+        const out3 = new THREE.Vector3(c.x - SEAM_MID[0], 0, c.z - SEAM_MID[1]).normalize().multiplyScalar(3.2);
+        const v = age - f.land;
+        let off: THREE.Vector3, heat = 0.75;
+        if (age < f.land) off = pos.clone().sub(c).add(out3.clone().multiplyScalar(u));
+        else {
+          const k = span(v, 0, SLIDE);
+          off = out3.clone().multiplyScalar(1 - k * k).add(new THREE.Vector3(0, this.rebound(age, f.land + SLIDE, -0.35, 0.07), 0));
+          heat = 0.75 * Math.exp(-v / 0.12);
+          home += smooth(span(v, 0, SLIDE));
+        }
+        this.write(out, i, this.pose(i, off, age < f.land ? turned : ID, 1, 0), heat);
         continue;
       }
-      const become = p.kind === 'round' ? 0.07 : 0.1;
-      if (age < s.land) {
-        const k = this.flight(i, age, s.go, s.land, touch, become, res);
-        if (k <= 0) { this.write(out, i, this.m.makeScale(0, 0, 0), 0); continue; }
-        // The part comes into being at its seat, a hair above it, uncovered outward from where the shard is.
-        const r0 = p.hinge ? p.r * 2.4 : p.r * 2.2;
-        const drop = 1.6 * (1 - k) ** 2;
-        this.write(out, i, this.pose(i, this.v.set(0, drop, 0), ID, 1, swing), o.heat, [touch.x, touch.y - 1.5, touch.z, r0 * outCubic(k)]);
-        continue;
+      const v = age - f.land;
+      const sh = this.shardPool[f.parts[0]];
+      if (age < f.land || v < f.rise + RISE) {
+        // The splinter: whole in flight, then folding flat onto the seat as what it carries rises out of it.
+        const fold = age < f.land ? 0 : span(v, 0, f.rise + RISE);
+        sh.p.copy(age < f.land ? pos : f.target);
+        sh.q.copy(age < f.land ? turned : f.q);
+        sh.size.copy(f.size).multiply(new THREE.Vector3(1 - 0.25 * fold, Math.max(0.02, 1 - fold * 1.1), 1 - 0.1 * fold));
+        sh.glow = 1 + 0.8 * Math.sin(Math.PI * fold);
+        res.shards.push(sh);
       }
-      const v = age - s.land;
-      const hop = v < 0.09 ? Math.sin((v / 0.09) * Math.PI) * (1 - v / 0.09) * 0.45 : 0;
-      this.write(out, i, this.pose(i, this.v.set(0, hop, 0), ID, 1, swing), o.heat * Math.exp(-v / 0.09));
+      if (age < f.land) continue;
+      for (const i of f.parts) {
+        const p = this.parts[i];
+        const delay = f.rise * (f.along.get(i) ?? 0);
+        const k = span(v - delay, 0, RISE);
+        if (k <= 0) continue;
+        const swing = p.hinge ? this.swing(i, age) : 0;
+        const w = v - delay - RISE;
+        const hop = w > 0 && w < 0.07 ? Math.sin((w / 0.07) * Math.PI) * (1 - w / 0.07) * 0.3 : 0;
+        this.write(out, i, this.pose(i, this.v.set(0, hop, 0), ID, 1, swing, 0.12 + 0.88 * outCubic(k)), 0.55 * Math.exp(-Math.max(0, w) / 0.1));
+      }
     }
+    res.shadow = smooth(span(home, this.boardCount - 1, this.boardCount));
   }
 
-  // A part's shard in flight from the strike to where it touches down: an arc with weight, bowed to one side, tumbling
-  // less as it nears. Returns how far it has become its part, 0 to 1, over the last stretch.
-  private flight(i: number, age: number, go: number, land: number, touch: THREE.Vector3, become: number, res: LifeAt): number {
-    const o = this.own[i], p = this.parts[i];
-    const u = span(age, go, land);
-    const d = touch.clone().sub(this.strike);
-    const dist = Math.hypot(d.x, d.z);
-    const H = p.kind === 'board' ? 9 : (12 + 0.3 * dist) * o.arc;
-    const side = new THREE.Vector3(-d.z, 0, d.x).normalize().multiplyScalar(o.bow * (3 + 0.12 * dist) * Math.sin(Math.PI * u));
-    const pos = this.strike.clone().addScaledVector(d, u).add(side).add(new THREE.Vector3(0, H * 4 * u * (1 - u), 0));
-    const k = become > 0 ? span(age, land - become, land) : 0;
-    const sh = this.shardPool[i];
-    sh.p.copy(pos);
-    sh.q.setFromAxisAngle(o.axis, o.spin * (1 - u) ** 1.4);
-    sh.s = o.shard * (1 - outCubic(k)) * Math.min(1, u * 6 + 0.35);
-    sh.glow = 1 + 1.2 * k;
-    sh.fold = k;
-    if (sh.s > 0.02) res.shards.push(sh);
-    return k;
+  // The plate and the lever close once they have risen: shut, a hard stop, a small swing back.
+  private swing(i: number, age: number): number {
+    const p = this.parts[i];
+    const [a, b] = p.kind === 'plate' ? SHUT.plate : SHUT.lever;
+    const open = p.hinge!.open;
+    return open * (age < a ? 1 : age < b ? 1 - span(age, a, b) ** 2 : 0) + this.rebound(age, b, open * 0.035, 0.1);
   }
 
   // A small swing back after a hard stop: up to amp, and gone in dur seconds.

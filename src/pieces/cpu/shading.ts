@@ -108,12 +108,8 @@ float cpuWave(float d, float b){
   }
   return sum * first;
 }
-// A part still being uncovered burns hot along the edge where it is coming into being.
-vec3 cpuHeat(){
-  vec3 c = vHeat > 0.001 ? cpuRamp(vHeat) * vHeat * 2.0 : vec3(0.0);
-  if (vReveal.w < 9e4) { float e = vReveal.w - distance(vCpuR, vReveal.xyz); float i = exp(-max(e, 0.0) / 0.9) * 0.95; c += cpuRamp(i) * i * 1.6; }
-  return c;
-}
+// A part just come home burns hot along its edges, the faces that stand up from its own top, and cools.
+#define cpuHeat() (vHeat > 0.001 ? cpuRamp(vHeat) * vHeat * 2.4 * smoothstep(0.35, 0.9, 1.0 - abs(vObjN.y)) : vec3(0.0))
 vec3 cpuBandLight(){
   if (uBandOn < 0.5) return vec3(0.0);
   float e = uBand.z - length(vCpuP.xz - uBand.xy);
