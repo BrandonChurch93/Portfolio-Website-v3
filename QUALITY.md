@@ -252,7 +252,7 @@ The card:
 7. **The card throws a shadow** across the page in the stream's light, and none where there is no light to throw it.
 8. **Smooth under the pointer.** `npm run perf` on `/lab/work`, with the pointer moving over the cards while the page scrolls: every frame at the screen's rate on his Mac. At an iPad's size with `--cpu 4`, what it gives up is said out loud.
 9. **With reduced motion** nothing turns and no loop plays. The colors still come back for a pointer or for keyboard focus.
-10. **On a touch screen** nothing turns, and the cards nearest the middle of the screen are awake.
+10. **On a touch screen** nothing turns. On a phone the cards nearest the middle of the screen are awake. On anything larger no card lights by itself (his rule, Nov 14): scrolled from top to foot, none is ever lit. A finger's first tap lights a card and does not open it, a second opens it, and a tap elsewhere puts it back to rest. A mouse or a pencil lights it by hovering.
 
 The stones and the rail:
 

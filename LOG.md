@@ -55,6 +55,35 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 - The five calls on the desk as a 3D piece, unanswered since the morning. After them: three rough desks.
 - He has looked at Claude Code's fourth pass and the knob, and the band of light was mended after it: the next entry down. He has not seen the mended band.
 
+## 2026-11-14 · No card lights by itself on anything larger than a phone (Fable, Claude Code)
+
+**What Brandon said**
+
+- "On mobile devices and on iPad when scrolling, the cards automatically light up with color. I understand this is probably best user experience for mobile users, but most of my testing is being done on a iPad right now, which is causing issues. Let's go ahead and remove that feature. For everything outside of mobile devices, anything bigger than a mobile device should not automatically have a card come in focus. It should have to be clicked beforehand or hovered by a mouse or an Apple pencil."
+- He did not say whether the band is approved. He tests on an iPad, which is why the cards in their colors behind the band looked wrong to him there.
+
+**What was built**
+
+- `watchTouch` in `WorkCard.tsx`. On a phone (a touch screen whose shorter side is under `PHONE_SIDE`, 600 px, in `src/config/site.ts`) it is as it was: the cards nearest the middle of the screen are lit.
+- On anything else nothing is lit by the scroll. A finger's tap is read from `pointerup` of a touch pointer, which a touch that turned into a scroll never sends. A tap on a card that is not lit lights it, as a pointer put on it, and the click that follows is stopped. A tap on a lit card is left alone, so its link opens. A tap elsewhere puts every card back to rest.
+- `TIER_PROBE.phoneWidth` now reads `PHONE_SIDE`, so the number is in one place.
+- Calls made for him are in `BRIEF.md`, Cards and buttons, "No card lights by itself". The one he is most likely to have a view on: two taps to open a case study on an iPad.
+
+**Checked, in Chromium and in WebKit, at an iPad held both ways and at a phone**
+
+- Scrolled from top to foot: the most cards lit at once was 0 on the iPad both ways, and 1 on the phone.
+- First tap: the card is lit and nothing opens. Second tap: its case study opens. A tap on another card moves the light. A tap off the cards puts them back to rest.
+- A sleeping second row card, iPad sideways: a tap wakes it and opens nothing, a second opens it, and a tap elsewhere puts it back to sleep.
+- A finger dragging the page from on top of a card lights nothing (Chromium only: WebKit's test browser cannot be made to drag).
+- A pencil's pointer coming over a card lights it and leaving puts it back. This was done with made up pointer events. A real pencil cannot be driven from a script.
+- On the phone a tap opens the case study at once, as before.
+- At a desktop: the card study's stills agree pixel for pixel, and a mouse still wakes a sleeping card and lets it go.
+- The tablet still of the card study differs, as it should: it used to show the middle cards lit.
+
+**Not checked**
+
+- A real iPad, a real pencil, a phone held sideways.
+
 ## 2026-11-14 · The band of light, mended after his look (Fable, Claude Code)
 
 At `/lab/work` and `/lab/work-blank`. He has not seen the mended band.

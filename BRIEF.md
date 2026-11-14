@@ -748,7 +748,7 @@ Said to Claude Code after opening `/lab/work` and `/lab/work-blank`.
     - A card that is put away is no longer under the pointer, and is drawn as its place is before it is seen again.
 - **Calls made for him. None is a rule:**
     - **A pointer at rest that the page is scrolled under does not wake a sleeping card.** This narrows a line of the agreement, "Under the pointer or with keyboard focus a sleeping card wakes by the same change". A pointer that is put on a sleeping card, and keyboard focus, still wake it, by one band from where the pointer came on. Without this, a card under his resting pointer would open from the pointer and not from the stream, which is what he ruled out.
-    - On a touch screen only the stream wakes a card. Before, the cards nearest the middle of the screen woke by a band of their own.
+    - On a touch screen larger than a phone the stream wakes a card, and so does a tap on it (Cards and buttons, "No card lights by itself"). Before, the cards nearest the middle of the screen woke by a band of their own.
     - A card the pointer has already woken does not open again when the stream reaches it. The strike still flares its rim and throws its sparks.
     - A blank does not grow under a pointer at rest. It grows as it wakes.
     - Where a card goes back to sleep to: where the stream struck it if the stream was the last thing keeping it awake, and where the pointer came on if the pointer was.
@@ -825,9 +825,19 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
 - **The card as proposed is approved as the base (Nov 12).** "No, everything in the proposal is fine." What that covers:
     - On it, top to bottom: the picture in a window sunk into the card. A small label of the kind of project and the year. The title. The description. Up to four tags. The whole card opens the project.
     - Made of: the dark plate from the stream's test shot. Metal only as accents: a thin copper bead all round, which the stream lands on and strikes, and the frame round the picture. The buttons' metal and lighting.
-    - The picture rests in bronze and shows its own colors under the cursor or with keyboard focus, when the bead and the frame catch the light and the card grows a little. Where nothing hovers, the cards nearest the middle of the screen show their colors.
+    - The picture rests in bronze and shows its own colors under the cursor or with keyboard focus, when the bead and the frame catch the light and the card grows a little. Where nothing hovers, the cards nearest the middle of the screen show their colors. **Changed Nov 14: only on a phone.** On anything larger no card lights by itself ("No card lights by itself", below).
     - A card is always readable. The stream's strike lights it and never hides it.
     - The derby uses the four projects on his live home page with their real words, and his real screenshots in place of a blank. Which four end up on the home page is still his to say.
+- **No card lights by itself on anything larger than a phone (Nov 14).** "On mobile devices and on iPad when scrolling, the cards automatically light up with color. I understand this is probably best user experience for mobile users, but most of my testing is being done on a iPad right now, which is causing issues. Let's go ahead and remove that feature. For everything outside of mobile devices, anything bigger than a mobile device should not automatically have a card come in focus. It should have to be clicked beforehand or hovered by a mouse or an Apple pencil."
+    - In exact terms: on any screen larger than a phone, a card shows its own colors only when it is tapped, or hovered by a mouse or a pencil, or has keyboard focus. Scrolling lights nothing.
+    - On a phone the cards nearest the middle of the screen still light as the page scrolls. Read from "I understand this is probably best user experience for mobile users". His to overturn. The phone is designed in the mobile pass.
+    - Built Nov 14, in `WorkCard.tsx`. Calls made for him, none a rule:
+        - A phone is a touch screen whose shorter side is under 600 px (`PHONE_SIDE`). An iPad is not one, held either way.
+        - **A finger's first tap lights a card and does not open it. A tap on a lit card opens it.** A click cannot bring a card into focus if it also leaves the page, which is how "clicked beforehand" is read. It means two taps to open a case study on an iPad, where it was one.
+        - A tap anywhere else lets the card go back to rest, and a tap on another card moves the light to it.
+        - A tap on a sleeping card wakes it by its band, from the edge nearest the tap, and does not open it.
+        - A finger that scrolls the page lights nothing, even when it starts on a card.
+        - A mouse and a pencil are as on a desktop: hovering lights the card and one click opens it.
 - What he asked for with the approval (Nov 12): "Maybe you could figure out if there are any data points that could be important or nice to have that we don't, and maybe it makes sense in the layout of the card itself. Maybe you could also give me a few different variants, but only ones that are top-tier. I don't just want variants for the sake of it."
 - **His verdict on the card derby (Nov 13).** Nothing on the cards changes until he says: "Let's hold up on changing anything for the moment."
     - **The layout is C · Data plate.** "When it comes to data plate, I genuinely like that one a lot."

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type CSSProperties, type FocusEvent, type PointerEvent } from 'react';
+import { PHONE_SIDE } from '../config/site';
 import type { WorkItem } from '../content/work';
 import { CARD, cardPicture, type CardEdge } from '../metal/mask';
 import { Plate } from './Plate';
@@ -46,12 +47,37 @@ function trackPointer(): void {
   }, { capture: true, passive: true });
 }
 
-// Where nothing hovers, the cards nearest the middle of the screen are the ones that are awake.
-const touchCards = new Map<HTMLElement, (on: boolean) => void>();
+// What a finger does to the cards. at is where it tapped, in the window.
+// On a phone, where nothing hovers, the cards nearest the middle of the screen are the ones that are awake.
+// On anything larger no card wakes by itself: he ruled that a card there has to be tapped, or hovered by a mouse or
+// a pencil. A finger wakes a card by tapping it, and the tap that wakes it does not open it. A tap on a card that
+// is awake opens it, and a tap anywhere else lets it go back to rest. A finger that scrolls the page wakes nothing:
+// a touch that turns into a scroll is called off, and never ends as a tap.
+const touchCards = new Map<HTMLElement, (on: boolean, at?: [number, number]) => void>();
 let watching = false;
 function watchTouch(): void {
-  if (watching || typeof window === 'undefined' || !matchMedia('(hover: none)').matches) return;
+  if (watching || typeof window === 'undefined') return;
   watching = true;
+  if (!matchMedia('(hover: none)').matches || Math.min(screen.width, screen.height) >= PHONE_SIDE) {
+    // The card whose next click only wakes it.
+    let waking: HTMLElement | null = null;
+    addEventListener('pointerdown', () => { waking = null; }, { capture: true, passive: true });
+    addEventListener('pointerup', (e) => {
+      if (e.pointerType !== 'touch') return;
+      const on = e.target as Node | null;
+      let card: HTMLElement | null = null;
+      for (const el of touchCards.keys()) if (on && el.contains(on)) card = el;
+      waking = card && card.dataset.awake !== 'true' ? card : null;
+      for (const [el, set] of touchCards) if (el !== card) set(false);
+      if (waking) touchCards.get(waking)!(true, [e.clientX, e.clientY]);
+    }, { capture: true, passive: true });
+    addEventListener('click', (e) => {
+      const card = waking;
+      waking = null;
+      if (card && card.contains(e.target as Node)) { e.preventDefault(); e.stopPropagation(); }
+    }, { capture: true });
+    return;
+  }
   let queued = false;
   const pick = () => {
     queued = false;
@@ -75,9 +101,9 @@ function watchTouch(): void {
 
 // A project card. Its plate is lit metal round a dark face and a picture, with a band of bronze that carries its
 // facts, and its words are in the page over it.
-// At rest the picture is shown in the site's metals. Under the pointer, with keyboard focus, or nearest the middle of
-// a touch screen, its own colors come back and its loop plays, the bead and the rail catch the light, and the card
-// grows a little.
+// At rest the picture is shown in the site's metals. Under the pointer, with keyboard focus, tapped by a finger, or
+// nearest the middle of a phone's screen, its own colors come back and its loop plays, the bead and the rail catch
+// the light, and the card grows a little.
 // It also turns in depth with the pointer, words and all, and the light on its metal turns with it.
 // The whole card opens the case study, and says so at its foot. Live, Evals and Code go elsewhere: with the pointer
 // on one of them the case study's words go quiet and that link lights, so it is always plain where a click leads.
@@ -108,9 +134,10 @@ export function WorkCard({ item, look = CARD_LOOK, held, className }: Props) {
   useEffect(() => {
     const card = el.current;
     if (!card || held) return;
-    touchCards.set(card, (on) => {
+    touchCards.set(card, (on, at) => {
       const r = card.getBoundingClientRect();
-      setHover((h) => (h.on === on ? h : { on, x: r.width / 2, y: (r.width / CARD.width) * picture * 0.5, meant: false }));
+      // A tap puts the finger on the card, as a pointer is put on it. The middle of a phone's screen puts nothing there.
+      setHover((h) => (h.on === on ? h : at ? { on, x: at[0] - r.left, y: at[1] - r.top, meant: true } : { on, x: r.width / 2, y: (r.width / CARD.width) * picture * 0.5, meant: false }));
     });
     watchTouch();
     trackPointer();

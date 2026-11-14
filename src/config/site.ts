@@ -21,6 +21,8 @@ export const TIER_PIXEL_RATIO: Record<Exclude<Tier, 'static'>, number> = { high:
 // A 3D canvas may go past its tier's ratio, up to the screen's own, while its pixel count stays inside the count the
 // tier's ratio gives a 1440 by 900 canvas: a phone's small canvas gets the screen's full density, a large one does not.
 export const TIER_PIXEL_BUDGET_AREA = 1440 * 900;
+// A screen whose shorter side is under this many CSS px is a phone. An iPad is not one, held either way.
+export const PHONE_SIDE = 600;
 // The GPU timing test draws a fixed load and measures milliseconds per frame. These are the limits per tier.
 export const TIER_PROBE = {
   frames: 24,
@@ -28,7 +30,7 @@ export const TIER_PROBE = {
   midMs: 12,
   bigPixels: 3840 * 2160,
   lowMemoryGb: 4,
-  phoneWidth: 600,
+  phoneWidth: PHONE_SIDE,
 } as const;
 
 export const CLOCK = { maxStep: 1 / 20 } as const;
