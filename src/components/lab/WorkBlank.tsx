@@ -29,7 +29,7 @@ export function WorkBlank() {
     const q = new URLSearchParams(location.search).get('wake');
     if (q !== null) held.current = held.current.map(() => Number(q));
     registry.tool('blankHold', (i: number, amount?: number) => { held.current[i] = amount ?? null; });
-    const at = [0, 0, 0, 0], wipes = FROM.map(() => new Float32Array(6)), wore = ['', '', '', ''];
+    const at = [0, 0, 0, 0], wipes = FROM.map(() => new Float32Array(3)), wore = ['', '', '', ''];
     const off = clock.onFrame((_, dt) => {
       slots.current.forEach((slot, i) => {
         const card = slot?.querySelector<HTMLElement>('article'), host = slot?.querySelector('[data-kind="card"]');
@@ -38,10 +38,9 @@ export function WorkBlank() {
         at[i] = hold ?? Math.max(0, Math.min(1, at[i] + Math.sign(want.current[i] - at[i]) * (dt * rate.current) / WAKE.cross));
         const hw = card.offsetWidth / 2, hh = card.offsetHeight / 2, unit = card.offsetWidth / CARD.width;
         const whole = at[i] >= 1;
-        const burn = whole ? 0 : band(wipes[i], 0, hw, hh, unit, edge(hw * (2 * FROM[i][0] - 1), hh * (2 * FROM[i][1] - 1), hw, hh), at[i]);
-        if (!whole) band(wipes[i], 1, hw, hh, unit, [0, -hh, 0, -1], 0);
-        plates.setWipes(host, whole ? null : wipes[i], burn, 0);
-        const words = veil(whole ? null : wipes[i], hw, hh);
+        const burn = whole ? 0 : band(wipes[i], hw, hh, unit, edge(hw * (2 * FROM[i][0] - 1), hh * (2 * FROM[i][1] - 1), hw, hh), at[i]);
+        plates.setBand(host, whole ? null : wipes[i], burn);
+        const words = veil(whole ? null : wipes[i], hw, hh, unit);
         if (words !== wore[i]) { wore[i] = words; card.style.setProperty('--veil', words); }
       });
     });

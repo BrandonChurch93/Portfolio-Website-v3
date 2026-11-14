@@ -334,10 +334,15 @@ The section:
 12. **Smooth.** `npm run perf` with four blanks on the screen, scrolling, and through a run of presses: every frame at the screen's rate on his Mac.
 13. **`/lab/stream` and the approved buttons are unchanged.**
 14. **A real object in real space.** The light on the dial behaves as it would on a real thing in front of the visitor, and nothing about it reads as a picture of metal. This is why he picked it.
+15. **One band, from one place** (his rule, Nov 14). A card opens from the first spot the stream touches and from nowhere else. Scrolled at any speed with the pointer resting anywhere on the page, no card ever has two bands on it, and no band crosses a card that is already awake.
+16. **No word ahead of the band** (his rule, Nov 14). In real frames of a card waking, none of its words shows on the blank, not faintly and not for one frame.
+17. **Nothing dark comes in** at a side or a corner as a band sets out or arrives, on any of the four cards.
+18. **A press on a sleeping row, in real frames.** Scrolled to the foot, the category changed several times, scrolled back up until the first row is asleep, then pressed: in every frame the first row is two blanks.
 
 **How to judge it**
 
 - Stills at three times zoom, and filmstrips for every motion, read left to right. On his Mac the scripts print `hardware`, so a filmstrip there is a fair test of motion.
+- A filmstrip is frozen frames, each one settled before it is taken. Tests 15 to 18 can only be judged from real frames of a live page (`npm run live`): all four faults he found on Nov 14 were there for a frame or two and in no filmstrip.
 - Put a still beside the sketch's still, and beside the PC Builder images.
 - Before each check-in, have fresh reviewers who have not seen the work being made judge the stills against this section, told to look for reasons to fail it. Give them this section and his words from `BRIEF.md`, and tell them plainly that no shard has to read as a named material.
 - He judges the motion himself, in his browser.

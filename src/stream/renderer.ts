@@ -57,8 +57,8 @@ export interface PlateCard {
   turn: Float32Array; tiltX: number; tiltY: number;
   bake: string; win: [number, number, number, number]; frame: number; rim: number; unit: number; flare: number; struck: [number, number];
   there: number;
-  // The two bands that wake it, or nothing for a card that is wholly awake (src/metal/wake.ts).
-  wipes: Float32Array | null;
+  // The band that wakes it, or nothing for a card that is wholly awake (src/metal/wake.ts).
+  wipe: Float32Array | null;
 }
 
 export interface Frame {
@@ -621,8 +621,8 @@ export class StreamRenderer {
         gl.uniform3f(P.plate.u('uFrame'), c.frame, c.rim, c.unit);
         gl.uniform2f(P.plate.u('uTilt'), c.tiltX, c.tiltY);
         gl.uniform3f(P.plate.u('uFlare'), c.flare, c.struck[0], c.struck[1]);
-        gl.uniform1f(P.plate.u('uBlank'), c.wipes ? 1 : 0);
-        if (c.wipes) gl.uniform3fv(P.plate.u('uWipe[0]'), c.wipes);
+        gl.uniform1f(P.plate.u('uBlank'), c.wipe ? 1 : 0);
+        if (c.wipe) gl.uniform3fv(P.plate.u('uWipe'), c.wipe);
         plate(P.plate, c);
       }
     }

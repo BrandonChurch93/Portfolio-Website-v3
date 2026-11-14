@@ -23,8 +23,9 @@ export interface PlateProps {
   className?: string;
   style?: CSSProperties;
   tilt?: boolean;
-  // The pointer is on the plate, or it has focus. x and y are where it is, CSS px from the plate's top left.
-  hover?: { on: boolean; x: number; y: number };
+  // The pointer is on the plate, or it has focus. x and y are where it is, CSS px from the plate's top left. meant
+  // is false for a pointer at rest that the page was scrolled under.
+  hover?: { on: boolean; x: number; y: number; meant?: boolean };
   // What screen readers and search read. Defaults to the plate's words. The words are always in the DOM.
   children?: ReactNode;
 }
@@ -101,8 +102,8 @@ export function Plate({ finish, kind = 'plate', label, big, facts, photo, card, 
   }, [kind, turn, pinned, hover?.on, hover?.x, hover?.y, state]);
 
   useEffect(() => {
-    if (host.current) plates.setHover(host.current, !!hover?.on, hover?.x, hover?.y);
-  }, [hover?.on, hover?.x, hover?.y, state]);
+    if (host.current) plates.setHover(host.current, !!hover?.on, hover?.x, hover?.y, hover?.meant ?? true);
+  }, [hover?.on, hover?.x, hover?.y, hover?.meant, state]);
 
   return (
     <div ref={host} className={`${styles.plate} ${className ?? ''}`} style={style} data-kind={kind} data-finish={finish} data-state={state}>

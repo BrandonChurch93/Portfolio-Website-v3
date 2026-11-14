@@ -621,9 +621,10 @@ Said to the web chat with a screenshot from his phone, while Claude Code was sti
 - Everything else about D stands: the rays, the shadow that swings off the handle, the band of light.
 - Fable's part in it, said to him: the prompt told the builder to judge the blank against a photograph of a real engine turned dial. That may be what pulled the middle toward a watch part. Not confirmed, since the builder's report has not been seen.
 
-**The knob, built (Nov 14), waiting on his look**
+**The knob, built (Nov 14). He has looked: "This looks great! Great work on the card."**
 
-- At `/lab/work`, and alone at `/lab/work-blank`. Built in answer to "His look at the handle as Claude Code first built it". He has not seen it. Nothing about it is settled until he says so.
+- At `/lab/work`, and alone at `/lab/work-blank`. Built in answer to "His look at the handle as Claude Code first built it".
+- His look (Nov 14), said to Claude Code after opening both pages: "This looks great! Great work on the card." Read as: the knob on the blank is what he asked for. He went straight on to two faults in the band of light, which are in "His look at the fourth pass", below. He did not go through the calls listed here one by one, so each is still his to overturn.
 - What it is: the head of an antique cabinet knob, seen from straight in front, at the dead center of the card. A rolled rim, a ring of 30 beads, a half round moulding, and a domed face with a rosette in relief: eight broad petals with a crease down each, eight long pointed leaves behind them, a plain boss at the heart. In old bronze: dark where it is low, rubbed bright where it stands proud.
 - How it stands off the card, seen head on:
   - Its own shadow on the dial. The head stands on a stem, so its shadow is the head's round shape lying clear of the head, away from the strongest light, and swings as the cursor's light and the stream move. With nothing near it lies up and to the right, along the dark wedge he picked the study for, so the wedge reads as the long end of the knob's own shadow.
@@ -693,10 +694,10 @@ One round in Claude Code, on `/lab/work`. It takes in everything he has ruled si
 - A blank is never brighter than the stream beside it. The lights off the screen are set to suit the page, not copied from the study, which has no stream.
 - Carried from before: what lands on a sleeping card does not wake it, and with reduced motion or under 1100 px no card sleeps.
 
-**The fourth pass, built (Nov 14), waiting on his look**
+**The fourth pass, built (Nov 14). He has looked at the blank and the band. The rest waits on him**
 
 - At `/lab/work`, by Claude Code on his Mac. All nine are on the page. The blank can be seen alone at `/lab/work-blank`, Study 20, with a button on each card that wakes it and puts it back to sleep.
-- He has not seen it. Nothing about it is settled until he says so.
+- His look is in "His look at the fourth pass", below: the card with the knob is great, and the band had two faults, since mended. Nothing else here is settled until he says so.
 - The test shot at `/lab/stream` and the approved buttons were compared with stills from before: every still agrees pixel for pixel. The awake card's stills agree except for the words "Case study", whose color was changed on purpose.
 - Fable's calls in the agreement were built as written: the band starts at the strike, a sleeping card under the pointer or with keyboard focus wakes and sleeps by the same change, no card sleeps with reduced motion or under 1100 px, and what lands on a sleeping card does not wake it. The lights were set for the page.
 - **Where the build had to choose between two things he asked for.** His to overturn:
@@ -714,6 +715,43 @@ One round in Claude Code, on `/lab/work`. It takes in everything he has ruled si
   - While the pointer's band is crossing a card, the card behind it is whole and in its colors. They are not faded in as well.
   - A stone throws 45 percent of what it threw. The budget for thrown shards stays at 400: three quick presses still reach it.
   - "Case study" at rest is three parts the quietest text color to two parts the next one up.
+
+**His look at the fourth pass (Nov 14): two faults in the band, and one rule**
+
+Said to Claude Code after opening `/lab/work` and `/lab/work-blank`.
+
+- "This looks great! Great work on the card. There are 2 other things we need to fix though."
+- "If I scroll down and change the category a few times and then scroll up to where the 1st row is the placeholder cards, and then switch categories, you can see the actual cards come in even though the surge is not touching it for a split second before the animation to turn it to the placeholder plays."
+- "If I scroll at normal speed I see multiple overlaps. I don't know how to explain it, but when the surge touches the side of the card, that's where the card comes into life at the starting point. I see multiple of those starting points overlapping if I scroll slightly faster."
+- "On the second link that you gave me, pressing the wake button on all the cards, all of them have issues. Some of them have text that is barely visible still on the gold part while it's coming in. This shouldn't happen. Other ones have darkness that comes in on one side of the card when it's coming in."
+- "I just think we need to revisit that animation and make sure it's consistent and doesn't show text is not supposed to yet until the animation passes it, and we need to make it so it only ever opens from the first spot the surge touches and can't open from multiple spots."
+- "The surge" here is the stream's leading end as he scrolls, and "the placeholder" and "the gold part" are the blank.
+- In exact terms, four rules for the change between asleep and awake:
+    1. **A card opens from one place only: the first spot the stream touches.** There is never a second band on a card, and a card never opens from two places.
+    2. **None of a card's words shows on the blank.** A word is seen only once the band has passed it.
+    3. **Nothing dark comes in at a side or a corner as the band crosses.**
+    4. **A press on a sleeping row never shows a card,** not for one frame. This is item 8 of the agreement, which the build did not hold to.
+- He has not ruled on the rest of the fourth pass: the stones' strike, the mirror, the bolt's ends, "Case study".
+
+**The band, mended (Nov 14), waiting on his look**
+
+- At `/lab/work` and `/lab/work-blank`. All four were found in real frames recorded from a live page, and none could be seen in a filmstrip of frozen frames, which is how the band had been judged.
+- What each was:
+    1. Two starting points. A card had two bands, one for the stream and one for the pointer. His pointer rests on the page while he scrolls, so each card came under it and opened from where the pointer met it, and then the stream struck and opened it again from the strike.
+    2. Words on the blank. The card's plate was drawn before the stream had set that frame's band, and the mask on the words after. So the words were uncovered one frame ahead of the band, up to about 30 px at the band's fastest.
+    3. The dark side. One number in the band's light ran past what a number can hold far ahead of the band, and the card's far corner was drawn black for the first frame or two.
+    4. The card that flashed. A card that is put away kept what it was when it went. Shown again in a sleeping place, it was drawn awake for one frame. And one that had been under the pointer when it went came back awake and ran a band back to sleep.
+- What is built:
+    - A card has one band. It belongs to the place the card stands in, and every card of that place wears it, the ones put away too.
+    - Where a band sets out from is chosen only while the card is wholly asleep or wholly awake. Whatever comes or goes while it is crossing turns that one band round.
+    - The plates are drawn last in a frame, after the band is set, and the words come up a little behind the band's line, in its trailing light.
+    - A card that is put away is no longer under the pointer, and is drawn as its place is before it is seen again.
+- **Calls made for him. None is a rule:**
+    - **A pointer at rest that the page is scrolled under does not wake a sleeping card.** This narrows a line of the agreement, "Under the pointer or with keyboard focus a sleeping card wakes by the same change". A pointer that is put on a sleeping card, and keyboard focus, still wake it, by one band from where the pointer came on. Without this, a card under his resting pointer would open from the pointer and not from the stream, which is what he ruled out.
+    - On a touch screen only the stream wakes a card. Before, the cards nearest the middle of the screen woke by a band of their own.
+    - A card the pointer has already woken does not open again when the stream reaches it. The strike still flares its rim and throws its sparks.
+    - A blank does not grow under a pointer at rest. It grows as it wakes.
+    - Where a card goes back to sleep to: where the stream struck it if the stream was the last thing keeping it awake, and where the pointer came on if the pointer was.
 
 **How it is built**
 

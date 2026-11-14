@@ -2,6 +2,62 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · The band of light, mended after his look (Fable, Claude Code)
+
+At `/lab/work` and `/lab/work-blank`. He has not seen the mended band.
+
+**What Brandon said**
+
+- "This looks great! Great work on the card. There are 2 other things we need to fix though."
+- On `/lab/work`: after scrolling down, changing the category a few times and scrolling back up to where the first row is blanks, a change of category showed "the actual cards come in even though the surge is not touching it for a split second before the animation to turn it to the placeholder plays".
+- On `/lab/work`, scrolled at a normal speed: "I see multiple of those starting points overlapping if I scroll slightly faster."
+- On `/lab/work-blank`, pressing Wake: "Some of them have text that is barely visible still on the gold part while it's coming in. This shouldn't happen. Other ones have darkness that comes in on one side of the card when it's coming in."
+- "We need to make it so it only ever opens from the first spot the surge touches and can't open from multiple spots."
+- His words and the four rules read from them are in `BRIEF.md`, The stream, "His look at the fourth pass". The knob is ticked in `PLAN.md` on "This looks great! Great work on the card". He was told so, in case that reads more into it than he meant.
+
+**Why none of it had been seen**
+
+- Every strip the band was judged from was frozen frames. `npm run strip` freezes the clock and settles the whole page before each frame, so the plate, the mask and the stream always agree in it.
+- No scripted scroll had a pointer resting on the page. His does.
+- `npm run live` is new: real frames of a live page from the browser's own screencast, as a sheet with the time under each. Options are at the top of `scripts/live.mjs`. It only gives a frame when the picture changes, so a gap in the times is not a late frame. Time frames with `performance.now()` in a real window for that.
+
+**What each fault was, and the fix**
+
+1. **Two starting points.** A card had two bands (`uWipe[2]`), the stream's and the pointer's. A page scrolled under a pointer at rest brings each card under it, and the browser says the pointer has come onto the card. So a card opened from where it met the pointer, then again from the strike.
+   - A card has one band (`uWipe`, `Plate.wipe`, `advance` in `src/metal/wake.ts`). Where it sets out from is chosen only while the card is wholly asleep or wholly awake.
+   - A pointer that did not move does not count (`meant`, in `WorkCard.tsx`): the page keeps where the pointer last was, and a pointer that comes onto a card at that same place was scrolled under. It counts from its first real move.
+2. **Words on the blank.** The plates' frame ran before the stream's, so a card was drawn with the band of the frame before, under a mask set for this one. At the band's fastest that is about 30 px of words on the gold.
+   - The plates draw in a second pass at the end of the frame (`drawAll`, the clock's `onFrame(fn, true)`). Easing the turn and the hover stays first, because the stream reads both.
+   - The mask is held back a little as well (`WAKE.words`): whole 12 units behind the line, nothing nearer than 3.
+3. **The dark side.** `exp(a / 6.0)` in the band's light on the card, taken ahead of the line too, where `a` is over 530 units at the far corner in the first frame: it overflowed, and nothing times infinity is not a number, so the corner was drawn black. It is now taken from behind the line only.
+4. **The card that flashed.** Only the cards that showed were handed their band each frame. One that was put away kept its last state, and `c.near`, the pointer's band, was never stepped down while it was away.
+   - The band belongs to the place (`bands`, `stepBands` in `stream.ts`). Every card of the place is handed it every frame, shown or not.
+   - `setShown(false)` takes the pointer off a plate, and `setShown(true)` draws the plate at once.
+
+**Checked, on the production build**
+
+- Real frames: all four blanks waking, two going back to sleep, the end of a wake, a press on a sleeping first row in a 900 and a 1300 tall window, the page wheeled at 1000 and 1800 px a second with the pointer resting over a first row card and over a second row card, a pointer put on a sleeping card, the stream then striking that card, a pointer at rest that then moves, keyboard focus, and a card put away while the pointer is on it and brought back to a sleeping row. Three sheets are kept: `reference/studies/40-band-*.jpg`.
+- Unchanged: `/lab/stream`, 19 of 20 frozen frames pixel for pixel and number for number, the live one off by 1 in 12 pixels as before. The buttons, 7 stills. The card study, 4 stills. `BAKE`, `LIGHT`, `ROOM`, `SPEC` and `VERT` letter for letter.
+- Frames: scrolling Work and the blanks, 599 frames, worst 16.8 ms. Slowed four times at iPad size, 6 of 593 over 25 ms. Eight presses in a real window at 120 a second, worst 10.3 ms. Every blank woken and put back to sleep in a real window, worst 10.4 ms.
+- Across the first row's strike, live: the band never moved more than half a card in a frame and the card was never left half changed.
+- No card sleeps with reduced motion or at 834 and 390 wide.
+- WebKit at iPad size: a wake at quarter speed and every band held part way. No errors.
+
+**One fresh Opus reviewer, real frames only, told to look for reasons to fail**
+
+- Words ahead of the band: pass. Closest was one frame of a card going to sleep with a line of text faint inside the line's glow, on the card's side.
+- Darkness: pass. One band from one place: pass. The press: pass. The four cards alike: pass.
+- It named four things the sheets did not cover: the press for longer and with more of the card on the screen, a fast scroll across the second row, the end of a wake, and a gap in the times on one sheet. All four were then recorded or timed, and hold. No reviewer saw those.
+- **Its one open finding: on a pale picture in its own colors the band's line is lost.** That is a card under the pointer as the stream wakes it, with a pale screenshot (Ask the Claude Docs, Design System Extractor). Light laid on what is already bright shows nothing, so there the band is the edge between the picture and the blank and not a bright line. Holding the picture down behind the line was tried and made no visible difference, so it was taken out. Not fixed. His to see.
+
+**Calls made for him.** In `BRIEF.md`, The stream, "The band, mended". The one that goes against the agreement: a pointer at rest that the page is scrolled under no longer wakes a sleeping card.
+
+**Not done, plainly**
+
+- The pale picture, above.
+- A sleeping card under a pointer at rest takes the hover's light under the blank, so when the stream wakes it the picture behind the band is already in its colors, where the card beside it wakes toned. That is the card as he picked it under a pointer. The reviewer thought he might notice.
+- Not checked: a real iPad, a 4K screen, a screen reader by ear. As before.
+
 ## 2026-11-14 · Study 22: Skills and About, a fuller draft with his words, and the desk's five calls (Fable, web chat)
 
 **What Brandon said**

@@ -296,8 +296,8 @@ uniform float uPush;         // how far the picture comes closer while the card 
 uniform vec3 uFace, uFaceLit;
 uniform vec3 uRamp[5];       // the tones a card's picture rests in, dark to light, linear
 ${card ? `uniform float uAsleep;       // 1 while any of a card is asleep: there it is a blank, an engine turned dial
-uniform vec3 uWipe[2];       // the two bands that wake it: the middle of each one's circle, from the card's middle, and its radius, CSS px
-uniform vec2 uBurn;          // how brightly each band burns
+uniform vec3 uWipe;          // the band that wakes it: the middle of its circle, from the card's middle, and its radius, CSS px
+uniform float uBurn;         // how brightly the band burns
 uniform vec3 uEnd;           // the stream's leading end near a sleeping card: where on the screen, CSS px, and how strongly it lights the blank
 uniform vec3 uCross[3];      // the band's colors: its trail, its body and its bright line
 uniform sampler2D uLoop;` : `uniform sampler2D uLoop;`}     // a card's loop: the picture in motion, shown in place of it while the card is awake
@@ -621,11 +621,11 @@ ${card ? `  // Asleep, a card is a blank: an engine turned dial inside the card'
     vec2 c = p - uRes * 0.5;
     vec2 pc = c / uDpr;
     float unit = uDpr / uS;
-    float ahead = min(length(pc - uWipe[0].xy) - uWipe[0].z, length(pc - uWipe[1].xy) - uWipe[1].z);
-    // The knob draws back into the dial as a band comes to it, and is gone before the band is on it. A band that
+    float ahead = length(pc - uWipe.xy) - uWipe.z;
+    // The knob draws back into the dial as the band comes to it, and is gone before the band is on it. A band that
     // crossed it standing cut it in two, as no light cuts a thing. It stands out again when the band has run back
     // past it. This is how much of it is out, 0 to 1: its size, how far it stands, and its shadow all go by it.
-    float knobIs = smoothstep(KNOB_R + 6.0, KNOB_R + 120.0, min(length(uWipe[0].xy) - uWipe[0].z, length(uWipe[1].xy) - uWipe[1].z) * unit);
+    float knobIs = smoothstep(KNOB_R + 6.0, KNOB_R + 120.0, (length(uWipe.xy) - uWipe.z) * unit);
     float sleep = clamp(ahead * uDpr + 0.5, 0.0, 1.0);
     float into = -sdBox(c, uRes * 0.5 - uInset - uBead, max(uRad - uBead, 0.0));
     float within = clamp(into + 0.5, 0.0, 1.0);
@@ -721,14 +721,10 @@ ${card ? `  // Asleep, a card is a blank: an engine turned dial inside the card'
       if (knobIs > 0.02 && length(q - headAt) < KNOB_R * knobIs + 1.0){
         // The knob's head, taken four times to a pixel: its beads are small and every edge of it is a line of
         // light. It is old bronze: rubbed bright where it stands proud and gone dark where it is low.
-        // A band's light reaches the head before the band does, low and from the side the band comes from.
-        vec3 Lb[2]; float gb[2];
-        for (int i = 0; i < 2; i++){
-          vec2 to = uWipe[i].xy - pc;
-          float ab = (length(to) - uWipe[i].z) * unit;
-          Lb[i] = normalize(vec3(to.x, -to.y, 0.4 * length(to)));
-          gb[i] = uBurn[i] * exp(-max(ab, 0.0) / ${(WAKE.lead * 1.4).toFixed(1)});
-        }
+        // The band's light reaches the head before the band does, low and from the side the band comes from.
+        vec2 to = uWipe.xy - pc;
+        vec3 Lb = normalize(vec3(to.x, -to.y, 0.4 * length(to)));
+        float gb = uBurn * exp(-max((length(to) - uWipe.z) * unit, 0.0) / ${(WAKE.lead * 1.4).toFixed(1)});
         // Its bronze is older than the dial's: browner, and less red.
         vec3 aged = metalD * vec3(0.84, 0.78, 0.62);
         // The light that throws its shadow, as the head sees it: the way to it, and how bright and how warm it is.
@@ -772,10 +768,7 @@ ${card ? `  // Asleep, a card is a blank: an engine turned dial inside the card'
           one += spec(Nk, V, sun, Tk, Bk, mix(0.46, 0.3, rubbed), 0.0, metalD) * sunIs * mix(0.25, 0.7, rubbed);
           one += spec(Nk, V, L, Tk, Bk, mix(0.42, 0.3, rubbed), 0.0, metalD) * fall * mix(0.3, 0.7, rubbed);
           one += spec(Nk, V, E, Tk, Bk, 0.34, 0.0, metalD) * near * ember * mix(0.4, 0.9, rubbed);
-          for (int i = 0; i < 2; i++){
-            if (gb[i] <= 0.0) continue;
-            one += (spec(Nk, V, Lb[i], Tk, Bk, 0.32, 0.0, metalD) + aged * 0.55 * pow(max(dot(Nk, Lb[i]), 0.0), 1.5)) * gb[i] * mix(uCross[1], uCross[2], 0.45);
-          }
+          if (gb > 0.0) one += (spec(Nk, V, Lb, Tk, Bk, 0.32, 0.0, metalD) + aged * 0.55 * pow(max(dot(Nk, Lb), 0.0), 1.5)) * gb * mix(uCross[1], uCross[2], 0.45);
           one *= mix(0.26, 1.3, side) * (1.0 + 0.6 * rubbed);
           one += aged * (0.016 + 0.02 * smoothstep(-0.2, 0.9, Rk.y));
           // What is low on it has gone dark and a little green, and the dark has crept into every crease.
@@ -795,22 +788,25 @@ ${card ? `  // Asleep, a card is a blank: an engine turned dial inside the card'
     // line is on the edge between the two. Ahead of it its light lies on the dial, whose rays throw it back
     // where they lie along the band and not where they point at it. Behind it the card is left as it is.
     // It is lit where it started, and spends itself as it goes: broad and hot there, a thin line at the far side.
-    for (int i = 0; i < 2; i++){
-      if (uBurn[i] <= 0.0) continue;
-      vec2 from = pc - uWipe[i].xy;
-      float a = (length(from) - uWipe[i].z) * unit;
+    if (uBurn > 0.0){
+      vec2 from = pc - uWipe.xy;
+      float a = (length(from) - uWipe.z) * unit;
       vec2 hc = uRes * 0.5 / uDpr;
-      float gone = length(pc - clamp(uWipe[i].xy, -hc, hc)) * unit;
-      float strong = 0.14 + 0.86 / (1.0 + pow(gone / ${WAKE.spend.toFixed(1)}, 2.0));
+      float gone = length(pc - clamp(uWipe.xy, -hc, hc)) * unit;
+      float strong = 0.14 + 0.86 / (1.0 + gone * gone / ${(WAKE.spend * WAKE.spend).toFixed(1)});
       float core = ${WAKE.core.toFixed(2)} * (0.55 + 2.4 * strong);
-      float line = exp(-pow(a / core, 2.0));
+      float line = exp(-a * a / (core * core));
       float halo = exp(-abs(a) / (core * 3.0));
+      // Each is worked out from the side of the line it lies on only. Far ahead of the line the card's own light,
+      // taken there too, ran past what a number can hold, and the far corner of the card went black as the band
+      // set out.
       float lead = a > 0.0 ? exp(-a / (${WAKE.lead.toFixed(1)} * (0.5 + 0.9 * strong))) : 0.0;
-      float trail = a < 0.0 ? exp(a / ${WAKE.trail.toFixed(1)}) : 0.0;
+      float behind = min(a, 0.0);
+      float trail = a < 0.0 ? exp(behind / ${WAKE.trail.toFixed(1)}) : 0.0;
       float glance = 1.0 - abs(dot(normalize(c + 1e-3), normalize(from)));
       vec3 onDial = mix(uCross[1], uCross[2], 0.3) * uRamp[4] * lead * 2.4 * (0.35 + 1.1 * glance * glance);
-      vec3 onCard = mix(uCross[0], uCross[1], 0.5) * trail * (0.03 + 0.34 * exp(a / 6.0)) * mix(1.0, 0.5, ink);
-      col += uBurn[i] * within * strong * (uCross[2] * line * 3.0 + uCross[1] * halo + mix(onCard, onDial, sleep));
+      vec3 onCard = mix(uCross[0], uCross[1], 0.5) * trail * (0.03 + 0.34 * exp(behind / 6.0)) * mix(1.0, 0.5, ink);
+      col += uBurn * within * strong * (uCross[2] * line * 3.0 + uCross[1] * halo + mix(onCard, onDial, sleep));
     }
   }
 

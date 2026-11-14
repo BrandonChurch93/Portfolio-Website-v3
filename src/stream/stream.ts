@@ -3,7 +3,7 @@ import { lamp } from '../lamp/lamp';
 import { signedDistance } from '../metal/edt';
 import { CARD } from '../metal/mask';
 import { plates } from '../metal/renderer';
-import { band, edge, veil, WAKE, type Start } from '../metal/wake';
+import { advance, asleep, band, edge, veil, VEILED, type Band, type Start } from '../metal/wake';
 import { clock } from '../world/clock';
 import { tiers } from '../world/tier';
 import { STREAM, STREAM_BUDGET, STREAM_STEP, unitFor, type StreamBudget } from './config';
@@ -73,12 +73,11 @@ const RIDER = 17;
 interface Card {
   host: Element;
   turned: HTMLElement;
-  // Its two bands (src/metal/renderer.ts, Plate.wipes), and the mask its words wear to be uncovered in step.
-  wipes: Float32Array;
+  // Its band as its plate takes it (src/metal/renderer.ts, Plate.wipe), the mask its words wear to be uncovered
+  // behind the band, and whether it is wholly asleep.
+  wipe: Float32Array;
   veil: string;
-  // The pointer's band: how far across the card it is, 0 to 1, and where on the card's edge it set out from.
-  near: number;
-  from: Start;
+  sound: boolean;
   // Which category's it is, which of the four places it stands in, and that place's row.
   cat: number;
   slot: number;
@@ -281,7 +280,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
         if (!plate || !plate.parentElement || !layer) return null;
         const k = el.offsetWidth / CARD.width;
         const c: Card = {
-          host: plate, turned: plate.parentElement, wipes: new Float32Array(6), veil: '', near: 0, from: [0, 0, 0, -1], cat, slot, row, l: rowLeft[row] + layer.offsetLeft + el.offsetLeft, off: layer.offsetTop + el.offsetTop, w: el.offsetWidth, h: el.offsetHeight, r: CARD.radius * k,
+          host: plate, turned: plate.parentElement, wipe: new Float32Array(3), veil: '', sound: false, cat, slot, row, l: rowLeft[row] + layer.offsetLeft + el.offsetLeft, off: layer.offsetTop + el.offsetTop, w: el.offsetWidth, h: el.offsetHeight, r: CARD.radius * k,
           shape: { x: 0, y: 0, hw: 0, hh: 0, r: 0 }, inset: 1.5 * k, deep: parseFloat(getComputedStyle(el).perspective) || 1e6, baked: -1, bake: '', win: [0, 0, 1, 1], frame: 0, rim: 0, scale: 1, watch: 0, landings: [],
         };
         cards.push(c);
@@ -371,6 +370,59 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   // A pointer's band held part way across the card in a place, for a still: how far, and where it came from.
   const holds = new Map<number, { a: number; x: number; y: number }>();
   let stepped = 0;
+  // Each place's band (src/metal/wake.ts). It belongs to the place and not to a card: whichever card stands there
+  // wears it, and so does every card that is put away, so one that comes back is already as its place is.
+  let bands: Band[] = [];
+  let sleeping = false;
+
+  // A card is asleep whenever the stream is not on it: a blank, with nothing the card holds on it. The change
+  // between the two is a band of light that crosses the card with the dial ahead of it and the card behind.
+  // It sets out from where the stream strikes the card, and runs back the way it came when the stream draws
+  // back above it. On a card the stream is not on, a pointer that is put on it or keyboard focus wakes it by the
+  // same band, from where the pointer came onto it. Only where the stream runs its whole route: with reduced
+  // motion or on a narrow screen no card sleeps.
+  const stepBands = (showing: Card[]) => {
+    const can = !!sim && !still && !!sides[0] && !!sides[1];
+    if (!can || !table[0]) { sleeping = false; return; }
+    if (bands.length !== table[0].length) { bands = table[0].map(() => asleep()); sleeping = false; }
+    const frozen = clock.isFrozen();
+    bands.forEach((b, slot) => {
+      const c = showing.find((k) => k.slot === slot) ?? table[0][slot];
+      const first = c?.landings[0];
+      if (!c || first === undefined) { b.across = 1; return; }
+      const L = route!.landings[first], on = sim!.head[L.side] >= L.s;
+      const hw = c.w / 2, hh = c.h / 2, x = c.l + hw, y = rows[c.row].top + c.off + hh;
+      // The stream's band goes straight out of the face it strikes.
+      const at = edge(L.x - x, L.y - y, hw, hh), struck: Start = [at[0], at[1], Math.cos(L.face), Math.sin(L.face)];
+      const st = plates.cardOf(c.host), put = !!st && st.on && st.meant;
+      const entered = st ? edge(st.enterX - st.w / 2, st.enterY - st.h / 2, hw, hh) : struck;
+      const held = holds.get(slot);
+      if (held) { b.across = held.a; b.from = edge(c.w * (held.x - 0.5), c.h * (held.y - 0.5), hw, hh); b.stream = false; }
+      // A frozen frame is of one moment, with nothing before it to have stepped from.
+      else if (frozen) { b.across = put ? 1 : sim!.wake[first]; b.stream = b.across > 0 && sim!.wake[first] > 0; b.from = b.stream || !put ? struck : entered; }
+      // Nor has the first frame: the page may open part way down, with the stream already on a card.
+      else if (!sleeping) { b.across = on ? 1 : 0; b.stream = true; b.from = struck; }
+      else advance(b, on, put, struck, entered, stepped);
+    });
+    sleeping = true;
+  };
+
+  // The band a card wears this frame, handed to its plate, or nothing for one that is wholly awake. burn is how
+  // brightly it burns.
+  const bandOf = (c: Card, hw: number, hh: number): { wipe: Float32Array | null; burn: number; b: Band | null } => {
+    const b = sleeping ? bands[c.slot] : null;
+    if (!b || b.across >= 1) return { wipe: null, burn: 0, b };
+    return { wipe: c.wipe, burn: band(c.wipe, hw, hh, c.w / CARD.width, b.from, b.across), b };
+  };
+
+  // The mask over a card's words. A card that is wholly asleep is marked as one, so it does not grow under a
+  // pointer that the page was scrolled under: it grows when it wakes.
+  const wear = (c: Card, words: string) => {
+    const card = c.turned.parentElement as HTMLElement;
+    if (words !== c.veil) { c.veil = words; card.style.setProperty('--veil', words); }
+    const sound = words === VEILED;
+    if (sound !== c.sound) { c.sound = sound; card.toggleAttribute('data-asleep', sound); }
+  };
 
   // ---- the project cards as they stand this frame
   const platesNow = (): PlateCard[] => {
@@ -378,9 +430,14 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     if (!Z) return [];
     const keep = new Set<string>(), stood: CardShape[] = [];
     const out: PlateCard[] = [];
+    const showing: Card[] = [];
+    for (const show of Z.cards) { const c = table[show.cat]?.[show.slot]; if (c && !show.leaving) showing.push(c); }
+    stepBands(showing);
+    const seen = new Set<Card>();
     for (const show of Z.cards) {
       const c = table[show.cat]?.[show.slot];
       if (!c) continue;
+      seen.add(c);
       const top = rows[c.row].top + c.off + show.dy;
       c.shape = { x: c.l + c.w / 2, y: top + c.h / 2, hw: c.w / 2, hh: c.h / 2, r: c.r };
       const st = plates.cardOf(c.host);
@@ -415,49 +472,31 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
         const f = hard * Math.exp(-since / S.struck.flare);
         if (f > flare) { flare = f; fx = route!.landings[i].x - c.shape.x; fy = route!.landings[i].y - c.shape.y; }
       }
-      // A card is asleep whenever the stream is not on it: a blank, with nothing the card holds on it. The change
-      // between the two is a band of light that crosses the card with the dial ahead of it and the card behind.
-      // It sets out from where the stream strikes the card, and runs back the way it came when the stream draws
-      // back above it. Under the pointer or with keyboard focus a sleeping card wakes by a band of its own, from
-      // where the pointer came onto it. Only where the stream runs its whole route: with reduced motion or on a
-      // narrow screen no card sleeps.
-      let wipes: Float32Array | null = null;
-      const lit: [number, number] = [0, 0];
-      const first = c.landings[0];
-      if (sim && !still && first !== undefined && sides[0] && sides[1]) {
-        const L = route!.landings[first];
-        const held = holds.get(c.slot);
-        if (held) { c.near = held.a; c.from = edge(c.w * (held.x - 0.5), c.h * (held.y - 0.5), c.shape.hw, c.shape.hh); }
-        else if (st) {
-          if (st.on && c.near <= 0) c.from = edge(st.enterX - st.w / 2, st.enterY - st.h / 2, c.shape.hw, c.shape.hh);
-          c.near = clock.isFrozen() ? (st.on ? 1 : 0) : Math.max(0, Math.min(1, c.near + (st.on ? stepped / WAKE.pointer[0] : -stepped / WAKE.pointer[1])));
-        }
-        const across = sim.wake[first];
-        if (across < 1 && c.near < 1) {
-          wipes = c.wipes;
-          const unit = c.w / CARD.width;
-          // The stream's band sets out from where the stream strikes the card, straight out of the face it strikes.
-          const struckAt = edge(L.x - c.shape.x, L.y - c.shape.y, c.shape.hw, c.shape.hh);
-          lit[0] = band(wipes, 0, c.shape.hw, c.shape.hh, unit, [struckAt[0], struckAt[1], Math.cos(L.face), Math.sin(L.face)], across);
-          lit[1] = band(wipes, 1, c.shape.hw, c.shape.hh, unit, c.from, c.near);
-        }
-      } else c.near = 0;
-      if (wipes && sim) {
+      const { wipe, burn, b } = bandOf(c, c.shape.hw, c.shape.hh);
+      if (wipe && sim) {
         // The leading end on this card's side lights the blank as it comes near.
-        const side = route!.landings[first!].side;
+        const side = route!.landings[c.landings[0]].side;
         at(route!.branches[side], sim.head[side], tmp);
         plates.setEnd(c.host, tmp[0], tmp[1] + hostTop - clock.view.y, S.work.nearBlank * (0.55 + 0.45 * Math.min(1, sim.energy[side])));
       }
-      // While the pointer's band is what shows or hides the card, the card's own light under the pointer does not
-      // come and go as well: the card is whole behind the band.
-      plates.setBanded(c.host, !!wipes && (c.near > 0 || !!st?.on));
-      plates.setWipes(c.host, wipes, lit[0], lit[1]);
-      const words = veil(wipes, c.shape.hw, c.shape.hh);
-      if (words !== c.veil) { c.veil = words; (c.turned.parentElement as HTMLElement).style.setProperty('--veil', words); }
+      // While a band is showing or hiding the card under the pointer, the card's own light under the pointer does
+      // not come and go as well: the card is whole behind the band.
+      plates.setBanded(c.host, !!wipe && (!b!.stream || !!st?.on));
+      plates.setBand(c.host, wipe, burn);
+      wear(c, veil(wipe, c.shape.hw, c.shape.hh, c.w / CARD.width));
       if (c.bake) keep.add(c.bake);
       // Not until it can be seen: a card on its way in that still shows nothing would shade the ground it is not on.
       if (!show.leaving && show.alpha > 0.5) stood.push({ ...c.shape, hw: c.shape.hw - c.inset, hh: c.shape.hh - c.inset });
-      out.push({ ...c.shape, inset: c.inset, turn, tiltX, tiltY, bake: c.bake, win: c.win, frame: c.frame, rim: c.rim, unit: (2 * c.shape.hw) / CARD.width, flare, struck: [fx, fy], there: show.alpha, wipes });
+      out.push({ ...c.shape, inset: c.inset, turn, tiltX, tiltY, bake: c.bake, win: c.win, frame: c.frame, rim: c.rim, unit: (2 * c.shape.hw) / CARD.width, flare, struck: [fx, fy], there: show.alpha, wipe });
+    }
+    // A card that is put away is kept as its place is, asleep or awake, so the frame it comes back in shows it
+    // that way. Left as it was when it went, a card that came back to a sleeping place was seen awake first.
+    for (const c of cards) {
+      if (seen.has(c)) continue;
+      const { wipe, burn, b } = bandOf(c, c.w / 2, c.h / 2);
+      plates.setBanded(c.host, false);
+      plates.setBand(c.host, wipe, burn);
+      if (!wipe || b!.across <= 0) wear(c, veil(wipe, c.w / 2, c.h / 2, c.w / CARD.width));
     }
     // A card that is waiting keeps its relief, so it is there the moment the card comes in.
     for (const c of cards) if (c.bake) keep.add(c.bake);

@@ -33,6 +33,19 @@ interface Props {
   className?: string;
 }
 
+// Where the pointer last was, and how many times it has moved. A page scrolled under a pointer at rest brings a card
+// under it without the pointer moving at all, and that pointer was not put on the card: it does not wake a sleeping one.
+const pointer = { x: NaN, y: NaN, moves: 0 };
+let tracking = false;
+function trackPointer(): void {
+  if (tracking || typeof window === 'undefined') return;
+  tracking = true;
+  addEventListener('pointermove', (e) => {
+    if (e.clientX === pointer.x && e.clientY === pointer.y) return;
+    pointer.x = e.clientX; pointer.y = e.clientY; pointer.moves++;
+  }, { capture: true, passive: true });
+}
+
 // Where nothing hovers, the cards nearest the middle of the screen are the ones that are awake.
 const touchCards = new Map<HTMLElement, (on: boolean) => void>();
 let watching = false;
@@ -71,7 +84,9 @@ function watchTouch(): void {
 export function WorkCard({ item, look = CARD_LOOK, held, className }: Props) {
   const el = useRef<HTMLElement>(null);
   const band = useRef<HTMLDivElement>(null);
-  const [hover, setHover] = useState({ on: false, x: 0, y: 0 });
+  const [hover, setHover] = useState({ on: false, x: 0, y: 0, meant: true });
+  // How many times the pointer had moved when it came onto the card without moving, or -1 once it was put there.
+  const came = useRef(-1);
   const [stripH, setStripH] = useState(0);
   const shape = { aspect: PICTURE_ASPECT, stripH: stripH || undefined, edge: look.edge };
   const picture = cardPicture(shape);
@@ -95,9 +110,10 @@ export function WorkCard({ item, look = CARD_LOOK, held, className }: Props) {
     if (!card || held) return;
     touchCards.set(card, (on) => {
       const r = card.getBoundingClientRect();
-      setHover((h) => (h.on === on ? h : { on, x: r.width / 2, y: (r.width / CARD.width) * picture * 0.5 }));
+      setHover((h) => (h.on === on ? h : { on, x: r.width / 2, y: (r.width / CARD.width) * picture * 0.5, meant: false }));
     });
     watchTouch();
+    trackPointer();
     return () => { touchCards.delete(card); };
   }, [held, picture]);
 
@@ -105,20 +121,29 @@ export function WorkCard({ item, look = CARD_LOOK, held, className }: Props) {
     const card = el.current;
     if (!card || !held) return;
     const r = card.getBoundingClientRect();
-    setHover({ on: true, x: r.width * held[0], y: r.height * held[1] });
+    setHover({ on: true, x: r.width * held[0], y: r.height * held[1], meant: true });
   }, [held]);
 
   const on = held ? {} : {
     onPointerEnter: (e: PointerEvent<HTMLElement>) => {
       if (e.pointerType === 'touch') return;
       const r = e.currentTarget.getBoundingClientRect();
-      setHover({ on: true, x: e.clientX - r.left, y: e.clientY - r.top });
+      // The pointer is told of here before its own move is: put on the card, it is not where it last was.
+      const meant = !Number.isNaN(pointer.x) && (e.clientX !== pointer.x || e.clientY !== pointer.y);
+      came.current = meant ? -1 : pointer.moves;
+      setHover({ on: true, x: e.clientX - r.left, y: e.clientY - r.top, meant });
+    },
+    onPointerMove: (e: PointerEvent<HTMLElement>) => {
+      if (came.current < 0 || came.current === pointer.moves || e.pointerType === 'touch') return;
+      came.current = -1;
+      const r = e.currentTarget.getBoundingClientRect();
+      setHover((h) => (h.on ? { on: true, x: e.clientX - r.left, y: e.clientY - r.top, meant: true } : h));
     },
     onPointerLeave: (e: PointerEvent<HTMLElement>) => { if (e.pointerType !== 'touch') setHover((h) => ({ ...h, on: false })); },
     onFocus: (e: FocusEvent<HTMLElement>) => {
       if (!(e.target as HTMLElement).matches(':focus-visible')) return;
       const r = e.currentTarget.getBoundingClientRect();
-      setHover({ on: true, x: r.width / 2, y: r.height / 3 });
+      setHover({ on: true, x: r.width / 2, y: r.height / 3, meant: true });
     },
     onBlur: () => setHover((h) => ({ ...h, on: false })),
   };

@@ -19,8 +19,10 @@
   will-change: transform;
 }
 
+/* A card that is wholly asleep does not grow: the page may have been scrolled under a pointer at rest, and a blank
+   that swelled there had been asked for nothing. The stream marks it (data-asleep). */
 @media (hover: hover) {
-  .card[data-awake='true'] .turn {
+  .card[data-awake='true']:not([data-asleep]) .turn {
     scale: calc(1 + var(--grow));
     transition: scale 0.32s cubic-bezier(0.3, 1.45, 0.5, 1);
   }

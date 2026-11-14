@@ -12,6 +12,7 @@ class Clock {
   private raf = 0;
   private started = false;
   private listeners = new Set<FrameListener>();
+  private last = new Set<FrameListener>();
   // Where the page is scrolled and how big the window is, read once at the start of a frame, before anything writes:
   // read after a write, these make the browser recalculate styles there and then.
   readonly view = { x: 0, y: 0, w: 1, h: 1 };
@@ -43,10 +44,13 @@ class Clock {
     this.emit(0);
   }
 
-  onFrame(fn: FrameListener): () => void {
-    this.listeners.add(fn);
+  // last: run after every listener that did not ask for it. For what draws from what the others set this frame:
+  // drawn before them, it shows the frame before.
+  onFrame(fn: FrameListener, last = false): () => void {
+    const set = last ? this.last : this.listeners;
+    set.add(fn);
     this.start();
-    return () => this.listeners.delete(fn);
+    return () => set.delete(fn);
   }
 
   start(): void {
@@ -75,6 +79,7 @@ class Clock {
     const t = this.now();
     gsap.updateRoot(t);
     for (const fn of this.listeners) fn(t, dt);
+    for (const fn of this.last) fn(t, dt);
   }
 
   stop(): void {
