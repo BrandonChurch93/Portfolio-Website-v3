@@ -2,6 +2,137 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · The surge when the category changes, built at `/lab/work` (Fable, Claude Code on Brandon's Mac)
+
+**What was asked.** The prompt is in the entry below. In short: the three changes from his look at the second pass first, then what the stream does when the category changes, on the real stream with the real cards, to `BRIEF.md`, The stream, "When the category changes", tested by `QUALITY.md`, "When the category changes".
+
+**The three changes**
+
+- The stones' faces light whenever the stream has reached them. The switch, `?faces=0` and the code behind them are gone.
+- The bar over WORK is gone from the page, the route (`route.ts`) and the stream's drawing. `?over=1` is gone.
+- The View all work button is raised: `bottom: calc(var(--drop) * 0.5 + 1.75rem)` in `WorkLab.module.css`. At 1440 wide there are 57 px of clear page above it to the foot of the second row and about 55 px below it to the top of the rail's low ends. The rail was not moved. `reference/studies/29-work-button-centered.jpg`.
+
+**What is on the page**
+
+- The category bar works. Software is the real four. Games, 3D art and Photography are four stand in cards each (`categories` in `src/content/work.ts`), with plain drawn pictures in quiet earth colors (`public/media/work/stand-in-*.webp`), "stand in" in each title and tag, and a line in the page's label that says so. A row of Software's cards is 503 px tall at 1440 wide. Games is 432, 3D art 476, Photography 565.
+- Every category's cards are on the page from the start: each row holds one layer of two cards for each category, and only the layer that shows takes room (`.layer` in `WorkLab.module.css`). So every card is already laid out, baked and measured when its turn comes, and a change costs no long frame. Cards that are not showing are `visibility: hidden`, so they are out of the tab order and out of a screen reader's way.
+- A press under 1100 px wide, with reduced motion, or with the stream not yet at the bar changes the cards and nothing else.
+
+**How it is built**
+
+- `src/stream/surge.ts` works the whole change out from the presses so far and a time: which cards show, how far each has dropped or risen, each row's height, where each front is, every strike. Nothing in it is stepped, so a frozen frame draws the same thing every time and a filmstrip can show any moment (`streamPress`).
+- The page's part is `mountSwap` in that file: it sets each card's place and opacity, each row's height while it is changing, and the bar's jolt. The stream reads the same state every frame.
+- **The route is never planned again for a change of category.** Planning it again would deal the riding shards out afresh and start the simulation over, which is every shard jumping at once. The route stays as planned round the cards that showed when it was planned, and a row that is now taller or shorter stretches the planned page under it (`warp` and `unwarp` in `stream.ts`). The stream, its shards, the stones and the rail are all carried by that.
+- The front is four things. The heart of the line burning fiercer, sharp ahead and long behind (the `swell` form of `coreFrag`, used only on the Work page, so the test shot's shader is the same text as before). A fierce point at its head, the one a leading end has. Sparks shed as it runs, as a leading end sheds them (`setFronts` in `sim.ts`). And a wave in the line, which carries the riding shards with it because their places are worked out from the line (`shove` in `stream.ts`).
+- A strike with the stream already lying there is new. The simulation's burst at an arrival was lifted into one function (`burst` in `sim.ts`, same arithmetic in the same order), and a list of strikes to come is handed to it (`setEvents`). A strike only lands where the leading end has already passed. There is no leading end to bring its fierce point to such a strike, so a card's strike has a flash of its own and flares the line where it struck.
+- A card's change: the old card drops 34 px, still nearly solid, and is gone at 0.09 s. The new one starts 40 px below at 0.08 s, gathers speed, cannot be seen until about 0.125 s, is solid by 0.155 s and is stopped by its seat at 0.18 s, which is when the stream strikes it. A card that eased to a stop read as a landing and then a flash.
+- While a first row card is away the stream sags by up to 24 px and loses the corner the card gave it (`soften` in `stream.ts`), but never goes below the top of the card dropping from under it or of the one coming up under it. While a second row card is away the point the stream made against its side rounds off and leans in by about 20 px, only as far as the place is clear of both cards (`clear` in `surge.ts`). Struck, it springs off the card and bounces to rest, away from the card only.
+- A row is as tall as the tallest card standing in it or on its way in. So it grows as soon as a taller card is let in, and does not shrink until the last taller card has gone.
+- The page's rows ease in and out to their new height over 0.4 s and do not overshoot. The stream does: what hangs beside a row that changes height bows out (shorter) or in (taller) by a little over half the change at most, swings back past its line and settles over about 1.3 s, and what hangs below is left behind and swings on the same way (`bow` and `trail` in `config.ts`).
+- A later press kills the earlier surge where it is (its front fades over 0.12 s, and whatever it had not reached is left to the new one), so the cards always change from the top down. A card on its way in that cannot be seen yet becomes the newest category at the press itself. One that can already be seen is not swapped in the air: it seats, and goes again when the new front reaches it.
+- The front's kink is taken down to 30 percent where the stream lies on something, since a wave cannot go down into what it lies on, and dies into the meeting, where the two sides are one line.
+
+**What it does, measured (one press 20 percent across the bar, 1440 wide, Software to Games, seconds after the press)**
+
+- The bar's jolt (5 px) starts in the frame of the press, and its words and the stream on its ends go with it. The stream jumps at the bar's left end at 0.017 and its right at 0.075, the left harder.
+- First row: lets go at 0.100 and 0.150. Struck at 0.28 and 0.33.
+- Stones flare at 0.267 and 0.325. Rail at 0.525 and 0.583.
+- Second row: lets go at 0.383 and 0.433. Struck at 0.56 and 0.62.
+- The meeting at 0.717, which is 0.700 after the left end jumped. The button takes the light then and gives it back over about a second.
+- Riding shards, every frame for 160 frames: 0 vanished, 0 appeared, 0 jumped against their line. The furthest any moved against its line in a sixtieth of a second was 3.9 px.
+- Thrown shards in the air at most 250 of a budget of 260. Sparks at most 841 of 900. The spark budget on his Mac was 700 and is now 900, to give the front its sparks. The test shot never reaches 700, and its stills are unchanged.
+- How hard (1.00 is a leading end at full pace): the surge strikes a first row card at 0.92 and a second row card at 1.15. The scroll measures 0.63 and 0.86 at a steady 300 px a second, 0.74 and 1.04 at 600, 0.85 and 1.22 at 1000, and 1.00 and 1.30 from 1600 up. In the two scripted scrolls used for comparison (600 px in three quarters of a second, eased) it measures 0.92 and 1.15.
+- Counted beside the second row's left card after its strike: the surge puts 65 shards in the air there, the scroll 66.
+- Three presses 0.12 and 0.3 s apart: ends on the newest, cards change top row first, never more than 5 cards drawn in a frame, riding shards 0, 0 and 0. The thrown budget is reached and the last strikes throw fewer.
+- New words measured from the screen in the first frame after a card seats and through its strike: title 13.5 to 1 at least, description 8.2, tags 8.3, the band 6.0. "Case study" at rest measures 4.3 to 4.9 against 4.5: the card as approved, already recorded as his to rule on.
+
+**Frame times, production build, a real window on his Mac at 120 frames a second (`chromiumSandbox: true`)**
+
+- 11 presses 1.2 s apart: 0 of 1676 frames longer than one and a half screen frames. Worst 10.4 ms.
+- The same with the pointer moving over the cards: 0 of 1676.
+- 37 presses a quarter of a second apart: 0 of 1196. 5 presses 5 s apart: 0 of 2636. A window the size of an iPad held sideways: 0 of 1676.
+- `npm run perf` through ten presses (the command is in `CLAUDE.md`): 1440 frames in 12 s, worst 10.4 ms, none over 25.
+- With the processor slowed four times at an iPad's size, 60 a second: 6 to 9 frames in about 712 took two screen frames, against 0 of 720 with no presses.
+- **What is dropped at a limit, said out loud:** on one press nothing. Pressed again and again, thrown shards reach their budget of 260 and the last strikes throw fewer than they ask for, and sparks reach theirs (898 of 900 in a run of presses 1.2 s apart), where the newest are not thrown.
+
+**Unchanged, compared pixel for pixel on the final production build**
+
+- `/lab/stream`: 20 frozen frames, pictures and the numbers behind them, the same as before the work. (A 21st still is taken live and never repeats.)
+- The approved buttons: 7 stills the same. The card study at `/lab/work-cards`: 4 stills the same. The plates' `BAKE` and `LIGHT` shaders are the same text.
+- Under 1100 px the page lays out to the pixel as the live site did, and the stream's route is the same to a hundredth of a pixel. A press there changes all four cards together and nothing else.
+
+**The other checks**
+
+- Keyboard: Enter and Space on a category press it. Focus stays on it and shows. Only the cards that are showing can be reached with Tab.
+- A screen reader: the page holds `role="status"` with "Showing Games, four stand in cards", and each category is a button with `aria-pressed`. No screen reader was run.
+- Reduced motion: the four cards change in one frame and nothing else moves.
+- WebKit at an iPad's size held sideways: a press plays with no errors.
+- Resizing the window with another category showing, across 1100 px and back, then pressing: the stream stays on everything.
+
+**What nine fresh reviewers said, three rounds of three. Each round's reviewers had seen nothing before**
+
+- Round 1, the first build. Passed: only where the stream is, pressed again quickly (with the cards out of order), never slow. Failed: the knock could not be seen, the front could not be followed, the button took no visible light, the second row's strike was weaker than the scroll's, the second row kept its point in the air where the card had been, and no overshoot could be seen. Also: the old card faded in place, the strike came after the card had arrived, a row began to shrink while its taller card still stood, the line was doubled below the meeting, and the stand in pictures' colours were the loudest thing on the page.
+- What changed: everything in "How it is built" from the card's change down, the bar's bigger jolt with its words and the stream going with it, the button's light, strike strengths, and the stand in pictures redrawn in quiet earth colours.
+- Round 2. Passed: starts at the press, each stop answers in order, only where the stream is, nothing queues or doubles, never slow. Failed: the front at the size of the whole section, the second row's strike (the filmstrip ended before the shards had spread: counted, the surge throws 65 there and the scroll 66), the second row's point still in the air, the overshoot. Also: the swell read as a soft dome of glow, which `QUALITY.md` fails on sight.
+- What changed: the swell became the heart burning fiercer and no wider, sags and leans deeper and rounded, the cards dropping and rising further and arriving with speed, the bounce off a card one sided, the settle stronger, and the strikes compared on the same real card at matched times.
+- Round 3. Passed: starts at the press (weakly: the knock is small), each stop answers in order, the stream never comes apart (with two faults, below), only where the stream is, never slow, and the strike lands on the card's arrival. Failed: the front cannot be found at the size of the whole section, the strike beside the scroll's (shards equal, the flash, sparks and rim weaker), the overshoot (too small to see for shorter cards, none seen for taller ones), and pressed again quickly (a category that was skipped could still seat for a moment).
+- What changed after round 3: the front sheds sparks and has a leading end's point, a card's strike has its own flash and flares the line, an unseen card becomes the newest at the press itself, the rows ease in as well as out, the new card is solid sooner once it shows, and the rounding waits until the old card has gone.
+- Round 4, one more fresh reviewer, on the four tests that failed in round 3. Passed: pressed again quickly (no skipped category shows, nothing queues, it ends clean, though one frame holds three categories and one card is struck twice). Failed: the front cannot be pointed to on the sides or in the whole view, only on the rail and at the meeting. The strike beside the scroll's, marginally: shards, rim and picture about equal, the scroll's spray of sparks denser, some of it its leading end's own. The settle: the bow out can be seen, the swing back past the line is about 5 px on the page and cannot be seen by eye, and for taller cards none was seen. Also: the line read as lumpy or zigzag in two frames, the sag had a sharp point in one frame, and the new card showed as a dark plate before it was lit.
+- What changed after round 4, and no reviewer has seen it: the front's wave is gentler (10 units to each side over a longer stretch) and is smoothed where the stream comes onto a thing or leaves it.
+
+**At the bar, by measurement and by the reviewers**
+
+- The order and the timing: the bar, the first row, the stones, the second row, the rail, the meeting, the nearer side first, 0.700 s from the bar to the meeting.
+- A press only does what the stream can reach. Above the cards, the cards change and nothing strikes them.
+- Riding shards: none vanish, appear or jump.
+- The stream is never cut or doubled, and the two cards' words never show through each other.
+- A new card's words can be read from the frame it seats, through its strike.
+- The strike lands on the card's arrival, with shards thrown that bounce and spill, as many as the scroll throws.
+- Every frame at the screen's rate on his Mac through runs of presses.
+- `/lab/stream`, the buttons and the card study draw what they drew.
+
+**Not at the bar, plainly**
+
+- **The front cannot be followed on the sides.** Four rounds of reviewers read the surge from the stops going off in order, not from a front running down the line. It can be followed on the rail and into the meeting. A wide swell of light was followable and read as a ball of glow, which `QUALITY.md` fails on sight. A thin fierce one with a point and sparks does not stand out from a stream that is already bright everywhere. This needs a decision, not more tuning.
+- **The settle onto a new height is too small to see as a swing.** The stream does bow, swing back past its line and settle, by measurement. The reviewers could not see it by eye in stills, and one read the line as wavy while a card is away. Making it larger risks the stream looking thrown about, which `QUALITY.md` fails on sight. This is the item most in need of his eye, in motion.
+- **The surge's strike beside the scroll's.** Equal in shards, rim and picture, and in the simulation's own measure. The scroll's strike has a denser spray of sparks, part of it its leading end's own. The last reviewer still called it the weaker, marginally.
+- **Pressed three times in a third of a second,** a card can be struck twice and three categories can be on screen in one frame. No category he skipped shows.
+- **For a frame or two the new card shows as a dark plate before its rim and picture are bright.** One reviewer read it as a dark rectangle rising.
+- **The knock is small:** the bar moves 5 px.
+- **The wave on the rail** read as a lumpy step to one reviewer.
+- **With the processor slowed four times,** 6 to 9 frames in about 712 took two screen frames during presses.
+- **"Case study" at rest** measures 4.3 to 4.9 to 1 against 4.5. It is the card as approved and was already his to rule on.
+- **Not checked:** his own browser, a real iPad or phone, a real screen reader.
+
+**Calls made for him. None is a rule**
+
+- The four places the build departs from the agreement's ten calls are in `BRIEF.md`, The stream, "When the category changes", "Built".
+- The button is raised and the rail is not lowered.
+- The stand in cards' words, their plain pictures and their heights.
+- The end of the bar further from the press starts later, by up to 14 percent of 0.7 s, as in the wireframe. The bar's jolt is 5 px and starts at the press.
+- One strike at the meeting, when the first side gets there, and the button takes its light then.
+- Cards beyond the leading end change at their times with no strike. With the stream not at the bar, all four change together.
+- Pressing the category that is showing does nothing.
+- The front: how fierce the heart burns, its point, 170 sparks a second at the nearer end, a wave 10 units to each side, and the surge running up toward WORK at 60 percent.
+- How deep the stream sags (24 px) and leans (20 px), and that it loses its corner or its point while the card is away.
+- The rows ease over 0.4 s and do not overshoot. The stream bows by a little over half the change at most.
+- A row is as tall as the tallest card in it or on its way in.
+- The lighter contacts of a surge throw a quarter of the shards they would on a scroll.
+- The spark budget on his Mac, 700 to 900.
+- The stones' faces flare to about twice as bright as the front passes.
+- The screen reader's line: "Showing Games, four stand in cards".
+- One line in the approved card's stylesheet (`.foot`, `min-height`), so a card with no links keeps its foot. The real cards are unchanged to the pixel. **This touches something he approved, so it is his to refuse.**
+
+**Found on the way. The next session would otherwise rediscover these**
+
+- **A press only surges where the stream is.** `streamPress` called straight after a jump of the scroll finds the leading end not yet at the bar and changes the cards quietly. Freeze, settle, then press, as the example in `CLAUDE.md` does.
+- **The test browser without its sandbox invents a long frame.** Launched as Playwright does by default, the first time the page under a resting pointer is laid out again the browser spends about 21 ms inside macOS (`GetCurrentKeyModifiers`, which sets up a window server connection). It looked like the first press costing three frames. With `chromiumSandbox: true`, as a real browser runs, it is gone. It took a native stack sample to find.
+- **Moving the bar hid its own words.** A `translate` on the bar gathers its words into it, and they go under the stream's canvas for as long. The jolt is handed to the words (`--knock`).
+- **The route's first plan depends a little on when the display font is ready.** The same live build gave two answers for where the stream strikes WORK, 3 to 6 px apart, from one load to the next. It was there before this work and was not changed.
+- **A soft wide swell reads as a ball of glow. A thin fierce one cannot be seen from far off.** That is why the front has sparks.
+- **Multiplying the core's light shows its faint fibres as lines of their own,** which read as the stream doubled.
+- The stills: `reference/studies/29-*`.
+
 ## 2026-11-13 · Handoff to Claude Code: the surge when the category changes (Fable, web chat)
 
 **What Brandon said**

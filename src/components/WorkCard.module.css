@@ -139,6 +139,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 0 calc(var(--u) * 12);
+  /* The row is as tall as a link in it, and as tall as that with none: a card with no link out keeps its foot. */
+  min-height: var(--touch);
   margin-top: auto;
   padding-bottom: calc(var(--u) * 4);
   border-top: 1px solid var(--line);

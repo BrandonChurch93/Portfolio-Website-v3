@@ -50,11 +50,13 @@ export interface Bar { ax: number; ay: number; bx: number; by: number; half: num
 // the pointer has turned and grown it to, as a 3 by 3 matrix by columns. tiltX and tiltY are the same turn as
 // angles, for its light. bake names its relief (setBake). win is its picture's window, from its center, frame the
 // width of the frame round that, rim the width of its edge, and unit one of the card's own design units. flare is
-// how hard it has just been struck, and struck where, from its center.
+// how hard it has just been struck, and struck where, from its center. there is how much of it is there, 0 to 1:
+// a card on its way in or out is only partly there, and cuts the stream off only as much.
 export interface PlateCard {
   x: number; y: number; hw: number; hh: number; inset: number; r: number;
   turn: Float32Array; tiltX: number; tiltY: number;
   bake: string; win: [number, number, number, number]; frame: number; rim: number; unit: number; flare: number; struck: [number, number];
+  there: number;
 }
 
 export interface Frame {
@@ -75,6 +77,9 @@ export interface Frame {
   lots: Int32Array;                              // first and count for each layer and kind
   plates?: PlateCard[];                          // the project cards on the page
   lit?: number[];                                // how far each stone's face is lit from inside, 0 to 1
+  // The surges running along each side: for each, where along the route its front is (in units), how much brighter
+  // it makes the core, and which way it runs. G.SWELLS of them to a side, three numbers each.
+  swell?: [Float32Array, Float32Array];
 }
 
 const lin = (name: PaletteName): [number, number, number] => {
@@ -152,6 +157,7 @@ export class StreamRenderer {
   private bakes = new Map<string, { b0: WebGLTexture; b1: WebGLTexture }>();
   // The sun stone's carving.
   private stone: [WebGLTexture, WebGLTexture] | null = null;
+  private calm = new Float32Array(G.SWELLS * 3);
   private sdf: WebGLTexture;
   private none: WebGLTexture | null = null;
   private title: TitleField | null = null;
@@ -219,7 +225,7 @@ export class StreamRenderer {
   // Programs that depend on the budget, or on how many things stand on the page, are built again when those change.
   // ends: the two sides of the stream meet again.
   configure(budget: StreamBudget, shapes: G.Shapes = { cards: 1, posts: 0, rails: 0 }, ends = false): void {
-    const same = this.budget === budget && this.ends === ends && this.shapes.cards === shapes.cards && this.shapes.posts === shapes.posts && this.shapes.rails === shapes.rails && !this.shapes.plates === !shapes.plates && !this.shapes.drawn === !shapes.drawn;
+    const same = this.budget === budget && this.ends === ends && !this.shapes.swell === !shapes.swell && this.shapes.cards === shapes.cards && this.shapes.posts === shapes.posts && this.shapes.rails === shapes.rails && !this.shapes.plates === !shapes.plates && !this.shapes.drawn === !shapes.drawn;
     if (!this.ok || same) return;
     const gl = this.gl, f = this.float;
     for (const old of Object.values(this.prog)) gl.deleteProgram(old.p);
@@ -228,7 +234,7 @@ export class StreamRenderer {
     this.ends = ends;
     const shard = ['aPos', 'aNormal', 'aEdge', 'aTag', 'aBevel0', 'aBevel1', 'aBevel2', 'iPlace', 'iTurn', 'iCore', 'iMore'];
     this.prog = {
-      core: compile(gl, G.CORE_VERT, G.coreFrag(budget.split ? 9 : 7, ends), ['aPos', 'aAlong']),
+      core: compile(gl, G.CORE_VERT, G.coreFrag(budget.split ? 9 : 7, ends, !!shapes.swell), ['aPos', 'aAlong']),
       streak: compile(gl, G.STREAK_VERT, G.STREAK_FRAG, ['aPos', 'aLight']),
       down: compile(gl, G.FULL_VERT, G.downFrag(f), ['aPos']),
       up: compile(gl, G.FULL_VERT, G.upFrag(f), ['aPos']),
@@ -384,6 +390,15 @@ export class StreamRenderer {
     for (const [key, t] of this.bakes) if (!keys.has(key)) { this.gl.deleteTexture(t.b0); this.gl.deleteTexture(t.b1); this.bakes.delete(key); }
   }
 
+  // Where the things on the page stand this frame, for when they move: a card changing, a row growing.
+  place(cards: CardShape[], posts: PostShape[], rails: RailShape[], stood: CardShape[], bars: Bar[]): void {
+    this.cards = cards;
+    this.posts = posts;
+    this.rails = rails;
+    this.stood = stood;
+    this.bars = bars;
+  }
+
   private fill(buffer: WebGLBuffer, data: Float32Array, floats: number, key: 'core' | 'streaks' | 'shards'): void {
     const gl = this.gl;
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -462,6 +477,10 @@ export class StreamRenderer {
       gl.uniform1f(P.core.u('uEnergy'), f.energy[b]);
       gl.uniform2f(P.core.u('uOwn'), b * 1777, b * f.split);
       if (this.ends) gl.uniform1f(P.core.u('uEnd'), b ? f.end : 1e6);
+      if (this.shapes.swell) {
+        gl.uniform3fv(P.core.u('uSwell[0]'), f.swell ? f.swell[b] : this.calm);
+        gl.uniform2f(P.core.u('uSwellSize'), STREAM.change.swell[1], STREAM.change.swell[2]);
+      }
       gl.drawArrays(gl.TRIANGLE_STRIP, f.coreRuns[b * 2], f.coreRuns[b * 2 + 1]);
     }
     if (f.streakCount > 0) {
@@ -508,6 +527,7 @@ export class StreamRenderer {
     // ---- where the project cards stand
     const plates = P.hole && this.mask ? f.plates ?? [] : [];
     const plate = (p: Program, c: PlateCard) => {
+      gl.uniform1f(p.u('uThere'), c.there);
       gl.uniform4f(p.u('uBox'), c.x, c.y, c.hw, c.hh);
       gl.uniform2f(p.u('uRound'), c.inset, c.r);
       gl.uniformMatrix3fv(p.u('uTurn'), false, c.turn);

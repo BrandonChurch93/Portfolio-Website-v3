@@ -62,6 +62,8 @@ interface Plate extends PlateEntry {
   // own colors.
   baked: number;
   warm: number;
+  // Whether it is to be drawn at all. A card that is waiting behind another keeps its bake and is not lit.
+  shown: boolean;
 }
 
 // A card's relief as it was baked, read back out so that something else can light it too: the stream lays its own
@@ -216,7 +218,7 @@ class PlateRenderer {
       area: entry.spec.kind === 'card' ? entry.host.closest<HTMLElement>('[data-plate-area]') : null,
       visible: false, bakeGen: 0, sig: '', tilt: { x: 0, y: 0, gx: 0, gy: 0 }, stream: { x: 0, y: 0, z: 26, k: 0 },
       hover: { v: 0, goal: 0, pinned: false }, pointer: { x: 0, y: 0 }, hovered: '',
-      seed: seedOf(entry.spec), baked: 0, warm: 0,
+      seed: seedOf(entry.spec), baked: 0, warm: 0, shown: true,
     };
     this.plates.add(p);
     this.byHost.set(entry.host, p);
@@ -273,6 +275,15 @@ class PlateRenderer {
     // A frozen clock draws each frame once, and the plates before the stream: the card is drawn again here, so a
     // frozen frame shows the warmth of its own moment and not of the one before.
     if (clock.isFrozen() && p.visible && p.mask) this.draw(p, false);
+  }
+
+  // Whether a plate is to be drawn. One that is hidden behind another keeps everything it has and costs nothing.
+  setShown(host: Element, on: boolean): void {
+    const p = this.byHost.get(host);
+    if (!p || p.shown === on) return;
+    p.shown = on;
+    p.sig = '';
+    if (on && clock.isFrozen() && p.visible && p.mask) this.draw(p, false);
   }
 
   // A card as it is this frame: how it is turned, in radians as its page turns it, how awake it is, and how many
@@ -461,7 +472,7 @@ class PlateRenderer {
     const k = frozen ? 1 : 0.14;
     // Every plate's place is read before anything is written, so the page lays out once a frame, not once a plate.
     const rects = new Map<Plate, DOMRect>();
-    for (const p of this.plates) if (p.visible && p.mask) rects.set(p, p.host.getBoundingClientRect());
+    for (const p of this.plates) if (p.visible && p.mask && p.shown) rects.set(p, p.host.getBoundingClientRect());
     for (const p of this.plates) {
       const dx = p.tilt.gx - p.tilt.x;
       const dy = p.tilt.gy - p.tilt.y;

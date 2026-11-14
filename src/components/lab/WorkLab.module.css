@@ -51,6 +51,9 @@
   justify-items: center;
   padding: 98vh 0 92vh;
   padding: 98svh 0 92svh;
+  /* A row changes height when the category changes. The page under it moves with it, and the browser is not to
+     scroll the page to hide that. */
+  overflow-anchor: none;
 }
 
 /* The spacing after the last letter is taken back on the left, so the word sits on the page's center line. */
@@ -64,21 +67,6 @@
   text-transform: uppercase;
   white-space: nowrap;
   color: var(--text);
-}
-
-/* A bar over the word, for looking at with and without. It takes no room of its own, so the page does not move
-   when it is switched on. The stream draws it: this is only where it stands. */
-.over {
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% + 0.06em);
-  width: calc(100% - 0.25em);
-  height: 1.4rem;
-  translate: -50% 0;
-}
-
-.over[hidden] {
-  display: none;
 }
 
 .bar {
@@ -106,6 +94,8 @@
   letter-spacing: var(--track-label);
   text-transform: uppercase;
   cursor: pointer;
+  /* A press knocks the bar, and the words go with it (src/stream/surge.ts). */
+  translate: 0 var(--knock, 0px);
   transition: color var(--dur-1) var(--ease-settle);
 }
 
@@ -130,11 +120,24 @@
   margin-top: clamp(4.4rem, 8vw, 6.6rem);
 }
 
+/* A row holds every category's two cards for it, one set over another, and is as tall as the set that shows. The
+   others lie at its top out of the layout, each at its own height, so each is already measured and drawn when its
+   turn comes. Which cards show is set card by card (src/stream/surge.ts). */
 .row {
+  position: relative;
+}
+
+.layer {
   position: relative;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--gap);
+}
+
+.layer:not([data-current='true']) {
+  position: absolute;
+  inset: 0 0 auto;
+  visibility: hidden;
 }
 
 /* A stone stands beside each side of the grid, level with the foot of the first row. Its near edge is where the
@@ -172,10 +175,12 @@
   border-bottom: 1px solid var(--line-strong);
 }
 
+/* The button stands in the pocket between the foot of the second row and the V the two halves of the rail make,
+   centered there by eye: clear above the rail's low ends, with the stream meeting under it. */
 .button {
   position: absolute;
   left: 50%;
-  bottom: 1.25rem;
+  bottom: calc(var(--drop) * 0.5 + 1.75rem);
   translate: -50% 0;
 }
 
@@ -196,54 +201,6 @@
   background: none;
 }
 
-/* The two switches stay on screen, so each can be thrown at any point of the scroll. */
-.switches {
-  position: fixed;
-  left: var(--edge);
-  bottom: var(--space-5);
-  z-index: 5;
-  display: grid;
-  gap: var(--space-2);
-  font-family: var(--font-mono);
-  font-size: var(--step--1);
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-}
-
-.switch {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.switchLabel {
-  min-width: 9.5rem;
-  color: var(--text-3);
-}
-
-.option {
-  min-height: 2.75rem;
-  padding: 0 var(--space-4);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-2);
-  background: var(--bg-2);
-  color: var(--text-2);
-  font: inherit;
-  letter-spacing: inherit;
-  text-transform: inherit;
-  cursor: pointer;
-}
-
-.option[aria-pressed='true'] {
-  border-color: var(--copper);
-  color: var(--copper-light);
-}
-
-.option:focus-visible {
-  outline: 2px solid var(--copper-light);
-  outline-offset: 2px;
-}
-
 /* Too narrow for two cards of at least 340 px side by side with the stream's room and the margin kept: under 1100 px
    a card would be narrower than that. One column, no stones and no rail: a stand in until the route for a narrow
    screen is designed. */
@@ -257,14 +214,13 @@
     width: min(calc(var(--grid) + 2.4rem), 100vw - 6rem);
   }
 
-  .row {
+  .layer {
     grid-template-columns: 1fr;
     gap: clamp(3.4rem, 6vw, 5.2rem);
   }
 
   .stone,
-  .rail,
-  .over {
+  .rail {
     display: none;
   }
 
@@ -278,13 +234,5 @@
   .button {
     position: static;
     translate: none;
-  }
-
-  .switches {
-    font-size: 0.6875rem;
-  }
-
-  .switchLabel {
-    min-width: 0;
   }
 }

@@ -71,10 +71,6 @@ export const STREAM = {
     // The brackets the rail is carried on: how far along each half of the rail they are, as shares of its length,
     // and how large one is against the rail's own.
     keel: { at: [0.17, 0.83] as [number, number], size: 1 },
-    // A bar over the title: its blades are smaller than the rail's, their length and half their width in halves of
-    // the bar's thickness, the stream comes down this far beyond a blade's point, and its brackets are small, so
-    // they stop short of the word.
-    over: { blade: 3.1, wide: 1.2, beside: 14, at: [0.2, 0.8] as [number, number], size: 0.3 },
     // The meeting: how steeply each side comes down to the middle from the rail's end, how much of that stretch is a
     // bow, how far down the two take to turn into one, and how near they are when they count as met.
     meet: { slope: 0.28, bow: 0.8, fall: 38, near: 10 },
@@ -87,6 +83,76 @@ export const STREAM = {
     contact: {
       title: [1, 1, 5, 2.2], bar: [0.3, 0.6, 3, 4], card: [1, 1, 6, 2.2], post: [0.3, 1.3, 4, 4], side: [1.3, 1.3, 8, 2.6], rail: [0.4, 0.7, 3, 4], meet: [0.2, 0.5, 2, 4],
     } as Record<string, readonly [number, number, number, number]>,
+  },
+
+  // When the category changes (surge.ts). Times are in seconds and lengths in units.
+  change: {
+    // The surge takes this long from the bar to the meeting under the button, and the end of the bar further from
+    // the press starts later by up to this share of that.
+    length: 0.7,
+    lag: 0.14,
+    // A card's change does not stretch with the surge. The old card is gone by out, dropping this far as it goes.
+    // The new one starts up at in, from this far below, and the stream strikes it as it seats.
+    out: 0.09,
+    in: 0.08,
+    seat: 0.18,
+    drop: 34,
+    rise: 40,
+    // How the new card gathers speed on its way up (1 is a steady rise), and how long the stream takes to sag once
+    // a card has let go.
+    arrive: 1.7,
+    sagIn: 0.07,
+    // The share of its way up for which the new card is not yet seen. It is solid a third of its way later.
+    ghost: 0.45,
+    // How hard the surge strikes a card, on its top in the first row and on its side in the second, as a share of
+    // a leading end at full pace: what the scroll's strike is when the page is scrolled 600 px in three quarters of a
+    // second, which is what the comparison filmstrips do. The knock on
+    // the bar, at the end far from the press and what is added at the near one. And the stone, the rail and the
+    // meeting.
+    hard: [0.87, 0.81] as [number, number],
+    knock: [0.5, 0.5] as [number, number],
+    light: 0.6,
+    // The share of their shards the light contacts of a surge throw, which leaves the budget to the cards' strikes.
+    loose: 0.25,
+    // How long an earlier surge takes to die when a later press cuts in.
+    cut: 0.12,
+    // The bar's jolt, in pixels. How long a surge takes to die once it has arrived, and how long after the last
+    // strike things are still settling.
+    jolt: 5,
+    fade: 0.3,
+    tail: 1.6,
+    // The kink that runs with the surge: how far it throws the line to each side, and half its length. The share
+    // of that the surge running up from the bar toward the title has, which dies before it reaches the word.
+    kink: [10, 90] as [number, number],
+    // How much of that kink a stretch lying on something loses: the wave cannot go down into what it lies on.
+    held: 0.7,
+    up: 0.6,
+    // The swell of light that runs with it: how much brighter the core is at the front, how far ahead of the front
+    // that reaches, and how far behind.
+    swell: [2, 10, 140] as [number, number, number],
+    // Where a card is away the stream sags toward where it was: this far on a top, this far at a side, tapering off
+    // over reach to each side. Struck, it springs off the new card: how far, how fast that dies, how fast it rings,
+    // and how long it is followed.
+    sag: [21, 30] as [number, number],
+    // How far each way along the stream the second row's turn is rounded off while its card is away. How much
+    // brighter a stone's face flares as the front passes it, and how much of the meeting's strike the button takes.
+    round: [26, 60] as [number, number],
+    flare: 4,
+    button: 1.5,
+    // The sparks a front sheds each second at the end of the bar nearer the press, and the flash at a card's strike:
+    // how fierce its point is against a leading end's, how long it lasts, and how much it flares the line there.
+    shed: 170,
+    flash: [1.15, 0.07, 1.6, 0.12] as [number, number, number, number],
+    reach: [34, 90] as [number, number],
+    spring: [11, 9, 32, 1] as [number, number, number, number],
+    // The second row's card lets go this far before the surge reaches the point the stream strikes it at.
+    ahead: 24,
+    // A row takes this long to reach a new height. What hangs beside it bows by this share of the change, out when
+    // the row grows shorter and in when it grows taller, from the moment the row starts, dying over this long, at
+    // this period. What hangs below it is left behind by this share of that bow, and swings to the side by this.
+    row: 0.4,
+    trail: [0.6, 0.4] as [number, number],
+    bow: [0.55, 0.4, 0.8] as [number, number, number],
   },
 
   // How fast a thing the stream has reached warms to it, each second, and how fast it cools once the stream has
@@ -208,7 +274,7 @@ export interface StreamBudget {
 }
 
 export const STREAM_BUDGET: Record<Exclude<Tier, 'static'>, StreamBudget> = {
-  high: { per100: 55, loose: 260, sparks: 700, pixelRatio: 2, pixels: 9.6e6, samples: 4, split: true, levels: 6 },
+  high: { per100: 55, loose: 260, sparks: 900, pixelRatio: 2, pixels: 9.6e6, samples: 4, split: true, levels: 6 },
   mid: { per100: 38, loose: 120, sparks: 300, pixelRatio: 3, pixels: 3.8e6, samples: 4, split: false, levels: 6 },
   low: { per100: 26, loose: 60, sparks: 160, pixelRatio: 1.5, pixels: 1.7e6, samples: 2, split: false, levels: 5 },
 };

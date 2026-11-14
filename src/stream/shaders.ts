@@ -61,12 +61,16 @@ ${CLIP}
 void main(){ vAlong = aAlong; gl_Position = clip(aPos, 0.0); }`;
 
 // ends: the route has a place where the two sides meet again, and a side's own strands fade out there as they faded
-// in where the sides parted. Without it the shader is the test shot's, letter for letter.
-export const coreFrag = (strands: number, ends = false) => `${HEAD}
+// in where the sides parted. swell: a surge can run along the core, and the core is brighter where its front is.
+// Without either the shader is the test shot's, letter for letter.
+export const SWELLS = 4;
+export const coreFrag = (strands: number, ends = false, swell = false) => `${HEAD}
 in vec3 vAlong;
 uniform float uTime, uEnergy, uHeart;
 uniform vec2 uOwn;   // a shift that gives each side its own strands, and where along the route they begin${ends ? `
-uniform float uEnd;  // where along the route they end` : ''}
+uniform float uEnd;  // where along the route they end` : ''}${swell ? `
+uniform vec3 uSwell[${SWELLS}];   // each front: where along the route it is, how much brighter it makes the core, and which way it runs (1 down the route, -1 up it)
+uniform vec2 uSwellSize;          // how far ahead of a front the swell reaches, and how far behind` : ''}
 out vec4 frag;
 ${NOISE}
 void main(){
@@ -106,7 +110,16 @@ void main(){
   // Light runs down it, and it burns hotter toward its leading end.
   float run = 0.84 + 0.16 * sin(s / 83.0 - t * 2.1) * sin(s / 211.0 - t * 0.9 + 0.8);
   float head = 1.0 - smoothstep(0.0, 120.0, lead);
-  sum *= run * (1.0 + (0.6 + 1.3 * uEnergy) * head * head) * smoothstep(0.0, 5.0, lead) * smoothstep(${CORE_HALF}.0, 22.0, abs(x));
+  sum *= run * (1.0 + (0.6 + 1.3 * uEnergy) * head * head) * smoothstep(0.0, 5.0, lead) * smoothstep(${CORE_HALF}.0, 22.0, abs(x));${swell ? `
+  for (int i = 0; i < ${SWELLS}; i++){
+    // A swell is the heart of the line burning fiercer, sharp ahead and long behind, and no wider than the heart
+    // is: made wide it is a soft ball of glow. The fibres round it are only a little brighter: brightened as much
+    // as the heart, the faint ones show as lines of their own.
+    float d = (vAlong.y - uSwell[i].x) * uSwell[i].z;
+    float reach = d > 0.0 ? uSwellSize.x : uSwellSize.y;
+    float e = uSwell[i].y * exp(-d * d / (reach * reach)), qs = x / 1.3;
+    sum = sum * (1.0 + 0.45 * e) + 3.2 * e * begun * smoothstep(${CORE_HALF}.0, 22.0, abs(x)) / pow(1.0 + qs * qs, 1.6);
+  }` : ''}
   frag = vec4(sqrt(min(sum, ${LIGHT_MAX}.0) / ${LIGHT_MAX}.0), 0.0, 0.0, 1.0);
 }`;
 
@@ -338,12 +351,13 @@ float sdBox(vec2 p, vec2 b, float r){ vec2 q = abs(p) - b + r; return length(max
 float plateCover(vec2 at){ return clamp(0.5 - sdBox(at, uBox.zw - uRound.x, uRound.y) * uDpr, 0.0, 1.0); }
 `;
 
-// How much of this pixel the card covers.
+// How much of this pixel the card covers. A card that is on its way in or out is only partly there.
 export const PLATE_HOLE_FRAG = `${HEAD}
 in vec2 vAt;
+uniform float uThere;
 out vec4 frag;
 ${plateEdge(true)}
-void main(){ frag = vec4(plateCover(vAt)); }`;
+void main(){ frag = vec4(plateCover(vAt) * uThere); }`;
 
 // The most of the stream's light a part of the card takes, as amounts of it: the rim and the frame round the
 // picture, the picture, the face close inside the rim, the face where the card's words are, and the band. The
@@ -363,6 +377,7 @@ uniform vec2 uTilt;           // how the card is turned: about x, about y
 uniform vec3 uMetalA, uMetalB, uFaceLit, uFlame, uHot, uPale;
 uniform vec3 uRough;          // of the metal, of the band, and how brushed the metal is
 uniform vec3 uFlare;          // how hard a leading end has just struck the card, 0 to 1, and where, from its center
+uniform float uThere;         // how much of the card is there, 0 to 1
 out vec4 frag;
 ${CLIP}${LIT}${plateEdge(false)}${NOISE}
 const float PI = 3.14159265;
@@ -421,7 +436,7 @@ void main(){
   float reach = 1.0 - smoothstep(-2.0, 2.0, sdBox(vAt - uWin.xy + over, uWin.zw, 0.5));
   vec3 print = uFaceLit * 1.5 * min(lit, ${PLATE_MOST.picture.toFixed(2)}) * (0.35 + 0.65 * reach) * (1.0 + grain * 0.1);
   vec3 col = mix(mix(metal, wash, face), print, picture);
-  frag = vec4(col * cov, 0.0);
+  frag = vec4(col * cov * uThere, 0.0);
 }`;
 
 // ---- the posts and the rail: the buttons' metal, standing in the page, for the stream to meet
@@ -853,7 +868,8 @@ void main(){
 // How many of each thing stand on the page for the stream to light. One card and nothing else is the test shot,
 // and its shaders are then the test shot's, letter for letter.
 // rails counts every straight solid that throws a shadow. drawn says whether any rail is drawn at all.
-export interface Shapes { cards: number; posts: number; rails: number; plates?: number; drawn?: number }
+// swell says whether a surge can run along the core.
+export interface Shapes { cards: number; posts: number; rails: number; plates?: number; drawn?: number; swell?: boolean }
 const plain = (n: Shapes) => n.cards <= 1 && !n.posts && !n.rails;
 
 const RAIL_FIELD = `

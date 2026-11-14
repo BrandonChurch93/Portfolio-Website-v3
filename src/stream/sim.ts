@@ -48,6 +48,9 @@ export class StreamSim {
   // Every straight solid on the page, the rails first, and each one's own directions.
   private readonly bars: Rail[];
   private readonly frames: ReturnType<typeof railFrame>[];
+  private events: { t: number; i: number; hard: number; loose: number }[] = [];
+  private fronts: { side: number; t0: number; until: number; from: number; to: number; span: number; rate: number }[] = [];
+  private next = 0;
 
   constructor(private route: Route, private budget: StreamBudget, private seed: number, private sizes: [number, number]) {
     const landings = route.landings.length, emitters = Math.max(16, emitter(landings, 0));
@@ -98,6 +101,8 @@ export class StreamSim {
   settle(line: number, t: number): void {
     const from = Math.floor((t - S.warmSeconds) / STREAM_STEP) * STREAM_STEP;
     this.time = from;
+    this.next = this.events.findIndex((e) => e.t > from);
+    if (this.next < 0) this.next = this.events.length;
     this.pace = 0;
     this.sparkCount = this.looseCount = this.forkCount = 0;
     for (let b = 0; b < 2; b++) {
@@ -193,18 +198,22 @@ export class StreamSim {
       for (let n = this.due(sparks, rates[sparks]); n > 0; n--) this.landSpark(i, this.count[sparks]++, 1);
       if (this.head[b] >= L.s) this.now(i);
       for (let n = this.due(forks, rates[forks]); n > 0; n--) this.landFork(i, forks, this.count[forks]++);
-      if (was[b] < L.s && this.head[b] >= L.s) {
-        // A contact is as strong as the arrival, and a lighter one throws its share of a full strike.
-        const hard = Math.min(1, this.speed[b] / (H.pace * u)) ** 0.6;
-        // The two sides arrive at the same pace, so each landing past the test shot's two throws a number of its own.
-        const own = i < 2 ? 1 : 0.8 + 0.4 * hash(i, 53, this.seed);
-        for (let k = Math.round((S.loose.burst[0] + S.loose.burst[1] * hard) * L.force * own); k > 0; k--) this.throwShard(i, this.count[shards]++, (0.35 + hard) * L.force);
-        for (let k = Math.round((20 + 90 * hard) * L.force); k > 0; k--) this.landSpark(i, this.count[sparks]++, 1 + hard);
-        for (let k = Math.round(4 * L.force); k > 0; k--) this.landFork(i, forks, this.count[forks]++);
-        this.hitAt[i] = this.time;
-        this.hit[i] = (0.4 + 0.6 * hard) * L.force;
-      }
+      if (was[b] < L.s && this.head[b] >= L.s) this.burst(i, Math.min(1, this.speed[b] / (H.pace * u)) ** 0.6);
     });
+    // Strikes that were set for a time: the stream is already lying on the thing, and something has struck it again.
+    for (; this.next < this.events.length && this.events[this.next].t <= this.time; this.next++) {
+      const e = this.events[this.next], L = this.route.landings[e.i];
+      if (L && this.head[L.side] >= L.s) this.burst(e.i, e.hard, e.loose);
+    }
+    for (let n = 0; n < this.fronts.length; n++) {
+      const f = this.fronts[n], e = this.time - f.t0;
+      if (e < 0 || e > f.span || this.time >= f.until) continue;
+      const s = f.from + (f.to - f.from) * (e / f.span);
+      if (s >= this.head[f.side]) continue;
+      // A steady rate, as whole sparks: those due by the end of this step less those due by its start.
+      const first = Math.floor((e - dt) * f.rate) + 1, last = Math.floor(e * f.rate);
+      for (let k = Math.max(0, first); k <= last; k++) this.frontSpark(f.side, s, 900 + n, k);
+    }
 
     this.moveSparks(dt);
     this.moveLoose(dt);
@@ -217,6 +226,43 @@ export class StreamSim {
       f++;
     }
     this.forkCount = f;
+  }
+
+  // What a landing throws when it is struck, hard being how hard against a leading end at full pace.
+  private burst(i: number, hard: number, loose = 1): void {
+    const L = this.route.landings[i], sparks = emitter(i, SPARKS), shards = emitter(i, SHARDS), forks = emitter(i, FORKS);
+    // The two sides arrive at the same pace, so each landing past the test shot's two throws a number of its own.
+    const own = i < 2 ? 1 : 0.8 + 0.4 * hash(i, 53, this.seed);
+    // A contact is as strong as the arrival, and a lighter one throws its share of a full strike.
+    for (let k = Math.round((S.loose.burst[0] + S.loose.burst[1] * hard) * L.force * own * loose); k > 0; k--) this.throwShard(i, this.count[shards]++, (0.35 + hard) * L.force);
+    for (let k = Math.round((20 + 90 * hard) * L.force); k > 0; k--) this.landSpark(i, this.count[sparks]++, 1 + hard);
+    for (let k = Math.round(4 * L.force); k > 0; k--) this.landFork(i, forks, this.count[forks]++);
+    this.hitAt[i] = this.time;
+    this.hit[i] = (0.4 + 0.6 * hard) * L.force;
+  }
+
+  // Strikes to come, each at a time, on a landing, so hard. Those already past are not struck again.
+  setEvents(events: { t: number; i: number; hard: number; loose: number }[]): void {
+    this.events = events;
+    this.next = events.findIndex((e) => e.t > this.time);
+    if (this.next < 0) this.next = events.length;
+  }
+
+  // Fronts that run down a side through a stream that is already there, each from a time, between two places along
+  // the side, taking so long, until it is cut off. Each sheds sparks as it goes, as a leading end does.
+  setFronts(fronts: { side: number; t0: number; until: number; from: number; to: number; span: number; rate: number }[]): void {
+    this.fronts = fronts;
+  }
+
+  private frontSpark(b: number, s: number, emitter: number, k: number): void {
+    const K = S.sparks, u = this.route.unit, r = (j: number) => this.rnd(emitter, k, j);
+    at(this.route.branches[b], s, tmp);
+    // Swept back along the way it came and out to one side, as a leading end's are when it is moving fast.
+    const side = r(0) < 0.5 ? -1 : 1, wide = (0.35 + r(1)) * side;
+    const dx = -tmp[2] * 1.1 - tmp[3] * wide, dy = -tmp[3] * 1.1 + tmp[2] * wide, len = Math.hypot(dx, dy) || 1;
+    const a = Math.atan2(dy / len, dx / len) + (r(2) + r(3) - 1) * 0.75;
+    const v = (K.speed[0] + (K.speed[1] - K.speed[0]) * r(4) * r(5)) * u * 1.3;
+    this.spark(tmp[0], tmp[1], Math.cos(a) * v, Math.sin(a) * v, K.life[0] + (K.life[1] - K.life[0]) * r(6) * r(7), 0.55 + 0.45 * r(8), 0);
   }
 
   private spark(x: number, y: number, vx: number, vy: number, life: number, heat: number, kind: number): void {
