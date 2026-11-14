@@ -5,21 +5,22 @@ import { hex } from '../config/palette';
 import { buildBench } from '../pieces/workbench/model';
 import { clock } from '../world/clock';
 import { Stage } from '../world/stage';
-import { BAY, DESK, EDGE, KINDS, LAND, PLACES, buildDesk, buildPC, type Kind } from './desks';
+import { BAY, DESK, EDGE, LAND, PLACES, SCREEN, buildDesk } from './desks';
 import { materials } from './materials';
 
-// The stage the three rough desks are shown on: one desk at a time, the things on it borrowed from the carried
-// workbench as stand ins, the PC under the far end, and the desk's own lights. The view is the one the fuller draft
-// of Skills is drawn from: from the front left and above.
+// The stage the rough desk is shown on: the bench, the scene on it, the PC under its far end, and the desk's own
+// lights. The lamp, the tablet with its pencil and the camera are borrowed from the carried workbench as stand ins.
+// The view is the one the fuller draft of Skills is drawn from: from the front left and above.
 
 const D2R = Math.PI / 180, M = DESK.SCALE;
 export const REST = { az: -24, el: 30 };
 const AIM = new THREE.Vector3(0.02, -0.23, 0);
 const FOV = 20;
+// What is still borrowed from the carried workbench. Its monitor, keyboard and mouse are not: this draft has its own.
+const CARRIED = ['lamp', 'tablet', 'camera', 'lens', 'cap'];
 let areaLib = false;
 
 export interface DeskScene {
-  show(kind: Kind): void;
   // A line of light along the front edge, standing in for the stream.
   stream(on: boolean): void;
   // The cursor's light, as places across and down the host, 0 to 1.
@@ -29,7 +30,7 @@ export interface DeskScene {
   dispose(): void;
 }
 
-export async function mountDesks(host: HTMLElement, tier: Tier, first: Kind): Promise<DeskScene> {
+export async function mountDesk(host: HTMLElement, tier: Tier): Promise<DeskScene> {
   const canvas = document.createElement('canvas');
   canvas.setAttribute('aria-hidden', 'true');
   canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block';
@@ -49,26 +50,25 @@ export async function mountDesks(host: HTMLElement, tier: Tier, first: Kind): Pr
   floor.receiveShadow = true;
   floor.userData.noWire = true;
   root.add(floor);
-  const desks = new Map<Kind, THREE.Group>();
-  for (const k of KINDS) { const g = buildDesk(k.id, mats); g.visible = k.id === first; root.add(g); desks.set(k.id, g); }
-  root.add(buildPC(mats));
+  const desk = buildDesk(mats);
+  root.add(desk.root);
 
-  // The things on the desk are the carried workbench's, moved to their places on a longer top.
+  // The lamp, the tablet and the camera are the carried workbench's, moved to their places on a longer top.
   const bench = await buildBench();
   for (const tl of bench.tools) {
     const to = PLACES[tl.name];
-    if (!to) continue;
+    if (!to || !CARRIED.includes(tl.name)) continue;
     bench.root.remove(tl.group);
-    tl.group.position.set(to[0], 0, to[1]);
+    tl.group.position.set(to[0], tl.name === 'lamp' || tl.name === 'lens' ? 0 : 4, to[1]);
     tl.group.rotation.set(0, to[2] * D2R, 0);
     root.add(tl.group);
   }
   bench.root.traverse((o) => { if (o instanceof THREE.Mesh) o.geometry.dispose(); });
   bench.lampBulb.color.setRGB(1, 0.82, 0.63).multiplyScalar(2.4);
-  for (const m of bench.screens) m.emissiveIntensity = m.name === 'tabletScreen' ? 0.32 : 0.55;
+  for (const m of bench.screens) m.emissiveIntensity = 0.32;
 
   // The desk's own lights: the lamp over the tablet, the monitor, and the PC's ember under the far end.
-  const [lx, lz] = PLACES.lamp, [mx, mz] = PLACES.monitor;
+  const [lx, lz] = PLACES.lamp;
   const deskLamp = new THREE.SpotLight(0xffc98f, 5.5, 0, 58 * D2R, 0.85, 2);
   deskLamp.position.set((lx + 190) * M, 438 * M, (lz + 196) * M);
   deskLamp.target.position.set((lx + 430) * M, 0, (lz + 330) * M);
@@ -79,15 +79,15 @@ export async function mountDesks(host: HTMLElement, tier: Tier, first: Kind): Pr
   deskLamp.shadow.radius = 5;
   deskLamp.shadow.camera.near = 0.05;
   deskLamp.shadow.camera.far = 3;
-  const monLight = new THREE.RectAreaLight(0xffc48a, 3.4, 0.704, 0.396);
-  monLight.position.set(mx * M, 345 * M, (mz + 15) * M);
-  monLight.lookAt(mx * M, 150 * M, (mz + 525) * M);
-  const pcLight = new THREE.PointLight(hex('flame'), 0.35, 1.6, 2);
-  pcLight.position.set((BAY.l - 60) * M, (-DESK.H + 300) * M, ((BAY.back + BAY.front) / 2) * M);
+  const monLight = new THREE.RectAreaLight(0xffc48a, 2.4, (SCREEN.w - 20) * M, (SCREEN.h - 30) * M);
+  monLight.position.set(SCREEN.x * M, (SCREEN.low + SCREEN.h / 2) * M, (SCREEN.z + 24) * M);
+  monLight.lookAt(SCREEN.x * M, 120 * M, (SCREEN.z + 560) * M);
+  const pcLight = new THREE.PointLight(hex('flame'), 0.4, 1.8, 2);
+  pcLight.position.set((BAY.l - 90) * M, (-DESK.H + 280) * M, ((BAY.back + BAY.front) / 2 + 60) * M);
   const rim = new THREE.RectAreaLight(0xffe0c4, 8, 2.6, 0.6);
   rim.position.set(1.4, 1.2, -1.8);
   rim.lookAt(0, -0.1, 0);
-  const fill = new THREE.RectAreaLight(0xffd9b8, 8, 2.6, 1.4);
+  const fill = new THREE.RectAreaLight(0xffd9b8, 5.5, 2.6, 1.4);
   fill.position.set(-1.6, 0.9, 2.4);
   fill.lookAt(0, -0.3, 0);
   s.add(deskLamp, deskLamp.target, monLight, pcLight, rim, fill, new THREE.HemisphereLight(0x4a3526, 0x120c08, 0.55));
@@ -95,9 +95,9 @@ export async function mountDesks(host: HTMLElement, tier: Tier, first: Kind): Pr
   // The stream's stand in: a line that comes down onto the front edge, runs it to the near end and falls away, with a
   // long low light beside it so the edge and the timber show what the stream's light does to them.
   const line = new THREE.MeshBasicMaterial({ color: new THREE.Color(hex('hot')).multiplyScalar(2.6) });
-  const streams = new Map<Kind, THREE.Group>();
-  for (const k of KINDS) {
-    const [y, z] = EDGE[k.id], end = -DESK.W / 2 - (k.id === 'rail' ? 150 : 0);
+  const flow = new THREE.Group();
+  {
+    const [y, z] = EDGE, end = -DESK.W / 2;
     const path = new THREE.CurvePath<THREE.Vector3>();
     const v = (x: number, yy: number, zz = z) => new THREE.Vector3(x, yy, zz);
     path.add(new THREE.LineCurve3(v(LAND, 1500), v(LAND, y + 8)));
@@ -114,14 +114,12 @@ export async function mountDesks(host: HTMLElement, tier: Tier, first: Kind): Pr
     const glow = new THREE.RectAreaLight(hex('flame'), 2.6, (LAND - end) * M, 0.05);
     glow.position.set(((LAND + end) / 2) * M, (y + 14) * M, (z + 12) * M);
     glow.lookAt(((LAND + end) / 2) * M, (y - 60) * M, (z - 300) * M);
-    const lit = new THREE.Group();
-    lit.add(g, glow);
-    lit.visible = false;
-    s.add(lit);
-    streams.set(k.id, lit);
+    flow.add(g, glow);
+    flow.visible = false;
+    s.add(flow);
   }
 
-  let view = { ...REST }, lampUV = { x: 0.62, y: 0.3 }, alive = true, seen = true, shown = first, flowing = false;
+  let view = { ...REST }, lampUV = { x: 0.62, y: 0.3 }, alive = true, seen = true;
   const right = new THREE.Vector3(), up = new THREE.Vector3(), back = new THREE.Vector3();
   const place = () => {
     const a = view.az * D2R, e = view.el * D2R;
@@ -142,16 +140,14 @@ export async function mountDesks(host: HTMLElement, tier: Tier, first: Kind): Pr
     if (clock.isFrozen() && !stale) return;
     stale = false;
     const t = clock.now();
-    bench.monitor.draw(t);
     bench.tablet.draw(t);
+    desk.glow.uniforms.uTime.value = t;
     place();
     stage.render();
   };
   stage.resize();
   place();
-  for (const g of desks.values()) g.visible = true;
   await stage.warm();
-  for (const [k, g] of desks) g.visible = k === first;
   const watch = new ResizeObserver(() => { stage.resize(); stale = true; frame(); });
   watch.observe(host);
   const near = new IntersectionObserver((es) => { seen = es.some((e) => e.isIntersecting); });
@@ -160,8 +156,7 @@ export async function mountDesks(host: HTMLElement, tier: Tier, first: Kind): Pr
   frame();
 
   return {
-    show(kind) { shown = kind; for (const [k, g] of desks) g.visible = k === kind; for (const [k, g] of streams) g.visible = flowing && k === kind; stale = true; frame(); },
-    stream(on) { flowing = on; for (const [k, g] of streams) g.visible = on && k === shown; stale = true; frame(); },
+    stream(on) { flow.visible = on; stale = true; frame(); },
     lamp(x, y) { if (Math.abs(x - lampUV.x) + Math.abs(y - lampUV.y) > 0.002) stale = true; lampUV = { x, y }; },
     turn(az, el = 0) { view = az === null ? { ...REST } : { az: REST.az + az, el: Math.min(62, Math.max(6, REST.el + el)) }; stale = true; frame(); },
     dispose() { alive = false; off(); watch.disconnect(); near.disconnect(); stage.dispose(); canvas.remove(); },

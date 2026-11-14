@@ -287,7 +287,6 @@
   transition-delay: 0s;
 }
 
-/* The tabs stand on the bar the stream runs along. */
 .tabs {
   position: absolute;
   z-index: 2;
@@ -295,6 +294,7 @@
   align-items: flex-end;
   gap: calc(var(--u) * 28);
   height: calc(var(--u) * 42);
+  border-bottom: 1px solid var(--line-strong);
 }
 
 .tab {

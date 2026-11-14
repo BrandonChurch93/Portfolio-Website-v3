@@ -2,6 +2,47 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · The bench picked, its second round, and About's stream behind him (Fable, web chat)
+
+**What Brandon said**
+
+- "I like what you did with the desk!" "My favorite desk is option A."
+- On the scene: the PC should look higher end, like his PC Builder's, of which he sent a screenshot. A large mat over about 80 percent of the desk, stopping before the monitor. An ultrawide in place of the monitor. The left of the desk looks vacant. No wire on the keyboard, and a gaming keyboard lit in the site's colors, with "something fun". A high end gaming mouse. A better camera. "I feel like we could definitely improve on the scene quite a bit in multiple different areas."
+- On About: he does not want the stream running over the tabs, and he does want it behind his picture, as what makes the glow. He offered a route (along the bottom of the last skill, then hooking round behind him) and asked for suggestions.
+- All of it is in `BRIEF.md`, Settled, word for word, pushed before anything was built. It reverses two things written an hour earlier from "everything looks good here": the stream beside him, and the tabs on the stream's bar.
+
+**What was built**
+
+- `/lab/desk`: the bench alone, with a mat, an ultrawide, a new keyboard and mouse, and a PC laid out after his screenshot. `BRIEF.md`, Open 29.
+- `/lab/skills-about-draft`: Work's rail under the last row of skills carries the stream to over his head, and it drops behind him. `BRIEF.md`, Open 28.
+- His PC Builder's repository was read, not changed: `/home/claude/brandonchurch93/pc-desktop-builder` in this workspace. Nothing was copied from it into this repo.
+
+**What was looked at**
+
+- The bench from the page's view at twice the size, from lower down, and with the stream's line on. The draft's About with the whole line drawn. A live page and a timed scroll of the draft: everything comes on in order and goes away again on the way back, the pulse runs down the rail and in behind him. No errors.
+
+**What went wrong on the way**
+
+- For three rounds the new keys looked ivory and the new mouse white. The carried keyboard and mouse were being placed on top of them, because the new ones' places had been added under the same names. `CARRIED` in `scene.ts` now says what is borrowed.
+- A point light 60 mm over the keys burned them out. It is gone, and the keys light the mat by a soft patch.
+- The PC's glass mirrored the cursor's light as one hard spot that bloomed over the whole case.
+
+**What is not right yet, plainly**
+
+- Every new thing on the desk is a rough form, and the camera he found wanting is still the old one.
+- The PC is a stand in. The real one is his PC Builder's, and bringing it over is part of the build, not of this draft.
+- About's rail is gentler than Work's, so the stream crosses it fast.
+- Not seen on his machine: the wave on the keys moving, the fans, the drag.
+
+**Waiting on him**
+
+- His word on About's new route.
+- His word on the list of ten things to be built for real (`BRIEF.md`, Open 29). Then the kit for an Opus builder.
+
+**For the next session**
+
+- The PC Builder's 3D is in `src/world/parts/` (one file a kind of part), `src/world/layout/cases/` (six cases: cub, vitrine, vent, atrium, bulwark, gantry), `src/world/kit/` (geometry, materials, textures, blades, labels) and `src/world/light/` (per LED lighting). Three 0.187, all in code, no model files. Which case and preset his screenshot shows has not been looked up.
+
 ## 2026-11-14 · Study 23: three rough desks, and his approval of the second round (Fable, web chat)
 
 **What Brandon said**

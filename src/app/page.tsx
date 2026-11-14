@@ -13,12 +13,12 @@ export default function Index() {
       <h2 className={styles.group}>Studies</h2>
       <ul className={styles.list}>
         <li>
-          <Link href="/lab/desk">Three rough desks</Link>
-          <span className={styles.minor}>Phase 3 · the desk for Skills, made new: three directions built rough in 3D, to pick one from. Drag to look round each</span>
+          <Link href="/lab/desk">The desk, a rough draft</Link>
+          <span className={styles.minor}>Phase 3 · the desk for Skills, made new: your pick, the bench, with a mat, an ultrawide, a gaming keyboard and mouse and a PC like your PC Builder&rsquo;s roughed in. Drag to look round it</span>
         </li>
         <li>
           <Link href="/lab/skills-about-draft">Skills and About, a fuller draft</Link>
-          <span className={styles.minor}>Phase 3 · the pair with your words and the motion roughed in, second round: the rows under a desk with a real desk&rsquo;s proportions, the skills from your résumé, your portrait beside About&rsquo;s words, and a switch for how the stream passes you</span>
+          <span className={styles.minor}>Phase 3 · the pair with your words and the motion roughed in, third round: the rows under the desk, the skills from your résumé, your portrait beside About&rsquo;s words, and the stream passing behind you</span>
         </li>
         <li>
           <Link href="/lab/skills-about">Skills and About, as a pair</Link>

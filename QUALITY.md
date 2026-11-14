@@ -394,6 +394,9 @@ What the build taught:
 - At the page's size a desk 2 m long is drawn at less than half a pixel to the millimetre. Grain 3 mm apart is not seen at all, and the timber needs figure tens of millimetres wide to read as wood.
 - A light's width and height are not scaled with the group that holds it. A strip light given in millimetres under a root scaled by 0.001 was a kilometre long and washed the picture out.
 - In the web chat one frame of a lit scene takes seconds. A page that draws every frame starves the still script, so the stage draws only when something changed while the clock is held, and stills are taken with `--t`.
+- When a new thing takes an old thing's place, check the old one is gone. The carried keyboard and mouse were still being put where the new ones stood, and for three rounds the new keys looked ivory.
+- A small light close to a surface burns it white: light falls off with the square of the distance. Light a small lit thing with its own glow and a soft patch on what it stands on.
+- Glass that mirrors the cursor's light throws one hard spot that blooms over the whole thing. Keep a glass panel's shine low.
 
 ## A derby of reliefs
 

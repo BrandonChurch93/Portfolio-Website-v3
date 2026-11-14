@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { KINDS, type Kind } from '../../desk-drafts/desks';
 import type { DeskScene } from '../../desk-drafts/scene';
 import { registry } from '../../hooks/registry';
 import { lamp } from '../../lamp/lamp';
@@ -9,12 +8,11 @@ import { tiers } from '../../world/tier';
 import { clock } from '../../world/clock';
 import styles from './DeskDrafts.module.css';
 
-// Study 23: three rough desks for Skills, to choose a direction from. ?desk=bureau or rail opens on that one,
-// ?stream=1 draws a line for the stream along the front edge, ?turn=40,10 turns the view by those degrees, and ?ui=0
-// hides the switches.
+// Study 23: the desk for Skills as a rough draft. He picked A · Bench from three, and this is its second round, with
+// the scene on it roughed in after his notes. ?stream=1 draws a line for the stream along the front edge,
+// ?turn=40,10 turns the view by those degrees, and ?ui=0 hides the switches.
 export function DeskDrafts() {
   const host = useRef<HTMLDivElement>(null), scene = useRef<DeskScene | null>(null), drag = useRef<{ x: number; y: number; az: number; el: number } | null>(null), turned = useRef({ az: 0, el: 0 });
-  const [kind, setKind] = useState<Kind>('bench');
   const [ready, setReady] = useState(false);
   const [ui, setUi] = useState(true);
   const [moved, setMoved] = useState(false);
@@ -23,17 +21,16 @@ export function DeskDrafts() {
   useEffect(() => {
     const h = host.current;
     if (!h) return;
-    const q = new URLSearchParams(location.search), want = KINDS.find((k) => k.id === q.get('desk'))?.id ?? 'bench';
+    const q = new URLSearchParams(location.search);
     const turn = (q.get('turn') ?? '').split(',').map(Number);
     const flowing = q.get('stream') === '1';
     if (q.get('ui') === '0') setUi(false);
-    setKind(want);
     setStream(flowing);
     lamp.bind();
     tiers.detect();
     let alive = true, off: (() => void) | null = null;
-    void registry.track(import('../../desk-drafts/scene').then(async ({ mountDesks }) => {
-      const made = await mountDesks(h, tiers.get(), want);
+    void registry.track(import('../../desk-drafts/scene').then(async ({ mountDesk }) => {
+      const made = await mountDesk(h, tiers.get());
       if (!alive) { made.dispose(); return; }
       scene.current = made;
       made.stream(flowing);
@@ -47,25 +44,25 @@ export function DeskDrafts() {
     return () => { alive = false; off?.(); scene.current?.dispose(); scene.current = null; };
   }, []);
 
-  const pick = (k: Kind) => { setKind(k); scene.current?.show(k); };
   const flow = (on: boolean) => { setStream(on); scene.current?.stream(on); };
   const reset = () => { turned.current = { az: 0, el: 0 }; scene.current?.turn(null); setMoved(false); };
-  const now = KINDS.find((k) => k.id === kind)!;
 
   return (
     <main className={styles.main}>
       <header className={styles.head}>
         <p className={styles.label}>Study 23 · The desk</p>
-        <h1 className={styles.heading}>Three rough desks</h1>
+        <h1 className={styles.heading}>The bench, second round</h1>
         <p className={styles.lede}>
-          Three directions for the desk in Skills, each built rough in 3D at the size and the angle the fuller draft drew it.
-          Pick one, or say what to take from each. Drag to look round it.
+          Your pick, A, with the scene on it roughed in after your notes: a mat over most of the top, an ultrawide, a
+          wireless gaming keyboard and a gaming mouse lit in the site’s colors, and a PC laid out like the build you sent.
+          Drag to look round it.
         </p>
         <ul className={styles.caveats}>
-          <li>For choosing a direction: the desk’s build, how its bronze front edge carries the stream, where its two drawers sit. Not its finish or its detail.</li>
-          <li>The same in all three: a dark timber top 2 m long, the knob you chose on both drawers, the PC under the far end.</li>
-          <li>The monitor, lamp, keyboard, mouse, iPad with its pencil and camera are the old build’s, set here as stand ins. They are made new with the desk.</li>
-          <li>The PC is a stand in for your PC Builder’s case. The stream is a plain line you can switch on, to see which edge it rides. The headphones and a phone are not here.</li>
+          <li>For agreeing what is on the desk and where, before it is built for real. Still rough: nothing here has its finish or its detail.</li>
+          <li>New in this round, each a rough form: the mat, the monitor, the keyboard, the mouse and the PC.</li>
+          <li>Still the old build’s, as stand ins: the lamp, the iPad with its pencil, the camera with its lens and cap. They are made new with the desk.</li>
+          <li>The PC is a stand in too. The real one is your PC Builder’s own case and parts brought over from its code, lit in the site’s colors.</li>
+          <li>The stream is a plain line you can switch on. The headphones and a phone are not here.</li>
         </ul>
       </header>
 
@@ -85,17 +82,13 @@ export function DeskDrafts() {
           onPointerUp={() => { drag.current = null; }}
           onPointerCancel={() => { drag.current = null; }}
         />
-        {!ready && <p className={styles.wait}>Building the desks</p>}
-        <p className={styles.caption}><b>{now.letter} · {now.name}</b> {now.line}</p>
+        {!ready && <p className={styles.wait}>Building the desk</p>}
+        <p className={styles.caption}><b>A · Bench</b> A joiner’s bench. A thick slab on two trestles, a wedged stretcher, a bronze angle screwed over the front edge.</p>
       </div>
 
       {ui && (
         <div className={styles.panel}>
           <div className={styles.controls}>
-            <div className={styles.group} role="group" aria-label="Which desk">
-              <span className={styles.groupName}>Desk</span>
-              {KINDS.map((k) => <button key={k.id} type="button" className={styles.choice} aria-pressed={kind === k.id} onClick={() => pick(k.id)}>{k.letter} · {k.name}</button>)}
-            </div>
             <div className={styles.group} role="group" aria-label="A line standing in for the stream">
               <span className={styles.groupName}>Stream</span>
               <button type="button" className={styles.choice} aria-pressed={!stream} onClick={() => flow(false)}>Off</button>

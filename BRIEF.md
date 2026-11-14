@@ -1288,6 +1288,17 @@ Each line has Fable's recommendation where there is one. None of these are rules
         - What is not right yet, plainly: the bar is level, so the stream crosses it in about half a second however slowly the page is scrolled. The right side under his portrait and the left side under a short tab's words are empty. The lamp's head is a box.
         - Stills: `reference/studies/41-skills-about-draft-2-*.jpg`.
     - **His verdict on the second round (Nov 14): "Yeah, everything looks good here."** The stream beside him, the desk's proportions and the résumé's skills are in Settled. So are the five calls on the desk, with the Apple Pencil added beside his iPad Pro.
+    - **His second thoughts on About (Nov 14), in Settled, About:** the stream is to pass behind his portrait, which is what lights him, and to stay clear of the tabs. He asked for a route.
+    - **The third round, built on his word (Nov 14). In front of him.** The same page, `/lab/skills-about-draft`. Fable's route, which is his own idea given something to carry it:
+        - Work's rail comes back as the line between Skills and About. Its high end is at the left under the last row of skills, where the stream comes down beside the rows. It slopes down to the right at about 8 degrees and ends over his head.
+        - The stream lands on the rail's high end, runs it, falls off its end and drops behind his portrait. It is not seen behind him. The light behind him comes up as it passes, and it comes out under him where the picture has faded away, and goes on down toward Contact.
+        - The title, the tabs and the words hang under the rail's high end. The stream is never on them. The tabs are plain, with a lit line under the one that is chosen.
+        - His portrait stands beside the words as before, with its top just under the rail's low end.
+        - What comes on, in order: About's title where the stream lands on the rail, the tabs and words as it runs over them, his portrait as it nears the rail's end, the light behind him as it drops behind his head.
+        - A change of tab still sends a pulse: down the rail from over the tab that was pressed and in behind him. Fable's call, his to cut if that too is in the way.
+        - Gone from the page: the level bar the tabs stood on, the stream between the words and him, and the switch between the two.
+        - What is not right yet, plainly: the rail's 8 degrees is gentler than Work's 12, so the stream covers its 940 units in about 0.8 seconds on a quick scroll and falls behind the page. Under a short tab's words the left side is empty.
+        - Stills: `reference/studies/43-skills-about-draft-3-*.jpg`.
     - **The desk as a 3D piece: five calls put to him, with Fable's pick for each. Answered Nov 14: all five agreed, with the pencil added** (Settled, Skills). How it is made: in code in this repo, as his PC Builder was, or modeled through Blender on his gaming PC and loaded as a file (Open 5). What sits on it: the monitor, lamp, keyboard and mouse, a tablet and his camera, nothing new. The desk itself: a dark timber top, a bronze front edge that carries the stream, two drawers with the knob he chose. The PC under it: his PC Builder's case brought over, lit in the site's ember. The headphones: their own small piece by the title, the site's own design. Fable's pick is the first of each. After his answer: three rough desks to choose from. His `3d-asset-playbook` skill is the method.
 
 29. **The desk as a 3D piece: three rough desks (Nov 14). In front of him. Nothing in it is picked.** At `/lab/desk`, Study 23, built in the web chat on his word: "everything looks good that you mentioned", after Fable had said the three rough desks came next.
@@ -1304,6 +1315,31 @@ Each line has Fable's recommendation where there is one. None of these are rules
     - Not judged: how it runs on his machine and on an iPad. The web chat draws in software, where one frame takes seconds.
     - What comes after his pick: the desk is designed in full and built as a piece in `src/pieces/`, with the things on it made new. `CLAUDE.md` gives the building of a contained 3D object to Opus, from a kit, with Fable designing and judging. His `3d-asset-playbook` skill is the method.
     - Stills: `reference/studies/42-desk-*.jpg`.
+    - **His pick and his notes (Nov 14), in Settled, Skills:** the desk is A · Bench. The PC is to look like his PC Builder's, the top gets a large mat and an ultrawide, the keyboard is wireless and a gaming one lit in the site's colors, the mouse a gaming one, the camera better.
+    - **The second round, built on his word (Nov 14). In front of him.** The same page, `/lab/desk`, now the bench alone, with the scene on it roughed in:
+        - **The mat.** Dark hide with a line of copper stitching, 1600 by 478 mm, 80 percent of the top's length, from near the front edge back to just short of the monitor's foot. The iPad, pencil, keyboard, mouse and camera stand on it.
+        - **The ultrawide.** 38 inches, 900 mm across, curved, on a neck and a flat foot. Its screen is drawn shapes for an editor and the city: a stand in.
+        - **The keyboard.** A 75 percent board with no cable: a dark metal case, dark caps with six in copper, a dial, a mark on every cap lit from under it, and a wave of the site's light that crosses the keys. Lines of light along its foot, and a glow on the mat round it.
+        - **The mouse.** A low sculpted shell, a lit wheel, two thumb buttons, a line of light round its foot.
+        - **The PC.** Laid out after his screenshot, in the site's colors: a glass case with two chambers, three fans behind the front glass, three in the floor, one at the back, a cooler with a lit ring, four sticks of memory, a graphics card with a lit bar and fins, sleeved cables, a line of light round the foot. Larger than the first: 290 wide, 476 tall, 470 deep.
+        - Still the carried workbench's, as stand ins: the lamp, the iPad with its pencil, the camera with its lens and cap. The camera he found wanting is not changed in this round.
+        - B and C are out of the page and the code. Their stills are `reference/studies/42-desk-*`.
+    - **His PC Builder's code was read (Nov 14).** `github.com/BrandonChurch93/PC-Desktop-Builder`, public. Its 3D is all written in code on the same library as this site: six cases and forty three parts, about 7,600 lines for the cases, parts, materials and lights. So the real PC can be brought over as it is, with its lights set to the site's colors, and not modeled again.
+    - **What Fable proposes is built for real, for him to agree. Nothing here is ruled.**
+        1. The bench as picked, in full: joinery, end grain, wear, the bronze angle and its screws, the two drawers and the knob.
+        2. The mat, as above.
+        3. The ultrawide, with a screen that shows real work and is not a flat picture.
+        4. The keyboard, as above. The fun in it, Fable's idea: when the stream lands on the desk the keys flare outward from the landing, and the keys nearest the cursor's light glow.
+        5. A gaming mouse.
+        6. His iPad Pro with the pencil beside it, carrying no maker's mark.
+        7. A camera of now: a full frame mirrorless body with a fast lens, a second lens and a cap.
+        8. A desk lamp, made new.
+        9. His PC Builder's own case and parts, the build in his screenshot, brought over from its code and lit in the site's colors, with its fans turning.
+        10. The headphones, their own small piece by the title.
+        - Not built: anything else on the desk, and a phone.
+        - How: a kit for an Opus builder in Claude Code on his Mac, which builds the piece into `src/pieces/` behind the piece contract, with Fable as partner and judge. `CLAUDE.md`, Who does what.
+    - What is not right yet in the second round, plainly: every new thing is a rough form. The keyboard's caps are plain boxes and its marks plain bars. The mouse is one shell. The PC cannot be read part by part at the page's size. The mat is featureless. The lit screen is a flat picture, which `QUALITY.md` fails in anything finished.
+    - Stills: `reference/studies/43-desk-a-second-round*.jpg`.
 
 ## Dropped
 

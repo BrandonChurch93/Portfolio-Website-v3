@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { hex } from '../config/palette';
-import { metal, shade, withObj } from '../world/surface';
+import { dielectric, metal, shade, withObj } from '../world/surface';
 
 // Surfaces for the rough desks, worked out in the shader from the model's own millimetres.
 
@@ -58,17 +58,34 @@ export interface Mats {
   steel: THREE.Material;
   coal: THREE.Material;
   glass: THREE.Material;
+  // Lights, from the palette: the deep ember, the flame, and the pale hot.
+  deep: THREE.MeshBasicMaterial;
   ember: THREE.MeshBasicMaterial;
+  hot: THREE.MeshBasicMaterial;
+  hide: THREE.Material;
+  shell: THREE.Material;
+  cap: THREE.Material;
+  key: THREE.Material;
+  blade: THREE.Material;
+  board: THREE.Material;
   floor: THREE.Material;
 }
 
 export function materials(): Mats {
   const coal = new THREE.MeshPhysicalMaterial({ color: 0x100d0b, roughness: 0.62 });
   coal.name = 'coal';
-  const glass = new THREE.MeshPhysicalMaterial({ color: 0x0c0806, roughness: 0.04, metalness: 0, transparent: true, opacity: 0.22, clearcoat: 1, clearcoatRoughness: 0.03, depthWrite: false });
+  const glass = new THREE.MeshPhysicalMaterial({ color: 0x0c0806, roughness: 0.14, metalness: 0, transparent: true, opacity: 0.2, specularIntensity: 0.3, depthWrite: false });
   glass.name = 'glass';
   const ember = new THREE.MeshBasicMaterial({ color: new THREE.Color(hex('flame')).multiplyScalar(1.15) });
   ember.name = 'ember';
+  const deep = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xc4480a).multiplyScalar(1.05) });
+  deep.name = 'deep';
+  const hot = new THREE.MeshBasicMaterial({ color: new THREE.Color(hex('hot')).multiplyScalar(1.1) });
+  hot.name = 'hot';
+  const blade = new THREE.MeshPhysicalMaterial({ color: 0x1a120c, roughness: 0.35, transparent: true, opacity: 0.82 });
+  blade.name = 'blade';
+  const board = new THREE.MeshPhysicalMaterial({ color: 0x0a0806, roughness: 0.5, metalness: 0.4 });
+  board.name = 'board';
   // The floor is the page's own ground: it takes light and shadow under the desk and is gone a little way out, so
   // the piece never sits in a rectangle.
   const floor = shade(new THREE.MeshStandardMaterial({ color: 0x0e0a08, roughness: 0.94 }), 'desk-floor', {
@@ -83,7 +100,11 @@ export function materials(): Mats {
     edge: metal({ name: 'desk-edge', color: hex('copper'), rough: 0.22, brush: 'x', tarnish: 0.2, patina: BROWN }),
     bronze: metal({ name: 'desk-bronze', color: hex('bronze'), rough: 0.34, brush: 'x', tarnish: 0.55, patina: BROWN }),
     cast: metal({ name: 'desk-cast', color: hex('copper'), rough: 0.3, brush: 'none', tarnish: 0.7, patina: BROWN, cast: 0.7 }),
-    steel: metal({ name: 'desk-steel', color: 0x4a4038, rough: 0.42, brush: 'y', tarnish: 0.3, patina: BROWN }),
-    coal, glass, ember, floor,
+    steel: metal({ name: 'desk-steel', color: 0x1d1916, rough: 0.5, brush: 'none', tarnish: 0.1, patina: BROWN }),
+    hide: dielectric('desk-hide', 0x191310, 0.78, { sheen: 0.35, vary: 0.1, scale: 0.02 }),
+    shell: dielectric('desk-shell', 0x201a16, 0.5, { vary: 0.04, sheen: 0.4 }),
+    key: dielectric('desk-key', 0x0b0908, 0.86, { vary: 0.03 }),
+    cap: dielectric('desk-cap', hex('copper'), 0.5, { vary: 0.05 }),
+    coal, glass, ember, deep, hot, blade, board, floor,
   };
 }

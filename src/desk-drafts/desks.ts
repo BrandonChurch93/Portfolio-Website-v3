@@ -2,28 +2,25 @@ import * as THREE from 'three';
 import { Builder, at, cyl, lathe, rbox, xf } from '../world/build';
 import type { Mats } from './materials';
 
-// Three rough desks for Skills, to choose a direction from. Millimetres, under a root scaled by 0.001. The top's
-// surface is y = 0, its front edge is at z = D / 2 and the viewer stands at +z. Every one keeps what is settled: a
-// dark timber top 2 m long, a bronze front edge that carries the stream, two drawers with the knob he chose, and room
-// under the far end for the PC.
+// The desk for Skills as a rough draft: A · Bench, which he picked from three, with the scene on it roughed in after
+// his notes. Millimetres, under a root scaled by 0.001. The top's surface is y = 0, its front edge is at z = D / 2 and
+// the viewer stands at +z.
 export const DESK = { W: 2000, D: 780, H: 740, SCALE: 0.001 } as const;
 const { W, D, H } = DESK;
 const FRONT = D / 2, FLOOR = -H;
 
-export type Kind = 'bench' | 'bureau' | 'rail';
-export const KINDS: { id: Kind; letter: string; name: string; line: string }[] = [
-  { id: 'bench', letter: 'A', name: 'Bench', line: 'A joiner’s bench. A thick slab on two trestles, a wedged stretcher, a bronze angle screwed over the front edge.' },
-  { id: 'bureau', letter: 'B', name: 'Bureau', line: 'An antique writing table. A thin top in a bronze rim, drawers in the frieze, tapered legs in bronze shoes.' },
-  { id: 'rail', letter: 'C', name: 'Rail', line: 'Made like the Work section’s hardware. A knife edged slab on steel frames, with Work’s own rail and Blades along the front.' },
-];
-
-// Where the stream rides each desk's front edge: how far above the top, and how far out from the middle.
-export const EDGE: Record<Kind, [y: number, z: number]> = { bench: [3.6, FRONT + 1], bureau: [4.6, FRONT - 7], rail: [5.2, FRONT + 27] };
+// Where the stream rides the front edge, on the corner of the bronze angle: how far above the top, and how far out
+// from the middle.
+export const EDGE: [y: number, z: number] = [3.6, FRONT + 1];
 // Where it lands on that edge, measured from the middle of the desk. The fuller draft has it at 1.12 m from the left.
 export const LAND = 120;
 
-// Where the PC stands under the far end, so each desk leaves it room.
-export const BAY = { l: 500, r: 720, back: -210, front: 270, h: 500 } as const;
+// Where the PC stands under the far end.
+export const BAY = { l: 440, r: 730, back: -205, front: 265, h: 492 } as const;
+// The desk mat: most of the top, from near the front edge back to just short of the monitor's foot.
+export const MAT = { w: 1600, d: 478, x: 0, z: 124, h: 4 } as const;
+// The ultrawide: 38 inches, curved, its foot behind the mat.
+export const SCREEN = { x: -60, z: -262, w: 900, h: 384, low: 118, curve: 1800 } as const;
 
 // A flat slab with rounded corners: w along x, d along z, from y = -h up to y = 0.
 function slab(w: number, d: number, r: number, h: number, bev = 2): THREE.BufferGeometry {
@@ -38,18 +35,6 @@ function slab(w: number, d: number, r: number, h: number, bev = 2): THREE.Buffer
   g.translate(0, bev - h, 0);
   return g;
 }
-
-// A length of one section along x. The section is given as places across z and up y.
-function run(section: [z: number, y: number][], x0: number, x1: number): THREE.BufferGeometry {
-  const s = new THREE.Shape(section.map(([z, y]) => new THREE.Vector2(-z, y)));
-  const g = new THREE.ExtrudeGeometry(s, { depth: x1 - x0, bevelEnabled: false });
-  g.rotateY(Math.PI / 2);
-  g.translate(x0, 0, 0);
-  return g;
-}
-
-// A square leg that tapers: side a at the top, b at the foot.
-const taper = (a: number, b: number, h: number) => new THREE.CylinderGeometry(a / Math.SQRT2, b / Math.SQRT2, h, 4, 1).rotateY(Math.PI / 4);
 
 // The knob he chose for the sleeping card, as a thing: a stem, a rolled rim, a ring of beads, a moulding, and a
 // domed face with a rosette, eight petals over eight leaves round a boss. It stands out from a face that looks at +z.
@@ -78,7 +63,7 @@ function screwAt(b: Builder, M: Mats, x: number, y: number, z: number): void {
   b.add(rbox(7.6, 0.9, 0.8, 0.2), M.coal, at(x, y, z + 1.3));
 }
 
-// A: the joiner's bench.
+// The joiner's bench.
 function bench(b: Builder, M: Mats): void {
   const T = 64;
   b.add(slab(W, D, 5, T, 3.5), M.top);
@@ -108,135 +93,231 @@ function bench(b: Builder, M: Mats): void {
   }
 }
 
-// B: the antique writing table.
-function bureau(b: Builder, M: Mats): void {
-  const T = 30, IN = 57, top = -T, aH = 104;
-  b.add(slab(W - 16, D - 16, 4, T, 1.5), M.top);
-  for (const z of [-FRONT + 7, FRONT - 7]) b.add(rbox(W, 37, 14, 5), M.edge, at(0, -15, z));
-  for (const x of [-W / 2 + 7, W / 2 - 7]) b.add(rbox(14, 37, D, 5), M.edge, at(x, -15, 0));
-  for (const z of [-FRONT + 14, FRONT - 14]) b.add(rbox(W - 60, 9, 9, 3), M.bronze, at(0, -39, z));
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) b.add(rbox(48, 45, 48, 9), M.cast, at(sx * (W / 2 - 19), -15.5, sz * (FRONT - 19)));
-  for (const z of [-FRONT + IN, FRONT - IN]) b.add(rbox(W - 2 * IN - 74, aH, 22, 2), M.top, at(0, top - aH / 2, z));
-  for (const x of [-W / 2 + IN, W / 2 - IN]) b.add(rbox(22, aH, D - 2 * IN - 74, 2), M.cross, at(x, top - aH / 2, 0));
-  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-    const x = sx * (W / 2 - IN), z = sz * (FRONT - IN);
-    b.add(rbox(76, aH + 8, 76, 3), M.post, at(x, top - (aH + 8) / 2, z));
-    b.add(rbox(88, 15, 88, 4), M.cast, at(x, top - aH - 15, z));
-    const fall = H - T - aH - 22 - 62;
-    b.add(taper(72, 40, fall), M.post, at(x, top - aH - 22 - fall / 2, z));
-    b.add(taper(48, 34, 56), M.cast, at(x, FLOOR + 34, z));
-    b.add(cyl(21, 6, 24), M.cast, at(x, FLOOR + 3, z));
-    if (sz > 0) knob(b, M, x, top - aH / 2 - 4, z + 38, 0.82, false);
-  }
-  // Two drawers in the frieze, each in a bronze bead.
-  const z = FRONT - IN;
-  for (const x of [-640, -210]) {
-    b.add(rbox(400, 82, 20, 2), M.top, at(x, top - aH / 2, z + 5));
-    for (const y of [-43, 43]) b.add(rbox(410, 4, 5, 1.4), M.bronze, at(x, top - aH / 2 + y, z + 14.5));
-    for (const dx of [-203, 203]) b.add(rbox(4, 90, 5, 1.4), M.bronze, at(x + dx, top - aH / 2, z + 14.5));
-    knob(b, M, x, top - aH / 2, z + 15, 0.9);
-  }
+// The mat: a dark hide with a line of copper stitching just inside its edge.
+function mat(b: Builder, M: Mats): void {
+  const { w, d, x, z, h } = MAT;
+  b.add(slab(w, d, 16, h, 1), M.hide, at(x, h, z));
+  for (const dz of [-d / 2 + 7, d / 2 - 7]) b.add(rbox(w - 40, 0.7, 1.3, 0.3), M.edge, at(x, h + 0.2, z + dz), { shadow: false });
+  for (const dx of [-w / 2 + 7, w / 2 - 7]) b.add(rbox(1.3, 0.7, d - 40, 0.3), M.edge, at(x + dx, h + 0.2, z), { shadow: false });
 }
 
-// The Blade, Work's finial: a flat leaf that comes to a point, lying along x.
-function blade(len: number, tall: number, thick: number): THREE.BufferGeometry {
-  const s = new THREE.Shape();
-  s.moveTo(0, -tall * 0.34);
-  s.quadraticCurveTo(len * 0.22, -tall * 0.56, len * 0.42, -tall * 0.3);
-  s.lineTo(len, 0);
-  s.lineTo(len * 0.42, tall * 0.3);
-  s.quadraticCurveTo(len * 0.22, tall * 0.56, 0, tall * 0.34);
-  const g = new THREE.ExtrudeGeometry(s, { depth: thick - 3, bevelEnabled: true, bevelThickness: 1.5, bevelSize: 1.5, bevelSegments: 2, curveSegments: 10 });
-  g.translate(0, 0, -(thick - 3) / 2);
+// Bends a flat thing that faces +z into the monitor's curve, its ends coming toward the viewer.
+function curve(g: THREE.BufferGeometry, r: number): THREE.BufferGeometry {
+  const p = g.getAttribute('position');
+  for (let i = 0; i < p.count; i++) {
+    const a = p.getX(i) / r, z = p.getZ(i);
+    p.setXYZ(i, (r - z) * Math.sin(a), p.getY(i), r - (r - z) * Math.cos(a));
+  }
+  g.computeVertexNormals();
   return g;
 }
 
-// C: the rail desk.
-function rail(b: Builder, M: Mats): void {
-  const T = 40;
-  b.add(run([[-FRONT, 0], [FRONT, 0], [FRONT, -13], [FRONT - 30, -T], [-FRONT, -T]], -W / 2, W / 2), M.top);
-  // Work's rail along the front: a bar on standoffs, a Blade at each end.
-  const z = FRONT + 27, y = -6.5;
-  b.add(cyl(10.5, W + 40, 28).rotateZ(Math.PI / 2), M.edge, at(0, y, z));
-  for (let i = 0; i < 6; i++) {
-    const x = -W / 2 + 100 + i * ((W - 200) / 5);
-    b.add(cyl(5.5, 22, 16).rotateX(Math.PI / 2), M.bronze, at(x, y, FRONT + 10));
-    b.add(cyl(9, 3, 20).rotateX(Math.PI / 2), M.bronze, at(x, y, FRONT + 1.5));
-    b.add(new THREE.SphereGeometry(13.5, 20, 14), M.bronze, at(x, y, z));
+// What the ultrawide shows: an editor beside a drawing of the city, as plain shapes. A stand in for a real screen.
+function screenTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = 2560; c.height = 1072;
+  const g = c.getContext('2d')!;
+  const ink = ['#f4ede5', '#e3a567', '#f78e1e', '#96897b', '#c9803d'];
+  g.fillStyle = '#0a0705'; g.fillRect(0, 0, c.width, c.height);
+  g.fillStyle = '#140d09'; g.fillRect(0, 0, c.width, 54); g.fillRect(0, 0, 300, c.height);
+  for (let i = 0; i < 4; i++) { g.fillStyle = i === 1 ? '#2a1a0f' : '#1a110b'; g.fillRect(320 + i * 230, 8, 210, 46); g.fillStyle = ink[3]; g.fillRect(340 + i * 230, 26, 110 + (i % 2) * 40, 10); }
+  for (let i = 0; i < 22; i++) { g.fillStyle = i === 6 ? ink[2] : '#3a2a1f'; g.fillRect(36 + (i % 5 === 0 ? 0 : 28), 90 + i * 40, 120 + ((i * 53) % 110), 12); }
+  let seed = 7;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for (let row = 0; row < 23; row++) {
+    const y = 96 + row * 40, indent = [0, 1, 2, 2, 3, 2, 1, 1, 2, 3, 3, 2, 1, 0, 0, 1, 2, 2, 3, 2, 1, 1, 0][row];
+    g.fillStyle = '#4a3a2c'; g.fillRect(332, y + 2, 26, 10);
+    if (row === 13) continue;
+    let x = 400 + indent * 44;
+    for (let k = 0, n = 2 + Math.floor(rnd() * 4); k < n; k++) { const w = 50 + rnd() * 190; g.fillStyle = ink[Math.floor(rnd() * ink.length)]; g.globalAlpha = 0.9; g.fillRect(x, y, w, 14); x += w + 18; }
+    g.globalAlpha = 1;
   }
-  for (const s of [-1, 1]) b.add(blade(150, 54, 11), M.cast, xf({ p: [s * (W / 2 + 14), y, z], r: [0, s < 0 ? Math.PI : 0, 0] }));
-  // Two frames of flat steel bar, a beam between them at the back, bronze pads under the feet.
-  for (const s of [-1, 1]) {
-    const x = s * 870;
-    for (const pz of [-300, 300]) b.add(rbox(18, 652, 70, 3), M.steel, at(x, -T - 326, pz));
-    b.add(rbox(18, 48, 720, 4), M.steel, at(x, FLOOR + 24 + 4, 0));
-    b.add(rbox(18, 46, 670, 3), M.steel, at(x, -T - 23, 0));
-    for (const pz of [-330, 330]) b.add(cyl(24, 5, 24), M.bronze, at(x, FLOOR + 2.5, pz));
-    for (const pz of [-300, 300]) for (const py of [-T - 23, FLOOR + 28]) b.add(cyl(6, 22, 16).rotateZ(Math.PI / 2), M.bronze, at(x, py, pz));
-  }
-  b.add(rbox(1722, 60, 30, 3), M.steel, at(0, -T - 30, -262));
-  // Two drawers, one over the other, in a steel case hung under the slab.
-  const cx = -600, w = 420, hh = 300, front = FRONT - 44;
-  b.add(rbox(w, hh, 520, 4), M.steel, at(cx, -T - hh / 2, front - 260));
-  for (const i of [0, 1]) {
-    const dy = -T - 9 - 68 - i * 144;
-    b.add(rbox(w - 16, 136, 18, 2), M.top, at(cx, dy, front + 6));
-    knob(b, M, cx, dy, front + 15);
-  }
+  g.fillStyle = '#100a07'; g.fillRect(1560, 54, 1000, c.height - 54);
+  g.strokeStyle = ink[2]; g.lineWidth = 3;
+  for (let i = 1; i <= 5; i++) { g.globalAlpha = 1 - i * 0.15; g.beginPath(); g.ellipse(2060, 700, i * 76, i * 26, 0, 0, Math.PI * 2); g.stroke(); }
+  g.globalAlpha = 1;
+  for (let i = -4; i <= 4; i++) { const h = 330 - Math.abs(i) * 58 + ((i * 37) % 30); g.fillStyle = i === 0 ? ink[1] : ink[2]; g.globalAlpha = i === 0 ? 1 : 0.75; g.fillRect(2060 + i * 30 - 7, 690 - h, 14, h); }
+  g.globalAlpha = 1;
+  g.fillStyle = '#2a1a0f'; g.fillRect(0, c.height - 34, c.width, 34);
+  g.fillStyle = ink[2]; g.fillRect(24, c.height - 23, 150, 10);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
 }
 
-// The PC under the far end, as a stand in: his PC Builder's case is brought over for the real piece. A dark case with
-// a glass side toward the viewer, three fans behind the front, and what is inside lit in the site's ember.
+// The ultrawide monitor: a curved panel on a neck and a flat foot.
+function monitor(b: Builder, M: Mats, glass: THREE.Material): void {
+  const { x, z, w, h, low, curve: r } = SCREEN, mid = low + h / 2, put = (g: THREE.BufferGeometry, m: THREE.Material, dz = 0, opts?: { shadow?: boolean; uv?: 'keep' }) => b.add(curve(g, r), m, at(x, mid, z + dz), opts);
+  put(new THREE.BoxGeometry(w, h, 13, 48, 1, 1), M.coal);
+  put(new THREE.BoxGeometry(w * 0.5, h * 0.62, 30, 24, 1, 1), M.steel, -18);
+  put(new THREE.PlaneGeometry(w - 14, h - 26, 48, 1).translate(0, 6, 6.9), glass, 0, { shadow: false, uv: 'keep' });
+  put(new THREE.BoxGeometry(46, 3, 2, 4, 1, 1).translate(0, -h / 2 + 7, 7), M.ember, 0, { shadow: false });
+  b.add(rbox(64, low + 150, 26, 6), M.steel, xf({ p: [x, (low + 150) / 2, z - 34], r: [-0.07, 0, 0] }));
+  b.add(slab(330, 210, 26, 9, 1.5), M.steel, at(x, 9, z + 4));
+}
+
+// A 75 percent gaming keyboard, wireless: a low metal case, dark caps with a few in copper, a dial, and light under
+// the keys that runs across them as a wave.
+function keyboard(b: Builder, M: Mats, glow: THREE.Material, halo: THREE.Material, x: number, z: number): void {
+  const U = 19.05, tilt = xf({ p: [x, MAT.h, z], r: [0.06, 0, 0] }), on = (m: THREE.Matrix4) => m.clone().premultiply(tilt);
+  const rows: number[][] = [
+    Array(14).fill(1),
+    [...Array(13).fill(1), 2, 1],
+    [1.5, ...Array(12).fill(1), 1.5, 1],
+    [1.75, ...Array(11).fill(1), 2.25, 1],
+    [2.25, ...Array(10).fill(1), 1.75, 1, 1],
+    [1.25, 1.25, 1.25, 6.25, 1, 1, 1, 1, 1, 1],
+  ];
+  const w = 16 * U, d = 6 * U;
+  b.add(rbox(w + 22, 17, d + 22, 5), M.steel, on(at(0, 8.5, 0)));
+  b.add(rbox(w + 4, 1, d + 4, 0.4), glow, on(at(0, 17.4, 0)), { shadow: false });
+  b.add(rbox(w + 16, 1.6, 2.4, 0.6), M.ember, on(at(0, 1.2, d / 2 + 11.4)), { shadow: false });
+  for (const s of [-1, 1]) b.add(rbox(2.4, 1.6, d + 16, 0.6), M.ember, on(at(s * (w / 2 + 11.4), 1.2, 0)), { shadow: false });
+  b.add(new THREE.PlaneGeometry(w + 240, d + 230).rotateX(-Math.PI / 2), halo, at(x, MAT.h + 0.4, z), { shadow: false, uv: 'keep' });
+  rows.forEach((row, r) => {
+    let u = 0;
+    row.forEach((k, i) => {
+      const cx = -w / 2 + (u + k / 2) * U, cz = -d / 2 + (r + 0.5) * U;
+      const lit = (r === 0 && i === 0) || (r === 3 && i === 12) || (r === 4 && i === 12) || (r === 5 && i >= 7);
+      b.add(rbox(k * U - 2.4, 8.5, U - 2.4, 2.2), lit ? M.cap : M.key, on(at(cx, 22.2, cz)));
+      // The mark on each cap is lit from under it.
+      if (!lit) b.add(rbox(Math.min(k * U - 10, 26), 0.4, 6.4, 0.2), glow, on(at(cx, 26.6, cz - 1.5)), { shadow: false });
+      u += k;
+    });
+  });
+  b.add(cyl(12, 13, 32), M.edge, on(at(w / 2 - U, 24.5, -d / 2 + U / 2)));
+  b.add(new THREE.TorusGeometry(12.6, 1, 8, 40).rotateX(Math.PI / 2), M.ember, on(at(w / 2 - U, 18.6, -d / 2 + U / 2)), { shadow: false });
+}
+
+// Stacked outlines closed with a cap: a shell such as a mouse.
+function shell(secs: { y: number; a: number; b: number; n?: number; oz?: number }[], seg = 64): THREE.BufferGeometry {
+  const pos: number[] = [], idx: number[] = [];
+  for (const s of secs) for (let i = 0; i < seg; i++) {
+    const t = (i / seg) * 2 * Math.PI, c = Math.cos(t), sn = Math.sin(t), e = 2 / (s.n ?? 2.6);
+    pos.push(s.a * Math.sign(c) * Math.abs(c) ** e, s.y, (s.oz ?? 0) + s.b * Math.sign(sn) * Math.abs(sn) ** e);
+  }
+  for (let j = 0; j < secs.length - 1; j++) for (let i = 0; i < seg; i++) { const a = j * seg + i, c = j * seg + ((i + 1) % seg); idx.push(a, a + seg, c, c, a + seg, c + seg); }
+  const top = secs[secs.length - 1], ci = pos.length / 3, base = (secs.length - 1) * seg;
+  pos.push(0, top.y + 1.2, top.oz ?? 0);
+  for (let i = 0; i < seg; i++) idx.push(base + i, ci, base + ((i + 1) % seg));
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
+// A gaming mouse: a low sculpted shell that rises to the palm, a lit wheel, two thumb buttons, a line of light round
+// its foot.
+function mouse(b: Builder, M: Mats, halo: THREE.Material, x: number, z: number, turn: number): void {
+  const base = xf({ p: [x, MAT.h, z], r: [0, turn, 0] }), on = (m: THREE.Matrix4) => m.clone().premultiply(base);
+  b.add(shell([{ y: 0.5, a: 30, b: 61 }, { y: 6, a: 32.5, b: 63 }, { y: 16, a: 32, b: 61, oz: 1 }, { y: 26, a: 29, b: 54, oz: 5 }, { y: 34, a: 23, b: 42, oz: 10 }, { y: 39, a: 13, b: 24, oz: 15 }]), M.shell, base);
+  const foot = new THREE.CatmullRomCurve3(Array.from({ length: 40 }, (_, i) => { const t = (i / 40) * Math.PI * 2, c = Math.cos(t), sn = Math.sin(t), e = 2 / 2.6; return new THREE.Vector3(31.5 * Math.sign(c) * Math.abs(c) ** e, 2.4, 62 * Math.sign(sn) * Math.abs(sn) ** e); }), true);
+  b.add(new THREE.TubeGeometry(foot, 120, 1.5, 6, true), M.ember, base, { shadow: false });
+  b.add(new THREE.SphereGeometry(1, 16, 10), M.ember, on(xf({ p: [0, 37.2, 20], s: [6.5, 0.8, 9] })), { shadow: false });
+  b.add(new THREE.PlaneGeometry(250, 300).rotateX(-Math.PI / 2), halo, on(at(0, 0.4, 0)), { shadow: false, uv: 'keep' });
+  b.add(cyl(7.2, 7, 24).rotateZ(Math.PI / 2), M.coal, on(at(0, 27.5, -33)));
+  b.add(new THREE.TorusGeometry(7.4, 0.9, 8, 28).rotateY(Math.PI / 2), M.ember, on(at(0, 27.5, -33)), { shadow: false });
+  b.add(rbox(0.8, 3, 46, 0.3), M.coal, on(at(0, 27.4, -34)));
+  for (const dz of [-14, 6]) b.add(rbox(3, 6, 17, 1.4), M.coal, on(at(-31.4, 17, dz)));
+}
+
+// A fan: a square frame, a hub, seven swept blades and a ring of light. It faces along the axis named.
+function fan(b: Builder, M: Mats, x: number, y: number, z: number, axis: 'x' | 'y' | 'z', r: number, ring: THREE.Material): void {
+  const turn = axis === 'x' ? xf({ p: [x, y, z], r: [0, Math.PI / 2, 0] }) : axis === 'y' ? xf({ p: [x, y, z], r: [Math.PI / 2, 0, 0] }) : at(x, y, z);
+  const on = (m: THREE.Matrix4) => m.clone().premultiply(turn);
+  for (const s of [-1, 1]) { b.add(rbox(2 * r + 8, 5, 12, 1.5), M.coal, on(at(0, s * (r + 1.5), 0))); b.add(rbox(5, 2 * r + 8, 12, 1.5), M.coal, on(at(s * (r + 1.5), 0, 0))); }
+  b.add(cyl(r * 0.27, 12, 24).rotateX(Math.PI / 2), M.coal, turn);
+  for (let i = 0; i < 7; i++) { const a = (i / 7) * Math.PI * 2; b.add(rbox(r * 0.66, r * 0.34, 1.6, 0.6), M.blade, on(xf({ p: [Math.cos(a) * r * 0.58, Math.sin(a) * r * 0.58, 0], r: [0.35, 0, a + 0.5] })), { shadow: false }); }
+  b.add(new THREE.TorusGeometry(r - 1.5, 2.2, 8, 56), ring, on(at(0, 0, 4)), { shadow: false });
+}
+
+// The PC under the far end, laid out after the build in his PC Builder that he sent: a glass case with two chambers.
+// Fans over the top, in the front wall and in the floor, one at the back, a liquid cooler with a lit ring, four
+// sticks of memory, a graphics card with a lit bar, sleeved cables down to a shroud, a line of light round the foot.
+// Lit in the site's colors. A stand in: the real case is brought over from his PC Builder's own code.
 function pc(b: Builder, M: Mats): void {
-  const { l, r, back, front, h } = BAY, cx = (l + r) / 2, cz = (back + front) / 2, w = r - l, d = front - back, y0 = FLOOR + 14, y1 = FLOOR + h;
-  b.add(rbox(w, 6, d, 2), M.steel, at(cx, y0 + 3, cz));
-  b.add(rbox(w, 6, d, 2), M.steel, at(cx, y1 - 3, cz));
-  b.add(rbox(6, y1 - y0, d, 2), M.steel, at(r - 3, (y0 + y1) / 2, cz));
-  b.add(rbox(w, y1 - y0, 6, 2), M.steel, at(cx, (y0 + y1) / 2, back + 3));
-  b.add(rbox(w, y1 - y0, 8, 2), M.coal, at(cx, (y0 + y1) / 2, front - 4));
-  for (const z of [back + 40, front - 40]) for (const x of [l + 30, r - 30]) b.add(cyl(13, 14, 16), M.coal, at(x, FLOOR + 7, z));
-  // Four posts of the frame the glass sits in.
-  for (const z of [back + 5, front - 5]) b.add(rbox(8, y1 - y0, 10, 2), M.steel, at(l + 4, (y0 + y1) / 2, z));
-  // Inside: the shroud over the power supply, the board on the far wall, a cooler, memory, and the card lying across.
-  b.add(rbox(w - 14, 92, d - 16, 3), M.coal, at(cx, y0 + 52, cz));
-  b.add(rbox(4, 300, 300, 1), M.coal, at(r - 12, y0 + 260, cz - 20));
-  b.add(new THREE.TorusGeometry(38, 2.6, 10, 48).rotateY(Math.PI / 2), M.ember, at(r - 46, y0 + 330, cz - 40), { shadow: false });
-  b.add(cyl(30, 34, 32).rotateZ(Math.PI / 2), M.steel, at(r - 32, y0 + 330, cz - 40));
-  for (let i = 0; i < 4; i++) b.add(rbox(30, 120, 5, 1.5), i % 2 ? M.coal : M.ember, at(r - 30, y0 + 330, cz + 60 + i * 13), { shadow: false });
-  b.add(rbox(120, 52, 300, 5), M.steel, at(r - 76, y0 + 196, cz - 6));
-  b.add(rbox(3, 6, 250, 1), M.ember, at(r - 137, y0 + 206, cz - 6), { shadow: false });
-  for (let i = 0; i < 3; i++) b.add(new THREE.TorusGeometry(54, 4, 8, 56), M.ember, at(cx, y0 + 96 + 62 + i * 128, front + 0.6), { shadow: false });
-  b.add(rbox(1.5, y1 - y0 - 12, d - 12, 0.5), M.glass, at(l + 1.5, (y0 + y1) / 2, cz), { shadow: false });
+  const { l, r, back, front, h } = BAY, cz = (back + front) / 2, w = r - l, d = front - back, y0 = FLOOR + 16, y1 = FLOOR + h, cy = (y0 + y1) / 2, wall = r - 96;
+  for (const y of [y0 + 4, y1 - 4]) b.add(rbox(w, 8, d, 2.5), M.steel, at((l + r) / 2, y, cz));
+  b.add(rbox(6, y1 - y0, d, 2), M.steel, at(r - 3, cy, cz));
+  b.add(rbox(w, y1 - y0, 6, 2), M.steel, at((l + r) / 2, cy, back + 3));
+  for (const [x, z] of [[l + 5, back + 5], [l + 5, front - 5], [r - 5, front - 5]]) b.add(rbox(10, y1 - y0, 10, 2), M.steel, at(x, cy, z));
+  for (const z of [back + 44, front - 44]) for (const x of [l + 34, r - 34]) b.add(cyl(14, 16, 16), M.coal, at(x, FLOOR + 8, z));
+  b.add(rbox(w + 4, 2.4, 2.4, 1), M.ember, at((l + r) / 2, FLOOR + 17, front + 1.6), { shadow: false });
+  b.add(rbox(2.4, 2.4, d + 4, 1), M.ember, at(l - 1.6, FLOOR + 17, cz), { shadow: false });
+  // The wall between the chambers carries the board. In front of it, toward the glass: the cooler, the memory, the card.
+  b.add(rbox(5, y1 - y0 - 110, d - 70, 1), M.coal, at(wall, cy + 46, cz - 24));
+  b.add(rbox(3, 250, 250, 1), M.board, at(wall - 5, y1 - 150, cz - 30));
+  fan(b, M, wall - 22, y1 - 96, back + 74, 'x', 56, M.hot);
+  b.add(cyl(36, 26, 40).rotateZ(Math.PI / 2), M.steel, at(wall - 22, y1 - 118, cz - 26));
+  b.add(new THREE.TorusGeometry(31, 3, 10, 48).rotateY(Math.PI / 2), M.hot, at(wall - 36.5, y1 - 118, cz - 26), { shadow: false });
+  for (const dz of [-14, 14]) b.add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(wall - 30, y1 - 100, cz - 26 + dz), new THREE.Vector3(wall - 60, y1 - 52, cz - 60 + dz), new THREE.Vector3(wall - 70, y1 - 30, cz - 130)]), 24, 5.5, 10), M.coal);
+  for (let i = 0; i < 4; i++) { b.add(rbox(34, 132, 7, 2), M.coal, at(wall - 22, y1 - 122, cz + 34 + i * 11)); b.add(rbox(5, 126, 5, 1.5), M.ember, at(wall - 41, y1 - 122, cz + 34 + i * 11), { shadow: false }); }
+  b.add(rbox(132, 58, 322, 7), M.steel, at(wall - 72, y0 + 228, cz - 10));
+  b.add(rbox(3, 10, 250, 1), M.hot, at(wall - 139.5, y0 + 246, cz - 10), { shadow: false });
+  for (let i = 0; i < 26; i++) b.add(rbox(2, 22, 5, 0.6), i % 2 ? M.ember : M.deep, at(wall - 139, y0 + 214, cz - 126 + i * 9.4), { shadow: false });
+  for (let i = 0; i < 6; i++) b.add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([new THREE.Vector3(wall - 110, y0 + 232, cz + 60 + i * 7), new THREE.Vector3(wall - 142, y0 + 190, cz + 62 + i * 7), new THREE.Vector3(wall - 132, y0 + 130, cz + 64 + i * 7)]), 16, 3, 8), M.coal);
+  b.add(rbox(wall - l - 16, 5, d - 20, 1.5), M.steel, at((l + wall) / 2, y0 + 122, cz));
+  for (let i = 0; i < 3; i++) fan(b, M, l + 78, y0 + 30, back + 82 + i * 150, 'y', 62, i === 1 ? M.ember : M.deep);
+  b.add(rbox(wall - l - 20, 26, d - 40, 3), M.coal, at((l + wall) / 2, y1 - 26, cz));
+  b.add(rbox(wall - l - 30, 2.4, d - 60, 1), M.ember, at((l + wall) / 2, y1 - 40.5, cz), { shadow: false });
+  // The second chamber shows through the front glass: three fans one over another.
+  for (let i = 0; i < 3; i++) fan(b, M, (l + r) / 2, y0 + 86 + i * 150, front - 22, 'z', 64, i === 1 ? M.hot : M.ember);
+  b.add(rbox(1.5, y1 - y0 - 14, d - 18, 0.5), M.glass, at(l + 1.5, cy, cz), { shadow: false });
+  b.add(rbox(w - 18, y1 - y0 - 14, 1.5, 0.5), M.glass, at((l + r) / 2, cy, front - 1.5), { shadow: false });
 }
 
-const MAKE: Record<Kind, (b: Builder, M: Mats) => void> = { bench, bureau, rail };
+export interface Desk { root: THREE.Group; screen: THREE.MeshStandardMaterial; glow: THREE.ShaderMaterial }
 
-export function buildDesk(kind: Kind, M: Mats): THREE.Group {
-  const g = new THREE.Group();
-  g.name = kind;
-  const b = new Builder();
-  MAKE[kind](b, M);
-  b.build(g, kind);
-  return g;
+// The light a lit thing lays on the mat round it: brightest under it, gone by the plane's edge.
+function haloMaterial(): THREE.ShaderMaterial {
+  const m = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: 'varying vec2 vUv; void main(){ float d = length((vUv - 0.5) * 2.0); float a = 1.0 - smoothstep(0.25, 1.0, d); gl_FragColor = vec4(vec3(0.9, 0.36, 0.05) * a * a * 0.2, 1.0); }',
+  });
+  m.name = 'halo';
+  return m;
 }
 
-export function buildPC(M: Mats): THREE.Group {
-  const g = new THREE.Group();
-  g.name = 'pc';
-  const b = new Builder();
-  pc(b, M);
-  for (const mesh of b.build(g, 'pc')) if (mesh.material === M.glass) { mesh.renderOrder = 5; mesh.castShadow = false; }
-  return g;
+export function buildDesk(M: Mats): Desk {
+  const root = new THREE.Group();
+  const screen = new THREE.MeshStandardMaterial({ color: 0x050505, emissive: 0xffffff, emissiveMap: screenTexture(), emissiveIntensity: 0.62, roughness: 0.3 });
+  screen.name = 'screen';
+  // The light under the keys: a wave of the site's own light that crosses the board.
+  const glow = new THREE.ShaderMaterial({
+    uniforms: { uTime: { value: 0 } },
+    vertexShader: 'varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: 'uniform float uTime; varying vec3 vP; void main(){ float w = 0.5 + 0.5 * sin(vP.x * 0.021 - uTime * 1.9 + vP.z * 0.012); vec3 c = mix(vec3(0.42, 0.11, 0.0), vec3(1.0, 0.5, 0.1), w); c = mix(c, vec3(1.0, 0.78, 0.5), smoothstep(0.86, 1.0, w)); gl_FragColor = vec4(c, 1.0); }',
+  });
+  glow.name = 'glow';
+  const halo = haloMaterial();
+  const add = (name: string, make: (b: Builder) => void) => {
+    const g = new THREE.Group();
+    g.name = name;
+    const b = new Builder();
+    make(b);
+    for (const mesh of b.build(g, name)) if (mesh.material === M.glass) { mesh.renderOrder = 5; mesh.castShadow = false; } else if (mesh.material === screen || mesh.material === glow || mesh.material === halo) { mesh.receiveShadow = false; mesh.userData.noWire = true; if (mesh.material === halo) mesh.renderOrder = 3; }
+    root.add(g);
+  };
+  add('bench', (b) => bench(b, M));
+  add('mat', (b) => mat(b, M));
+  add('monitor', (b) => monitor(b, M, screen));
+  add('keyboard', (b) => keyboard(b, M, glow, halo, PLACES.keyboard[0], PLACES.keyboard[1]));
+  add('mouse', (b) => mouse(b, M, halo, PLACES.mouse[0], PLACES.mouse[1], PLACES.mouse[2] * (Math.PI / 180)));
+  add('pc', (b) => pc(b, M));
+  return { root, screen, glow };
 }
 
-// Where the things on the desk stand, in millimetres from the middle of the top, and how far each is turned.
+// Where the things on the desk stand, in millimetres from the middle of the top, and how far each is turned. The
+// lamp, the tablet with its pencil, the camera, the lens and its cap are the carried workbench's.
 export const PLACES: Record<string, [x: number, z: number, turn: number]> = {
-  lamp: [-820, -250, 0],
-  tablet: [-600, 140, 22],
-  monitor: [-110, -250, 0],
-  keyboard: [-130, 205, 0],
-  mouse: [185, 160, 9],
-  camera: [680, 70, -36],
-  lens: [820, -190, 0],
-  cap: [585, 255, 0],
+  lamp: [-868, -268, 0],
+  tablet: [-600, 150, 22],
+  keyboard: [-110, 196, 0],
+  mouse: [176, 190, 8],
+  camera: [640, 120, -36],
+  lens: [742, -30, 0],
+  cap: [520, 262, 0],
 };

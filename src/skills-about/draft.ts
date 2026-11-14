@@ -6,22 +6,18 @@ import { CX, LEAD, TAIL, type Cue } from './plan';
 // more room than the bars did, so the places are worked out again here.
 
 // Skills: the title and the headphones over the desk's far end, the desk, and the four rows across the page under it.
-export const SKILLS = { title: [820, 170] as Pt, phones: { x: 1168, y: 58 }, rows: { l: 190, r: 1310, t: FLOOR + 64 }, foot: 90 };
+export const SKILLS = { title: [820, 170] as Pt, phones: { x: 1168, y: 58 }, rows: { l: 190, r: 1310, t: FLOOR + 64 }, foot: 44 };
 
-// About: the title and the tabs stand on a level bar the stream runs along, the words hang under it, and his
-// portrait stands beside them. Two ways for the stream to pass him. beside: the bar is as long as the words, the
-// stream falls off its end between the words and him, and he is centered on the words. behind: the bar runs on
-// behind his shoulders, which puts him higher than the words, since his shoulders are low in the picture.
-// end is where the bar stops, fall where the stream comes down after it, x and top where his portrait is, top
-// from the bar.
-export type Pass = 'beside' | 'behind';
+// About: Work's rail comes back as the line between the two sections. Its high end is under the last row of skills
+// at the left, where the stream comes down, and it slopes down to the right to end over his head. The stream runs it,
+// falls off its end behind his portrait, which is what lights him, and comes out under him. The title, the tabs and
+// the words hang under the rail's high end, clear of the stream, and his portrait stands beside them, centered on
+// them. Everything is measured down from the top of About.
 export const ABOUT = {
-  h: 650,
-  bar: { y: 290, l: 96 },
-  words: { l: 190, w: 470 },
-  portrait: { w: 580, h: 562 },
-  beside: { end: 692, fall: 722, x: 764, top: -251, glow: [0.42, 40] as Pt },
-  behind: { end: 1344, fall: 1360, x: 750, top: -326, glow: [0.5, -10] as Pt },
+  h: 790,
+  rail: { ax: 116, ay: 16, bx: 1054, by: 146 },
+  words: { l: 190, w: 470, title: 167, tabs: 263, text: 334 },
+  portrait: { x: 764, y: 172, w: 580, h: 562 },
 };
 
 // Where the stream falls beside the rows and beside About's words.
@@ -35,9 +31,10 @@ export interface Draft { h: number; skills: number; about: number; line: Line; c
 
 // tops is how far under the first row each row starts and tall is how tall the four are together, both read off
 // the page, since a row is as tall as its words.
-export function draft(tops: number[], tall: number, pass: Pass): Draft {
-  const skills = LEAD, about = skills + SKILLS.rows.t + tall + SKILLS.foot, h = about + ABOUT.h + TAIL, bar = about + ABOUT.bar.y;
-  const A = ABOUT[pass], P = ABOUT.portrait;
+export function draft(tops: number[], tall: number): Draft {
+  const skills = LEAD, about = skills + SKILLS.rows.t + tall + SKILLS.foot, h = about + ABOUT.h + TAIL;
+  const R = ABOUT.rail, P = ABOUT.portrait;
+  const rail = (x: number): Pt => [x, about + R.ay + ((x - R.ax) / (R.bx - R.ax)) * (R.by - R.ay)];
   const on = (along: number): Pt => { const [x, y] = put(along, 0, 0); return [x, skills + y - 2]; };
   const land = on(BENCH.land), off = on(0.012);
   const l = line([
@@ -45,24 +42,25 @@ export function draft(tops: number[], tall: number, pass: Pass): Draft {
     [land[0], land[1], 6, 14],
     [off[0], off[1], 26],
     [SPINE, off[1] + 190, 90, 3],
-    [SPINE, bar, 6, 9],
-    [A.end - 2, bar, 24],
-    [A.fall, bar + 110, 70],
-    [A.fall, h, 0, 11],
+    [rail(SPINE)[0], rail(SPINE)[1], 6, 9],
+    [rail(R.bx - 4)[0], rail(R.bx - 4)[1], 20],
+    [R.bx + 18, about + R.by + 110, 60],
+    [R.bx + 18, h, 0, 9],
   ]);
   const cue = (id: string, [x, y]: Pt, back = 0): Cue => ({ id, at: nearest(l, x, y) - back, x, y });
   const level = (id: string, y: number): Cue => { const at = reach(l, y), [x] = point(l, at); return { id, at, x, y }; };
-  const him = pass === 'beside' ? [cue('portrait', [A.end, bar]), level('behind', bar + 90)] : [cue('portrait', [A.x + 60, bar]), cue('behind', [A.x + P.w / 2, bar])];
+  const behind = level('behind', about + P.y + 130);
   return {
-    h, skills, about, line: l, pulse: pass === 'beside' ? him[0].at + 60 : him[1].at,
+    h, skills, about, line: l, pulse: behind.at + 120,
     cues: [
       level('title', skills + 96),
       cue('near', land, NEAR),
       cue('desk', land),
       ...tops.map((t, i) => level(`row${i}`, skills + SKILLS.rows.t + t + NAME)),
-      cue('about', [SPINE, bar]),
-      cue('words', [ABOUT.words.l + 150, bar]),
-      ...him,
+      cue('about', rail(SPINE)),
+      cue('words', rail(ABOUT.words.l + 150)),
+      cue('portrait', rail(R.bx - 170)),
+      behind,
     ],
   };
 }
