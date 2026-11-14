@@ -607,6 +607,20 @@ Fable had told the builder to fix two things in D: a boss that "can read as a ri
 - **Where it can go further.** "I'm definitely open to improving it even further, by making it feel like the user is looking at something in real 3D space, because of how the interactions of the light reflect on it are hyperrealistic."
     - In exact terms: the light on the dial is why he picked it. More of that is welcome: the card reading as a real object in real space. Nothing that makes the light on it less real.
 
+**His look at the handle as Claude Code first built it (Nov 14)**
+
+Said to the web chat with a screenshot from his phone, while Claude Code was still working on the fourth pass. Nothing had been pushed, so the web chat has seen the screenshot and not the code.
+
+- "He changed the center. It no longer looks like a knob for a piece of furniture. He changed it to look more like a real dial. I don't like that it's off center and not protruding more from the background. Before it felt like an object poking out of the card, which is what made it so good. Now it looks like a slight raise."
+- In exact terms, three things are wrong with the handle as built:
+    1. It is off center. It belongs at the dead center of the card.
+    2. It barely stands off the card. In the study it read as an object poking out of the card. It has to stand at least that far off, and plainly.
+    3. It reads as part of a watch dial: flat rings round a small raised middle. It has to read as a knob from a piece of antique furniture.
+- What he thought he was getting, from two photographs he attached of antique cabinet knobs in aged bronze: a round head with a ring of beads at its rim and a flower in relief on its face, one with swirling petals and one a sunflower with a beaded middle, on a short stem with a flared foot. They are a shop's product photographs, so they are not in this repo, which is public.
+- In exact terms: the handle is a knob of that family, designed for this site and not copied from either photograph.
+- Everything else about D stands: the rays, the shadow that swings off the handle, the band of light.
+- Fable's part in it, said to him: the prompt told the builder to judge the blank against a photograph of a real engine turned dial. That may be what pulled the middle toward a watch part. Not confirmed, since the builder's report has not been seen.
+
 **The fourth pass on the Work page: the agreement for the build (Nov 13)**
 
 One round in Claude Code, on `/lab/work`. It takes in everything he has ruled since the third pass. He held every prompt until all of it was answered: "I only want to go to Claude Code once we have everything figured out that's open."
@@ -625,7 +639,7 @@ One round in Claude Code, on `/lab/work`. It takes in everything he has ruled si
 
 **The blank is a goal. The study is the floor to beat, not a drawing to copy**
 
-- What it has to be: an engine turned plate as a watchmaker turns a dial, in the site's bronze. Fine rays round the card's middle, the handle at the middle, the card's polished edge round it. The lights off the screen smear across the rays into fans, and the fans turn as the page scrolls, as the cursor's light moves beside the card, and as the stream comes near.
+- What it has to be: an engine turned plate as a watchmaker turns a dial, in the site's bronze. Fine rays round the card's middle, the handle at the dead center, the card's polished edge round it. The handle is a knob from antique furniture, not a part of a watch ("His look at the handle as Claude Code first built it", above). The lights off the screen smear across the rays into fans, and the fans turn as the page scrolls, as the cursor's light moves beside the card, and as the stream comes near.
 - Kept from the study, and only ever made better ("What he likes in D", above): the handle, with its depth, and the dark area that reads as a shadow and swings on the handle.
 - Where the builder can go further: the whole card reading as a real object in real space, by how the light behaves on it.
 - Fixed: nothing of the card's layout or content. The card's size and its edge. Rays about the middle, with the handle. The shadow.

@@ -2,6 +2,55 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · The handle on the blank, as first built: a prompt to revisit it (Fable, web chat)
+
+**What Brandon said.** His words are in `BRIEF.md`, The stream, "His look at the handle as Claude Code first built it".
+
+- Claude Code was still working on the fourth pass. He sent a screenshot of the sleeping card from his phone and two photographs of antique cabinet knobs.
+- The handle is off center, barely stands off the card, and looks like part of a watch dial. He wants a furniture knob that pokes out of the card, as the study's did.
+- He asked for a prompt to send once Claude Code has finished.
+
+**What Fable saw and did not see**
+
+- The screenshot only. Nothing was pushed, so the code and the builder's reasons have not been seen. No cause is confirmed.
+- In the screenshot the handle is rings round a small raised middle. A dark fan runs from it to the upper right, and two dark patches at the lower left do not join it. He did not mention the patches, so they are not in the prompt.
+- The two photographs are a shop's product pictures. They are not in the repo. He attaches them to the prompt himself.
+
+**What changed in the record. No code changed**
+
+- `BRIEF.md`: the section above, and a line in the fourth pass's goal for the blank.
+- `QUALITY.md`: a row in the table, and test 4 of "The fourth pass on the Work page" now says dead center, a furniture knob, and plainly off the card.
+- `PLAN.md`: Now.
+
+**Fable's calls in the prompt. His to cut**
+
+- The three ways a knob seen head on can show depth (its own shadow, the light across its dome and beads, the head shifting against the dial as the card turns) are Fable's wording for "poking out".
+- "Design our own in that family, do not copy either pattern."
+
+**The prompt Brandon was given, to send with the two photographs attached when the fourth pass is reported**
+
+```
+Revisit the handle at the middle of the sleeping card. It is not what I picked.
+
+What is wrong:
+1. It is off center. Put it at the dead center of the card.
+2. It barely stands off the card. In the study at /lab/work-blanks it read as an object poking out of the card, and that is what made it good. Now it reads as a slight raise.
+3. It has turned into part of a watch dial. I want a knob from a piece of antique furniture.
+
+What I want: an antique cabinet knob, like the two photos attached. A round head with a beaded rim and a flower in relief, on a stem, in aged bronze. Design our own in that family, do not copy either pattern. It has to stand well off the card. Seen head on, that depth has to come from its own shadow on the dial, the light across its dome and its beads, and the head shifting against the dial as the card turns. No smaller than the study's handle.
+
+Keep the rays, the shadow that swings off the handle, the band of light, and everything else in the fourth pass.
+
+The photos are for reference only. Do not commit them, the repo is public.
+
+Pull main first. BRIEF.md, The stream, "His look at the handle as Claude Code first built it" has this in full, and test 4 of QUALITY.md, "The fourth pass on the Work page", is updated. Show me a close still of the handle beside the study's, then build, commit, push and confirm the deploy.
+```
+
+**Half finished**
+
+- Claude Code's fourth pass, and then this.
+- His look at the whole page sketch at `/lab/home`, in the entry below.
+
 ## 2026-11-14 · Study 18: the whole page, sketched from the hero to the footer (Fable, web chat)
 
 **What Brandon said**
