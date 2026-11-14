@@ -2,6 +2,28 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · His verdict on the accomplishments derby, and Skills and About as a pair (Fable, web chat)
+
+**What Brandon said**
+
+- "I think we're misaligned on this section, I was envisioning something with more textural content and not badges. Let me put some more thought into this and let's skip this section for now and come back. Instead let's work on the skills and about section together since they will be attack on top of each other this should be a probably and the accomplishment section will bridge the gap between them and work. What are your thoughts?"
+- Fable's reading, said to him: "textural" as textual, "attack on top of each other" as stacked on top of each other. "This should be a probably" is not clear and was not guessed at.
+
+**What it means**
+
+- The accomplishments derby is not what he pictured. Nothing in it is picked or carried forward. He sees the section as mostly written content.
+- The section is set aside until he brings it back. When it does it sits between Work and Skills.
+- He wants Skills and About designed together. He asked for thoughts, so nothing is built.
+
+**What Fable told him**
+
+- Agrees with both.
+- The miss was Fable's: he was asked which layout and never what the section says.
+- A proposal for the pair, not agreed: a wireframe of Skills and About at the page's size on its own `/lab` page, with the real desk, the real portrait, the live site's words and a line for the stream, and a switch only where there is a real choice. The stream comes into Skills at the middle of the top, so the pair holds with or without a section between.
+- The choices that pair still carries, each said to him in bold again: the rows of skills beside the desk goes against "Skills read in wide rows, not narrow columns", and the desk drawn from its other side changes a piece he accepted. The rail across About is a new object.
+
+**Nothing built.** Only the record changed, and one line on the index page.
+
 ## 2026-11-14 · The knob on the blank, built (Fable, Claude Code on his Mac)
 
 At `/lab/work`, and alone at `/lab/work-blank`, Study 20. He has not seen it.

@@ -14,7 +14,7 @@ export default function Index() {
       <ul className={styles.list}>
         <li>
           <Link href="/lab/accomplishments">Accomplishments, a derby in three parts</Link>
-          <span className={styles.minor}>Phase 3 · three layouts for the section, the cards each is made of, and five ways to show the companies, in bronze relief</span>
+          <span className={styles.minor}>Phase 3 · three layouts for the section, the cards each is made of, and five ways to show the companies, in bronze relief. Set aside: not what he pictured</span>
         </li>
         <li>
           <Link href="/lab/home">The whole page, sketched</Link>
