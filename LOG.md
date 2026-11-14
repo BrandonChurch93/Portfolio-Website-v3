@@ -2,6 +2,28 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · The surge at 1.1 seconds (Fable, Claude Code on Brandon's Mac)
+
+**What was asked.** "In src/stream/config.ts, change the surge's length from 0.7 to 1.1. Build, commit and push." Only that was done.
+
+**What changed**
+
+- `length: 1.1` under `change` in `src/stream/config.ts`. Nothing else in the code.
+
+**Measured at 1.1 (one press 20 percent across the bar, 1440 wide, Software to Games, seconds after the press)**
+
+- The stream jumps at the bar's left end at 0.017 and its right at 0.117. The far end's delay is a share of the length, so it is longer too.
+- First row: lets go at 0.150 and 0.233, struck at 0.33 and 0.42. At 0.7 it was struck at 0.28 and 0.33.
+- Stones at 0.425 and 0.517. Second row struck at 0.77 and 0.86. Rail at 0.825 and 0.917. The meeting at 1.117, which is 1.100 after the left end jumped.
+- Riding shards: 0 vanished, 0 appeared, 0 jumped. Thrown shards at most 250 of 260. Sparks at most 743 of 900.
+- Three quick presses still end on the newest with the cards changing from the top down.
+
+**Not done, from the prompt in the entry below**
+
+- Test 2 was not judged again at 1.1: nobody has looked at whether the front can now be followed down the sides.
+- Nothing tuned against 0.7 was looked at or retuned: the swell and the sparks behind the front, how far ahead of the front the second row's card lets go, a second press while a surge is running.
+- The stills of `/lab/stream` and the buttons were not retaken. The change is one number that only the Work page's surge reads.
+
 ## 2026-11-13 · His look at the surge: the long one (Fable, web chat)
 
 **What Brandon said**

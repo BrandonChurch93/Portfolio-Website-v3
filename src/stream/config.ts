@@ -89,7 +89,7 @@ export const STREAM = {
   change: {
     // The surge takes this long from the bar to the meeting under the button, and the end of the bar further from
     // the press starts later by up to this share of that.
-    length: 0.7,
+    length: 1.1,
     lag: 0.14,
     // A card's change does not stretch with the surge. The old card is gone by out, dropping this far as it goes.
     // The new one starts up at in, from this far below, and the stream strikes it as it seats.
