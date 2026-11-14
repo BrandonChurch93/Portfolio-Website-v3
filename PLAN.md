@@ -45,7 +45,10 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **His word on the marks, and a derby (Nov 14):** he goes with Fable's recommendation, the companies' marks as one material and not a cloud of grey logos, and asked for a derby of the section: several layouts, several cards, several ways to show the marks
 - **In front of Brandon (Nov 14):** the accomplishments derby at `/lab/accomplishments`, Study 19, built in the web chat, in bronze relief. Three layouts (A · Slanted plates, B · Struck medals, D · Drawer fronts), seven cards, five ways to show the marks, and a switch between a polished and an antique finish. Fable recommends B, the beaded medal, the marks struck into one bar, Polished. Whether the section goes in at all is still his to say: it goes against "the site never repeats the résumé". `BRIEF.md`, Open 26
 - **His verdict on the accomplishments derby (Nov 14):** not what he pictured. He sees that section as mostly written content, not badges. It is set aside until he brings it back, and it will sit between Work and Skills. `BRIEF.md`, Open 26
-- **What he wants next (Nov 14):** Skills and About worked on together, because one sits directly on the other. He asked for Fable's thoughts. Fable agrees and proposed a wireframe of the pair at the page's size, with the stream coming in at the middle. Not started: waiting on his word. `BRIEF.md`, Open 16
+- **Agreed (Nov 14):** Skills and About are worked on as a pair, the stream comes into Skills at the middle, and a wireframe of the pair comes first. He wants Fable's proposal before anything is built
+- **His notes for the desk (Nov 14):** a longer desk to match the skills beside it, the PC under it, a pair of headphones hanging on the page near the skills. And a ruling: the 3D work is made new for this design, not recolored. `BRIEF.md`, Settled, 3D pieces, and Open 28
+- **Put to him (Nov 14):** Fable's proposal for the pair, `BRIEF.md`, Open 28. If he approves, the first thing built is a wireframe at `/lab/skills-about`, Study 21. Waiting on his word
+- **Built in Claude Code (Nov 14):** the fourth pass and the knob on the blank, at `/lab/work` and `/lab/work-blank`. He has not looked yet
 - **Next, once he has looked again:** his word on Open 26 and 27 and on the rest of the sketch, then the first section after Work is refined. Fable's proposed order: Skills, About, Contact and the footer, the hero
 - **His word on D (Nov 13):** the raised piece at the middle is a handle to him and stays as 3D as it is. The dark area reads as a shadow, is why he chose D, and stays. Both may only be made better. `BRIEF.md`, The stream, "What he likes in D, and what must not be lost"
 - **Going to Claude Code as one round, the fourth pass on `/lab/work`:** the stones' strike halved and scattered, the left path mirroring the right, the bolt only from the category bar to the meeting, no coloring of a picture at a strike, cards asleep whenever the stream is not on them, the engine turned blank lit by lights off the screen, its change as a band of light from the strike, nothing happening on a sleeping row at a press, and a lighter "Case study". `BRIEF.md`, The stream, "The fourth pass on the Work page". Its tests are in `QUALITY.md` under the same name. The prompt is in `LOG.md`, top entry, and replaces the one under "His look at the third pass, after the blank", which was never sent
@@ -143,7 +146,7 @@ Set aside, kept as records: the molten metal test shot at `/lab/pour`, its looks
 
 ## Phase 5 · The pieces in the page
 
-- [ ] Every piece moved to the new palette
+- [ ] Every piece made new for this design, not recolored (his word on the desk, Nov 14)
 - [ ] The city, with the opening using the whole screen
 - [ ] The workbench, sitting in the page and not in a box
 - [ ] The rocket

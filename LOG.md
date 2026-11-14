@@ -2,6 +2,34 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · Skills and About: his notes for the desk, and a proposal put to him (Fable, web chat)
+
+**What Brandon said**
+
+- "Your recommendation is sound. I also want to note we can increase the length of the desk to match the length of the skills content better, we can put the pc under the desk, and even hang a pair of headphones on the background near the skills section think air pods max. The 3d work itself needs to be redone to fit our new design not just recolored."
+- "What do your purpose? Once I hear your proposal and approve we can build." Read as: what do you propose.
+- "Also Claude code finished, I haven't tested out grabbing coffee will test soon." He pasted Claude Code's report on the knob and the fourth pass. It matches the entry below this one. He has not looked at either.
+
+**What went into the record**
+
+- Settled, 3D pieces: the 3D work is made new for this design, not recolored.
+- Open 16: the pair, the stream in at the middle and a wireframe first are agreed.
+- Open 28: his ideas for the desk, Fable's reading of them, and Fable's proposal for the pair.
+
+**What Fable proposed. Not approved**
+
+- `BRIEF.md`, Open 28, holds it in full. In short: the desk scene at the left as tall as the skills beside it (headphones on a hook, a long desk, the PC under it), the stream landing on the desk's near corner and running its front edge, the rows coming on one after another, then About with Work's own rail behind his shoulders.
+- First to be built if he approves: a wireframe at `/lab/skills-about`, Study 21. Claude Code's `/lab/work-blank` is Study 20.
+- The new desk is its own piece of work after the wireframe.
+- A small drawing of the layout was shown to him in the chat, to check the picture before building. It is not in the repo.
+
+**For whoever builds the wireframe**
+
+- The live site's words for the four competencies and the three About tabs have to be fetched from brandonchurchportfolio.com. They are not in `src/content/`. Use them as they stand. He rewrites the copy himself.
+- The page sketch's Skills and About are in `src/page-sketch/plan.ts` (`SKILLS`, `ABOUT`). The pair's wireframe is a new study and does not change `/lab/home`.
+
+**Nothing built.**
+
 ## 2026-11-14 · His verdict on the accomplishments derby, and Skills and About as a pair (Fable, web chat)
 
 **What Brandon said**
