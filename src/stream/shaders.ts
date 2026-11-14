@@ -384,6 +384,7 @@ uniform vec3 uMetalA, uMetalB, uFaceLit, uFlame, uHot, uPale;
 uniform vec3 uRough;          // of the metal, of the band, and how brushed the metal is
 uniform vec3 uFlare;          // how hard a leading end has just struck the card, 0 to 1, and where, from its center
 uniform float uThere;         // how much of the card is there, 0 to 1
+uniform float uAsleep;        // 1 while the card is a blank: what is lit here is the relief of a card that is not showing
 out vec4 frag;
 ${CLIP}${LIT}${plateEdge(false)}${NOISE}
 const float PI = 3.14159265;
@@ -442,7 +443,7 @@ void main(){
   float reach = 1.0 - smoothstep(-2.0, 2.0, sdBox(vAt - uWin.xy + over, uWin.zw, 0.5));
   vec3 print = uFaceLit * 1.5 * min(lit, ${PLATE_MOST.picture.toFixed(2)}) * (0.35 + 0.65 * reach) * (1.0 + grain * 0.1);
   vec3 col = mix(mix(metal, wash, face), print, picture);
-  frag = vec4(col * cov * uThere, 0.0);
+  frag = vec4(col * cov * uThere * (1.0 - uAsleep), 0.0);
 }`;
 
 // ---- the posts and the rail: the buttons' metal, standing in the page, for the stream to meet

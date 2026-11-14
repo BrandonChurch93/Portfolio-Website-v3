@@ -66,7 +66,7 @@ export const STREAM = {
     // the button its low end stops, how far past that end the stream still runs straight, and the turn off it.
     rail: { half: 9, in: 30, land: [27, 32] as [number, number], gap: 22, over: 4, off: [8, 30] as [number, number] },
     // How long a sleeping card takes to wake once the stream has struck it. Short: it is lit by the strike.
-    wake: 0.07,
+    wake: 0.1,
     // A project card's rim is rounded over, so its crest stands this far inside its outline, in the card's own
     // units. The stream takes the crest for the card's edge, and so lies on the rim and not over its shoulder.
     seat: 2.4,

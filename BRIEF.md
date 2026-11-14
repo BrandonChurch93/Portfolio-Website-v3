@@ -476,6 +476,16 @@ One round in Claude Code, on `/lab/work`. He had not sent either of the two prom
 - Not in it: a phone or any screen under 1100 px. The lunge. The top bar. Real projects for the other three categories. New pictures.
 - Its tests are in `QUALITY.md`: "When the category changes", tests 14 to 23, and "The path through Work as a bolt".
 
+**A sleeping card is a blank, with none of its content (Nov 13)**
+
+His look at the third pass: "the sleeping cards look really bad. I didn't actually want them to show like the content of what the card is actually going to have. Think of like a metal card, but it's completely blank. Maybe it has some designs on it. That would be cool, but I definitely don't want it to show like the content of what the card will have, like a generic placeholder that's like super shiny and smooth in our layout, without any content."
+
+- A sleeping card shows nothing the card will hold: no picture, no relief of the picture, no words, no band, no window.
+- It is a blank metal card in the card's place and at its size, smooth and shiny.
+- It may carry a design. Built, Fable's call and his to overturn: a fine line cut inside the edge and a sun cut at the middle, the stones' mark.
+- Still Fable's calls from before: under the pointer or with keyboard focus the card is awake and shows its content, a screen reader gets the words, and no card sleeps with reduced motion or under 1100 px.
+- The first build of it, the card's own picture cast as a relief with its words in copper, is dropped.
+
 **The third pass, built (Nov 13), waiting on his look**
 
 - At `/lab/work`, by Claude Code on his Mac. All seven are on the page. The switch between the bolt and the path as it was is at the foot of the screen, and `/lab/work?path=now` opens on the old one.
@@ -488,7 +498,7 @@ One round in Claude Code, on `/lab/work`. He had not sent either of the two prom
   - While a surge's front runs, the stream's core ahead of it is turned down to about a fifth, and comes back as the front passes. He asked to keep the stream's look, and for those 1.1 seconds this changes it. It is what made the front something the eye can follow: three rounds of reviewers could not pick the front out of a stream that was as bright ahead of it as behind. One number, `change.hush` in `src/stream/config.ts`, and at 0 the stream is as it was.
   - On the bolt each strike on a card and a stone is 1.2 times as hard as on the path as it was, with a brighter flash, so the strike after a straight approach is the stronger one. The path as it was is untouched.
 - Fable's calls in the agreements were built as written: a sleeping card wakes under the pointer or with focus, no card sleeps with reduced motion or under 1100 px, what lands on a sleeping card does not wake it, the burst where fronts meet throws no shards, and a later press still cuts an earlier surge off.
-- Calls made while building, none of them a rule, are in `LOG.md`, "The third pass on the Work page, built". The ones he is most likely to have a view on: a sleeping card's picture is cast as a low relief in bronze, its words rest at 64 percent in the card's copper, and it wakes in under a tenth of a second, at the strike. The bolt's strokes are fixed for a page and differ on the two sides. The budgets on his Mac went up to make room for the stones' strikes: thrown shards from 260 to 400, sparks from 900 to 1200.
+- Calls made while building, none of them a rule, are in `LOG.md`, "The third pass on the Work page, built". The ones he is most likely to have a view on: a sleeping card is a blank of polished bronze with a line and a sun cut into it (his ruling above), and it wakes in a tenth of a second, at the strike. The bolt's strokes are fixed for a page and differ on the two sides. The budgets on his Mac went up to make room for the stones' strikes: thrown shards from 260 to 400, sparks from 900 to 1200.
 - What is at the bar and what is not, with what the fresh reviewers said in four rounds, is in the same `LOG.md` entry. In short, the reviewers still fail: the bolt's top half (round the title and the bar it reads as a drawn outline), the front as a hard point, the sleeping card on a real screenshot, the waking, and the burst at the leading end.
 
 **How it is built**

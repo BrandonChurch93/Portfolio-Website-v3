@@ -293,7 +293,7 @@ uniform float uPush;         // how far the picture comes closer while the card 
 uniform vec3 uFace, uFaceLit;
 uniform vec3 uRamp[5];       // the tones a card's picture rests in, dark to light, linear
 ${card ? `uniform float uWarm;         // how far a strike of the stream has warmed a card's picture toward its own colors
-uniform float uAsleep;       // how far a card the stream has not reached is asleep: a blank of itself in bronze
+uniform float uAsleep;       // how far a card the stream has not reached is asleep: a blank of polished metal
 uniform sampler2D uLoop;` : `uniform sampler2D uLoop;`}     // a card's loop: the picture in motion, shown in place of it while the card is awake
 uniform float uLoopOn;
 out vec4 frag;
@@ -309,7 +309,14 @@ vec3 ramp(float l){
 vec3 rotX(vec3 v, float a){ float c = cos(a), s = sin(a); return vec3(v.x, c * v.y - s * v.z, s * v.y + c * v.z); }
 vec3 rotY(vec3 v, float a){ float c = cos(a), s = sin(a); return vec3(c * v.x + s * v.z, v.y, -s * v.x + c * v.z); }
 
-void main(){
+${card ? `// What is cut into a sleeping card's blank: a fine line inside its edge and a sun at its middle. 1 where it is cut.
+float blankMark(vec2 c, vec2 res, float edge, float s){
+  float r = length(c), a = atan(c.y, c.x), R = 0.105 * res.x;
+  float sun = min(abs(r - R), abs(r - R * 0.6));
+  if (r > R * 1.16 && r < R * 1.48) sun = min(sun, r * abs(sin(a * 8.0)) / 8.0);
+  return 1.0 - smoothstep(0.8 * s, 1.8 * s, min(abs(edge + 13.0 * s), sun));
+}
+` : ''}void main(){
   vec2 p = vec2(gl_FragCoord.x, uRes.y - gl_FragCoord.y);
   float d = sdBox(p - uRes * 0.5, uRes * 0.5 - uInset, uRad);
   float cov = clamp(0.5 - d, 0.0, 1.0);
@@ -476,11 +483,7 @@ ${card ? `    col = mix(col, faceCol * seat, ink);
     col = mix(col, uGlow * 1.3, metal2 * (1.0 - inRing) * smoothstep(0.1, 0.75, near));
   }
 
-${card ? `  // Asleep, a card's metal is not lit by the room: it rests dark, and only the cursor's own light brings it up.
-  float sleep = uAsleep;
-  float dim = mix(1.0, clamp(0.22 + 1.1 * fall, 0.0, 1.0), sleep);
-  col *= dim;
-` : ''}  if (uWinOn > 0.5){
+  if (uWinOn > 0.5){
     float dw = winD(p);
     float inside = clamp(-dw / (0.9 * uS) - 1.4, 0.0, 1.0);
     if (inside > 0.0){
@@ -525,29 +528,7 @@ ${card ? `  // Asleep, a card's metal is not lit by the room: it rests dark, and
           // The lights of the picture come back first and its darks last.
           shown = smoothstep(0.0, 0.35, uHover * 1.35 - (1.0 - l));
         }
-${card ? `        under = mix(rest, under, max(shown, uWarm));
-        // Asleep, the window holds the picture cast in bronze: a low relief of its lights and darks, with no color
-        // and no picture's own tones, lit from where the lamp is. A picture only turned down would be a card
-        // switched off.
-        if (sleep > 0.0){
-          float wide = uWin.z / uWin.w;
-          vec2 part = (wide > uPhotoAspect ? vec2(1.0, uPhotoAspect / wide) : vec2(wide / uPhotoAspect, 1.0)) / max(uPhotoZoom, 1.0);
-          vec2 quv = clamp(uPhotoFocus, part * 0.5, 1.0 - part * 0.5) + ((p - (uWin.xy - uWin.zw)) / (2.0 * uWin.zw) - 0.5) * part;
-          // The slope is taken across a few pixels of the card each way, from the picture blurred: taken from one
-          // pixel to the next it shows the picture's own grid as blocks.
-          vec2 st = 1.3 * part / (2.0 * uWin.zw);
-          vec3 lum = vec3(0.2126, 0.7152, 0.0722);
-          float hl = dot(textureLod(uPhoto, quv - vec2(st.x, 0.0), 1.0).rgb, lum), hr = dot(textureLod(uPhoto, quv + vec2(st.x, 0.0), 1.0).rgb, lum);
-          float hu = dot(textureLod(uPhoto, quv - vec2(0.0, st.y), 1.0).rgb, lum), hd = dot(textureLod(uPhoto, quv + vec2(0.0, st.y), 1.0).rgb, lum);
-          float ha = dot(textureLod(uPhoto, quv - st, 1.0).rgb, lum), hb = dot(textureLod(uPhoto, quv + st, 1.0).rgb, lum);
-          float hc = dot(textureLod(uPhoto, quv + vec2(st.x, -st.y), 1.0).rgb, lum), he = dot(textureLod(uPhoto, quv + vec2(-st.x, st.y), 1.0).rgb, lum);
-          float soft = (hl + hr + hu + hd) * 0.25;
-          vec2 slope = vec2((hr - hl) * 2.0 + hb + hc - ha - he, (hd - hu) * 2.0 + hb + he - ha - hc) * 0.25;
-          vec3 RN = normalize(vec3(-slope.x, slope.y, 0.11));
-          float facing = max(dot(RN, L), 0.0), edge = pow(max(dot(RN, normalize(L + V)), 0.0), 18.0);
-          vec3 blank = (uF0a * (0.04 + 0.3 * facing) * (0.34 + 1.1 * fall) + uF0a * edge * fall * 0.45 + ramp(0.16 + 0.1 * soft) * 0.24) * mix(0.25, 1.0, lit) * ao;
-          under = mix(under, blank, sleep);
-        }` : `        under = mix(rest, under, shown);`}
+${card ? `        under = mix(rest, under, max(shown, uWarm));` : `        under = mix(rest, under, shown);`}
       }
       // The wall: brass, facing into the window, lit by the lamp when it faces it.
       vec2 wn = normalize(p - uWin.xy + 1e-3);
@@ -567,11 +548,37 @@ ${card ? `      if (wallSeen > 0.0){
 ${card ? `      vec3 glass = studio(reflect(-V, G), 0.08 + smudge) * fr * 0.4;
       if (uGlare > 0.0) glass += spec(G, V, L, vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), 0.12 + smudge, 0.0, vec3(0.04)) * fall * 0.55 * uGlare * vec3(1.0, 0.84, 0.62);
 ` : `      vec3 glass = studio(reflect(-V, G), 0.08 + smudge) * fr * 0.4 + spec(G, V, L, vec3(1.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0), 0.12 + smudge, 0.0, vec3(0.04)) * fall * 0.55 * uGlare * vec3(1.0, 0.84, 0.62);
-`}${card ? `      col = mix(col, under + glass * dim, inside);` : `      col = mix(col, under + glass, inside);`}
+`}${card ? `      // Asleep, a card is a blank of polished metal: no picture, and no dark face under its words.
+      col = mix(col, under + glass, inside * (1.0 - uAsleep));` : `      col = mix(col, under + glass, inside);`}
     }
   }
 
-  // Keep the hue as it gets bright: an exposure curve on the brightest channel scales all three together, so hot
+${card ? `  // Asleep, a card is a blank: polished bronze from edge to edge inside its bead, brighter toward its top, one soft
+  // sheen lying across it, the cursor's light pooling on it and the stream warming it. Nothing the card will hold
+  // is on it. Cut into it are a fine line inside the edge and a sun, the stones' own mark.
+  if (uAsleep > 0.0){
+    vec2 q = p / uRes, c = p - uRes * 0.5;
+    float edge = sdBox(c, uRes * 0.5 - uInset - uBead, max(uRad - uBead, 0.0));
+    float within = 1.0 - smoothstep(-1.2 * uS, 1.2 * uS, edge);
+    float grainB = noise(p / uS * 1.7) - 0.5;
+    float sheen = exp(-pow((q.x * 0.55 + q.y - 0.62) / 0.2, 2.0));
+    float poolB = 1.0 / (1.0 + pow(length(uLamp.xy - css) / (150.0 * uS / uDpr), 2.0));
+    float gleam = exp(-pow((q.x * 0.55 + q.y - 0.5) / 0.04, 2.0));
+    vec3 blank = uF0a * (mix(0.3, 0.15, q.y) + 0.3 * sheen + 0.16 * gleam) * (1.0 + grainB * 0.035);
+    blank += uF0a * uLampI * (0.9 * poolB + 0.02) * (1.0 + 0.6 * uHover);
+    // The blank is flat: lit with the card's own relief, the lamp would pick out the frame of a picture that is not there.
+    blank += uF0a * fall * 0.5 * pow(max(normalize(L + V).z, 0.0), 40.0);
+    blank += uF0a * 1.1 * min(streamOn, 3.5);
+    vec2 off = vec2(L.x, -L.y) / max(L.z, 0.2) * uRimH * 1.5;
+    blank *= 1.0 - 0.6 * smoothstep(-1.4 * uS, 1.4 * uS, sdBox(c + off, uRes * 0.5 - uInset - uBead, max(uRad - uBead, 0.0)));
+    vec2 lit = vec2(1.1, 1.1) * uS;
+    float cut = blankMark(c, uRes, edge, uS), up = blankMark(c - lit, uRes, sdBox(c - lit, uRes * 0.5 - uInset - uBead, max(uRad - uBead, 0.0)), uS);
+    blank = blank * (1.0 - 0.6 * cut) + uF0a * 0.3 * max(up - cut, 0.0);
+    col = mix(col, blank, within * uAsleep);
+    spill *= 1.0 - within * uAsleep;
+  }
+
+` : ''}  // Keep the hue as it gets bright: an exposure curve on the brightest channel scales all three together, so hot
   // brass rolls off smoothly toward full gold and never turns lemon or white, and has no flat clipped plateau.
   float mx = max(col.r, max(col.g, col.b));
   if (mx > 1e-5) col *= (1.0 - exp(-mx * 1.15)) / (mx * 0.955);

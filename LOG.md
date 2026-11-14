@@ -2,6 +2,29 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · The sleeping card becomes a blank (Fable, Claude Code on Brandon's Mac)
+
+**What he said, on seeing the third pass:** the sleeping cards "look really bad". He never wanted them to show what the card will hold. He wants a metal card that is completely blank, shiny and smooth, perhaps with a design on it. The ruling is in `BRIEF.md`, The stream, "A sleeping card is a blank".
+
+**What was built**
+
+- `src/metal/shaders.ts`, card branch only: asleep, everything inside the card's bead is one face of polished bronze, brighter toward its top, with a soft sheen and a thin gleam across it, the lamp pooling on it and the stream warming it. The picture, the window, the band and the dark face are not drawn. `blankMark` cuts a fine line inside the edge and a sun at the middle.
+- The card's words are hidden while it is asleep (`WorkCard.module.css`), and come back under the pointer, with focus, and at the strike. The copper words and the relief of the picture are gone.
+- The stream's own light on a card (`plateLightFrag`) is off while the card is asleep: it lights the card's relief, which is not showing.
+- Waking takes 0.1 s at the strike.
+
+**Found on the way**
+
+- The lamp's highlight on the blank must not use the card's normal or its tangents: both come from the card's relief, and the lamp then draws the hidden picture frame as a bright hairline across the blank.
+- A flat polished face reflects the dark room and comes out black. The blank has its own color for that reason.
+
+**Not done**
+
+- No reviewer has seen the blank. He has not seen it.
+- The other things the reviewers failed in the third pass are as they were: the entry below.
+- Reference still: `reference/studies/32-sleeping-blank.jpg`. The stills `31-third-pass-sleeping-cards.jpg` and the sleeping cards in the other `31-` stills show the dropped relief.
+
+
 ## 2026-11-13 · The third pass on the Work page, built at `/lab/work` (Fable, Claude Code on Brandon's Mac)
 
 **All seven changes are on the page. He has not seen it. Four rounds of fresh Opus reviewers still fail parts of it, listed below.**

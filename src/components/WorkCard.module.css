@@ -88,18 +88,7 @@
 .words {
   /* A card the stream has not reached is asleep, and its words rest low and in bronze (--asleep is set by the
      stream). Under the pointer or with focus it is awake, so it can always be read and used. */
-  opacity: calc(1 - 0.36 * var(--asleep, 0));
-}
-
-/* Asleep, every word is the card's own copper. */
-.card[data-asleep='true']:not([data-awake='true']) :is(.strip, .words) * {
-  color: var(--copper-light);
-}
-
-/* Asleep, the words are cut into the bronze: dark above each letter, a thin light below. */
-.card[data-asleep='true']:not([data-awake='true']) .strip,
-.card[data-asleep='true']:not([data-awake='true']) .words {
-  text-shadow: 0 -1px 0 rgb(0 0 0 / 0.9), 0 1px 0 rgb(255 196 140 / 0.22);
+  opacity: calc(1 - var(--asleep, 0));
 }
 
 .card[data-awake='true'] .strip,

@@ -434,7 +434,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       if (c.bake) keep.add(c.bake);
       // Not until it can be seen: a card on its way in that still shows nothing would shade the ground it is not on.
       if (!show.leaving && show.alpha > 0.5) stood.push({ ...c.shape, hw: c.shape.hw - c.inset, hh: c.shape.hh - c.inset });
-      out.push({ ...c.shape, inset: c.inset, turn, tiltX, tiltY, bake: c.bake, win: c.win, frame: c.frame, rim: c.rim, unit: (2 * c.shape.hw) / CARD.width, flare, struck: [fx, fy], there: show.alpha });
+      out.push({ ...c.shape, inset: c.inset, turn, tiltX, tiltY, bake: c.bake, win: c.win, frame: c.frame, rim: c.rim, unit: (2 * c.shape.hw) / CARD.width, flare, struck: [fx, fy], there: show.alpha, asleep: c.asleep });
     }
     // A card that is waiting keeps its relief, so it is there the moment the card comes in.
     for (const c of cards) if (c.bake) keep.add(c.bake);
