@@ -402,6 +402,60 @@ What the build taught:
 - A small light close to a surface burns it white: light falls off with the square of the distance. Light a small lit thing with its own glow and a soft patch on what it stands on.
 - Glass that mirrors the cursor's light throws one hard spot that blooms over the whole thing. Keep a glass panel's shine low.
 
+## Skills and About, the first build
+
+`BRIEF.md`, Settled, "Skills and About, the first build", is the agreement. Everything in "The stream" above still holds. It passes when all of these are true:
+
+*The stream's route*
+
+1. **The order.** A filmstrip of a scroll from the top of Skills to the foot of About shows the stream meet, in this order and no other: the lamp, the three rows, the reflector, the studio light, him.
+2. **Off the things it must stay off.** In real frames of that scroll, no shard and no part of the core is drawn over his head, over a tab, over a word of About, or over anything on the desk but the lamp. `streamCount` over each of those boxes is 0 in every frame.
+3. **Never over him.** With `streamCount` over the solid part of his portrait, every frame is 0. The stream comes back in only where the picture has faded.
+4. **His line.** Laid over `reference/studies/45-his-line-for-the-stream-behind-him.jpg` at the same size, the studio light is where he circled it and the stream's throw lies along the line he drew, within a few pixels at his neck.
+5. **Not a bolt.** Outside the two runs he ruled straight, the stream sways as it falls, as `/lab/stream` does.
+6. **It goes away again.** Scrolled back up, everything the stream brought on goes away in the reverse order, and nothing is left half on. Scrolled up and down across any one strike, nothing flickers.
+
+*Skills*
+
+7. **The lamp is the only thing struck on the desk.** The lamp comes on in the frame of the strike. The tablet, the monitor, the keys and the PC follow left to right, and all are on within about a second.
+8. **The scene keeps the eye.** With the stream beside it, the desk is what is looked at. This is why he moved the stream off the front edge.
+9. **The headphones hang.** They read as a weight on a hook. Struck, and brushed by the cursor, they swing as a pendulum that loses its swing and comes to rest. They never loop, never snap, and never swing with nothing having set them off.
+10. **A row is not there before its strike.** In real frames, nothing of a row shows before the strike that wakes it: not its thing, not its name, not a list, not for one frame. Each row comes on at its own strike.
+11. **Shards land on the borders.** After a row's strike, thrown shards come to rest on the rule over or under that row and fade there. `streamThrown` shows them resting on those lines.
+12. **The rows read.** Each name is on one line, centered against its lists, and a row's groups can be told apart at a glance.
+
+*About*
+
+13. **Nobody reads About before the full effect.** In real frames at a slow scroll, an ordinary one and a flick, no word of About (the title, a tab, the text) shows before his portrait, the studio light's light and the glow behind him are all fully up.
+14. **It lands where it is read.** At an ordinary scroll on a screen 900 px tall, the whole effect and the words are in place while the words are in the upper half of the screen. After a flick, within a second of the page coming to rest.
+15. **The light comes out of the studio light.** In a still, the glow behind him reads as thrown by the studio light, and the glow behind him is no brighter or wider than in `reference/studies/46-skills-about-draft-6.jpg`.
+16. **The words sit even with him.** The block of words is centered on him top to bottom, and the title does not start above his head.
+17. **He is part of the page.** His portrait has no edge anywhere, and where it fades it fades into the page's own ground. Words over its faded side pass contrast.
+18. **Two tabs.** Professional shows first. The arrow keys move between them. A change sends the pulse, and the words change as it passes. The text is marked as a placeholder.
+19. **The reflector and the studio light are objects.** Each is a finished small thing in the site's metals, lit by the cursor's light, and the stream strikes each in full.
+
+*The CPU*
+
+20. **At the bar as a thing.** Alone on the screen at three times its size it is a finished object, and beside `reference/bar/pc-builder-parts.jpg` it is not the weaker one. At its size on the page its outline still reads as a processor in a socket.
+21. **Three ways, each whole.** Each of the three ways of coming to life is a finished piece of motion that can be judged against the others. In real frames of each, the thing is not on the page before its strike, and is never left half made.
+22. **In the shards' way,** a shard can be followed from the strike to the part it becomes.
+
+*Everything*
+
+23. **The site's colors only.** No white, blue or rainbow light anywhere, the CPU and the studio light included.
+24. **Work is as it was.** Stills of `/lab/work`, `/lab/work-blank` and `/lab/stream`, taken before the pass starts at the scrolls this file names for them, agree with stills taken after it.
+25. **Smooth.** `npm run perf` on `/lab/skills`, scrolling through both sections and through a change of tab: every frame at the screen's rate on his Mac. And on a processor slowed four times, nothing is built that a phone could not run.
+26. **Under 1100 px** the page shows a plain stand in and nothing is broken.
+27. **With reduced motion** both sections are on the page, lit, from the start.
+28. **A screen reader** gets the words of both sections whether or not the stream has reached them, and keyboard focus in About brings About on.
+
+**How to judge it**
+
+- Stills, filmstrips, and real frames from `npm run live` for everything that changes on a scroll, a press or the pointer. Tests 2, 3, 10, 13 and 21 can only be judged from real frames.
+- Put stills beside the draft's (`reference/studies/46` and `47`) and beside the PC Builder images.
+- Before reporting, fresh Opus reviewers who have not seen the work being made judge the stills, filmstrips and frames against this section, told to look for reasons to fail it.
+- He judges the motion himself, in his browser.
+
 ## A derby of reliefs
 
 `BRIEF.md`, Open 26, has what the derby at `/lab/accomplishments` holds. It is judged for layout and for the look of each piece, not for motion. It is worth showing when all of these are true:

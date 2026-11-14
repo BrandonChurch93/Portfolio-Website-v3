@@ -2,6 +2,79 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · The prompt for Skills and About, the first build (Fable, web chat)
+
+**What Brandon said**
+
+- "I think we're all good to write the prompt. I know this is a big one and we made a lot of decisions here, so please make sure that we're not missing anything for these two sections."
+- "I did do a couple turns with Claude Code while we were working to fix up a couple things about the work section. I wanna make sure that that doesn't get overwritten."
+
+**What was done**
+
+- The agreement is in `BRIEF.md`, Settled, "Skills and About, the first build": 26 items, what is not built, what holds Work as it is, and Fable's calls. Every ruling under Skills and About was checked against it by its heading.
+- Its 28 tests are in `QUALITY.md` under the same name.
+- Nothing in the code was changed.
+
+**What protects Work**
+
+- The prompt's first step commits whatever is uncommitted on his Mac before it pulls. The last commits from Claude Code that this workspace has seen are 4710187 and c21a23c, the band mended and no card lighting by itself. Anything later is still on his Mac.
+- Test 24: stills of `/lab/work`, `/lab/work-blank` and `/lab/stream` before and after must agree.
+
+**Calls made for him, each said to him**
+
+- The two straight runs in About are read as his rulings and not as a bolt, which stays in Work only.
+- The rough bench stands in for the desk, the headphones' form is a stand in, and the second and third rows keep an empty place for their thing.
+- The reflector, the studio light and the CPU are made for real in this pass.
+
+**The prompt Brandon was given**
+
+```
+Before anything else: if anything in this folder is uncommitted, commit it as it is. That includes the fixes we made to the Work section today. Then pull main with rebase. If BRIEF.md, PLAN.md, LOG.md, QUALITY.md or CLAUDE.md conflict, keep both sides' entries. Push.
+
+Then read BRIEF.md, PLAN.md, QUALITY.md and the top entry of LOG.md from disk, as CLAUDE.md says.
+
+Build Skills and About for real, as one round, at /lab/skills. BRIEF.md, Settled, "Skills and About, the first build" is the agreement: 26 numbered items, what is not built, and where each one was ruled. QUALITY.md, "Skills and About, the first build" has its 28 tests.
+
+Open /lab/skills-about-draft first and scroll it. It is the map, and src/skills-about/draft.ts holds every place. It is a map and a floor to beat, not code to build on. Open /lab/skill-things too. It is the rough derby I picked the three things from.
+
+The order to work in:
+
+1. Before you touch any shared code, take stills of /lab/work, /lab/work-blank and /lab/stream. They must match when you finish.
+2. The page and the stream's route through both sections (items 1 to 8). Give the route a planner of its own beside routeThroughWork. Get the whole route right with stand ins before anything is polished.
+3. Skills (items 9 to 14): the title, the headphones on their hook, the rough bench from /lab/desk standing in for the desk with the strike on its lamp, and the three rows.
+4. About (items 15 to 23): my portrait as the ground of the section, the words centered on me, the two tabs, the reflector, the studio light, the glow coming out of the studio light, and the order it all comes on in.
+5. The CPU in its socket (items 24 to 26), with three ways of coming to life behind a switch.
+
+The reflector, the studio light and the CPU are contained 3D objects. Write a kit for each and have Opus builders make them, with you judging.
+
+What I care about most:
+
+- Nobody can read a word of About before my portrait, the studio light's light and the glow are fully up. It should land as the section comes to where it is read, not a second late. The run over the top of About is long and nearly level, so how fast the stream covers it is yours to set.
+- The stream comes in over my own left shoulder, along the line I drew: reference/studies/45-his-line-for-the-stream-behind-him.jpg. It is never drawn over me, and it stays off my head, the tabs and the words.
+- At the desk the stream strikes the lamp and nothing else. The desk is what I should be looking at, not the stream.
+- Nothing of a row shows before its strike. What the strike throws lands on the row's borders and fades there.
+- The CPU is hyper detailed, at the standard of my PC Builder's parts, in our colors only. I am on the fence about it being made out of the stream's shards, which is why I want all three ways to compare in motion.
+
+Hold to these:
+
+- Nothing in Work changes. /lab/work, /lab/work-blank, /lab/stream, the cards and the buttons draw what they draw today. Whatever you add to the stream's shared code goes beside what is there.
+- The bolt stays in Work only. Two runs in About are straight because I ruled them that way: the run from the reflector to the studio light, and the studio light's throw.
+- The rough bench, the headphones' form and the empty places in the second and third rows are stand ins. Do not polish them. The desk gets its own kit next.
+- Leave phones and every screen under 1100 px as a plain stand in.
+- The words are placeholders and mine to write. Do not draft copy.
+- Where the brief lists something as Fable's call, build it and list it in your report as mine to overturn. If you depart from one, say which and why.
+- Every subagent runs on Opus. Before you report, have fresh Opus reviewers who have not seen the work being made judge stills, filmstrips and real frames against QUALITY.md, told to look for reasons to fail it.
+
+Work without check-ins until there is a page I can scroll. Then update BRIEF.md, PLAN.md, LOG.md and CLAUDE.md, run a production build, commit, push, and confirm the deploy is ready.
+
+Report in lists: the link, what is at the bar, what is not and why, every call you made for me, and exactly what I am approving. End with one clear recommendation.
+```
+
+**For the next session**
+
+- Next in the web chat: the kit for the desk as a piece. `BRIEF.md`, Open 29, has the list of ten and what he found short. The PC is his PC Builder's, turned glass side out, in a bay about 520 mm wide. The headphones and their hook are its tenth item. Then the next section is planned with him: Fable's proposed order is Contact and the footer, then the hero.
+- When Claude Code reports, his verdicts go into `BRIEF.md` as he gives them.
+
 ## 2026-11-14 · His picks from the derby of things (Fable, web chat)
 
 **What Brandon said**

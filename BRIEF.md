@@ -1025,6 +1025,77 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
 - **A variant he asked to see: his portrait as the background (Nov 14).** "Do you remember that hero we kept talking about that I wanted to use for my about me section, where it actually has my face as like the background and the cursor moves it? Can you give me a variant of that too? I still wanna keep the studio light shining on it, the position of the stream coming in from the side and illuminating the background. But I'm just curious what that would look like more like that hero I'm referring to."
     - In exact terms: the hero he means is the third look of the first derby, where his portrait was large, blended into the dark ground, and moved with the cursor. A second version of About is drawn with his portrait that way, with the studio light and the stream as in the first. Not a ruling: he is curious to see it.
 
+**Skills and About, the first build: the agreement (Nov 14)**
+
+One round in Claude Code. It takes in everything he ruled on Nov 14 for the two sections, which is in Skills and About above, and points to it. "I think we're all good to write the prompt. I know this is a big one and we made a lot of decisions here, so please make sure that we're not missing anything for these two sections." The fuller draft at `/lab/skills-about-draft`, in its seventh round, is the map: `src/skills-about/draft.ts` holds every place, in units of a page 1460 wide. It is a map and a floor to beat, not code to build on.
+
+**What gets built**
+
+*The page and the stream*
+
+1. **One page, `/lab/skills`,** with Skills and then About under it, laid out as the draft has them.
+2. **The real stream runs through both,** on a route planned from where things are on the page, by a planner of its own beside `routeThroughWork`. In order, it: comes in at the top middle, as it leaves Work. Strikes the shade of the desk's lamp. Falls on past the desk's near end. Turns in to strike the thing at the left of each of the three rows. Strikes the reflector under the last row, at the left. Runs to the right over the whole top of About, falling about 4 degrees. Strikes the studio light. Is thrown down and to the left along the line he drew, about 52 degrees under level: past his jaw, in behind him at the side of his neck over his own left shoulder, behind the whole of his chest, out at the lower left of his portrait. Falls on toward Contact.
+3. **How the path moves.** Outside Work the stream sways as it falls, and "Bolt is for Work. Nowhere else" stands. Two runs are straight because he ruled them so: the run from the reflector to the studio light ("goes more towards the right while still falling slightly"), and the studio light's throw, which he drew as a straight line. The turns at the rows are strikes on a falling path.
+4. **Every strike is a real strike,** as in Work: the flash, the sparks, the thrown shards.
+5. **What a row's strike throws lands on the row's borders.** The rule over and under a row is a solid thing with an edge. Shards land on it, rest and fade.
+6. **The stream is never drawn over him.** Behind his portrait it is hidden by his own outline, and it comes back in under him where the picture has faded away.
+7. **It stays off** his head, the tabs, About's words, and everything on the desk but the lamp.
+8. **What the stream brings on goes away again** when it draws back above, in the reverse order.
+
+*Skills*
+
+9. **The title, and the headphones at its right on a hook.** The hook is fixed to the page's ground and the headphones hang from it with their weight showing. They rock once, as a real pendulum that loses its swing, when the stream strikes the lamp, and again when the cursor brushes past them. Their form in this pass is a stand in. Their look is made with the desk.
+10. **The desk's place is held by the rough bench from `/lab/desk`,** as it stands. It comes out of the dark a little before the stream reaches it. The stream strikes its lamp: the lamp comes on at the strike, then the tablet, the monitor, the keys and the PC, left to right, within about a second. Once lit its lights are fixed.
+11. **Three rows under the desk:** AI Product Engineering, Full-Stack Engineering, Design Systems & Craft. Each row is a place for its thing at the left, the skill set's name centered top to bottom against its lists, and the lists in their groups with clear room between groups. No numbers, no line under a name, no middle column. The words are `src/skills-about/content.ts` as they stand.
+12. **A thing is about 160 units across and a row about 180 tall.** The draft still draws them at 92 and shorter.
+13. **Nothing of a row shows before its strike,** its thing included. At the strike the thing comes to life, then the name comes on, then the lists.
+14. **The first row's thing is the CPU in its socket** (items 24 to 26). The second and third rows keep their place empty in this pass. Their strikes still land and their words still come on.
+
+*About*
+
+15. **His portrait is the ground of the section:** about 900 units wide, blended into the page at his left, his right and his foot, with the words over its faded left side. It leans away from the cursor, about 40 units from one side of the screen to the other. It is drawn from the sharpest cut out there is (`public/media/portrait-cut-1600.webp`, cut from `reference/portrait.jpg`).
+16. **The words are centered on him top to bottom:** the title, the two tabs, the text.
+17. **Two tabs, Professional first, then Personal.** The text is the live site's paragraphs as `content.ts` deals them out, under a tag that says Placeholder text.
+18. **A change of tab sends a pulse** along the run from over the tab that was pressed, through the studio light and in behind him, and the words change as it passes.
+19. **The reflector,** the first thing the stream strikes in About: a round reflector on an arm, made for real as a small piece. He will judge it in motion and may change it.
+20. **The studio light,** made for real as a small piece: a studio spotlight on a yoke with barn doors, in the site's bronze and dark metal, at the right end of the run, aimed along his line. When the stream strikes it its lens lights.
+21. **The glow behind him comes out of the studio light.** The glow itself is kept as the draft has it: "We don't have to completely redo the glow, as that might compromise the image." It is joined to the studio light by the light that the lens throws down its aim and past his shoulder.
+22. **The order About comes on in.** The stream strikes the reflector and runs over the top. It strikes the studio light: the light comes on and he comes out of the dark. It goes in behind him: the glow comes up. Only then the title, the tabs and the text. No word of About can be read before that.
+23. **It lands as the section comes to where it is read.** How fast the stream's leading end covers the long run over About is the builder's to set, so that at an ordinary scroll the whole effect is in place with the words in the upper half of the screen, and not a second later.
+
+*The CPU, and how a thing comes to life*
+
+24. **The CPU in its socket, made for real** as a piece in `src/pieces/` behind the piece contract, to the standard of his PC Builder's parts: a processor seated in its socket on a square of board, with the lever, the capacitors, the chokes and the traces round it. It is a chip running a model: the stream's light pulses in it and runs out along its traces. Every light is one of the site's colors. It is lit by the cursor's light and turns a little toward the cursor. It can be seen alone at `/lab/piece/cpu`.
+25. **Three ways of coming to life, behind a switch** on `/lab/skills` and on its own page, for him to pick from in motion. He is on the fence about the first: "I'm worried they won't look good."
+    - Shards: some of the shards the strike throws fly in, become the thing's parts and lock together, and its lights come on last. The rest land on the borders.
+    - Band: a band of light crosses it from the strike and uncovers it, as a card in Work is woken.
+    - Flash: the strike's flash lights it and its parts drop the last short way into place. No shard becomes a part.
+26. **The other two things wait for his pick** of a way: the screen with its back off, and the palette and brush.
+
+**What is not built in this pass**
+
+- The desk as a piece, and everything on, under and beside it: Open 29's list of ten. That takes in the headphones' look, and his PC Builder's PC turned glass side out. Its kit comes next.
+- The screen with its back off and the palette and brush.
+- A border down the left of the rows for the stream to bounce off. Parked, his idea, for a later round if the turn at a row looks soft.
+- Anything for a phone or a screen under 1100 px wide. It shows a plain stand in.
+- The words. He writes them.
+- The accomplishments section, the hero, Contact.
+
+**Nothing in Work changes**
+
+- He had Claude Code fix things in Work on Nov 14 while this was being planned: "I wanna make sure that that doesn't get overwritten." Whatever is uncommitted there is committed first, as it is.
+- `/lab/work`, `/lab/work-blank`, `/lab/stream`, the cards and the buttons draw what they draw before this pass starts. What is added to the stream's shared code is added beside what is there.
+
+**Fable's calls, his to overturn**
+
+- The page's address, `/lab/skills`.
+- The rough bench standing in for the desk, the headphones' form as a stand in, and the empty places in the second and third rows.
+- The two straight runs in About, read as his rulings and not as a bolt.
+- A thing at 160 units and a row at 180.
+- His portrait comes on when the studio light is struck, and the words half a second after the glow.
+- The words of both sections are in the page for a screen reader whether or not the stream has reached them. Keyboard focus on anything in About brings the whole of About on at once.
+- With reduced motion both sections are on the page from the start, lit, and nothing waits for the stream.
+
 ### Contact
 
 - A rocket launch, not a rocket flying through space.
