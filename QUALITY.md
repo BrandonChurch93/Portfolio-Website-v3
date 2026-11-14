@@ -440,6 +440,23 @@ What the build taught:
 21. **Three ways, each whole.** Each of the three ways of coming to life is a finished piece of motion that can be judged against the others. In real frames of each, the thing is not on the page before its strike, and is never left half made.
 22. **In the shards' way,** a shard can be followed from the strike to the part it becomes.
 
+*The desk*
+
+29. **Ten finished things.** Each of the ten, alone on the screen at three times its size on the page, is a finished object an engineer would look closer at, and beside `reference/bar/pc-builder-parts.jpg` it is not the weaker one.
+30. **Better than the rough, plainly.** Beside `reference/studies/43-desk-a-second-round-close.jpg`, the keyboard, the mouse, the camera and the PC are each plainly better. Those are the four he named.
+31. **Told from a still alone.** A reviewer shown one still and nothing else names each thing and what it is made of.
+32. **It is his bench.** A thick timber top on two trestles, the bronze angle and its screws, the two drawers with the knob from the sleeping card. It has a real desk's proportions and does not read as stretched.
+33. **The mat** covers about 80 percent of the top and stops short of the monitor. The left of the desk does not look vacant.
+34. **The screen shows real work,** with depth to it. It is never a flat lit picture.
+35. **The keyboard has no cable.** Its keys light in a wave as the desk comes on, the keys nearest the cursor's light glow, and every light is one of the site's colors.
+36. **The PC is his PC Builder's.** Its case and parts are that project's own, the whole build reads through the long glass side at the page's size, its fans turn, and it is lit in the site's colors with no white, blue or rainbow.
+37. **No maker's mark anywhere,** and no real company's product copied: the iPad, the pencil, the headphones, the camera.
+38. **The headphones** are a finished small thing, hang on their hook with their weight showing, and rock as test 9 has it.
+39. **The lamp takes the strike.** Struck, it reads as lit by the stream, and the desk then reads as lit by its own lamp.
+40. **Nothing crawls.** Scrolled slowly and fast, the timber's grain, the mat's stitching and the keys hold still: no sparkle, no moiré, no shimmer.
+41. **The cursor's light shows its form.** Moved across the desk, the light picks out edges and depth on every thing, as it does on the 3D card he liked.
+42. **Smooth with the desk in.** Test 25 holds with the finished desk on the page.
+
 *Everything*
 
 23. **The site's colors only.** No white, blue or rainbow light anywhere, the CPU and the studio light included.
@@ -453,6 +470,7 @@ What the build taught:
 
 - Stills, filmstrips, and real frames from `npm run live` for everything that changes on a scroll, a press or the pointer. Tests 2, 3, 10, 13 and 21 can only be judged from real frames.
 - Put stills beside the draft's (`reference/studies/46` and `47`) and beside the PC Builder images.
+- For the desk, each round: a reviewer who sees stills only and says what each thing is and what it is made of, one who judges against this section and the PC Builder images, and one who measures the frame rate. Fresh reviewers every round.
 - Before reporting, fresh Opus reviewers who have not seen the work being made judge the stills, filmstrips and frames against this section, told to look for reasons to fail it.
 - He judges the motion himself, in his browser.
 

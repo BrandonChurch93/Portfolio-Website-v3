@@ -1044,8 +1044,8 @@ One round in Claude Code. It takes in everything he ruled on Nov 14 for the two 
 
 *Skills*
 
-9. **The title, and the headphones at its right on a hook.** The hook is fixed to the page's ground and the headphones hang from it with their weight showing. They rock once, as a real pendulum that loses its swing, when the stream strikes the lamp, and again when the cursor brushes past them. Their form in this pass is a stand in. Their look is made with the desk.
-10. **The desk's place is held by the rough bench from `/lab/desk`,** as it stands. It comes out of the dark a little before the stream reaches it. The stream strikes its lamp: the lamp comes on at the strike, then the tablet, the monitor, the keys and the PC, left to right, within about a second. Once lit its lights are fixed.
+9. **The title, and the headphones at its right on a hook.** The hook is fixed to the page's ground and the headphones hang from it with their weight showing. They rock once, as a real pendulum that loses its swing, when the stream strikes the lamp, and again when the cursor brushes past them. They are made for real with the desk (item 27).
+10. **The desk is made for real** (items 27 to 30). The rough bench from `/lab/desk` holds its place only until it is. It comes out of the dark a little before the stream reaches it. The stream strikes its lamp: the lamp comes on at the strike, then the tablet, the monitor, the keys and the PC, left to right, within about a second. Once lit its lights are fixed.
 11. **Three rows under the desk:** AI Product Engineering, Full-Stack Engineering, Design Systems & Craft. Each row is a place for its thing at the left, the skill set's name centered top to bottom against its lists, and the lists in their groups with clear room between groups. No numbers, no line under a name, no middle column. The words are `src/skills-about/content.ts` as they stand.
 12. **A thing is about 160 units across and a row about 180 tall.** The draft still draws them at 92 and shorter.
 13. **Nothing of a row shows before its strike,** its thing included. At the strike the thing comes to life, then the name comes on, then the lists.
@@ -1072,9 +1072,26 @@ One round in Claude Code. It takes in everything he ruled on Nov 14 for the two 
     - Flash: the strike's flash lights it and its parts drop the last short way into place. No shard becomes a part.
 26. **The other two things wait for his pick** of a way: the screen with its back off, and the palette and brush.
 
+*The desk. Added the same day, on his word: "I say pass it to him and set the quality standard."*
+
+27. **The desk and everything on, under and beside it, made for real,** as a piece in `src/pieces/` behind the piece contract, seen alone at `/lab/piece/desk` and standing in `/lab/skills`. The rough bench at `/lab/desk`, in its second round, is the basic version. What stands where is agreed and its look is not: "the desk isn't bad, assuming that Claude Code is going to make this look much better." The ten things:
+    1. The bench he picked, A · Bench: a thick top in dark timber on two trestles, a bronze angle over the front edge with its screws, a stretcher, and two drawers with the knob he chose for the sleeping card. About 2 m long, 0.78 deep and 0.74 tall, seen from the front left and above.
+    2. A large mat over about 80 percent of the top, stopping short of the monitor.
+    3. A curved ultrawide, whose screen shows real work and is not a flat picture.
+    4. A wireless gaming keyboard, lit in the site's colors, with "something fun": its keys light in a wave as the desk comes on, and the keys nearest the cursor's light glow. No cable. Of the rough: "the keyboard and mouse still kind of look mid".
+    5. A high end gaming mouse.
+    6. His iPad Pro with its pencil beside it, carrying no maker's mark.
+    7. A camera of now: a mirrorless body with a fast lens, a second lens and a cap. Of the rough: "the camera leaves a lot to be desired".
+    8. The desk lamp, made to take the stream's strike.
+    9. The PC: his PC Builder's own case and parts, brought over from its code (`github.com/BrandonChurch93/PC-Desktop-Builder`, public, all of its 3D in code). The build is the one in the screenshot he sent, which looks to be its Atrium case, a showcase with two chambers and glass on the left and the front. It stands under the desk's far end, turned so its long glass side faces the front, in a bay about 520 mm wide, with the drawers moved toward the near end. Lit in the site's colors and not the PC Builder's own, its fans turning. Of the rough: "it actually doesn't look great at all, but I kinda like the idea of it being glass and see-through".
+    10. The headphones on their hook by the title, their own small piece, of the site's own design. AirPods Max is the feel he named. Nothing is copied and there is no maker's mark.
+    - Nothing else goes on the desk, and no phone.
+28. **The standard is his PC Builder's.** `reference/bar/pc-builder-parts.jpg` and `pc-builder-rig.jpg`, and `QUALITY.md`, "What made the PC Builder work". Each of the ten is a finished thing alone on the screen.
+29. **It gets there by rounds.** Claude Code iterates, with fresh reviewers each round, until every test passes. If a thing stops getting better, how it is made changes. The bar is never lowered.
+30. **Its lights** are the lamp, the lit monitor and the PC, fixed once lit. It is also lit by the cursor's light, which is what shows its form.
+
 **What is not built in this pass**
 
-- The desk as a piece, and everything on, under and beside it: Open 29's list of ten. That takes in the headphones' look, and his PC Builder's PC turned glass side out. Its kit comes next.
 - The screen with its back off and the palette and brush.
 - A border down the left of the rows for the stream to bounce off. Parked, his idea, for a later round if the turn at a row looks soft.
 - Anything for a phone or a screen under 1100 px wide. It shows a plain stand in.
@@ -1089,7 +1106,7 @@ One round in Claude Code. It takes in everything he ruled on Nov 14 for the two 
 **Fable's calls, his to overturn**
 
 - The page's address, `/lab/skills`.
-- The rough bench standing in for the desk, the headphones' form as a stand in, and the empty places in the second and third rows.
+- The empty places in the second and third rows.
 - The two straight runs in About, read as his rulings and not as a bolt.
 - A thing at 160 units and a row at 180.
 - His portrait comes on when the studio light is struck, and the words half a second after the glow.
@@ -1148,6 +1165,9 @@ One round in Claude Code. It takes in everything he ruled on Nov 14 for the two 
     - The pass covers every section together: the layout, the category bar, and the stream's route on one column.
     - Fable's recommendation, not agreed: the phone's speed is still measured as each section is built, so nothing is made that a phone cannot run. That is a cost check and needs no design.
 - **If the next pass of Skills and About looks good, it goes to Claude Code, and he and Fable plan the next section (Nov 14).** "Everything looks good on the next pass, I think I'm ready to hand it off to Claude Code to start building, and me and you can start planning on the next section."
+- **A basic version is made in the web chat, and Claude Code iterates on it until it is a masterpiece. That holds for 3D pieces too (Nov 14).** "Why didn't we include the desk in the prompt? That's how we worked this whole time. We make a basic version here, and then he iterates on it over and over again until it's a masterpiece. What changed that workflow? I say pass it to him and set the quality standard."
+    - In exact terms: Fable had held the desk back for a kit to be written in the web chat, and put a rough stand in in its place. Nothing had changed the workflow, and he was right. A 3D piece goes to Claude Code with its rough draft, his rulings on it and a quality standard, in the same round as the section it stands in. Claude Code writes whatever kits its own builders need.
+    - **The web chat's next section is Contact.** "What I wanted to do with you was go ahead and start working on the contact section next."
 - When something is ready to show him: run a production build, commit, push to `main`, and give him the live link. He is often on his iPad, which cannot open localhost. (Nov 11)
 - **The whole page is sketched before the next section is refined (Nov 14).** His words: "I'd like for you to sketch out the remaining scenes for the big 3D objects. We can just put a simple placeholder for now, but what I'd like to do is go from hero all the way down to footer. Then the plan will be to go section by section, probably doing the hero last." "This is why I want to get this in place, so I can look at everything as a whole. We may completely redo an entire section after you do this. Everything is up for refining."
     - In exact terms: one rough sketch of the home page from the hero to the footer, with stand ins for the big 3D pieces. Then each section is refined the way Work is being refined, starting with the one after Work, the hero last.

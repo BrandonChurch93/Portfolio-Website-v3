@@ -2,6 +2,51 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · The desk joins the round, and Contact is next (Fable, web chat)
+
+**What Brandon said**
+
+- The first prompt had been with Claude Code about 45 minutes and it was still working.
+- "Why didn't we include the desk in the prompt? That's how we worked this whole time. We make a basic version here, and then he iterates on it over and over again until it's a masterpiece. What changed that workflow? I say pass it to him and set the quality standard."
+- "What I wanted to do with you was go ahead and start working on the contact section next."
+
+**What was done**
+
+- His ruling is in `BRIEF.md`, How we work. Fable had held the desk back for a kit of its own, and nothing had changed the workflow to call for that.
+- The agreement has items 27 to 30 for the desk, and `QUALITY.md` has tests 29 to 42. Items 9 and 10 no longer call the headphones and the desk stand ins.
+- The case in his screenshot looks to be the PC Builder's Atrium: its code calls it a dual chamber showcase with glass on the left and the front. The screenshot itself is not in this repo. He attaches it to the prompt.
+
+**The second prompt Brandon was given, to paste into the same Claude Code session with his PC Builder screenshot attached**
+
+```
+This adds to the round you are working on. Finish the step you are on and commit it. Then pull main with rebase, and keep both sides' entries if the record conflicts.
+
+The desk is part of this round. I do not want a stand in there. BRIEF.md, Settled, "Skills and About, the first build" now has items 27 to 30 for it, and QUALITY.md has tests 29 to 42 under the same name. Read both again from disk.
+
+Build the desk and everything on, under and beside it for real, as a piece, and put it in /lab/skills in place of the rough bench. The rough bench at /lab/desk is the basic version: what stands where is agreed, and its look is not. Iterate on it over and over until it is a masterpiece. The standard is my PC Builder: reference/bar/pc-builder-parts.jpg and reference/bar/pc-builder-rig.jpg.
+
+Where the rough is furthest from that, in my words:
+
+- The keyboard and the mouse look mid. I use a wireless gaming keyboard and a high end gaming mouse. Light them in our colors and do something fun with the keys.
+- The camera leaves a lot to be desired.
+- The computer does not look great at all. I like it being glass and see through. Turn it so its long glass side faces me.
+
+The PC is my PC Builder's own, not a new model. Its code is public at github.com/BrandonChurch93/PC-Desktop-Builder and all of its 3D is written in code on the same library as this site. Bring the case and parts over from it: the build in the screenshot attached to this message, which looks to be its Atrium case. Light it in our colors, not the PC Builder's, with its fans turning.
+
+The headphones by the Skills title are part of this too: their own small piece on their hook, of our own design, with no maker's mark. The same goes for the iPad and its pencil.
+
+Start the desk's builders now, alongside the rest, with Opus builders and fresh Opus reviewers each round. If a thing stops getting better, change how it is made. Never lower the bar.
+
+Show me the page as soon as the route, Skills and About can be scrolled, with the desk at whatever stage it has reached, and say plainly which of its things are at the bar and which are not. Then keep going on the desk until every test passes.
+
+Everything in the first prompt still holds, and nothing in Work changes.
+```
+
+**For the next session**
+
+- Contact, with him. Settled: a rocket launch and not a rocket flying through space, nothing depends on a visitor sending a message, and something at the bottom that ties the page together. Open 7, 12 and 13 hold Fable's recommendations: links, a copy email button and Calendly with no form, the stream ending by feeding the rocket's launch, and the rocket as built not yet judged. The rocket is made new, as the desk is. The stream now leaves About at the lower left of his portrait.
+- Settle what Contact says and does first, then a wireframe on a page of its own.
+
 ## 2026-11-14 · The prompt for Skills and About, the first build (Fable, web chat)
 
 **What Brandon said**
