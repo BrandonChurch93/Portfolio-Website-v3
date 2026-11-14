@@ -27,7 +27,8 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **Built in Claude Code (Nov 13):** those three changes, on `/lab/work`. Waiting on his look
 - **His pick (Nov 13):** when the category changes, the surge, at 0.7 seconds. Picked from the wireframe at `/lab/work-surge`. The agreement for building it on `/lab/work` is in `BRIEF.md`, The stream, "When the category changes"
 - **Built in Claude Code (Nov 13):** the surge, on `/lab/work`, with a working category bar and stand in cards for the other three categories. `LOG.md`, top entry, has its account: what is at the bar, what is not, what the fresh reviewers said in four rounds, and every call made for him. Three of its thirteen tests are not passed (the front cannot be followed on the sides, the strike's spray of sparks is thinner than the scroll's, the settle is too small to see). Waiting on his look
-- **Still waiting on his word:** the card with the stream on it, the second row's strike, the stone and the rail's fittings as objects, and a lighter resting color for "Case study"
+- **His look at the surge (Nov 13):** "Everything looks really good." He wants the long one: 1.1 seconds from the bar to the button, not 0.7. A small prompt for that is in `LOG.md`, top entry
+- **Still waiting on his word:** whether he can follow the surge's front down the sides, the settle onto a new height, the line added to the card's stylesheet. And from before: the card with the stream on it, the second row's strike, the stone and the rail's fittings as objects, and a lighter resting color for "Case study"
 - **He is open to the stone's face lighting** and wants to see it in action before he rules, so it gets built on the real page
 - **In that pass:** the real card with the stream meeting it, the Sun stones made new and a little larger with a face that lights, Blade finials, the right side mirroring the left, a real strike on the second row, room on an iPad held sideways, a bar over WORK behind a switch, and the frame rate with real cards
 - **Not now:** anything for a phone or a screen under 1100 px. It is one pass at the end of Phase 3
@@ -88,7 +89,7 @@ Set aside, kept as records: the molten metal test shot at `/lab/pour`, its looks
 - [ ] Hero
 - [~] Work · the stream's real route with the posts and the rail, at `/lab/work` (Claude Code)
 - [~] Work · the card's look (web chat). The layout is picked: C · Data plate. How it answers the pointer is picked (Nov 13). Its pictures, and how it takes the stream, are open
-- [~] Work · what the stream does when the category changes: the surge at 0.7 seconds, picked from a wireframe (Nov 13). Built on `/lab/work` Nov 13 (Claude Code), waiting on his look
+- [~] Work · what the stream does when the category changes: the surge, picked from a wireframe at 0.7 seconds and changed to 1.1 once he saw it on the page (Nov 13). Built on `/lab/work` Nov 13 (Claude Code), waiting on his look
 - [~] Work · the second pass at `/lab/work`: the real card, the Sun stones, the Blades (Claude Code). Built Nov 13, waiting on his look
 - [ ] Work · the category bar, and the top bar it may dock into
 - [ ] Work · the whole section, with the real card in it

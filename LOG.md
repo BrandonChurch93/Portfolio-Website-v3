@@ -2,6 +2,40 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · His look at the surge: the long one (Fable, web chat)
+
+**What Brandon said**
+
+- "Everything looks really good, after reviewing the animation, I wish I would've went with the long one from earlier. We should give him a prompt to update that."
+
+**What changed in the record. No code changed**
+
+- `BRIEF.md`, The stream: "His look at the surge on the page". The length is 1.1 seconds. Dropped and Open 20 say so. `QUALITY.md`: a row in the table, and test 2 reads 1.1. `PLAN.md`: Now.
+
+**For whoever makes the change**
+
+- The length is `length: 0.7` under the surge's block in `src/stream/config.ts`.
+- The build's account says the front cannot be followed down the sides at 0.7 (test 2). At 1.1 the front runs about a third slower, so that test is worth judging again before anything else is done to the front.
+- Things tuned against 0.7 that may want a look at 1.1: how long the swell and its sparks last behind the front, how far ahead of the front the second row's card lets go, and what a second press does to a surge that is still running.
+
+**The prompt Brandon was given**
+
+```
+Pull main and read BRIEF.md, The stream, "His look at the surge on the page".
+
+On /lab/work the surge is too short. Make it the long one: 1.1 seconds from the bar to the meeting under the button, not 0.7. A card's own change keeps its timing and does not stretch.
+
+Then play it and check what was tuned against 0.7 still holds at 1.1: the swell and the sparks behind the front, when the second row lets go, and a second press while a surge is running. Retune only what looks wrong.
+
+Judge test 2 again at the new length and tell me whether the front can now be followed down the sides.
+
+/lab/stream and the approved buttons must still draw what they draw today. Build, commit, push, confirm the deploy, and report in a short list ending with one recommendation.
+```
+
+**Half finished**
+
+- The change. His word on what he has not answered, listed in `BRIEF.md`.
+
 ## 2026-11-13 · The surge when the category changes, built at `/lab/work` (Fable, Claude Code on Brandon's Mac)
 
 **What was asked.** The prompt is in the entry below. In short: the three changes from his look at the second pass first, then what the stream does when the category changes, on the real stream with the real cards, to `BRIEF.md`, The stream, "When the category changes", tested by `QUALITY.md`, "When the category changes".
