@@ -60,12 +60,13 @@ function seededNoise(size = 64): THREE.DataTexture {
 }
 
 // Last pass: a fixed pattern of half-level noise, so dark glows fade smoothly instead of stepping through 8-bit
-// levels. Fixed per pixel, so a frozen frame is still the same image.
+// levels. Fixed per pixel, so a frozen frame is still the same image. Where a piece draws nothing on a clear ground
+// there is no noise either: on a canvas the page shows through, it would be a faint rectangle of grain.
 function ditherPass(): ShaderPass {
   return new ShaderPass({
     uniforms: { tDiffuse: { value: null } },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: 'uniform sampler2D tDiffuse; varying vec2 vUv; float h(vec2 p){ vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); } void main(){ vec4 c = texture2D(tDiffuse, vUv); float n = h(gl_FragCoord.xy) + h(gl_FragCoord.xy + 17.0) - 1.0; gl_FragColor = vec4(c.rgb + n / 255.0, c.a); }',
+    fragmentShader: 'uniform sampler2D tDiffuse; varying vec2 vUv; float h(vec2 p){ vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); } void main(){ vec4 c = texture2D(tDiffuse, vUv); float n = h(gl_FragCoord.xy) + h(gl_FragCoord.xy + 17.0) - 1.0; gl_FragColor = vec4(c.rgb + n / 255.0 * step(0.002, max(c.a, max(c.r, max(c.g, c.b)))), c.a); }',
   });
 }
 

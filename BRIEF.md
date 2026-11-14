@@ -1113,6 +1113,49 @@ One round in Claude Code. It takes in everything he ruled on Nov 14 for the two 
 - The words of both sections are in the page for a screen reader whether or not the stream has reached them. Keyboard focus on anything in About brings the whole of About on at once.
 - With reduced motion both sections are on the page from the start, lit, and nothing waits for the stream.
 
+**The first build, as built (Nov 14). In front of him. Nothing in it is approved.**
+
+At `/lab/skills`, Study 25, built in Claude Code by Fable. The reflector, the studio light and the CPU were each made by an Opus builder from a kit (`reference/kits/`), with Fable judging, in three rounds for the first two and two for the CPU. All 26 items are built. What follows is where it departs from what is written above, the calls made for him, and what is not at the bar.
+
+*Where it departs from a line above. Each was said to him in bold.*
+
+1. **The stream runs faster than the scroll on two runs.** From the reflector to the studio light it takes 0.3 seconds, and from the studio light to behind his shoulder 0.26, however slowly the page is scrolled. It goes against The stream, "On the site it moves no faster than the visitor scrolls". Item 23 gave the builder the first run. The second is Fable's. Carried at the scroll's pace, at 600 px a second the words came on after About's title had left the screen.
+2. **Thrown by the studio light, the stream's leading end runs ahead of the scroll,** by 15.5 percent of the screen's height, about 140 px on a screen 900 tall, until it is under his portrait. Everywhere else its end rests two thirds of the way down the screen. Same reason.
+3. **The words come on the moment the glow is whole,** 0.26 seconds after the stream goes in behind him, where "Fable's calls" above has them half a second after the glow. The gate he asked for stands: no word shows until his portrait, the studio light's light and the glow are all whole.
+4. **The stream is let back in under him little by little,** over the last sixth of his portrait, down to its foot, where item 6 has it come back "under him where the picture has faded away". His picture fades over that same stretch. Let back in at one height it came back along a straight cut across his shirt, which a fresh reviewer failed.
+5. **The studio light has no cable.** The kit asked for one. Inside the room the light has at the screen's right edge it could only be a stub, so it was dropped.
+
+*Fable's calls in the build, his to overturn*
+
+- **The route.**
+    - It comes straight down the middle of the page, as it leaves Work, until 150 units above Skills, and bows from there to the lamp.
+    - It strikes the top of the lamp's shade on its upper left, so what it throws goes up and to the left, away from the desk. That strike is lighter than a card's (0.7 of one), so the desk keeps the eye.
+    - At each row it turns in from 62 units above the row's middle to 62 below, and meets the thing at its left most point.
+    - A row's strike faces up and a little to the right, the way the stream is going, so what it throws goes into the row. Nothing is aimed at a border: the pieces land where they fall.
+    - In the studio light the stream goes in at the barrel's upper left side and comes out at the middle of the lens, about 50 px away on a 1440 wide screen. Between the two it is not drawn.
+- **What the stream is never drawn over.** The monitor, the mat with everything on it, the PC, the block of About's words, and his outline. A shard whose place is over one of those is not drawn. What the lamp, the reflector and the studio light throw is also let fall less far than what a row throws (60, 24 and 12 units against 150), so it does not rain on the desk, the words or him.
+- **How he hides the stream.** His portrait is drawn over the stream, and under it his own outline, filled with the page's ground and a copy of the light behind him, covers the stream. So the stream is cut exactly at his outline and leans with him.
+- **The rows' borders are bronze rails the stream draws,** 6 px thick at a 1440 wide screen, in the metal of Work's rail. A row's two borders run out from the stream's side over a third of a second at its strike. The border under a row is the border over the next.
+- **When things come on, after the strike or the cue that brings them.**
+    - The desk comes out of the dark over 0.8 seconds, from when the stream is 170 units short of the lamp. The lamp is on in the frame of the strike, then the tablet from 0.2 seconds, the monitor from 0.4, the keys from 0.6 and the PC from 0.78, all on by 1 second.
+    - A row: its thing from the strike, its name from 0.4 seconds to 0.7, its lists from 0.58 to 0.94.
+    - About: the studio light's light over 0.3 seconds and his portrait over 0.36 from the light's strike, the glow over 0.26 from when the stream goes in behind him, then the title, the tabs and the text 0.05 seconds apart, all whole 0.3 seconds later.
+    - Everything goes away again in the reverse order, at the same pace.
+- **The headphones** rock about 5 degrees when the lamp is struck and up to 6 when the cursor brushes them, the way the cursor was going, once a little over a second, and are still again in about three.
+- **A change of tab.** The old text goes in a sixth of a second, the pulse takes 0.46 seconds from over the tab to behind him, and the new text comes in as it passes, about 0.3 seconds after the press. Pressed while the stream is not behind him, the text just changes.
+- **The switch for the CPU's three ways** is at the foot of the screen. Pressing a way while the stream is on the first row strikes the row again, so the three can be compared in place.
+- **The page.** A board 1460 units wide, drawn as wide as the screen up to 2400 px. Type has a least size, so on a screen 1100 wide the lists are 13 px and not 10. There is most of a screen of empty page above Skills and below About, since nothing stands above or below them yet.
+- **The small pieces are mounted when the page opens,** not as they come near, so none is being built as the stream reaches it.
+- **The reflector's dish** shows the cursor's light moving the other way to the cursor, as a hollow dish does. Struck, it gives a degree or two on its arm.
+
+*What is not at the bar, plainly*
+
+CPUNOTES
+
+*Measured, in a live page, on a screen 1440 by 900*
+
+MEASURED
+
 ### Contact
 
 - A rocket launch, not a rocket flying through space.

@@ -96,6 +96,44 @@ export const STREAM = {
     } as Record<string, readonly [number, number, number, number]>,
   },
 
+  // The route through Skills and About (routeThroughSkills in route-skills.ts). That page is laid out on a board
+  // 1460 units wide, and lengths here are in the board's units unless they say otherwise.
+  skills: {
+    // Onto the lamp's shade: the turn it takes off the line it came in on, where it comes to the shade from, as far to the right and as far above it, the bow it
+    // takes there, and where it joins the line it falls down beside the rows: how far below the shade, and that turn.
+    lamp: { leave: 120, from: [34, 150] as [number, number], bow: [130, 6] as [number, number], off: 130, join: [80, 70] as [number, number] },
+    // At each row it turns in to strike the thing at the row's left end, from this far above it and to this far
+    // below, and the turn it takes off the line and back onto it.
+    row: { over: 62, turn: [22, 3] as [number, number] },
+    // How tight the turn at a strike is, in the stream's own units.
+    corner: 5,
+    // The desk comes out of the dark when the leading end is this far short of the lamp.
+    near: 170,
+    // Below his portrait: the turn it takes to fall again, how far to the left it then drifts, and over how far down.
+    tail: { turn: 70, in: 44, down: 260 },
+    // What a strike throws falls this far and goes: far enough to reach the border under a row. What the lamp, the
+    // reflector and the studio light throw goes sooner, so it does not rain on the desk, on About's words or on him.
+    fall: 150,
+    falls: [60, 24, 12] as [number, number, number],
+    // The two runs the stream is thrown along take this long, in seconds, however slowly the page is scrolled: from
+    // the reflector to the studio light, and from the studio light to behind his shoulder. Carried at the scroll's
+    // pace, the first crossed the whole page for 87 units of scroll and the second fell behind a quick scroll, and
+    // the light on him came up after About had been read.
+    thrown: [0.3, 0.26] as [number, number],
+    // Thrown by the studio light, the leading end runs ahead of the scroll by this share of the screen's height,
+    // and gives it back over this far of its fall below his portrait.
+    ahead: [0.155, 520] as [number, number],
+    // How far in from each end of a stretch behind or inside something its riding shards are let go and taken up
+    // again, in the stream's own units.
+    hide: 24,
+    // How a row's strike faces: up and a little to the right, so that what it throws goes into the row.
+    rowFace: -1.12,
+    // Each contact, as in work.contact.
+    contact: { lamp: [0.7, 0.8, 4, 3], row: [0.8, 1, 5, 2.6], reflector: [1.15, 1.3, 6, 2.6], light: [1, 1.2, 6, 2.6] } as Record<string, readonly [number, number, number, number]>,
+    // How many seconds of each thing's coming the page follows (src/skills/stage.ts reads them back).
+    over: { title: 0.6, near: 0.9, lamp: 1.4, row: 1.6, reflector: 0.6, light: 0.8, behind: 1.2, under: 0.6 } as Record<string, number>,
+  },
+
   // When the category changes (surge.ts). Times are in seconds and lengths in units.
   change: {
     // The surge takes this long from the bar to the meeting under the button.

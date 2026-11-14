@@ -474,6 +474,16 @@ What the build taught:
 - Before reporting, fresh Opus reviewers who have not seen the work being made judge the stills, filmstrips and frames against this section, told to look for reasons to fail it.
 - He judges the motion himself, in his browser.
 
+**What the build taught**
+
+- **A thing let back in at a line is a cut.** The stream came back under his portrait along the straight edge of the layer that hides it, across his shirt. It is let back in little by little over the stretch where his picture fades, and a fresh reviewer was the one who saw it.
+- **A chain of things that each wait for the last lands late.** The reflector, the run, the studio light, the throw, the glow, then the words: carried at the scroll's pace, the words came on after About's title had left the screen. The two runs the stream is thrown along take a set time, the thrown stream leads the scroll by a share of the screen's height, and the words come on the moment the glow is whole. Measure where the title is on the screen when the last word is whole, at 300, 600 and 900 px a second and after a flick, not only the order.
+- **What a strike throws needs somewhere to stop.** With one limit for the whole route, what the reflector and the studio light threw rained on About's words and on him. Each landing says how far its own shards may fall, and the page names the places the stream is never drawn over.
+- **A piece that shows a new material or a new light compiles a shader in that frame.** One frame of 160 ms, in the middle of a scroll. A piece draws every state it can be in once, at mount, and turns a light off by its strength and never by hiding it. Mount the pieces a page's stream brings on well before the stream reaches them.
+- **A glow behind an object on a wall is a patch.** Both wall mounted pieces first lit the wall behind them so their shadow could be seen, and it read as a faint oval nothing else on the page has. The wall takes shadow and no light.
+- **Count what is drawn, not what is planned.** The route kept clear of the desk, his head and the words by a wide margin, and thrown shards still crossed all three. `streamList` in every frame of a real scroll found them.
+- **A test browser that is asked for nothing draws nothing.** A script that scrolled and then only waited saw a stream that had barely moved, which looked like a fault in the stream. Keep a frame loop running in the page while a script waits, and drive a scroll at a set speed from inside the page.
+
 ## A derby of reliefs
 
 `BRIEF.md`, Open 26, has what the derby at `/lab/accomplishments` holds. It is judged for layout and for the look of each piece, not for motion. It is worth showing when all of these are true:

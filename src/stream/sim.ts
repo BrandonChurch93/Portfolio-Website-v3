@@ -43,6 +43,10 @@ export class StreamSim {
   // How far the band of light has crossed whatever stands at each landing, 0 to 1: it sets out when a leading
   // end reaches the landing and runs back when the stream draws back above it.
   readonly wake: Float32Array;
+  // How long the leading end has been past each of the route's cues, in seconds, up to as long as the cue is
+  // followed for. It runs back down once the stream has drawn back above the cue, so what the stream brought on
+  // goes away again the way it came.
+  readonly since: Float32Array;
   sparkCount = 0;
   looseCount = 0;
   forkCount = 0;
@@ -74,6 +78,7 @@ export class StreamSim {
     this.hit = new Float32Array(landings);
     this.on = new Float32Array(landings);
     this.wake = new Float32Array(landings);
+    this.since = new Float32Array(route.cues?.length ?? 0);
     this.phase = new Float64Array(emitters);
     this.count = new Int32Array(emitters);
     this.nextAt = new Float64Array(landings);
@@ -128,6 +133,7 @@ export class StreamSim {
     this.hitAt.fill(-100);
     this.endAt[0] = this.endAt[1] = this.metAt = -100;
     this.route.landings.forEach((L, i) => { this.on[i] = this.wake[i] = this.head[L.side] >= L.s ? 1 : 0; });
+    this.route.cues?.forEach((c, k) => { this.since[k] = this.head[0] >= c.s ? c.over : 0; });
     const rates = this.rates(0, 0);
     for (let e = 0; e < rates.length; e++) { this.phase[e] = rates[e] * from; this.count[e] = Math.floor(this.phase[e]); }
     for (let i = 0; i < this.route.landings.length; i++) {
@@ -149,6 +155,7 @@ export class StreamSim {
     this.joined();
     this.sparkCount = this.looseCount = this.forkCount = 0;
     this.route.landings.forEach((L, i) => { this.on[i] = this.wake[i] = this.head[L.side] >= L.s ? 1 : 0; });
+    this.route.cues?.forEach((c, k) => { this.since[k] = this.head[0] >= c.s ? c.over : 0; });
     // A still keeps a crackle of arc at each leading end, always the same one.
     for (let b = 0; b < 2; b++) {
       if (b === 1 && !this.own()) continue;
@@ -187,7 +194,9 @@ export class StreamSim {
       // It goes down the page no faster than the page was scrolled. Across the page, along the title or the card,
       // it may go faster, or it would be left behind by a scroll that has no sideways part to it.
       at(br, this.head[b], tmp);
-      const lim = Math.min(H.most * u, Math.max(H.creep * u, this.pace)) / Math.max(Math.abs(tmp[3]), H.across);
+      let lim = Math.min(H.most * u, Math.max(H.creep * u, this.pace)) / Math.max(Math.abs(tmp[3]), H.across);
+      // Along a run it is thrown down it keeps a pace of its own, however slowly the page is scrolled.
+      if (br.haste) lim = Math.max(lim, br.haste[Math.min(br.n - 1, Math.round(this.head[b] / br.step))]);
       const goal = Math.max(-lim, Math.min(lim, err * H.follow));
       this.speed[b] += (goal - this.speed[b]) * (1 - Math.exp(-H.quick * dt));
       let move = this.speed[b] * dt;
@@ -199,6 +208,7 @@ export class StreamSim {
       this.energy[b] += (want - this.energy[b]) * (1 - Math.exp(-(want > this.energy[b] ? H.rise : H.fall) * dt));
     }
     this.joined();
+    this.route.cues?.forEach((c, k) => { this.since[k] = Math.max(0, Math.min(c.over, this.since[k] + (this.head[0] >= c.s ? dt : -dt))); });
 
     const rates = this.rates(this.energy[0], this.energy[1]);
     for (let b = 0; b < 2; b++) {
@@ -382,7 +392,9 @@ export class StreamSim {
     if (L.face === UP) { tmp[0] = L.x + way * r(15) * 14 * u; tmp[1] = L.y - size - r(16) * 6 * u; } else this.from(L, way * r(15) * 14 * u, size + r(16) * 6 * u, tmp);
     this.loose.set([
       tmp[0], tmp[1], (r(17) - 0.5) * 30 * u, vx, vy, (r(18) - 0.5) * 60 * u,
-      q[0] / ql, q[1] / ql, q[2] / ql, q[3] / ql, (w[0] / wl) * spin, (w[1] / wl) * spin, (w[2] / wl) * spin, 0, life, clear ? -size : size, carried, tmp[1],
+      q[0] / ql, q[1] / ql, q[2] / ql, q[3] / ql, (w[0] / wl) * spin, (w[1] / wl) * spin, (w[2] / wl) * spin, 0, life, clear ? -size : size, carried,
+      // A landing that lets its shards fall less far than the route does is taken as that much higher than it is.
+      L.fall === undefined ? tmp[1] : tmp[1] - (this.route.fall - L.fall),
     ], o);
     this.looseSeed[this.looseCount++] = r(19);
   }

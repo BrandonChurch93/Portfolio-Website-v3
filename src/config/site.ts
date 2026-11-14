@@ -6,14 +6,14 @@ export const SITE_NAME = 'Brandon Church';
 // The names the carried 3D pieces use for the palette. waterAmber3d is the stream's color as a number.
 export const COLORS = { bg: palette.bg, amber: palette.flame, accent: palette['copper-light'], text: palette.text, waterAmber3d: hex('flame') } as const;
 
-export const PIECES = ['city', 'workbench', 'handheld', 'camera', 'rocket'] as const;
+export const PIECES = ['city', 'workbench', 'handheld', 'camera', 'rocket', 'cpu', 'reflector', 'studio-light'] as const;
 export type PieceName = (typeof PIECES)[number];
 
 // A fraction of the viewport height. A piece's scroll progress is measured against this line.
 export const READING_LINE = 0.66;
 // A piece mounts within this many viewport heights of the screen and disposes beyond the second number. At most max
 // pieces hold a WebGL context at once, because browsers drop the oldest context past a small limit.
-export const PIECE_MOUNT = { near: 1, far: 2.5, max: 2 } as const;
+export const PIECE_MOUNT = { near: 1, far: 2.5, max: 4 } as const;
 
 export type Tier = 'high' | 'mid' | 'low' | 'static';
 export const TIERS: readonly Tier[] = ['high', 'mid', 'low', 'static'];

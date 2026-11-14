@@ -1,21 +1,76 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { clock } from '../../world/clock';
+import type { Piece } from '../../world/piece';
+import { WAYS, type Struck, type Way } from '../../world/struck';
 import { PieceView } from '../PieceView';
 import styles from './PieceLab.module.css';
 
+const WAY_NAMES: Record<Way, string> = { shards: 'Shards', band: 'Band', flash: 'Flash' };
+// How long after the strike the stream is taken to be fully on a struck piece.
+const WARM = 0.3;
+
 // One piece alone, filling the viewport, for building and checking it.
 // ?entrance=1 plays its entrance. ?making=1 shows the "how this is made" switch. ?label=0 hides the label.
+// ?size=220 draws it in a host that many pixels tall, which is how large it is on a page.
+// A piece the stream strikes (src/world/struck.ts) gets a Strike button, and one that comes to life at its strike a
+// switch between the three ways and a quarter speed switch. ?way=band opens it on that way, ?at=0.4 holds it that
+// many seconds after its strike, ?stream=1 opens it with the stream on it, and ?ui=0 hides the buttons.
 export function PieceLab({ name }: { name: string }) {
-  const [opts, setOpts] = useState<{ entrance: boolean; making: boolean; label: boolean } | null>(null);
+  const [opts, setOpts] = useState<{ entrance: boolean; making: boolean; label: boolean; ui: boolean; size: number | null } | null>(null);
+  const [struck, setStruck] = useState<{ life: boolean } | null>(null);
+  const [way, setWay] = useState<Way>('shards');
+  const [slow, setSlow] = useState(false);
+  const piece = useRef<(Piece & Partial<Struck>) | null>(null);
+  const live = useRef({ way, slow, at: null as number | null, from: null as number | null, on: false });
+  live.current.way = way;
+  live.current.slow = slow;
+
   useEffect(() => {
     const q = new URLSearchParams(location.search);
-    setOpts({ entrance: q.get('entrance') === '1', making: q.get('making') === '1', label: q.get('label') !== '0' });
+    const asked = q.get('way') as Way | null, at = q.get('at'), size = Number(q.get('size'));
+    if (asked && WAYS.includes(asked)) setWay(asked);
+    live.current.at = at === null ? null : Number(at);
+    live.current.on = q.get('stream') === '1';
+    setOpts({ entrance: q.get('entrance') === '1', making: q.get('making') === '1', label: q.get('label') !== '0', ui: q.get('ui') !== '0', size: size > 0 ? size : null });
+    return clock.onFrame((t) => {
+      const p = piece.current, s = live.current;
+      // Until the page has something to say the piece is left as it is, so a script can set it.
+      if (!p?.setStream || (s.at === null && s.from === null && !s.on)) return;
+      const age = s.at ?? (s.from === null ? (s.on ? 60 : -1) : (t - s.from) * (s.slow ? 0.25 : 1));
+      p.setLife?.(s.way, s.at === null && s.from === null ? 60 : age);
+      p.setStream(Math.max(0, Math.min(1, age / WARM)), age < 0 ? 60 : age);
+    });
   }, []);
+
+  const strike = () => { live.current.at = null; live.current.from = clock.now(); };
+
   return (
-    <main className={styles.main}>
+    <main className={styles.main} style={opts?.size ? ({ '--size': `${opts.size}px` } as CSSProperties) : undefined}>
       {opts?.label && <h1 className={styles.title}>piece · {name}</h1>}
-      {opts && <PieceView name={name} className={styles.stage} entrance={opts.entrance} making={opts.making} />}
+      {opts && (
+        <PieceView
+          name={name}
+          className={opts.size ? styles.sized : styles.stage}
+          entrance={opts.entrance}
+          making={opts.making}
+          onPiece={(p: (Piece & Partial<Struck>) | null) => { piece.current = p; p?.setLife?.(live.current.way, 60); setStruck(p?.setStream ? { life: !!p.setLife } : null); }}
+        />
+      )}
+      {opts?.ui && struck && (
+        <div className={styles.controls}>
+          {struck.life && (
+            <div className={styles.group} role="group" aria-label="How it comes to life">
+              {WAYS.map((w) => <button key={w} type="button" className={styles.choice} aria-pressed={way === w} onClick={() => { setWay(w); strike(); }}>{WAY_NAMES[w]}</button>)}
+            </div>
+          )}
+          <div className={styles.group}>
+            <button type="button" className={styles.choice} onClick={strike}>Strike</button>
+            <button type="button" className={styles.choice} aria-pressed={slow} onClick={() => setSlow(!slow)}>Quarter speed</button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

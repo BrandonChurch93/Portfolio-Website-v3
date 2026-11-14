@@ -25,13 +25,17 @@ interface Props {
   onPiece?: (p: Piece | null) => void;
   children?: ReactNode;
   switchSide?: 'left' | 'right';
+  // How many screens away the piece is mounted from, in place of the usual one. A page whose stream brings a piece
+  // on mounts it well before it is reached: building a piece holds the page for a moment, and that must not fall in
+  // the middle of a scroll.
+  reach?: number;
 }
 
 type Extra = Piece & { opening?: (t: number | null) => void; skip?: () => void };
 
 // Hosts one 3D piece: mounts it near the viewport, feeds it the lamp and the tier, and registers it for the test hooks.
 // The "how this is made" switch is off unless a page asks for it (BRIEF.md, Open).
-export function PieceView({ name, entrance = false, once, making = false, className, onReady, frame, entranceFrom, onPiece, children, switchSide = 'right' }: Props) {
+export function PieceView({ name, entrance = false, once, making = false, className, onReady, frame, entranceFrom, onPiece, children, switchSide = 'right', reach }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const [isMaking, setMaking] = useState(false);
   const piece = useRef<Extra | null>(null);
@@ -110,13 +114,13 @@ export function PieceView({ name, entrance = false, once, making = false, classN
     const id = `piece:${name}`;
     const check = () => {
       const dist = distanceOf(h), vh = innerHeight;
-      if (dist < vh * PIECE_MOUNT.near) {
+      if (dist < vh * (reach ?? PIECE_MOUNT.near)) {
         near = true;
         if (!mounted && !loading && !evicted) {
           if (budget.claim(id, { distance: () => distanceOf(h), keepsStill: false, release: () => { evicted = true; stop(); } })) loading = registry.track(start());
           else evicted = true;
         }
-      } else if (dist > vh * PIECE_MOUNT.far) {
+      } else if (dist > vh * Math.max(PIECE_MOUNT.far, (reach ?? 0) + 1.5)) {
         near = false;
         evicted = false;
         stop();

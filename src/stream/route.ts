@@ -46,6 +46,9 @@ export interface Branch {
   // be taken out of the stream to thin them.
   ride: Float32Array;
   rideLen: number;
+  // The least speed its leading end runs at here, in pixels a second, however slowly the page is scrolled. Only a
+  // run the stream is thrown along has it (route-skills.ts).
+  haste?: Float32Array;
 }
 
 // A place where the stream meets something: it is struck when a leading end arrives, and throws a little while the
@@ -71,7 +74,19 @@ export interface Landing {
   every: number;
   // Struck by the bolt, which comes straight in: it flashes brighter.
   bolt?: boolean;
+  // What a page calls it, where the page asks after it.
+  name?: string;
+  // How far below it what it throws may fall before it goes, where that is less than the route allows.
+  fall?: number;
 }
+
+// A place along the route where the leading end brings something onto the page. over is how many seconds of its
+// coming the page follows: the stream keeps how long the end has been past it, up to that, and runs it back when
+// the stream draws back above it.
+export interface Cue { name: string; s: number; over: number }
+// A stretch the stream runs behind or inside something: its riding shards are not drawn there, and with core
+// neither is its core.
+export interface Dark { from: number; to: number; core: boolean }
 
 export interface Route extends Solids {
   // The rails' finials, as straight solids: what is thrown bounces off them and they throw shadows, but the route
@@ -87,13 +102,15 @@ export interface Route extends Solids {
   // How far below where it was thrown a thrown shard may fall before it goes. Infinity when nothing limits it.
   fall: number;
   unit: number;
+  cues?: Cue[];
+  dark?: Dark[];
 }
 
 // A turn in the route: where two straight runs would meet, how early it leaves the first and how late it joins the
 // second. Unequal reaches make a turn that is thrown, like something with weight running off an edge, not a drawn arc.
-type Corner = [x: number, y: number, leave: number, join: number];
+export type Corner = [x: number, y: number, leave: number, join: number];
 
-function trace(corners: Corner[]): number[] {
+export function trace(corners: Corner[]): number[] {
   const out: number[] = [corners[0][0], corners[0][1]];
   for (let i = 1; i < corners.length - 1; i++) {
     const [ax, ay] = [out[out.length - 2], out[out.length - 1]];
@@ -192,7 +209,7 @@ function even(p: number[], step: number): number[] {
 // Evenly spaced points along a line through pts, each pushed sideways by the sway where the page around it is open.
 // still lists distances along the line where there is to be no sway at all, so two lines can be joined there.
 // until is how far along the line the sway goes at all: past it the line is left as it was drawn.
-function wander(pts: number[], S: Solids, unit: number, phase: number, splitAt: number, narrow: number, still: number[] = [], until = Infinity): number[] {
+export function wander(pts: number[], S: Solids, unit: number, phase: number, splitAt: number, narrow: number, still: number[] = [], until = Infinity): number[] {
   const R = STREAM.route, step = R.sample * unit;
   const base = even(pts, step);
   const swayed: number[] = [];
@@ -215,7 +232,7 @@ function wander(pts: number[], S: Solids, unit: number, phase: number, splitAt: 
 }
 
 // A side of the stream from the line it follows: evenly spaced points, and what the stream needs to know at each.
-function measure(line: number[], S: Solids, unit: number, carry = 0, sampled = false): Branch {
+export function measure(line: number[], S: Solids, unit: number, carry = 0, sampled = false): Branch {
   const R = STREAM.route, step = R.sample * unit;
   // A line that is already points a step apart is taken as it is: sampled again, two lines that mirror each other
   // would each cut their corners in places of their own.
@@ -276,7 +293,7 @@ function measure(line: number[], S: Solids, unit: number, carry = 0, sampled = f
 // share of them made them blink as they circled the core. Where the two sides run as one, on the stem and after
 // they meet, that stretch carries what both sides do, so each side's shards ride it at twice the speed: hiding half
 // of each until the parting made them appear there.
-function rides(branches: Branch[], S: Solids, u: number): void {
+export function rides(branches: Branch[], S: Solids, u: number): void {
   const R = STREAM.route, K = STREAM.shards;
   for (const b of branches) {
     const together = (i: number) => 0.5 + 0.5 * Math.min(1, b.apart[i] / (K.apart * u));
@@ -293,7 +310,7 @@ function rides(branches: Branch[], S: Solids, u: number): void {
 // The way a top faces, as an angle.
 export const UP = -Math.PI / 2;
 // How far along a line its point nearest a place is.
-function lengthTo(line: number[], x: number, y: number): number {
+export function lengthTo(line: number[], x: number, y: number): number {
   let best = Infinity, at = 0, run = 0;
   for (let i = 0; i < line.length; i += 2) {
     if (i) run += Math.hypot(line[i] - line[i - 2], line[i + 1] - line[i - 1]);
@@ -304,7 +321,7 @@ function lengthTo(line: number[], x: number, y: number): number {
 }
 
 // A narrow screen has no room for the route to wander.
-const roam = (width: number) => (width < 600 ? 0.4 : 1);
+export const roam = (width: number) => (width < 600 ? 0.4 : 1);
 // Where a side comes down past the end of the title. On a narrow screen it keeps clear of the screen's edge, so the
 // sheath of shards is never cut off.
 const beside = (title: Box, width: number, u: number, way: number) => {

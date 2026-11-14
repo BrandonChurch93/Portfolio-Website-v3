@@ -20,9 +20,17 @@ const FOV = 20;
 const CARRIED = ['lamp', 'tablet', 'camera', 'lens', 'cap'];
 let areaLib = false;
 
+// How much each of the desk's lights is on, 0 to 1. room is the light the desk is seen by before any of its own is
+// on. The page that stands the bench in for the desk in Skills brings them up as the stream arrives.
+export interface DeskLights { room: number; lamp: number; tablet: number; monitor: number; keys: number; pc: number }
+
 export interface DeskScene {
   // A line of light along the front edge, standing in for the stream.
   stream(on: boolean): void;
+  light(l: DeskLights): void;
+  // Where a point of the scene is drawn in the host, across and down, 0 to 1. The point is in the desk's own
+  // millimetres.
+  where(x: number, y: number, z: number): [number, number];
   // The cursor's light, as places across and down the host, 0 to 1.
   lamp(x: number, y: number): void;
   // Turn the view by these degrees from where it rests. null puts it back.
@@ -119,6 +127,43 @@ export async function mountDesk(host: HTMLElement, tier: Tier): Promise<DeskScen
     s.add(flow);
   }
 
+  // Each light, with what it is at when it is fully on. The lit parts of the keyboard, the mouse, the monitor and
+  // the PC share three materials, so each group is given its own copies to be turned up and down by.
+  const dial = <T,>(read: () => T, write: (k: number, full: T) => void) => { const full = read(); return (k: number) => write(k, full); };
+  const power = (l: THREE.Light) => dial(() => l.intensity, (k, full) => { l.intensity = full * k; });
+  const tint = (m: { color: THREE.Color }) => dial(() => m.color.clone(), (k, full) => { m.color.copy(full).multiplyScalar(k); });
+  const own = (group: string) => {
+    const copies = new Map<THREE.Material, THREE.MeshBasicMaterial>(), dials: ((k: number) => void)[] = [];
+    desk.root.getObjectByName(group)?.traverse((o) => {
+      if (!(o instanceof THREE.Mesh)) return;
+      const m = o.material as THREE.Material;
+      if (m === mats.ember || m === mats.deep || m === mats.hot) {
+        let c = copies.get(m);
+        if (!c) { c = (m as THREE.MeshBasicMaterial).clone(); copies.set(m, c); dials.push(tint(c)); }
+        o.material = c;
+      } else if (m instanceof THREE.ShaderMaterial && (m.name === 'glow' || m.name === 'halo')) {
+        if (!m.uniforms.uOn) {
+          m.uniforms.uOn = { value: 1 };
+          m.fragmentShader = `uniform float uOn; ${m.fragmentShader.replace(/\}\s*$/, ' gl_FragColor.rgb *= uOn; }')}`;
+          m.needsUpdate = true;
+        }
+        dials.push((k) => { m.uniforms.uOn.value = k; });
+      }
+    });
+    return (k: number) => { for (const d of dials) d(k); };
+  };
+  const hemi = s.children.find((o) => o instanceof THREE.HemisphereLight) as THREE.HemisphereLight;
+  const lights: Record<keyof DeskLights, ((k: number) => void)[]> = {
+    room: [power(rim), power(fill), power(hemi), dial(() => s.environmentIntensity, (k, full) => { s.environmentIntensity = full * k; })],
+    lamp: [power(deskLamp), tint(bench.lampBulb)],
+    tablet: bench.screens.map((m) => dial(() => m.emissiveIntensity, (k, full) => { m.emissiveIntensity = full * k; })),
+    monitor: [dial(() => desk.screen.emissiveIntensity, (k, full) => { desk.screen.emissiveIntensity = full * k; }), power(monLight), own('monitor')],
+    keys: [own('keyboard'), own('mouse')],
+    pc: [power(pcLight), own('pc')],
+  };
+  let room = 1;
+  const was: DeskLights = { room: 1, lamp: 1, tablet: 1, monitor: 1, keys: 1, pc: 1 };
+
   let view = { ...REST }, lampUV = { x: 0.62, y: 0.3 }, alive = true, seen = true;
   const right = new THREE.Vector3(), up = new THREE.Vector3(), back = new THREE.Vector3();
   const place = () => {
@@ -131,7 +176,7 @@ export async function mountDesk(host: HTMLElement, tier: Tier): Promise<DeskScen
     stage.camera.updateMatrixWorld(true);
     stage.camera.matrixWorld.extractBasis(right, up, back);
     stage.lamp.position.copy(AIM).addScaledVector(right, (lampUV.x - 0.5) * 2.8).addScaledVector(up, (0.5 - lampUV.y) * 1.5 + 0.35).addScaledVector(back, 1.25);
-    stage.lamp.intensity = 16;
+    stage.lamp.intensity = 16 * room;
   };
   // Under a held clock, which is how a still is taken, a frame is drawn only when something has changed.
   let stale = true;
@@ -157,6 +202,20 @@ export async function mountDesk(host: HTMLElement, tier: Tier): Promise<DeskScen
 
   return {
     stream(on) { flow.visible = on; stale = true; frame(); },
+    light(l) {
+      for (const key of Object.keys(lights) as (keyof DeskLights)[]) {
+        if (l[key] === was[key]) continue;
+        was[key] = l[key];
+        for (const set of lights[key]) set(l[key]);
+        stale = true;
+      }
+      room = was.room;
+    },
+    where(x, y, z) {
+      place();
+      const v = new THREE.Vector3(x * M, y * M, z * M).project(stage.camera);
+      return [(v.x + 1) / 2, (1 - v.y) / 2];
+    },
     lamp(x, y) { if (Math.abs(x - lampUV.x) + Math.abs(y - lampUV.y) > 0.002) stale = true; lampUV = { x, y }; },
     turn(az, el = 0) { view = az === null ? { ...REST } : { az: REST.az + az, el: Math.min(62, Math.max(6, REST.el + el)) }; stale = true; frame(); },
     dispose() { alive = false; off(); watch.disconnect(); near.disconnect(); stage.dispose(); canvas.remove(); },

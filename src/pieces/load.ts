@@ -9,6 +9,9 @@ export const pieceLoaders: Record<string, () => Promise<PieceFactory>> = {
   handheld: () => import('./handheld/index').then((m) => m.createHandheld),
   camera: () => import('./camera/index').then((m) => m.createCamera),
   rocket: () => import('./rocket/index').then((m) => m.createRocket),
+  cpu: () => import('./cpu/index').then((m) => m.createCpu),
+  reflector: () => import('./reflector/index').then((m) => m.createReflector),
+  'studio-light': () => import('./studio-light/index').then((m) => m.createStudioLight),
 };
 
 export function loaderFor(name: string): (() => Promise<PieceFactory>) | undefined {

@@ -77,6 +77,8 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **Going to Claude Code as one round, Skills and About built for real at `/lab/skills`:** the page and the stream's route through both, Skills with the rough bench standing in for the desk and three rows that wake at their strikes, About with his portrait as its ground and the studio light, and the CPU in its socket with three ways of coming to life. `BRIEF.md`, Settled, "Skills and About, the first build" is the agreement, 26 items. `QUALITY.md` has its 28 tests under the same name. The prompt is in `LOG.md`, top entry
 - **His ruling (Nov 14):** the desk goes to Claude Code in the same round, with the quality standard set, as every other piece of work has gone. No kit is written for it in the web chat. `BRIEF.md`, How we work
 - **Added to the round (Nov 14):** the desk and everything on, under and beside it, made for real: items 27 to 30 of the agreement and tests 29 to 42. The second prompt is in `LOG.md`, top entry
+- **Built in Claude Code (Nov 14):** Skills and About, the first build, at `/lab/skills`, Study 25, all 26 items. The reflector, the studio light and the CPU in its socket were made by Opus builders from kits in `reference/kits/`. `BRIEF.md`, Settled, "The first build, as built" has where it departs from the agreement (five places, each said to him), every call made for him, and what is not at the bar. `LOG.md`, top entry, has its account and what two fresh reviewers said
+- **In front of Brandon:** `/lab/skills`. He judges the motion, picks one of the CPU's three ways of coming to life, and rules on the five departures. And still from before: the mended band at `/lab/work` and `/lab/work-blank`, and the rest of the fourth pass
 - **Next in the web chat (Nov 14):** Contact, on his word. It starts with what the section says and does, then a wireframe
 - **Built in Claude Code (Nov 14):** the fourth pass and the knob on the blank, at `/lab/work` and `/lab/work-blank`. He has looked: see the lines on it below
 - **Next, once he has looked again:** his word on Open 26 and 27 and on the rest of the sketch, then the first section after Work is refined. Fable's proposed order: Skills, About, Contact and the footer, the hero
@@ -161,6 +163,7 @@ Set aside, kept as records: the molten metal test shot at `/lab/pour`, its looks
 - [ ] Work · the whole section, with the real card in it
 - [~] Skills and About, as a pair: a rough draft of both at `/lab/skills-about`, with each brought onto the page by the stream (web chat, Nov 14). He said "This looks good." A fuller draft with his real words and the motion roughed in at `/lab/skills-about-draft`, in two rounds (web chat, Nov 14). He picked the rows under the desk. Waiting on his look at the second round
 - [~] Skills · the desk as a 3D piece, made new: three rough desks at `/lab/desk`, of which he picked A · Bench (Nov 14), then a second round with the scene on it roughed in after his notes (web chat, Nov 14). He agreed the design for the real build (Nov 14). Next: his pick of the stream's route at the desk, then the kit
+- [~] Skills and About · the first build at `/lab/skills`: the stream's real route through both, the rough bench standing in for the desk, three rows that wake at their strikes, his portrait as About's ground, and the order About comes on in (Claude Code). Built Nov 14, waiting on his look
 - [ ] Skills
 - [ ] About
 - [ ] Contact and the bottom of the page
@@ -189,6 +192,9 @@ Set aside, kept as records: the molten metal test shot at `/lab/pour`, its looks
 - [ ] The handheld and the camera in their categories
 - [ ] The PC animation
 - [ ] The software piece
+- [~] The CPU in its socket, the first of the three things in the rows of skills, with three ways of coming to life for him to pick from (`src/pieces/cpu/`, Opus from a kit, Nov 14). Waiting on his look and his pick
+- [~] The reflector and the studio light in About (`src/pieces/reflector/`, `src/pieces/studio-light/`, Opus from kits, Nov 14). Waiting on his look
+- [ ] The screen with its back off and the palette and brush, once he has picked a way of coming to life
 - [ ] The stream touching the pieces, replacing what the second build drew inside the city, the workbench and the rocket. The code's old names go with it (`LOG.md`, 2026-11-11)
 - [ ] The workbench and the rocket brought up to the bar (see `LOG.md`, 2026-11-11)
 
