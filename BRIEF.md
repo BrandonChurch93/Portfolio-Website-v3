@@ -1033,6 +1033,14 @@ Each line has Fable's recommendation where there is one. None of these are rules
     - **Against a settled line, said to him in bold:** What this is, "the site never repeats the résumé. It shows the work and says what a résumé cannot." The people who read the site have already read his résumé, and companies and counts are what a résumé holds.
     - Fable's recommendation: go straight into Skills. If he wants the proof on the page, keep it to one quiet strip with no title, as drawn, and not a section of its own.
     - His to settle if it goes in: which companies, whether each lets its mark be used, and figures he can stand behind in an interview. Words has the live site's "twelve years" and "40+ clients" down as needing correction.
+    - **His first thought for its layout (Nov 14). Talk only, nothing drawn or decided:** "I was thinking long diagonal cards, maybe a 3D image in each. But that's just one of many possibilities. What are your thoughts on some good options?"
+    - Fable's options, put to him the same night:
+        - A · His idea, as a stair: three long plates stepping down the page on a slant, words level inside them. The slant is what carries the stream, which lands on the high end of each and runs off the low end.
+        - B · Struck medals: each accomplishment a medal in bronze with a beaded rim and its figure in relief, a blank until the stream strikes it. Company marks as small stamps under them. Relief in the cards' own metal, not new 3D pieces.
+        - C · A maker's plate: one long engraved plate, like the data plate on a machine, with the figures in engraved fields and the marks stamped along its foot.
+        - Passed over by Fable: figures that count up, which every template has, and a shelf of 3D trophies, which is four new pieces to bring to the bar.
+    - Said to him: a 3D image in each card is a new piece each, the same week he cut three. A slant here sits one section above the rail that slants across About.
+    - Fable's recommendation: B, with C as the quiet one, and all three drawn on the sketch for him to choose by looking.
 27. **The rows of skills beside the desk, as the mirror of About (Nov 14). His question, not ruled.** "Should we mirror the about section with the 3D desk object? And have the skills on the right side of it?"
     - In exact terms: About is words at the left and his portrait at the right. Skills would be its mirror: the desk at the left, and the title with the rows of skills at the right of it.
     - On the sketch: this is how `/lab/home` opens (Skills rows · Beside the desk). The rows across the page under the desk are one press away.
