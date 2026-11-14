@@ -1118,6 +1118,14 @@ One round in Claude Code. It takes in everything he ruled on Nov 14 for the two 
 - A rocket launch, not a rocket flying through space.
 - Nothing depends on a visitor sending a message.
 - He likes having something at the bottom that ties the page together.
+- **What Contact holds (Nov 14).** "If you look at my current portfolio add a functional contact form. I also give them a way to easily copy my email if needed. I can also provide my phone number right there as well. And I also don't hate putting my location either but I'll leave those up to you. Most important links is a calendar link so they can schedule a meeting with me immediately. Next we should have links for we could put a link to my LinkedIn there as well, but that's probably already going in the footer right?"
+    - In exact terms, as Fable reads it: his live site's Contact has a working form (a name, an email, a message), a link that copies his email address and a link to book time on his calendar. The new Contact has all three.
+    - **The calendar link is the most important link in the section.** A visitor can book a meeting with him at once. It is the section's primary button and it comes first.
+    - **A way to copy his email address stays.**
+    - **A working contact form stays.** It replaces Fable's recommendation in Open 7, which was no form.
+    - Read beside "Nothing depends on a visitor sending a message": the form is there and it works, and nothing else on the page waits for it. The launch plays whether or not anyone writes.
+    - **His phone number and where he lives are left to Fable.** Fable's calls, which he can overturn: no phone number on the page, and one short line that says where he is based and his time zone. The reasons are in Open 31.
+    - **LinkedIn.** He asked whether it is already going in the footer. Fable's answer: yes, in the footer with GitHub and the résumé, and not repeated in Contact. Not a ruling until he says so.
 
 ### 3D pieces
 
@@ -1185,7 +1193,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
 4. **A new 3D art piece** to replace the sculpture. Recommendation: wait until he has 3D art to show.
 5. **Imported models.** The second build wrote every model in code. Recommendation: allow real models (Blender, his own sculpts) wherever they look better.
 6. **What the skills rows say.** Recommendation: start from the four competencies on his live site.
-7. **Contact.** Recommendation: links, a copy email button and Calendly. No form.
+7. **Contact.** **Decided Nov 14: a calendar link first, a way to copy his email, and a working form** (Settled, Contact). What follows is how it stood. Recommendation: links, a copy email button and Calendly. No form.
 8. **A "how this is made" switch** on the 3D pieces. Recommendation: decide when the pieces are in the page.
 9. **The résumé.** A page, or only the download button.
 10. **The project page design.**
