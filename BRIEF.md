@@ -1048,6 +1048,9 @@ Each line has Fable's recommendation where there is one. None of these are rules
         - F · Stamped bars: long cast bars of bronze lying a little askew, each stamped with a figure, with the companies' marks as hallmarks. The bar itself is the 3D.
         - G · Numerals in WORK's letters: the figures as large lit letters like the WORK title, with the stream striking one as it passes. The marks in a quiet row under them.
     - Fable's recommendation: draw A, B and E.
+    - **His answer (Nov 14): "No on E. No on F. No on G."** Tags on Work's rail, stamped bars and numerals in WORK's letters are passed over. Left standing as options: A · the stair of slanted plates, B · struck medals, D · drawer fronts. Nothing is picked.
+    - **His question the same night:** "What about the logo cloud, what were your thoughts on that?"
+    - Fable's answer, talk only: not as a cloud. A row of grey logos is the most common block on the web, and other companies' marks bring their own colors, which the palette cannot take. The marks go in as one material: stamped into bronze in a single row, each catching the cursor's light, under whichever of A, B or D he picks. A cloud needs four to six marks to read as one, so with two or three each gets its name and one line instead. Only companies he may name in public go in.
 27. **The rows of skills beside the desk, as the mirror of About (Nov 14). His question, not ruled.** "Should we mirror the about section with the 3D desk object? And have the skills on the right side of it?"
     - In exact terms: About is words at the left and his portrait at the right. Skills would be its mirror: the desk at the left, and the title with the rows of skills at the right of it.
     - On the sketch: this is how `/lab/home` opens (Skills rows · Beside the desk). The rows across the page under the desk are one press away.
