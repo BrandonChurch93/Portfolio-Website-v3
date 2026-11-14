@@ -71,7 +71,9 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **Put to him (Nov 14):** a second set: three CPUs, four things for Full-Stack Engineering, four for Design Systems & Craft, a larger size, and each thing assembled from its strike. `BRIEF.md`, Open 28
 - **His answer (Nov 14):** go with all of Fable's recommendations for the rows of skills, and build the derby with the stream striking each thing so he can see the assembly
 - **In front of Brandon (Nov 14):** the derby of six at `/lab/skill-things`, Study 24. `BRIEF.md`, Open 28
-- **Next (Nov 14):** his pick of one thing for each row. Then the prompt for Claude Code for Skills and About, the kit for the desk, and a kit for the three things
+- **His picks from the derby (Nov 14):** the CPU in its socket, the screen with its back off, the palette and brush. He is on the fence about the things being made out of the strike's shards: the derby was too rough to show it. `BRIEF.md`, Settled, Skills
+- **Put to him (Nov 14):** go to Claude Code, and prove the coming to life on the CPU first, with three ways behind a switch. `BRIEF.md`, Open 28
+- **Next (Nov 14):** on his go, the prompt for Claude Code: Skills and About built for real from the fuller draft, and the CPU in its socket as the first of the three things. The kit for the desk follows
 - **Built in Claude Code (Nov 14):** the fourth pass and the knob on the blank, at `/lab/work` and `/lab/work-blank`. He has looked: see the lines on it below
 - **Next, once he has looked again:** his word on Open 26 and 27 and on the rest of the sketch, then the first section after Work is refined. Fable's proposed order: Skills, About, Contact and the footer, the hero
 - **His word on D (Nov 13):** the raised piece at the middle is a handle to him and stays as 3D as it is. The dark area reads as a shadow, is why he chose D, and stays. Both may only be made better. `BRIEF.md`, The stream, "What he likes in D, and what must not be lost"

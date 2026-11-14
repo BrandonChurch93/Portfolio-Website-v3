@@ -2,6 +2,23 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · His picks from the derby of things (Fable, web chat)
+
+**What Brandon said**
+
+- AI Product Engineering: option B, the CPU in its socket. Full-Stack Engineering: option A, the screen with its back off. Design Systems & Craft: option A, the palette and brush.
+- He is on the fence about the particles of the stream creating the things, and worried it will not look good. The derby was too low in quality to show it.
+- He asked whether to go ahead in Claude Code and pivot if needed, or dial it in here first.
+
+**What was done**
+
+- His picks are in `BRIEF.md`, Settled, Skills. Fable's answer is in Open 28: go to Claude Code, and prove the coming to life on the CPU first, with three ways behind a switch. Nothing built.
+
+**For the next session**
+
+- On his go, write the prompt for Claude Code. It covers Skills and About built for real from `/lab/skills-about-draft` as ruled in `BRIEF.md`, Settled, Skills and About, and the CPU in its socket as the first thing with the three ways of coming to life. Read `BRIEF.md` Settled for both sections and Open 28 and 29 before writing it: this session's context is long.
+- Nothing in Skills and About as drawn is left unruled except how the three things come to life.
+
 ## 2026-11-14 · Study 24: a derby of the things in the rows of skills (Fable, web chat)
 
 **What Brandon said**

@@ -970,6 +970,12 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     - Full-Stack Engineering: "I didn't really like any of the options you gave me. They seemed too simplified."
     - Design Systems & Craft: "I didn't really love the ones that you gave me. I'm thinking something more sophisticated. Think of, like, a painter's paint swatch, and then a paintbrush that kind of like swashes in between them or something. I'm not sure, but that's just something I'm thinking of."
     - In exact terms: each thing is a small scene made to the standard of the things on the desk, a real object with what belongs round it, not a bronze emblem. The CPU and the palette with a brush are his ideas and not yet picks. The first nine options are passed over.
+- **His picks for the three things (Nov 14).** "I like option B better for AI product engineering. Option A for full stack and option A for design." From the derby at `/lab/skill-things`:
+    - AI Product Engineering: the CPU in its socket, on a square of board with lit traces. Fable had recommended the CPU opened up.
+    - Full-Stack Engineering: a screen with its back off.
+    - Design Systems & Craft: the palette and brush.
+    - The other three are in Dropped.
+    - **How they come to life is not ruled.** "The only thing I'm on the fence about is the actual particle stream creating the objects. I'm worried they won't look good. I was hoping in the derby you could show me what that looks like, but the derby was too low quality." In exact terms: he has not agreed to the things being put together out of the strike's shards. The derby could not show it well enough to judge. It is proven at the bar, with the real stream, before it is settled. Open 28.
 - **The PC is turned glass side out (Nov 14).** "PC turned glass side out looks good."
 - **The first thing the stream strikes in About is the reflector, for now (Nov 14).** "The reflector as the first thing the stream strikes in About is fine as well. I'll have to see it in action though within Claude Code. We may fine tune that later."
 - **The headphones hang on a hook, as a real pair would (Nov 14).** "One thing I do want to add to the headphones next to the skill title is like a hook they're hanging on. I want them to feel like they're hanging in 3D space on a hook like you would see in real life. I don't know if adding like a detail of when the stream passes it, they rock a little bit or something to make it seem like they're real would make sense or not, and add to the scene."
@@ -1513,6 +1519,8 @@ Each line has Fable's recommendation where there is one. None of these are rules
         - Pressing a thing strikes it again. Strike all and half speed are at the foot of the screen. `?at=1.05` holds every strike at that many seconds for a still.
         - What is not right, plainly: these are boxes, rods and discs. None has the detail he asked for, and a rough cannot show it. The paints look pale because they mirror the room. The screen's front cannot be seen in a still. The line for the stream is a flat strip. How the assembly feels in motion was not watched: the web chat draws in software.
         - Stills: `reference/studies/48-skill-things-*.jpg`.
+    - **His verdict on the derby (Nov 14), in Settled, Skills:** the CPU in its socket, the screen with its back off, the palette and brush. He is on the fence about the things being made out of the strike's shards, and found the derby too low in quality to show it. He asked whether to go on to Claude Code for a polished example or dial it in here first.
+    - **Fable's answer, put to him: go to Claude Code, and prove it on one thing first.** The web chat draws in software and has only a flat strip for the stream, so another round here would be another stand in. In Claude Code the real stream and its shards run on his graphics card. One thing is built first, the CPU in its socket, to the bar, on a page of its own, with three ways of coming to life behind a switch, for him to judge in motion: put together from the strike's shards as proposed. Uncovered by a band of light that crosses it from the strike, as a card in Work is woken. Or lit by the strike's flash with its parts dropping the last short way into place, and no shards turned into parts. The other two things are built after he picks.
 
 ## Dropped
 
@@ -1552,6 +1560,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
 - The "laid back, fun to try" voice
 - Three hovers for the buttons: light running round the border, Heat and Pull. He chose Catch (Nov 11)
 - The second build's kit, its screenshot gates and its voice rules. None of them apply here.
+- For the rows of skills: the CPU opened up, a tower in section, and samples under a loupe. He picked the CPU in its socket, the screen with its back off, and the palette and brush (Nov 14)
 - In About: his portrait as a figure beside the words. He picked his portrait as the background (Nov 14)
 - In Skills: Product Leadership as a fourth skill set, and the numbers on the rows (Nov 14)
 - In About: three tabs (about me, what I want to do, my plans for the future). He wants two, Professional and Personal (Nov 14)
