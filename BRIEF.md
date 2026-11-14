@@ -1041,6 +1041,13 @@ Each line has Fable's recommendation where there is one. None of these are rules
         - Passed over by Fable: figures that count up, which every template has, and a shelf of 3D trophies, which is four new pieces to bring to the bar.
     - Said to him: a 3D image in each card is a new piece each, the same week he cut three. A slant here sits one section above the rail that slants across About.
     - Fable's recommendation: B, with C as the quiet one, and all three drawn on the sketch for him to choose by looking.
+    - **His answer (Nov 14): "No on C. A and B are fine but I want at least 2 more options."** The maker's plate is passed over. A and B stand as options, not picks.
+    - Four more from Fable, the same night. Talk only:
+        - D · Drawer fronts: long level plates stepping down the page on a diagonal, like the fronts of an antique cabinet's drawers. Each has a knob of the blank's family at one end and an engraved label. The other reading of his "long diagonal cards".
+        - E · Tags on Work's rail: no section at all. Small engraved plaques hang under the rail that already ends Work, and each swings and lights as the stream runs over it. It would change the foot of Work, which is built.
+        - F · Stamped bars: long cast bars of bronze lying a little askew, each stamped with a figure, with the companies' marks as hallmarks. The bar itself is the 3D.
+        - G · Numerals in WORK's letters: the figures as large lit letters like the WORK title, with the stream striking one as it passes. The marks in a quiet row under them.
+    - Fable's recommendation: draw A, B and E.
 27. **The rows of skills beside the desk, as the mirror of About (Nov 14). His question, not ruled.** "Should we mirror the about section with the 3D desk object? And have the skills on the right side of it?"
     - In exact terms: About is words at the left and his portrait at the right. Skills would be its mirror: the desk at the left, and the title with the rows of skills at the right of it.
     - On the sketch: this is how `/lab/home` opens (Skills rows · Beside the desk). The rows across the page under the desk are one press away.
