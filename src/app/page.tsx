@@ -18,7 +18,7 @@ export default function Index() {
         </li>
         <li>
           <Link href="/lab/skills-about-draft">Skills and About, a fuller draft</Link>
-          <span className={styles.minor}>Phase 3 · the pair with your words and the motion roughed in, third round: the rows under the desk, the skills from your résumé, your portrait beside About&rsquo;s words, and the stream passing behind you</span>
+          <span className={styles.minor}>Phase 3 · the pair with your words and the motion roughed in, fourth round: the stream onto the desk&rsquo;s lamp, and in About two things that turn it so it goes in behind your shoulder</span>
         </li>
         <li>
           <Link href="/lab/skills-about">Skills and About, as a pair</Link>

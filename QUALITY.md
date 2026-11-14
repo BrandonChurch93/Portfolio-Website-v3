@@ -377,6 +377,9 @@ The section:
 - **A stand in for a 3D piece is worked out from real sizes.** The first long desk was plotted by eye, 1160 units long on legs 220 tall, and he called it elongated. Given a real desk's sizes in metres and one way of looking at it, the outline reads as a desk. `src/skills-about/bench.ts`.
 - **Know where a picture's parts are before laying things against it.** His shoulders are about 58 percent of the way down his portrait and his chin about 47. A line placed at 45 percent ran behind his mouth.
 - **Two things he wants can pull against each other. Draw both and say so.** The stream behind his shoulders and his portrait centered on the words cannot both be had, so the draft carries each behind a switch.
+- **Measure a picture's outline. Do not read it by eye.** The middle of his trapezius at the left of the picture is 29 percent of the way across and 54 percent down, read off the portrait's own edge a row at a time. By eye from a still it came out 60 units too far across.
+- **Say which side.** "My left shoulder", said of a picture, can be either one. Write down the reading taken and tell him.
+- **A place worked out with sines and cosines is rounded before it is drawn.** The server and the browser can differ in its last digit, and the page then does not match what the server sent. The second strike's place did.
 
 ## Rough drafts of a 3D piece
 

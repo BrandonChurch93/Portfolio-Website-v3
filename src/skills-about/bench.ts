@@ -18,5 +18,8 @@ export const put = (along: number, up: number, back: number): Pt => [
   BENCH.top - UNITS * (along * sy * sp + back * cy * sp + up * cp),
 ];
 
+// The top of the lamp's shade, where the stream can strike it: along, up and back.
+export const LAMP: [number, number, number] = [0.29, 0.42, 0.52];
+
 // The lowest thing in the scene, the foot of the near left leg.
 export const FLOOR = put(0.04, -BENCH.tall, 0.04)[1];

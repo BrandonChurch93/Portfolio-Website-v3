@@ -64,16 +64,18 @@
   overflow: visible;
 }
 
-.rail {
-  stroke: var(--bronze);
-  stroke-width: 7;
-}
-
-.blade {
+.prop {
   fill: var(--bg-2);
   stroke: var(--copper-light);
   stroke-width: 1.5;
   stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+/* His outline in the stream's mask leans with his portrait. */
+.shade {
+  transform: translate(calc((var(--mx, 0.5) - 0.5) * -14px), calc((var(--my, 0.5) - 0.5) * -8px));
+  transition: transform 0.7s var(--ease-settle);
 }
 
 .aura {
@@ -140,7 +142,7 @@
   fill: var(--pale);
 }
 
-/* His portrait leans a little away from the cursor, and comes out of the dark when the stream reaches the rail. */
+/* His portrait leans a little away from the cursor, and comes out of the dark as the stream runs toward him. */
 .portrait {
   position: absolute;
   z-index: 1;

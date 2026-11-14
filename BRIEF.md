@@ -1315,6 +1315,23 @@ Each line has Fable's recommendation where there is one. None of these are rules
         - Gone from the page: the level bar the tabs stood on, the stream between the words and him, and the switch between the two.
         - What is not right yet, plainly: the rail's 8 degrees is gentler than Work's 12, so the stream covers its 940 units in about 0.8 seconds on a quick scroll and falls behind the page. Under a short tab's words the left side is empty.
         - Stills: `reference/studies/43-skills-about-draft-3-*.jpg`.
+    - **His verdict on the third round (Nov 14), in Settled, About:** "I definitely don't like the stream coming in directly over my head." He gave a route of his own, two things for the stream to strike, and asked for thoughts on what the two things are.
+    - **The fourth round, built on his word (Nov 14). In front of him. Nothing in it is picked.** The same page. His route, drawn:
+        - The first thing stands at the left under the last row of skills, where the stream comes down. The stream strikes it and runs to the right, falling 4 degrees, for about 560 units. There is no rail under it.
+        - The second stands over the gap between the words and his portrait, about 80 units under the top of About. The stream strikes it and is thrown down to the right at 58 degrees.
+        - It goes in behind his shoulder at the left of the picture, 29 percent of the way across his portrait and 54 percent of the way down: half way between the side of his neck and the point of that shoulder, measured off the picture's own outline.
+        - It crosses behind his chest on the same line, about 300 units, comes out under him where the picture has faded away, and falls on toward Contact.
+        - It clears his face by about 100 units, the end of the tabs by about 140, and the words by more.
+        - What comes on, in order: About's title at the first strike, the tabs and words and then his portrait as the stream runs over them, the light behind him as it goes in behind his shoulder. A change of tab sends a pulse along the run, through the second thing and in behind him.
+        - Gone from the page: the rail and its Blade ends.
+    - **Fable's thoughts on what the two things are, which he asked for. Not agreed.**
+        - Not more Sun stones. A stone carries a face, and a lit face beside his own competes with it. A stone also throws the stream as a ricochet, and a ricochet that lands exactly behind a shoulder looks arranged.
+        - Not loose things from an office. Nothing holds them up on the page, and the desk a screen above is already the office.
+        - **Fable's pick: the two things that steer light on a portrait set.** A round reflector, which bounces it, and a spotlight on a yoke with barn doors, in the site's bronze and dark metal, which the stream goes into and which throws it where it is aimed. His portrait is lit the way a studio portrait is lit, with a warm light behind the sitter at the shoulder, and a spotlight makes that literal: the stream is the light behind him. It is about him as well, since photography is one of the kinds of work the site shows.
+        - It gives the page one idea from Skills down: the stream switches each thing on. The desk's lamp (Open 29), the spotlight on him, and at the foot of the page the rocket's engine (Open 12).
+        - Each is a contained 3D piece, made new. The draft draws them as outlines.
+    - What is not right yet, plainly: the band between the last row of skills and About's title is about 270 units of nearly empty page. Under a short tab's words the left side is still empty. The line reads as landing on his shoulder until the real stream is seen drawn behind his portrait. Motion is not judged here.
+    - Stills: `reference/studies/44-skills-about-draft-4-*.jpg`.
     - **The desk as a 3D piece: five calls put to him, with Fable's pick for each. Answered Nov 14: all five agreed, with the pencil added** (Settled, Skills). How it is made: in code in this repo, as his PC Builder was, or modeled through Blender on his gaming PC and loaded as a file (Open 5). What sits on it: the monitor, lamp, keyboard and mouse, a tablet and his camera, nothing new. The desk itself: a dark timber top, a bronze front edge that carries the stream, two drawers with the knob he chose. The PC under it: his PC Builder's case brought over, lit in the site's ember. The headphones: their own small piece by the title, the site's own design. Fable's pick is the first of each. After his answer: three rough desks to choose from. His `3d-asset-playbook` skill is the method.
 
 29. **The desk as a 3D piece: three rough desks (Nov 14). In front of him. Nothing in it is picked.** At `/lab/desk`, Study 23, built in the web chat on his word: "everything looks good that you mentioned", after Fable had said the three rough desks came next.
@@ -1356,6 +1373,32 @@ Each line has Fable's recommendation where there is one. None of these are rules
         - How: a kit for an Opus builder in Claude Code on his Mac, which builds the piece into `src/pieces/` behind the piece contract, with Fable as partner and judge. `CLAUDE.md`, Who does what.
     - What is not right yet in the second round, plainly: every new thing is a rough form. The keyboard's caps are plain boxes and its marks plain bars. The mouse is one shell. The PC cannot be read part by part at the page's size. The mat is featureless. The lit screen is a flat picture, which `QUALITY.md` fails in anything finished.
     - Stills: `reference/studies/43-desk-a-second-round*.jpg`.
+    - **His verdict on the second round (Nov 14), in Settled, Skills:** the design is agreed for the real build, with no more rounds of the rough draft. Short of the bar, in his words: the keyboard, the mouse and the camera "look mid", and the computer "doesn't look great at all". He likes the PC being glass, and asked whether it should be turned to show its side. He does not love the stream landing in the middle of the desk and running its front edge.
+        - He did not take the list of ten above item by item. Fable reads his approval as covering it, since each thing he named as short is on it. Said to him, his to correct.
+    - **Fable's answer on the PC: yes, turn it.** A quarter turn, so the long glass side faces the front. The whole build is then read through one pane: the cooler, the memory, the card and the column of fans. Front on, as the second round has it, the fans are what is seen and the build is behind them. It needs a bay about 520 mm wide under the desk in place of 290, so the drawers move toward the near end. The fuller draft's outline now draws it turned.
+    - **Fable's options for the stream at the desk, which he asked for. Not agreed.**
+        - **Onto the lamp. Fable's pick.** The stream comes down to the left of the screen, strikes the top of the lamp's shade and falls on past the desk's near end, touching nothing else. The lamp comes on at the strike, then the tablet, the monitor and the PC, left to right, within about a second. The stream touches the scene at one point at its edge and is gone, and what the visitor watches is the desk coming on. It keeps "One fixed light: the desk lamp and the lit monitor": the lamp lights the desk, and the stream lights the lamp. Nothing on the desk moves. The lamp is made to take the strike.
+        - Past the desk, touching nothing. The stream falls down the left and the desk comes on as it passes. The quietest, and nothing explains why the desk wakes.
+        - Along the front edge, as it was. He does not love it.
+        - Thought through and not drawn: through the glass PC, which would fill with the stream's light. The PC would have to move to the desk's near end, where the trestle stands in front of it, and the stream would come out under the desk in the middle of the rows of skills.
+        - The fuller draft at `/lab/skills-about-draft` opens on the lamp, with a switch back to the front edge.
+        - If he picks the lamp, the bench keeps its bronze angle as part of the desk, and the third call's "a bronze front edge that carries the stream" becomes "a bronze front edge".
+    - **For the kit, from his words:** everything on the desk is made to the bar, and the things he named are where the rough draft is furthest from it: the keyboard and the mouse, the camera, and the PC most of all. The PC's glass stays.
+30. **What Skills and About say (Nov 14). He asked for Fable's read of his résumé. Nothing here is ruled, and the words are his.**
+    - His words are in Settled, Words: "that's probably something that we should discuss".
+    - Fable's read, said to him:
+        - The résumé makes one argument, and it is the positioning line in Settled, Words, almost word for word: he takes a product from the first conversation with a client to production, and proves it with evaluation.
+        - Evaluating and red teaming frontier models is now a large part of it. On the site it is one list under AI Product Engineering, and the live About, written in July, does not mention it.
+        - The site's Skills makes a different argument: four pillars named in July, with the résumé's six groups poured into them.
+    - **For Skills, two things to decide:**
+        - The shape of the rows. Keep the four pillars, or cut the rows along the path a product takes through him: understand it, design it, build it, prove it. The same lists in four rows, and the section then says his positioning without a sentence of copy. Fable's pick: the path. It would change Open 6 and what he approved in the second round, the résumé's six groups under his four skill sets.
+        - The length. The 77 are the résumé's list, which is written to be matched by keyword. Some pairs say one thing twice, as "Generative AI" beside "LLMs" and "AI Agents" beside "Agentic AI". To an engineer reading the site they read as padding. Fable's suggestion: the résumé's list less its doubles, about 60, still more than the live site's 48.
+    - **For About:**
+        - The three tabs are his structure, and the live text was not written for them. Dealt out, the first tab has two paragraphs and the other two have one each. Each tab needs its own text.
+        - To be put right in the text as it stands: "Twelve years" and "40+ clients" (Settled, Words), the tense of the line about his studio, and no mention of the evaluation work.
+        - What the résumé cannot say is what About is for: why he builds, what he wants to do, what he plans.
+    - One thing above both sections: the résumé's title and the hero's "AI Product Engineer" are different (Open 1). The hero is worked last, and the title still decides how Skills and About are worded.
+    - He rewrites the copy himself. Fable drafts only if he asks.
 
 ## Dropped
 

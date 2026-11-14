@@ -2,6 +2,50 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · The desk agreed for the real build, a new route into About, and a read of his résumé (Fable, web chat)
+
+**What Brandon said**
+
+- "OK, the desk isn't bad, assuming that Claude Code is going to make this look much better. I think I'm willing to approve the current design." No more rounds of the rough desk. Short of the bar: the keyboard and mouse "still kind of look mid", the camera the same, and the computer "doesn't look great at all", though he likes it as glass and wonders about turning it side on.
+- He does not love the stream landing in the middle of the desk: it will "steal the show over the scene". The run along the front edge was Fable's idea and he was "50-50" on it.
+- "I definitely don't like the stream coming in directly over my head." His route: two things for the stream to strike, the second sending it in behind his shoulder at the trapezius and "directly through my body diagonally". Sun stones or other props, and he asked for thoughts.
+- He wants to talk through what Skills and About say, and asked what Fable thought of his résumé.
+- All of it is in `BRIEF.md`, Settled, pushed before anything was built.
+
+**What was built**
+
+- `/lab/skills-about-draft`, fourth round. About: his route, with a reflector and a spotlight as the two things. Skills: the stream onto the lamp, with a switch back to the front edge, and the PC turned in the outline. `BRIEF.md`, Open 28 and 29.
+- Nothing on `/lab/desk`. He asked for no more rounds of it.
+
+**What was looked at**
+
+- Stills of the whole draft with the line drawn. A live page scrolled down and back up on both desk routes: everything comes on in order and goes away again, a tab's pulse runs along the line to him, no errors.
+
+**What went wrong on the way**
+
+- The page did not match what the server sent. The second strike's place, worked out with a tangent, differed in its last digit between the server and the browser. Places are rounded now.
+- His shoulder was first read off a still by eye and came out 60 units too far across. It is measured off the portrait's outline now.
+
+**Calls made for him, each said to him**
+
+- "My left shoulder" is read as the shoulder at the left of the picture.
+- His approval of the desk is read as covering the list of ten things to be built for real.
+- The two things in About are drawn as a reflector and a spotlight, and the stream at the desk as a strike on the lamp. Both are Fable's suggestions and neither is agreed.
+
+**What is not right yet, plainly**
+
+- About has about 270 units of nearly empty page between the last row of skills and its title, and the left side is empty under a short tab's words.
+- The line reads as landing on his shoulder. Whether it reads as going behind him waits for the real stream.
+- Motion is not judged here.
+
+**Waiting on him**
+
+- About's route and the two things. The stream at the desk. The PC turned. The shape and length of the rows of skills, `BRIEF.md`, Open 30. Then the words, which are his, and the kit for the desk.
+
+**For the next session**
+
+- His résumé was read again for Open 30. Nothing from it is in this repo but the lists of skills already in `src/skills-about/content.ts`.
+
 ## 2026-11-14 · The bench picked, its second round, and About's stream behind him (Fable, web chat)
 
 **What Brandon said**

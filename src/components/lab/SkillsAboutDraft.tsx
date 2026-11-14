@@ -5,7 +5,7 @@ import { READING_LINE } from '../../config/site';
 import { lamp } from '../../lamp/lamp';
 import { nearest, point, reach } from '../../page-sketch/plan';
 import { ABOUT_TABS, COMPETENCIES } from '../../skills-about/content';
-import { ABOUT, SKILLS, draft } from '../../skills-about/draft';
+import { ABOUT, SKILLS, TURNS, draft, runAt, type DeskRoute } from '../../skills-about/draft';
 import { W } from '../../skills-about/plan';
 import { clock } from '../../world/clock';
 import { Phones } from './DeskOutline';
@@ -16,19 +16,20 @@ import { Workbench } from './Workbench';
 // Over a gap longer than FAR it catches up faster.
 const SPEED = 1150;
 const FAR = 2600;
-// How long a tab's pulse takes along the bar, in seconds, and how far along it is when the words change.
+// How long a tab's pulse takes to reach him, in seconds, and how far along it is when the words change.
 const PULSE = { run: 0.75, swap: 0.45 };
 // Where the rows start and how tall they are until the page has been read.
 const GUESS = { tops: [0, 190, 310, 500], tall: 640 };
 
-const tr = (x: number, y: number) => `translate(${x} ${y})`;
+const tr = (x: number, y: number) => `translate(${x.toFixed(1)} ${y.toFixed(1)})`;
 const ease = (u: number) => 1 - (1 - u) ** 3;
 
 // Study 22: Skills and About as a pair, with his real words and the motion roughed in.
-// ?speed=half, ?whole and ?ui=0 open it on those.
+// ?desk=edge, ?speed=half, ?whole and ?ui=0 open it on those.
 export function SkillsAboutDraft() {
   const id = useId().replace(/:/g, '');
   const [slow, setSlow] = useState(false);
+  const [desk, setDesk] = useState<DeskRoute>('lamp');
   const [ui, setUi] = useState(true);
   const [whole, setWhole] = useState(false);
   const [reached, setReached] = useState<Set<string>>(new Set());
@@ -38,13 +39,14 @@ export function SkillsAboutDraft() {
   const board = useRef<HTMLDivElement>(null), list = useRef<HTMLDivElement>(null);
   const stream = useRef<SVGGElement>(null), head = useRef<SVGGElement>(null), spark = useRef<SVGGElement>(null);
   const at = useRef(0), replaying = useRef(false), pulse = useRef<{ t: number; from: number } | null>(null);
-  const p = useMemo(() => draft(rows.tops, rows.tall), [rows]);
+  const p = useMemo(() => draft(rows.tops, rows.tall, desk), [rows, desk]);
   const live = useRef({ p, reached, whole, slow, tab, showing });
   live.current = { p, reached, whole, slow, tab, showing };
 
   useEffect(() => {
     const q = new URLSearchParams(location.search);
     if (q.get('speed') === 'half') setSlow(true);
+    if (q.get('desk') === 'edge') setDesk('edge');
     if (q.get('ui') === '0') setUi(false);
     if (q.has('whole')) setWhole(true);
     lamp.bind();
@@ -111,9 +113,9 @@ export function SkillsAboutDraft() {
   }), []);
 
   const got = (c: string) => reached.has(c);
-  const R = SKILLS.rows, A = ABOUT.rail, P = ABOUT.portrait, T = ABOUT.words, top = p.about;
-  const railAt = (x: number) => top + A.ay + ((x - A.ax) / (A.bx - A.ax)) * (A.by - A.ay);
-  const flare = `${id}-flare`, aura = `${id}-aura`, hidden = `${id}-hidden`, fade = `${id}-fade`;
+  const R = SKILLS.rows, P = ABOUT.portrait, T = ABOUT.words, top = p.about;
+  const [fx, fy] = TURNS.first, [sx, sy] = TURNS.second;
+  const flare = `${id}-flare`, aura = `${id}-aura`, hidden = `${id}-hidden`, fade = `${id}-fade`, shade = `${id}-shade`;
   const cue = (c: string) => p.cues.find((k) => k.id === c)!;
   const place = (x: number, y: number, w?: number): CSSProperties => ({ left: `${(x / W) * 100}%`, top: `${(y / p.h) * 100}%`, width: w ? `${(w / W) * 100}%` : undefined });
   const pick = (i: number) => {
@@ -123,7 +125,7 @@ export function SkillsAboutDraft() {
     if (!el || !on || !got('words')) { pulse.current = null; return; }
     const r = el.getBoundingClientRect(), b = on.getBoundingClientRect();
     const x = ((r.left + r.width / 2 - b.left) / b.width) * W;
-    pulse.current = { t: clock.now(), from: nearest(p.line, x, railAt(x)) };
+    pulse.current = { t: clock.now(), from: nearest(p.line, x, top + runAt(x)) };
   };
   const step = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
     const by = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0, n = ABOUT_TABS.length;
@@ -139,17 +141,20 @@ export function SkillsAboutDraft() {
     <main className={styles.main}>
       <header className={styles.head}>
         <p className={styles.label}>Study 22 · Skills and About</p>
-        <h1 className={styles.heading}>A fuller draft, third round</h1>
+        <h1 className={styles.heading}>A fuller draft, fourth round</h1>
         <p className={styles.lede}>
-          The rows of skills under the desk, the skills from your résumé, your portrait beside About’s words, and the
-          stream passing behind you. Scroll: the line is the stream. The buttons at the foot of the screen play a section
-          again or at half speed.
+          The stream onto the desk’s lamp and not along its front edge, and in About two things that turn it so it goes
+          in behind your shoulder. Scroll: the line is the stream. The buttons at the foot of the screen play a section
+          again, run it at half speed, or put the stream back on the desk’s front edge.
         </p>
         <ul className={styles.caveats}>
           <li>The lists of skills are your résumé’s, word for word: its six groups under your four skill sets. Each set’s name and the two lines beside it are your live site’s.</li>
           <li>About’s paragraphs are your live site’s, dealt out under the three tabs. Twelve years and 40+ clients are shown as they stand and are down for correction.</li>
-          <li>In About the stream stays clear of the tabs and the words. It runs a rail under the last row of skills, drops off its end behind your portrait, and that is what brings the light up behind you. A change of tab sends a pulse down the rail to you.</li>
-          <li>The desk, the PC and the headphones are still outlines. The stream is still a line. Type sizes and spacing are a first pass.</li>
+          <li>At the desk the stream strikes the lamp and falls on past the desk’s near end. The lamp comes on, then the screens, then the PC, left to right. The switch at the foot of the screen puts it back on the front edge to compare.</li>
+          <li>The PC is turned so its long glass side faces you.</li>
+          <li>In About the stream strikes two things. The first, under the last row of skills, sends it to the right on a gentle grade. The second throws it down steeply to go in behind your shoulder at the left of the picture, half way between your neck and the point of the shoulder. It crosses behind you, which is what brings the light up, and comes out under you. It never touches your head, the tabs or the words. A change of tab sends a pulse along it to you.</li>
+          <li>The two things are drawn as a round reflector and a spotlight. That is a suggestion and nothing agreed.</li>
+          <li>The desk, the PC, the headphones, the reflector and the spotlight are outlines. The stream is still a line. Type sizes and spacing are a first pass.</li>
           <li>For judging: where things sit, what appears when, in what order, how fast. Not a phone.</li>
         </ul>
       </header>
@@ -167,39 +172,63 @@ export function SkillsAboutDraft() {
               <stop offset="0.5" stopColor="var(--ember)" stopOpacity="0.5" />
               <stop offset="1" stopColor="var(--ember)" stopOpacity="0" />
             </radialGradient>
-            {/* Behind his portrait the stream is not seen: it comes out under him, where the picture has faded away. */}
+            {/* Behind him the stream is not seen. The mask is his own outline, and lets the stream back in under him,
+                where the picture has faded away. */}
+            <filter id={shade}>
+              <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" />
+            </filter>
             <linearGradient id={fade} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0.88" stopColor="#000" />
+              <stop offset="0" stopColor="#fff" stopOpacity="0" />
               <stop offset="1" stopColor="#fff" />
             </linearGradient>
             <mask id={hidden} maskUnits="userSpaceOnUse" x={0} y={0} width={W} height={p.h}>
               <rect x={0} y={0} width={W} height={p.h} fill="#fff" />
-              <rect x={P.x + P.w * 0.22} y={top + P.y + P.h * 0.115} width={P.w * 0.56} height={P.h * 0.925} fill={`url(#${fade})`} />
+              <image href="/media/portrait-cut-960.webp" x={P.x} y={top + P.y} width={P.w} height={P.h} filter={`url(#${shade})`} className={styles.shade} />
+              <rect x={P.x} y={top + P.y + P.h * 0.93} width={P.w} height={P.h * 0.1} fill={`url(#${fade})`} />
             </mask>
           </defs>
           <g transform={tr(0, p.skills)}>
-            <Workbench shown={got('near')} on={got('desk')} />
+            <Workbench shown={got('near')} on={got('desk')} sweep={desk === 'lamp'} />
             <Phones at={SKILLS.phones} shown={got('title')} lively />
           </g>
           <ellipse cx={P.x + P.w / 2} cy={top + P.y + P.h * 0.42} rx={410} ry={290} fill={`url(#${aura})`} className={styles.aura} data-on={got('behind')} />
-          <line x1={A.ax} y1={top + A.ay + 5} x2={A.bx} y2={top + A.by + 5} className={styles.rail} />
-          <path d={`M${A.ax} ${top + A.ay - 3} l-28 -1 l28 14 Z M${A.bx} ${top + A.by} l26 12 l-27 1 Z`} className={styles.blade} />
+          {/* The first thing it strikes: a round reflector seen nearly edge on, its face up and to the right. */}
+          <g transform={`${tr(fx, top + fy)} rotate(${45 + ABOUT.first.grade / 2})`} className={styles.prop}>
+            <line x1={0} y1={16} x2={0} y2={44} />
+            <circle cx={0} cy={50} r={7} />
+            <ellipse cx={0} cy={8} rx={50} ry={9} />
+            <ellipse cx={0} cy={5} rx={42} ry={5} />
+          </g>
+          <g className={styles.prop}>
+            <line x1={sx} y1={top + sy} x2={sx} y2={top + sy - 62} />
+            <rect x={sx - 22} y={top + sy - 68} width={44} height={6} rx={2} />
+          </g>
           <g mask={`url(#${hidden})`}>
-          <g ref={stream} className={styles.line}>
-            {[styles.haze, styles.glow, styles.body, styles.core].map((c) => <path key={c} d={p.line.d} className={c} strokeDasharray="0 99999" />)}
-          </g>
-          {['desk', 'about'].map((c) => (
-            <g key={c} className={styles.strike} data-on={got(c)} transform={tr(cue(c).x, cue(c).y)}>
-              <circle r={26} fill={`url(#${flare})`} />
-              {[20, 75, 130, 200, 255, 320].map((a) => <line key={a} x1={0} y1={0} x2={15} y2={0} transform={`rotate(${a})`} />)}
-              <circle r={2.6} className={styles.dot} />
+            <g ref={stream} className={styles.line}>
+              {[styles.haze, styles.glow, styles.body, styles.core].map((c) => <path key={c} d={p.line.d} className={c} strokeDasharray="0 99999" />)}
             </g>
-          ))}
-          <g ref={head} className={styles.lead}>
-            <circle r={34} fill={`url(#${flare})`} />
-            {[70, 100, 125, 55, 150].map((a) => <line key={a} x1={0} y1={0} x2={20} y2={0} transform={`rotate(${a})`} />)}
-            <circle r={3.4} className={styles.dot} />
           </g>
+          {/* The second: a spotlight aimed at his shoulder. The stream goes in at its side and comes out of its lens. */}
+          <g transform={`${tr(sx, top + sy)} rotate(${ABOUT.enter.angle})`} className={styles.prop}>
+            <rect x={-46} y={-13} width={12} height={26} rx={3} />
+            <rect x={-36} y={-24} width={72} height={48} rx={10} />
+            <rect x={36} y={-27} width={9} height={54} rx={2} />
+            <path d="M45 -27 L70 -44 L70 -38 L45 -21 Z M45 27 L70 44 L70 38 L45 21 Z" />
+            <circle r={6} />
+          </g>
+          <g mask={`url(#${hidden})`}>
+            {['desk', 'about', 'throw'].map((c) => (
+              <g key={c} className={styles.strike} data-on={got(c)} transform={tr(cue(c).x, cue(c).y)}>
+                <circle r={26} fill={`url(#${flare})`} />
+                {[20, 75, 130, 200, 255, 320].map((a) => <line key={a} x1={0} y1={0} x2={15} y2={0} transform={`rotate(${a})`} />)}
+                <circle r={2.6} className={styles.dot} />
+              </g>
+            ))}
+            <g ref={head} className={styles.lead}>
+              <circle r={34} fill={`url(#${flare})`} />
+              {[70, 100, 125, 55, 150].map((a) => <line key={a} x1={0} y1={0} x2={20} y2={0} transform={`rotate(${a})`} />)}
+              <circle r={3.4} className={styles.dot} />
+            </g>
           </g>
           <g ref={spark} className={styles.lead}>
             <circle r={46} fill={`url(#${flare})`} />
@@ -248,6 +277,11 @@ export function SkillsAboutDraft() {
       {ui && (
         <div className={styles.panel}>
           <div className={styles.controls}>
+            <div className={styles.group} role="group" aria-label="How the stream meets the desk">
+              <span className={styles.groupName}>Stream at the desk</span>
+              <button type="button" className={styles.choice} aria-pressed={desk === 'lamp'} onClick={() => setDesk('lamp')}>Onto the lamp</button>
+              <button type="button" className={styles.choice} aria-pressed={desk === 'edge'} onClick={() => setDesk('edge')}>Along the front edge</button>
+            </div>
             <div className={styles.group} role="group" aria-label="How fast everything runs">
               <span className={styles.groupName}>Speed</span>
               <button type="button" className={styles.choice} aria-pressed={!slow} onClick={() => setSlow(false)}>Full</button>
