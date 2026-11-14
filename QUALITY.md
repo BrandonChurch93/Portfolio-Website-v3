@@ -347,6 +347,17 @@ The section:
 - **Know what drew the picture.** The scripts print `hardware` or `software`. Software pictures (the web chat's workspace) are fair for form, layout and color. They are not fair for motion, smoothness or speed. Brandon judges motion on his own machine.
 - **If it still fails after several rounds of fixing, stop fixing the same way.** Research how the best work of that kind is done, then rebuild that part.
 
+## A sketch of the whole page
+
+`BRIEF.md`, Open 25, has what the sketch at `/lab/home` holds. A sketch is judged for layout and nothing else. It is worth showing when all of these are true:
+
+1. **It is not title, grid, button, repeat.** No two sections are laid out alike, and each is shaped by what the stream does there.
+2. **Every sideways move of the stream has something carrying it,** and every turn has a cause. Nothing is there only to steer it.
+3. **It never runs straight down for long.** A free fall has a wander, and the longest ones are said out loud.
+4. **It does not touch everything.** Outside Work the stream meets one or two things a section.
+5. **Each 3D piece is drawn at the size and outline it would have,** and none is cut off or behind words.
+6. **It says what it is not.** Look, motion, words and the design of any piece are not being judged, and anything that goes against a settled line is named.
+
 ## How to show Brandon something
 
 1. Say what it is and where to open it.

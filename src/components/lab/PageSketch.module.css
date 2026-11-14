@@ -1,0 +1,485 @@
+.main {
+  position: relative;
+  min-height: 100svh;
+  padding-bottom: 8rem;
+  background: var(--bg);
+}
+
+.sheet {
+  display: block;
+  width: min(100%, 1720px);
+  height: auto;
+  margin: 0 auto;
+  overflow: visible;
+}
+
+.whole {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-6);
+  padding: var(--space-5) var(--space-5) 0;
+}
+
+.half {
+  height: calc(100svh - 9.5rem);
+  width: auto;
+  max-width: 48%;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+}
+
+.top {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 3.5rem;
+  padding: 0 var(--edge);
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transform: translateY(-102%);
+  transition: transform var(--dur-2) var(--ease-settle);
+}
+
+.top.on {
+  transform: none;
+}
+
+.topName {
+  font-family: var(--font-display);
+  font-weight: 500;
+}
+
+.topLinks {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.topLink {
+  min-height: var(--touch);
+  padding: 0 var(--space-4);
+  border: 0;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.topLink[aria-current='true'] {
+  color: var(--pale);
+}
+
+.panel {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  z-index: 6;
+  width: max-content;
+  max-width: calc(100vw - 2 * var(--space-4));
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--line-strong);
+  border-radius: 1.75rem;
+  background: color-mix(in srgb, var(--bg-2) 94%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transform: translateX(-50%);
+}
+
+.caption {
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--copper-light);
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1) var(--space-5);
+}
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.groupName {
+  margin-right: var(--space-2);
+  font-size: var(--step--1);
+  color: var(--text-2);
+}
+
+.choice {
+  min-height: 2.5rem;
+  padding: 0 var(--space-4);
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--text-2);
+  cursor: pointer;
+}
+
+.choice[aria-pressed='true'] {
+  color: var(--pale);
+  background: color-mix(in srgb, var(--ember) 55%, transparent);
+  box-shadow: inset 0 0 0 1px var(--flame);
+}
+
+.choice:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.choice:focus-visible,
+.topLink:focus-visible {
+  outline: var(--focus);
+  outline-offset: var(--focus-offset);
+}
+
+.name {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 500;
+  fill: var(--text);
+}
+
+.link,
+.cat,
+.label,
+.tag,
+.note,
+.onPrimary,
+.onAccent {
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.link {
+  font-size: 13px;
+  fill: var(--text-3);
+}
+
+.cat {
+  font-size: 13px;
+  fill: var(--text-3);
+}
+
+.cat[data-pressed='true'] {
+  fill: var(--pale);
+}
+
+.label {
+  font-size: 15px;
+  fill: var(--copper-light);
+}
+
+.tag {
+  font-size: 11.5px;
+  fill: var(--text-3);
+}
+
+.note {
+  font-size: 12.5px;
+  fill: var(--hot);
+}
+
+.onPrimary {
+  font-size: 13px;
+  fill: var(--bg);
+}
+
+.onAccent {
+  font-size: 13px;
+  fill: var(--copper-light);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 72px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  fill: var(--text);
+}
+
+.title[data-wide] {
+  font-size: 112px;
+  letter-spacing: 0.2em;
+}
+
+.bar {
+  fill: color-mix(in srgb, var(--text-3) 42%, var(--bg));
+}
+
+.heavy {
+  fill: color-mix(in srgb, var(--text) 70%, var(--bg));
+}
+
+.rule {
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+
+.primary {
+  fill: var(--copper);
+}
+
+.accent {
+  fill: none;
+  stroke: var(--copper);
+  stroke-width: 1.5;
+}
+
+.words {
+  transition: opacity var(--dur-3) var(--ease-settle);
+}
+
+.words[data-on='false'] {
+  opacity: 0.14;
+}
+
+.ink,
+.solid,
+.leg,
+.railBar,
+.ray {
+  stroke: var(--copper);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  transition: stroke var(--dur-2) linear;
+}
+
+.ink,
+.leg {
+  fill: none;
+}
+
+.solid {
+  fill: var(--bg-2);
+}
+
+.leg {
+  stroke-width: 3;
+}
+
+.railBar {
+  stroke-width: 9;
+  stroke: var(--bronze);
+}
+
+.ray {
+  stroke-width: 0.8;
+  stroke: var(--bronze);
+}
+
+.shade {
+  fill: var(--bg);
+  opacity: 0.75;
+}
+
+.obj[data-on='false'] .ink,
+.obj[data-on='false'] .solid,
+.obj[data-on='false'] .leg {
+  stroke: color-mix(in srgb, var(--bronze) 50%, var(--bg));
+}
+
+.obj[data-on='true'] .ink,
+.obj[data-on='true'] .solid,
+.obj[data-on='true'] .leg {
+  stroke: var(--copper-light);
+}
+
+.lit {
+  opacity: 0;
+  transition: opacity var(--dur-2) linear;
+}
+
+.obj[data-on='true'] .lit {
+  opacity: 1;
+}
+
+.glass {
+  fill: color-mix(in srgb, var(--flame) 46%, var(--bg));
+}
+
+.cone {
+  fill: color-mix(in srgb, var(--hot) 22%, transparent);
+}
+
+.hot {
+  fill: none;
+  stroke: var(--pale);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.ring {
+  fill: none;
+  stroke: var(--hot);
+  stroke-width: 3;
+}
+
+.basin {
+  fill: color-mix(in srgb, var(--flame) 55%, var(--bg));
+}
+
+.pool {
+  fill: color-mix(in srgb, var(--ember) 40%, transparent);
+  stroke: none;
+}
+
+.card .face,
+.card .blank {
+  transition: opacity var(--dur-2) linear;
+}
+
+.card[data-on='true'] .blank,
+.card[data-on='false'] .face {
+  opacity: 0;
+}
+
+.card .face .solid,
+.card .face .ink {
+  stroke: var(--copper-light);
+}
+
+.card .blank .solid,
+.card .blank .ink {
+  stroke: color-mix(in srgb, var(--bronze) 80%, var(--bg));
+}
+
+.picture {
+  fill: color-mix(in srgb, var(--bronze) 34%, var(--bg));
+}
+
+.band {
+  fill: color-mix(in srgb, var(--bronze) 60%, var(--bg));
+}
+
+.glowBase {
+  opacity: 0.35;
+}
+
+.aura {
+  opacity: 0;
+  transition: opacity var(--dur-3) var(--ease-settle);
+}
+
+.aura[data-on='true'] {
+  opacity: 1;
+}
+
+.portrait {
+  transition: opacity var(--dur-3) var(--ease-settle);
+}
+
+.portrait[data-on='false'] {
+  opacity: 0.3;
+}
+
+.rocket {
+  transition: transform var(--dur-1) linear;
+}
+
+.rocket .solid,
+.rocket .ink {
+  stroke: color-mix(in srgb, var(--bronze) 50%, var(--bg));
+}
+
+.rocket[data-on='true'] .solid,
+.rocket[data-on='true'] .ink {
+  stroke: var(--copper-light);
+  fill: color-mix(in srgb, var(--text) 16%, var(--bg-2));
+}
+
+.plume {
+  fill: var(--hot);
+  opacity: 0;
+  transition: opacity var(--dur-1) linear;
+}
+
+.rocket[data-lifted='true'] .plume {
+  opacity: 0.9;
+}
+
+.line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+}
+
+.line[data-whole='true'] {
+  opacity: 1;
+}
+
+.line path {
+  fill: none;
+}
+
+.haze {
+  stroke: var(--ember);
+  stroke-width: 26;
+  opacity: 0.3;
+}
+
+.glow {
+  stroke: var(--flame);
+  stroke-width: 11;
+  opacity: 0.3;
+}
+
+.body {
+  stroke: var(--hot);
+  stroke-width: 4;
+  opacity: 0.8;
+}
+
+.core {
+  stroke: var(--pale);
+  stroke-width: 1.6;
+}
+
+.head,
+.strike {
+  opacity: 0;
+  transition: opacity var(--dur-1) linear;
+}
+
+.strike[data-on='true'] {
+  opacity: 1;
+}
+
+.head line,
+.strike line {
+  stroke: var(--hot);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+}
+
+.dot {
+  fill: var(--pale);
+}
+
+@media (max-width: 760px) {
+  .groupName {
+    display: none;
+  }
+}

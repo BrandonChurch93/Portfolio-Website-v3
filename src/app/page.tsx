@@ -13,6 +13,14 @@ export default function Index() {
       <h2 className={styles.group}>Studies</h2>
       <ul className={styles.list}>
         <li>
+          <Link href="/lab/home">The whole page, sketched</Link>
+          <span className={styles.minor}>Phase 3 · a wireframe from the hero to the footer, with the stream&rsquo;s route and the 3D pieces as outlines</span>
+        </li>
+        <li>
+          <Link href="/lab/work-blanks">Four blanks</Link>
+          <span className={styles.minor}>Phase 3 · the sleeping card in mirror bronze, four ways. He picked the engine turned dial</span>
+        </li>
+        <li>
           <Link href="/lab/palette">Color and light</Link>
           <span className={styles.minor}>Phase 1 · the palette from the portrait</span>
         </li>

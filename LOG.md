@@ -2,6 +2,60 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · Study 18: the whole page, sketched from the hero to the footer (Fable, web chat)
+
+**What Brandon said**
+
+- He wants the remaining scenes for the big 3D objects sketched from the hero down to the footer, with simple stand ins, and then to go section by section as with Work, the hero last. "We may completely redo an entire section after you do this. Everything is up for refining."
+- On how much of the site sleeps until the stream arrives: he cannot say until he sees it, and left it to Fable. "What do you think, a mix? Do it where you think appropriate?"
+- "Let's go with your recommendation, I've turned you up. Go ahead and create the plan and build the sketch!"
+
+**What was built**
+
+- `/lab/home`: `src/page-sketch/plan.ts`, `src/components/lab/PageSketch.tsx` and its stylesheet, `src/app/lab/home/page.tsx`. It is on the index at `/`.
+- One SVG, 1460 units wide, scaled to the screen up to 1720 px. The hero's height follows the window (760 to 1100 units), and everything below is placed from it.
+- `plan(hero)` returns each section's top, four lines for the stream (the fall from the city, the two sides through Work, and one line from the meeting to the pad) and the things it strikes, each with how far along its line it is. The page shows a line up to where its leading end has come down to, at `READING_LINE` of the window, as the Work wireframe did.
+- Work's layout is the surge study's stage. Its constants are now exported from `src/work-surge/surge.ts` and imported, not copied. Above the category bar the route is the path as it was, and from the bar to the meeting it is hard corners, as he ruled for the bolt.
+- The pieces are line drawings made from their stills in `reference/pieces/`. The workbench is its still mapped point by point at half size and flipped, so the front edge the stream runs along comes out as it would.
+- The foot bar: what sleeps (Nothing, A mix, Everything), notes on or off, and Scroll it or Whole page. Whole page draws the page as two sheets side by side, the hero and Work, then everything after, with the whole line drawn.
+- A slim top bar with the four sections comes in after the hero, and its links scroll to them.
+
+**The plan the sketch draws.** It is `BRIEF.md`, Open 25. In short:
+
+- The stream's sideways moves each have a carrier: the desk's front edge takes it left, a rail across About takes it right behind his shoulders, the rocket's flume brings it back to the center line. The page starts and ends on that line, the city above and the rocket below.
+- The handheld and the camera stand between Work and Skills as Games and Photography. The PC stands under the desk beside the rows of skills.
+- A mix sleeps one main thing a section and never words, the hero or his portrait.
+
+**What was looked at, and what was not**
+
+- Stills at 1440 by 900 of every screen from the hero to the footer, in each of the three sleep settings, the whole page view with and without notes, the hero at 1920 by 1080 and on an iPad held sideways. `reference/studies/34-page-sketch-*.jpg`.
+- The switches and links pressed by a script in a live page: the three sleep settings change which cards show, notes go, the whole page view shows two sheets, a section link scrolls and marks the section, and at the foot of the page the rocket has lifted.
+- Not looked at: a phone, which is not designed. Any of it as real stream, real pieces or real words, which it is not.
+
+**Fable's calls. All his to overturn**
+
+- The two pieces between Work and Skills, and that the stream strikes both.
+- The PC under the desk, beside the rows.
+- The workbench and the rocket drawn from their other side.
+- The rail in About, and the stream behind his shoulders on it.
+- The rocket on the page's center line, the stream ending in its pad.
+- What sleeps in A mix.
+- The top bar with the sections in it, and no categories docking.
+- Section titles smaller than WORK, since WORK is the one the stream strikes.
+
+**Worth knowing, so it is not found twice**
+
+- A stream only goes sideways on something sloped. So the side of the page each object sits on follows from the stream: the desk had to be seen from its other side to carry the stream left, which is what let the portrait stay on the right as settled.
+- With the desk on the right instead, the desk and the portrait are both on the right and three sections in a row read as words left, object right.
+- A flume that climbs toward the pad on screen cannot carry a stream that only falls. It comes in from behind the pad, so it runs down the screen.
+- The portrait's shoulders fill almost its whole width, so the rail is hidden behind him for most of it and shows going in and coming out. Its top is placed 90 units above the section's so the rail clears his chin by about 60.
+- `[data-on]` on a group drives every sleeping state from the stylesheet. The line's length and the rocket's lift are written straight to the SVG each frame, and React only draws again when the set of things reached changes.
+
+**Half finished**
+
+- His look at the sketch, and his rulings on it.
+- Claude Code has the fourth pass on `/lab/work`, if he has sent it. This sketch does not touch that page.
+
 ## 2026-11-13 · Handoff to Claude Code: the fourth pass on the Work page (Fable, web chat)
 
 **What Brandon said**

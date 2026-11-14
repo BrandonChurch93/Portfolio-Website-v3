@@ -13,11 +13,11 @@ export interface Press { t: number; cat: number; mode: Mode; T: number }
 export interface Fonts { display: string; mono: string }
 
 const CX = STAGE.w / 2;
-const CARD = { w: 460, h: 510, r: 18 };
-const CARDS = [{ x: 250, y: 386 }, { x: 750, y: 386 }, { x: 250, y: 970 }, { x: 750, y: 970 }];
-const STONE = { x: 93, y: 904, r: 41 };
-const RAIL = { ax: 113, ay: 1590, bx: 611, by: 1657 };
-const BUTTON = { l: 638, r: 822, t: 1548, b: 1594 };
+export const CARD = { w: 460, h: 510, r: 18 };
+export const CARDS = [{ x: 250, y: 386 }, { x: 750, y: 386 }, { x: 250, y: 970 }, { x: 750, y: 970 }];
+export const STONE = { x: 93, y: 904, r: 41 };
+export const RAIL = { ax: 113, ay: 1590, bx: 611, by: 1657 };
+export const BUTTON = { l: 638, r: 822, t: 1548, b: 1594 };
 const STEP = 4;
 const H = 1 / 120;
 // A card's change: the old one lets go and is gone by out, the new one comes up from below between in0 and strike,

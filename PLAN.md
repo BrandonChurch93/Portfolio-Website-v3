@@ -40,6 +40,8 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **His reaction to the ideas for the blank (Nov 13):** he likes B · The mould and A · Etched layout, D · Engine turned "sounds cool", and C · Doors is cut for another option
 - **In front of Brandon (Nov 13):** the derby of blanks at `/lab/work-blanks`, Study 17, built in the web chat: A · Etched layout, B · The mould, C · Facets in place of Doors, D · Engine turned, each with its change between asleep and awake, all four lit by long lights that stand off the screen. He picks one, and says whether the lights and the change are right
 - **His pick of a blank (Nov 13):** D · Engine turned, "my favorite by far". Fable had recommended B from stills. `BRIEF.md`, The stream, "His pick of a blank"
+- **The whole page, sketched (Nov 14):** he asked for a sketch of the page from the hero to the footer before the next section is refined, with the hero refined last, and said go. It is at `/lab/home`, Study 18, built in the web chat. `BRIEF.md`, Open 25, has the stream's route, each section, what sleeps, and what goes against a settled line. Waiting on his look
+- **Next, once he has looked:** his rulings on the sketch, then the first section after Work is refined. Fable's proposed order: Skills with the two pieces above it, About, Contact and the footer, the hero
 - **His word on D (Nov 13):** the raised piece at the middle is a handle to him and stays as 3D as it is. The dark area reads as a shadow, is why he chose D, and stays. Both may only be made better. `BRIEF.md`, The stream, "What he likes in D, and what must not be lost"
 - **Going to Claude Code as one round, the fourth pass on `/lab/work`:** the stones' strike halved and scattered, the left path mirroring the right, the bolt only from the category bar to the meeting, no coloring of a picture at a strike, cards asleep whenever the stream is not on them, the engine turned blank lit by lights off the screen, its change as a band of light from the strike, nothing happening on a sleeping row at a press, and a lighter "Case study". `BRIEF.md`, The stream, "The fourth pass on the Work page". Its tests are in `QUALITY.md` under the same name. The prompt is in `LOG.md`, top entry, and replaces the one under "His look at the third pass, after the blank", which was never sent
 - **Still waiting on his word:** whether he can follow the surge's front down the sides, the settle onto a new height, the line added to the card's stylesheet. And from before: the card with the stream on it, the second row's strike, the stone and the rail's fittings as objects, and a lighter resting color for "Case study"
@@ -98,7 +100,7 @@ Set aside, kept as records: the molten metal test shot at `/lab/pour`, its looks
 ## Phase 3 · The home page, composed around the stream
 
 - [x] Work's layout, chosen from wireframes at `/lab/work-draft`: his own sketch on straight rows, with a post beside each side and a rail at the foot. The posts and the rail are still to be judged as real objects (Nov 12)
-- [ ] Layout sketches for the other sections
+- [~] Layout sketches for the other sections: the whole page at `/lab/home`, hero to footer (web chat, Nov 14). Waiting on his look
 - [ ] The spacing system
 - [ ] Hero
 - [~] Work · the stream's real route with the posts and the rail, at `/lab/work` (Claude Code)
@@ -113,7 +115,7 @@ Set aside, kept as records: the molten metal test shot at `/lab/pour`, its looks
 - [ ] Skills
 - [ ] About
 - [ ] Contact and the bottom of the page
-- [ ] The stream's full route down the page
+- [~] The stream's full route down the page: sketched as a line at `/lab/home` (Nov 14), as a proposal. Not built
 - [ ] The mobile pass: every section on a phone and on any screen too narrow for its layout, designed together once every section is finished. His ruling, Nov 13. Until then those screens show plain stand ins
 - [ ] A tablet held sideways, desktop and 4K
 
