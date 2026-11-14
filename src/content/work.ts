@@ -109,8 +109,8 @@ export const software: WorkItem[] = [
 ];
 
 // Stand ins for the three categories that have no projects on the cards yet. Nothing on them is real: the names say
-// so, the words only fill the room real words will take, and the pictures are plain shapes. The three sets are
-// written to different lengths, so their cards come out shorter and taller than Software's.
+// so, the words only fill the room real words will take, and the pictures are plain shapes. Every card is one size,
+// so their words are written to the length a Software card's are.
 const HOME = '#work-title';
 const standIn = (set: string, kind: string, names: string, n: number, line: string, tags: string[]): WorkItem => ({
   slug: `${set}-stand-in-${n}`,
@@ -124,13 +124,15 @@ const standIn = (set: string, kind: string, names: string, n: number, line: stri
   links: [],
 });
 
-const games: WorkItem[] = [1, 2, 3, 4].map((n) => standIn('game', 'Game', 'Game', n, 'A stand in for a game. Its real words go here.', ['Stand in', 'Game']));
+const games: WorkItem[] = [1, 2, 3, 4].map((n) => standIn('game', 'Game', 'Game', n,
+  'A stand in for a game. Its real words go here: what the game is, what it was built in and the one thing in it worth a closer look, in about as many words as a project card carries, and no more than that.',
+  ['Stand in', 'Game', 'Unity']));
 const art: WorkItem[] = [1, 2, 3, 4].map((n) => standIn('art', '3D art', '3D piece', n,
-  'A stand in for a 3D piece. Its real words go here: what the piece is, what it was made in and what was hard about it, in about as many words as a project card carries.',
+  'A stand in for a 3D piece. Its real words go here: what the piece is, what it was made in and what was hard about it, in about as many words as a project card carries, and no more than that.',
   ['Stand in', '3D art', 'Blender']));
 const photography: WorkItem[] = [1, 2, 3, 4].map((n) => standIn('photo', 'Photography', 'Photo set', n,
-  'A stand in for a set of photographs. Its real words go here, and this one runs long on purpose: where the set was shot, what it was shot on, what light it was after, how long it took and how many frames made the cut. It is written long so that this card stands taller than a card for software, and the page under it has to make room for it and then give that room back.',
-  ['Stand in', 'Photography', 'Natural light', 'Medium format']));
+  'A stand in for a set of photographs. Its real words go here: where the set was shot, what it was shot on and what light it was after, in about as many words as a project card carries.',
+  ['Stand in', 'Photography', 'Natural light']));
 
 export const categories: WorkCategory[] = [
   { name: 'Software', items: software },

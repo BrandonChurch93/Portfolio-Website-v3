@@ -8,8 +8,8 @@ import { STREAM } from './config';
 // first row's card lets go, the stone flares, the second row's card lets go, the rail and the meeting take a light
 // strike. A card that lets go drops away, the new one comes up from below, and the stream strikes it as it seats.
 //
-// This module is the order and the timing of that, and the part of it that is the page's: which cards show, where,
-// and how tall each row is. Everything is worked out from the presses so far and a time, so a frozen frame shows
+// This module is the order and the timing of that, and the part of it that is the page's: which cards show and
+// where. Everything is worked out from the presses so far and a time, so a frozen frame shows
 // the same thing every time. The stream reads the same state (at) and does its own part: the surge in the line,
 // the sag where a card is away, the strikes.
 
@@ -19,9 +19,6 @@ const solidAt = C.in + C.ghost * (C.seat - C.in);
 
 // The stops of one side, as the stream gives them: how far along from the bar to the meeting each is, 0 to 1.
 export interface Stops {
-  // Where on the page, across, each side of the stream rests on the bar, and how wide the bar is.
-  bar: [number, number];
-  width: number;
   // For each side: the first row's card, the stone, the second row's card, the rail.
   at: [number[], number[]];
   // Whether the stream has reached the bar, which is where a surge starts. If it has not, nothing plays.
@@ -46,24 +43,20 @@ export interface State {
   give: number[];
   below: number[];
   shown: number[];
-  // Each row's height now, and how far what hangs free below it is still swinging from the row's last move.
-  rows: number[];
   // For each place: how far the card that is leaving has dropped while it is still there to be lain on, and how
   // clear the place is of both cards, 0 to 1.
   gone: number[];
   clear: number[];
-  // How far what hangs free beside a row that is changing height bows, out from the cards or in toward them.
-  bow: number[];
-  // Each surge that is running: its side, how far it has come from the bar to the meeting, how near its end of the
-  // bar the press was, and how much of it is left.
-  fronts: { side: number; phase: number; near: number; left: number }[];
+  // Each surge that is running: its side, how far it has come from the bar, where 1 is the meeting and past 1 it
+  // is going on down, and how much of it a later press has left.
+  fronts: { side: number; phase: number; left: number }[];
   // The bar's jolt, in pixels. Each stone's flare and the meeting's, 0 to 1.
   knock: number;
   stone: [number, number];
   met: number;
 }
 
-interface Press { t: number; cat: number; x: number | null; surge: boolean }
+interface Press { t: number; cat: number; surge: boolean }
 interface Change { at: number; from: number; to: number; quiet: boolean; via: { until: number; to: number }[] }
 
 export interface SwapParts {
@@ -76,14 +69,13 @@ export interface SwapParts {
 }
 
 export interface Swap {
-  // Pick a category. x is where across the page the press was.
-  press(category: number, x?: number): void;
+  // Pick a category. Wherever on the bar the press was, both sides start together.
+  press(category: number): void;
   at(t: number): State;
   // The strikes of every press so far, and a number that changes when they do.
   strikes(): Strike[];
-  // Each front: its side, when it leaves the bar, how near the press that end of the bar was, and when a later
-  // press cuts it off.
-  fronts(): { side: number; t0: number; near: number; cut: number }[];
+  // Each front: its side, when it leaves the bar, and when a later press cuts it off.
+  fronts(): { side: number; t0: number; cut: number }[];
   version(): number;
   bind(stops: Stops | null): void;
   dispose(): void;
@@ -97,8 +89,7 @@ export function mountSwap(parts: SwapParts, first = 0): Swap {
   let presses: Press[] = [];
   let stops: Stops | null = null;
   let changes: Change[][] = [];
-  let rowEvents: { t: number; cat: number }[][] = [];
-  let fronts: { side: number; t0: number; near: number; cut: number }[] = [];
+  let fronts: { side: number; t0: number; cut: number }[] = [];
   let struck: Strike[] = [];
   let stones: number[][] = [[], []];
   let mets: number[] = [];
@@ -106,9 +97,6 @@ export function mountSwap(parts: SwapParts, first = 0): Swap {
   let quietAt = -1;
   let count = 0;
   let disposed = false;
-  // Each layer's own height: what its row is when that category shows.
-  let tall: number[][] = [];
-  const measure = () => { tall = parts.layers.map((row) => row.map((layer) => layer.getBoundingClientRect().height)); };
   const hosts = parts.cards.map((set) => set.map((card) => card.querySelector('[data-kind="card"]')));
 
   // Everything that follows from the presses, in order.
@@ -125,23 +113,26 @@ export function mountSwap(parts: SwapParts, first = 0): Swap {
         for (let slot = 0; slot < places; slot++) arrive.push({ t: p.t, slot, quiet: true });
         return;
       }
-      let met = Infinity;
       knocks.push(p.t);
       // The press itself lets nothing go. But a card on its way in that cannot be seen yet becomes the newest at once.
       for (let slot = 0; slot < places; slot++) arrive.push({ t: p.t, slot, quiet: false, only: true });
+      // Both sides start at the press, each from where it rests on the bar, so the two cards of a row let go
+      // together and the two fronts reach the meeting together.
       for (let side = 0; side < 2; side++) {
-        const far = p.x === null ? 0.5 : Math.max(0, Math.min(1, Math.abs(p.x - stops.bar[side]) / stops.width));
-        const t0 = p.t + far * C.lag * T, at = stops.at[side];
-        fronts.push({ side, t0, near: 1 - far, cut });
-        const light = (t: number, stop: Stop): void => { if (t < cut) struck.push({ t, stop, side, hard: stop === 'bar' ? C.knock[0] + C.knock[1] * (1 - far) : C.light, loose: C.loose }); };
-        light(t0, 'bar');
-        for (const [t, slot] of [[t0 + T * at[0], side], [t0 + T * at[2], 2 + side]]) if (t < cut) arrive.push({ t, slot, quiet: false });
+        const t0 = p.t, at = stops.at[side];
+        fronts.push({ side, t0, cut });
+        const strike = (t: number, stop: Stop, hard: number, loose: number): void => { if (t < cut) struck.push({ t, stop, side, hard, loose }); };
+        strike(t0, 'bar', C.knock, C.loose);
+        // The two sides are not the same length, and a row's two cards still go together: each row is timed by the
+        // two sides' mean.
+        const both = stops.at, row = (n: number) => (both[0][n] + both[1][n]) / 2;
+        for (const [t, slot] of [[t0 + T * row(0), side], [t0 + T * row(2), 2 + side]]) if (t < cut) arrive.push({ t, slot, quiet: false });
         if (t0 + T * at[1] < cut) stones[side].push(t0 + T * at[1]);
-        light(t0 + T * at[1], 'stone');
-        light(t0 + T * at[3], 'rail');
-        met = Math.min(met, t0 + T);
+        strike(t0 + T * at[1], 'stone', C.hard[2], 1);
+        strike(t0 + T * at[3], 'rail', C.light, C.loose);
       }
-      if (met < cut) { mets.push(met); struck.push({ t: met, stop: 'meet', side: 0, hard: C.light, loose: C.loose }); }
+      // Where the two fronts meet is the stream's own doing (sim.ts). The button takes its light then.
+      if (p.t + T < cut) mets.push(p.t + T);
     });
     arrive.sort((a, b) => a.t - b.t);
     const newest = (t: number) => { let cat = base; for (const p of presses) if (p.t <= t) cat = p.cat; return cat; };
@@ -167,37 +158,16 @@ export function mountSwap(parts: SwapParts, first = 0): Swap {
       for (const c of changes[slot]) if (!c.quiet) struck.push({ t: c.at + C.seat, stop: slot < 2 ? 'top' : 'side', side: slot % 2, hard: C.hard[slot < 2 ? 0 : 1], loose: 1 });
     }
     struck.sort((a, b) => a.t - b.t);
-    // A row is as tall as the tallest card standing in it or on its way in. So it grows as soon as a taller card is
-    // let in, and does not shrink until the last taller card has gone.
-    rowEvents = parts.rows.map((_, row) => {
-      const marks: { t: number; slot: number; cats: number[] }[] = [];
-      for (let slot = row * 2; slot < row * 2 + 2 && slot < places; slot++) for (const c of changes[slot]) {
-        marks.push({ t: c.at, slot, cats: [c.from, c.via.length ? c.via[0].to : c.to] });
-        c.via.forEach((v, i) => marks.push({ t: v.until, slot, cats: [c.from, i + 1 < c.via.length ? c.via[i + 1].to : c.to] }));
-        marks.push({ t: c.at + (still ? 0 : C.out), slot, cats: [c.to] });
-      }
-      marks.sort((a, b) => a.t - b.t);
-      const held: number[][] = [[base], [base]];
-      const out: { t: number; cat: number }[] = [];
-      let target = base;
-      for (const m of marks) {
-        held[m.slot - row * 2] = m.cats;
-        let most = held[0][0];
-        for (const cat of [...held[0], ...held[1]]) if (tall[row][cat] > tall[row][most]) most = cat;
-        if (tall[row][most] !== tall[row][target]) { target = most; out.push({ t: m.t, cat: most }); }
-      }
-      return out;
-    });
     const last = presses.length ? presses[presses.length - 1].t : -1;
-    quietAt = last + C.length * (1 + C.lag) + C.seat + C.tail;
+    // A front goes on down past the meeting until it reaches the stream's leading end, which may be some way on.
+    quietAt = last + C.length * 1.8 + C.seat + C.tail;
     count++;
   };
 
   const cache: { t: number; n: number; z: State | null } = { t: NaN, n: -1, z: null };
   const at = (t: number): State => {
     if (cache.z && cache.t === t && cache.n === count) return cache.z;
-    if (!tall.length) measure();
-    const z: State = { busy: t < quietAt, cards: [], give: [], below: [], shown: [], gone: [], clear: [], rows: [], bow: [], fronts: [], knock: 0, stone: [0, 0], met: 0 };
+    const z: State = { busy: t < quietAt, cards: [], give: [], below: [], shown: [], gone: [], clear: [], fronts: [], knock: 0, stone: [0, 0], met: 0 };
     for (let slot = 0; slot < places; slot++) {
       let c: Change | null = null;
       for (const k of changes[slot]) if (k.at <= t) c = k;
@@ -231,21 +201,10 @@ export function mountSwap(parts: SwapParts, first = 0): Swap {
       z.give.push(c.quiet ? 0 : smooth(u / C.sagIn));
       z.below.push(below); z.shown.push(shown); z.gone.push(gone); z.clear.push(c.quiet ? 0 : faded * faded * (1 - shown) ** 1.5);
     }
-    parts.rows.forEach((_, row) => {
-      let h0 = tall[row][base], h1 = h0, t1 = -Infinity, bow = 0;
-      const value = (when: number) => h0 + (h1 - h0) * (still ? 1 : smooth((when - t1) / C.row));
-      for (const e of rowEvents[row]) {
-        if (e.t > t) break;
-        h0 = value(e.t); h1 = tall[row][e.cat]; t1 = e.t;
-        if (!still) bow += (h0 - h1) * C.bow[0] * Math.exp(-(t - e.t) / C.bow[1]) * Math.sin((2 * Math.PI * (t - e.t)) / C.bow[2]);
-      }
-      z.rows.push(value(t));
-      z.bow.push(bow);
-    });
     for (const f of fronts) {
       const e = t - f.t0;
-      const left = Math.max(0, Math.min(1, (C.length + C.fade - e) / C.fade)) * (1 - smooth((t - f.cut) / C.cut));
-      if (e >= 0 && left > 0) z.fronts.push({ side: f.side, phase: e / C.length, near: f.near, left });
+      const left = 1 - smooth((t - f.cut) / C.cut);
+      if (e >= 0 && e < C.length * 1.8 && left > 0) z.fronts.push({ side: f.side, phase: e / C.length, left });
     }
     const since = (list: number[]) => { let e = Infinity; for (const k of list) if (k <= t) e = Math.min(e, t - k); return e; };
     const k = since(knocks);
@@ -282,18 +241,15 @@ export function mountSwap(parts: SwapParts, first = 0): Swap {
       s.opacity = alpha;
       s.translate = `0 ${dy}px`;
     }));
-    // A row's own layout holds the layer of the category it has settled on. While it is changing, its height is
-    // set here, and it is handed back to the layout once it is still.
-    parts.rows.forEach((el, row) => {
+    // A row's own layout holds the layer of the category it has settled on. Every card is one size, so which layer
+    // that is moves nothing.
+    parts.rows.forEach((_, row) => {
       const cats = z.cards.filter((c) => Math.floor(c.slot / 2) === row && !c.leaving).map((c) => c.cat);
-      const settled = cats.every((c) => c === cats[0]) && Math.abs(z.rows[row] - tall[row][cats[0]]) < 0.05 && !z.cards.some((c) => Math.floor(c.slot / 2) === row && (c.leaving || c.dy !== 0));
-      if (settled) {
-        if (flow[row] !== cats[0]) {
-          parts.layers[row].forEach((layer, cat) => { layer.dataset.current = String(cat === cats[0]); });
-          flow[row] = cats[0];
-        }
-        el.style.height = '';
-      } else el.style.height = `${z.rows[row].toFixed(2)}px`;
+      const settled = cats.every((c) => c === cats[0]) && !z.cards.some((c) => Math.floor(c.slot / 2) === row && (c.leaving || c.dy !== 0));
+      if (settled && flow[row] !== cats[0]) {
+        parts.layers[row].forEach((layer, cat) => { layer.dataset.current = String(cat === cats[0]); });
+        flow[row] = cats[0];
+      }
     });
     // The bar's words stand over the stream's canvas, each on its own. The jolt is handed to them and not set on
     // the bar: a bar that is moved gathers its words into itself, and they go under the canvas for as long.
@@ -301,32 +257,27 @@ export function mountSwap(parts: SwapParts, first = 0): Swap {
     if (jolt !== knocked) { knocked = jolt; if (jolt) parts.bar.style.setProperty('--knock', jolt); else parts.bar.style.removeProperty('--knock'); }
   };
 
-  const press = (cat: number, x: number | null, t: number) => {
-    measure();
+  const press = (cat: number, t: number) => {
     // Presses that are long done are folded into where the cards stand, so the record never grows.
     if (!clock.isFrozen() && presses.length && t > quietAt + 1) { base = presses[presses.length - 1].cat; presses = []; plan(); }
     // Picking the category that is already showing, or already on its way, does nothing.
     if (cat === (presses.length ? presses[presses.length - 1].cat : base)) return;
-    presses.push({ t, cat, x, surge: !!stops && stops.reached() });
+    presses.push({ t, cat, surge: !!stops && stops.reached() });
     presses.sort((a, b) => a.t - b.t);
     plan();
   };
   plan();
   const off = clock.onFrame((t) => apply(t));
-  // streamPress(category, at, across) scripts a press for a filmstrip: at is the clock's time, across is where on
-  // the bar it lands, 0 to 1 from its left end, and left out it lands on that category's own button.
-  registry.tool('streamPress', (cat: number, when: number, across?: number) => {
-    const r = parts.bar.getBoundingClientRect(), n = parts.cards.length;
-    press(cat, r.left + r.width * (across ?? (cat + 0.5) / n), when);
-  });
+  // streamPress(category, at) scripts a press for a filmstrip: at is the clock's time.
+  registry.tool('streamPress', (cat: number, when: number) => press(cat, when));
 
   return {
-    press(category: number, x?: number) { press(category, x ?? null, clock.now()); apply(clock.now()); },
+    press(category: number) { press(category, clock.now()); apply(clock.now()); },
     at,
     strikes: () => struck,
     fronts: () => fronts,
     version: () => count,
-    bind(next: Stops | null) { stops = next; measure(); plan(); },
+    bind(next: Stops | null) { stops = next; plan(); },
     dispose() { disposed = true; off(); },
   };
 }

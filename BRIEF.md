@@ -476,6 +476,21 @@ One round in Claude Code, on `/lab/work`. He had not sent either of the two prom
 - Not in it: a phone or any screen under 1100 px. The lunge. The top bar. Real projects for the other three categories. New pictures.
 - Its tests are in `QUALITY.md`: "When the category changes", tests 14 to 23, and "The path through Work as a bolt".
 
+**The third pass, built (Nov 13), waiting on his look**
+
+- At `/lab/work`, by Claude Code on his Mac. All seven are on the page. The switch between the bolt and the path as it was is at the foot of the screen, and `/lab/work?path=now` opens on the old one.
+- He has not seen it. Nothing about it is settled until he says so.
+- The test shot at `/lab/stream` and the approved buttons were compared with stills from before: every still agrees pixel for pixel.
+- **Where the build departs from what was written, and why.** Each is his to overturn:
+  - One size of card is applied at every width, phones included, because it is the card and not the page. On a phone a title keeps two lines there, where the Software titles need them, so "a title is one line" holds from a card 265 px wide up.
+  - The kink that ran with the surge is gone. The agreement's step 2 has "a swell of light and a kink in the line". On a path of straight strokes a wave in the line bends the strokes, and reviewers of the first build read it as ragged. The front is now what item 2 of "Three changes" lists, and no more.
+  - The riding shards are flung wide by a front and by the burst at the leading end, as agreed. Flung, they move faster than the old measure of a jump allows (6 px in a sixtieth of a second): the furthest measured is 39 px. None vanish or appear, and at rest none jump. So `QUALITY.md`, "When the category changes", test 6 is not met as it is worded, by something the agreement asks for.
+  - While a surge's front runs, the stream's core ahead of it is turned down to about a fifth, and comes back as the front passes. He asked to keep the stream's look, and for those 1.1 seconds this changes it. It is what made the front something the eye can follow: three rounds of reviewers could not pick the front out of a stream that was as bright ahead of it as behind. One number, `change.hush` in `src/stream/config.ts`, and at 0 the stream is as it was.
+  - On the bolt each strike on a card and a stone is 1.2 times as hard as on the path as it was, with a brighter flash, so the strike after a straight approach is the stronger one. The path as it was is untouched.
+- Fable's calls in the agreements were built as written: a sleeping card wakes under the pointer or with focus, no card sleeps with reduced motion or under 1100 px, what lands on a sleeping card does not wake it, the burst where fronts meet throws no shards, and a later press still cuts an earlier surge off.
+- Calls made while building, none of them a rule, are in `LOG.md`, "The third pass on the Work page, built". The ones he is most likely to have a view on: a sleeping card's picture is cast as a low relief in bronze, its words rest at 64 percent in the card's copper, and it wakes in under a tenth of a second, at the strike. The bolt's strokes are fixed for a page and differ on the two sides. The budgets on his Mac went up to make room for the stones' strikes: thrown shards from 260 to 400, sparks from 900 to 1200.
+- What is at the bar and what is not, with what the fresh reviewers said in four rounds, is in the same `LOG.md` entry. In short, the reviewers still fail: the bolt's top half (round the title and the bar it reads as a drawn outline), the front as a hard point, the sleeping card on a real screenshot, the waking, and the burst at the leading end.
+
 **How it is built**
 
 He added these while the stream was a simulated liquid. They hold for anything in the stream that is simulated: shards thrown loose, sparks.
@@ -604,6 +619,12 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
         - A title is one line. At any one width the description has the same number of lines on every card, the most a Software card needs there.
         - The stand in cards for the other categories become that size. With every card one size a row never changes height, so the stream settling onto a new height, and its test, come out.
         - Claude Code measures how many characters a title, a description and a row of tags can hold, and writes it here, so he has the numbers when he rewrites the words.
+    - **How much a card holds, measured on `/lab/work` (Nov 13).** A card is 341 px wide on a page 1100 wide, the narrowest that shows two columns. From 1440 wide up it is 453 px and wider, and its words grow with it, so the counts stop changing there.
+        - **A title: 32 characters** to fit one line at every desktop width. From 1280 wide up it holds 36.
+        - **A description: about 225 characters.** That is 4 lines of about 61 from 1440 wide up. A narrower card gets more lines, not fewer words: 5 lines of about 52 at 1194 wide, 6 lines of about 48 at 1100.
+        - **A row of tags: three tags of up to 13 characters each** to show at every desktop width, or four of up to 9, or two of up to 21. From 1440 wide up a row holds three of up to 17, or four of up to 12.
+        - As the words stand today: every title and description fits. Below about 1400 wide the AI Glasses card shows three of its four tags, and below about 1240 wide the Design System Extractor card shows two of its three ("Live component capture" is 22 characters).
+        - On a phone a card is about 243 px wide. There a title has two lines and a description 8, and the counts are his when the mobile pass comes.
 - **What a card's loop and picture need. Fable's spec, his to change:** one recording a project, of the product doing the one thing that makes it worth a look. Twice as wide as it is tall, 1600 by 800 or larger. Four to eight seconds, ending close enough to where it starts to cut cleanly. MP4, H.264, no sound. The browser zoomed in before recording, so one part fills the frame and its type reads at the card's size. The picture is the first frame, saved as an image.
 - **What was in front of him at first: the card derby at `/lab/work-cards` (Study 14).**
     - How the picture rests: 1 · Toned, 2 · Cast, 3 · Etched. Fable recommends Toned. **Cast leans against "Brass is an accent on it, not the whole card"**, because the picture is the largest thing on the card.

@@ -22,6 +22,8 @@ import type { State, Swap } from './surge';
 export interface StreamHandle {
   // Swap between the facets and the first round's shards, where it stands.
   setLook(look: Look): void;
+  // The Work page's path: the bolt, or the path as it was before it.
+  setBolt(on: boolean): void;
   dispose(): void;
 }
 
@@ -44,6 +46,8 @@ interface Options {
   title: HTMLElement;
   card?: HTMLElement;
   work?: WorkParts;
+  // Whether the route through Work is the bolt. Left out, it is.
+  bolt?: boolean;
   // Open with the frame held: nothing moves but the cursor's light. The test shot only.
   hold?: boolean;
   look?: Look;
@@ -72,6 +76,7 @@ const RIDER = 17;
 interface Card {
   host: Element;
   turned: HTMLElement;
+  asleep: number;
   // Which category's it is, which of the four places it stands in, and that place's row.
   cat: number;
   slot: number;
@@ -214,8 +219,6 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   let base: { reliefs: CardShape[]; posts: PostShape[]; rails: RailShape[]; bars: Bar[] } | null = null;
   // How much taller each row is this frame than it was planned, what the swap says is happening, and the last of
   // its strikes handed to the simulation.
-  let grown: number[] = [];
-  let warped = false;
   let Z: State | null = null;
   let handed = -1;
   // This frame: whether a change of category is moving the line, and whether anything is carried with the page or
@@ -226,6 +229,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   // The cards the pointer has turned or grown this frame: what lies on one of them goes with it.
   const bent: { c: Card; m: Float32Array }[] = [];
   let version = 0;
+  let bolt = opts.bolt ?? true;
   // For a close still: the most device pixels the canvas may draw to a CSS pixel, in place of the budget's.
   let sharp = 0;
   // The landing on each stone, in the order the stones are drawn.
@@ -242,12 +246,8 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     clock.readView();
     const hr = host.getBoundingClientRect();
     const w = Math.max(1, hr.width), h = Math.max(1, canvas.getBoundingClientRect().height);
-    // A change of category changes how tall the rows are and nothing else, and the route is not planned again for
-    // it: the stream is carried with the rows (warp, below). So the rows are left out of the page's height here,
-    // and what would change the cards themselves, the width of the page, is already in the key.
-    const rowsTall = opts.work ? opts.work.rows.reduce((sum, el) => sum + el.getBoundingClientRect().height, 0) : 0;
-    const layersTall = opts.work ? opts.work.sets.reduce((sum, set) => sum + set.reduce((n, el) => n + el.offsetHeight, 0), 0) : 0;
-    const key = `${tier}:${Math.round(w)}:${Math.round(h)}:${Math.round(hr.height - rowsTall)}:${layersTall}:${version}`;
+    // A change of category moves nothing the route is planned round, so the route is not planned again for it.
+    const key = `${tier}:${Math.round(w)}:${Math.round(h)}:${Math.round(hr.height)}:${version}`;
     if (key === built) return;
     built = key;
     still = tier === 'static';
@@ -268,7 +268,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     const cardBox: Box = opts.card ? boxOf(opts.card) : ink;
     const bottom = hostH + 260 * unit;
     const W = opts.work;
-    cards = []; table = []; rows = []; sides = [null, null]; base = null; grown = []; handed = -1;
+    cards = []; table = []; rows = []; sides = [null, null]; base = null; handed = -1;
     if (W) {
       const posts = W.posts.filter(shown).map((el) => { const b = boxOf(el); return { x: (b.l + b.r) / 2, y: (b.t + b.b) / 2, r: (b.r - b.l) / 2 }; });
       rows = W.rows.map((el) => { const b = boxOf(el); return { top: b.t, tall: b.b - b.t }; });
@@ -280,7 +280,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
         if (!plate || !plate.parentElement || !layer) return null;
         const k = el.offsetWidth / CARD.width;
         const c: Card = {
-          host: plate, turned: plate.parentElement, cat, slot, row, l: rowLeft[row] + layer.offsetLeft + el.offsetLeft, off: layer.offsetTop + el.offsetTop, w: el.offsetWidth, h: el.offsetHeight, r: CARD.radius * k,
+          host: plate, turned: plate.parentElement, asleep: -1, cat, slot, row, l: rowLeft[row] + layer.offsetLeft + el.offsetLeft, off: layer.offsetTop + el.offsetTop, w: el.offsetWidth, h: el.offsetHeight, r: CARD.radius * k,
           shape: { x: 0, y: 0, hw: 0, hh: 0, r: 0 }, inset: 1.5 * k, deep: parseFloat(getComputedStyle(el).perspective) || 1e6, baked: -1, bake: '', win: [0, 0, 1, 1], frame: 0, rim: 0, scale: 1, watch: 0, landings: [],
         };
         cards.push(c);
@@ -296,7 +296,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
         return { l: c.l + seat, t: t + seat, r: c.l + c.w - seat, b: t + c.h - seat };
       });
       const barBox = boxOf(W.bar);
-      route = routeThroughWork({ title: ink, bar: barBox, cards: places, posts, rail: shown(W.rail) ? boxOf(W.rail) : null, button: shown(W.button) ? boxOf(W.button) : null, width: w, bottom, unit });
+      route = routeThroughWork({ title: ink, bar: barBox, cards: places, posts, rail: shown(W.rail) ? boxOf(W.rail) : null, button: shown(W.button) ? boxOf(W.button) : null, width: w, bottom, unit }, bolt);
       const landed = places.map((box) => route!.landings.flatMap((L, i) => ((L.kind === 'land' || L.kind === 'side') && Math.hypot(Math.max(box.l - L.x, 0, L.x - box.r), Math.max(box.t - L.y, 0, L.y - box.b)) < 10 * unit ? [i] : [])));
       for (const c of cards) c.landings = landed[c.slot];
       // Each side's stops, for the surge. Only the full route has them.
@@ -315,7 +315,6 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       const [A, B] = sides;
       const share = (a: Side, s: number) => (s - a.bar) / (a.meet - a.bar);
       W.swap.bind(A && B ? {
-        bar: [route.landings[A.hit.bar].x + hr.left, route.landings[B.hit.bar].x + hr.left], width: barBox.r - barBox.l,
         at: [A, B].map((a) => [share(a, a.top), share(a, a.stone), share(a, a.side - S.change.ahead * unit), share(a, a.rail)]) as [number[], number[]],
         reached: () => !!sim && !still && (sim.head[0] >= A.bar || sim.head[1] >= B.bar),
       } : null);
@@ -367,21 +366,6 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     settled = '';
   };
 
-  // ---- how the page under the stream has moved since the route was planned
-  // A row that is taller or shorter than it was planned carries everything below it down or up, and what is beside
-  // it is stretched with it. This is how far a point of the planned page has moved.
-  const warp = (y: number): number => {
-    let d = 0;
-    for (let k = 0; k < rows.length && y > rows[k].top; k++) d += grown[k] * Math.min(1, (y - rows[k].top) / rows[k].tall);
-    return d;
-  };
-  // And the point of the planned page that is now at a height on the real one.
-  const unwarp = (y: number): number => {
-    let p = y;
-    for (let k = 0; k < 5; k++) p = y - warp(p);
-    return p;
-  };
-
   // ---- the project cards as they stand this frame
   const platesNow = (): PlateCard[] => {
     bent.length = 0;
@@ -391,9 +375,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     for (const show of Z.cards) {
       const c = table[show.cat]?.[show.slot];
       if (!c) continue;
-      let above = 0;
-      for (let k = 0; k < c.row; k++) above += grown[k];
-      const top = rows[c.row].top + above + c.off + show.dy;
+      const top = rows[c.row].top + c.off + show.dy;
       c.shape = { x: c.l + c.w / 2, y: top + c.h / 2, hw: c.w / 2, hh: c.h / 2, r: c.r };
       const st = plates.cardOf(c.host);
       let turn = FLAT, tiltX = 0, tiltY = 0, flare = 0, warm = 0, fx = 0, fy = 0;
@@ -424,32 +406,47 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
         const since = sim.time - sim.hitAt[i], hard = sim.hit[i];
         if (since < 0 || since > 1.2) continue;
         const f = hard * Math.exp(-since / S.struck.flare);
-        if (f > flare) { flare = f; fx = route!.landings[i].x - c.shape.x; fy = route!.landings[i].y + warp(route!.landings[i].y) - c.shape.y; }
+        if (f > flare) { flare = f; fx = route!.landings[i].x - c.shape.x; fy = route!.landings[i].y - c.shape.y; }
         warm = Math.max(warm, S.struck.warm * hard * (since < S.struck.rise ? since / S.struck.rise : Math.exp(-(since - S.struck.rise) / S.struck.settle)));
       }
       plates.setWarm(c.host, warm < 0.01 ? 0 : warm);
+      // A card the stream has not reached is asleep, and the stream's first strike wakes it for good. Only where
+      // the stream runs its whole route: with reduced motion or on a narrow screen every card is awake.
+      let asleep = 0;
+      const first = c.landings[0];
+      if (sim && !still && first !== undefined && sides[0] && sides[1]) {
+        const L = route!.landings[first], reached = sim.head[L.side] >= L.s;
+        const struck = sim.time - sim.hitAt[first] < 2 ? sim.hitAt[first] : -1e6;
+        // A frozen frame shows what its own moment would: nothing is remembered from a frame taken before it.
+        // It wakes at the strike that first reaches it, not at one that comes when the stream already lies there.
+        // Once awake it stays awake, from one frozen frame to the next as well: the stream drawn back up leaves it so.
+        if (clock.isFrozen()) {
+          asleep = awake[c.slot] ? 0 : reached ? (sim.on[first] < 0.3 ? 1 - Math.min(1, (sim.time - struck) / S.work.wake) : 0) : 1;
+          if (asleep <= 0) awake[c.slot] = true;
+        } else {
+          if (reached && !awake[c.slot]) { awake[c.slot] = true; woke[c.slot] = struck; }
+          asleep = awake[c.slot] ? 1 - Math.min(1, (sim.time - woke[c.slot]) / S.work.wake) : 1;
+        }
+      }
+      asleep = Math.max(0, asleep);
+      plates.setAsleep(c.host, asleep);
+      if (asleep !== c.asleep) { c.asleep = asleep; const el = c.turned.parentElement as HTMLElement; el.style.setProperty('--asleep', asleep.toFixed(3)); el.dataset.asleep = String(asleep > 0.5); }
       if (c.bake) keep.add(c.bake);
-      if (!show.leaving) stood.push({ ...c.shape, hw: c.shape.hw - c.inset, hh: c.shape.hh - c.inset });
+      // Not until it can be seen: a card on its way in that still shows nothing would shade the ground it is not on.
+      if (!show.leaving && show.alpha > 0.5) stood.push({ ...c.shape, hw: c.shape.hw - c.inset, hh: c.shape.hh - c.inset });
       out.push({ ...c.shape, inset: c.inset, turn, tiltX, tiltY, bake: c.bake, win: c.win, frame: c.frame, rim: c.rim, unit: (2 * c.shape.hw) / CARD.width, flare, struck: [fx, fy], there: show.alpha });
     }
     // A card that is waiting keeps its relief, so it is there the moment the card comes in.
     for (const c of cards) if (c.bake) keep.add(c.bake);
     if (cards.length) renderer!.keepBakes(keep);
-    // What the stream itself draws stands where the page has carried it: the bar with its knock, and everything
-    // below a row that has changed height.
-    if (base) {
-      const lower = <T extends { y: number }>(o: T): T => ({ ...o, y: o.y + warp(o.y) });
-      const span = <T extends { ay: number; by: number }>(o: T): T => ({ ...o, ay: o.ay + warp(o.ay), by: o.by + warp(o.by) });
-      renderer!.place(base.reliefs.map((r, i) => (i ? r : { ...r, y: r.y + Z!.knock })), warped ? base.posts.map(lower) : base.posts, warped ? base.rails.map(span) : base.rails, stood, warped ? base.bars.map(span) : base.bars);
-    }
+    // The bar stands where its knock has put it.
+    if (base) renderer!.place(base.reliefs.map((r, i) => (i ? r : { ...r, y: r.y + Z!.knock })), base.posts, base.rails, stood, base.bars);
     return out;
   };
 
   // What lies on a card goes with it when the pointer turns and grows it: a point within a few units of the card is
-  // carried as if fixed to the card's own plane, and one further off less, until it is not moved at all. And every
-  // point goes with the page where a row has changed height.
+  // carried as if fixed to the card's own plane, and one further off less, until it is not moved at all.
   const bend = (x: number, y: number, out: Float32Array): void => {
-    if (warped) y += warp(y);
     out[0] = x; out[1] = y;
     for (const { c, m } of bent) {
       const s = c.shape, dx = Math.max(Math.abs(x - s.x) - s.hw, 0), dy = Math.max(Math.abs(y - s.y) - s.hh, 0), d = Math.hypot(dx, dy) / unit;
@@ -464,6 +461,10 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   // ---- what a change of category does to the line itself. A point this far along a side, where the side runs
   // this way and lies this much on something, is pushed by: the kink of each surge as it passes, the sag where a
   // card is away and the spring off the new one, and the swing of what hangs free below a row that has moved.
+  // When the stream first struck each place a card stands in: from then on the cards there are awake.
+  const woke = [0, 0, 0, 0], awake = [false, false, false, false];
+  const running: { b: number; s: number; v: number; left: number; from: number; live: boolean; age: number }[] = [];
+  const hush: [number, number] = [0, 0];
   const push = new Float32Array(2), soft = new Float32Array(2), here = new Float32Array(4), fore = new Float32Array(4), aft = new Float32Array(4);
   // A corner the stream made against a card is rounded off while the card is away: each point is drawn toward the
   // middle of the line a little way to each side of it, at two lengths.
@@ -482,22 +483,6 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     let dx = 0, dy = 0;
     const A = sides[b], K = S.change, u = unit;
     if (A && Z) {
-      // How much the stream lies on something round here, taken over a stretch of it: taken at the point alone, the
-      // wave below would be creased wherever the stream comes onto a thing or leaves it.
-      const br = route!.branches[b], reach = Math.round((K.kink[1] * u * 0.5) / br.step), at0 = Math.min(br.n - 1, Math.round(s / br.step));
-      const lying = (br.hold[Math.max(0, at0 - reach)] + 2 * hold + br.hold[Math.min(br.n - 1, at0 + reach)]) / 4;
-      for (const f of Z.fronts) {
-        if (f.side !== b) continue;
-        const wide = K.kink[1] * u, amp = K.kink[0] * u * f.left * (0.7 + 0.5 * f.near), run = f.phase * (A.meet - A.bar);
-        let q = (s - A.bar - run) / wide;
-        // Past the meeting the two sides are one line, and a kink one side brought there would part them.
-        const whole = Math.max(0, Math.min(1, (A.meet - s) / wide));
-        if (q > -3.2 && q < 3.2 && whole > 0) { const w = -q * Math.exp(-q * q) * 2.33 * amp * whole * (1 - K.held * lying); dx -= ty * w; dy += tx * w; }
-        // The surge also runs up from the bar toward the title, and dies before it reaches the word.
-        const up = A.bar - run;
-        q = (s - up) / wide;
-        if (up > A.die && q > -3.2 && q < 3.2) { const w = q * Math.exp(-q * q) * 2.33 * amp * K.up * ((up - A.die) / (A.bar - A.die)); dx -= ty * w; dy += tx * w; }
-      }
       // Where it rests on the bar it goes with the bar's jolt.
       if (Z.knock) { const off = Math.abs(s - A.bar) / (K.reach[0] * u); if (off < 1) dy += Z.knock * (1 - off * off); }
       // Where the first row's card is away the stream sags and loses the corner the card gave it, but never goes
@@ -527,17 +512,6 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
           soften(b, s, away);
           dx += into * K.sag[1] * u * away + soft[0]; dy += soft[1];
         } else dx += into * g1 * K.spring[0] * u * (1 - r) ** 2;
-      }
-      // A row that changes height carries everything below it. What hangs free does not go with it at once: it is
-      // left behind, swings on past its line and settles. Beside the row itself there is slack to take up when the
-      // row grows shorter, and the line is drawn straighter when it grows taller, so there it bows out from the
-      // cards or in toward them.
-      for (let k = 0; k < rows.length; k++) {
-        if (y <= rows[k].top || !Z.bow[k]) continue;
-        const f = (y - rows[k].top) / rows[k].tall, free = (1 - hold) * Z.bow[k], out = b ? 1 : -1;
-        dy += free * K.trail[0] * Math.min(1, f);
-        // Toward the meeting the two sides close on each other, and a swing to the side would part them.
-        dx += out * free * (f < 1 ? Math.sin(Math.PI * f) : K.trail[1]) * Math.max(0, Math.min(1, (A.meet - s) / (2 * K.kink[1] * u)));
       }
     }
     push[0] = dx; push[1] = dy;
@@ -656,21 +630,17 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       }
       const struck = sim.hit[i] * Math.exp(-(sim.time - sim.hitAt[i]) / 0.14);
       if (struck <= 0.02) continue;
-      if (L.face === UP) round(L.x, L.y - S.route.above * u, (4 + 9 * struck) * u, 3.2 * struck);
-      else round(L.x + Math.cos(L.face) * S.route.above * u, L.y + Math.sin(L.face) * S.route.above * u, (4 + 9 * struck) * u, 3.2 * struck);
+      const hard = bolt && !!opts.work;
+      const flash = 3.2 * struck * (hard ? S.work.bolt.flash : 1), wide = (4 + 9 * struck) * u * (hard ? 1.25 : 1);
+      if (L.face === UP) round(L.x, L.y - S.route.above * u, wide, flash);
+      else round(L.x + Math.cos(L.face) * S.route.above * u, L.y + Math.sin(L.face) * S.route.above * u, wide, flash);
     }
-    // Each surge has a hot point at its front, as a leading end has, smaller.
-    if (surging && Z) for (const f of Z.fronts) {
-      const A = sides[f.side];
-      if (!A) continue;
-      const s = A.bar + f.phase * (A.meet - A.bar), br = route.branches[f.side];
-      if (s >= sim.head[f.side] || (f.side === 1 && s >= route.join[1])) continue;
-      at(br, s, tmp);
-      const x = tmp[0], y = tmp[1];
-      shove(f.side, s, tmp[2], tmp[3], br.hold[Math.min(br.n - 1, Math.round(s / br.step))], y);
-      // The front has the head a leading end has: a fierce point, and its light spreading round it.
-      round(x + push[0], y + push[1], 2.8 * u, 7.8 * f.left * (0.75 + 0.25 * f.near));
-      round(x + push[0], y + push[1], 6 * u, 1.3 * f.left);
+    // Each front has the head a leading end has: a fierce point, and its light spreading round it.
+    for (const f of running) {
+      if (!f.live) continue;
+      at(route.branches[f.b], f.s, tmp);
+      round(tmp[0], tmp[1], 4.4 * u, 12 * f.left * (1 + 0.15 * Math.sin(t * 31 + f.b)));
+      round(tmp[0], tmp[1], 8 * u, 2 * f.left);
     }
     // Where a surge strikes a card there is no leading end to bring its fierce point, so the strike has its own.
     if (surging && opts.work) for (const e of opts.work.swap.strikes()) {
@@ -684,7 +654,8 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     for (let b = 0; b < 2; b++) {
       if (b === 1 && (sim.head[1] <= route.split || sim.head[1] >= route.join[1])) continue;
       at(route.branches[b], sim.head[b], tmp);
-      const e = sim.energy[b], beat = still ? 0 : 0.12 * Math.sin(t * 9.3 + b * 2.1) * Math.sin(t * 5.1 + b);
+      // Where a front has just fused with it, it flashes.
+      const e = sim.energy[b], beat = still ? 0 : 0.12 * Math.sin(t * 9.3 + b * 2.1) * Math.sin(t * 5.1 + b) + 2.4 * Math.exp(-Math.max(0, t - sim.endAt[b]) / 0.16);
       // A fierce point, no bigger than the core is wide. The glow round it is its own light spreading, not a ball.
       round(tmp[0], tmp[1], (2.4 + 0.9 * e) * u, 7.8 * (1 + beat));
       round(tmp[0], tmp[1], 6 * u, 1.3 * (1 + beat));
@@ -747,7 +718,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       if (probe && po + PROBE <= probe.length) { probe[po + 3] = grown; probe[po + 5] = hold; probe[po + 8] = tmp[0]; probe[po + 9] = tmp[1]; }
       if (grown <= 0.02) continue;
       if (tmp[1] < top - 70 * u || tmp[1] > bottom + 70 * u) continue;
-      const cx = tmp[0], cy = tmp[1], tx = tmp[2], ty = tmp[3];
+      const cx = tmp[0], cy = tmp[1], tx = br.fx ? mix(br.fx) : tmp[2], ty = br.fy ? mix(br.fy) : tmp[3];
       const e = sim.energy[b];
       // They gather and thin along the route in slow waves, so the stream has knots and open stretches. Along an
       // object there are no knots. The knots travel with the shards, so they go by distance ridden.
@@ -760,7 +731,20 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       // They go round the core, but quicker across its face than past its sides, so the core is never hidden for long.
       const turn = R.f[o + 3] + t * K.orbit + (d * TAU) / (K.wind * u) + 0.4 * Math.sin(t * R.f[o + 4] + R.f[o + 5]);
       const round = turn + K.aside * Math.sin(2 * turn);
-      const far = R.f[o + 2] * (1 + K.spread * hold) * (1 + (K.flare + K.flareFast * e) * Math.exp(-lead / (K.flareOver * u)));
+      let far = R.f[o + 2] * (1 + K.spread * hold) * (1 + (K.flare + K.flareFast * e) * Math.exp(-lead / (K.flareOver * u)));
+      // A front flings them wide as it passes, and they close in again behind it. It takes a moment to throw them:
+      // thrown at once, each would jump.
+      let flung = 0;
+      for (const f of running) {
+        // Only what the front has passed: above the bar it passed nothing.
+        if (f.b === b && d < f.from) continue;
+        const behind = f.b === b ? f.s - d : f.b === 0 && d >= route.join[b] && f.s >= route.join[0] ? f.s - route.join[0] - (d - route.join[b]) : -1;
+        if (behind <= 0) continue;
+        const q = behind / (f.v * S.change.fling[1]);
+        // Less where the stream lies on something: there they have one side to go to, and would cross to it.
+        if (q < 9) flung = Math.max(flung, S.change.fling[0] * f.left * (1 - 0.7 * hold) * q * Math.exp(1 - q));
+      }
+      far *= 1 + flung;
       // It swings out to one side of the core and then the other. With less room on one side than it would swing,
       // it swings out on the open side both times, and with a little less room, a little: its place never changes
       // at once, which turning it back off the nearest face of an object did at every corner.
@@ -846,21 +830,29 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     if (!renderer || !route || !sim || disposed) return;
     const began = performance.now();
     const top = clock.view.y - hostTop;
-    // What a change of category is doing this frame: which cards show, how tall the rows are, where each surge is.
+    // What a change of category is doing this frame: which cards show and where each surge is.
     Z = opts.work ? opts.work.swap.at(t) : null;
-    warped = false;
-    if (Z && rows.length) { grown = rows.map((r, k) => Z!.rows[k] - r.tall); warped = grown.some((d) => Math.abs(d) > 0.01); }
     surging = !!Z && Z.busy && !still;
-    const canvasTop = Math.max(0, Math.min(hostH + (warped ? grown.reduce((a, d) => a + d, 0) : 0) - cssH, top - S.margin));
+    // The fronts that are running this frame: which side each is on, how far along it, how fast, and how much of it
+    // a later press has left. One is gone once it has caught the stream's leading end, and the second side's at the
+    // meeting, where it has become one with the first.
+    running.length = 0;
+    if (surging && Z && sim) for (const f of Z.fronts) {
+      const A = sides[f.side];
+      if (!A) continue;
+      const s = A.bar + f.phase * (A.meet - A.bar);
+      // One that is gone is kept, not live, for the shards it flung: they are still closing in behind where it was.
+      running.push({ b: f.side, s, v: (A.meet - A.bar) / S.change.length, left: f.left, from: A.bar, live: !(f.side === 1 && f.phase > 1) && s < sim.head[f.side], age: f.phase * S.change.length });
+    }
+    const canvasTop = Math.max(0, Math.min(hostH - cssH, top - S.margin));
     canvas.style.transform = `translate3d(0,${canvasTop.toFixed(1)}px,0)`;
     const frozen = clock.isFrozen();
-    // The route is as it was planned, so the line the scroll has reached is found on the planned page.
-    const anchorLine = (y: number) => (warped ? unwarp(lineAt(y)) : lineAt(y));
+    const anchorLine = lineAt;
     let line = heldLine ?? anchorLine(top);
     if (opts.work && handed !== opts.work.swap.version()) {
       handed = opts.work.swap.version();
       sim.setEvents(opts.work.swap.strikes().flatMap((e) => { const i = sides[e.side]?.hit[e.stop]; return i === undefined ? [] : [{ t: e.t, i, hard: e.hard, loose: e.loose }]; }));
-      sim.setFronts(opts.work.swap.fronts().flatMap((f) => { const A = sides[f.side]; return A ? [{ side: f.side, t0: f.t0, until: f.cut, from: A.bar, to: A.meet, span: S.change.length, rate: S.change.shed * (0.6 + 0.4 * f.near) }] : []; }));
+      sim.setFronts(opts.work.swap.fronts().flatMap((f) => { const A = sides[f.side]; return A ? [{ side: f.side, t0: f.t0, until: f.cut, from: A.bar, meet: A.meet, span: S.change.length, goes: f.side === 0 }] : []; }));
       settled = '';
     }
 
@@ -902,25 +894,31 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     const lx = touch ? touch.x : L.px, ly = (touch ? touch.y : L.py + clock.view.y) - hostTop;
     const lz = 120 * unit;
     const stood = platesNow();
-    carried = warped || bent.length > 0;
-    // What is on screen, as a stretch of the planned page.
-    const from = warped ? unwarp(canvasTop) : canvasTop, to = warped ? unwarp(canvasTop + cssH) : canvasTop + cssH;
+    carried = bent.length > 0;
+    const from = canvasTop, to = canvasTop + cssH;
     fillCore(from, to, runs);
     glints = 0;
-    const drawn = fillShards(now, from, to, lx, warped ? unwarp(ly) : ly, lz, led);
+    const drawn = fillShards(now, from, to, lx, ly, lz, led);
     const streakCount = fillStreaks(now);
     // The swell of light that runs with each surge, down from the bar and up from it.
     let swell: [Float32Array, Float32Array] | undefined;
-    if (surging && Z && Z.fronts.length) {
+    if (surging && Z) {
       swell = swells;
       const used = [0, 0];
       swells[0].fill(0); swells[1].fill(0);
-      for (let k = Z.fronts.length - 1; k >= 0; k--) {
-        const f = Z.fronts[k], A = sides[f.side];
-        if (!A || used[f.side] + 2 > SWELLS) continue;
-        const run = f.phase * (A.meet - A.bar), much = S.change.swell[0] * f.left * (0.6 + 0.6 * f.near), up = A.bar - run;
-        swells[f.side].set([(A.bar + run) / unit, much, 1, up / unit, up > A.die ? much * S.change.up * ((up - A.die) / (A.bar - A.die)) : 0, -1], used[f.side] * 3);
-        used[f.side] += 2;
+      hush[0] = hush[1] = 0;
+      // Behind each front the core burns pale for a stretch. A fainter one runs up from the bar toward the title
+      // and dies before it reaches the word.
+      for (const f of running) {
+        if (!f.live || used[f.b] + 1 > SWELLS) continue;
+        swells[f.b].set([f.s / unit, S.change.swell[0] * f.left, 2], used[f.b]++ * 3);
+        hush[f.b] = Math.max(hush[f.b], S.change.hush[0] * f.left * Math.min(1, f.age / S.change.hush[1]));
+      }
+      for (const f of Z.fronts) {
+        const A = sides[f.side];
+        if (!A || f.phase > 1 || used[f.side] + 1 > SWELLS) continue;
+        const up = A.bar - f.phase * (A.meet - A.bar);
+        if (up > A.die) swells[f.side].set([up / unit, S.change.swell[0] * f.left * S.change.up * ((up - A.die) / (A.bar - A.die)), -1], used[f.side]++ * 3);
       }
       // A card's strike flares the line where it struck, both ways along it, for as long as the flash lasts.
       for (const e of opts.work!.swap.strikes()) {
@@ -933,7 +931,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     }
     const f: Frame = {
       view: [0, canvasTop, cssW, cssH], time: now, unit, lamp: [lx, ly, lz, 0.5 + 0.5 * led], energy: [sim.energy[0], sim.energy[1]], split: route.split / unit, end: route.join[1] / unit, look, presence,
-      core, coreRuns: runs, streaks, streakCount, shards, lots, plates: stood, swell,
+      core, coreRuns: runs, streaks, streakCount, shards, lots, plates: stood, swell, hush: swell ? hush : undefined,
       // A lit face is never quite steady: it breathes a little, as coals do. It flares as a surge passes its stone.
       lit: stones.map((i, k) => sim!.on[i] * (still ? 1 : 0.92 + 0.08 * Math.sin(now * 2.3 + i) * Math.sin(now * 1.1 + i * 1.7)) * (Z ? Math.sqrt(1 + S.change.flare * Z.stone[k ? 1 : 0]) : 1)),
     };
@@ -943,7 +941,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       const meet = route.landings[route.landings.length - 1];
       const near = Math.max(0, Math.min(1, (sim.head[0] - meet.s + 150 * unit) / (150 * unit)));
       // It takes the light again as a surge arrives under it.
-      plates.setStream(buttonPlate, meet.x, meet.y + (warped ? warp(meet.y) : 0) + hostTop - clock.view.y, still ? Math.round(near) * 0.3 : near * (0.3 + (Z ? S.change.button * Z.met : 0)));
+      plates.setStream(buttonPlate, meet.x, meet.y + hostTop - clock.view.y, still ? Math.round(near) * 0.3 : near * (0.3 + (Z ? S.change.button * Z.met : 0)));
     }
     spent += (performance.now() - began - spent) * 0.1;
     stats.streamMs = spent;
@@ -976,7 +974,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   }));
   void ready;
 
-  registry.tool('streamState', () => ({ on: host.dataset.stream, look, unit, shards: stats.streamShards, sparks: sim?.sparkCount ?? 0, loose: sim?.looseCount ?? 0, head: sim ? [sim.head[0], sim.head[1]] : [], energy: sim ? [sim.energy[0], sim.energy[1]] : [], riders: riders?.n ?? 0, boxes: route?.boxes ?? [], landings: route?.landings.map((L) => ({ kind: L.kind, side: L.side, s: L.s, x: L.x, y: L.y })) ?? [], posts: route?.posts ?? [], rails: route?.rails ?? [], split: route?.split ?? 0, join: route ? route.join.map((j) => (j < Infinity ? j : -1)) : [], stops: sides.map((a) => (a ? { bar: a.bar, top: a.top, lip: a.lip, stone: a.stone, side: a.side, rail: a.rail, meet: a.meet, die: a.die } : null)), rows: rows.map((r, k) => ({ ...r, grown: grown[k] ?? 0 })) }));
+  registry.tool('streamState', () => ({ on: host.dataset.stream, look, unit, shards: stats.streamShards, sparks: sim?.sparkCount ?? 0, loose: sim?.looseCount ?? 0, head: sim ? [sim.head[0], sim.head[1]] : [], energy: sim ? [sim.energy[0], sim.energy[1]] : [], riders: riders?.n ?? 0, boxes: route?.boxes ?? [], landings: route?.landings.map((L) => ({ kind: L.kind, side: L.side, s: L.s, x: L.x, y: L.y })) ?? [], posts: route?.posts ?? [], rails: route?.rails ?? [], split: route?.split ?? 0, join: route ? route.join.map((j) => (j < Infinity ? j : -1)) : [], stops: sides.map((a) => (a ? { bar: a.bar, top: a.top, lip: a.lip, stone: a.stone, side: a.side, rail: a.rail, meet: a.meet, die: a.die } : null)), rows }));
   // The route itself: how far apart its points are, and each side's points as x and y, for measuring how the stream
   // comes to a thing and leaves it.
   registry.tool('streamRoute', () => ({ step: route?.branches[0].step ?? 0, sides: route ? route.branches.map((b) => Array.from({ length: b.n * 2 }, (_, i) => (i % 2 ? b.y[i >> 1] : b.x[i >> 1]))) : [] }));
@@ -1043,6 +1041,12 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   });
 
   return {
+    setBolt(on: boolean) {
+      if (on === bolt || disposed) return;
+      bolt = on;
+      version++;
+      plan();
+    },
     setLook(next: Look) {
       if (next === look || disposed) return;
       look = next;

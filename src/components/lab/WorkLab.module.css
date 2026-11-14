@@ -184,6 +184,50 @@
   translate: -50% 0;
 }
 
+/* The switch between the bolt and the path as it was. It stays on screen, so it can be thrown at any point of the
+   scroll. It comes out when he rules on the path. */
+.switch {
+  position: fixed;
+  left: var(--edge);
+  bottom: var(--space-5);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+
+.switchLabel {
+  margin-right: var(--space-2);
+  color: var(--text-3);
+}
+
+.option {
+  min-height: var(--touch);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-2);
+  background: var(--bg-2);
+  color: var(--text-2);
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.option[aria-pressed='true'] {
+  border-color: var(--copper);
+  color: var(--copper-light);
+}
+
+.option:focus-visible {
+  outline: var(--focus);
+  outline-offset: 2px;
+}
+
 /* Once the stream is drawing, it draws the title, the bar, the stones and the rail itself, lit. A card is its own
    lit plate, and the stream only lays its light on it. */
 .page[data-stream='on'] .title {

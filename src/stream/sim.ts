@@ -18,6 +18,10 @@ const scatter = (n: number) => Math.imul(n + 1, 0x9e3779b1) >>> 8;
 // leading ends. Each landing has three: its sparks, the shards it throws, and its forks. The first two landings keep
 // the numbers the test shot gave them (3 and 4, 5 and 6, 9 and 10), so the test shot draws what it always drew.
 const SPARKS = 0, SHARDS = 1, FORKS = 2;
+
+// A front of a surge on one side: when it leaves from, how far along the side the meeting is and how long it takes
+// to get there, when it is cut off, and whether it goes on past the meeting.
+export interface SimFront { side: number; t0: number; until: number; from: number; meet: number; span: number; goes: boolean }
 const emitter = (landing: number, what: number) => (landing < 2 ? [3, 5, 9][what] + landing : 11 + (landing - 2) * 3 + what);
 
 export class StreamSim {
@@ -49,7 +53,10 @@ export class StreamSim {
   private readonly bars: Rail[];
   private readonly frames: ReturnType<typeof railFrame>[];
   private events: { t: number; i: number; hard: number; loose: number }[] = [];
-  private fronts: { side: number; t0: number; until: number; from: number; to: number; span: number; rate: number }[] = [];
+  private fronts: SimFront[] = [];
+  // When a front last fused with each side's leading end, and when the two sides' fronts last met.
+  readonly endAt = [-100, -100];
+  metAt = -100;
   private next = 0;
 
   constructor(private route: Route, private budget: StreamBudget, private seed: number, private sizes: [number, number]) {
@@ -114,6 +121,7 @@ export class StreamSim {
     this.phase.fill(0);
     this.count.fill(0);
     this.hitAt.fill(-100);
+    this.endAt[0] = this.endAt[1] = this.metAt = -100;
     this.route.landings.forEach((L, i) => { this.on[i] = this.head[L.side] >= L.s ? 1 : 0; });
     const rates = this.rates(0, 0);
     for (let e = 0; e < rates.length; e++) { this.phase[e] = rates[e] * from; this.count[e] = Math.floor(this.phase[e]); }
@@ -164,7 +172,7 @@ export class StreamSim {
   }
 
   step(line: number, pace: number): void {
-    const dt = STREAM_STEP, H = S.head, u = this.route.unit;
+    const dt = STREAM_STEP, H = S.head, F = S.change, u = this.route.unit;
     this.time += dt;
     this.pace = Math.max(Math.abs(pace), this.pace * Math.exp(-dt / H.hold));
     const was = [this.head[0], this.head[1]];
@@ -180,7 +188,9 @@ export class StreamSim {
       let move = this.speed[b] * dt;
       if (Math.abs(move) > Math.abs(err)) { move = err; this.speed[b] *= 0.5; }
       this.head[b] = Math.max(0, Math.min(br.len, this.head[b] + move));
-      const want = Math.min(1.5, Math.max(0, this.speed[b]) / (H.pace * u));
+      // A front that has just fused with the end gives it its energy for a moment, as a fast scroll would.
+      const given = this.time - this.endAt[b] < F.given[1] ? F.given[0] : 0;
+      const want = Math.max(given, Math.min(1.5, Math.max(0, this.speed[b]) / (H.pace * u)));
       this.energy[b] += (want - this.energy[b]) * (1 - Math.exp(-(want > this.energy[b] ? H.rise : H.fall) * dt));
     }
     this.joined();
@@ -207,12 +217,33 @@ export class StreamSim {
     }
     for (let n = 0; n < this.fronts.length; n++) {
       const f = this.fronts[n], e = this.time - f.t0;
-      if (e < 0 || e > f.span || this.time >= f.until) continue;
-      const s = f.from + (f.to - f.from) * (e / f.span);
-      if (s >= this.head[f.side]) continue;
-      // A steady rate, as whole sparks: those due by the end of this step less those due by its start.
-      const first = Math.floor((e - dt) * f.rate) + 1, last = Math.floor(e * f.rate);
-      for (let k = Math.max(0, first); k <= last; k++) this.frontSpark(f.side, s, 900 + n, k);
+      if (e < 0 || this.time >= f.until) continue;
+      const speed = (f.meet - f.from) / f.span, s = f.from + speed * e, before = s - speed * dt;
+      // The side that does not go on ends at the meeting, where it becomes one with the other.
+      const head = this.head[f.side], end = f.goes ? head : Math.min(head, f.meet);
+      if (before >= end) continue;
+      if (s >= end) {
+        if (end < head) continue;
+        // It has caught the stream's leading end. The two fuse, and the end throws the front's energy on ahead.
+        for (let k = 0; k < F.burst[0]; k++) this.frontSpark(f.side, head, 990 + n, k, 2.7, 0.22);
+        for (let k = 0; k < F.burst[1]; k++) this.frontFork(f.side, head, 970 + n, k, 3);
+        this.endAt[f.side] = this.time;
+        if (!this.own()) this.endAt[1 - f.side] = this.time;
+        continue;
+      }
+      if (f.goes && before < f.meet && s >= f.meet) {
+        // The two sides' fronts meet under the button and become one.
+        const i = this.route.landings.findIndex((L) => L.kind === 'meet');
+        if (i >= 0) {
+          for (let k = 0; k < F.fuse[0]; k++) this.landSpark(i, this.count[emitter(i, SPARKS)]++, 1.5);
+          for (let k = 0; k < F.fuse[1]; k++) this.landFork(i, emitter(i, FORKS), this.count[emitter(i, FORKS)]++);
+          this.hitAt[i] = this.time; this.hit[i] = 0.6;
+        }
+        this.metAt = this.time;
+      }
+      // A steady rate, as whole sparks and forks: those due by the end of this step less those due by its start.
+      for (let k = Math.max(0, Math.floor((e - dt) * F.shed) + 1), last = Math.floor(e * F.shed); k <= last; k++) this.frontSpark(f.side, s, 900 + n, k);
+      for (let k = Math.max(0, Math.floor((e - dt) * F.arcs) + 1), last = Math.floor(e * F.arcs); k <= last; k++) this.frontFork(f.side, s, 950 + n, k, 1.7);
     }
 
     this.moveSparks(dt);
@@ -248,21 +279,36 @@ export class StreamSim {
     if (this.next < 0) this.next = events.length;
   }
 
-  // Fronts that run down a side through a stream that is already there, each from a time, between two places along
-  // the side, taking so long, until it is cut off. Each sheds sparks as it goes, as a leading end does.
-  setFronts(fronts: { side: number; t0: number; until: number; from: number; to: number; span: number; rate: number }[]): void {
+  // Fronts that run down a side through a stream that is already there: second leading ends. Each leaves a place
+  // on its side at a time and reaches the meeting a span later, at a steady speed, until a later press cuts it off.
+  // One that goes on runs past the meeting, down the stem. It sheds sparks and throws forks of arc as a leading end
+  // does. Where the two sides' fronts meet they fuse with a burst, and where a front catches the stream's own
+  // leading end it fuses with that and energy bursts out of the end. A burst is light, sparks and arc: it throws
+  // no shards, which only a strike does.
+  setFronts(fronts: SimFront[]): void {
     this.fronts = fronts;
   }
 
-  private frontSpark(b: number, s: number, emitter: number, k: number): void {
+  private frontSpark(b: number, s: number, emitter: number, k: number, fast = 1.3, wide = 1): void {
     const K = S.sparks, u = this.route.unit, r = (j: number) => this.rnd(emitter, k, j);
     at(this.route.branches[b], s, tmp);
-    // Swept back along the way it came and out to one side, as a leading end's are when it is moving fast.
-    const side = r(0) < 0.5 ? -1 : 1, wide = (0.35 + r(1)) * side;
-    const dx = -tmp[2] * 1.1 - tmp[3] * wide, dy = -tmp[3] * 1.1 + tmp[2] * wide, len = Math.hypot(dx, dy) || 1;
-    const a = Math.atan2(dy / len, dx / len) + (r(2) + r(3) - 1) * 0.75;
-    const v = (K.speed[0] + (K.speed[1] - K.speed[0]) * r(4) * r(5)) * u * 1.3;
-    this.spark(tmp[0], tmp[1], Math.cos(a) * v, Math.sin(a) * v, K.life[0] + (K.life[1] - K.life[0]) * r(6) * r(7), 0.55 + 0.45 * r(8), 0);
+    // Swept back along the way it came and out to one side, as a leading end's are when it is moving fast. In a
+    // burst out of the end they go forward.
+    const side = r(0) < 0.5 ? -1 : 1, out = (0.35 + r(1)) * side * wide, along = fast > 1.5 ? 1.1 : -1.1;
+    const dx = tmp[2] * along - tmp[3] * out, dy = tmp[3] * along + tmp[2] * out, len = Math.hypot(dx, dy) || 1;
+    // A burst is narrow and short lived: wide and lasting it is a firework.
+    const jet = fast > 1.5;
+    const a = Math.atan2(dy / len, dx / len) + (r(2) + r(3) - 1) * (jet ? 0.3 : 0.75);
+    const v = (K.speed[0] + (K.speed[1] - K.speed[0]) * r(4) * r(5)) * u * fast;
+    this.spark(tmp[0], tmp[1], Math.cos(a) * v, Math.sin(a) * v, (K.life[0] + (K.life[1] - K.life[0]) * r(6) * r(7)) * (jet ? 0.5 : 1), 0.55 + 0.45 * r(8), 0);
+  }
+
+  private frontFork(b: number, s: number, emitter: number, k: number, much = 1): void {
+    const A = S.arc, u = this.route.unit, r = (j: number) => this.rnd(emitter, k, j);
+    at(this.route.branches[b], s, tmp);
+    const angle = Math.atan2(tmp[3], tmp[2]) + (r(0) + r(1) - 1) * 1.7 + (r(6) < 0.25 ? (r(7) - 0.5) * 3.6 : 0);
+    const reach = (A.reach[0] + (A.reach[1] - A.reach[0]) * r(2) ** 2) * u * (0.9 + 0.5 * much);
+    this.fork(tmp[0], tmp[1], angle, reach, A.life[0] + (A.life[1] - A.life[0]) * r(3), r(4) * 1000, 0.55 + 0.45 * r(5));
   }
 
   private spark(x: number, y: number, vx: number, vy: number, life: number, heat: number, kind: number): void {
@@ -317,15 +363,18 @@ export class StreamSim {
     const clear = r(1) < S.shards.clear;
     const size = (this.sizes[0] * S.loose.least + (this.sizes[1] - this.sizes[0]) * r(2) ** 1.8) * u;
     // Thrown out from the surface in a fan: nearly straight out at its middle, flatter toward the way things leave.
-    const lean = L.face + way * (0.12 + 1.0 * r(3));
-    const v = (170 + 450 * r(4) * (0.4 + 0.6 * r(5))) * u * (0.45 + 0.5 * Math.min(1, hard));
+    const lean = L.kind === 'post' ? L.face + (r(3) - 0.42) * 0.7 * (Math.cos(L.face) < 0 ? -1 : 1) : L.face + way * (0.12 + 1.0 * r(3));
+    // A stone throws further than a card does: what it throws has the gap between the rows to cross.
+    const v = (170 + 450 * r(4) * (0.4 + 0.6 * r(5))) * u * (0.45 + 0.5 * Math.min(1, hard)) * (L.kind === 'post' ? S.work.post.far : 1);
     const vx = Math.cos(lean) * v, vy = Math.sin(lean) * v;
     const o = this.looseCount * LOOSE;
     const q = [r(6) - 0.5, r(7) - 0.5, r(8) - 0.5, r(9) - 0.5], ql = Math.hypot(q[0], q[1], q[2], q[3]) || 1;
     const spin = 3 + 9 * r(10);
     const w = [r(11) - 0.5, r(12) - 0.5, r(13) - 0.5], wl = Math.hypot(w[0], w[1], w[2]) || 1;
     const life = carried ? S.loose.lone : S.loose.life[0] + (S.loose.life[1] - S.loose.life[0]) * r(14);
-    if (L.face === UP) { tmp[0] = L.x + way * r(15) * 14 * u; tmp[1] = L.y - size - r(16) * 6 * u; } else this.from(L, way * r(15) * 14 * u, size + r(16) * 6 * u, tmp);
+    if (L.face === UP) { tmp[0] = L.x + way * r(15) * 14 * u; tmp[1] = L.y - size - r(16) * 6 * u; }
+    else if (L.kind === 'post') { tmp[0] = L.x + Math.cos(L.face) * (size + r(16) * 6 * u); tmp[1] = L.y + (S.work.post.low[0] + S.work.post.low[1] * r(15)) * u; }
+    else this.from(L, way * r(15) * 14 * u, size + r(16) * 6 * u, tmp);
     this.loose.set([
       tmp[0], tmp[1], (r(17) - 0.5) * 30 * u, vx, vy, (r(18) - 0.5) * 60 * u,
       q[0] / ql, q[1] / ql, q[2] / ql, q[3] / ql, (w[0] / wl) * spin, (w[1] / wl) * spin, (w[2] / wl) * spin, 0, life, clear ? -size : size, carried, tmp[1],

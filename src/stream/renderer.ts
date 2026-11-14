@@ -80,6 +80,7 @@ export interface Frame {
   // The surges running along each side: for each, where along the route its front is (in units), how much brighter
   // it makes the core, and which way it runs. G.SWELLS of them to a side, three numbers each.
   swell?: [Float32Array, Float32Array];
+  hush?: [number, number];
 }
 
 const lin = (name: PaletteName): [number, number, number] => {
@@ -480,6 +481,7 @@ export class StreamRenderer {
       if (this.shapes.swell) {
         gl.uniform3fv(P.core.u('uSwell[0]'), f.swell ? f.swell[b] : this.calm);
         gl.uniform2f(P.core.u('uSwellSize'), STREAM.change.swell[1], STREAM.change.swell[2]);
+        gl.uniform1f(P.core.u('uHush'), f.hush ? f.hush[b] : 0);
       }
       gl.drawArrays(gl.TRIANGLE_STRIP, f.coreRuns[b * 2], f.coreRuns[b * 2 + 1]);
     }

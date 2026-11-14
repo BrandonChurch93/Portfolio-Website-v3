@@ -62,6 +62,8 @@ interface Plate extends PlateEntry {
   // own colors.
   baked: number;
   warm: number;
+  // How far a card the stream has not reached is asleep, 0 to 1.
+  asleep: number;
   // Whether it is to be drawn at all. A card that is waiting behind another keeps its bake and is not lit.
   shown: boolean;
 }
@@ -218,7 +220,7 @@ class PlateRenderer {
       area: entry.spec.kind === 'card' ? entry.host.closest<HTMLElement>('[data-plate-area]') : null,
       visible: false, bakeGen: 0, sig: '', tilt: { x: 0, y: 0, gx: 0, gy: 0 }, stream: { x: 0, y: 0, z: 26, k: 0 },
       hover: { v: 0, goal: 0, pinned: false }, pointer: { x: 0, y: 0 }, hovered: '',
-      seed: seedOf(entry.spec), baked: 0, warm: 0, shown: true,
+      seed: seedOf(entry.spec), baked: 0, warm: 0, asleep: 0, shown: true,
     };
     this.plates.add(p);
     this.byHost.set(entry.host, p);
@@ -274,6 +276,14 @@ class PlateRenderer {
     p.warm = v;
     // A frozen clock draws each frame once, and the plates before the stream: the card is drawn again here, so a
     // frozen frame shows the warmth of its own moment and not of the one before.
+    if (clock.isFrozen() && p.visible && p.mask) this.draw(p, false);
+  }
+
+  // How far a card the stream has not reached yet is asleep, 0 to 1. Under the pointer or with focus it is awake.
+  setAsleep(host: Element, v: number): void {
+    const p = this.byHost.get(host);
+    if (!p || p.asleep === v) return;
+    p.asleep = v;
     if (clock.isFrozen() && p.visible && p.mask) this.draw(p, false);
   }
 
@@ -530,7 +540,7 @@ class PlateRenderer {
     const video = p.videoEl && p.videoEl.readyState >= 2;
     const loop = !!p.loopEl && p.loopEl.readyState >= 2 && p.hover.v > 0 && !this.still;
     const sig = [Math.round(L.px), Math.round(L.py), Math.round(r.left), Math.round(r.top), clock.view.w, clock.view.h,
-      p.tilt.x.toFixed(3), p.tilt.y.toFixed(3), p.stream.k.toFixed(3), Math.round(p.stream.x), Math.round(p.stream.y), p.hover.v.toFixed(3), p.warm.toFixed(3), !!p.photoTex,
+      p.tilt.x.toFixed(3), p.tilt.y.toFixed(3), p.stream.k.toFixed(3), Math.round(p.stream.x), Math.round(p.stream.y), p.hover.v.toFixed(3), p.warm.toFixed(3), p.asleep.toFixed(3), !!p.photoTex,
       p.hover.v > 0 ? `${Math.round(p.pointer.x)}:${Math.round(p.pointer.y)}` : '',
       video ? p.videoEl!.currentTime.toFixed(3) : '', loop ? p.loopEl!.currentTime.toFixed(3) : ''].join();
     if (!force && sig === p.sig) return;
@@ -568,6 +578,7 @@ class PlateRenderer {
     gl.uniform1i(l.u('uReveal'), card ? REVEALS[p.look?.reveal ?? 'fade'] : 0);
     gl.uniform1f(l.u('uPush'), card ? p.look?.push ?? 0 : 0);
     gl.uniform1f(l.u('uWarm'), card ? p.warm : 0);
+    if (card) gl.uniform1f(l.u('uAsleep'), p.asleep * (1 - p.hover.v));
     gl.uniform1f(l.u('uRimH'), mask.bead * (mask.deep ? 0.42 : 0.5));
     if (card) {
       gl.uniform3fv(l.u('uFace'), FACE);

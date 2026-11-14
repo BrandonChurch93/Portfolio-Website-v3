@@ -1,4 +1,5 @@
 import { STREAM } from './config';
+import { hash } from './rand';
 
 // Where the stream goes. It is planned, never simulated, because the layout needs it to hit exact places. Two routes
 // are planned here, each from where things really are on the page. The test shot: down from above the page, parting
@@ -22,6 +23,10 @@ export interface Branch {
   y: Float32Array;
   tx: Float32Array;
   ty: Float32Array;
+  // The way the route runs here as its riding shards take it: at a hard turn they are carried round over a longer
+  // stretch than the turn itself, so none is thrown round it. Only the bolt has it. Without it they take tx and ty.
+  fx?: Float32Array;
+  fy?: Float32Array;
   // The lowest the route has been by each point, so a height on the page gives one distance along it.
   floor: Float32Array;
   // How much the route lies along an object here, 0 to 1, how much it is near one in the wider sense, and how
@@ -206,7 +211,7 @@ function wander(pts: number[], S: Solids, unit: number, phase: number, splitAt: 
 }
 
 // A side of the stream from the line it follows: evenly spaced points, and what the stream needs to know at each.
-function measure(line: number[], S: Solids, unit: number): Branch {
+function measure(line: number[], S: Solids, unit: number, carry = 0): Branch {
   const R = STREAM.route, step = R.sample * unit;
   const p = even(line, step);
   const n = p.length / 2;
@@ -224,6 +229,16 @@ function measure(line: number[], S: Solids, unit: number): Branch {
     const near = nearest(S, out.x[i], out.y[i]);
     out.hold[i] = 1 - ease(R.hold[0] * unit, R.hold[1] * unit, near);
     out.calm[i] = 1 - ease(R.hold[1] * unit, R.calm * unit, near);
+  }
+  if (carry > 0) {
+    const k = Math.max(1, Math.round((carry * unit) / step)), fx = blank(), fy = blank();
+    for (let i = 0; i < n; i++) {
+      let x = 0, y = 0;
+      for (let j = -k; j <= k; j++) { const w = 1 + Math.cos((Math.PI * j) / (k + 1)), at = Math.max(0, Math.min(n - 1, i + j)); x += out.tx[at] * w; y += out.ty[at] * w; }
+      const l = Math.hypot(x, y) || 1;
+      fx[i] = x / l; fy[i] = y / l;
+    }
+    out.fx = fx; out.fy = fy;
   }
   // The true room to each side jumps where an object ends. Shards are kept clear by a version of it that changes
   // slowly: squeezed so that the first few units count for most, then the least of its neighbours, then their
@@ -343,18 +358,22 @@ export interface WorkPlan {
 // beside the button, where the two sides meet and go on down as one. Each turn is at something: a surface it lands
 // on, a face it meets, a slope, or the other side.
 // On a screen too narrow for two columns it parts on the title, lands on the bar and falls past the cards.
-export function routeThroughWork(P: WorkPlan): Route {
+// As a bolt (bolt = true, and only on a screen wide enough for two columns): the same stops in the same order, with
+// no bows and no sway. It runs straight from each thing it strikes to the next, turns hard where it strikes, and on
+// a long free run goes in short straight strokes of uneven length and reach, the last of them straight in.
+export function routeThroughWork(P: WorkPlan, bolt = false): Route {
   const R = STREAM.route, W = STREAM.work, T = R.turn, u = P.unit;
   const cx = (P.title.l + P.title.r) / 2;
   const two = P.cards.length >= 4 && P.posts.length === 2 && !!P.rail && !!P.button;
   const half = W.rail.half * u;
   const top = P.title.t - R.above * u, shelf = P.bar.t - R.above * u;
-  const start: Corner = [cx, R.start * u, 0, 0], part: Corner = [cx, top, T.part[0] * u, T.part[1] * u];
+  const hard = bolt && two, tight = W.bolt.corner * u;
+  const start: Corner = [cx, R.start * u, 0, 0], part: Corner = hard ? [cx, top, tight, tight] : [cx, top, T.part[0] * u, T.part[1] * u];
   const rails: Rail[] = two ? [-1, 1].map((way) => ({ ax: way < 0 ? P.rail!.l : P.rail!.r, ay: P.rail!.t, bx: (way < 0 ? P.button!.l : P.button!.r) + way * W.rail.gap * u, by: P.rail!.b, half })) : [];
   const fins: Rail[] = rails.flatMap((r, i) => { const f = railFrame(r); return finial(r.ax, r.ay, -f.ex, -f.ey, half, bladeFor(P.posts[i].r * 2, half)); });
   const S: Solids = { boxes: two ? [P.title, P.bar, ...P.cards.slice(0, 4), P.button!] : [P.title, P.bar, ...P.cards], posts: two ? P.posts : [], rails };
   const flows = S.boxes.map((b) => (two && b === P.cards[0] ? -1 : two && b === P.cards[1] ? 1 : 0));
-  const split = top - T.part[0] * u - R.start * u;
+  let split = top - part[2] - R.start * u;
   const narrow = roam(P.width);
   // A place the stream meets something, before it is known how far along the side that is: the point of the route to
   // look for is kept with it.
@@ -364,7 +383,87 @@ export function routeThroughWork(P: WorkPlan): Route {
   const met = (kind: Landing['kind'], x: number, y: number, out: number, face: number, c: Contact): Omit<Landing, 's' | 'side'> => ({ kind, x, y, out, face, force: c[0], glow: c[1], arc: c[2], every: c[3] });
   const mark = (kind: Landing['kind'], x: number, y: number, out: number, face: number, c: Contact, at: [number, number]): Mark => ({ landing: met(kind, x, y, out, face, c), at });
 
+  // A free run of the bolt from one place to another: turns added to the line between the two, each standing off
+  // it to one side, unevenly far apart and unevenly far out. None is near either end, so it leaves the first place
+  // straight and comes straight in to the second, and none is near anything it could cut across.
+  // into: which side of the run the last stroke must start from, when the run ends on a top. From that side the
+  // last stroke comes in flatter than the run and the stream keeps its pace along the top. From the other it would
+  // come straight down on it and turn square, which is a wire's turn.
+  const strokes = (corners: Corner[], a: [number, number], b: [number, number], seed: number, into = 0) => {
+    const B = W.bolt, dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy) || 1, ex = dx / L, ey = dy / L;
+    let d = (B.lead[0] + (B.knot[0] * hash(0, seed, 3)) * 0.6) * u, last = hash(0, seed, 4) < 0.5 ? -1 : 1;
+    for (let k = 1; d < L - B.lead[1] * u; k++) {
+      const far = 0.4 + 0.6 * hash(k, seed, 1), over = hash(k, seed, 2) < B.flip ? -Math.sign(last) : Math.sign(last);
+      let o = over * far;
+      const at = (v: number): [number, number] => [a[0] + ex * d - ey * v * B.reach * u, a[1] + ey * d + ex * v * B.reach * u];
+      const ends = into !== 0 && d + B.knot[0] * u >= L - B.lead[1] * u;
+      if (ends) o = into * Math.max(0.55, far);
+      let p = at(o);
+      if (nearest(S, p[0], p[1]) < B.clear * u) { o = ends ? o / 2 : -o; p = at(o); }
+      if (nearest(S, p[0], p[1]) < B.clear * u) { o = 0; p = at(0); }
+      corners.push([p[0], p[1], tight, tight]);
+      if (o) last = o;
+      d += (B.knot[0] + (B.knot[1] - B.knot[0]) * hash(k, seed, 5) ** 1.4) * u;
+    }
+  };
+
+  // The bolt comes down the middle of the page to the title in strokes too. Both sides are that one line until
+  // they part, so it is made once.
+  const stem: Corner[] = [start];
+  if (hard) {
+    strokes(stem, [cx, R.start * u], [cx, top], 3);
+    split = (even(trace([...stem, [cx, top, 0, 0]]), R.sample * u).length / 2 - 1) * R.sample * u - tight;
+  }
+
+  // The bolt's side: the same stops, each struck straight on and left straight.
+  const boltSide = (way: number) => {
+    const B = W.bolt, past = B.past * u, seed = way < 0 ? 11 : 29;
+    const corners: Corner[] = [...stem, part];
+    const marks: Mark[] = [];
+    // It strikes harder than the path as it was: it has come straight in.
+    const full = (c: Contact): Contact => [c[0] * B.force, c[1], c[2], c[3]];
+    const turn = (x: number, y: number) => corners.push([x, y, tight, tight]);
+    // Along a top to its end, and hard down off the corner. It lands the least it may from that end, having come
+    // down to it on a slant from the last end, so it strikes the top already going the way it will run.
+    const onto = (box: Box, from: [number, number], least: number, c: Contact, n: number) => {
+      const end = way < 0 ? box.l : box.r, level = box.t - R.above * u;
+      const x = (end - way * least - from[0]) * way > 10 * u ? end - way * least : from[0] + way * 10 * u;
+      strokes(corners, from, [x, level], seed + n, way);
+      turn(x, level);
+      marks.push(mark('land', x, box.t, way, UP, c, [x, level]));
+      turn(end + way * past, level);
+      return end + way * past;
+    };
+    const titleEnd = (way < 0 ? P.title.l : P.title.r) + way * past;
+    turn(titleEnd, top);
+    const barLip = onto(P.bar, [titleEnd, top], W.bar.least * u, C.bar, 5);
+    const i = way < 0 ? 0 : 1, A = P.cards[i], Bx = P.cards[i + 2], post = P.posts[i], rail = rails[i];
+    const cardLip = onto(A, [barLip, shelf], W.card.least * u, full(C.card), 6);
+    const reach = post.r + R.above * u, cos = Math.cos(W.post.at), sin = Math.sin(W.post.at);
+    const hit: [number, number] = [post.x - way * reach * cos, post.y - reach * sin];
+    strokes(corners, [cardLip, A.t - R.above * u], hit, seed);
+    turn(hit[0], hit[1]);
+    marks.push(mark('post', post.x - way * post.r * cos, post.y - post.r * sin, -way, way < 0 ? W.post.aim : Math.PI - W.post.aim, full(C.post), hit));
+    const struck: [number, number] = [(way < 0 ? Bx.l : Bx.r) + way * R.above * u, Bx.t + (Bx.b - Bx.t) * W.side.at];
+    strokes(corners, hit, struck, seed + 1);
+    turn(struck[0], struck[1]);
+    marks.push(mark('side', way < 0 ? Bx.l : Bx.r, struck[1], way < 0 ? 1 : -1, way < 0 ? Math.PI : 0, full(C.side), struck));
+    const f = railFrame(rail), lift = rail.half + R.above * u;
+    const on = (d: number): [number, number] => [rail.ax + f.ex * d + f.nx * lift, rail.ay + f.ey * d + f.ny * lift];
+    const land = on(W.rail.in * u), low = on(f.len + W.rail.over * u);
+    strokes(corners, struck, land, seed + 2);
+    turn(land[0], land[1]);
+    marks.push(mark('rail', rail.ax + f.ex * W.rail.in * u + f.nx * rail.half, rail.ay + f.ey * W.rail.in * u + f.ny * rail.half, way < 0 ? 1 : -1, Math.atan2(f.ny, f.nx), C.rail, land));
+    turn(low[0], low[1]);
+    const across = Math.abs(cx - low[0]), my = low[1] + across * W.meet.slope;
+    corners.push([cx, my, tight, tight], [cx, P.bottom, 0, 0]);
+    const line = trace(corners);
+    line.length -= 2;
+    return { line, marks, end: [line[line.length - 2], line[line.length - 1]] as [number, number] };
+  };
+
   const side = (way: number) => {
+    if (hard) return boltSide(way);
     const hook = way < 0 ? T.left : T.right;
     const xh = beside(P.title, P.width, u, way);
     const corners: Corner[] = [start, part, [xh, top, hook[0] * u, hook[1] * u]];
@@ -405,7 +504,7 @@ export function routeThroughWork(P: WorkPlan): Route {
     const hit: [number, number] = [post.x - way * reach * cos, post.y - reach * sin], end = way < 0 ? A.l : A.r;
     const thrown = onto(A, lip, W.card, C.card, Math.max(12 * u, Math.abs(hit[0] - end) / 2));
     corners.push([hit[0], hit[1], W.post.turn * u, W.post.turn * u]);
-    marks.push(mark('post', post.x - way * post.r * cos, post.y - post.r * sin, 0, Math.atan2(-sin, -way * cos), C.post, hit));
+    marks.push(mark('post', post.x - way * post.r * cos, post.y - post.r * sin, -way, way < 0 ? W.post.aim : Math.PI - W.post.aim, C.post, hit));
     // What meets a face comes off it the other way, with less than it had. It never comes off climbing.
     const off = (come: [number, number], nx: number, ny: number, spring: number): [number, number] => {
       const into = come[0] * nx + come[1] * ny, x = come[0] - (1 + spring) * into * nx, y = Math.max(0.08, come[1] - (1 + spring) * into * ny), l = Math.hypot(x, y) || 1;
@@ -440,8 +539,15 @@ export function routeThroughWork(P: WorkPlan): Route {
   const step = R.sample * u;
   const lengthOf = (line: number[]) => (even(line, step).length / 2 - 1) * step;
   const join: [number, number] = [Infinity, Infinity];
-  let lines = sides.map((s, b) => wander(s.line, S, u, b * 2.4, split, narrow));
-  if (two) {
+  let lines = hard ? [] : sides.map((s, b) => wander(s.line, S, u, b * 2.4, split, narrow));
+  if (hard) {
+    // Below the meeting the two sides are one bolt, and it goes on down in strokes of its own.
+    const y = Math.max(sides[0].end![1], sides[1].end![1]), stem: Corner[] = [[cx, y, 0, 0]];
+    strokes(stem, [cx, y], [cx, P.bottom], 5);
+    stem.push([cx, P.bottom, 0, 0]);
+    const tail = trace(stem);
+    lines = sides.map((s, b) => { join[b] = lengthOf(s.line); return [...s.line, ...tail.slice(2)]; });
+  } else if (two) {
     const y = Math.max(sides[0].end![1], sides[1].end![1]);
     const tail = wander([cx, y, cx, P.bottom], S, u, 0, 0, narrow, [0]);
     lines = sides.map((s, b) => {
@@ -450,7 +556,7 @@ export function routeThroughWork(P: WorkPlan): Route {
       return [...own, ...tail.slice(2)];
     });
   }
-  const branches = lines.map((line) => measure(line, S, u)) as [Branch, Branch];
+  const branches = lines.map((line) => measure(line, S, u, hard ? W.bolt.carry : 0)) as [Branch, Branch];
   for (const b of branches) {
     const j = join[branches.indexOf(b)];
     for (let i = 0; i < b.n; i++) { const s = i * b.step; b.apart[i] = s <= split || s >= j ? 0 : 2 * Math.abs(b.x[i] - cx); }

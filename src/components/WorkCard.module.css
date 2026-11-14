@@ -1,5 +1,7 @@
 /* Every size inside a card is in design units: one unit is a CSS pixel on a card 460 wide, so a card is the same
-   card at any width. Words keep a least size, so on a narrow card they stay readable and the card grows taller. */
+   card at any width. Words keep a least size, so on a narrow card they stay readable and the card grows taller.
+   At any one width every card is the same size, whatever is written on it. The title, the description and the tags
+   each have a set number of lines there, the most a Software card's words need, and the words are written to fit. */
 .card {
   position: relative;
   display: grid;
@@ -61,10 +63,10 @@
 /* The band of bronze under the picture. The plate draws it, and the kind of project and its year lie on it. */
 .strip {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0 calc(var(--u) * 12);
+  white-space: nowrap;
   min-height: calc(var(--u) * var(--strip));
   padding: 0.35em calc(var(--u) * 22);
   font-family: var(--font-mono);
@@ -75,7 +77,40 @@
   color: var(--copper-light);
 }
 
+.strip span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* How many lines the title and the description have on a card this wide: the most a Software card's words take
+   there. Measured, not worked out. A wider card's words are larger with it, so from 422 px up nothing changes. */
+.strip,
 .words {
+  /* A card the stream has not reached is asleep, and its words rest low and in bronze (--asleep is set by the
+     stream). Under the pointer or with focus it is awake, so it can always be read and used. */
+  opacity: calc(1 - 0.36 * var(--asleep, 0));
+}
+
+/* Asleep, every word is the card's own copper. */
+.card[data-asleep='true']:not([data-awake='true']) :is(.strip, .words) * {
+  color: var(--copper-light);
+}
+
+/* Asleep, the words are cut into the bronze: dark above each letter, a thin light below. */
+.card[data-asleep='true']:not([data-awake='true']) .strip,
+.card[data-asleep='true']:not([data-awake='true']) .words {
+  text-shadow: 0 -1px 0 rgb(0 0 0 / 0.9), 0 1px 0 rgb(255 196 140 / 0.22);
+}
+
+.card[data-awake='true'] .strip,
+.card[data-awake='true'] .words {
+  opacity: 1;
+  filter: none;
+}
+
+.words {
+  --title-lines: 2;
+  --lines: 9;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -87,6 +122,13 @@
   font-weight: 600;
   letter-spacing: -0.028em;
   line-height: 1.15;
+  /* The line's own box is shorter than the letters' tails, so the cut is made a little below it. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--title-lines);
+  height: calc(var(--title-lines) * 1.15em + 0.14em);
+  margin-bottom: -0.14em;
+  overflow: hidden;
 }
 
 /* The whole card opens the case study. */
@@ -107,14 +149,24 @@
   font-size: max(13.5px, calc(var(--u) * 14.5));
   line-height: 1.55;
   color: var(--text-2);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: var(--lines);
+  height: calc(var(--lines) * 1.55em);
+  overflow: hidden;
 }
 
+/* One row of tags. A tag that does not fit the row wraps under it, where it is not seen: a card shows the tags
+   that fit, in the order they are written. */
 .tags {
   display: flex;
   flex-wrap: wrap;
   gap: calc(var(--u) * 5);
+  height: calc(1.94em + 2px);
   margin: calc(var(--u) * 15) 0 calc(var(--u) * 14);
   padding: 0;
+  overflow: hidden;
+  font-size: max(10px, calc(var(--u) * 10.5));
   list-style: none;
 }
 
@@ -123,8 +175,8 @@
   border: 1px solid var(--line);
   border-radius: 999px;
   font-family: var(--font-mono);
-  font-size: max(10px, calc(var(--u) * 10.5));
   line-height: 1.3;
+  white-space: nowrap;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-2);
@@ -135,12 +187,9 @@
    pointer is on one of the links. */
 .foot {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 0 calc(var(--u) * 12);
-  /* The row is as tall as a link in it, and as tall as that with none: a card with no link out keeps its foot. */
-  min-height: var(--touch);
   margin-top: auto;
   padding-bottom: calc(var(--u) * 4);
   border-top: 1px solid var(--line);
@@ -195,6 +244,11 @@
 }
 
 .go {
+  /* As tall as a link, so the foot is the same height on a card with no links out. */
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  min-height: var(--touch);
   margin-left: auto;
   white-space: nowrap;
   color: var(--text-3);
@@ -225,4 +279,24 @@
 .card:has(.links a:hover) .arrow,
 .card:has(.links a:focus-visible) .arrow {
   translate: 0 0;
+}
+
+@container (min-width: 245px) {
+  .words { --lines: 8; }
+}
+
+@container (min-width: 265px) {
+  .words { --title-lines: 1; --lines: 7; }
+}
+
+@container (min-width: 290px) {
+  .words { --lines: 6; }
+}
+
+@container (min-width: 345px) {
+  .words { --lines: 5; }
+}
+
+@container (min-width: 422px) {
+  .words { --lines: 4; }
 }

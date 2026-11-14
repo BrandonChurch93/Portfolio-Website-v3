@@ -70,7 +70,8 @@ uniform float uTime, uEnergy, uHeart;
 uniform vec2 uOwn;   // a shift that gives each side its own strands, and where along the route they begin${ends ? `
 uniform float uEnd;  // where along the route they end` : ''}${swell ? `
 uniform vec3 uSwell[${SWELLS}];   // each front: where along the route it is, how much brighter it makes the core, and which way it runs (1 down the route, -1 up it)
-uniform vec2 uSwellSize;          // how far ahead of a front the swell reaches, and how far behind` : ''}
+uniform vec2 uSwellSize;          // how far ahead of a front the swell reaches, and how far behind
+uniform float uHush;              // how far the core ahead of a front is turned down, 0 to 1` : ''}
 out vec4 frag;
 ${NOISE}
 void main(){
@@ -111,15 +112,20 @@ void main(){
   float run = 0.84 + 0.16 * sin(s / 83.0 - t * 2.1) * sin(s / 211.0 - t * 0.9 + 0.8);
   float head = 1.0 - smoothstep(0.0, 120.0, lead);
   sum *= run * (1.0 + (0.6 + 1.3 * uEnergy) * head * head) * smoothstep(0.0, 5.0, lead) * smoothstep(${CORE_HALF}.0, 22.0, abs(x));${swell ? `
+  float hush = 0.0;
   for (int i = 0; i < ${SWELLS}; i++){
     // A swell is the heart of the line burning fiercer, sharp ahead and long behind, and no wider than the heart
     // is: made wide it is a soft ball of glow. The fibres round it are only a little brighter: brightened as much
     // as the heart, the faint ones show as lines of their own.
-    float d = (vAlong.y - uSwell[i].x) * uSwell[i].z;
+    float d = (vAlong.y - uSwell[i].x) * sign(uSwell[i].z);
+    // A front (2, where a strike's swell is 1) has the stream ahead of it turned down, so it runs into the dark as
+    // a leading end does and can be followed.
+    if (uSwell[i].z > 1.5) hush = max(hush, smoothstep(0.0, 30.0, d));
     float reach = d > 0.0 ? uSwellSize.x : uSwellSize.y;
-    float e = uSwell[i].y * exp(-d * d / (reach * reach)), qs = x / 1.3;
+    float e = uSwell[i].y * exp(-d * d / (reach * reach)), qs = x / 1.9;
     sum = sum * (1.0 + 0.45 * e) + 3.2 * e * begun * smoothstep(${CORE_HALF}.0, 22.0, abs(x)) / pow(1.0 + qs * qs, 1.6);
-  }` : ''}
+  }
+  sum *= 1.0 - uHush * hush;` : ''}
   frag = vec4(sqrt(min(sum, ${LIGHT_MAX}.0) / ${LIGHT_MAX}.0), 0.0, 0.0, 1.0);
 }`;
 

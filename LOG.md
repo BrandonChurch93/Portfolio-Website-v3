@@ -2,6 +2,62 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-13 · The third pass on the Work page, built at `/lab/work` (Fable, Claude Code on Brandon's Mac)
+
+**All seven changes are on the page. He has not seen it. Four rounds of fresh Opus reviewers still fail parts of it, listed below.**
+
+**What was built**
+
+- **1 · One size of card.** `WorkCard.module.css`: a title, a description and a row of tags each have a set number of lines at a card's width (container queries at 245, 265, 290, 345 and 422 px). All 16 cards measure the same at 390, 834, 1100, 1194, 1440 and 1920 wide. The stand in cards' words were rewritten to about 200 characters with three tags. The settle onto a new height is out of `stream.ts`, `surge.ts` and `config.ts`. The character counts are in `BRIEF.md`, Cards and buttons, "One size of card".
+- **2 · The bolt.** `routeThroughWork(P, true)` in `route.ts`: the same stops in the same order, straight runs, hard corners (`work.bolt.corner`), short straight strokes on every free run (`strokes`, hashed, fixed for a page, different on the two sides), strokes on the fall above the title too, and the last stroke onto a top made to come in flatter than the run so it never drops square onto it. The riding shards are carried round a hard turn over 44 units (`fx`, `fy` in `measure`), which took 101 jumps at the title to 0. On the bolt a strike on a card or a stone is 1.2 times as hard with a brighter flash (`bolt.force`, `bolt.flash`). The switch is at the foot of the screen, and `?path=now` opens on the path as it was.
+- **3 · The stone's strike.** Struck in full (1.26 in a surge, where a first row card's is 1.11). What it throws leaves from lower on the stone's edge, aimed a little below level and inward (`work.post.aim`, `low`, `far`), so it clears the first row's corner, crosses the gap, lands on the second row's tops and is gone from them by about 1.5 s.
+- **4 · Sleeping cards.** `uAsleep` in the card's light shader (`src/metal/shaders.ts`, card branch only): the metal is dimmed and the picture is cast as a fine low relief in bronze, from a slope taken over a few pixels of the picture. The words are the card's copper at 64 percent with a cut shadow (`data-asleep` on the article). The stream's first strike wakes a card in 0.07 s and it stays awake (`awake` in `stream.ts`). Awake under the pointer and with keyboard focus, never asleep with reduced motion or under 1100 px. Measured by `sleepuse.mjs`.
+- **5 · Both sides together.** `surge.ts`: both sides start at the press. Each row's two cards are timed by the mean of the two sides, since the bolt's sides are not the same length: they let go in the same frame (0.133 and 0.600 s).
+- **6 · The front.** A second leading end in `sim.ts` (`setFronts`): a hot point, forks of arc, sparks, the riding shards flung wide behind it (`change.fling`), a pale wake (`change.swell`). **And the core ahead of it is turned down to about a fifth while it runs (`change.hush`, `uHush` in the core shader).** That is the one thing that made it possible to follow. It changes the stream's look for 1.1 s, which he asked to keep: it is recorded in the brief as a departure.
+- **7 · Where surges meet.** The two fronts fuse under the button with sparks and forks (`change.fuse`) and one goes on down. Where a front catches the leading end the end bursts: a short narrow jet of sparks forward, forks, and the riders pushed out (`change.burst`, `given`). No shards are thrown by either.
+
+**Measured, production build, 1440 wide**
+
+- One press: bar 0.008 s both sides, first row lets go 0.133 and is struck 0.308, stones 0.417, second row lets go 0.600 and is struck 0.767, meeting 1.108.
+- Riding shards at rest on the bolt: 0 vanished, 0 appeared, 0 jumped. Through a surge 0 vanish or appear, and flung ones move up to 39 px in a frame (503 readings over the old 6 px measure). So test 6 of "When the category changes" is not met as worded.
+- Thrown shards reach the budget of 400 in a surge, so the last strikes throw fewer than they ask for. Sparks 994 of 1200.
+- `/lab/stream`: 20 frozen frames the same as before the work, pixel for pixel. The buttons: 7 stills the same. `BAKE` and `LIGHT` the same letter for letter.
+- Frame times in a real window at 120 a second: 0 long frames in runs of 11 presses, 37 quick presses and at iPad size. With the pointer moving over the cards, one run in four had two long frames (208 and 150 ms) about 0.23 s after a press, with the stream's and the plates' own time small in those frames. Cause not found. With the processor slowed four times at iPad size, 20 of about 720 frames were over 25 ms, where the build before had 4.
+- WebKit at iPad size draws all of it.
+
+**What the fresh reviewers said (four rounds, two reviewers each for the first three)**
+
+- Pass: both sides together (14), sleeping for sleeping (19), one size (20), the two fronts meet (22), every turn has a cause (path 4), draws back cleanly (path 7), riders at rest (path 6).
+- The bolt: from the stone down it "feels like power choosing a course" and beats the old bows. Round the title, the bar and the first row it reads as a mirrored drawn outline (flat run, slanted leg, flat ledge, slanted leg). Those are the stops he agreed, on a symmetric layout, and no stroke can go there without leaving a top. The strike on the bolt is measured harder and was not seen as harder in stills. Tests 1, 3 and 5 fail on the top half.
+- The front (15): fails. Followable once the stream ahead was turned down, but it reads as a bright stretch, not a hard point, and the leading end at a fast scroll has longer forks.
+- The sleeping card (16): fails in every round as "an emboss filter" on real screenshots. The last version, a fine relief with copper words, was not reviewed.
+- Waking (17): fails as a fade. It is now 0.07 s at the strike, not reviewed. Staying awake passes.
+- The stone (21): the throw crosses the gap and lands, called the best thing twice. The pieces then lie along the card's top for a moment. No bounce could be seen in stills.
+- The end burst (23): fails as a sparkler. Since narrowed to a short jet, and the resting end's own sparks are in every frame of that filmstrip.
+- Also raised, from the surge as he approved it: the sag where a card is away reads as a smooth bend beside the bolt's straight runs, and a leaving card fades more than it drops.
+
+**Calls made for him**
+
+- The description's lines by width, tags hidden when they do not fit, one size at every width including phones.
+- Every number of the bolt, strokes fixed per page and different on each side, the harder strike and flash on the bolt.
+- The kink in the surge removed. Budgets on his Mac: thrown shards 260 to 400, sparks 900 to 1200.
+- The sleeping card as a relief of its own picture with copper words. The other reading of "a blank" is a plain bronze window with no picture.
+- The stream turned down ahead of a front.
+- `.foot` and `.go` in the approved card's stylesheet changed so the foot is one row at every width.
+
+**Found on the way**
+
+- A card on its way in that showed nothing yet still shaded the ground: a dark rectangle where a card had gone. Fixed (`stood` in `stream.ts`).
+- GLSL: `cast` and `half` are reserved words. A plate whose shader fails falls back to a CSS outline without an error on the page: `glsl.mjs` in the scratchpad compiles it.
+- The reviewers' filmstrips are frozen frames, where a card's waking is worked out from the frame alone. It now remembers a woken card from frame to frame.
+
+**Not done or not checked**
+
+- The long frame with the pointer moving. The last sleeping card, the 0.07 s waking and the narrowed end burst have not been before a reviewer.
+- Stand in descriptions leave about two empty lines at 1100 wide. His own words will be written to fit.
+- Reference stills: `reference/studies/31-third-pass-*`.
+
+
 ## 2026-11-13 · Handoff to Claude Code: the third pass on the Work page (Fable, web chat)
 
 **What Brandon said**

@@ -31,7 +31,8 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **Built in Claude Code (Nov 13):** the length is 1.1 seconds on `/lab/work`. Only the number was changed. Test 2 has not been judged again at the new length, and nothing tuned against 0.7 was looked at. `LOG.md`, top entry
 - **His pick of a path (Nov 13):** Bolt, as a trial on the route through Work, with today's path one switch away
 - **Going to Claude Code as one round, the third pass on `/lab/work`:** one size of card with one row of tags, the Bolt path as a goal the builder is free to reach, a full strike on each Sun stone, sleeping cards, both sides of the surge together, the surge's front as a second leading end, and what happens where surges meet. `BRIEF.md`, The stream, "The third pass on the Work page". The prompt is in `LOG.md`, top entry. The two prompts written earlier in the day were never sent and this one replaces them
-- **In front of Brandon:** nothing until that build reports
+- **Built in Claude Code (Nov 13):** the third pass, at `/lab/work`, all seven changes, with a switch at the foot of the screen between the bolt and the path as it was. `LOG.md`, top entry, has its account: what is at the bar, what is not, what the fresh reviewers said in three rounds, and every call made for him. `BRIEF.md`, The stream, "The third pass, built" has where it departs from what was written
+- **In front of Brandon:** the third pass at `/lab/work`. He has not seen it
 - **Still waiting on his word:** whether he can follow the surge's front down the sides, the settle onto a new height, the line added to the card's stylesheet. And from before: the card with the stream on it, the second row's strike, the stone and the rail's fittings as objects, and a lighter resting color for "Case study"
 - **He is open to the stone's face lighting** and wants to see it in action before he rules, so it gets built on the real page
 - **In that pass:** the real card with the stream meeting it, the Sun stones made new and a little larger with a face that lights, Blade finials, the right side mirroring the left, a real strike on the second row, room on an iPad held sideways, a bar over WORK behind a switch, and the frame rate with real cards
@@ -94,7 +95,7 @@ Set aside, kept as records: the molten metal test shot at `/lab/pour`, its looks
 - [~] Work · the stream's real route with the posts and the rail, at `/lab/work` (Claude Code)
 - [~] Work · the card's look (web chat). The layout is picked: C · Data plate. How it answers the pointer is picked (Nov 13). Its pictures, and how it takes the stream, are open
 - [~] Work · what the stream does when the category changes: the surge, picked from a wireframe at 0.7 seconds and changed to 1.1 once he saw it on the page (Nov 13). Built on `/lab/work` Nov 13 (Claude Code), waiting on his look
-- [~] Work · the third pass at `/lab/work`: one size of card, the Bolt path, the stone's strike, sleeping cards, the surge's front (Claude Code). Handed over Nov 13
+- [~] Work · the third pass at `/lab/work`: one size of card, the Bolt path, the stone's strike, sleeping cards, the surge's front (Claude Code). Built Nov 13, waiting on his look
 - [~] Work · the second pass at `/lab/work`: the real card, the Sun stones, the Blades (Claude Code). Built Nov 13, waiting on his look
 - [ ] Work · the category bar, and the top bar it may dock into
 - [ ] Work · the whole section, with the real card in it
