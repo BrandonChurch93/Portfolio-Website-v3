@@ -2,6 +2,63 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · Study 26: Contact and the footer, a wireframe (Fable, web chat)
+
+**What Brandon said**
+
+- "If you look at my current portfolio add a functional contact form. I also give them a way to easily copy my email if needed. I can also provide my phone number right there as well. And I also don't hate putting my location either but I'll leave those up to you. Most important links is a calendar link so they can schedule a meeting with me immediately. Next we should have links for we could put a link to my LinkedIn there as well, but that's probably already going in the footer right?"
+- Read as: his live site's Contact has a working form, and the new one has it too. It is in `BRIEF.md`, Settled, Contact, and was pushed before anything was built.
+- He did not answer whether the rocket launches once or every time. The wireframe draws every time, and says it is not ruled.
+
+**What the live site's Contact has**, read from its code (`app/components/ContactSection.jsx` in the clone)
+
+- An eyebrow "Contact" and a heading "Let's Talk".
+- "Copy my email", which copies his address and reads "Copied!" for two seconds.
+- "Book on Calendly", a link to his Calendly page.
+- A rule that reads "or send a message", then a form: a name, an email, a message, "Send Message". It posts to a form service from the page. Sent, it reads "Message sent" and "I'll get back to you within 24 hours."
+- Its footer has GitHub, LinkedIn, CodePen and YouTube as icons, and "Designed and built by Brandon Church". The résumé download is in its top bar.
+
+**What was done**
+
+- `/lab/contact`, Study 26: `src/contact/plan.ts`, `src/components/lab/ContactDraft.tsx` and its styles. It uses the fuller draft's shared styles for the board, the stream's line and the switches.
+- `BRIEF.md`: Settled, Contact has his words. Open 31 has the wireframe: Fable's calls and why, the layout, what the stream does, what is not decided for the build, and notes for whoever builds it. Open 7 is marked decided.
+- `QUALITY.md`, A draft of a section: two lessons, below.
+- `CLAUDE.md`: a row for the wireframe. The index page links it.
+- Stills: `reference/studies/50-contact-lit-on-the-pad.jpg` and `50-contact-dark-launching-and-after.jpg`.
+
+**Fable's calls, each his to overturn**
+
+- No phone number on the page. One short line for where he is based and his time zone. LinkedIn, GitHub and the résumé in the footer.
+- The rocket in the middle between two columns. The stream strikes the spike on the rocket's nose and nothing else. The words come on at the strike.
+- Once the rocket has gone, the stream falls on to the empty table and burns there.
+- Sending a message changes nothing but the form.
+
+**What looking at it showed**
+
+- The first launch drew the flame through the table and under the ground. The rocket and its flame are now cut off at the ground.
+- Smoke as two grey blurs read as smears. It is out, and the warm light on the ground carries the launch.
+- The stream under the risen rocket was a ruler straight line with a seam where it met the fall above. It is now the same swaying line, uncovered from the rocket's tail down.
+- Lesson: on a quick scroll back up, the rocket was still coming down two seconds after the stream had drawn back past the section, onto a pad that had gone dark. Nothing of the pad goes dark while the rocket is in the air, and it comes back down faster than it went up.
+- Lesson: the engine has to be reached before the page runs out. It is 352 units above the foot of the page, enough for a screen 900 tall. For taller screens the reading line slides down the screen over the last half screen of scroll.
+
+**Checked**
+
+- A live run at 1440 by 900 and 1720 by 1300, scrolled down and back up at 520 px a second: no errors in the console. Down, in order: the pad comes up, the strike with the words and the nose, the upper stage, the lower stage, the lift. Up: the stages go dark only after the rocket has landed, and the words go as the stream draws back above the nose.
+- The form was filled in and sent in that run and showed "Message sent". The copy button read "Copied".
+- Stills of the pad dark, lit, 1.2 and 2.2 seconds into the launch, after it, and with the form sent. All opened and looked at.
+
+**Not at any bar, and not meant to be**
+
+- Outlines, a line for the stream, a few shapes and a glow for the launch. How it moves cannot be judged in the web chat.
+- At the strike on a screen 900 tall, the email row, the line for where he is based and the send button are just under the screen.
+- Keyboard focus anywhere in the section brings its words on. Reduced motion shows everything on, with the rocket lit on its table and no launch. Neither was tested beyond reading the code.
+
+**For the next session**
+
+- Waiting on his look at `/lab/contact`. His verdicts go into `BRIEF.md` first: the layout, the stream striking the rocket, what is left after the launch, the launch every time and the landing, no phone number, the line for where he is based, the footer's links.
+- Then the agreement for Contact, its tests, and a prompt for Claude Code, in the pattern of "Skills and About, the first build". The rocket goes with it as a piece, with this outline as its basic version (How we work, the workflow ruling).
+- Claude Code pushed the first build of Skills and About while this was being made: the page, the stream's route through both, the three pieces it strikes and the frame of the desk. Its entry is the next one down. It touched nothing in this study.
+
 ## 2026-11-14 · Skills and About, the first build (Fable, Claude Code)
 
 **What Brandon said**

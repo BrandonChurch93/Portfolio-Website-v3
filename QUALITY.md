@@ -381,6 +381,8 @@ The section:
 - **Say which side.** "My left shoulder", said of a picture, can be either one. Write down the reading taken and tell him. It was read as the picture's left, and he meant his own.
 - **What waits at the far end of a long run comes late.** With the studio light at the right, the stream's end has about 1,600 units of line to cover from About's title to his shoulder. Bring on what can come on early, and say what still waits.
 - **A place worked out with sines and cosines is rounded before it is drawn.** The server and the browser can differ in its last digit, and the page then does not match what the server sent. The second strike's place did.
+- **The last thing the stream reaches has to be reached before the page runs out.** The leading end is read two thirds of the way down the screen, so whatever stands in the last third of the last screen is never reached. Contact's engine is 352 units above the foot of the page, which a screen 900 tall just clears and a taller one does not. `/lab/contact` slides the reading line down the screen near the foot of the page.
+- **Something that plays out over seconds outlasts a quick scroll back up.** The rocket takes about two seconds to come back down. The stream had drawn back past the whole section by then, and the pad went dark under a rocket still in the air. What a thing stands on stays lit until the thing has finished.
 
 ## Rough drafts of a 3D piece
 

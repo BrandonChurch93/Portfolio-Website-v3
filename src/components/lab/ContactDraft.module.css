@@ -1,0 +1,277 @@
+/* The rocket, its tower and its table are outlines. They stand dark until the stream is near. */
+.pad {
+  fill: var(--bg-2);
+  stroke: var(--copper-light);
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  transition: opacity calc(var(--slow, 1) * 0.8s) var(--ease-settle);
+}
+
+.pad[data-shown='false'] {
+  opacity: 0.24;
+}
+
+.ring {
+  fill: none;
+  stroke-width: 1;
+  opacity: 0.5;
+}
+
+.post {
+  fill: none;
+  stroke-width: 2.4;
+}
+
+.brace {
+  fill: none;
+  stroke-width: 1;
+  opacity: 0.7;
+}
+
+.lamp,
+.port {
+  transition: fill calc(var(--slow, 1) * 0.4s) linear;
+}
+
+.lamp[data-on='true'],
+.hull[data-on='true'] .port {
+  fill: var(--hot);
+  stroke: var(--pale);
+}
+
+/* A part of the rocket lights as the stream's light runs down it. */
+.hull {
+  transition: fill calc(var(--slow, 1) * 0.45s) linear, stroke calc(var(--slow, 1) * 0.45s) linear;
+}
+
+.hull[data-on='true'] {
+  fill: color-mix(in srgb, var(--hot) 30%, var(--bg-2));
+  stroke: var(--pale);
+}
+
+.jet,
+.heat {
+  opacity: 0;
+  stroke: none;
+}
+
+.white {
+  fill: var(--pale);
+  stroke: none;
+}
+
+.spot {
+  position: absolute;
+  z-index: 2;
+}
+
+.lede {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 16);
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: calc(var(--u) * 30);
+  font-weight: 300;
+  letter-spacing: var(--track-tight);
+  line-height: 1.2;
+  color: var(--text);
+}
+
+.tag {
+  padding: calc(var(--u) * 2) calc(var(--u) * 8);
+  border: 1px dashed var(--line-strong);
+  border-radius: 99px;
+  font-family: var(--font-mono);
+  font-size: calc(var(--u) * 11);
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--copper);
+}
+
+/* Stand ins for the two metal buttons, at their size. */
+.primary,
+.accent {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 10);
+  border-radius: calc(var(--u) * 10);
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.primary {
+  height: calc(var(--u) * 66);
+  padding: 0 calc(var(--u) * 42);
+  border: 0;
+  background: linear-gradient(180deg, var(--copper-light), var(--copper));
+  font-size: calc(var(--u) * 20);
+  color: var(--bg);
+}
+
+.accent {
+  height: calc(var(--u) * 46);
+  padding: 0 calc(var(--u) * 22);
+  border: 1px solid var(--copper);
+  background: var(--bg-2);
+  font-size: calc(var(--u) * 14.5);
+  color: var(--copper-light);
+}
+
+.accent:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.primary:focus-visible,
+.accent:focus-visible,
+.field input:focus-visible,
+.field textarea:focus-visible {
+  outline: var(--focus);
+  outline-offset: var(--focus-offset);
+}
+
+.mail {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 18);
+}
+
+.address {
+  font-family: var(--font-mono);
+  font-size: calc(var(--u) * 15);
+  color: var(--text);
+}
+
+.where {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: calc(var(--u) * 12);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.form {
+  display: grid;
+  gap: calc(var(--u) * 16);
+}
+
+.formName {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: calc(var(--u) * 12);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(var(--u) * 14);
+}
+
+.field {
+  display: grid;
+  gap: calc(var(--u) * 7);
+  font-family: var(--font-mono);
+  font-size: calc(var(--u) * 11.5);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--copper);
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  padding: 0 calc(var(--u) * 14);
+  border: 1px solid var(--line-strong);
+  border-radius: calc(var(--u) * 8);
+  background: color-mix(in srgb, var(--bg-2) 82%, transparent);
+  font-family: var(--font-body);
+  font-size: calc(var(--u) * 15);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
+}
+
+.field input {
+  height: calc(var(--u) * 46);
+}
+
+.field textarea {
+  height: calc(var(--u) * 132);
+  padding-top: calc(var(--u) * 12);
+  padding-bottom: calc(var(--u) * 12);
+  line-height: 1.5;
+  resize: none;
+}
+
+.send {
+  width: 100%;
+  height: calc(var(--u) * 50);
+}
+
+.done {
+  display: grid;
+  justify-items: start;
+  gap: calc(var(--u) * 12);
+  padding: calc(var(--u) * 30);
+  border: 1px solid var(--line-strong);
+  border-radius: calc(var(--u) * 12);
+  background: color-mix(in srgb, var(--bg-2) 82%, transparent);
+  font-size: calc(var(--u) * 15.5);
+  color: var(--text-2);
+}
+
+.done p {
+  margin: 0;
+}
+
+.done .doneTitle {
+  font-family: var(--font-display);
+  font-size: calc(var(--u) * 24);
+  font-weight: 600;
+  color: var(--pale);
+}
+
+.done .accent {
+  margin-top: calc(var(--u) * 8);
+}
+
+.foot {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: calc(var(--u) * 13.5);
+  color: var(--text-3);
+}
+
+.foot p {
+  margin: 0;
+}
+
+.foot ul {
+  display: flex;
+  gap: calc(var(--u) * 30);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: calc(var(--u) * 12.5);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}

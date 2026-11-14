@@ -13,6 +13,10 @@ export default function Index() {
       <h2 className={styles.group}>Studies</h2>
       <ul className={styles.list}>
         <li>
+          <Link href="/lab/contact">Contact and the footer, a wireframe</Link>
+          <span className={styles.minor}>Phase 3 · the rocket in the middle, a calendar button, your email and a working form either side of it, and the launch at the foot of the page</span>
+        </li>
+        <li>
           <Link href="/lab/desk">The desk, a rough draft</Link>
           <span className={styles.minor}>Phase 3 · the desk for Skills, made new: your pick, the bench, with a mat, an ultrawide, a gaming keyboard and mouse and a PC like your PC Builder&rsquo;s roughed in. Drag to look round it</span>
         </li>

@@ -1260,7 +1260,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
 9. **The résumé.** A page, or only the download button.
 10. **The project page design.**
 11. **Which projects show** in each category on the home page.
-12. **What ties the bottom of the page together.** Recommendation: the stream ends by feeding the rocket's launch.
+12. **What ties the bottom of the page together.** Recommendation: the stream ends by feeding the rocket's launch. Drawn in the Contact wireframe (Open 31), and not ruled.
 13. **The rocket as built.** He has not judged it yet.
 14. **Whether the site has to meet Section 508** (WCAG 2.0, levels A and AA). He asked whether the buttons do, out of curiosity. Recommendation: yes, checked as each part is built, because the engineers who read the site will check. The buttons' results are in `LOG.md`.
 
@@ -1682,6 +1682,36 @@ Each line has Fable's recommendation where there is one. None of these are rules
         - Stills: `reference/studies/48-skill-things-*.jpg`.
     - **His verdict on the derby (Nov 14), in Settled, Skills:** the CPU in its socket, the screen with its back off, the palette and brush. He is on the fence about the things being made out of the strike's shards, and found the derby too low in quality to show it. He asked whether to go on to Claude Code for a polished example or dial it in here first.
     - **Fable's answer, put to him: go to Claude Code, and prove it on one thing first.** The web chat draws in software and has only a flat strip for the stream, so another round here would be another stand in. In Claude Code the real stream and its shards run on his graphics card. One thing is built first, the CPU in its socket, to the bar, on a page of its own, with three ways of coming to life behind a switch, for him to judge in motion: put together from the strike's shards as proposed. Uncovered by a band of light that crosses it from the strike, as a card in Work is woken. Or lit by the strike's flash with its parts dropping the last short way into place, and no shards turned into parts. The other two things are built after he picks.
+
+31. **Contact and the footer: a wireframe (Nov 14). In front of him. Only what is under Settled, Contact is ruled.** At `/lab/contact`, Study 26, built in the web chat on his word that Contact is next.
+    - **What it holds, from his words (Settled, Contact):** a calendar button first, a way to copy his email, and a working form. Nothing waits for a message.
+    - **Fable's calls on what he left open, each his to overturn:**
+        - No phone number. Everyone who reads the site already has his résumé, which carries it. A number on a public page is collected by machines and called by strangers, and this repo is public too. The calendar button does what a number is for.
+        - One short line for where he is based and his time zone. It tells someone booking a call what hours he keeps, and it is where he can say he would move for the right role. The wording is his. The wireframe shows "City, State · Mountain Time" as a stand in: no place is written in the repo until he gives the line.
+        - LinkedIn, GitHub and the résumé go in the footer and are not repeated in Contact. Contact keeps to the three ways to reach him. The live site's footer also links CodePen and YouTube. Whether those stay is his to say.
+    - **The layout, Fable's proposal:** the rocket and its tower in the middle of the page, between two columns. At the left: the title, a line, the calendar button, his email address with a button that copies it, and the line for where he is based. At the right: the form (a name, an email, a message, a send button). The launch table stands on the footer's top edge, so the ground the rocket stands on is the line the footer hangs from.
+        - Why the middle: the stream leaves About about 40 units left of the center line, so it falls onto the rocket with nothing needed to carry it sideways. The stream begins on the center line too, at the city's lip.
+        - Passed over: the rocket at one side and every word at the other. The stream would have had to be carried across the page, over the words.
+    - **What the stream does, Fable's proposal. It takes up Open 12:**
+        1. The rocket, the tower and the table stand dark. They come up as the stream nears.
+        2. The stream falls from under his portrait and strikes the spike on the rocket's nose. It is the one thing it strikes in the section. The words of both columns come on at the strike.
+        3. Its light runs down the rocket: the nose, the upper stage and the lower stage light in turn.
+        4. It reaches the engine and the engine lights. The tower's arms draw back. A second later the rocket lifts, and climbs the way the stream came down.
+        5. Under the rising rocket the stream is its flame. Once the rocket has gone the stream falls on to the empty table and burns there. The page ends on that.
+        6. Scrolling back up, the rocket comes back down the stream and lands, the flame goes out, and the section goes dark again. Not ruled. It is what everything else on the page does: what the stream brings on goes away when it draws back.
+    - **The form** shows what it says once a message has gone: "Message sent", as the live site has it. Sending a message changes nothing else on the page. In the wireframe it sends nothing.
+    - **Not decided, for the build:**
+        - How the form sends. The live site posts to a form service straight from the page, with nothing running on a server. Recommendation: keep that, since it works today and asks nothing of him. When sending fails the form says so and points to his email address.
+        - The address the copy button copies, and the calendar link. The live site's are known. Neither is written in this repo until he says which to use.
+        - What the rocket looks like. Fable reads "the 3D work is made new for this design" (Settled, 3D pieces) as holding for the rocket. He said it of the desk and has not said it of the rocket. The wireframe's outline follows the carried rocket's proportions: about 470 units tall, with its tower at its right.
+        - How far up the page the rocket is followed, and whether it is seen crossing the foot of About.
+    - **For whoever builds it:**
+        - The stream has to reach the engine before the page runs out. The leading end is read two thirds of the way down the screen, so the last third of the last screen is under it. The engine stands 352 units above the foot of the page. That is enough on a screen 900 tall and not on a taller one. The wireframe slides the reading line down the screen over the last half screen of scroll.
+        - At the strike, on a screen 900 tall, the top two thirds of both columns are on the screen. The email row, the line for where he is based and the send button are just under it, and are already on when they are scrolled to.
+        - While the rocket is in the air nothing of the pad goes dark, however far the stream has drawn back. On a quick scroll up the rocket was still coming down onto a pad that had gone dark.
+    - **It leaves out something the carried rocket has:** a flume coming in from the left, which the page sketch (Open 25) brought the stream in along. Here the stream comes in from above and there is no flume. He called what the second build drew inside its pieces, the flume among them, very low quality (The stream).
+    - What is not right, plainly: it is outlines and a line. The launch is a few shapes and a glow. Nothing of how it moves can be judged in the web chat. After the launch the middle of the section holds the stream, the tower and a small flame, and whether that is enough of an ending is his to judge once it moves.
+    - Stills: `reference/studies/50-contact-*.jpg`.
 
 ## Dropped
 
