@@ -2,6 +2,24 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · A second set of options for the three small things (Fable, web chat)
+
+**What Brandon said**
+
+- Each thing needs an animation that brings it to life when it is struck, perhaps forming out of the stream. Fable is to work out what fits.
+- The first row's options were the best but abstract. He wants a hyper realistic CPU that spins, with a background and other things round it.
+- He liked none of the options for Full-Stack Engineering or Design Systems & Craft: too simplified. For design he thought of a painter's palette with a brush that sweeps between the paints.
+- In `BRIEF.md`, Settled, Skills.
+
+**What was done**
+
+- Nothing built. A second set was put to him, with a pick for each row, a larger size, and a way each comes to life. `BRIEF.md`, Open 28, "The second set".
+
+**For the next session**
+
+- The derby is rough 3D on its own page under `/lab`, built when he says which options go in.
+- Real things at this size need about 160 units each and rows about 180 tall. The fuller draft still draws them at 92.
+
 ## 2026-11-14 · The seventh round ruled, and options for the three small things (Fable, web chat)
 
 **What Brandon said**
