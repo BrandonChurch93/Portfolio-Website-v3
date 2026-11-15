@@ -26,7 +26,7 @@ const D2R = Math.PI / 180, M = SCALE;
 const ALONE = { fill: 0.62, fov: 12 };
 // The cursor's light: how far in front of the city it stands, in metres, how far it ranges across and up as shares
 // of what the host shows, and how strong it is.
-const LAMP = { back: 2.6, across: 1.1, up: 1.1, power: 13 };
+const LAMP = { back: 2.6, across: 1.1, up: 1.1, power: 7 };
 // The canvas fades to nothing over this share of its rim, so nothing can end at its edge.
 const RIM = 0.05;
 // The room the city is seen by, as the desk's is: how strongly its things reflect it, and two wide pale lights in
@@ -36,16 +36,16 @@ const ROOM = {
   env: 0.3,
   lights: [
     { power: 9, size: [3.2, 0.6], at: [1.6, 1.5, -2.2], to: [0, 0.2, 0] },
-    { power: 5, size: [3.2, 1.4], at: [-1.8, 1.4, 2.6], to: [0, 0.2, 0] },
+    { power: 1.4, size: [3.2, 1.4], at: [-1.8, 1.4, 2.6], to: [0, 0.2, 0] },
   ] as { power: number; size: [number, number]; at: [number, number, number]; to: [number, number, number] }[],
 };
 // The moon, which is in the upper right of the page's sky: the one light that gives the world a lit side and a dark
 // one. Where it stands from the world, how strong it is, and how many pixels across its shadows are drawn. It never
 // moves, so its shadows are drawn once.
-const MOON = { from: [0.62, 0.55, 0.42] as const, power: 15, map: { high: 4096, mid: 2048, low: 1024, static: 2048 } as Record<Tier, number>, reach: 1100 };
+const MOON = { from: [0.8, 0.46, 0.08] as const, power: 15, map: { high: 4096, mid: 2048, low: 1024, static: 2048 } as Record<Tier, number>, reach: 1100 };
 // The dim light of the sky, which fills what the moon does not reach. It is kept low: with more, the world had no
 // dark side and read as flat.
-const SKY = 0.2;
+const SKY = 0.1;
 // Depth as darkness: what is further from the eye sinks toward the page's ground, so the far side of the city
 // stands dark against the glow behind it and the near side stands clear of it. From how far in front of the
 // world's middle it begins, and how far behind it would be whole, in metres.
