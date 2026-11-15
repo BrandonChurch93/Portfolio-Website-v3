@@ -23,10 +23,8 @@ export const build: PartFactory = async () => {
   await hollow(s, T);
   await masses(s, T);
   vents6(s, T);
-  await slice();
   teeth(s, T);
   made(s, T);
-  await slice();
   await backing(s, T);
   await slice();
   const geo = s.geometry();

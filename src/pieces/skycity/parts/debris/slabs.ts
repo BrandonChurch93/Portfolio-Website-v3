@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { seeded } from '../../../../world/build';
 import { CHAMFER, type Cell, Mesh, type Plane, type V3, dot, unit } from './hull';
-import { CLIP, type Look, ROCK, boulder, broadleaf, cell, conifer, edgeAt, outline, place, plain, rockLift, rod, root, solid, turned } from './kit';
+import { CLIP, type Look, ROCK, boulder, broadleaf, canopy, cell, conifer, edgeAt, outline, place, plain, rockLift, rod, root, solid, turned } from './kit';
 import { KIND } from './look';
 
 // The great slabs: each a piece of the world torn off with what stood on it. The world is land: a city of great
@@ -71,6 +71,16 @@ function roots(m: Mesh, r: () => number, sides: Plane[], n: number, long: number
   }
 }
 
+// Low growth on the forest's floor: tufts and shrubs in autumn's colors.
+function undergrowth(m: Mesh, r: () => number, sides: Plane[], n: number, seed: number, keep: (x: number, z: number) => boolean = () => true): void {
+  for (let i = 0; i < n; i++) {
+    const a = r() * TAU, e = edgeAt(sides, a), d = e * Math.sqrt(r()) * 0.9, x = Math.cos(a) * d, z = Math.sin(a) * d;
+    if (!keep(x, z)) continue;
+    const s = 1.2 + 2.2 * r();
+    canopy(m, s, place([x, s * 0.35, z]), cell(KIND.leaf, 0.25 + 0.6 * r()), seed + i * 3, 0.55, undefined, 0);
+  }
+}
+
 // A lamp post: a dark mast, an arm, a lit lantern.
 function lamp(m: Mesh, at: V3, turn: number, lean = 0, tall = 15): void {
   const base = place(at, [lean, turn, 0]);
@@ -113,6 +123,7 @@ function colonnade(seed: number): Slab {
     const d = place([-14 + i * 6.6 + r(), 1.55, 9 + i * 1.3], [Math.PI / 2, 0.2 + (r() - 0.5) * 0.3, 0]);
     turned(m, [[0, 0], [1.5, 0], [1.42, 5.6], [0, 5.6]], 10, d, STONE(0.5 + 0.2 * r()));
   }
+  undergrowth(m, r, sides, 22, seed, (x, z) => z > 2 || Math.abs(x) > 26);
   broadleaf(m, r, [24, 0, 14], 17, 9, 0.55, seed + 40);
   roots(m, r, sides, 9, 14);
   return { mesh: m, name: 'colonnade' };
@@ -129,6 +140,7 @@ function grove(seed: number): Slab {
     if (i % 5 === 2) conifer(m, r, [x, 0, z], 26 + 12 * r(), 5.5 + 2 * r(), seed + i * 11);
     else broadleaf(m, r, [x, 0, z], 15 + 8 * r(), 8 + 4 * r(), 0.3 + 0.6 * r(), seed + i * 11);
   });
+  undergrowth(m, r, sides, 34, seed);
   boulder(m, r, [6, 0.6, -2], 3.5, seed + 3, sides);
   roots(m, r, sides, 13, 22);
   return { mesh: m, name: 'grove' };
@@ -151,6 +163,7 @@ function tower(seed: number): Slab {
     const g = place([4 + (r() - 0.5) * 16, 48 + r() * 6, -4 + (r() - 0.5) * 16], [(r() - 0.5) * 1.4, r() * TAU, (r() - 0.5) * 1.4]);
     m.geo(new THREE.BoxGeometry(0.7, 9 + 6 * r(), 1.2).translate(0, 4, 0), g, DARK);
   }
+  undergrowth(m, r, sides, 14, seed, (x, z) => Math.abs(x - 2) > 24 || Math.abs(z + 2) > 24);
   roots(m, r, sides, 6, 12);
   return { mesh: m, name: 'tower' };
 }
@@ -181,6 +194,7 @@ function pylon(seed: number): Slab {
     m.solid(solid(4.8, 0.35, 9.3, { at: [x, 4.7, 22], clip: sides, bevel: 0.1 }), plain(BRONZE, ROCK(0.5, 0)));
   }
   m.solid(solid(7, 3.6, 5, { at: [20, 3.6, 0], turn: [0, 0.5, 0.18], cuts: [{ n: [1, 0.4, 0], d: 5 }], bevel: 0.3 }), (tag, n) => (tag >= 10 ? ROCK(0.5, 0) : wall(tag, n)), { step: 5, lift: rockLift(seed + 9, 0.6, 0.2), reach: 2 });
+  undergrowth(m, r, sides, 24, seed, (x, z) => (z < 3 || z > 29) && !(x > -32 && x < 20 && z > -22 && z < 3));
   conifer(m, r, [34, 0, -22], 28, 6.5, seed + 70);
   broadleaf(m, r, [-40, 0, 30], 16, 9, 0.8, seed + 80);
   roots(m, r, sides, 12, 20);
@@ -255,6 +269,7 @@ function peak(seed: number): Slab {
     const a = r() * TAU, d = edgeAt(sides, a) * (0.55 + 0.35 * r());
     broadleaf(m, r, [Math.cos(a) * d, 0, Math.sin(a) * d], 13 + 9 * r(), 7 + 4 * r(), 0.2 + 0.7 * r(), seed + i * 7);
   }
+  undergrowth(m, r, sides, 26, seed);
   roots(m, r, sides, 10, 22);
   return { mesh: m, name: 'peak' };
 }
@@ -263,17 +278,17 @@ function peak(seed: number): Slab {
 // sizes and heights, and under it, in place of rock, the foundations themselves, torn out of the ground: piers of
 // dressed stone and girders, with clods of rock still on them.
 function block(seed: number): Slab {
-  const r = seeded(seed), m = new Mesh(), R = 48;
-  const sides = body(m, r, R, 8, 40, EARTH, seed);
-  m.solid(solid(30, 1.6, 28, { at: [0, 1.6, 0], clip: sides, bevel: 0.3 }), (tag, n) => (tag === 2 ? cell(KIND.paving, 2, 0, 0.4) : tag === CLIP ? SECTION : tag === CHAMFER ? cell(KIND.stone, 0.4, 1) : n[1] < -0.5 ? STONE(0.2) : STONE(0.35)));
-  // The foundations it was torn off with: piers of dressed stone and the steel in them, out of the broken rock.
-  for (let i = 0; i < 6; i++) {
-    const a = r() * TAU, d = edgeAt(sides, a) * (0.85 + 0.1 * r()), h = 8 + 10 * r();
-    m.solid(solid(1.6, h / 2, 1.6, { at: [Math.cos(a) * d, -6 - h / 2, Math.sin(a) * d], turn: [(r() - 0.5) * 0.5, r(), (r() - 0.5) * 0.5], cuts: [{ n: unit([r() - 0.5, -1, r() - 0.5]), d: h / 2 - 2 * r() }], bevel: 0.2 }), (tag) => (tag >= 10 ? SECTION : tag === CHAMFER ? cell(KIND.stone, 0.2, 1) : STONE(0.1)));
-    m.geo(new THREE.BoxGeometry(0.3, 6 + 6 * r(), 0.3).translate(0, -3, 0), place([Math.cos(a) * d, -6 - h, Math.sin(a) * d], [(r() - 0.5) * 0.8, 0, (r() - 0.5) * 0.8]), DARK);
+  const r = seeded(seed), m = new Mesh(), R = 46;
+  const sides = outline(r, 9, R, 0.3);
+  m.solid(solid(R * 1.4, 3.5, R * 1.4, { at: [0, -3.5, 0], clip: sides, bevel: 0.5 }), (tag) => (tag === 2 ? cell(KIND.paving, 2, 0, 0.4) : tag === CHAMFER ? cell(KIND.stone, 0.4, 1) : STONE(0.25)), { step: 6, lift: rockLift(seed, 0.4, 0.1), reach: 3, keep: (t) => t === 2 });
+  for (let i = 0; i < 14; i++) {
+    const a = r() * TAU, d = edgeAt(sides, a) * (0.2 + 0.65 * r()), h = 10 + 22 * r();
+    m.solid(solid(2 + 1.5 * r(), h / 2, 2 + 1.5 * r(), { at: [Math.cos(a) * d, -7 - h / 2, Math.sin(a) * d], turn: [(r() - 0.5) * 0.3, r(), (r() - 0.5) * 0.3], cuts: [{ n: unit([r() - 0.5, -1, r() - 0.5]), d: h / 2 - 2 * r() }], bevel: 0.3 }), (tag) => (tag >= 10 ? STONE(0.1) : tag === CHAMFER ? cell(KIND.stone, 0.4, 1) : STONE(0.3)));
+    if (r() < 0.4) m.geo(new THREE.BoxGeometry(0.5, 8 + 8 * r(), 0.5).translate(0, -4, 0), place([Math.cos(a) * d + 2, -7 - h, Math.sin(a) * d], [(r() - 0.5) * 0.8, 0, (r() - 0.5) * 0.8]), DARK);
+    if (r() < 0.5) boulder(m, r, [Math.cos(a) * d, -9 - h * r(), Math.sin(a) * d], 2.5 + 3 * r(), seed + i);
   }
   const towers: [number, number, number, number, number][] = [[-14, -12, 11, 10, 70], [12, -14, 9, 9, 52], [-12, 14, 8, 9, 38], [14, 12, 10, 8, 60]];
-  for (const [x, z, hx, hz, h] of towers) stump(m, r, [x, 3.2, z], hx, hz, h * (0.8 + 0.3 * r()), sides, r() < 0.5 ? 1 : 0);
+  for (const [x, z, hx, hz, h] of towers) stump(m, r, [x, 0, z], hx, hz, h * (0.8 + 0.3 * r()), sides, r() < 0.5 ? 1 : 0);
   return { mesh: m, name: 'block' };
 }
 

@@ -78,15 +78,12 @@ const atRun = (r: { deg: number[]; s: number[] }, s: number): number => {
 // vent's tip, where the light falls from the lowest rock.
 const tips = VENTS.map((v) => drawn(v[0], v[1], v[2]));
 export function fits(f: Frame, hx: number, hy: number, hz: number): boolean {
-  let x0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (const a of [-1, 1]) for (const b of [-1, 1]) for (const c of [-1, 1]) {
-    // A chunk may be tapered and leaned, so its corners can reach a little past its box.
-    const p: V3 = [0, 1, 2].map((i) => f.o[i] + f.x[i] * a * hx * 1.4 + f.y[i] * b * hy * 1.1 + f.z[i] * c * hz * 1.2) as V3;
+    const p: V3 = [0, 1, 2].map((i) => f.o[i] + f.x[i] * a * hx + f.y[i] * b * hy + f.z[i] * c * hz) as V3;
     if (p[1] < TEAR.low + 1) return false;
     const [x, y] = drawn(p[0], p[1], p[2]);
-    x0 = Math.min(x0, x); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
+    for (const t of tips) if (Math.abs(x - t[0]) < 7 && y > t[1] - 3) return false;
   }
-  for (const t of tips) if (x0 < t[0] + 7 && x1 > t[0] - 7 && y1 > t[1] - 3) return false;
   return true;
 }
 
@@ -156,8 +153,7 @@ export async function face(s: Sink, T: Table): Promise<void> {
       const qm = (q0 + q1) / 2;
       const rr = ring(T, qm, -SEEN, SEEN);
       const total = rr.s[rr.s.length - 1];
-      for (let run = 0, col = 0; run < total; col++) {
-        if (col % 12 === 0) await slice();
+      for (let run = 0; run < total;) {
         // Now and then a block spans several joints and stands well out: a mass that has not yet fallen.
         // Now and then a block spans several joints and beds and stands well out: one of the great masses the face
         // is broken into, with the small blocks round it.
@@ -196,7 +192,7 @@ export async function strip(s: Sink, T: Table): Promise<void> {
       s.tri(p00, p01, p10, cell(rows[k]), n0, n0, n1, cell(rows[k + 1]), cell(rowsB[k]));
       s.tri(p10, p01, p11, cell(rowsB[k]), n1, n0, n1, cell(rows[k + 1]), cell(rowsB[k + 1]));
     }
-    if (i % 32 === 0) await slice();
+    if (i % 64 === 0) await slice();
   }
 }
 
@@ -224,7 +220,7 @@ export async function backing(s: Sink, T: Table): Promise<void> {
       s.tri(prevB.p, A.p, B.p, cell, prevB.n, A.n, B.n);
       prevA = A; prevB = B;
     }
-    if (i % 8 === 0) await slice();
+    if (i % 24 === 0) await slice();
   }
 }
 
@@ -263,8 +259,7 @@ export async function hollow(s: Sink, T: Table): Promise<void> {
     const ring0 = a, ring1 = a + step;
     a += step;
     const am = (ring0 + ring1) / 2;
-    for (let d = 40 + r() * 6, col = 0; d < 320; col++) {
-      if (col % 12 === 0) await slice();
+    for (let d = 40 + r() * 6; d < 320;) {
       const rad = RH * Math.cos(am) + 1;
       const w = mix(16, 40, r() * r()), dd = (w / rad) / D2R;
       const d0 = d, d1 = d + dd;

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { hex } from '../../../../config/palette';
 import { NOISE, lin } from '../../../../world/surface';
-import { CORE, DEBRIS, HEART, SCALE, SOURCE, VENTS, VIEW } from '../../layout';
+import { CORE, HEART, SCALE } from '../../layout';
 import { MOVE_GLSL } from './motion';
 
 // One material draws every piece of rock and everything that stood on the ground, so all of it is one program. What
@@ -44,12 +44,6 @@ const ALBEDO = 0.5;
 const SHEEN = 0.12;
 // How much of the direct light a corner keeps out, against all of the room's.
 const OCC_DIRECT = 0.55;
-// The streams a piece can be lit by: each vent's, falling about FALL_LONG, and the main one from the core's underside
-// down past the foot of the field. As x, z, the top and the foot of each.
-const FALL_LONG = 300;
-const FALLS = [...VENTS.map((v) => [v[0], v[2], v[1], v[1] - FALL_LONG]), [SOURCE[0], SOURCE[2], SOURCE[1], DEBRIS.low - 200]];
-const FALL_LIGHT = { power: 9, reach: 40 };
-const RIM = 0.07;
 
 // The depth the lights' shadows are drawn with, for the few pieces that hold still and so may throw a shadow: it puts
 // each where the clock puts it, as the material does.
@@ -79,23 +73,20 @@ export function lookMaterial(u: LookUniforms): THREE.MeshStandardMaterial {
 attribute vec4 cell; attribute float occ;
 attribute vec4 iC; attribute vec4 iU; attribute vec4 iV; attribute vec4 iS; attribute vec4 iQ; attribute vec4 iK;
 uniform float uT;
-varying vec4 vCell; varying vec3 vObj; varying vec3 vObjN; varying float vSeed; varying float vOcc; varying vec3 vW; varying vec3 vWN;
+varying vec4 vCell; varying vec3 vObj; varying vec3 vObjN; varying float vSeed; varying float vOcc;
 ${MOVE_GLSL}
 vec4 dQ; vec3 dAt;`)
       .replace('#include <beginnormal_vertex>', `dMove(uT, dQ, dAt);
 vec3 objectNormal = dRot(dQ, normal);`)
       .replace('#include <begin_vertex>', `vec3 transformed = dAt + dRot(dQ, position * iK.x);
-vCell = vec4(cell.xyz, cell.x < 1.5 ? cell.w * iK.x + fract(iK.y) * 70.0 : cell.w); vObj = position * iK.x; vObjN = normal; vSeed = iK.y; vOcc = occ; vW = transformed; vWN = objectNormal;`);
+vCell = vec4(cell.xyz, cell.x < 1.5 ? cell.w * iK.x + fract(iK.y) * 70.0 : cell.w); vObj = position * iK.x; vObjN = normal; vSeed = iK.y; vOcc = occ;`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
-varying vec4 vCell; varying vec3 vObj; varying vec3 vObjN; varying float vSeed; varying float vOcc; varying vec3 vW; varying vec3 vWN;
+varying vec4 vCell; varying vec3 vObj; varying vec3 vObjN; varying float vSeed; varying float vOcc;
 uniform float uT; uniform float uCore; uniform vec3 uHeartW; uniform float uCoreRW;
 const float FILL = ${FILL.toFixed(2)};
 const float ALBEDO = ${ALBEDO.toFixed(2)};
 const float SHEEN = ${SHEEN.toFixed(2)};
-const float SOIL = 0.4;
-const float TILT = ${Math.tan((VIEW.el * Math.PI) / 180).toFixed(5)};
-const vec4 FALLS[${FALLS.length}] = vec4[](${FALLS.map((f) => `vec4(${f.map((v) => v.toFixed(1)).join(', ')})`).join(', ')});
 ${NOISE}
 ${HEAD}`)
       .replace('#include <color_fragment>', `#include <color_fragment>
@@ -111,7 +102,7 @@ normal = dBump(normal, dH, dHk);`)
   reflectedLight.indirectDiffuse *= o;
   reflectedLight.indirectSpecular *= o;
   reflectedLight.directDiffuse *= mix(1.0, o, ${OCC_DIRECT.toFixed(2)});
-  reflectedLight.directSpecular *= mix(1.0, o, ${OCC_DIRECT.toFixed(2)}) * mix(dSheen * 2.0, 1.0, max(dMetal, dGlass));
+  reflectedLight.directSpecular *= mix(1.0, o, ${OCC_DIRECT.toFixed(2)}) * mix(dFill, 1.0, max(dMetal, dGlass));
 }`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
 ${EMIT}`);
@@ -199,8 +190,6 @@ const COLOR = /* glsl */ `{
       c = mix(c, litter, leafy * step(0.55, cl2.y) * 0.6);
       c = mix(c, ${lin(0x3a3631)}, step(0.93, dHash1(cl2.y * 7.0)) * fine);
       c = mix(c, ${lin(0x2c2218)}, 1.0 - fine);
-      // Under the moon's full light a bare floor came out as pale as sand: the forest's floor is dark.
-      c *= SOIL;
       seam = 0.0;
     }
     c *= 0.88 + 0.12 * vCell.y;
@@ -211,8 +200,7 @@ const COLOR = /* glsl */ `{
     float rn = wNoise(p * vec3(0.06, 0.016, 0.06)) * 2.0 - 1.0;
     float cw = max(fwidth(rn), 1e-3);
     float joint = (1.0 - smoothstep(0.0, 0.05 + cw * 1.5, abs(rn))) * smoothstep(0.45, 0.65, wNoise(p * 0.05 + 4.0)) * (1.0 - smoothstep(0.15, 0.35, cw)) * (1.0 - step(0.5, kd));
-    // A chamfer is a strip a pixel or two across: a bed's parting crossing it would read as a row of dots.
-    c *= 1.0 - (0.6 * joint + 0.5 * seam) * (1.0 - ch);
+    c *= 1.0 - 0.6 * joint - 0.5 * seam;
     // Fracture: broad conchoidal hollows and fine grit, gone before they are finer than a pixel.
     float big = wFbm(p * 0.07);
     dH = big * 1.6 + ledge + wNoise(p * 0.45) * 0.45 * fine - joint * 0.7 - seam * 0.5;
@@ -258,7 +246,7 @@ const COLOR = /* glsl */ `{
       tone = dHash(cellq);
       vec2 f = fract(q / 7.0) - 0.5;
       joint = max(dLine(f.x, 0.04), dLine(f.y, 0.04));
-      inlay = 0.0;
+      inlay = max(dLine(f.x * 7.0, 0.3), dLine(f.y * 7.0, 0.3)) * step(0.72, dHash(cellq + 3.0));
     }
     c = ${lin(0x4c443b)} * (0.72 + 0.4 * tone) * (0.9 + 0.2 * mix(0.5, wFbm(p * 0.6), fine));
     c *= 1.0 - 0.6 * joint;
@@ -274,10 +262,10 @@ const COLOR = /* glsl */ `{
     c = ${lin(0x1e1c1a)} * (0.85 + 0.3 * mix(0.5, wNoise(p * 1.3), fine)) * (0.9 + 0.2 * wNoise(p * 0.05));
     float x = vObj.x - vCell.w, hw = vCell.y;
     float dash = step(0.45, fract(vObj.z / 9.0));
-    float mk = (dLine(x, 0.25) * dash + dLine(abs(x) - (hw - 1.2), 0.2)) * 0.5;
+    float mk = dLine(x, 0.5) * dash + dLine(abs(x) - (hw - 1.6), 0.4);
     mk *= 1.0 - ch;
     dRough = 0.55 + 0.2 * wNoise(p * 0.2); dH = wNoise(p * 1.1) * 0.1 * fine; dHk = 0.0015;
-    c = mix(c, ${lin(0x55504a)}, mk);
+    if (mk > 0.01) { c = mix(c, ${lin(hex('copper'))}, mk); dMetal = mk; dRough = mix(dRough, 0.2, mk); dF0 = ${lin(hex('copper'))}; }
   }
   else if (kd < 6.5) {
     // Polished metal: gold, bronze, copper. Rubbed bright on its edges, darker and tarnished in its hollows.
@@ -310,7 +298,7 @@ const COLOR = /* glsl */ `{
     float pane = smoothstep(0.06 - w.x, 0.06 + w.x, f.x) * (1.0 - smoothstep(0.94 - w.x, 0.94 + w.x, f.x)) * smoothstep(0.26 - w.y, 0.26 + w.y, f.y) * (1.0 - smoothstep(0.93 - w.y, 0.93 + w.y, f.y));
     float mull = dLine(f.x - 0.5, 0.05);
     pane *= 1.0 - mull;
-    pane = mix(pane, 0.55, tiny) * step(an.y, 0.7) * (1.0 - step(0.5, ch));
+    pane = mix(pane, 0.55, tiny) * step(an.y, 0.7);
     vec3 frame = vCell.y > 0.5 ? ${lin(hex('bronze'))} * 0.7 : ${lin(0x4a4239)};
     float grime = smoothstep(0.6, 0.0, f.y) * 0.25 * wNoise(vec3(along * 1.7, vObj.y * 0.4, 0.0));
     vec3 fr = frame * (0.85 + 0.2 * wNoise(p * 0.4)) * (1.0 - grime);
@@ -345,6 +333,8 @@ const COLOR = /* glsl */ `{
     vec3 dark = ${lin(0x080706)} * (1.0 + 2.0 * wNoise(p * 0.8));
     c = mix(dark, ${lin(0x433d36)} * (0.8 + 0.4 * wNoise(p * 1.3)), clamp(slab + wall, 0.0, 1.0));
     c = mix(c, ${lin(0x221e1b)}, far);
+    float rod = dLine(fract(along * 1.6) - 0.5, 0.1) * smoothstep(0.82, 0.86, f) * (1.0 - far);
+    c = mix(c, ${lin(0x2a1c14)}, rod);
     dRough = 0.85; dH = (slab - 0.5) * 0.6 * (1.0 - far); dHk = 0.002;
   }
   else if (kd < 9.5) {
@@ -365,7 +355,7 @@ const COLOR = /* glsl */ `{
   else if (kd < 11.5) {
     // Dressed stone: pale, smooth, laid in courses.
     float course = dLine(fract(vObj.y / 3.0 + vCell.w) - 0.5, 0.05);
-    c = ${lin(0x433c34)} * (0.85 + 0.25 * mix(0.5, wFbm(p * 0.35), fine)) * (1.0 - 0.35 * course) * (0.8 + 0.2 * vCell.y + 0.2);
+    c = ${lin(0x51483e)} * (0.85 + 0.25 * mix(0.5, wFbm(p * 0.35), fine)) * (1.0 - 0.35 * course) * (0.8 + 0.2 * vCell.y + 0.2);
     c *= 0.8 + 0.2 * wNoise(vec3(p.x * 0.3, p.y * 0.05, p.z * 0.3));
     dRough = 0.6; dH = wNoise(p * 0.6) * 0.3 * fine - course * 0.3; dHk = 0.0015;
     c = mix(c, c * 1.3, ch);
@@ -404,20 +394,4 @@ const EMIT = /* glsl */ `{
     totalEmissiveRadiance += seen * hit * mix(vec3(fres), dF0, dMetal) * shine;
   }
   totalEmissiveRadiance += dEmi;
-  // The streams that fall past a piece light the side of it that faces them. They are drawn over the world on the
-  // page, so they light it as they light the page: by how near they are drawn, whatever the depth between.
-  vec3 wn = normalize(vWN), fallLight = vec3(0.0);
-  float ye = vW.y - vW.z * TILT;
-  for (int i = 0; i < ${FALLS.length}; i++) {
-    vec4 fl = FALLS[i];
-    vec2 near = vec2(fl.x, clamp(ye, fl.w - fl.y * TILT, fl.z - fl.y * TILT)), to2 = near - vec2(vW.x, ye);
-    float d = length(to2);
-    vec3 L = normalize(vec3(to2, 0.5 * d + 4.0));
-    fallLight += dRamp(0.66) * max(dot(wn, L), 0.0) / (1.0 + d * d / ${(FALL_LIGHT.reach ** 2).toFixed(1)});
-  }
-  totalEmissiveRadiance += diffuseColor.rgb * fallLight * ${FALL_LIGHT.power.toFixed(2)} * uCore * vOcc;
-  // The world's glow above lays a thin light along every edge that turns from the eye, so a dark side still has an
-  // outline against the night.
-  float rimK = pow(1.0 - clamp(abs(dot(normal, normalize(vViewPosition))), 0.0, 1.0), 3.0);
-  totalEmissiveRadiance += dRamp(0.42) * rimK * ${RIM.toFixed(3)} * (1.0 - dMetal * 0.5);
 }`;

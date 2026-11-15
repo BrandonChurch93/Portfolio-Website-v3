@@ -1,14 +1,13 @@
 import * as THREE from 'three';
-import { ConvexGeometry } from 'three/addons/geometries/ConvexGeometry.js';
 import { seeded } from '../../../../world/build';
 import { CHAMFER, type Cell, Mesh, type Plane, type V3, unit } from './hull';
-import { ROCK, cell, place, rockLift, solid } from './kit';
+import { CLIP, ROCK, cell, place, rockLift, rod, solid, turned } from './kit';
 import { KIND } from './look';
 
 // The chunks, 10 to 50 across, and the fragments, 2 to 10: each kind is made once at about 30 units and drawn many
 // times at many sizes. Most are rock broken along its joints and beds, stepped where a bed parted, some with the
-// ground's paving still on them, and a few are girders out of what was built. A column's drum, a piece of wall with
-// its window and a gold capstone were tried and read as dice and toys at this size.
+// ground's paving still on them. A few are pieces of what was built: a drum of a column, a piece of wall with its
+// window, a girder, a gold capstone.
 
 // Each kind's geometry is moved so its middle is at the origin and scaled so it reaches 1 from it. `top` is where its
 // rock's beds are counted from, in that same size.
@@ -21,10 +20,10 @@ function rockBlock(r: () => number, hx: number, hy: number, hz: number, at: V3, 
   const cuts: Plane[] = [];
   const support = (n: V3) => hx * Math.abs(n[0]) + hy * Math.abs(n[1]) + hz * Math.abs(n[2]);
   const add = (n: V3, k: number) => { const u = unit(n); cuts.push({ n: u, d: support(u) * k }); };
-  for (let i = 0; i < 2; i++) add([(r() - 0.5) * 0.5, i ? 1 : -1, (r() - 0.5) * 0.5], 0.6 + 0.25 * r());
-  for (let i = 0; i < 3 + Math.floor(r() * 2); i++) { const a = r() * TAU; add([Math.cos(a), (r() - 0.5) * 0.6, Math.sin(a)], 0.45 + 0.35 * r()); }
-  for (let i = 0; i < 2 + Math.floor(r() * 3); i++) { const z = r() * 2 - 1, a = r() * TAU, s = Math.sqrt(1 - z * z); add([s * Math.cos(a), z, s * Math.sin(a)], 0.35 + 0.4 * r()); }
-  const b = 0.3 + 0.3 * r();
+  for (let i = 0; i < 2; i++) add([(r() - 0.5) * 0.3, i ? 1 : -1, (r() - 0.5) * 0.3], 0.8 + 0.15 * r());
+  for (let i = 0; i < 3 + Math.floor(r() * 2); i++) { const a = r() * TAU; add([Math.cos(a), (r() - 0.5) * 0.4, Math.sin(a)], 0.6 + 0.3 * r()); }
+  for (let i = 0; i < 2 + Math.floor(r() * 3); i++) { const z = r() * 2 - 1, a = r() * TAU, s = Math.sqrt(1 - z * z); add([s * Math.cos(a), z, s * Math.sin(a)], 0.55 + 0.35 * r()); }
+  const b = 0.45 + 0.4 * r();
   return solid(hx, hy, hz, { cuts, at, turn, bevel: bevel ? b : 0 });
 }
 
@@ -50,6 +49,27 @@ function rock(seed: number, crust: boolean): Kind {
   return finish(m, topY, [0, 1, 0]);
 }
 
+// A drum of a column, broken across at a slant.
+function drum(seed: number): Kind {
+  const r = seeded(seed), m = new Mesh();
+  turned(m, [[0, -8], [6, -8], [6, 4], [0, 4]], 18, place([0, 0, 0]), cell(KIND.stone, 0.6));
+  // Flutes: shallow ribs round it.
+  for (let i = 0; i < 12; i++) m.geo(new THREE.BoxGeometry(0.7, 11.6, 0.5).translate(0, -2.2, 6.05), place([0, 0, 0], [0, (i / 12) * TAU, 0]), cell(KIND.stone, 0.4));
+  turned(m, [[6, 4], [3.5, 6.5], [1.5, 5.2], [0, 7.5]], 9, place([0, 0, 0], [0, r(), 0]), cell(KIND.stone, 0.5, 1));
+  rod(m, 6.6, 1.2, 18, place([0, -8, 0]), cell(KIND.gold));
+  return finish(m, 8, [0, -1, 0]);
+}
+
+// A piece of a wall with its window and the frame round it, torn on every side.
+function wall(seed: number): Kind {
+  const r = seeded(seed), m = new Mesh();
+  const torn: Plane[] = [];
+  for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU + r() * 0.5; torn.push({ n: unit([Math.cos(a), Math.sin(a), (r() - 0.5) * 0.4]), d: 11 + 4 * r() }); }
+  m.solid(solid(18, 18, 2.2, { clip: torn, bevel: 0.3 }), (tag, n) => (tag === CLIP ? ROCK(0.5, 14) : tag === CHAMFER ? cell(KIND.facade, 0, 1, 0.3) : Math.abs(n[2]) > 0.7 ? cell(KIND.facade, 0, 0, 0.3) : ROCK(0.5, 14)), { step: 5, lift: rockLift(seed, 0.8, 0.2), reach: 2, keep: (t) => t < 10 });
+  m.solid(solid(16, 0.5, 2.8, { at: [0, -5, 0], clip: torn, bevel: 0.15 }), (tag) => (tag === CLIP ? ROCK(0.5, 0) : cell(KIND.bronze)));
+  return finish(m, 14, [0, 0, 1]);
+}
+
 // A girder: a flange and web of dark steel, a plate of copper bolted to it, bent near one end.
 function girder(seed: number): Kind {
   const r = seeded(seed), m = new Mesh(), bend = 0.3 + 0.3 * r();
@@ -63,37 +83,38 @@ function girder(seed: number): Kind {
   return finish(m, 0, [0, 0, 1]);
 }
 
+// A capstone: a small pyramid cased in gold, broken off along its foot, the rock of its core showing.
+function capstone(seed: number): Kind {
+  const r = seeded(seed), m = new Mesh();
+  turned(m, [[11, 0], [0, 11]], 4, place([0, 0, 0], [0, Math.PI / 4, 0]), cell(KIND.gold));
+  m.solid(solid(7.6, 3, 7.6, { at: [0, -2.4, 0], cuts: [{ n: unit([r() - 0.5, -1, r() - 0.5]), d: 2.4 }], bevel: 0.4 }), (tag) => (tag === CHAMFER ? [KIND.rock, 0.5, 1, 0] : ROCK(0.5, 0)), { step: 4, lift: rockLift(seed, 0.6, 0.2), reach: 2 });
+  return finish(m, 0, [0, -1, 0]);
+}
+
+export const CHUNK_KINDS = 12;
 export function chunkKinds(): Kind[] {
   const out: Kind[] = [];
   for (let i = 0; i < 8; i++) out.push(rock(500 + i * 17, i === 2 || i === 5));
-  out.push(girder(720));
+  out.push(drum(700), wall(710), girder(720), capstone(730));
   return out;
 }
 // How often each kind is drawn: rock is most of it.
-export const CHUNK_WEIGHT = [1, 1, 0.8, 1, 1, 0.8, 1, 1, 0.2];
+export const CHUNK_WEIGHT = [1, 1, 0.8, 1, 1, 0.8, 1, 1, 0.22, 0.18, 0.2, 0.12];
 
 // Fragments, 2 to 10 across: single blocks, a few faces each, no chamfer and no roughening, which would be finer than
 // a pixel. One is a sliver of gold, one a chip of paving.
-// A fragment is a hull round a handful of points scattered in a squashed ball, a few of them pulled far out, so it
-// is jagged and no two faces are alike: a chip, a flake or a splinter, never a box.
-function fragment(seed: number, kind: 'chip' | 'flake' | 'splinter' | 'gold'): Kind {
+function fragment(seed: number, kind: 'rock' | 'flake' | 'sliver' | 'gold' | 'paving'): Kind {
   const r = seeded(seed), m = new Mesh(), tone = r();
-  const squash: V3 = kind === 'flake' ? [1, 0.22 + 0.1 * r(), 0.8] : kind === 'splinter' || kind === 'gold' ? [1, 0.25, 0.3] : [1, 0.6 + 0.3 * r(), 0.75 + 0.2 * r()];
-  const pts: THREE.Vector3[] = [];
-  for (let i = 0; i < 7; i++) {
-    const z = r() * 2 - 1, a = r() * TAU, q = Math.sqrt(1 - z * z), k = i < 3 ? 1.2 + 0.6 * r() : 0.35 + 0.35 * r();
-    pts.push(new THREE.Vector3(q * Math.cos(a) * k * squash[0] * 10, z * k * squash[1] * 10, q * Math.sin(a) * k * squash[2] * 10));
-  }
-  const g = new ConvexGeometry(pts);
+  const [hx, hy, hz] = kind === 'flake' ? [11 + 3 * r(), 1.6 + r(), 8 + 3 * r()] : kind === 'sliver' || kind === 'gold' ? [16 + 4 * r(), 2 + 1.5 * r(), 3.5 + 2 * r()] : [10 + 4 * r(), 5 + 4 * r(), 7 + 4 * r()];
+  const s = rockBlock(r, hx, hy, hz, [0, 0, 0], [0, 0, 0], false);
   const flat: Cell = kind === 'gold' ? cell(KIND.gold) : ROCK(tone, 8);
-  m.geo(g.toNonIndexed(), new THREE.Matrix4(), flat);
-  g.dispose();
+  m.solid(s, (tag, n) => (kind === 'paving' && n[1] > 0.85 ? cell(KIND.paving, 0) : tag === CHAMFER ? [flat[0], flat[1], 1, flat[3]] : flat));
   return finish(m, 8, [0, 1, 0]);
 }
 export function fragmentKinds(): Kind[] {
-  return [fragment(900, 'chip'), fragment(911, 'chip'), fragment(922, 'flake'), fragment(933, 'splinter'), fragment(944, 'flake'), fragment(955, 'gold'), fragment(966, 'chip'), fragment(977, 'splinter')];
+  return [fragment(900, 'rock'), fragment(911, 'rock'), fragment(922, 'flake'), fragment(933, 'sliver'), fragment(944, 'flake'), fragment(955, 'gold'), fragment(966, 'paving'), fragment(977, 'sliver')];
 }
-export const FRAGMENT_WEIGHT = [1, 1, 1, 1, 1, 0.12, 1, 0.8];
+export const FRAGMENT_WEIGHT = [1, 1, 1, 1, 1, 0.15, 0.2, 0.8];
 
 export const pick = (w: readonly number[], x: number): number => {
   const sum = w.reduce((a, b) => a + b, 0);

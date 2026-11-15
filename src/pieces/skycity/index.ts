@@ -35,24 +35,26 @@ const RIM = 0.05;
 // pale strip overhead and one at each side, as a photographer's lights are, for the bright hard edged lines that
 // make a curved thing read as polished. And darkness between, so a highlight has something to stand against.
 // These are part of what is reflected and not lights of their own, which on a canvas this large cost more than a
-// frame has. Powers are as seen in a mirror.
+// frame has. Powers are as seen in a mirror. The strips are thin on purpose: a rough surface is lit by all of the
+// room at once, and wide ones lifted every rock and wall on the world out of the night. A mirror shows a thin
+// strip as brightly as a wide one.
 const ROOM = {
   env: 0.3,
   moon: { power: 32, across: 0.8, far: 7 },
-  glow: { power: 2.6, size: [16, 5] as [number, number], at: [0, 1.2, -7] as [number, number, number] },
+  glow: { power: 0.6, size: [16, 3] as [number, number], at: [0, 0.6, -7] as [number, number, number] },
   strips: [
-    { power: 20, size: [5.5, 0.22], at: [0.6, 3.4, 2.2], to: [0, 0, 0] },
+    { power: 20, size: [5.5, 0.12], at: [0.6, 3.4, 2.2], to: [0, 0, 0] },
     // In front of the world and level with it, behind the eye: a polished face turned to the visitor reflects what
     // is there, and with nothing there every such face was dark however polished.
-    { power: 15, size: [9, 0.16], at: [0, 0.7, 7], to: [0, 0.3, 0] },
-    { power: 5, size: [9, 0.5], at: [0, -1.4, 6], to: [0, 0, 0] },
+    { power: 16, size: [9, 0.05], at: [0, 0.7, 7], to: [0, 0.3, 0] },
+    { power: 8, size: [9, 0.07], at: [0, -1.4, 6], to: [0, 0, 0] },
     { power: 11, size: [0.2, 3.6], at: [4.4, 1.2, 1.6], to: [0, 0.4, 0] },
     { power: 6, size: [0.2, 3.6], at: [-4.4, 1.2, 1.6], to: [0, 0.4, 0] },
     { power: 9, size: [3.2, 0.6], at: [1.6, 1.5, -2.2], to: [0, 0.2, 0] },
     // High behind the world: what a level mirror seen from the page reflects. Without it a pool of polished metal
     // showed only the glow, as a flat orange sheet.
-    { power: 13, size: [9, 0.28], at: [0, 3.8, -5], to: [0, 0, 0] },
-    { power: 6, size: [0.3, 2.4], at: [-2.6, 2.6, -5.5], to: [0, 0, 0] },
+    { power: 13, size: [9, 0.1], at: [0, 3.8, -5], to: [0, 0, 0] },
+    { power: 6, size: [0.1, 2.4], at: [-2.6, 2.6, -5.5], to: [0, 0, 0] },
   ] as { power: number; size: [number, number]; at: [number, number, number]; to: [number, number, number] }[],
 };
 // The moon, which is in the upper right of the page's sky: the one light that gives the world a lit side and a dark

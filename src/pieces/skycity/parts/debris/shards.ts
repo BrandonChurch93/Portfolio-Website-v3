@@ -21,17 +21,14 @@ export function riderSize(r: () => number): { size: number; kind: number } {
   const pick = r(), big = r() ** 3.4, [lo, hi] = STREAM.sizes.facets;
   return { size: (lo + (hi - lo) * big) * STREAM_UNIT * GROW, kind: facetKind(big, pick) };
 }
-// The stream's share of clear shards. Round its fall, out of the thick of its glow, fewer of them read as glass.
-export const CLEAR_SHARE = STREAM.shards.clear * 0.6;
+export const CLEAR_SHARE = STREAM.shards.clear;
 const BALL = { flash: 6, hold: 0.6 };
-// How much of what a clear shard holds shows through its body, against its edges.
-const BODY = 0.6;
 // The stream's riders ride within a few units of its line, so all of them are lit as if beside it. The shards here
 // are spread round the fall and among the debris, further from any light: they are lit from this far out as the
 // stream's own are from beside its line, so they come out as bright and as pale as those do.
 const REACH = { line: 3.2, ball: 150 };
 // The stream draws its riders a little larger than their size, by their depth and the page's presence.
-export const GROW = 1.2;
+export const GROW = 1.3;
 
 export interface Shard { move: Move; kind: number; clear: boolean }
 
@@ -103,7 +100,6 @@ uniform vec3 uHeart; uniform float uCoreR; uniform vec2 uLine;
 const float UNIT = ${STREAM_UNIT.toFixed(3)};
 // The core is a ball, and seen from under it, it fills a wide cone: far more faces mirror it than mirror the stream's
 // line. So a face that mirrors it flashes less, and a clear shard holds less of it, or the cloud under the core burns.
-const float BODY = ${BODY.toFixed(2)};
 const float BALL_FLASH = ${BALL.flash.toFixed(2)}, BALL_HOLD = ${BALL.hold.toFixed(2)}, REACH_LINE = ${REACH.line.toFixed(2)}, REACH_BALL = ${REACH.ball.toFixed(1)};
 vec3 V;
 float ggx(float nh, float a){ float a2 = a * a, d = nh * nh * (a2 - 1.0) + 1.0; return a2 / (3.14159 * d * d); }
@@ -167,19 +163,10 @@ vec3 unbalance(vec3 c){
 }
 `;
 
-// One program draws both: which a shard is rides on a uniform, so the two lots share it.
-const FRAG = /* glsl */ `
-uniform vec3 uF0, uCopper, uEmber, uFlame, uHot;
-uniform bool uClear;
+const SOLID = /* glsl */ `
+uniform vec3 uF0, uCopper;
 ${LIGHT}
-vec3 ramp(float a){
-  vec3 c = uEmber * clamp(a / 0.11, 0.0, 1.0);
-  c = mix(c, uFlame, smoothstep(0.07, 0.42, a));
-  c = mix(c, uHot, smoothstep(0.34, 0.85, a));
-  c = mix(c, uPale, smoothstep(0.7, 1.6, a));
-  return c;
-}
-void solid(){
+void main(){
   V = normalize(uEye - vP);
   vec3 N = normalize(vN);
   if (dot(N, V) < -0.2) N = -N;
@@ -201,8 +188,19 @@ void solid(){
   col *= (1.0 - exp(-mx * 1.15)) / (mx * 0.955 + 1e-5);
   col = mix(col, uPale, clamp((light - 1.7) * 0.4, 0.0, 0.85));
   gl_FragColor = vec4(unbalance(col), 1.0);
+}`;
+
+const CLEAR = /* glsl */ `
+uniform vec3 uEmber, uFlame, uHot;
+${LIGHT}
+vec3 ramp(float a){
+  vec3 c = uEmber * clamp(a / 0.11, 0.0, 1.0);
+  c = mix(c, uFlame, smoothstep(0.07, 0.42, a));
+  c = mix(c, uHot, smoothstep(0.34, 0.85, a));
+  c = mix(c, uPale, smoothstep(0.7, 1.6, a));
+  return c;
 }
-void clear(){
+void main(){
   V = normalize(uEye - vP);
   vec3 N = normalize(vN);
   if (dot(N, V) < -0.2) N = -N;
@@ -224,17 +222,14 @@ void clear(){
   float rim = 1.0 - smoothstep(0.1, 0.55, abs(dot(B, V)));
   float edge = (held * 1.5 + 0.1 * min(fall, 1.0)) * rim + 2.8 * (fb * ballBand(B, tb, cosA, 0.42) + fl * lineBand(B, tl, plane, 0.42)) + lampI * 0.4 * toLamp * toLamp * toLamp;
   float point = tipAt() * (1.6 * fall + 0.7 * lampI);
-  // The body is thin glass: it shows little of what it holds except toward the core, and burns along its edges.
-  // What is behind it in the stream's own picture is the stream's glow, which a clear shard there shows, dimmed.
-  vec3 col = max(ramp(max(fl - 0.6, 0.0) * 0.5) * vec3(0.8, 0.74, 0.66), ramp(held * BODY));
+  vec3 col = ramp(held);
   col = max(col, ramp(glint + point));
   col = mix(col, max(col, ramp(edge + point)), line);
   col = min(col, uPale);
   // What is behind shows through it, dimmed as the stream's clear shards dim it.
-  float a = clamp(0.24 + 0.6 * line * min(edge, 1.0) + 1.6 * held * BODY + glint, 0.0, 1.0);
+  float a = clamp(0.24 + 0.6 * line * min(edge, 1.0) + 1.6 * held + glint, 0.0, 1.0);
   gl_FragColor = vec4(unbalance(col), a);
-}
-void main(){ if (uClear) clear(); else solid(); }`;
+}`;
 
 export function shardMaterials(u: ShardUniforms): { solid: THREE.ShaderMaterial; clear: THREE.ShaderMaterial } {
   const shared = {
@@ -242,24 +237,18 @@ export function shardMaterials(u: ShardUniforms): { solid: THREE.ShaderMaterial;
     uCoreR: { value: CORE.r },
     uLine: { value: new THREE.Vector2(SOURCE[1], SOURCE[1] - 600) },
     uPale: { value: lin('pale') },
-    uF0: { value: new THREE.Vector3(...COPPER_LIGHT) }, uCopper: { value: new THREE.Vector3(...COPPER) },
-    uEmber: { value: lin('ember') }, uFlame: { value: lin('flame') }, uHot: { value: lin('hot') },
   };
   const solid = new THREE.ShaderMaterial({
     name: 'debris-shard',
-    uniforms: { ...u, ...shared, uClear: { value: false } },
+    uniforms: { ...u, ...shared, uF0: { value: new THREE.Vector3(...COPPER_LIGHT) }, uCopper: { value: new THREE.Vector3(...COPPER) } },
     vertexShader: VERT,
-    fragmentShader: FRAG,
-    // Drawn as the clear ones are, but whole, so the two lots are one program: three compiles another for a material
-    // that is not transparent.
-    transparent: true,
-    depthWrite: true,
+    fragmentShader: SOLID,
   });
   const clear = new THREE.ShaderMaterial({
     name: 'debris-clear',
-    uniforms: { ...u, ...shared, uClear: { value: true } },
+    uniforms: { ...u, ...shared, uEmber: { value: lin('ember') }, uFlame: { value: lin('flame') }, uHot: { value: lin('hot') } },
     vertexShader: VERT,
-    fragmentShader: FRAG,
+    fragmentShader: CLEAR,
     transparent: true,
     depthWrite: false,
     blending: THREE.CustomBlending,

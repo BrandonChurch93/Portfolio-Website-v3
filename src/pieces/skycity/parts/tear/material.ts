@@ -141,10 +141,11 @@ float tBed(vec3 p){
     c = mix(c, ${lin(0x15100c)}, roots * 0.8 * wild);
     // Under the soil, the top of the rock, weathered and broken by joints, darker in its cracks.
     float rockQ = smoothstep(9.0, 13.0, q + 4.0 * (wNoise(vec3(along * 0.06, 0.0, 9.0)) - 0.5));
-    float cr = wFbm(vec3(along * 0.09, p.y * 0.07, 3.0)), crw = max(fwidth(cr), 1e-4);
-    float joint = smoothstep(0.012, 0.012 + crw * 1.5, abs(cr - 0.5));
-    vec3 rk = mix(${lin(0x4f463d)}, ${lin(0x6a5e50)}, wNoise(vec3(along * 0.05, p.y * 0.08, 4.0))) * (0.85 + 0.3 * blot);
-    rk *= mix(0.4, 1.0, joint * mid + (1.0 - mid));
+    vec2 jq = vec2(along / 9.0, p.y / 5.5 + 0.4 * sin(along * 0.11));
+    vec2 jf = abs(fract(jq) - 0.5);
+    float joint = (1.0 - smoothstep(0.38, 0.47, max(jf.x * (0.9 + 0.2 * wNoise(vec3(floor(jq), 1.0))), jf.y))) ;
+    vec3 rk = mix(${lin(0x4f463d)}, ${lin(0x6a5e50)}, wNoise(vec3(floor(jq), 4.0))) * (0.85 + 0.3 * blot);
+    rk *= mix(0.35, 1.0, joint * mid + (1.0 - mid));
     c = mix(c, rk, rockQ);
     float road = 0.0;
     for (int i = 0; i < 3; i++) {
@@ -163,7 +164,7 @@ float tBed(vec3 p){
     float h = max(0.0, p.y - vCell.y), inner = step(0.9, vCell.z);
     float k = exp(-h / mix(3.5, 14.0, inner));
     c = mix(${lin(0x1e1b18)} * (0.85 + 0.3 * tone + 0.2 * blot), ${lin(0x0d0b0a)}, inner); tRough = mix(0.85, 0.6, inner); tSpec = mix(0.35, 0.2, inner);
-    tEmi = tRamp(clamp(0.25 + 0.75 * k, 0.0, 1.0)) * (0.15 + 2.6 * k * k) * mix(0.12, 1.3, inner) * uCore * smoothstep(42.0, 20.0, h);
+    tEmi = tRamp(clamp(0.25 + 0.75 * k, 0.0, 1.0)) * (0.15 + 2.6 * k * k) * mix(0.35, 1.3, inner) * uCore * smoothstep(42.0, 20.0, h);
     wear = 0.0;
   } else if (kd == ${f(KIND.concrete)}) {
     c = ${lin(0x5a544c)} * (0.8 + 0.35 * tone) * (0.9 + 0.2 * (wNoise(p * 0.6) - 0.5) * fine) * (1.0 + 0.3 * wear);

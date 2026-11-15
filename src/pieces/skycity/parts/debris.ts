@@ -5,7 +5,7 @@ import type { CityPart, PartFactory } from '../part';
 import { CHUNK_WEIGHT, FRAGMENT_WEIGHT, type Kind, chunkKinds, fragmentKinds, pick } from './debris/chunks';
 import type { V3 } from './debris/hull';
 import { type LookUniforms, lookDepth, lookMaterial } from './debris/look';
-import { MODE, MOVE_ATTRS, type Move, type Ring, clearAlways, eddy, hold, moveAt, orbit, packMove, tumble } from './debris/motion';
+import { MODE, MOVE_ATTRS, type Move, type Ring, SMALL, clearAlways, eddy, hold, moveAt, orbit, packMove, tumble } from './debris/motion';
 import { CLEAR_SHARE, type Shard, type ShardUniforms, bake, riderSize, shardMaterials, shardTriangles } from './debris/shards';
 import { SLABS, SLAB_NAMES } from './debris/slabs';
 import { occlusion } from './debris/ao';
@@ -24,20 +24,17 @@ const TAU = Math.PI * 2;
 const Y = HEART[1];
 
 // How many of each, by the stage's tier.
-const COUNT = { chunks: 50, fragments: 340, shards: 190, eddy: 0.7 };
+const COUNT = { chunks: 50, fragments: 340, shards: 380, eddy: 0.8 };
 // The rings round the world's upright: the outer ones pass in front of the torn rock and round behind the world,
 // under the core's disc where they cross it. The inner ones run under the torn rock, behind the core's foot.
 const OUTER = { r: [700, 960], y: [Y + 85, Y - 125], dip: [0.04, 0.2], om: [0.008, 0.02] };
 const INNER = { r: [250, 640], y: [TEAR.low - 8, TEAR.low - 36], om: [0.018, 0.045] };
 // Under the core, round the stream's fall: how far out, how low, and how fast round.
-const FALL = { r: [24, 175], top: Y - 197, foot: DEBRIS.low + 8, om: [0.09, 0.32] };
+const FALL = { r: [12, 140], top: Y - 197, foot: DEBRIS.low + 8, om: [0.09, 0.32] };
 // How far the rays that find a piece's own corners reach: on a slab in units, on a chunk in its own size.
 const OCC = { slab: 7, chunk: 0.35 };
 // The share of the fragments that broke off with a larger piece and keep near it.
 const TRAIL = 0.4;
-// A shard is kept clear of things as if it were no larger than this: the foot of the field is kept for the small
-// pieces and the shards, and a shard of the stream's larger sizes still counts as one of them.
-const SHARD_BOUND = 6;
 // How fast things tumble, by size: radians a second.
 const SPIN = { slab: [0.025, 0.05], chunk: [0.07, 0.26], fragment: [0.2, 0.6], shard: [0.3, 0.9] };
 
@@ -106,6 +103,7 @@ export const build: PartFactory = async ({ tier }) => {
   const slabBounds: { at: V3; r: number }[] = [];
   // What the small pieces may trail behind or hang about: the slabs and the larger chunks.
   const parents: { move: Move; r: number }[] = [];
+  const unclear: string[] = [];
   let alone: CityPart['alone'];
   for (let i = 0; i < SLABS.length; i++) {
     const name = SLAB_NAMES[i];
@@ -127,6 +125,7 @@ export const build: PartFactory = async ({ tier }) => {
     } else if (p.how === 'orbit') move = orbit(p.ring!, p.th0!, r, { ...o, spin: 0.012 });
     else if (p.how === 'tumble') move = tumble(p.at!, p.spin!, r, o);
     else { move = holdShowing(p.at!, p.face!, r, o); move.rho = 0; }
+    if (!only && !clearAlways(move, bound * 0.85)) unclear.push(name);
     slabBounds.push({ at: moveAt(move, 0).at, r: bound });
     parents.push({ move, r: bound * 0.7 });
     const mesh = add(instanced(slab.mesh.geometry(await occlusion(slab.mesh, OCC.slab)), [move]), look, name);
@@ -215,17 +214,15 @@ export const build: PartFactory = async ({ tier }) => {
     // The stream's own shards: most round its fall under the core, thickest just under the core and thinning toward
     // the foot, the rest among the other pieces.
     for (let i = 0; i < Math.round(COUNT.shards * k); i++) {
-      const round = i < COUNT.shards * k * COUNT.eddy;
-      // Away from any stream a clear shard has nothing behind it to show and nothing to hold: only solid ones there.
-      const { size, kind } = riderSize(r), isClear = round && r() < CLEAR_SHARE, o = { scale: size, seed: 9000 + i };
+      const { size, kind } = riderSize(r), isClear = r() < CLEAR_SHARE, o = { scale: size, seed: 9000 + i };
       let m: Move | null = null;
       for (let tries = 0; tries < 40 && !m; tries++) {
         let c: Move;
-        if (round) {
-          const y = lerp([FALL.top, FALL.foot], r() ** 1.5), rad = lerp(FALL.r, r() ** 0.9);
+        if (i < COUNT.shards * k * COUNT.eddy) {
+          const y = lerp([FALL.top, FALL.foot], r() ** 1.9), rad = lerp(FALL.r, r() ** 1.3);
           c = eddy([SOURCE[0], y, SOURCE[2]], rad, lerp(FALL.om, r()) * (r() < 0.9 ? 1 : -1), 0.5, r, { ...o, spin: lerp(SPIN.shard, r()) });
         } else c = placeOne(size, o.seed, SPIN.shard, true) ?? eddy([0, FALL.top, 0], 100, 0.1, 0.5, r, { ...o, spin: 0.5 });
-        if (clearAlways(c, Math.min(size, SHARD_BOUND))) m = c;
+        if (clearAlways(c, Math.min(size, SMALL))) m = c;
       }
       if (m) shards.push({ move: m, kind, clear: isClear });
     }
@@ -238,6 +235,7 @@ export const build: PartFactory = async ({ tier }) => {
   }
   group.userData.triangles = tris;
   group.userData.counts = { meshes: meshes.length, shards: shards.length };
+  (globalThis as unknown as { __debris: unknown }).__debris = { unclear, tris, meshes: meshes.map((x) => [x.name, (x.geometry.getAttribute('position').count / 3) * ((x.geometry as THREE.InstancedBufferGeometry).instanceCount ?? 1)]) };
 
   const cursor = new THREE.Vector3();
   const tan = Math.tan((VIEW.el * Math.PI) / 180);
