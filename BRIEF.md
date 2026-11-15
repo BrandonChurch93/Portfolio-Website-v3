@@ -878,6 +878,15 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     - Fable's miss: holding the layout the same across the three looks, on purpose, when the layout is one of the things he wants changed.
     - What is still settled and is kept in every option: a spire with rings round it on the center line, its tip under the buttons, and the stream leaving the core under it.
     - Three shapes are put to him in the chat as silhouettes, each with the material that belongs to it. Nothing more is built until he answers.
+- **His pick of shapes: A and C. The planet comes first, and it still has a living city and nature (Nov 15, 02:16).** From three silhouettes put to him in the chat (A · Rings round one spire, B · Canyons cut into the planet, C · A burst of shards). "The 2 I like the most are A and C. I like those. Figuring out what kind of planet it is and then figuring out how the city lays on top, that may give us a better world than building a city on an [undesigned] planet." "That being said I still want a city. It needs to feel alive, like a population lives there. While also feeling like a world with nature."
+    - In exact terms:
+    - **A and C are kept. B is not.**
+    - **The order of design changes.** First: what kind of planet this is. Then: how a city lies on a planet of that kind. Not a city set down on a blank dome.
+    - **There is still a city on it,** and it reads as lived in by a population. The silhouettes showed almost none, so both get one.
+    - **The world has nature as well as a city.** In the site's own colors, as ruled before.
+    - "Undesigned" is Fable's reading of a word his dictation wrote as "undeceived".
+    - Fable's two planets, put to him in the chat and his to change. **A, a river world:** the planet is dark bronze banded in rings, its water is the stream's light, which rises in a spring under the spire and runs out in rivers to the tear. The city follows the rivers. Fields, groves and pools lie between them. One grand spire with great gold rings stands over the spring. **C, a crystal world:** the planet grows crystal, giant shards of dark glass thrust out of it at angles, lopsided. The city is built into and between them. Groves of small crystals, veins and pools of light. The tallest shard is the spire, with rings.
+    - Both are built as a lit derby at `/lab/surface-looks`, on the real planet.
 - An idea to revisit with the hero, not decided: his first thought was the city breaking apart into the stream as the visitor scrolls. Fable's twist, which he asked to have noted: building, not breaking. The city assembles out of the stream's facets in the opening, and the stream carries the same pieces on down the page. (Nov 12)
 
 **The hero, the city at rest: the agreement (Nov 14)**
