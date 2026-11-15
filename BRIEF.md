@@ -988,6 +988,12 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     - **The city is not bland or empty, and has nature in it.** Now: bare paving between the buildings. To be decided: what the ground is. He asked, and Fable's proposal is put to him in the chat.
     - **Large changes, not small ones.**
     - He asked for a detailed plan and whether to go back to Gemini. Fable's plan is in the chat and in `LOG.md`. Nothing is changed until he says go.
+- **More context for the blockout, and go (Nov 15, 12:36).** "Yes, you understood what I said exactly. Let me give you a little bit more context. So at rest on the default view before the user scrolls, I want them to see this futuristic city. I don't necessarily want them to see the landscapes of the city or the desert. As they scroll down, they get to see more of the planet. They see the desert, the vegetation, and so on. But as they keep scrolling, that's when they see that this planet has suffered something catastrophic. There also should be tons of flying debris, orbiting and [tidally] locked ones, kind of similar to what we have now in Claude Code." "Yes, you're good to go ahead and start working."
+    - In exact terms:
+    - **The hero is seen in three steps as the page scrolls.** At rest, before any scroll: the city of the future, its spire and its skyline, and no desert and no open land. On the first scroll: more of the planet, laid out, with the desert and the trees and parks. Further down: the catastrophe, which is the torn rock, the core and what broke away.
+    - So the desert and the open land lie on the near half of the top, toward the visitor, which is the part under the foot of the screen at rest. The far half, and all of the skyline, is city.
+    - **Debris, a great deal of it.** Some in orbit round the world, some holding its place with one face to the core, as the world Claude Code built has it. It belongs to the third step: none of it shows at rest.
+    - **Go** on the plan for the blockout's second round, as put to him at 12:25 (`LOG.md`). His five parts stand as written, with "balanced at rest" now meaning the city alone at rest.
 - An idea to revisit with the hero, not decided: his first thought was the city breaking apart into the stream as the visitor scrolls. Fable's twist, which he asked to have noted: building, not breaking. The city assembles out of the stream's facets in the opening, and the stream carries the same pieces on down the page. (Nov 12)
 
 **The hero, the city at rest: the agreement (Nov 14)**

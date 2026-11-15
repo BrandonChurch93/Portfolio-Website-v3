@@ -138,6 +138,8 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **The wireframe** is at `/lab/work-draft`, opening on R, the layout that was agreed. It has done its job. It shows the order of the stops and nothing else
 - **Where the stream is:** `/lab/stream`, approved. It must keep drawing what it draws today
 - **Small things left on the stream, none blocking:** the rest of Phase 2's list below
+- **His go on the blockout's second round (Nov 15, 12:36):** the plan stands, and the hero is seen in three steps on the scroll: the city alone at rest, then the land with its desert and trees, then the catastrophe. A great deal of debris, orbiting and locked to the core. `BRIEF.md`, Settled, Hero, "More context for the blockout, and go". Fable is rebuilding `/lab/hero-blockout` to it
+
 
 ## Phase 0 · Foundation
 
