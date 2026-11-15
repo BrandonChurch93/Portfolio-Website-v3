@@ -21,6 +21,12 @@ He saw the frame with the old disc still on it, and said:
 - "The city also looks really small. That should not be the case."
 - "I think the nature scenes should look much more like a national forest than a farm."
 
+Then, on what "real" means:
+
+- "This is the most important one on the entire site, so it has to look the absolute best! Think Star Wars, alien landscape, but familiar. Ultra realistic in the sense of it looks like an actual real object the user is looking at, something from a high production movie or AAA video game. Not hyperrealistic in the sense of what you're looking at, you would actually see in the real world, as this is a futuristic sci-fi city."
+- **So the bar is the finish of a high production film or a AAA game:** real weight, real light, real materials. It is not that the scene could exist. Ask your reviewers: "is this a frame from a high production film or a AAA game, or is it cheap, amateur, low poly or a toy? What gives it away?" A reviewer who says film or AAA game has passed it.
+- **The look is an alien landscape that is familiar,** as a Star Wars world is: landforms a visitor knows (ridges, mesas, forest, river, rock) made strange by their scale, their shapes and their light. Monumental, worn, lived in.
+
 What that changes, for everyone:
 
 - **The dome is flatter:** `PLANET` is now a radius of 748 kept to 62 degrees, so about 1320 across and 400 tall. `HEART` is no longer the sphere's middle: it is a fixed place, 540 under the top. Use `HEART`, never `-PLANET.r`.
