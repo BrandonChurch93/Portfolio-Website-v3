@@ -25,14 +25,14 @@ export const METAL = { gold: 0, bronze: 1, copper: 2 } as const;
 // Nothing on a tower is ever brighter than this, under the glow's threshold, so no tower can bloom.
 const PEAK = 1.45;
 // How much of the room the glass reflects, and the metals.
-const ROOM = { glass: 0.9, metal: 1.9 };
+const ROOM = { glass: 0.9, metal: 1.0 };
 // How much of the cursor's light the glass gives back: enough to slide across it pane by pane, not so much that
 // a pane it catches reads as a lit room.
 const GLASS_SPEC = 0.22;
 // The back of the city is seen through more night: toward it, a tower gives way to this share of the dark air.
 const AIR = { from: 120, to: -300, most: 0.42 };
 const OPEN = { low: 0.3, deep: 90, shallow: 30, r0: 300, r1: 600 };
-const GAIN = { room: 1.25, lobby: 0.15, street: 0.035, spire: 0.05, light: 0.85, spill: 0.12, rim: 0.08, pod: 0.9 };
+const GAIN = { room: 1.25, lobby: 0.15, street: 0.035, spire: 0.05, light: 0.85, spill: 0.12, pod: 0.9 };
 // The dark where one mass stands on another: how deep, and over how many units it comes back.
 const MEET = { k: 0.6, over: 2.6 };
 
@@ -49,7 +49,7 @@ varying vec3 vCity;
 varying vec3 vCityN;
 varying vec3 vTan;
 varying float vFoot;
-float tRough; float tMetal; vec3 tEmit; vec2 tTilt; float tOcc; float tRim; float tSky; float tRoom; float tMeet; float tSpec;
+float tRough; float tMetal; vec3 tEmit; vec2 tTilt; float tOcc; float tSky; float tRoom; float tMeet; float tSpec;
 
 float th(vec3 p){
   uvec3 v = uvec3(ivec3(floor(p))) * uvec3(1597334673u, 3812015801u, 2798796415u);
@@ -72,7 +72,7 @@ vec3 tTone(float t){
 }
 // A metal by the table's number: its colour and how rough it is.
 vec4 tMetalOf(float m){
-  return m < 0.5 ? vec4(${lin(gold)}, 0.07) : m < 1.5 ? vec4(${lin(hex('bronze'))} * 0.5, 0.36) : vec4(${lin(hex('copper'))} * 0.62, 0.42);
+  return m < 0.5 ? vec4(${lin(gold)}, 0.22) : m < 1.5 ? vec4(${lin(hex('bronze'))} * 0.5, 0.42) : vec4(${lin(hex('copper'))} * 0.62, 0.36);
 }
 // The room behind a window: where in the opening the eye looks in (0 to 1 across and up), the eye's ray in the
 // face's frame (across, up, into the wall), the room's size in units, and two numbers of the room's own. What is seen
@@ -147,20 +147,24 @@ const COLOR = /* glsl */ `
   vec3 alb = vec3(0.04); tRough = 0.6; tMetal = 0.3; tEmit = vec3(0.0); tTilt = vec2(0.0); tSky = 1.0; tRoom = ${f2(ROOM.glass)}; tSpec = 1.0;
   float seed = floor(vLook.x * 65536.0);
   vec4 accentM = tMetalOf(vLook2.x), cladM = tMetalOf(vLook2.y);
-  vec3 stoneC = vec3(0.075, 0.066, 0.054) * mix(0.85, 1.12, th(vec3(seed, 51.0, 0.0)));
+  // Every building's stone a little different: from a cool grey to a warm sand, lighter or darker.
+  vec3 stoneC = mix(vec3(0.064, 0.062, 0.058), vec3(0.086, 0.071, 0.05), th(vec3(seed, 52.0, 0.0))) * mix(0.8, 1.15, th(vec3(seed, 51.0, 0.0)));
   float upright = 1.0 - abs(vCityN.y);
-  bool isFacade = kind == ${K.glass}.0 || kind == ${K.stone}.0 || kind == ${K.clad}.0 || kind == ${K.pod}.0;
+  bool isFacade = kind == ${K.glass}.0 || kind == ${K.stone}.0 || kind == ${K.clad}.0 || kind == ${K.pod}.0 || kind == ${K.slot}.0;
+  // Stone is opened by few, large openings, three floors tall: never a grid of small windows.
+  bool tall = kind == ${K.stone}.0 || kind == ${K.slot}.0;
   if (isFacade && vFace.z > 0.5) {
     // [mullion as a share of the bay on each side, sill, head]: glass in its skin, stone's tall narrow windows,
     // clad metal's narrower slots, a pod's bands.
     float skin = vLook.y;
-    vec3 sk = kind == ${K.stone}.0 ? vec3(0.34, 0.04, 0.97)
+    vec3 sk = kind == ${K.stone}.0 ? vec3(0.36, 0.14, 0.86)
+            : kind == ${K.slot}.0 ? vec3(0.07, 0.12, 0.9)
             : kind == ${K.clad}.0 ? vec3(0.37, 0.1, 0.9)
             : kind == ${K.pod}.0 ? vec3(0.05, 0.3, 0.78)
             : skin < 0.5 ? vec3(0.015, 0.05, 0.965) : skin < 1.5 ? vec3(0.02, 0.38, 0.94) : vec3(0.19, 0.05, 0.965);
-    float bayW = kind == ${K.stone}.0 ? ${f2(BAY.stone)} : kind == ${K.clad}.0 ? ${f2(BAY.clad)} : kind == ${K.pod}.0 ? ${f2(BAY.pod)} : ${f2(BAY.glass)};
-    float fh = vLook2.w;
-    bool lobby = vFoot < 0.5 && vFace.y < 1.9 * fh && kind != ${K.pod}.0;
+    float bayW = kind == ${K.slot}.0 ? ${f2(BAY.slot)} : kind == ${K.stone}.0 ? ${f2(BAY.stone)} : kind == ${K.clad}.0 ? ${f2(BAY.clad)} : kind == ${K.pod}.0 ? ${f2(BAY.pod)} : ${f2(BAY.glass)};
+    float fh = vLook2.w * (tall ? 3.0 : 1.0);
+    bool lobby = vFoot < 0.5 && vFace.y < 1.9 * fh && kind != ${K.pod}.0 && !tall;
     if (lobby) sk = vec3(0.05, 0.06, 0.94);
     float bu = vFace.x * vFace.z;
     float fy = lobby ? vFace.y / (1.9 * fh) : vFace.y / fh;
@@ -171,7 +175,7 @@ const COLOR = /* glsl */ `
 
     // The frame round the glass.
     vec3 frame = vec3(0.03, 0.029, 0.028); float fRough = 0.34, fMetal = 0.85;
-    if (kind == ${K.stone}.0) { frame = stoneC; fRough = 0.72; fMetal = 0.0; }
+    if (tall) { frame = stoneC; fRough = 0.72; fMetal = 0.0; }
     else if (kind == ${K.clad}.0) { frame = cladM.rgb; fRough = cladM.a + 0.03; fMetal = 1.0; }
     else if (kind == ${K.pod}.0) { frame = vec3(0.035, 0.033, 0.03); fRough = 0.3; fMetal = 0.8; }
     else if (vLook2.z > 1.5) { frame = accentM.rgb * 0.85; fRough = accentM.a + 0.04; fMetal = 1.0; }
@@ -183,7 +187,7 @@ const COLOR = /* glsl */ `
     float bSize = 2.0 + floor(th(vec3(seed, 4.0, 0.0)) * 5.0);
     float blockI = floor((floorI + floor(th(vec3(seed, 6.0, 0.0)) * bSize)) / bSize);
     float bh = th(vec3(blockI, seed, 31.0));
-    float share = kind == ${K.pod}.0 ? 0.75 : vLook.z;
+    float share = kind == ${K.pod}.0 ? 0.75 : tall ? vLook.z * 0.55 : vLook.z;
     float state = bh < 0.7 - 0.45 * share ? 0.0 : bh < 0.86 - 0.2 * share ? 0.15 + 0.3 * share : bh < 0.97 ? 0.8 : 1.0;
     float fj = th(vec3(floorI, seed, 33.0));
     // Floors are lit or dark more than rooms are: a floor of a dark block may be lit through, one of a lit block dark.
@@ -271,7 +275,9 @@ const COLOR = /* glsl */ `
     // Faint streaks where rain has run down it, a little darker toward the foot.
     float sx = vFace.x * vFace.z * 1.4, sfw = fwidth(sx);
     float streak = th(vec3(floor(sx), seed, 81.0)) * (1.0 - smoothstep(0.3, 0.7, sfw)) * (0.6 + 0.4 * th(vec3(floor(sx), floor(vFace.y / 9.0), seed + 83.0)));
-    alb = stoneC * (1.0 - 0.16 * joint) * mix(1.0, 0.92 + 0.16 * blk, fineB) * (1.0 - 0.12 * streak);
+    alb = stoneC * (1.0 - 0.16 * joint) * mix(1.0, 0.92 + 0.16 * blk, fineB) * (1.0 - 0.2 * streak);
+    // Worn: darker toward the foot of every wall, where the street's dirt has climbed it.
+    alb *= mix(0.68, 1.0, smoothstep(0.0, 26.0, vCity.y - vFoot)) * mix(0.8, 1.0, smoothstep(0.0, 60.0, vCity.y));
     tRough = 0.78; tMetal = 0.0; tRoom = 0.6;
   } else if (kind == ${K.dark}.0) {
     alb = vec3(0.085, 0.082, 0.078); tRough = 0.45; tMetal = 0.6; tRoom = 0.8;
@@ -322,7 +328,6 @@ const COLOR = /* glsl */ `
   // Where one mass stands on another, or on the street, the foot of the wall is in the dark of the corner.
   tMeet = 1.0 - ${f2(MEET.k)} * exp(-max(0.0, vCity.y - vFoot) / ${f2(MEET.over)}) * upright;
   tOcc *= tMeet;
-  tRim = kind == ${K.light}.0 || kind == ${K.lobby}.0 ? 0.0 : smoothstep(0.0, 80.0, vCity.y) * 0.6 + 0.4;
   // Deep in the streets less of any light reaches a wall.
   float lowFall = mix(0.45, 1.0, smoothstep(0.0, 60.0, vCity.y)) * tMeet;
   diffuseColor.rgb = alb * lowFall;
@@ -336,14 +341,8 @@ const NORMAL = /* glsl */ `
 }
 `;
 
-// The glow the page draws in the sky behind the world shows on the edges that turn away from the eye, as a
-// reflection of it, faint.
 const EMIT = /* glsl */ `
 totalEmissiveRadiance = tEmit;
-{
-  float nv = clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0);
-  totalEmissiveRadiance += tTone(0.85) * ${f2(GAIN.rim)} * pow(1.0 - nv, 7.0) * tRim * tMeet;
-}
 `;
 
 export interface TowerLook {

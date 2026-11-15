@@ -38,6 +38,9 @@ export const K = {
   sky: 14,
   // A cartouche: a panel of dark bronze with abstract marks raised in gold, in a column, and a gold border.
   glyph: 15,
+  // The back of a channel cut into stone: tall openings, three floors high, filling its width, between spandrels of
+  // stone. Most are dark, a few lit warm from within.
+  slot: 16,
 } as const;
 
 export type XZ = [number, number];
@@ -46,8 +49,8 @@ export type V3 = [number, number, number];
 
 // The width of a bay, in units, for each facade that has windows. Solid stone counts its length in units, for its
 // blocks.
-export const BAY = { glass: 2.2, stone: 2.6, clad: 3.0, pod: 2.0 } as const;
-const bays = (k: number, len: number) => (k === K.glass ? Math.max(1, Math.round(len / BAY.glass)) : k === K.stone ? Math.max(1, Math.round(len / BAY.stone)) : k === K.clad ? Math.max(1, Math.round(len / BAY.clad)) : k === K.pod ? Math.max(1, Math.round(len / BAY.pod)) : k === K.plain || k === K.glyph ? Math.max(1, Math.round(len)) : 0);
+export const BAY = { glass: 2.2, stone: 8.0, clad: 3.0, pod: 2.0, slot: 6.0 } as const;
+const bays = (k: number, len: number) => (k === K.glass ? Math.max(1, Math.round(len / BAY.glass)) : k === K.stone ? Math.max(1, Math.round(len / BAY.stone)) : k === K.clad ? Math.max(1, Math.round(len / BAY.clad)) : k === K.pod ? Math.max(1, Math.round(len / BAY.pod)) : k === K.slot ? 1 : k === K.plain || k === K.glyph ? Math.max(1, Math.round(len)) : 0);
 
 // Segments shorter than this, on a ring that is not round, are the bevels of its corners.
 const BEVEL_MAX = 1.7;
@@ -148,6 +151,9 @@ export interface LoftOpts {
   edge?: number;
   // The height the wall stands on, if not its own lowest level.
   foot?: number;
+  // How many bays a face of so many units has, where the facade's own bay would not line up with what stands in
+  // front of it.
+  bays?: (len: number) => number;
 }
 
 // Walls between rings at levels, every ring with as many points, each going round anticlockwise seen from above.
@@ -160,7 +166,7 @@ export function loft(b: City, levels: Level[], kind: number, o: LoftOpts = {}): 
   if (o.round) {
     let per = 0;
     for (let j = 0; j < n; j++) per += segLen(j);
-    const nb = bays(kind, per);
+    const nb = o.bays && bays(kind, per) ? o.bays(per) : bays(kind, per);
     const normal = (i: number, j: number): V3 => {
       const h = sub(P(i, j + 1), P(i, j - 1));
       let up = sub(P(Math.min(L - 1, i + 1), j), P(Math.max(0, i - 1), j));
@@ -191,7 +197,7 @@ export function loft(b: City, levels: Level[], kind: number, o: LoftOpts = {}): 
     const sl = segLen(j);
     let k = o.kinds?.[j] ?? kind;
     if (o.edge !== undefined && sl < BEVEL_MAX) k = o.edge;
-    const nb = bays(k, sl);
+    const nb = o.bays && bays(k, sl) ? o.bays(sl) : bays(k, sl);
     for (let i = 0; i < L - 1; i++) {
       const a = P(i, j), c = P(i, j + 1), d = P(i + 1, j + 1), e = P(i + 1, j);
       let nn = cross(sub(c, a), sub(e, a));
