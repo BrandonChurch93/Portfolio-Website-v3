@@ -2,6 +2,20 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · His look at the second round, and which way to go next (Fable, web chat)
+
+**What Brandon said**
+
+- A major improvement, and not where he wants it. Six notes on the top and one ruling: the look of the top is signed off by him before anything goes to Claude Code. `BRIEF.md`, Settled, Hero, "His look at the second round" has his words and what each means.
+- He asked which way to go: a few more rounds here and then Claude Code, or a higher fidelity version here first.
+
+**What Fable recommended. Not agreed until he answers.**
+
+- **The higher fidelity version here, before Claude Code.** One round that makes his six changes and takes the same model into color: the top with real materials, lit windows, kinds of tree and kinds of ground, and the torn rock in color with the moon's shadows and the core's light. Shown at the page's size in its three steps and in close views of the city, the land and the rock.
+- Why here: every look built in Claude Code so far was built before the look was agreed, and each cost him a round to turn down. Stills are enough to judge a look, and he can mark them up as he just did. What only Claude Code can do, motion and speed on real hardware, does not need the look to wait on it.
+- **What is hardest, said to him:** the buildings. Code is weakest there and every build so far fell short there. The color round shows the truth of it before more is built.
+- **The Safari crash goes to Claude Code now, alone,** with a line to stop work on the old world. The prompt is in the chat.
+
 ## 2026-11-15 · The blockout's second round (Fable, web chat)
 
 **What Brandon said**
