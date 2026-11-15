@@ -58,7 +58,7 @@ export const TAIL = 260;
 // The headphones swing as a pendulum that loses its swing: how long one swing takes, how long it takes to lose most
 // of it, how far the lamp's strike rocks them and the most a brush of the cursor does, in degrees, and how long a
 // knock is followed for.
-export const SWING = { period: 1.05, dies: 0.95, struck: 5, brush: 6, lasts: 7 };
+export const SWING = { period: 1.05, dies: 0.95, struck: 9, brush: 10, lasts: 7 };
 // One knock's swing, in degrees, so many seconds after a knock of so many degrees.
 export const swingOf = (a: number, e: number): number => (e > 0 && e < SWING.lasts ? a * Math.exp(-e / SWING.dies) * Math.sin((2 * Math.PI * e) / SWING.period) : 0);
 
