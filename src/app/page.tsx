@@ -13,6 +13,10 @@ export default function Index() {
       <h2 className={styles.group}>Studies</h2>
       <ul className={styles.list}>
         <li>
+          <Link href="/lab/hero">The hero</Link>
+          <span className={styles.minor}>Phase 3 · built for real, with no opening yet: your words over a city made new that rests low on the screen, and the stream setting off from its main fall as you scroll. The city&rsquo;s ground, spire and towers are with their builders, and the sky and the falls are not in yet</span>
+        </li>
+        <li>
           <Link href="/lab/hero-draft">The hero, a wireframe</Link>
           <span className={styles.minor}>Phase 3 · layout A as outlines: your words centered over the city, the city resting low with its falls under the foot of the screen, and the stream setting off from the main fall as you scroll</span>
         </li>

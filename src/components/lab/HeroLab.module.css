@@ -1,0 +1,191 @@
+.page {
+  position: relative;
+  overflow: clip;
+  background: var(--bg);
+}
+
+.head {
+  position: absolute;
+  top: var(--space-5);
+  left: var(--edge);
+  z-index: 6;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--copper-light);
+}
+
+/* The screen's height is part of the layout. His words are set from the top of the screen: a third of the way down
+   it, less a little, and never nearer its top than a least. The city is set from its foot: the rim of its ground
+   rests a little under the foot of the screen, so its falls are hidden until the page is scrolled, unless that
+   would bring its spire up into the words, when it rests lower. */
+.board {
+  --u: calc(min(100vw, 2400px) / 1460);
+  --screen: 100vh;
+  --screen: 100svh;
+  --words: max(calc(var(--u) * var(--words-least)), calc(var(--screen) * var(--words-third) - var(--u) * var(--words-rise)));
+  /* How far down the page the spire's tip is, and the middle of the city's ground. */
+  --tip: max(calc(var(--words) + var(--u) * (var(--words-tall) + var(--words-gap))), calc(var(--screen) + var(--u) * (var(--hide) - var(--city-tall))));
+  --ground: calc(var(--tip) + var(--u) * var(--city-tall));
+  position: relative;
+  width: calc(var(--u) * 1460);
+  height: calc(var(--ground) + var(--u) * (var(--city-keel) + var(--work-under) + var(--work-tail)));
+  margin: 0 auto;
+}
+
+/* The light a far off city throws into the sky: behind the city and above it, with no edge. */
+.glow {
+  position: absolute;
+  left: calc(50% - var(--u) * var(--glow-rx));
+  top: calc(var(--ground) - var(--u) * (var(--glow-lift) + var(--glow-ry)));
+  width: calc(var(--u) * var(--glow-rx) * 2);
+  height: calc(var(--u) * var(--glow-ry) * 2);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--flame) 30%, transparent), color-mix(in srgb, var(--ember) 24%, transparent) 42%, color-mix(in srgb, var(--ember) 8%, transparent) 72%, transparent);
+  pointer-events: none;
+}
+
+.city {
+  position: absolute;
+  left: 0;
+  top: calc(var(--tip) - var(--u) * var(--city-over));
+  height: calc(var(--u) * (var(--city-over) + var(--city-tall) + var(--city-under)));
+  z-index: 1;
+  pointer-events: none;
+}
+
+.piece {
+  position: absolute;
+  inset: 0;
+}
+
+.words {
+  position: absolute;
+  left: 50%;
+  top: var(--words);
+  z-index: 5;
+  translate: -50% 0;
+  text-align: center;
+}
+
+.role {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: calc(var(--u) * 15);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--copper-light);
+}
+
+.name {
+  margin: calc(var(--u) * 14) 0 0;
+  font-family: var(--font-display);
+  font-size: calc(var(--u) * 92);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.lead {
+  max-width: calc(var(--u) * 620);
+  margin: calc(var(--u) * 26) auto 0;
+  font-size: max(calc(var(--u) * 19), 14px);
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.buttons {
+  display: flex;
+  justify-content: center;
+  gap: calc(var(--u) * 16);
+  margin-top: calc(var(--u) * 30);
+}
+
+.button {
+  width: calc(var(--u) * 176);
+  min-width: 0;
+}
+
+/* A small cue at the foot of the first screen that there is more below. It goes once the page is scrolled. */
+.cue {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--screen) - var(--u) * 34);
+  z-index: 5;
+  translate: -50% 0;
+  margin: 0;
+  padding: calc(var(--u) * 4) calc(var(--u) * 10);
+  font-family: var(--font-mono);
+  font-size: calc(var(--u) * 10.5);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  pointer-events: none;
+}
+
+/* Work's bar, as a stand in on this page: where the stream strikes. */
+.bar {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--ground) + var(--u) * (var(--city-keel) + var(--work-under)));
+  translate: -50% 0;
+  height: calc(var(--u) * 46);
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: calc(var(--u) * 10);
+  font-family: var(--font-mono);
+  font-size: calc(var(--u) * 10.5);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cue {
+    display: none;
+  }
+}
+
+/* A screen too narrow for the layout shows a plain stand in: his words, with no stream and no city. Phones are
+   designed in one pass after every section is finished. */
+@media (max-width: 1099.98px) {
+  .board {
+    --u: 1px;
+    width: auto;
+    height: auto;
+    padding: var(--space-9) var(--gut);
+  }
+
+  .glow,
+  .city,
+  .cue,
+  .bar {
+    display: none;
+  }
+
+  .words {
+    position: static;
+    width: auto !important;
+    translate: none;
+  }
+
+  .name {
+    font-size: var(--step-5);
+    white-space: normal;
+  }
+
+  .buttons {
+    flex-wrap: wrap;
+  }
+
+  .button {
+    width: auto;
+    min-width: 10rem;
+  }
+}

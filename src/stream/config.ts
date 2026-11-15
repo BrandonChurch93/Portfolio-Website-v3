@@ -148,6 +148,19 @@ export const STREAM = {
     over: { title: 0.6, near: 0.9, lamp: 1.4, row: 1.6, reflector: 0.6, light: 0.8, behind: 1.2, under: 0.6 } as Record<string, number>,
   },
 
+  // The route through the hero (routeThroughHero in route-hero.ts): from the city's main fall, down the front of its
+  // rock, and on down to Work's bar. Lengths are in the board's units.
+  hero: {
+    // It comes straight down onto the bar over this last stretch, turning into it by this much.
+    over: 120,
+    turn: 80,
+    // Its strike on the bar, on a page where Work's own route does not take it from there.
+    strike: [1, 1, 5, 2.2] as readonly [number, number, number, number],
+    fall: 150,
+    // How far down the rock the leading end has run when the page is told it has set off.
+    off: 30,
+  },
+
   // The route through Contact (routeThroughContact in route-contact.ts): one stream that falls onto the Sun stone
   // under the rocket and ends there. Lengths are in the board's units unless they say otherwise.
   pad: {
