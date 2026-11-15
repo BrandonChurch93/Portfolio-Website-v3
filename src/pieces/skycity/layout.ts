@@ -124,19 +124,20 @@ const ragged = (deg: number, n: number, seed: number): number => {
 };
 // The torn edge: how far out on the map the ground reaches at a bearing, in degrees from straight toward the
 // visitor, turning to the visitor's right. Never further than the planet is kept (out), and bitten back from
-// there by as much as bite, in large bites and small teeth. The ground above and the torn rock below both end on
-// this line, so they meet.
+// there by as much as bite, in large bites and small teeth. The bites are deep: with an even edge the world read
+// as a disc with a rim, and he ruled that there is no platform. The ground above and the torn rock below both end
+// on this line, so they meet.
 export const EDGE = {
   out: PLANET.cap * D2R * R,
-  bite: 62,
+  bite: 150,
   at(deg: number): number {
     const big = ragged(deg, 7, 1), mid = ragged(deg, 19, 2), small = ragged(deg, 53, 3);
-    return EDGE.out - EDGE.bite * Math.min(1, 0.55 * big * big + 0.3 * mid + 0.22 * small * small);
+    return EDGE.out - EDGE.bite * Math.min(1, 0.72 * big ** 2.2 + 0.2 * mid * mid + 0.14 * small * small);
   },
 };
 // The broken margin: the ground from here out to the torn edge is damaged. Cracked, split, with things leaning or
 // fallen. Where a place round the core reaches further out than this, it is damaged there too.
-export const MARGIN = 600;
+export const MARGIN = 560;
 
 // The torn underside. No rock hangs lower than this, as a height in the frame: under it there is only the core and
 // what broke away. Round the core the rock is torn back into a hollow this far across from the planet's middle,
@@ -233,6 +234,7 @@ export function lots(): Lot[] {
         if (PARKS.some((p) => p.band === band && within(a, p.from, p.to))) continue;
         const t = a * (Math.PI / 180);
         if (districtAt(Math.sin(t) * rad, Math.cos(t) * rad)) continue;
+        if (rad + d / 2 > EDGE.at(a) - 6) continue;
         out.push({ x: Math.round(Math.sin(t) * rad * 10) / 10, z: Math.round(Math.cos(t) * rad * 10) / 10, w: Math.round(w), d: Math.round(d), turn: Math.round(a), tall: Math.round(tall), band, seed });
       }
     }

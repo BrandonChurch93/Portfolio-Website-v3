@@ -49,9 +49,9 @@ const SKY = 0.1;
 // Depth as darkness: what is further from the eye sinks toward the page's ground, so the far side of the city
 // stands dark against the glow behind it and the near side stands clear of it. From how far in front of the
 // world's middle it begins, and how far behind it would be whole, in metres.
-const HAZE = { from: 0.9, to: 3.4 };
+const HAZE = { from: 0.5, to: 2.2 };
 // The light the core throws on the torn rock and on what broke away.
-const GLOW = { power: 0.9 };
+const GLOW = { power: 14 };
 // The heights of the frame each part lies between, lowest first. A part none of which the screen shows is not
 // drawn and is not told the time, so the core and what broke away cost nothing while they are under the foot of
 // the screen, and the city costs nothing once it is over the top.
