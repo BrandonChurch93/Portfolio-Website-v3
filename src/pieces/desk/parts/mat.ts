@@ -9,7 +9,7 @@ import { hairline, hide, type MatShape } from './mat/hide';
 
 const SHAPE: MatShape = { ...MAT, r: 16 };
 // How far the top edge is rolled over, and how far out the hairline of shadow reaches onto the timber.
-const ROLL = 1.3, SHADOW = 9;
+const ROLL = 1.7, SHADOW = 9;
 
 function outline(w: number, d: number, r: number): THREE.Shape {
   const s = new THREE.Shape();
@@ -61,5 +61,5 @@ export const build: PartFactory = () => {
   shadow.matrixAutoUpdate = false;
   shadow.userData.noWire = true;
   group.add(sheet, shadow);
-  return { group, alone: { at: [x + 690, h, z + 170], r: 170 } };
+  return { group, alone: { at: [x + 750, h, z + 200], r: 150 } };
 };

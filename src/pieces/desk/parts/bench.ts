@@ -70,18 +70,17 @@ function stretcher(b: Builder, M: THREE.Material): void {
   const body = stoppedPost(0, 0, -inner, inner, STRETCH.h, STRETCH.d, 2.5, 8, 50, 16).rotateZ(-Math.PI / 2).translate(0, STRETCH.y, STRETCH.z);
   b.add(grain(body, 0.88, 'x', STRETCH.z - 230, STRETCH.y + 30), M);
   for (const s of [-1, 1]) {
-    // The tenon comes through the leg and stands 60 proud of it, its end chamfered, held by a key driven down
-    // through it: tapered, its arrises chamfered, its head spread a little by the mallet.
-    const t0 = inner - 20, t1 = outer + 60;
-    const tenon = loftBar([{ y: t0, w: 70, d: 22, c: 1.4 }, { y: t1 - 3.5, w: 70, d: 22, c: 1.4 }, { y: t1, w: 63, d: 15.5, c: 1.4 }])
+    // The tenon comes through the leg and stands a little proud, its end chamfered, split by two wedges driven in
+    // across it.
+    const t0 = inner - 20, t1 = outer + 12;
+    const tenon = loftBar([{ y: t0, w: 70, d: 22, c: 1.4 }, { y: t1 - 3, w: 70, d: 22, c: 1.4 }, { y: t1, w: 65, d: 17, c: 1.4 }])
       .rotateZ(-Math.PI / 2).translate(0, STRETCH.y, STRETCH.z);
     if (s < 0) tenon.scale(-1, 1, 1);
     b.add(grain(s < 0 ? flip(tenon) : tenon, 0.88, 'x', STRETCH.z - 230, STRETCH.y + 30), M);
-    const key = loftBar([
-      { y: -60, w: 10, d: 27, c: 1.4 }, { y: 44, w: 16, d: 29, c: 1.8 }, { y: 49, w: 18.4, d: 31.5, c: 2.6 },
-      { y: 53.5, w: 16.6, d: 29.5, c: 3.2 }, { y: 56, w: 12, d: 24, c: 3 },
-    ]).translate(s * (outer + 31), STRETCH.y + 6, STRETCH.z);
-    b.add(grain(key, 0.05 + (s > 0 ? 0.4 : 0), 'y', s * (outer + 31) + 60, STRETCH.z - 20), M);
+    for (const dy of [-17, 17]) {
+      const w = rbox(5, 4, 16, 0.6).translate(s * (t1 + 0.6), STRETCH.y + dy, STRETCH.z);
+      b.add(grain(w, 0.05 + (dy > 0 ? 0.3 : 0), 'x', STRETCH.z + 40, STRETCH.y + dy + 30), M);
+    }
   }
 }
 
@@ -138,11 +137,13 @@ export const build: PartFactory = () => {
   stretcher(b, wood);
   const knobs = drawers(b, wood);
 
-  const bronze = metal({ name: 'bench-angle', color: hex('bronze'), rough: 0.3, brush: 'x', tarnish: 0.45, patina: [0.5, 0.36, 0.26], extra: {
+  // Satin on its faces, polished along its rolled outer arris: the light that lands on it is a clean line that
+  // slides along the edge, never a patch.
+  const bronze = metal({ name: 'bench-angle', color: hex('bronze'), rough: 0.5, brush: 'x', tarnish: 0.45, patina: [0.5, 0.36, 0.26], extra: {
     head: 'float bRub;',
-    color: `{ float d = length(vec2(${(FRONT + ANGLE.t).toFixed(1)} - vObj.z, vObj.y - ${ANGLE.t.toFixed(1)})); bRub = 1.0 - smoothstep(0.5, 6.0, d);
-      diffuseColor.rgb *= (1.0 + 0.5 * bRub) * (1.0 - 0.35 * smoothstep(-22.0, -33.0, vObj.y) * step(${(FRONT + 1).toFixed(1)}, vObj.z)); }`,
-    rough: 'roughnessFactor = clamp(roughnessFactor - 0.14 * bRub, 0.08, 1.0);',
+    color: `{ float d = length(vec2(${(FRONT + ANGLE.t).toFixed(1)} - vObj.z, vObj.y - ${ANGLE.t.toFixed(1)})); bRub = 1.0 - smoothstep(1.2, 3.2, d);
+      diffuseColor.rgb *= (1.0 + 0.12 * bRub) * (1.0 - 0.35 * smoothstep(-22.0, -33.0, vObj.y) * step(${(FRONT + 1).toFixed(1)}, vObj.z)); }`,
+    rough: 'roughnessFactor = clamp(mix(roughnessFactor, 0.16, bRub), 0.08, 1.0);',
   } });
   angle(b, bronze);
 

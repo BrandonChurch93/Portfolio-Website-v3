@@ -31,7 +31,7 @@ const v3 = (v: [number, number, number]) => `vec3(${v.map((x) => x.toFixed(1)).j
 export interface Glue { joints: number[]; below: number }
 
 export function timber(wear: Wear[], glue: Glue): THREE.MeshPhysicalMaterial {
-  const m = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.5, specularIntensity: 0.32, specularColor: new THREE.Color(0xffd6ae) });
+  const m = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.5, specularIntensity: 0.17, envMapIntensity: 0.4, specularColor: new THREE.Color(0xffd2a4) });
   m.name = 'bench-timber';
   const rubs = wear.map((w) => `rub += ${w.k.toFixed(2)} * wBox(p, ${v3(w.at)}, ${v3(w.r)})${w.up ? ' * smoothstep(0.6, 0.9, n.y)' : ''};`).join('\n    ');
   shade(m, 'bench-timber', {
@@ -77,11 +77,13 @@ float wBox(vec3 p, vec3 c, vec3 r){ vec3 d = abs(p - c) / r; return 1.0 - smooth
     // Pores: short dark dashes along the grain, dots on an end. Only up close.
     float pz = wNoise(vec3(u * 0.085, g.y * 1.7, g.z * 1.7));
     float pores = smoothstep(0.62, 0.86, pz) * (1.0 - 0.6 * late) * (1.0 - smoothstep(0.22, 0.6, px));
-    float tone = 0.78 + 0.44 * fract(seed * 13.7);
-    vec3 early = mix(vec3(0.0082, 0.0049, 0.0035), vec3(0.0235, 0.0134, 0.0086), broad);
-    vec3 lateC = vec3(0.0034, 0.0019, 0.0013);
+    float tone = 0.7 + 0.6 * fract(seed * 13.7);
+    vec3 early = mix(vec3(0.0112, 0.0049, 0.0026), vec3(0.034, 0.0138, 0.0062), broad);
+    vec3 lateC = vec3(0.0032, 0.0016, 0.001);
     vec3 col = mix(early, lateC, late * 0.92);
-    col *= (0.8 + 0.4 * broad) * (0.7 + 0.6 * streak) * tone;
+    col *= (0.65 + 0.7 * broad) * (0.7 + 0.6 * streak) * tone;
+    // Now and then a dark mineral streak runs with the grain for a hand's length.
+    col *= 1.0 - 0.45 * smoothstep(0.72, 0.86, wNoise(vec3(u * 0.0017, g.y * 0.045 + seed * 31.0, g.z * 0.045)));
     col *= 1.0 - pores * 0.5;
     // An end drinks the oil: darker, duller, with the rings as arcs.
     col *= mix(1.0, 0.62, tEnd);
@@ -103,14 +105,14 @@ float wBox(vec3 p, vec3 c, vec3 r){ vec3 d = abs(p - c) / r; return 1.0 - smooth
     // The oil sits in the dense late wood and the dark streaks and polishes there, and the open early wood stays
     // dull: the sheen shows the figure.
     // Up close the sheen shows the figure. From across the room that would be stripes, so it is its average.
-    float figureSeen = 1.0 - smoothstep(0.5, 1.3, px);
+    float figureSeen = 1.0 - smoothstep(1.0, 2.6, px);
     tRough = 0.4 + figureSeen * (0.2 * (1.0 - late) - 0.08 + 0.16 * smoothstep(0.35, 0.75, broad) * (1.0 - 0.5 * late) + 0.1 * smoothstep(0.45, 0.8, streak) - 0.17)
       + 0.16 * pores + 0.3 * tEnd - 0.12 * tRub - 0.16 * arris;
     // Where the face turns within a pixel its highlight would be a stepped line one pixel wide: spread it instead.
     tRough = max(tRough, 0.3 + 1.6 * length(fwidth(n)));
     // The fibres dip in and out of the face: the sheen moves along the grain in soft bands as the light moves. Three's
     // anisotropic highlight did this better and once in a while divided by nothing, which blacks out the canvas.
-    tTilt = (1.0 - tEnd) * (0.035 + 0.025 * figureSeen) * sin(u * 0.022 + 5.0 * wNoise(vec3(u * 0.003, ph * 0.04, seed * 3.0)));
+    tTilt = (1.0 - tEnd) * (0.018 + 0.012 * figureSeen) * sin(u * (0.018 + 0.012 * fract(seed * 4.3)) + 6.0 * wNoise(vec3(u * 0.003, ph * 0.04, seed * 3.0)));
   }`,
     rough: 'roughnessFactor = clamp(tRough, 0.2, 0.95);',
     normal: 'normal = normalize(normal + vGrainV * tTilt);',
