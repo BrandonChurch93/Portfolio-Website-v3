@@ -55,7 +55,7 @@ function ringMatrix(o: Hoop): THREE.Matrix4 {
 function ringAt(o: Hoop, r: number, deg: number, up = 0): THREE.Vector3 {
   return polar(r, deg, up).applyMatrix4(ringMatrix(o));
 }
-function hoop(b: Parts, o: Hoop, h: Handle, seg: number, shadow?: boolean): void {
+function hoop(b: Parts, o: Hoop, h: Handle, seg: number): void {
   const pts: THREE.Vector2[] = [], d = o.d, t = o.h, add = (x: number, y: number) => pts.push(new THREE.Vector2(o.r + x, y));
   const c = 0.35 * t;
   add(0.45 * d, -t);
@@ -68,7 +68,7 @@ function hoop(b: Parts, o: Hoop, h: Handle, seg: number, shadow?: boolean): void
     for (let i = 0; i <= 5; i++) { const a = Math.PI / 2 - (i / 5) * Math.PI; add(d - bead * 0.95 + bead * 0.95 * Math.cos(a), cy + bead * Math.sin(a)); }
   }
   add(0.45 * d, -t);
-  b.add(new THREE.LatheGeometry(pts, seg), h, ringMatrix(o), shadow);
+  b.add(new THREE.LatheGeometry(pts, seg), h, ringMatrix(o));
 }
 
 // A fin standing out from the axis at a bearing: at each height, how far in and out it reaches and how thick it is,
@@ -152,7 +152,7 @@ const grow = (pts: P2[], k: number): P2[] => {
 };
 
 // A loft of the rounded square through sections of [height, face distance], of power n.
-function superLoft(st: P2[], n: number, seg = 128): THREE.BufferGeometry {
+function superLoft(st: P2[], n: number, seg = 96): THREE.BufferGeometry {
   const pos: number[] = [], idx: number[] = [];
   for (const [y, R] of st) for (let i = 0; i <= seg; i++) { const a = (i / seg) * Math.PI * 2, r = R * swell(a, n); pos.push(Math.sin(a) * r, y, Math.cos(a) * r); }
   const W = seg + 1;
@@ -255,7 +255,8 @@ export async function buildSpire(of: Of): Promise<SpireModel> {
   for (let k = 0; k < TIERS.length; k++) {
     const t = TIERS[k], last = k === TIERS.length - 1, top = last ? DECK.sill : t.to;
     const st: P2[] = [];
-    for (let i = 0; i <= 6; i++) { const y = t.from - 0.5 + ((top - t.from + 0.5) * i) / 6; st.push([y, coreA(Math.min(y, t.to))]); }
+    const own = (y: number) => t.a0 + (t.a1 - t.a0) * Math.min(1, Math.max(0, (y - t.from) / (t.to - t.from)));
+    for (let i = 0; i <= 6; i++) { const y = t.from - 0.5 + ((top - t.from + 0.5) * i) / 6; st.push([y, own(y)]); }
     b.add(superLoft(st, CORE.n), of.glass);
     if (last) {
       b.add(superLoft([[DECK.sill - 0.6, t.a1 + 0.9], [DECK.sill, t.a1 + 0.9], [DECK.sill, t.a1 - 0.2]], CORE.n), of.gold);
@@ -269,6 +270,11 @@ export async function buildSpire(of: Of): Promise<SpireModel> {
     b.add(superLoft(prof.map(([dy, kk]) => [y0 + dy, R + kk]), CORE.n), last ? of.copper : of.gold);
     const next = last ? 6 : TIERS[k + 1].a0 - 0.5;
     b.add(superLoft([[y0 + c, R + CORNICE.lip - 0.4], [y0 + c, next]], CORE.n), of.base);
+  }
+  // Bronze mullion fins up each face of the core, two to a face either side of its rib.
+  for (const g of GATES) for (const t of TIERS) for (const side of [-1, 1]) {
+    const face = (y: number, k: number) => { const a = coreA(y), u = side * a * k; return new THREE.Vector3(u, y, (a ** CORE.n - Math.abs(u) ** CORE.n) ** (1 / CORE.n) + 0.35).applyAxisAngle(new THREE.Vector3(0, 1, 0), g * D2R); };
+    for (const k of [0.36, 0.7]) b.add(bar(face(t.from, k), face(t.to, k), 0.9, 1.1), of.bronze, undefined, false);
   }
   {
     for (const g of GATES) for (const t of TIERS) {
@@ -285,17 +291,25 @@ export async function buildSpire(of: Of): Promise<SpireModel> {
   // it goes on as a blade of bronze, with a gilded edge, that swells round the sun and closes over it.
   {
     const ys: number[] = [];
-    for (let y = PIER.from; y < PIER.knee; y += 3) ys.push(y);
+    for (let y = PIER.from; y < PIER.knee; y += 4) ys.push(y);
     for (let y = PIER.knee; y < PIER.top; y += 10) ys.push(y);
     ys.push(PIER.top);
-    for (const a of PIERS) for (const geo of rounded(a, ys.map((y) => ({ y, rin: coreCorner(y) * 0.7, rout: pierOut(y), th: pierTh(y) })), 0.9, 4)) b.add(geo, of.stone);
-    const line = bladeAt(36);
+    for (const a of PIERS) for (const geo of rounded(a, ys.map((y) => ({ y, rin: coreCorner(y) * 0.7, rout: pierOut(y), th: pierTh(y) })), 1.4, 5)) b.add(geo, of.bronze);
+    // On each pier: a gilded band where each tier's cornice meets it, and a channel up its corner lit as a window to
+    // each two storeys.
+    for (const a of PIERS) {
+      for (const t of TIERS.slice(0, -1)) {
+        const y = t.to + CORNICE.tall / 2;
+        for (const geo of rounded(a, [{ y: y - CORNICE.tall / 2, rin: coreCorner(y) * 0.7, rout: pierOut(y) + 0.7, th: pierTh(y) + 1.0 }, { y: y + CORNICE.tall / 2, rin: coreCorner(y) * 0.7, rout: pierOut(y) + 0.7, th: pierTh(y) + 1.0 }], 0.45)) b.add(geo, of.gold);
+      }
+    }
+    const line = bladeAt(26);
     const at = (y: number, ab: [number, number][]) => {
       for (let i = 1; i < ab.length; i++) if (y <= ab[i][0]) { const k = (y - ab[i - 1][0]) / (ab[i][0] - ab[i - 1][0]); return ab[i - 1][1] + (ab[i][1] - ab[i - 1][1]) * Math.max(0, k); }
       return ab[ab.length - 1][1];
     };
     for (const a of PIERS) {
-      for (const geo of rounded(a, line.map(([r, y]) => ({ y, rin: Math.max(r - at(y, BLADE.deep), 2), rout: r, th: at(y, BLADE.th) })), 0.7, 4)) b.add(geo, of.bronze);
+      for (const geo of rounded(a, line.map(([r, y]) => ({ y, rin: Math.max(r - at(y, BLADE.deep), 2), rout: r, th: at(y, BLADE.th) })), 1.1, 5)) b.add(geo, of.copper);
       for (const geo of rounded(a, line.slice(1).map(([r, y]) => ({ y, rin: r - 0.7, rout: r + 0.45, th: at(y, BLADE.th) * 0.42 })), 0.3, 3)) b.add(geo, of.gold);
       // The collar where the stone pier becomes the bronze blade.
       const y = PIER.top;
@@ -343,13 +357,11 @@ export async function buildSpire(of: Of): Promise<SpireModel> {
     const dome: P2[] = [];
     const d0 = TIERS[2].a1 + CORNICE.lip - 1.2;
     for (let i = 0; i <= 8; i++) { const t = i / 8; dome.push([Math.max(d0 * Math.cos((t * Math.PI) / 2) ** 0.7, 7), DOME.from + (DOME.to - DOME.from) * Math.sin((t * Math.PI) / 2)]); }
-    turn(b, dome, of.copper, 128, 60);
+    turn(b, dome, of.copper, 96, 60);
     turn(b, [[3, DOME.to - 1], [9, DOME.to - 0.4], [9, DOME.to + 1.2], [6.5, SUN.y - SUN.r + 2.2], [3, SUN.y - SUN.r + 3.6]], of.gold, 96, 40);
-    b.add(new THREE.SphereGeometry(SUN.r, 64, 40).translate(0, SUN.y, 0), of.sun);
+    b.add(new THREE.SphereGeometry(SUN.r, 48, 30).translate(0, SUN.y, 0), of.sun);
     for (const o of CROWN) {
-      hoop(b, o, of.gold, 160);
-      // A line of light along the inner edge of its underside, which lights the blades it passes.
-      b.add(new THREE.CylinderGeometry(o.r - o.d + 0.5, o.r - o.d + 0.5, 0.5, 160, 1, true).applyMatrix4(new THREE.Matrix4().makeTranslation(0, -o.h + 0.4, 0)).applyMatrix4(ringMatrix(o)), of.ring, undefined, false);
+      hoop(b, o, of.gold, 112);
       for (let i = 0; i < o.lights; i++) b.add(new THREE.OctahedronGeometry(1.15).scale(1, 0.75, 1).applyMatrix4(new THREE.Matrix4().setPosition(ringAt(o, o.r + o.d * 0.25, (i + 0.5) * (360 / o.lights), o.h + 0.25))), of.stud, undefined, false);
       for (const a of PIERS) {
         const p = ringAt(o, o.r - o.d * 0.6, a), edge = bladeEdge(p.y);
@@ -360,7 +372,7 @@ export async function buildSpire(of: Of): Promise<SpireModel> {
   await slice();
 
   // The needle and its gilded rings, the beacon's lens, and the spike.
-  turn(b, NEEDLE, of.bronze, 48);
+  turn(b, NEEDLE, of.gold, 48);
   for (const r of NEEDLE_RINGS) turn(b, [[r.r - 1.0, r.y - r.h / 2], [r.r, r.y - r.h / 2 + 0.25], [r.r, r.y + r.h / 2 - 0.25], [r.r - 1.0, r.y + r.h / 2]], of.gold, 48);
   const lens: THREE.Vector2[] = [];
   for (let i = 0; i <= 10; i++) { const k = i / 10; lens.push(new THREE.Vector2(0.9 + (BEACON.r - 0.9) * Math.sin(k * Math.PI) ** 0.6, BEACON.from + (BEACON.to - BEACON.from) * k)); }

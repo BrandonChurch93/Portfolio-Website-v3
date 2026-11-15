@@ -41,6 +41,10 @@ const ROOM = {
   glow: { power: 2.6, size: [16, 5] as [number, number], at: [0, 1.2, -7] as [number, number, number] },
   strips: [
     { power: 20, size: [5.5, 0.22], at: [0.6, 3.4, 2.2], to: [0, 0, 0] },
+    // In front of the world and level with it, behind the eye: a polished face turned to the visitor reflects what
+    // is there, and with nothing there every such face was dark however polished.
+    { power: 15, size: [9, 0.16], at: [0, 0.7, 7], to: [0, 0.3, 0] },
+    { power: 5, size: [9, 0.5], at: [0, -1.4, 6], to: [0, 0, 0] },
     { power: 11, size: [0.2, 3.6], at: [4.4, 1.2, 1.6], to: [0, 0.4, 0] },
     { power: 6, size: [0.2, 3.6], at: [-4.4, 1.2, 1.6], to: [0, 0.4, 0] },
     { power: 9, size: [3.2, 0.6], at: [1.6, 1.5, -2.2], to: [0, 0.2, 0] },

@@ -39,7 +39,6 @@ export function liftAt(t: number): number {
 export const build: PartFactory = async ({ tier }) => {
   const { mats, of } = spireMaterials();
   const { group, tris, meshes } = await buildSpire(of);
-  if (typeof location !== 'undefined' && location.search.includes('grey=1')) { const g = new THREE.MeshStandardMaterial({ color: 0x8a8580, roughness: 0.7 }); for (const m of meshes) m.material = g; }
   const halo = new THREE.Sprite(mats.halo);
   halo.position.set(0, (BEACON.from + BEACON.to) / 2, 0);
   halo.renderOrder = 2;

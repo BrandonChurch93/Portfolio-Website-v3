@@ -99,7 +99,7 @@ export const LINE = { half: 0.7, from: TERRACE_TOP + 0.5, to: DECK.sill - 1 };
 export const LIFT = { tall: 2.6, levels: [LINE.from + 1, 70, TIERS[1].from + 6, 128, TIERS[2].from + 6, DECK.sill - 5] as const, speed: 26, slot: 11, dwell: 2.4 };
 
 // A storey of the core and a bay of its glass, in units, and how deep a room is behind it.
-export const ROOM = { tall: 3.3, bay: 1.65, deep: 4.4 };
+export const ROOM = { tall: 2.4, bay: 1.2, deep: 3.4 };
 
 // The nav lights: how long one blinks, in seconds.
 export const BLINK = 3.1;

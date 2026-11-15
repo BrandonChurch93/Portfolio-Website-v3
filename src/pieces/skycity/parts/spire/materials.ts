@@ -15,33 +15,33 @@ export const U = {
   uPulse: { value: -100 },
 };
 
-interface Solid { color: number; rough: number; metal: number; room: number }
+interface Solid { color: number; rough: number; metal: number }
 const tone = (n: PaletteName, k: number) => new THREE.Color(hex(n)).multiplyScalar(k).getHex();
 // Gold: a polished metal at the palette's own hue, between copper-light and hot, never a yellow brass.
-const GOLD = new THREE.Color(hex('copper-light')).lerp(new THREE.Color(hex('hot')), 0.85).lerp(new THREE.Color(hex('pale')), 0.22).getHex();
-// Copper: the palette's copper drawn toward its ember, so it is redder and darker than the gold beside it.
-const COPPER = new THREE.Color(hex('copper')).lerp(new THREE.Color(hex('ember')), 0.3).getHex();
+const GOLD = new THREE.Color(hex('copper-light')).lerp(new THREE.Color(hex('hot')), 0.7).getHex();
+// Copper: the palette's own, redder and darker than the gold beside it.
+const COPPER = hex('copper');
 // The three metals differ in value and in finish, so they can be told apart without hue: gold is the lightest and
 // mirror polished, copper is the orange one and satin, bronze is dark and brushed. Against them the stone is pale and
 // matte, the steel near black, and the glass dark.
 export const SOLID = {
-  stone: { color: 0x7a7066, rough: 0.62, metal: 0, room: 1 },
+  stone: { color: 0x544d46, rough: 0.7, metal: 0 },
   // The courses, the roofs and the door's reveals, a darker stone.
-  base: { color: 0x403a34, rough: 0.8, metal: 0, room: 1 },
-  gold: { color: GOLD, rough: 0.1, metal: 1, room: 2.4 },
-  copper: { color: COPPER, rough: 0.2, metal: 1, room: 1.9 },
-  bronze: { color: tone('bronze-deep', 0.85), rough: 0.26, metal: 1, room: 1.6 },
+  base: { color: 0x403a34, rough: 0.8, metal: 0 },
+  gold: { color: GOLD, rough: 0.1, metal: 1 },
+  copper: { color: COPPER, rough: 0.14, metal: 1 },
+  bronze: { color: tone('bronze', 0.8), rough: 0.17, metal: 1 },
   // Polished black stone for the shaft's pilasters: the obelisk's own stone, drawn by the light on its arrises.
-  jet: { color: 0x15120f, rough: 0.2, metal: 0.25, room: 1.4 },
+  jet: { color: 0x15120f, rough: 0.2, metal: 0.25 },
   // Blackened steel: the deck's top, the struts, the needle.
-  dark: { color: 0x242220, rough: 0.34, metal: 0.85, room: 1.3 },
+  dark: { color: 0x242220, rough: 0.34, metal: 0.85 },
 } satisfies Record<string, Solid>;
 export type SolidName = keyof typeof SOLID;
 const SOLIDS = Object.keys(SOLID) as SolidName[];
 
 // Glass and light: the shaft's glass with its rooms, the gates' doors, the sun, the gallery, the line of light and the
 // lift, the rings' lights, the nav lights and the beacon.
-export const LIGHTS = ['glass', 'door', 'sun', 'gallery', 'line', 'ring', 'blink', 'beacon', 'stud'] as const;
+export const LIGHTS = ['glass', 'door', 'sun', 'gallery', 'line', 'ring', 'blink', 'beacon', 'stud', 'slit'] as const;
 export type LightName = (typeof LIGHTS)[number];
 
 const col = (c: number) => { const k = new THREE.Color(c); return `vec3(${k.r.toFixed(4)}, ${k.g.toFixed(4)}, ${k.b.toFixed(4)})`; };
@@ -76,7 +76,7 @@ const HOLD_CHUNK = 'outgoingLight = heldUnder(outgoingLight - totalEmissiveRadia
 const VERT_HEAD = 'attribute vec4 cell;\nvarying float vKind;\nvarying vec3 vObj;\nvarying vec3 vObjN;\nvarying vec3 vCam;';
 const VERT_BODY = 'vKind = cell.x;\nvObj = position;\nvObjN = normal;\nvCam = (inverse(modelMatrix) * vec4(cameraPosition, 1.0)).xyz;';
 
-interface Chunks { head: string; color: string; rough?: string; metal?: string; normal?: string; emissive?: string; room?: string; after?: string }
+interface Chunks { head: string; color: string; rough?: string; metal?: string; normal?: string; emissive?: string; room?: string; after?: string; hold?: string }
 
 function patch(m: THREE.MeshPhysicalMaterial, key: string, c: Chunks): void {
   m.userData.uniforms = U;
@@ -91,7 +91,7 @@ function patch(m: THREE.MeshPhysicalMaterial, key: string, c: Chunks): void {
     if (c.emissive) f = f.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\n${c.emissive}`);
     if (c.after) f = f.replace('#include <lights_physical_fragment>', `#include <lights_physical_fragment>\n${c.after}`);
     f = f.replace('#include <lights_fragment_end>', `${c.room ?? ''}\n#include <lights_fragment_end>`);
-    sh.fragmentShader = f.replace('#include <opaque_fragment>', HOLD_CHUNK);
+    sh.fragmentShader = f.replace('#include <opaque_fragment>', c.hold ?? HOLD_CHUNK);
   };
   m.customProgramCacheKey = () => key;
 }
@@ -107,12 +107,11 @@ function solidMaterial(): THREE.MeshPhysicalMaterial {
   m.name = 'spireSolid';
   const s = SOLIDS.map((n) => SOLID[n] as Solid);
   const K = (n: SolidName) => SOLIDS.indexOf(n);
-  patch(m, 'spire-solid-4', {
+  patch(m, 'spire-solid-5', {
     head: `
 const vec3 SC[${s.length}] = ${arr('vec3', s, (x) => col(x.color))};
 const float SR[${s.length}] = ${arr('float', s, (x) => f1(x.rough))};
 const float SM[${s.length}] = ${arr('float', s, (x) => f1(x.metal))};
-const float SRoom[${s.length}] = ${arr('float', s, (x) => f1(x.room))};
 const float RINGS_Y[${RINGS_Y.length}] = ${arr('float', RINGS_Y, f1)};
 const vec3 GOLD = ${col(GOLD)};
 ${GATE_GLSL}
@@ -173,13 +172,15 @@ float cartouche(vec2 q, float px){
     float jx = 0.5 - abs(fract(along) - 0.5);
     float fine = smoothstep(0.08, 0.22, fwidth(q));
     float joint = max(1.0 - smoothstep(0.025, 0.06, jy), (1.0 - smoothstep(0.02, 0.05, jx)) * (1.0 - step(0.7, abs(N0.y))) * (1.0 - slim));
+    // The arris of each course, worn round, catches a little more light just under the joint over it.
+    float arris = smoothstep(0.86, 0.94, fract(q)) * (1.0 - smoothstep(0.95, 0.975, fract(q))) * (1.0 - fine);
     float block = h21(vec2(course, floor(along) * (1.0 - slim)));
     // Weather: darker streaks run down from each ledge, the foot of every wall is darker, and the high stone is
     // cleaner than the old terrace.
     float streak = wNoise(vec3(vObj.x * 0.9, vObj.y * 0.05, vObj.z * 0.9));
     float foot = smoothstep(-4.0, 6.0, vObj.y);
     float age = mix(0.86, 1.0, smoothstep(30.0, 120.0, vObj.y));
-    diffuseColor.rgb *= (0.8 + 0.3 * block) * (1.0 - 0.32 * joint * (1.0 - fine)) * (0.9 + 0.2 * grain) * (0.82 + 0.3 * blot) * (0.8 + 0.25 * streak) * (0.66 + 0.34 * foot) * age;
+    diffuseColor.rgb *= (0.68 + 0.5 * block) * (1.0 - 0.6 * joint * (1.0 - fine)) * (1.0 + 0.18 * arris) * (0.9 + 0.2 * grain) * (0.92 + 0.12 * blot) * (0.84 + 0.2 * streak) * (0.66 + 0.34 * foot) * age;
     vec2 gl = gateLocal(vObj);
     if (sk == ${K('stone')} && gl.y > ${f1(PYLON.face1 - 1)} && dot(N0.xz, vec2(sin(gateOf(vObj)), cos(gateOf(vObj)))) > 0.8 && abs(gl.x) > ${f1(PYLON.door + 0.6)} && vObj.y < ${f1(PYLON.top - 4)}) {
       inlay = cartouche(vec2(gl.x, vObj.y), px);
@@ -187,23 +188,21 @@ float cartouche(vec2 q, float px){
     }
     if (sk == ${K('stone')}) { terraceSlits(vObj, N0, px); diffuseColor.rgb *= 1.0 - 0.85 * slit; }
   } else if (sk == ${K('bronze')}) {
-    float br = wNoise(vec3(length(vObj.xz) * 7.0, vObj.y * 7.0, 0.0));
-    br = mix(br, 0.5, smoothstep(0.06, 0.2, px));
-    diffuseColor.rgb *= (0.84 + 0.32 * br) * (0.9 + 0.2 * blot);
+    diffuseColor.rgb *= 0.94 + 0.12 * blot;
   } else if (sk == ${K('copper')}) {
-    diffuseColor.rgb *= 0.9 + 0.2 * blot;
+    diffuseColor.rgb *= 0.95 + 0.1 * blot;
   } else if (sk == ${K('jet')}) {
     diffuseColor.rgb *= 0.9 + 0.2 * blot;
   } else if (sk == ${K('dark')}) {
     diffuseColor.rgb *= (0.85 + 0.3 * grain) * (0.9 + 0.2 * blot);
   }`,
-    rough: `roughnessFactor = clamp(SR[sk] + (sk == ${K('gold')} ? 0.0 : 0.12 * (grain - 0.5)), 0.05, 1.0);
+    rough: `roughnessFactor = clamp(SR[sk] + (SM[sk] > 0.9 ? 0.04 * (blot - 0.5) : 0.12 * (grain - 0.5)), 0.05, 1.0);
   roughnessFactor = mix(roughnessFactor, 0.3, inlay);`,
     metal: `metalnessFactor = mix(SM[sk], 1.0, inlay);`,
     emissive: `
   float r = length(vObj.xz);
   // Each lit ring lays its light on what is just under it and close to it.
-  if (sk == ${K('stone')} || sk == ${K('copper')}) {
+  if (sk == ${K('stone')}) {
     float w = 0.0;
     for (int i = 0; i < ${RINGS_Y.length}; i++) { float d = RINGS_Y[i] - vObj.y; w += smoothstep(-0.3, 0.6, d) * exp(-max(d, 0.0) / 8.0) * (0.6 + 1.2 * pulseAt(RINGS_Y[i])); }
     totalEmissiveRadiance += heat(0.6) * 0.05 * w;
@@ -216,16 +215,12 @@ float cartouche(vec2 q, float px){
     totalEmissiveRadiance += heat(0.62) * 0.32 * top * spill;
   }
   totalEmissiveRadiance += heat(0.62) * 0.55 * slit * slitLit;
-  // The sun lights the cage, the rings' inner faces and the gallery's roof round it.
-  if (sk != ${K('stone')} && sk != ${K('base')}) {
-    vec3 d = vObj - vec3(0.0, ${f1(SUN.y)}, 0.0);
-    float face = clamp(dot(N0, -normalize(d)), 0.0, 1.0);
-    totalEmissiveRadiance += heat(0.7) * 0.55 * face * exp(-max(length(d) - ${f1(SUN.r)}, 0.0) / 16.0) * step(${f1(DECK.roof - 1)}, vObj.y);
-  }
   // The lift's car lights the front rib either side of the line as it passes.
   float lm = uLift + ${f1(LIFT.tall / 2)};
   if ((sk == ${K('stone')} || sk == ${K('jet')}) && vObj.z > 0.0) totalEmissiveRadiance += heat(0.7) * 0.2 * exp(-abs(vObj.y - lm) / 5.0) * exp(-abs(vObj.x) / 2.5) * step(${f1(LIFT.levels[0] - 2)}, vObj.y);`,
-    room: `#if defined( USE_CLEARCOAT )\n  clearcoatRadiance *= 0.0;\n#endif\n  radiance *= mix(SRoom[sk], 1.0, inlay);`,
+    room: `#if defined( USE_CLEARCOAT )\n  clearcoatRadiance *= 0.0;\n#endif`,
+    // Polished metal is a mirror: what it reflects is never held down, so a highlight on it can run to pale.
+    hold: `if (SM[sk] < 0.9) outgoingLight = heldUnder(outgoingLight - totalEmissiveRadiance) + totalEmissiveRadiance;\n#include <opaque_fragment>`,
   });
   return m;
 }
@@ -257,7 +252,7 @@ vec3 rooms(vec3 p, vec3 cam){
   // The two storeys under each cornice are a sky lobby, all lit.
   float sky = 0.0;
   ${TIERS.slice(0, 2).map((t) => `sky = max(sky, step(${f1(t.to - 7)}, p.y) * step(p.y, ${f1(t.to)}));`).join('\n  ')}
-  lvl = mix(lvl, 0.8, sky);
+  lvl = mix(lvl, 0.36, sky);
   float on = step(0.3, h21(vec2(fi + face * 31.0, ri)));
   on = mix(on, 1.0, sky);
   float k = 0.38 + 0.44 * h21(vec2(fi * 0.37 + face, ri)) + 0.1 * sky;
@@ -288,14 +283,16 @@ vec3 rooms(vec3 p, vec3 cam){
     color: `
   int lk = int(vKind + 0.5);`,
     rough: `bool glassy = lk == ${L('glass')} || lk == ${L('door')} || lk == ${L('sun')} || lk == ${L('gallery')};
-  roughnessFactor = glassy ? 0.045 : 0.4;`,
-    after: 'material.clearcoat = glassy ? 0.9 : 0.0;',
+  roughnessFactor = lk == ${L('glass')} ? 0.07 : glassy ? 0.045 : 0.4;`,
+    after: 'material.clearcoat = glassy ? 0.5 : 0.0;',
     emissive: `
   vec3 em = vec3(0.0);
   vec3 p = vObj;
   float a = bearing(p), y = p.y;
   if (lk == ${L('glass')}) {
     em += rooms(p, vCam);
+    // The sun over the shaft lays its light down the top of the glass.
+    em += heat(0.62) * 0.22 * exp(-max(${f1(SUN.y)} - y, 0.0) / 22.0);
     // What the glass reflects of the night: the glow the city throws into the sky, warm and low, strongest where the
     // glass turns away from the eye and fading toward the top of each face.
     float graze = 1.0 - abs(dot(normalize(vObjN), normalize(vCam - p)));
@@ -317,7 +314,7 @@ vec3 rooms(vec3 p, vec3 cam){
     // Brightest where the eye looks into it, so it reads as a ball of light and not a lamp shade.
     float into = pow(abs(dot(normalize(vObjN), normalize(vCam - p))), 1.5);
     float heart = 0.45 + 0.55 * into;
-    em += heat(0.72 + 0.26 * heart) * (1.2 + 3.4 * heart * heart) * mix(pane, 1.0, 0.35 * into);
+    em += heat(0.7 + 0.26 * heart) * (1.1 + 2.3 * heart * heart) * mix(pane, 1.0, 0.45 + 0.3 * into);
   } else if (lk == ${L('gallery')}) {
     float s = clamp((y - ${f1(DECK.sill)}) / ${f1(DECK.roof - DECK.sill)}, 0.0, 1.0);
     float b = a / 6.2831853 * 128.0, fb = smoothstep(0.25, 0.6, fwidth(b));
@@ -331,10 +328,10 @@ vec3 rooms(vec3 p, vec3 cam){
     float car = smoothstep(uLift - 0.15, uLift + 0.15, y) * (1.0 - smoothstep(uLift + ${f1(LIFT.tall)} - 0.15, uLift + ${f1(LIFT.tall)} + 0.15, y));
     float near = exp(-abs(y - uLift - ${f1(LIFT.tall / 2)}) / 14.0);
     float w = abs(p.x) / ${f1(0.7)};
-    em += (heat(0.7) * 0.6 + heat(0.88) * 0.5 * near) * (0.5 + 0.5 * (1.0 - w * w)) + heat(1.0) * 2.0 * car;
+    em += (heat(0.7) * 0.6 + heat(0.88) * 0.5 * near) * (0.5 + 0.5 * (1.0 - w * w)) + heat(0.9) * 1.1 * car;
   } else if (lk == ${L('ring')}) {
     float pu = pulseAt(y);
-    em += heat(0.72 + 0.15 * pu) * (0.55 + 0.9 * pu);
+    em += heat(0.72 + 0.15 * pu) * (0.35 + 0.9 * pu);
   } else if (lk == ${L('blink')}) {
     float ph = fract(uT / ${f1(BLINK)} + h21(vec2(floor(y), floor(degrees(a) / 30.0))));
     float on = exp(-pow((ph - 0.12) / 0.05, 2.0));
@@ -343,13 +340,18 @@ vec3 rooms(vec3 p, vec3 cam){
     // A ring's lamps: steady, with a slow chase running round each ring the way the next one runs back.
     float dir = mod(floor(y / 10.0), 2.0) * 2.0 - 1.0;
     float ch = 0.5 + 0.5 * cos(a * 3.0 - dir * uT * 0.9);
-    em += heat(0.8) * (0.9 + 0.7 * ch * ch);
+    em += heat(0.78) * (0.55 + 0.5 * ch * ch);
+  } else if (lk == ${L('slit')}) {
+    // The lit slits up the piers' corners: a window to each two storeys, some brighter than the rest.
+    float q = y / ${f1(ROOM.tall * 2)}, f = fract(q), aa = fwidth(q);
+    float win = mix(smoothstep(0.08, 0.08 + aa, f) * (1.0 - smoothstep(0.78 - aa, 0.78, f)), 0.7, smoothstep(0.3, 0.7, aa));
+    em += heat(0.5 + 0.25 * h21(vec2(floor(q), floor(degrees(a))))) * 0.4 * win;
   } else if (lk == ${L('beacon')}) {
     em += heat(0.8 + 0.2 * uBeacon) * (0.45 + 3.2 * uBeacon);
   }
   if (glassy) { float face = abs(dot(normal, normalize(vViewPosition))); em *= lk == ${L('gallery')} ? mix(0.12, 1.0, pow(face, 1.6)) : mix(0.3, 1.0, pow(face, 0.6)); }
   totalEmissiveRadiance += em;`,
-    room: `#if defined( USE_CLEARCOAT )\n  clearcoatRadiance *= lk == ${L('sun')} ? 1.2 : lk == ${L('gallery')} ? 2.5 : glassy ? 8.0 : 1.0;\n#endif\n  radiance *= lk == ${L('sun')} ? 0.8 : lk == ${L('gallery')} ? 1.5 : glassy ? 6.0 : 1.0;`,
+    room: `#if defined( USE_CLEARCOAT )\n  clearcoatSpecularDirect *= glassy ? 0.15 : 1.0;\n  clearcoatRadiance *= lk == ${L('sun')} ? 1.2 : lk == ${L('gallery')} ? 2.5 : glassy ? 2.5 : 1.0;\n#endif\n  radiance *= lk == ${L('sun')} ? 0.8 : lk == ${L('gallery')} ? 1.5 : glassy ? 2.0 : 1.0;\n  // The cursor's light is a small reflection on glass, not a glare across a face.\n  reflectedLight.directSpecular *= glassy ? 0.2 : 1.0;`,
   });
   return m;
 }
