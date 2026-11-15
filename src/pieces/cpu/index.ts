@@ -4,6 +4,7 @@ import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUnifo
 import { hex } from '../../config/palette';
 import type { Tier } from '../../config/site';
 import { clock } from '../../world/clock';
+import { SIDE, myTurn } from '../../world/turn';
 import type { PieceOptions } from '../../world/piece';
 import { Stage } from '../../world/stage';
 import { balance, trueDarks } from '../../world/tone';
@@ -247,9 +248,13 @@ export function createCpu(): StruckPiece {
     placeLamp();
   };
 
-  let held = false;
-  const frame = (dt = 0, force = false) => {
+  let held = false, owed = 0;
+  const frame = (step = 0, force = false) => {
     if (!stage || !model || !life || !visible) return;
+    owed += step;
+    if (!force && !myTurn(SIDE.small)) return;
+    const dt = owed;
+    owed = 0;
     if (stage.tier === 'static' && held && !force && !clock.isFrozen()) return;
     const t = time();
     const lv = lifeIn, sv = streamIn;

@@ -4,8 +4,10 @@ import { hex } from '../../config/palette';
 import type { Tier } from '../../config/site';
 import { clock } from '../../world/clock';
 import type { Piece, PieceOptions } from '../../world/piece';
+import { studioScene } from '../../world/env';
 import { Stage } from '../../world/stage';
-import { balance, trueDarks } from '../../world/tone';
+import { finish, trueDarks } from '../../world/tone';
+import { SIDE, myTurn } from '../../world/turn';
 import type { Anchor, Struck } from '../../world/struck';
 import { BULB, DESK, SCREEN, SHADE, VIEW } from './layout';
 import { LIT, PARTS, type DeskLights, type DeskPart, type PartFactory, type PartName, type PartState } from './part';
@@ -28,7 +30,32 @@ const LAMP = { back: 1.25, across: 2.8, up: 1.5, lift: 0.35, power: 16 };
 // it has gone to nothing. The share of that reach inside which it is whole.
 const FLOOR = { at: [0, 150] as [number, number], reach: [1500, 950] as [number, number], whole: 0.3, color: 0x060504 };
 // The canvas fades to nothing over this share of its rim, so nothing can end at its edge.
-const RIM = 5;
+const RIM = 0.05;
+// The two lights that throw shadows: the cursor's and the desk lamp's. A shadow map is the whole desk drawn again, so
+// each is drawn only when its light or something that throws a shadow has moved.
+const CAST = { cursor: 1, lamp: 2, both: 3 };
+// The room the desk is seen by before any of its lights is on: how strongly its things reflect it, and two wide pale
+// lights in it, one behind and to the right and one in front and to the left, each with its strength, its size and
+// where it stands and faces. They are part of what is reflected and not lights of their own: as area lights the two
+// of them and the monitor's cost a sixth of the desk's whole frame.
+const ROOM = {
+  env: 0.3,
+  lights: [
+    { power: 9, size: [2.6, 0.6], at: [1.4, 1.2, -1.8], to: [0, -0.1, 0] },
+    { power: 5, size: [2.6, 1.4], at: [-1.6, 0.9, 2.4], to: [0, -0.3, 0] },
+  ] as { power: number; size: [number, number]; at: [number, number, number]; to: [number, number, number] }[],
+};
+
+function room(): THREE.Scene {
+  const s = studioScene();
+  for (const l of ROOM.lights) {
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(...l.size), new THREE.MeshBasicMaterial({ color: new THREE.Color(hex('pale')).multiplyScalar(l.power / ROOM.env), side: THREE.DoubleSide }));
+    m.position.set(...l.at);
+    m.lookAt(...l.to);
+    s.add(m);
+  }
+  return s;
+}
 
 function floorMaterial(): THREE.MeshStandardMaterial {
   const m = new THREE.MeshStandardMaterial({ color: FLOOR.color, roughness: 1, transparent: true, depthWrite: false });
@@ -78,8 +105,8 @@ export function createDesk(): DeskPiece {
   let stage: Stage | null = null, canvas: HTMLCanvasElement | null = null;
   let parts: { name: PartName; part: DeskPart }[] = [];
   let off: (() => void) | null = null, watch: ResizeObserver | null = null, near: IntersectionObserver | null = null;
-  let seen = true, stale = true, moving = false, hold: number | null = null, only: PartName | null = null;
-  let lampUV = { x: 0.62, y: 0.3 }, led = 0;
+  let seen = true, stale = true, moving = false, urgent = false, hold: number | null = null, only: PartName | null = null;
+  let lampUV = { x: 0.62, y: 0.3 }, led = 0, cast = CAST.both, deskLamp: THREE.SpotLight | null = null;
   let lights: DeskLights = { ...LIT };
   const built: Record<string, number> = {};
   let first = 0;
@@ -116,11 +143,17 @@ export function createDesk(): DeskPiece {
     if (!stage || !seen) return;
     const frozen = clock.isFrozen() || hold !== null;
     if (!stale && !moving) return;
+    if (!urgent && !frozen && !myTurn(SIDE.desk)) return;
+    urgent = false;
     stale = false;
     place();
     const now = hold ?? clock.now(), s: PartState = { t: now, lights, cursor, pointer, led, stream, swing: swing.a, swung: swing.v, still: reduced || frozen || stage.tier === 'static' };
     moving = false;
     for (const { part } of parts) if (part.update?.(s) && !s.still) moving = true;
+    if (frozen) cast = CAST.both;
+    if (cast & CAST.cursor) stage.lamp.shadow.needsUpdate = true;
+    if (cast & CAST.lamp && deskLamp) deskLamp.shadow.needsUpdate = true;
+    cast = 0;
     stage.render();
   };
 
@@ -128,6 +161,8 @@ export function createDesk(): DeskPiece {
     const keys = Object.keys(l) as (keyof DeskLights)[];
     if (!force && keys.every((key) => l[key] === lights[key])) return;
     for (const key of keys) for (const set of dials[key] ?? []) set(l[key]);
+    // A light comes on or goes out in the frame the stream asks for it, and does not wait for the desk's turn.
+    if (keys.some((key) => l[key] > 0 !== lights[key] > 0)) urgent = true;
     lights = { ...l };
     stale = true;
   };
@@ -136,16 +171,15 @@ export function createDesk(): DeskPiece {
     async mount(h: HTMLElement, opts: PieceOptions) {
       canvas = document.createElement('canvas');
       canvas.setAttribute('aria-hidden', 'true');
-      const fade = `linear-gradient(to right, transparent, #000 ${RIM}%, #000 ${100 - RIM}%, transparent), linear-gradient(to bottom, transparent, #000 ${RIM}%, #000 ${100 - RIM}%, transparent)`;
-      canvas.style.cssText = `position:absolute;inset:0;width:100%;height:100%;display:block;-webkit-mask-image:${fade};mask-image:${fade};-webkit-mask-composite:source-in;mask-composite:intersect`;
+      canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block';
       h.prepend(canvas);
       if (!areaLib) { RectAreaLightUniformsLib.init(); areaLib = true; }
       const q = new URLSearchParams(location.search), asked = q.get('only') as PartName | null;
       only = asked && PARTS.includes(asked) ? asked : null;
       if (q.get('lights') === '0') lights = { room: 1, lamp: 0, tablet: 0, monitor: 0, keys: 0, pc: 0, word: 0 };
-      stage = new Stage(h, canvas, { tier: opts.tier, fov: VIEW.fov, near: 0.05, far: 40, bloom: { strength: 0.1, threshold: 2.3, radius: 0.22 }, ao: 0.02, aoIntensity: 1, envIntensity: 0.3, env: 'studio', lampTarget: [0, -0.05, 0.1], lampAngle: 0.9 });
+      stage = new Stage(h, canvas, { tier: opts.tier, fov: VIEW.fov, near: 0.05, far: 40, bloom: { strength: 0.1, threshold: 2.3, radius: 0.22 }, ao: 0.02, aoIntensity: 1, aoSamples: 8, aoScale: 0.5, bloomScale: 0.5, envIntensity: ROOM.env, env: room, lampTarget: [0, -0.05, 0.1], lampAngle: 0.9 });
       trueDarks(stage.renderer);
-      balance(stage);
+      finish(stage, RIM);
       const s = stage.scene;
       const root = new THREE.Group();
       root.scale.setScalar(M);
@@ -169,7 +203,7 @@ export function createDesk(): DeskPiece {
       // The desk's own lights: the lamp over the tablet and the monitor. The PC carries its own. Then the room it is
       // seen by before any of them is on. The lamp and the room are the palette's pale, the least orange
       // light there is: under an orange light steel, timber and copper all came out one tone.
-      const deskLamp = new THREE.SpotLight(hex('pale'), 5.2, 0, 58 * D2R, 0.85, 2);
+      deskLamp = new THREE.SpotLight(hex('pale'), 5.2, 0, 58 * D2R, 0.85, 2);
       deskLamp.position.set(BULB.at[0] * M, BULB.at[1] * M, BULB.at[2] * M);
       deskLamp.target.position.set((BULB.at[0] + BULB.aim[0] * 400) * M, (BULB.at[1] + BULB.aim[1] * 400) * M, (BULB.at[2] + BULB.aim[2] * 400) * M);
       deskLamp.castShadow = true;
@@ -179,22 +213,18 @@ export function createDesk(): DeskPiece {
       deskLamp.shadow.radius = 5;
       deskLamp.shadow.camera.near = 0.05;
       deskLamp.shadow.camera.far = 3;
+      deskLamp.shadow.autoUpdate = stage.lamp.shadow.autoUpdate = false;
+      deskLamp.shadow.needsUpdate = stage.lamp.shadow.needsUpdate = true;
       const monLight = new THREE.RectAreaLight(hex('hot'), 2.2, (SCREEN.w - 20) * M, (SCREEN.h - 30) * M);
       monLight.position.set(SCREEN.x * M, (SCREEN.low + SCREEN.h / 2) * M, (SCREEN.z + 24) * M);
       monLight.lookAt(SCREEN.x * M, 120 * M, (SCREEN.z + 560) * M);
-      const rim = new THREE.RectAreaLight(hex('pale'), 9, 2.6, 0.6);
-      rim.position.set(1.4, 1.2, -1.8);
-      rim.lookAt(0, -0.1, 0);
-      const fill = new THREE.RectAreaLight(hex('pale'), 5, 2.6, 1.4);
-      fill.position.set(-1.6, 0.9, 2.4);
-      fill.lookAt(0, -0.3, 0);
       // A warm grey, not a brown: this light reaches every surface, and a brown one tinted every neutral thing.
       const hemi = new THREE.HemisphereLight(0x3d3731, 0x100e0c, 0.55);
-      s.add(deskLamp, deskLamp.target, monLight, rim, fill, hemi);
+      s.add(deskLamp, deskLamp.target, monLight, hemi);
       // A light is turned down by its strength and never hidden: hiding one makes every material compile again.
       const power = (l: THREE.Light) => { const full = l.intensity; return (k: number) => { l.intensity = full * k; }; };
       const env = s.environmentIntensity;
-      dials.room = [power(rim), power(fill), power(hemi), (k) => { s.environmentIntensity = env * k; }];
+      dials.room = [power(hemi), (k) => { s.environmentIntensity = env * k; }];
       dials.lamp = [power(deskLamp)];
       dials.monitor = [power(monLight)];
 
@@ -218,6 +248,7 @@ export function createDesk(): DeskPiece {
       near = new IntersectionObserver((es) => { seen = es.some((e) => e.isIntersecting); if (seen) { stale = true; frame(); } });
       near.observe(h);
       off = clock.onFrame(frame);
+      cast = CAST.both;
       stale = true;
       frame();
       opts.onReady?.();
@@ -226,11 +257,13 @@ export function createDesk(): DeskPiece {
       if (Math.abs(x - lampUV.x) + Math.abs(y - lampUV.y) < 0.002) return;
       lampUV = { x, y };
       led = 1;
+      cast |= CAST.cursor;
       stale = true;
     },
     setLights: (l: DeskLights) => setLights(l),
     setStream(on: number, since: number) {
       if (on === stream.on && (since > 2 || since === stream.since)) return;
+      if (since < stream.since || on > 0 !== stream.on > 0) urgent = true;
       stream.on = on;
       stream.since = since;
       stale = true;
@@ -241,6 +274,7 @@ export function createDesk(): DeskPiece {
       swing.v = dt > 0 && dt < 0.1 ? (angle - swing.a) / dt : 0;
       swing.a = angle;
       swing.t = now;
+      cast = CAST.both;
       stale = true;
     },
     where(x: number, y: number, z: number): Anchor {
@@ -256,7 +290,7 @@ export function createDesk(): DeskPiece {
     setProgress() {},
     setWaterLight() {},
     setMaking(on: boolean) { if (stage) { stage.setMaking(on, stage.scene); stale = true; } },
-    setTier(tier: Tier) { if (!stage) return; stage.setTier(tier); balance(stage); stale = true; },
+    setTier(tier: Tier) { if (!stage) return; stage.setTier(tier); finish(stage, RIM); cast = CAST.both; stale = true; },
     freeze(t: number | null) { hold = t; stale = true; frame(); },
     view() {},
     dispose() {
@@ -267,6 +301,7 @@ export function createDesk(): DeskPiece {
       parts = [];
       stage?.dispose();
       stage = null;
+      deskLamp = null;
       canvas?.remove();
       canvas = null;
     },

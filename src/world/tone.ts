@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
-import type { Stage } from './stage';
+import { SMAAPass } from 'three/addons/postprocessing/SMAAPass.js';
+import { DITHER, type Stage } from './stage';
 
 // The stage's tone curve, Neutral, takes the same small amount off red, green and blue in the darks. On a dark warm
 // grey that leaves almost no blue and half the green, so every dark thing came out one sepia orange whatever it was
@@ -66,4 +67,46 @@ export function balance(stage: Stage): void {
   pass.material.name = BALANCE.name;
   const at = passes.findIndex((p) => p instanceof OutputPass);
   stage.composer.insertPass(pass, at < 0 ? passes.length : at);
+}
+
+// The end of a large canvas's chain as one pass in place of three: the white balance, the tone curve with the screen's
+// color space, and the stage's dither, then a fade to nothing over a share of the canvas at each edge, so nothing ends
+// at its edge. On a canvas as large as the screen each pass over every pixel is time a frame does not have, and as a
+// CSS mask on the canvas the fade cost the compositor a layer of its own. A piece asks for it in place of balance(),
+// after trueDarks(), and again after it sets a tier.
+const FINISH = 'finish';
+const finishFragment = (rim: number) => `precision highp float;
+uniform sampler2D tDiffuse;
+#include <tonemapping_pars_fragment>
+#include <colorspace_pars_fragment>
+varying vec2 vUv;
+float h( vec2 p ) { vec3 q = fract( vec3( p.xyx ) * 0.1031 ); q += dot( q, q.yzx + 33.33 ); return fract( ( q.x + q.y ) * q.z ); }
+void main() {
+	vec4 c = texture2D( tDiffuse, vUv );
+	float peak = max( c.r, max( c.g, c.b ) );
+	float k = 1.0 - smoothstep( 0.3, 0.85, peak );
+	vec3 o = c.rgb * mix( vec3( 1.0 ), vec3( 0.96, 1.21, 1.59 ), k );
+	o.g = min( o.g, o.r );
+	o.b = min( o.b, o.g );
+	vec4 s = sRGBTransferOETF( vec4( CustomToneMapping( o ), c.a ) );
+	float n = h( gl_FragCoord.xy ) + h( gl_FragCoord.xy + 17.0 ) - 1.0;
+	s.rgb += n / 255.0 * step( 0.002, max( s.a, max( s.r, max( s.g, s.b ) ) ) );
+	vec2 e = clamp( min( vUv, 1.0 - vUv ) / ${rim.toFixed(4)}, 0.0, 1.0 );
+	gl_FragColor = s * ( e.x * e.y );
+}`;
+
+export function finish(stage: Stage, rim: number): void {
+  const c = stage.composer, named = (p: unknown, name: string) => p instanceof ShaderPass && p.material.name === name;
+  for (const p of [...c.passes]) if (p instanceof OutputPass || named(p, BALANCE.name) || named(p, DITHER) || named(p, FINISH)) c.removePass(p);
+  const material = new THREE.RawShaderMaterial({
+    name: FINISH,
+    uniforms: { tDiffuse: { value: null }, toneMappingExposure: { value: 1 } },
+    vertexShader: 'precision highp float; uniform mat4 modelViewMatrix; uniform mat4 projectionMatrix; attribute vec3 position; attribute vec2 uv; varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 ); }',
+    fragmentShader: finishFragment(rim),
+  });
+  const pass = new ShaderPass(material), draw = pass.render.bind(pass);
+  pass.render = (...a: Parameters<typeof draw>) => { material.uniforms.toneMappingExposure.value = stage.renderer.toneMappingExposure; draw(...a); };
+  // Before the edge smoothing, which wants the picture as the screen shows it: it is the last pass but one.
+  const at = c.passes.findIndex((p) => p instanceof SMAAPass);
+  c.insertPass(pass, at < 0 ? c.passes.length : at);
 }

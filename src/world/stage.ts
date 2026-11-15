@@ -30,8 +30,15 @@ export interface StageOptions {
   lampTarget?: [number, number, number];
   lampAngle?: number;
   exposure?: number;
-  // The environment metal reflects: the neutral room, or a studio of soft lights for pieces made mostly of metal.
-  env?: 'room' | 'studio';
+  // The environment metal reflects: the neutral room, a studio of soft lights for pieces made mostly of metal, or a
+  // room a piece builds itself.
+  env?: 'room' | 'studio' | (() => THREE.Scene);
+  // For a canvas as large as the screen, where the tier's own numbers cost more than a frame has: how many samples
+  // the occlusion and its denoise take at the high tier, the share of the canvas's pixels the occlusion is worked
+  // out at, and the share the bloom is.
+  aoSamples?: number;
+  aoScale?: number;
+  bloomScale?: number;
 }
 
 const TIER_POST: Record<Tier, { ao: boolean; aoScale: number; shadow: number; smaa: boolean }> = {
@@ -62,12 +69,15 @@ function seededNoise(size = 64): THREE.DataTexture {
 // Last pass: a fixed pattern of half-level noise, so dark glows fade smoothly instead of stepping through 8-bit
 // levels. Fixed per pixel, so a frozen frame is still the same image. Where a piece draws nothing on a clear ground
 // there is no noise either: on a canvas the page shows through, it would be a faint rectangle of grain.
+export const DITHER = 'dither';
 function ditherPass(): ShaderPass {
-  return new ShaderPass({
+  const pass = new ShaderPass({
     uniforms: { tDiffuse: { value: null } },
     vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
     fragmentShader: 'uniform sampler2D tDiffuse; varying vec2 vUv; float h(vec2 p){ vec3 q = fract(vec3(p.xyx) * 0.1031); q += dot(q, q.yzx + 33.33); return fract((q.x + q.y) * q.z); } void main(){ vec4 c = texture2D(tDiffuse, vUv); float n = h(gl_FragCoord.xy) + h(gl_FragCoord.xy + 17.0) - 1.0; gl_FragColor = vec4(c.rgb + n / 255.0 * step(0.002, max(c.a, max(c.r, max(c.g, c.b)))), c.a); }',
   });
+  pass.material.name = DITHER;
+  return pass;
 }
 
 export class Stage {
@@ -107,7 +117,7 @@ export class Stage {
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.setClearColor(0x0c0a09, 0);
     const pmrem = new THREE.PMREMGenerator(this.renderer);
-    const envScene = o.env === 'studio' ? studioScene() : new RoomEnvironment();
+    const envScene = typeof o.env === 'function' ? o.env() : o.env === 'studio' ? studioScene() : new RoomEnvironment();
     this.envRT = pmrem.fromScene(envScene, 0.04);
     envScene.traverse((x) => { if (x instanceof THREE.Mesh) { x.geometry.dispose(); (x.material as THREE.Material).dispose(); } });
     pmrem.dispose();
@@ -133,6 +143,10 @@ export class Stage {
     this.composer.addPass(this.renderPass);
     const b = o.bloom ?? { strength: 0.22, threshold: 1.1, radius: 0.4 };
     this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), b.strength, b.radius, b.threshold);
+    if (o.bloomScale) {
+      const bloom = this.bloom, set = bloom.setSize.bind(bloom), k = o.bloomScale;
+      bloom.setSize = (w: number, h: number) => set(Math.max(1, Math.round(w * k)), Math.max(1, Math.round(h * k)));
+    }
     this.buildPost();
 
     this.stats = document.createElement('div');
@@ -151,11 +165,12 @@ export class Stage {
     const t = TIER_POST[this.tier];
     if (t.ao) {
       this.ao = new GTAOPass(this.scene, this.camera, 256, 256);
-      this.ao.updateGtaoMaterial({ radius: this.o.ao ?? 0.035, distanceExponent: 1.6, thickness: 0.6, scale: 1.25, samples: this.tier === 'high' ? 16 : 8 });
+      const samples = this.tier === 'high' ? this.o.aoSamples ?? 16 : 8;
+      this.ao.updateGtaoMaterial({ radius: this.o.ao ?? 0.035, distanceExponent: 1.6, thickness: 0.6, scale: 1.25, samples });
       this.ao.blendIntensity = this.o.aoIntensity ?? 1;
-      this.ao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples: this.tier === 'high' ? 16 : 8 });
+      this.ao.updatePdMaterial({ lumaPhi: 10, depthPhi: 2, normalPhi: 3, radius: 6, rings: 2, samples });
       // Occlusion is soft; it is worked out at a fraction of the screen's pixels and blended up.
-      const aoPass = this.ao, aoSet = aoPass.setSize.bind(aoPass), sc = t.aoScale;
+      const aoPass = this.ao, aoSet = aoPass.setSize.bind(aoPass), sc = this.tier === 'high' ? this.o.aoScale ?? t.aoScale : t.aoScale;
       aoPass.setSize = (w: number, h: number) => aoSet(Math.max(1, Math.round(w * sc)), Math.max(1, Math.round(h * sc)));
       const pd = (this.ao as unknown as { pdMaterial: THREE.ShaderMaterial }).pdMaterial;
       pd.uniforms.tNoise.value = seededNoise();

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { hex } from '../../config/palette';
 import type { Tier } from '../../config/site';
 import { clock } from '../../world/clock';
+import { SIDE, myTurn } from '../../world/turn';
 import type { PieceOptions } from '../../world/piece';
 import { Stage } from '../../world/stage';
 import { trueDarks } from '../../world/tone';
@@ -204,6 +205,7 @@ export function createReflector(): StruckPiece {
 
   const frame = (force = false) => {
     if (!stage || !visible) return;
+    if (!force && !myTurn(SIDE.small)) return;
     const k = key();
     if (!force && !dirty && k === shown) return;
     if (stage.tier === 'static' && !force && !dirty && shown && !clock.isFrozen()) return;
