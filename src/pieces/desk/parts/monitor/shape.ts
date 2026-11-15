@@ -93,10 +93,6 @@ export const SHELL = {
   // Full depth across the middle, gone at the reach.
   full: 250,
   reach: 395,
-  // The vents in its top: two banks of short slots, each slot lying along the panel, in staggered rows. Where a bank
-  // starts and stops from the middle, the rows' first and last depth back from the panel, the pitch along and between
-  // rows, and a slot's length and width.
-  vents: { inner: 40, outer: 214, from: 8, to: 27, pitch: 17, row: 4.75, len: 12.5, slot: 2.1 },
 } as const;
 
 export function shellDepth(x: number): number {
@@ -108,8 +104,8 @@ export function shellDepth(x: number): number {
 
 export function shell(): THREE.BufferGeometry {
   const curve = new THREE.SplineCurve(SHELL.outline.map(([y, d]) => new THREE.Vector2(y, d)));
-  const pts = curve.getSpacedPoints(46);
-  const xs = stations(SHELL.reach * 2, 120, [0, 2, 6, 12, 20, 30, 44, 60, 80, 100]);
+  const pts = curve.getSpacedPoints(30);
+  const xs = stations(SHELL.reach * 2, 80, [0, 2, 6, 12, 20, 30, 44, 60, 80, 100]);
   const [g] = sweep(xs, (x) => {
     const s = shellDepth(x), lift = 0.9 + 0.1 * s;
     const outer: Loop = pts.map((p) => [p.x * lift, PANEL.back + 1 - p.y * s]);

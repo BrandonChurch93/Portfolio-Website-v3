@@ -1,29 +1,29 @@
 import * as THREE from 'three';
 import { Builder, at, cyl, rbox } from '../../../../world/build';
 import { MID, PANEL } from './frame';
-import { roundRect, sweep } from './shape';
+import { corner, roundRect, sweep } from './shape';
 import type { MonitorMats } from './materials';
 
-// The stand: a plate foot on the timber behind the mat, its front edge following the panel's curve; a spine that rises
-// from a plinth on the foot into a knuckle; and through the knuckle a hinge, a barrel between copper caps, carried on a
-// tongue from the boss on the back shell.
+// The stand: a V of two tapered blade legs that spread forward from a hub behind the panel, a slim column rising from
+// the hub with a track down its front, a carriage that rides the track (the height slide), and on the carriage the
+// hinge: a barrel between copper caps, carried on a tongue from the boss on the back shell. The panel is seen to stand
+// clear above the desk on it.
 
 export const STAND = {
   // The hinge's barrel: its axis, back from the panel's middle and down from it, its radius and length.
-  pivot: { back: 84, down: 10, r: 11, len: 72 },
-  // The spine: how wide it is, its depth, and the radius of its head round the barrel.
-  spine: { w: 56, depth: 26, head: 16 },
-  // The foot: its front edge at the middle, its back, its half width at the front and the back, its thickness and the
-  // radius of its corners; how high its pads hold it off the timber; how wide its polished rim is, and how far the
-  // blasted floor inside the rim is sunk below it.
-  foot: { front: -186, back: -382, wf: 176, wb: 136, t: 9, r: 30, lift: 3, rim: 34, recess: 1.8 },
-  // The copper collar on the spine: its height above the timber, its own height, and how far it stands proud.
-  collar: { at: 54, h: 4, proud: 0.9 },
+  pivot: { back: 78, down: 10, r: 10, len: 74 },
+  // The column: how far behind the barrel it stands, its width and depth, how round its corners are.
+  column: { behind: 16, w: 44, d: 26, r: 9 },
+  // The hub at the column's foot: its radius and height, and the copper ring on it.
+  hub: { r: 34, h: 16, ring: 2.4 },
+  // The legs: where each tip stands from the hub, across and forward; how wide and tall each is at the hub and at the
+  // tip.
+  leg: { across: 214, forward: 150, w0: 46, w1: 22, h0: 15, h1: 8 },
+  // The carriage on the track: its height, and how far it wraps the column.
+  carriage: { h: 74, wrap: 8 },
   // The boss on the back shell, where the tongue meets it.
   boss: { r: 50, t: 7 },
 } as const;
-
-type P2 = [number, number];
 
 // A sweep made along x, stood up: its x becomes height and its outline's first axis runs across.
 function upright(g: THREE.BufferGeometry, x0: number): THREE.BufferGeometry {
@@ -35,75 +35,60 @@ function upright(g: THREE.BufferGeometry, x0: number): THREE.BufferGeometry {
   return g;
 }
 
-// A polygon with each corner rounded by its own radius.
-function roundedPoly(pts: P2[], radii: number[]): THREE.Shape {
-  const s = new THREE.Shape(), n = pts.length;
-  const cut = (i: number): [P2, P2] => {
-    const p = pts[i], a = pts[(i + n - 1) % n], b = pts[(i + 1) % n], r = radii[i];
-    const la = Math.hypot(a[0] - p[0], a[1] - p[1]), lb = Math.hypot(b[0] - p[0], b[1] - p[1]);
-    const ra = Math.min(r, la / 2), rb = Math.min(r, lb / 2);
-    return [[p[0] + ((a[0] - p[0]) / la) * ra, p[1] + ((a[1] - p[1]) / la) * ra], [p[0] + ((b[0] - p[0]) / lb) * rb, p[1] + ((b[1] - p[1]) / lb) * rb]];
-  };
-  for (let i = 0; i < n; i++) {
-    const [inn, out] = cut(i);
-    if (i === 0) s.moveTo(inn[0], inn[1]); else s.lineTo(inn[0], inn[1]);
-    if (radii[i] > 0) s.quadraticCurveTo(pts[i][0], pts[i][1], out[0], out[1]); else s.lineTo(out[0], out[1]);
-  }
-  s.closePath();
-  return s;
+// One leg, made along x from the hub (x = 0) to its tip, lying on the timber: a blade that narrows and thins toward the
+// tip, its upper edges well rounded so they carry a highlight, its tip rounded off.
+function leg(len: number): THREE.BufferGeometry[] {
+  const L = STAND.leg, xs: number[] = [];
+  for (let i = 0; i <= 40; i++) xs.push((len * i) / 40);
+  for (const d of [0.4, 1.5, 3.5, 6, 9, 13]) xs.push(len - d);
+  xs.sort((a, b) => a - b);
+  return sweep(xs, (x) => {
+    const t = x / len, end = corner(len - x, L.w1 / 2);
+    const w = L.w0 + (L.w1 - L.w0) * t - 2 * end, h = L.h0 + (L.h1 - L.h0) * t * t - end * 0.6;
+    const r = Math.min(h * 0.48, 7);
+    const loop = roundRect(h / 2, 0, h / 2, w / 2, r, 6);
+    // Flatten the underside so it sits on the timber.
+    return loop.map(([y, z]) => [Math.max(0.4, y), z] as [number, number]);
+  });
 }
 
 export function stand(b: Builder, M: MonitorMats): void {
-  const [x, my, mz] = MID, F = STAND.foot, Pv = STAND.pivot, Sp = STAND.spine;
-  const px = x, py = my - Pv.down, pz = mz - Pv.back;
+  const [x, my, mz] = MID, Pv = STAND.pivot, C = STAND.column, H = STAND.hub, L = STAND.leg, K = STAND.carriage;
+  const py = my - Pv.down, pz = mz - Pv.back, cz = pz - C.behind;
 
-  // The foot. Its front edge is an arc about the panel's own centre of curvature, so it answers the panel's curve. It
-  // is a polished rim, chamfered inside and out so both edges catch a line of light, round a blasted floor sunk below
-  // it, and it stands on four pads.
-  const cz = mz + PANEL.R, rc = cz - F.front;
-  const edgeZ = (dx: number) => cz - Math.sqrt(rc * rc - dx * dx);
-  const outline = (inset: number): THREE.Shape => {
-    const pts: P2[] = [], radii: number[] = [], wf = F.wf - inset, wb = F.wb - inset, r = Math.max(4, F.r - inset * 0.6);
-    for (let i = 0; i <= 14; i++) { const dx = -wf + (2 * wf * i) / 14; pts.push([x + dx, -(edgeZ(dx) - inset)]); radii.push(i === 0 || i === 14 ? r : 0); }
-    pts.push([x + wb, -(F.back + inset)], [x - wb, -(F.back + inset)]);
-    radii.push(r * 1.4, r * 1.4);
-    return roundedPoly(pts, radii);
-  };
-  const flat = (g: THREE.BufferGeometry, y: number) => { g.rotateX(-Math.PI / 2); g.translate(0, y, 0); return g; };
-  const ring = outline(0);
-  ring.holes.push(outline(F.rim));
-  const chamfer = 2.2;
-  b.add(flat(new THREE.ExtrudeGeometry(ring, { depth: F.t - 2 * chamfer, bevelEnabled: true, bevelThickness: chamfer, bevelSize: chamfer, bevelOffset: -chamfer, bevelSegments: 1, curveSegments: 12 }), F.lift + chamfer), M.rim);
-  const floorTop = F.lift + F.t - F.recess;
-  b.add(flat(new THREE.ExtrudeGeometry(outline(F.rim - 3), { depth: floorTop - F.lift - 1, bevelEnabled: false, curveSegments: 12 }), F.lift + 1), M.foot);
-  for (const [dx, z] of [[-F.wf + 34, F.front - 26], [F.wf - 34, F.front - 26], [-F.wb + 30, F.back + 28], [F.wb - 30, F.back + 28]] as P2[]) b.add(cyl(11, F.lift, 24), M.pad, at(x + dx, F.lift / 2, z), { shadow: false });
-  const base = floorTop;
+  // The legs, from under the hub's edge out to their tips, each turned toward its tip.
+  const len = Math.hypot(L.across, L.forward);
+  for (const s of [-1, 1]) {
+    const turn = Math.atan2(-L.forward, s * L.across);
+    for (const g of leg(len - H.r * 0.4)) b.add(g, M.stand, new THREE.Matrix4().makeRotationY(turn).premultiply(new THREE.Matrix4().makeTranslation(x + Math.cos(turn) * H.r * 0.4, 0, cz - Math.sin(turn) * H.r * 0.4)));
+    // A pad under each tip.
+    b.add(cyl(9, 1.2, 20), M.pad, at(x + s * L.across * 0.96, 0.6, cz + L.forward * 0.96), { shadow: false });
+  }
 
-  // The spine: a loft that rises from a broad fillet on the plinth, narrowing and leaning a little forward as it goes,
-  // into the knuckle round the barrel.
+  // The hub: a low drum, chamfered top and bottom, with a copper ring let into its top where the column rises.
+  b.add(new THREE.LatheGeometry([[0, 0], [H.r - 2, 0], [H.r, 2], [H.r, H.h - 3], [H.r - 3, H.h], [0, H.h]].map(([r, y]) => new THREE.Vector2(r, y)), 64), M.stand, at(x, 0, cz));
+  b.add(new THREE.TorusGeometry(C.w * 0.5 + 6, H.ring / 2, 10, 64).rotateX(Math.PI / 2), M.copper, at(x, H.h + 0.3, cz), { shadow: false });
+
+  // The column: a slim upright from the hub to above the barrel, with a dark track down its front.
+  const top = py + K.h / 2 + 10;
   const hs: number[] = [];
-  for (let i = 0; i <= 44; i++) { const t = i / 44; hs.push(base + 2 + (py - base - 2) * t ** 1.6); }
-  const [loft] = sweep(hs, (h) => {
-    const t = (h - base) / (py - base), foot = Math.exp(-t * 16);
-    const w = Sp.w + 10 - 18 * t + 26 * foot, d = Sp.depth + 8 - 8 * t + 22 * foot;
-    return roundRect(0, pz - 9 * (1 - t) * (1 - t) - 3 * foot, w / 2, d / 2, 9, 6);
-  }, false);
-  b.add(upright(loft, px), M.stand);
-  // A copper collar round the spine a little above the plinth, chamfered top and bottom.
-  const at60 = (h: number) => { const t = (h - base) / (py - base), foot = Math.exp(-t * 16); return { w: Sp.w + 10 - 18 * t + 26 * foot, d: Sp.depth + 8 - 8 * t + 22 * foot, z: pz - 9 * (1 - t) * (1 - t) - 3 * foot }; };
-  const C = STAND.collar, s0 = at60(C.at);
-  const [collar] = sweep([C.at, C.at + 0.5, C.at + C.h - 0.5, C.at + C.h], (h) => {
-    const grow = h === C.at || h === C.at + C.h ? 0.1 : C.proud;
-    return roundRect(0, s0.z, s0.w / 2 + grow, s0.d / 2 + grow, 9 + grow, 6);
-  }, false);
-  b.add(upright(collar, px), M.copper);
-  const plinth = new THREE.ExtrudeGeometry(roundedPoly([[-46, -50], [46, -50], [46, 54], [-46, 54]], [22, 22, 22, 22]), { depth: 3, bevelEnabled: true, bevelThickness: 1.5, bevelSize: 1.5, bevelOffset: -1.5, bevelSegments: 2, curveSegments: 8 });
-  plinth.rotateX(-Math.PI / 2);
-  b.add(plinth, M.foot, at(px, base + 1.5, pz - 2));
-  b.add(cyl(Sp.head + 1, Sp.w - 8, 48).rotateZ(Math.PI / 2), M.stand, at(px, py, pz));
+  for (let i = 0; i <= 6; i++) hs.push(H.h - 1 + ((top - H.h + 1) * i) / 6);
+  const [col] = sweep(hs, () => roundRect(0, cz, C.w / 2, C.d / 2, C.r, 6), true);
+  b.add(upright(col, x), M.stand);
+  b.add(rbox(10, top - H.h - 40, 2, 0.8), M.pad, at(x, (top + H.h) / 2 - 10, cz + C.d / 2 + 0.2), { shadow: false });
+  b.add(new THREE.SphereGeometry(C.w / 2, 24, 8, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 0.25, C.d / C.w), M.stand, at(x, top, cz));
 
+  // The carriage that rides the track, wrapping the column's front and sides, and the hinge on it.
+  b.add(rbox(C.w + 2 * K.wrap, K.h, C.d / 2 + 14, 6), M.stand, at(x, py, cz + C.d / 4 + 6));
+  b.add(cyl(Pv.r, Pv.len, 40).rotateZ(Math.PI / 2), M.stand, at(x, py, pz));
+  for (const s of [-1, 1]) {
+    b.add(cyl(Pv.r - 1.5, 2, 40).rotateZ(Math.PI / 2), M.copper, at(x + s * (Pv.len / 2 + 0.8), py, pz), { shadow: false });
+    b.add(rbox(8, 30, 30, 3), M.stand, at(x + s * (C.w / 2 + K.wrap - 4), py, pz - 4));
+  }
+
+  // The tongue from the barrel to the boss on the back shell.
   const bossZ = mz + PANEL.back - 46.5;
-  b.add(cyl(STAND.boss.r, STAND.boss.t, 56).rotateX(Math.PI / 2), M.shell, at(px, py, bossZ - STAND.boss.t / 2 + 1));
+  b.add(cyl(STAND.boss.r, STAND.boss.t, 56).rotateX(Math.PI / 2), M.shell, at(x, py, bossZ - STAND.boss.t / 2 + 1));
   const z0 = bossZ - STAND.boss.t + 2, z1 = pz;
-  b.add(rbox(30, 24, z0 - z1, 5), M.stand, at(px, py, (z0 + z1) / 2));
+  b.add(rbox(30, 22, z0 - z1 + 6, 5), M.stand, at(x, py, (z0 + z1) / 2));
 }

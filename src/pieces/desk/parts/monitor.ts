@@ -10,7 +10,7 @@ import { curvedSlab, shell } from './monitor/shape';
 import { stand } from './monitor/stand';
 
 // The ultrawide: 38 inches, curved, behind the mat. A thin panel with a hair of border under its glass and a slim
-// chin, a back shell with vents in its top, and a stand that is a finished thing. Its screen shows his work on this
+// chin, a back shell whose top shows as a ledge, and a stand on a V of two legs. Its screen shows his work on this
 // site: the editor with the stream's code, and beside it the page that code runs, its stream alive. See ./monitor/.
 
 // How the alone view frames it: its middle, and how far from it the frame reaches.

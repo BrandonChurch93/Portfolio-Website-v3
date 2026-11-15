@@ -170,16 +170,6 @@ function drawWall(wmm: number, hmm: number): HTMLCanvasElement {
   glow.addColorStop(1, 'rgba(31, 11, 0, 0)');
   g.fillStyle = glow;
   g.fillRect(0, 0, wmm, hmm);
-  // Long faint arcs, an echo of the stream, where the windows leave the wallpaper bare.
-  g.lineCap = 'round';
-  for (let i = 0; i < 7; i++) {
-    g.strokeStyle = `rgba(150, 140, 128, ${0.035 + 0.008 * i})`;
-    g.lineWidth = 0.6 + i * 0.15;
-    g.beginPath();
-    g.moveTo(-20, hmm * (0.98 - i * 0.035));
-    g.bezierCurveTo(wmm * 0.3, hmm * (0.55 - i * 0.05), wmm * 0.62, hmm * (1.05 - i * 0.03), wmm + 20, hmm * (0.62 - i * 0.06));
-    g.stroke();
-  }
   // The bar along the top.
   const bar = 8;
   g.fillStyle = 'rgba(8, 7, 7, 0.82)';
@@ -237,7 +227,7 @@ function drawEditor(): { c: HTMLCanvasElement; caret: [number, number, number] }
     const y = top + 14 + i * row, x = 6 + d * 5;
     if (y > foot - 4) return;
     if (on) {
-      g.fillStyle = '#262321';
+      g.fillStyle = '#181615';
       g.fillRect(0, y - row / 2, tree - 0.3, row);
       g.fillStyle = INK.fn;
       g.fillRect(0, y - row / 2, 0.7, row);
@@ -294,8 +284,9 @@ function drawEditor(): { c: HTMLCanvasElement; caret: [number, number, number] }
   for (let i = 0; i < Math.min(rows, SOURCE.length); i++) {
     const y = codeTop + (i + 0.5) * L, line = SOURCE[i], here = i === CARET[0];
     if (here) {
-      g.fillStyle = '#1a1816';
-      g.fillRect(x0, y - L / 2, w - x0, L);
+      // Faint, and only as far as the line runs: a full width band read as a stripe across the code.
+      g.fillStyle = '#121110';
+      g.fillRect(x0, y - L / 2, 150, L);
       caret = [left + CARET[1] * cw, h - y, L * 0.72];
     }
     text(g, String(FIRST_LINE + i), gutter, y, 3.1, here ? INK.name : INK.faint, { align: 'right' });

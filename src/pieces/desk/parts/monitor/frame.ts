@@ -9,7 +9,7 @@ export const PANEL = {
   // The body behind the glass, from its back to its face, and how round its edges are.
   back: -10.5,
   face: -1.7,
-  edge: 2.6,
+  edge: 4,
   // The glass: how far in from the body's edge it stops, and its two faces.
   lip: 1.4,
   glassBack: -1.35,

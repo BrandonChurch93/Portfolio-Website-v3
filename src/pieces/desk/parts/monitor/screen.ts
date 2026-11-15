@@ -158,7 +158,8 @@ void main(){
 
   // The backlight: a dim, warm, uneven glow, brighter toward the edges, that every dark part of the picture keeps.
   vec2 e = min(vS, AREA - vS) / AREA.y;
-  float bleed = exp(-min(e.x, e.y) * 9.0) * 0.8;
+  // A sum and not a min: a min creases along each corner's bisector, and on a dark ground the crease shows as a line.
+  float bleed = (exp(-e.x * 9.0) + exp(-e.y * 9.0)) * 0.4;
   vec3 black = vec3(0.0019, 0.00155, 0.0012) * (0.7 + 0.8 * bleed);
   // Before the picture, the backlight alone shows as a brighter, even glow that the picture then settles over.
   vec3 col = black * uBack * (1.0 + 1.3 * (1.0 - uWall));
@@ -191,12 +192,10 @@ void main(){
   vec3 pc3 = mix(behind * 0.55 + vec3(0.009, 0.008, 0.007), pnl.rgb * ${f(GAIN.ui)}, pnl.a);
   col = mix(col, pc3 + black * uBack, inn);
 
-  // The pointer, nearest the glass, with its own small shadow.
+  // The pointer, nearest the glass. It throws no shadow: sampled from its small texture at the page's size, a shadow
+  // blurred into a square, and stretched along the texture's clamped edge into a band across the screen.
   vec2 tip = vec2(${f(C.at[0])}, ${f(C.at[1])});
   vec2 pu = vec2(pc.x - tip.x, tip.y - pc.y) / ${f(C.size)};
-  vec2 su = vec2(pc.x + uSun.x * (dP - dC) - tip.x, tip.y - (pc.y + uSun.y * (dP - dC))) / ${f(C.size)};
-  float ps = texture2D(tPt, vec2(su.x, 1.0 - su.y), 3.0).a * step(0.0, su.x) * step(su.x, 1.0) * step(0.0, su.y) * step(su.y, 1.0);
-  col *= 1.0 - ps * 0.6 * uPt;
   vec4 pt = texture2D(tPt, vec2(pu.x, 1.0 - pu.y)) * step(0.0, pu.x) * step(pu.x, 1.0) * step(0.0, pu.y) * step(pu.y, 1.0);
   col = mix(col, pt.rgb * ${f(GAIN.ui)}, pt.a * uPt);
 

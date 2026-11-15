@@ -1,68 +1,48 @@
 import * as THREE from 'three';
 import { hex } from '../../../../config/palette';
 import { glassLayer, metal, shade } from '../../../../world/surface';
-import { MID, PANEL } from './frame';
-import { SHELL } from './shape';
 
-// The ultrawide's surfaces: a satin dark steel for the panel and its chin, a finer blasted finish for the back shell
-// with its vents cut in, a brushed dark steel for the stand, copper for the few small accents, and the glass.
+// The ultrawide's surfaces: one dark steel, satin on the panel, a little rougher on the back shell, and polished on
+// the stand so its rounded edges carry the cursor's light; copper for the few small accents; and the glass.
 
-// What tarnish pulls the dark steels toward: grey, so they stay plainly grey beside copper.
+// What tarnish pulls copper toward, and the dark steel: grey, so the steel stays plainly grey beside copper.
 const BROWN: [number, number, number] = [0.5, 0.36, 0.26];
 const GREY: [number, number, number] = [0.88, 0.88, 0.88];
-const f = (n: number) => n.toFixed(3);
 
 export interface MonitorMats {
   body: THREE.Material;
   shell: THREE.Material;
   stand: THREE.Material;
-  foot: THREE.Material;
-  rim: THREE.Material;
   pad: THREE.Material;
   copper: THREE.Material;
   glass: THREE.MeshPhysicalMaterial;
 }
 
 // How strongly the glass mirrors the room, off and with the picture fully up.
-export const GLASS_SPEC = { off: 0.4, on: 0.16 } as const;
+export const GLASS_SPEC = { off: 0.4, on: 0.04 } as const;
 
-// The body, the stand and the foot are one program: the same dark steel, differing only in color and roughness.
-const steel = (color: number, rough: number) => metal({ name: 'monitor-steel', color, rough, brush: 'none', tarnish: 0.08, patina: GREY });
+// The body, the shell, the stand and the pads are one program: the same dark steel, differing only in color and
+// roughness.
+// Each mirrors the room only weakly (env), so the cursor's light, which moves, is what its highlights show.
+// Satin steel also spreads a small light into a broad soft sheen round its tight glint: a second, rougher lobe from
+// each spot light, the cursor's among them, so its highlights slide plainly along the edges and the stand.
+const SHEEN = /* glsl */ `
+  #if NUM_SPOT_LIGHTS > 0
+  { vec3 Vv = normalize(vViewPosition);
+    for (int i = 0; i < NUM_SPOT_LIGHTS; i++){
+      vec3 toL = spotLights[i].position + vViewPosition;
+      vec3 Lv = toL / max(length(toL), 1e-4);
+      vec3 Hv = Lv + Vv;
+      Hv = Hv / max(length(Hv), 1e-4);
+      float nh = max(dot(normal, Hv), 0.0), nl = max(dot(normal, Lv), 0.0);
+      float fall = getDistanceAttenuation(length(toL), spotLights[i].distance, spotLights[i].decay) * getSpotAttenuation(spotLights[i].coneCos, spotLights[i].penumbraCos, dot(Lv, spotLights[i].direction));
+      totalEmissiveRadiance += spotLights[i].color * fall * nl * pow(nh, 12.0) * diffuseColor.rgb * 1.4;
+    }
+  }
+  #endif`;
+const steel = (color: number, rough: number, env = 0.35) => { const m = metal({ name: 'monitor-steel', color, rough, brush: 'none', tarnish: 0.08, patina: GREY, extra: { emissive: SHEEN } }); m.envMapIntensity = env; return m; };
 
 export function monitorMats(): MonitorMats {
-  const V = SHELL.vents;
-  const vents = /* glsl */ `
-float gVent;
-float ventMask(){
-  vec3 l = vObj - vec3(${f(MID[0])}, ${f(MID[1])}, ${f(MID[2])});
-  float zr = ${f(PANEL.R)} - l.z;
-  float xp = atan(l.x, zr) * ${f(PANEL.R)};
-  float d = ${f(PANEL.back + 1)} - (${f(PANEL.R)} - length(vec2(l.x, zr)));
-  float row = floor((d - ${f(V.from)}) / ${f(V.row)} + 0.5);
-  float dy = d - ${f(V.from)} - row * ${f(V.row)};
-  float u = xp / ${f(V.pitch)} + 0.5 * mod(row, 2.0);
-  float dx = (fract(u) - 0.5) * ${f(V.pitch)};
-  float r = ${f(V.slot / 2)};
-  float sd = length(vec2(max(abs(dx) - ${f(V.len / 2 - V.slot / 2)}, 0.0), dy)) - r;
-  float w = fwidth(sd) + 1e-4;
-  float rows = step(-0.5, row) * step(row, ${f(Math.round((V.to - V.from) / V.row) + 0.5)});
-  float sharp = (1.0 - smoothstep(-w, w, sd)) * rows;
-  float mean = ${f((V.len * V.slot) / (V.pitch * V.row))} * step(${f(V.from - V.row / 2)}, d) * step(d, ${f(V.to + V.row / 2)});
-  // Slots narrower than a pixel or two are drawn as the shade they average to, so the grille never crawls.
-  float far = smoothstep(0.35, 0.9, max(fwidth(d), fwidth(xp)) / ${f(V.slot)});
-  float ax = abs(xp);
-  float bank = smoothstep(${f(V.inner - 1)}, ${f(V.inner + 1)}, ax) * (1.0 - smoothstep(${f(V.outer - 1)}, ${f(V.outer + 1)}, ax));
-  float region = smoothstep(0.55, 0.75, normalize(vObjN).y) * step(178.0, l.y) * bank;
-  return mix(sharp, mean, far) * region;
-}`;
-  const shell = metal({
-    name: 'monitor-shell', color: 0x1d1c1b, rough: 0.32, brush: 'none', tarnish: 0.05, patina: GREY,
-    extra: {
-      head: vents,
-      color: 'gVent = ventMask(); diffuseColor.rgb *= 1.0 - 0.8 * gVent;',
-      rough: 'roughnessFactor = mix(roughnessFactor, 1.0, gVent);',
-    },
-  });
   // The glass adds only what it reflects, and keeps it low: the room's soft sheen below, and the cursor's light as a
   // plain mirror would show it. A broad glare of the cursor's light greyed the whole picture.
   const glass = shade(glassLayer('monitor-glass', 0.05), 'monitor-glass', {
@@ -82,13 +62,10 @@ float ventMask(){
   glass.specularIntensity = GLASS_SPEC.off;
   glass.userData.uniforms = { uRoom: { value: 1 }, uOn: { value: 0 } };
   return {
-    body: steel(0x232220, 0.2),
-    shell,
-    stand: steel(0x262422, 0.26),
-    // The foot is blasted, not polished: lying flat, a polished face mirrors the room's lights as a pale slab.
-    foot: steel(0x1c1b1a, 0.5),
-    rim: steel(0x151413, 0.34),
-    pad: steel(0x0c0b0b, 0.8),
+    body: steel(0x4a4846, 0.28),
+    shell: steel(0x3c3a38, 0.34),
+    stand: steel(0x2c2a29, 0.32, 0.25),
+    pad: steel(0x0c0b0b, 0.8, 1),
     copper: metal({ name: 'monitor-copper', color: hex('copper'), rough: 0.26, brush: 'none', tarnish: 0.3, patina: BROWN }),
     glass,
   };
