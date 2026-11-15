@@ -191,8 +191,8 @@ export const DISTRICTS: District[] = [
   { kind: 'monument', from: 74, to: 94, r0: 330, r1: 450 },
   { kind: 'forest', from: FOREST.from, to: FOREST.to, r0: FOREST.r0, r1: FOREST.r1 },
   { kind: 'dunes', from: DUNES.from, to: DUNES.to, r0: DUNES.r0, r1: DUNES.r1 },
-  { kind: 'open', from: 24, to: 44, r0: 270, r1: CITY.r },
-  { kind: 'open', from: 322, to: 342, r0: 300, r1: CITY.r },
+  { kind: 'open', from: 28, to: 44, r0: 330, r1: CITY.r },
+  { kind: 'open', from: 316, to: 332, r0: 350, r1: CITY.r },
   { kind: 'wild', from: 128, to: 222, r0: 380, r1: 590 },
 ];
 // Whether a bearing lies in a stretch that runs from one bearing to another, turning to the right.
@@ -229,7 +229,7 @@ export function lots(): Lot[] {
       for (let i = 0; i < n; i++) {
         const a = ((i + 0.5 * (row % 2) + 0.24 * (r() - 0.5)) / n) * 360, w = 30 + r() * 14, d = Math.min(deep, 30 + r() * 16), lean = r(), seed = Math.floor(r() * 1e6);
         const fall = Math.exp(-((rad / 300) ** 2)), tall = Math.min(TALLEST, (48 + 225 * fall * (0.45 + 0.55 * lean)) * (0.8 + 0.4 * r()));
-        const gone = r() < 0.34;
+        const gone = r() < 0.2;
         if (fringe && gone) continue;
         if (AVENUES.some((b) => Math.abs(((a - b + 540) % 360) - 180) * (Math.PI / 180) * rad < ROAD / 2 + w / 2 + 2)) continue;
         if (PARKS.some((p) => p.band === band && within(a, p.from, p.to))) continue;
