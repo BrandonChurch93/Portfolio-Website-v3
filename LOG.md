@@ -2,6 +2,34 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · A clean slate, no Blender, and a prompt for concept pictures (Fable, web chat)
+
+**What Brandon said**
+
+- He proposed a clean slate for the hero's world and Fable agreed. He does not want Blender. He has no references and suggested pictures from Gemini. He set out what he sees, as thoughts and not rules. `BRIEF.md`, Settled, Hero, the last three entries.
+
+**What was done**
+
+- His words written in. Nothing built.
+- The prompt below was given to him for Gemini. It names no film or series, so the pictures are not anyone else's design.
+
+```
+Concept art for the top of a personal website. One small planet floating in a dark night sky, seen from the side and slightly above.
+
+The lower half of the planet has been torn away. Its underside is jagged broken rock in layers, the inside of a real planet. In the middle of the tear the planet's core is exposed: a knot of burning orange light, the brightest thing in the picture. A thin stream of that light, carrying small glowing shards, falls straight down from the core and out of the bottom of the picture. Chunks of the planet drift around the torn underside, and the large ones still carry pieces of the surface.
+
+The top of the planet is a living world. A large city of the future covers much of it, the kind of skyline anyone would look at and say "that is a city from the future": clean, believable, optimistic science fiction. Not alien and not ancient. Thousands of lit windows. One great pyramid stands inside the city, among the towers. The city wraps around a desert of sand dunes. Inside the city there are parks and avenues lined with trees. The ground is natural: rock, sand and soil. Nothing about the planet looks man-made, metal or concrete.
+
+Style: photoreal, like a detailed miniature photographed for a big film. Night. Colors: a near-black warm background, burnt orange and amber light, bronze, copper and gold. No blue, no green, no white. One low light from the upper right, like a moon. The city glows.
+
+Layout: wide, 16:9. The planet is centered and fills the lower two thirds. The top third is empty dark sky with a few faint stars, left clear for a headline. No text, no logos, no people, no spacecraft.
+```
+
+**For the next session**
+
+- The pictures he sends back, and what he likes in each. They are a target for the look, not a plan to copy.
+- Still to send Claude Code: the crash, at the head of the next prompt.
+
 ## 2026-11-15 · What is wrong with world A, and the crash prompt was never sent (Fable, web chat)
 
 **What Brandon said**
