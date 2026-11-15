@@ -156,13 +156,13 @@ export async function buildCpu(): Promise<CpuModel> {
   // Steel worn back to bright metal on its edges and corners.
   const wear = partChunks({
     head: `float cpuWear(){ float k = 1.0 - abs(vObjN.y); float bev = smoothstep(0.06, 0.3, k) * (1.0 - smoothstep(0.7, 0.96, k)); return bev * (0.3 + 0.7 * smoothstep(0.34, 0.64, wFbm(vObj * 0.8 + 5.0))); }`,
-    color: `diffuseColor.rgb = mix(diffuseColor.rgb, ${lin(shade('text', 0.62))} * 0.55 + ${lin(hex('bronze'))} * 0.45, cpuWear() * 0.85);`,
+    color: `diffuseColor.rgb = mix(diffuseColor.rgb, ${lin(shade('text', 0.5))} * 0.4 + ${lin(hex('bronze'))} * 0.6, cpuWear());`,
     rough: 'roughnessFactor = mix(roughnessFactor, 0.14, cpuWear());',
   }, { bounce: false });
-  const steel = metal({ name: 'cpuSteel', color: shade('text', 0.26), rough: 0.36, brush: 'x', tarnish: 0.18, patina: GREY, extra: wear });
+  const steel = metal({ name: 'cpuSteel', color: shade('text', 0.13), rough: 0.5, brush: 'x', tarnish: 0.18, patina: GREY, extra: wear });
   steel.userData.uniforms = u;
   // The lever's own steel: drawn from the same metal, a little brighter where it has been handled.
-  const leverSteel = metal({ name: 'cpuLever', color: shade('text', 0.3), rough: 0.28, brush: 'z', tarnish: 0.12, patina: GREY, extra: partChunks({}, { bounce: false }) });
+  const leverSteel = metal({ name: 'cpuLever', color: shade('text', 0.16), rough: 0.42, brush: 'z', tarnish: 0.12, patina: GREY, extra: partChunks({}, { bounce: false }) });
   leverSteel.userData.uniforms = u;
   const etch = lidEtch();
   const lidC = `vec2(${SOCKET.x.toFixed(2)}, ${SOCKET.z.toFixed(2)})`;
@@ -173,11 +173,12 @@ export async function buildCpu(): Promise<CpuModel> {
     extra: partChunks({
       head: `uniform sampler2D uEtch;
 float cpuEtch(vec2 o){ if (vObjN.y < 0.99 || vObj.y < ${(IHS.y2 - 0.02).toFixed(2)}) return 0.0; return texture2D(uEtch, (vObj.xz + o - ${lidC}) / ${ETCH_MM.toFixed(1)} + 0.5).r; }
-float cpuLines(){ float px = length(fwidth(vObj.xz)); float a = 1.0 - smoothstep(0.012, 0.05, px), b = 1.0 - smoothstep(0.03, 0.12, px);
-  return (wNoise(vec3(vObj.x * 0.9, vObj.z * 46.0, 1.0)) - 0.5) * a + (wNoise(vec3(vObj.x * 0.35, vObj.z * 14.0, 4.0)) - 0.5) * b * 0.35; }`,
-      color: 'float cpuEt = cpuEtch(vec2(0.0));\n  float cpuLn = cpuLines();\n  diffuseColor.rgb *= (1.0 - 0.93 * cpuEt) * (1.0 + 0.1 * cpuLn);',
-      rough: 'roughnessFactor = clamp(roughnessFactor + 0.07 * cpuLn, 0.06, 1.0); roughnessFactor = mix(roughnessFactor, 0.4, cpuEt);',
-      normal: `{ float e = 0.03; float gx = cpuEtch(vec2(e, 0.0)) - cpuEtch(vec2(-e, 0.0)); float gz = cpuEtch(vec2(0.0, e)) - cpuEtch(vec2(0.0, -e)); vec3 axZ = normalize(cross(vAxX, vAxY)); normal = normalize(normal + (gx * vAxX + gz * axZ) * 0.3); }`,
+float cpuLines(){ float px = length(fwidth(vObj.xz)); float a = 1.0 - smoothstep(0.006, 0.025, px), b = 1.0 - smoothstep(0.015, 0.06, px), c = 1.0 - smoothstep(0.04, 0.14, px);
+  return (wNoise(vec3(vObj.x * 0.7, vObj.z * 110.0, 1.0)) - 0.5) * a + (wNoise(vec3(vObj.x * 0.5, vObj.z * 48.0, 4.0)) - 0.5) * b * 0.8 + (wNoise(vec3(vObj.x * 0.3, vObj.z * 19.0, 7.0)) - 0.5) * c * 0.4; }`,
+      color: 'float cpuEt = cpuEtch(vec2(0.0));\n  float cpuLn = cpuLines();\n  diffuseColor.rgb *= 1.0 + 0.16 * cpuLn;\n  diffuseColor.rgb = mix(diffuseColor.rgb, ' + lin(shade('bronze-deep', 0.5)) + ', cpuEt);',
+      rough: 'roughnessFactor = clamp(roughnessFactor + 0.16 * cpuLn, 0.04, 1.0); roughnessFactor = mix(roughnessFactor, 0.85, cpuEt);',
+      metal: 'metalnessFactor = mix(metalnessFactor, 0.0, cpuEt);',
+      normal: `{ float e = 0.03; float gx = cpuEtch(vec2(e, 0.0)) - cpuEtch(vec2(-e, 0.0)); float gz = cpuEtch(vec2(0.0, e)) - cpuEtch(vec2(0.0, -e)); vec3 axZ = normalize(cross(vAxX, vAxY)); normal = normalize(normal + (gx * vAxX + gz * axZ) * 0.08); }`,
     }),
   });
   lid.userData.uniforms = { ...u, uEtch: { value: etch } };
@@ -186,7 +187,7 @@ float cpuLines(){ float px = length(fwidth(vObj.xz)); float a = 1.0 - smoothstep
   copper.userData.uniforms = u;
   const contacts = metal({
     name: 'cpuContacts', color: shade('copper', 0.85), rough: 0.4,
-    extra: partChunks({ emissive: 'totalEmissiveRadiance += cpuRamp(cpuSeam(vCpuP)) * cpuSeam(vCpuP) * 0.45;' }, { bounce: false }),
+    extra: partChunks({ emissive: 'totalEmissiveRadiance += cpuSeamLight(vCpuP) * 3.0;' }, { bounce: false }),
   });
   contacts.userData.uniforms = u;
   const can = ink(metal({ name: 'cpuCan', color: shade('copper', 0.82), rough: 0.24, brush: 'radial-z', tarnish: 0.12, patina: BROWN, extra: inkChunks(true) }));
@@ -194,15 +195,15 @@ float cpuLines(){ float px = length(fwidth(vObj.xz)); float a = 1.0 - smoothstep
   plastic.userData.uniforms = u;
   plastic.specularIntensity = 0.4;
   // The socket's body takes the seam's light on its inner wall.
-  const body = dielectric('cpuBody', shade('text', 0.085), 0.62, { vary: 0.05, scale: 0.5, extra: partChunks({ emissive: 'totalEmissiveRadiance += cpuRamp(cpuSeam(vCpuP)) * cpuSeam(vCpuP) * 1.5;' }) });
+  const body = dielectric('cpuBody', shade('text', 0.085), 0.62, { vary: 0.05, scale: 0.5, extra: partChunks({ emissive: 'totalEmissiveRadiance += cpuSeamLight(vCpuP) * 1.6;' }) });
   body.userData.uniforms = u;
   body.specularIntensity = 0.45;
-  const ferrite = ink(dielectric('cpuFerrite', shade('text', 0.17), 0.9, { vary: 0.14, scale: 1.6, extra: inkChunks(false) }));
+  const ferrite = ink(dielectric('cpuFerrite', shade('text', 0.085), 0.88, { vary: 0.14, scale: 1.6, extra: inkChunks(false) }));
   ferrite.specularIntensity = 0.18;
   const epoxy = ink(dielectric('cpuEpoxy', shade('text', 0.07), 0.5, { vary: 0.05, scale: 0.9, extra: inkChunks(false) }));
   epoxy.specularIntensity = 0.45;
   // The processor's substrate, the site's dark where a real one is green, with the seam's light on its edge.
-  const substrate = dielectric('cpuSubstrate', shade('bronze-deep', 0.46), 0.5, { coat: 0.2, vary: 0.05, scale: 0.4, extra: partChunks({ emissive: 'totalEmissiveRadiance += cpuRamp(cpuSeam(vCpuP)) * cpuSeam(vCpuP) * 0.7;' }) });
+  const substrate = dielectric('cpuSubstrate', shade('bronze-deep', 0.46), 0.5, { coat: 0.2, vary: 0.05, scale: 0.4, extra: partChunks({ emissive: 'totalEmissiveRadiance += cpuSeamLight(vCpuP) * 1.4;' }) });
   substrate.userData.uniforms = u;
   const ceramic = dielectric('cpuCeramic', shade('text-3', 0.42), 0.6, { vary: 0.12, scale: 2.0, extra: partChunks() });
   ceramic.userData.uniforms = u;
@@ -531,7 +532,7 @@ const SMALL_ROWS = ['top', 'left', 'right', 'right', 'right', 'front', 'front', 
 // The board's tiles: a jittered grid of cells cut from the square, one at each mounting hole so no hole is split,
 // their shared sides made jagged the same way from both sides so the seams close exactly. Each tile is its outline
 // (x, z) going round, its middle and its reach.
-export const TILES = { across: 5, jag: 1.1 } as const;
+export const TILES = { across: 4, jag: 1.2 } as const;
 function boardTiles(): { outline: P2[]; c: P2; r: number }[] {
   const H = BOARD.half, n = TILES.across, step = (2 * H) / n, rnd = seeded(2611);
   const seeds: P2[] = [];
@@ -608,6 +609,8 @@ float cpuHole(){ const vec2 H[4] = vec2[4](${holes}); float d = 1e3; for (int i 
 // The cut edge: mask, then the board's core of glass and resin with four copper layers through it, then mask.
 float cpuLayer(){ float y = -vObj.y; float w = max(fwidth(y) * 0.8, 0.018);
   float k = 0.0; for (int i = 0; i < 4; i++){ float c = 0.12 + float(i) * 0.45; k = max(k, 1.0 - smoothstep(0.03, 0.03 + w, abs(y - c))); } return k; }
+// The arris along the board's top edge catches the light: a fine pale line that draws the board's outline.
+float cpuArris(){ return (1.0 - cpuTop()) * step(abs(vObjN.y), 0.5) * (1.0 - smoothstep(0.0, max(fwidth(vObj.y) * 1.2, 0.05), -vObj.y)); }
 float cpuEdgeMask(){ float y = -vObj.y; return 1.0 - smoothstep(0.03, 0.06, y) * smoothstep(1.57, 1.54, y); }`,
     color: /* glsl */ `
   vec4 cpuA = texture2D(uArt, cpuBuv(vec2(0.0)));
@@ -619,11 +622,11 @@ float cpuEdgeMask(){ float y = -vObj.y; return 1.0 - smoothstep(0.03, 0.06, y) *
   float cpuSide = step(abs(vObjN.y), 0.5);
   float cpuEdge = (1.0 - cpuT - cpuHole()) * cpuSide;
   float cpuLay = cpuLayer() * cpuEdge * (1.0 - cpuEdgeMask());
-  vec3 core = ${lin(shade('text', 0.075))} * (0.82 + 0.18 * sin((vObj.x + vObj.z) * 9.0 + vObj.y * 31.0) * sin((vObj.x - vObj.z) * 23.0));
+  vec3 core = ${lin(shade('text-3', 0.36))} * (0.82 + 0.18 * sin((vObj.x + vObj.z) * 9.0 + vObj.y * 31.0) * sin((vObj.x - vObj.z) * 23.0));
   cpuCol = mix(cpuCol, core, cpuEdge * (1.0 - cpuEdgeMask()));
   float cpuMet = max(max(cpuPad, cpuLay), cpuHole());
   cpuCol = mix(cpuCol, ${lin(shade('copper', 0.8))}, max(cpuPad, cpuHole()));
-  cpuCol = mix(cpuCol, ${lin(shade('copper', 0.35))}, cpuLay);
+  cpuCol = mix(cpuCol, ${lin(shade('copper', 0.75))}, cpuLay);
   diffuseColor.rgb = cpuCol;`,
     rough: 'roughnessFactor = mix(roughnessFactor, 0.8, cpuSilk); roughnessFactor = mix(roughnessFactor, 0.62, cpuEdge); roughnessFactor = mix(roughnessFactor, 0.34, cpuMet);',
     metal: 'metalnessFactor = cpuMet;',
@@ -637,6 +640,7 @@ float cpuEdgeMask(){ float y = -vObj.y; return 1.0 - smoothstep(0.03, 0.06, y) *
     normal = normalize(normal - (gx * vAxX + gz * axZ) * 1.0);
   }`,
     emissive: /* glsl */ `
+  totalEmissiveRadiance += ${lin(hex('pale'))} * cpuArris() * (1.0 - cpuHole()) * 0.45 * uRim.w / 3.2;
   if (uGlow > 0.001 && cpuT > 0.5) {
     // Each bundle its own beat: the bundle and the distance out are read from the one texel this point covers.
     vec2 cpuUv = cpuBuv(vec2(0.0));
@@ -650,9 +654,9 @@ float cpuEdgeMask(){ float y = -vObj.y; return 1.0 - smoothstep(0.03, 0.06, y) *
       vec4 cpuS = textureLod(uPulse, cpuUv, 0.0);
       float cpuTi = cpuS.b / max(cpuS.r, 1e-3) * 127.5 - bun * 16.0;
       float cpuLine = cpuS.r * (1.0 - smoothstep(0.7, 2.0, abs(cpuTi - CPU_MID[int(clamp(bun, 0.0, ${(6).toFixed(1)}))])));
-      float mask = mix(cpuA.r, cpuLine, cpuFar);
+      float mask = mix(max(cpuA.r, 0.35 * cpuS.r), cpuLine, cpuFar);
       float g = min(cpuWave(d, bun) * mask * (1.0 + 0.8 * cpuFar), mix(1.25, 0.9, cpuFar)) * uGlow;
-      totalEmissiveRadiance += cpuRamp(g) * g * (2.6 + 2.4 * cpuFar);
+      totalEmissiveRadiance += cpuRamp(g) * g * (5.5 - 0.5 * cpuFar);
     }
   }`,
   };

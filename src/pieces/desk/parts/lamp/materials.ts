@@ -28,19 +28,20 @@ const tone = (n: PaletteName, k: number) => new THREE.Color(hex(n)).multiplyScal
 // The metals, by kind. Finish: 0 a fine grain, 1 turned round the foot's axis, 2 spun round the shade's axis, 3 brushed
 // along its length. Room is how much of the studio the metal takes against the stage's level, so a dark part still
 // holds a line of light on its edges. Strike is how much of the stream's light it takes.
-interface Metal { color: number; rough: number; finish: number; room: number; strike: number }
+interface Metal { color: number; rough: number; finish: number; room: number; strike: number; streak?: number; lacquer?: number }
 export const METAL = {
   // Warm dark steel, plainly grey beside the copper: brushed for the stem, the arm and the counterweight.
-  steel: { color: 0xbab2a8, rough: 0.24, finish: 3, room: 4.6, strike: 0.5 },
+  steel: { color: 0xbab2a8, rough: 0.24, finish: 3, room: 4.6, strike: 0.5, streak: 0.5 },
   // Blackened and satin: the joints.
   joint: { color: 0x37312c, rough: 0.27, finish: 0, room: 4.2, strike: 0.5 },
   // Blackened, turned: the foot.
   foot: { color: 0x36302b, rough: 0.28, finish: 1, room: 3, strike: 0 },
   bronze: { color: tone('bronze', 0.95), rough: 0.3, finish: 0, room: 3, strike: 0.7 },
   copper: { color: tone('copper', 0.92), rough: 0.26, finish: 0, room: 3, strike: 0.7 },
-  // The shade: spun steel, blackened and polished, so the room's lights and the cursor's lie on it as sharp
-  // reflections that slide as the light moves, and the stream's strike and the vents read strongly against it.
-  shell: { color: 0x4c4743, rough: 0.07, finish: 2, room: 2.4, strike: 1 },
+  // The shade: dark spun steel under a clear lacquer. The lacquer mirrors the room sharply, and the spinning rings
+  // under it draw the cursor's light out into a long streak across them that slides round the dome as the light
+  // moves. The stream's strike and the vents read strongly against it.
+  shell: { color: 0x47423e, rough: 0.34, finish: 2, room: 2.4, strike: 1, streak: 1.15, lacquer: 0.85 },
   rim: { color: tone('copper-light', 0.82), rough: 0.18, finish: 0, room: 3, strike: 1 },
   cap: { color: tone('copper', 0.95), rough: 0.2, finish: 0, room: 3, strike: 1 },
 } satisfies Record<string, Metal>;
@@ -89,10 +90,10 @@ float rings(float q, float s1, float s2){ float px = fwidth(q);
   return 0.5 + (wNoise(vec3(q * 0.35, 1.0, 2.0)) - 0.5) * 0.22 + (wNoise(vec3(q * s1, 5.0, 3.0)) - 0.5) * 0.45 * a1 + (wNoise(vec3(q * s2, 9.0, 1.0)) - 0.5) * 0.35 * a2; }
 `;
 
-const VERT = { head: 'attribute vec4 cell;\nvarying float vKind;\nvarying vec2 vLampUv;\nvarying vec3 vObj;\nvarying vec3 vObjN;', body: 'vKind = cell.x;\nvLampUv = uv;\nvObj = position;\nvObjN = normal;' };
-const FRAG_HEAD = `varying vec3 vObj;\nvarying vec3 vObjN;\n${NOISE}\n${HEAD}`;
+const VERT = { head: 'attribute vec4 cell;\nvarying float vKind;\nvarying vec2 vLampUv;\nvarying vec3 vObj;\nvarying vec3 vObjN;\nvarying vec3 vGrain;', body: 'vKind = cell.x;\nvLampUv = uv;\nvObj = position;\nvObjN = normal;\nvGrain = cell.yzw;' };
+const FRAG_HEAD = `varying vec3 vObj;\nvarying vec3 vObjN;\nvarying vec3 vGrain;\n${NOISE}\n${HEAD}`;
 
-function patch(m: THREE.MeshStandardMaterial, key: string, chunks: { head: string; color: string; rough?: string; emissive: string; room?: string; self?: string }): void {
+function patch(m: THREE.MeshStandardMaterial, key: string, chunks: { head: string; color: string; rough?: string; emissive: string; room?: string; self?: string; spot?: string; after?: string }): void {
   m.userData.uniforms = U;
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, U);
@@ -102,6 +103,12 @@ function patch(m: THREE.MeshStandardMaterial, key: string, chunks: { head: strin
     if (chunks.rough) f = f.replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\n${chunks.rough}`);
     f = f.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\n${chunks.emissive}`);
     if (chunks.self) f = f.replace('#include <lights_fragment_begin>', THREE.ShaderChunk.lights_fragment_begin.replace('getSpotLightInfo( spotLight, geometryPosition, directLight );', `getSpotLightInfo( spotLight, geometryPosition, directLight );\n\t\t${chunks.self}`));
+    if (chunks.spot) {
+      // Inside the spot lights' loop, after the shadow, just before the light is added.
+      const L = THREE.ShaderChunk.lights_fragment_begin, at = L.indexOf('RE_Direct(', L.indexOf('getSpotLightInfo('));
+      f = f.replace('#include <lights_fragment_begin>', `${L.slice(0, at)}${chunks.spot}\n\t\t${L.slice(at)}`);
+    }
+    if (chunks.after) f = f.replace('#include <lights_physical_fragment>', `#include <lights_physical_fragment>\n${chunks.after}`);
     if (chunks.room) f = f.replace('#include <lights_fragment_end>', `${chunks.room}\n#include <lights_fragment_end>`);
     f = f.replace('#include <opaque_fragment>', 'outgoingLight = heldUnder(outgoingLight - totalEmissiveRadiance) + totalEmissiveRadiance;\n#include <opaque_fragment>');
     sh.fragmentShader = f;
@@ -112,7 +119,7 @@ function patch(m: THREE.MeshStandardMaterial, key: string, chunks: { head: strin
 const arr = <T>(type: string, xs: T[], f: (x: T) => string) => `${type}[${xs.length}](${xs.map(f).join(', ')})`;
 
 function metalMaterial(): THREE.MeshPhysicalMaterial {
-  const m = new THREE.MeshPhysicalMaterial({ color: 0xffffff, metalness: 1, roughness: 0.3 });
+  const m = new THREE.MeshPhysicalMaterial({ color: 0xffffff, metalness: 1, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.03 });
   m.name = 'lampMetal';
   const ms = METALS.map((n) => METAL[n] as Metal);
   const consts = `
@@ -121,6 +128,25 @@ const float MR[${ms.length}] = ${arr('float', ms, (x) => x.rough.toFixed(3))};
 const float MF[${ms.length}] = ${arr('float', ms, (x) => x.finish.toFixed(1))};
 const float MS[${ms.length}] = ${arr('float', ms, (x) => x.strike.toFixed(2))};
 const float MRoom[${ms.length}] = ${arr('float', ms, (x) => x.room.toFixed(2))};
+const float MStreak[${ms.length}] = ${arr('float', ms, (x) => (x.streak ?? 0).toFixed(2))};
+const float MLac[${ms.length}] = ${arr('float', ms, (x) => (x.lacquer ?? 0).toFixed(2))};
+// The way the grain runs where it is drawn, in view space: along a brushed part, round the shade's axis on the spun
+// shade, or none.
+vec3 grainView(int k){
+  vec3 g = vGrain;
+  if (k == ${K.shell}) g = cross(${v3(AXIS)}, vObj - ${v3(CROWN)});
+  float l = length(g);
+  if (l < 1e-3) return vec3(0.0);
+  return normalize(mat3(viewMatrix) * (g / l));
+}
+// A streak of light across the grain, from one light: the line on a brushed tube, the band across a spun dome.
+vec3 streakOf(vec3 L, vec3 V, vec3 N, vec3 T, float e){
+  vec3 h = L + V; float hl = length(h);
+  if (hl < 1e-4 || dot(T, T) < 0.5) return vec3(0.0);
+  h /= hl;
+  float th = dot(T, h);
+  return vec3(pow(max(1.0 - th * th, 0.0), e) * max(dot(N, L), 0.0));
+}
 float mFinish(int k){
   float f = MF[k];
   if (f > 2.5) return rings(dot(vObj, vec3(0.31, 0.11, 0.17)) * 0.6 + wNoise(vObj * 0.9) * 2.0, 4.0, 11.0);
@@ -147,7 +173,9 @@ float mFinish(int k){
     // The rolled rim's lip catches the bulb, inside and round the mouth: a thin bright crescent along the shade's edge.
     if (mk == ${K.rim}) totalEmissiveRadiance += mix(${lin(hex('hot'))}, ${lin(hex('pale'))}, 0.4) * (pow(max(dot(nn, toBulb) * 0.8 + 0.2, 0.0), 2.0) + smoothstep(0.15, 0.8, dot(nn, ${v3(AXIS)})) * 0.9) * uLamp * 3.4;
   }`,
-    room: 'radiance *= MRoom[mk];',
+    room: '#if defined( USE_CLEARCOAT )\n  clearcoatRadiance *= MRoom[mk];\n#endif\n  radiance *= MRoom[mk];',
+    after: 'material.clearcoat = MLac[mk];',
+    spot: `if (MStreak[mk] > 0.0) { vec3 gT = grainView(mk); reflectedLight.directSpecular += directLight.color * streakOf(directLight.direction, geometryViewDir, geometryNormal, gT, mk == ${K.shell} ? 280.0 : 220.0) * MStreak[mk] * mix(material.specularColor, vec3(1.0), 0.55); }`,
   });
   return m;
 }

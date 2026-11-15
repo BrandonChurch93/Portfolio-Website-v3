@@ -140,7 +140,7 @@ float cpuCrest(float x, float d, float speed, float amp, int b){
   if (x < 0.0) return 0.0;
   float s = x * speed, len = CPU_LEN[b];
   float ahead = d - s;
-  float shape = ahead > 0.0 ? exp(-pow(ahead / (0.02 + 0.008 * cpuFar), 2.0)) : exp(ahead / (0.06 + 0.1 * cpuFar)) * (0.5 + 0.5 * exp(ahead / 0.02));
+  float shape = ahead > 0.0 ? exp(-pow(ahead / (0.02 + 0.008 * cpuFar), 2.0)) : exp(ahead / (0.1 + 0.16 * cpuFar)) * (0.45 + 0.55 * exp(ahead / 0.02));
   return amp * shape * (0.45 + 0.55 * exp(-s / (0.45 * len))) * (1.0 - smoothstep(0.78 * len, 0.97 * len, s));
 }
 // The light on bundle b at d of the way out. The first wave leaves the bundles one after another as the lights come
@@ -151,7 +151,7 @@ float cpuWave(float d, float bf){
   if (since < 0.0) return 0.0;
   if (uStatic > 0.5) return 0.32 * exp(-d / (0.4 * CPU_LEN[b])) * (1.0 - smoothstep(0.78 * CPU_LEN[b], 0.97 * CPU_LEN[b], d));
   float sum = cpuCrest(since - 0.32 * cpuH(bf * 5.1 + 9.0), d, 0.7 + 0.3 * cpuH(bf + 3.0), 0.6 + 0.4 * cpuH(bf * 2.7 + 4.0), b);
-  float rate = 0.6 + 0.5 * cpuH(bf * 7.13 + 1.0), phase = cpuH(bf * 3.31 + 2.0) * 7.0;
+  float rate = 0.9 + 0.6 * cpuH(bf * 7.13 + 1.0), phase = cpuH(bf * 3.31 + 2.0) * 7.0;
   float k0 = floor(uTime * rate + phase);
   for (int j = 0; j < 3; j++) {
     float k = k0 - float(j), key = k * 1.618 + bf * 17.0;
@@ -167,7 +167,7 @@ float cpuFlare(float b){
   if (since < 0.0) return 0.0;
   if (uStatic > 0.5) return 0.4;
   float f = exp(-pow((since - 0.32 * cpuH(b * 5.1 + 9.0)) / 0.07, 2.0)) * 1.2;
-  float rate = 0.6 + 0.5 * cpuH(b * 7.13 + 1.0), phase = cpuH(b * 3.31 + 2.0) * 7.0;
+  float rate = 0.9 + 0.6 * cpuH(b * 7.13 + 1.0), phase = cpuH(b * 3.31 + 2.0) * 7.0;
   float k0 = floor(uTime * rate + phase);
   for (int j = 0; j < 2; j++) {
     float k = k0 - float(j), key = k * 1.618 + b * 17.0;
@@ -187,22 +187,28 @@ float cpuSeam(vec3 p){
   float sd = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
   if (abs(sd) > 6.0) return 0.0;
   float near = exp(-abs(sd) / 0.9) * exp(-max(p.y - 2.4, 0.0) / 0.5);
-  float side = 0.12 + 0.88 * pow(smoothstep(-0.7, 0.95, dot(normalize(r + 1e-3), ${TO_STRIKE})), 1.6);
+  float side = 0.04 + 0.96 * pow(smoothstep(-0.5, 0.95, dot(normalize(r + 1e-3), ${TO_STRIKE})), 2.0);
   float a = atan(r.y, r.x);
   float flicker = uStatic > 0.5 ? 1.0 : 0.7 + 0.3 * sin(uTime * 2.3 + a * 3.0) * sin(uTime * 1.7 - a * 5.0 + 1.3);
-  float s = side * flicker * 0.32;
-  for (int b = 0; b < ${EXITS.length}; b++) s += cpuFlare(float(b)) * exp(-length(p.xz - CPU_EXIT[b]) / 4.0) * 0.55;
+  float s = side * flicker * 0.55;
+  for (int b = 0; b < ${EXITS.length}; b++) s += cpuFlare(float(b)) * exp(-length(p.xz - CPU_EXIT[b]) / 4.5) * 0.9;
   return s * near * uGlow;
 }
+// The seam's light as a color: the stream's colors, hot where it is strong.
+vec3 cpuSeamLight(vec3 p){ float s = cpuSeam(p); return cpuRamp(0.25 + 1.2 * s) * s; }
 // The light the band throws: a hot line exactly on the cut, and the parts just behind it plainly lit by it.
 float cpuCutA;
 vec3 cpuEdgeLight(){
   if (uBandOn < 0.5 || uBand.w <= 0.0) return vec3(0.0);
   float w = max(0.2, fwidth(cpuCutA) * 1.3);
   float line = exp(-pow(cpuCutA / w, 2.0)) * uBand.w;
-  float trail = exp(-cpuCutA / 5.0) * smoothstep(0.0, 2.0, cpuCutA / w) * 0.55 * uBand.w;
-  float up = 0.55 + 0.45 * max(vCpuN.y, 0.0);
-  return mix(${C('hot')}, ${C('pale')}, 0.6 * uBand.w) * line * 4.5 + cpuRamp(trail) * trail * 2.2 * up;
+  // The curtain is a light standing on the line: what is just behind it is lit by it, on the faces turned toward it
+  // and on none turned away, falling off within a few millimetres.
+  vec2 out2 = cpuOnBoard(vCpuP) - uBand.xy;
+  vec3 toLine = normalize(vec3(out2.x, 0.0, out2.y) / max(length(out2), 1e-3) + vec3(0.0, 0.55, 0.0));
+  float facing = max(dot(normalize(vCpuN), toLine), 0.0);
+  float trail = exp(-cpuCutA / 3.5) * smoothstep(0.0, 1.5, cpuCutA / w) * uBand.w * facing * facing * 1.6;
+  return mix(${C('hot')}, ${C('pale')}, 0.6 * uBand.w) * line * 6.0 + cpuRamp(trail) * trail * 4.0;
 }
 // A part opening out of its shard burns along its edges and cools as it opens; a piece of the board burns only in a
 // hairline along the top of its cut sides.
@@ -227,9 +233,9 @@ vec3 cpuBounce(vec3 albedo){
   vec4 ph = textureLod(uPulse, uv, 4.0);
   float g = 0.0;
   if (ph.r > 0.03) g = cpuWave(ph.g / ph.r, floor(ph.b / ph.r * 127.5 / 16.0)) * ph.r;
-  float k = min(g * uGlow, 0.45) * (0.25 + 0.55 * (1.0 - max(vCpuN.y, 0.0))) * exp(-max(vCpuP.y, 0.0) / 2.4);
+  float k = min(g * uGlow, 0.7) * (0.25 + 0.75 * (1.0 - max(vCpuN.y, 0.0))) * exp(-max(vCpuP.y, 0.0) / 3.0);
   float s = min(cpuSeam(vec3(vCpuP.xz, max(vCpuP.y - 0.6, 0.0))) * 0.22, 0.2);
-  return (cpuRamp(k) * k * (0.25 + 0.6 * albedo) + cpuRamp(s) * s) * 0.9;
+  return (cpuRamp(k) * k * (0.4 + 0.6 * albedo) * 2.0 + cpuRamp(s) * s) * 0.9;
 }`;
 
 export const CUT = /* glsl */ `

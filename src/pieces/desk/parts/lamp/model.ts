@@ -21,10 +21,11 @@ class Parts {
   private cast = new Builder();
   private fine = new Builder();
   get tris() { return this.cast.tris + this.fine.tris; }
-  add(geo: THREE.BufferGeometry, h: Handle, m?: THREE.Matrix4, o: { shadow?: boolean } = {}): void {
+  // along: the way a brushed or turned part's grain runs, in the desk's frame, for the streak the light draws on it.
+  add(geo: THREE.BufferGeometry, h: Handle, m?: THREE.Matrix4, o: { shadow?: boolean; along?: THREE.Vector3 } = {}): void {
     const g = geo.index ? geo.toNonIndexed() : geo.clone();
-    const n = g.getAttribute('position').count, cell = new Float32Array(n * 4);
-    for (let i = 0; i < n; i++) cell[i * 4] = h.kind;
+    const n = g.getAttribute('position').count, cell = new Float32Array(n * 4), a = o.along?.clone().normalize();
+    for (let i = 0; i < n; i++) { cell[i * 4] = h.kind; if (a) { cell[i * 4 + 1] = a.x; cell[i * 4 + 2] = a.y; cell[i * 4 + 3] = a.z; } }
     g.setAttribute('cell', new THREE.Float32BufferAttribute(cell, 4));
     const casts = o.shadow ?? h.cast;
     (casts ? this.cast : this.fine).add(g, h.mat, m, { shadow: casts });
@@ -60,7 +61,7 @@ const anyPerp = (v: THREE.Vector3) => (Math.abs(v.y) < 0.9 ? UP.clone().cross(v)
 const along = (at: THREE.Vector3, dir: THREE.Vector3) => frame(at, dir, anyPerp(dir));
 
 // Segments round a turned part follow its size, so a small one is not cut finer than it can be seen.
-function addTurn(b: Parts, pts: [number, number][], mat: Handle, m: THREE.Matrix4, seg = 96, o: { shadow?: boolean } = {}): void {
+function addTurn(b: Parts, pts: [number, number][], mat: Handle, m: THREE.Matrix4, seg = 96, o: { shadow?: boolean; along?: THREE.Vector3 } = {}): void {
   const r = Math.max(...pts.map((p) => p[0]));
   for (const g of turn(pts, Math.min(seg, Math.max(20, Math.round(r * 3))))) b.add(g, mat, m, o);
 }
@@ -68,7 +69,7 @@ function addTurn(b: Parts, pts: [number, number][], mat: Handle, m: THREE.Matrix
 // A rod between two points.
 function rod(b: Parts, a: THREE.Vector3, c: THREE.Vector3, r: number, mat: Handle, seg = 24): void {
   const d = c.clone().sub(a), len = d.length();
-  b.add(cyl(r, len, seg, r, true), mat, along(a.clone().addScaledVector(d, 0.5), d));
+  b.add(cyl(r, len, seg, r, true), mat, along(a.clone().addScaledVector(d, 0.5), d), { along: d });
 }
 
 // A tube along a smooth path, its uv along it counted in braid pitches.
@@ -205,15 +206,15 @@ export function buildLamp(mats: Of): LampModel {
   // The stem: a bronze swivel on the boss, a dark steel tube, and a bronze collar that carries the elbow's ears.
   const top = ELBOW_Y;
   addTurn(b, [[13.2, 52], [13.8, 52.7], [13.8, 55.2], [13.2, 55.8], [13.8, 56.4], [13.8, 59.4], [13.0, 60.2], [9.6, 61.1], [8.3, 61.8]], mats.bronze, foot, 64);
-  addTurn(b, [[STEM_R, 61.6], [STEM_R, top - 34]], mats.steel, foot, 40);
+  addTurn(b, [[STEM_R, 61.6], [STEM_R, top - 34]], mats.steel, foot, 40, { along: UP });
   addTurn(b, [[STEM_R, top - 34.2], [9.8, top - 33.6], [10.4, top - 32.2], [10.4, top - 27.4], [9.8, top - 26.2], [10.4, top - 25.4], [10.4, top - 24.6], [9.6, top - 23.8], [0.01, top - 23.6]], mats.steel, foot, 48);
   knuckle(b, mats, { at: ELBOW, pin: ELBOW_PIN, down: UP.clone().negate(), arms: [ARM_DIR, ARM_DIR.clone().negate()], armR: ARM_R, re: 11.5, ld: 24, hw: 8.5 });
 
   // The counterweight beyond the elbow: a turned bronze weight on a short spigot.
   {
     const tail = ARM_DIR.clone().negate(), m = along(ELBOW, tail);
-    addTurn(b, [[ARM_R, 19.8], [4.6, 20.8], [4.6, 34]], mats.steel, m, 24);
-    addTurn(b, [[4.6, 33.6], [9, 34.2], [14.6, 35.6], [15.8, 37.2], [16, 46.8], [15.2, 47.6], [16, 48.4], [16, 58.8], [15.2, 59.6], [16, 60.4], [16, 68.4], [15.2, 70.4], [11.8, 71.8], [6.2, 72.5], [0.01, 72.7]], mats.steel, m, 64);
+    addTurn(b, [[ARM_R, 19.8], [4.6, 20.8], [4.6, 34]], mats.steel, m, 24, { along: tail });
+    addTurn(b, [[4.6, 33.6], [9, 34.2], [14.6, 35.6], [15.8, 37.2], [16, 46.8], [15.2, 47.6], [16, 48.4], [16, 58.8], [15.2, 59.6], [16, 60.4], [16, 68.4], [15.2, 70.4], [11.8, 71.8], [6.2, 72.5], [0.01, 72.7]], mats.steel, m, 64, { along: tail });
   }
 
   // The arm: one dark steel tube from the elbow to the shade's knuckle.
@@ -247,45 +248,20 @@ export function buildLamp(mats: Of): LampModel {
   }
   // A ring of vent slots pressed round the crown: dark at rest, burning with the bulb behind them.
   {
-    const n = 24, sMid = 8.6, half = 4.6;
+    const n = 22, sMid = 9.2, half = 5.6;
     const r = (k: number) => SHELL.reduce((acc, [rr, ss], i) => (i && k >= SHELL[i - 1][1] && k <= ss ? SHELL[i - 1][0] + ((rr - SHELL[i - 1][0]) * (k - SHELL[i - 1][1])) / (ss - SHELL[i - 1][1]) : acc), 0);
     const dr = (r(sMid + half) - r(sMid - half)) / (2 * half);
     for (let i = 0; i < n; i++) {
       const t = (i / n) * Math.PI * 2, c = Math.cos(t), sn = Math.sin(t);
       const at = V(r(sMid) * c, -sMid, r(sMid) * sn), nrm = V(c, dr, sn).normalize(), mer = V(dr * c, -1, dr * sn).normalize();
-      b.add(new THREE.BoxGeometry(2.3, 0.5, half * 2), mats.glow, sm.clone().multiply(frame(at.addScaledVector(nrm, 0.12), nrm, mer)), { shadow: false });
-      b.add(new THREE.BoxGeometry(3.6, 0.6, half * 2 + 1.4), mats.shell, sm.clone().multiply(frame(V(r(sMid) * c, -sMid, r(sMid) * sn).addScaledVector(nrm, -0.05), nrm, mer)));
+      b.add(new THREE.BoxGeometry(3.1, 0.5, half * 2), mats.glow, sm.clone().multiply(frame(at.addScaledVector(nrm, 0.12), nrm, mer)), { shadow: false });
+      b.add(new THREE.BoxGeometry(4.4, 0.6, half * 2 + 1.4), mats.shell, sm.clone().multiply(frame(V(r(sMid) * c, -sMid, r(sMid) * sn).addScaledVector(nrm, -0.05), nrm, mer)));
     }
   }
   b.add(new THREE.CircleGeometry(SHELL[0][0] + 1, 48).rotateX(-Math.PI / 2).translate(0, -SHELL[0][1] - 1.4, 0), mats.glow, sm, { shadow: false });
   // The bulb on its socket, inside.
   addTurn(b, [[15.5, -26], [15.5, -8], [13, -6], [0.01, -6]], mats.steel, sm, 16);
   b.add(new THREE.SphereGeometry(BULB.r, 18, 10), mats.glow, sm.clone().multiply(new THREE.Matrix4().makeTranslation(0, -BULB.s, 0)), { shadow: false });
-
-  // The cord from the shade: out through a grommet beside the saddle, along under the arm in two clips, round the
-  // elbow, down the back of the stem and into the boss.
-  {
-    const off = TOWARD.clone().negate().addScaledVector(UP, -0.8).addScaledVector(ARM_DIR, -TOWARD.clone().negate().addScaledVector(UP, -0.8).dot(ARM_DIR)).normalize();
-    const away = V(-TOWARD.x, 0, -TOWARD.z).normalize();
-    const gDir = FLANK.clone().multiplyScalar(Math.cos(-0.42)).addScaledVector(side, Math.sin(-0.42)), gs = SADDLE_S + 6;
-    const g0 = onShade(gs, gDir, 0.4), gn = normalAt(gs, gDir);
-    addTurn(b, [[3.6, 0], [3.6, 2.2], [3.0, 3.6], [2.6, 4.2]], mats.joint, along(g0, gn), 24);
-    const armAt = (t: number, o: number) => ELBOW.clone().addScaledVector(ARM_DIR, t).addScaledVector(off, o);
-    const path = [
-      g0.clone().addScaledVector(gn, 3.4), g0.clone().addScaledVector(gn, 12), armAt(ARM_LEN - 36, 11.8), armAt(ARM_LEN * 0.62, 10.6),
-      armAt(ARM_LEN * 0.3, 10.6), armAt(26, 14), ELBOW.clone().addScaledVector(away, 24).addScaledVector(UP, -18),
-      F.clone().setY(top - 64).addScaledVector(away, 12.4), F.clone().setY(150).addScaledVector(away, 12), F.clone().setY(70).addScaledVector(away, 12.6),
-      F.clone().setY(48).addScaledVector(away, 26.4), F.clone().setY(43.4).addScaledVector(away, 25),
-    ];
-    cordTube(b, path, 2.1, mats.cord);
-    for (const t of [ARM_LEN * 0.62, ARM_LEN * 0.3]) {
-      const c = armAt(t, 5.3), m = frame(c, ARM_DIR, off);
-      b.add(new THREE.CylinderGeometry(1, 1, 1, 24, 1, true).scale(8.4, 4.2, 13.2), mats.steel, m);
-    }
-    const sc = F.clone().setY(150).addScaledVector(away, 5.8);
-    b.add(new THREE.CylinderGeometry(1, 1, 1, 24, 1, true).scale(9.6, 4.2, 14.8), mats.steel, frame(sc, UP, away));
-    addTurn(b, [[3.4, 0], [3.4, 1.8], [2.8, 3.0]], mats.joint, along(F.clone().setY(43.4).addScaledVector(away, 24.5), away.clone().negate()), 20);
-  }
 
   // The mains cord out of the back of the foot, lying on the top in a curve away from the stream's side and over the
   // desk's back edge. It drops

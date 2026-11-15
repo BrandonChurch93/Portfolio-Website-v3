@@ -77,7 +77,7 @@ const ENV = 0.3;
 const FILL = 0.06;
 // The flash way: the key becomes the strike's flash, from the struck side and higher than the stream, its shadows
 // soft and filled, and moves back to its own place as the room comes up.
-const FLASH_KEY = { power: 5, at: [-0.4, 0.13, -0.32] as const, soft: 2.5, fill: 0 };
+const FLASH_KEY = { power: 18, at: [-0.4, 0.13, -0.32] as const, soft: 2.5, fill: 0 };
 const STRIKE_LIGHT = { base: 0.0012, flash: 0.014 } as const;
 const TURN = { yaw: 5, pitch: 3, omega: 6.5 } as const;
 // The canvas fades out at its rim, and fully outside the middle of the host's height where the row's borders run.
@@ -202,13 +202,13 @@ export function createCpu(): StruckPiece {
     key.shadow.radius = KEY.soft + (FLASH_KEY.soft - KEY.soft) * w;
     rim.intensity = RIM.power * room;
     rimDir.set(...RIM.at).normalize().transformDirection(stage.camera.matrixWorldInverse);
-    u.uRim.value.set(rimDir.x, rimDir.y, rimDir.z, RIM.line * room);
+    u.uRim.value.set(rimDir.x, rimDir.y, rimDir.z, RIM.line * Math.max(room, w));
     fill.intensity = FILL * room;
     flashFill.intensity = FLASH_KEY.fill * w;
     // Metal is seen by what it mirrors, so in the flash the room's reflections stay up: a flat lid lit by one raking
     // light alone mirrors the dark and reads as a hole.
-    stage.scene.environmentIntensity = ENV * (0.1 + 0.9 * Math.max(room, 0.75 * w));
-    strips.forEach((st, i) => { st.intensity = STRIPS[i].power * Math.max(room, 0.4 * w); });
+    stage.scene.environmentIntensity = ENV * (0.1 + 0.9 * Math.max(room, 1.3 * w));
+    strips.forEach((st, i) => { st.intensity = STRIPS[i].power * Math.max(room, 1.2 * w); });
     stage.lamp.intensity = LAMP.power * room;
     // The strike's flash is the stream's leading end arriving, so it does not wait for the stream to come up.
     const flash = since >= 0 && since < 1.5 ? Math.exp(-since / 0.12) * Math.min(1, since / 0.02) : 0;

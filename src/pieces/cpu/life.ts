@@ -12,7 +12,7 @@ import { PART_TEXELS } from './shading';
 export const LIFE: Record<Way, number> = { shards: 1.2, band: 0.85, flash: 0.75 };
 
 // When the lights come on, in each way: the first wave of the pulse leaves the seam then.
-const LIGHTS: Record<Way, number> = { shards: 1.07, band: 0.6, flash: 0.6 };
+const LIGHTS: Record<Way, number> = { shards: 1.1, band: 0.6, flash: 0.6 };
 
 // The stream's shards on the page run from 4.5 to 17 CSS pixels from middle to farthest point, and the board is 160
 // pixels across there: so a shard here is between these, in millimetres.
@@ -54,24 +54,26 @@ const FLASH = { cpu: 13, body: 3, frame: 2, round: [4, 8] as [number, number], g
 
 // The shards way, in seconds. Each shard flies from the strike, lands where its part is and opens into it: the part's
 // own faces, crumpled into the shard's size, unfold. The board's tiles leave over the first span and lock in a wave
-// from the struck corner; the socket and the processor come next on high arcs, the largest and brightest shards of
-// all, then the plate and the lever, then the rows. A row's group is one shard that opens its parts one after
-// another along the run.
+// from the struck corner. Then the socket, the processor, the plate and the lever, each alone, with a gap before the
+// next, the socket and the processor the largest and hottest shards of all. Then the rows: a row is one shard that
+// lands at its near end and runs along it, and each part opens as it passes.
 const SHARDS = {
-  tiles: { leave: [0, 0.26] as [number, number], fly: [0.14, 0.2] as [number, number], gap: 1.3, slide: 0.07, open: 0.06, size: [5, 8] as [number, number], lit: 1.4 },
+  tiles: { leave: [0, 0.16] as [number, number], fly: [0.12, 0.16] as [number, number], gap: 1.3, slide: 0.07, open: 0.06, size: [5, 8] as [number, number], lit: 1, turn: 25 },
   big: [
-    { kinds: ['frame', 'body'], leave: 0.27, fly: 0.24, open: 0.12, size: 11.6, lit: 14, lift: 26 },
-    { kinds: ['cpu'], leave: 0.34, fly: 0.24, open: 0.1, size: 11.6, lit: 14, lift: 30 },
-    { kinds: ['plate'], leave: 0.4, fly: 0.2, open: 0.1, size: 8, lit: 1.6, lift: 14 },
-    { kinds: ['lever'], leave: 0.45, fly: 0.2, open: 0.08, size: 7, lit: 1.6, lift: 14 },
+    { kinds: ['frame', 'body'], leave: 0.26, fly: 0.2, open: 0.1, size: 16, lit: 3.4, lift: 16, crumple: 0.14 },
+    { kinds: ['cpu'], leave: 0.38, fly: 0.2, open: 0.09, size: 16, lit: 3.4, lift: 18, crumple: 0.14 },
+    { kinds: ['plate'], leave: 0.5, fly: 0.16, open: 0.08, size: 8, lit: 1.5, lift: 10, crumple: 0.12 },
+    { kinds: ['lever'], leave: 0.58, fly: 0.15, open: 0.07, size: 7, lit: 1.5, lift: 9, crumple: 0.12 },
   ],
   // The plate and the lever arrive standing open this far, then swing shut: start and how long.
   standing: { plate: 70, lever: 66 },
-  shut: { plate: [0.72, 0.12] as [number, number], lever: [0.8, 0.12] as [number, number] },
-  rows: { first: 0.5, apart: 0.055, run: 0.09, fly: 0.15, open: 0.06, each: 0.009, lit: 1.6 },
+  shut: { plate: [0.75, 0.12] as [number, number], lever: [0.83, 0.12] as [number, number] },
+  rows: { first: 0.64, apart: 0.05, fly: 0.13, run: 0.15, open: 0.06, lit: 1.2, size: 6.5 },
 } as const;
 
 interface Opens { i: number; at: number; c: THREE.Vector3; r: number }
+// A row's shard, once landed, runs along the row to here in this long, opening each part as it passes.
+interface Run { to: THREE.Vector3; dur: number }
 interface Flier {
   opens: Opens[];
   leave: number;
@@ -88,8 +90,12 @@ interface Flier {
   lift: number;
   bow: number;
   tile: boolean;
-  // How it lies as it lands, which the part opens out of.
+  crumple: number;
+  run?: Run;
+  // How it lies as it lands, and how the part lies as it starts to open: turned about the upright only, so a flat
+  // thing never stands on edge.
   q: THREE.Quaternion;
+  partQ: THREE.Quaternion;
 }
 
 export class Life {
@@ -127,12 +133,14 @@ export class Life {
   private plan(r: () => number): Flier[] {
     const P = this.parts, out: Flier[] = [], S = this.strike;
     const mid = (i: number) => new THREE.Vector3((P[i].lo[0] + P[i].hi[0]) / 2, P[i].hi[1], (P[i].lo[2] + P[i].hi[2]) / 2);
-    const fly = (o: Omit<Flier, 'from' | 'kind' | 'axis' | 'spin' | 'yaw' | 'bow' | 'q'> & { bow?: number }) => {
+    const fly = (o: Omit<Flier, 'from' | 'kind' | 'axis' | 'spin' | 'yaw' | 'bow' | 'q' | 'partQ' | 'crumple'> & { bow?: number; crumple?: number; turn?: number }) => {
       const yaw = r() * Math.PI * 2;
       const d = Math.hypot(o.to.x - S.x, o.to.z - S.z);
+      const turn = ((o.turn ?? 40) * (r() * 2 - 1) * Math.PI) / 180;
       out.push({
-        ...o, from: S.clone(), kind: this.kindFor(r), axis: new THREE.Vector3(r() - 0.5, r() - 0.5, r() - 0.5).normalize(), spin: 7 + r() * 6, yaw,
-        bow: o.bow ?? (r() < 0.5 ? -1 : 1) * (2 + 0.05 * d) * (0.4 + 0.6 * r()), q: new THREE.Quaternion().setFromAxisAngle(UP, yaw).multiply(FLAT),
+        ...o, from: S.clone(), kind: this.kindFor(r), axis: new THREE.Vector3(r() - 0.5, r() - 0.5, r() - 0.5).normalize(), spin: 7 + r() * 6, yaw, crumple: o.crumple ?? 0.38,
+        bow: o.bow ?? (r() < 0.5 ? -1 : 1) * (1.5 + 0.03 * d) * (0.4 + 0.6 * r()), q: new THREE.Quaternion().setFromAxisAngle(UP, yaw).multiply(FLAT),
+        partQ: new THREE.Quaternion().setFromAxisAngle(UP, turn),
       });
     };
     // The board's tiles, in a wave from the struck corner.
@@ -142,7 +150,7 @@ export class Life {
       const k = dist(i) / far, leave = T.leave[0] + (T.leave[1] - T.leave[0]) * k, flight = T.fly[0] + (T.fly[1] - T.fly[0]) * k;
       const c = new THREE.Vector3(P[i].c[0], 0, P[i].c[2]);
       const size = THREE.MathUtils.clamp(P[i].r * 0.45, T.size[0], T.size[1]);
-      fly({ opens: [{ i, at: 0, c, r: P[i].r }], leave, land: leave + flight, open: T.open, to: c, size, lit: T.lit, lift: 6 + 0.1 * dist(i) + 3 * r(), tile: true });
+      fly({ opens: [{ i, at: 0, c, r: P[i].r }], leave, land: leave + flight, open: T.open, to: c, size, lit: T.lit, lift: 4 + 0.06 * dist(i) + 2 * r(), tile: true, turn: T.turn, crumple: 0.3 });
     }
     // The socket and the processor, high and bright; the plate standing open and the lever raised.
     for (const big of SHARDS.big) {
@@ -152,24 +160,29 @@ export class Life {
       // A hinged part opens where it stands open, so its shard lands there.
       const p0 = P[list[0]], deg = p0.kind === 'plate' ? SHARDS.standing.plate : p0.kind === 'lever' ? SHARDS.standing.lever : 0;
       const to = p0.hinge && deg ? at.clone().applyMatrix4(this.hingeMatrix(p0, Math.sign(p0.hinge.open) * deg * (Math.PI / 180))) : at.clone();
-      fly({ opens: list.map((i) => ({ i, at: 0, c: at.clone(), r: this.reach(i) })), leave: big.leave, land: big.leave + big.fly, open: big.open, to, size: big.size, lit: big.lit, lift: big.lift, tile: false, bow: 3 });
+      fly({ opens: list.map((i) => ({ i, at: 0, c: at.clone(), r: this.reach(i) })), leave: big.leave, land: big.leave + big.fly, open: big.open, to, size: big.size, lit: big.lit, lift: big.lift, tile: false, bow: 3, crumple: big.crumple });
     }
-    // The rows: each a run of groups, a group one shard.
-    const groups = new Map<string, number[]>();
-    P.forEach((p, i) => { if (p.row) { const g = `${p.row}:${p.group ?? i}`; groups.set(g, [...(groups.get(g) ?? []), i]); } });
-    const rows = new Map<string, number[][]>();
-    for (const [key, list] of groups) { const row = key.split(':')[0]; rows.set(row, [...(rows.get(row) ?? []), list.sort((a, b) => dist(a) - dist(b))]); }
+    // The rows: one shard each, landing at the row's near end and running along it.
+    const rows = new Map<string, number[]>();
+    P.forEach((p, i) => { if (p.row) rows.set(p.row, [...(rows.get(p.row) ?? []), i]); });
     const R = SHARDS.rows;
-    const order = [...rows.values()].map((gs) => gs.sort((a, b) => dist(a[0]) - dist(b[0]))).sort((a, b) => dist(a[0][0]) - dist(b[0][0]));
-    order.forEach((gs, k) => gs.forEach((list, j) => {
-      const first = mid(list[0]);
-      const leave = R.first + k * R.apart + (gs.length > 1 ? (j / (gs.length - 1)) * R.run : 0);
-      const size = THREE.MathUtils.clamp(this.reach(list[0]) * 0.9, SHARD_MM[0], 6);
+    [...rows.values()].sort((a, b) => Math.min(...a.map(dist)) - Math.min(...b.map(dist))).forEach((list, k) => {
+      const xs = list.map((i) => P[i].c[0]), zs = list.map((i) => P[i].c[2]);
+      const alongX = Math.max(...xs) - Math.min(...xs) >= Math.max(...zs) - Math.min(...zs);
+      const key = (i: number) => (alongX ? P[i].c[0] : P[i].c[2]);
+      const lo = Math.min(...list.map(key)), hi = Math.max(...list.map(key));
+      const across = (alongX ? zs : xs).reduce((t, v) => t + v, 0) / list.length;
+      const at = (v: number) => new THREE.Vector3(alongX ? v : across, 3, alongX ? across : v);
+      // It runs from the end nearer the strike.
+      const fromLo = at(lo).distanceTo(S) <= at(hi).distanceTo(S);
+      const a0 = fromLo ? lo : hi, a1 = fromLo ? hi : lo, span = Math.max(1e-3, Math.abs(a1 - a0));
+      const leave = R.first + k * R.apart;
       fly({
-        opens: list.map((i, n) => ({ i, at: n * R.each * (list.length > 6 ? 1 : 3), c: new THREE.Vector3(P[i].c[0], P[i].lo[1], P[i].c[2]), r: this.reach(i) })),
-        leave, land: leave + R.fly, open: R.open, to: first, size, lit: R.lit, lift: 7 + 0.08 * dist(list[0]), tile: false,
+        opens: list.map((i) => ({ i, at: (Math.abs(key(i) - a0) / span) * R.run, c: new THREE.Vector3(P[i].c[0], P[i].lo[1], P[i].c[2]), r: this.reach(i) })),
+        leave, land: leave + R.fly, open: R.open, to: at(a0), size: R.size, lit: R.lit, lift: 6 + 0.05 * at(a0).distanceTo(S), tile: false, crumple: 0.3,
+        run: { to: at(a1), dur: R.run },
       });
-    }));
+    });
     return out;
   }
 
@@ -225,9 +238,20 @@ export class Life {
     for (const f of this.fliers) {
       if (age < f.leave) continue;
       const u = span(age, f.leave, f.land);
-      if (age < f.land && n < this.pool.length) {
+      const running = f.run && age >= f.land && age < f.land + f.run.dur;
+      if ((age < f.land || running) && n < this.pool.length) {
         // In flight: out of the stream, an arc with weight, tumbling, and turning to lie as it will land.
         const sh = this.pool[n++];
+        if (running && f.run) {
+          // Along the row, flat and shrinking as it spends itself on each part it passes.
+          const w = (age - f.land) / f.run.dur;
+          sh.p.copy(f.to).lerp(f.run.to, w);
+          sh.q.copy(f.q);
+          sh.s.set(f.size * (1 - 0.6 * w), f.size * (1 - 0.6 * w), f.size * (1 - 0.6 * w) * 0.5);
+          sh.kind = f.kind;
+          sh.lit = f.lit;
+          res.shards.push(sh);
+        } else {
         const e = u * (1.15 - 0.15 * u);
         sh.p.copy(f.from).lerp(f.to, e);
         const side = this.v.set(-(f.to.z - f.from.z), 0, f.to.x - f.from.x).normalize().multiplyScalar(f.bow * Math.sin(Math.PI * u));
@@ -240,15 +264,17 @@ export class Life {
         sh.lit = f.lit;
         res.shards.push(sh);
         continue;
+        }
       }
+      if (age < f.land) continue;
       // Landed: each of its parts opens out of it in turn, its own faces unfolding from the shard's size and lie.
       for (const o of f.opens) {
         const p = this.parts[o.i];
         const t = age - f.land - o.at;
         if (t < 0) continue;
         const k = span(t, 0, f.open), open = smooth(k);
-        const lie = new THREE.Quaternion().slerpQuaternions(f.q, new THREE.Quaternion(), open);
-        const fold = { open: k >= 1 ? 1 : open, crumple: o.r * 0.38, small: THREE.MathUtils.clamp(f.size / o.r, 0.12, 1), c: o.c };
+        const lie = new THREE.Quaternion().slerpQuaternions(f.partQ, new THREE.Quaternion(), open);
+        const fold = { open: k >= 1 ? 1 : open, crumple: o.r * f.crumple, small: THREE.MathUtils.clamp(f.size / o.r, 0.12, 1), c: o.c };
         const turn = new THREE.Matrix4().makeTranslation(o.c.x, o.c.y, o.c.z).multiply(new THREE.Matrix4().makeRotationFromQuaternion(lie)).multiply(new THREE.Matrix4().makeTranslation(-o.c.x, -o.c.y, -o.c.z));
         const heat = (f.tile ? 0.38 : 0.36) * (1 - open);
         if (f.tile) {
@@ -315,7 +341,7 @@ export class Life {
     const c: [number, number] = [STRIKE.x + dir.x * back, STRIKE.z + dir.y * back];
     const far = Math.hypot(BOARD.half - c[0], BOARD.half - c[1]) + BAND.past;
     const near = Math.hypot(STRIKE.x - c[0], STRIKE.z - c[1]) - 1;
-    const r = near + (far - near) * (1 - (1 - k) ** 1.45);
-    res.band = { c, r, k: Math.min(1, k / 0.025) * Math.min(1, (1 - k) / 0.1) * (0.45 + 0.55 * (1 - k) ** 1.2) };
+    const r = near + (far - near) * (1 - (1 - Math.min(1, k / 0.9)) ** 1.6);
+    res.band = { c, r, k: Math.min(1, k / 0.025) * Math.min(1, (1 - k) / 0.1) * (0.5 + 0.5 * (1 - k)) };
   }
 }

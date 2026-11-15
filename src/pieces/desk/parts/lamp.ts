@@ -57,6 +57,13 @@ export const build: PartFactory = () => {
     return { tris, meshes: meshes.length, highest: hi, shadeTop: drawn(STRIKE), leftmost: left, footLeft,  crown: CROWN.toArray(), hit: HIT.toArray() };
   });
 
+  // Where the lamp is drawn, as a coarse list of points in host heights, for checking what passes over it.
+  registry.tool('lampDrawn', (step = 7) => {
+    const out: [number, number][] = [], p = new THREE.Vector3();
+    for (const m of meshes) { const pos = m.geometry.getAttribute('position'); for (let i = 0; i < pos.count; i += step as number) out.push(drawn(p.fromBufferAttribute(pos, i))); }
+    return out;
+  });
+
   return {
     group,
     alone: { at: [-805, 232, -180], r: 245 },
