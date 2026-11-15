@@ -20,8 +20,10 @@ export interface ContactPlan {
   view: number;
   // One unit of the page's board in pixels (src/contact/board.ts).
   board: number;
-  // Where it comes in, and where on the stone it lands.
+  // Where it comes in, and where on the stone it lands. joined says it comes in from the section before, where
+  // it does not sway, so the two meet.
   from: Pt;
+  joined?: boolean;
   land: Pt;
   // How far down the page the foot of the screen is when it lands.
   seat: number;
@@ -36,7 +38,7 @@ export function routeThroughContact(P: ContactPlan): Route {
   let total = 0;
   for (let i = 2; i < drawn.length; i += 2) total += Math.hypot(drawn[i] - drawn[i - 2], drawn[i + 1] - drawn[i - 1]);
   // No sway where it lands, so that it meets the stone where the page has it.
-  const line = wander(drawn, S, u, 0, 0, roam(P.width), [total]);
+  const line = wander(drawn, S, u, 0, 0, roam(P.width), [...(P.joined ? [0] : []), total]);
   const branches = [measure(line, S, u), measure(line, S, u)] as [Branch, Branch];
   for (const b of branches) b.apart.fill(0);
   rides(branches, S, u);

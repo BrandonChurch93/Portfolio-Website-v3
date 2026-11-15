@@ -8,6 +8,8 @@ import type { SkillsStage } from '../../skills/stage';
 import type { Piece } from '../../world/piece';
 import { WAYS, type StruckPiece, type Way } from '../../world/struck';
 import { PieceView } from '../PieceView';
+import type { Hub } from '../../whole/hub';
+import { Shell } from './Shell';
 import styles from './SkillsLab.module.css';
 
 const WAY_NAMES: Record<Way, string> = { shards: 'Shards', band: 'Band', flash: 'Flash' };
@@ -49,7 +51,8 @@ function Glow() {
 // screen too narrow for the desk. The second and third rows keep an empty place for their thing. The words are placeholders and his to write.
 // ?way=band or flash opens it on that way of bringing the CPU to life, and ?ui=0 hides the label and the switch.
 // Pressing a way while the stream is on the first row strikes the row again, so the three can be compared in place.
-export function SkillsLab() {
+// On a page with more sections than this one (hub), it hands the hub its plan and the hub mounts the one stream.
+export function SkillsLab({ hub }: { hub?: Hub }) {
   const id = useId().replace(/:/g, '');
   const page = useRef<HTMLElement>(null), board = useRef<HTMLDivElement>(null), skills = useRef<HTMLElement>(null), about = useRef<HTMLElement>(null);
   const stage = useRef<SkillsStage | null>(null);
@@ -66,7 +69,7 @@ export function SkillsLab() {
 
   useEffect(() => {
     const q = new URLSearchParams(location.search), asked = q.get('way') as Way | null;
-    setUi(q.get('ui') !== '0');
+    setUi(q.get('ui') !== '0' && !hub);
     if (asked && WAYS.includes(asked)) setWay(asked);
     const fits = matchMedia(`(min-width: ${BOARD.least}px)`), read = () => setWide(fits.matches);
     read();
@@ -79,11 +82,11 @@ export function SkillsLab() {
     let alive = true, made: SkillsStage | null = null;
     void import('../../skills/stage').then(({ mountSkills }) => {
       if (!alive) return;
-      made = mountSkills({ page: page.current!, board: board.current!, skills: skills.current!, about: about.current!, pieces: () => pieces.current, way: () => live.current.way });
+      made = mountSkills({ page: hub?.page() ?? page.current!, root: page.current!, board: board.current!, skills: skills.current!, about: about.current!, pieces: () => pieces.current, way: () => live.current.way }, hub?.skills(skills.current!));
       stage.current = made;
     });
     return () => { alive = false; stage.current = null; made?.dispose(); };
-  }, [wide]);
+  }, [wide, hub]);
 
   const hold = (name: 'cpu' | 'reflector' | 'light') => (p: Piece | null) => { pieces.current[name] = p as StruckPiece | null; };
   const holdDesk = (p: Piece | null) => { pieces.current.desk = p as DeskPiece | null; };
@@ -105,7 +108,7 @@ export function SkillsLab() {
 
   const T = ABOUT.words, P = ABOUT.portrait, K = SKILLS.thing;
   return (
-    <main ref={page} className={styles.page}>
+    <Shell ref={page} className={styles.page} data-embed={hub ? '' : undefined}>
       {ui && (
         <header className={styles.head}>
           <p className={styles.label}>Study 25 · Skills and About</p>
@@ -179,6 +182,6 @@ export function SkillsLab() {
           </div>
         </div>
       )}
-    </main>
+    </Shell>
   );
 }

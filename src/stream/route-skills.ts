@@ -22,9 +22,10 @@ export interface SkillsPlan {
   // One unit of the page's board in pixels (src/skills/plan.ts).
   board: number;
   // Where it comes in, across the page, and how far down the page it leaves that line for the lamp. Above that
-  // it falls as it left the section before.
+  // it falls as it left the section before. from is where the section before left it, on a page that has one.
   x: number;
   leaves: number;
+  from?: Pt;
   // How far down the page the leading end is when the title comes on.
   title: number;
   // The place on the lamp's shade it strikes, and the way the shade faces there, as an angle.
@@ -51,7 +52,7 @@ export function routeThroughSkills(P: SkillsPlan): Route {
   const R = STREAM.route, K = STREAM.skills, u = P.unit, k = P.board, tight = K.corner * u;
   const S: Solids = { boxes: [], posts: [], rails: P.rules };
   const corners: Corner[] = [
-    [P.x, R.start * u, 0, 0],
+    P.from ? [P.from.x, P.from.y, 0, 0] : [P.x, R.start * u, 0, 0],
     [P.x, P.leaves, K.lamp.leave * k, K.lamp.leave * k],
     [P.lamp.x + K.lamp.from[0] * k, P.lamp.y - K.lamp.from[1] * k, K.lamp.bow[0] * k, K.lamp.bow[1] * k],
     [P.lamp.x, P.lamp.y, tight, tight],
@@ -69,7 +70,7 @@ export function routeThroughSkills(P: SkillsPlan): Route {
   drawn.length -= 2;
   const narrow = roam(P.width), far = lengthTo(drawn, P.reflector.x, P.reflector.y);
   // No sway at a strike, so that the stream meets the thing where the page has it, and none from the reflector on.
-  const still = [P.lamp, ...P.rows].map((p) => lengthTo(drawn, p.x, p.y));
+  const still = [...(P.from ? [0] : []), ...[P.lamp, ...P.rows].map((p) => lengthTo(drawn, p.x, p.y))];
   const main = wander(drawn, S, u, 0, 0, narrow, [...still, far], far);
   const ex = main[main.length - 2], ey = main[main.length - 1];
   const tail = wander([ex, ey, P.out.x - K.tail.in * k, P.bottom], S, u, 0, 0, narrow, [0]);

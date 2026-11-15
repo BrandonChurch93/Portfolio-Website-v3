@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { categories } from '../../content/work';
 import { mountStream } from '../../stream/stream';
 import { mountSwap, type Swap } from '../../stream/surge';
+import type { Hub } from '../../whole/hub';
+import { Shell } from './Shell';
 import { MetalButton } from '../MetalButton';
 import { WorkCard } from '../WorkCard';
 import styles from './WorkLab.module.css';
@@ -22,7 +24,9 @@ const ROWS = [0, 1];
 // (src/metal/wake.ts). A row the stream is not on does nothing when a category is picked.
 // Software's cards are the live site's. The cards for the other three categories are stand ins, and the page says
 // so. The category bar's look and the button are stand ins too. ?ui=0 hides the label.
-export function WorkLab() {
+// On a page with more sections than this one (hub), it lays itself out and hands the hub its things, and the hub
+// mounts the one stream for all of them.
+export function WorkLab({ hub }: { hub?: Hub }) {
   const page = useRef<HTMLElement>(null);
   const title = useRef<HTMLHeadingElement>(null);
   const bar = useRef<HTMLDivElement>(null);
@@ -35,16 +39,17 @@ export function WorkLab() {
 
   useEffect(() => {
     const asked = new URLSearchParams(location.search);
-    setUi(asked.get('ui') !== '0');
+    setUi(asked.get('ui') !== '0' && !hub);
     if (!page.current || !title.current || !bar.current || !grid.current || !rail.current || !button.current) return;
     const all = (what: string, within: Element = grid.current!) => [...within.querySelectorAll<HTMLElement>(what)];
     const rows = all('[data-part="row"]'), layers = rows.map((row) => all('[data-part="layer"]', row));
     const sets = categories.map((_, cat) => rows.flatMap((_row, r) => all('article', layers[r][cat])));
     const cards = mountSwap({ bar: bar.current, rows, layers, cards: sets });
     swap.current = cards;
-    const mounted = mountStream(page.current, { title: title.current, work: { bar: bar.current, rows, sets, swap: cards, posts: all('[data-part="stone"]'), rail: rail.current, button: button.current } });
-    return () => { swap.current = null; mounted.dispose(); cards.dispose(); };
-  }, []);
+    const parts = { title: title.current, work: { bar: bar.current, rows, sets, swap: cards, posts: all('[data-part="stone"]'), rail: rail.current, button: button.current } };
+    const mounted = hub ? hub.work(parts) : mountStream(page.current, parts).dispose;
+    return () => { swap.current = null; mounted(); cards.dispose(); };
+  }, [hub]);
 
   const pick = (index: number) => {
     setCategory(index);
@@ -52,7 +57,7 @@ export function WorkLab() {
   };
 
   return (
-    <main ref={page} className={styles.page}>
+    <Shell ref={page} className={styles.page} data-embed={hub ? '' : undefined}>
       {ui && (
         <header className={styles.head}>
           <p className={styles.label}>Study 10 · the stream through Work</p>
@@ -88,6 +93,6 @@ export function WorkLab() {
           </div>
         </div>
       </section>
-    </main>
+    </Shell>
   );
 }

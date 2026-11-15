@@ -11,7 +11,8 @@ export interface Box { l: number; t: number; r: number; b: number }
 // A round post standing out of the page, seen end on.
 export interface Post { x: number; y: number; r: number }
 // A straight rail seen from the front: the line down its middle from its high end to its low end, and half its thickness.
-export interface Rail { ax: number; ay: number; bx: number; by: number; half: number }
+// soft is the share of its usual bounce a thrown shard keeps off it, where that is not the route's own.
+export interface Rail { ax: number; ay: number; bx: number; by: number; half: number; soft?: number }
 // Everything on the page the stream can meet.
 export interface Solids { boxes: Box[]; posts: Post[]; rails: Rail[] }
 

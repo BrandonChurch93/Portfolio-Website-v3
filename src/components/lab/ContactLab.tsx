@@ -10,6 +10,8 @@ import type { Piece } from '../../world/piece';
 import { MetalButton } from '../MetalButton';
 import { PieceView } from '../PieceView';
 import { Plate } from '../Plate';
+import type { Hub } from '../../whole/hub';
+import { Shell } from './Shell';
 import styles from './ContactLab.module.css';
 
 // The pad is mounted from this many screens away, so it is not being built as the stream reaches it.
@@ -24,7 +26,8 @@ const P = CONTACT.plate;
 // The plate is one of the cards' family, asleep as the same blank. Its words and its form are in the page, over it,
 // so they are always there for a screen reader. The words are stand ins and his to write.
 // ?wake=0.45 holds the plate's band that far across, and ?ui=0 hides the label.
-export function ContactLab() {
+// On a page with more sections than this one (hub), it hands the hub its plan and the hub mounts the one stream.
+export function ContactLab({ hub }: { hub?: Hub }) {
   const id = useId().replace(/:/g, '');
   const page = useRef<HTMLElement>(null), board = useRef<HTMLDivElement>(null), section = useRef<HTMLElement>(null), form = useRef<HTMLFormElement>(null);
   const pad = useRef<PadPiece | null>(null);
@@ -35,7 +38,7 @@ export function ContactLab() {
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
 
   useEffect(() => {
-    setUi(new URLSearchParams(location.search).get('ui') !== '0');
+    setUi(new URLSearchParams(location.search).get('ui') !== '0' && !hub);
     const fits = matchMedia(`(min-width: ${BOARD.least}px)`), read = () => setWide(fits.matches);
     read();
     fits.addEventListener('change', read);
@@ -47,10 +50,10 @@ export function ContactLab() {
     let made: ContactStage | null = null, gone = false;
     void import('../../contact/stage').then(({ mountContact }) => {
       if (gone) return;
-      made = mountContact({ page: page.current!, board: board.current!, contact: section.current!, pad: () => pad.current });
+      made = mountContact({ page: hub?.page() ?? page.current!, board: board.current!, contact: section.current!, pad: () => pad.current }, hub?.contact(section.current!));
     });
     return () => { gone = true; made?.dispose(); };
-  }, [wide]);
+  }, [wide, hub]);
 
   useEffect(() => {
     if (!copied) return;
@@ -84,7 +87,7 @@ export function ContactLab() {
 
   const F = contact.form;
   return (
-    <main ref={page} className={styles.page} data-wide={wide ?? undefined}>
+    <Shell ref={page} className={styles.page} data-wide={wide ?? undefined} data-embed={hub ? '' : undefined}>
       {ui && (
         <div className={styles.head}>
           <p className={styles.label}>Study 28 · Contact</p>
@@ -147,6 +150,6 @@ export function ContactLab() {
           </ul>
         </footer>
       </div>
-    </main>
+    </Shell>
   );
 }

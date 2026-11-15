@@ -18,7 +18,9 @@ import { ABOUT, BOARD, CX, SKILLS, SWING, swingOf, throwLine } from './plan';
 // everything goes away again in the reverse order, and a frozen frame is always the same picture.
 
 export interface SkillsParts {
+  // The element the stream is on, and the section's own part of it where that is not the whole of it.
   page: HTMLElement;
+  root?: HTMLElement;
   board: HTMLElement;
   skills: HTMLElement;
   about: HTMLElement;
@@ -103,9 +105,16 @@ const within = (x: number, y: number, q: Quad): boolean => {
 const clamp = (v: number) => Math.max(0, Math.min(1, v));
 const ramp = (age: number, [a, b]: Span) => { const k = clamp((age - a) / (b - a)); return k * k * (3 - 2 * k); };
 
-export function mountSkills(parts: SkillsParts): SkillsStage {
-  const q = <T extends HTMLElement = HTMLElement>(part: string, within: Element = parts.page) => within.querySelector<T>(`[data-part="${part}"]`)!;
-  const all = (part: string) => [...parts.page.querySelectorAll<HTMLElement>(`[data-part="${part}"]`)];
+// A page with more than this section on it mounts one stream for all of them and hands each section this in place
+// of a stream of its own: it takes the section's plan and gives back the stream's handle.
+export type StreamHost = (plan: (c: PlanContext) => Planned) => StreamHandle;
+
+export function mountSkills(parts: SkillsParts, host?: StreamHost): SkillsStage {
+  // Its own things are looked for inside its own part of the page: on a page with other sections, theirs have
+  // parts of the same names.
+  const root = parts.root ?? parts.page;
+  const q = <T extends HTMLElement = HTMLElement>(part: string, within: Element = root) => within.querySelector<T>(`[data-part="${part}"]`)!;
+  const all = (part: string) => [...root.querySelectorAll<HTMLElement>(`[data-part="${part}"]`)];
   const desk = q('desk');
   const rows = all('row'), names = all('name'), lists = all('lists'), thing = q('thing') as HTMLElement | null;
   const reflector = q('reflector'), light = q('light'), portrait = q('portrait'), cover = q('cover'), coverGlow = cover.firstElementChild as HTMLElement;
@@ -173,7 +182,7 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
     const corner = on(Pt.x, Pt.y, A0);
     him = { ...him, l: corner.x, t: corner.y, w: Pt.w * k, h: Pt.h * k, k };
     const route = routeThroughSkills({
-      width: c.width, bottom: c.bottom, unit: c.unit, view: c.view, board: k,
+      width: c.width, bottom: c.bottom, unit: c.unit, view: c.view, board: k, from: c.from,
       x: B.l + CX * k,
       leaves: S0 - SKILLS.lead * k,
       title: S0 + SKILLS.cue * k,
@@ -234,7 +243,7 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
   const frame = (t: number) => {
     if (!stream || disposed) return;
     const whole = !stream.runs();
-    if (parts.page.hasAttribute('data-all') !== whole) parts.page.toggleAttribute('data-all', whole);
+    if (root.hasAttribute('data-all') !== whole) root.toggleAttribute('data-all', whole);
     const since = (cue: string) => (whole ? 60 : stream!.since(cue));
     const P = parts.pieces();
     // The desk says where its things are drawn, so the route is planned again once it is there.
@@ -334,7 +343,7 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
     anchors = { cpu: cpu.CPU.strike, reflector: refl.REFLECTOR.strike, strike: studio.STUDIO.strike, lens: studio.STUDIO.lens };
     lives = cpu.LIFE;
     place();
-    stream = mountStream(parts.page, { plan });
+    stream = host ? host(plan) : mountStream(parts.page, { plan });
   }));
 
   // For checking: which of the things the stream is kept off a place is over. 0 is About's words, and 1 on are the
@@ -360,8 +369,8 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
       removeEventListener('pointermove', brush);
       parts.about.removeEventListener('focusin', focusIn);
       parts.about.removeEventListener('focusout', focusOut);
-      stream?.dispose();
-      parts.page.removeAttribute('data-all');
+      if (!host) stream?.dispose();
+      root.removeAttribute('data-all');
     },
   };
 }

@@ -10,6 +10,7 @@ import { STREAM, STREAM_BUDGET, STREAM_STEP, unitFor, type StreamBudget } from '
 import { hash, seeded } from './rand';
 import { CORE_FLOATS, INSTANCE_FLOATS, KINDS, LAYERS, STREAK_FLOATS, StreamRenderer, type Bar, type CardShape, type Frame, type PlateCard, type PostShape, type RailShape, type TitleField } from './renderer';
 import { along, at, bladeFor, buildRoute, railFrame, riddenAt, routeThroughWork, UP, type Box, type Route } from './route';
+import { join } from './join';
 import { CORE_HALF, SWELLS } from './shaders';
 import { buildShards, facetKind, FIRST_KINDS, type Look } from './shards';
 import { FORK_FLOATS, LOOSE_FLOATS, SPARK_FLOATS, StreamSim } from './sim';
@@ -44,7 +45,9 @@ export interface StreamHandle {
 }
 
 // What a page that plans its own route hands the stream: where the page is, to plan from.
-export interface PlanContext { box(el: Element): Box; width: number; bottom: number; unit: number; view: number }
+// from is where the stream comes in, on a page where a section above this one has already carried it: the planner
+// starts its route there.
+export interface PlanContext { box(el: Element): Box; width: number; bottom: number; unit: number; view: number; from?: { x: number; y: number } }
 // And what it gets back: the route, and the rails the stream draws as they stand in a frame, given how long the
 // leading end has been past each cue.
 // after is called in each frame the stream draws, once its leading end has moved and before it is drawn, so the
@@ -75,7 +78,10 @@ interface Options {
   card?: HTMLElement;
   work?: WorkParts;
   // A page that plans its own route, as Skills and About do (route-skills.ts).
+  // With work as well, the page is Work and then more: the stream runs Work's route as far down the page as until
+  // says, and the plan's route is put on the end of it (join.ts), so one stream runs through both.
   plan?: (c: PlanContext) => Planned;
+  until?: (box: (el: Element) => Box) => number;
   // Open with the frame held: nothing moves but the cursor's light. The test shot only.
   hold?: boolean;
   look?: Look;
@@ -332,7 +338,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
         return { l: c.l + seat, t: t + seat, r: c.l + c.w - seat, b: t + c.h - seat };
       });
       const barBox = boxOf(W.bar);
-      route = routeThroughWork({ title: ink, bar: barBox, cards: places, posts, rail: shown(W.rail) ? boxOf(W.rail) : null, button: shown(W.button) ? boxOf(W.button) : null, width: w, bottom, unit });
+      route = routeThroughWork({ title: ink, bar: barBox, cards: places, posts, rail: shown(W.rail) ? boxOf(W.rail) : null, button: shown(W.button) ? boxOf(W.button) : null, width: w, bottom: opts.plan && opts.until ? opts.until((el) => boxOf(el as HTMLElement)) : bottom, unit });
       const landed = places.map((box) => route!.landings.flatMap((L, i) => ((L.kind === 'land' || L.kind === 'side') && Math.hypot(Math.max(box.l - L.x, 0, L.x - box.r), Math.max(box.t - L.y, 0, L.y - box.b)) < 10 * unit ? [i] : [])));
       for (const c of cards) c.landings = landed[c.slot];
       // Each side's stops, for the surge. Only the full route has them.
@@ -360,9 +366,22 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       const K = S.work.keel;
       const drawn = route.rails.map((r, i) => { const long = railFrame(r).len / r.half; return { ...r, own: 1.3, blade: bladeFor(route!.posts[i].r * 2, r.half), ends: [1, 0] as [number, number], keel: [K.at[0] * long, K.at[1] * long, K.size] as [number, number, number] }; });
       base = { reliefs: [shapeOf(W.bar)], posts: route.posts.map((o, i) => ({ ...o, own: i ? -1 : 1 })), rails: drawn, bars: [...route.rails, ...route.fins] };
-      renderer.configure(budget, { cards: base.reliefs.length + places.length, posts: route.posts.length, rails: base.bars.length, plates: cards.length, drawn: drawn.length, swell: !!(A && B) }, route.join[0] < Infinity);
+      // The sections under Work: their route starts where Work's ends and is put on the end of it.
+      planned = null;
+      let more = 0;
+      if (opts.plan) {
+        const br = route.branches[0], lead = br.len;
+        const next = opts.plan({ box: (el) => boxOf(el as HTMLElement), width: w, bottom, unit, view: clock.view.h, from: { x: br.x[br.n - 1], y: br.y[br.n - 1] } });
+        // What the plan knows by how far along its own route something is, is that far past Work's end here.
+        planned = { ...next, quiet: next.quiet && ((s) => (s < lead ? 1 : next.quiet!(s - lead))) };
+        more = next.route.rails.length;
+        route = join(route, next.route);
+        pulses = [];
+      }
+      const under = planned?.rails?.(sinceOf) ?? [];
+      renderer.configure(budget, { cards: base.reliefs.length + places.length, posts: route.posts.length, rails: base.bars.length + more, plates: cards.length, drawn: drawn.length + more, swell: !!(A && B) }, route.join[0] < Infinity);
       renderer.resize(Math.round(cssW * dpr), Math.round(cssH * dpr), dpr);
-      renderer.setRelief(made ? made.field : null, base.reliefs, base.posts, base.rails, [], base.bars);
+      renderer.setRelief(made ? made.field : null, base.reliefs, base.posts, [...base.rails, ...under], [], [...base.bars, ...under]);
       stones = route.landings.flatMap((L, i) => (L.kind === 'post' ? [i] : []));
       buttonPlate = route.join[0] < Infinity ? W.button.querySelector('[data-kind]') : null;
     } else if (opts.plan) {
@@ -545,7 +564,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     for (const c of cards) if (c.bake) keep.add(c.bake);
     if (cards.length) renderer!.keepBakes(keep);
     // The bar stands where its knock has put it.
-    if (base) renderer!.place(base.reliefs.map((r, i) => (i ? r : { ...r, y: r.y + Z!.knock })), base.posts, base.rails, stood, base.bars);
+    if (base) { const under = planned?.rails?.(sinceOf) ?? []; renderer!.place(base.reliefs.map((r, i) => (i ? r : { ...r, y: r.y + Z!.knock })), base.posts, under.length ? [...base.rails, ...under] : base.rails, stood, under.length ? [...base.bars, ...under] : base.bars); }
     return out;
   };
 
@@ -1029,7 +1048,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     const lx = touch ? touch.x : L.px, ly = (touch ? touch.y : L.py + clock.view.y) - hostTop;
     const lz = 120 * unit;
     const stood = platesNow();
-    if (planned?.rails) { const rails = planned.rails(sinceOf); renderer.place([], [], rails, [], rails); }
+    if (planned?.rails && !base) { const rails = planned.rails(sinceOf); renderer.place([], [], rails, [], rails); }
     carried = bent.length > 0;
     const from = canvasTop, to = canvasTop + cssH;
     fillCore(from, to, runs);

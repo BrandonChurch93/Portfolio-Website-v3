@@ -1,0 +1,28 @@
+.page {
+  position: relative;
+  overflow: clip;
+  background: var(--bg);
+}
+
+.head {
+  position: absolute;
+  top: var(--space-6);
+  left: var(--edge);
+  z-index: 6;
+  max-width: 26rem;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--copper-light);
+}
+
+.note {
+  margin-top: var(--space-3);
+  font-size: var(--step--1);
+  line-height: 1.6;
+  color: var(--text-3);
+}

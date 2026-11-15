@@ -8,6 +8,7 @@ import { FILL, LAUNCH, ROCKET, TABLE, TOWER, burn, climbed } from '../pieces/pad
 import { STREAM } from '../stream/config';
 import type { Box, Rail } from '../stream/route';
 import { routeThroughContact } from '../stream/route-contact';
+import type { StreamHost } from '../skills/stage';
 import { mountStream, type PlanContext, type Planned, type StreamHandle } from '../stream/stream';
 import { clock } from '../world/clock';
 import { tiers } from '../world/tier';
@@ -43,8 +44,8 @@ const JUMP = 1;
 const clamp = (v: number) => Math.max(0, Math.min(1, v));
 const ramp = (v: number, [a, b]: [number, number]) => { const k = clamp((v - a) / (b - a)); return k * k * (3 - 2 * k); };
 
-export function mountContact(parts: ContactParts): ContactStage {
-  const q = <T extends HTMLElement = HTMLElement>(part: string) => parts.page.querySelector<T>(`[data-part="${part}"]`)!;
+export function mountContact(parts: ContactParts, host?: StreamHost): ContactStage {
+  const q = <T extends HTMLElement = HTMLElement>(part: string) => parts.contact.querySelector<T>(`[data-part="${part}"]`)!;
   const title = q('title'), plate = q('plate'), content = q('content');
   const metal = plate.querySelector<HTMLElement>('[data-kind="card"]');
 
@@ -74,7 +75,7 @@ export function mountContact(parts: ContactParts): ContactStage {
     const B = c.box(parts.board), top = c.box(parts.contact).t;
     k = (B.r - B.l) / BOARD.w;
     const at = ([x, y]: [number, number]) => ({ x: B.l + x * k, y: top + y * k });
-    const land = at(LANDS), from = { x: B.l + CONTACT.in * k, y: STREAM.route.start * c.unit };
+    const land = at(LANDS), from = c.from ?? { x: B.l + CONTACT.in * k, y: STREAM.route.start * c.unit };
     const rests: Rail[] = RESTS.map(([x0, z0, x1, z1]) => { const a = at(onBoard(x0, 0, z0)), b = at(onBoard(x1, 0, z1)); return { ax: a.x, ay: a.y, bx: b.x, by: b.y, half: c.unit }; });
     // The table, the tower and the rocket, as one box from the tower's lamp down to the table's near legs.
     const a = at(onBoard(Math.min(TABLE.l, TOWER.l) - CLEAR, TOWER.lamp + CLEAR, 0)), b = at(onBoard(Math.max(TABLE.r, ROCKET.fin) + CLEAR, 0, TABLE.deep / 2 + CLEAR));
@@ -84,7 +85,7 @@ export function mountContact(parts: ContactParts): ContactStage {
     const pr = parts.page.getBoundingClientRect();
     origin = { x: pr.left + scrollX, y: pr.top + scrollY };
     return {
-      route: routeThroughContact({ width: c.width, unit: c.unit, view: c.view, board: k, from, land, seat: top + (CONTACT.h + CONTACT.seat) * k, rests }),
+      route: routeThroughContact({ width: c.width, unit: c.unit, view: c.view, board: k, from, joined: !!c.from, land, seat: top + (CONTACT.h + CONTACT.seat) * k, rests }),
       after: frame,
       off: (x, y) => keepOff.some((o) => x >= o.l && x <= o.r && y >= o.t && y <= o.b),
     };
@@ -171,7 +172,7 @@ export function mountContact(parts: ContactParts): ContactStage {
 
   lamp.bind();
   tiers.detect();
-  stream = mountStream(parts.page, { plan });
+  stream = host ? host(plan) : mountStream(parts.page, { plan });
 
   return {
     dispose() {
@@ -183,7 +184,7 @@ export function mountContact(parts: ContactParts): ContactStage {
       document.documentElement.removeEventListener('pointerleave', left);
       plate.removeEventListener('focusin', focusIn);
       plate.removeEventListener('focusout', focusOut);
-      stream?.dispose();
+      if (!host) stream?.dispose();
     },
   };
 }
