@@ -21,6 +21,10 @@ export default function Index() {
           <span className={styles.minor}>Phase 3 · layout A as outlines: your words over the top of a small world, its torn underside, its core and its debris under the foot of the screen, and the stream setting off from the core as you scroll</span>
         </li>
         <li>
+          <Link href="/lab/sky">The night sky</Link>
+          <span className={styles.minor}>Phase 3 · the hero&rsquo;s sky alone, in its place: fine stars, the bright few with four points, a moon with a ring or a second moon or neither, a band of far stars, the city&rsquo;s glow, and now and then a meteor. Your words and the city are stand ins</span>
+        </li>
+        <li>
           <Link href="/lab/whole">The whole page so far</Link>
           <span className={styles.minor}>Phase 3 · Work, Skills, About and Contact on one page with one stream, from the top of Work to the stone under the rocket. Not here yet, on purpose: the hero, the navigation and the footer&rsquo;s design</span>
         </li>
