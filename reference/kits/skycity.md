@@ -1,0 +1,86 @@
+# Kit · the city in the hero
+
+Read `reference/kits/README.md` first: the bar, the colors and "The look" hold for everything here. This is `src/pieces/skycity/`, one piece with one stage, as the desk and the launch pad are (`reference/kits/desk.md`, `reference/kits/pad.md`), and each of its things is a part with a builder of its own: the ground that floats, the spire, and the towers.
+
+`BRIEF.md`, Settled, "The hero, the city at rest", items 3 to 7 and 10, is the agreement. `QUALITY.md`, "The hero, the city at rest", tests 2, 3, 7 and 8, is how it is judged. The wireframe he approved is at `/lab/hero-draft` (scroll it): it settles where the city sits and how much of it shows, and nothing about its look. It is the first thing a visitor sees, and it is the thing he has asked for longest.
+
+## His words
+
+- "The city is made again from nothing. A futuristic sci-fi city that looks like a real object, not a drawing and not the old model."
+- "Hyper realistic, and when I say hyper realistic, I mean something that looks like it's real, not necessarily something that's realistic in the real world."
+- "It feels alive", "like when you see a city off in the distance, you can see the glow going into the sky."
+- The second build's city (`src/pieces/city/`, `reference/pieces/`) is not kept and is not a model for this one. Do not read it for its look.
+- Its falls are the stream's own light and are drawn by the stream, not by you. The glow behind it and the night sky are the page's.
+
+## What it is
+
+- **A city of the future on ground that floats:** a disc of land 1320 units across with a rim, and rock under it that comes down to a keel under the middle. A spire 420 units tall stands at the middle on a plaza. Towers stand in four bands between ring boulevards, tallest near the spire and falling toward the rim, with avenues running out from the plaza and parks in some of the bands.
+- **It is seen as a skyline:** from straight in front and 4.5 degrees up, from far away. The ground is nearly edge on, so the front rim, the fronts and sides of the towers, their tops against the sky, and the rock's front are what is seen. At rest on the page only what stands above the rim shows: the rim and the rock come up as the page is scrolled.
+- **It looks like a real model of a real place,** photographed at night: not a drawing, not a low polygon toy, not a field of grey boxes with yellow dots. Think of an architect's presentation model made at great expense, or a miniature shot for a film: every tower a designed building with a top, a base, setbacks, a structure that can be read, glass that reflects, and lit rooms seen through it.
+- **It passes "The look":** near neutral, in three values. Warm near black and charcoal masses, dark glass, steel and stone that are plainly grey, pale glints on edges. Copper and bronze only as accents: a crown, a band, a mullion line, a dome. Its lights are the palette's (ember, flame, hot, pale). It is never one orange mass, and nothing in it is blue, green or white.
+- **It is alive, cheaply:** lit windows in patterns that read as rooms and floors, not noise. Small lights that move or blink slowly: beacons on the tall tops, a few lines of traffic on the boulevards and avenues, a lift climbing the spire, craft drifting between towers. Everything that moves is worked out from the clock alone (`t` in the state), costs almost nothing, never visibly loops, and holds still when `still` is set.
+- **The cursor's light falls on it:** a light the stage owns, which throws the only shadows. Glass and metal answer it with reflections that slide as it moves.
+
+## The frame, which is not yours to change
+
+- `layout.ts` holds every size and place, in units: one unit is a CSS pixel on a screen 1460 wide. The middle of the ground's top is the origin, x to the visitor's right, y up, z toward the visitor. `GROUND`, `SPIRE`, `PLAZA`, `RINGS`, `ROAD`, `AVENUES`, `PARKS` and `FALLS` are the plan of the city. `lots()` gives every place a tower stands, the same on every call: the ground's builder and the towers' builder both read it, so streets, plots and towers agree.
+- `part.ts` is the contract: a part builds a group in units and has an `update` that is handed the state (`t`, `cursor`, `still`). `index.ts` is the stage: the view, the lights and the cursor's light. One unit is the same number of pixels whatever the host's height.
+- The stage has these lights and a part adds none: the cursor's light, which throws the only shadows and draws its shadow map only when it moves. The room, which is reflected and not lit. A dim light from the sky. What a part lights by itself it lights with its own materials. A city lit by ten thousand windows cannot have ten thousand lights: the windows are emissive, and the light they throw on the street, the next tower and the ground is drawn into the materials (a glow at a tower's foot, a wash on the ground), not computed.
+- No area lights anywhere (`RectAreaLight`).
+- It draws on a clear ground. Nothing may lay a haze over the whole canvas that shows it as a rectangle: bloom from anything bright does that, so keep the brightest things small.
+- If something in `layout.ts`, `part.ts` or `index.ts` should change, do not change it: say exactly what and why in your report. The plan in `layout.ts` may move for a good reason.
+
+## What each thing is
+
+### The ground (`parts/ground.ts`, `parts/ground/`)
+
+- The disc of land, its rim, and the rock under it. The rim is architecture, not a pie crust: a made edge with a wall, terraces or a promenade, piers, lights along it, and six places where a fall leaves it (`FALLS`, across the front): a spout or a channel cut in the rim at each, dark until the stream is there. The stream draws the falls themselves.
+- The rock under it: real rock, cut and layered, with structure let into it (ribs, anchors, the housings of whatever holds a city in the air), coming down to a keel under the spire, where the main fall leaves: a mouth there, made for it. It is seen from the front and a little above, lit from the cursor's light and from the city above. It must not be a smooth cone.
+- The city's floor: the plaza round the spire, the ring boulevards and avenues with their own lights, plots under every tower (`lots()`), and the parks: trees, water, lit paths, a dome or a pavilion. Seen nearly edge on, so what matters is what stands up from it and what glows on it.
+- The light the city throws on its own ground, drawn into the ground.
+
+### The spire (`parts/spire.ts`, `parts/spire/`)
+
+- The tallest thing, on the center line, 420 units tall on a foot about 40 across: the one building every visitor looks at, with the stream's main fall directly under it. Not a cone. A designed tower of the future: a structure that can be read (a core, ribs or a lattice, rings or decks at intervals, a taper with breaks in it), a lit crown and a needle, an observation level, a base that meets the plaza with steps, arches or buttresses.
+- Its lights are the city's signature: a line of light up it, rings, a beacon at the tip that breathes slowly. A lift that climbs it.
+- It must hold up alone at three times the page's size beside `reference/bar/pc-builder-parts.jpg`, and still read as one clean needle at the page's size.
+
+### The towers (`parts/towers.ts`, `parts/towers/`)
+
+- A tower on every lot from `lots()`: about 350 of them, 56 to about 300 units tall, 22 to 38 across. They are the mass of the city and most of what is seen.
+- **Not boxes.** A family of building types, each designed (setbacks, crowns, fins, sky bridges, podiums, a few round or faceted ones), varied by the lot's `seed` so that no two neighbours match and the skyline has rhythm: clusters, gaps, a few landmarks. Instance them: one geometry per type, drawn many times.
+- **Windows that read as rooms:** floors and bays, some lit and some dark, warm in different strengths, a few whole floors lit, never a random speckle and never a perfect grid of equal dots. At the page's size a tower is 20 to 40 pixels wide, so a window is about a pixel: the pattern must hold still when the page is scrolled and the light moves (`QUALITY.md`, "Nothing sparkles or bands"). Work the windows out in the shader from the tower's own coordinates and fade them to their average before they are finer than a pixel.
+- Glass that reflects the room and the cursor's light, edges that catch a pale line, tops with plant, masts and beacons.
+- The small life between them: traffic as moving points of light along the boulevards and avenues, a few craft in the air. Cheap, from the clock alone.
+
+## What a part may cost
+
+The city's canvas is as wide as the screen, and a frame on his Mac is 8 ms. `window.__site.piece('skycity').stats()` reports what it cost.
+
+| Part | Shader programs over the stage's own | Triangles drawn | First frame, alone |
+|---|---|---|---|
+| Ground | 4 | 150,000 | 300 ms |
+| Spire | 3 | 60,000 | 300 ms |
+| Towers | 4 | 250,000 | 300 ms |
+
+- Share materials: one program draws many things when they differ only by a uniform, an attribute or a texture. Towers are instanced.
+- Throw shadows only from what is large enough to matter: the shadow map draws everything that casts again.
+- No task of your build longer than about 16 ms: yield between the pieces of your build (`pause` in `src/world/build.ts`).
+- A surface worked out in a shader leaves out detail finer than a pixel, and so does geometry.
+
+## How to look at it
+
+- The dev server is at `http://127.0.0.1:5330`, and the scripts start one if it is not running. Three builders share the city: if another part's file is briefly broken, wait and take the still again.
+- The whole city at the page's size, a pixel to a unit: `npm run shot -- "/lab/piece/skycity?label=0&ui=0&size=840&wide=1440" --t 4 --wait 2500 --scale 1 --png --out shots/hero/<name>.png`. `--scale 2` is what a visitor's screen draws. `--lamp 0.3,0.6` moves the cursor's light.
+- One part alone: `/lab/piece/skycity?only=spire&label=0&ui=0` (`ground`, `spire`, `towers`). Close: `--scale 3`.
+- For anything that moves, real frames: `npm run live` (options at the top of `scripts/live.mjs`).
+- Always `--png`, always `--t 4`.
+- Open every image. Assume your first verdict is too kind. Each round, show stills to fresh Opus reviewers who are told nothing of what you hope to hear: one shown the whole city at the page's size and asked what it is, whether it looks like a real model or a drawing, and what looks least finished. One shown your part close beside `reference/bar/pc-builder-parts.jpg` and asked which is the weaker work and why.
+- If a way of making a thing stops getting better, change how it is made.
+
+## What to hand back
+
+- Your part's files, type checking clean (`npx tsc --noEmit -p .`). Do not commit, stash, reset or discard anything, and do not run `npm run build`.
+- Stills: alone, close, with the cursor's light in two places, in the whole city at the page's size and at twice it, and real frames of anything that moves.
+- What it cost, from `stats()`.
+- The tests that are yours, in your own plain judgement, the reviewers' words, and plainly what is still short of the bar.
