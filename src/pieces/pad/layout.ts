@@ -8,9 +8,9 @@
 export const SCALE = 0.002;
 
 // The Sun stone: how far across it reaches, how thick its edge is, how deep it is cut, and its rings as shares of
-// its radius from the rim in. What lies between two rings is a band, and inside the last is the boss the table
-// stands round.
-export const STONE = { r: 320, edge: 13, cut: 7, rings: [1, 0.86, 0.7, 0.52, 0.34, 0.18] } as const;
+// its radius from the rim in. They are the carving's own (src/stream/stone.ts): the rim with its moat, the sixteen
+// plates, the twenty glyphs, the ring round the face, and the face, which the table stands over.
+export const STONE = { r: 320, edge: 13, cut: 7, rings: [1, 0.915, 0.6945, 0.5105, 0.456, 0] } as const;
 // Where the stream lands: on the outer band, at the end nearest the plate.
 export const LAND: [number, number, number] = [280, 0, 0];
 
