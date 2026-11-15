@@ -1,24 +1,47 @@
 import * as THREE from 'three';
-import { hex } from '../../../config/palette';
+import { registry } from '../../../hooks/registry';
 import { ROCKET } from '../layout';
 import type { PartFactory } from '../part';
+import { STILL_T, makeFire } from './rocket/fire';
+import { level } from './rocket/form';
+import { U, codeTexture, hullMaterial } from './rocket/materials';
+import { buildRocket } from './rocket/model';
 
-// A stand in until the rocket is made: a body, a nose and a flame.
-export const build: PartFactory = () => {
-  const group = new THREE.Group(), steel = new THREE.MeshStandardMaterial({ color: 0x3a3836, roughness: 0.4, metalness: 0.9 });
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(ROCKET.r, ROCKET.r, ROCKET.bands[1], 48), steel);
-  body.position.y = ROCKET.mouth + 16 + ROCKET.bands[1] / 2;
-  const noseTall = ROCKET.tall - 16 - ROCKET.bands[1], nose = new THREE.Mesh(new THREE.ConeGeometry(ROCKET.r, noseTall, 48), steel);
-  nose.position.y = ROCKET.mouth + 16 + ROCKET.bands[1] + noseTall / 2;
-  const bell = new THREE.Mesh(new THREE.CylinderGeometry(ROCKET.r * 0.5, ROCKET.r * 0.8, 16, 32, 1, true), steel);
-  bell.position.y = ROCKET.mouth + 8;
-  const flame = new THREE.Mesh(new THREE.ConeGeometry(ROCKET.r * 0.7, 150, 24, 1, true).rotateX(Math.PI), new THREE.MeshBasicMaterial({ color: new THREE.Color(hex('hot')).multiplyScalar(3), transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }));
-  flame.position.y = ROCKET.mouth - 75;
-  group.add(body, nose, bell, flame);
-  for (const o of [body, nose, bell]) o.castShadow = o.receiveShadow = true;
+// The rocket and its fire. A near black machine: wound carbon tanks under a clear coat, turned dark steel, copper
+// only in its rims and fittings, drawn by the light on its edges and the long lines the cursor's light draws up it. It
+// lights from its foot up as the stone fills, by the slits between its sections, the line up its raceway, its vents,
+// its ports and the beacon on its spike. Then its engine lights, its fire is thrown out over the stone under the
+// table, and it climbs on its plume. Everything is worked out from the state it is handed, so a held fill or launch is
+// always the same picture and the launch runs backwards.
+
+export const build: PartFactory = async () => {
+  const mat = hullMaterial();
+  U.uCode.value = await codeTexture();
+  const { group: body, tris, meshes } = await buildRocket(mat);
+  const fire = makeFire();
+  body.add(fire.group);
+  body.position.y = ROCKET.mouth;
+  const group = new THREE.Group();
+  group.add(body);
+
+  registry.tool('rocketStats', () => ({ tris, meshes: meshes.length }));
+
   return {
     group,
-    alone: { at: [0, ROCKET.mouth + ROCKET.tall / 2, 0], r: ROCKET.tall * 0.56 },
-    update(s) { (flame.material as THREE.MeshBasicMaterial).opacity = s.burn; flame.scale.y = 0.4 + s.burn; return s.burn > 0; },
+    alone: { at: [0, ROCKET.mouth + ROCKET.tall / 2 - 20, 0], r: ROCKET.tall * 0.58 },
+    update(s) {
+      U.uLevel.value = level(s.fill);
+      U.uBurn.value = s.burn;
+      U.uTime.value = s.still ? STILL_T : s.t;
+      U.uKeyAz.value = Math.atan2(s.cursor.x, s.cursor.z);
+      fire.set(s);
+      return s.burn > 0;
+    },
+    dispose() {
+      for (const m of meshes) m.geometry.dispose();
+      mat.dispose();
+      U.uCode.value?.dispose();
+      fire.dispose();
+    },
   };
 };
