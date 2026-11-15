@@ -2,6 +2,39 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · Study 27: the hero, a wireframe of layout A (Fable, web chat)
+
+**What Brandon said**
+
+- His rough draft of the hero's words, then: "I'll go with your recommendation. You're free to go ahead and build out the layout." Layout A, the first paragraph only, the second paragraph to About. `BRIEF.md`, Settled, Hero.
+
+**What was done**
+
+- `/lab/hero-draft`: `src/hero/plan.ts`, `src/components/lab/HeroDraft.tsx` and its styles. Outlines only.
+- The screen's height is part of the layout. The words are set from the top of the screen, the city from its foot, and the rim of the city's ground rests 40 units under the foot of the screen, so the falls are hidden at rest on every screen.
+
+**What looking at it showed**
+
+- His name at 92 units broke onto two lines in a block 700 wide, which pushed the city down until only a third of it showed. The block is wider and the name stays on one line.
+- In the opening the city passed behind the words as they came in. "The model never goes behind the text." The words now wait until the city is at rest.
+
+**Measured, at rest, in the machine's Chrome**
+
+- 1440 by 900: the buttons end 475 px down, the spire's tip is at 525, the rim is about 85 px under the foot of the screen, and 59 percent of the city's height shows.
+- 1366 by 768: 422, 452, hidden, 53 percent. 1920 by 1080: 593, 635, hidden. 1720 by 1300: 641, 852, hidden.
+- No errors but a 404 for a file the dev server asks for on its first load.
+
+**Not at the bar, plainly**
+
+- On a tall screen (1720 by 1300) there is about 210 px of empty ground between the buttons and the spire, because the city hangs from the foot of the screen.
+- The opening is an order of things and nothing more. Motion cannot be judged here.
+- The city is a row of boxes. It says where the city is and how much shows, not what it is.
+
+**For the next session**
+
+- Waiting on his look: the layout, how much of the city shows, when the stream sets off. Then the agreement for the hero: the city made again, the opening, and how the falls are made.
+- Still open: the two buttons' words, which are his. His second paragraph goes to About when he rewrites it.
+
 ## 2026-11-14 · His changes to Skills built, and the desk brought to the screen's rate (Fable, Claude Code)
 
 **What Brandon said**
