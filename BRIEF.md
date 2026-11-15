@@ -822,7 +822,35 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     - **The order of work this sets:** the city is made first, as a finished thing at rest. The opening is designed on the real city afterwards.
     - The three ways for the city to come to be that Fable put to him (built from shards, lit, risen) are not picked and wait with the opening.
     - The night sky is still his question, unanswered.
+- **The opening is paused, and the night sky is drawn to be judged (Nov 14).** "Fully in agreement with everything you said here. Let's go ahead and build out the night sky and get an idea of what that looks like, and if it looks good, we can pass this update to Claude Code."
+    - In exact terms: the opening's look waits until the city is built. The city is made first, at rest, with its glow. The night sky is drawn into the wireframe at `/lab/hero-draft` with Fable's three limits (the top, the corners and the sides only, pale and warm, sparse, and fading near the city's glow), for him to say yes or no to.
+    - He wants the city's work added to what Claude Code already has in hand, once he has seen the sky.
 - An idea to revisit with the hero, not decided: his first thought was the city breaking apart into the stream as the visitor scrolls. Fable's twist, which he asked to have noted: building, not breaking. The city assembles out of the stream's facets in the opening, and the stream carries the same pieces on down the page. (Nov 12)
+
+**The hero, the city at rest: the agreement (Nov 14)**
+
+For Claude Code, added to the work it has in hand. His words are in the list above. The wireframe at `/lab/hero-draft` (`src/hero/plan.ts`) is the basic version: where things sit and how much shows are agreed, and its look is not. The opening is not part of this.
+
+1. **One page, `/lab/hero`,** laid out as the wireframe has it: his words centered about a third of the way down, the city full width along the bottom with its spire on the center line.
+2. **The words block:** the line above his name, his name, his first paragraph, and the real primary and secondary metal buttons, one to Work and one to Contact. The words are his, as `HeroDraft.tsx` has them. The buttons' words are stand ins.
+3. **The city rests low.** On every desktop screen the rim of the ground it stands on is under the foot of the screen, so its falls are hidden until the page is scrolled, and about half of the city or a little more shows. The city is never behind the words.
+4. **The city is made again, as a piece.** A city of the future on ground that floats: a spire at the center, towers, parks. It looks like a real thing, though not a thing of this world. It is held to "The look" in `reference/kits/README.md` and to the standard of his PC Builder's parts. The second build's model is not kept.
+5. **It is alive.** Lit windows and small lights in the palette's colors, and whatever small movement makes a far off city feel lived in, cheap enough to draw every frame.
+6. **Its glow.** A soft glow behind and above it, of the kind behind his portrait in About: the light a far off city throws into the sky. It has no edge and no rectangle.
+7. **Its falls are the stream's own light,** several off the rim and a main one under the spire. Nothing the second build drew.
+8. **The real stream sets off from the main fall** once the fall has been scrolled up to the reading line, and runs to Work's bar, which it strikes dead center.
+9. **A night sky,** as the wireframe draws it: stars at the top, in the corners and down the sides, none behind the words, pale and warm with no blue, sparse, fewer and fainter toward the city's glow, and gone before Work begins.
+10. **The cursor's light falls on the city,** as on everything else.
+11. **No opening in this pass.** The city and the words are simply there when the page loads. The opening is designed on the finished city, with him. Nothing draws the city's outline.
+12. **It goes on top of the whole page** (`/lab/whole`) once both exist, with the stream unbroken from the main fall into Work.
+13. With reduced motion nothing moves. Under 1100 px the page is a plain stand in.
+
+*Fable's calls, each his to overturn:*
+
+- On a tall screen the city may be drawn larger, so there is no empty band between the buttons and the spire.
+- A small cue at the foot of the first screen says there is more below, and goes once the page is scrolled.
+
+*Not built in this pass:* the opening, the navigation, phones.
 
 ### Work
 

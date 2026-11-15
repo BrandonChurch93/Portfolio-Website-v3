@@ -548,6 +548,20 @@ What the build taught:
 - Look at the plate and the stone beside the things they come from, not alone.
 - Say plainly what is short. He is shown it as soon as it can be scrolled.
 
+## The hero, the city at rest
+
+`BRIEF.md`, Settled, "The hero, the city at rest", is the agreement. It passes when all of these are true:
+
+1. **The layout holds on four screens** (1440 by 900, 1366 by 768, 1920 by 1080, 1720 by 1300), measured: the rim and every fall are under the foot of the screen at rest, about half of the city or more shows, and nothing of the city is behind a word or a button. Give the numbers.
+2. **A stranger shown one still says "a city of the future",** and says it looks like a real model and not a drawing. Close up it is not the weaker work beside `reference/bar/pc-builder-parts.jpg`.
+3. **It passes "The look":** near neutral, three values, copper as an accent, its lights in the palette. Not one orange mass.
+4. **The glow has no edge.** No rectangle, no banding, and it reads as light in the sky and not as fog on the city.
+5. **The sky:** no star behind the words' block, none with any blue in it, none below where Work begins, and fewer near the glow than in the corners. Counted.
+6. **The falls and the stream:** the falls are plainly the stream's own light. In real frames of a scroll the stream leaves the main fall with no gap and no jump and strikes Work's bar dead center.
+7. **Nothing crawls or sparkles** on the city when the page is scrolled slowly or the cursor moves.
+8. **The frame rate holds,** numbers given, with the processor slowed four times as well, and the first frame's cost is given.
+9. **Nothing in Work, Skills, About or Contact has changed.**
+
 ## The whole page so far
 
 `BRIEF.md`, Settled, "The whole page so far", is the agreement. It passes when all of these are true:

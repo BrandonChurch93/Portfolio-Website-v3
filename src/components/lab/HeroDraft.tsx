@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { clock } from '../../world/clock';
-import { CITY, CX, FALLS, OPEN, READ, W, WORK, layout, rimAt, rock, stream, towers } from '../../hero/plan';
+import { CITY, CX, FALLS, OPEN, READ, SKY, W, WORK, layout, rimAt, rock, stars, stream, towers } from '../../hero/plan';
 import styles from './HeroDraft.module.css';
 
 // Study 27, at /lab/hero-draft: the hero's layout as outlines. Layout A, his pick.
@@ -15,12 +15,13 @@ const span = (s: number, [a, b]: readonly [number, number]) => clamp((s - a) / (
 export function HeroDraft() {
   const root = useRef<HTMLDivElement>(null), clip = useRef<SVGRectElement>(null), end = useRef<SVGGElement>(null);
   const [view, setView] = useState({ u: 1, hh: 900 });
-  const [ui, setUi] = useState(true), [notes, setNotes] = useState(true);
+  const [ui, setUi] = useState(true), [notes, setNotes] = useState(true), [sky, setSky] = useState(true);
   const played = useRef<number | null>(null), hold = useRef<number | null>(null);
 
   const L = useMemo(() => layout(view.hh), [view.hh]);
   const line = useMemo(() => stream(L), [L]);
   const blocks = useMemo(() => towers(), []);
+  const lights = useMemo(() => stars(L), [L]);
   const under = useMemo(() => rock(), []);
   const live = useRef({ L, line, view });
   live.current = { L, line, view };
@@ -29,6 +30,7 @@ export function HeroDraft() {
     const q = new URLSearchParams(location.search);
     if (q.get('ui') === '0') setUi(false);
     if (q.get('notes') === '0') setNotes(false);
+    if (q.get('sky') === '0') setSky(false);
     if (q.has('opening')) hold.current = Number(q.get('opening')) || 0;
     const size = () => {
       const u = Math.min(innerWidth, MOST) / W;
@@ -69,17 +71,28 @@ export function HeroDraft() {
   const vars = { '--u': `${view.u}px`, height: `${L.h * view.u}px` } as CSSProperties;
 
   return (
-    <div ref={root} className={styles.page} style={vars} data-notes={notes}>
+    <div ref={root} className={styles.page} style={vars} data-notes={notes} data-sky={sky}>
       <svg className={styles.art} viewBox={`0 0 ${W} ${L.h}`} aria-hidden="true">
         <defs>
           <linearGradient id="hero-fall" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor="var(--flame)" stopOpacity="0.9" />
             <stop offset="1" stopColor="var(--flame)" stopOpacity="0" />
           </linearGradient>
+          <radialGradient id="hero-glow">
+            <stop offset="0" stopColor="var(--flame)" stopOpacity="0.34" />
+            <stop offset="0.3" stopColor="var(--ember)" stopOpacity="0.8" />
+            <stop offset="0.65" stopColor="var(--ember)" stopOpacity="0.28" />
+            <stop offset="1" stopColor="var(--ember-deep)" stopOpacity="0" />
+          </radialGradient>
           <clipPath id="hero-reach">
             <rect ref={clip} x="0" y={L.start} width={W} height="0" />
           </clipPath>
         </defs>
+
+        <g className={styles.sky}>
+          {lights.map((s, i) => <circle key={i} cx={s.x} cy={s.y} r={s.r} opacity={s.o} />)}
+        </g>
+        <ellipse className={styles.skyglow} cx={CX} cy={L.city + CITY.rim - SKY.glow.lift} rx={SKY.glow.rx} ry={SKY.glow.ry} fill="url(#hero-glow)" />
 
         <g className={styles.city} transform={`translate(${CITY.x} ${L.city})`}>
           <path className={styles.rock} d={under} pathLength={1} />
@@ -141,6 +154,7 @@ export function HeroDraft() {
         <div className={styles.switches}>
           <span className={styles.study}>Study 27 · The hero, a wireframe</span>
           <button type="button" onClick={play}>Play the opening</button>
+          <button type="button" aria-pressed={sky} onClick={() => setSky((v) => !v)}>Sky and glow</button>
           <button type="button" aria-pressed={notes} onClick={() => setNotes((v) => !v)}>Notes</button>
         </div>
       )}

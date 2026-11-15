@@ -60,6 +60,29 @@ export function rock(): string {
   return pts.join(' ');
 }
 
+// The night sky: how many stars are tried, the clear ground kept round the words, and how far the city's glow
+// reaches, which is also where it puts the stars out.
+export const SKY = { tries: 900, clear: { rx: 560, ry: 250 }, glow: { rx: 800, ry: 560, lift: 30 } } as const;
+
+export type Star = { x: number; y: number; r: number; o: number };
+
+// Stars at the top, in the corners and down the sides, none behind the words, fewer and fainter toward the city.
+export function stars(l: { words: number; city: number }): Star[] {
+  const out: Star[] = [], foot = l.city + CITY.rim, wy = l.words + WORDS.tall / 2, gy = foot - SKY.glow.lift;
+  for (let i = 0; i < SKY.tries; i++) {
+    const x = hash(i * 3 + 1) * W, y = hash(i * 3 + 2) * foot;
+    const top = 1 - Math.min(1, y / (foot * 0.42)), side = Math.abs(x - CX) / CX;
+    const edge = Math.max(top, side ** 2.2);
+    const inWords = ((x - CX) / SKY.clear.rx) ** 2 + ((y - wy) / SKY.clear.ry) ** 2;
+    const lit = Math.max(0, 1 - Math.hypot((x - CX) / SKY.glow.rx, (y - gy) / SKY.glow.ry));
+    const keep = edge * Math.min(1, Math.max(0, inWords - 1) * 1.6) * (1 - lit) ** 1.5;
+    if (hash(i * 3 + 3) > keep * 0.62) continue;
+    const big = hash(i + 500) > 0.93;
+    out.push({ x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, r: big ? 1.7 : 0.6 + Math.round(hash(i + 700) * 6) / 10, o: Math.round((0.25 + 0.6 * hash(i + 900)) * (big ? 1 : 0.8) * 100) / 100 });
+  }
+  return out;
+}
+
 export type Layout = {
   words: number; city: number; build: number; start: number; tip: number; work: number; h: number; fold: number;
 };

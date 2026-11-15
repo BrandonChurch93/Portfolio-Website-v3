@@ -2,6 +2,45 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · The hero: the sky drawn, the opening paused, and the city handed on (Fable, web chat)
+
+**What Brandon said**
+
+- He likes the layout a lot. The glow he means is like the one behind his portrait: a far off city's light in the sky. He does not want an opening that traces the buildings' outlines. The opening waits until the city is built. He asked for the night sky to be drawn, and for the city's work to be added to what Claude Code has in hand. All in `BRIEF.md`, Settled, Hero.
+
+**What was done**
+
+- `/lab/hero-draft`: a night sky and the city's glow, behind a "Sky and glow" switch. About 150 stars from 900 tries, at the top, in the corners and down the sides, none behind the words, fewer toward the glow.
+- `BRIEF.md`, Settled, "The hero, the city at rest", 13 items, and 9 tests under the same name in `QUALITY.md`.
+- Still: `reference/studies/55-hero-the-night-sky-and-the-glow.jpg`. Its second and third panels were taken before the glow was strengthened.
+
+**What looking at it showed**
+
+- The first glow could barely be seen. It is stronger now, flame at its core falling to ember.
+
+**The prompt Brandon was given, to add to the same Claude Code session**
+
+```
+One more thing for the list, after the whole page. You are still mid-work, so lose nothing: do not stash, reset or discard anything uncommitted, and do not stop a builder that is running.
+
+5. The hero. BRIEF.md, Settled, "The hero, the city at rest" is the agreement, 13 items, and QUALITY.md has its 9 tests under the same name. The wireframe at /lab/hero-draft is the basic version: where things sit and how much of the city shows are agreed, and its look is not. Build it at /lab/hero, then put it on top of /lab/whole.
+
+What I care about most:
+
+- The city is made again from nothing. A futuristic sci-fi city that looks like a real object, not a drawing and not the old model.
+- It feels alive, with a glow behind and above it like the one behind my portrait: a far off city lighting the sky.
+- At rest the city sits low, with its falls under the foot of the screen. Scrolling brings them up, and then the stream sets off from the main fall.
+- A night sky at the top, in the corners and down the sides. Never behind my words. No blue.
+- No opening animation yet. The city is simply there. We design the opening together once I have seen the city.
+
+Show me the city as soon as it stands in the hero, and say plainly what is at the bar and what is not.
+```
+
+**For the next session**
+
+- Waiting on his look at the sky. If he does not want it, item 9 and test 5 come out and the sky line leaves the prompt.
+- After the city exists: the opening, designed on it with him. The three ways Fable offered are not picked.
+
 ## 2026-11-14 · Study 27: the hero, a wireframe of layout A (Fable, web chat)
 
 **What Brandon said**

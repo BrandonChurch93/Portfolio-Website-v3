@@ -17,6 +17,21 @@
   overflow: visible;
 }
 
+/* The night sky and the city's glow. The stars are there before the city is, and the glow comes up with it. */
+.sky {
+  fill: var(--pale);
+}
+
+.skyglow {
+  translate: 0 calc(var(--lift) * var(--u));
+  opacity: calc(var(--draw) * var(--draw));
+}
+
+.page[data-sky='false'] .sky,
+.page[data-sky='false'] .skyglow {
+  display: none;
+}
+
 /* The city is outlines: its look is not in this draft. It draws itself, then moves down to where it rests. */
 .city {
   translate: 0 calc(var(--lift) * var(--u));
