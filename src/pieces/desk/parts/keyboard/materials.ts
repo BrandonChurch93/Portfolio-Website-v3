@@ -49,7 +49,7 @@ uniform vec4 uSharpAt, uSoftAt;
 uniform vec3 uDot[3];
 varying vec4 vCell; varying vec3 vKeyE;
 ${DECODE}
-int kind; float kbLg; float kbTop; float kbEdge;
+int kind; float kbLg; float kbTop; float kbEdge; float kbFine;
 float kbLegend(){
   vec2 uv = vec2((vObj.x - ${f(ATLAS.x0)}) * ${f(ATLAS_PX / ATLAS.w)}, 1.0 - (vObj.z - ${f(ATLAS.z0)}) * ${f(ATLAS_PX / ATLAS.h)});
   return texture2D(uLegend, uv).a;
@@ -61,14 +61,24 @@ float kbLegend(){
   // A cap's rounded top edge is smoother than its face, so it catches a crisp line of the light behind it.
   { float ny = normalize(vObjN).y; kbEdge = kind == ${KIND.cap} ? smoothstep(0.3, 0.55, ny) * (1.0 - smoothstep(0.8, 0.92, ny)) * (1.0 - vCell.z) : 0.0; }
   diffuseColor.rgb = ${byKind(FINISH, 0)};
+  // The case's faces under a millimetre and a half wide (model.ts marks each with its width) are left out once they are
+  // narrower than a pixel: the seam's groove turns flat into the side and the bare chamfer round the well takes the
+  // anodising round it. Drawn, each was a line too thin to land on every pixel, a dashed line that flickered with
+  // the light.
+  kbFine = (kind == ${KIND.body} || kind == ${KIND.cut}) && vCell.y > 0.0 ? 1.0 - smoothstep(0.4, 1.0, vCell.y / length(fwidth(vObj))) : 0.0;
+  if (kind == ${KIND.cut}) diffuseColor.rgb = mix(diffuseColor.rgb, ${lin(FINISH[KIND.body][0])}, kbFine);
   // The two accent caps are copper PBT.
   diffuseColor.rgb = mix(diffuseColor.rgb, ${lin(0x7a4220)}, vCell.z);
   if (kind == ${KIND.cap}) diffuseColor.rgb *= 0.94 + 0.12 * wNoise(vObj * 0.9) * (1.0 - smoothstep(0.08, 0.3, length(fwidth(vObj))));
   // A legend is frosted cream when its key is dark, and gives way to the light as the key comes on.
   diffuseColor.rgb = mix(diffuseColor.rgb, ${lin(0x9c8f7d)} * (1.0 - 0.8 * smoothstep(0.0, 0.35, dot(vKeyE, vec3(0.3, 0.6, 0.1)))), kbLg);`,
-    rough: `roughnessFactor = mix(mix(mix(${byKind(FINISH, 1)}, 0.42, vCell.z), 0.4, kbLg), 0.3, kbEdge);`,
+    rough: `roughnessFactor = mix(mix(mix(mix(${byKind(FINISH, 1)}, 0.42, vCell.z), 0.4, kbLg), 0.3, kbEdge), ${f(FINISH[KIND.body][1])}, kbFine);`,
     metal: `metalnessFactor = ${byKind(FINISH, 2)};`,
     normal: /* glsl */ `
+  if (kind == ${KIND.body} && kbFine > 0.0) {
+    vec3 nb = normalize(vec3(vObjN.x, 0.0, vObjN.z) + 1e-5);
+    normal = normalize(mix(normal, normalize(vAxX * nb.x + vAxY * nb.y + cross(vAxX, vAxY) * nb.z), kbFine));
+  }
   // The knob: fine flutes round its side and turned rings on its top, each gone before it is finer than a pixel, so
   // its edge never glitters as the light moves.
   if (kind == ${KIND.knob}) {

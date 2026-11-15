@@ -14,7 +14,7 @@ export const BOARD_AT = { y: rimAt(0) - CASE.plate, tilt: CASE.tilt * D2R } as c
 // The case, as a profile run round its outline: insets from the outer edge and heights, from the foot of the tray up
 // over the rim and down inside the well to below the plate. A cut face is the bare metal a diamond cutter leaves:
 // the chamfer round the top and the small one round the well.
-const H = CASE.front, IN = CASE.bezel;
+const H = CASE.front, IN = CASE.bezel, FINE = 1.5;
 const PROFILE: [inset: number, y: number, cut: boolean][] = [
   [1.4, 0, false], [0, 1.4, false], [0, CASE.seam - 0.9, false], [0.45, CASE.seam - 0.45, false], [0, CASE.seam, false],
   [0, H - 1.8, false], [1.8, H, true], [IN - 0.6, H, false], [IN, H - 0.6, true], [IN, H - CASE.plate - 1, false],
@@ -28,9 +28,13 @@ export const kind = (g: THREE.BufferGeometry, k: number, at = 0) => tag(g, () =>
 export function caseGeometry(): { body: THREE.BufferGeometry; cut: THREE.BufferGeometry } {
   const out = { body: [] as number[][], cut: [] as number[][] };
   const ring = (i: number) => outline(CW - 2 * i, CD - 2 * i, Math.max(0.8, CASE.r - i), 8, 48, 18);
+  const fine = { body: [] as number[], cut: [] as number[] };
   for (let j = 0; j < PROFILE.length - 1; j++) {
     const [i0, y0] = PROFILE[j], [i1, y1, cut] = PROFILE[j + 1];
     const A = ring(i0), B = ring(i1), pos: number[] = [], nor: number[] = [];
+    // A face of the profile narrower than this is marked with its width, for the shader to fade it out once it is
+    // narrower than a pixel: the seam's groove and the small chamfer round the well.
+    const span = Math.hypot(i1 - i0, y1 - y0), mark = span < FINE ? span : 0;
     const vert = (o: typeof A, k: number, y: number) => {
       const [x, z] = o.p[k], [ox, oz] = o.n[k];
       // The profile's normal: outward by the rise, up by the step in.
@@ -48,6 +52,7 @@ export function caseGeometry(): { body: THREE.BufferGeometry; cut: THREE.BufferG
       vert(A, k1, y0); vert(B, k, y1); vert(B, k1, y1);
     }
     (cut ? out.cut : out.body).push(pos, nor);
+    for (let k = 0; k < pos.length / 3; k++) (cut ? fine.cut : fine.body).push(mark);
   }
   const make = (list: number[][]) => {
     const pos: number[] = [], nor: number[] = [];
@@ -57,7 +62,8 @@ export function caseGeometry(): { body: THREE.BufferGeometry; cut: THREE.BufferG
     g.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
     return g;
   };
-  return { body: kind(make(out.body), KIND.body), cut: kind(make(out.cut), KIND.cut) };
+  const marked = (g: THREE.BufferGeometry, k: number, w: number[]) => { let i = 0; return tag(g, () => [0, w[i++], 0, k]); };
+  return { body: marked(make(out.body), KIND.body, fine.body), cut: marked(make(out.cut), KIND.cut, fine.cut) };
 }
 
 // The plate the switches stand in, in the board's frame: it runs under the well's walls.
@@ -99,7 +105,9 @@ export function stabiliserGeometry(k: Key): { housings: THREE.BufferGeometry[]; 
   const span = k.w >= 6 ? 50 : 11.9, z = k.z + 4.2;
   const housings = [-1, 1].map((s) => kind(new THREE.BoxGeometry(6.4, 6.2, 12.4).translate(k.x + s * span, 3.1, k.z), KIND.rubber));
   const wire = new THREE.CylinderGeometry(0.6, 0.6, 2 * span + 3, 10).rotateZ(Math.PI / 2).translate(k.x, 1.6, z + 4.4);
-  return { housings, wire: kind(wire, KIND.cut) };
+  // The wire is marked like the case's narrow faces, by its radius, so it is gone into the dark gap at the page's size
+  // and back as a wire up close.
+  return { housings, wire: tag(wire, () => [0, 0.6, 0, KIND.cut]) };
 }
 
 // The volume knob: a short dark collar and a turned copper knob with a dished top.

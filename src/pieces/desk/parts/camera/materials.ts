@@ -50,9 +50,14 @@ const COLOR = /* glsl */ `
     float x = uu * vCamCell.x, x2 = fract(uu + 0.5) * vCamCell.x;
     vec2 d1 = vec2(dFdx(x), dFdy(x)), d2 = vec2(dFdx(x2), dFdy(x2));
     camDx = dot(d1, d1) < dot(d2, d2) ? d1 : d2;
-    camFade = 1.0 - smoothstep(0.18, 0.42, length(camDx));
-    float c = cos(6.2831853 * x), s = sin(6.2831853 * x);
-    float sq = max(vCamCell.z, 0.05);
+    float w = length(camDx);
+    camFade = 1.0 - smoothstep(0.18, 0.42, w);
+    // As a rib nears a few pixels across it loses its square top and becomes a plain wave, averaged over the pixel: a
+    // square rib's sharp sides are finer than its pitch, and at four pixels a rib they stepped from pixel to pixel
+    // and swam in rings as the light moved. Up close the ribs are as they were.
+    float bl = w < 1e-3 ? 1.0 : sin(3.1415927 * min(w, 1.0)) / (3.1415927 * min(w, 1.0));
+    float c = cos(6.2831853 * x) * bl, s = sin(6.2831853 * x) * bl;
+    float sq = max(max(vCamCell.z, 0.05), smoothstep(0.08, 0.28, w));
     float t = clamp((c + sq) / (2.0 * sq), 0.0, 1.0);
     camH = t * t * (3.0 - 2.0 * t);
     camDh = (c > -sq && c < sq) ? 6.0 * t * (1.0 - t) / (2.0 * sq) * (-6.2831853 * s) : 0.0;

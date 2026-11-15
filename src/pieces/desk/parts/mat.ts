@@ -42,6 +42,30 @@ function band(w: number, d: number, r: number, from: number, to: number): THREE.
   return g;
 }
 
+// The rolled edge shaded as the round it is. An extrusion's bevel comes with one normal per facet, five facets each
+// narrower than a pixel at the page's size, and which facet a pixel's middle fell on changed its light from pixel to
+// pixel along the edge: a checker that flickered as the light moved. The round's own normal, from its centre line,
+// turns smoothly, and the renderer widens a highlight on a normal that turns within a pixel.
+function roundEdge(g: THREE.BufferGeometry, m: MatShape): void {
+  const side = g.groups.find((x) => x.materialIndex === 1);
+  if (!side) return;
+  const p = g.getAttribute('position'), n = g.getAttribute('normal');
+  const A = m.w / 2 - m.r, B = m.d / 2 - m.r, top = m.h - ROLL, v = new THREE.Vector3();
+  for (let i = side.start; i < side.start + side.count; i++) {
+    const qx = p.getX(i) - m.x, qz = p.getZ(i) - m.z, y = p.getY(i);
+    const cx = THREE.MathUtils.clamp(qx, -A, A), cz = THREE.MathUtils.clamp(qz, -B, B);
+    let ox = qx - cx, oz = qz - cz;
+    const l = Math.hypot(ox, oz);
+    if (l > 1e-6) { ox /= l; oz /= l; } else if (Math.abs(qx) - A > Math.abs(qz) - B) { ox = Math.sign(qx); oz = 0; } else { ox = 0; oz = Math.sign(qz); }
+    const out = l - (m.r - ROLL), up = y > top ? y - top : y < ROLL ? y - ROLL : 0;
+    v.set(ox * Math.max(out, 0), up, oz * Math.max(out, 0));
+    if (v.lengthSq() < 1e-8) v.set(ox, 0, oz);
+    v.normalize();
+    n.setXYZ(i, v.x, v.y, v.z);
+  }
+  n.needsUpdate = true;
+}
+
 export const build: PartFactory = () => {
   const { w, d, x, z, h, r } = SHAPE;
   const group = new THREE.Group();
@@ -49,6 +73,7 @@ export const build: PartFactory = () => {
   const geo = new THREE.ExtrudeGeometry(outline(w, d, r), { depth: h - 2 * ROLL, bevelEnabled: true, bevelThickness: ROLL, bevelSize: ROLL, bevelOffset: -ROLL, bevelSegments: 5, curveSegments: 16 });
   geo.rotateX(-Math.PI / 2);
   geo.translate(x, ROLL, z);
+  roundEdge(geo, SHAPE);
   const sheet = new THREE.Mesh(geo, hide(SHAPE));
   sheet.name = 'mat:hide';
   sheet.castShadow = true;

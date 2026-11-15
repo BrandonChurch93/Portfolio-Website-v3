@@ -16,6 +16,33 @@ const solid = (name: string, color: number, roughness: number, metalness = 0) =>
   return m;
 };
 
+// Under the desk's top. The room the metal reflects throws no shadow, so the case's roof mirrored as much of it as the
+// mat above and read as standing through the top. Its upward faces (the roof, and the perforated field in it) take
+// only what reaches in under a table top: a third at its front, a fifth at its back. Only the roof: what faces up
+// inside the case is lit through the glass and stays as it was. The roof's height is in the case's own millimetres,
+// with the floor at 0, and the front and back in metres from the case's middle, toward the visitor and away.
+const ROOF = 400;
+const UNDER = { front: 0.32, back: 0.2, from: 0.08, to: -0.14 } as const;
+const UNDER_VERT = /* glsl */ `
+{ vec3 wn = normalize(mat3(modelMatrix) * normal); vec4 ww = modelMatrix * vec4(position, 1.0);
+  float back = smoothstep(${UNDER.from.toFixed(2)}, ${UNDER.to.toFixed(2)}, ww.z - modelMatrix[3].z);
+  vPcUnder = mix(1.0, mix(${UNDER.front.toFixed(2)}, ${UNDER.back.toFixed(2)}, back), smoothstep(0.5, 0.85, wn.y) * step(${ROOF.toFixed(1)}, position.y)); }`;
+const UNDER_FRAG = `
+#if defined( RE_IndirectSpecular )
+  radiance *= vPcUnder;
+#endif
+  iblIrradiance *= vPcUnder;`;
+function underTop<M extends THREE.MeshStandardMaterial>(m: M, key: string): M {
+  const before = m.onBeforeCompile.bind(m);
+  m.onBeforeCompile = (sh, r) => {
+    before(sh, r);
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying float vPcUnder;').replace('#include <begin_vertex>', `#include <begin_vertex>\n${UNDER_VERT}`);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vPcUnder;').replace('#include <lights_fragment_maps>', `#include <lights_fragment_maps>\n${UNDER_FRAG}`);
+  };
+  m.customProgramCacheKey = () => key;
+  return m;
+}
+
 // The light ramp every lit thing reads its tone from: ember, flame, hot, pale.
 const RAMP = /* glsl */ `
 vec3 pcTone(float t){
@@ -92,7 +119,7 @@ export function makeLook(print: THREE.Texture, board: THREE.Texture): Look {
   const lampK = { value: 1 };
   const cursor = { value: new THREE.Vector3() };
   const center = { value: new THREE.Vector3() };
-  const shell = solid('pc-shell', 0x232221, 0.4, 1);
+  const shell = underTop(solid('pc-shell', 0x232221, 0.4, 1), 'pc-shell');
   const inner = solid('pc-inner', 0x121111, 0.72);
   const accent = solid('pc-accent', 0x2f2d2b, 0.42, 1);
   const plastic = solid('pc-plastic', 0x141312, 0.58);
@@ -140,6 +167,7 @@ export function makeLook(print: THREE.Texture, board: THREE.Texture): Look {
     diffuseColor.a = mix(mix(0.06, 1.0, solid), vPerf.y, far); }`,
   });
   perf.name = 'pc-perf';
+  underTop(perf, 'pc-perf');
 
   // The fans' blades: smoked plastic that carries the light of the fan's rings in from its rim, brightest by the hub's
   // ring, as the PC Builder's Aureole blades do. Each fan's tone and strength come in its instance color.
