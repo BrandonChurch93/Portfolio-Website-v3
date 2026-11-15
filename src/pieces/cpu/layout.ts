@@ -21,9 +21,11 @@ export const IHS = { skirt: [19, 15.5] as P2, wing: [21.3, 7] as P2, top: [16.5,
 export const BODY = { out: [24.5, 21.8] as P2, cav: [23.7, 20.45] as P2, top: 2.6, floor: 0.8 } as const;
 // The steel frame screwed to the board round the body, and the load plate hinged at its right end.
 export const FRAME = { out: [31, 25.4] as P2, t: 0.9 } as const;
-export const PLATE = { out: [25.5, 22.6] as P2, win: [17, 20.85] as P2, y: 3.55, t: 0.8, hinge: [27.2, 3.95] as P2, tongue: 30.2 } as const;
-// The lever: a rod along the front side, turning about its own line.
-export const LEVER = { z: 26.6, y: 2.0, r: 0.95, x0: -22, x1: 28.4, handle: 33.6 } as const;
+// The window reaches past the lid's skirt at each end, so the lid's wings cross the gap and pass under the plate.
+export const PLATE = { out: [25.5, 22.6] as P2, win: [20.4, 20.85] as P2, y: 3.55, t: 0.8, hinge: [27.2, 3.95] as P2, tongue: 30.2 } as const;
+// The lever: an axle across the plate's hinge end (x1), turning in two bearings, with a cam in its middle that bears
+// on the plate; an arm along the front side to x0; a handle bent out to z handle, which clips under the hook.
+export const LEVER = { z: 26.6, y: 2.0, r: 0.95, x0: -22, x1: 29.8, handle: 33.6, axle: -12, cam: [-1.5, 9.5] as P2, hook: -17.4 } as const;
 export const SCREWS: P2[] = [[-28, -22], [28, -22], [-28, 22], [28, 22]];
 export const SHOULDER: P2 = [-28.6, 0];
 

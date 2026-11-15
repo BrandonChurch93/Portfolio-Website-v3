@@ -2,23 +2,25 @@ import * as THREE from 'three';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 import { lin } from '../../world/surface';
 import { hex } from '../../config/palette';
 import type { Tier } from '../../config/site';
 import { clock } from '../../world/clock';
 import type { PieceOptions } from '../../world/piece';
 import { Stage } from '../../world/stage';
+import { trueDarks } from '../../world/tone';
 import { WAYS, type Anchor, type StruckPiece, type Way } from '../../world/struck';
 import { MONO, SANS } from './art';
-import { BOARD, BUNDLES, DEG, SOCKET, STRIKE } from './layout';
+import { BOARD, DEG, IHS, SOCKET, STRIKE } from './layout';
 import { LIFE, Life, type LifeAt } from './life';
 import { buildCpu, type CpuModel } from './model';
 import { PARTS_MAX, PART_TEXELS } from './shading';
-import { shardGeometry, shardMaterial } from './shard';
+import { shardMeshes, shardUniforms, SHARD_KINDS } from './shard';
 
 // The processor in its socket, at the left of the first row of skills. It is not on the page until the stream
-// strikes it, and comes on in one of three ways (./life.ts). With the stream on it, light pulses out of the seam
-// round the processor and runs out along the traces.
+// strikes it, and comes on in one of three ways (./life.ts). With the stream on it, light leaves the seam round the
+// processor and runs out along the traces.
 
 export { LIFE };
 
@@ -28,10 +30,10 @@ export { LIFE };
 const VIEW = { az: 28, el: 50, fov: 18, across: 0.73 } as const;
 const MM = 0.001;
 const STRIKE_W = new THREE.Vector3(STRIKE.x, STRIKE.y, STRIKE.z).multiplyScalar(MM);
+const EYE_DIR = new THREE.Vector3(-Math.sin(VIEW.az * DEG) * Math.cos(VIEW.el * DEG), Math.sin(VIEW.el * DEG), Math.cos(VIEW.az * DEG) * Math.cos(VIEW.el * DEG));
 
 function framing(): { target: THREE.Vector3; dist: number; strike: Anchor } {
   const cam = new THREE.PerspectiveCamera(VIEW.fov, 1, 0.01, 10);
-  const dir = new THREE.Vector3(-Math.sin(VIEW.az * DEG) * Math.cos(VIEW.el * DEG), Math.sin(VIEW.el * DEG), Math.cos(VIEW.az * DEG) * Math.cos(VIEW.el * DEG));
   const h = BOARD.half * MM, t = BOARD.thick * MM;
   const corners: THREE.Vector3[] = [];
   for (const x of [-h, h]) for (const z of [-h, h]) for (const y of [0, -t]) corners.push(new THREE.Vector3(x, y, z));
@@ -39,7 +41,7 @@ function framing(): { target: THREE.Vector3; dist: number; strike: Anchor } {
   let dist = 0.6, strike: Anchor = [0, 0];
   const at = (v: THREE.Vector3): Anchor => { p.copy(v).project(cam); return [p.x / 2, -p.y / 2]; };
   for (let it = 0; it < 60; it++) {
-    cam.position.copy(target).addScaledVector(dir, dist);
+    cam.position.copy(target).addScaledVector(EYE_DIR, dist);
     cam.lookAt(target);
     cam.updateMatrixWorld(true);
     let lo = Infinity, hi = -Infinity;
@@ -57,38 +59,40 @@ const FRAME = framing();
 
 export const CPU: { strike: Anchor } = { strike: FRAME.strike };
 
-// The lights. The cursor's light sits where the board would mirror it to the eye at the point under the cursor, so
-// its highlight crosses the lid and the mask with the cursor.
-const LAMP = { power: 0.11, reach: 0.34, height: 0.004, bound: 0.2 } as const;
-// The key stands high behind the far side, turned well away from where flat faces would mirror it to the eye: what
-// catches it is the top of every part and each rounded edge, and each part throws a short shadow toward the near left.
-const KEY = { power: 2.2, at: [0.3, 0.33, -0.1] as const };
-// A thin rim low from the left, for the left faces of the parts.
-// A narrow light for the lid alone, standing where the lid mirrors it to the eye at rest: the lid carries a soft lit
-// streak in its brushing wherever the cursor is.
-const LID = { power: 0.06, reach: 0.34, angle: 0.085 } as const;
-const RIM = { power: 2.2, at: [-0.32, 0.075, -0.05] as const };
-const ENV = 0.36;
-const FILL = 0.04;
-const STRIKE_LIGHT = { base: 0.012, flash: 0.02, life: 0 } as const;
-// The flash way's first light: an even wash in the stream's colour that throws no glint, from the strike's side.
-const FLASH_FILL = 1.4;
-// In the flash way the key is the strike's light: low and hot from the struck corner, throwing long shadows across
-// the board, and it moves back to its own place as the room comes up.
-const FLASH_KEY = { power: 26, at: [-0.34, 0.085, -0.3] as const };
-const BAND_LIGHT = 0.03;
+// The room's light: the palette's pale taken most of the way to its warm off white, so steel lit by it reads as
+// steel and not as copper. The stream's own light stays ember to pale.
+const ROOM_LIGHT = new THREE.Color(hex('pale')).lerp(new THREE.Color(hex('text')), 0.62);
+// The cursor's light sits where the board would mirror it to the eye at the point under the cursor, so its
+// highlight crosses the lid and the plate with the cursor.
+const LAMP = { power: 0.03, reach: 0.34, height: 0.004, bound: 0.2 } as const;
+// The key, high at the front left: it gives the whole thing its range at rest, from the near black mask to small
+// glints on the steel's edges, and throws each part's short shadow back and to the right.
+const KEY = { power: 0.55, at: [-0.3, 0.44, 0.22] as const, soft: 2.5 };
+// The rim, low behind: a crisp line along the top edge of every part.
+const RIM = { power: 0.9, at: [0.12, 0.06, -0.42] as const };
+// Two long strip lights, where the flat lid and plate mirror them to the eye: each lies across the lid as a sharp
+// band, and the bands slide over the lid and the plate as the piece turns toward the cursor.
+const STRIPS = [
+  { power: 2.4, w: 0.55, h: 0.011, along: 0.3, tilt: 0 },
+  { power: 1.2, w: 0.5, h: 0.008, along: 0.36, tilt: -7 },
+] as const;
+const ENV = 0.3;
+const FILL = 0.06;
+// The flash way: the key becomes the strike's flash, from the struck side and higher than the stream, its shadows
+// soft and filled, and moves back to its own place as the room comes up.
+const FLASH_KEY = { power: 6, at: [-0.32, 0.26, -0.22] as const, soft: 7, fill: 0.16 };
+const STRIKE_LIGHT = { base: 0.0012, flash: 0.014 } as const;
 const TURN = { yaw: 5, pitch: 3, omega: 6.5 } as const;
 // The canvas fades out at its rim, and fully outside the middle of the host's height where the row's borders run.
 const MASK = 'linear-gradient(to right, transparent 2%, #000 12%, #000 88%, transparent 98%), linear-gradient(to bottom, transparent 5%, #000 11%, #000 89%, transparent 95%)';
-// The bloom keeps to its finest levels, so a glow stays within a few pixels of what makes it and never fills the canvas.
-const BLOOM_LEVELS = [1.0, 0.45, 0.08, 0, 0];
+// The shards: how many of one kind can fly at once.
+const SHARDS_MOST = 64;
 
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
-// The bloom: only the stream's own light blooms, and only a little.
-const BLOOM = 0.22;
+const smooth = (k: number) => { k = clamp(k, 0, 1); return k * k * (3 - 2 * k); };
 
 // Before the picture is tone mapped, every pixel's peak is eased under a ceiling and the hottest are drawn toward pale
-// gold, so a glint on metal stays a small sharp gold point and nothing anywhere goes to white.
+// gold, so a glint stays a small sharp gold point and nothing anywhere goes to white.
 const CEILINGS = new WeakSet<object>();
 function ceiling(): ShaderPass {
   const p = new ShaderPass({
@@ -97,12 +101,13 @@ function ceiling(): ShaderPass {
     fragmentShader: `uniform sampler2D tDiffuse; varying vec2 vUv;
 void main(){
   vec4 c = texture2D(tDiffuse, vUv);
+  c.rgb = max(c.rgb, 0.0);
   float m = max(c.r, max(c.g, c.b));
-  const float k = 0.5;
+  const float k = 0.55;
   if (m > k) {
-    float n = k + (0.86 - k) * (1.0 - exp(-(m - k) / (0.86 - k)));
-    vec3 hue = mix(c.rgb / m, ${lin(hex('pale'))}, smoothstep(0.62, 0.86, n) * 0.75);
-    c.rgb = hue / max(hue.r, max(hue.g, hue.b)) * n;
+    float n = k + (0.84 - k) * (1.0 - exp(-(m - k) / (0.84 - k)));
+    vec3 hue = mix(c.rgb / m, ${lin(hex('pale'))}, smoothstep(0.66, 0.84, n) * 0.7);
+    c.rgb = hue / max(max(hue.r, max(hue.g, hue.b)), 1e-4) * n;
   }
   gl_FragColor = c;
 }`,
@@ -110,24 +115,8 @@ void main(){
   CEILINGS.add(p);
   return p;
 }
-const cpuH = (n: number) => { n = (n * 0.1031) % 1; if (n < 0) n += 1; n *= n + 33.33; n *= n + n; return n % 1; };
 
-// How brightly the seam flares as the waves leave it: the same schedule as the shader's, summed over the bundles.
-function seam(t: number): number {
-  let s = 0;
-  for (let b = 0; b < BUNDLES.length; b++) {
-    const tau = t * (0.95 + 0.4 * cpuH(b * 7.13 + 1)) + cpuH(b * 3.31 + 2) * 5;
-    const k0 = Math.floor(tau);
-    for (let j = 0; j < 2; j++) {
-      const k = k0 - j, key = k * 1.618 + b * 17;
-      const e = k + 0.5 * cpuH(key + 0.5);
-      const amp = (0.55 + 0.45 * cpuH(key + 1.5)) * (cpuH(key + 2.5) >= 0.12 ? 1 : 0);
-      const x = tau - e;
-      if (x >= -0.2) s += amp * Math.exp(-(((x - 0.02) / 0.09) ** 2));
-    }
-  }
-  return 0.28 + 0.48 * Math.min(1.5, s);
-}
+let areaLib = false;
 
 export function createCpu(): StruckPiece {
   let stage: Stage | null = null;
@@ -143,25 +132,27 @@ export function createCpu(): StruckPiece {
   let lampUV = { x: 0.62, y: 0.3 };
   let lifeIn: { way: Way; age: number } = { way: 'shards', age: -1 };
   let streamIn = { on: 0, since: 60 };
-  let forced: { az: number; el: number; d: number } | null = null;
+  let forced: { az: number; el: number; d: number; at?: THREE.Vector3 } | null = null;
   let last = '';
   const turn = new THREE.Group();
   const yaw = { x: 0, v: 0 }, pitch = { x: 0, v: 0 };
   let key: THREE.SpotLight | null = null;
   let rim: THREE.SpotLight | null = null;
-  let lidLight: THREE.SpotLight | null = null;
+  const strips: THREE.RectAreaLight[] = [];
   let fill: THREE.HemisphereLight | null = null;
   let flashFill: THREE.HemisphereLight | null = null;
   let strikeLight: THREE.PointLight | null = null;
-  let bandLight: THREE.PointLight | null = null;
-  let shards: THREE.InstancedMesh | null = null;
-  let boardMat: THREE.Material | null = null;
+  let shards: THREE.InstancedMesh[] = [];
+  let shadowU: { value: number } | null = null;
+  const su = shardUniforms();
   const partData = new Float32Array(PART_TEXELS * PARTS_MAX * 4);
   const ray = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
   const tmp = new THREE.Matrix4();
-  const one = new THREE.Vector3();
   const color = new THREE.Color();
+  const eye = new THREE.Vector3();
+  const KEY_AT = new THREE.Vector3(...KEY.at), FLASH_AT = new THREE.Vector3(...FLASH_KEY.at);
+  const ROOM = ROOM_LIGHT.clone(), HOT = new THREE.Color(hex('hot'));
 
   const time = () => hold ?? clock.now();
   const still = () => clock.isFrozen() || hold !== null;
@@ -171,12 +162,11 @@ export function createCpu(): StruckPiece {
     if (!stage) return;
     const cam = stage.camera;
     if (forced) {
-      const a = forced.az * DEG, e = forced.el * DEG, c = new THREE.Vector3(0, 0, 0);
+      const a = forced.az * DEG, e = forced.el * DEG, c = forced.at ?? new THREE.Vector3();
       cam.position.set(c.x - forced.d * Math.cos(e) * Math.sin(a), c.y + forced.d * Math.sin(e), c.z + forced.d * Math.cos(e) * Math.cos(a));
       cam.lookAt(c);
     } else {
-      const dir = new THREE.Vector3(-Math.sin(VIEW.az * DEG) * Math.cos(VIEW.el * DEG), Math.sin(VIEW.el * DEG), Math.cos(VIEW.az * DEG) * Math.cos(VIEW.el * DEG));
-      cam.position.copy(FRAME.target).addScaledVector(dir, FRAME.dist);
+      cam.position.copy(FRAME.target).addScaledVector(EYE_DIR, FRAME.dist);
       cam.lookAt(FRAME.target);
     }
     cam.updateMatrixWorld(true);
@@ -201,7 +191,8 @@ export function createCpu(): StruckPiece {
   };
 
   const spring = (s: { x: number; v: number }, goal: number, dt: number) => {
-    if (still() || quiet() || dt <= 0) { if (still() || quiet()) { s.x = goal; s.v = 0; } return; }
+    if (still() || quiet()) { s.x = goal; s.v = 0; return; }
+    if (dt <= 0) return;
     const w = TURN.omega, step = Math.min(dt, 1 / 30);
     s.v += (w * w * (goal - s.x) - 2 * w * s.v) * step;
     s.x += s.v * step;
@@ -209,57 +200,75 @@ export function createCpu(): StruckPiece {
   };
 
   const apply = (L: LifeAt, on: number, since: number, t: number) => {
-    if (!stage || !model || !key || !fill || !strikeLight || !bandLight || !shards) return;
+    if (!stage || !model || !key || !rim || !fill || !flashFill || !strikeLight) return;
     const u = model.u;
     turn.visible = L.show;
     turn.position.copy(STRIKE_W);
     turn.rotation.set(pitch.x * DEG, yaw.x * DEG, 0, 'YXZ');
     model.root.position.copy(STRIKE_W).multiplyScalar(-1);
+    place();
+    turn.updateMatrixWorld(true);
     (u.uParts.value.image.data as Float32Array).set(partData);
     u.uParts.value.needsUpdate = true;
-    const glow = on * L.lights;
-    stage.bloom.strength = BLOOM * glow;
+    const lightsOn = L.lit >= 0 ? smooth(L.lit / 0.05) : 0;
+    const glow = on * lightsOn;
     u.uGlow.value = glow;
-    u.uFront.value = L.front;
+    u.uLit.value = t - L.lit;
     u.uTime.value = t;
     u.uStatic.value = quiet() ? 1 : 0;
-    u.uSeam.value = quiet() ? 0.62 : seam(t);
     u.uBandOn.value = L.band ? 1 : 0;
-    u.uBeat.value = quiet() ? 0 : L.beat;
-    if (!quiet()) u.uSeam.value += 1.2 * L.beat;
     if (L.band) u.uBand.value.set(L.band.c[0], L.band.c[1], L.band.r, L.band.k);
-    (model.shadow.material as THREE.ShaderMaterial).uniforms.uShadow.value = L.shadow;
-    const seat = (boardMat?.userData.uniforms as { uSeat?: { value: number } } | undefined)?.uSeat;
-    if (seat) seat.value = L.seat;
+    u.uEye.value.copy(model.root.worldToLocal(eye.copy(stage.camera.position)));
+    if (shadowU) shadowU.value = L.shadow;
     const room = L.show ? L.room : 0;
-    const fk = L.show ? L.flash : 0;
-    key.position.set(...KEY.at).lerp(new THREE.Vector3(...FLASH_KEY.at), fk > 0.02 ? 1 : 0);
-    key.color.set(hex('pale')).lerp(new THREE.Color(hex('hot')), Math.min(1, fk * 1.5));
-    key.intensity = fk > 0.02 ? FLASH_KEY.power * fk + KEY.power * room * 0.3 : KEY.power * room;
-    if (rim) rim.intensity = RIM.power * room;
-    if (lidLight) lidLight.intensity = LID.power * room * L.lid;
+    // The flash way's key: the strike's flash, moving back to the key's own place as it fades.
+    const w = L.show ? smooth(L.flash * 1.3) : 0;
+    key.position.copy(KEY_AT).lerp(FLASH_AT, w);
+    key.color.copy(ROOM).lerp(HOT, w);
+    key.intensity = KEY.power * room * (1 - w) + FLASH_KEY.power * w;
+    key.shadow.radius = KEY.soft + (FLASH_KEY.soft - KEY.soft) * w;
+    rim.intensity = RIM.power * room;
     fill.intensity = FILL * room;
-    stage.scene.environmentIntensity = ENV * (0.08 + 0.92 * room);
+    flashFill.intensity = FLASH_KEY.fill * w;
+    // Metal is seen by what it mirrors, so in the flash the room's reflections stay up: a flat lid lit by one raking
+    // light alone mirrors the dark and reads as a hole.
+    stage.scene.environmentIntensity = ENV * (0.1 + 0.9 * Math.max(room, 0.75 * w));
+    strips.forEach((st, i) => { st.intensity = STRIPS[i].power * Math.max(room, 0.4 * w); });
     stage.lamp.intensity = LAMP.power * room;
     // The strike's flash is the stream's leading end arriving, so it does not wait for the stream to come up.
     const flash = since >= 0 && since < 1.5 ? Math.exp(-since / 0.12) * Math.min(1, since / 0.02) : 0;
-    if (flashFill) flashFill.intensity = L.show ? FLASH_FILL * (L.flash + 0.35 * flash) : 0;
-    strikeLight.intensity = L.show ? on * STRIKE_LIGHT.base + STRIKE_LIGHT.flash * flash + STRIKE_LIGHT.life * L.flash : 0;
-    model.led.emissiveIntensity = L.show ? L.lights * 2.4 : 0;
-    if (L.band) {
-      const a = Math.atan2(BOARD.half - L.band.c[1], BOARD.half - L.band.c[0]);
-      bandLight.position.set((L.band.c[0] + Math.cos(a) * (L.band.r - 6)) * MM, 0.009, (L.band.c[1] + Math.sin(a) * (L.band.r - 6)) * MM);
-      bandLight.intensity = BAND_LIGHT * L.band.k;
-    } else bandLight.intensity = 0;
-    shards.count = L.shards.length;
-    L.shards.forEach((s, i) => {
-      tmp.compose(s.p, s.q, s.size);
-      shards!.setMatrixAt(i, tmp);
-      shards!.setColorAt(i, color.setRGB(s.glow, 0, 0));
+    strikeLight.intensity = L.show ? on * STRIKE_LIGHT.base + STRIKE_LIGHT.flash * flash : 0;
+    model.led.emissiveIntensity = L.show ? glow * 2.2 : 0;
+    // The shards, in this canvas's pixels.
+    const W = stage.width, H = stage.height;
+    const unit = H / 220;
+    su.uHost.value.set(W, H);
+    su.uPx.value = H / (2 * FRAME.dist * Math.tan((VIEW.fov / 2) * DEG));
+    su.uDepth.value = FRAME.dist;
+    su.uCoreAt.value.set(W / 2 + FRAME.strike[0] * H, H / 2 + FRAME.strike[1] * H);
+    su.uUnit.value = unit;
+    su.uDpr.value = stage.renderer.getPixelRatio();
+    su.uLamp.value.set(lampUV.x * W, lampUV.y * H, 120 * unit);
+    su.uLampI.value = 0.5 * (0.3 + 0.7 * room);
+    su.uExposure.value = stage.renderer.toneMappingExposure;
+    const counts = new Array<number>(SHARD_KINDS).fill(0);
+    for (const s of L.shards) {
+      const mesh = shards[s.kind], n = counts[s.kind];
+      if (!mesh || n >= SHARDS_MOST) continue;
+      tmp.compose(s.p, s.q, s.s);
+      mesh.setMatrixAt(n, tmp);
+      // Near the cursor a shard catches its light, as the stream's do.
+      const sp = model.root.localToWorld(eye.copy(s.p)).project(stage.camera);
+      const dx = lampUV.x * W - (sp.x * 0.5 + 0.5) * W, dy = lampUV.y * H - (0.5 - sp.y * 0.5) * H;
+      mesh.setColorAt(n, color.setRGB(1, Math.exp(-(dx * dx + dy * dy) / (170 * unit) ** 2), 0));
+      counts[s.kind] = n + 1;
+    }
+    shards.forEach((m, k) => {
+      m.count = counts[k];
+      m.visible = counts[k] > 0;
+      m.instanceMatrix.needsUpdate = true;
+      if (m.instanceColor) m.instanceColor.needsUpdate = true;
     });
-    shards.instanceMatrix.needsUpdate = true;
-    if (shards.instanceColor) shards.instanceColor.needsUpdate = true;
-    place();
     placeLamp();
   };
 
@@ -272,12 +281,12 @@ export function createCpu(): StruckPiece {
     const L = life.at(lv.way, lv.age, partData);
     spring(yaw, clamp((lampUV.x - 0.5) * 2, -1, 1) * TURN.yaw, dt);
     spring(pitch, clamp((lampUV.y - 0.5) * 2, -1, 1) * TURN.pitch, dt);
-    const pulsing = sv.on * L.lights > 0.0005 && !quiet();
+    const pulsing = sv.on > 0.0005 && L.lit >= 0 && !quiet();
     const len = LIFE[lv.way];
     const sig = [
-      lampUV.x.toFixed(4), lampUV.y.toFixed(4), lv.way, lv.age <= 0 ? 'none' : lv.age >= len ? 'whole' : lv.age.toFixed(4), sv.on.toFixed(4),
+      lampUV.x.toFixed(4), lampUV.y.toFixed(4), lv.way, lv.age <= 0 ? 'none' : lv.age >= len + 0.6 ? 'whole' : lv.age.toFixed(4), sv.on.toFixed(4),
       sv.on > 0 && sv.since < 1.5 ? sv.since.toFixed(3) : '-', yaw.x.toFixed(4), pitch.x.toFixed(4), stage.width, stage.height, pulsing ? t.toFixed(4) : '-', stage.tier,
-      forced ? `${forced.az},${forced.el},${forced.d}` : '-',
+      forced ? `${forced.az},${forced.el},${forced.d},${forced.at?.toArray().join(',') ?? ''}` : '-',
     ].join('|');
     if (sig === last && !force) return;
     last = sig;
@@ -310,11 +319,14 @@ export function createCpu(): StruckPiece {
       canvas.style.setProperty('-webkit-mask-composite', 'source-in');
       h.appendChild(canvas);
       await Promise.all([`500 20px ${MONO}`, `600 20px ${MONO}`, `700 20px ${MONO}`, `300 20px ${SANS}`, `600 20px ${SANS}`].map((f) => document.fonts.load(f).catch(() => null)));
-      stage = new Stage(h, canvas, { tier: opts.tier, fov: VIEW.fov, near: 0.05, far: 3, env: 'studio', envIntensity: ENV, bloom: { strength: 0.3, threshold: 1.6, radius: 0 }, lampTarget: [0, 0, 0], lampAngle: 0.62, exposure: 1.2 });
+      if (!areaLib) { RectAreaLightUniformsLib.init(); areaLib = true; }
+      stage = new Stage(h, canvas, { tier: opts.tier, fov: VIEW.fov, near: 0.05, far: 3, env: 'studio', envIntensity: ENV, bloom: { strength: 0.3, threshold: 3.4, radius: 0 }, lampTarget: [0, 0, 0], lampAngle: 0.62, exposure: 1.15 });
+      trueDarks(stage.renderer);
       noAO();
-      (stage.bloom.compositeMaterial.uniforms.bloomFactors as { value: number[] }).value = BLOOM_LEVELS;
+      // No bloom: it rounded the cursor's smallest glints into beads. The stream's own glow is drawn by the page.
+      stage.bloom.enabled = false;
       stage.lamp.penumbra = 0.9;
-      stage.lamp.color.set(hex('pale'));
+      stage.lamp.color.copy(ROOM_LIGHT);
       stage.lamp.shadow.camera.near = 0.05;
       stage.lamp.shadow.camera.far = 1.2;
       stage.lamp.shadow.bias = -0.0004;
@@ -322,55 +334,55 @@ export function createCpu(): StruckPiece {
       stage.lamp.shadow.radius = 3;
       model = await buildCpu();
       life = new Life(model.parts);
-      boardMat = model.meshes.find((m) => (m.material as THREE.Material).name === 'cpuBoard')?.material as THREE.Material ?? null;
+      shadowU = (model.shadow.material as THREE.ShaderMaterial).uniforms.uShadow as { value: number };
       const s = stage.scene;
       turn.add(model.root);
       s.add(turn);
-      key = new THREE.SpotLight(hex('pale'), KEY.power, 0, 0.42, 0.85, 2);
-      key.position.set(...KEY.at);
+      place();
+      turn.position.copy(STRIKE_W);
+      model.root.position.copy(STRIKE_W).multiplyScalar(-1);
+      turn.updateMatrixWorld(true);
+      life.setEye(model.root.worldToLocal(eye.copy(stage.camera.position)));
+      key = new THREE.SpotLight(ROOM_LIGHT, KEY.power, 0, 0.42, 0.85, 2);
+      key.position.copy(KEY_AT);
       key.target.position.set(0, 0, 0);
       key.castShadow = true;
       key.shadow.mapSize.set(2048, 2048);
       key.shadow.bias = -0.0002;
       key.shadow.normalBias = 0.0012;
-      key.shadow.radius = 2.5;
+      key.shadow.radius = KEY.soft;
       key.shadow.camera.near = 0.2;
-      key.shadow.camera.far = 0.8;
-      rim = new THREE.SpotLight(hex('pale'), RIM.power, 0, 0.5, 0.6, 2);
+      key.shadow.camera.far = 0.9;
+      rim = new THREE.SpotLight(ROOM_LIGHT, RIM.power, 0, 0.5, 0.6, 2);
       rim.position.set(...RIM.at);
       rim.target.position.set(0.01, 0.004, 0);
-      s.add(rim, rim.target);
-      {
-        const c = new THREE.Vector3(SOCKET.x, 5.35, SOCKET.z).multiplyScalar(MM);
-        place();
-        const eye = stage.camera.position.clone().sub(c).normalize();
-        lidLight = new THREE.SpotLight(hex('pale'), LID.power, 0, LID.angle, 0.7, 2);
-        lidLight.position.copy(c).addScaledVector(new THREE.Vector3(-eye.x, eye.y, -eye.z), LID.reach);
-        lidLight.target.position.copy(c);
-        s.add(lidLight, lidLight.target);
+      // The strips stand where the lid mirrors them to the eye at rest, one a little higher than the other.
+      const lidAt = new THREE.Vector3(SOCKET.x, IHS.y2, SOCKET.z).multiplyScalar(MM);
+      const mirror = EYE_DIR.clone().multiply(new THREE.Vector3(-1, 1, -1));
+      for (const st of STRIPS) {
+        const dir = mirror.clone().applyAxisAngle(new THREE.Vector3(mirror.z, 0, -mirror.x).normalize(), st.tilt * DEG);
+        const l = new THREE.RectAreaLight(ROOM_LIGHT, st.power, st.w, st.h);
+        l.position.copy(lidAt).addScaledVector(dir, st.along);
+        l.lookAt(lidAt);
+        strips.push(l);
+        s.add(l);
       }
-      fill = new THREE.HemisphereLight(new THREE.Color(hex('pale')).multiplyScalar(0.6), new THREE.Color(hex('bg-3')), FILL);
+      fill = new THREE.HemisphereLight(ROOM_LIGHT.clone().multiplyScalar(0.6), new THREE.Color(hex('bg-3')), FILL);
       strikeLight = new THREE.PointLight(hex('hot'), 0, 0, 2);
       strikeLight.position.set((STRIKE.x - 12) * MM, 4 * MM, (STRIKE.z - 12) * MM);
-      bandLight = new THREE.PointLight(hex('hot'), 0, 0, 2);
+      flashFill = new THREE.HemisphereLight(new THREE.Color(hex('hot')), new THREE.Color(hex('ember-deep')), 0);
       // Every light stands in the scene itself and is never hidden, only dimmed: a light that comes or goes changes
       // every program, and three would build them all again in the middle of the strike.
-      s.add(strikeLight, bandLight);
-      flashFill = new THREE.HemisphereLight(new THREE.Color(hex('hot')), new THREE.Color(hex('ember-deep')), 0);
-      s.add(key, key.target, fill, flashFill);
-      shards = new THREE.InstancedMesh(shardGeometry(), shardMaterial(), PARTS_MAX);
-      shards.setColorAt(0, color.setRGB(0, 0, 0));
-      shards.count = 0;
-      shards.frustumCulled = false;
-      shards.userData.noWire = true;
-      model.root.add(shards);
+      s.add(key, key.target, rim, rim.target, fill, flashFill, strikeLight);
+      shards = shardMeshes(su, SHARDS_MOST);
+      for (const m of shards) model.root.add(m);
       stage.resize();
-      place();
       apply(life.at(lifeIn.way, lifeIn.age, partData), 0, 60, time());
       await stage.warm();
       // Draws every state it can be in once, so no program is first needed in the middle of a strike.
       for (const way of WAYS) for (const k of [0.04, 0.2, 0.45, 0.7, 0.9, 2]) for (const on of [0, 1]) {
         apply(life.at(way, LIFE[way] * k, partData), on, on ? 0.05 : 60, 3);
+        for (const m of shards) { m.visible = true; m.count = Math.max(m.count, 1); }
         stage.render();
       }
       apply(life.at(lifeIn.way, lifeIn.age, partData), 0, 60, time());
@@ -402,13 +414,18 @@ export function createCpu(): StruckPiece {
     // Where the stream meets it, measured from the frame as drawn now, in host heights from the host's middle.
     measure(): Anchor | null {
       if (!stage || !host) return null;
-      const p = new THREE.Vector3();
-      model?.root.updateMatrixWorld(true);
-      turn.updateMatrixWorld(true);
-      p.copy(STRIKE_W);
-      p.project(stage.camera);
+      const p = STRIKE_W.clone().project(stage.camera);
       return [(p.x * stage.width) / stage.height / 2, -p.y / 2];
     },
+    // Where a point of the model, in millimetres, is drawn now, in host heights from the host's middle.
+    where(x: number, y: number, z: number): Anchor | null {
+      if (!stage || !model) return null;
+      model.root.updateMatrixWorld(true);
+      const p = model.root.localToWorld(new THREE.Vector3(x, y, z)).project(stage.camera);
+      return [(p.x * stage.width) / stage.height / 2, -p.y / 2];
+    },
+    // A close look at a point of the model, in millimetres, for building it.
+    look(x: number, y: number, z: number, az = VIEW.az, el = VIEW.el, dist = 0.12) { forced = { az, el, d: dist, at: new THREE.Vector3(x, y, z).multiplyScalar(MM) }; frame(0, true); },
     info() { const i = stage?.renderer.info.render; return { triangles: i?.triangles ?? 0, calls: i?.calls ?? 0, frameMs: stage?.frameMs ?? 0, anchor: CPU.strike }; },
   });
   return piece;

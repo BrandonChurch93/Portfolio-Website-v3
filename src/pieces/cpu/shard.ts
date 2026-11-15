@@ -1,102 +1,104 @@
 import * as THREE from 'three';
-import { seeded, type Vec3 } from '../../world/build';
+import { HEAD, SOLID_FRAG } from '../../stream/shaders';
+import { STREAM } from '../../stream/config';
+import { buildShards, FACET_KINDS, VERTEX_FLOATS } from '../../stream/shards';
+import { COPPER, COPPER_LIGHT } from '../../metal/finishes';
 import { hex } from '../../config/palette';
-import { lin } from '../../world/surface';
 
-// The shard a part flies home as: the stream's kind, a dark faceted splinter with needle points. It is long along its
-// own x, so it can be laid along what it carries; each instance is stretched to the part's length, depth and breadth.
+// The shards a part flies home as are the stream's own: the same meshes, from the same seed, and the same fragment
+// shader, so a shard leaving the strike is one of the shards flying past it on the page. The stream draws in CSS
+// pixels of the page, y down and z toward the eye; this canvas hands the shader its own pixels the same way.
 
-const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-const cross = (a: Vec3, b: Vec3): Vec3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-const dot = (a: Vec3, b: Vec3) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+export const SHARD_KINDS = FACET_KINDS;
 
-// The tightest skin round a handful of points.
-function hull(pts: Vec3[]): number[] {
-  const out: number[] = [];
-  const n = pts.length;
-  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) for (let k = j + 1; k < n; k++) {
-    const nrm = cross(sub(pts[j], pts[i]), sub(pts[k], pts[i])), l = Math.hypot(...nrm);
-    if (l < 1e-9) continue;
-    let over = 0, under = 0;
-    for (let m = 0; m < n && !(over && under); m++) {
-      if (m === i || m === j || m === k) continue;
-      const d = dot(nrm, sub(pts[m], pts[i])) / l;
-      if (d > 1e-7) over++;
-      if (d < -1e-7) under++;
-    }
-    if (over && under) continue;
-    for (const v of over ? [i, k, j] : [i, j, k]) out.push(...pts[v]);
-  }
-  return out;
+// The fragment shader as the stream has it, with what it draws handed on in this canvas's light: the stage's
+// exposure is taken back out, since the stream's own canvas has none.
+const FRAG = SOLID_FRAG.replace(HEAD, 'precision highp float;\n').replace('frag = vec4(col, 1.0);', 'frag = vec4(col / uExposure, 1.0);').replace('out vec4 frag;', 'out vec4 frag;\nuniform float uExposure;');
+
+const VERT = /* glsl */ `precision highp float;
+uniform mat4 modelViewMatrix, projectionMatrix;
+uniform vec2 uHost;
+uniform float uPx, uDepth;
+uniform vec2 uCoreAt, uCoreRun;
+in vec3 aPos, aNormal, aEdge, aBevel0, aBevel1, aBevel2;
+in float aTag;
+in mat4 instanceMatrix;
+in vec3 instanceColor;
+out vec3 vP, vN, vEdge, vObj;
+out float vTag;
+flat out vec4 vCore, vMore;
+flat out float vSize;
+flat out vec3 vB0, vB1, vB2;
+vec3 page(vec3 n){ return vec3(n.x, -n.y, n.z); }
+void main(){
+  mat4 mv = modelViewMatrix * instanceMatrix;
+  vec4 v = mv * vec4(aPos, 1.0);
+  gl_Position = projectionMatrix * v;
+  vec2 ndc = gl_Position.xy / max(gl_Position.w, 1e-6);
+  vP = vec3((ndc.x * 0.5 + 0.5) * uHost.x, (0.5 - ndc.y * 0.5) * uHost.y, (v.z + uDepth) * uPx);
+  mat3 m = mat3(mv);
+  mat3 nm = transpose(inverse(m));
+  vN = page(normalize(nm * aNormal + 1e-6));
+  vB0 = page(normalize(nm * aBevel0 + 1e-6)); vB1 = page(normalize(nm * aBevel1 + 1e-6)); vB2 = page(normalize(nm * aBevel2 + 1e-6));
+  float size = (length(m[0]) + length(m[1]) + length(m[2])) / 3.0 * uPx;
+  vSize = size;
+  vEdge = aEdge * size;
+  vObj = aPos;
+  vTag = aTag;
+  vec2 rel = vP.xy - uCoreAt;
+  vCore = vec4(uCoreAt + uCoreRun * dot(rel, uCoreRun), uCoreRun);
+  vMore = vec4(0.5, instanceColor.r, 0.0, instanceColor.g);
+}`;
+
+export interface ShardUniforms {
+  uHost: { value: THREE.Vector2 };
+  uPx: { value: number };
+  uDepth: { value: number };
+  uCoreAt: { value: THREE.Vector2 };
+  uCoreRun: { value: THREE.Vector2 };
+  uUnit: { value: number };
+  uDpr: { value: number };
+  uLamp: { value: THREE.Vector3 };
+  uLampI: { value: number };
+  uExposure: { value: number };
 }
 
-export function shardGeometry(): THREE.BufferGeometry {
-  const r = seeded(808);
-  // A body, a needle forward and a shorter one back along x, and a few points out to the sides, none alike.
-  // A body with real thickness, cut by many faces, a needle forward and a shorter one back, and points to the sides.
-  const pts: Vec3[] = [
-    [1.0, 0.06, 0.04], [-0.8, -0.08, -0.05],
-    [0.2, 0.1, 0.66], [-0.32, -0.06, -0.6], [0.5, 0.0, -0.42], [-0.56, 0.08, 0.38],
-  ];
-  for (let i = 0; i < 12; i++) {
-    const a = r() * Math.PI * 2, x = (r() - 0.5) * 1.1;
-    pts.push([x, Math.sin(a) * (0.55 + 0.4 * r()), Math.cos(a) * (0.3 + 0.25 * r())]);
-  }
-  const pos = hull(pts);
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  // Which corner of its face each vertex is, so the shader can draw the hairline along the facet's edges.
-  const bary = new Float32Array(pos.length);
-  for (let i = 0; i < pos.length / 3; i++) bary[i * 3 + (i % 3)] = 1;
-  g.setAttribute('bary', new THREE.Float32BufferAttribute(bary, 3));
-  g.computeVertexNormals();
-  return g;
+const lin3 = (c: [number, number, number]) => new THREE.Vector3(...c);
+const linHex = (h: number) => { const c = new THREE.Color(h); return new THREE.Vector3(c.r, c.g, c.b); };
+
+export function shardUniforms(): ShardUniforms {
+  return {
+    uHost: { value: new THREE.Vector2(1, 1) }, uPx: { value: 1 }, uDepth: { value: 0 }, uCoreAt: { value: new THREE.Vector2() }, uCoreRun: { value: new THREE.Vector2(0, 1) },
+    uUnit: { value: 1 }, uDpr: { value: 1 }, uLamp: { value: new THREE.Vector3() }, uLampI: { value: 0 }, uExposure: { value: 1 },
+  };
 }
 
-// Lit as the stream's are: every face a flat mirror of dark copper, so each takes its own tone as it turns, dark
-// until it lines up with a light and then flashing; a hairline of hot light along each edge; a glint on the points.
-export function shardMaterial(): THREE.ShaderMaterial {
-  const m = new THREE.ShaderMaterial({
-    vertexShader: /* glsl */ `
-attribute vec3 bary;
-varying vec3 vV;
-varying vec3 vB;
-varying vec3 vO;
-varying float vG;
-void main(){
-  vec4 mv = modelViewMatrix * instanceMatrix * vec4(position, 1.0);
-  vV = mv.xyz;
-  vB = bary;
-  vO = position;
-  vG = instanceColor.r;
-  gl_Position = projectionMatrix * mv;
-}`,
-    fragmentShader: /* glsl */ `
-varying vec3 vV;
-varying vec3 vB;
-varying vec3 vO;
-varying float vG;
-float spot(vec3 n, vec3 v, vec3 l, float p){ return pow(max(dot(n, normalize(l + v)), 0.0), p); }
-void main(){
-  vec3 n = normalize(cross(dFdx(vV), dFdy(vV)));
-  vec3 v = normalize(-vV);
-  if (dot(n, v) < 0.0) n = -n;
-  // Each face is a flat of dark copper and takes its own tone from where it turns: the key above and behind, the
-  // stream's light low on the left, a soft panel overhead, and a sharp flash when a face lines up with a light.
-  vec3 R = reflect(-v, n);
-  vec3 K = normalize(vec3(0.4, 0.85, -0.3)), S = normalize(vec3(-0.9, 0.25, 0.35));
-  float light = 0.03 + 0.14 * smoothstep(0.1, 0.9, R.y)
-    + 0.22 * pow(max(dot(n, K), 0.0), 2.0) + 0.16 * pow(max(dot(n, S), 0.0), 2.0)
-    + spot(n, v, K, 60.0) * 1.4 + spot(n, v, S, 40.0) * 1.0;
-  vec3 col = ${lin(hex('copper'))} * 0.6 * light;
-  vec3 w = fwidth(vB);
-  vec3 e3 = smoothstep(vec3(0.0), w * 1.2, vB);
-  float line = (1.0 - min(min(e3.x, e3.y), e3.z)) * smoothstep(0.55, 0.15, abs(dot(n, v)));
-  float tip = pow(smoothstep(0.75, 1.0, length(vO)), 3.0);
-  col += ${lin(hex('hot'))} * line * 0.7 * vG + ${lin(hex('hot'))} * tip * 0.35 * vG;
-  gl_FragColor = vec4(col, 1.0);
-}`,
+// One instanced mesh for each of the stream's kinds of facet.
+export function shardMeshes(u: ShardUniforms, most: number): THREE.InstancedMesh[] {
+  const { data, kinds } = buildShards(STREAM.seed);
+  const buf = new THREE.InterleavedBuffer(data, VERTEX_FLOATS);
+  const material = new THREE.RawShaderMaterial({
+    glslVersion: THREE.GLSL3,
+    vertexShader: VERT,
+    fragmentShader: FRAG,
+    uniforms: { ...u, uF0: { value: lin3(COPPER_LIGHT) }, uCopper: { value: lin3(COPPER) }, uPale: { value: linHex(hex('pale')) } },
   });
-  m.name = 'cpuShard';
-  return m;
+  material.name = 'cpuShard';
+  return kinds.slice(0, FACET_KINDS).map((k) => {
+    const g = new THREE.BufferGeometry();
+    const at = (name: string, size: number, offset: number) => g.setAttribute(name, new THREE.InterleavedBufferAttribute(buf, size, offset));
+    at('aPos', 3, 0); at('aNormal', 3, 3); at('aEdge', 3, 6); at('aTag', 1, 9); at('aBevel0', 3, 10); at('aBevel1', 3, 13); at('aBevel2', 3, 16);
+    g.setAttribute('position', g.getAttribute('aPos'));
+    g.setDrawRange(k.first, k.count);
+    g.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 1e4);
+    const mesh = new THREE.InstancedMesh(g, material, most);
+    mesh.setColorAt(0, new THREE.Color(0, 0, 0));
+    mesh.count = 0;
+    mesh.frustumCulled = false;
+    mesh.castShadow = false;
+    mesh.receiveShadow = false;
+    mesh.userData.noWire = true;
+    mesh.userData.noAO = true;
+    return mesh;
+  });
 }
