@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 import { hex } from '../../config/palette';
-import { COLORS, type Tier } from '../../config/site';
-import { materials } from '../../desk-drafts/materials';
+import type { Tier } from '../../config/site';
 import { clock } from '../../world/clock';
 import type { Piece, PieceOptions } from '../../world/piece';
 import { Stage } from '../../world/stage';
@@ -16,12 +15,31 @@ import { LIT, PARTS, type DeskLights, type DeskPart, type PartFactory, type Part
 // It frames a fixed height of its world, so the desk is the same size against its host's height whatever the host's
 // width. ?only=keyboard shows one part alone, close, on the same stage and under the same lights, and ?lights=0
 // shows the desk before the stream has reached it.
+// It draws on a clear ground. The floor under it is the page's own ground, which takes the desk's light and its
+// shadow close to it and is gone a little way out, so the piece never sits in a rectangle.
 
 const D2R = Math.PI / 180, M = DESK.SCALE;
 // How much of the host's height a part seen alone fills.
 const ALONE = 0.62;
 // The cursor's light: how far in front of the desk it stands, how far it ranges across and up, and how strong it is.
 const LAMP = { back: 1.25, across: 2.8, up: 1.5, lift: 0.35, power: 16 };
+// The floor: where it is lit and shadowed most, in the desk's millimetres, and how far out along and across the desk
+// it has gone to nothing. The share of that reach inside which it is whole.
+const FLOOR = { at: [0, 150] as [number, number], reach: [1500, 950] as [number, number], whole: 0.42, color: 0x0e0a08 };
+// The canvas fades to nothing over this share of its rim, so nothing can end at its edge.
+const RIM = 5;
+
+function floorMaterial(): THREE.MeshStandardMaterial {
+  const m = new THREE.MeshStandardMaterial({ color: FLOOR.color, roughness: 1, transparent: true, depthWrite: false });
+  m.name = 'desk-floor';
+  m.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec2 vFloor;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvFloor = position.xz;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec2 vFloor;').replace('#include <dithering_fragment>', `#include <dithering_fragment>
+  gl_FragColor.a *= 1.0 - smoothstep(${FLOOR.whole.toFixed(2)}, 1.0, length(vFloor / vec2(${FLOOR.reach[0].toFixed(1)}, ${FLOOR.reach[1].toFixed(1)})));`);
+  };
+  m.customProgramCacheKey = () => 'desk-floor';
+  return m;
+}
 
 const loaders: Record<PartName, () => Promise<PartFactory>> = {
   bench: () => import('./parts/bench').then((m) => m.build),
@@ -89,8 +107,10 @@ export function createDesk(): DeskPiece {
     stage.render();
   };
 
-  const setLights = (l: DeskLights) => {
-    for (const key of Object.keys(l) as (keyof DeskLights)[]) for (const set of dials[key] ?? []) set(l[key]);
+  const setLights = (l: DeskLights, force = false) => {
+    const keys = Object.keys(l) as (keyof DeskLights)[];
+    if (!force && keys.every((key) => l[key] === lights[key])) return;
+    for (const key of keys) for (const set of dials[key] ?? []) set(l[key]);
     lights = { ...l };
     stale = true;
   };
@@ -99,7 +119,8 @@ export function createDesk(): DeskPiece {
     async mount(h: HTMLElement, opts: PieceOptions) {
       canvas = document.createElement('canvas');
       canvas.setAttribute('aria-hidden', 'true');
-      canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block';
+      const fade = `linear-gradient(to right, transparent, #000 ${RIM}%, #000 ${100 - RIM}%, transparent), linear-gradient(to bottom, transparent, #000 ${RIM}%, #000 ${100 - RIM}%, transparent)`;
+      canvas.style.cssText = `position:absolute;inset:0;width:100%;height:100%;display:block;-webkit-mask-image:${fade};mask-image:${fade};-webkit-mask-composite:source-in;mask-composite:intersect`;
       h.prepend(canvas);
       if (!areaLib) { RectAreaLightUniformsLib.init(); areaLib = true; }
       const q = new URLSearchParams(location.search), asked = q.get('only') as PartName | null;
@@ -107,14 +128,13 @@ export function createDesk(): DeskPiece {
       if (q.get('lights') === '0') lights = { room: 1, lamp: 0, tablet: 0, monitor: 0, keys: 0, pc: 0 };
       stage = new Stage(h, canvas, { tier: opts.tier, fov: VIEW.fov, near: 0.05, far: 40, bloom: { strength: 0.16, threshold: 1.9, radius: 0.3 }, ao: 0.02, aoIntensity: 1, envIntensity: 0.3, env: 'studio', lampTarget: [0, -0.05, 0.1], lampAngle: 0.9 });
       const s = stage.scene;
-      s.background = new THREE.Color(COLORS.bg);
-      s.fog = new THREE.Fog(COLORS.bg, 6, 11);
       const root = new THREE.Group();
       root.scale.setScalar(M);
       s.add(root);
       if (!only) {
-        const floor = new THREE.Mesh(new THREE.PlaneGeometry(9000, 9000).rotateX(-Math.PI / 2), materials().floor);
-        floor.position.y = -DESK.H;
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(2 * FLOOR.reach[0], 2 * FLOOR.reach[1]).rotateX(-Math.PI / 2), floorMaterial());
+        floor.position.set(FLOOR.at[0], -DESK.H, FLOOR.at[1]);
+        floor.renderOrder = -1;
         floor.receiveShadow = true;
         floor.userData.noWire = true;
         root.add(floor);
@@ -165,7 +185,7 @@ export function createDesk(): DeskPiece {
         reach = ball.radius / ALONE;
       }
       stage.resize();
-      setLights(lights);
+      setLights(lights, true);
       place();
       await stage.warm();
       watch = new ResizeObserver(() => { stage?.resize(); stale = true; frame(); });
@@ -183,7 +203,7 @@ export function createDesk(): DeskPiece {
       led = 1;
       stale = true;
     },
-    setLights,
+    setLights: (l: DeskLights) => setLights(l),
     setStream(on: number, since: number) {
       if (on === stream.on && (since > 2 || since === stream.since)) return;
       stream.on = on;

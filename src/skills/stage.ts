@@ -1,5 +1,5 @@
-import { BAY, DESK, MAT, SCREEN } from '../desk-drafts/desks';
-import type { DeskScene } from '../desk-drafts/scene';
+import type { DeskPiece } from '../pieces/desk/index';
+import { BAY, DESK, MAT, SCREEN, SHADE } from '../pieces/desk/layout';
 import { registry } from '../hooks/registry';
 import { lamp } from '../lamp/lamp';
 import { STREAM } from '../stream/config';
@@ -22,7 +22,7 @@ export interface SkillsParts {
   board: HTMLElement;
   skills: HTMLElement;
   about: HTMLElement;
-  pieces: () => { cpu: StruckPiece | null; reflector: StruckPiece | null; light: StruckPiece | null };
+  pieces: () => { cpu: StruckPiece | null; reflector: StruckPiece | null; light: StruckPiece | null; desk: DeskPiece | null };
   way: () => Way;
 }
 
@@ -66,8 +66,7 @@ const SHOW = {
 const RISE = 10;
 // A rule: half its thickness, in the stream's own units.
 const RULE = { half: 2.4 };
-// The lamp's shade, in the bench's own millimetres: where the stream strikes it, and the way it faces there.
-const SHADE: [number, number, number] = [-716, 470, -52];
+// The way the lamp's shade faces where the stream strikes it. Where that is, is the desk's own (SHADE in its layout).
 const SHADE_FACE = -2.2;
 // The headphones swing as a pendulum that loses its swing: how long one swing takes, how long it takes to lose most
 // of it, how far the lamp's strike rocks them and the most a brush of the cursor does, in degrees.
@@ -106,7 +105,7 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
   const heading = q('about-title'), tabs = q('tabs'), panel = q('panel');
   const auras = all('aura'), beams = all('beam');
 
-  let stream: StreamHandle | null = null, bench: DeskScene | null = null, disposed = false;
+  let stream: StreamHandle | null = null, bench: DeskPiece | null = null, disposed = false;
   let anchors: { cpu: Anchor; reflector: Anchor; strike: Anchor; lens: Anchor } = { cpu: [-0.36, 0], reflector: [0, 0], strike: [0.02, -0.14], lens: [-0.12, 0.16] };
   let lives: Record<Way, number> = { shards: 1.3, band: 0.9, flash: 0.8 };
   let rules: Rail[] = [], cues: Cue[] = [];
@@ -152,7 +151,7 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
     const face = on(ABOUT.reflector.x, ABOUT.reflector.y, A0);
     run = { ax: face.x, ay: face.y, bx: strike.x, by: strike.y };
     const W = ABOUT.words, Pt = ABOUT.portrait, words = [on(W.l, W.title - 8, A0), on(W.l + W.w, W.title - 8, A0), on(W.l + W.w, WORDS_FOOT, A0), on(W.l, WORDS_FOOT, A0)];
-    const spot = (x: number, y: number, z: number) => { const [fx, fy] = bench!.where(x, y, z); return [D.l + fx * (D.r - D.l), D.t + fy * (D.b - D.t)]; };
+    const spot = (x: number, y: number, z: number) => { const [ax, ay] = bench!.where(x, y, z), tall = D.b - D.t; return [(D.l + D.r) / 2 + ax * tall, (D.t + D.b) / 2 + ay * tall]; };
     const quad = (...pts: [number, number, number][]) => pts.flatMap((p) => spot(...p)) as Quad;
     const floor = -DESK.H, sx = SCREEN.x, sw = SCREEN.w / 2, mx = MAT.x, mw = MAT.w / 2, md = MAT.d / 2;
     const quads: Quad[] = [words.flatMap((p) => [p.x, p.y]) as Quad, ...(bench ? [
@@ -169,7 +168,7 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
       x: B.l + CX * k,
       leaves: S0 - SKILLS.lead * k,
       title: S0 + SKILLS.cue * k,
-      lamp: { ...(shade ? { x: D.l + shade[0] * (D.r - D.l), y: D.t + shade[1] * (D.b - D.t) } : on(342, 296, S0)), face: SHADE_FACE },
+      lamp: { ...(shade ? { x: (D.l + D.r) / 2 + shade[0] * (D.b - D.t), y: (D.t + D.b) / 2 + shade[1] * (D.b - D.t) } : on(342, 296, S0)), face: SHADE_FACE },
       spine: B.l + SKILLS.spine * k,
       rows: boxes.map((r, i) => ({ x: B.l + (R.l - SKILLS.thing.meet) * k - STREAM.skills.shy * c.unit, y: (r.t + r.b) / 2 - (i ? 0 : SKILLS.thing.rise * SKILLS.thing.host * k) })),
       rules,
@@ -222,6 +221,8 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
     if (parts.page.hasAttribute('data-all') !== whole) parts.page.toggleAttribute('data-all', whole);
     const since = (cue: string) => (whole ? 60 : stream!.since(cue));
     const P = parts.pieces();
+    // The desk says where its things are drawn, so the route is planned again once it is there.
+    if (P.desk !== bench) { bench = P.desk; queueMicrotask(() => stream?.replan()); }
     if (way !== parts.way()) follow(cues);
 
     // Skills: the title and the headphones, the desk, and each row.
@@ -233,7 +234,8 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
     set('swing', hang, '--swing', `${(whole ? 0 : swing(t)).toFixed(2)}deg`);
     const near = since('near'), lit = since('lamp');
     set('desk:o', desk, 'opacity', near > 0 ? '1' : '0');
-    bench?.light({ room: ramp(near, SHOW.room), lamp: lit > 0 ? 0.6 + 0.4 * ramp(lit, SHOW.lamp) : 0, tablet: ramp(lit, SHOW.tablet), monitor: ramp(lit, SHOW.monitor), keys: ramp(lit, SHOW.keys), pc: ramp(lit, SHOW.pc) });
+    bench?.setStream(whole ? 1 : lampHit.on, whole ? 60 : t - lampHit.at);
+    bench?.setLights({ room: ramp(near, SHOW.room), lamp: lit > 0 ? 0.6 + 0.4 * ramp(lit, SHOW.lamp) : 0, tablet: ramp(lit, SHOW.tablet), monitor: ramp(lit, SHOW.monitor), keys: ramp(lit, SHOW.keys), pc: ramp(lit, SHOW.pc) });
     rows.forEach((_, i) => {
       const age = since(`row${i}`);
       show(`name${i}`, names[i], ramp(age, SHOW.name));
@@ -316,14 +318,6 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
     lives = cpu.LIFE;
     place();
     stream = mountStream(parts.page, { plan });
-    return import('../desk-drafts/scene').then(({ mountDesk }) => mountDesk(desk, tiers.get())).then((made) => {
-      if (disposed) { made.dispose(); return; }
-      bench = made;
-      const offLamp = clock.onFrame(() => { const r = desk.getBoundingClientRect(), m = lamp.get(); made.lamp((m.px - r.left) / Math.max(1, r.width), (m.py - r.top) / Math.max(1, r.height)); });
-      const dispose = made.dispose.bind(made);
-      made.dispose = () => { offLamp(); dispose(); };
-      stream?.replan();
-    });
   }));
 
   // For checking: which of the things the stream is kept off a place is over. 0 is About's words, and 1 on are the
@@ -350,7 +344,6 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
       parts.about.removeEventListener('focusin', focusIn);
       parts.about.removeEventListener('focusout', focusOut);
       stream?.dispose();
-      bench?.dispose();
       parts.page.removeAttribute('data-all');
     },
   };

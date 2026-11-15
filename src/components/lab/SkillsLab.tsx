@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { ABOUT_TABS, COMPETENCIES } from '../../skills-about/content';
+import type { DeskPiece } from '../../pieces/desk/index';
 import { ABOUT, BOARD, SKILLS, throwLine } from '../../skills/plan';
 import type { SkillsStage } from '../../skills/stage';
 import type { Piece } from '../../world/piece';
@@ -43,15 +44,15 @@ function Glow() {
 // Skills and About, built for real (BRIEF.md, Settled, "Skills and About, the first build"). The page only lays
 // things out. The stream plans its route from where they are (src/stream/route-skills.ts) and brings each onto the
 // page as its leading end reaches it (src/skills/stage.ts).
-// The bench is the rough draft's, standing in for the desk. The headphones' form is a stand in. The second and third
-// rows keep an empty place for their thing. The words are placeholders and his to write.
+// The desk is the piece in src/pieces/desk, at whatever stage its parts have reached. The headphones' form is a stand
+// in. The second and third rows keep an empty place for their thing. The words are placeholders and his to write.
 // ?way=band or flash opens it on that way of bringing the CPU to life, and ?ui=0 hides the label and the switch.
 // Pressing a way while the stream is on the first row strikes the row again, so the three can be compared in place.
 export function SkillsLab() {
   const id = useId().replace(/:/g, '');
   const page = useRef<HTMLElement>(null), board = useRef<HTMLDivElement>(null), skills = useRef<HTMLElement>(null), about = useRef<HTMLElement>(null);
   const stage = useRef<SkillsStage | null>(null);
-  const pieces = useRef<{ cpu: StruckPiece | null; reflector: StruckPiece | null; light: StruckPiece | null }>({ cpu: null, reflector: null, light: null });
+  const pieces = useRef<{ cpu: StruckPiece | null; reflector: StruckPiece | null; light: StruckPiece | null; desk: DeskPiece | null }>({ cpu: null, reflector: null, light: null, desk: null });
   const [ui, setUi] = useState(true);
   const [way, setWay] = useState<Way>('shards');
   const [tab, setTab] = useState(0);
@@ -84,6 +85,7 @@ export function SkillsLab() {
   }, [wide]);
 
   const hold = (name: 'cpu' | 'reflector' | 'light') => (p: Piece | null) => { pieces.current[name] = p as StruckPiece | null; };
+  const holdDesk = (p: Piece | null) => { pieces.current.desk = p as DeskPiece | null; };
   const pick = (i: number) => {
     if (i === tab) return;
     setTab(i);
@@ -107,7 +109,7 @@ export function SkillsLab() {
         <header className={styles.head}>
           <p className={styles.label}>Study 25 · Skills and About</p>
           <h1 className={styles.heading}>Scroll down</h1>
-          <p className={styles.note}>The bench is the rough draft, standing in for the desk. The headphones are a stand in. The second and third rows keep an empty place for their thing. The words are placeholders.</p>
+          <p className={styles.note}>The desk is being made thing by thing, and some of its things are still the rough draft's. The headphones are a stand in. The second and third rows keep an empty place for their thing. The words are placeholders.</p>
         </header>
       )}
       <div ref={board} className={styles.board}>
@@ -129,7 +131,9 @@ export function SkillsLab() {
               <circle cx={0} cy={22} r={5.5} className={styles.solid} />
             </svg>
           </div>
-          <div className={styles.desk} data-part="desk" aria-hidden="true" style={at(SKILLS.desk.x, SKILLS.desk.y, SKILLS.desk.w, SKILLS.desk.h)} />
+          <div className={styles.desk} data-part="desk" aria-hidden="true" style={at(SKILLS.desk.x, SKILLS.desk.y, SKILLS.desk.w, SKILLS.desk.h)}>
+            {wide && <PieceView name="desk" reach={REACH} className={styles.piece} onPiece={holdDesk} />}
+          </div>
           <div className={styles.rows} style={{ marginLeft: u(SKILLS.rows.l), width: u(SKILLS.rows.r - SKILLS.rows.l), paddingTop: u(SKILLS.rows.t), paddingBottom: u(SKILLS.foot), '--thing': K.w, '--least': SKILLS.rows.least, '--meet': K.meet, '--wide': K.wide, '--host': K.host, '--rise': K.rise } as CSSProperties}>
             {COMPETENCIES.map((c, i) => (
               <article key={c.name} className={styles.row} data-part="row">
