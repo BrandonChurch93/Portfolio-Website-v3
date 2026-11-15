@@ -104,9 +104,28 @@ Show me the city as soon as it stands in the hero, and say plainly what is at th
 - Two builders started: the headphones as AirPods Max in the dark finish, on the stand as made, and the pencil as an Apple Pencil Pro inside the tablet's part, with the tablet left as it is. Each has fresh reviewers asked for the make and model.
 - The kits (`desk.md`, `headphones.md`) and test 1 of "Skills, the desk and the title changed" say so.
 
-**Still running from before**
+**Landed since, all pushed**
 
-- The rocket, the mouse's third way, the desk's build on a first visit, and the city's ground, spire and towers.
+- The pencil as an Apple Pencil Pro and the headphones as AirPods Max. Fresh reviewers named both unprompted. The headphones' two rail band is right for the real thing, whatever one reviewer said.
+- The rocket and its fire, the mouse's third way (every reviewer shown the whole desk named a gaming mouse, and it is turned 20 degrees now), the lamp's fifth round.
+- The desk's build on a first visit: `slice()` in `src/world/build.ts`, `stage.warm(pace)`, the area light's tables in a worker (`src/pieces/desk/area.ts`). The desk's own tasks are under 35 ms. What is left is in the engineer's list: the stage's constructor, the parts that were not his to slice, the CPU's own area light tables.
+- The hero's page at `/lab/hero` (Study 30), the city's three parts as first full builds, and the hero on top of `/lab/whole`. `BRIEF.md`, "The hero, the city at rest, as built". `join()` now also puts a route with one side in front of one with two, and `mountStream` takes `before` for a plan above Work.
+
+**Still running**
+
+- The bench's fifth round (timber, the angle's edge), a fresh reviewer on Contact's 22 tests, and the hero's night sky with the glow (`src/hero/sky/`, lab page `/lab/sky`).
+
+**What the next session would otherwise rediscover**
+
+- A reviewer measuring on the production server is knocked over by a rebuild in the same checkout. There are two side checkouts now: `ship` serves 5331, and `ship2` is for build checks and serves 5332 when 5331 is in use. Start a server from its own folder (`ship2/node_modules/.bin/next start <ship2> -p 5332`): `npm --prefix ... exec` starts it in the repo's folder and serves an old build.
+- `stage.warm()` flushes the GL context after asking for the compile. Without it the last program's link waited about a second.
+
+**Next**
+
+- The sky into the hero's page when it lands, then the six falls and the main fall as standing light: the stream's renderer draws two runs of core today and needs more for them.
+- Fresh reviewers on the hero and on the desk as it now stands. A second round on the city aimed at what every reviewer said: rooms behind the windows, bevelled edges, future silhouettes, weathered rock.
+- The hero's tests 1 and 6 to 9, Contact's remaining tests, the whole page's tests 1 to 4.
+
 
 ## 2026-11-14 · Contact can be scrolled, the desk's fourth reviews, and the hero joins the list (Fable, Claude Code)
 

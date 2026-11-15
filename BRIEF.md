@@ -865,6 +865,16 @@ For Claude Code, added to the work it has in hand. His words are in the list abo
 
 *Not built in this pass:* the opening, the navigation, phones.
 
+**The hero, the city at rest, as built (Nov 14, night). Study 30, at `/lab/hero`, and on top of `/lab/whole`. The city stands in it, as a first full build. The sky, the glow as the sky draws it, and the falls off the rim are not in yet. Nothing of it has been judged by an independent reviewer.**
+
+- **Built by Fable:** the page (`HeroLab.tsx`, `src/hero/board.ts`), the stream's route from the main fall (`src/stream/route-hero.ts`, `src/hero/stage.ts`), the city's frame and its plan of lots (`src/pieces/skycity/index.ts`, `layout.ts`, `part.ts`), and the join that puts the hero in front of Work on the whole page.
+- **Built by Opus builders, from `reference/kits/skycity.md`:** the ground (the walled rim with six made places for the falls, layered rock with ribs let into it, a keel with a mouth for the main fall, a floor of lit streets and parks), the spire (stone buttresses that become steel ribs, a glass core, five ringed decks, a lantern crown, a needle with a beacon and a lift that climbs), and the towers (fourteen kinds of building and four landmarks on 315 lots, windows lit as rooms and floors, beacons, about 300 cars and 26 craft from the clock).
+- **What the builders' own fresh reviewers said, of all three parts:** at the page's size every one called it a floating city of the future. Every one also called it "a game or CG render, not a photographed model", and close up each part the weaker work beside his PC Builder's parts. The towers read to one as "a 1930s to 1980s American downtown". So test 2's first half passes and its second half does not.
+- **The layout** is the wireframe's, worked out by the stylesheet from the screen's height: his words a third of the way down, the rim of the city's ground 40 units under the foot of the screen. Not yet measured on the four screens of test 1.
+- **The stream** begins on the front of the rim under the spire and is not drawn until that place has been scrolled up to the reading line. It runs straight down the front of the rock to the keel, then falls swaying. On `/lab/hero` it strikes a stand in for Work's bar. On the whole page Work's own route takes it from 170 units over Work's title, so one stream runs from the main fall to the stone in Contact.
+- **Not in yet:** the night sky, with the glow drawn by it (a builder has both: the page shows a plain glow meanwhile). The six falls off the rim and the main fall as standing light before the stream sets off. The cursor's cue is in. No opening, as agreed.
+- **Fable's calls, his to overturn:** the hero's buttons are the real metal buttons with the stand in words. Work stands 330 units under the keel on the whole page. The towers' builder added a faint moonlight from the upper right, where the moon will be, so every tower has a lit side.
+
 ### Work
 
 - One section. A centered title. No featured card.
