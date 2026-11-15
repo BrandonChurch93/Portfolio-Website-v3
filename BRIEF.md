@@ -1018,6 +1018,7 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     - **A ruling: the look of the top is signed off by him before anything goes to Claude Code.** He wants the top at a far higher fidelity, so that he can judge the detail of the city, the textures and the kinds of terrain.
     - **The torn rock is better, and he cannot judge it in grey:** not its depth, and not how its shadows will look.
     - He asked which way to go: a few more rounds here and then Claude Code, or a higher fidelity version here first. Fable's recommendation is in the chat and in `LOG.md`. Nothing is changed until he answers.
+- **Go on the higher fidelity round, here (Nov 15, 14:30).** "Yes, go ahead and make these updates." In exact terms: Fable makes his six changes to the top and takes the same model into color in one round, in the web chat: the top with real materials, lit windows, kinds of tree and kinds of ground, and the torn rock in color with the moon's shadows and the core's light. Shown at the page's size in its three steps and in close views of the city, the land and the rock. He signs that off before anything goes to Claude Code. It still does not move.
 - An idea to revisit with the hero, not decided: his first thought was the city breaking apart into the stream as the visitor scrolls. Fable's twist, which he asked to have noted: building, not breaking. The city assembles out of the stream's facets in the opening, and the stream carries the same pieces on down the page. (Nov 12)
 
 **The hero, the city at rest: the agreement (Nov 14)**
