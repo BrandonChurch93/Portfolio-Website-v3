@@ -943,6 +943,9 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     - **The desert is large, with large dunes.** In this picture it is a small corner with low dunes.
     - **The core hangs well below the surface,** with a deep body of jagged, broken earth between the city and it. In this picture the core is just under the city's ground.
     - He did not fault the spire at the middle, the grander city, the lit windows or the trees in autumn colors.
+- **More on the third picture: the city is too small, the spire is right, and one ring (Nov 15, 10:57).** "The city kind of looks off, like the buildings aren't as big as I would hope them to be. The [spire] looks great. It would be cool if [it] had like a single ring at the top, maybe tilted, kind of like Saturn's. But the rest of the city looks a bit small. It's definitely dense enough. It just isn't as grand as I would've hoped."
+    - In exact terms: the spire in the third picture is the spire he wants. One ring round it near its top, tilted, as Saturn's is: his idea, offered as "it would be cool". The city is dense enough and its buildings are too small beside the planet: they are larger, so the city is grand.
+    - He is on Gemini's free plan with few messages left. Fable's view: a new chat with one whole prompt and the third picture attached for its look only, since what is left to change is the picture's structure, which an edit does poorly.
 - An idea to revisit with the hero, not decided: his first thought was the city breaking apart into the stream as the visitor scrolls. Fable's twist, which he asked to have noted: building, not breaking. The city assembles out of the stream's facets in the opening, and the stream carries the same pieces on down the page. (Nov 12)
 
 **The hero, the city at rest: the agreement (Nov 14)**
