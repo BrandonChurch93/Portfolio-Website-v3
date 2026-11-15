@@ -1716,7 +1716,18 @@ Each line has Fable's recommendation where there is one. None of these are rules
             - C · Below. The block centered as his live site has it, and under it the launch as a band of its own across the whole page, the rocket on the center line under the city. Nothing competes with the form and the page ends on the launch alone. The page is a screen longer, and when the rocket goes the form is above the screen.
         - **Fable's pick: A, with the block at the right and the rocket at the left.** The stream leaves About under the lower left of his portrait, so it falls into the pool beside the rocket with nothing carrying it. About has its words at the left and him at the right, so the two sections do not repeat each other.
         - The pool also answers what he had not answered, whether the rocket launches once or every time: the pool drains as the stream draws back, and the rocket is on it again by the time it fills. Fable's proposal.
-    - **What follows is the first round as it was drawn.**
+    - **The derby he asked for is built (Nov 14), second round, same page.** A switch at the foot of the screen sets A · Beside, B · Behind or C · Below. In all three:
+        - The block is one plate in his live site's order: the calendar button, his email with a copy button, "or send a message", the form, the line for where he is based.
+        - The stream falls into a long pool at the foot of the section. The pool fills as the page is scrolled on and is full at the foot of the page. The rocket lights from its foot up as the pool fills, and launches from the pool when it is full.
+        - After the launch the pool stays lit, with the stream still falling into it. Scrolling back up drains the pool and brings the rocket back down.
+        - The block and the title come on as the stream passes the block's top. The rocket and the pool come up as the stream nears the pool.
+    - **Where each had to give, plainly:**
+        - A: nothing had to. The stream falls between the rocket and the block and touches neither. The rocket is drawn a little larger than the carried one's outline, 538 units tall, so it stands as tall as the block.
+        - B: the title could not stand over the rocket, so it is inside the plate, smaller. The tower is behind the plate and only its top shows. The stream had to lean about 100 units to the left to land clear of the table.
+        - C: the block is in the middle, so the stream passes behind it, as it does behind a card in Work, and the title is inside the plate. The rocket could not stand on the center line, because the stream comes out from under the block there. It is about 100 units to the right. The section is 1390 units tall against A's 830.
+    - What is not right, plainly: outlines, a line, a flat panel for the plate and an oval for the pool. How it moves cannot be judged in the web chat. The pool dims while the rocket burns and reads as nearly empty in a still.
+    - Stills: `reference/studies/51-contact-*.jpg`.
+    - **What follows is the first round as it was drawn.** It is no longer on the page.
     - **What it holds, from his words (Settled, Contact):** a calendar button first, a way to copy his email, and a working form. Nothing waits for a message.
     - **Fable's calls on what he left open, each his to overturn:**
         - No phone number. Everyone who reads the site already has his résumé, which carries it. A number on a public page is collected by machines and called by strangers, and this repo is public too. The calendar button does what a number is for.

@@ -13,8 +13,8 @@ export default function Index() {
       <h2 className={styles.group}>Studies</h2>
       <ul className={styles.list}>
         <li>
-          <Link href="/lab/contact">Contact and the footer, a wireframe</Link>
-          <span className={styles.minor}>Phase 3 · the first round, turned down: the rocket in the middle with the content either side of it. The second round has one block of content and a pool the rocket launches from</span>
+          <Link href="/lab/contact">Contact, a derby of three arrangements</Link>
+          <span className={styles.minor}>Phase 3 · one block of content, a pool at the foot of the page and the rocket that launches from it, arranged three ways: beside, behind and below</span>
         </li>
         <li>
           <Link href="/lab/desk">The desk, a rough draft</Link>

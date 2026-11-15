@@ -2,6 +2,34 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · Contact, second round: a derby of three arrangements (Fable, web chat)
+
+**What Brandon said**
+
+- He pressed A in the sketch twice and stopped it both times. Then: "Can you actually just make a derby with these three options so I can see them?" Nothing is picked.
+
+**What was done**
+
+- `/lab/contact` is drawn again. `src/contact/plan.ts` holds the three arrangements (`LAYOUTS`), and `ContactDraft.tsx` draws whichever the switch is on. The first round is out of the code. Its stills are `reference/studies/50-contact-*.jpg`.
+- The block is one plate. The pool is an oval at the foot of the section. How full it is comes from how far the page is scrolled past where the stream lands, and it is full at the foot of the page. The rocket lights from its foot up (`FUEL`) and launches when the pool is full.
+- `BRIEF.md`, Open 31, has what each arrangement had to give up to work. Stills: `reference/studies/51-contact-*.jpg`.
+
+**What looking at it showed**
+
+- In B and C the title stood over the rocket or the stream and could not be read cleanly. It is inside the plate there. In A it stands over the plate.
+- A's rocket at the carried one's size looked small beside the block. It is 1.15 times that.
+- The safety check on the shell refused a command that held a script with a regular expression in a heredoc. Scripts go in a file written with the file tool, then run.
+
+**Checked**
+
+- A live run of each arrangement at 1440 by 900, scrolled down and back up at 520 px a second: no errors. Down, in order: the block, the rocket and pool, the lower stage, the upper stage, the nose, the lift. Up: the block goes, the rocket lands, then the pad goes dark. In C the block goes last, since it is at the top.
+- The form sent and showed "Message sent". The switch changes the board's height and what is drawn.
+
+**For the next session**
+
+- Waiting on his pick. Then the agreement for Contact, its tests and the prompt for Claude Code, with the rocket and the pool as pieces in the same round.
+- Still his to say: no phone number, the line for where he is based, LinkedIn in the footer, CodePen and YouTube.
+
 ## 2026-11-14 · The Contact wireframe turned down, and a brainstorm (Fable, web chat)
 
 **What Brandon said**

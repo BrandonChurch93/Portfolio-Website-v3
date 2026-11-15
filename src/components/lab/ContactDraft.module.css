@@ -12,10 +12,15 @@
   opacity: 0.24;
 }
 
-.ring {
-  fill: none;
+/* The pool: its rim, and a lip drawn over what fills it. */
+.rim {
+  fill: var(--bg);
   stroke-width: 1;
-  opacity: 0.5;
+}
+
+.lip {
+  fill: none;
+  stroke-width: 1.2;
 }
 
 .post {
@@ -61,37 +66,74 @@
   stroke: none;
 }
 
-.spot {
+.block {
   position: absolute;
   z-index: 2;
 }
 
-.lede {
-  position: absolute;
-  z-index: 2;
+.over {
   display: flex;
-  align-items: center;
-  gap: calc(var(--u) * 16);
+  align-items: flex-end;
+  gap: calc(var(--u) * 18);
+  height: calc(var(--u) * 72);
+}
+
+.over[data-inside='true'] {
+  height: calc(var(--u) * 52);
+}
+
+.over[data-inside='true'] .title {
+  font-size: calc(var(--u) * 52);
+}
+
+.title {
   margin: 0;
   font-family: var(--font-display);
-  font-size: calc(var(--u) * 30);
-  font-weight: 300;
-  letter-spacing: var(--track-tight);
-  line-height: 1.2;
+  font-size: calc(var(--u) * 72);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
   color: var(--text);
 }
 
 .tag {
+  margin-bottom: calc(var(--u) * 10);
   padding: calc(var(--u) * 2) calc(var(--u) * 8);
   border: 1px dashed var(--line-strong);
   border-radius: 99px;
   font-family: var(--font-mono);
   font-size: calc(var(--u) * 11);
-  font-weight: 400;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   white-space: nowrap;
   color: var(--copper);
+}
+
+/* One plate holds everything. It is solid, so what it lies over cannot be seen through it. */
+.plate {
+  display: grid;
+  gap: calc(var(--u) * 20);
+  padding: calc(var(--u) * 30);
+  border: 1px solid var(--copper);
+  border-radius: calc(var(--u) * 14);
+  background: var(--bg-2);
+  box-shadow: 0 calc(var(--u) * 18) calc(var(--u) * 50) color-mix(in srgb, var(--bg) 80%, transparent);
+  transition: border-color calc(var(--slow, 1) * 0.6s) linear;
+}
+
+.plate[data-first='true'] {
+  margin-top: calc(var(--u) * 28);
+}
+
+.plate[data-on='false'] {
+  border-color: var(--line);
+}
+
+.fast {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 14);
 }
 
 /* Stand ins for the two metal buttons, at their size. */
@@ -110,11 +152,12 @@
 }
 
 .primary {
-  height: calc(var(--u) * 66);
-  padding: 0 calc(var(--u) * 42);
+  height: calc(var(--u) * 62);
+  margin-right: calc(var(--u) * 8);
+  padding: 0 calc(var(--u) * 34);
   border: 0;
   background: linear-gradient(180deg, var(--copper-light), var(--copper));
-  font-size: calc(var(--u) * 20);
+  font-size: calc(var(--u) * 19);
   color: var(--bg);
 }
 
@@ -122,9 +165,15 @@
   height: calc(var(--u) * 46);
   padding: 0 calc(var(--u) * 22);
   border: 1px solid var(--copper);
-  background: var(--bg-2);
+  background: var(--bg);
   font-size: calc(var(--u) * 14.5);
   color: var(--copper-light);
+}
+
+.small {
+  height: calc(var(--u) * 38);
+  padding: 0 calc(var(--u) * 16);
+  font-size: calc(var(--u) * 13);
 }
 
 .accent:disabled {
@@ -140,22 +189,36 @@
   outline-offset: var(--focus-offset);
 }
 
-.mail {
-  display: flex;
-  align-items: center;
-  gap: calc(var(--u) * 18);
-}
-
 .address {
   font-family: var(--font-mono);
-  font-size: calc(var(--u) * 15);
+  font-size: calc(var(--u) * 14.5);
   color: var(--text);
+}
+
+.or {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 14);
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: calc(var(--u) * 11.5);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.or::before,
+.or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line-strong);
 }
 
 .where {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: calc(var(--u) * 12);
+  font-size: calc(var(--u) * 11.5);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-2);
@@ -164,15 +227,6 @@
 .form {
   display: grid;
   gap: calc(var(--u) * 16);
-}
-
-.formName {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: calc(var(--u) * 12);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-2);
 }
 
 .pair {
@@ -197,7 +251,7 @@
   padding: 0 calc(var(--u) * 14);
   border: 1px solid var(--line-strong);
   border-radius: calc(var(--u) * 8);
-  background: color-mix(in srgb, var(--bg-2) 82%, transparent);
+  background: var(--bg);
   font-family: var(--font-body);
   font-size: calc(var(--u) * 15);
   letter-spacing: 0;
@@ -210,7 +264,7 @@
 }
 
 .field textarea {
-  height: calc(var(--u) * 132);
+  height: calc(var(--u) * 116);
   padding-top: calc(var(--u) * 12);
   padding-bottom: calc(var(--u) * 12);
   line-height: 1.5;
@@ -226,10 +280,8 @@
   display: grid;
   justify-items: start;
   gap: calc(var(--u) * 12);
-  padding: calc(var(--u) * 30);
-  border: 1px solid var(--line-strong);
-  border-radius: calc(var(--u) * 12);
-  background: color-mix(in srgb, var(--bg-2) 82%, transparent);
+  min-height: calc(var(--u) * 280);
+  align-content: center;
   font-size: calc(var(--u) * 15.5);
   color: var(--text-2);
 }
@@ -243,10 +295,6 @@
   font-size: calc(var(--u) * 24);
   font-weight: 600;
   color: var(--pale);
-}
-
-.done .accent {
-  margin-top: calc(var(--u) * 8);
 }
 
 .foot {
