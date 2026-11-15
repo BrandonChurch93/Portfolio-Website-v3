@@ -31,7 +31,7 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 
 **Half finished, and what the next session needs**
 
-- The dunes' builder is still running. Its files are uncommitted until it hands back: commit named paths only.
+- Every builder has handed back and nothing of theirs is uncommitted.
 - `parts/ground/shape.ts` and `rock.ts`, and `GROUND.rim`, `GROUND.rock`, `FALLS` in `layout.ts`, are leftovers to delete once nothing reads them.
 - The frame rate holds 60 in the test browser only with the world's canvas held to 2.8 million pixels. Not measured on a 120 Hz screen. The first frame is about 1.5 seconds, mostly the land, whose builder has a target of 250 ms.
 - Not pushed since the first standing build.
