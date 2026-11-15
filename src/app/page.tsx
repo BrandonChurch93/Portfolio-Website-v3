@@ -17,6 +17,10 @@ export default function Index() {
           <span className={styles.minor}>Phase 3 · built for real, with no opening yet: your words over a city made new that rests low on the screen, and the stream setting off from its main fall as you scroll. The city&rsquo;s ground, spire and towers are with their builders, and the sky and the falls are not in yet</span>
         </li>
         <li>
+          <Link href="/lab/surface-looks">The top of the planet, two worlds</Link>
+          <span className={styles.minor}>Phase 3 · a derby for the hero, on the real planet: A, a river world of bronze with a city along its rivers and great gold rings round one spire, and C, a crystal world with a city built into a burst of amber shards</span>
+        </li>
+        <li>
           <Link href="/lab/hero-draft">The hero, a wireframe</Link>
           <span className={styles.minor}>Phase 3 · layout A as outlines: your words over the top of a small world, its torn underside, its core and its debris under the foot of the screen, and the stream setting off from the core as you scroll</span>
         </li>

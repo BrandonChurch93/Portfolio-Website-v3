@@ -2,6 +2,31 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · Two worlds for the top of the planet, at `/lab/surface-looks` (Fable, web chat)
+
+**What Brandon said**
+
+- Of the three silhouettes he likes A and C most. He likes working out what kind of planet it is first and then how the city lies on it. He still wants a city that feels lived in, and a world with nature. `BRIEF.md`, Settled, Hero.
+
+**What was done**
+
+- Study 31 is built and pushed: A, a river world, and C, a crystal world, each on the real planet. `BRIEF.md`, Settled, Hero, "Two worlds, as built" says what each holds. `CLAUDE.md` has the files.
+- Look A's first try, rows of towers round the spire, is gone. The stage and the kit from it were kept.
+- Stills kept: `reference/studies/60-hero-two-worlds-a-the-river-world.jpg` and `60-hero-two-worlds-c-the-crystal-world.jpg`.
+
+**What the build taught**
+
+- A ground seen nearly edge on mirrors the room behind it whatever its own color: a black planet came out cream. `material.envMapIntensity` does nothing for the scene's own environment in this version of three. Give the material the room as its own `envMap` and it does (`dim` in `src/surface-looks/kit.ts`).
+- Under the hero stage's bloom a ring of polished gold reads as a tube of neon. The study uses less.
+- The real `tear`, `core` and `debris` parts can be hosted on another stage from their own build functions, with nothing of the piece changed. A still with them takes about two minutes in software.
+- A shape is only different if the tallest things are not at the middle. Putting each quarter's peak part way down its river, and leaving the middle of the picture to a valley, is what broke the mound.
+
+**Half finished, and what the next session needs**
+
+- His pick. Then the agreement for the picked world replaces items 19 to 26 of "The hero, the city at rest" and tests 14 to 19, and a prompt goes to Claude Code.
+- Not judged on a real graphics card: the turned finish of A's ground under a moving cursor, the lights going round the rings, and whether the page holds the screen's rate.
+- The live site's crash on his device is with Claude Code, in the prompt he was given. This page mounts the same planet, so it may show the same fault until that is fixed.
+
 ## 2026-11-15 · The derby of looks stopped at its first still: the shape is turned down too (Fable, web chat)
 
 **What Brandon said**
