@@ -38,9 +38,13 @@ export const K = {
   sky: 14,
   // A cartouche: a panel of dark bronze with abstract marks raised in gold, in a column, and a gold border.
   glyph: 15,
-  // The back of a channel cut into stone: tall openings, three floors high, filling its width, between spandrels of
-  // stone. Most are dark, a few lit warm from within.
+  // The back of a channel cut into stone: a tall strip of dark glass, lit in runs of floors.
   slot: 16,
+  // The back of an opening sunk in a wall, built in depth: a room behind glass, most dark, some lit. Its column is
+  // the whole part of its share across, its sill its foot and its head the top of the opening.
+  deep: 17,
+  // Worn paving on a roof or a terrace.
+  paving: 18,
 } as const;
 
 export type XZ = [number, number];
@@ -75,10 +79,12 @@ export class City {
   private nrm = new Grow(1 << 20);
   private map = new Grow(1 << 20);
   private face = new Grow(1 << 20);
-  private foot = new Grow(1 << 18);
+  private foot = new Grow(1 << 19);
   private idx: number[] = [];
   private verts = 0;
   private ox = 0; private oz = 0; private c = 1; private s = 0; private id = 0;
+  // The top of the wall being built, for the stains that run down from under its cornice, or -1 for none.
+  head = -1;
   private m = new THREE.Matrix4().elements;
   // Where the tower being built began in the buffers, so it can be taken out again.
   private from = { pos: 0, nrm: 0, map: 0, face: 0, foot: 0, idx: 0, verts: 0 };
@@ -107,7 +113,7 @@ export class City {
   // A point of the tower's frame on the map, with its height over the ground.
   onMap(q: V3): V3 { return [this.ox + q[0] * this.c + q[2] * this.s, q[1], this.oz - q[0] * this.s + q[2] * this.c]; }
 
-  vert(q: V3, n: V3, frac: number, bays: number, kind: number, foot: number): number {
+  vert(q: V3, n: V3, frac: number, bays: number, kind: number, foot: number, head = this.head): number {
     const w = this.place(q), p = this.onMap(q), e = this.m;
     let nx = e[0] * n[0] + e[4] * n[1] + e[8] * n[2], ny = e[1] * n[0] + e[5] * n[1] + e[9] * n[2], nz = e[2] * n[0] + e[6] * n[1] + e[10] * n[2];
     const l = Math.hypot(nx, ny, nz);
@@ -116,7 +122,7 @@ export class City {
     this.nrm.push(nx, ny, nz);
     this.map.push(p[0], p[1], p[2]);
     this.face.push(frac, bays, kind, this.id);
-    this.foot.push(foot);
+    this.foot.push(foot, head);
     return this.verts++;
   }
 
@@ -128,7 +134,7 @@ export class City {
     g.setAttribute('normal', new THREE.BufferAttribute(this.nrm.out, 3));
     g.setAttribute('plan', new THREE.BufferAttribute(this.map.out, 3));
     g.setAttribute('face', new THREE.BufferAttribute(this.face.out, 4));
-    g.setAttribute('foot', new THREE.BufferAttribute(this.foot.out, 1));
+    g.setAttribute('foot', new THREE.BufferAttribute(this.foot.out, 2));
     g.setIndex(this.verts > 65535 ? new THREE.BufferAttribute(new Uint32Array(this.idx), 1) : new THREE.BufferAttribute(new Uint16Array(this.idx), 1));
     g.computeBoundingSphere();
     return g;
@@ -160,7 +166,8 @@ export interface LoftOpts {
 export function loft(b: City, levels: Level[], kind: number, o: LoftOpts = {}): void {
   const n = levels[0].ring.length, L = levels.length;
   const P = (i: number, j: number): V3 => { const q = levels[i].ring[((j % n) + n) % n]; return [q[0], levels[i].y, q[1]]; };
-  const foot = o.foot ?? levels[0].y;
+  const foot = o.foot ?? levels[0].y, was = b.head;
+  b.head = levels[L - 1].y;
   // Where a segment's kind and bays come from: its length at the lowest level.
   const segLen = (j: number) => { let m = 0; for (let i = 0; i < L; i++) m += len3(sub(P(i, j + 1), P(i, j))); return m / L; };
   if (o.round) {
@@ -191,6 +198,7 @@ export function loft(b: City, levels: Level[], kind: number, o: LoftOpts = {}): 
       const a = rows[i][j], c = rows[i][j + 1], d = rows[i + 1][j + 1], e = rows[i + 1][j];
       b.tri(a, c, d); b.tri(a, d, e);
     }
+    b.head = was;
     return;
   }
   for (let j = 0; j < n; j++) {
@@ -214,6 +222,7 @@ export function loft(b: City, levels: Level[], kind: number, o: LoftOpts = {}): 
       }
     }
   }
+  b.head = was;
 }
 
 // A flat lid over a ring at y, facing up, or down when under is set. holes are rings cut out of it.
@@ -366,4 +375,73 @@ export function offset(ring: Ring, out: number): Ring {
     const k = Math.max(0.2, 1 + ax * bx + az * bz);
     return [q[0] + ((ax + bx) / k) * out, q[1] + ((az + bz) / k) * out];
   });
+}
+
+// A quad, its corners in order round it, turned to face out (a direction it should face).
+export function quad(b: City, p: [V3, V3, V3, V3], out: V3, kind: number, f: { frac?: [number, number, number, number]; bays?: number; foot?: number; head?: number } = {}): void {
+  let n = cross(sub(p[1], p[0]), sub(p[3], p[0]));
+  if (len3(n) < 1e-9) n = cross(sub(p[2], p[1]), sub(p[0], p[1]));
+  const flip = n[0] * out[0] + n[1] * out[1] + n[2] * out[2] < 0;
+  const nn = norm(out);
+  const fr = f.frac ?? [0, 1, 1, 0], foot = f.foot ?? Math.min(p[0][1], p[1][1], p[2][1], p[3][1]);
+  const ids = p.map((q, i) => b.vert(q, nn, fr[i], f.bays ?? 0, kind, foot, f.head ?? b.head));
+  if (flip) { b.tri(ids[0], ids[2], ids[1]); b.tri(ids[0], ids[3], ids[2]); } else { b.tri(ids[0], ids[1], ids[2]); b.tri(ids[0], ids[2], ids[3]); }
+}
+
+export interface Punch {
+  // The face runs across from x0 to x1 and up from y0 to y1, at z0 at its foot, leaning back by lean units for every
+  // unit it rises, and faces +z.
+  x0: number; x1: number; y0: number; y1: number; z0: number; lean: number;
+  // Openings: so many across and so many up, each so wide and so tall, sunk so deep, so far over each storey's floor.
+  cols: number; rows: number; ow: number; oh: number; dd: number; sill: number;
+  // The wall's kind and the kind of the openings' jambs, sills and heads.
+  wall: number; jamb: number;
+  // Where a column has no opening: a share of them, chosen by r, are left solid.
+  r?: () => number; solid?: number;
+}
+
+// A wall pierced by openings built in depth: each a recess whose jambs, sill and head are stone, which the moon
+// shadows, and whose back is a room (K.deep). The face is built in strips round the openings.
+export function punched(b: City, o: Punch): void {
+  const z = (y: number) => o.z0 - o.lean * (y - o.y0), out: V3 = [0, o.lean, 1];
+  const W = o.x1 - o.x0, pitch = W / o.cols, storey = (o.y1 - o.y0) / o.rows;
+  const P = (x: number, y: number, k = 0): V3 => [x, y, z(y) - k];
+  const fr = (x: number) => (x - o.x0) / W;
+  const wall = (xa: number, xb: number, ya: number, yb: number) => {
+    if (xb - xa < 1e-3 || yb - ya < 1e-3) return;
+    quad(b, [P(xa, ya), P(xb, ya), P(xb, yb), P(xa, yb)], out, o.wall, { frac: [fr(xa), fr(xb), fr(xb), fr(xa)], bays: W, foot: o.y0, head: o.y1 });
+  };
+  const holes: boolean[][] = [];
+  for (let j = 0; j < o.rows; j++) holes.push(Array.from({ length: o.cols }, () => !(o.r && o.r() < (o.solid ?? 0))));
+  let y = o.y0;
+  for (let j = 0; j < o.rows; j++) {
+    const ya = o.y0 + storey * j + o.sill, yb = ya + o.oh;
+    wall(o.x0, o.x1, y, ya);
+    let x = o.x0;
+    for (let i = 0; i < o.cols; i++) {
+      const c = o.x0 + pitch * (i + 0.5), xa = c - o.ow / 2, xb = c + o.ow / 2;
+      if (!holes[j][i]) continue;
+      wall(x, xa, ya, yb);
+      x = xb;
+      const d = o.dd;
+      // The jambs, the sill and the head.
+      quad(b, [P(xa, ya), P(xa, ya, d), P(xa, yb, d), P(xa, yb)], [1, 0, 0], o.jamb, { foot: ya, head: yb });
+      quad(b, [P(xb, ya), P(xb, yb), P(xb, yb, d), P(xb, ya, d)], [-1, 0, 0], o.jamb, { foot: ya, head: yb });
+      quad(b, [P(xa, ya), P(xb, ya), P(xb, ya, d), P(xa, ya, d)], [0, 1, 0], o.jamb, { foot: ya, head: yb });
+      quad(b, [P(xa, yb), P(xa, yb, d), P(xb, yb, d), P(xb, yb)], [0, -1, 0], o.jamb, { foot: ya, head: yb });
+      const col = i + 1000 * j + 0.001;
+      quad(b, [P(xa, ya, d), P(xb, ya, d), P(xb, yb, d), P(xa, yb, d)], out, K.deep, { frac: [col, col + 0.998, col + 0.998, col], bays: 1, foot: ya, head: yb });
+    }
+    wall(x, o.x1, ya, yb);
+    y = yb;
+  }
+  wall(o.x0, o.x1, y, o.y1);
+}
+
+// A low wall round the edge of a roof, so tall and so thick, inside the ring.
+export function parapet(b: City, ring: Ring, y: number, tall: number, thick: number, kind: number, top: number = kind): void {
+  const inner = offset(ring, -thick), rev = [...inner].reverse();
+  loft(b, [{ y, ring }, { y: y + tall, ring }], kind, { foot: y });
+  loft(b, [{ y, ring: rev }, { y: y + tall, ring: rev }], kind, { foot: y });
+  cap(b, ring, y + tall, top, false, [inner]);
 }

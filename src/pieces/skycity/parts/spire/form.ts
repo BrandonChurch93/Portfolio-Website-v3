@@ -1,84 +1,107 @@
 import { SPIRE } from '../../layout';
 
-// The spire's form, in the city's units, y up from the plaza, its axis at the origin. Bearings are in degrees from
-// straight toward the visitor, turning to the visitor's right.
+// The spire's form, in the city's units, y up from the top of the dome, its axis at the origin. Bearings are in
+// degrees from straight toward the visitor, turning to the visitor's right.
 //
-// It is one gesture from the plaza to the tip: six buttresses spring from a stepped stone plinth and climb as ribs,
-// winding a sixth of a turn round a glass core and gathering into the needle. The core steps in under them at each
-// deck, where the ribs are clamped to an outrigger plate ringed with light. Near the top the observation level is a
-// ring of glass held out past the ribs, and over it the ribs close round the lit lantern of the crown.
+// The great tower of the city, built over centuries. Its foot is the oldest: a battered terrace of pale stone with a
+// gilded gorge cornice, a pylon gate on each of its four sides. Out of the terrace rises the body: a core of dark
+// glass with rooms in it, a rounded square in plan with a face to each gate, and on its four corners stone piers that
+// flare out over the terrace and climb the core to its head. A ring stands clear of the body where the piers' flare
+// ends. At the head a lotus capital of copper carries a lit gallery, and over it the crown, the newest: a sun of lit
+// glass held in a cage of gilded meridians whose four rings step in as they rise. Then the needle and its beacon.
 
 export const TALL = SPIRE.tall;
 
-// The plinth's steps, as [radius, top] from the plaza up.
-export const STEPS: [number, number][] = [[57, 1.1], [53, 2.2], [49, 3.4]];
-export const PLINTH_TOP = STEPS[STEPS.length - 1][1];
-
-// The ribs stand at these bearings at their feet: the front of the spire is the face between the two either side of 0,
-// where the line of light runs up it.
-export const RIBS = [30, 90, 150, 210, 270, 330] as const;
-
-// Where the ribs ride: their middle's radius, from where they leave the buttresses to where they gather at the foot of
-// the needle, as an ogive: nearly upright low down, closing faster toward the top.
-export const RIB = { from: 74, to: 368, r0: 21.2, r1: 3.6, depth: 3, wide: 3.5, top: 1.7 };
-const ribK = (y: number) => Math.min(1, Math.max(0, (y - RIB.from) / (RIB.to - RIB.from)));
-export const ribR = (y: number) => RIB.r1 + (RIB.r0 - RIB.r1) * (1 - ribK(y) ** 1.6) ** 0.8;
-// On its way up each rib winds a little round the core, most of it over the crown, as the ribs gather.
-export const TWIST = 24;
-export const ribTurn = (y: number) => { const k = ribK(y); return TWIST * k ** 3; };
-// A buttress springs from the plinth this far out and curves up into its rib.
-export const BUTTRESS = { r: 45, th: 5.6, curve: 2.3 };
-// The copper cuff where a buttress's stone cladding ends and its steel rib goes on: its height and how far it stands
-// proud of the rib.
-export const CUFF = { y: RIB.from, h: 3.4, proud: 0.6 };
-
-// The decks: the lobby's canopy, three breaks in the core, and the floor of the observation level. Each is an
-// outrigger plate the ribs are clamped to, standing out past them, with a fascia ringed by a line of light.
-export const DECKS = [30, 120, 200, 262, 299] as const;
-export const DECK = { thick: 2, past: 2.4, band: 0.6, canopy: 24 };
-// The clamp where a rib passes a deck: how much wider, taller and deeper it is than the rib.
-export const NODE = { wide: 1.4, tall: 2.6, deep: 1.1 };
-
-// The core: the lobby's drum, then a run of glass between each pair of decks, each tucked just inside where the ribs
-// are at its top, so the ribs stand off it most at the foot of each run.
-const GAP = 2.1;
-export const RUNS: [number, number, number, number][] = [[PLINTH_TOP, DECKS[0] - DECK.thick / 2, 19, 19]];
-for (let i = 0; i < DECKS.length - 1; i++) {
-  const a = DECKS[i] + DECK.thick / 2, b = DECKS[i + 1] - DECK.thick / 2, top = ribR(b) - RIB.depth / 2 - GAP;
-  RUNS.push([a, b, i === 0 ? 19 : top + 0.7, top]);
+// A rounded square in plan, its faces toward the gates: how far from the axis its surface is at a bearing, as a
+// share of its faces' distance. n is its power: 2 a circle, higher a squarer square.
+export function swell(bearingRad: number, n: number): number {
+  const s = Math.abs(Math.sin(bearingRad)), c = Math.abs(Math.cos(bearingRad));
+  return 1 / (s ** n + c ** n) ** (1 / n);
 }
+// The distance of such a square's corner, at 45 degrees, for a face distance of a.
+export const cornerOf = (a: number, n: number) => a * 2 ** (0.5 - 1 / n);
 
-export function coreR(y: number): number {
-  for (const [a, b, r0, r1] of RUNS) if (y >= a - 0.01 && y <= b + 0.01) return r0 + ((r1 - r0) * (y - a)) / (b - a);
-  for (let i = 0; i < RUNS.length - 1; i++) if (y > RUNS[i][1] && y < RUNS[i + 1][0]) return RUNS[i][3];
-  return RUNS[RUNS.length - 1][3];
+// How far under the top of the dome the lowest course reaches, so it meets the ground where the ground falls away.
+export const SINK = 7;
+// The terrace's power in plan, and the courses it stands on, as [face distance, top].
+export const SQ = 4;
+export const STEPS: [number, number][] = [[61, 0.6], [58.5, 1.8], [56, 3]];
+// The terrace: battered from its foot to the cornice, its faces' distance at both, and its gilded gorge cornice.
+export const TERRACE = { from: 3, top: 24, r0: 54, r1: 50.5, cornice: 3.4, lip: 3.2 };
+export const TERRACE_TOP = TERRACE.top + TERRACE.cornice;
+export const terraceR = (y: number) => TERRACE.r0 + (TERRACE.r1 - TERRACE.r0) * clamp01((y - TERRACE.from) / (TERRACE.top - TERRACE.from));
+
+// The four pylon gates, at these bearings. Each is two battered towers either side of a door, a lintel between them,
+// standing out of the terrace's face. Distances are from the axis: where its back is let into the terrace, its face
+// at its foot and its top, its door's half width, each tower's outer half width at its foot and top, its cornice, the
+// lintel's foot and top, and where the door is set back to.
+export const GATES = [0, 90, 180, 270] as const;
+export const PYLON = { back: 46, face0: 67, face1: 63.5, top: 39, door: 4.6, half0: 21, half1: 17.5, cornice: 2.8, lintel: [27, 33] as const, recess: 60.5 };
+
+// The core: three tiers, each stepping in from the one under it at a gilded gorge cornice, as an obelisk built in
+// stages. Each tier's faces' distance at its foot and its top, and the power of its plan. Over the third, the
+// gallery: a band of lit glass under the last cornice, out of which the crown grows.
+export interface Tier { from: number; to: number; a0: number; a1: number }
+export const TIERS: Tier[] = [
+  { from: TERRACE_TOP - 1, to: 96, a0: 34, a1: 30.5 },
+  { from: 96, to: 150, a0: 28, a1: 25 },
+  { from: 150, to: 186, a0: 23, a1: 21.5 },
+];
+export const CORE = { from: TIERS[0].from, to: TIERS[2].to, n: 3 };
+// A tier's cornice: how tall it is and how far its lip stands out.
+export const CORNICE = { tall: 3.4, lip: 2.6 };
+export const DECK = { sill: 177.5, roof: TIERS[2].to };
+export function coreA(y: number): number {
+  for (const t of TIERS) if (y <= t.to) return t.a0 + (t.a1 - t.a0) * clamp01((y - t.from) / (t.to - t.from));
+  return TIERS[TIERS.length - 1].a1;
 }
+export const coreCorner = (y: number) => cornerOf(coreA(y), CORE.n);
 
-// The observation level: a ring of glass held out past the ribs on the top deck, under a thin roof, round a lit core.
-export const SKY = { from: DECKS[4] + DECK.thick / 2, to: 309, r: 15.6, roof: 1.2, core: 8.2, fins: 24, fin: [0.8, 1.3] as const };
-// The crown: a lantern of lit glass that the ribs close round, from the observation level's roof to the needle.
-export const LANTERN = { from: SKY.to + SKY.roof, to: RIB.to - 1 };
-export const lanternR = (y: number) => Math.max(0.8, ribR(y) - RIB.depth / 2 - 1.1);
-// A copper collar where the ribs gather, at the foot of the needle.
-export const COLLAR = { y: RIB.to + 1.2, r: 4.6, h: 3.2 };
+// A pier on each corner of the core, at 45 degrees from the gates: it springs from the terrace's corner, flares in
+// along a curve, and climbs the tiers on a smooth taper of its own, so the tiers step in behind it. Over the core it
+// goes on as a blade of bronze that swells round the sun and closes over it under the needle.
+export const PIERS = [45, 135, 225, 315] as const;
+export const PIER = { from: TERRACE.top - 2, foot: 61, knee: 112, curve: 2.1, proud: 6, top: CORE.to, th0: 16, th1: 11.5 };
+const env = (y: number) => cornerOf(TIERS[0].a0, CORE.n) + (cornerOf(TIERS[2].a1, CORE.n) - cornerOf(TIERS[0].a0, CORE.n)) * clamp01((y - CORE.from) / (CORE.to - CORE.from));
+const pierK = (y: number) => clamp01((y - PIER.from) / (PIER.knee - PIER.from));
+export const pierOut = (y: number) => env(y) + PIER.proud + (PIER.foot - env(PIER.from) - PIER.proud) * (1 - pierK(y)) ** PIER.curve;
+export const pierTh = (y: number) => PIER.th1 + (PIER.th0 - PIER.th1) * (1 - clamp01((y - PIER.from) / (PIER.top - PIER.from))) ** 1.4;
+// A blade's outline, as [height, distance of its outer edge from the axis], and how deep it is from its outer edge in
+// and how thick it is, each as [height, size] from its foot to its tip.
+export const BLADE = { line: [[CORE.to, cornerOf(TIERS[2].a1, CORE.n) + PIER.proud], [200, 36], [212, 38.5], [226, 37], [240, 31], [252, 20], [262, 7.5]] as [number, number][], deep: [[CORE.to, 13], [214, 12], [263, 4.5]] as [number, number][], th: [[CORE.to, 11.5], [214, 13.5], [263, 4.5]] as [number, number][] };
+// A rib of stone up the middle of each face of the core: how far it stands proud of the glass and how wide it is.
+export const RIB = { proud: 1.6, w0: 5.5, w1: 3.2 };
 
-// The needle, turned, up to the beacon; rings of copper on it.
-export const NEEDLE: [number, number][] = [[3.2, COLLAR.y + COLLAR.h / 2], [2.5, 382], [1.9, 396], [1.3, 408], [0.75, 415.4]];
-export const NEEDLE_RINGS = [{ y: 381, r: 3.1, h: 1.2 }, { y: 400, r: 2.2, h: 0.9 }];
-// The beacon: a slim lens near the tip, and the spike over it.
-export const BEACON = { from: 415.4, to: 418.4, r: 0.95, tip: TALL };
+// The rings, level, each a heavy hoop of polished gold binding the blades, standing clear of them, thick enough in
+// section to catch the light on its top and to be dark under it, with lamps round its rim. They step in as they rise.
+export interface Hoop { y: number; r: number; h: number; d: number; lights: number }
+// How far each ring is tipped toward the visitor, in degrees. The page sees the crown from under two degrees above
+// it, where a level ring is only a line: tipped this far, each shows its far side over its near one, as a ring.
+export const TILT = 7;
+export const CROWN: Hoop[] = [
+  { y: 211, r: 45, h: 3.4, d: 3.8, lights: 28 },
+  { y: 229, r: 42, h: 3.1, d: 3.5, lights: 24 },
+  { y: 245, r: 32, h: 2.7, d: 3.1, lights: 20 },
+];
 
-// The line of light up the front and the back of the core, and the lift that rides it: its half width, in units, and
+// The sun, held inside the blades, on a gilded neck over a low dome of copper that roofs the gallery.
+export const SUN = { y: 222, r: 20 };
+export const DOME = { from: DECK.roof + CORNICE.tall, to: 195 };
+
+// The needle, turned, from where the blades close to the beacon, and gilded collars on it.
+export const NEEDLE: [number, number][] = [[7.5, 261], [6, 264], [4.6, 268], [3.3, 272.5], [2.2, 276]];
+export const NEEDLE_RINGS = [{ y: 262.5, r: 8.4, h: 2.0 }, { y: 268.5, r: 5.6, h: 1.4 }, { y: 273, r: 4.1, h: 1.1 }];
+export const BEACON = { from: 276, to: 278.6, r: 1.7, tip: TALL };
+
+// The line of light up the rib on the core's front face, and the lift that rides it: its half width, in units, and
 // the levels the lift stops at.
-// The line sits in a channel between two dark fins: how far out they stand and how wide each is.
-export const CHANNEL = { out: 0.7, wide: 0.35 };
-export const LINE = { half: 0.7, from: DECKS[0] + DECK.thick / 2, to: SKY.from };
-export const LIFT = { tall: 2.6, levels: [32.4, 122.4, 202.4, 264.4, 301.4] as const, speed: 34, slot: 11, dwell: 2.4 };
+export const LINE = { half: 0.7, from: TERRACE_TOP + 0.5, to: DECK.sill - 1 };
+export const LIFT = { tall: 2.6, levels: [LINE.from + 1, 70, TIERS[1].from + 6, 128, TIERS[2].from + 6, DECK.sill - 5] as const, speed: 26, slot: 11, dwell: 2.4 };
 
-// A storey of the core, and how many bays it has round.
-export const FLOOR = { tall: 3.2, bays: 56 };
-// The lobby's glass: how many lights between a pair of buttresses, and where its transom is.
-export const LOBBY = { lights: 6, transom: 21 };
+// A storey of the core and a bay of its glass, in units, and how deep a room is behind it.
+export const ROOM = { tall: 3.3, bay: 1.65, deep: 4.4 };
 
-// The nav lights on the deck tips: how long one blinks, in seconds.
+// The nav lights: how long one blinks, in seconds.
 export const BLINK = 3.1;
+
+function clamp01(x: number): number { return Math.min(1, Math.max(0, x)); }

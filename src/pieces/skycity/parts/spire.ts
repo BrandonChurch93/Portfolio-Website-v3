@@ -1,20 +1,25 @@
 import * as THREE from 'three';
 import { registry } from '../../../hooks/registry';
 import type { PartFactory } from '../part';
-import { BEACON, LIFT, TALL } from './spire/form';
+import { SPIRE } from '../layout';
+import { BEACON, LIFT, SUN } from './spire/form';
 import { U, spireMaterials } from './spire/materials';
 import { buildSpire } from './spire/model';
 
-// The spire at the middle of the city: a stone plinth, six buttresses that climb in as an exoskeleton of ribs round a
-// glass core, three decks ringed with light where the core steps in, the observation level, a lantern lit in a cage
-// of the ribs, and the needle. A line of light runs up its front with a lift riding it, a pulse climbs the rings now
-// and then, and the beacon at the tip breathes. All of it from the clock alone.
+// The great tower of the city, at the top of the world: a battered terrace of stone with a pylon gate on each side,
+// a core of glass with rooms in it between four stone piers that flare out over the terrace, a ring round the body,
+// a lotus capital of copper carrying a lit gallery, and the crown: a sun of lit glass in a cage of gilded meridians
+// whose four rings step in as they rise. Then the needle and its beacon. A line of light runs up its front with a lift
+// riding it, a pulse climbs the rings now and then, a chase runs round the rings' lamps, and the beacon breathes.
+// All of it from the clock alone.
 
 // The beacon's breath, in seconds, and the halo round it, in units: at rest and at the top of a breath.
 const BREATH = 4.6;
-const HALO = { rest: 4, full: 11, dim: 0.08, bright: 0.45 };
+const HALO = { rest: 7, full: 20, dim: 0.08, bright: 0.45 };
+// The sun's own glow round it, in units, and how strong: soft and small, so it lays no haze over the page.
+const GLOW = { size: 92, strength: 0.12 };
 // How often a pulse sets off up the rings, how long it takes to climb, and where it starts and ends.
-const PULSE = { every: 13.7, climb: 4.2, from: -60, to: 480 };
+const PULSE = { every: 13.7, climb: 4.2, from: -60, to: 300 };
 // With reduced motion or on the static tier, everything is shown as it is at this time.
 const REST = 3.1;
 
@@ -31,13 +36,21 @@ export function liftAt(t: number): number {
   return from + (to - from) * ease((tau - LIFT.dwell) / Math.max(run, 0.01));
 }
 
-export const build: PartFactory = ({ tier }) => {
+export const build: PartFactory = async ({ tier }) => {
   const { mats, of } = spireMaterials();
-  const { group, tris, meshes } = buildSpire(of);
+  const { group, tris, meshes } = await buildSpire(of);
+  if (typeof location !== 'undefined' && location.search.includes('grey=1')) { const g = new THREE.MeshStandardMaterial({ color: 0x8a8580, roughness: 0.7 }); for (const m of meshes) m.material = g; }
   const halo = new THREE.Sprite(mats.halo);
   halo.position.set(0, (BEACON.from + BEACON.to) / 2, 0);
   halo.renderOrder = 2;
   group.add(halo);
+  const glowMat = mats.halo.clone();
+  glowMat.color.multiplyScalar(GLOW.strength);
+  const glow = new THREE.Sprite(glowMat);
+  glow.position.set(0, SUN.y, 0);
+  glow.scale.setScalar(GLOW.size);
+  glow.renderOrder = 2;
+  group.add(glow);
   const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
   const hot = mats.halo.color.clone();
 
@@ -45,7 +58,7 @@ export const build: PartFactory = ({ tier }) => {
 
   return {
     group,
-    alone: { at: [0, TALL / 2, 0], r: TALL * 0.4 },
+    alone: { at: [0, SPIRE.tall / 2, 0], r: SPIRE.tall * 0.4 },
     update(s) {
       const t = reduced || tier === 'static' ? REST : s.t;
       U.uT.value = t;
@@ -64,6 +77,7 @@ export const build: PartFactory = ({ tier }) => {
       mats.light.dispose();
       mats.halo.map?.dispose();
       mats.halo.dispose();
+      glowMat.dispose();
     },
   };
 };
