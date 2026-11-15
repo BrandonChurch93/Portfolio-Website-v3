@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Builder, at, pause, xf } from '../../../world/build';
+import { Builder, at, slice, xf } from '../../../world/build';
 import { MAT } from '../layout';
 import type { PartFactory } from '../part';
 import { cameraArt } from './camera/art';
@@ -44,8 +44,9 @@ export const build: PartFactory = async () => {
   const group = new THREE.Group();
   group.name = 'camera';
   const art = await cameraArt(8);
+  await slice();
   const m = cameraMaterials(art);
-  await pause();
+  await slice();
 
   const b = new Builder();
   const root = new Put(b, new THREE.Matrix4());
@@ -62,13 +63,15 @@ export const build: PartFactory = async () => {
   const lensSee = SEE.clone().applyMatrix4(new THREE.Matrix4().extractRotation(lensT).invert());
 
   const cam = root.sub(camT);
-  body(cam, m);
-  await pause();
-  prime(cam.sub(xf({ p: [MOUNT.x, MOUNT.y, MOUNT.z + 1.4], r: [Math.PI / 2, 0, 0], s: PRIME_SCALE })), m, { mid: primeMid, dir: -1, flip: true, front: false });
-  await pause();
+  await body(cam, m);
+  await slice();
+  await prime(cam.sub(xf({ p: [MOUNT.x, MOUNT.y, MOUNT.z + 1.4], r: [Math.PI / 2, 0, 0], s: PRIME_SCALE })), m, { mid: primeMid, dir: -1, flip: true, front: false });
+  await slice();
   // Lying on its side, the zoom's barrel is read from its front, so its band's lettering runs the other way.
-  zoom(root.sub(lensT), m, { mid: Math.atan2(lensSee.x, lensSee.z), dir: -1, flip: true, front: false });
-  cap(root.sub(capT), m);
+  await zoom(root.sub(lensT), m, { mid: Math.atan2(lensSee.x, lensSee.z), dir: -1, flip: true, front: false });
+  await slice();
+  await cap(root.sub(capT), m);
+  await slice();
 
   // Contact shadows: under the body and the grip, a lighter one under the prime that stands just clear of the mat,
   // along the zoom where it lies, under the cap.
@@ -79,7 +82,7 @@ export const build: PartFactory = async () => {
   root.sub(lensGround).add(shadowPlate(30, 58, 26, 0.75), m.shadow, at(0, lift, 0), false);
   root.sub(capGround).add(shadowPlate(37, 37, 37, 0.7), m.shadow, at(0, lift, 0), false);
 
-  const meshes = b.build(group, 'camera');
+  const meshes = await b.buildInSlices(group, 'camera');
   const box = new THREE.Box3();
   for (const mesh of meshes) {
     if (mesh.material === m.shadow) { mesh.renderOrder = -1; continue; }

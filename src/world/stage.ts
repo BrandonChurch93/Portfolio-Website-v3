@@ -80,6 +80,9 @@ function ditherPass(): ShaderPass {
   return pass;
 }
 
+// How many vertices warm() sends to the GPU at a time when it is paced.
+const DRAW_AHEAD = 40000;
+
 export class Stage {
   renderer: THREE.WebGLRenderer;
   scene = new THREE.Scene();
@@ -202,7 +205,10 @@ export class Stage {
   // link on the first frame and stall it.
   // Parts hidden until a moment of the piece's life (smoke, a flame, a sling) are shown for the compile, so they do not
   // stall the frame they first appear in.
-  async warm(): Promise<void> {
+  // With pace, every program the first frame needs is compiled ahead of it and none is waited for: the scene's thing by
+  // thing, then the post chain's, the shadows' and the occlusion pass's, which three would otherwise compile in the
+  // frame itself and wait on as each links. pace is called between the pieces of that work.
+  async warm(pace?: () => Promise<void> | void): Promise<void> {
     // Lights keep their state: three compiles for the number of lights in view, and that must match the first frame.
     const seen = (o: THREE.Object3D) => { for (let x: THREE.Object3D | null = o; x; x = x.parent) if (!x.visible) return false; return true; };
     const dark = new Set<THREE.Object3D>();
@@ -212,14 +218,150 @@ export class Stage {
     for (const l of dark) l.visible = false;
     const prev = this.renderer.getRenderTarget();
     this.renderer.setRenderTarget(this.composer.readBuffer);
-    await this.renderer.compileAsync(this.scene, this.camera);
+    let spare: THREE.Material[] = [];
+    if (pace) spare = await this.compileAhead(pace);
+    else await this.renderer.compileAsync(this.scene, this.camera);
     this.renderer.setRenderTarget(prev);
+    const shadows = pace ? await this.drawAhead(pace) : null;
     // The GPU driver builds a program's pipeline at its first draw, so one frame is drawn with everything shown. The
-    // piece draws its real first frame straight after; this one is never seen.
-    this.composer.render();
+    // piece draws its real first frame straight after; this one is never seen. Paced, it is drawn a pass to a task.
+    if (pace) await this.renderInSteps(pace);
+    else this.composer.render();
+    shadows?.();
+    for (const m of spare) m.dispose();
     for (const o of hidden) o.visible = false;
     for (const l of dark) l.visible = true;
     await pause();
+  }
+
+  // The composer's render(), with pace called after each pass.
+  private async renderInSteps(pace: () => Promise<void> | void): Promise<void> {
+    const c = this.composer, prev = this.renderer.getRenderTarget();
+    for (const [i, pass] of c.passes.entries()) {
+      if (!pass.enabled) continue;
+      pass.renderToScreen = c.renderToScreen && c.isLastEnabledPass(i);
+      pass.render(this.renderer, c.writeBuffer, c.readBuffer, 0, false);
+      if (pass.needsSwap) c.swapBuffers();
+      await pace();
+    }
+    this.renderer.setRenderTarget(prev);
+  }
+
+  // Draws the scene a few things at a time into a target of one pixel, so their buffers and textures are sent in tasks
+  // of their own and not all in the frame drawn with everything shown, and then the shadow maps, one light to a task.
+  // Hands back what puts the shadows as they were, to be called after that frame, which then has no shadow to draw.
+  private async drawAhead(pace: () => Promise<void> | void): Promise<() => void> {
+    const r = this.renderer, scene = this.scene, prev = r.getRenderTarget(), read = this.composer.readBuffer;
+    const tiny = new THREE.WebGLRenderTarget(1, 1, { type: read.texture.type, format: read.texture.format as THREE.PixelFormat, colorSpace: read.texture.colorSpace as THREE.ColorSpace, depthBuffer: read.depthBuffer, stencilBuffer: read.stencilBuffer, samples: read.samples });
+    const casters: { shadow: THREE.LightShadow }[] = [];
+    scene.traverse((o) => { const shadow = (o as THREE.Object3D & { shadow?: THREE.LightShadow }).shadow; if (o instanceof THREE.Light && o.castShadow && shadow) casters.push({ shadow }); });
+    const was = casters.map(({ shadow }) => [shadow.autoUpdate, shadow.needsUpdate] as const);
+    for (const { shadow } of casters) { shadow.autoUpdate = false; shadow.needsUpdate = false; }
+    const things: THREE.Object3D[] = [];
+    scene.traverse((o) => { if (o.visible && ((o as THREE.Mesh).isMesh || (o as THREE.Points).isPoints || (o as THREE.Line).isLine || (o as THREE.Sprite).isSprite)) things.push(o); });
+    const size = (o: THREE.Object3D) => (o as THREE.Mesh).geometry?.getAttribute('position')?.count ?? 0;
+    for (let from = 0; from < things.length;) {
+      let to = from, n = 0;
+      while (to < things.length && (to === from || n < DRAW_AHEAD)) n += size(things[to++]);
+      const batch = new Set(things.slice(from, to));
+      for (const o of things) o.visible = batch.has(o);
+      r.setRenderTarget(tiny);
+      r.render(scene, this.camera);
+      from = to;
+      await pace();
+    }
+    for (const o of things) o.visible = true;
+    for (const { shadow } of casters) {
+      shadow.needsUpdate = true;
+      r.setRenderTarget(tiny);
+      r.render(scene, this.camera);
+      await pace();
+    }
+    r.setRenderTarget(prev);
+    tiny.dispose();
+    return () => casters.forEach(({ shadow }, i) => { [shadow.autoUpdate, shadow.needsUpdate] = was[i]; });
+  }
+
+  private async compileAhead(pace: () => Promise<void> | void): Promise<THREE.Material[]> {
+    const r = this.renderer, scene = this.scene;
+    type Drawn = THREE.Object3D & { material: THREE.Material | THREE.Material[]; isInstancedMesh?: boolean };
+    const drawn = (o: THREE.Object3D): o is Drawn => (o as THREE.Mesh).isMesh === true || (o as THREE.Points).isPoints === true || (o as THREE.Line).isLine === true || (o as THREE.Sprite).isSprite === true;
+    const list = (m: THREE.Material | THREE.Material[]) => (Array.isArray(m) ? m : [m]);
+    // One thing at a time, in place of its subtree: a stand in that is the thing in every way but has no children.
+    const alone = (o: Drawn, material?: THREE.Material | THREE.Material[]) => {
+      const p = Object.create(o) as Drawn;
+      p.children = [];
+      if (material) p.material = material;
+      return p;
+    };
+    const things: Drawn[] = [];
+    scene.traverse((o) => { if (drawn(o)) things.push(o); });
+    for (const o of things) { r.compile(alone(o), this.camera, scene); await pace(); }
+
+    // What the post chain draws, gathered by running it once with nothing drawn.
+    // A pass draws one quad with a material it changes from draw to draw, so the material is kept with the draw.
+    const calls: { scene: THREE.Object3D; material?: THREE.Material | THREE.Material[]; camera: THREE.Camera; target: THREE.WebGLRenderTarget | null; override: THREE.Material | null; shown: Drawn[] }[] = [];
+    const real = r.render, read = this.composer.readBuffer;
+    r.render = (s: THREE.Object3D, c: THREE.Camera) => {
+      const override = (s as THREE.Scene).isScene ? (s as THREE.Scene).overrideMaterial : null, shown: Drawn[] = [];
+      if (override) s.traverseVisible((o) => { if (drawn(o)) shown.push(o); });
+      calls.push({ scene: s, material: drawn(s) ? s.material : undefined, camera: c, target: r.getRenderTarget(), override, shown });
+    };
+    try { this.composer.render(); } finally { r.render = real; }
+    if (this.composer.readBuffer !== read) this.composer.swapBuffers();
+    for (const call of calls) {
+      if (call.scene === scene && !call.override) continue;
+      r.setRenderTarget(call.target);
+      if (call.override) {
+        const override = call.override;
+        for (const o of call.shown) { r.compile(alone(o, list(o.material).map((m) => (m.allowOverride ? override : m))), call.camera, scene); await pace(); }
+      } else if (call.material && drawn(call.scene)) {
+        r.compile(alone(call.scene, call.material), call.camera);
+        await pace();
+      }
+    }
+    r.setRenderTarget(this.composer.readBuffer);
+
+    // The shadows: each thing that casts one, drawn by a depth material set up as the shadow map sets up its own.
+    const spare = new Map<string, THREE.Material>();
+    type Maps = THREE.Material & { wireframe?: boolean; map?: THREE.Texture | null; alphaMap?: THREE.Texture | null; displacementMap?: THREE.Texture | null; displacementScale?: number; displacementBias?: number };
+    const kinds = new Set<boolean>();
+    scene.traverseVisible((o) => { if (o instanceof THREE.Light && o.castShadow) kinds.add(o instanceof THREE.PointLight); });
+    const flip: Record<number, THREE.Side> = { [THREE.FrontSide]: THREE.BackSide, [THREE.BackSide]: THREE.FrontSide, [THREE.DoubleSide]: THREE.DoubleSide };
+    const casters: Drawn[] = [];
+    scene.traverseVisible((o) => { if (drawn(o) && o.castShadow) casters.push(o); });
+    for (const point of kinds) for (const o of casters) {
+      const own = point ? o.customDistanceMaterial : o.customDepthMaterial;
+      const mats = list(o.material).filter((m) => m.visible).map((m: Maps) => {
+        if (own) return own;
+        const side = m.shadowSide ?? flip[m.side], alphaTest = m.alphaToCoverage ? 0.5 : m.alphaTest;
+        const key = [point, side, m.wireframe, m.alphaMap?.uuid, m.map?.uuid, alphaTest, m.displacementMap?.uuid, m.displacementScale, m.displacementBias].join('|');
+        let d = spare.get(key) as Maps | undefined;
+        if (!d) {
+          d = point ? new THREE.MeshDistanceMaterial() : new THREE.MeshDepthMaterial();
+          d.side = side;
+          d.wireframe = m.wireframe;
+          d.alphaMap = m.alphaMap;
+          d.alphaTest = alphaTest;
+          d.map = m.map;
+          d.displacementMap = m.displacementMap;
+          d.displacementScale = m.displacementScale;
+          d.displacementBias = m.displacementBias;
+          spare.set(key, d);
+        }
+        return d;
+      });
+      if (!mats.length) continue;
+      r.compile(alone(o, Array.isArray(o.material) ? mats : mats[0]), this.camera, scene);
+      await pace();
+    }
+
+    // Each program is waited for while it links on its own thread, then read once, so that reading it in the frame
+    // waits on nothing.
+    const programs = (r.info.programs ?? []) as (THREE.WebGLProgram & { isReady?(): boolean })[];
+    for (let left = programs.filter((p) => p.isReady && !p.isReady()), n = 0; left.length && n < 500; left = left.filter((p) => !p.isReady!()), n++) await new Promise((done) => setTimeout(done, 10));
+    for (const p of programs) { p.getUniforms(); await pace(); }
+    return [...spare.values()];
   }
 
   setResolutionScale(k: number): void {

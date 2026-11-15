@@ -1,14 +1,15 @@
 import * as THREE from 'three';
-import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
 import { hex } from '../../config/palette';
 import type { Tier } from '../../config/site';
 import { clock } from '../../world/clock';
 import type { Piece, PieceOptions } from '../../world/piece';
 import { studioScene } from '../../world/env';
+import { slice } from '../../world/build';
 import { Stage } from '../../world/stage';
 import { finish, trueDarks } from '../../world/tone';
 import { SIDE, myTurn } from '../../world/turn';
 import type { Anchor, Struck } from '../../world/struck';
+import { areaLightTables } from './area';
 import { BULB, DESK, SCREEN, SHADE, VIEW } from './layout';
 import { LIT, PARTS, type DeskLights, type DeskPart, type PartFactory, type PartName, type PartState } from './part';
 
@@ -99,8 +100,6 @@ export type DeskPiece = Piece & Struck & DeskExtras;
 // Where the stream strikes the lamp's shade, by the same projection as where().
 export const DESK_SHADE = SHADE;
 
-let areaLib = false;
-
 export function createDesk(): DeskPiece {
   let stage: Stage | null = null, canvas: HTMLCanvasElement | null = null;
   let parts: { name: PartName; part: DeskPart }[] = [];
@@ -173,7 +172,7 @@ export function createDesk(): DeskPiece {
       canvas.setAttribute('aria-hidden', 'true');
       canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block';
       h.prepend(canvas);
-      if (!areaLib) { RectAreaLightUniformsLib.init(); areaLib = true; }
+      const tables = areaLightTables();
       const q = new URLSearchParams(location.search), asked = q.get('only') as PartName | null;
       only = asked && PARTS.includes(asked) ? asked : null;
       if (q.get('lights') === '0') lights = { room: 1, lamp: 0, tablet: 0, monitor: 0, keys: 0, pc: 0, word: 0 };
@@ -192,12 +191,21 @@ export function createDesk(): DeskPiece {
         floor.userData.noWire = true;
         root.add(floor);
       }
+      // One part after another, each handing the thread back as it goes (slice), so building the desk never holds a
+      // page that is being scrolled. Their code is fetched all at once.
       const names = only ? [only] : [...PARTS];
-      parts = await Promise.all(names.map(async (name) => {
-        const make = await loaders[name](), from = performance.now(), part = await make({ tier: opts.tier });
+      const code = names.map((name) => loaders[name]());
+      const mine = stage, made: { name: PartName; part: DeskPart }[] = [];
+      for (const [i, name] of names.entries()) {
+        const make = await code[i];
+        await slice();
+        const from = performance.now(), part = await make({ tier: opts.tier });
         built[name] = Math.round(performance.now() - from);
-        return { name, part };
-      }));
+        made.push({ name, part });
+        // Taken down while it was being built.
+        if (stage !== mine) { for (const m of made) m.part.dispose?.(); return; }
+      }
+      parts = made;
       for (const { part } of parts) root.add(part.group);
 
       // The desk's own lights: the lamp over the tablet and the monitor. The PC carries its own. Then the room it is
@@ -240,8 +248,11 @@ export function createDesk(): DeskPiece {
       stage.resize();
       setLights(lights, true);
       place();
+      await tables;
+      if (stage !== mine) return;
       const from = performance.now();
-      await stage.warm();
+      await stage.warm(slice);
+      if (stage !== mine) return;
       first = Math.round(performance.now() - from);
       watch = new ResizeObserver(() => { stage?.resize(); stale = true; frame(); });
       watch.observe(h);

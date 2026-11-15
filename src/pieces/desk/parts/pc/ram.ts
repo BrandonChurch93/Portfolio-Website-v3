@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { slice } from '../../../../world/build';
 import { type Adds, extrude, led, moved, rbox, roundedPoly, xf } from './kit';
 import type { Look } from './look';
 
@@ -37,7 +38,7 @@ function facetRelief(pts: [number, number][], rim: number, ridge: number, out: 1
   return g;
 }
 
-export function ram(parent: Adds, L: Look, m: THREE.Matrix4, tone: number): void {
+export async function ram(parent: Adds, L: Look, m: THREE.Matrix4, tone: number): Promise<void> {
   const b = moved(parent, m);
   const outline: [number, number][] = [
     [-HALF, 0], [NOTCH - 0.8, 0], [NOTCH - 0.8, 3.4], [NOTCH + 0.8, 3.4], [NOTCH + 0.8, 0], [HALF, 0],
@@ -54,6 +55,7 @@ export function ram(parent: Adds, L: Look, m: THREE.Matrix4, tone: number): void
   const lN: [number, number][] = [[-HALF + 0.3, 19.4], [-HALF + 3.4, 18.2], [-HALF + 3.4, 14.2], [-HALF + 0.3, 13.0]];
   const prof: [number, number][] = [[-HALF + 0.3, bottom], [HALF - 0.3, bottom], ...rN, [HALF - 0.3, top - 5.5], [HALF - 6.5, top], [9.5, top], [5.5, top - 2.6], [-5.5, top - 2.6], [-9.5, top], [-HALF + 6.5, top], [-HALF + 0.3, top - 5.5], ...lN];
   for (const side of [1, -1] as const) {
+    await slice();
     const g = extrude(roundedPoly(prof, 0.6), plateT, 0.55, 'xy', 4, 1);
     g.translate(0, 0, side > 0 ? gap : -gap - plateT);
     b.add(g, L.sink, TO_STICK, { uv: 'box' });
@@ -63,10 +65,13 @@ export function ram(parent: Adds, L: Look, m: THREE.Matrix4, tone: number): void
       b.add(f, L.sink, TO_STICK, { uv: 'box' });
     };
     const ft = top - 6, low = bottom + 6;
+    await slice();
     facet([[-HALF + 8, low], [-14, low], [-4, ft - 4], [-HALF + 14, ft - 4]]);
+    await slice();
     facet([[14, low], [HALF - 8, low], [HALF - 14, ft - 4], [4, ft - 4]]);
   }
 
+  await slice();
   // The bar: frosted, along the notched top line, on its own plate.
   const barW = 2 * (gap + plateT) - 0.6, z0 = top - 1.6, z1 = HEIGHT, half = (LEN - 2) / 2;
   const notched: [number, number][] = [[-half, z0], [half, z0], [half, z1 - 1.2], [half - 1.2, z1], [9.5, z1], [5.5, z1 - 2.6], [-5.5, z1 - 2.6], [-9.5, z1], [-half + 1.2, z1], [-half, z1 - 1.2]];

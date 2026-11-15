@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { hex } from '../../../config/palette';
-import { Builder, at, rbox } from '../../../world/build';
+import { Builder, at, rbox, slice } from '../../../world/build';
 import { metal } from '../../../world/surface';
 import { DESK } from '../layout';
 import type { PartFactory } from '../part';
@@ -29,7 +29,7 @@ const ANGLE = { top: 22, leg: 36, t: 3 };
 // Where the top's four boards meet, across the depth.
 const JOINTS = [-201, -4, 197];
 
-function boards(b: Builder, M: THREE.Material): void {
+async function boards(b: Builder, M: THREE.Material): Promise<void> {
   const edges = [-FRONT, ...JOINTS, FRONT];
   // Where each board's log had its pith, across the grain: far beside a quarter or rift sawn board, whose face shows
   // straight lines, and below the one flat sawn board, whose face rises in a cathedral here and there.
@@ -39,16 +39,19 @@ function boards(b: Builder, M: THREE.Material): void {
     const back = i === 0 ? 4 : 0, front = i === 3 ? 1 : 0;
     const s = outline([[z0, -T], [z1, -T], [z1, 0], [z0, 0]], [2, 2, front, back], 5);
     b.add(grain(runX(s, -W / 2, W / 2, 2.5), [0.13, 0.52, 0.36, 0.81][i], 'x', zc + pith[i][0], -T / 2 + pith[i][1]), M);
+    await slice();
   }
 }
 
-function trestle(b: Builder, M: THREE.Material, s: -1 | 1): void {
+async function trestle(b: Builder, M: THREE.Material, s: -1 | 1): Promise<void> {
   const cx = s * TX, k = s > 0 ? 0.5 : 0;
   const bearer = outline([[-382, -T], [382, -T], [382, -T - 26], [362, -T - BEARER.h], [-362, -T - BEARER.h], [-382, -T - 26]], [0, 0, 3, 14, 14, 3], 6);
   b.add(grain(runX(bearer, cx - BEARER.w / 2, cx + BEARER.w / 2, 3), 0.31 + k, 'z', cx + 110, -T - 260), M);
+  await slice();
   const top = FLOOR + FOOT.h;
   const foot = outline([[-388, FLOOR], [-292, FLOOR], [-282, FLOOR + 5], [282, FLOOR + 5], [292, FLOOR], [388, FLOOR], [388, FLOOR + 24], [358, top], [-358, top], [-388, FLOOR + 24]], [1.5, 0, 2, 2, 0, 1.5, 3, 5, 5, 3], 5);
   b.add(grain(runX(foot, cx - FOOT.w / 2, cx + FOOT.w / 2, 3), 0.47 + k, 'z', cx - 140, FLOOR - 160), M);
+  await slice();
   for (const z of [-LEG.z, LEG.z]) {
     b.add(grain(stoppedPost(cx, z, top, -T - BEARER.h, LEG.w, LEG.d, 2.5, 9, 64, 18), 0.62 + k + z * 1e-4, 'y', cx + 520 * s, z + 160), M);
     // Two pegs through each joint, a little proud of both faces.
@@ -56,6 +59,7 @@ function trestle(b: Builder, M: THREE.Material, s: -1 | 1): void {
       const g = peg(5, w, 1.6, 0.9).translate(cx, y, z + dz);
       b.add(grain(g, 0.77 + dz * 0.003 + y * 1e-4, 'x', z + dz + 9, y + 6), M);
     }
+    await slice();
   }
 }
 
@@ -67,11 +71,12 @@ function flip(g: THREE.BufferGeometry): THREE.BufferGeometry {
   return g;
 }
 
-function stretcher(b: Builder, M: THREE.Material): void {
+async function stretcher(b: Builder, M: THREE.Material): Promise<void> {
   const inner = TX - LEG.w / 2, outer = TX + LEG.w / 2;
   const body = stoppedPost(0, 0, -inner, inner, STRETCH.h, STRETCH.d, 2.5, 8, 50, 16).rotateZ(-Math.PI / 2).translate(0, STRETCH.y, STRETCH.z);
   b.add(grain(body, 0.88, 'x', STRETCH.z - 230, STRETCH.y + 30), M);
   for (const s of [-1, 1]) {
+    await slice();
     // The tenon comes through the leg and stands a little proud, its end chamfered, split by two wedges driven in
     // across it.
     const t0 = inner - 20, t1 = outer + 12;
@@ -87,18 +92,24 @@ function stretcher(b: Builder, M: THREE.Material): void {
 }
 
 // The drawer case and its two drawers. Hands back where each knob goes.
-function drawers(b: Builder, M: THREE.Material): [number, number, number][] {
+async function drawers(b: Builder, M: THREE.Material): Promise<[number, number, number][]> {
   const { l, r, bottom, face, stile, mid, top, foot, gap, set } = CASE;
   const zc = face - 10, h = -T - bottom, ym = (-T + bottom) / 2, xm = (l + r) / 2;
   b.add(grain(rbox(stile, h, 20, 1.5).translate(l + stile / 2, ym, zc), 0.21, 'y', l + 90, zc - 160), M);
   b.add(grain(rbox(stile, h, 20, 1.5).translate(r - stile / 2, ym, zc), 0.69, 'y', r - 90, zc - 140), M);
+  await slice();
   b.add(grain(rbox(mid, h - top - foot, 20, 1.5).translate(xm, (-T - top + bottom + foot) / 2, zc), 0.36, 'y', xm + 70, zc - 150), M);
   b.add(grain(rbox(r - l - 2 * stile + 2, top, 20, 2, 3).translate(xm, -T - top / 2, zc), 0.58, 'x', zc - 700, -T - 40), M);
   b.add(grain(rbox(r - l - 2 * stile + 2, foot, 20, 1.5).translate(xm, bottom + foot / 2, zc), 0.93, 'x', zc - 650, bottom + 60), M);
   // The case behind the frame: its sides, its bottom, and the drawers' boxes seen through the gaps.
+  await slice();
   const back = -150, depth = face - 20 - back;
-  for (const [x, sd] of [[l + 9, 0.17], [r - 9, 0.83]]) b.add(grain(rbox(18, h, depth, 1.5).translate(x, ym, back + depth / 2), sd, 'z', x + 140, ym - 200), M);
+  for (const [x, sd] of [[l + 9, 0.17], [r - 9, 0.83]]) {
+    await slice();
+    b.add(grain(rbox(18, h, depth, 1.5).translate(x, ym, back + depth / 2), sd, 'z', x + 140, ym - 200), M);
+  }
   b.add(grain(rbox(r - l - 36, 14, depth, 1).translate(xm, bottom + 7, back + depth / 2), 0.44, 'z', xm, bottom - 200), M);
+  await slice();
   const ow = (r - l - 2 * stile - mid) / 2, oh = h - top - foot, oy = (-T - top + bottom + foot) / 2;
   const knobs: [number, number, number][] = [];
   for (const [i, x] of [[0, l + stile + ow / 2], [1, r - stile - ow / 2]] as [number, number][]) {
@@ -110,15 +121,19 @@ function drawers(b: Builder, M: THREE.Material): [number, number, number][] {
   return knobs;
 }
 
-function angle(b: Builder, M: THREE.Material): void {
+async function angle(b: Builder, M: THREE.Material): Promise<void> {
   const { top, leg, t } = ANGLE, f = FRONT + t;
   const s = outline([[FRONT - top + 1, 0], [FRONT, 0], [FRONT, t - leg], [f, t - leg], [f, t], [FRONT - top + 1, t]], [0.8, 1.2, 0.8, 0.8, 2.2, 0.8], 4);
   b.add(runX(s, -W / 2 + 15, W / 2 - 15, 0.8, 2), M);
+  await slice();
   const rnd = (i: number) => { const x = Math.sin(i * 91.7 + 3.1) * 43758.5453; return x - Math.floor(x); };
-  for (let i = 0; i < 13; i++) b.add(screwHead(4.2, rnd(i) * Math.PI).translate(-930 + i * 155, t - leg / 2 - 1.5, f), M);
+  for (let i = 0; i < 13; i++) {
+    b.add(screwHead(4.2, rnd(i) * Math.PI).translate(-930 + i * 155, t - leg / 2 - 1.5, f), M);
+    await slice();
+  }
 }
 
-export const build: PartFactory = () => {
+export const build: PartFactory = async () => {
   const group = new THREE.Group();
   group.name = 'bench';
   const b = new SoundBuilder();
@@ -133,11 +148,11 @@ export const build: PartFactory = () => {
     ...knobXs.map((x): Wear => ({ at: [x, oy, CASE.face], r: [55, 40, 6], k: 0.12 })),
   ];
   const wood = timber(wear, { joints: JOINTS, below: -T - 1 }, { trestle: TX - 110, drawers: [CASE.l, CASE.r, CASE.face - 40] });
-  boards(b, wood);
-  trestle(b, wood, -1);
-  trestle(b, wood, 1);
-  stretcher(b, wood);
-  const knobs = drawers(b, wood);
+  await boards(b, wood);
+  await trestle(b, wood, -1);
+  await trestle(b, wood, 1);
+  await stretcher(b, wood);
+  const knobs = await drawers(b, wood);
 
   // Satin bronze, darker and browner than the copper of the knobs. Its rolled outer arris is polished only where
   // hands have worn it, so the light it catches breaks along the edge and slides with the cursor, never a band.
@@ -149,9 +164,9 @@ export const build: PartFactory = () => {
       diffuseColor.rgb *= (1.0 + 0.15 * bRub) * (1.0 - 0.35 * smoothstep(-22.0, -33.0, vObj.y) * step(${(FRONT + 1).toFixed(1)}, vObj.z)); }`,
     rough: 'roughnessFactor = clamp(mix(roughnessFactor, 0.2, bRub), 0.08, 1.0);',
   } });
-  angle(b, bronze);
+  await angle(b, bronze);
 
-  const face = rosetteMap();
+  const face = await rosetteMap(slice);
   const knobFaceMat = new THREE.MeshPhysicalMaterial({ color: hex('copper'), metalness: 1, roughness: 0.4, normalMap: face, normalScale: new THREE.Vector2(1, 1) });
   knobFaceMat.name = 'bench-knob-face';
   knobFaceMat.onBeforeCompile = (sh) => {
@@ -169,10 +184,11 @@ export const build: PartFactory = () => {
   } });
   const body = knobBody(), faceGeo = knobFace();
   for (const [x, y, z] of knobs) {
+    await slice();
     b.add(body.turned, knobMat, at(x, y, z));
     for (const bead of body.beads) b.add(bead, knobMat, at(x, y, z));
     b.add(faceGeo, knobFaceMat, at(x, y, z));
   }
-  b.build(group, 'bench');
+  await b.buildInSlices(group, 'bench');
   return { group, alone: { at: [-600, -150, 300], r: 330 } };
 };

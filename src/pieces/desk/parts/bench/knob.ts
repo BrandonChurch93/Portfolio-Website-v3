@@ -52,14 +52,19 @@ function turned(r: number): number {
 const RELIEF = 6.4;
 let map: THREE.DataTexture | null = null;
 
-// The rosette as a normal map over the face, x to the right and y up, with how high it stands in alpha.
-export function rosetteMap(size = 512): THREE.DataTexture {
+// The rosette as a normal map over the face, x to the right and y up, with how high it stands in alpha. Worked out a
+// row at a time, with pace called between rows, so the page is not held while it is made.
+export async function rosetteMap(pace: () => Promise<void> | void, size = 512): Promise<THREE.DataTexture> {
   if (map) return map;
   const R = KNOB.face, step = (2 * R) / size, h = new Float32Array((size + 2) * (size + 2));
-  for (let j = -1; j <= size; j++) for (let i = -1; i <= size; i++) h[(j + 1) * (size + 2) + i + 1] = rosette(-R + (i + 0.5) * step, -R + (j + 0.5) * step);
+  for (let j = -1; j <= size; j++) {
+    for (let i = -1; i <= size; i++) h[(j + 1) * (size + 2) + i + 1] = rosette(-R + (i + 0.5) * step, -R + (j + 0.5) * step);
+    await pace();
+  }
   const at = (i: number, j: number) => h[(j + 1) * (size + 2) + i + 1];
   const data = new Uint8Array(size * size * 4);
   for (let j = 0; j < size; j++) for (let i = 0; i < size; i++) {
+    if (i === 0) await pace();
     const dx = (at(i + 1, j) - at(i - 1, j)) / (2 * step), dy = (at(i, j + 1) - at(i, j - 1)) / (2 * step);
     const l = Math.hypot(dx, dy, 1), k = (j * size + i) * 4;
     data[k] = Math.round((-dx / l * 0.5 + 0.5) * 255);

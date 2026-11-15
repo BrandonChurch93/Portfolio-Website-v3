@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { slice } from '../../../../world/build';
 import { PI, type Adds, rbox } from './kit';
 import type { Look } from './look';
 
@@ -40,7 +41,7 @@ export function filletPath(points: THREE.Vector3[], radius: number, straight = 1
 
 export interface Run { path: THREE.Vector3[]; rows: number; cols: number; pitch: number; wire: number; rowAxis: THREE.Vector3; combs?: number[] }
 
-export function run(b: Adds, L: Look, r: Run): void {
+export async function run(b: Adds, L: Look, r: Run): Promise<void> {
   const P = r.path, n = P.length;
   const T = P.map((_, i) => P[Math.min(n - 1, i + 1)].clone().sub(P[Math.max(0, i - 1)]).normalize());
   const N: THREE.Vector3[] = [], B: THREE.Vector3[] = [];
@@ -52,6 +53,7 @@ export function run(b: Adds, L: Look, r: Run): void {
   const cum = [0];
   for (let i = 1; i < n; i++) cum.push(cum[i - 1] + P[i].distanceTo(P[i - 1]));
   for (let ri = 0; ri < r.rows; ri++) for (let ci = 0; ci < r.cols; ci++) {
+    await slice();
     const ox = (ri - (r.rows - 1) / 2) * r.pitch, oy = (ci - (r.cols - 1) / 2) * r.pitch;
     const pts = P.map((p, i) => p.clone().addScaledVector(N[i], ox).addScaledVector(B[i], oy));
     const curve = new THREE.CatmullRomCurve3(pts, false, 'centripetal', 0.5);

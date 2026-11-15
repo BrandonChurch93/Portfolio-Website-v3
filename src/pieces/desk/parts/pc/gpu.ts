@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { slice } from '../../../../world/build';
 import { PI, type Adds, at, circleHole, circleShape, cyl, extrude, lathe, led, moved, polyHole, rbox, roundedPoly, rrectHole, torus, xf } from './kit';
 import { FX, fxOf, type Look } from './look';
 import { SHEET, printPlane } from './print';
@@ -28,7 +29,7 @@ export const cardFanAt = (i: number) => xf({ p: [CARD.fanX[i], CARD.fanY + 6, (C
 // Where the power socket is, in card space, and which way its plug leaves.
 export const SOCKET = { x: Math.min(CARD.pcbEnd - 26, CARD.back + CARD.L * 0.62), y: -8.2, z: CARD.H - 1.6 + 0.5 };
 
-export function gpu(parent: Adds, L: Look, m: THREE.Matrix4): void {
+export async function gpu(parent: Adds, L: Look, m: THREE.Matrix4): Promise<void> {
   const b = moved(parent, m);
   const c = CARD, mid = (c.clear + c.H) / 2;
 
@@ -37,6 +38,7 @@ export function gpu(parent: Adds, L: Look, m: THREE.Matrix4): void {
   b.add(extrude(roundedPoly(o, 0.4), 1.6, 0.2, 'xy', 4), L.pcb, xzAt(0.8));
   b.add(new THREE.BoxGeometry(86, 0.1, 7), L.copper, at(45, 0.85, 3.8));
 
+  await slice();
   // The bracket at the slot end: ports and slanted vents.
   {
     const y0 = c.bp - c.slots * 20.32, y1 = c.bp;
@@ -56,6 +58,7 @@ export function gpu(parent: Adds, L: Look, m: THREE.Matrix4): void {
     }
   }
 
+  await slice();
   // The shroud's fan face: a plate with three openings, a bezel round each, ribs between them, the brushed armor and
   // its lips, and the end's accent.
   const ch = Math.min(46, c.H * 0.34), plateT = 3.2;
@@ -64,6 +67,7 @@ export function gpu(parent: Adds, L: Look, m: THREE.Matrix4): void {
   for (const fx of c.fanX) plate.holes.push(circleHole(fx, mid, c.fanR + 1.6));
   b.add(extrude(plate, plateT, 0.9, 'xy', 40, 2), L.satin, xzAt(c.fanY + plateT));
   for (const fx of c.fanX) {
+    await slice();
     const bez = circleShape(c.fanR + 6);
     bez.holes.push(circleHole(0, 0, c.fanR + 1.6));
     b.add(extrude(bez, 2.2, 0.8, 'xy', 40, 2), L.sinkDark, xzAt(c.fanY).multiply(new THREE.Matrix4().makeTranslation(fx, mid, 0)));
@@ -72,6 +76,7 @@ export function gpu(parent: Adds, L: Look, m: THREE.Matrix4): void {
     const xm = (c.fanX[i] + c.fanX[i + 1]) / 2;
     b.add(extrude(roundedPoly([[xm - 4, c.clear + 4], [xm + 2, c.clear + 4], [xm + 7, c.H - 4], [xm + 1, c.H - 4]], 1), 2.4, 0.7, 'xy', 4, 2), L.sink, xzAt(c.fanY));
   }
+  await slice();
   {
     const m0 = c.fanX[0] - c.fanR - 9.5, r0 = mid - c.fanR - 9.5, r1 = mid + c.fanR + 9.5;
     const hr = Math.min(c.fanR + 6.4, (c.fanX[1] - c.fanX[0]) / 2 - 2.5);
@@ -87,6 +92,7 @@ export function gpu(parent: Adds, L: Look, m: THREE.Matrix4): void {
   }
   b.add(extrude(roundedPoly([[c.end - 30, c.clear + 3], [c.end - 3, c.clear + ch], [c.end - 3, c.H - ch * 0.7 - 1], [c.end - ch * 0.9 + 2, c.H - 4], [c.end - ch * 0.9 - 6, c.H - 4], [c.end - 20, c.H - ch * 0.7 - 6], [c.end - 20, c.clear + 10]], 1), 1.6, 0.5, 'xy', 4, 1), L.sink, xzAt(c.fanY - 0.2));
 
+  await slice();
   // The walls: the glass facing edge with its window onto the fins and the socket's cutout, the board side, the end.
   const wallY0 = c.fanY + plateT, wallY1 = -2, sideH = wallY1 - wallY0;
   const glassSide = roundedPoly([[c.back + 12, 0], [c.end - ch * 0.9, 0], [c.end - ch * 0.9 + 2, sideH * 0.55], [c.end - ch * 0.9, sideH], [c.back + 12, sideH]], 1.2);
@@ -95,6 +101,7 @@ export function gpu(parent: Adds, L: Look, m: THREE.Matrix4): void {
   b.add(extrude(glassSide, 2.6, 0.7, 'xy', 4, 2), L.satin, at(0, wallY0, c.H - 2.6));
   const boardSide = roundedPoly([[c.back + 8, 0], [c.end - 34, 0], [c.end - 34, sideH], [c.back + 8, sideH]], 1.2);
   boardSide.holes.push(polyHole([[c.back + 30, 3], [c.end - 50, 3], [c.end - 50, sideH * 0.5], [c.back + 30, sideH * 0.5]]));
+  await slice();
   b.add(extrude(boardSide, 2.4, 0.6, 'xy', 4, 2), L.satin, at(0, wallY0, c.clear));
   b.add(rbox(3.2, sideH, c.H - c.clear - ch * 1.7 + 2, 1, 2), L.satin, at(c.end - 1.6, (wallY0 + wallY1) / 2, (c.clear + ch + c.H - ch * 0.7) / 2));
   for (const [x0, z0, x1, z1] of [[c.end - ch * 0.9, c.H, c.end, c.H - ch * 0.7], [c.end - 34, c.clear, c.end, c.clear + ch], [c.back + 2, c.H - 10, c.back + 12, c.H]]) {
@@ -105,11 +112,15 @@ export function gpu(parent: Adds, L: Look, m: THREE.Matrix4): void {
     b.add(rbox(len + 1.5, sideH, 2.6, 0.8, 2), L.satin, xf({ p: [mx + nx * 1.3, (wallY0 + wallY1) / 2, mz + nz * 1.3], r: [0, -th, 0] }));
   }
 
+  await slice();
   // The fin stack and the copper pipes through it.
   {
     const x0 = c.back + 10, x1 = c.end - ch - 2, n = Math.floor((x1 - x0) / 1.9);
     const y0 = c.fanY + plateT + 1.5, y1 = -6.5, z0 = c.clear + 3, z1 = c.H - 5;
-    for (let i = 0; i < n; i++) b.add(new THREE.BoxGeometry(0.42, y1 - y0, z1 - z0), L.fin, at(x0 + i * 1.9, (y0 + y1) / 2, (z0 + z1) / 2), { shadow: false });
+    for (let i = 0; i < n; i++) {
+      if (i % 16 === 0) await slice();
+      b.add(new THREE.BoxGeometry(0.42, y1 - y0, z1 - z0), L.fin, at(x0 + i * 1.9, (y0 + y1) / 2, (z0 + z1) / 2), { shadow: false });
+    }
     // The stack runs on under the flow through cut in the backplate, short of the chamfered end.
     for (let x = x0 + n * 1.9; x < c.end - 6; x += 1.9) b.add(new THREE.BoxGeometry(0.42, y1 - y0, c.H - 26 - c.clear - 18), L.fin, at(x, (y0 + y1) / 2, (c.clear + 18 + c.H - 26) / 2), { shadow: false });
     for (let i = 0; i < 5; i++) {
@@ -119,6 +130,7 @@ export function gpu(parent: Adds, L: Look, m: THREE.Matrix4): void {
     }
   }
 
+  await slice();
   // The bar's light on the fins seen through the window under it: each fin's edge lit, brightest at the window's top
   // and gone at its foot, so the gaps between fins stay dark.
   {
@@ -127,6 +139,7 @@ export function gpu(parent: Adds, L: Look, m: THREE.Matrix4): void {
     for (let i = 0; i < n; i++) {
       const x = x0 + i * 1.9;
       if (x < wa || x > wb) continue;
+      if (i % 16 === 0) await slice();
       const g = new THREE.BoxGeometry(0.5, yb - ya, 0.6);
       led(g, 0, 0);
       const p = g.getAttribute('position'), cell = g.getAttribute('cell');
@@ -137,6 +150,7 @@ export function gpu(parent: Adds, L: Look, m: THREE.Matrix4): void {
 
   // The fans' still parts: the duct ring, the rim and the hub with its cap.
   for (const fx of c.fanX) {
+    await slice();
     const f = xf({ p: [fx, c.fanY + 6, mid], r: [-PI / 2, 0, 0] });
     b.add(torus(c.fanR + 0.6, 1.0, 4, 48), L.sinkDark, f.clone().multiply(at(0, 0, -2.2)));
     b.add(lathe([[c.fanR + 0.2, -4.5], [c.fanR + 1.2, -4.5], [c.fanR + 1.2, 6], [c.fanR + 0.2, 6]], 48), L.satin, f);
@@ -146,6 +160,7 @@ export function gpu(parent: Adds, L: Look, m: THREE.Matrix4): void {
   }
 
   // The backplate: vents, the flow through cut at its end, the X brace and the lit ring.
+  await slice();
   const bpY = 2.2, bpT = 2.0;
   {
     const bpo: [number, number][] = [[c.back + 2, c.clear + 2], [c.end - 30, c.clear + 2], [c.end, c.clear + ch], [c.end, c.H - ch * 0.7], [c.end - ch * 0.9, c.H], [c.back + 12, c.H], [c.back + 2, c.H - 10]];
@@ -154,6 +169,7 @@ export function gpu(parent: Adds, L: Look, m: THREE.Matrix4): void {
     bp.holes.push(polyHole([[cutX0, c.clear + 18], [c.end - 16, c.clear + 28], [c.end - 16, c.H - 22], [cutX0 + 8, c.H - 22]]));
     for (let x = c.back + 120; x + 10 < cutX0 - 12; x += 13) bp.holes.push(polyHole([[x, c.H - 30], [x + 6, c.H - 30], [x + 14, c.H - 10], [x + 8, c.H - 10]]));
     b.add(extrude(bp, bpT, 0.6, 'xy', 6, 2), L.sinkDark, xzAt(bpY + bpT), { uv: 'box' });
+    await slice();
     const core: [number, number] = [c.back + 78, mid - 4];
     const arm = 30.5, half = 4.5, k = Math.SQRT1_2;
     const plus: [number, number][] = [[-arm, -half], [-half, -half], [-half, -arm], [half, -arm], [half, -half], [arm, -half], [arm, half], [half, half], [half, arm], [-half, arm], [-half, half], [-arm, half]];
@@ -172,6 +188,7 @@ export function gpu(parent: Adds, L: Look, m: THREE.Matrix4): void {
     b.add(rbox(112, 0.8, 30, 0.4, 1), L.sinkDark, at(205, bpY + bpT + 0.4, (c.clear + c.H - 36) / 2 + 3));
   }
 
+  await slice();
   // The doubled light bar along the glass facing edge, stopping short of the socket, each line on a brushed rail.
   {
     const barZ = c.H + 0.1, by = wallY0 + sideH * 0.78;
@@ -202,6 +219,7 @@ export function gpu(parent: Adds, L: Look, m: THREE.Matrix4): void {
     for (const [s0, s1] of [[c.back + 16, SOCKET.x - SOCKET_W / 2 - 14], [SOCKET.x + SOCKET_W / 2 + 28, c.end - ch * 0.9 - 6]]) if (s1 - s0 > 8) b.add(rbox(s1 - s0, 2.2, 1.0, 0.4, 2), L.sink, at((s0 + s1) / 2, ry, c.H + 0.3));
   }
 
+  await slice();
   // The power socket in its cutout, on a small riser board.
   {
     const z = c.H - 1.6;

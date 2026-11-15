@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { slice } from '../../../../world/build';
 import { PI, type Adds, at, cyl, extrude, lathe, led, moved, puck, rbox, roundedPoly, rrectShape, torus, tube, xf } from './kit';
 import { fan } from './fan';
 import { FX, fxOf, type Look } from './look';
@@ -12,7 +13,7 @@ import { SHEET, printDisc } from './print';
 const XZ = new THREE.Matrix4().set(1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1);
 export const PUMP_FITTINGS: [number, number, number][] = [[-9, 33.5 + 12.5, 38], [9, 33.5 + 12.5, 38]];
 
-export function pump(parent: Adds, L: Look, m: THREE.Matrix4): void {
+export async function pump(parent: Adds, L: Look, m: THREE.Matrix4): Promise<void> {
   const b = moved(parent, m);
   b.add(puck(27, 2.4, 0.4, 48), L.copper, undefined);
   const A = 64, hw = 6.5;
@@ -23,6 +24,7 @@ export function pump(parent: Adds, L: Look, m: THREE.Matrix4): void {
     b.add(lathe([[0, 0], [4.6, 0], [4.8, 0.6], [4.8, 3.2], [4.3, 4.0], [0, 4.0]], 20), L.copper, s);
     b.add(new THREE.BoxGeometry(4.4, 0.8, 0.4), L.void, s.clone().multiply(at(0, 0, 4.05)), { shadow: false });
   }
+  await slice();
   b.add(lathe([[0, 6], [33, 6], [34.6, 7.2], [34.6, 40], [33.8, 44.6], [31.5, 47.2], [0, 47.2]], 48), L.sinkDark, undefined);
   b.add(lathe([[34.4, 14], [35.2, 14], [35.2, 15.2], [34.4, 15.2]], 64), L.copper, undefined);
   b.add(lathe([[0, 0], [29.4, 0], [29.4, 0.9], [28.9, 1.4], [0, 1.4]], 64), L.satin, at(0, 0, 46.2));
@@ -31,6 +33,7 @@ export function pump(parent: Adds, L: Look, m: THREE.Matrix4): void {
   // The cap's print, and the rings' light on the cap round them.
   b.add(printDisc(28.9, SHEET.cap), L.print, at(0, 0, 47.62), { shadow: false });
   b.add(fxOf(new THREE.PlaneGeometry(72, 72), FX.ring, 0.9, 0.3, 0.86), L.fx, at(0, 0, 47.72), { shadow: false });
+  await slice();
   for (const [x] of PUMP_FITTINGS) {
     const f = at(x, 33.5, 38);
     b.add(cyl(5.2, 6, 'y', 24), L.sink, f.clone().multiply(at(0, 2.6, 0)));
@@ -45,13 +48,14 @@ const RAD = { L: 397, tank: 22, W: 120, width: 124, thick: 30, fanT: 25, pitch: 
 export const RAD_FITTINGS: [number, number, number][] = [[RAD.L / 2 - RAD.tank / 2 + 1.5, 15, RAD.thick + 13], [RAD.L / 2 - RAD.tank / 2 + 1.5, -15, RAD.thick + 13]];
 export const RAD_FANS = [-1, 0, 1].map((i) => i * RAD.pitch);
 
-export function radiator(parent: Adds, L: Look, m: THREE.Matrix4, fanTone: number): THREE.Matrix4[] {
+export async function radiator(parent: Adds, L: Look, m: THREE.Matrix4, fanTone: number): Promise<THREE.Matrix4[]> {
   const b = moved(parent, m);
   const { L: len, tank, W, thick } = RAD;
   const rz0 = 0, rz1 = thick, coreL = len - 2 * tank;
   // The core: flat tubes with dark fins between them, the fins drawn as their folded face.
   for (let i = 0; i <= 13; i++) b.add(rbox(coreL, 1.6, rz1 - rz0 - 3, 0.5, 1), L.sinkDark, xf({ p: [0, -W / 2 + i * (W / 13), (rz0 + rz1) / 2] }));
   for (const z of [rz0 + 1.6, rz1 - 1.6]) b.add(new THREE.PlaneGeometry(coreL, W), L.fin, xf({ p: [0, 0, z], r: [z > 15 ? 0 : PI, 0, 0] }), { shadow: false });
+  await slice();
   for (const sgn of [-1, 1]) {
     const t = roundedPoly([[-tank / 2, rz0], [tank / 2 - 3, rz0], [tank / 2, rz0 + 3], [tank / 2, rz1 - 3], [tank / 2 - 3, rz1], [-tank / 2, rz1]], 1.2);
     const g = extrude(t, RAD.width, 0.8, 'xy', 3, 2);
@@ -61,6 +65,7 @@ export function radiator(parent: Adds, L: Look, m: THREE.Matrix4, fanTone: numbe
     const g = extrude(rrectShape(coreL + 2, rz1 - rz0, 1.2, 0, (rz0 + rz1) / 2), 1.4, 0.4, 'xy', 3, 1);
     b.add(g, L.sink, new THREE.Matrix4().makeTranslation(0, sgn > 0 ? W / 2 + 1.4 : -W / 2, 0).multiply(XZ), { uv: 'box' });
   }
+  await slice();
   b.add(cyl(5.5, 2.2, 'x', 20), L.sink, at(-len / 2 - 0.6, 30, (rz0 + rz1) / 2));
   for (const [x, y] of RAD_FITTINGS) {
     const f = at(x, y, rz1);
@@ -72,16 +77,18 @@ export function radiator(parent: Adds, L: Look, m: THREE.Matrix4, fanTone: numbe
   const fans: THREE.Matrix4[] = [];
   for (const cx of RAD_FANS) {
     const fm = new THREE.Matrix4().makeTranslation(cx, 0, rz1 + RAD.fanT / 2).multiply(new THREE.Matrix4().makeRotationX(PI));
-    fan(b, L, fm, 'gale', fanTone, 1.15);
+    await slice();
+    await fan(b, L, fm, 'gale', fanTone, 1.15);
     fans.push(m.clone().multiply(fm));
   }
   return fans;
 }
 
 // The two braided tubes from the pump's fittings to the radiator's, in case space, side by side.
-export function tubes(b: Adds, L: Look, from: THREE.Vector3[], to: THREE.Vector3[]): void {
+export async function tubes(b: Adds, L: Look, from: THREE.Vector3[], to: THREE.Vector3[]): Promise<void> {
   const a = [...from].sort((p, q) => p.x - q.x), e = [...to].sort((p, q) => p.z - q.z);
   for (let i = 0; i < 2; i++) {
+    await slice();
     const p = a[i], q = e[i];
     // Up out of the pump, forward and over in front of the radiator's fans, and back up into its fittings at the rear.
     // Seen from above, a run any deeper hides behind the top of the case, so the two run one over the other, close

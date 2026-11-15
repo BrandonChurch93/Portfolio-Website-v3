@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { hex } from '../../../config/palette';
-import { Builder } from '../../../world/build';
+import { Builder, slice } from '../../../world/build';
 import { BAY, DESK, PC_TURN, VIEW } from '../layout';
 import type { DeskPart, PartFactory, PartState } from '../part';
 import { BOARD, T as BT, board, boardSheet } from './pc/board';
@@ -27,8 +27,11 @@ const LAMP_BACK = 1300;
 // shadow, so they reach no further than the case, or they light the desk's top through its timber.
 const GLOW = { low: 0.045, high: 0.08, reach: 0.34 };
 
-export const build: PartFactory = () => {
-  const L = makeLook(printSheet(), boardSheet());
+export const build: PartFactory = async () => {
+  const print = printSheet();
+  await slice();
+  const L = makeLook(print, boardSheet());
+  await slice();
   const group = new THREE.Group();
   group.name = 'pc';
   // The case's own frame, set on the floor in the middle of the bay, its left glass toward the front.
@@ -40,17 +43,17 @@ export const build: PartFactory = () => {
   group.add(kase);
 
   const b = new Builder();
-  atrium(b, L);
-  glass(b, L);
+  await atrium(b, L);
+  await glass(b, L);
 
   const [ax, ay, az] = ATRIUM.anchor;
   const boardM = at(ax, ay, az);
-  board(b, L, boardM);
+  await board(b, L, boardM);
   const front = az + BT;
-  pump(b, L, at(ax + BOARD.socket.x, ay + BOARD.socket.y, front + 6.5));
-  BOARD.dimms.forEach((d, i) => ram(b, L, at(ax + d.x, ay + d.y, front + 2), [0.3, 0.36, 0.42, 0.48][i]));
+  await pump(b, L, at(ax + BOARD.socket.x, ay + BOARD.socket.y, front + 6.5));
+  for (const [i, d] of BOARD.dimms.entries()) await ram(b, L, at(ax + d.x, ay + d.y, front + 2), [0.3, 0.36, 0.42, 0.48][i]);
   const cardM = at(ax + 22, ay + BOARD.pcie, front + 2);
-  gpu(b, L, cardM);
+  await gpu(b, L, cardM);
   support(b, L, cardM.elements[12] + CARD.L - 28 - 34, ATRIUM.floor, cardM.elements[13] + CARD.fanY, cardM.elements[14] + CARD.H * 0.55);
 
   // The fans: three in the side wall behind the tray, three in the floor's basin, one at the rear, three under the
@@ -58,11 +61,12 @@ export const build: PartFactory = () => {
   const radM = new THREE.Matrix4().makeTranslation(...MOUNTS.top[1].slice(0, 1).concat([ATRIUM.topIn, MAIN_Z]) as [number, number, number]).multiply(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(Q, 0, 2 * Q)));
   const fans: THREE.Matrix4[] = [], fanTones: number[] = [];
   const fanGains: number[] = [];
-  const place = (m: THREE.Matrix4, t: number, k: number) => { fan(b, L, m, 'aureole', t, k); fans.push(m); fanTones.push(t); fanGains.push(k); };
-  MOUNTS.side.forEach((m, i) => place(m, [0.95, 0.62, 0.3][i], [1.0, 0.95, 0.9][i]));
-  MOUNTS.bottom.forEach((m, i) => place(m, [0.08, 0.4, 0.72][i], [1.0, 0.9, 0.95][i]));
-  place(MOUNTS.rear, 0.82, 0.9);
-  for (const m of radiator(b, L, radM, 0.5)) { fans.push(m); fanTones.push(0.5); fanGains.push(1.0); }
+  const place = async (m: THREE.Matrix4, t: number, k: number) => { await slice(); await fan(b, L, m, 'aureole', t, k); fans.push(m); fanTones.push(t); fanGains.push(k); };
+  for (const [i, m] of MOUNTS.side.entries()) await place(m, [0.95, 0.62, 0.3][i], [1.0, 0.95, 0.9][i]);
+  for (const [i, m] of MOUNTS.bottom.entries()) await place(m, [0.08, 0.4, 0.72][i], [1.0, 0.9, 0.95][i]);
+  await place(MOUNTS.rear, 0.82, 0.9);
+  for (const m of await radiator(b, L, radM, 0.5)) { fans.push(m); fanTones.push(0.5); fanGains.push(1.0); }
+  await slice();
 
   // The light each lit part lays on what is beside it: the floor fans on the shelf over them and the basin under them,
   // and the memory on the board round it.
@@ -84,7 +88,7 @@ export const build: PartFactory = () => {
 
   // The pump's tubes up to the radiator's fittings at its rear end.
   const pumpM = at(ax + BOARD.socket.x, ay + BOARD.socket.y, front + 6.5);
-  tubes(b, L, PUMP_FITTINGS.map((p) => new THREE.Vector3(...p).applyMatrix4(pumpM)), RAD_FITTINGS.map((p) => new THREE.Vector3(...p).applyMatrix4(radM)));
+  await tubes(b, L, PUMP_FITTINGS.map((p) => new THREE.Vector3(...p).applyMatrix4(pumpM)), RAD_FITTINGS.map((p) => new THREE.Vector3(...p).applyMatrix4(radM)));
 
   // Sleeved power: the 24 pin plug at the board's edge into its grommet, the processor's plug up into the top corner,
   // and the card's plug out toward the glass and down to its grommet under the card.
@@ -92,23 +96,23 @@ export const build: PartFactory = () => {
   {
     const hh = 2 * 4.2 + 2.4 + 4.3;
     const p = v(ax + BOARD.w, ay + BOARD.atx24.y, front + hh / 2), gr = g('atx24'), gz = ATRIUM.trayF;
-    run(b, L, { rows: 2, cols: 12, pitch: 4.4, wire: 1.6, rowAxis: v(0, 0, 1), combs: [24, 52],
+    await run(b, L, { rows: 2, cols: 12, pitch: 4.4, wire: 1.6, rowAxis: v(0, 0, 1), combs: [24, 52],
       path: filletPath([p.clone(), v(gr.c[0] + 14, p.y, p.z), v(gr.c[0] - 4, p.y, gz - 2), v(gr.c[0] - 30, p.y, gz - 30)], 20, 22) });
   }
   {
     const p = v(ax + BOARD.eps.x, ay + BOARD.eps.y, front + 13), gr = g('eps');
-    run(b, L, { rows: 2, cols: 4, pitch: 4.2, wire: 1.65, rowAxis: v(0, 1, 0), combs: [],
+    await run(b, L, { rows: 2, cols: 4, pitch: 4.2, wire: 1.65, rowAxis: v(0, 1, 0), combs: [],
       path: filletPath([p.clone(), v(p.x, p.y, p.z + 8), v(p.x, gr.c[1], p.z + 8), v(p.x, gr.c[1], ATRIUM.trayF - 14)], 10, 8) });
   }
   {
     const p = v(cardM.elements[12] + SOCKET.x, cardM.elements[13] + SOCKET.y, cardM.elements[14] + SOCKET.z), gr = g('gpu');
     const z = p.z + 30.4, gz = ATRIUM.trayF;
-    run(b, L, { rows: 2, cols: 6, pitch: 3.9, wire: 1.25, rowAxis: v(0, 1, 0), combs: [16, 52, 96, 150],
+    await run(b, L, { rows: 2, cols: 6, pitch: 3.9, wire: 1.25, rowAxis: v(0, 1, 0), combs: [16, 52, 96, 150],
       path: filletPath([p.clone(), v(p.x, p.y, z), v(p.x, gr.c[1], z), v(gr.c[0], gr.c[1], z), v(gr.c[0], gr.c[1], gz - 20)], 18.4, 16) });
   }
 
   // Everything that stands still, merged by material.
-  const meshes = b.build(kase, 'pc');
+  const meshes = await b.buildInSlices(kase, 'pc');
   // Only the case's outside casts a shadow: nothing inside it does.
   const casts = new Set<THREE.Material>([L.shell, L.accent]);
   for (const m of meshes) { m.castShadow = casts.has(m.material as THREE.Material); m.updateMatrix(); }

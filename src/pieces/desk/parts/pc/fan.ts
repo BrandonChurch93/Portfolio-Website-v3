@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { slice } from '../../../../world/build';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { PI, type Adds, at, bladeGeometry, circleHole, cyl, extrude, lathe, led, rrect, torus, xf } from './kit';
 import type { Look } from './look';
@@ -13,7 +14,7 @@ const CORNERS: [number, number][] = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
 
 export type FanKind = 'aureole' | 'gale';
 
-export function fan(b: Adds, L: Look, m: THREE.Matrix4, kind: FanKind, tone: number, gain = 0.8): void {
+export async function fan(b: Adds, L: Look, m: THREE.Matrix4, kind: FanKind, tone: number, gain = 0.8): Promise<void> {
   const on = (x: THREE.Matrix4) => m.clone().multiply(x);
   const flange = () => {
     const s = rrect(new THREE.Shape(), -HALF, -HALF, 120, 120, R);
@@ -31,6 +32,7 @@ export function fan(b: Adds, L: Look, m: THREE.Matrix4, kind: FanKind, tone: num
     b.add(extrude(c, T - 2 * FL - 0.2, 0, 'xy', 1), L.plastic, m.clone().multiply(at(0, 0, -FACE + FL + 0.1)), { shadow: false });
     for (const z of [-FACE - 0.45, FACE + 0.45]) b.add(new THREE.BoxGeometry(10.5, 10.5, 1.5), L.rubber, m.clone().multiply(at(sx * 53.4, sy * 53.4, z)), { shadow: false });
   }
+  await slice();
   const back = FACE - 1.2;
   b.add(lathe([[0, back - 6.5], [17.8, back - 6.5], [19, back - 5.3], [19, back], [0, back]], 24), L.plastic, m, { shadow: false });
   for (let i = 0; i < 4; i++) {

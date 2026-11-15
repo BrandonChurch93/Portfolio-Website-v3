@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { at, interp, loft, rbox, xf, type Section } from '../../../../world/build';
+import { at, interp, loft, rbox, slice, xf, type Section } from '../../../../world/build';
 import { circle, rounded, rrect, slab } from '../../../../world/shape';
 import { codeUV, DEG, faceUV, pebble, ribs, turned, type Put } from './forms';
 import type { CameraMaterials } from './materials';
@@ -46,7 +46,8 @@ const range = (secs: Section[], y0: number, y1: number, grow = 0): Section[] => 
   return ys.map((y) => { const s = interp(secs, y); return { ...s, rx: s.rx + grow, rz: s.rz + grow }; });
 };
 
-export function body(p: Put, m: CameraMaterials): void {
+export async function body(p: Put, m: CameraMaterials): Promise<void> {
+  await slice();
   // The body in black paint, in two castings, front and back, meeting at a seam round its sides. Over it the top
   // plate in satin dark steel, a third casting, with its own seam where it sits on them.
   const T = BODY.plate;
@@ -56,6 +57,7 @@ export function body(p: Put, m: CameraMaterials): void {
   const top = rounded([[-W, T + 0.3, 0.6], [W, T + 0.3, 0.6], [W, BODY.h, 5.5], [-W, BODY.h, 5.5]]);
   p.add(slab(top, [], BODY.back, BODY.front, 1.2, 2), m.plate);
 
+  await slice();
   // The grip: skin to just under its top, painted above, with a small lip where they meet.
   p.add(pebble(loft(range(GRIP, GRIP[0].y, SKIN_TOP), 96), SKIN.scale, SKIN.depth), m.skin);
   p.add(ribs(loft(range(GRIP, SKIN_TOP - 0.6, GRIP[GRIP.length - 1].y, 0.35), 96, { cap: true }), 0, 0), m.paint);
@@ -63,6 +65,7 @@ export function body(p: Put, m: CameraMaterials): void {
   base.rotateX(Math.PI / 2);
   p.add(pebble(base.translate(0, GRIP[0].y, 0), SKIN.scale, SKIN.depth), m.skin);
 
+  await slice();
   // The skin on the front at the left of the mount, cut round it in a wide arc.
   const panel: THREE.Vector2[] = [];
   const R = 46.5, x1 = W - 3.2, y0 = 5, y1 = BODY.plate - 3;
@@ -70,11 +73,14 @@ export function body(p: Put, m: CameraMaterials): void {
   panel.reverse();
   panel.push(new THREE.Vector2(x1 - 2, y0), new THREE.Vector2(x1, y0 + 2), new THREE.Vector2(x1, y1 - 2), new THREE.Vector2(x1 - 2, y1));
   p.add(pebble(slab(panel, [], BODY.front - 0.1, BODY.front + 0.7, 0.25, 2), SKIN.scale, SKIN.depth), m.skin);
+  await slice();
   // And a thumb rest on the back.
   p.add(pebble(slab(rounded(rrect(-46, 66.5, 24, 12, 5)), [], BODY.back - 1.4, BODY.back + 0.2, 0.4, 2), SKIN.scale, SKIN.depth), m.skin);
 
+  await slice();
   // The mount's ring.
   p.add(turned([[29.2, 0], [34.8, 0], [35.4, 0.5], [35.4, 1.0], [34.9, 1.4], [32.1, 1.4]], 96), m.bronze, xf({ p: [MOUNT.x, MOUNT.y, MOUNT.z], r: [Math.PI / 2, 0, 0] }));
+  await slice();
   // The lens release, in the metal between the ring and the skin.
   const rel = (a: number, r: number): [number, number] => [MOUNT.x + Math.cos(a) * r, MOUNT.y + Math.sin(a) * r];
   {
@@ -82,14 +88,17 @@ export function body(p: Put, m: CameraMaterials): void {
     p.add(turned([[0, 0], [4.6, 0], [4.6, 1.8], [4.2, 2.6], [2.6, 3.0], [0, 3.0]], 48), m.paint, xf({ p: [x, y, BODY.front - 0.2], r: [Math.PI / 2, 0, 0] }));
     p.add(turned([[4.6, 0], [5.6, 0], [5.6, 0.6], [4.7, 0.8]], 48), m.copper, xf({ p: [x, y, BODY.front - 0.2], r: [Math.PI / 2, 0, 0] }));
   }
+  await slice();
   // The assist lamp's window, between the mount and the grip.
   p.add(turned([[0, 0], [3.4, 0], [3.4, 0.6], [2.8, 1.2], [0, 1.3]], 40), m.paint, xf({ p: [-21.5, 66, BODY.front - 0.1], r: [Math.PI / 2, 0, 0] }));
   p.add(turned([[0, 1.1], [2.5, 1.1], [0, 1.35]], 40), m.gloss, xf({ p: [-21.5, 66, BODY.front - 0.1], r: [Math.PI / 2, 0, 0] }));
+  await slice();
   // The model code, a made up one.
   {
     p.add(codeUV(new THREE.PlaneGeometry(14, 3.5)), m.plate, at(MOUNT.x + 38, 70.5, BODY.front + 0.05), false);
   }
 
+  await slice();
   // The finder's hump, its hot shoe, the eyecup and its window at the back.
   p.add(ribs(loft(HUMP, 96, { cap: true }), 0, 0), m.plate);
   {
@@ -106,6 +115,7 @@ export function body(p: Put, m: CameraMaterials): void {
   p.add(pebble(slab(cup, [hole], -34, -23.5, 1.4, 2), RUBBER.scale, RUBBER.depth), m.rubber);
   p.add(slab(hole, [], -28.5, -27.8, 0.2, 1), m.gloss);
 
+  await slice();
   // Dials on the top plate: the mode dial behind the grip and a second at the other end, each with a knurled
   // bronze rim and its marks engraved on its top.
   const dial = (x: number, z: number, region: 'mode' | 'iso', lock: boolean, index: [number, number]) => {
@@ -123,6 +133,7 @@ export function body(p: Put, m: CameraMaterials): void {
   dial(-37, -8.5, 'mode', true, [Math.PI / 2, 15.8]);
   dial(50, -5, 'iso', false, [0, 15.8]);
 
+  await slice();
   // The shutter release on the grip's top, in the collar that switches the camera on, and the front dial under it.
   {
     const s = p.sub(xf({ p: [-47.6, 76.6, 29], r: [11 * DEG, 0, 0] }));
@@ -136,8 +147,10 @@ export function body(p: Put, m: CameraMaterials): void {
   p.add(ribs(turned([[9.0, -2.2], [9.0, 2.2]], 96), 44, 0.6, 0.5), m.ribMetal, at(-47.4, 70.2, 38.6));
   p.add(turned([[9.0, 2.2], [8.6, 2.6], [0, 2.6]], 96), m.ribMetal, at(-47.4, 70.2, 38.6));
 
+  await slice();
   // The strap lugs and their split rings.
   for (const sx of [-1, 1]) {
+    await slice();
     const lug = rounded(rrect(sx * (W + 3.6), 66, 8, 11, 2.6));
     p.add(slab(lug, [circle(sx * (W + 4.4), 66, 2.2, 32)], -8.4, -3.6, 0.6, 2), m.paint);
     const path = new THREE.CatmullRomCurve3([
@@ -147,16 +160,19 @@ export function body(p: Put, m: CameraMaterials): void {
     p.add(new THREE.TubeGeometry(path, 48, 0.75, 8, true), m.bronze);
   }
 
+  await slice();
   // The doors over the ports on the left side, rubber with a notch to open them by.
   const side = (o: THREE.Vector2[], x0: number, x1: number) => slab(o, [], x0, x1, 0.25, 2).rotateY(Math.PI / 2);
   p.add(pebble(side(rounded(rrect(3, 32, 24, 28, 3)), W - 0.2, W + 0.6), RUBBER.scale, RUBBER.depth), m.rubber);
   p.add(pebble(side(rounded(rrect(3, 55.5, 24, 10, 3)), W - 0.2, W + 0.6), RUBBER.scale, RUBBER.depth), m.rubber);
   p.add(rbox(0.6, 1.4, 6, 0.3), m.inside, at(W + 0.55, 46.2, -3));
 
+  await slice();
   // The back: the screen in its frame, the buttons beside it, a small rear dial.
   p.add(slab(rounded(rrect(6, 40, 80, 56, 3)), [], BODY.back - 2.4, BODY.back + 0.2, 0.6, 2), m.paint);
   p.add(slab(rounded(rrect(6, 40, 76, 52, 2)), [], BODY.back - 2.9, BODY.back - 2.3, 0.15, 1), m.gloss);
   for (const [x, y, r] of [[-44, 56, 3.4], [-44, 44, 3.4], [-44, 32, 3.4], [-54, 22, 3.0], [-44, 20, 5.8]] as [number, number, number][]) {
+    await slice();
     p.add(turned([[0, 0], [r, 0], [r, 1.6], [r - 0.4, 2.2], [0, 2.3]], 40), m.paint, xf({ p: [x, y, BODY.back], r: [-Math.PI / 2, 0, 0] }));
   }
   p.add(turned([[0, -2.4], [7.6, -2.4], [8.0, -2.0]], 72), m.ribMetal, at(-52, 74.2, BODY.back - 3));

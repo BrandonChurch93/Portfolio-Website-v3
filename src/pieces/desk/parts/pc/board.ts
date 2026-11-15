@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { seeded } from '../../../../world/build';
+import { seeded, slice } from '../../../../world/build';
 import { PI, at, moved, type Adds, cyl, extrude, lathe, led, polyShape, rbox, roundedPoly, rrectHole, rrectShape, xf } from './kit';
 import type { Look } from './look';
 import { SHEET, printPlane } from './print';
@@ -91,7 +91,7 @@ const capacitor = (b: Adds, L: Look, x: number, y: number, h = 8, r = 2.6, gold 
   b.add(lathe([[r, 0], [r, h - 0.6], [r - 0.6, h - 0.2], [0, h - 0.2]], 8), gold ? L.copper : L.sink, at(x, y, T));
 };
 
-export function board(parent: Adds, L: Look, m: THREE.Matrix4): void {
+export async function board(parent: Adds, L: Look, m: THREE.Matrix4): Promise<void> {
   const sub = moved(parent, m);
   const add = sub.add;
   const { w, h } = BOARD;
@@ -103,6 +103,7 @@ export function board(parent: Adds, L: Look, m: THREE.Matrix4): void {
     add(lathe([[0, 0], [3.4, 0], [3.4, 0.6], [0, 1.4]], 10), L.sinkDark, at(hx, hy, T));
   }
 
+  await slice();
   // The processor's socket frame shows round the pump's plate.
   const sx = BOARD.socket.x, sy = BOARD.socket.y;
   add(rbox(62, 76, 3.2, 1, 2), L.sinkDark, at(sx, sy, T + 1.6));
@@ -118,13 +119,17 @@ export function board(parent: Adds, L: Look, m: THREE.Matrix4): void {
   for (let x = vt.x0 + 16; x < vt.x1 - 6; x += 8.6) if (clear(x, vt.y1 - 11.5, 2.6)) capacitor(sub, L, x, vt.y1 - 11.5, 7.5, 2.4);
   for (const [dx, dy] of [[13, -22], [13, -30.5], [20.5, -22]]) capacitor(sub, L, 194.5 + dx, dy, 7, 2.2);
   for (const y of [-180, -188.5, -250, -258.5, -275]) capacitor(sub, L, 11, y, 9, 2.6, true);
+  await slice();
   heatsink(sub, L, vr.x0, vr.x1, vr.y0, vr.y1, vr.h, 'y', 11);
+  await slice();
   // The regulator's heatsink beside the socket carries the board's name on a cap along its top, and the board's light
   // along its side.
   add(rbox(22, 90, 1.4, 0.5, 1), L.sinkDark, at((vr.x0 + vr.x1) / 2, (vr.y0 + vr.y1) / 2 - 2, T + vr.h + 0.9));
   add(printPlane(84, 16, SHEET.cover), L.print, at((vr.x0 + vr.x1) / 2, (vr.y0 + vr.y1) / 2 - 2, T + vr.h + 1.62).multiply(new THREE.Matrix4().makeRotationZ(PI / 2)), { shadow: false });
   add(led(new THREE.BoxGeometry(1.4, vr.y0 - vr.y1 - 8, 1.6), 0.3, 1.2), L.led, at(vr.x1 + 0.9, (vr.y0 + vr.y1) / 2, T + vr.h - 6), { shadow: false });
+  await slice();
   heatsink(sub, L, vt.x0, vt.x1, vt.y0, vt.y1, vt.h, 'x', 12, true);
+  await slice();
 
   // The rear connectors: a shield with the ports in it, and the armored cover over them with its light in the notch.
   const ioTop = 41;
@@ -135,6 +140,7 @@ export function board(parent: Adds, L: Look, m: THREE.Matrix4): void {
   for (const [y, z, pw] of ports) shield.holes.push(rrectHole(pw, 6.6, 0.6, -z, y));
   shield.holes.push(rrectHole(16.8, 14.4, 0.6, -(T + 20), -90));
   add(extrude(shield, 0.8, 0.2, 'zy', 8, 1), L.sinkDark, at(-3.0, 0, 0));
+  await slice();
   for (const [y, z, pw] of ports) {
     add(rbox(16, 6.2, pw - 0.4, 0.4, 1), L.sink, at(5, y, z));
     add(new THREE.BoxGeometry(1, 4.6, pw - 2.4), L.void, at(-2.6, y, z), { shadow: false });
@@ -142,6 +148,7 @@ export function board(parent: Adds, L: Look, m: THREE.Matrix4): void {
   add(rbox(20, 13.8, 16.2, 0.6, 1), L.sink, at(7, -90, T + 20));
   add(new THREE.BoxGeometry(1, 11.2, 12), L.void, at(-2.6, -90, T + 20), { shadow: false });
   for (const z of [T + 9, T + 18, T + 27]) add(cyl(3.2, 12, 'x', 14), L.plastic, at(3.6, -140, z));
+  await slice();
   const coverPts: [number, number][] = [[-1, -4], [30, -4], [30, -26], [26, -34], [26, -118], [30, -126], [30, -150], [-1, -150]];
   add(extrude(roundedPoly(coverPts, 1.5), 6, 1.2, 'xy', 4, 2), L.sink, at(0, 0, T + ioTop - 6), { uv: 'box' });
   add(extrude(roundedPoly([[14, -6], [29, -6], [29, -60], [14, -74]], 1), 1.4, 0.5, 'xy', 2, 1), L.copper, at(0, 0, T + ioTop - 0.4), { uv: 'box' });
@@ -150,6 +157,7 @@ export function board(parent: Adds, L: Look, m: THREE.Matrix4): void {
 
   // Memory slots with latches.
   for (const d of BOARD.dimms) {
+    await slice();
     const len = 146 - 14;
     add(rbox(6.4, len, 9, 0.5, 2), L.plastic, at(d.x, d.y, T + 4.5));
     add(rbox(6.8, len - 10, 1.2, 0.3, 1), L.sinkDark, at(d.x, d.y, T + 0.6));
@@ -162,6 +170,7 @@ export function board(parent: Adds, L: Look, m: THREE.Matrix4): void {
   // Expansion slots: the first reinforced, as the card's own slot.
   const slots: [number, number, boolean][] = [[BOARD.pcie, 89, true], [BOARD.pcie - 2 * pitch, 89, false], [BOARD.pcie - 4 * pitch, 25, false], [BOARD.pcie - 6 * pitch, 39, false]];
   for (const [y, len, armored] of slots) {
+    await slice();
     add(rbox(len, 7.2, 10.6, 0.5, 2), L.plastic, at(22 + len / 2, y, T + 5.3));
     add(new THREE.BoxGeometry(len - 3, 1.6, 0.6), L.void, at(22 + len / 2, y, T + 10.65), { shadow: false });
     if (armored) {
@@ -173,6 +182,7 @@ export function board(parent: Adds, L: Look, m: THREE.Matrix4): void {
 
   // The drive plates, each with its grooves and two screws.
   for (const my of [-137, -160 - pitch, -160 - 3 * pitch]) {
+    await slice();
     const pw = 94, pd = 25, ph = 7.2;
     const sh = roundedPoly([[0, -pd / 2], [pw - 8, -pd / 2], [pw, -pd / 2 + 8], [pw, pd / 2], [8, pd / 2], [0, pd / 2 - 8]], 1.4);
     add(extrude(sh, ph, 0.9, 'xy', 3, 2), L.sink, at(36, my, T + 1.4), { uv: 'box' });
@@ -180,6 +190,7 @@ export function board(parent: Adds, L: Look, m: THREE.Matrix4): void {
     for (const [ex, ey] of [[40, my + pd / 2 - 4], [36 + pw - 4, my - pd / 2 + 4]]) add(lathe([[0, 0], [2, 0], [2, 0.6], [1.5, 1.0], [0, 1.1]], 12), L.sinkDark, at(ex, ey, T + 1.4 + ph));
   }
 
+  await slice();
   // The chipset heatsink with its raised plate, and a light strip along its edge.
   const cs = { x0: 142, x1: 212, y0: -206, y1: -282, h: 10 };
   add(extrude(roundedPoly([[cs.x0, cs.y0], [cs.x1 - 10, cs.y0], [cs.x1, cs.y0 - 10], [cs.x1, cs.y1], [cs.x0 + 12, cs.y1], [cs.x0, cs.y1 + 12]], 1.4), cs.h - 2, 1.0, 'xy', 3, 2), L.sink, at(0, 0, T), { uv: 'box' });
@@ -187,6 +198,7 @@ export function board(parent: Adds, L: Look, m: THREE.Matrix4): void {
   add(extrude(roundedPoly([[mx - 16, my - 16], [mx + 16, my - 16], [mx + 16, my + 16], [mx - 16, my + 16]], 2), 1.6, 0.5, 'xy', 3, 1), L.sink, at(0, 0, T + cs.h - 2), { uv: 'box' });
   add(led(rbox(1.6, 60, 2, 0.6, 2), 0.25, 0.7), L.led, at(cs.x1 + 1.4, my - 6, T + 4), { shadow: false });
 
+  await slice();
   // The right angle 24 pin header at the board's edge, the processor power header, the drive ports and the cell.
   const hw = 12 * 4.2 + 2.4 + 4.3, hh = 2 * 4.2 + 2.4 + 4.3;
   add(rbox(12, hw, hh, 0.6, 2), L.plastic, at(w - 6, BOARD.atx24.y, T + hh / 2));
@@ -196,6 +208,7 @@ export function board(parent: Adds, L: Look, m: THREE.Matrix4): void {
   add(lathe([[0, 0], [10, 0], [10, 3.2], [0, 3.2]], 24), L.sinkDark, at(122, -290, T));
   add(lathe([[0, 0], [8, 0], [8, 0.4], [0, 0.4]], 24), L.sink, at(122, -290, T + 3.2));
 
+  await slice();
   // Small chips scattered over the bare board.
   const r = seeded(9);
   for (let i = 0; i < 40; i++) {
