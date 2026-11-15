@@ -17,7 +17,7 @@ Read `reference/kits/README.md` first: the bar, the colors, how to look at a thi
 - **Where your thing stands is fixed** (`PLACES`, `MAT`, `SCREEN`, `BAY` in `src/desk-drafts/desks.ts`, as changed in `src/pieces/desk/layout.ts`). Its size is the real thing's size.
 - **Seen alone:** `/lab/piece/desk?only=<part>` shows your part by itself, framed close, at about three times its size on the page, on the same stage and under the same lights. That is where it has to be a finished object. `/lab/piece/desk` shows the whole desk, where it has to sit with the rest. `?lights=0` shows it before the stream has reached the desk, lit only by the room and the cursor.
 - **Lights.** The desk's own lights are the lamp, the lit monitor and the PC, fixed once lit. The page brings them on, left to right, as the stream strikes the lamp. Your part is handed a level from 0 to 1 for the light it belongs to (`lights` in the part's state) and must look right at 0, at 1 and at every level between: at 0 it is a finished unlit object, lit by the room and the cursor's light.
-- **The cursor's light** is what shows form, and he loves it. It is a real light that moves with the cursor. Your part is also told where it is over the desk, for a thing that answers it (the keyboard's keys).
+- **The cursor's light** is what shows form, and he loves it. It is a real light that moves with the cursor. Your part is also told where the light is over the desk (`cursor`) and where the pointer itself is (`pointer`), for a thing that answers it (the keyboard's keys).
 - **Time** comes in the part's state. With reduced motion nothing loops.
 
 ## What every part must hold to
@@ -26,6 +26,7 @@ Read `reference/kits/README.md` first: the bar, the colors, how to look at a thi
 - **Told from a still alone:** a stranger shown one still names the thing and what it is made of.
 - **No maker's mark,** and no real company's product copied. His own things (the iPad, the pencil, the headphones, the camera) read as his kind of thing, high end and current, with made up marks or none.
 - **Palette only.** Lights are ember, flame, hot and pale. Metals are bronze, copper and warm dark steel. No white, blue, green or rainbow, the keyboard and the PC included.
+- **Not one orange tone.** Read "The look" in `reference/kits/README.md` and hold to it: only copper is orange and it is an accent, everything else is near neutral, every thing has a near black, a mid grey and pale glints, and dark parts are drawn by light on their edges. The timber is the one large warm brown thing, so what stands on it must not be brown or orange, or it sinks into the desk.
 - **Nothing crawls.** Scrolled slowly and with the cursor moving, grain, stitching, key legends, vents and grilles hold still: no sparkle, no moiré. Leave out detail finer than a pixel at the page's size and fade it in up close.
 - **Cost.** The whole desk is one canvas about 1300 by 800 px on the page with ten things in it. Merge what never moves. Say your part's triangles and draw calls. Anything that moves by itself (fans, a screen, the keys' wave) must be cheap enough to draw every frame.
 - **It sits.** Contact shadows under it on the mat or the timber, and its light lands on what is next to it.
@@ -51,7 +52,7 @@ All from the repo folder. A dev server is already running on port 5330 and is sh
 
 ```
 npm run shot -- "/lab/piece/desk?only=<part>&label=0&ui=0" --t 4 --wait 2500 --out shots/desk/<part>/alone.jpg
-npm run shot -- "/lab/piece/desk?only=<part>&label=0&ui=0" --t 4 --wait 2500 --scale 3 --out shots/desk/<part>/close.jpg
+npm run shot -- "/lab/piece/desk?only=<part>&label=0&ui=0" --t 4 --wait 2500 --scale 2 --out shots/desk/<part>/close.jpg
 npm run shot -- "/lab/piece/desk?only=<part>&label=0&ui=0&lights=0" --t 4 --wait 2500 --out shots/desk/<part>/unlit.jpg
 npm run shot -- "/lab/piece/desk?only=<part>&label=0&ui=0" --t 4 --wait 2500 --lamp 0.15,0.3 --out shots/desk/<part>/lamp-left.jpg
 npm run shot -- "/lab/piece/desk?label=0&ui=0" --t 4 --wait 3000 --out shots/desk/<part>/whole.jpg
@@ -59,6 +60,7 @@ npm run shot -- "/lab/piece/desk?size=808&label=0&ui=0" --t 4 --wait 3000 --out 
 npm run live -- "/lab/piece/desk?only=<part>&label=0&ui=0" --scale 1 --ms 2000 --every 6 --max 16 --cols 8 --tile 300 --out shots/desk/<part>/live.jpg
 ```
 
+- A part alone is already drawn at about three times its size on the page, and the canvas draws at up to two device pixels to a CSS pixel. So the close still is `--scale 2`: at 3 it is only enlarged, and shows stair steps that are not in the model.
 - `--t 4` holds the clock, so a still is always the same picture. For anything that moves by itself (fans, the screen, the keys' wave), also take real frames with `npm run live`, whose options are at the top of `scripts/live.mjs`.
 - `?size=808` draws the desk in a host as tall as it is on the page at a 1440 wide screen. That is what a visitor sees. Your thing has to say what it is at that size.
 - Open every image you take with the Read tool. Never judge something you have not looked at.

@@ -10,7 +10,7 @@ import { mountStream, type PlanContext, type Planned, type StreamHandle } from '
 import { clock } from '../world/clock';
 import type { Anchor, StruckPiece, Way } from '../world/struck';
 import { tiers } from '../world/tier';
-import { ABOUT, BOARD, CX, SKILLS, throwLine } from './plan';
+import { ABOUT, BOARD, CX, SKILLS, SWING, swingOf, throwLine } from './plan';
 
 // What the stream does to Skills and About. The page lays things out. This reads where they are, hands the stream's
 // planner the places (src/stream/route-skills.ts), and in every frame brings each thing onto the page by how long
@@ -41,13 +41,13 @@ const SHOW = {
   title: [0, 0.5] as Span,
   phones: [0.12, 0.6] as Span,
   // The desk comes out of the dark as the stream nears it. Its lamp is on in the frame of the strike, and the rest
-  // follow from left to right, all on within a second.
+  // follow from left to right. The keys take half a second, which is how long their wave needs to be seen crossing.
   room: [0, 0.8] as Span,
   lamp: [0, 0.14] as Span,
   tablet: [0.2, 0.42] as Span,
   monitor: [0.4, 0.66] as Span,
-  keys: [0.6, 0.82] as Span,
-  pc: [0.78, 1] as Span,
+  keys: [0.55, 1.05] as Span,
+  pc: [0.9, 1.3] as Span,
   // A row: its borders run out from the stream's side at the strike, its thing comes to life, then its name, then
   // its lists.
   rule: [0, 0.34] as Span,
@@ -68,9 +68,6 @@ const RISE = 10;
 const RULE = { half: 2.4 };
 // The way the lamp's shade faces where the stream strikes it. Where that is, is the desk's own (SHADE in its layout).
 const SHADE_FACE = -2.2;
-// The headphones swing as a pendulum that loses its swing: how long one swing takes, how long it takes to lose most
-// of it, how far the lamp's strike rocks them and the most a brush of the cursor does, in degrees.
-const SWING = { period: 1.05, dies: 0.95, struck: 5, brush: 6, lasts: 7 };
 // How hard the stream strikes the first row again when its thing is asked to come to life again.
 const AGAIN = 0.8;
 // A change of tab: how long its pulse takes to reach him, and how far along that the words change.
@@ -211,7 +208,7 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
   // The headphones' swing at a time: every knock they have had, each dying away.
   const swing = (t: number) => {
     let deg = 0;
-    for (const s of swings) { const e = t - s.t; if (e > 0 && e < SWING.lasts) deg += s.a * Math.exp(-e / SWING.dies) * Math.sin((2 * Math.PI * e) / SWING.period); }
+    for (const s of swings) deg += swingOf(s.a, t - s.t);
     return deg;
   };
 

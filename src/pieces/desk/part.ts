@@ -21,6 +21,9 @@ export interface PartState {
   // Where the cursor's light is over the desk, in the desk's millimetres, and how much a real cursor leads it, 0 to 1.
   cursor: THREE.Vector3;
   led: number;
+  // Where the pointer itself is over the desk's top, in the desk's millimetres. The light stands above the pointer,
+  // so a thing that answers the pointer, as the keys do, reads this and not the light's place.
+  pointer: THREE.Vector3;
   // What the stream is doing to the lamp: how much it is on it, and the seconds since it struck.
   stream: { on: number; since: number };
   // Nothing loops and nothing drifts: reduced motion, or a held frame.

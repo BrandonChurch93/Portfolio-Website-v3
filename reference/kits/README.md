@@ -18,6 +18,19 @@ Three contained 3D objects on the Skills and About page (`/lab/skills`): the CPU
 - Only the site's palette: `src/config/palette.ts`, read with `hex('copper')` and so on. Ground near black and warm. Metal is bronze and copper, never yellow gold, never chrome or nickel white. Dark metal is a warm near black.
 - Every light is ember, flame, hot or pale. Nothing white, nothing blue, nothing green, no rainbow. A hot core goes to pale gold, never to white. Check a still for any pixel bluer than it is red.
 
+## The look: what separates one material from another here
+
+Round after round, fresh reviewers failed things on this page for the same fault: "every material is the same sepia orange, so it looks like a tinted photo rather than several metals", while the PC Builder's parts "separate black, white, metal and light". The palette allows no white, blue or green, so hue cannot do that work. Value, saturation and finish have to, on purpose:
+
+- **Only copper is orange, and copper is an accent.** A ring, a crown, a rim, a pad, a screw. Never more than about a quarter of what is seen of a thing. Bronze is its darker, browner neighbour and is used as sparingly.
+- **Everything else is close to neutral:** a true warm black, charcoal, a warm dark steel that is plainly grey beside copper, a matte dark plastic or rubber, cloth, and pale cream for marks and legends. Sample a still: a mid tone on a neutral part has a saturation under 0.2, and one on copper over 0.55.
+- **Three values in every thing:** a near black, a mid grey, and small pale glints, about (255, 227, 194) at the brightest. If a still of the thing has no near black or no pale glint, it is not lit yet.
+- **Dark things are drawn by light on their edges.** That is how the PC Builder's black parts read: a crisp pale line along the top edge of each part from a light behind it, a clean highlight along a chamfer. A dark part with no edge light is a hole in the page.
+- **Finish is a color here.** Matte beside satin beside polished: cloth, rubber, anodised metal, brushed metal, a polished edge, glass. Put two finishes side by side wherever two parts meet.
+- **Metal reads as metal by what it reflects:** long sharp reflections that slide across it as the cursor's light moves, as on the sleeping card he approved (`src/metal/dial.ts`). A soft orange gradient is paint.
+- **Light is ember, flame, hot and pale, and it is light:** it comes from a lamp, a screen, an LED or the stream, and it lands on what is next to it. A material never glows to be seen, and a lit thing never washes the whole object one orange.
+- **Nothing blooms at rest,** and nothing clips past pale.
+
 ## The contract
 
 - A piece is a folder in `src/pieces/<name>/`: `index.ts` exports its factory and its constants, `model.ts` builds it. You own that folder and nothing else. A place holder `index.ts` is there now. Replace it, and keep the names it exports.
