@@ -987,6 +987,19 @@ For Claude Code, added to the work it has in hand. His words are in the list abo
 - **The port is dropped** with its crag.
 - **Item 27:** the torn underside, the core, the debris, the sky and the layout are not being worked on. Stills of them from before are kept to compare.
 
+**The finished version, as built (Nov 15). It stands, at `/lab/hero` and on top of `/lab/whole`, and is on the live site. Every item of 19 to 27 is built. None of what is new has been called a film or a AAA frame by a fresh reviewer.**
+
+- **Item 19 and 20:** the city ends at 472 on the map with a ragged fringe, about 80 buildings on 119 lots, and bare cracked bedrock runs from it to the torn edge.
+- **Item 21, polished metal:** the spire's rings, clamps and needle in gold, its cage in copper, its piers in bronze. The pyramid cased in bands of gold with a faceted mirror cap. About four in ten of the city's towers clad in fluted bronze, copper or gold. A ring of polished bronze where the way ends, with two more seen through it. The Sun disc. Three pools of polished bronze on the land and one in the dunes. Every metal reflects a room made for it and shows the cursor's light as a soft panel that moves (`src/pieces/skycity/polish.ts`).
+- **Item 22:** about 150 great trees, 70 to 120 tall with giants to 186, palms over the canopy, right up to the pyramid.
+- **Item 23:** dunes of pale gold sand at the right, round the monument, with a pool of polished metal.
+- **Item 24:** a Sun disc of gold, 168 across, on its rim in a granite cradle between obelisks, carved with the Sun stone's marks round a boss. No face.
+- **Item 25:** five designed craft, 46 to 92 long. The lanes of small lights were tried, never read as traffic, and were left out.
+- **Item 26:** the city rebuilt as blocks of joined buildings and towers in five designs. The two blank blocks are gone: the ring stands there.
+- **Item 27:** the torn underside and the debris were put back exactly as they were in the build he saw (their builders had gone on after it), and the room's light was brought back to what it was, so stills of the underside, the core and the debris from before and after agree but for a slightly lighter rock.
+- **What the builders' own fresh reviewers last said, plainly:** the city "a painted tabletop miniature", "a 1930s Art Deco downtown". The pyramid "a backlight behind louvres". The Sun disc "a well-modelled prop from a mid-tier game", "a collectible coin", and next to Work's stones "a cousin, not the ancestor". The jungle "a dense, rust-brown jungle" at a glance and "amateur" close up. The land's margin "a layered band" and its pools "lava decals". The craft read as craft in open sky and "a brass desk ornament" close up. The spire's gilding has not been judged by a fresh reviewer.
+- **Measured:** WebKit at an iPad's size, no errors, on both pages. The test browser holds 60 frames a second at the median with the world's canvas held to 2.8 million pixels, with some frames at 30. Not measured on a 120 Hz screen. The world takes about 1.3 seconds to build in slices, the debris and the torn underside most of it, and its first frame up to 1.9 seconds on a cold cache.
+
 ### Work
 
 - One section. A centered title. No featured card.

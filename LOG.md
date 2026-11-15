@@ -19,10 +19,19 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 
 **Fable's calls, written into `BRIEF.md`:** the second natural area is dunes, the monument is a Sun disc carved as Work's stones, the mountains behind the pyramid go with the crag, the water becomes pools of metal.
 
+**Built and pushed, the same day**
+
+- Every builder handed back but the dunes', whose part was pushed as it stood and built. `BRIEF.md`, "The finished version, as built" has what each made and what its reviewers said.
+- **`src/pieces/skycity/polish.ts`** is new and shared: `polished(material)` adds the cursor's light as a panel that polished metal reflects, close in front of whatever it lights, and holds the brightness of reflections so a large mirror does not set the bloom glowing. The spire, the city, the pyramid, the Sun disc, the pools and the craft use it.
+- **The room** (`ROOM` in `index.ts`) holds the moon, the glow and thin strips overhead, at the sides, in front and high behind. Thin on purpose: wide ones lifted every rock out of the night.
+- **The torn underside and the debris were put back to the commit that first went live** (`d482d09`), because their builders' later rounds had changed what he had seen and asked to be left alone. The later rounds are in the history (`2fcd786`, `d5cea05`).
+- The two open wedges at the front were made narrower after the city's builder found its front read as bare.
+- Stills from before and after for test 20 are in `shots/before/` and `shots/after/`.
+- `sharp(...).extract(...).stats()` gives the whole image's numbers, not the cropped part's: crop to a file first.
+
 **Half finished, and what the next session needs**
 
-- Eight builders are running. Their files are uncommitted until each hands back: commit named paths only.
-- `src/pieces/skycity/parts/port.ts` and `parts/port/` are no longer loaded. Delete them once the craft's builder has handed back: it was told to copy what it wants.
+- The dunes' builder is still running. Its files are uncommitted until it hands back: commit named paths only.
 - `parts/ground/shape.ts` and `rock.ts`, and `GROUND.rim`, `GROUND.rock`, `FALLS` in `layout.ts`, are leftovers to delete once nothing reads them.
 - The frame rate holds 60 in the test browser only with the world's canvas held to 2.8 million pixels. Not measured on a 120 Hz screen. The first frame is about 1.5 seconds, mostly the land, whose builder has a target of 250 ms.
 - Not pushed since the first standing build.
