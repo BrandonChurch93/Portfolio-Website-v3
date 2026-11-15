@@ -2,6 +2,23 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · What is wrong with world A, and the crash prompt was never sent (Fable, web chat)
+
+**What Brandon said**
+
+- The width is right and he does not want it smaller. World A's ground reads as man-made, a spaceship, not a planet partly destroyed. He wants a real landscape with more than one biome (his first idea: a forest, and perhaps a desert), many varied trees, a city that is not in rows or along rivers, smaller rings that belong to the spire. The core is right. The torn rock could be more like a planet's. The big debris should carry the same land as the surface. `BRIEF.md`, Settled, Hero.
+- He never sent Claude Code the prompt about the crash. It leads the next one.
+
+**What was done**
+
+- His words written in. Nothing built. Still paused for his references.
+- Put to him: what he describes is the world that was asked for at midnight on Nov 14 (a forest, dunes, a city on natural ground), which failed on how it was made and not on the idea. Natural land is what code has now missed three times here. `BRIEF.md`, Open 5, imported models, has never been ruled: Fable recommends this one piece is made as a real model in Blender, through his 3D asset playbook, and asked him to rule on it with his references.
+
+**For the next session**
+
+- His references, and his answer on Open 5.
+- The next prompt to Claude Code opens with the crash.
+
 ## 2026-11-15 · The two worlds: a pause, and the platform (Fable, web chat)
 
 **What Brandon said**
