@@ -1,132 +1,144 @@
 import * as THREE from 'three';
-import { hex } from '../../../../config/palette';
-import { NOISE, lin } from '../../../../world/surface';
-import { SCALE } from '../../layout';
+import { lin } from '../../../../world/surface';
+import { MOONWARD } from '../../layout';
+import { JUNGLE } from './colors';
 
-// One program draws the whole forest, every kind drawn many times over: needles, leaves, bark and stone, each
-// vertex saying which it is.
+// One program draws the whole jungle: every tree is a square of the baked pictures (./bake.ts), standing where the
+// tree stands and facing the page's view, and lit through the way the picture says it faces at each pixel. The colors
+// are the jungle's own (./colors.ts) and nowhere else.
 
 export const U = {
-  // The cursor's light, in the world's units.
-  uLamp: { value: new THREE.Vector3(0, 300, 1200) },
+  uAlbedo: { value: null as THREE.Texture | null },
+  uNormal: { value: null as THREE.Texture | null },
+  // How much taller than wide the pictures are, which a square's side is turned up by.
+  uTall: { value: 1 },
 };
 
-const f1 = (x: number) => x.toFixed(3);
-// Where the moon stands from the world (the stage's key light, from the upper right and a little in front). The
-// edges of crowns turned to it catch it.
-const MOON = new THREE.Vector3(0.56, 0.6, 0.57).normalize();
+const C = (k: keyof typeof JUNGLE) => lin(JUNGLE[k]);
+// The pictures are read this many steps coarser than the screen asks for: single tufts of leaves smaller than a few
+// pixels then join into the masses they are part of, and do not speckle.
+const SOFT = '0.9';
 
-const COMMON = /* glsl */ `
-uniform vec3 uLamp;
-${NOISE}
-vec3 heat(float k){
-  vec3 c = mix(${lin(hex('ember'))}, ${lin(hex('flame'))}, smoothstep(0.0, 0.45, k));
-  c = mix(c, ${lin(hex('hot'))}, smoothstep(0.45, 0.85, k));
-  return mix(c, ${lin(hex('pale'))}, smoothstep(0.85, 1.0, k));
-}
-// What the room and the lights reflect is held under pale, so a glint stays a glint and never blooms.
-vec3 heldUnder(vec3 c){ float m = max(c.r, max(c.g, c.b)); if (m <= 0.9) return c; float e = m - 0.9; return c * (0.9 + e / (1.0 + e / 0.45)) / m; }
-// A bump from a height worked out in the fragment, in view space.
-vec3 gBump(vec3 n, float h, float k){
-  vec3 dpx = dFdx(-vViewPosition), dpy = dFdy(-vViewPosition);
-  float hx = dFdx(h), hy = dFdy(h);
-  vec3 r1 = cross(dpy, n), r2 = cross(n, dpx);
-  float det = dot(dpx, r1);
-  vec3 g = sign(det) * (hx * r1 + hy * r2);
-  vec3 m = abs(det) * n - g * k;
-  return dot(m, m) > 1e-20 ? normalize(m) : n;
-}
-`;
-const HOLD = 'outgoingLight = heldUnder(outgoingLight - totalEmissiveRadiance) + totalEmissiveRadiance;\n#include <opaque_fragment>';
-// The cursor's light is the only light that moves, so the forest answers it a little more strongly than it would.
-// Not much more: lit strongly, leaves read as paper.
-const LAMP_GAIN = 1.3;
+// Per tree (look): x how far its leaves turn toward flame, y how bright it is, z how much of a lantern's light reaches
+// it from below, and a lantern itself above 1.5. Per tree (cell): where its square is and its side, and where its
+// foot is across it.
+const VERT_HEAD = /* glsl */ `
+attribute vec4 cell;
+attribute vec4 look;
+uniform float uTall;
+varying vec2 vAt;
+varying vec3 vR;
+varying vec3 vU;
+varying vec3 vF;
+varying vec4 vLook;
+varying float vY;`;
 
-// leaf (per vertex): x what it is (0 bark, 1 leaves in a crown, 2 needles in a conifer's skirt, 4 stone, 5 a
-// lantern's glass), y how far
-// up its crown or skirt it is, z how far out, w a number of its own. tint (per thing): the color of its leaves.
-// tree (per thing): x a seed, y how much of a lantern's light reaches it from below, z its bark's tone, from dark to
-// the aspen's pale.
-export function leafMaterial(): THREE.MeshStandardMaterial {
-  const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8, metalness: 0, side: THREE.DoubleSide });
-  m.name = 'forest';
-  // Leaves and bark are matte: the room's long lights laid over them as a grey sheen took every dark away.
+export function cardMaterial(): THREE.MeshStandardMaterial {
+  const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.82, metalness: 0, side: THREE.DoubleSide });
+  m.name = 'jungle';
   m.envMapIntensity = 0.25;
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, U);
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute vec4 leaf;\nattribute vec3 tint;\nattribute vec4 tree;\nvarying vec4 vLeaf;\nvarying vec3 vTint;\nvarying vec4 vTree;\nvarying vec3 vLoc;\nvarying vec3 vLocN;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvLeaf = leaf;\nvTint = tint;\nvTree = tree;\nvLoc = position;\nvLocN = normal;');
-    let f = sh.fragmentShader.replace('#include <common>', `#include <common>\n${COMMON}\nvarying vec4 vLeaf;\nvarying vec3 vTint;\nvarying vec4 vTree;\nvarying vec3 vLoc;\nvarying vec3 vLocN;\nfloat lPart; float lPx; float lClump = 0.5;`);
+      .replace('#include <common>', `#include <common>\n${VERT_HEAD}`)
+      .replace('#include <begin_vertex>', `#include <begin_vertex>
+vAt = cell.xy + vec2(position.x + 0.5, position.y) * cell.z * vec2(1.0, 1.0 / uTall);
+vLook = look;
+vY = position.y;
+{ mat3 im = mat3(instanceMatrix); vR = normalize(normalMatrix * im[0]); vU = normalize(normalMatrix * im[1]); vF = normalize(normalMatrix * im[2]); }`)
+      // A tree's shadows are looked up at the front of its crown and not at its trunk, where the square stands: there
+      // the square would lie in its own shadow. How far in front is the length of the instance's third column.
+      .replace('#include <shadowmap_vertex>', `#if defined( USE_SHADOWMAP ) || ( NUM_SPOT_LIGHT_COORDS > 0 )
+{ vec4 keep = worldPosition; worldPosition.xyz += mat3(modelMatrix) * instanceMatrix[2].xyz;
+#include <shadowmap_vertex>
+worldPosition = keep; }
+#endif`);
+    let f = sh.fragmentShader.replace('#include <common>', `#include <common>
+uniform sampler2D uAlbedo;
+uniform sampler2D uNormal;
+varying vec2 vAt;
+varying vec3 vR;
+varying vec3 vU;
+varying vec3 vF;
+varying vec4 vLook;
+varying float vY;
+float jLeaf = 0.0, jOpen = 1.0, jVal = 0.0;
+vec3 jAlbedo = vec3(0.0);
+vec3 jN = vec3(0.0, 0.0, 1.0);`);
     f = f.replace('#include <color_fragment>', `#include <color_fragment>
 {
-  lPart = floor(vLeaf.x + 0.5);
-  lPx = length(fwidth(vLoc));
-  vec3 q = vLoc + vTree.x * 37.0;
-  vec3 c;
-  float fine = mix(0.5, wNoise(q * 3.4), 1.0 - smoothstep(0.3, 0.8, lPx * 3.4));
-  if (lPart < 0.5) {
-    // Bark: a dark warm grey, weathered paler on the dead, and on the aspen pale with dark marks across it.
-    c = mix(${lin(0x110c08)}, ${lin(0x5e574e)}, vTree.z);
-    float mark = smoothstep(0.62, 0.8, wNoise(vec3(q.x * 2.0, q.y * 1.6, q.z * 2.0)));
-    c *= 1.0 - 0.6 * mark * smoothstep(0.7, 1.0, vTree.z) * (1.0 - smoothstep(0.3, 0.8, lPx * 2.0));
-    c *= 0.85 + 0.3 * mix(0.5, wNoise(vec3(q.x * 3.0, q.y * 0.5, q.z * 3.0)), 1.0 - smoothstep(0.3, 0.8, lPx * 3.0));
-  } else if (lPart > 4.5) {
-    // A lantern's glass.
-    c = ${lin(0x1a120a)};
-  } else if (lPart > 3.5) {
-    // Stone: a warm grey, darker in its hollows, with paler crusts.
-    float s = wFbm(q * 0.7);
-    c = ${lin(0x2e2924)} * (0.6 + 0.6 * s) * (0.85 + 0.3 * fine) * (0.8 + 0.4 * wNoise(q * 0.25));
-    lClump = s;
-  } else {
-    // Leaves and needles: in clusters with dark gaps between them, gone to their average before a cluster is finer
-    // than a pixel. A crown is lit on its top and dark under; a conifer's every skirt is.
-    float far = smoothstep(0.35, 0.9, lPx * 1.1);
-    // Where a crown turns from the eye its edge breaks into clusters of leaves with sky between, so no crown shows the
-    // polygons it is built of. The view never moves, so the edge holds still.
-    float face = abs(dot(normalize(vNormal), normalize(vViewPosition)));
-    float lace = wNoise(q * (lPart > 1.5 ? 2.4 : 1.5)) * 0.7 + wNoise(q * 4.1) * 0.3;
-    if (lPart < 2.5 && lace < (0.42 - face) * 1.9) discard;
-    float clump = mix(smoothstep(0.32, 0.68, wFbm(q * (lPart > 1.5 ? 1.6 : 1.25))), 0.55, far);
-    // A coarser clumping that still shows when the crown is small on the screen.
-    float coarse = mix(smoothstep(0.3, 0.7, wNoise(q * 0.42)), 0.55, smoothstep(0.5, 1.2, lPx * 0.42));
-    clump = mix(clump * 0.6 + coarse * 0.4, coarse, far * 0.8);
-    float up = smoothstep(0.0, 1.0, vLeaf.y), out1 = clamp(vLeaf.z, 0.0, 1.0);
-    float shade = lPart > 1.5 ? mix(0.1, 0.9, up * up) : mix(0.16, 1.0, up * up) * mix(0.3, 1.0, out1);
-    c = vTint * shade * mix(0.3, 1.2, clump) * (0.8 + 0.4 * fine) * (0.85 + 0.3 * vLeaf.w);
-    lClump = clump;
-  }
-  diffuseColor.rgb = c;
+  vec4 A = texture2D(uAlbedo, vAt, ${SOFT});
+  if (A.a < 0.5) discard;
+  vec3 a = A.rgb / A.a;
+  vec4 B = texture2D(uNormal, vAt, ${SOFT}) / A.a;
+  jLeaf = a.r; jVal = a.g; jOpen = clamp(B.a, 0.0, 1.0);
+  vec3 nb = B.xyz * 2.0 - 1.0;
+  jN = dot(nb, nb) > 1e-6 ? normalize(nb) : vec3(0.0, 0.0, 1.0);
+  float hue = clamp(a.b + vLook.x, 0.0, 1.0);
+  vec3 leaf = mix(${C('deep')}, ${C('mass')}, smoothstep(0.05, 0.5, jVal));
+  leaf = mix(leaf, ${C('leaf')}, smoothstep(0.55, 1.0, jVal));
+  leaf = mix(leaf, ${C('flame')} * (0.4 + 0.7 * jVal), smoothstep(0.5, 1.0, hue));
+  vec3 bark = mix(${C('bark')}, ${C('barkPale')}, a.b) * (0.35 + 0.9 * jVal);
+  jAlbedo = mix(bark, leaf, jLeaf) * vLook.y;
+  diffuseColor.rgb = jAlbedo * mix(0.12, 1.0, jOpen * jOpen);
 }`);
-    f = f.replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = lPart > 4.5 ? 0.3 : lPart > 3.5 ? 0.9 : lPart < 0.5 ? 0.95 : 0.8;');
     f = f.replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
-if (lPart > 0.5 && lPart < 4.5) normal = gBump(normal, (lClump + 0.3 * wNoise((vLoc + vTree.x * 37.0) * 3.4)) * (lPart > 3.5 ? 0.8 : 0.9) * (1.0 - smoothstep(0.35, 0.9, lPx * 1.1)), ${SCALE.toFixed(5)});`);
+{ vec3 nn = jN.x * vR + jN.y * vU + jN.z * vF; normal = dot(nn, nn) > 1e-8 ? normalize(nn) : normalize(vF); }`);
     f = f.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
 {
-  vec3 V = normalize(vViewPosition);
-  vec3 N = normal;
-  float fres = pow(1.0 - clamp(abs(dot(N, V)), 0.0, 1.0), 2.5);
-  vec3 lw = (viewMatrix * vec4(uLamp * ${SCALE.toFixed(5)}, 1.0)).xyz + vViewPosition;
-  vec3 L = dot(lw, lw) > 1e-12 ? normalize(lw) : vec3(0.0, 0.0, 1.0);
-  vec3 Mo = normalize(mat3(viewMatrix) * vec3(${f1(MOON.x)}, ${f1(MOON.y)}, ${f1(MOON.z)}));
-  float toLamp = clamp(dot(N, L), 0.0, 1.0), toMoon = clamp(dot(N, Mo) * 0.7 + 0.3, 0.0, 1.0);
-  float leafy = step(0.5, lPart) * (1.0 - step(3.5, lPart));
-  float up = smoothstep(0.1, 1.0, vLeaf.y);
-  // Edges catch the light: the cursor's where they face it, and the moon's on the side turned to it.
-  vec3 edge = mix(${lin(hex('copper-light'))}, ${lin(hex('pale'))}, 0.35 + 0.4 * toLamp);
-  totalEmissiveRadiance += edge * diffuseColor.rgb * leafy * fres * (1.4 * toLamp + 1.5 * toMoon * up) * (0.4 + 0.8 * lClump);
-  // A lantern burns.
-  totalEmissiveRadiance += heat(0.66) * 2.6 * step(4.5, lPart);
-  // A lantern's light reaches the trees nearest it, from below.
-  float under = clamp(0.5 - vLocN.y * 0.6, 0.0, 1.0);
-  totalEmissiveRadiance += heat(0.5) * diffuseColor.rgb * vTree.y * under * exp(-max(vLoc.y, 0.0) / 6.0) * 1.6 * step(0.5, lPart);
+  float lantern = step(1.5, vLook.z) * (1.0 - jLeaf) * smoothstep(0.85, 0.97, jVal);
+  totalEmissiveRadiance += ${C('glow')} * 2.6 * lantern;
+  // The glow of the sky behind the world comes through the leaves at the edges of a crown, and the moon catches its
+  // top: both on the open leaves only, so the inside of a crown stays dark.
+  float facing = clamp(dot(normal, normalize(vViewPosition)), 0.0, 1.0), rim = (1.0 - facing) * (1.0 - facing);
+  float skyward = clamp(0.35 + 0.65 * normal.y, 0.0, 1.0);
+  vec3 Mo = normalize(mat3(viewMatrix) * vec3(${MOONWARD.map((v) => v.toFixed(3)).join(', ')}));
+  float moon = max(dot(normal, Mo), 0.0);
+  totalEmissiveRadiance += ${C('catch')} * jLeaf * jAlbedo * jOpen * (3.2 * rim * skyward + 3.0 * moon * moon * jOpen);
+  float spill = vLook.z < 1.5 ? vLook.z : 0.0, low = 1.0 - clamp(vY, 0.0, 1.0);
+  totalEmissiveRadiance += ${C('spill')} * diffuseColor.rgb * spill * low * low * low * 3.0;
 }`);
-    // Leaves and needles keep little of the sheen a smooth surface has at a grazing angle: seen from above, a skirt of
-    // needles is all grazing angles, and the sheen turned every dark conifer grey.
-    f = f.replace('#include <lights_fragment_end>', `  float sheen = lPart > 4.5 ? 1.0 : lPart > 3.5 ? 0.5 : lPart < 0.5 ? 0.25 : 0.2;\n  reflectedLight.directDiffuse *= ${f1(LAMP_GAIN)};\n  reflectedLight.directSpecular *= ${f1(LAMP_GAIN)} * sheen;\n  reflectedLight.indirectSpecular *= sheen;\n#include <lights_fragment_end>`);
-    sh.fragmentShader = f.replace('#include <opaque_fragment>', HOLD);
+    // Deep in a crown the sky does not reach, and the moon only through gaps.
+    f = f.replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
+reflectedLight.indirectDiffuse *= jOpen;
+reflectedLight.directDiffuse *= mix(0.45, 1.0, jOpen);
+reflectedLight.directSpecular *= 0.12;
+reflectedLight.indirectSpecular *= 0.1 * jOpen;`);
+    sh.fragmentShader = f;
   };
-  m.customProgramCacheKey = () => 'forest';
+  m.customProgramCacheKey = () => 'jungle';
   return m;
+}
+
+// The shadow a tree throws: its square turned about its trunk to face the light being drawn, so the moon and the
+// cursor's light each see the tree's outline and not a square edge on.
+export function cardDepth(): THREE.MeshDepthMaterial {
+  const d = new THREE.MeshDepthMaterial();
+  d.onBeforeCompile = (sh) => {
+    sh.uniforms.uAlbedo = U.uAlbedo;
+    sh.uniforms.uTall = U.uTall;
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute vec4 cell;\nuniform float uTall;\nvarying vec2 vAt;')
+      .replace('#include <project_vertex>', `
+vAt = cell.xy + vec2(position.x + 0.5, position.y) * cell.z * vec2(1.0, 1.0 / uTall);
+vec4 mvPosition;
+{
+  vec3 c0 = instanceMatrix[0].xyz, c1 = instanceMatrix[1].xyz;
+  float wide = length(c0);
+  vec3 L = vec3(viewMatrix[0][2], viewMatrix[1][2], viewMatrix[2][2]);
+  vec3 across = cross(normalize(c1), L);
+  float k = length(across);
+  across = k > 1e-3 ? across / k : c0 / max(wide, 1e-6);
+  if (dot(across, c0) < 0.0) across = -across;
+  vec3 foot = instanceMatrix[3].xyz + c0 * (cell.w - 0.5);
+  vec3 p = foot + across * wide * (position.x - (cell.w - 0.5)) + c1 * position.y;
+  mvPosition = modelViewMatrix * vec4(p, 1.0);
+}
+gl_Position = projectionMatrix * mvPosition;`);
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform sampler2D uAlbedo;\nvarying vec2 vAt;')
+      .replace('#include <clipping_planes_fragment>', '#include <clipping_planes_fragment>\nif (texture2D(uAlbedo, vAt).a < 0.5) discard;');
+  };
+  d.customProgramCacheKey = () => 'jungle-depth';
+  return d;
 }
