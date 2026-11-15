@@ -111,7 +111,9 @@ export function body(p: Put, m: CameraMaterials): void {
   const dial = (x: number, z: number, region: 'mode' | 'iso', lock: boolean, index: [number, number]) => {
     const d = p.sub(at(x, BODY.h - 0.2, z));
     d.add(turned([[10.6, 0], [13.6, 0], [13.6, 1.0], [13.0, 1.4], [12.9, 1.4]], 96), m.paint);
-    d.add(ribs(turned([[12.9, 1.4], [13.3, 1.8], [13.3, 6.4], [12.9, 6.8]], 80), 72, 0.55, 0.45), m.bronze);
+    d.add(turned([[12.9, 1.4], [13.3, 1.8]], 80), m.bronze);
+    d.add(ribs(turned([[13.3, 1.8], [13.3, 6.4]], 80), 72, 0.55, 0.45), m.bronze);
+    d.add(turned([[13.3, 6.4], [12.9, 6.8]], 80), m.bronze);
     d.add(turned([[12.9, 6.8], [12.6, 6.8], [12.6, 7.6], [12.0, 8.2]], 96), m.barrel);
     d.add(faceUV(new THREE.CircleGeometry(12.0, 96).rotateX(-Math.PI / 2).translate(0, 8.2, 0), region, 13), m.barrel);
     if (lock) d.add(turned([[3.9, 8.1], [3.9, 9.8], [3.5, 10.4], [0, 10.6]], 48), m.paint);
@@ -124,11 +126,15 @@ export function body(p: Put, m: CameraMaterials): void {
   // The shutter release on the grip's top, in the collar that switches the camera on, and the front dial under it.
   {
     const s = p.sub(xf({ p: [-47.6, 76.6, 29], r: [11 * DEG, 0, 0] }));
-    s.add(ribs(turned([[5.8, 0], [10.6, 0], [11.0, 0.4], [11.0, 2.6], [10.6, 3.0], [6.4, 3.0], [6.2, 2.4]], 80), 40, 0.45, 0.5), m.paint);
+    s.add(turned([[5.8, 0], [10.6, 0], [11.0, 0.4]], 80), m.paint);
+    s.add(ribs(turned([[11.0, 0.4], [11.0, 2.6]], 80), 40, 0.45, 0.5), m.paint);
+    s.add(turned([[11.0, 2.6], [10.6, 3.0], [6.4, 3.0], [6.2, 2.4]], 80), m.paint);
     s.add(rbox(5, 1.8, 6, 0.8), m.paint, at(6.5, 1.5, 9.5));
     s.add(turned([[5.4, 2.4], [5.4, 4.4], [5.0, 5.2], [3.6, 5.7], [0, 5.5]], 72), m.bronze);
   }
-  p.add(ribs(turned([[0, -2.6], [8.6, -2.6], [9.0, -2.2], [9.0, 2.2], [8.6, 2.6], [0, 2.6]], 96), 44, 0.6, 0.5), m.ribMetal, at(-47.4, 70.2, 38.6));
+  p.add(turned([[0, -2.6], [8.6, -2.6], [9.0, -2.2]], 96), m.ribMetal, at(-47.4, 70.2, 38.6));
+  p.add(ribs(turned([[9.0, -2.2], [9.0, 2.2]], 96), 44, 0.6, 0.5), m.ribMetal, at(-47.4, 70.2, 38.6));
+  p.add(turned([[9.0, 2.2], [8.6, 2.6], [0, 2.6]], 96), m.ribMetal, at(-47.4, 70.2, 38.6));
 
   // The strap lugs and their split rings.
   for (const sx of [-1, 1]) {
@@ -153,5 +159,7 @@ export function body(p: Put, m: CameraMaterials): void {
   for (const [x, y, r] of [[-44, 56, 3.4], [-44, 44, 3.4], [-44, 32, 3.4], [-54, 22, 3.0], [-44, 20, 5.8]] as [number, number, number][]) {
     p.add(turned([[0, 0], [r, 0], [r, 1.6], [r - 0.4, 2.2], [0, 2.3]], 40), m.paint, xf({ p: [x, y, BODY.back], r: [-Math.PI / 2, 0, 0] }));
   }
-  p.add(ribs(turned([[0, -2.4], [7.6, -2.4], [8.0, -2.0], [8.0, 2.0], [7.6, 2.4], [0, 2.4]], 72), 36, 0.5, 0.5), m.ribMetal, at(-52, 74.2, BODY.back - 3));
+  p.add(turned([[0, -2.4], [7.6, -2.4], [8.0, -2.0]], 72), m.ribMetal, at(-52, 74.2, BODY.back - 3));
+  p.add(ribs(turned([[8.0, -2.0], [8.0, 2.0]], 72), 36, 0.5, 0.5), m.ribMetal, at(-52, 74.2, BODY.back - 3));
+  p.add(turned([[8.0, 2.0], [7.6, 2.4], [0, 2.4]], 72), m.ribMetal, at(-52, 74.2, BODY.back - 3));
 }

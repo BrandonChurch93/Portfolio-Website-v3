@@ -166,10 +166,10 @@ export function gpu(parent: Adds, L: Look, m: THREE.Matrix4): void {
     b.add(torus(24.6, 1.0, 6, 64), L.copper, xf({ p: [rc[0], bpY + bpT + 0.4, rc[1]], r: [PI / 2, 0, 0] }));
     // The ring's light on the plate round it.
     b.add(fxOf(new THREE.PlaneGeometry(76, 76), FX.ring, 0.12, 0.4, 0.58), L.fx, xf({ p: [rc[0], bpY + bpT + 0.08, rc[1]], r: [-PI / 2, 0, 0] }), { shadow: false });
-    // Two raised lines run the plate's length, and the badge sits between them past the ring.
+    // Two raised lines run the plate's length, and a raised panel sits between them past the ring: the name is on the
+    // lit edge, once.
     for (const z of [c.clear + 13, c.H - 36]) b.add(rbox(cutX0 - 14 - (c.back + 40), 0.9, 1.6, 0.4, 1), L.sinkDark, at((c.back + 40 + cutX0 - 14) / 2, bpY + bpT + 0.45, z));
     b.add(rbox(112, 0.8, 30, 0.4, 1), L.sinkDark, at(205, bpY + bpT + 0.4, (c.clear + c.H - 36) / 2 + 3));
-    b.add(printPlane(106, 26.5, SHEET.badge), L.print, xf({ p: [205, bpY + bpT + 0.85, (c.clear + c.H - 36) / 2 + 3], r: [-PI / 2, 0, 0] }), { shadow: false });
   }
 
   // The doubled light bar along the glass facing edge, stopping short of the socket, each line on a brushed rail.

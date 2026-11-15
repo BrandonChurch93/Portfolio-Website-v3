@@ -126,7 +126,7 @@ export function makeLook(print: THREE.Texture, board: THREE.Texture): Look {
   // A perforated sheet: a staggered grid of round holes with an edge a pixel wide, and its mean coverage once the
   // holes are finer than a pixel, so nothing sparkles. Each sheet carries its pitch, its mean cover and how pale its
   // metal is (perfOf), so a fine top and a coarse shelf share one program.
-  const perf = patch(new THREE.MeshStandardMaterial({ color: 0x232220, roughness: 0.5, metalness: 0.6, transparent: true }), 'pc-perf', {
+  const perf = patch(new THREE.MeshStandardMaterial({ color: 0x232220, roughness: 0.55, metalness: 0.3, transparent: true }), 'pc-perf', {
     vhead: 'attribute vec4 cell; varying vec3 vPerf;',
     vert: 'vPerf = cell.xyz;',
     head: 'varying vec3 vPerf;\nvec2 perfP(){ vec3 n = abs(vObjN); return n.y > n.x && n.y > n.z ? vObj.xz : n.x > n.z ? vObj.zy : vObj.xy; }',
@@ -208,7 +208,8 @@ void main(){
   else if (mode == 4) {
     vec2 q = max(abs(vP.xz) - uHalf, 0.0); float d = length(q);
     float side = smoothstep(-uHalf.y, uHalf.y, vP.z) * 0.6 + smoothstep(-uHalf.x, uHalf.x, vP.x) * 0.25 + 0.15;
-    a = exp(-d / 55.0) * smoothstep(0.0, 6.0, d) * (1.0 - smoothstep(0.55, 1.0, d / vCell.z)) * side;
+    // Close by the strip, and a long soft reach beyond it that lands on what lies near: the title's nearest letters.
+    a = (exp(-d / 55.0) * 0.75 + exp(-d / 210.0) * 0.25) * smoothstep(0.0, 6.0, d) * (1.0 - smoothstep(0.45, 1.0, d / vCell.z)) * side;
   }
   gl_FragColor = vec4(tone * a * uLevel, 0.0);
 }`,

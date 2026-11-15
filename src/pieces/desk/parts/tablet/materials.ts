@@ -12,10 +12,10 @@ const P = (name: string, o: THREE.MeshPhysicalMaterialParameters) => { const m =
 
 export function tabletMaterials() {
   // The shell: a warm dark steel, close to grey, blasted to a soft satin.
-  const shell = P('tabShell', { color: tone('text-3', 0.36), metalness: 1, roughness: 0.38 });
+  const shell = P('tabShell', { color: tone('text-3', 0.36), metalness: 1, roughness: 0.3 });
   // Every cut edge, on the tablet and on its stand, is left bright and pale: the chamfer line round the tablet, the
   // bevels round the stand's cheeks and slots, the corners of its lip, the screws' heads.
-  const chamfer = P('tabChamfer', { color: tone('text-2', 0.55), metalness: 1, roughness: 0.4 });
+  const chamfer = P('tabChamfer', { color: tone('text-2', 0.55), metalness: 1, roughness: 0.24 });
   // One dark polymer for the seam, the antenna lines, the port's mouth, the speaker holes and the screws' sockets.
   const band = P('tabBand', { color: tone('text-3', 0.1), metalness: 0, roughness: 0.6 });
   // The glass's edge, which is solid and catches its own line.
@@ -41,9 +41,10 @@ export function tabletMaterials() {
     vec2 tgP = vTabUv;
     vec2 tgQ = abs(tgP) - vec2(132.4, 99.3) + 10.0;
     float tgIn = 1.0 - smoothstep(-0.3, 0.3, length(max(tgQ, 0.0)) + min(max(tgQ.x, tgQ.y), 0.0) - 10.0);
-    float tgD = dot(tgP - vec2(clamp(uCur.x * 0.5, -130.0, 130.0), 0.0), normalize(vec2(1.0, 0.62)));
+    vec2 tgU = (uCur - vec2(300.0, 0.0)) * 0.6;
+    float tgD = dot(tgP - vec2(clamp(tgU.x, -130.0, 130.0), 0.0), normalize(vec2(1.0, 0.62)));
     float streak = exp(-tgD * tgD / (2.0 * 9.0 * 9.0)) * 1.4 + exp(-tgD * tgD / (2.0 * 40.0 * 40.0)) * 0.35;
-    vec2 tgC = tgP - uCur * 0.5;
+    vec2 tgC = tgP - tgU;
     float pool = exp(-dot(tgC, tgC) / (2.0 * 110.0 * 110.0));
     float base = (0.06 + 0.08 * smoothstep(-110.0, 110.0, tgP.y)) * mix(0.5, 1.0, tgIn);
     totalEmissiveRadiance += uSheenColor * uSheen * (base + streak * (0.4 + 0.6 * pool) + pool * 0.35) * (0.4 + tgF * 4.0);
@@ -57,7 +58,7 @@ export function tabletMaterials() {
   const screw = P('tabScrew', { color: tone('text-3', 0.3), metalness: 1, roughness: 0.3 });
   const rubber = P('tabRubber', { color: tone('text-3', 0.1), metalness: 0, roughness: 0.85 });
   // The pencil: a satin barrel in charcoal, a polished steel band and collar, and a nib of pale warm grey.
-  const pencil = P('tabPencil', { color: tone('text-3', 0.06), metalness: 0, roughness: 0.72 });
+  const pencil = P('tabPencil', { color: tone('bg', 0.6), metalness: 0, roughness: 0.38, specularIntensity: 0.8 });
   // Copper is the one accent: the stand's rod.
   const copper = P('tabCopper', { color: hex('copper'), metalness: 1, roughness: 0.5 });
   const nib = P('tabNib', { color: tone('text-2', 0.1), metalness: 0, roughness: 0.78 });

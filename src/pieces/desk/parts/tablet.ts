@@ -17,9 +17,10 @@ const Z = { chamferBack: 0.85, bandTop: 3.95, metalTop: 4.55, ink: 4.7, picture:
 // The stand, in its own frame: y up from the floor of the channel the tablet's edge stands in, z toward the visitor.
 // The tablet leans back at this angle; the stand's cheeks stand at ±cheek and are this thick.
 const STAND = { tilt: 24 * DEG, liner: 0.8, rubber: 1.0, base: 4, cheek: 118, cheekT: 8, back: -168, lipZ: 3.6, lipTop: 7.8, front: 10, behind: -12, at: 95 } as const;
-// The pencil: its length, its radius, and how far its flat side is from its middle. It lies on that flat.
-// It lies on its round side, rolled so the flat faces up and toward the visitor.
-const PEN = { len: 166, r: 4.45, flat: 3.55, at: [188, 2] as [number, number], turn: -100 * DEG, roll: 150 * DEG } as const;
+// The pencil: its length, its radius, and how far its flat side is from its middle. It lies by itself on the mat at
+// PLACES.pencil, square to the desk's front edge with its tip to the back, on its round side, rolled so the flat
+// faces up and toward the visitor.
+const PEN = { len: 166, r: 4.45, flat: 3.55, roll: 150 * DEG } as const;
 // The picture's brightness at full, and how much of the room the glass shows.
 const GLOW = 1.2, SHEEN = 0.05;
 // The screen's light on the mat: how wide and how far out it reaches, in millimetres, and how strong it is at full.
@@ -29,13 +30,38 @@ const tan = Math.tan(STAND.tilt), cos = Math.cos(STAND.tilt);
 // The top of a cheek at a place along the stand: just under the tablet's back, by the rubber laid on it.
 const cheekTop = (z: number) => STAND.liner + -z * tan - STAND.rubber / cos;
 
+// Soft shadows on the mat, one rounded rectangle each, flat at height y: in their own millimetres (uv), with their half
+// sizes, corner and strength in the cell attribute (the mat shader in ./tablet/materials.ts).
+interface Quad { c: [number, number]; h: [number, number]; corner: number; k: number; pad: number }
+function shadowQuads(quads: Quad[], y: number): THREE.BufferGeometry {
+  const pos: number[] = [], uv: number[] = [], cell: number[] = [];
+  for (const q of quads) {
+    const ex = q.h[0] + q.pad, ez = q.h[1] + q.pad;
+    const corner = (u: number, v: number) => { pos.push(q.c[0] + u, y, q.c[1] + v); uv.push(u, v); cell.push(q.h[0], q.h[1], q.corner, q.k); };
+    corner(-ex, -ez); corner(-ex, ez); corner(ex, ez); corner(-ex, -ez); corner(ex, ez); corner(ex, -ez);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setAttribute('cell', new THREE.Float32BufferAttribute(cell, 4));
+  return g;
+}
+
+// Seen alone, the tablet on its stand and the pencil beside it are framed together: their middle in the desk's
+// millimetres, and how far they reach from it.
+const ALONE = { at: [-560, 30, 150] as [number, number, number], r: 225 };
+
 export const build: PartFactory = () => {
   const m = tabletMaterials();
+  // The part is in the desk's own frame: the tablet on its stand is placed and turned inside it, and the pencil lies
+  // apart on the mat.
   const group = new THREE.Group();
   group.name = 'tablet';
+  const seat = new THREE.Group();
   const [px, pz, turn] = PLACES.tablet;
-  group.position.set(px, MAT.h, pz);
-  group.rotation.y = turn * DEG;
+  seat.position.set(px, MAT.h, pz);
+  seat.rotation.y = turn * DEG;
+  group.add(seat);
 
   const b = new Builder();
   const S = new THREE.Matrix4().makeTranslation(0, STAND.base, STAND.at);
@@ -50,7 +76,7 @@ export const build: PartFactory = () => {
     { key: 'chamfer', steps: [{ d: -Z.chamferBack, z: 0 }, { d: 0, z: Z.chamferBack }] },
     { key: 'shell', steps: [{ d: 0, z: Z.chamferBack }, { d: 0, z: Z.bandTop }] },
     // The front edge is cut round, so some part of it always faces the light and carries a pale line all the way round.
-    { key: 'chamfer', steps: [0, 15, 30, 45, 60, 75, 90].map((a) => ({ d: -0.6 * (1 - Math.cos(a * DEG)), z: Z.bandTop + 0.6 * Math.sin(a * DEG), a })) },
+    { key: 'chamfer', steps: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90].map((a) => ({ d: -0.6 * (1 - Math.cos(a * DEG)), z: Z.bandTop + 0.6 * Math.sin(a * DEG), a })) },
     { key: 'seam', steps: [{ d: -0.6, z: Z.metalTop }, { d: -0.84, z: Z.metalTop }] },
     { key: 'glassEdge', steps: glassRound },
   ]);
@@ -137,7 +163,9 @@ export const build: PartFactory = () => {
   }
 
   // ---- the pencil, on its flat beside the tablet ------------------------------------------------------------------
-  const pen = new THREE.Matrix4().makeTranslation(PEN.at[0], PEN.r, PEN.at[1]).multiply(new THREE.Matrix4().makeRotationY(PEN.turn)).multiply(new THREE.Matrix4().makeRotationX(PEN.roll)).multiply(new THREE.Matrix4().makeTranslation(-PEN.len / 2, 0, 0));
+  const [qx, qz] = PLACES.pencil;
+  const pb = new Builder();
+  const pen = new THREE.Matrix4().makeTranslation(qx, MAT.h + PEN.r, qz).multiply(new THREE.Matrix4().makeRotationY(90 * DEG)).multiply(new THREE.Matrix4().makeRotationX(PEN.roll)).multiply(new THREE.Matrix4().makeTranslation(-PEN.len / 2, 0, 0));
   const R = PEN.r, F = PEN.flat;
   const st: [number, number, number][] = [[0, 0, 0], [0.08, 1.2, 1.2], [0.3, 2.2, 2.2], [0.7, 3.1, 3.1], [1.2, 3.7, F], [1.9, 4.1, F], [2.8, 4.35, F], [3.8, R, F]];
   for (const [x, dr] of [[13.6, 0], [13.85, 0.13], [14.15, 0.13], [14.4, 0]] as const) st.push([x, R - dr, F - dr]);
@@ -148,32 +176,22 @@ export const build: PartFactory = () => {
     st.push([135 + TAPER * t, r, Math.min(r, F + (R - F) * Math.min(1, t / 0.3))]);
   }
   // The pencil is too thin to shadow itself cleanly from the desk's lights: its shadow on the mat is the soft one below.
-  b.add(barrel(st), m.pencil, pen, { shadow: false });
+  pb.add(barrel(st), m.pencil, pen, { shadow: false });
   // A polished band near the back end, just proud of the barrel, that catches a ring of light.
-  b.add(barrel([[8.6, R + 0.04, F + 0.04], [8.9, R + 0.06, F + 0.06], [12.7, R + 0.06, F + 0.06], [13.0, R + 0.04, F + 0.04]]), m.chamfer, pen, { shadow: false });
+  pb.add(barrel([[8.6, R + 0.04, F + 0.04], [8.9, R + 0.06, F + 0.06], [12.7, R + 0.06, F + 0.06], [13.0, R + 0.04, F + 0.04]]), m.chamfer, pen, { shadow: false });
   const along = (x: number) => pen.clone().multiply(xf({ p: [x, 0, 0], r: [0, 0, -Math.PI / 2] }));
-  b.add(turned([[tipR - 0.05, 0], [tipR + 0.07, 0.12], [tipR + 0.07, 0.95], [tipR - 0.08, 1.1]], 48), m.chamfer, along(135 + TAPER), { shadow: false });
-  b.add(turned([[2.35, 0], [2.3, 1.0], [1.95, 3.2], [1.5, 5.4], [1.12, 6.9], [0.9, 7.55], [0.62, 7.92], [0.32, 8.1], [0, 8.15]], 40, 60), m.nib, along(135 + TAPER + 1.1), { shadow: false });
+  pb.add(turned([[tipR - 0.05, 0], [tipR + 0.07, 0.12], [tipR + 0.07, 0.95], [tipR - 0.08, 1.1]], 48), m.chamfer, along(135 + TAPER), { shadow: false });
+  pb.add(turned([[2.35, 0], [2.3, 1.0], [1.95, 3.2], [1.5, 5.4], [1.12, 6.9], [0.9, 7.55], [0.62, 7.92], [0.32, 8.1], [0, 8.15]], 40, 60), m.nib, along(135 + TAPER + 1.1), { shadow: false });
 
-  b.build(group, 'tablet');
+  b.build(seat, 'tablet');
+  pb.build(group, 'pencil');
 
   // ---- what it lays on the mat: soft shadows where it sits, and the screen's light --------------------------------
-  const quads: { c: [number, number]; h: [number, number]; corner: number; k: number; pad: number; turn?: number }[] = [
+  const sg = shadowQuads([
     { c: [0, STAND.at - 1], h: [STAND.cheek + STAND.cheekT / 2, 11], corner: 1.5, k: 0.85, pad: 16 },
     ...[-1, 1].map((s) => ({ c: [s * STAND.cheek, STAND.at + (STAND.back + STAND.front) / 2] as [number, number], h: [STAND.cheekT / 2, (STAND.front - STAND.back) / 2] as [number, number], corner: 1.5, k: 0.85, pad: 16 })),
     { c: [0, STAND.at - 92], h: [T.hw - 6, 96], corner: 18, k: 0.22, pad: 20 },
-    { c: PEN.at, h: [72, 1.6], corner: 1.5, k: 0.75, pad: 14, turn: PEN.turn },
-  ];
-  const pos: number[] = [], uv: number[] = [], cell: number[] = [];
-  for (const q of quads) {
-    const ex = q.h[0] + q.pad, ez = q.h[1] + q.pad, a = q.turn ?? 0, c = Math.cos(a), s = Math.sin(a);
-    const corner = (u: number, v: number) => { pos.push(q.c[0] + u * c + v * s, 0.25, q.c[1] - u * s + v * c); uv.push(u, v); cell.push(q.h[0], q.h[1], q.corner, q.k); };
-    corner(-ex, -ez); corner(-ex, ez); corner(ex, ez); corner(-ex, -ez); corner(ex, ez); corner(ex, -ez);
-  }
-  const sg = new THREE.BufferGeometry();
-  sg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  sg.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-  sg.setAttribute('cell', new THREE.Float32BufferAttribute(cell, 4));
+  ], 0.25);
   const shadows = new THREE.Mesh(sg, m.shadow);
   shadows.name = 'tablet:shadows';
   shadows.renderOrder = 1;
@@ -183,21 +201,25 @@ export const build: PartFactory = () => {
   const spill = new THREE.Mesh(spillGeo, m.spill);
   spill.name = 'tablet:spill';
   spill.renderOrder = 2;
-  for (const o of [shadows, spill]) { o.matrixAutoUpdate = false; o.updateMatrix(); group.add(o); }
+  for (const o of [shadows, spill]) { o.matrixAutoUpdate = false; o.updateMatrix(); seat.add(o); }
+  // The pencil's own hairline of shadow along where it touches the mat, and a soft one round it.
+  const penShadow = new THREE.Mesh(shadowQuads([{ c: [qx, qz], h: [1.6, 74], corner: 1.5, k: 0.8, pad: 12 }], MAT.h + 0.25), m.shadow);
+  penShadow.name = 'pencil:shadow';
+  penShadow.renderOrder = 1;
+  group.add(penShadow);
 
   // Seen alone there is no mat under it to take the screen's light.
   const alone = typeof location !== 'undefined' && new URLSearchParams(location.search).get('only') === 'tablet';
-  group.updateMatrix();
-  const mid3 = new THREE.Vector3(18, 32, STAND.at - 92).applyMatrix4(group.matrix);
+  seat.updateMatrix();
 
   // How a point of the desk is put into the tablet's own frame, for the cursor's light on the glass.
-  const toTab = new THREE.Matrix4().multiplyMatrices(group.matrix, tab).invert();
+  const toTab = new THREE.Matrix4().multiplyMatrices(seat.matrix, tab).invert();
   const cur = new THREE.Vector3();
   const glassU = m.glass.userData.uniforms as { uCur: { value: THREE.Vector2 }; uSheen: { value: number } };
   let last = -1;
   return {
     group,
-    alone: { at: [mid3.x, mid3.y, mid3.z], r: 182 },
+    alone: { at: ALONE.at, r: ALONE.r },
     update(s) {
       cur.copy(s.cursor).applyMatrix4(toTab);
       glassU.uCur.value.set(cur.x, cur.y);

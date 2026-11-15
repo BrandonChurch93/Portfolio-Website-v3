@@ -55,7 +55,6 @@
 .title,
 .name,
 .groups,
-.phones,
 .desk,
 .thingHost,
 .portrait,
@@ -80,11 +79,18 @@
   color: var(--text);
 }
 
-/* The headphones, as an outline: a stand in. They hang from the peg and swing about it. */
-.phones {
+/* The section's title lies on the desk's floor and is drawn by the desk. This is the same heading for a screen
+   reader, out of sight. On a screen too narrow for the desk it is the title, as words. */
+.heading2 {
   position: absolute;
-  z-index: 2;
-  pointer-events: none;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .desk {
@@ -395,13 +401,13 @@
 
 /* Where nothing waits for the stream: with reduced motion, and where the stream cannot run (the page says so with
    data-all), both sections are on the page from the start, lit. */
-.page[data-all] :is(.title, .name, .groups, .phones, .desk, .thingHost, .portrait, .tabs, .panel, .aura, .beam) {
+.page[data-all] :is(.title, .name, .groups, .desk, .thingHost, .portrait, .tabs, .panel, .aura, .beam) {
   opacity: 1 !important;
   transform: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .page :is(.title, .name, .groups, .phones, .desk, .thingHost, .portrait, .tabs, .panel, .aura, .beam) {
+  .page :is(.title, .name, .groups, .desk, .thingHost, .portrait, .tabs, .panel, .aura, .beam) {
     opacity: 1 !important;
     transform: none !important;
   }
@@ -425,7 +431,15 @@
     font-size: var(--step-5);
   }
 
-  .phones,
+  .heading2 {
+    width: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+
   .desk,
   .thing,
   .glow,

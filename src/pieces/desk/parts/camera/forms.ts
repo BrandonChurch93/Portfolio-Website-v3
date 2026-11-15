@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
+import { mergeGeometries, toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Builder } from '../../../../world/build';
 import { ATLAS, REG, BAND_MID, type Region } from './art';
 
@@ -81,21 +81,32 @@ export function element(r: number, R: number, y: number, down = false, seg = 80)
   return g;
 }
 
-// The iris: n thin blades, each curving out from the opening to the barrel, overlapping the next.
-export function iris(n: number, open: number, out: number, y: number): THREE.BufferGeometry[] {
-  const list: THREE.BufferGeometry[] = [];
-  const span = (Math.PI * 2 / n) * 2.1;
-  for (let i = 0; i < n; i++) {
-    const a0 = (i / n) * Math.PI * 2;
-    const pts: THREE.Vector2[] = [];
-    for (let k = 0; k <= 14; k++) { const t = k / 14; const r = open + (out - open) * Math.pow(t, 1.15); const a = a0 + t * span; pts.push(new THREE.Vector2(Math.sin(a) * r, Math.cos(a) * r)); }
-    for (let k = 0; k <= 10; k++) { const a = a0 + span - (k / 10) * (span + 0.55); pts.push(new THREE.Vector2(Math.sin(a) * out, Math.cos(a) * out)); }
-    const g = new THREE.ShapeGeometry(new THREE.Shape(pts));
-    g.rotateX(-Math.PI / 2);
-    g.translate(0, y + i * 0.12, 0);
-    list.push(g);
+// The iris, stopped down: a clean opening of n slightly rounded sides, and the seam of each blade sweeping out from a
+// corner of it to the barrel. The blades are one sheet with the opening cut from it, so the opening's edge is clean.
+export function iris(n: number, open: number, out: number, y: number): { blades: THREE.BufferGeometry; seams: THREE.BufferGeometry } {
+  const step = (Math.PI * 2) / n, corner = open / Math.cos(step / 2);
+  const at = (a: number, r: number) => new THREE.Vector2(Math.sin(a) * r, -Math.cos(a) * r);
+  const hole: THREE.Vector2[] = [];
+  for (let i = 0; i < n; i++) for (let k = 0; k < 8; k++) {
+    const t = k / 8, a = (i + t) * step;
+    // Straight between corners, bowed out a little as a blade's curved edge is.
+    const flat = open / Math.cos(a - (i + 0.5) * step);
+    hole.push(at(a, flat + Math.sin(Math.PI * t) * open * 0.05));
   }
-  return list;
+  const ring = new THREE.Shape(Array.from({ length: 96 }, (_, k) => at((k / 96) * Math.PI * 2, out)));
+  ring.holes.push(new THREE.Path(hole));
+  const blades = new THREE.ShapeGeometry(ring, 1).rotateX(-Math.PI / 2).translate(0, y, 0);
+  const strips: THREE.BufferGeometry[] = [];
+  const w = 0.22;
+  for (let i = 0; i < n; i++) {
+    const side: THREE.Vector2[] = [], back: THREE.Vector2[] = [];
+    for (let k = 0; k <= 12; k++) {
+      const t = k / 12, a = i * step + t * step * 1.3, r = corner + (out - corner) * t;
+      side.push(at(a - w / r, r)); back.push(at(a + w / r, r));
+    }
+    strips.push(new THREE.ShapeGeometry(new THREE.Shape([...side, ...back.reverse()]), 1).rotateX(-Math.PI / 2).translate(0, y + 0.05, 0));
+  }
+  return { blades, seams: mergeGeometries(strips.map((g) => g.toNonIndexed()), false)! };
 }
 
 // Adds to a builder through a transform: every thing on the camera is built in its own frame.

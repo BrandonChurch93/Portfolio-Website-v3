@@ -13,7 +13,7 @@ export type PieceName = (typeof PIECES)[number];
 export const READING_LINE = 0.66;
 // A piece mounts within this many viewport heights of the screen and disposes beyond the second number. At most max
 // pieces hold a WebGL context at once, because browsers drop the oldest context past a small limit.
-export const PIECE_MOUNT = { near: 1, far: 2.5, max: 5 } as const;
+export const PIECE_MOUNT = { near: 1, far: 2.5, max: 4 } as const;
 
 export type Tier = 'high' | 'mid' | 'low' | 'static';
 export const TIERS: readonly Tier[] = ['high', 'mid', 'low', 'static'];

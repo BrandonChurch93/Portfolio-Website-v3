@@ -4,14 +4,12 @@ import { shade } from '../../../../world/surface';
 
 // The mat's hide, worked out per pixel from the desk's millimetres: a pebbled grain, a soft mottle, the wear of
 // wrists and the mouse, a mug's ring and a few scuffs, a binding folded over the edge with a saddle stitched seam in
-// copper thread run through it, the painted edge, and a small mark blind stamped in one corner. Every fine thing is filtered over the pixel it
+// copper thread run through it, and the painted edge. No mark: he ruled that nothing on the desk carries one. Every fine thing is filtered over the pixel it
 // falls in, so a stitch that is too small to see is a steady line of its own average, and nothing twinkles.
 
 export interface MatShape { w: number; d: number; x: number; z: number; h: number; r: number }
 // Where the seam runs in from the edge, how long a stitch is, the thread's width, and how wide the binding is.
 export const SEAM = { inset: 6.5, pitch: 4, thread: 1.15, bind: 11 } as const;
-// The mark: its middle in the mat's own millimetres from its middle, and its radius.
-export const MARK = { x: 732, z: 190, r: 12 } as const;
 
 const f = (v: number) => v.toFixed(3);
 const lin = (h: number) => { const c = new THREE.Color(h); return `vec3(${f(c.r)}, ${f(c.g)}, ${f(c.b)})`; };
@@ -26,6 +24,7 @@ export function hide(m: MatShape): THREE.MeshPhysicalMaterial {
   shade(mat, 'mat-hide', {
     head: /* glsl */ `
 float hEdge, hRough, hThread, hBind;
+vec2 hGs;
 vec3 hBump;
 // Where a point is against a rounded outline inset by k: how far inside it (negative outside), how far round it
 // from the back left, and which way is out, in the mat's x and z.
@@ -56,16 +55,26 @@ float trainIn(float v, float w, float duty){
   float a = v - 0.5 * w, b = v + 0.5 * w;
   return ((floor(b) * duty + min(fract(b), duty)) - (floor(a) * duty + min(fract(a), duty))) / w;
 }
-// The mark: a ring round twelve short rays and a dot, pressed into the hide. 1 inside a stroke.
-float markAt(vec2 p){
-  p *= 0.76;
-  float r = length(p);
-  float ring = 1.0 - smoothstep(0.35, 0.6, abs(r - 7.6));
-  float ang = atan(p.y, p.x), seg = 6.2831853 / 12.0;
-  float a = mod(ang + 0.5 * seg, seg) - 0.5 * seg;
-  float ray = (1.0 - smoothstep(0.3, 0.55, abs(r * sin(a)))) * step(2.8, r) * step(r, 5.6);
-  float dot0 = 1.0 - smoothstep(1.2, 1.5, r);
-  return max(ring, max(ray, dot0));
+// The cells of the hide's grain: how far a point is from the nearest cell's middle and from the next, each cell
+// thrown a little off its square.
+vec2 hCells(vec2 x){
+  vec2 i = floor(x), f = fract(x);
+  float d1 = 8.0, d2 = 8.0;
+  for (int j = -1; j <= 1; j++) for (int k = -1; k <= 1; k++) {
+    vec2 o = vec2(float(k), float(j));
+    vec2 h = vec2(wHash(vec3(i + o, 1.7)), wHash(vec3(i + o, 5.3)));
+    float d = length(o + 0.08 + 0.84 * h - f);
+    if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) d2 = d;
+  }
+  return vec2(d1, d2);
+}
+// How high the grain stands at a point: each cell a low dome, the creases between them. Larger cells in some places,
+// smaller in others, each faded out before it is finer than the pixel.
+float hGrain(vec2 q, float px){
+  float big = smoothstep(0.0, 0.42, dot(hCells(q * 0.36), vec2(-1.0, 1.0))) * (1.0 - smoothstep(0.24, 0.42, px * 0.36));
+  float small = smoothstep(0.0, 0.42, dot(hCells(q * 0.82 + 17.0), vec2(-1.0, 1.0))) * (1.0 - smoothstep(0.24, 0.42, px * 0.82));
+  float m = smoothstep(0.35, 0.65, wNoise(vec3(q * 0.012, 3.0)));
+  return mix(big, small, m);
 }
 `,
     color: /* glsl */ `
@@ -77,10 +86,13 @@ float markAt(vec2 p){
     float top = 1.0 - hEdge;
     // The hide: a deep warm brown, mottled softly, the pebble of the grain only up close.
     float mott = wFbm(vec3(q * 0.012, 3.0));
-    float fine = wNoise(vec3(vObj.xz * 0.55, 7.0));
-    float near = 1.0 - smoothstep(0.24, 0.5, px * 0.55);
+    // The grain, and its slope, worked out once here for the colour and the normal both.
+    float g0 = hGrain(q, px), ge = 0.12;
+    vec2 gslope = vec2(hGrain(q + vec2(ge, 0.0), px) - g0, hGrain(q + vec2(0.0, ge), px) - g0) / ge;
+    float fine = g0;
+    float near = 1.0 - smoothstep(0.24, 0.42, px * 0.36);
     vec3 col = mix(vec3(0.0054), vec3(0.0088), mott);
-    col *= 1.0 + 0.5 * (fine - 0.5) * near;
+    col *= 1.0 - 0.35 * (1.0 - fine) * near;
     // Wrists in front of the keys, and the mouse, have rubbed it darker and smoother.
     float wrist = exp(-pow((q.x + 110.0) / 230.0, 2.0) - pow((q.y - 200.0) / 70.0, 2.0));
     float mouse = exp(-pow((q.x - 176.0) / 120.0, 2.0) - pow((q.y - 66.0) / 110.0, 2.0));
@@ -97,7 +109,9 @@ float markAt(vec2 p){
     }
     float seenUse = 1.0 - smoothstep(0.5, 1.4, px);
     col *= (1.0 - 0.2 * worn) * (1.0 - 0.05 * ring) * (1.0 + 0.35 * scuff * seenUse);
-    hRough = 0.62 - 0.22 * worn - 0.06 * ring + 0.2 * scuff * seenUse + 0.06 * (mott - 0.5) - 0.08 * (fine - 0.5) * near;
+    hRough = 0.62 - 0.22 * worn - 0.06 * ring + 0.2 * scuff * seenUse + 0.06 * (mott - 0.5) + 0.12 * (0.5 - fine) * near;
+    // Where it has worn, the grain is pressed flat.
+    hGs = gslope * 0.9 * (1.0 - 0.75 * clamp(worn, 0.0, 1.0));
     hBump = vec3(0.0);
     hThread = 0.0;
     hBind = 0.0;
@@ -139,16 +153,6 @@ float markAt(vec2 p){
     // The painted edge: smooth, darker, a little glossy.
     col = mix(col, vec3(0.0042), hEdge);
     hRough = mix(hRough, 0.3, hEdge);
-    // The mark, pressed in and burnished.
-    vec2 mp = q - vec2(${f(MARK.x)}, ${f(MARK.z)});
-    if (dot(mp, mp) < ${f((MARK.r + 2) ** 2)}) {
-      float e = 0.12, mk = markAt(mp);
-      float show = 1.0 - smoothstep(0.18, 0.45, px);
-      vec2 mg = vec2(markAt(mp + vec2(e, 0.0)) - markAt(mp - vec2(e, 0.0)), markAt(mp + vec2(0.0, e)) - markAt(mp - vec2(0.0, e))) / (2.0 * e);
-      hBump -= vec3(mg.x, 0.0, mg.y) * 0.6 * show * top;
-      col *= 1.0 - 0.55 * mk * top;
-      hRough = mix(hRough, 0.34, mk * top);
-    }
     diffuseColor.rgb = col;
   }`,
     rough: 'roughnessFactor = clamp(hRough, 0.2, 0.95);',
@@ -156,19 +160,9 @@ float markAt(vec2 p){
   {
     vec3 vAxZ = normalize(cross(vAxX, vAxY));
     vec3 b = vAxX * hBump.x + vAxZ * hBump.z;
-    // The pebble of the grain in two sizes, as slopes worked out from the same noise, each only where it is
-    // larger than a few pixels.
     vec2 q = vObj.xz;
-    float px = max(fwidth(q.x), fwidth(q.y));
     float keep = (1.0 - hEdge) * (1.0 - hThread) * (1.0 - 0.7 * hBind);
-    vec2 gq = vec2(0.0);
-    for (int i = 0; i < 2; i++) {
-      float k = i == 0 ? 0.55 : 1.5, amp = i == 0 ? 1.0 : 0.6, e = 0.2 / k;
-      float fade = 1.0 - smoothstep(0.28, 0.6, px * k);
-      vec3 at = vec3(q * k, 7.0 + float(i) * 5.0);
-      float n0 = wNoise(at);
-      gq += vec2(wNoise(at + vec3(e * k, 0.0, 0.0)) - n0, wNoise(at + vec3(0.0, e * k, 0.0)) - n0) / e * amp * fade;
-    }
+    vec2 gq = hGs;
     // A hide never lies dead flat: a slow swell, seen only in what it reflects.
     float w0 = wFbm(vec3(q * 0.07, 2.0));
     gq += vec2(wFbm(vec3((q + vec2(3.0, 0.0)) * 0.07, 2.0)) - w0, wFbm(vec3((q + vec2(0.0, 3.0)) * 0.07, 2.0)) - w0) / 3.0 * 0.35;

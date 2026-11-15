@@ -119,7 +119,10 @@ export function board(parent: Adds, L: Look, m: THREE.Matrix4): void {
   for (const [dx, dy] of [[13, -22], [13, -30.5], [20.5, -22]]) capacitor(sub, L, 194.5 + dx, dy, 7, 2.2);
   for (const y of [-180, -188.5, -250, -258.5, -275]) capacitor(sub, L, 11, y, 9, 2.6, true);
   heatsink(sub, L, vr.x0, vr.x1, vr.y0, vr.y1, vr.h, 'y', 11);
-  // The board's light along the regulator's heatsink beside the socket.
+  // The regulator's heatsink beside the socket carries the board's name on a cap along its top, and the board's light
+  // along its side.
+  add(rbox(22, 90, 1.4, 0.5, 1), L.sinkDark, at((vr.x0 + vr.x1) / 2, (vr.y0 + vr.y1) / 2 - 2, T + vr.h + 0.9));
+  add(printPlane(84, 16, SHEET.cover), L.print, at((vr.x0 + vr.x1) / 2, (vr.y0 + vr.y1) / 2 - 2, T + vr.h + 1.62).multiply(new THREE.Matrix4().makeRotationZ(PI / 2)), { shadow: false });
   add(led(new THREE.BoxGeometry(1.4, vr.y0 - vr.y1 - 8, 1.6), 0.3, 1.2), L.led, at(vr.x1 + 0.9, (vr.y0 + vr.y1) / 2, T + vr.h - 6), { shadow: false });
   heatsink(sub, L, vt.x0, vt.x1, vt.y0, vt.y1, vt.h, 'x', 12, true);
 
@@ -143,7 +146,6 @@ export function board(parent: Adds, L: Look, m: THREE.Matrix4): void {
   add(extrude(roundedPoly(coverPts, 1.5), 6, 1.2, 'xy', 4, 2), L.sink, at(0, 0, T + ioTop - 6), { uv: 'box' });
   add(extrude(roundedPoly([[14, -6], [29, -6], [29, -60], [14, -74]], 1), 1.4, 0.5, 'xy', 2, 1), L.copper, at(0, 0, T + ioTop - 0.4), { uv: 'box' });
   add(rbox(30, 146, ioTop - 8, 1, 2), L.sinkDark, at(14.8, -77, T + (ioTop - 8) / 2 + 0.2));
-  add(printPlane(48, 10, SHEET.cover), L.print, at(7, -104, T + ioTop + 0.04).multiply(new THREE.Matrix4().makeRotationZ(PI / 2)), { shadow: false });
   add(led(rbox(1.6, 82, 2.2, 0.6, 2), 0.35, 1.4), L.led, at(27.4, -76, T + ioTop - 2.6), { shadow: false });
 
   // Memory slots with latches.

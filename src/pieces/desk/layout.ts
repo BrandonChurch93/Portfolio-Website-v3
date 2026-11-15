@@ -8,9 +8,13 @@ export const DESK = { W: 2000, D: 780, H: 740, SCALE: 0.001 } as const;
 export const MAT = { w: 1600, d: 478, x: 0, z: 124, h: 4 } as const;
 // The ultrawide: 38 inches, curved, its foot behind the mat.
 export const SCREEN = { x: -60, z: -262, w: 900, h: 384, low: 118, curve: 1800 } as const;
-// The bay under the far end, where his PC stands with its long glass side to the front. The drawers are toward the
-// near end to leave it clear.
-export const BAY = { l: 300, r: 820, back: -160, front: 150, h: 520 } as const;
+// The bay under the far end, where his PC stands, turned so that its two glass sides face the visitor and its back
+// cannot be seen: he ruled that. Turned, it is deeper front to back than it was square. The drawers are toward the
+// near end to leave the bay clear.
+export const BAY = { l: 290, r: 830, back: -290, front: 290, h: 520 } as const;
+// How far the PC is turned from square, in degrees about the upright. The page looks at the desk from 24 degrees
+// round to the left: at this turn the long glass side and the glass end both face that way, the long side the more, and all three end fans read through the glass end. Its builder compared six angles and chose it.
+export const PC_TURN = -65;
 
 // Where the things on the top stand, from the middle of the top, and how far each is turned, in degrees.
 export const PLACES: Record<string, [x: number, z: number, turn: number]> = {
@@ -20,11 +24,19 @@ export const PLACES: Record<string, [x: number, z: number, turn: number]> = {
   // The mouse is turned toward the keyboard: seen from behind it was a smooth pebble, and turned its buttons and
   // wheel show.
   mouse: [176, 190, 40],
-  camera: [640, 120, -36],
-  // The second lens stands beside the camera, clear of it: behind it, it read as a tube growing out of the camera.
-  lens: [755, 190, 0],
-  cap: [520, 262, 0],
+  // The camera, its second lens and its cap are composed by their own part (ARRANGE in parts/camera.ts).
+  // The pencil lies square to the desk's front edge, in clear mat between the tablet and the keyboard: beside the
+  // tablet at the tablet's angle it read as part of the tablet.
+  pencil: [-385, 170, 0],
+  // The headphones' stand: at the back right of the top, across from the lamp, in the timber beside the monitor.
+  headphones: [770, -262, 0],
 };
+
+// The word that lies on the floor under the two drawers, as a word on a rug would lie: where its middle is, how tall
+// its capitals are, and how far apart its letters are set, as a share of that.
+// It lies far enough under the desk that the shadow the top throws from the cursor's light falls across it: with the
+// cursor near the middle of the screen the shadow's edge cuts the letters about in half, which is where he asked for it.
+export const WORD = { text: 'SKILLS', x: -250, z: 40, cap: 170, space: 0.06 } as const;
 
 // The top of the lamp's shade, where the stream strikes it.
 export const SHADE: [number, number, number] = [-716, 470, -52];

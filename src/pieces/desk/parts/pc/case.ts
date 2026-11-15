@@ -160,7 +160,7 @@ export function atrium(b: Adds, L: Look): void {
   const plate = rrectShape(fx1 - fx0, fzB - fzA, 3, (fx0 + fx1) / 2, -(fzA + fzB) / 2);
   plate.holes.push(rrectHole(fx1 - fx0 - 24, fzB - fzA - 24, 6, (fx0 + fx1) / 2, -(fzA + fzB) / 2));
   b.add(extrude(plate, 2, 0.5, 'xz', 6), L.shell, at(0, A.floor - 2, 0));
-  perforated(b, L, fx1 - fx0 - 22, fzB - fzA - 22, xf({ p: [(fx0 + fx1) / 2, A.floor - 1.4, (fzA + fzB) / 2], r: [-Q, 0, 0] }), 3, 2.4, 0.78, 2.2);
+  perforated(b, L, fx1 - fx0 - 22, fzB - fzA - 22, xf({ p: [(fx0 + fx1) / 2, A.floor - 1.4, (fzA + fzB) / 2], r: [-Q, 0, 0] }), 3, 1.6, 0.8, 2.2);
   for (const x of [fx0 + 30, (fx0 + fx1) / 2, fx1 - 30]) b.add(rbox(8, A.floor - 2 - basin - 2, 8, 2, 2), L.inner, at(x, (A.floor - 2 + basin + 2) / 2, fzB - 8));
   for (const sz of [1, -1]) b.add(rbox(fx1 - fx0 - 10, 2, 10, 0.6, 2), L.inner, at((fx0 + fx1) / 2, basin + 1.5, main + sz * 52.5));
 

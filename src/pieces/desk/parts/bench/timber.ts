@@ -30,8 +30,15 @@ const v3 = (v: [number, number, number]) => `vec3(${v.map((x) => x.toFixed(1)).j
 // that fine only shows the occlusion pass's noise.
 export interface Glue { joints: number[]; below: number }
 
-export function timber(wear: Wear[], glue: Glue): THREE.MeshPhysicalMaterial {
-  const m = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.5, specularIntensity: 0.17, envMapIntensity: 0.4, specularColor: new THREE.Color(0xffd2a4) });
+// Where the finish changes: the trestles, out from this far either side of the middle, are a plain rubbed oil, darker
+// and duller than the top. The drawer fronts and their frame, from x l to r and in front of z, are waxed, a shade
+// lighter and smoother.
+export interface Finish { trestle: number; drawers: [number, number, number] }
+
+export function timber(wear: Wear[], glue: Glue, finish: Finish): THREE.MeshPhysicalMaterial {
+  // A high index with a low intensity: the oil's sheen face on is as strong as before, and what it mirrors at a
+  // grazing angle, which is the room, stays faint. Three ties the grazing reflection to the intensity alone.
+  const m = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.5, ior: 2.3, specularIntensity: 0.12, envMapIntensity: 0.3, specularColor: new THREE.Color(0xffd2a4) });
   m.name = 'bench-timber';
   const rubs = wear.map((w) => `rub += ${w.k.toFixed(2)} * wBox(p, ${v3(w.at)}, ${v3(w.r)})${w.up ? ' * smoothstep(0.6, 0.9, n.y)' : ''};`).join('\n    ');
   shade(m, 'bench-timber', {
@@ -51,40 +58,40 @@ float wBox(vec3 p, vec3 c, vec3 r){ vec3 d = abs(p - c) / r; return 1.0 - smooth
     vec3 ax = axis < 0.5 ? vec3(1.0, 0.0, 0.0) : axis < 1.5 ? vec3(0.0, 1.0, 0.0) : vec3(0.0, 0.0, 1.0);
     tEnd = smoothstep(0.6, 0.86, abs(dot(n, ax)));
     float px = max(max(fwidth(p.x), fwidth(p.y)), fwidth(p.z));
-    float u = g.x;
+    // Every board comes from its own place in its log, so no figure is met twice.
+    float u = g.x + seed * 3711.0;
     vec2 ab = g.yz - vCell.zw;
-    // The rings: round the pith, wandering slowly along the board, and running out of its face a little.
-    // The log tapers, so a face cut along it crosses the rings in nested arches. The wander is kept gentle enough
-    // never to close a ring on itself, which reads as plywood.
-    float wob = (wFbm(vec3(u * 0.0009, seed * 17.0, 0.5)) - 0.5) * 7.0 + (wNoise(vec3(u * 0.005, seed * 5.0, 2.0)) - 0.5) * 0.5;
-    float r = length(ab) + wob + u * (0.003 + 0.006 * fract(seed * 5.1)) * (fract(seed * 3.7) > 0.5 ? 1.0 : -1.0);
-    float S = 2.4 + 1.2 * fract(seed * 7.3);
+    // The rings round the pith. Most boards are sawn across the rings, so their faces show fine straight lines; a log
+    // tapers and wanders a little, so here and there a line runs out of the face or a cathedral rises.
+    float wob = (wFbm(vec3(u * 0.0007, seed * 17.0, 0.5)) - 0.5) * 3.5;
+    float r = length(ab) + wob + u * 0.0018 * (fract(seed * 3.7) > 0.5 ? 1.0 : -1.0);
+    float S = 3.0 + 1.8 * fract(seed * 7.3);
     // Some years grew more than others: the rings bunch and spread.
-    float ph = r / S + 3.0 * wNoise(vec3(r * 0.02, seed * 11.0, 4.0));
+    float ph = r / S + 2.2 * wNoise(vec3(r * 0.03, seed * 11.0, 4.0));
     float fw = fwidth(ph);
     float x = fract(ph);
     // Early wood swells into the dark late wood, which ends hard at the next ring. The edges are never sharper
     // than the pixel, and a ring finer than about three pixels is its own average.
     float e = max(0.05, fw * 1.1);
-    float late = smoothstep(0.42 - e, 0.86 + e, x) * (1.0 - smoothstep(1.0 - e, 1.0, x));
-    late = mix(late, 0.3, smoothstep(0.16, 0.42, fw));
-    late *= 0.35 + 0.65 * smoothstep(0.2, 0.8, wNoise(vec3(floor(ph) * 0.41, seed * 9.0, 1.0)));
-    // The figure, a few rings wide, and long streaks of colour along the grain: what carries it from across the room.
-    float broad = wFbm(vec3(ph * 0.06, u * 0.0016, seed * 7.0));
-    float sa = wFbm(vec3(u * 0.0012, g.y * 0.07, g.z * 0.07 + seed * 13.0));
-    float sb = wNoise(vec3(u * 0.004, g.y * 0.32, g.z * 0.32 + seed * 5.0));
-    float streak = sa + (sb - 0.5) * 0.5 * (1.0 - smoothstep(0.6, 1.6, px));
-    // Pores: short dark dashes along the grain, dots on an end. Only up close.
+    float late = smoothstep(0.74 - e, 0.84 + e, x) * (1.0 - smoothstep(1.0 - e, 1.0, x));
+    late = mix(late, 0.2, smoothstep(0.16, 0.42, fw));
+    late *= 0.6 + 0.4 * smoothstep(0.2, 0.8, wNoise(vec3(floor(ph) * 0.41, seed * 9.0, 1.0)));
+    // Long quiet lines: runs of a few darker rings, which carry the grain from across the room.
+    float lines = wNoise(vec3(ph * 0.17, u * 0.0005, seed * 7.0));
+    float broad = wFbm(vec3(ph * 0.03, u * 0.0007, seed * 5.0));
+    // Pores: short dark dashes along the grain, dots on an end. The rays: small pale flecks across it. Only up close.
+    float near = 1.0 - smoothstep(0.35, 0.85, px);
     float pz = wNoise(vec3(u * 0.085, g.y * 1.7, g.z * 1.7));
-    float pores = smoothstep(0.62, 0.86, pz) * (1.0 - 0.6 * late) * (1.0 - smoothstep(0.22, 0.6, px));
-    float tone = 0.7 + 0.6 * fract(seed * 13.7);
-    vec3 early = mix(vec3(0.0112, 0.0049, 0.0026), vec3(0.034, 0.0138, 0.0062), broad);
+    float pores = smoothstep(0.54, 0.76, pz) * (1.0 - 0.5 * late) * near;
+    float fleck = smoothstep(0.8, 0.93, wNoise(vec3(u * 0.07, ph * 1.4, seed * 23.0))) * near * (1.0 - tEnd);
+    float tone = 0.8 + 0.4 * fract(seed * 13.7);
+    vec3 early = mix(vec3(0.0105, 0.005, 0.0029), vec3(0.03, 0.0136, 0.0068), 0.35 + 0.5 * broad);
     vec3 lateC = vec3(0.0032, 0.0016, 0.001);
-    vec3 col = mix(early, lateC, late * 0.92);
-    col *= (0.65 + 0.7 * broad) * (0.7 + 0.6 * streak) * tone;
+    vec3 col = mix(early, lateC, late * 0.95);
+    col *= (0.86 + 0.28 * broad) * (0.88 + 0.24 * lines) * tone * (1.0 + 0.3 * fleck);
     // Now and then a dark mineral streak runs with the grain for a hand's length.
-    col *= 1.0 - 0.45 * smoothstep(0.72, 0.86, wNoise(vec3(u * 0.0017, g.y * 0.045 + seed * 31.0, g.z * 0.045)));
-    col *= 1.0 - pores * 0.5;
+    col *= 1.0 - 0.3 * smoothstep(0.74, 0.88, wNoise(vec3(u * 0.0017, g.y * 0.045 + seed * 31.0, g.z * 0.045)));
+    col *= 1.0 - pores * 0.62;
     // An end drinks the oil: darker, duller, with the rings as arcs.
     col *= mix(1.0, 0.62, tEnd);
     // Rubbed: where hands and feet go, and along every arris.
@@ -101,18 +108,23 @@ float wBox(vec3 p, vec3 c, vec3 r){ vec3 d = abs(p - c) / r; return 1.0 - smooth
       float line = clamp((min(jd + 0.5 * jw, 0.5) - max(jd - 0.5 * jw, -0.5)) / jw, 0.0, 1.0) * (1.0 - smoothstep(0.6, 0.95, abs(n.z)));
       col *= 1.0 - 0.88 * line;
     }
+    float trestle = smoothstep(${(finish.trestle - 20).toFixed(1)}, ${finish.trestle.toFixed(1)}, abs(p.x)) * step(p.y, -60.0);
+    float waxed = step(${finish.drawers[0].toFixed(1)}, p.x) * step(p.x, ${finish.drawers[1].toFixed(1)}) * step(${finish.drawers[2].toFixed(1)}, p.z) * step(p.y, -58.5);
+    col *= mix(1.0, 0.78, trestle) * mix(1.0, 1.12, waxed);
+    col = mix(col, vec3(dot(col, vec3(0.3, 0.59, 0.11))), 0.18 * trestle);
     diffuseColor.rgb = col;
     // The oil sits in the dense late wood and the dark streaks and polishes there, and the open early wood stays
     // dull: the sheen shows the figure.
     // Up close the sheen shows the figure. From across the room that would be stripes, so it is its average.
     float figureSeen = 1.0 - smoothstep(1.0, 2.6, px);
-    tRough = 0.4 + figureSeen * (0.2 * (1.0 - late) - 0.08 + 0.16 * smoothstep(0.35, 0.75, broad) * (1.0 - 0.5 * late) + 0.1 * smoothstep(0.45, 0.8, streak) - 0.17)
+    tRough = 0.46 + figureSeen * (0.18 * (1.0 - late) - 0.09 + 0.08 * (lines - 0.5)) - 0.1 * fleck
       + 0.16 * pores + 0.3 * tEnd - 0.12 * tRub - 0.16 * arris;
+    tRough += 0.14 * trestle - 0.08 * waxed;
     // Where the face turns within a pixel its highlight would be a stepped line one pixel wide: spread it instead.
     tRough = max(tRough, 0.3 + 1.6 * length(fwidth(n)));
     // The fibres dip in and out of the face: the sheen moves along the grain in soft bands as the light moves. Three's
     // anisotropic highlight did this better and once in a while divided by nothing, which blacks out the canvas.
-    tTilt = (1.0 - tEnd) * (0.018 + 0.012 * figureSeen) * sin(u * (0.018 + 0.012 * fract(seed * 4.3)) + 6.0 * wNoise(vec3(u * 0.003, ph * 0.04, seed * 3.0)));
+    tTilt = (1.0 - tEnd) * (0.008 + 0.008 * figureSeen) * sin(u * (0.018 + 0.012 * fract(seed * 4.3)) + 6.0 * wNoise(vec3(u * 0.003, ph * 0.04, seed * 3.0)));
   }`,
     rough: 'roughnessFactor = clamp(tRough, 0.2, 0.95);',
     normal: 'normal = normalize(normal + vGrainV * tTilt);',

@@ -156,7 +156,7 @@ export function cameraMaterials(art: CameraArt): CameraMaterials {
   const copper = solid('camCopper', { color: hex('copper'), rough: 0.22, metal: 1 });
   const steel = solid('camSteel', { color: black(0.12), rough: 0.24, metal: 1 });
   // The iris's blades: blackened steel with a soft sheen, so the overlaps can be told apart.
-  const blade = solid('camBlade', { color: black(0.05), rough: 0.36, metal: 0.85 });
+  const blade = solid('camBlade', { color: black(0.1), rough: 0.34, metal: 0.85 });
   // The lens's inside: flocked black.
   const inside = solid('camInside', { color: black(0.006), rough: 0.92, env: 0.5 });
   // The screen, the finder's eyepiece, the assist lamp: glossy black glass.
@@ -172,7 +172,7 @@ export function cameraMaterials(art: CameraArt): CameraMaterials {
     .replace('rectAreaLight = rectAreaLights[ i ];', 'rectAreaLight = rectAreaLights[ i ]; rectAreaLight.color = vec3( 0.0 );');
   const glassP = (name: string, spec: THREE.Color, rough: number) => {
     const m = new THREE.MeshPhysicalMaterial({
-      color: 0x000000, metalness: 0, roughness: rough, ior: 1.9, specularIntensity: 1, specularColor: spec,
+      color: 0x000000, metalness: 0, roughness: rough, ior: 2.33, specularIntensity: 1, specularColor: spec,
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
     });
     m.name = name;
@@ -187,8 +187,8 @@ export function cameraMaterials(art: CameraArt): CameraMaterials {
     m.customProgramCacheKey = () => 'camera-glass';
     return m;
   };
-  const glass = glassP('camGlass', new THREE.Color(hex('pale')).multiplyScalar(2.6), 0.06);
-  const coat = glassP('camCoat', new THREE.Color(hex('hot')).multiplyScalar(0.6), 0.22);
+  const glass = glassP('camGlass', new THREE.Color(hex('pale')).multiplyScalar(3.2), 0.06);
+  const coat = glassP('camCoat', new THREE.Color(hex('hot')).multiplyScalar(0.9), 0.2);
 
   // A short soft contact shadow under each thing: a rounded rectangle, in its own millimetres (uv), whose half sizes,
   // corner and strength are in its cell attribute.

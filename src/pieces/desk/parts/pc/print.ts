@@ -1,12 +1,11 @@
 import * as THREE from 'three';
 
-// The marks his parts carry in the PC Builder, his own made up names: VELTRIN and CREST on the card, KESTRANE on the
-// pump's cap, KORRIN on the board's cover. Drawn once in code on one sheet, which the printed faces and the card's lit
+// The marks his parts carry in the PC Builder, his own made up names: VELTRIN on the card's lit edge, KESTRANE on the
+// pump's cap, KORRIN on the heatsink beside the socket. Drawn once in code on one sheet, which the printed faces and the card's lit
 // wordmark both read from. Each region is a uv rectangle of the sheet: u0, v0, u1, v1.
 
 const S = 1024;
 export const SHEET = {
-  badge: [0, 0.75, 1, 1] as const,
   cap: [0, 0.25, 0.5, 0.75] as const,
   cover: [0.5, 0.625, 1, 0.75] as const,
   side: [0.5, 0.5, 1, 0.625] as const,
@@ -36,12 +35,6 @@ export function printSheet(): THREE.CanvasTexture {
   const c = document.createElement('canvas'); c.width = S; c.height = S;
   const g = c.getContext('2d')!;
   g.textBaseline = 'middle';
-  // The backplate's badge: dark steel, the name large and the model small, a fine rule between.
-  region(g, SHEET.badge, (w, h) => {
-    g.fillStyle = '#c9c4bd'; g.font = `700 ${h * 0.42}px ${FONT}`; spaced(g, 'VELTRIN', w / 2, h * 0.4, h * 0.06);
-    g.fillStyle = '#8f8a83'; g.font = `600 ${h * 0.16}px ${FONT}`; spaced(g, 'CREST', w / 2, h * 0.8, h * 0.07);
-    g.fillStyle = '#5a5651'; g.fillRect(w * 0.22, h * 0.63, w * 0.56, h * 0.012);
-  }, '#2f2e2c');
   // The pump's cap: satin black, the name across its middle, a fine ring inside the lit one.
   region(g, SHEET.cap, (w, h) => {
     g.strokeStyle = '#4a4744'; g.lineWidth = w * 0.006; g.beginPath(); g.arc(w / 2, h / 2, w * 0.33, 0, Math.PI * 2); g.stroke();

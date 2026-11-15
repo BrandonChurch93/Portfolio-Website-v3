@@ -19,7 +19,8 @@ import { grain, timber, type Wear } from './bench/timber';
 const { W, D, H } = DESK;
 const T = 58, FRONT = D / 2, FLOOR = -H;
 // The trestles stand just outside the bay for the PC, with nothing of them inside it.
-const TX = 875, LEG = { w: 80, d: 70, z: 250 }, BEARER = { w: 80, h: 85 }, FOOT = { w: 90, h: 60 };
+// The legs stand far enough back that the stretcher between the back ones runs behind the bay for the PC.
+const TX = 882, LEG = { w: 80, d: 70, z: 315 }, BEARER = { w: 80, h: 85 }, FOOT = { w: 90, h: 60 };
 const STRETCH = { y: -540, z: -LEG.z, h: 100, d: 40 };
 // The drawer case: from x l to r, its front frame set back from the top's front edge.
 const CASE = { l: -720, r: -110, bottom: -200, face: FRONT - 22, stile: 24, mid: 20, top: 16, foot: 22, gap: 3.5, set: 6.5 };
@@ -30,8 +31,9 @@ const JOINTS = [-201, -4, 197];
 
 function boards(b: Builder, M: THREE.Material): void {
   const edges = [-FRONT, ...JOINTS, FRONT];
-  // Where each board's log had its pith, across the grain: below a flat sawn board, beside a rift sawn one.
-  const pith: [number, number][] = [[30, -170], [-310, 40], [-20, 220], [50, -140]];
+  // Where each board's log had its pith, across the grain: far beside a quarter or rift sawn board, whose face shows
+  // straight lines, and below the one flat sawn board, whose face rises in a cathedral here and there.
+  const pith: [number, number][] = [[-720, 30], [640, -45], [10, -230], [-880, 60]];
   for (let i = 0; i < 4; i++) {
     const z0 = edges[i], z1 = edges[i + 1], zc = (z0 + z1) / 2;
     const back = i === 0 ? 4 : 0, front = i === 3 ? 1 : 0;
@@ -42,13 +44,13 @@ function boards(b: Builder, M: THREE.Material): void {
 
 function trestle(b: Builder, M: THREE.Material, s: -1 | 1): void {
   const cx = s * TX, k = s > 0 ? 0.5 : 0;
-  const bearer = outline([[-360, -T], [360, -T], [360, -T - 34], [300, -T - 66], [230, -T - BEARER.h], [-230, -T - BEARER.h], [-300, -T - 66], [-360, -T - 34]], [0, 0, 3, 40, 60, 60, 40, 3], 6);
+  const bearer = outline([[-382, -T], [382, -T], [382, -T - 26], [362, -T - BEARER.h], [-362, -T - BEARER.h], [-382, -T - 26]], [0, 0, 3, 14, 14, 3], 6);
   b.add(grain(runX(bearer, cx - BEARER.w / 2, cx + BEARER.w / 2, 3), 0.31 + k, 'z', cx + 110, -T - 260), M);
   const top = FLOOR + FOOT.h;
-  const foot = outline([[-380, FLOOR], [-300, FLOOR], [-290, FLOOR + 5], [290, FLOOR + 5], [300, FLOOR], [380, FLOOR], [380, FLOOR + 26], [300, top], [-300, top], [-380, FLOOR + 26]], [1.5, 0, 2, 2, 0, 1.5, 3, 5, 5, 3], 5);
+  const foot = outline([[-388, FLOOR], [-292, FLOOR], [-282, FLOOR + 5], [282, FLOOR + 5], [292, FLOOR], [388, FLOOR], [388, FLOOR + 24], [358, top], [-358, top], [-388, FLOOR + 24]], [1.5, 0, 2, 2, 0, 1.5, 3, 5, 5, 3], 5);
   b.add(grain(runX(foot, cx - FOOT.w / 2, cx + FOOT.w / 2, 3), 0.47 + k, 'z', cx - 140, FLOOR - 160), M);
   for (const z of [-LEG.z, LEG.z]) {
-    b.add(grain(stoppedPost(cx, z, top, -T - BEARER.h, LEG.w, LEG.d, 2.5, 9, 64, 18), 0.62 + k + z * 1e-4, 'y', cx + 78 * s, z + 52), M);
+    b.add(grain(stoppedPost(cx, z, top, -T - BEARER.h, LEG.w, LEG.d, 2.5, 9, 64, 18), 0.62 + k + z * 1e-4, 'y', cx + 520 * s, z + 160), M);
     // Two pegs through each joint, a little proud of both faces.
     for (const [y, w] of [[-T - 44, BEARER.w], [FLOOR + 30, FOOT.w]]) for (const dz of [-17, 17]) {
       const g = peg(5, w, 1.6, 0.9).translate(cx, y, z + dz);
@@ -91,8 +93,8 @@ function drawers(b: Builder, M: THREE.Material): [number, number, number][] {
   b.add(grain(rbox(stile, h, 20, 1.5).translate(l + stile / 2, ym, zc), 0.21, 'y', l + 90, zc - 160), M);
   b.add(grain(rbox(stile, h, 20, 1.5).translate(r - stile / 2, ym, zc), 0.69, 'y', r - 90, zc - 140), M);
   b.add(grain(rbox(mid, h - top - foot, 20, 1.5).translate(xm, (-T - top + bottom + foot) / 2, zc), 0.36, 'y', xm + 70, zc - 150), M);
-  b.add(grain(rbox(r - l - 2 * stile + 2, top, 20, 2, 3).translate(xm, -T - top / 2, zc), 0.58, 'x', zc - 200, -T - 140), M);
-  b.add(grain(rbox(r - l - 2 * stile + 2, foot, 20, 1.5).translate(xm, bottom + foot / 2, zc), 0.93, 'x', zc - 220, bottom - 160), M);
+  b.add(grain(rbox(r - l - 2 * stile + 2, top, 20, 2, 3).translate(xm, -T - top / 2, zc), 0.58, 'x', zc - 700, -T - 40), M);
+  b.add(grain(rbox(r - l - 2 * stile + 2, foot, 20, 1.5).translate(xm, bottom + foot / 2, zc), 0.93, 'x', zc - 650, bottom + 60), M);
   // The case behind the frame: its sides, its bottom, and the drawers' boxes seen through the gaps.
   const back = -150, depth = face - 20 - back;
   for (const [x, sd] of [[l + 9, 0.17], [r - 9, 0.83]]) b.add(grain(rbox(18, h, depth, 1.5).translate(x, ym, back + depth / 2), sd, 'z', x + 140, ym - 200), M);
@@ -102,7 +104,7 @@ function drawers(b: Builder, M: THREE.Material): [number, number, number][] {
   for (const [i, x] of [[0, l + stile + ow / 2], [1, r - stile - ow / 2]] as [number, number][]) {
     b.add(grain(rbox(ow, oh, 6, 0.5).translate(x, oy, face - 34), 0.5 + i * 0.1, 'x', face - 200, oy), M);
     const fw = ow - 2 * gap, fh = oh - 2 * gap, fz = face - set;
-    b.add(grain(rbox(fw, fh, 20, 3, 3).translate(x, oy, fz - 10), 0.27 + i * 0.38, 'x', fz - 240 - i * 90, oy + 18 - i * 30), M);
+    b.add(grain(rbox(fw, fh, 20, 3, 3).translate(x, oy, fz - 10), 0.27 + i * 0.38, 'x', fz - 760 - i * 140, oy + 40 - i * 70), M);
     knobs.push([x, oy, fz]);
   }
   return knobs;
@@ -124,26 +126,28 @@ export const build: PartFactory = () => {
   const oy = (-T - CASE.top + CASE.bottom + CASE.foot) / 2;
   const wear: Wear[] = [
     { at: [0, STRETCH.y + STRETCH.h / 2, STRETCH.z], r: [560, 8, 30], k: 0.55, up: true },
-    { at: [-TX, FLOOR + FOOT.h, 330], r: [70, 40, 80], k: 0.45 },
-    { at: [TX, FLOOR + FOOT.h, 330], r: [70, 40, 80], k: 0.45 },
+    { at: [-TX, FLOOR + FOOT.h, 360], r: [70, 40, 60], k: 0.45 },
+    { at: [TX, FLOOR + FOOT.h, 360], r: [70, 40, 60], k: 0.45 },
     { at: [-940, 0, 290], r: [90, 6, 130], k: 0.3, up: true },
     { at: [940, 0, 290], r: [90, 6, 130], k: 0.3, up: true },
-    ...knobXs.map((x): Wear => ({ at: [x, oy, CASE.face], r: [55, 40, 6], k: 0.5 })),
+    ...knobXs.map((x): Wear => ({ at: [x, oy, CASE.face], r: [55, 40, 6], k: 0.12 })),
   ];
-  const wood = timber(wear, { joints: JOINTS, below: -T - 1 });
+  const wood = timber(wear, { joints: JOINTS, below: -T - 1 }, { trestle: TX - 110, drawers: [CASE.l, CASE.r, CASE.face - 40] });
   boards(b, wood);
   trestle(b, wood, -1);
   trestle(b, wood, 1);
   stretcher(b, wood);
   const knobs = drawers(b, wood);
 
-  // Satin on its faces, polished along its rolled outer arris: the light that lands on it is a clean line that
-  // slides along the edge, never a patch.
-  const bronze = metal({ name: 'bench-angle', color: hex('bronze'), rough: 0.5, brush: 'x', tarnish: 0.45, patina: [0.5, 0.36, 0.26], extra: {
+  // Satin bronze, darker and browner than the copper of the knobs. Its rolled outer arris is polished only where
+  // hands have worn it, so the light it catches breaks along the edge and slides with the cursor, never a band.
+  const bronze = metal({ name: 'bench-angle', color: new THREE.Color(hex('bronze')).lerp(new THREE.Color(0x3e322b), 0.55).getHex(), rough: 0.58, brush: 'x', tarnish: 0.7, patina: [0.5, 0.36, 0.26], extra: {
     head: 'float bRub;',
-    color: `{ float d = length(vec2(${(FRONT + ANGLE.t).toFixed(1)} - vObj.z, vObj.y - ${ANGLE.t.toFixed(1)})); bRub = 1.0 - smoothstep(1.2, 3.2, d);
-      diffuseColor.rgb *= (1.0 + 0.12 * bRub) * (1.0 - 0.35 * smoothstep(-22.0, -33.0, vObj.y) * step(${(FRONT + 1).toFixed(1)}, vObj.z)); }`,
-    rough: 'roughnessFactor = clamp(mix(roughnessFactor, 0.16, bRub), 0.08, 1.0);',
+    color: `{ float d = length(vec2(${(FRONT + ANGLE.t).toFixed(1)} - vObj.z, vObj.y - ${ANGLE.t.toFixed(1)}));
+      float worn = smoothstep(0.42, 0.72, wNoise(vec3(vObj.x * 0.006, 2.0, 5.0))) * (0.55 + 0.45 * wNoise(vec3(vObj.x * 0.05, 7.0, 1.0)));
+      bRub = (1.0 - smoothstep(1.2, 3.2, d)) * worn;
+      diffuseColor.rgb *= (1.0 + 0.15 * bRub) * (1.0 - 0.35 * smoothstep(-22.0, -33.0, vObj.y) * step(${(FRONT + 1).toFixed(1)}, vObj.z)); }`,
+    rough: 'roughnessFactor = clamp(mix(roughnessFactor, 0.2, bRub), 0.08, 1.0);',
   } });
   angle(b, bronze);
 
@@ -153,15 +157,15 @@ export const build: PartFactory = () => {
   knobFaceMat.onBeforeCompile = (sh) => {
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', '#include <common>\nfloat kRel;')
-      .replace('#include <color_fragment>', '#include <color_fragment>\nkRel = smoothstep(0.02, 0.55, texture2D(normalMap, vNormalMapUv).a);\ndiffuseColor.rgb *= mix(0.26, 1.2, kRel);')
-      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(0.62, 0.26, kRel);');
+      .replace('#include <color_fragment>', '#include <color_fragment>\nkRel = smoothstep(0.02, 0.55, texture2D(normalMap, vNormalMapUv).a);\ndiffuseColor.rgb *= mix(0.24, 1.0, kRel);')
+      .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(0.66, 0.34, kRel);');
   };
   knobFaceMat.customProgramCacheKey = () => 'bench-knob-face';
   const z0 = CASE.face - CASE.set;
   const knobMat = metal({ name: 'bench-knob', color: hex('copper'), rough: 0.36, brush: 'none', tarnish: 0.6, patina: [0.5, 0.36, 0.26], cast: 0.6, extra: {
     head: 'float kRub;',
-    color: `kRub = smoothstep(${(z0 + KNOB_RIM - 0.5).toFixed(1)}, ${(z0 + KNOB_RIM + 4.5).toFixed(1)}, vObj.z); diffuseColor.rgb *= mix(0.42, 1.25, kRub);`,
-    rough: 'roughnessFactor = clamp(mix(roughnessFactor + 0.18, roughnessFactor - 0.1, kRub), 0.08, 1.0);',
+    color: `kRub = smoothstep(${(z0 + KNOB_RIM - 0.5).toFixed(1)}, ${(z0 + KNOB_RIM + 4.5).toFixed(1)}, vObj.z); diffuseColor.rgb *= mix(0.38, 1.0, kRub);`,
+    rough: 'roughnessFactor = clamp(mix(roughnessFactor + 0.2, roughnessFactor, kRub), 0.08, 1.0);',
   } });
   const body = knobBody(), faceGeo = knobFace();
   for (const [x, y, z] of knobs) {

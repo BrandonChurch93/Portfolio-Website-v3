@@ -3,7 +3,6 @@
 import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { ABOUT_TABS, COMPETENCIES } from '../../skills-about/content';
 import type { DeskPiece } from '../../pieces/desk/index';
-import type { HeadphonesPiece } from '../../pieces/headphones/index';
 import { ABOUT, BOARD, SKILLS, throwLine } from '../../skills/plan';
 import type { SkillsStage } from '../../skills/stage';
 import type { Piece } from '../../world/piece';
@@ -45,15 +44,16 @@ function Glow() {
 // Skills and About, built for real (BRIEF.md, Settled, "Skills and About, the first build"). The page only lays
 // things out. The stream plans its route from where they are (src/stream/route-skills.ts) and brings each onto the
 // page as its leading end reaches it (src/skills/stage.ts).
-// The desk is the piece in src/pieces/desk, at whatever stage its parts have reached, and the headphones are theirs
-// (src/pieces/headphones). The second and third rows keep an empty place for their thing. The words are placeholders and his to write.
+// The desk is the piece in src/pieces/desk, at whatever stage its parts have reached. The section's title is a word
+// lying on the desk's floor, drawn by the desk: the heading in the page is for a screen reader, and is the title on a
+// screen too narrow for the desk. The second and third rows keep an empty place for their thing. The words are placeholders and his to write.
 // ?way=band or flash opens it on that way of bringing the CPU to life, and ?ui=0 hides the label and the switch.
 // Pressing a way while the stream is on the first row strikes the row again, so the three can be compared in place.
 export function SkillsLab() {
   const id = useId().replace(/:/g, '');
   const page = useRef<HTMLElement>(null), board = useRef<HTMLDivElement>(null), skills = useRef<HTMLElement>(null), about = useRef<HTMLElement>(null);
   const stage = useRef<SkillsStage | null>(null);
-  const pieces = useRef<{ cpu: StruckPiece | null; reflector: StruckPiece | null; light: StruckPiece | null; desk: DeskPiece | null; phones: HeadphonesPiece | null }>({ cpu: null, reflector: null, light: null, desk: null, phones: null });
+  const pieces = useRef<{ cpu: StruckPiece | null; reflector: StruckPiece | null; light: StruckPiece | null; desk: DeskPiece | null }>({ cpu: null, reflector: null, light: null, desk: null });
   const [ui, setUi] = useState(true);
   const [way, setWay] = useState<Way>('shards');
   const [tab, setTab] = useState(0);
@@ -87,7 +87,6 @@ export function SkillsLab() {
 
   const hold = (name: 'cpu' | 'reflector' | 'light') => (p: Piece | null) => { pieces.current[name] = p as StruckPiece | null; };
   const holdDesk = (p: Piece | null) => { pieces.current.desk = p as DeskPiece | null; };
-  const holdPhones = (p: Piece | null) => { pieces.current.phones = p as HeadphonesPiece | null; };
   const pick = (i: number) => {
     if (i === tab) return;
     setTab(i);
@@ -111,15 +110,12 @@ export function SkillsLab() {
         <header className={styles.head}>
           <p className={styles.label}>Study 25 · Skills and About</p>
           <h1 className={styles.heading}>Scroll down</h1>
-          <p className={styles.note}>The desk and the headphones are being made thing by thing, and some are still the rough draft's. The second and third rows keep an empty place for their thing. The words are placeholders.</p>
+          <p className={styles.note}>The desk's things are being made round by round. The second and third rows keep an empty place for their thing. The words are placeholders.</p>
         </header>
       )}
       <div ref={board} className={styles.board}>
         <section ref={skills} className={styles.skills} aria-labelledby={`${id}-skills`}>
-          <h2 id={`${id}-skills`} className={styles.title} data-part="title" style={at(SKILLS.title.x, SKILLS.title.y)}>Skills</h2>
-          <div className={styles.phones} data-part="phones" aria-hidden="true" style={{ width: u(SKILLS.phones.host), height: u(SKILLS.phones.host) }}>
-            {wide && <PieceView name="headphones" reach={REACH} className={styles.piece} onPiece={holdPhones} />}
-          </div>
+          <h2 id={`${id}-skills`} className={`${styles.title} ${styles.heading2}`}>Skills</h2>
           <div className={styles.desk} data-part="desk" aria-hidden="true" style={at(SKILLS.desk.x, SKILLS.desk.y, SKILLS.desk.w, SKILLS.desk.h)}>
             {wide && <PieceView name="desk" reach={REACH} className={styles.piece} onPiece={holdDesk} />}
           </div>

@@ -52,6 +52,8 @@ const loaders: Record<PartName, () => Promise<PartFactory>> = {
   tablet: () => import('./parts/tablet').then((m) => m.build),
   camera: () => import('./parts/camera').then((m) => m.build),
   pc: () => import('./parts/pc').then((m) => m.build),
+  headphones: () => import('./parts/headphones').then((m) => m.build),
+  word: () => import('./parts/word').then((m) => m.build),
 };
 
 export interface DeskExtras {
@@ -59,6 +61,8 @@ export interface DeskExtras {
   setLights(l: DeskLights): void;
   // Where a point of the desk is drawn in its host, in the desk's millimetres.
   where(x: number, y: number, z: number): Anchor;
+  // The angle the headphones hang at on their stand, in radians from straight down.
+  setSwing(angle: number): void;
   // What it cost: the milliseconds each part took to build, what the first frame took, what the last frame drew, and
   // how many shader programs it has had compiled. The programs are what a visitor waits for.
   stats(): { built: Record<string, number>; first: number; calls: number; triangles: number; programs: number; passes: string[] };
@@ -80,6 +84,7 @@ export function createDesk(): DeskPiece {
   const built: Record<string, number> = {};
   let first = 0;
   const stream = { on: 0, since: 60 };
+  const swing = { a: 0, v: 0, t: 0 };
   const dials: Partial<Record<keyof DeskLights, ((k: number) => void)[]>> = {};
   const aim = new THREE.Vector3(...VIEW.aim), right = new THREE.Vector3(), up = new THREE.Vector3(), back = new THREE.Vector3(), cursor = new THREE.Vector3(), pointer = new THREE.Vector3(), ray = new THREE.Vector3();
   let reach = VIEW.tall / 2;
@@ -113,7 +118,7 @@ export function createDesk(): DeskPiece {
     if (!stale && !moving) return;
     stale = false;
     place();
-    const s: PartState = { t: hold ?? clock.now(), lights, cursor, pointer, led, stream, still: reduced || frozen || stage.tier === 'static' };
+    const now = hold ?? clock.now(), s: PartState = { t: now, lights, cursor, pointer, led, stream, swing: swing.a, swung: swing.v, still: reduced || frozen || stage.tier === 'static' };
     moving = false;
     for (const { part } of parts) if (part.update?.(s) && !s.still) moving = true;
     stage.render();
@@ -137,7 +142,7 @@ export function createDesk(): DeskPiece {
       if (!areaLib) { RectAreaLightUniformsLib.init(); areaLib = true; }
       const q = new URLSearchParams(location.search), asked = q.get('only') as PartName | null;
       only = asked && PARTS.includes(asked) ? asked : null;
-      if (q.get('lights') === '0') lights = { room: 1, lamp: 0, tablet: 0, monitor: 0, keys: 0, pc: 0 };
+      if (q.get('lights') === '0') lights = { room: 1, lamp: 0, tablet: 0, monitor: 0, keys: 0, pc: 0, word: 0 };
       stage = new Stage(h, canvas, { tier: opts.tier, fov: VIEW.fov, near: 0.05, far: 40, bloom: { strength: 0.1, threshold: 2.3, radius: 0.22 }, ao: 0.02, aoIntensity: 1, envIntensity: 0.3, env: 'studio', lampTarget: [0, -0.05, 0.1], lampAngle: 0.9 });
       trueDarks(stage.renderer);
       balance(stage);
@@ -228,6 +233,14 @@ export function createDesk(): DeskPiece {
       if (on === stream.on && (since > 2 || since === stream.since)) return;
       stream.on = on;
       stream.since = since;
+      stale = true;
+    },
+    setSwing(angle: number) {
+      if (angle === swing.a) { if (swing.v) { swing.v = 0; stale = true; } return; }
+      const now = clock.now(), dt = now - swing.t;
+      swing.v = dt > 0 && dt < 0.1 ? (angle - swing.a) / dt : 0;
+      swing.a = angle;
+      swing.t = now;
       stale = true;
     },
     where(x: number, y: number, z: number): Anchor {

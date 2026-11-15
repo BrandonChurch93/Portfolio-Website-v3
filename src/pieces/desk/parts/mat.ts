@@ -4,8 +4,7 @@ import type { PartFactory } from '../part';
 import { hairline, hide, type MatShape } from './mat/hide';
 
 // His desk mat: a sheet of dark hide 4 thick over most of the top, its corners rounded, its top edge rolled and its
-// side painted, a saddle stitched seam in copper thread just inside the edge, and a small mark blind stamped in the
-// front right corner. It lies on the timber with a hairline of shadow round its edge.
+// side painted, a saddle stitched seam in copper thread just inside the edge, and no mark. It lies on the timber with a hairline of shadow round its edge.
 
 const SHAPE: MatShape = { ...MAT, r: 16 };
 // How far the top edge is rolled over, and how far out the hairline of shadow reaches onto the timber.

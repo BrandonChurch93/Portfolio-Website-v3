@@ -103,7 +103,7 @@ export const STREAM = {
     // takes there, and where it joins the line it falls down beside the rows: how far below the shade, and that turn.
     // It leaves the shade to the left, nearly level, as far as `out` and down by that much, turning there by `turn`,
     // so that it clears the lamp, whose arm and foot are below and to the left of the shade, before it falls.
-    lamp: { leave: 120, from: [34, 150] as [number, number], bow: [130, 6] as [number, number], out: [140, 16] as [number, number], turn: 46, off: 150, join: [60, 70] as [number, number] },
+    lamp: { leave: 120, from: [34, 150] as [number, number], bow: [130, 6] as [number, number], out: [190, 12] as [number, number], turn: 40, off: 160, join: [60, 70] as [number, number] },
     // At each row it turns in to strike the thing at the row's left end, from this far above it and to this far
     // below, and the turn it takes off the line and back onto it.
     row: { over: 62, turn: [22, 3] as [number, number] },
@@ -143,7 +143,7 @@ export const STREAM = {
     // How a row's strike faces: up and a little to the right, so that what it throws goes into the row.
     rowFace: -1.12,
     // Each contact, as in work.contact.
-    contact: { lamp: [0.7, 0.5, 2, 4], row: [0.8, 1, 5, 2.6], reflector: [1.15, 1.3, 6, 2.6], light: [1, 1.2, 6, 2.6] } as Record<string, readonly [number, number, number, number]>,
+    contact: { lamp: [0.55, 0.35, 1.5, 5], row: [0.8, 1, 5, 2.6], reflector: [1.15, 1.3, 6, 2.6], light: [1, 1.2, 6, 2.6] } as Record<string, readonly [number, number, number, number]>,
     // How many seconds of each thing's coming the page follows (src/skills/stage.ts reads them back).
     over: { title: 0.6, near: 0.9, lamp: 1.4, row: 1.6, reflector: 0.6, light: 0.8, behind: 1.2, under: 0.6 } as Record<string, number>,
   },

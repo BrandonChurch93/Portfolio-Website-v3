@@ -5,14 +5,15 @@ import type { Tier } from '../../config/site';
 // A part builds its group in millimetres, in the desk's own frame (./layout.ts), and is told each frame what the
 // desk is doing. It never touches the stage, the camera or another part.
 
-export const PARTS = ['bench', 'mat', 'lamp', 'monitor', 'keyboard', 'mouse', 'tablet', 'camera', 'pc'] as const;
+export const PARTS = ['bench', 'mat', 'lamp', 'monitor', 'keyboard', 'mouse', 'tablet', 'camera', 'pc', 'headphones', 'word'] as const;
 export type PartName = (typeof PARTS)[number];
 
 // How much each of the desk's lights is on, 0 to 1. room is the light the desk is seen by before any of its own is
 // on. The page brings them up as the stream arrives: the lamp at its strike, then the tablet, the monitor, the keys
 // and the PC, left to right.
-export interface DeskLights { room: number; lamp: number; tablet: number; monitor: number; keys: number; pc: number }
-export const LIT: DeskLights = { room: 1, lamp: 1, tablet: 1, monitor: 1, keys: 1, pc: 1 };
+// word is the section's title, which lies on the floor and comes on with the desk's lights.
+export interface DeskLights { room: number; lamp: number; tablet: number; monitor: number; keys: number; pc: number; word: number }
+export const LIT: DeskLights = { room: 1, lamp: 1, tablet: 1, monitor: 1, keys: 1, pc: 1, word: 1 };
 
 export interface PartState {
   // The clock, in seconds.
@@ -26,6 +27,10 @@ export interface PartState {
   pointer: THREE.Vector3;
   // What the stream is doing to the lamp: how much it is on it, and the seconds since it struck.
   stream: { on: number; since: number };
+  // The angle the headphones hang at on their stand, in radians from straight down, and how fast it is changing, in
+  // radians a second. The page works the swing out.
+  swing: number;
+  swung: number;
   // Nothing loops and nothing drifts: reduced motion, or a held frame.
   still: boolean;
 }

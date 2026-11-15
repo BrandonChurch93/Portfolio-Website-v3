@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { hex } from '../../../config/palette';
 import { Builder } from '../../../world/build';
-import { BAY, DESK, VIEW } from '../layout';
+import { BAY, DESK, PC_TURN, VIEW } from '../layout';
 import type { DeskPart, PartFactory, PartState } from '../part';
 import { BOARD, T as BT, board, boardSheet } from './pc/board';
 import { v, filletPath, run } from './pc/cables';
@@ -25,16 +25,18 @@ const D2R = Math.PI / 180;
 const LAMP_BACK = 1300;
 // The PC's own two lights inside the case, at full strength, and how far each reaches, in metres: they cast no
 // shadow, so they reach no further than the case, or they light the desk's top through its timber.
-const GLOW = { low: 0.03, high: 0.038, reach: 0.32 };
+const GLOW = { low: 0.045, high: 0.08, reach: 0.34 };
 
 export const build: PartFactory = () => {
   const L = makeLook(printSheet(), boardSheet());
   const group = new THREE.Group();
   group.name = 'pc';
   // The case's own frame, set on the floor in the middle of the bay, its left glass toward the front.
-  const cx = (BAY.l + BAY.r) / 2, cz = (BAY.back + BAY.front) / 2 - 5;
+  const cx = (BAY.l + BAY.r) / 2, cz = (BAY.back + BAY.front) / 2;
   const kase = new THREE.Group();
   kase.position.set(cx, -DESK.H, cz);
+  // Turned about its own middle so both glass sides face the visitor and its back faces away.
+  kase.rotation.y = PC_TURN * D2R;
   group.add(kase);
 
   const b = new Builder();
@@ -66,16 +68,18 @@ export const build: PartFactory = () => {
   // and the memory on the board round it.
   MOUNTS.bottom.forEach((m, i) => {
     const x = m.elements[12], t = fanTones[3 + i];
-    b.add(fxOf(new THREE.PlaneGeometry(150, 130), FX.spot, t, 0.22), L.fx, at(x, ATRIUM.floor + 0.4, MAIN_Z, [-Q, 0, 0]), { shadow: false });
-    b.add(fxOf(new THREE.PlaneGeometry(132, 132), FX.ring, t, 0.4, 0.88), L.fx, at(x, ATRIUM.basin + 3.2, MAIN_Z, [-Q, 0, 0]), { shadow: false });
+    b.add(fxOf(new THREE.PlaneGeometry(170, 150), FX.spot, t, 0.3), L.fx, at(x, ATRIUM.floor + 0.4, MAIN_Z, [-Q, 0, 0]), { shadow: false });
+    b.add(fxOf(new THREE.PlaneGeometry(150, 150), FX.spot, t, 0.35), L.fx, at(x, ATRIUM.basin + 3.2, MAIN_Z, [-Q, 0, 0]), { shadow: false });
   });
   b.add(fxOf(new THREE.PlaneGeometry(84, 176), FX.spot, 0.38, 0.4), L.fx, at(ax + 180, ay + BOARD.dimms[0].y, front + 0.3), { shadow: false });
+  // The radiator's fans light the tray under them, a band that fades down from the top of the chamber.
+  b.add(fxOf(new THREE.PlaneGeometry(380, 34), FX.fade, 0.5, 0.35), L.fx, at(-13, ATRIUM.topIn - 55 - 17, ATRIUM.trayF + 0.35, [0, 0, Math.PI]), { shadow: false });
   // The side fans sit behind the tray: their rings show crisp just inside the tray's openings.
   MOUNTS.side.forEach((m, i) => b.add(led(torus(55.4, 1.2, 4, 56), fanTones[i], fanGains[i]), L.led, at(m.elements[12], m.elements[13], ATRIUM.trayB - 0.8), { shadow: false }));
 
   // Its light on the floor round it, and its shadow under it.
   const span = { x: ATRIUM.x1 - ATRIUM.x0, z: ATRIUM.z1 - ATRIUM.z0 };
-  b.add(fxOf(new THREE.PlaneGeometry(span.x + 520, span.z + 520), FX.pool, 0.22, 0.32, 250), L.fx, at(0, 0.9, 0, [-Q, 0, 0]), { shadow: false });
+  b.add(fxOf(new THREE.PlaneGeometry(span.x + 1140, span.z + 1140), FX.pool, 0.22, 0.32, 560), L.fx, at(0, 0.9, 0, [-Q, 0, 0]), { shadow: false });
   b.add(fxOf(new THREE.PlaneGeometry(span.x + 160, span.z + 160), FX.shadow, 0, 0.75), L.fxDark, at(0, 0.6, 0, [-Q, 0, 0]), { shadow: false });
 
   // The pump's tubes up to the radiator's fittings at its rear end.
@@ -128,9 +132,9 @@ export const build: PartFactory = () => {
 
   // The PC's own light on what is round it: low by the floor fans and up by the pump and the top fans.
   const low = new THREE.PointLight(hex('pale'), 0, GLOW.reach, 2);
-  low.position.set(-60, 110, 112);
+  low.position.set(-60, 142, 110);
   const high = new THREE.PointLight(hex('pale'), 0, GLOW.reach, 2);
-  high.position.set(-60, 330, 100);
+  high.position.set(-40, 360, 95);
   kase.add(low, high);
 
   L.center.value.set(cx, -DESK.H + ATRIUM.y1 / 2, cz).multiplyScalar(DESK.SCALE);

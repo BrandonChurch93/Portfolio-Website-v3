@@ -1,6 +1,5 @@
 import type { DeskPiece } from '../pieces/desk/index';
-import type { HeadphonesPiece } from '../pieces/headphones/index';
-import { BAY, DESK, MAT, SCREEN, SHADE } from '../pieces/desk/layout';
+import { BAY, DESK, MAT, PLACES, SCREEN, SHADE, VIEW, WORD } from '../pieces/desk/layout';
 import { registry } from '../hooks/registry';
 import { lamp } from '../lamp/lamp';
 import { STREAM } from '../stream/config';
@@ -23,7 +22,7 @@ export interface SkillsParts {
   board: HTMLElement;
   skills: HTMLElement;
   about: HTMLElement;
-  pieces: () => { cpu: StruckPiece | null; reflector: StruckPiece | null; light: StruckPiece | null; desk: DeskPiece | null; phones: HeadphonesPiece | null };
+  pieces: () => { cpu: StruckPiece | null; reflector: StruckPiece | null; light: StruckPiece | null; desk: DeskPiece | null };
   way: () => Way;
 }
 
@@ -39,8 +38,6 @@ export interface SkillsStage {
 type Span = readonly [from: number, to: number];
 // When each thing comes on, in seconds after the cue that brings it: when it starts, and when it is whole.
 const SHOW = {
-  title: [0, 0.5] as Span,
-  phones: [0.12, 0.6] as Span,
   // The desk comes out of the dark as the stream nears it. Its lamp is on in the frame of the strike, and the rest
   // follow from left to right. The keys take half a second, which is how long their wave needs to be seen crossing.
   room: [0, 0.8] as Span,
@@ -49,6 +46,8 @@ const SHOW = {
   monitor: [0.4, 0.66] as Span,
   keys: [0.55, 1.05] as Span,
   pc: [0.9, 1.3] as Span,
+  // The word on the floor comes on with the last of the desk's lights.
+  word: [0.7, 1.3] as Span,
   // A row: its borders run out from the stream's side at the strike, its thing comes to life, then its name, then
   // its lists.
   rule: [0, 0.34] as Span,
@@ -71,9 +70,14 @@ const RULE = { half: 2.4 };
 const SHADE_FACE = -2.3;
 // The stream at the desk, once the lamp is lit: how much of its size it gives up, over which seconds after the
 // strike, and how far toward the first row it stays turned down before it grows back.
-const QUIET = { by: 0.3, over: [0.15, 1.1] as Span, back: 0.5 };
-// The part of the headphones' host the pair hangs in: its share of the width, and from how far down to how far down.
-const BRUSH = [0.56, 0.2, 0.88];
+const QUIET = { by: 0.4, over: [0.15, 1.1] as Span, back: 0.5 };
+// The headphones on their stand, in the desk's millimetres: how high the middle of the hanging pair is, and half its
+// width and half its height. The cursor brushing through that knocks them.
+const HANG = { up: 290, half: [125, 175] };
+// Half the word's length and half its depth on the floor, in the desk's millimetres, with room round it.
+const WORD_HALF = [WORD.cap * 2.6, WORD.cap * 0.75];
+// How long the leading end is followed past the top of Skills. Nothing waits on it now that the title is the desk's.
+const LEAD = 0.2;
 // How hard the stream strikes the first row again when its thing is asked to come to life again.
 const AGAIN = 0.8;
 // A change of tab: how long its pulse takes to reach him, and how far along that the words change.
@@ -102,14 +106,14 @@ const ramp = (age: number, [a, b]: Span) => { const k = clamp((age - a) / (b - a
 export function mountSkills(parts: SkillsParts): SkillsStage {
   const q = <T extends HTMLElement = HTMLElement>(part: string, within: Element = parts.page) => within.querySelector<T>(`[data-part="${part}"]`)!;
   const all = (part: string) => [...parts.page.querySelectorAll<HTMLElement>(`[data-part="${part}"]`)];
-  const title = q('title'), phones = q('phones'), desk = q('desk');
+  const desk = q('desk');
   const rows = all('row'), names = all('name'), lists = all('lists'), thing = q('thing') as HTMLElement | null;
   const reflector = q('reflector'), light = q('light'), portrait = q('portrait'), cover = q('cover'), coverGlow = cover.firstElementChild as HTMLElement;
   const heading = q('about-title'), tabs = q('tabs'), panel = q('panel');
   const auras = all('aura'), beams = all('beam');
 
   let stream: StreamHandle | null = null, bench: DeskPiece | null = null, disposed = false, hush = 0, quietTo = 0, quietBack = 0;
-  let anchors: { cpu: Anchor; reflector: Anchor; strike: Anchor; lens: Anchor; hook: Anchor } = { cpu: [-0.36, 0], reflector: [0, 0], strike: [0.02, -0.14], lens: [-0.12, 0.16], hook: [0, -0.24] };
+  let anchors: { cpu: Anchor; reflector: Anchor; strike: Anchor; lens: Anchor } = { cpu: [-0.36, 0], reflector: [0, 0], strike: [0.02, -0.14], lens: [-0.12, 0.16] };
   let lives: Record<Way, number> = { shards: 1.3, band: 0.9, flash: 0.8 };
   let rules: Rail[] = [], cues: Cue[] = [];
   // The run over the top of About, as the page has it: from the reflector to where the stream strikes the light.
@@ -141,7 +145,6 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
     const put = (el: HTMLElement, x: number, y: number, host: number, a: Anchor) => { el.style.left = `calc(var(--u) * ${(x - a[0] * host - host / 2).toFixed(2)})`; el.style.top = `calc(var(--u) * ${(y - a[1] * host - host / 2).toFixed(2)})`; };
     put(reflector, A.reflector.x, A.reflector.y, A.reflector.host, anchors.reflector);
     put(light, T.lens[0], T.lens[1], A.light.host, anchors.lens);
-    put(phones, SKILLS.phones.x, SKILLS.phones.y, SKILLS.phones.host, anchors.hook);
   };
 
   const plan = (c: PlanContext): Planned => {
@@ -163,6 +166,8 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
       quad([mx - mw, MAT.h, MAT.z - md], [mx + mw, MAT.h, MAT.z - md], [mx + mw, MAT.h, MAT.z + md], [mx - mw, MAT.h, MAT.z + md]),
       quad([BAY.l, floor, BAY.front], [BAY.r, floor, BAY.front], [BAY.r, floor + BAY.h, BAY.front], [BAY.l, floor + BAY.h, BAY.front]),
       quad([BAY.l, floor, BAY.back], [BAY.l, floor, BAY.front], [BAY.l, floor + BAY.h, BAY.front], [BAY.l, floor + BAY.h, BAY.back]),
+      // The word on the floor, with a margin: the stream stays off it as it stays off About's words.
+      quad([WORD.x - WORD_HALF[0], floor, WORD.z - WORD_HALF[1]], [WORD.x + WORD_HALF[0], floor, WORD.z - WORD_HALF[1]], [WORD.x + WORD_HALF[0], floor, WORD.z + WORD_HALF[1]], [WORD.x - WORD_HALF[0], floor, WORD.z + WORD_HALF[1]]),
     ] : [])];
     keepOff = quads.map((q) => ({ quads: [q], l: Math.min(q[0], q[2], q[4], q[6]), r: Math.max(q[0], q[2], q[4], q[6]), t: Math.min(q[1], q[3], q[5], q[7]), b: Math.max(q[1], q[3], q[5], q[7]) }));
     const corner = on(Pt.x, Pt.y, A0);
@@ -213,7 +218,7 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
   const follow = (cues: Cue[]) => {
     way = parts.way();
     const over: Record<string, number> = {
-      title: SHOW.phones[1], near: SHOW.room[1], lamp: SHOW.pc[1], row0: Math.max(SHOW.lists[1], lives[way] + 0.3), row1: SHOW.lists[1], row2: SHOW.lists[1],
+      title: LEAD, near: SHOW.room[1], lamp: SHOW.pc[1], row0: Math.max(SHOW.lists[1], lives[way] + 0.3), row1: SHOW.lists[1], row2: SHOW.lists[1],
       light: SHOW.portrait[1] + SHOW.panel[1], behind: SHOW.glow[1] + SHOW.panel[1],
     };
     for (const c of cues) if (over[c.name] !== undefined) { c.over = over[c.name]; stream?.follow(c.name, c.over); }
@@ -236,18 +241,16 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
     if (P.desk !== bench) { bench = P.desk; queueMicrotask(() => stream?.replan()); }
     if (way !== parts.way()) follow(cues);
 
-    // Skills: the title and the headphones, the desk, and each row.
-    show('title', title, ramp(since('title'), SHOW.title));
-    show('phones', phones, ramp(since('title'), SHOW.phones), 0);
+    // Skills: the desk, with the headphones on it and the title on its floor, and each row.
     const lampHit = stream.struck('lamp');
     if (lampHit.at > struckAt + 0.05 && !whole) { struckAt = lampHit.at; swings.push({ t: lampHit.at, a: SWING.struck * (0.5 + 0.5 * lampHit.hard) }); }
     while (swings.length && t - swings[0].t > SWING.lasts) swings.shift();
-    P.phones?.setSwing(whole ? 0 : (swing(t) * Math.PI) / 180);
+    bench?.setSwing(whole ? 0 : (swing(t) * Math.PI) / 180);
     const near = since('near'), lit = since('lamp');
     hush = whole ? 1 : ramp(lit, QUIET.over);
     set('desk:o', desk, 'opacity', near > 0 ? '1' : '0');
     bench?.setStream(whole ? 1 : lampHit.on, whole ? 60 : t - lampHit.at);
-    bench?.setLights({ room: ramp(near, SHOW.room), lamp: lit > 0 ? 0.6 + 0.4 * ramp(lit, SHOW.lamp) : 0, tablet: ramp(lit, SHOW.tablet), monitor: ramp(lit, SHOW.monitor), keys: ramp(lit, SHOW.keys), pc: ramp(lit, SHOW.pc) });
+    bench?.setLights({ room: ramp(near, SHOW.room), lamp: lit > 0 ? 0.6 + 0.4 * ramp(lit, SHOW.lamp) : 0, tablet: ramp(lit, SHOW.tablet), monitor: ramp(lit, SHOW.monitor), keys: ramp(lit, SHOW.keys), pc: ramp(lit, SHOW.pc), word: ramp(lit, SHOW.word) });
     rows.forEach((_, i) => {
       const age = since(`row${i}`);
       show(`name${i}`, names[i], ramp(age, SHOW.name));
@@ -292,8 +295,9 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
   let before: { x: number; t: number } | null = null;
   const brush = (e: PointerEvent) => {
     if (e.pointerType === 'touch') return;
-    // The pair hangs in the middle of its host, which is wider and taller than they are.
-    const r = phones.getBoundingClientRect(), w = r.width * BRUSH[0], inside = Math.abs(e.clientX - (r.left + r.right) / 2) < w / 2 && e.clientY > r.top + r.height * BRUSH[1] && e.clientY < r.top + r.height * BRUSH[2], now = clock.now();
+    if (!bench) return;
+    const r = desk.getBoundingClientRect(), [ax, ay] = bench.where(PLACES.headphones[0], HANG.up, PLACES.headphones[1]), k = r.height / (VIEW.tall * 1000);
+    const inside = Math.abs(e.clientX - (r.left + r.width / 2 + ax * r.height)) < HANG.half[0] * k && Math.abs(e.clientY - (r.top + r.height / 2 + ay * r.height)) < HANG.half[1] * k, now = clock.now();
     if (inside && before && now - before.t < 0.2 && now - (swings[swings.length - 1]?.t ?? -9) > 0.35) {
       const v = (e.clientX - before.x) / Math.max(0.004, now - before.t);
       if (Math.abs(v) > 60) swings.push({ t: now, a: Math.sign(v) * Math.min(SWING.brush, 1.5 + Math.abs(v) / 260) });
@@ -325,9 +329,9 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
   lamp.bind();
   tiers.detect();
   place();
-  void registry.track(Promise.all([import('../pieces/cpu/index'), import('../pieces/reflector/index'), import('../pieces/studio-light/index'), import('../pieces/headphones/index')]).then(([cpu, refl, studio, head]) => {
+  void registry.track(Promise.all([import('../pieces/cpu/index'), import('../pieces/reflector/index'), import('../pieces/studio-light/index')]).then(([cpu, refl, studio]) => {
     if (disposed) return;
-    anchors = { cpu: cpu.CPU.strike, reflector: refl.REFLECTOR.strike, strike: studio.STUDIO.strike, lens: studio.STUDIO.lens, hook: head.HEADPHONES.hook };
+    anchors = { cpu: cpu.CPU.strike, reflector: refl.REFLECTOR.strike, strike: studio.STUDIO.strike, lens: studio.STUDIO.lens };
     lives = cpu.LIFE;
     place();
     stream = mountStream(parts.page, { plan });
