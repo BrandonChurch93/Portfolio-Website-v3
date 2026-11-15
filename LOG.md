@@ -2,6 +2,27 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · The two worlds: a pause, and the platform (Fable, web chat)
+
+**What Brandon said**
+
+- Pause. Neither world is as good as he hoped. A is his favorite and is not amazing. All of them look like a city on a floating platform, not its own little world. He wonders whether there is room for a world. He is looking for reference pictures. `BRIEF.md`, Settled, Hero.
+
+**What was done**
+
+- His words written in. Nothing built.
+- Fable's reading given to him: the planet reads as a platform because it is a shallow cap seen edge on with both ends on the screen, which is what his two requests for a flatter dome made it. Two ways out, in words only: a rounder, smaller ball, or a planet wider than the screen.
+
+**What Fable takes from it**
+
+- Three rounds were spent on what stands on the planet (its materials, then its shape, then the kind of world) while the fault he now names is under all of them: the planet's own outline. The frame is judged before anything is stood on it.
+- World A broke two of his rulings of Nov 14 that still stood: no farms or terraced gardens, and a large city. Read every ruling on a thing before designing it again, including the ones beside a part that was turned down.
+
+**For the next session**
+
+- Wait for his references. Read each for three things: how round the world is, how large things are beside it, and whether its ends are seen.
+- Then one frame question to settle with him before any surface: the planet's outline in the hero.
+
 ## 2026-11-15 · Two worlds for the top of the planet, at `/lab/surface-looks` (Fable, web chat)
 
 **What Brandon said**
