@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { hero } from '../../content/hero';
-import { BOARD, CITY, CX, SKY, WORDS, WORK } from '../../hero/board';
+import { BOARD, CITY, CX, SKY, WORDS, WORK, WORLD } from '../../hero/board';
 import type { HeroStage } from '../../hero/stage';
 import { HOST } from '../../pieces/skycity/layout';
 import { MetalButton } from '../MetalButton';
@@ -89,7 +89,7 @@ export function HeroLab({ hub }: { hub?: Hub }) {
       <div ref={board} className={styles.board} style={vars}>
         <div ref={sky} className={styles.sky} aria-hidden="true" />
         <div ref={city} className={styles.city} style={{ width: u(HOST.wide) }}>
-          {wide && <PieceView name="skycity" className={styles.piece} />}
+          {wide && WORLD.shown && <PieceView name="skycity" className={styles.piece} />}
         </div>
         <header ref={words} className={styles.words} style={{ width: u(WORDS.w) }}>
           <p className={styles.role}>{hero.role}</p>

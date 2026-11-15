@@ -5,7 +5,7 @@ import { SOURCE, VENTS, drawn } from '../pieces/skycity/layout';
 import { mountStream, type Fall, type PlanContext, type Planned, type StreamHandle } from '../stream/stream';
 import { clock } from '../world/clock';
 import { tiers } from '../world/tier';
-import { BOARD, CX } from './board';
+import { BOARD, CX, WORLD } from './board';
 
 // What the stream does in the hero. The page lays the section out. This hands the stream's planner the places: the
 // underside of the world's core, where the stream begins, the places on the torn face where other streams of the
@@ -44,7 +44,7 @@ export function mountHero(parts: HeroParts, host?: StreamHost): HeroStage {
       return { x: p.x, from: p.y, to: p.y + FALL.long[i % FALL.long.length] * k, wide: FALL.wide };
     });
     return {
-      falls,
+      falls: WORLD.shown ? falls : [],
       route: routeThroughHero({ width: c.width, unit: c.unit, board: k, source: at(SOURCE), bar: { x: (bar.l + bar.r) / 2, y: bar.t - (host ? SEAM * k : 0) }, joined: !!host }),
       after: frame,
     };

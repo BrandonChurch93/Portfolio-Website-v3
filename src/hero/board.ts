@@ -43,3 +43,7 @@ export const SKY = {
 // and what broke away fill a screen with nothing of Work in sight. How wide the stand in for the bar is, and how
 // much page follows on this page, where Work itself is not.
 export const WORK = { under: 480, bar: 360, tail: 300 } as const;
+
+// The world as built is off the page while a new one is designed (BRIEF.md, Settled, Hero, Nov 15). Its place is
+// kept, so nothing else on the page moves, and the sky and the stream are as they were. The new world goes here.
+export const WORLD = { shown: false } as const;

@@ -145,6 +145,7 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **In front of Brandon (Nov 15):** the third round at `/lab/hero-blockout`, in color, with his six changes and close views of the city, the land and the rock. `BRIEF.md`, Settled, Hero, "The third round, in color, as built" says what is short: the buildings most of all. He signs off the look or says what to change. Nothing goes to Claude Code before that
 - **Stopped (Nov 15):** all work on the hero's world as built, by his word. It stays committed and untouched while the new one is designed in the web chat
 - **Fixed in Claude Code (Nov 15):** the crash in Safari. Safari kept the memory of every 3D thing the page had let go, and of every page left for another in the same tab, until his iPad ended the page. `LOG.md`, top entry, has the cause, the measurements, what an iPad now gets, and what is still large. Waiting on his word that it holds on his iPad
+- **Taken off the screen (Nov 15):** the built world, on `/lab/hero` and `/lab/whole`, by his word. The sky, his words and the main stream are as they were, and the world's place is kept for the new one
 
 
 ## Phase 0 · Foundation

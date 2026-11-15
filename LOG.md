@@ -65,6 +65,11 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 - A heap snapshot can be had from Playwright's WebKit: `page._connection.toImpl(page).delegate._session.send('Heap.snapshot')`. It is what found the plate held by a closure. Chromium's showed nothing, since Chromium collects it.
 - The measuring tool must not hold what it counts: Chromium's `queryObjects` keeps every object it lists until its group is released.
 
+**Later the same day: the built world taken off the screen**
+
+- His word: the world is being replaced, so take the planet and city off the screen and leave the sky as it is. `BRIEF.md`, Settled, Hero. `WORLD.shown` in `src/hero/board.ts` is the switch. `HeroLab.tsx` does not mount the piece and `src/hero/stage.ts` hands the stream no small streams from the torn face. Nothing else moved.
+- Measured the same way, after: the hero alone 513 MB of GPU and 129 of its own (it was 1186 and 387 with the world, 1625 and 479 before the fix). The whole page 968 on load and 1842 at its worst, which is now at Skills, where the desk is.
+
 **Half finished, and what the next session needs**
 
 - His word on whether it holds on his iPad. If it does not, the next cuts are the desk and Work's cards on an iPad, which are approved things and need his word first.
