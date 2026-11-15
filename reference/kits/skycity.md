@@ -1,5 +1,7 @@
 # Kit · the city in the hero
 
+**Changed again at midnight on Nov 14, from his look at the first build:** the city pulls back from the edge, polished metal is used boldly, the nature area becomes a jungle out of scale on purpose, a second natural area goes on the opposite side, the mountain is dropped for a monument, and the craft are made good or removed. `BRIEF.md`, the same agreement, items 19 to 27, and tests 14 to 20. The planet under it is left alone.
+
 **Changed Nov 14, night.** The city no longer stands on a flat disc. It stands on the torn top of a small planet, with the planet's core showing in the tear, debris round it, and the stream coming out of the core. `BRIEF.md`, Settled, "The hero, the city at rest", items 3, 4, 7, 8, 12 and 14 to 18, and the wireframe at `/lab/hero-draft` (`src/hero/plan.ts`). What follows was written for the disc: its ground, its plan of lots and its view are what change.
 
 Read `reference/kits/README.md` first: the bar, the colors and "The look" hold for everything here. This is `src/pieces/skycity/`, one piece with one stage, as the desk and the launch pad are (`reference/kits/desk.md`, `reference/kits/pad.md`), and each of its things is a part with a builder of its own: the ground that floats, the spire, and the towers.

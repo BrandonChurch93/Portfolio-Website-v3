@@ -2,6 +2,58 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · The finished version of what stands on the world: agreed, written in, and the prompt (Fable, web chat)
+
+**What Brandon said**
+
+- The second natural area goes on the opposite side and looks completely different. The nature area he has is not what he wanted: a dense jungle, with the scale wrong. "Remember this is art. They don't have to be proportionate." The mountain is scrapped for a monument, something spectacular, not another pyramid. Nothing of Claude Code's work in hand is to be overwritten. "Go ahead and update everything and give me the prompt."
+- Earlier in the same exchange: nothing on the world shines as metal, and the city may reach a little too far.
+- His words are in `BRIEF.md`, Settled, Hero.
+
+**What was done**
+
+- `BRIEF.md`, "The hero, the city at rest": items 19 to 27, the finished version of what stands on the world. `QUALITY.md`: tests 14 to 20. A note at the top of `reference/kits/skycity.md`. Two lines in Dropped.
+- Nothing was built or drawn here. Only the record changed, so nothing of Claude Code's can have been overwritten.
+
+**Left out on purpose**
+
+- Fable's note that the six streams from the torn face are too even. He did not answer it and he likes the planet, so item 27 leaves them alone.
+
+**The prompt Brandon was given, for the same Claude Code session**
+
+```
+The planet is right. What stands on it is not yet. This is the plan for the finished version.
+
+You are still mid-work, so lose nothing. Do not stash, reset or discard anything uncommitted, and do not overwrite anything a builder has in hand. Bring main in the way you have been doing it, when it is safe to.
+
+BRIEF.md, Settled, "The hero, the city at rest": items 19 to 27 are new and hold all of this. QUALITY.md has tests 14 to 20 for them.
+
+Leave alone: the planet's body, the torn underside, the core, the debris, the sky, the moon, the glow, the spire's shape, the layout and my words. I like all of that.
+
+Change:
+
+1. The city is too big. Keep it as dense as it is, but pull it back from the edge, about a quarter of the way in all the way round, and let two or three wedges of open land cut further in. Let bare ground show at the rim so I can see the curve of the planet.
+
+2. It is missing the shiny metal look. I do not see any of it. I want real polished gold, bronze and copper that reflect and catch the cursor's light, used boldly. Not orange trim on grey boxes. This is art, so you have freedom, and we could do some really cool things with it. Item 21 has ideas, including pools of mirror polished metal where a world would have lakes.
+
+3. The nature area on the left has to be a dense jungle, and the scale is all wrong. This is art. It does not have to be in proportion. Make the trees big enough that anyone knows it is a jungle at a glance. The site's colors, not green.
+
+4. A second natural area on the opposite side, and it has to look completely different from the jungle. Your choice. Item 23 has ideas.
+
+5. Scrap the mountain. Put a monument in its place, something spectacular. Not another pyramid. Your design. Item 24 has ideas.
+
+6. The flying cars look bad. Either a few craft that are designed and big enough to read as craft, or none.
+
+7. More kinds of building and fewer copies of the same grey block. The two blank blocks at the front of the avenue need designing or removing.
+
+Show me when it stands, and say plainly what is at the bar and what is not.
+```
+
+**For the next session**
+
+- His verdicts on the finished world go into `BRIEF.md`. Then the opening, designed on it with him.
+- Still open with him: Fable's note on the streams from the torn face.
+
 ## 2026-11-14 · His look at the torn world as first built, and a plan put to him (Fable, web chat)
 
 **What Brandon said**

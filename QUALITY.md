@@ -566,6 +566,16 @@ What the build taught:
 12. **The debris is of many kinds.** In real frames three ways of moving can be told apart: orbiting, holding still to the core, tumbling. Its sizes run from slabs to shards. Its smallest pieces cannot be told from the stream's shards. None is over the words, and it thins out before Work.
 13. **Room before Work.** On each of the four screens there is a place in the scroll where the torn underside, the whole core and the debris are on the screen and nothing of Work is.
 
+*What stands on the world, items 19 to 27:*
+
+14. **The city's reach.** In a still of the whole world, open ground can be seen at the rim all the way round, and a stranger says it is a city in the middle of a small world, not a plate of buildings. Measured: buildings stand on no more than about six tenths of the surface.
+15. **The metal shines.** In one still with the cursor's light on the world, at least five separate things show a bright, hard edged reflection, and in real frames the reflections slide as the light moves. Sampled, a highlight on polished metal is pale, not orange. A stranger asked what the world is made of says gold, bronze or metal without being led. Beside a Work card and a Sun stone it is of one family.
+16. **The jungle.** A stranger shown the hero at the page's size for three seconds says jungle or forest and points to it. One tree can be told from the next.
+17. **The second natural area** is named by the same stranger as something other than a jungle, and the two are not taken for one kind of place.
+18. **The monument.** The same stranger, asked what stands out after the spire and the core, points to it. It is not a pyramid. Close up it is not the weaker work beside `reference/bar/pc-builder-parts.jpg`.
+19. **The craft.** Each one can be known for a craft at the page's size, or there are none. No specks.
+20. **Nothing that was right has gone back:** stills of the torn underside, the core, the debris and the sky from before and after agree.
+
 ## The whole page so far
 
 `BRIEF.md`, Settled, "The whole page so far", is the agreement. It passes when all of these are true:
