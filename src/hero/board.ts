@@ -3,9 +3,9 @@ import { DEBRIS, HOST, PLANET, SOURCE, SPIRE, drawn } from '../pieces/skycity/la
 // The hero as built (BRIEF.md, Settled, "The hero, the city at rest"): where everything stands, on a board 1460
 // units wide that is drawn as wide as the screen up to 2400 px, as the other sections are. The wireframe he approved
 // (./plan.ts, /lab/hero-draft) is where these places come from. The screen's height is part of it: his words are set
-// from the top of the screen and the tip of the world's spire hangs a set way under them, so a taller screen shows
-// more of the world. The page's stylesheet works that out, and these are the numbers it does it with. Lengths are
-// in units.
+// from the top of the screen and the tip of the world's spire hangs a set way under them, or lower on a tall
+// screen, where that would bring the world's torn edge into sight. The page's stylesheet works that out, and
+// these are the numbers it does it with. Lengths are in units.
 
 export const BOARD = { w: 1460, least: 1100 };
 export const CX = BOARD.w / 2;
@@ -18,6 +18,9 @@ const tip = drawn(0, SPIRE.tall, 0)[1], r1 = (v: number): number => Math.round(v
 // tall its host is, the top of the dome, its torn edge at the sides, the underside of the core, where the stream
 // leaves it, and the lowest of what broke away.
 export const CITY = {
+  // The most of the dome under its top that shows at rest. On a tall screen the world rests lower, so that its torn
+  // edge stays under the foot of the screen.
+  show: 130,
   over: r1(tip),
   tall: HOST.tall,
   pole: r1(drawn(0, 0, 0)[1] - tip),

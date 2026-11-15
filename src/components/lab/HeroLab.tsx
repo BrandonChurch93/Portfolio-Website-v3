@@ -75,7 +75,7 @@ export function HeroLab({ hub }: { hub?: Hub }) {
 
   const vars = {
     '--words-tall': WORDS.tall, '--words-least': WORDS.least, '--words-third': WORDS.third, '--words-rise': WORDS.rise, '--words-gap': WORDS.gap,
-    '--city-tall': CITY.tall, '--city-over': CITY.over, '--city-edge': CITY.edge, '--city-low': CITY.low, '--work-under': WORK.under, '--work-tail': WORK.tail,
+    '--city-tall': CITY.tall, '--city-over': CITY.over, '--city-pole': CITY.pole, '--city-show': CITY.show, '--city-edge': CITY.edge, '--city-low': CITY.low, '--work-under': WORK.under, '--work-tail': WORK.tail,
     '--sky-tail': SKY.tail,
   } as CSSProperties;
 

@@ -21,15 +21,15 @@
 
 /* The screen's height is part of the layout. His words are set from the top of the screen: a third of the way down
    it, less a little, and never nearer its top than a least. The tip of the world's spire hangs a set way under
-   them, so a taller screen shows more of the world. Its torn edge and everything under it are under the foot of
-   the screen until the page is scrolled. */
+   them, or lower on a tall screen, so that no more than a set depth of the dome shows at rest: its torn edge and
+   everything under it are under the foot of the screen until the page is scrolled. */
 .board {
   --u: calc(min(100vw, 2400px) / 1460);
   --screen: 100vh;
   --screen: 100svh;
   --words: max(calc(var(--u) * var(--words-least)), calc(var(--screen) * var(--words-third) - var(--u) * var(--words-rise)));
   /* How far down the page the spire's tip is, and the lowest of what broke away from the world. */
-  --tip: calc(var(--words) + var(--u) * (var(--words-tall) + var(--words-gap)));
+  --tip: max(calc(var(--words) + var(--u) * (var(--words-tall) + var(--words-gap))), calc(var(--screen) - var(--u) * (var(--city-pole) + var(--city-show))));
   --low: calc(var(--tip) + var(--u) * var(--city-low));
   position: relative;
   width: calc(var(--u) * 1460);

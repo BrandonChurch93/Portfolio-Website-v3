@@ -924,6 +924,20 @@ For Claude Code, added to the work it has in hand. His words are in the list abo
 - **The core, in his words (Nov 14, late), on seeing the plain ball that stood in for it:** "It's very basic. Just an orange circle... we have to consider that the stream is coming out of that. So it should look like the culminating source of the stream, as well as a planet's core... this should tie in with the stream seamlessly." **So the core reads two ways at once:** the place all of the stream's light is gathered, at its most intense, and the heart of a planet. **And there is no place a visitor can point to where the core ends and the stream begins.** This sharpens item 15 and test 11. The join is built from both sides: the core by its builder, and how the stream begins by Fable.
 - *Fable's calls in answering it, his to overturn:* the forest is in autumn color, which is the palette's own. The pyramid moves in toward the top so it shows at rest on every screen. The port stays a port, as the pyramid's match at the right of the skyline, with nothing on thin masts. The land rises up to 38 units in ridges outside the city. With the dome flatter the world is about 1105 from the spire's tip to the lowest of what broke away, where the wireframe has 1220.
 
+**His second look (Nov 14, late), from working stills of the world mid-rebuild. Five rulings, which replace the plan made after his first look.** "It's coming along."
+
+- "It looks like the city isn't dense enough. You think of a city from Star Trek or Star Wars, the city is ultra dense. Also don't like how spread out the buildings are." **The city is ultra dense:** buildings a few units apart, in layers one behind another, streets as canyons.
+- "You can really see the grade of the planet, which I think we agreed to make it not such a rounded dome. It should be circular, and when you scroll down, you should have the realization that this is a piece of a planet, but it doesn't have to be so round." **The dome is a shallow cap:** still about 1320 across, about 165 tall where it was 400 (`PLANET`: curved to a radius of 1400, kept to 28 degrees). That it is a piece of a planet is learnt on the scroll, from the torn underside and the core.
+- "I think we have too much forest surrounding it. I just wanted there to be like a nature area, not that it was completely covered and surrounded by nature. I think we should make the city bigger and utilize a lot of the space that's currently being tied up with the nature." **Nature is one area. The city takes the rest of the top of the world.**
+- "The nature area should honestly look like a national forest, not something that is desert like, think of like a jungle. I wouldn't even hate like small mountains somewhere as well to give it more 3-D depth, even if that's outside the forest. Water sources would be interesting as well." **The nature area is lush, a forest as dense as a jungle, with small mountains and water.**
+- "In Star Wars, the Star Trek, you often see flying vehicles." **Flying vehicles, plainly seen.**
+- *Fable's calls in answering it, his to overturn:*
+    - The nature area is at the left of the world, behind and round the pyramid, so the temple stands at a jungle's edge as one does in those films, with the small mountains behind it on the skyline.
+    - **The jungle stays in the site's colors and is not green, by his own earlier rule ("Any nature is in the site's colors, not green").** If a jungle that is not green reads wrong to him, that rule is the one to change.
+    - The spire is 280 and the tallest buildings 215, so the city is the larger thing at rest. On a tall screen the world rests lower, so its torn edge stays under the foot of the screen: this replaces "a taller screen shows more of the world" above a set depth.
+    - The flying vehicles run in lanes between the towers, as traffic, with a few larger craft.
+    - With the cap this shallow the world is about 915 from the spire's tip to the lowest of what broke away.
+
 ### Work
 
 - One section. A centered title. No featured card.

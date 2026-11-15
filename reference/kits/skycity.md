@@ -10,6 +10,24 @@ Read `reference/kits/README.md` first: the bar, the colors and "The look" hold f
 
 **This section is the newest. Where anything below it disagrees with it, this section wins.** The frame it describes is in the code now: `src/pieces/skycity/layout.ts`, `part.ts`, `index.ts`.
 
+### His second look (Nov 14, late): the newest, and it wins over everything below
+
+He saw working stills of the world mid-rebuild. "It's coming along." Then:
+
+- "It looks like the city isn't dense enough. You think of a city from Star Trek or Star Wars, the city is ultra dense. Also don't like how spread out the buildings are."
+- "You can really see the grade of the planet, which I think we agreed to make it not such a rounded dome. It should be circular, and when you scroll down, you should have the realization that this is a piece of a planet, but it doesn't have to be so round."
+- "I think we have too much forest surrounding it. I just wanted there to be like a nature area, not that it was completely covered and surrounded by nature. I think we should make the city bigger and utilize a lot of the space that's currently being tied up with the nature."
+- "The nature area should honestly look like a national forest, not something that is desert like, think of like a jungle. I wouldn't even hate like small mountains somewhere as well to give it more 3-D depth, even if that's outside the forest. Water sources would be interesting as well. In Star Wars, the Star Trek, you often see flying vehicles."
+
+The plan is redrawn for it (`src/pieces/skycity/layout.ts`: read it again from the top). Where a number below disagrees with these, these win:
+
+- **A shallow cap.** `PLANET` is curved to a radius of 1400 and kept to 28 degrees: about 1320 across, only about 165 tall. `HEART` is 310 under the top. The torn edge is between about 622 and 684 on the map, and the broken margin begins at 600 (`MARGIN`).
+- **So the world is seen nearly edge on.** The top of the dome is no longer a face seen from above. What a visitor sees is what stands up, in layers one behind another, with the ground between as thin slivers. Height, outline and depth are everything. At the edge of the city things lean out about 23 degrees, at 300 out about 12.
+- **The city is ultra dense and covers most of the top.** `lots()` gives about 230 lots, 30 to 44 across, a few units apart, in four bands out to 600, the tallest 215 (`TALLEST`) near the spire and lower toward the visitor so each row shows over the one in front. Roads are 10 wide: canyons. The spire is 280 (`SPIRE`).
+- **One nature area** (`FOREST`, and kind `forest` in `DISTRICTS`): bearings 222 to 318, from 330 to 600 on the map, at the left of the world. In it `relief` gives hills up to 26 tall and five small mountains (`PEAKS`) up to 118 tall, behind and beside the temple. Everywhere else the land is level.
+- **The temple quarter** is at bearings 262 to 292, 330 to 470, inside the forest's edge. **The port** at 66 to 106, 300 to 470, in the city. **The way to the spire** at -8 to 8, 150 to 600, a canyon through the city.
+- **Flying vehicles, plainly seen:** lanes of traffic between the towers and a few larger craft.
+
 ### His look at the frame (Nov 14, late), which changes what follows
 
 He saw the frame with the old disc still on it, and said:

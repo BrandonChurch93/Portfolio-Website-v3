@@ -6,30 +6,31 @@ import { seeded } from '../../world/build';
 // inside, its core, and the pieces of it that broke away (BRIEF.md, Settled, "The hero, the city at rest").
 // Units, one a CSS pixel on a screen 1460 wide. The frame: the origin is the top of the dome, where the spire
 // stands. x to the visitor's right, y up, z toward the visitor. The planet's core hangs in the tear, straight down
-// from there (HEART). Its sizes began on the wireframe at /lab/hero-draft (src/hero/plan.ts), and he then asked for
-// a flatter dome and a larger city, which these are.
+// from there (HEART). Its sizes began on the wireframe at /lab/hero-draft (src/hero/plan.ts). He then asked, twice,
+// for a dome that is far less round and a city that is larger and dense, which these are.
 //
 // The plan of what stands on the world is a flat map, laid over the dome from its top: a place on the map is so far
 // to the right of the top and so far toward the visitor, measured along the ground. seat, lift and bend, below, put
 // what is on the map onto the dome. Everything stands straight out from the ground under it. The ground is land:
-// outside the city it rises in hills and ridges (relief), and seat, lift and bend stand things on the land.
+// in the forest it rises in hills and small mountains (relief), and seat, lift and bend stand things on the land.
 
 // A unit in the stage's metres. The lights, the shadows and the occlusion are set up for a scene a metre or two
 // across, as the desk is.
 export const SCALE = 0.0015;
 
 // The planet: the radius its top is curved to, how far round from its top it is kept, in degrees, and how far
-// across its core is from its middle. He found a dome that was nearly half a sphere too round: this one is about
-// 1320 across and 400 tall.
-export const PLANET = { r: 748, cap: 62, core: 150 } as const;
+// across its core is from its middle. He found the first two domes too round: "you can really see the grade of
+// the planet". This one is a shallow cap, about 1320 across and 165 tall. That it is a piece of a planet is learnt
+// on the scroll, from its torn underside and its core.
+export const PLANET = { r: 1400, cap: 28, core: 150 } as const;
 // The middle of the core, in the frame: under the middle of the world, a little under the level of its torn edge,
 // where the tear shows it. It is not the middle of the sphere the top is curved to, which is far lower.
-export const HEART = [0, -540, 0] as const;
+export const HEART = [0, -310, 0] as const;
 // How far out on the map the plan of the city and its places reaches. Beyond it, as far as the torn edge, is the
 // broken margin. rim and rock are the disc's, which the first ground was built to, and go with it.
-export const GROUND = { r: 700, rim: 16, rock: 220 } as const;
+export const GROUND = { r: 600, rim: 16, rock: 220 } as const;
 // The spire at the top: how tall it is, and how far across at its foot.
-export const SPIRE = { tall: 240, foot: 30 } as const;
+export const SPIRE = { tall: 280, foot: 34 } as const;
 
 const R = PLANET.r, D2R = Math.PI / 180;
 
@@ -43,19 +44,35 @@ const value = (x: number, z: number): number => {
   const i = Math.floor(x), j = Math.floor(z), u = ease(x - i), v = ease(z - j);
   return (hash2(i, j) * (1 - u) + hash2(i + 1, j) * u) * (1 - v) + (hash2(i, j + 1) * (1 - u) + hash2(i + 1, j + 1) * u) * v;
 };
-// The land outside the city: where on the map it begins to rise, where it is at its full height, where it begins to
-// fall away toward the torn edge and where it is level again, how tall its ridges are, and how many degrees to
-// each side of the way to the spire are kept level, so the way runs out through a pass.
-export const LAND = { from: 470, full: 550, to: 700, out: 770, tall: 38, way: 15 } as const;
-// How high the land stands over the planet's own curve at a place on the map: ridges and hills, the same on every
-// call. It is level under the city and at the torn edge.
+const bearing = (x: number, z: number): number => ((Math.atan2(x, z) / D2R) + 360) % 360;
+// The forest, which is the one place the land is not level: the stretch of the map it fills (FOREST in DISTRICTS
+// reads the same numbers), how tall its hills are, and how far in from each of its sides the hills take to rise.
+export const FOREST = { from: 222, to: 318, r0: 330, r1: 600, hills: 26, ease: [14, 60] } as const;
+// Small mountains in the forest, behind and beside the temple, for depth: each a place on the map, how far across
+// its foot is and how tall it stands.
+export const PEAKS: readonly { x: number; z: number; r: number; tall: number }[] = [
+  { x: -393, z: -275, r: 92, tall: 118 }, { x: -493, z: -220, r: 80, tall: 92 }, { x: -320, z: -288, r: 70, tall: 74 },
+  { x: -470, z: -120, r: 64, tall: 58 }, { x: -429, z: 311, r: 74, tall: 66 },
+];
+// How high the land stands over the planet's own curve at a place on the map, the same on every call. It is level
+// under the city and at the torn edge, and in the forest it rises in hills, with the small mountains over them.
 export function relief(x: number, z: number): number {
   const far = Math.hypot(x, z);
-  if (far <= LAND.from || far >= LAND.out) return 0;
-  const k = ramp(LAND.from, LAND.full, far) * (1 - ramp(LAND.to, LAND.out, far)) * ramp(LAND.way * 0.6, LAND.way * 1.6, Math.abs(Math.atan2(x, z)) / D2R);
-  if (k <= 0) return 0;
-  const ridge = 1 - Math.abs(2 * value(x / 150 + 7.3, z / 150 + 2.1) - 1);
-  return LAND.tall * k * (0.7 * ridge * ridge + 0.3 * value(x / 64 + 1.7, z / 64 + 9.2));
+  if (far < FOREST.r0 - 100 || far > FOREST.r1 + 60) return 0;
+  const b = bearing(x, z);
+  const k = ramp(FOREST.r0, FOREST.r0 + FOREST.ease[1], far) * (1 - ramp(FOREST.r1 - FOREST.ease[1], FOREST.r1 + 40, far)) * ramp(FOREST.from, FOREST.from + FOREST.ease[0], b) * (1 - ramp(FOREST.to - FOREST.ease[0], FOREST.to, b));
+  let h = 0;
+  if (k > 0) {
+    const ridge = 1 - Math.abs(2 * value(x / 130 + 7.3, z / 130 + 2.1) - 1);
+    h = FOREST.hills * k * (0.65 * ridge * ridge + 0.35 * value(x / 56 + 1.7, z / 56 + 9.2));
+  }
+  for (const p of PEAKS) {
+    const d = Math.hypot(x - p.x, z - p.z) / p.r;
+    if (d >= 1) continue;
+    const rough = 0.82 + 0.36 * value(x / 22 + p.x, z / 22 + p.z);
+    h = Math.max(h, h * 0.4 + p.tall * (1 - ease(d)) ** 1.25 * rough);
+  }
+  return h;
 }
 const axis = new THREE.Vector3(), turn = new THREE.Quaternion(), one = new THREE.Vector3(1, 1, 1), at = new THREE.Vector3();
 // How the ground is turned at a place on the map: straight up there is straight out from the planet.
@@ -111,7 +128,7 @@ const ragged = (deg: number, n: number, seed: number): number => {
 // this line, so they meet.
 export const EDGE = {
   out: PLANET.cap * D2R * R,
-  bite: 80,
+  bite: 62,
   at(deg: number): number {
     const big = ragged(deg, 7, 1), mid = ragged(deg, 19, 2), small = ragged(deg, 53, 3);
     return EDGE.out - EDGE.bite * Math.min(1, 0.55 * big * big + 0.3 * mid + 0.22 * small * small);
@@ -119,7 +136,7 @@ export const EDGE = {
 };
 // The broken margin: the ground from here out to the torn edge is damaged. Cracked, split, with things leaning or
 // fallen. Where a place round the core reaches further out than this, it is damaged there too.
-export const MARGIN = 700;
+export const MARGIN = 600;
 
 // The torn underside. No rock hangs lower than this, as a height in the frame: under it there is only the core and
 // what broke away. Round the core the rock is torn back into a hollow this far across from the planet's middle,
@@ -141,14 +158,15 @@ export const VENTS: readonly (readonly [number, number, number])[] = [
 // What broke away: the pieces of the planet round the torn underside and under it. None is lower than this, as a
 // height in the frame, none further from the planet's upright than this, and none higher than the torn edge.
 export const DEBRIS = { low: HEART[1] - 325, far: 980, high: -R * (1 - Math.cos(PLANET.cap * D2R)) } as const;
-// It is not towers from edge to edge: he ruled that. It is a small world: a city on the crown of the dome, large
-// on the screen, with the spire at its middle, and round the city a wild forest over hills, out to the broken
-// margin (DISTRICTS below).
+// It is a small world: a great, dense city, as the capital of a Star Wars or Star Trek world is dense, covering
+// most of the top of the dome with the spire at its middle, and in one part of it a nature area: a forest as lush
+// as a jungle, with small mountains and water (DISTRICTS below). He ruled both: the city dense and large, and
+// nature as one area and not all round.
 // Round the spire: a plaza, then ring boulevards at these distances from the middle, each this wide. The city's
-// buildings stand between the plaza and the last of them.
+// buildings stand between the plaza and the last of them. The roads are narrow: the city is canyons.
 export const PLAZA = 78;
-export const RINGS = [150, 290, 440] as const;
-export const ROAD = 14;
+export const RINGS = [150, 290, 440, 600] as const;
+export const ROAD = 10;
 // Avenues run out from the plaza to the rim at these bearings, in degrees from straight toward the visitor.
 export const AVENUES = [0, 45, 90, 135, 180, 225, 270, 315] as const;
 // Squares inside the core: each a stretch of one band between two boulevards, from one bearing to another, in
@@ -159,25 +177,24 @@ export const PARKS: { band: number; from: number; to: number }[] = [
 
 // The places that are not the city's own buildings. Each is a stretch of the ground from one bearing to another, in
 // degrees from straight toward the visitor, turning to the visitor's right, and from one distance from the middle
-// to another. The view is from straight in front and nearly level: the visitor's left and right are the skyline,
-// where things stand out sideways against the sky, and the face toward the visitor is seen from above.
-//   procession: a way from the spire's plaza down the face of the world toward the visitor, through the city and
-//     out through a pass in the forest.
-//   temple: the quarter with the flair of ancient Egypt, and its pyramid, which he likes. In the city, at the left
-//     of the skyline, near enough the top to show at rest on every screen.
-//   port: its match at the right of the skyline, where craft land and leave.
-//   forest: a wild forest over hills and ridges, as a national forest is, all round the city. Not a farm and not
-//     a garden: he ruled that.
-//   wild: the far side. Never seen.
+// to another. The view is from straight in front and nearly level, and the dome is shallow, so the world is seen
+// nearly edge on: what counts is what stands up, in layers one behind another, and the visitor's left and right
+// are the ends of the skyline.
+//   procession: a way from the spire's plaza toward the visitor, a canyon through the city.
+//   temple: the quarter with the flair of ancient Egypt, and its pyramid, which he likes. At the left of the
+//     skyline, at the forest's edge, as a temple stands in a jungle.
+//   port: where craft land and leave, in the city at the right of the skyline.
+//   forest: the nature area, at the left of the world behind and round the temple: a forest as lush as a jungle,
+//     as a national forest is, with small mountains and water. One area, not all round the city: he ruled that.
+//   wild: the far side. Hardly seen.
 export type Kind = 'procession' | 'forest' | 'port' | 'wild' | 'temple';
 export interface District { kind: Kind; from: number; to: number; r0: number; r1: number }
 export const DISTRICTS: District[] = [
-  { kind: 'procession', from: -10, to: 10, r0: 150, r1: 700 },
-  { kind: 'port', from: 60, to: 110, r0: 290, r1: 470 },
-  { kind: 'temple', from: 250, to: 300, r0: 290, r1: 470 },
-  { kind: 'forest', from: 10, to: 128, r0: 470, r1: 700 },
-  { kind: 'forest', from: 232, to: 350, r0: 470, r1: 700 },
-  { kind: 'wild', from: 128, to: 232, r0: 440, r1: 700 },
+  { kind: 'procession', from: -8, to: 8, r0: 150, r1: 600 },
+  { kind: 'port', from: 66, to: 106, r0: 300, r1: 470 },
+  { kind: 'temple', from: 262, to: 292, r0: 330, r1: 470 },
+  { kind: 'forest', from: FOREST.from, to: FOREST.to, r0: FOREST.r0, r1: FOREST.r1 },
+  { kind: 'wild', from: 128, to: 222, r0: 440, r1: 600 },
 ];
 // Whether a bearing lies in a stretch that runs from one bearing to another, turning to the right.
 export const within = (a: number, from: number, to: number): boolean => ((a - from) % 360 + 360) % 360 <= ((to - from) % 360 + 360) % 360;
@@ -195,23 +212,24 @@ export const FALLS = [-520, -360, -180, 180, 360, 520] as const;
 // is, and which band it stands in (0 is the innermost).
 export interface Lot { x: number; z: number; w: number; d: number; turn: number; tall: number; band: number; seed: number }
 
-// Every lot of the city, the same on every call: large buildings in rows along the city's three bands, tallest
-// near the spire. None on a boulevard, an avenue, a square or the way to the spire, and none in the temple quarter
-// or the port. The ground and the towers are made by different hands and both read this. He found the first
-// city small: these are few and large.
-export const TALLEST = 185;
+// Every lot of the city, the same on every call: buildings packed close in rows along the city's four bands, out
+// to the broken margin, tallest near the spire and lower toward the visitor so each row is seen over the one in
+// front. None on a boulevard, an avenue, a square or the way to the spire, and none in the temple quarter, the port
+// or the forest. The ground and the towers are made by different hands and both read this. He found the city not
+// dense enough and its buildings too spread out: these stand a few units apart.
+export const TALLEST = 215;
 export function lots(): Lot[] {
   const r = seeded(9173), out: Lot[] = [];
   const edges = [PLAZA, ...RINGS];
-  for (let band = 0; band < 3; band++) {
+  for (let band = 0; band < 4; band++) {
     const inner = edges[band] + ROAD, outer = edges[band + 1] - ROAD / 2, depth = outer - inner;
-    const rows = Math.max(1, Math.round(depth / 72)), deep = depth / rows - 8;
+    const rows = Math.max(1, Math.round(depth / 46)), deep = depth / rows - 4;
     for (let row = 0; row < rows; row++) {
-      const rad = inner + (depth * (row + 0.5)) / rows, n = Math.floor((2 * Math.PI * rad) / 86);
+      const rad = inner + (depth * (row + 0.5)) / rows, n = Math.floor((2 * Math.PI * rad) / 46);
       for (let i = 0; i < n; i++) {
-        const a = ((i + 0.5 * (row % 2)) / n) * 360, w = 42 + r() * 34, d = Math.min(deep, 42 + r() * 28), lean = r(), seed = Math.floor(r() * 1e6);
-        const fall = Math.exp(-((rad / 330) ** 2)), tall = Math.min(TALLEST, (64 + 150 * fall * (0.5 + 0.5 * lean)) * (0.8 + 0.4 * r()));
-        if (AVENUES.some((b) => Math.abs(((a - b + 540) % 360) - 180) * (Math.PI / 180) * rad < ROAD / 2 + w / 2 + 3)) continue;
+        const a = ((i + 0.5 * (row % 2) + 0.24 * (r() - 0.5)) / n) * 360, w = 30 + r() * 14, d = Math.min(deep, 30 + r() * 16), lean = r(), seed = Math.floor(r() * 1e6);
+        const fall = Math.exp(-((rad / 300) ** 2)), tall = Math.min(TALLEST, (48 + 225 * fall * (0.45 + 0.55 * lean)) * (0.8 + 0.4 * r()));
+        if (AVENUES.some((b) => Math.abs(((a - b + 540) % 360) - 180) * (Math.PI / 180) * rad < ROAD / 2 + w / 2 + 2)) continue;
         if (PARKS.some((p) => p.band === band && within(a, p.from, p.to))) continue;
         const t = a * (Math.PI / 180);
         if (districtAt(Math.sin(t) * rad, Math.cos(t) * rad)) continue;
