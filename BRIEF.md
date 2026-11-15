@@ -1204,6 +1204,7 @@ At `/lab/skills`, Study 25, built in Claude Code by Fable. The reflector, the st
     - The left column as drawn "just looks horrible. It's a mess."
     - Where the rocket stands is open, in his words: off to one side, perhaps part of the background, below the form, or with the form laid slightly over it so what happens behind can still be seen. None of these is picked.
     - He asked to brainstorm before anything more is built, and for Fable's own thinking and not only his options. What Fable put to him is in Open 31.
+- **A derby of the three arrangements (Nov 14).** "Can you actually just make a derby with these three options so I can see them?" He had pressed A in the sketch and stopped it before it was answered, so nothing is picked. In exact terms: A · Beside, B · Behind and C · Below are each drawn on `/lab/contact`, behind a switch, with the one block, the pool and the rocket launching from it. He picks from what he sees.
 
 ### 3D pieces
 
