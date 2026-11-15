@@ -814,6 +814,14 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     - **The city's look:** a futuristic science fiction city that looks like a real thing, though not a thing of this world, with a glow round it that is strongest going up. It is made again to sit with the site as it now looks.
     - **A night sky is his question, not a ruling:** stars at the top, in the corners and at the sides of the hero, never behind or among the words.
     - Fable's answers are given in the chat and are not rules.
+- **What he meant by the glow and the outline, and the opening waits for the city (Nov 14).** "When I said a glow going up, what I actually meant was like my portrait image, how I have that glow around me. I just want the city to feel alive, like when you see a city off in the distance, you can see the glow going into the sky." "I don't want the opening animation to be like an animation that outlines the city." "I just saw the opening animation, how like it goes up to the right and then down and outlines the buildings. That's what I meant. I just don't want animation that does that." "I'm not 100% sure how I want the opening animation to look. It's kind of hard to envision it without already seeing the city in place. It might make sense to put a pause on that until Claude Code actually builds the city itself, and then once we have the asset, we can build that animation."
+    - In exact terms:
+    - **The glow** is a soft glow behind and above the city, of the kind behind his portrait in About: the light a far off city throws into the sky. It is not a light that climbs the buildings and not part of the opening.
+    - **No opening that traces the city's outline.** The wireframe's lines running up and down each building are the thing he does not want.
+    - **How the opening looks is paused** until the city is built. Fable agrees. What stays settled about it: it happens in the middle of the screen, the city ends resting low with the words above it, the city is never behind the words, and there are no large camera moves.
+    - **The order of work this sets:** the city is made first, as a finished thing at rest. The opening is designed on the real city afterwards.
+    - The three ways for the city to come to be that Fable put to him (built from shards, lit, risen) are not picked and wait with the opening.
+    - The night sky is still his question, unanswered.
 - An idea to revisit with the hero, not decided: his first thought was the city breaking apart into the stream as the visitor scrolls. Fable's twist, which he asked to have noted: building, not breaking. The city assembles out of the stream's facets in the opening, and the stream carries the same pieces on down the page. (Nov 12)
 
 ### Work
