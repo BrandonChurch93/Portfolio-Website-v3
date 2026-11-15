@@ -897,6 +897,21 @@ For Claude Code, added to the work it has in hand. His words are in the list abo
 - **The falls are in (Nov 14, night), not yet pushed.** The main fall stands as the stream's own light from the rim down the rock, with the stream's leading end waiting at the keel until the scroll takes it on. Six more leave the rim at the plan's places and fall free, drawn by the stream's renderer as runs of its own core with nothing riding them (`falls` in `Planned`).
 - **Fable's calls, his to overturn:** the hero's buttons are the real metal buttons with the stand in words. Work stands 330 units under the keel on the whole page. The towers' builder added a faint moonlight from the upper right, where the moon will be, so every tower has a lit side.
 
+**The torn world, as built (Nov 14, late). The frame stands, at `/lab/hero` and on top of `/lab/whole`. The parts are with their builders, and until each hands back the page shows plain stand ins for the torn underside, the core and what broke away, and the first city standing on the top of a plain dome. Not pushed: the live site still shows the first full build of the city.**
+
+- **Built by Fable:** the world's frame (`src/pieces/skycity/layout.ts`, `index.ts`, `part.ts`), the page's layout for it, the stream's route out of the core, the six streams from the torn face, and the join into Work.
+- **The sizes are the wireframe's:** a sphere 675 in radius kept to 78 degrees from its top, so about 1320 across at the torn edge, a spire 220 tall, a core 300 across at the planet's middle, 1220 from the spire's tip to the lowest of what broke away, and Work 480 under that.
+- **Nine parts, one builder each:** the ground of the dome, the spire, the towers, the temple quarter, the gardens and farms, the port, the torn underside, the core, and what broke away. The first six carry over what was built for the disc. The disc and everything built for it is kept on the branch `kept/city-on-the-disc`.
+- **The night sky is in** (`src/hero/sky`, by a builder): stars, ten with four points, a moon in the upper right, a band of far stars in the upper left, a meteor now and then, and the glow behind the world. It ends at the world's torn edge. Its own reviewers call it a night sky and a render, not a photograph, and not plainly another world's.
+- **Fable's calls, each his to overturn:**
+    - What stands on the world is planned on a flat map laid over the dome, so the places he has seen (the way to the spire, the gardens, the farms, the temple quarter, the port) are where they were, and each now reaches further out.
+    - The moon is the world's key light, from the upper right where the moon is in the sky, with real shadows.
+    - Only the front half of the world is ever seen, so nothing is spent on the far side.
+    - From 760 on the map out to the torn edge the top of the world is broken: cracked, split, with things leaning and fallen.
+    - The torn rock is torn back round the core into a hollow that is open toward the visitor, which is how the core is seen.
+    - The six streams leave the tips of pieces of torn rock that hang toward the visitor.
+    - The moon is alone: the sky's builder also made one with a ring and one with a second moon, and its reviewers found both weaker.
+
 ### Work
 
 - One section. A centered title. No featured card.

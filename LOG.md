@@ -2,6 +2,35 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · The torn world: the frame, and nine builders (Fable, Claude Code)
+
+**What Brandon said**
+
+- His prompt for the torn world, in full in the entry below. "Show me the world as soon as it stands in the hero, and say plainly what is at the bar and what is not." "The ground's builder is the one this replaces. Handle that in whatever way loses no work."
+
+**What was done**
+
+- Everything every builder had uncommitted for the disc was saved on the branch `kept/city-on-the-disc` (two commits, local) before anything was touched. The ground's builder stopped by itself when it saw the agreement change, and its second round is on that branch too.
+- `src/pieces/skycity/layout.ts` redrawn for the dome: `PLANET`, `HEART`, a flat map laid over the dome (`seat`, `lift`, `bend`), the ragged torn edge (`EDGE.at`), the broken margin (`MARGIN`), `TEAR`, `CORE`, `SOURCE`, `coreLevel`, `VENTS`, `DEBRIS`, and `drawn()`. The spire is 220 and the towers' heights follow. The places round the core reach further out.
+- `index.ts`: the view is fixed on the middle of the host, the moon is a key light with shadows drawn once, a light stands at the core, and a part none of which is on the screen is not drawn or ticked.
+- Three new parts as plain stand ins (`tear`, `core`, `debris`), so the page could be checked before their builders hand back.
+- The hero's page: the tip of the spire a set way under his words, the host 1370 tall, the stream from the core's underside, six streams from the torn face, Work 480 under the lowest debris on `/lab/hero` and on `/lab/whole`.
+- The night sky mounted in the hero in place of the plain glow.
+- `reference/kits/skycity.md`: a new section, "The torn world", which every builder shares.
+- Nine builders: five told to seat what they have on the dome (spire, towers, temple, gardens and farms, port), four new (ground, the torn underside, the core, what broke away).
+
+**Checked**
+
+- A production build of the committed frame passes. On `/lab/whole` one stream runs from the core into Work and Work is as it was (stills).
+
+**Half finished, and what the next session needs**
+
+- Nothing of the torn world is pushed. Seven commits are ahead of `origin/main`.
+- The builders' files are uncommitted in the working tree until each hands back. Commit only named paths: `off.png` and `scripts/.gardens-stats.tmp.mjs` are strays.
+- `layout.ts` still has `GROUND.rim`, `GROUND.rock` and `FALLS` for the old ground, and `parts/ground/rock.ts` is kept for the tear's builder to copy from. Delete all four once nothing reads them.
+- Not yet done for the hero: the four screens of test 1 measured, WebKit at his iPad's size, the frame rate with the world built, real frames of the scroll from the core into Work.
+- The sky's builder made a moon with a ring and a moon with a second moon (`?moon=ring`, `?moon=moon` on `/lab/sky`). The page uses the plain moon.
+
 ## 2026-11-14 · The city becomes a torn world: the agreement rewritten, the wireframe redrawn (Fable, web chat)
 
 **What Brandon said**
