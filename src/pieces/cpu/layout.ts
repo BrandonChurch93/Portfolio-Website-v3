@@ -47,6 +47,10 @@ export const QFP = { x: 47, z: -47, w: 7 } as const;
 export const QFN = { x: -45, z: 46.5, w: 5 } as const;
 export const SOIC = { x: -8.5, z: 47.5 } as const;
 export const LED = { x: -37, z: -42.2 } as const;
+// The lower right: a second controller with its decoupling, its crystal, and a debug header.
+export const U44 = { x: 12, z: 46.5, w: 6 } as const;
+export const XTAL = { x: 38.5, z: 34, w: 5, d: 3.2 } as const;
+export const DBG = { x: 49.5, z: 33.5, pitch: 2, n: 5 } as const;
 
 // Small parts, as rows: where the first is, how many across and down, and how far apart.
 export type Small = '0402c' | '0402r' | '0603c' | '0603r' | '0805c';
@@ -66,6 +70,8 @@ export const SMALLS: Run[][] = [
   [{ x: -50.4, z: 51.8, nx: 5, nz: 1, dx: 2.0, dz: 0, kind: '0402r' }, { x: -50.4, z: 40.6, nx: 3, nz: 1, dx: 2.4, dz: 0, kind: '0603c' }],
   // Behind the clock chip in the top right corner.
   [{ x: 41.2, z: -53.2, nx: 6, nz: 1, dx: 2.1, dz: 0, kind: '0402c' }],
+  // Round the second controller.
+  [{ x: 7.6, z: 43.6, nx: 1, nz: 4, dx: 0, dz: 1.8, kind: '0402c', turn: true }, { x: 8.8, z: 51.4, nx: 5, nz: 1, dx: 1.6, dz: 0, kind: '0402c' }],
 ];
 export const SMALL_SIZE: Record<Small, [number, number, number]> = {
   '0402c': [1.0, 0.5, 0.5], '0402r': [1.0, 0.35, 0.5], '0603c': [1.6, 0.8, 0.8], '0603r': [1.6, 0.45, 0.8], '0805c': [2.0, 1.1, 1.25],

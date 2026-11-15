@@ -21,6 +21,8 @@ export interface Shared {
   // The band: the middle of its circle (x, z), its radius and how brightly it burns. uBandOn is 1 while it crosses.
   uBand: { value: THREE.Vector4 };
   uBandOn: { value: number };
+  // The lights coming on: a beat through every trace and the seam, then the pulse.
+  uBeat: { value: number };
 }
 
 export const PARTS_MAX = 64;
@@ -35,7 +37,7 @@ export function shared(pulse: THREE.Texture): Shared {
   tex.needsUpdate = true;
   return {
     uParts: { value: tex }, uPulse: { value: pulse }, uTime: { value: 0 }, uGlow: { value: 0 }, uFront: { value: 9 }, uStatic: { value: 0 },
-    uSeam: { value: 0 }, uBand: { value: new THREE.Vector4(0, 0, -1e5, 0) }, uBandOn: { value: 0 },
+    uSeam: { value: 0 }, uBand: { value: new THREE.Vector4(0, 0, -1e5, 0) }, uBandOn: { value: 0 }, uBeat: { value: 0 },
   };
 }
 
@@ -74,7 +76,7 @@ const seamH = `vec2(${PKG.hw.toFixed(2)}, ${(PKG.hd + 0.9).toFixed(2)})`;
 
 export const FHEAD = /* glsl */ `
 uniform sampler2D uPulse;
-uniform float uTime, uGlow, uFront, uStatic, uSeam, uBandOn;
+uniform float uTime, uGlow, uFront, uStatic, uSeam, uBandOn, uBeat;
 uniform vec4 uBand;
 varying vec3 vCpuP;
 varying vec3 vCpuN;
@@ -110,18 +112,21 @@ float cpuWave(float d, float b){
 }
 // A part just come home burns hot along its edges, the faces that stand up from its own top, and cools.
 #define cpuHeat() (vHeat > 0.001 ? cpuRamp(vHeat) * vHeat * 2.4 * smoothstep(0.35, 0.9, 1.0 - abs(vObjN.y)) : vec3(0.0))
+// The band's line on the board, wide and bright where it sets out and spent by the far side, and the light it lays
+// on what it has just uncovered behind it.
 vec3 cpuBandLight(){
-  if (uBandOn < 0.5) return vec3(0.0);
+  if (uBandOn < 0.5 || vReveal.x < 0.5) return vec3(0.0);
   float e = uBand.z - length(vCpuP.xz - uBand.xy);
-  float i = uBand.w * (exp(-pow(e / 0.9, 2.0)) * 1.05 + exp(-e / 7.0) * 0.4);
-  return cpuRamp(i) * min(i, 1.0) * 1.35;
+  float wide = 1.2 + 2.4 * uBand.w;
+  float i = uBand.w * (exp(-pow(e / wide, 2.0)) * 1.1 + exp(-max(e, 0.0) / 9.0) * 0.45);
+  return cpuRamp(i) * min(i, 1.0) * 1.6 * smoothstep(0.4, 0.85, vCpuN.y);
 }
 // The light the lit traces and the seam throw on what stands beside them: strongest low down and on faces that look
 // down or sideways at the board.
 vec3 cpuBounce(vec3 albedo){
   if (uGlow <= 0.001) return vec3(0.0);
   vec4 ph = textureLod(uPulse, (vCpuP.xz + 55.0) / 110.0, 4.0);
-  float g = ph.r > 0.02 ? cpuWave(ph.g / ph.r, floor(ph.b / ph.r * 8.0)) * ph.r * 2.6 : 0.0;
+  float g = ph.r > 0.02 ? cpuWave(ph.g / ph.r, floor(ph.b / ph.r * 127.5 / 16.0) * 16.0) * ph.r * 2.6 : 0.0;
   vec2 q = abs(vCpuP.xz - ${seamC}) - ${seamH};
   float sd = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
   float h = exp(-max(vCpuP.y, 0.0) / 2.8);
@@ -134,8 +139,7 @@ vec3 cpuBounce(vec3 albedo){
 }`;
 
 export const DISCARD = /* glsl */ `
-  if (uBandOn > 0.5 && length(vCpuP.xz - uBand.xy) > uBand.z) discard;
-  if (vReveal.w < 9e4 && distance(vCpuR, vReveal.xyz) > vReveal.w) discard;`;
+  if (uBandOn > 0.5 && vReveal.x > 0.5 && length(vCpuP.xz - uBand.xy) > uBand.z) discard;`;
 
 // The chunks a part's material needs, merged with its own.
 export function partChunks(own: Chunks = {}, o: { bounce?: boolean } = {}): Chunks {

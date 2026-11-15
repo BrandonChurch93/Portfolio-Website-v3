@@ -3,10 +3,10 @@ import { Builder, at, lathe, pause, rbox, seeded, xf, type Vec3 } from '../../wo
 import { circle, rounded, rrect, slab, type V } from '../../world/shape';
 import { dielectric, lin, metal } from '../../world/surface';
 import { hex } from '../../config/palette';
-import { ETCH_MM, boardArt, lidEtch, printSheet, printUv, smallParts, type PrintCell } from './art';
+import { ETCH_MM, PULSE_PX, boardArt, lidEtch, printSheet, printUv, smallParts, type PrintCell } from './art';
 import {
   BODY, BOARD, CAP, CHOKE, DEG, EPS, FAN, FRAME, HOLE, HOLES, IHS, LED, LEVER, MOS, PHASES, PKG, PLATE, QFN, QFP, SCREWS, SHOULDER,
-  SMALL_SIZE, SOCKET, SOIC, type P2,
+  SMALL_SIZE, SOCKET, SOIC, U44, XTAL, DBG, type P2,
 } from './layout';
 import { partChunks, shared, depthMaterial, type Shared } from './shading';
 
@@ -113,10 +113,10 @@ export async function buildCpu(): Promise<CpuModel> {
   });
   const wear = {
     head: `float cpuWear(){ float k = 1.0 - abs(vObjN.y); float bev = smoothstep(0.06, 0.3, k) * (1.0 - smoothstep(0.7, 0.96, k)); return bev * (0.35 + 0.65 * smoothstep(0.32, 0.62, wFbm(vObj * 0.8 + 5.0))); }`,
-    color: `diffuseColor.rgb = mix(diffuseColor.rgb, ${lin(hex('bronze'))}, cpuWear() * 0.9);`,
+    color: `diffuseColor.rgb = mix(diffuseColor.rgb, ${lin(hex('bronze'))}, cpuWear() * 0.5);`,
     rough: 'roughnessFactor = mix(roughnessFactor, 0.24, cpuWear());',
   };
-  const steel = metal({ name: 'cpuSteel', color: shade('bronze-deep', 0.5), rough: 0.22, brush: 'x', tarnish: 0.25, patina: PATINA, extra: partChunks(wear) });
+  const steel = metal({ name: 'cpuSteel', color: shade('text-3', 0.12), rough: 0.3, brush: 'x', tarnish: 0.15, patina: PATINA, extra: partChunks(wear) });
   steel.userData.uniforms = u;
   const etch = lidEtch();
   const lidC = `vec2(${SOCKET.x.toFixed(2)}, ${SOCKET.z.toFixed(2)})`;
@@ -134,20 +134,22 @@ export async function buildCpu(): Promise<CpuModel> {
   lid.envMapIntensity = 1.1;
   const copper = metal({ name: 'cpuCopper', color: shade('copper', 0.62), rough: 0.5, tarnish: 0.2, patina: PATINA, extra: partChunks() });
   copper.userData.uniforms = u;
-  const bronze = metal({ name: 'cpuBronze', color: hex('bronze'), rough: 0.3, brush: 'radial-z', tarnish: 0.2, patina: PATINA, extra: partChunks() });
+  const bronze = metal({ name: 'cpuBronze', color: shade('bronze', 0.8), rough: 0.42, brush: 'radial-z', tarnish: 0.2, patina: PATINA, extra: partChunks() });
   bronze.userData.uniforms = u;
-  const leverMetal = metal({ name: 'cpuLever', color: hex('bronze'), rough: 0.38, brush: 'x', tarnish: 0.18, patina: PATINA, extra: partChunks() });
+  const leverMetal = metal({ name: 'cpuLever', color: shade('bronze', 0.75), rough: 0.36, brush: 'x', tarnish: 0.18, patina: PATINA, extra: partChunks() });
   leverMetal.userData.uniforms = u;
   const contacts = metal({
     name: 'cpuContacts', color: shade('copper', 0.85), rough: 0.42, extra: partChunks({ emissive: `totalEmissiveRadiance += cpuRamp(uSeam * uGlow) * uSeam * uGlow * 1.5;` }, { bounce: false }),
   });
   contacts.userData.uniforms = u;
   const can = ink(metal({ name: 'cpuCan', color: shade('copper', 0.78), rough: 0.3, brush: 'radial-z', tarnish: 0.15, patina: PATINA, extra: partChunks(inkChunks(shade('bg-3', 1.0), true)) }));
-  const plastic = dielectric('cpuPlastic', shade('bg-3', 0.9), 0.38, { coat: 0, vary: 0.08, scale: 0.5, extra: partChunks() });
+  const plastic = dielectric('cpuPlastic', shade('bg-3', 0.8), 0.82, { coat: 0, vary: 0.08, scale: 0.5, extra: partChunks() });
   plastic.userData.uniforms = u;
   const ferrite = ink(dielectric('cpuFerrite', shade('bg', 2.0), 0.93, { vary: 0.16, scale: 1.6, extra: partChunks(inkChunks(shade('copper-light', 0.9), false)) }));
   const epoxy = ink(dielectric('cpuEpoxy', shade('bg-3', 0.62), 0.64, { coat: 0, vary: 0.06, scale: 0.9, extra: partChunks(inkChunks(hex('text-3'), false)) }));
-  ferrite.specularIntensity = 0.3;
+  ferrite.specularIntensity = 0.12;
+  plastic.specularIntensity = 0.25;
+  epoxy.specularIntensity = 0.35;
   const substrate = dielectric('cpuSubstrate', shade('bronze-deep', 0.42), 0.55, { coat: 0.12, vary: 0.05, scale: 0.4, extra: partChunks() });
   substrate.userData.uniforms = u;
   const ceramic = dielectric('cpuCeramic', shade('bronze-deep', 1.1), 0.62, { vary: 0.12, scale: 2.0, extra: partChunks() });
@@ -407,6 +409,27 @@ export async function buildCpu(): Promise<CpuModel> {
   for (const s of [-1, 1]) add(iLed, box(0.32, 0.58, 0.82), copper, at(LED.x + s * 0.64, 0.3, LED.z));
   await pause();
 
+  // The lower right: the second controller, its crystal, the debug header.
+  const iU44 = part({ kind: 'round', c: [U44.x, 0.5, U44.z], r: 4, row: 'front' });
+  add(iU44, printed(rbox(U44.w, 0.85, U44.w, 0.08, 1), 'u44', U44.w, U44.w), epoxy, at(U44.x, 0.43, U44.z));
+  for (let s = 0; s < 4; s++) for (let k = 0; k < 12; k++) {
+    const t = -2.75 + k * 0.5, o = U44.w / 2 + 0.01;
+    const [dx, dz] = s === 0 ? [t, -o] : s === 1 ? [o, t] : s === 2 ? [-t, o] : [-o, -t];
+    add(iU44, box(s % 2 ? 0.08 : 0.22, 0.2, s % 2 ? 0.22 : 0.08), copper, at(U44.x + dx, 0.1, U44.z + dz));
+  }
+  const iXtal = part({ kind: 'round', c: [XTAL.x, 0.6, XTAL.z], r: 3, row: 'right' });
+  add(iXtal, rbox(XTAL.w, 0.35, XTAL.d, 0.1, 1), epoxy, at(XTAL.x, 0.18, XTAL.z));
+  add(iXtal, rbox(XTAL.w - 0.5, 0.75, XTAL.d - 0.5, 0.18, 2), steel, at(XTAL.x, 0.7, XTAL.z));
+  for (const sx of [-1, 1]) add(iXtal, box(0.9, 0.3, XTAL.d * 0.7), copper, at(XTAL.x + sx * (XTAL.w / 2 - 0.2), 0.15, XTAL.z));
+  const iDbg = part({ kind: 'round', c: [DBG.x, 2, DBG.z], r: 6, row: 'right' });
+  add(iDbg, rbox(DBG.n * DBG.pitch, 2.0, DBG.pitch * 2, 0.2, 2), plastic, at(DBG.x, 1.0, DBG.z));
+  for (let i = 0; i < DBG.n; i++) for (const j of [-0.5, 0.5]) {
+    const x = DBG.x + (i - (DBG.n - 1) / 2) * DBG.pitch, z = DBG.z + j * DBG.pitch;
+    add(iDbg, box(0.5, 5.6, 0.5), copper, at(x, 2.8, z));
+    const tip = new THREE.ConeGeometry(0.36, 0.45, 4); tip.rotateY(Math.PI / 4);
+    add(iDbg, tip, copper, at(x, 5.82, z));
+  }
+
   // The small parts, a run at a time.
   const smalls = smallParts();
   const groups = new Map<number, number>();
@@ -450,7 +473,7 @@ export async function buildCpu(): Promise<CpuModel> {
 }
 
 // Which row each run of small parts flies home with.
-const SMALL_ROWS = ['top', 'left', 'right', 'right', 'right', 'front', 'front', 'front', 'right'];
+const SMALL_ROWS = ['top', 'left', 'right', 'right', 'right', 'front', 'front', 'front', 'right', 'front'];
 
 // The board's pieces: seams run from under the socket out to the edges, jagged, clear of the holes. Each piece is its
 // outline (x, z) going round, its middle and its reach.
@@ -498,10 +521,10 @@ function inside(p: P2, poly: P2[]): boolean {
 // The board: solder mask over copper. Traces and planes show through the mask as a lighter, raised tone; pads and
 // rings are bare copper; the ink is a warm pale; the cut edge shows the layers; the plated holes are copper.
 function boardMaterial(u: Shared, art: THREE.Texture): THREE.MeshPhysicalMaterial {
-  const m = new THREE.MeshPhysicalMaterial({ color: shade('bg', 0.7), roughness: 0.2, metalness: 0, anisotropy: 0.9 });
+  const m = new THREE.MeshPhysicalMaterial({ color: shade('bg', 0.7), roughness: 0.42, metalness: 0, anisotropy: 0.9 });
   m.name = 'cpuBoard';
   m.envMapIntensity = 0.12;
-  m.specularIntensity = 0.12;
+  m.specularIntensity = 0.1;
   const holes = HOLES.map(([x, z]) => `vec2(${x.toFixed(1)}, ${z.toFixed(1)})`).join(', ');
   const own = {
     head: /* glsl */ `
@@ -540,10 +563,15 @@ float cpuEdgeMask(){ float y = -vObj.y; return 1.0 - smoothstep(0.02, 0.04, y) *
     normal = normalize(normal - (gx * vAxX + gz * axZ) * 1.0);
   }`,
     emissive: /* glsl */ `
+  // A piece of the board in flight catches the light on its faces as it tumbles.
+  if (vHeat > 0.001) totalEmissiveRadiance += ${lin(hex('copper'))} * 0.08 * pow(max(dot(normalize(vCpuN), normalize(vec3(0.3, 0.8, -0.5))), 0.0), 6.0) * vHeat / 0.4;
   if (uGlow > 0.001 && cpuT > 0.5) {
     float g = 0.0;
-    if (cpuP.r > 0.08) g += cpuWave(cpuP.g / cpuP.r, floor(cpuP.b / cpuP.r * 8.0)) * cpuA.r * min(1.0, cpuP.r * 1.4) * 1.7;
+    // Each trace its own: its number and its distance are read from the one texel it covers, unblended.
+    vec4 cpuT1 = texelFetch(uPulse, ivec2(cpuBuv(vec2(0.0)) * ${PULSE_PX}.0), 0);
+    if (cpuT1.r > 0.5) g += cpuWave(cpuT1.g / cpuT1.r, floor(cpuT1.b / cpuT1.r * 127.5 + 0.5)) * cpuA.r * 1.7;
     vec4 ph = textureLod(uPulse, cpuBuv(vec2(0.0)), 2.6);
+    g += uBeat * cpuA.r * step(0.08, cpuP.r) * 0.95;
     g = min(g, 1.08) * uGlow;
     totalEmissiveRadiance += cpuRamp(g) * g * 2.3;
   }`,

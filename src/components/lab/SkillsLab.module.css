@@ -149,7 +149,9 @@
    far above the row's middle. */
 .thingHost {
   position: absolute;
-  z-index: 2;
+  /* Over the stream's canvas: what a row's strike throws passes behind the thing, so the thing coming to life is
+     never under a cloud of the stream's own shards. */
+  z-index: 4;
   left: calc(var(--u) * (0 - var(--meet) - var(--wide) / 2 - var(--host) * var(--ax, -0.36)));
   top: calc(50% - var(--u) * var(--host) * (0.5 + var(--ay, 0) + var(--rise)));
   width: calc(var(--u) * var(--wide));

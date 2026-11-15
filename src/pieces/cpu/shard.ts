@@ -33,11 +33,15 @@ function hull(pts: Vec3[]): number[] {
 export function shardGeometry(): THREE.BufferGeometry {
   const r = seeded(808);
   // A body, a needle forward and a shorter one back along x, and a few points out to the sides, none alike.
+  // A body with real thickness, cut by many faces, a needle forward and a shorter one back, and points to the sides.
   const pts: Vec3[] = [
-    [1.0, 0.04, 0.06], [-0.82, -0.05, -0.04],
-    [0.18, 0.0, 0.62], [-0.3, 0.05, -0.55], [0.46, -0.02, -0.38], [-0.55, 0.0, 0.34],
+    [1.0, 0.06, 0.04], [-0.8, -0.08, -0.05],
+    [0.2, 0.1, 0.66], [-0.32, -0.06, -0.6], [0.5, 0.0, -0.42], [-0.56, 0.08, 0.38],
   ];
-  for (let i = 0; i < 5; i++) pts.push([(r() - 0.5) * 0.7, (r() < 0.5 ? -1 : 1) * (0.55 + 0.45 * r()), (r() - 0.5) * 0.5]);
+  for (let i = 0; i < 12; i++) {
+    const a = r() * Math.PI * 2, x = (r() - 0.5) * 1.1;
+    pts.push([x, Math.sin(a) * (0.55 + 0.4 * r()), Math.cos(a) * (0.3 + 0.25 * r())]);
+  }
   const pos = hull(pts);
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
@@ -77,18 +81,19 @@ void main(){
   vec3 n = normalize(cross(dFdx(vV), dFdy(vV)));
   vec3 v = normalize(-vV);
   if (dot(n, v) < 0.0) n = -n;
-  // A dark room with a soft warm panel above, the key behind, and the stream's light low on the left.
+  // Each face is a flat of dark copper and takes its own tone from where it turns: the key above and behind, the
+  // stream's light low on the left, a soft panel overhead, and a sharp flash when a face lines up with a light.
   vec3 R = reflect(-v, n);
-  float room = 0.03 + 0.22 * smoothstep(0.2, 0.9, R.y);
-  float key = spot(n, v, normalize(vec3(0.4, 0.85, -0.3)), 70.0) * 2.2;
-  float stream = spot(n, v, normalize(vec3(-0.9, 0.25, 0.35)), 40.0) * 1.6;
-  float light = room + key + stream;
-  vec3 col = ${lin(hex('copper'))} * 0.55 * light;
+  vec3 K = normalize(vec3(0.4, 0.85, -0.3)), S = normalize(vec3(-0.9, 0.25, 0.35));
+  float light = 0.03 + 0.14 * smoothstep(0.1, 0.9, R.y)
+    + 0.22 * pow(max(dot(n, K), 0.0), 2.0) + 0.16 * pow(max(dot(n, S), 0.0), 2.0)
+    + spot(n, v, K, 60.0) * 1.4 + spot(n, v, S, 40.0) * 1.0;
+  vec3 col = ${lin(hex('copper'))} * 0.6 * light;
   vec3 w = fwidth(vB);
-  vec3 e3 = smoothstep(vec3(0.0), w * 1.3, vB);
-  float line = 1.0 - min(min(e3.x, e3.y), e3.z);
-  float tip = pow(smoothstep(0.7, 1.0, length(vO)), 3.0);
-  col += ${lin(hex('hot'))} * line * 0.75 * vG + ${lin(hex('pale'))} * tip * 0.5 * vG;
+  vec3 e3 = smoothstep(vec3(0.0), w * 1.2, vB);
+  float line = (1.0 - min(min(e3.x, e3.y), e3.z)) * smoothstep(0.55, 0.15, abs(dot(n, v)));
+  float tip = pow(smoothstep(0.75, 1.0, length(vO)), 3.0);
+  col += ${lin(hex('hot'))} * line * 0.7 * vG + ${lin(hex('hot'))} * tip * 0.35 * vG;
   gl_FragColor = vec4(col, 1.0);
 }`,
   });

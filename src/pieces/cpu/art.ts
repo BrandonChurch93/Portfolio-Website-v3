@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { pause, seeded } from '../../world/build';
 import {
-  BOARD, BUNDLES, CAP, CHOKE, EPS, FAN, FRAME, HOLE, HOLES, LED, MOS, PHASES, QFN, QFP, RUN, SMALLS, SMALL_SIZE, SOCKET, SOIC,
+  BOARD, BUNDLES, CAP, CHOKE, DBG, EPS, FAN, FRAME, HOLE, HOLES, LED, MOS, PHASES, QFN, QFP, RUN, SMALLS, SMALL_SIZE, SOCKET, SOIC, U44, XTAL,
   toWorld, type P2,
 } from './layout';
 
@@ -111,6 +111,13 @@ function pads(): [number, number, number, number][] {
   }
   for (const s of [-1, 1]) for (let i = 0; i < 4; i++) out.push([SOIC.x - 1.905 + i * 1.27, SOIC.z + s * 2.75, 0.6, 1.5]);
   for (const s of [-1, 1]) out.push([LED.x + s * 0.75, LED.z, 0.7, 0.9]);
+  for (let side = 0; side < 4; side++) for (let i = 0; i < 12; i++) {
+    const a = -2.75 + i * 0.5, o = U44.w / 2;
+    const [dx, dz] = side === 0 ? [a, -o] : side === 1 ? [o, a] : side === 2 ? [-a, o] : [-o, -a];
+    out.push(side % 2 === 0 ? [U44.x + dx, U44.z + dz, 0.25, 0.7] : [U44.x + dx, U44.z + dz, 0.7, 0.25]);
+  }
+  out.push([U44.x, U44.z, 3.8, 3.8]);
+  for (const s of [-1, 1]) out.push([XTAL.x + s * 1.5, XTAL.z, 1.4, 2.6]);
   return out;
 }
 
@@ -125,6 +132,7 @@ function footprints(): [number, number, number, number, boolean][] {
   out.push([EPS.x, EPS.z, EPS.w, EPS.d, false]);
   out.push([FAN.x, FAN.z, 10.4, 5.8, false]);
   out.push([QFP.x, QFP.z, QFP.w, QFP.w, false], [QFN.x, QFN.z, QFN.w, QFN.w, false], [SOIC.x, SOIC.z, 4.9, 3.9, false]);
+  out.push([U44.x, U44.z, U44.w, U44.w, false], [XTAL.x, XTAL.z, XTAL.w, XTAL.d, false], [DBG.x, DBG.z, DBG.n * DBG.pitch + 0.4, DBG.pitch * 2 + 0.4, false]);
   const [sx, sz] = [SOCKET.x, SOCKET.z];
   out.push([sx, sz, FRAME.out[0] * 2, FRAME.out[1] * 2, false]);
   return out;
@@ -139,7 +147,7 @@ export interface BoardArt {
 }
 
 const ART_PX = 2048;
-const PULSE_PX = 1024;
+export const PULSE_PX = 1024;
 const OCC_PX = 256;
 
 function readAlpha(c: HTMLCanvasElement): Uint8ClampedArray {
@@ -234,7 +242,7 @@ export async function boardArt(): Promise<BoardArt> {
       for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2 + Math.PI / 8; disc(g, hx + Math.cos(a) * 2.7, hz + Math.sin(a) * 2.7, 0.2); }
       g.globalCompositeOperation = 'source-over';
     }
-    for (const [x, z] of [[-24, 38.4], [16, 48.8], [52.6, -6.2], [36.4, 52.2], [-48.4, 33.2], [52.6, 30.8]] as P2[]) disc(g, x, z, 0.55);
+    for (const [x, z] of [[-24, 38.4], [18.6, 53.2], [52.6, -6.2], [36.4, 52.2], [-48.4, 33.2], [53.4, 27.6], [27.6, 50.6], [42.2, 38.2], [20.8, 41.8]] as P2[]) disc(g, x, z, 0.55);
     for (const [x, z] of [[-52.2, 52.2], [52.2, -27.8]] as P2[]) disc(g, x, z, 0.5);
   }
   await pause();
@@ -299,6 +307,18 @@ export async function boardArt(): Promise<BoardArt> {
     text(g, 'U12', SOIC.x + 3.4, SOIC.z, 0.8);
     text(g, 'PWR', LED.x + 1.6, LED.z, 0.8, { weight: 700 });
     text(g, 'D3', LED.x - 2.9, LED.z, 0.7);
+    corners(U44.x, U44.z, U44.w + 1.8, U44.w + 1.8, 1.0);
+    disc(g, U44.x - U44.w / 2 - 1.3, U44.z - U44.w / 2 - 0.7, 0.26);
+    text(g, 'U44', U44.x + 4.4, U44.z - 2.4, 0.8);
+    g.fillRect(U44.x - 3.6, U44.z - 6.2, 7.2, 1.3);
+    g.strokeRect(XTAL.x - XTAL.w / 2 - 0.5, XTAL.z - XTAL.d / 2 - 0.5, XTAL.w + 1, XTAL.d + 1);
+    text(g, 'Y1', XTAL.x - XTAL.w / 2 - 0.4, XTAL.z - XTAL.d / 2 - 1.3, 0.8);
+    text(g, '25.000', XTAL.x + 0.2, XTAL.z + XTAL.d / 2 + 1.3, 0.62, { align: 'center' });
+    g.strokeRect(DBG.x - DBG.n * DBG.pitch / 2 - 0.7, DBG.z - DBG.pitch - 0.7, DBG.n * DBG.pitch + 1.4, DBG.pitch * 2 + 1.4);
+    text(g, 'J9', DBG.x - DBG.n * DBG.pitch / 2 - 0.6, DBG.z + DBG.pitch + 1.6, 0.8, { weight: 700 });
+    text(g, 'DBG', DBG.x + 1.6, DBG.z + DBG.pitch + 1.6, 0.7);
+    g.beginPath(); g.moveTo(DBG.x - DBG.n * DBG.pitch / 2 - 1.6, DBG.z - 1.0); g.lineTo(DBG.x - DBG.n * DBG.pitch / 2 - 1.0, DBG.z - 0.5); g.lineTo(DBG.x - DBG.n * DBG.pitch / 2 - 1.6, DBG.z); g.fill();
+    g.fillRect(44.2, 47.6 - 0.65, 5.2, 1.3);
     // The socket's name, the holes' keep out rings, the small parts' runs.
     text(g, 'SKT1', 38.4, -23.4, 1.05, { weight: 700 });
     for (const [hx, hz] of HOLES) {
@@ -306,7 +326,7 @@ export async function boardArt(): Promise<BoardArt> {
       ring(g, hx, hz, HOLE.ring + 1.0, 0.13);
       g.setLineDash([]);
     }
-    const names = ['R2', 'C3', 'C4', 'C5', 'C6', 'C7', 'R8', 'C9', 'C1'];
+    const names = ['R2', 'C3', 'C4', 'C5', 'C6', 'C7', 'R8', 'C9', 'C1', 'C2'];
     SMALLS.forEach((runs, i) => {
       const r = runs[0];
       if (r.turn) text(g, `${names[i]}41`, r.x + 1.3, r.z - 1.6, 0.7, { turn: -Math.PI / 2 });
@@ -317,7 +337,7 @@ export async function boardArt(): Promise<BoardArt> {
     text(g, 'MB-K9C  R1.02', -41.6, 54.1, 1.15, { weight: 700, space: 0.08 });
     text(g, '2611  94V-0', 40.4, 28.6, 0.8);
     text(g, 'E461207', 40.4, 29.9, 0.7);
-    for (const [x, z, s] of [[-24, 38.4, 'TP3'], [16, 48.8, 'TP7'], [52.6, -6.2, 'TP9'], [36.4, 52.2, 'TP12'], [-48.4, 33.2, 'TP2'], [52.6, 30.8, 'TP14']] as [number, number, string][]) {
+    for (const [x, z, s] of [[-24, 38.4, 'TP3'], [18.6, 53.2, 'TP7'], [52.6, -6.2, 'TP9'], [36.4, 52.2, 'TP12'], [-48.4, 33.2, 'TP2'], [53.4, 27.6, 'TP14'], [27.6, 50.6, 'TP15'], [42.2, 38.2, 'TP16'], [20.8, 41.8, 'TP17']] as [number, number, string][]) {
       ring(g, x, z, 0.95, 0.12);
       text(g, s, x + (x > 50 ? -1.6 : 1.4), z + (x > 50 ? 1.7 : 0), 0.62, { align: x > 50 ? 'right' : 'left' });
     }
@@ -348,9 +368,11 @@ export async function boardArt(): Promise<BoardArt> {
     g.lineCap = 'butt';
     g.lineJoin = 'miter';
     BUNDLES.forEach((b, bi) => {
-      const id = Math.round(((bi + 0.5) / 8) * 255);
       g.lineWidth = b.pitch * 1.02;
-      for (const t of T[bi]) for (let k = 1; k < t.pts.length; k++) {
+      T[bi].forEach((t, ti) => {
+      // Each trace's number, so its light can run on its own: sixteen to a bundle, two levels apart.
+      const id = (bi * 16 + ti) * 2;
+      for (let k = 1; k < t.pts.length; k++) {
         const [a, c] = [t.pts[k - 1], t.pts[k]];
         const d0 = Math.min(1, t.d[k - 1] / RUN), d1 = Math.min(1, t.d[k] / RUN);
         const grad = g.createLinearGradient(a[0], a[1], c[0], c[1]);
@@ -359,6 +381,7 @@ export async function boardArt(): Promise<BoardArt> {
         g.strokeStyle = grad;
         line(g, [a, c]); g.stroke();
       }
+      });
     });
   }
   await pause();
@@ -405,7 +428,7 @@ export async function boardArt(): Promise<BoardArt> {
 // centered on the lid.
 export const ETCH_MM = 34;
 export function lidEtch(): THREE.CanvasTexture {
-  const px = 1024;
+  const px = 2048;
   const { c, g } = sheet(px, ETCH_MM, -ETCH_MM / 2, -ETCH_MM / 2);
   g.fillStyle = '#000';
   g.fillRect(-ETCH_MM / 2, -ETCH_MM / 2, ETCH_MM, ETCH_MM);
@@ -437,8 +460,8 @@ export function lidEtch(): THREE.CanvasTexture {
 
 // Ink on the tops of parts: a sheet of 8 by 8 cells. Red is pale ink, green is a dark mark (a vent, a dimple).
 export const PRINT = { cells: 8, px: 1024 } as const;
-export type PrintCell = 'choke' | 'choke2' | 'cap' | 'mos' | 'qfp' | 'qfn' | 'soic' | 'res' | 'eps';
-const CELL: Record<PrintCell, number> = { choke: 1, choke2: 2, cap: 3, mos: 4, qfp: 5, qfn: 6, soic: 7, res: 8, eps: 9 };
+export type PrintCell = 'choke' | 'choke2' | 'cap' | 'mos' | 'qfp' | 'qfn' | 'soic' | 'res' | 'eps' | 'u44' | 'xtal';
+const CELL: Record<PrintCell, number> = { choke: 1, choke2: 2, cap: 3, mos: 4, qfp: 5, qfn: 6, soic: 7, res: 8, eps: 9, u44: 10, xtal: 11 };
 
 // The uv of a point on a part's top face, from its place on the face (x, z from the face's middle) and the face's
 // size, in the cell that is printed with it.
@@ -522,6 +545,19 @@ export function printSheet(): THREE.CanvasTexture {
     text(g, '103', 0, 0.02, 0.42, { align: 'center', weight: 600 });
   });
   cell(CELL.eps, 4, 4, () => {});
+  cell(CELL.u44, U44.w, U44.w, (g) => {
+    red(g);
+    text(g, 'RX9', 0, -0.9, 1.2, { align: 'center', font: SANS, weight: 600 });
+    text(g, '44C2 7B', 0, 0.55, 0.72, { align: 'center', weight: 600 });
+    text(g, '2611', 0, 1.6, 0.62, { align: 'center', weight: 600 });
+    green(g);
+    disc(g, -U44.w / 2 + 0.7, -U44.w / 2 + 0.7, 0.3);
+  });
+  cell(CELL.xtal, XTAL.w, XTAL.d, (g) => {
+    red(g);
+    text(g, '25.000', 0, -0.3, 0.85, { align: 'center', weight: 700 });
+    text(g, 'K6Q', 0, 0.75, 0.55, { align: 'center', weight: 600 });
+  });
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.NoColorSpace;
   t.anisotropy = 8;

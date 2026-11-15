@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { lin } from '../../world/surface';
 import { hex } from '../../config/palette';
 import type { Tier } from '../../config/site';
 import { clock } from '../../world/clock';
@@ -67,9 +70,12 @@ const LID = { power: 0.06, reach: 0.34, angle: 0.085 } as const;
 const RIM = { power: 2.2, at: [-0.32, 0.075, -0.05] as const };
 const ENV = 0.36;
 const FILL = 0.04;
-const STRIKE_LIGHT = { base: 0.012, flash: 0.04, life: 0.06 } as const;
+const STRIKE_LIGHT = { base: 0.012, flash: 0.02, life: 0 } as const;
 // The flash way's first light: an even wash in the stream's colour that throws no glint, from the strike's side.
-const FLASH_FILL = 4;
+const FLASH_FILL = 1.4;
+// In the flash way the key is the strike's light: low and hot from the struck corner, throwing long shadows across
+// the board, and it moves back to its own place as the room comes up.
+const FLASH_KEY = { power: 26, at: [-0.34, 0.085, -0.3] as const };
 const BAND_LIGHT = 0.03;
 const TURN = { yaw: 5, pitch: 3, omega: 6.5 } as const;
 // The canvas fades out at its rim, and fully outside the middle of the host's height where the row's borders run.
@@ -78,6 +84,32 @@ const MASK = 'linear-gradient(to right, transparent 2%, #000 12%, #000 88%, tran
 const BLOOM_LEVELS = [1.0, 0.45, 0.08, 0, 0];
 
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
+// The bloom: only the stream's own light blooms, and only a little.
+const BLOOM = 0.22;
+
+// Before the picture is tone mapped, every pixel's peak is eased under a ceiling and the hottest are drawn toward pale
+// gold, so a glint on metal stays a small sharp gold point and nothing anywhere goes to white.
+const CEILINGS = new WeakSet<object>();
+function ceiling(): ShaderPass {
+  const p = new ShaderPass({
+    uniforms: { tDiffuse: { value: null } },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+    fragmentShader: `uniform sampler2D tDiffuse; varying vec2 vUv;
+void main(){
+  vec4 c = texture2D(tDiffuse, vUv);
+  float m = max(c.r, max(c.g, c.b));
+  const float k = 0.5;
+  if (m > k) {
+    float n = k + (0.86 - k) * (1.0 - exp(-(m - k) / (0.86 - k)));
+    vec3 hue = mix(c.rgb / m, ${lin(hex('pale'))}, smoothstep(0.62, 0.86, n) * 0.75);
+    c.rgb = hue / max(hue.r, max(hue.g, hue.b)) * n;
+  }
+  gl_FragColor = c;
+}`,
+  });
+  CEILINGS.add(p);
+  return p;
+}
 const cpuH = (n: number) => { n = (n * 0.1031) % 1; if (n < 0) n += 1; n *= n + 33.33; n *= n + n; return n % 1; };
 
 // How brightly the seam flares as the waves leave it: the same schedule as the shader's, summed over the bundles.
@@ -186,18 +218,24 @@ export function createCpu(): StruckPiece {
     (u.uParts.value.image.data as Float32Array).set(partData);
     u.uParts.value.needsUpdate = true;
     const glow = on * L.lights;
+    stage.bloom.strength = BLOOM * glow;
     u.uGlow.value = glow;
     u.uFront.value = L.front;
     u.uTime.value = t;
     u.uStatic.value = quiet() ? 1 : 0;
     u.uSeam.value = quiet() ? 0.62 : seam(t);
     u.uBandOn.value = L.band ? 1 : 0;
+    u.uBeat.value = quiet() ? 0 : L.beat;
+    if (!quiet()) u.uSeam.value += 1.2 * L.beat;
     if (L.band) u.uBand.value.set(L.band.c[0], L.band.c[1], L.band.r, L.band.k);
     (model.shadow.material as THREE.ShaderMaterial).uniforms.uShadow.value = L.shadow;
     const seat = (boardMat?.userData.uniforms as { uSeat?: { value: number } } | undefined)?.uSeat;
     if (seat) seat.value = L.seat;
     const room = L.show ? L.room : 0;
-    key.intensity = KEY.power * room;
+    const fk = L.show ? L.flash : 0;
+    key.position.set(...KEY.at).lerp(new THREE.Vector3(...FLASH_KEY.at), fk > 0.02 ? 1 : 0);
+    key.color.set(hex('pale')).lerp(new THREE.Color(hex('hot')), Math.min(1, fk * 1.5));
+    key.intensity = fk > 0.02 ? FLASH_KEY.power * fk + KEY.power * room * 0.3 : KEY.power * room;
     if (rim) rim.intensity = RIM.power * room;
     if (lidLight) lidLight.intensity = LID.power * room * L.lid;
     fill.intensity = FILL * room;
@@ -248,7 +286,17 @@ export function createCpu(): StruckPiece {
     held = true;
   };
 
-  const noAO = () => { if (stage) for (const p of stage.composer.passes) if (p instanceof GTAOPass) p.enabled = false; };
+  // The stage's post chain, as this piece needs it: no ambient occlusion, which cannot see parts that move, and the
+  // ceiling just before the output.
+  const noAO = () => {
+    if (!stage) return;
+    const c = stage.composer;
+    for (const p of c.passes) if (p instanceof GTAOPass) p.enabled = false;
+    if (!c.passes.some((p) => CEILINGS.has(p))) {
+      const out = c.passes.findIndex((p) => p instanceof OutputPass);
+      if (out >= 0) c.insertPass(ceiling(), out);
+    }
+  };
 
   const piece: StruckPiece = {
     async mount(h: HTMLElement, opts: PieceOptions) {
@@ -266,7 +314,7 @@ export function createCpu(): StruckPiece {
       noAO();
       (stage.bloom.compositeMaterial.uniforms.bloomFactors as { value: number[] }).value = BLOOM_LEVELS;
       stage.lamp.penumbra = 0.9;
-      stage.lamp.color.set(hex('pale')).lerp(new THREE.Color(hex('hot')), 0.45);
+      stage.lamp.color.set(hex('pale'));
       stage.lamp.shadow.camera.near = 0.05;
       stage.lamp.shadow.camera.far = 1.2;
       stage.lamp.shadow.bias = -0.0004;
@@ -296,12 +344,12 @@ export function createCpu(): StruckPiece {
         const c = new THREE.Vector3(SOCKET.x, 5.35, SOCKET.z).multiplyScalar(MM);
         place();
         const eye = stage.camera.position.clone().sub(c).normalize();
-        lidLight = new THREE.SpotLight(new THREE.Color(hex('pale')).lerp(new THREE.Color(hex('hot')), 0.5), LID.power, 0, LID.angle, 0.7, 2);
+        lidLight = new THREE.SpotLight(hex('pale'), LID.power, 0, LID.angle, 0.7, 2);
         lidLight.position.copy(c).addScaledVector(new THREE.Vector3(-eye.x, eye.y, -eye.z), LID.reach);
         lidLight.target.position.copy(c);
         s.add(lidLight, lidLight.target);
       }
-      fill = new THREE.HemisphereLight(new THREE.Color(hex('pale')).multiplyScalar(0.6), new THREE.Color(hex('ember-deep')), FILL);
+      fill = new THREE.HemisphereLight(new THREE.Color(hex('pale')).multiplyScalar(0.6), new THREE.Color(hex('bg-3')), FILL);
       strikeLight = new THREE.PointLight(hex('hot'), 0, 0, 2);
       strikeLight.position.set((STRIKE.x - 12) * MM, 4 * MM, (STRIKE.z - 12) * MM);
       bandLight = new THREE.PointLight(hex('hot'), 0, 0, 2);
