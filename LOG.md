@@ -27,6 +27,15 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 - `index.ts` now leaves out a part that fails to build and stands the rest, since nine hands are in it at once.
 - The wireframe at `/lab/hero-draft` now disagrees with the build on the dome's shape, the spire and the world's height. The build follows his ruling.
 
+**The light, and his second look, the same night**
+
+- The world's light is Fable's and was changed in `index.ts`: it is night. The moon is a strong key from the visitor's right (`MOONWARD` in `layout.ts`, defined once), the fill is low, the cursor's light is an accent, and the scene has fog in the page's ground color so the far side sinks into darkness. At a power of 4 the moon could not be seen at all: it is 15.
+- He said what real means (the finish of a high production film or a AAA game, an alien landscape that is familiar) and what the core is (the stream's culminating source and a planet's core, seamless with the stream). Both are in `BRIEF.md` and every builder has them.
+- The spire's builder made three rounds that its reviewers called "a broadcast mast". A fresh builder has it, from a new design: a heavy monument with stacked level rings as the old spire has.
+- **His second look, at working stills mid-rebuild:** the city is not dense enough and too spread out, the dome is still too round, there is too much forest, nature is to be one lush area like a jungle with small mountains and water, and he wants flying vehicles. `BRIEF.md`, Settled, Hero, "His second look".
+- `layout.ts` redrawn a third time for it: `PLANET` curved to 1400 and kept to 28 degrees (165 tall), `HEART` 310 under the top, `lots()` giving about 230 lots a few units apart in four bands out to 600, the tallest 215, the spire 280, one `FOREST` at the left with `PEAKS` (five small mountains) in `relief`, the temple quarter inside the forest's edge, the port in the city at the right. On a tall screen the world now rests lower so the torn edge stays hidden (`CITY.show` in `src/hero/board.ts`).
+- Every builder was told again. The flying vehicles are the port's builder's.
+
 **Checked**
 
 - A production build of the committed frame passes. On `/lab/whole` one stream runs from the core into Work and Work is as it was (stills).
