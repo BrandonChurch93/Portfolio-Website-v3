@@ -8,11 +8,13 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { SimplexNoise } from 'three/addons/math/SimplexNoise.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import type { Tier } from '../config/site';
+import { HANDHELD, type Tier } from '../config/site';
 import { site } from '../content/site';
 import { pixelRatioFor } from './tier-choice';
 import { pause, seeded } from './build';
 import { clock } from './clock';
+import { sweep } from './contexts';
+import { handheld } from './device';
 import { studioScene } from './env';
 
 // What every piece shares: renderer, Neutral tone mapping, soft shadows, a studio environment, the post chain, the
@@ -109,6 +111,7 @@ export class Stage {
   frameMs = 0;
   // A factor on the tier's pixel ratio, for moments in motion where full resolution is not needed.
   private resScale = 1;
+  private lean = false;
 
   constructor(private host: HTMLElement, private canvas: HTMLCanvasElement, private o: StageOptions) {
     this.tier = o.tier;
@@ -195,9 +198,42 @@ export class Stage {
     c.addPass(new OutputPass());
     if (t.smaa) { this.smaa = new SMAAPass(); c.addPass(this.smaa); }
     c.addPass(ditherPass());
-    this.lamp.shadow.mapSize.set(t.shadow, t.shadow);
+    const side = handheld() ? Math.min(t.shadow, HANDHELD.shadow.lamp) : t.shadow;
+    this.lamp.shadow.mapSize.set(side, side);
     this.lamp.shadow.map?.dispose();
     this.lamp.shadow.map = null as unknown as THREE.WebGLRenderTarget;
+    this.lean = false;
+  }
+
+  // three gives a shadow map a color texture as large as its depth, four bytes a pixel, which nothing reads: 64 MB
+  // for a map 4096 square. Made here first, the map has one of a single byte. A point light's cube is left to three.
+  private leanShadows(): void {
+    this.lean = true;
+    const most = Math.min(this.renderer.capabilities.maxTextureSize, handheld() ? HANDHELD.shadow.most : Infinity);
+    this.scene.traverse((o) => {
+      const light = o as THREE.Light & { shadow?: THREE.LightShadow };
+      if (!light.isLight || !light.castShadow || !light.shadow) return;
+      const shadow = light.shadow;
+      if (shadow.mapSize.x > most || shadow.mapSize.y > most) {
+        shadow.mapSize.set(Math.min(most, shadow.mapSize.x), Math.min(most, shadow.mapSize.y));
+        shadow.map?.dispose();
+        shadow.map = null as unknown as THREE.WebGLRenderTarget;
+      }
+      if (shadow.map || (light as THREE.PointLight).isPointLight || this.renderer.shadowMap.type !== THREE.PCFShadowMap) return;
+      const w = shadow.mapSize.x, h = shadow.mapSize.y;
+      const map = new THREE.WebGLRenderTarget(w, h, { format: THREE.RedFormat });
+      const depth = new THREE.DepthTexture(w, h, THREE.UnsignedIntType);
+      depth.name = `${light.name}.shadowMap`;
+      depth.format = THREE.DepthFormat;
+      depth.compareFunction = THREE.LessEqualCompare;
+      depth.minFilter = depth.magFilter = THREE.LinearFilter;
+      map.depthTexture = depth;
+      // Made on the GPU now: a map a material is drawn with before its first shadow pass would otherwise be read as a
+      // plain texture, which WebKit refuses.
+      this.renderer.initRenderTarget(map);
+      shadow.map = map;
+      (shadow.camera as THREE.PerspectiveCamera | THREE.OrthographicCamera).updateProjectionMatrix();
+    });
   }
 
   // Compiles every material in the variant the first frame will use. The post chain draws the scene into its own
@@ -209,6 +245,7 @@ export class Stage {
   // thing, then the post chain's, the shadows' and the occlusion pass's, which three would otherwise compile in the
   // frame itself and wait on as each links. pace is called between the pieces of that work.
   async warm(pace?: () => Promise<void> | void): Promise<void> {
+    this.leanShadows();
     // Lights keep their state: three compiles for the number of lights in view, and that must match the first frame.
     const seen = (o: THREE.Object3D) => { for (let x: THREE.Object3D | null = o; x; x = x.parent) if (!x.visible) return false; return true; };
     const dark = new Set<THREE.Object3D>();
@@ -386,7 +423,8 @@ export class Stage {
   resize(): void {
     const r = this.host.getBoundingClientRect();
     const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
-    const dpr = pixelRatioFor(this.tier, devicePixelRatio || 1, w * h) * this.resScale;
+    const drawn = pixelRatioFor(this.tier, devicePixelRatio || 1, w * h) * this.resScale;
+    const dpr = handheld() ? Math.min(drawn, Math.sqrt(HANDHELD.piece / (w * h))) : drawn;
     this.width = w;
     this.height = h;
     this.renderer.setPixelRatio(dpr);
@@ -465,6 +503,7 @@ export class Stage {
 
   render(): void {
     const t0 = performance.now();
+    if (!this.lean) this.leanShadows();
     this.renderer.info.reset();
     this.renderer.info.autoReset = false;
     this.composer.render();
@@ -490,7 +529,7 @@ export class Stage {
       }
     });
     this.renderer.dispose();
-    this.renderer.forceContextLoss();
+    sweep(this.renderer.getContext());
     this.stats.remove();
   }
 }

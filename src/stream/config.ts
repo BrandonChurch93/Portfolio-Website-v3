@@ -1,4 +1,4 @@
-import type { Tier } from '../config/site';
+import { HANDHELD, type Tier } from '../config/site';
 
 // The stream's constants. Lengths are in stream units: one unit is one CSS pixel on a desktop screen, and the whole
 // stream is scaled by unitFor() so it sits the same on a phone and on a 4K screen.
@@ -375,6 +375,11 @@ export const STREAM_BUDGET: Record<Exclude<Tier, 'static'>, StreamBudget> = {
   mid: { per100: 38, loose: 120, sparks: 300, pixelRatio: 3, pixels: 3.8e6, samples: 4, split: false, levels: 6 },
   low: { per100: 26, loose: 60, sparks: 160, pixelRatio: 1.5, pixels: 1.7e6, samples: 2, split: false, levels: 5 },
 };
+
+// A handheld's budgets: each tier's own, with the canvas and the multisampling held to HANDHELD. Made once, since the
+// renderer knows a budget by which object it is.
+const held = (b: StreamBudget): StreamBudget => ({ ...b, pixels: Math.min(b.pixels, HANDHELD.screen), samples: Math.min(b.samples, HANDHELD.samples) });
+export const STREAM_BUDGET_HELD: Record<Exclude<Tier, 'static'>, StreamBudget> = { high: held(STREAM_BUDGET.high), mid: held(STREAM_BUDGET.mid), low: held(STREAM_BUDGET.low) };
 
 // Stream units to CSS pixels for a screen this wide, with the page's root font size in pixels.
 export function unitFor(width: number, rootPx: number): number {

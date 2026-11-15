@@ -1,4 +1,5 @@
-import { PIECE_MOUNT } from '../config/site';
+import { HANDHELD, PIECE_MOUNT } from '../config/site';
+import { handheld } from './device';
 
 // At most PIECE_MOUNT.max pieces hold a WebGL context at once, because browsers drop the oldest context past a small
 // limit. A piece claims a place before it makes its context. When a claim would go over, the holder farthest from
@@ -16,21 +17,25 @@ const waiting = new Set<() => void>();
 
 export const budget = {
   // Takes a place, or returns false when the claimant itself is the one that should wait.
+  // A claimant takes a holder's place only when it is nearer than that holder: between two equally far, the one
+  // that already holds stays, so two pieces never take turns throwing each other out.
   claim(id: string, h: Holder): boolean {
-    holders.set(id, h);
-    while (holders.size > PIECE_MOUNT.max) {
+    const most = handheld() ? HANDHELD.pieces : PIECE_MOUNT.max;
+    const far = (v: Holder) => v.distance() + (v.keepsStill ? 0.5 : 0);
+    holders.delete(id);
+    while (holders.size >= most) {
       let out: string | null = null;
       let worst = -1;
       for (const [k, v] of holders) {
-        const d = v.distance() + (v.keepsStill ? 0.5 : 0);
+        const d = far(v);
         if (d > worst) { worst = d; out = k; }
       }
-      if (out === null) break;
+      if (out === null || far(h) >= worst) return false;
       const v = holders.get(out)!;
       holders.delete(out);
-      if (out === id) return false;
       v.release();
     }
+    holders.set(id, h);
     return true;
   },
   drop(id: string): void {

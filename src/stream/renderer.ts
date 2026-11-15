@@ -1,5 +1,6 @@
 import { hex, type PaletteName } from '../config/palette';
 import { COPPER, COPPER_LIGHT, FINISHES } from '../metal/finishes';
+import { sweep } from '../world/contexts';
 import { STREAM, type StreamBudget } from './config';
 import * as G from './shaders';
 import { COPPER_FRAG, glassFrag } from './shaders-first';
@@ -724,6 +725,6 @@ export class StreamRenderer {
   }
 
   dispose(): void {
-    this.gl?.getExtension('WEBGL_lose_context')?.loseContext();
+    sweep(this.gl);
   }
 }

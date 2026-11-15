@@ -1,5 +1,8 @@
 import { registry, stats } from '../../hooks/registry';
+import { HANDHELD } from '../../config/site';
 import { clock } from '../../world/clock';
+import { sweep } from '../../world/contexts';
+import { handheld } from '../../world/device';
 import { CRATER, SECOND, SPARK, SPLAT, TINT, craters, meteorAt, meteors, mix3, scale3, sparks, stars, type Meteor, type V3 } from './field';
 import { BAND_FS, BLIT_FS, GLOW_FS, HEIGHT_FS, METEOR_FS, MOON_FS, RECT_VS, RESOLVE_FS, SPARK_FS, SPARK_VS, SPLAT_FS, SPLAT_VS } from './shaders';
 
@@ -239,7 +242,7 @@ export function mountSky(host: HTMLElement, plan: () => SkyPlan): Sky {
     const t0 = performance.now();
     const p = plan();
     current = p;
-    s = Math.min(MAX_DPR, devicePixelRatio || 1);
+    s = Math.min(MAX_DPR, devicePixelRatio || 1, handheld() ? Math.sqrt(HANDHELD.screen / Math.max(1, p.w * p.h)) : Infinity);
     W = Math.max(1, Math.round(p.w * s));
     H = Math.max(1, Math.round(p.h * s));
     if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
@@ -471,7 +474,7 @@ export function mountSky(host: HTMLElement, plan: () => SkyPlan): Sky {
       seen.disconnect();
       canvas.removeEventListener('webglcontextlost', lost);
       canvas.removeEventListener('webglcontextrestored', restored);
-      gl.getExtension('WEBGL_lose_context')?.loseContext();
+      sweep(gl);
       canvas.remove();
     },
   };

@@ -15,6 +15,23 @@ export const READING_LINE = 0.66;
 // pieces hold a WebGL context at once, because browsers drop the oldest context past a small limit.
 export const PIECE_MOUNT = { near: 1, far: 2.5, max: 6 } as const;
 
+// What a handheld is held to (src/world/device.ts). An iPad's or a phone's browser ends a page that holds more
+// graphics memory than it allows: Safari reloads it, and after a few of those says a problem repeatedly occurred.
+// The Work page alone, which never did that on his iPad, is the measure: `npm run mem` gives a page's figure.
+export const HANDHELD = {
+  // The most pixels a 3D canvas has, and a canvas as large as the screen (the stream, the sky).
+  piece: 1.6e6,
+  screen: 2.4e6,
+  // The longest side of the cursor light's shadow map, and of any other light's.
+  shadow: { lamp: 1024, most: 2048 },
+  // The stream's multisampling.
+  samples: 2,
+  // A piece is mounted from no further than this many screens away, and let go one screen further. And no more than
+  // this many hold a WebGL context at once: three is the most that are ever on one screen together.
+  reach: 1.5,
+  pieces: 3,
+} as const;
+
 export type Tier = 'high' | 'mid' | 'low' | 'static';
 export const TIERS: readonly Tier[] = ['high', 'mid', 'low', 'static'];
 export const TIER_PIXEL_RATIO: Record<Exclude<Tier, 'static'>, number> = { high: 2, mid: 1.5, low: 1 };

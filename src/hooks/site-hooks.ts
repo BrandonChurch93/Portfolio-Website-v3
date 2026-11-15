@@ -1,8 +1,8 @@
-import { HOOK_PARAM, SETTLE, TIERS, type Tier } from '../config/site';
+import { SETTLE, TIERS, type Tier } from '../config/site';
 import { lamp } from '../lamp/lamp';
 import { clock } from '../world/clock';
 import { tiers } from '../world/tier';
-import { registry, stats, type PieceHandle } from './registry';
+import { hooksWanted, registry, stats, type PieceHandle } from './registry';
 
 export interface SiteHooks {
   settle(): Promise<true>;
@@ -52,9 +52,7 @@ async function settle(): Promise<true> {
   return true;
 }
 
-export function hooksWanted(): boolean {
-  return typeof window !== 'undefined' && new URLSearchParams(location.search).get(HOOK_PARAM) === '1';
-}
+export { hooksWanted };
 
 // Exposes window.__site only with ?hook=1. The harness and the tests drive the site through nothing else.
 export function installHooks(): void {

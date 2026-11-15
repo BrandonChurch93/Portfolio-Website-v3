@@ -252,11 +252,21 @@ class PlateRenderer {
     this.byHost.delete(p.host);
     this.io?.unobserve(p.host);
     this.ro?.unobserve(p.host);
+    // Safari keeps a host these two have watched after it is unobserved, and with it the page it was in. Disconnected,
+    // they keep nothing.
+    if (!this.plates.size) { this.io?.disconnect(); this.ro?.disconnect(); }
     const gl = this.gl;
     if (gl) { if (p.b0) gl.deleteTexture(p.b0); if (p.b1) gl.deleteTexture(p.b1); if (p.photoTex) gl.deleteTexture(p.photoTex); if (p.loopTex) gl.deleteTexture(p.loopTex); }
     p.videoEl?.pause();
     p.loopEl?.pause();
     p.bakeGen++;
+    // Safari keeps a canvas's pixels until the element is collected. Emptied, it lets them go now.
+    p.canvas.width = 0;
+    p.canvas.height = 0;
+    // And it can keep the last closure a piece of compiled code was run with, a bake's among them, long after: the
+    // plate that closure holds must not hold the page it stood in.
+    const gone = p as unknown as Record<string, unknown>;
+    for (const k of ['host', 'canvas', 'ctx', 'area', 'onState', 'mask', 'b0', 'b1', 'photoTex', 'loopTex', 'videoEl', 'loopEl', 'photo']) gone[k] = null;
   }
 
   // Tilt toward the cursor, a few degrees, eased in frame().
@@ -391,7 +401,7 @@ class PlateRenderer {
     im.src = photo.src;
     registry.track(im.decode().then(() => {
       const gl = this.gl;
-      if (!gl) return;
+      if (!gl || !this.plates.has(p)) return;
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
       gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
       const t = gl.createTexture()!;

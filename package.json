@@ -13,6 +13,7 @@
     "strip": "node scripts/strip.mjs",
     "live": "node scripts/live.mjs",
     "perf": "node scripts/perf.mjs",
+    "mem": "node scripts/mem.mjs",
     "blockout": "node scripts/blockout.mjs"
   },
   "license": "UNLICENSED",

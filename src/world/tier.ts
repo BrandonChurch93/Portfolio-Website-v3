@@ -1,5 +1,6 @@
 import { TIER_PROBE, type Tier } from '../config/site';
 import { chooseTier } from './tier-choice';
+import { sweep } from './contexts';
 
 type Listener = (t: Tier) => void;
 
@@ -39,7 +40,7 @@ function probeGpu(): { webgl: boolean; ms: number | null } {
     }
     gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
     const ms = (performance.now() - t0) / TIER_PROBE.frames;
-    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    sweep(gl);
     return { webgl: true, ms };
   } catch {
     return { webgl: true, ms: null };

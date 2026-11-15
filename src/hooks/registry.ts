@@ -1,5 +1,13 @@
 // Where pieces and the opening make themselves reachable to the test hooks.
-// Registering costs nothing; the hooks themselves exist only with ?hook=1.
+// The hooks exist only with ?hook=1, and only then is a tool kept: a tool holds whatever registered it (a stream, a
+// piece, their WebGL contexts) for as long as it is kept, which without the hooks was for the life of the tab.
+import { HOOK_PARAM } from '../config/site';
+
+let wanted: boolean | null = null;
+export function hooksWanted(): boolean {
+  if (wanted === null && typeof window !== 'undefined') wanted = new URLSearchParams(location.search).get(HOOK_PARAM) === '1';
+  return wanted === true;
+}
 
 export interface PieceHandle {
   setProgress(p: number): void;
@@ -33,7 +41,7 @@ export const registry = {
   },
   // A module offers the test hooks something to call by name, without the hooks having to import the module.
   tool(name: string, fn: (...args: never[]) => unknown): void {
-    tools.set(name, fn);
+    if (hooksWanted()) tools.set(name, fn);
   },
   getTool(name: string): ((...args: never[]) => unknown) | undefined {
     return tools.get(name);

@@ -1,0 +1,96 @@
+// How much memory a page holds in Safari's engine, which is what an iPad ends a page for.
+//
+//   npm run mem -- <route> [<route> ...] [options]
+//
+//   --vp ipad|desktop     an iPad held sideways, as a touch screen (default), or a desktop window
+//   --walk                open the index, go into each route by its link and come back, in one tab, as he does.
+//                         What matters is that a second visit costs what the first did, and that leaving gives it back
+//   --warn                with --walk, send WebKit the memory warning an iPad sends a page that is getting large
+//   --url <base>          use a site that is already running somewhere else
+//
+// It prints the footprint of WebKit's graphics process (GPU) and of the page's own process (Web), in MB, when the
+// page has loaded and after it has been scrolled to its foot. These are the figures the system ends a process by.
+// macOS only: it reads them with the system's own footprint tool. A dev server holds more than a production build:
+// for a figure to compare, build, start it (npx next start -p 5340) and pass --url http://127.0.0.1:5340.
+// The Work page alone, which never crashed his iPad, held about 1000 MB of GPU before the fix of Nov 15.
+import process from 'node:process';
+import { execSync } from 'node:child_process';
+import { webkit } from 'playwright';
+import { parseArgs, server } from './lib.mjs';
+
+const argv = process.argv.slice(2);
+const walk = argv.includes('--walk'), warn = argv.includes('--warn');
+const { flags, rest: routes } = parseArgs(argv.filter((a) => a !== '--walk' && a !== '--warn'));
+if (!routes.length) { console.error('usage: npm run mem -- <route> [<route> ...] [--walk] [--warn] [--vp desktop] [--url <base>]'); process.exit(1); }
+if (process.platform !== 'darwin') { console.error('mem: macOS only, it reads memory with the footprint tool'); process.exit(1); }
+
+const procs = () => execSync('ps -axo pid=,comm= | grep -i WebKit | grep -v grep || true').toString().trim().split('\n').filter(Boolean).map((l) => { const m = l.trim().match(/^(\d+)\s+(.*)$/); return { pid: m[1], name: m[2].split('/').pop() }; });
+const before = new Set(procs().map((p) => p.pid));
+const foot = () => {
+  const out = { GPU: 0, Web: 0 };
+  for (const p of procs()) {
+    if (before.has(p.pid)) continue;
+    const kind = /GPU/.test(p.name) ? 'GPU' : /WebContent/.test(p.name) ? 'Web' : null;
+    if (!kind) continue;
+    try {
+      const m = execSync(`footprint ${p.pid} 2>/dev/null | grep "phys_footprint:"`).toString().match(/phys_footprint: ([\d.]+) (\w+)/);
+      if (m) out[kind] = Math.max(out[kind], Math.round(Number(m[1]) * (m[2] === 'GB' ? 1024 : m[2] === 'KB' ? 1 / 1024 : 1)));
+    } catch { /* the process has gone */ }
+  }
+  return `GPU ${String(out.GPU).padStart(5)} MB · Web ${String(out.Web).padStart(5)} MB`;
+};
+
+const srv = await server(flags);
+let b = await webkit.launch();
+const errors = new Set();
+try {
+  const screen = flags.vp === 'desktop' ? { viewport: { width: 1728, height: 1000 }, deviceScaleFactor: 2 } : { viewport: { width: 1194, height: 834 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true };
+  let page;
+  const fresh = async () => {
+    // A browser of its own: WebKit's graphics process is one to a browser, and keeps some of what the last page held.
+    if (page) { await b.close(); b = await webkit.launch(); }
+    page = await (await b.newContext(screen)).newPage();
+    page.on('console', (m) => { if (m.type() === 'error') errors.add(m.text().slice(0, 160)); });
+    page.on('pageerror', (e) => errors.add(`page: ${e.message.slice(0, 160)}`));
+    page.on('crash', () => errors.add('THE PAGE CRASHED'));
+  };
+  await fresh();
+  // The page scrolls itself: a test browser with nothing asking for frames stops drawing them.
+  const toFoot = async () => {
+    const tall = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight);
+    await page.evaluate((tall) => new Promise((done) => { const t0 = performance.now(), dur = Math.min(30000, Math.max(4000, tall * 3)); const f = () => { const k = Math.min(1, (performance.now() - t0) / dur); scrollTo(0, tall * k); if (k < 1) requestAnimationFrame(f); else done(); }; requestAnimationFrame(f); }), tall);
+    await page.waitForTimeout(2500);
+  };
+  const say = (label) => console.log(`${label.padEnd(36)} ${foot()}`);
+  if (walk) {
+    await page.goto(`${srv.base}/`, { waitUntil: 'load' });
+    await page.waitForTimeout(2500);
+    say('the index');
+    for (const r of routes) {
+      const found = await page.evaluate((r) => { const a = [...document.querySelectorAll('a')].find((a) => a.getAttribute('href') === r); a?.click(); return !!a; }, r);
+      if (!found) { console.log(`${r}: the index has no link to it`); continue; }
+      await page.waitForTimeout(6000);
+      await toFoot();
+      say(`${r}, scrolled to its foot`);
+      await page.evaluate(() => history.back());
+      await page.waitForTimeout(4000);
+      say('  back on the index');
+      if (warn) { execSync('notifyutil -p org.WebKit.lowMemory'); await page.waitForTimeout(3500); say('  after a memory warning'); }
+    }
+  } else {
+    // Each route alone, in a browser of its own.
+    for (const r of routes) {
+      await fresh();
+      await page.waitForTimeout(1500);
+      await page.goto(`${srv.base}${r}`, { waitUntil: 'load' });
+      await page.waitForTimeout(6000);
+      say(`${r}, loaded`);
+      await toFoot();
+      say(`${r}, scrolled to its foot`);
+    }
+  }
+  if (errors.size) console.log(`errors:\n  ${[...errors].slice(0, 8).join('\n  ')}`);
+} finally {
+  await b.close();
+  await srv.stop();
+}

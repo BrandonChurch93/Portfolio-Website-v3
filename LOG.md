@@ -2,6 +2,74 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · The Safari crash: its cause, the fix, and what is still large (Fable, Claude Code)
+
+**What Brandon said**
+
+- "The live site is crashing for me in Safari." "The page goes black, reloads, and then Safari says 'a problem repeatedly occurred' with the link. Find the cause and fix it. Test it in Safari, not only Chrome." The device and the page were left blank. The record says he tests on an iPad Pro, and this Mac's logs show no Safari page killed here, so the work was done for an iPad.
+- "Stop all work on the hero's world." It is redesigned in the web chat from a clean slate. The built world stays committed as it is. `BRIEF.md`, Settled, Hero.
+- "Lose nothing. Do not stash, reset or discard anything."
+
+**The cause**
+
+- That message is what Safari shows when the system has ended a page's process several times, for memory. WebKit's own bug reports describe it for pages heavy with WebGL on an iPad.
+- **Safari does not give a WebGL context's memory back when the page lets the context go.** Losing the context does nothing. Dropping its canvas does nothing. Deleting its textures frees those, and a deleted vertex buffer is kept to be used again by that context only. Measured in WebKit: 256 MB of buffers, deleted, context lost, canvas removed, every reference dropped, was still 310 MB held 14 seconds later, and five rounds of that in five contexts held 1591 MB. Chrome frees all of it at once.
+- So every 3D piece the scroll let go, and every page left for another in the same tab, kept what it held. One tab, before the fix: the hero cost 1614 MB, and the tab still held 980 MB back on the index. A second visit to the whole page reached 3662 MB.
+- **The site also held on to what it had dropped, in three places.** The registry the screenshot scripts reach into a page through kept every function handed to it for the life of the tab, and each held the stream, piece or sky that registered it. A piece's opening was never taken back. And Safari keeps the last closure a piece of compiled code ran with: one bake of one plate held that plate, its canvas and the whole page it stood in.
+- The pages were also large by themselves. In WebKit at his iPad's size the whole page held 3242 MB of graphics memory and the hero 1648 MB.
+
+**What was done. All in shared code. Nothing in `src/pieces/skycity/` was touched.**
+
+- `src/world/contexts.ts`, new. Every WebGL context the site makes is known with everything made in it. `sweep(gl)` deletes all of it, loses the context, restores it when the loss arrives and loses the empty one again. Restoring is the one thing found that makes Safari throw a context away: 314 MB came down to 50. The stage, the stream, the sky and the speed test use it. `Runtime` sweeps whatever a page left behind at every change of page, and everything when the page is hidden by a full load.
+- `src/hooks/registry.ts`: a tool is kept only with `?hook=1`. `PieceView` takes a piece's opening back. A removed plate lets go of its host, canvas and textures, and its canvas is emptied.
+- `src/world/stage.ts`: each shadow map is made with a color texture of one byte a pixel in place of three's four, which nothing reads. 48 MB less for a map 4096 square. On every device, and stills of the desk, the CPU, the world and the pad on a desktop are the same before and after, byte for byte.
+- `HANDHELD` in `src/config/site.ts`, and `src/world/device.ts`: what an iPad or a phone is held to. A 3D canvas has at most 1.6 million pixels, the stream and the sky 2.4 million. The cursor light's shadow map is 1024, any other 2048. The stream takes two samples, not four. A piece is mounted from a screen and a half away and let go a screen further, and three at most are alive, with whatever is on the screen always given a place (`src/world/budget.ts`). `?handheld=1` opens any page that way.
+- `npm run mem`, new: the figures below, for any page. `CLAUDE.md`, Commands.
+
+**Measured. Playwright's WebKit at 1194 by 834 as a touch screen, production builds, GPU process then the page's own, in MB.**
+
+| Page alone, scrolled to its foot | Before | After |
+|---|---|---|
+| `/lab/hero` | 1625 · 479 | 1186 · 387 |
+| `/lab/work` | 1028 · 234 | 867 · 235 |
+| `/lab/skills` | 1860 · 692 | 1129 · 707 |
+| `/lab/contact` | 1115 · 327 | 794 · 323 |
+| `/lab/whole` | 3242 · 1228 | 2091 · 1026 |
+| `/lab/hero-blockout` | 1266 on load | 784 · 209 |
+
+| One tab, in from the index and back, with the memory warning an iPad sends | Before | After |
+|---|---|---|
+| The hero, then back on the index | 1614, then 938 | 1187, then 422 |
+| The whole page, then back | 3321, then 1394 | 2059, then 456 |
+| The hero a second time | 2326 | 1195 |
+| The whole page a second time | 3662 | 2017 |
+
+- After the fix the tab comes back to about 450 MB every time and a second visit costs what the first did. Before, each visit stacked on the last.
+- No errors in WebKit or Chromium on fourteen pages scrolled top to foot. The whole page scrolled to its foot and back up: the desk and the world come back whole.
+- In WebKit's own heap snapshot after leaving the hero, the only canvas and context left alive are the plates' own, which are meant to stay.
+
+**Not done, and not known**
+
+- **Not tested on his iPad.** Nothing here can run one. The proof is the measurements, and his opening it.
+- **Not proven in Safari itself.** An Opus agent opened both builds in the real Safari on this Mac. Nothing crashed or reloaded in either. But Safari would not take automation (the Automation prompt was never answered), so each page opened in its own background tab and the comparison in one tab could not be made. The agent could not close what it opened: Safari was left running with about eight tabs.
+- **The limit on his iPad is not known.** Work alone, about 1000 MB before the fix, never crashed there. After the fix only Work, Contact and the blockout are under that alone. The hero is 1190 and the whole page still reaches 2090 where the world, the desk and Work's cards are all alive.
+- What is still large, in rough order: the desk (about 550 MB), the hero's world (about 450, and it is being replaced), Work's sixteen cards held all the way down the page (about 450), and about 200 that WebKit keeps for any page that rewrites a buffer every frame.
+
+**What the work taught**
+
+- A WebGL context is only gone in Safari when it is restored after a loss, or when its page's memory is collected. Sweep, never just lose.
+- Graphics memory does not bring a collection on. A page can hold gigabytes of dead contexts with a small heap.
+- In Safari, a buffer rewritten each frame costs 100 MB or more whatever its size. A texture rewritten each frame costs nothing. Uniforms cost nothing. Declaring the buffer static halves the cost and drops frames.
+- WebKit's graphics process is one to a browser and keeps some of what the last page held, so a page is measured in a browser of its own.
+- `notifyutil -p org.WebKit.lowMemory` sends WebKit the memory warning an iPad sends. On this Mac's 24 GB WebKit almost never collects without it, so a test without it overstates what the page's own process holds.
+- A heap snapshot can be had from Playwright's WebKit: `page._connection.toImpl(page).delegate._session.send('Heap.snapshot')`. It is what found the plate held by a closure. Chromium's showed nothing, since Chromium collects it.
+- The measuring tool must not hold what it counts: Chromium's `queryObjects` keeps every object it lists until its group is released.
+
+**Half finished, and what the next session needs**
+
+- His word on whether it holds on his iPad. If it does not, the next cuts are the desk and Work's cards on an iPad, which are approved things and need his word first.
+- The web chat's blockout draws through the shared stage, so it has every part of this fix. Its new world should be built on textures and uniforms for what moves, and measured with `npm run mem` before he is given a link.
+- `scripts/mem.mjs` is macOS only.
 ## 2026-11-15 · The third round: his six changes, and the model in color (Fable, web chat)
 
 **What Brandon said**
