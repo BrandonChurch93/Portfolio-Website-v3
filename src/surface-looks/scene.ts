@@ -68,6 +68,27 @@ function room(): THREE.Scene {
   return s;
 }
 
+// The core's light is a point light with no shadow, so it shone up through the planet onto everything on top of it:
+// a ring of gold high over the city was lit orange from below and read as neon. The planet is in the way. What
+// stands on the top of it takes no light from the core.
+const POINT = '#if ( NUM_POINT_LIGHTS > 0 ) && defined( RE_Direct )';
+function above(root: THREE.Object3D): void {
+  const done = new Set<THREE.Material>();
+  root.traverse((o) => {
+    if (!(o instanceof THREE.Mesh)) return;
+    for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
+      if (!(m instanceof THREE.MeshStandardMaterial) || done.has(m)) continue;
+      done.add(m);
+      const before = m.onBeforeCompile, key = m.customProgramCacheKey;
+      m.onBeforeCompile = (sh, r) => {
+        before.call(m, sh, r);
+        sh.fragmentShader = sh.fragmentShader.replace('#include <lights_fragment_begin>', THREE.ShaderChunk.lights_fragment_begin.replace(POINT, '#if 0'));
+      };
+      m.customProgramCacheKey = () => `${key.call(m)}|above`;
+    }
+  });
+}
+
 const planet: (() => Promise<PartFactory>)[] = [
   () => import('../pieces/skycity/parts/tear').then((m) => m.build),
   () => import('../pieces/skycity/parts/core').then((m) => m.build),
@@ -193,6 +214,7 @@ export async function mountLooks(host: HTMLElement, tier: Tier, o: { planet: boo
     if (!made.has(name)) {
       const look = (await looks[name]())({ room: s.environment, level: ROOM.env });
       if (!alive) { look.dispose(); return; }
+      above(look.group);
       made.set(name, look);
       root.add(look.group);
     }
