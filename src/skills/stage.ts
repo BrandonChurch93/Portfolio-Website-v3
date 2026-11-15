@@ -108,7 +108,7 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
   const heading = q('about-title'), tabs = q('tabs'), panel = q('panel');
   const auras = all('aura'), beams = all('beam');
 
-  let stream: StreamHandle | null = null, bench: DeskPiece | null = null, disposed = false, hush = 0;
+  let stream: StreamHandle | null = null, bench: DeskPiece | null = null, disposed = false, hush = 0, quietTo = 0, quietBack = 0;
   let anchors: { cpu: Anchor; reflector: Anchor; strike: Anchor; lens: Anchor; hook: Anchor } = { cpu: [-0.36, 0], reflector: [0, 0], strike: [0.02, -0.14], lens: [-0.12, 0.16], hook: [0, -0.24] };
   let lives: Record<Way, number> = { shards: 1.3, band: 0.9, flash: 0.8 };
   let rules: Rail[] = [], cues: Cue[] = [];
@@ -183,6 +183,10 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
       out: on(T.out[0], T.out[1], A0),
     });
     cues = route.cues ?? [];
+    // This is asked for every point of the stream in every frame, so the two lengths are worked out here, once.
+    const lampAt = cues.find((c) => c.name === 'lamp')?.s ?? 0;
+    quietTo = cues.find((c) => c.name === 'row0')?.s ?? 0;
+    quietBack = lampAt + (quietTo - lampAt) * QUIET.back;
     follow(cues);
     return {
       route,
@@ -194,11 +198,7 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
       after: frame,
       // Once the lamp is struck the stream is turned down from the top of the page to where it turns in to the first
       // row, so the desk it has just lit holds the eye. It is whole again by the first row.
-      quiet: (s) => {
-        if (hush <= 0) return 1;
-        const to = cues.find((c) => c.name === 'row0')?.s ?? 0, from = cues.find((c) => c.name === 'lamp')?.s ?? 0, back = from + (to - from) * QUIET.back;
-        return 1 - QUIET.by * hush * (s <= back ? 1 : clamp(1 - (s - back) / Math.max(1, to - back)));
-      },
+      quiet: (s) => (hush <= 0 || s >= quietTo ? 1 : 1 - QUIET.by * hush * (s <= quietBack ? 1 : (quietTo - s) / Math.max(1, quietTo - quietBack))),
       off: (x, y) => {
         for (const o of keepOff) if (x >= o.l && x <= o.r && y >= o.t && y <= o.b && within(x, y, o.quads[0])) return true;
         if (!outline) return false;
