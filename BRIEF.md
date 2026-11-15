@@ -870,6 +870,14 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     - **What is wrong with it, in his words:** it is not one piece of art, its parts fight one another, and it may not match the rest of the site.
     - **What is asked for:** a new art style for the 3D model that matches the site, and the surface built again from nothing in that style.
     - The art style is not chosen. Fable's reading of why the surface failed, and a direction, are put to him in the chat. Nothing more is built on the surface until he picks.
+- **He likes the goldsmith direction and wants a derby before he accepts it (Nov 15, 01:48).** "I like your recommendation a lot, but I don't know if I want to just accept the very first thing. Can you give me like two more options to choose from? I would love a derby to be able to get an idea of each look."
+    - In exact terms: nothing is picked. Three looks for the surface are to be built so he can see each: Fable's recommendation (the surface as one piece of metalwork in dark bronze and gold) and two others.
+    - Fable began the derby at `/lab/surface-looks` (Study 31) with the three looks on one shared plan, rings and avenues of towers round the spire, so that only the look would differ.
+- **His look at the first still of that derby: the shape is wrong too (Nov 15, 02:08).** He stopped the work. "I do not like that the shape of this city is pretty much the same as the one we're replacing. The shape is a thing I dislike. It's like you're using the same layout."
+    - In exact terms: the turned down surface was a spire at the middle with towers packed round it, tallest at the middle and falling to the edge, a mound of buildings over the whole top of the dome. The first look of the derby had that same shape in new materials. **The shape itself is turned down, not only the materials.** A new surface has a different composition: what stands where, how much stands at all, and what the skyline is.
+    - Fable's miss: holding the layout the same across the three looks, on purpose, when the layout is one of the things he wants changed.
+    - What is still settled and is kept in every option: a spire with rings round it on the center line, its tip under the buttons, and the stream leaving the core under it.
+    - Three shapes are put to him in the chat as silhouettes, each with the material that belongs to it. Nothing more is built until he answers.
 - An idea to revisit with the hero, not decided: his first thought was the city breaking apart into the stream as the visitor scrolls. Fable's twist, which he asked to have noted: building, not breaking. The city assembles out of the stream's facets in the opening, and the stream carries the same pieces on down the page. (Nov 12)
 
 **The hero, the city at rest: the agreement (Nov 14)**

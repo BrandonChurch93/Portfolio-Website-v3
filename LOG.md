@@ -2,6 +2,31 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · The derby of looks stopped at its first still: the shape is turned down too (Fable, web chat)
+
+**What Brandon said**
+
+- He likes the goldsmith direction and wants two more options and a derby before accepting it.
+- The live site keeps going black, reloads, and then says a problem repeatedly occurred and shows the link. That message is Safari's, shown when a page's process has been killed several times, most often for memory. Which device and which page are not known yet.
+- Watching the derby's first still come up, he stopped the work: the city's shape is much the same as the one being replaced, and the shape is a thing he dislikes. `BRIEF.md`, Settled, Hero.
+
+**What was done**
+
+- Study 31 was begun at `/lab/surface-looks`: a stage that copies the hero world's own (same view, moon, room, cursor's light) and hosts the real `tear`, `core` and `debris` parts without touching the piece, a kit for building a look on the real dome (`src/surface-looks/kit.ts`: a plan, `loft`, `ribbon`, `cap`, `Pile`), and look A, Goldsmith, as a first build. Looks B and C are empty.
+- **None of it is committed.** It is in the web chat's workspace only: `src/surface-looks/`, `src/components/lab/SurfaceLooks.tsx` and its stylesheet, `src/app/lab/surface-looks/`. The stage and the kit are worth keeping whatever the shapes turn out to be. Look A's rows of towers are not.
+- His words written into `BRIEF.md`. Three shapes were put to him in the chat as silhouettes: rings round one spire (metal), canyons cut into the planet (rock), a burst of shards (glass).
+- A prompt for Claude Code was given to him: stop the surface, keep the planet, fix the crash first and then the first load and the frame rate.
+
+**What Fable takes from it**
+
+- A derby holds the same only what is settled. The plan of the city was not settled, it was part of what he turned down, and holding it fixed made every option the old city in a new finish.
+- He reads shape first. A silhouette is the right tool for that question, and the lit study comes after it.
+
+**For the next session**
+
+- On his pick of shapes: build the derby at `/lab/surface-looks` on the stage and kit already written, one look for each shape he keeps.
+- The still script on the page with the real planet in software was stopped before it finished, so how long a frame of it takes here is not known. `?planet=0` leaves the planet out and a still took under a minute.
+
 ## 2026-11-15 · The finished surface turned down: the planet stays, the surface is rethought (Fable, web chat)
 
 **What Brandon said**
