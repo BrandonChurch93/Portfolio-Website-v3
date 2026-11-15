@@ -122,19 +122,6 @@
   color: var(--text);
 }
 
-.tag {
-  margin-bottom: calc(var(--u) * 10);
-  padding: calc(var(--u) * 2) calc(var(--u) * 8);
-  border: 1px dashed var(--line-strong);
-  border-radius: 99px;
-  font-family: var(--font-mono);
-  font-size: calc(var(--u) * 11);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  color: var(--copper);
-}
-
 /* One plate holds everything. Asleep it is the blank: engine turned rays round a knob. A band of light crosses it
    from the corner nearest the stream, and what is behind the band is the plate awake. */
 .plate {
@@ -280,12 +267,6 @@
 .field textarea:focus-visible {
   outline: var(--focus);
   outline-offset: var(--focus-offset);
-}
-
-.address {
-  font-family: var(--font-mono);
-  font-size: calc(var(--u) * 14.5);
-  color: var(--text);
 }
 
 .or {

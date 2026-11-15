@@ -2,6 +2,38 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · Contact, fourth round: the plate wakes at the landing, and the screen is seated for it (Fable, web chat)
+
+**What Brandon said**
+
+- He likes the contact form. The card should appear when the stream hits the pool under the rocket. When it hits, the screen must be placed so the animation and the form can both be seen with no trouble. The calendar button should say it goes to Calendly. He asked whether to cut the copyable email or make it a secondary button, "Copy my email". He is in Boise, Idaho. The small line beside the title can go. His words are in `BRIEF.md`, Settled, Contact.
+
+**What was done**
+
+- `plan.ts`: `SEAT` and `FILL`, the plate's band from its lower left corner, a footer of 100 units, and the plan's `seat`, the distance from the landing to the foot of the screen.
+- `ContactDraft.tsx`: the stream's end is read from the foot of the screen less `seat`. The stone lights on the clock once the stream is on it. The plate wakes on the `land` cue. The buttons, the line for Boise, and no tag. The page has no padding under its board.
+- `QUALITY.md`, A draft of a section: two lessons.
+
+**What looking at it showed**
+
+- The plate's band stopped short of the far corner, so the second button stayed covered. The reach was worked out for a band that starts at the top left. It is now the distance to the furthest corner from wherever the band starts.
+- With the lab page's own 144 px under the board, the end of the page pushed the title off a 900 px screen. That padding is off this page.
+
+**Checked**
+
+- `contact4_seat.mjs` in scratch, on six screens, scrolled at 420 px a second: where the title, the plate, the rocket and the stone are on the screen at the landing and at the end of the page. All inside on all six. The plate is awake 0.9 seconds after the landing and the rocket is out of sight 6.9 seconds after it. No errors.
+- Stills: `reference/studies/53-contact-before-the-landing-waking-and-seated.jpg`, opened.
+
+**Not done**
+
+- The live run of scrolling back up was not repeated for this round. The code that drains the stone, lands the rocket and puts the plate to sleep is the third round's, with the stone now draining on the clock.
+- A screen under about 700 px tall cannot hold the section. Nothing is designed for it.
+
+**For the next session**
+
+- Waiting on his look, and his word on the email button. Still his to say: no phone number, LinkedIn in the footer, CodePen and YouTube.
+- He has said that if he likes the design he raises the effort for a higher fidelity version here before Claude Code.
+
 ## 2026-11-14 · Contact, third round: the Sun stone under the rocket and the sleeping plate (Fable, web chat)
 
 **What Brandon said**

@@ -1,21 +1,15 @@
 'use client';
 
 import { useEffect, useId, useRef, useState, type CSSProperties, type FocusEvent, type FormEvent } from 'react';
-import { READING_LINE } from '../../config/site';
-import { BLOCK, FOOT, FUEL, LAUNCH, ROCKET, STONE, TABLE, TOWER, W, WAKE, climbed, plan } from '../../contact/plan';
+import { BLOCK, FILL, FOOT, FUEL, LAUNCH, ROCKET, STONE, TABLE, TOWER, W, WAKE, climbed, plan } from '../../contact/plan';
 import { point, reach } from '../../page-sketch/plan';
 import { clock } from '../../world/clock';
 import styles from './ContactDraft.module.css';
 import draft from './SkillsAboutDraft.module.css';
 
-// The most of its line the stream's end covers in a second, the gap past which it catches up faster, and the most
-// of the stone that lights in a second.
+// The most of its line the stream's end covers in a second, and the gap past which it catches up faster.
 const SPEED = 1150;
 const FAR = 2600;
-const POUR = 1.3;
-// Near the foot of the page the place the stream's end is read from slides down the screen, so the stone is full
-// when the page runs out on any height of screen. This is the share of a screen it slides over.
-const SLIDE = 0.5;
 
 const P = plan();
 const K = ROCKET, H = K.half, S = STONE, SX = K.x, SY = P.ground;
@@ -81,9 +75,7 @@ export function ContactDraft() {
     const el = board.current, now = live.current;
     if (!el) return;
     const box = el.getBoundingClientRect(), scale = box.width / W, l = P.line, k = now.slow ? 0.5 : 1;
-    const left = document.documentElement.scrollHeight - innerHeight - scrollY;
-    const read = READING_LINE + (1 - READING_LINE) * smooth(1 - left / (innerHeight * SLIDE));
-    const y = (innerHeight * read - box.top) / scale;
+    const y = (innerHeight - box.top) / scale - P.seat;
     const want = now.whole ? l.total : reach(l, y);
     const still = dt <= 0 || clock.isFrozen();
     let len = at.current;
@@ -95,10 +87,9 @@ export function ContactDraft() {
     }
     at.current = len;
     const landed = len >= l.total - 1;
-    const fill = now.whole ? 1 : landed ? clamp((y - P.landAt[1]) / (P.h - 40 - P.landAt[1])) : 0;
     let f = full.current;
-    if (still || now.whole) f = fill;
-    else f += clamp(fill - f, -POUR * k * dt * 2, POUR * k * dt);
+    if (still || now.whole) f = landed ? 1 : 0;
+    else f = clamp(f + ((landed ? 1 : -2) * dt * k) / FILL);
     full.current = f;
     const ready = f >= 0.995;
     let b = burn.current;
@@ -148,7 +139,7 @@ export function ContactDraft() {
     const step = f >= FUEL.nose ? 3 : f >= FUEL.upper ? 2 : f >= FUEL.lower ? 1 : 0;
     if (step !== now.fuel) setFuel(step);
 
-    const up2 = next.has('block') || now.woken;
+    const up2 = next.has('land') || now.woken;
     let w = wake.current;
     if (now.held !== null) w = now.held;
     else if (still || now.whole) w = up2 ? 1 : 0;
@@ -157,7 +148,7 @@ export function ContactDraft() {
     const face = plate.current;
     if (face) {
       const wide = face.offsetWidth, tall = face.offsetHeight;
-      face.style.setProperty('--r', `${(w * (Math.hypot(wide * (1 - WAKE.from[0]), tall * (1 - WAKE.from[1])) + 40)).toFixed(1)}px`);
+      face.style.setProperty('--r', `${(w * (Math.hypot(wide * Math.max(WAKE.from[0], 1 - WAKE.from[0]), tall * Math.max(WAKE.from[1], 1 - WAKE.from[1])) + 40)).toFixed(1)}px`);
       face.style.setProperty('--band', (Math.sin(Math.PI * w) ** 0.6).toFixed(3));
       face.style.setProperty('--knob', (1 - smooth(w / WAKE.knob)).toFixed(3));
     }
@@ -166,7 +157,7 @@ export function ContactDraft() {
   const got = (c: string) => reached.has(c);
   // While the rocket is off its table nothing of the pad goes dark, however far the stream has drawn back.
   const near = got('near') || aloft, fed = (n: number) => fuel >= n || aloft;
-  const up = got('block') || woken;
+  const up = got('land') || woken;
   const [ex, ey] = P.engine;
   const glow = `${id}-flare`, heat = `${id}-heat`, burnt = `${id}-jet`, clip = `${id}-clip`;
   const place = (x: number, y: number, w?: number): CSSProperties => ({ left: `${(x / W) * 100}%`, top: `${(y / P.h) * 100}%`, width: w ? `${(w / W) * 100}%` : undefined });
@@ -180,23 +171,23 @@ export function ContactDraft() {
   const leave = (e: FocusEvent<HTMLDivElement>) => { if (!e.currentTarget.contains(e.relatedTarget)) setWoken(false); };
 
   return (
-    <main className={draft.main}>
+    <main className={draft.main} style={{ paddingBottom: 0 }}>
       <header className={draft.head}>
         <p className={draft.label}>Study 26 · Contact</p>
         <h1 className={draft.heading}>Contact, with the Sun stone and the sleeping plate</h1>
         <p className={draft.lede}>
-          Arrangement A, with the two things you said yes to drawing. The pool is a Sun stone laid flat, and the plate
-          sleeps as the engine turned blank. Scroll: the line is the stream.
+          Fourth round, after your look. The plate now wakes when the stream lands on the stone, and the stream lands
+          only once the screen holds the rocket, the stone and the whole plate. Scroll: the line is the stream.
         </p>
         <ul className={draft.caveats}>
-          <li>The plate is asleep until the stream passes its top: the engine turned blank with its knob. A band of light crosses it from the corner nearest the stream, the knob draws back ahead of the band, and the form is there. Moving the pointer onto it, or tabbing into it, wakes it too.</li>
-          <li>The stream lands on the stone’s outer band. The stone lights band by band from its rim to its middle as you scroll on, and the last to light is the boss the rocket stands on. Then the rocket goes.</li>
-          <li>I told you the stone would light from the middle outward. Drawn, it lights from the rim in: the stream lands at the rim, so its light has to travel in to the rocket.</li>
-          <li>The rocket lights from its foot up as the stone fills. After the launch the stone stays lit. Scroll back up and the stone goes dark from the middle out, the rocket comes back down, and the plate goes back to sleep.</li>
-          <li>The plate no longer lies over the pool: the stone is round and reads better whole.</li>
-          <li>Every word is a stand in. The email address is a made up one, the buttons go nowhere and the form sends nothing.</li>
+          <li>The plate is asleep as you scroll in. The stream lands on the stone’s outer band, and at that moment a band of light crosses the plate from the corner nearest the landing and the form is there.</li>
+          <li>The stream is timed so it lands when the foot of the stone is a little above the foot of your screen. On any screen tall enough to hold them, the rocket, the stone and the plate are all in view when it lands, and stay in view to the end of the page.</li>
+          <li>The stone no longer fills as you scroll. Once the stream is on it, it lights from its rim to its middle by itself, in about two and a half seconds, and then the rocket goes. There is almost no page left to scroll by then.</li>
+          <li>Book on Calendly says where it goes. Copy my email is the secondary button, with no address shown. The line under the form says Boise, Idaho.</li>
+          <li>The tag beside the title is gone. It was my label for stand in words and not part of the design.</li>
+          <li>The other words are still stand ins. The buttons go nowhere and the form sends nothing.</li>
           <li>All of it is outline: the stone’s carving is a few rings, ticks and rays, the blank is drawn lines and a drawn knob, the rocket is the carried one’s outline, the stream is a line.</li>
-          <li>For judging: the idea of the stone under the rocket, the idea of the blank on the plate, and the order things happen in. Not the look, not the motion’s feel, not a phone.</li>
+          <li>For judging: when the plate wakes, what the screen holds when the stream lands, and the order things happen in. Not the look, not the motion’s feel, not a phone.</li>
         </ul>
       </header>
 
@@ -301,7 +292,6 @@ export function ContactDraft() {
         <section aria-label="Contact" className={styles.block} style={place(BLOCK.l, P.top + BLOCK.t, BLOCK.w)}>
           <div className={styles.over}>
             <h2 className={`${styles.title} ${draft.reveal}`} data-on={up}>Contact</h2>
-            <span className={`${styles.tag} ${draft.reveal}`} data-on={up} style={{ '--d': 2 } as CSSProperties}>Stand in words</span>
           </div>
           <div ref={plate} className={styles.plate} style={{ '--fx': `${WAKE.from[0] * 100}%`, '--fy': `${WAKE.from[1] * 100}%` } as CSSProperties} onPointerMove={() => setWoken(true)} onPointerLeave={(e) => { if (!e.currentTarget.contains(document.activeElement)) setWoken(false); }} onFocus={() => setWoken(true)} onBlur={leave}>
             <div className={styles.blank} aria-hidden="true">
@@ -321,10 +311,9 @@ export function ContactDraft() {
             </div>
             <div className={styles.awake}>
               <div className={styles.fast}>
-                <button type="button" className={styles.primary}>Book a call <span aria-hidden="true">↗</span></button>
-                <span className={styles.address}>name@example.com</span>
-                <button type="button" className={`${styles.accent} ${styles.small}`} onClick={copy}>
-                  <span aria-live="polite">{copied ? 'Copied' : 'Copy'}</span>
+                <button type="button" className={styles.primary}>Book on Calendly <span aria-hidden="true">↗</span></button>
+                <button type="button" className={styles.accent} onClick={copy}>
+                  <span aria-live="polite">{copied ? 'Copied' : 'Copy my email'}</span>
                 </button>
               </div>
               <p className={styles.or}><span>or send a message</span></p>
@@ -346,7 +335,7 @@ export function ContactDraft() {
                   </button>
                 </form>
               )}
-              <p className={styles.where}>City, State · Mountain Time</p>
+              <p className={styles.where}>Boise, Idaho · Mountain Time</p>
             </div>
             <div className={styles.band} aria-hidden="true" />
           </div>

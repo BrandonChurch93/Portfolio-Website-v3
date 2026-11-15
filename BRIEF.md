@@ -1761,6 +1761,15 @@ Each line has Fable's recommendation where there is one. None of these are rules
         - Scrolled back up, the stone goes dark from the middle out before the rocket has landed. It is the stone draining, and it is his to say whether that reads.
     - What is not right, plainly: every part is outline. The stone's carving is a few rings and marks and nothing like the Sun stones in Work. The blank is drawn lines and a drawn knob, not the lit metal of a card. The lit stone is flat color.
     - Stills: `reference/studies/52-contact-*.jpg`.
+    - **Fourth round, after his look (Nov 14), same page:**
+        - The plate wakes when the stream lands on the stone. Its band sets out from its lower left corner, the corner nearest the landing.
+        - **How the screen is seated for the landing.** In this section the stream's end is read from a fixed distance above the foot of the screen, not from two thirds of the way down it. It lands when the foot of the stone is 78 units above the foot of the screen. From the title's top to the stone's foot is 671 units, and the page ends 22 units after the landing. Measured on six screens (1440 by 900, 1366 by 768, 1440 by 790, 1920 by 1080, 1720 by 1300, 1180 by 820): at the landing, and again at the end of the page, the title, the whole plate, the rocket and the stone are inside the screen on every one.
+        - Because the page has almost run out by then, the stone no longer fills with the scroll. Once the stream is on it, it lights from its rim to its middle by itself in 2.4 seconds, and then the rocket goes. Fable's call, his to overturn.
+        - The footer is 100 units, down from 230, so the end of the page does not push the title off a small screen.
+        - "Book on Calendly" on the primary button, his live site's words. "Copy my email" as the secondary button, with no address shown. "Boise, Idaho · Mountain Time" under the form. The tag beside the title is gone.
+    - **Fable's answer on the email: keep it, as the secondary button.** The form and the button serve different people. Someone he is interviewing with will often rather write from their own mail, where they have a copy and can add people. A form on a portfolio is the path people trust least. It costs one button. His to cut.
+    - **For whoever builds it:** a screen too short to hold 671 units cannot show all of it at once. Under about 700 px tall at a desktop's width, the title leaves the top before the stream lands. What happens there is not designed.
+    - Stills: `reference/studies/53-contact-*.jpg`.
     - **What follows is the first round as it was drawn.** It is no longer on the page.
     - **What it holds, from his words (Settled, Contact):** a calendar button first, a way to copy his email, and a working form. Nothing waits for a message.
     - **Fable's calls on what he left open, each his to overturn:**

@@ -11,8 +11,12 @@ export const W = 1460;
 // Room above Contact for the stream to fall in from under his portrait, and where it leaves About across the page.
 export const LEAD = 170;
 export const IN = 692;
-export const CONTACT = { h: 860 };
-export const FOOT = { h: 230, words: 96 };
+export const FOOT = { h: 100, words: 46 };
+// When the stream lands the screen has to hold the rocket, the stone and the whole plate. So the stream's end is
+// read from this far over the foot of the stone, and the stone is that far above the foot of the screen as it lands.
+export const SEAT = 78;
+// How long the stone takes to light from its rim to its middle once the stream is on it, in seconds.
+export const FILL = 2.4;
 
 // The rocket, measured up from the mouth of its engine: the bell, the lower stage, a band, the upper stage, a
 // band, the nose and its spike. It stands on a table whose legs stand on the stone's middle.
@@ -36,19 +40,20 @@ export const FUEL = { lower: 0.4, upper: 0.62, nose: 0.84 };
 // rocket comes back down when the stream draws back.
 export const LAUNCH = { arms: 0.35, lift: 1, climb: 70, end: 4.9, back: 2.6 };
 // The plate's band of light: how long it takes to cross, how many times faster it runs back, how much of the
-// crossing the knob is gone by, and where on the plate it sets out from, as shares of its width and height.
-export const WAKE = { run: 0.95, back: 1.5, knob: 0.3, from: [0, 0.06] as Pt };
+// crossing the knob is gone by, and where on the plate it sets out from, as shares of its width and height: the
+// corner nearest where the stream lands.
+export const WAKE = { run: 0.95, back: 1.5, knob: 0.3, from: [0, 0.97] as Pt };
 
-export interface Plan { h: number; top: number; engine: Pt; ground: number; foot: number; landAt: Pt; ry: number; line: Line; cues: Cue[] }
+export interface Plan { h: number; top: number; engine: Pt; ground: number; foot: number; landAt: Pt; ry: number; seat: number; line: Line; cues: Cue[] }
 
 export function plan(): Plan {
   const top = LEAD, engineY = Math.round(top + ROCKET.tip + ROCKET.tall * ROCKET.scale);
   const ground = Math.round(engineY + TABLE.ground * ROCKET.scale), landAt: Pt = [LAND, ground];
   const l = line([[IN, 0], [landAt[0], landAt[1], 0, 8]]);
-  const level = (id: string, y: number): Cue => ({ id, at: reach(l, y), x: LAND, y });
+  const ry = Math.round(STONE.rx * STONE.flat), foot = ground + ry + STONE.edge;
   return {
-    h: top + CONTACT.h + FOOT.h, top, engine: [ROCKET.x, engineY], ground, foot: top + CONTACT.h, landAt, ry: Math.round(STONE.rx * STONE.flat), line: l,
-    cues: [level('block', top + BLOCK.t + 60), level('near', ground - 560), { id: 'land', at: l.total, x: landAt[0], y: landAt[1] }],
+    h: foot + FOOT.h, top, engine: [ROCKET.x, engineY], ground, foot, landAt, ry, seat: foot + SEAT - ground, line: l,
+    cues: [{ id: 'near', at: reach(l, ground - 560), x: LAND, y: ground - 560 }, { id: 'land', at: l.total, x: landAt[0], y: landAt[1] }],
   };
 }
 

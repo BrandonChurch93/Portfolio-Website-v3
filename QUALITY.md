@@ -383,6 +383,8 @@ The section:
 - **A place worked out with sines and cosines is rounded before it is drawn.** The server and the browser can differ in its last digit, and the page then does not match what the server sent. The second strike's place did.
 - **The last thing the stream reaches has to be reached before the page runs out.** The leading end is read two thirds of the way down the screen, so whatever stands in the last third of the last screen is never reached. Contact's engine is 352 units above the foot of the page, which a screen 900 tall just clears and a taller one does not. `/lab/contact` slides the reading line down the screen near the foot of the page.
 - **Something that plays out over seconds outlasts a quick scroll back up.** The rocket takes about two seconds to come back down. The stream had drawn back past the whole section by then, and the pad went dark under a rocket still in the air. What a thing stands on stays lit until the thing has finished.
+- **Where a section has to be seen whole when something happens, time the stream from the foot of the screen.** Read from two thirds of the way down the screen, the stream reached Contact's stone with the title and half the plate already gone off the top of a small screen. Read from a fixed distance above the foot of the screen, it lands when the section is seated, on every height of screen. Measure it: where the title, the plate and the piece are on the screen at the landing and at the end of the page.
+- **A lab page's own padding moves the end of the page.** The draft's page had 144 px under its board, so the last scroll pushed the title off the screen, which the real page would not do. Take the padding off before judging what the last screen holds.
 
 ## Rough drafts of a 3D piece
 
