@@ -25,7 +25,7 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: calc(var(--size) * 1.3);
+  width: var(--wide, calc(var(--size) * 1.3));
   height: var(--size);
   translate: -50% -50%;
   overflow: visible;

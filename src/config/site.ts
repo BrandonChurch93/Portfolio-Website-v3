@@ -6,7 +6,7 @@ export const SITE_NAME = 'Brandon Church';
 // The names the carried 3D pieces use for the palette. waterAmber3d is the stream's color as a number.
 export const COLORS = { bg: palette.bg, amber: palette.flame, accent: palette['copper-light'], text: palette.text, waterAmber3d: hex('flame') } as const;
 
-export const PIECES = ['city', 'workbench', 'handheld', 'camera', 'rocket', 'cpu', 'reflector', 'studio-light', 'desk'] as const;
+export const PIECES = ['city', 'workbench', 'handheld', 'camera', 'rocket', 'cpu', 'reflector', 'studio-light', 'desk', 'pad'] as const;
 export type PieceName = (typeof PIECES)[number];
 
 // A fraction of the viewport height. A piece's scroll progress is measured against this line.
