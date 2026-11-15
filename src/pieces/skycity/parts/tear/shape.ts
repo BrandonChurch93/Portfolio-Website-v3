@@ -148,7 +148,7 @@ export async function table(): Promise<Table> {
     }
     pts.push(out);
     end[i] = out[(STEPS.length - 1) * 4 + 3];
-    if (i % 24 === 0) await slice();
+    if (i % 6 === 0) await slice();
   }
   return { degs, pts, end };
 }
