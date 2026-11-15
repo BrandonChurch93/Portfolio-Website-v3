@@ -5,6 +5,8 @@ import type { Branch, Route } from './route';
 // before it ended. This joins two of them into one, so one stream, with one leading end, runs through both.
 // The first route may have two sides, as Work's has. They have met by its end, and from there only the first side
 // goes on: the second route is put on the end of that side alone, and the other side is left as it was.
+// Or the first is one stream and the second has two sides, as when the hero's route comes before Work's: then each
+// of the second's sides is put on the end of the first, and where they part and meet is that much further along.
 // Everything the second route knows by how far along it is (its landings, its cues, the stretches it is not drawn)
 // is moved along by the first route's length. Things a route holds once for all of itself are kept apart: each
 // landing keeps how far its own route lets a thrown shard fall, and each rail keeps its own route's bounce.
@@ -29,18 +31,22 @@ function carry(a: Branch, b: Branch): Branch {
   return out;
 }
 
+// A route with one side has the same line for both, and never parts.
+const one = (r: Route): boolean => r.branches[1] === r.branches[0] || (r.join[0] === Infinity && r.split > r.branches[0].len);
+
 export function join(a: Route, b: Route): Route {
-  const first = a.branches[0], by = first.len, whole = carry(first, b.branches[0]);
+  const first = a.branches[0], by = first.len;
   const fall = Math.max(a.fall, b.fall);
-  const lands = (r: Route, shift: number) => r.landings.map((L) => ({ ...L, s: L.s + shift, side: shift ? 0 : L.side, fall: L.fall ?? (r.fall === fall ? undefined : r.fall) }));
+  // The second route keeps its own sides only when it is the one that has them.
+  const parts = one(a) && !one(b);
+  const lands = (r: Route, shift: number, sided: boolean) => r.landings.map((L) => ({ ...L, s: L.s + shift, side: sided ? L.side : 0, fall: L.fall ?? (r.fall === fall ? undefined : r.fall) }));
   const rails = (r: Route) => r.rails.map((rail) => (r.soft === undefined || rail.soft !== undefined ? rail : { ...rail, soft: r.soft }));
-  // A route with one side has the same line for both. When neither has parted, the whole is still one line.
-  const single = a.branches[1] === first || (a.join[0] === Infinity && a.split > first.len);
+  const whole = carry(first, b.branches[0]);
   return {
-    branches: [whole, single ? whole : a.branches[1]],
-    split: single ? whole.len + 1e6 : a.split,
-    join: a.join,
-    landings: [...lands(a, 0), ...lands(b, by)],
+    branches: parts ? [whole, carry(first, b.branches[1])] : [whole, one(a) ? whole : a.branches[1]],
+    split: parts ? b.split + by : one(a) ? whole.len + 1e6 : a.split,
+    join: parts ? [b.join[0] + by, b.join[1] + by] : a.join,
+    landings: [...lands(a, 0, true), ...lands(b, by, parts)],
     boxes: [...a.boxes, ...b.boxes], posts: [...a.posts, ...b.posts], rails: [...rails(a), ...rails(b)],
     fins: [...a.fins, ...b.fins], flows: [...a.flows, ...b.flows],
     fall, unit: a.unit,

@@ -80,8 +80,10 @@ interface Options {
   // A page that plans its own route, as Skills and About do (route-skills.ts).
   // With work as well, the page is Work and then more: the stream runs Work's route as far down the page as until
   // says, and the plan's route is put on the end of it (join.ts), so one stream runs through both.
+  // before is a plan for what stands above Work, as the hero does: Work's route begins where that one ends.
   plan?: (c: PlanContext) => Planned;
   until?: (box: (el: Element) => Box) => number;
+  before?: (c: PlanContext) => Planned;
   // Open with the frame held: nothing moves but the cursor's light. The test shot only.
   hold?: boolean;
   look?: Look;
@@ -338,7 +340,9 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
         return { l: c.l + seat, t: t + seat, r: c.l + c.w - seat, b: t + c.h - seat };
       });
       const barBox = boxOf(W.bar);
-      route = routeThroughWork({ title: ink, bar: barBox, cards: places, posts, rail: shown(W.rail) ? boxOf(W.rail) : null, button: shown(W.button) ? boxOf(W.button) : null, width: w, bottom: opts.plan && opts.until ? opts.until((el) => boxOf(el as HTMLElement)) : bottom, unit });
+      const pre = opts.before ? opts.before({ box: (el) => boxOf(el as HTMLElement), width: w, bottom, unit, view: clock.view.h }) : null, above = pre?.route.branches[0];
+      route = routeThroughWork({ title: ink, bar: barBox, cards: places, posts, rail: shown(W.rail) ? boxOf(W.rail) : null, button: shown(W.button) ? boxOf(W.button) : null, width: w, bottom: opts.plan && opts.until ? opts.until((el) => boxOf(el as HTMLElement)) : bottom, unit, from: above ? above.y[above.n - 1] : undefined });
+      if (pre) route = join(pre.route, route);
       const landed = places.map((box) => route!.landings.flatMap((L, i) => ((L.kind === 'land' || L.kind === 'side') && Math.hypot(Math.max(box.l - L.x, 0, L.x - box.r), Math.max(box.t - L.y, 0, L.y - box.b)) < 10 * unit ? [i] : [])));
       for (const c of cards) c.landings = landed[c.slot];
       // Each side's stops, for the surge. Only the full route has them.
@@ -367,14 +371,23 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       const drawn = route.rails.map((r, i) => { const long = railFrame(r).len / r.half; return { ...r, own: 1.3, blade: bladeFor(route!.posts[i].r * 2, r.half), ends: [1, 0] as [number, number], keel: [K.at[0] * long, K.at[1] * long, K.size] as [number, number, number] }; });
       base = { reliefs: [shapeOf(W.bar)], posts: route.posts.map((o, i) => ({ ...o, own: i ? -1 : 1 })), rails: drawn, bars: [...route.rails, ...route.fins] };
       // The sections under Work: their route starts where Work's ends and is put on the end of it.
-      planned = null;
-      let more = 0;
+      planned = pre;
+      let more = pre ? pre.route.rails.length : 0;
       if (opts.plan) {
         const br = route.branches[0], lead = br.len;
         const next = opts.plan({ box: (el) => boxOf(el as HTMLElement), width: w, bottom, unit, view: clock.view.h, from: { x: br.x[br.n - 1], y: br.y[br.n - 1] } });
         // What the plan knows by how far along its own route something is, is that far past Work's end here.
-        planned = { ...next, quiet: next.quiet && ((s) => (s < lead ? 1 : next.quiet!(s - lead))) };
-        more = next.route.rails.length;
+        const under: Planned = { ...next, quiet: next.quiet && ((s) => (s < lead ? 1 : next.quiet!(s - lead))) };
+        // With a plan above Work as well, the two are one: both are told of each frame, and the stream is kept off
+        // what either keeps it off.
+        planned = pre ? {
+          route: next.route,
+          rails: pre.rails || under.rails ? (since) => [...(pre.rails?.(since) ?? []), ...(under.rails?.(since) ?? [])] : undefined,
+          after: (t) => { pre.after?.(t); under.after?.(t); },
+          off: (x, y) => !!pre.off?.(x, y) || !!under.off?.(x, y),
+          quiet: pre.quiet || under.quiet ? (s) => (pre.quiet?.(s) ?? 1) * (under.quiet?.(s) ?? 1) : undefined,
+        } : under;
+        more += next.route.rails.length;
         route = join(route, next.route);
         pulses = [];
       }

@@ -7,6 +7,7 @@ import type { HeroStage } from '../../hero/stage';
 import { HOST } from '../../pieces/skycity/layout';
 import { MetalButton } from '../MetalButton';
 import { PieceView } from '../PieceView';
+import type { Hub } from '../../whole/hub';
 import { Shell } from './Shell';
 import styles from './HeroLab.module.css';
 
@@ -19,14 +20,16 @@ const u = (n: number) => `calc(var(--u) * ${Number(n.toFixed(2))})`;
 // (src/stream/route-hero.ts): from the city's main fall, down the front of its rock, to the bar.
 // There is no opening: the city and the words are simply there. The glow behind the city is a plain one until the
 // sky is in, which draws it. ?ui=0 hides the label.
-export function HeroLab() {
+// On a page with more sections than this one (hub), it hands the hub its plan, the hub mounts the one stream, and
+// the stream runs on from the city's rock into Work.
+export function HeroLab({ hub }: { hub?: Hub }) {
   const page = useRef<HTMLElement>(null), board = useRef<HTMLDivElement>(null), city = useRef<HTMLDivElement>(null), bar = useRef<HTMLDivElement>(null), cue = useRef<HTMLParagraphElement>(null);
   const [ui, setUi] = useState(true);
   // Whether the screen is wide enough for the layout. Narrower, the page is a plain stand in with no stream and no city.
   const [wide, setWide] = useState<boolean | null>(null);
 
   useEffect(() => {
-    setUi(new URLSearchParams(location.search).get('ui') !== '0');
+    setUi(new URLSearchParams(location.search).get('ui') !== '0' && !hub);
     const fits = matchMedia(`(min-width: ${BOARD.least}px)`), read = () => setWide(fits.matches);
     read();
     fits.addEventListener('change', read);
@@ -38,10 +41,10 @@ export function HeroLab() {
     let made: HeroStage | null = null, gone = false;
     void import('../../hero/stage').then(({ mountHero }) => {
       if (gone) return;
-      made = mountHero({ page: page.current!, board: board.current!, city: city.current!, bar: bar.current!, cue: cue.current });
+      made = mountHero({ page: hub?.page() ?? page.current!, board: board.current!, city: city.current!, bar: () => (hub ? hub.workTop() : bar.current), cue: cue.current }, hub?.hero());
     });
     return () => { gone = true; made?.dispose(); };
-  }, [wide]);
+  }, [wide, hub]);
 
   const vars = {
     '--words-tall': WORDS.tall, '--words-least': WORDS.least, '--words-third': WORDS.third, '--words-rise': WORDS.rise, '--words-gap': WORDS.gap,
@@ -50,7 +53,7 @@ export function HeroLab() {
   } as CSSProperties;
 
   return (
-    <Shell ref={page} className={styles.page}>
+    <Shell ref={page} className={styles.page} data-embed={hub ? '' : undefined}>
       {ui && (
         <div className={styles.head}>
           <p className={styles.label}>Study 30 · The hero</p>

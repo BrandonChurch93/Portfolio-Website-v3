@@ -13,9 +13,10 @@ import { BOARD, CITY, CX } from './board';
 export interface HeroParts {
   page: HTMLElement;
   board: HTMLElement;
-  // The city's host, and the thing the stream runs down to: Work's bar, or what stands in for it.
+  // The city's host, and the thing the stream runs down to: what stands in for Work's bar on this page, or, on a
+  // page that has Work under the hero, Work's title.
   city: HTMLElement;
-  bar: HTMLElement;
+  bar: () => HTMLElement | null;
   cue: HTMLElement | null;
 }
 
@@ -23,16 +24,18 @@ export interface HeroStage { dispose(): void }
 
 // How far the page has to be scrolled for the cue to have gone, in pixels.
 const CUE = 120;
+// On a page with Work under the hero, how far over Work's title the hero's route hands the stream to Work's, in units.
+const SEAM = 170;
 
 export function mountHero(parts: HeroParts, host?: StreamHost): HeroStage {
   let stream: StreamHandle | null = null, disposed = false, shown = '';
 
   const plan = (c: PlanContext): Planned => {
-    const B = c.box(parts.board), k = (B.r - B.l) / BOARD.w, C = c.box(parts.city), bar = c.box(parts.bar);
+    const B = c.box(parts.board), k = (B.r - B.l) / BOARD.w, C = c.box(parts.city), to = parts.bar(), bar = to ? c.box(to) : { l: B.l, r: B.r, t: C.b, b: C.b };
     // The middle of the city's ground is a set distance over the foot of its host.
     const x = B.l + CX * k, ground = C.b - CITY.under * k;
     return {
-      route: routeThroughHero({ width: c.width, unit: c.unit, board: k, fall: { x, y: ground + CITY.front * k }, keel: { x, y: ground + CITY.keel * k }, bar: { x: (bar.l + bar.r) / 2, y: bar.t }, joined: !!host }),
+      route: routeThroughHero({ width: c.width, unit: c.unit, board: k, fall: { x, y: ground + CITY.front * k }, keel: { x, y: ground + CITY.keel * k }, bar: { x: (bar.l + bar.r) / 2, y: bar.t - (host ? SEAM * k : 0) }, joined: !!host }),
       after: frame,
     };
   };

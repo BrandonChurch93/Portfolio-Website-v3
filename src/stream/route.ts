@@ -387,6 +387,9 @@ export interface WorkPlan {
   width: number;
   bottom: number;
   unit: number;
+  // How far down the page it begins, on a page where a section above Work has already carried the stream that far.
+  // Without it, it comes in from above the top of the page.
+  from?: number;
 }
 
 // The route through Work, the same on both sides, mirrored. Down the middle, parting on the title and round its
@@ -406,12 +409,13 @@ export function routeThroughWork(P: WorkPlan): Route {
   const half = W.rail.half * u;
   const top = P.title.t - R.above * u, shelf = P.bar.t - R.above * u;
   const tight = W.bolt.corner * u;
-  const start: Corner = [cx, R.start * u, 0, 0], part: Corner = [cx, top, T.part[0] * u, T.part[1] * u];
+  const begins = P.from ?? R.start * u;
+  const start: Corner = [cx, begins, 0, 0], part: Corner = [cx, top, T.part[0] * u, T.part[1] * u];
   const rails: Rail[] = two ? [-1, 1].map((way) => ({ ax: way < 0 ? P.rail!.l : P.rail!.r, ay: P.rail!.t, bx: (way < 0 ? P.button!.l : P.button!.r) + way * W.rail.gap * u, by: P.rail!.b, half })) : [];
   const fins: Rail[] = rails.flatMap((r, i) => { const f = railFrame(r); return finial(r.ax, r.ay, -f.ex, -f.ey, half, bladeFor(P.posts[i].r * 2, half)); });
   const S: Solids = { boxes: two ? [P.title, P.bar, ...P.cards.slice(0, 4), P.button!] : [P.title, P.bar, ...P.cards], posts: two ? P.posts : [], rails };
   const flows = S.boxes.map((b) => (two && b === P.cards[0] ? -1 : two && b === P.cards[1] ? 1 : 0));
-  const split = top - part[2] - R.start * u;
+  const split = top - part[2] - begins;
   const narrow = roam(P.width);
   // A place the stream meets something, before it is known how far along the side that is: the point of the route to
   // look for is kept with it.

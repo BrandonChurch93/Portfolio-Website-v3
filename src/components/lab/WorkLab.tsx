@@ -26,7 +26,8 @@ const ROWS = [0, 1];
 // so. The category bar's look and the button are stand ins too. ?ui=0 hides the label.
 // On a page with more sections than this one (hub), it lays itself out and hands the hub its things, and the hub
 // mounts the one stream for all of them.
-export function WorkLab({ hub }: { hub?: Hub }) {
+// under says the hero stands over it there, so it keeps only the room the stream needs to fall from the city.
+export function WorkLab({ hub, under }: { hub?: Hub; under?: boolean }) {
   const page = useRef<HTMLElement>(null);
   const title = useRef<HTMLHeadingElement>(null);
   const bar = useRef<HTMLDivElement>(null);
@@ -57,7 +58,7 @@ export function WorkLab({ hub }: { hub?: Hub }) {
   };
 
   return (
-    <Shell ref={page} className={styles.page} data-embed={hub ? '' : undefined}>
+    <Shell ref={page} className={styles.page} data-embed={hub ? (under ? 'under' : '') : undefined}>
       {ui && (
         <header className={styles.head}>
           <p className={styles.label}>Study 10 · the stream through Work</p>
