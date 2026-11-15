@@ -21,9 +21,10 @@ export const PLACES: Record<string, [x: number, z: number, turn: number]> = {
   lamp: [-868, -268, 0],
   tablet: [-600, 150, 22],
   keyboard: [-110, 196, 0],
-  // The mouse is turned toward the keyboard: seen from behind it was a smooth pebble, and turned its buttons and
-  // wheel show.
-  mouse: [176, 190, 40],
+  // The mouse is turned a little toward the keyboard, as it lies under a hand: seen square from behind it was a
+  // smooth pebble, and turned as far as 40 it was seen side on, with its wheel and the split of its buttons beyond
+  // its crest.
+  mouse: [176, 190, 20],
   // The camera, its second lens and its cap are composed by their own part (ARRANGE in parts/camera.ts).
   // The pencil lies square to the desk's front edge, in clear mat between the tablet and the keyboard: beside the
   // tablet at the tablet's angle it read as part of the tablet.
