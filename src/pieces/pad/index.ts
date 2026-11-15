@@ -48,8 +48,10 @@ const ROOM = {
 // carving: a light close over a surface burns a white spot into it. How wide the cone is, in degrees, how far it
 // reaches, in metres, and how strong it is with the stone full.
 const GLOW = { cone: 72, reach: 1.8, power: 2.2 };
-// The engine's light: how far under the engine's mouth it stands, in units, and how strong it is at full thrust.
-const FIRE = { under: 12, power: 0.7 };
+// The engine's light: how far over the engine's mouth it stands, in units, and how strong it is at full thrust. It
+// stands clear of the stone: any nearer, it burned a white spot into the stone's middle that the bloom spread into
+// a dome over the whole pad.
+const FIRE = { over: 30, power: 0.3 };
 
 function room(): THREE.Scene {
   const s = studioScene();
@@ -153,7 +155,7 @@ export function createPad(): PadPiece {
     const now = hold ?? clock.now(), b = burn(launch), climb = climbed(launch);
     const s: PartState = { t: now, fill, launch, burn: b, climb, stream, cursor, still: reduced || frozen || stage.tier === 'static' };
     if (glow) glow.intensity = GLOW.power * fill;
-    if (fire) { fire.intensity = FIRE.power * b; fire.position.y = (ROCKET.mouth - FIRE.under + climb) * M; }
+    if (fire) { fire.intensity = FIRE.power * b; fire.position.y = (ROCKET.mouth + FIRE.over + climb) * M; }
     moving = false;
     for (const { name, part } of parts) {
       if (name === 'rocket') {
@@ -178,7 +180,7 @@ export function createPad(): PadPiece {
       only = asked && PARTS.includes(asked) ? asked : null;
       if (q.get('fill')) fill = Math.min(1, Math.max(0, Number(q.get('fill'))));
       if (q.get('launch')) { launch = Number(q.get('launch')); fill = 1; }
-      stage = new Stage(h, canvas, { tier: opts.tier, fov: ALONE.fov, near: 0.3, far: 40, bloom: { strength: 0.22, threshold: 1.6, radius: 0.3 }, ao: 0.02, aoIntensity: 1, aoSamples: 8, aoScale: 0.5, bloomScale: 0.5, envIntensity: ROOM.env, env: room, lampAngle: 0.9 });
+      stage = new Stage(h, canvas, { tier: opts.tier, fov: ALONE.fov, near: 0.3, far: 40, bloom: { strength: 0.22, threshold: 2.2, radius: 0.3 }, ao: 0.02, aoIntensity: 1, aoSamples: 8, aoScale: 0.5, bloomScale: 0.5, envIntensity: ROOM.env, env: room, lampAngle: 0.9 });
       trueDarks(stage.renderer);
       finish(stage, RIM);
       const s = stage.scene;
@@ -208,7 +210,7 @@ export function createPad(): PadPiece {
       glow.position.set(0, 0, 0);
       glow.target.position.set(0, 1, 0);
       fire = new THREE.PointLight(hex('hot'), 0, 0, 2);
-      fire.position.set(0, (ROCKET.mouth - FIRE.under) * M, 0);
+      fire.position.set(0, (ROCKET.mouth + FIRE.over) * M, 0);
       const hemi = new THREE.HemisphereLight(0x3d3731, 0x100e0c, 0.55);
       s.add(glow, glow.target, fire, hemi);
       stage.lamp.intensity = LAMP.power;
