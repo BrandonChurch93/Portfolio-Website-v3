@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { hex } from '../../config/palette';
 import type { Tier } from '../../config/site';
 import { clock } from '../../world/clock';
-import { studioScene } from '../../world/env';
 import type { Piece, PieceOptions } from '../../world/piece';
 import { Stage } from '../../world/stage';
 import type { Anchor } from '../../world/struck';
@@ -29,50 +28,38 @@ const ALONE = { fill: 0.62, fov: 12 };
 const LAMP = { back: 2.6, across: 1.1, up: 1.1, power: 7 };
 // The canvas fades to nothing over this share of its rim, so nothing can end at its edge.
 const RIM = 0.05;
-// The room the city is seen by, as the desk's is: how strongly its things reflect it, and two wide pale lights in
-// it, one behind and to the right and one in front and to the left. They are part of what is reflected and not
-// lights of their own, which on a canvas this large cost more than a frame has.
+// What the world's polished metal reflects. He asked for gold, bronze and copper that shine, and a mirror shows
+// only what is round it: so the room holds the things a polished face on this world would catch. The moon, small
+// and very bright, where the moon is in the page's sky. The glow of the city in the sky behind and above. A long
+// pale strip overhead and one at each side, as a photographer's lights are, for the bright hard edged lines that
+// make a curved thing read as polished. And darkness between, so a highlight has something to stand against.
+// These are part of what is reflected and not lights of their own, which on a canvas this large cost more than a
+// frame has. Powers are as seen in a mirror.
 const ROOM = {
   env: 0.3,
-  lights: [
+  moon: { power: 260, across: 0.7, far: 7 },
+  glow: { power: 2.6, size: [16, 5] as [number, number], at: [0, 1.2, -7] as [number, number, number] },
+  strips: [
+    { power: 20, size: [5.5, 0.22], at: [0.6, 3.4, 2.2], to: [0, 0, 0] },
+    { power: 11, size: [0.2, 3.6], at: [4.4, 1.2, 1.6], to: [0, 0.4, 0] },
+    { power: 6, size: [0.2, 3.6], at: [-4.4, 1.2, 1.6], to: [0, 0.4, 0] },
     { power: 9, size: [3.2, 0.6], at: [1.6, 1.5, -2.2], to: [0, 0.2, 0] },
-    { power: 1.4, size: [3.2, 1.4], at: [-1.8, 1.4, 2.6], to: [0, 0.2, 0] },
   ] as { power: number; size: [number, number]; at: [number, number, number]; to: [number, number, number] }[],
 };
-// The moon, which is in the upper right of the page's sky: the one light that gives the world a lit side and a dark
-// one. Where it stands from the world (the plan has it), how strong it is, and how many pixels across its shadows are drawn. It never
-// moves, so its shadows are drawn once.
-const MOON = { from: MOONWARD, power: 15, map: { high: 4096, mid: 2048, low: 1024, static: 2048 } as Record<Tier, number>, reach: 1100 };
-// The dim light of the sky, which fills what the moon does not reach. It is kept low: with more, the world had no
-// dark side and read as flat.
-const SKY = 0.1;
-// Depth as darkness: what is further from the eye sinks toward the page's ground, so the far side of the city
-// stands dark against the glow behind it and the near side stands clear of it. From how far in front of the
-// world's middle it begins, and how far behind it would be whole, in metres.
-const HAZE = { from: 0.5, to: 2.2 };
-// How many pixels the world is drawn with at most. Its canvas is taller than the screen and every pixel of it is
-// lit by three lights through two shadow maps: at a screen's full density it drew 30 frames a second on a fast
-// laptop, and at this count 60 with room to spare. The stage's own budget is for a canvas the size of a screen.
-const PIXELS = 2.8e6;
-// The light the core throws on the torn rock and on what broke away.
-const GLOW = { power: 14 };
-// The heights of the frame each part lies between, lowest first. A part none of which the screen shows is not
-// drawn and is not told the time, so the core and what broke away cost nothing while they are under the foot of
-// the screen, and the city costs nothing once it is over the top.
-const EDGE_Y = -PLANET.r * (1 - Math.cos((PLANET.cap * Math.PI) / 180)), TOP = SPIRE.tall + HOST.over;
-const ABOVE: readonly [number, number] = [EDGE_Y - 80, TOP];
-const SPAN: Record<PartName, readonly [number, number]> = {
-  ground: [EDGE_Y - 80, 60], spire: ABOVE, towers: ABOVE, temple: ABOVE, gardens: ABOVE, port: ABOVE,
-  tear: [TEAR.low - 80, EDGE_Y + 80], core: [HEART[1] - 340, HEART[1] + 340], debris: [DEBRIS.low - 80, DEBRIS.high + 80],
-};
 function room(): THREE.Scene {
-  const s = studioScene();
-  for (const l of ROOM.lights) {
-    const m = new THREE.Mesh(new THREE.PlaneGeometry(...l.size), new THREE.MeshBasicMaterial({ color: new THREE.Color(hex('pale')).multiplyScalar(l.power / ROOM.env), side: THREE.DoubleSide }));
-    m.position.set(...l.at);
-    m.lookAt(...l.to);
+  const s = new THREE.Scene();
+  const walls = new THREE.Mesh(new THREE.BoxGeometry(30, 20, 30), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.01, 0.007, 0.005), side: THREE.BackSide }));
+  s.add(walls);
+  const lit = (g: THREE.BufferGeometry, tint: THREE.Color, power: number, at: [number, number, number], to: [number, number, number]) => {
+    const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: tint.clone().multiplyScalar(power / ROOM.env), side: THREE.DoubleSide }));
+    m.position.set(...at);
+    m.lookAt(...to);
     s.add(m);
-  }
+  };
+  const pale = new THREE.Color(hex('pale'));
+  for (const l of ROOM.strips) lit(new THREE.PlaneGeometry(...l.size), pale, l.power, l.at, l.to);
+  lit(new THREE.CircleGeometry(ROOM.moon.across / 2, 32), pale, ROOM.moon.power, [MOONWARD[0] * ROOM.moon.far, MOONWARD[1] * ROOM.moon.far, MOONWARD[2] * ROOM.moon.far], [0, 0, 0]);
+  lit(new THREE.PlaneGeometry(...ROOM.glow.size), new THREE.Color(hex('flame')), ROOM.glow.power, ROOM.glow.at, [0, 0.5, 0]);
   return s;
 }
 
@@ -85,7 +72,9 @@ const loaders: Record<PartName, () => Promise<PartFactory>> = {
   debris: () => import('./parts/debris').then((m) => m.build),
   temple: () => import('./parts/temple').then((m) => m.build),
   gardens: () => import('./parts/gardens').then((m) => m.build),
-  port: () => import('./parts/port').then((m) => m.build),
+  dunes: () => import('./parts/dunes').then((m) => m.build),
+  monument: () => import('./parts/monument').then((m) => m.build),
+  craft: () => import('./parts/craft').then((m) => m.build),
 };
 
 export interface CityExtras {
