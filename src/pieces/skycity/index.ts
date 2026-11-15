@@ -49,6 +49,10 @@ const ROOM = {
     { power: 11, size: [0.2, 3.6], at: [4.4, 1.2, 1.6], to: [0, 0.4, 0] },
     { power: 6, size: [0.2, 3.6], at: [-4.4, 1.2, 1.6], to: [0, 0.4, 0] },
     { power: 9, size: [3.2, 0.6], at: [1.6, 1.5, -2.2], to: [0, 0.2, 0] },
+    // High behind the world: what a level mirror seen from the page reflects. Without it a pool of polished metal
+    // showed only the glow, as a flat orange sheet.
+    { power: 13, size: [9, 0.28], at: [0, 3.8, -5], to: [0, 0, 0] },
+    { power: 6, size: [0.3, 2.4], at: [-2.6, 2.6, -5.5], to: [0, 0, 0] },
   ] as { power: number; size: [number, number]; at: [number, number, number]; to: [number, number, number] }[],
 };
 // The moon, which is in the upper right of the page's sky: the one light that gives the world a lit side and a dark

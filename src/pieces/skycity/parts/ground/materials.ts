@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { hex } from '../../../../config/palette';
 import { lin, shade } from '../../../../world/surface';
-import { DISTRICTS, PEAKS, PLANET } from '../../layout';
+import { PLANET } from '../../layout';
+import { BARE } from './bare';
 import { D2R } from './kit';
 
 // The ground's two programs, and the one its small moving lights are drawn with. The floor draws everything that is
@@ -192,34 +193,13 @@ vec3 gStone(vec3 base, float px, float up){
     c = mix(${lin(0x2a2018)}, ${lin(0x55504a)}, st) * (0.8 + 0.3 * n);
     gRough = 0.97; gSpec = 0.12;
   }
-  else if (kd < 16.5) {
-    // The land's great rock: beds of many tones, from pale sand to near black, each with its own grain, some harder
-    // and smoother; dark streaks where water ran down it from the ledges; dust on what faces up.
-    float y = vLoc.y + vCell.y * 7.0, wob = (wNoise(vObj * 0.15) - 0.5) * 1.6;
-    float bed = floor((y + wob) / 2.3), tone = gHash(vec2(bed, floor(vCell.y * 13.0)));
-    vec3 a = ${lin(0x665b4f)}, b2 = ${lin(0x574e45)}, c2 = ${lin(0x6f6252)}, d = ${lin(0x4a433c)}, e = ${lin(0x5e4e3f)};
-    c = tone < 0.28 ? a : tone < 0.5 ? b2 : tone < 0.66 ? c2 : tone < 0.82 ? e : d;
-    float within = fract((y + wob) / 2.3);
-    c *= 0.94 + 0.08 * smoothstep(0.0, 0.25, within) - 0.12 * smoothstep(0.85, 1.0, within) * fade;
-    c *= 0.86 + 0.28 * mix(0.5, wNoise(vObj * vec3(0.9, 0.25, 0.9)), fade);
-    float streak = smoothstep(0.6, 0.85, wNoise(vec3(vObj.x * 0.35, vLoc.y * 0.03, vObj.z * 0.35))) * (1.0 - up);
-    c *= 1.0 - 0.45 * streak;
-    c = mix(c, ${lin(0x5d5247)} * (0.85 + 0.25 * n), smoothstep(0.6, 0.95, up) * 0.6);
-    gRough = 0.86 - 0.12 * step(0.5, tone); gSpec = 0.3;
-    gCut = -smoothstep(0.82, 1.0, within) * 0.9 * fade;
-  }
   else {
-    // Water: near black where it is deep, a little lighter in the shallows, and smooth, so it takes the sky and the
-    // moon. Where it falls it breaks into streaks of pale water running down.
-    float runs = vCell.w, foam = vCell.y;
-    float shallow = runs > 0.5 ? 0.6 : smoothstep(0.55, 1.0, vCell.z);
-    c = mix(${lin(0x050606)}, ${lin(0x1a1917)}, shallow);
-    float flow = wNoise(vec3(vLoc.y * 2.0, vLoc.x * 0.35 - uT * (0.6 + 3.0 * foam), 3.0));
-    float streak = smoothstep(0.42, 0.68, flow) * mix(0.6, 1.0, fade);
-    c = mix(c, ${lin(0x8c8781)} * (0.7 + 0.4 * flow), clamp(foam * 1.4, 0.0, 1.0) * streak);
-    c = mix(c, ${lin(0x2a2826)}, clamp(foam * 1.4, 0.0, 1.0) * (1.0 - streak) * 0.5);
-    gRough = mix(0.04, 0.55, foam); gSpec = 1.0;
-    gCut = runs * (flow - 0.5) * 0.25 * fade;
+    // Metal polished to a mirror, as the pools are: gold, copper or bronze by its y, with a slow broad ripple running
+    // through it so what it reflects breaks into moving shapes, bright beside dark.
+    float m = vCell.y;
+    c = m < 0.5 ? ${lin(GOLD)} : m < 1.5 ? ${lin(hex('copper'))} : ${lin(hex('bronze-deep'))} * 1.8;
+    gMetal = 1.0; gRough = 0.035; gSpec = 1.0;
+    gCut = ((wNoise(vObj * 0.12 + vec3(uT * 0.05, 0.0, uT * 0.03)) - 0.5) * 0.45 + (wNoise(vObj * 0.31 - vec3(0.0, 0.0, uT * 0.07)) - 0.5) * 0.5) * fade;
   }
   diffuseColor.rgb = c;
 }`,
@@ -234,18 +214,20 @@ vec3 gStone(vec3 base, float px, float up){
 
 // The floor's plan, as the shader needs it.
 export interface FloorPlan {
-  plaza: number; rings: readonly number[]; road: number; avenues: readonly number[]; city: number; mapR: number; tall: number; margin: number;
+  plaza: number; rings: readonly number[]; road: number; avenues: readonly number[]; city: number; mapR: number; tall: number;
   squares: [number, number, number, number][];
-  // Each place another part makes its own floor in: from radius x to y, from bearing z to w.
-  zones: { procession: [number, number, number, number]; temple: [number, number, number, number]; port: [number, number, number, number] };
-  // The forest: from radius x to y, from bearing z to w. There are no streets in it.
+  // Each place another part makes its own floor in, and each stretch of open ground: from radius x to y, from
+  // bearing z to w.
+  zones: { procession: [number, number, number, number]; temple: [number, number, number, number]; monument: [number, number, number, number] };
   forest: [number, number, number, number];
+  dunes: [number, number, number, number];
+  open: [number, number, number, number][];
 }
 
 // The floor. Its attributes: plan, where on the map a point was before the land broke, how deep under the land's top
-// it is, and what it is (0 the top, 1 a broken face, 2 the crack's floor, 3 the rock under the torn edge); aux, how
-// high the land stands there as a share of its tallest, how far out across the margin, and how much of the stream's
-// light shows there.
+// it is (on the top itself, how bare the ground is), and what it is (0 the top, 1 a broken face, 2 the crack's floor,
+// 3 the rock under the torn edge); aux, how high the ground stands there as a share of TALL, how far out across the
+// margin, and how much of the stream's light shows there.
 export function floorMaterial(u: GroundUniforms, map: THREE.Texture, plan: FloorPlan): THREE.MeshStandardMaterial {
   const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.8, metalness: 0 });
   m.name = 'ground-floor';
@@ -256,28 +238,24 @@ export function floorMaterial(u: GroundUniforms, map: THREE.Texture, plan: Floor
   shade(m, 'ground-floor', {
     vhead: 'attribute vec4 plan;\nattribute vec3 aux;\nvarying vec4 vPlan;\nvarying vec3 vAux;',
     vert: 'vPlan = plan; vAux = aux;',
-    head: `varying vec4 vPlan; varying vec3 vAux; uniform float uT; uniform float uCore; uniform sampler2D uMap; float gRough, gSpec, gMetal, gH, gFlat; vec3 gEmi;
+    head: `varying vec4 vPlan; varying vec3 vAux; uniform float uT; uniform float uCore; uniform sampler2D uMap; float gRough, gSpec, gMetal, gH; vec3 gEmi;
 ${RAMP}
 ${LINES}
 ${BUMP}
 const float RINGS[${plan.rings.length}] = float[](${rings});
 const float AVES[${plan.avenues.length}] = float[](${aves});
 const vec4 SQUARES[${plan.squares.length}] = vec4[](${plan.squares.map(v4).join(', ')});
-const vec4 PEAKS[${PEAKS.length}] = vec4[](${PEAKS.map((q) => v4([q.x, q.z, q.r, q.tall])).join(', ')});
-// The mountains' faces, as weather wears them: gullies and spurs running down from the summit, worked out round the
-// nearest mountain, deeper toward the top. x how deep the gully is (0 a spur, 1 its floor), y how much of a mountain
-// is here.
-vec2 gGully(vec2 p){
-  float best = 0.0, g = 0.5;
-  for (int i = 0; i < ${PEAKS.length}; i++) {
-    vec2 o = p - PEAKS[i].xy; float d = length(o) / PEAKS[i].z;
-    if (d > 1.05) continue;
-    float a = atan(o.x, o.y), k = 1.0 - smoothstep(0.6, 1.05, d);
-    float rid = 1.0 - abs(2.0 * wNoise(vec3(a * 5.5 + d * 1.5, d * 2.2, float(i) * 7.0)) - 1.0);
-    float fine2 = 1.0 - abs(2.0 * wNoise(vec3(a * 17.0 + d * 3.0, d * 6.0, float(i) * 3.0)) - 1.0);
-    if (k > best) { best = k; g = 1.0 - (0.7 * rid + 0.3 * fine2); }
+const vec4 OPEN[${plan.open.length}] = vec4[](${plan.open.map(v4).join(', ')});
+// The edges of the cells of a cracked pavement: 0 on a crack, rising into each slab; and each slab's own number.
+vec2 gCells(vec2 q){
+  vec2 i = floor(q), f = fract(q);
+  float d1 = 8.0, d2 = 8.0, id = 0.0;
+  for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
+    vec2 o = vec2(float(x), float(y)), c = o + 0.15 + 0.7 * vec2(gHash(i + o), gHash(i + o + 17.3)) - f;
+    float d = dot(c, c);
+    if (d < d1) { d2 = d1; d1 = d; id = gHash(i + o + 5.1); } else if (d < d2) d2 = d;
   }
-  return vec2(g, best);
+  return vec2(sqrt(d2) - sqrt(d1), id);
 }
 // How far inside a stretch of the ground a point is: from radius x to y, from bearing z to w. Below 0 outside.
 float gSector(float r, float deg, vec4 q){
@@ -295,85 +273,78 @@ float gSector(float r, float deg, vec4 q){
   float slope = 1.0 - clamp(dot(normalize(vObjN + vec3(0.0, 1e-5, 0.0)), radial), 0.0, 1.0);
   float steep = smoothstep(0.02, 0.1, slope);
   vec3 c; vec3 emi = vec3(0.0);
-  gRough = 0.92; gSpec = 0.22; gMetal = 0.0; gH = 0.0; gFlat = 0.0;
+  gRough = 0.92; gSpec = 0.22; gMetal = 0.0; gH = 0.0;
   if (what < 0.5) {
     vec4 mp = texture2D(uMap, p / ${f(2 * plan.mapR)} + 0.5) * step(r, ${f(plan.mapR - 2)});
-    float road = smoothstep(0.7, 0.9, mp.g), verge = smoothstep(0.3, 0.5, mp.g) * (1.0 - road);
-    float water = smoothstep(0.7, 0.9, mp.b), bank = smoothstep(0.3, 0.5, mp.b) * (1.0 - water);
-
-    // The land, in three values: dark earth under the trees, leaf litter in drifts of umber and old copper, moss in
-    // the hollows; mid warm rock on the ridges and the steep ground, with scree below it; pale gravel on the roads and
-    // pale stone on the river banks. Dry grass where the ground is open and low.
+    float old = smoothstep(0.35, 0.8, mp.g), hh = h * ${f(plan.tall)};
     float n0 = wFbm(vec3(p * 0.011, 1.0)), n1 = wFbm(vec3(gTurn(p, 37.0) * 0.045, 2.0));
     float n2 = mix(0.5, wFbm(vec3(gTurn(p, 71.0) * 0.21, 3.0)), fine), n3 = mix(0.5, wNoise(vec3(gTurn(p, 23.0) * 0.9, 4.0)), finer);
-    vec3 land = mix(${lin(0x1c1510)}, ${lin(0x2e2116)}, smoothstep(0.35, 0.65, n1));
-    land = mix(land, ${lin(0x4a2e19)}, smoothstep(0.58, 0.78, n2 * 0.6 + n1 * 0.4) * 0.6);
-    land = mix(land, ${lin(0x241e16)}, smoothstep(0.55, 0.75, n0) * 0.35);
-    land *= 0.78 + 0.44 * n3;
-    float fleck = smoothstep(0.66, 0.74, mix(0.5, wNoise(vec3(gTurn(p, 9.0) * 0.55, 14.0)), fine));
-    land = mix(land, ${lin(0x4a3a27)}, fleck * 0.5);
-    float cliff = smoothstep(0.1, 0.3, slope);
-    float lift = cliff * 0.75 + h * 1.1 + (n1 - 0.5) * 0.3 + tOut * 0.2;
-    float rk = smoothstep(0.5, 0.75, lift), sc = smoothstep(0.32, 0.5, lift) * (1.0 - rk);
-    // Bare rock: its shape is in its relief, ridged and broken, and the moon finds it; its tone runs in broad warm
-    // patches, darker down its seams; rust and pale lichen on what faces up.
-    float rg1 = 1.0 - abs(2.0 * wFbm(vec3(gTurn(p, 13.0) * 0.06, 6.0)) - 1.0), rg2 = 1.0 - abs(2.0 * wNoise(vec3(gTurn(p, 51.0) * 0.23, 9.0)) - 1.0);
-    float seam = smoothstep(0.35, 0.05, rg1);
-    // The mountains' beds, level across them, each its own tone.
-    float hh = h * ${f(plan.tall)} + (n1 - 0.5) * 2.0, bedId = floor(hh / 3.2), bedIn = fract(hh / 3.2);
-    vec3 stone = mix(${lin(0x3e3630)}, ${lin(0x5e5248)}, smoothstep(0.3, 0.7, wFbm(vec3(p * 0.025, 4.0)) * 0.85 + gHash(vec2(bedId, 3.0)) * 0.15)) * (0.8 + 0.3 * n2) * (1.0 - 0.5 * seam);
-    stone = mix(stone, ${lin(0x6c6156)}, smoothstep(0.74, 0.86, n2) * 0.35);
-    stone = mix(stone, ${lin(0x56351f)}, smoothstep(0.75, 0.88, wFbm(vec3(p * 0.3, 12.0))) * 0.4 * fine);
-    vec2 gully = gGully(p);
-    float worn = gully.y * smoothstep(0.08, 0.25, slope);
-    stone *= mix(1.0, 0.78 + 0.3 * (1.0 - gully.x), worn);
-    land = mix(land, ${lin(0x3b332b)} * (0.6 + 0.7 * n3), sc * 0.8);
-    land = mix(land, stone, rk);
-    c = land;
-    gRough = mix(0.95, 0.8, rk); gSpec = mix(0.12, 0.3, rk);
-    gH = (n2 - 0.5) * 0.9 + (n3 - 0.5) * 0.5 - worn * gully.x * 2.2 + rk * (rg1 * 3.4 + rg2 * 1.3 * fine - seam * 1.6) + sc * (n3 - 0.5) * 1.4;
+    float edgeN = wNoise(vec3(p * 0.05, 8.0));
+    float jungle = smoothstep(-6.0, 6.0, gSector(r, deg, ${v4(plan.forest)}) + (edgeN - 0.5) * 8.0);
+    float dunes = smoothstep(-6.0, 6.0, gSector(r, deg, ${v4(plan.dunes)}) + (edgeN - 0.5) * 8.0);
 
-    // Roads and tracks out through the land: pale packed gravel, two darker wheel worn lines, between worn verges.
-    vec3 gravel = ${lin(0x7a6a57)} * (0.82 + 0.3 * n3) * (0.88 + 0.2 * n2);
-    c = mix(c, ${lin(0x3e3125)} * (0.8 + 0.4 * n3), verge * 0.8);
-    c = mix(c, gravel, road);
-    gH = mix(gH, (n3 - 0.5) * 0.3, road);
-    gRough = mix(gRough, 0.9, road); gSpec = mix(gSpec, 0.28, road);
+    // The bare ground: bedrock under a skin of dust, in the site's warm darks. Its beds are the terraces the ground is
+    // laid in, each its own tone, the edge of each a little paler where it was worn; the rock broken into slabs along
+    // its joints; dust lying in the hollows and on the treads of the terraces; dark varnish in patches; grit.
+    float dust0 = smoothstep(0.4, 0.7, 1.0 - n1);
+    float bedc = (hh + 0.02 * p.x - 0.01 * p.y) / ${f(BARE.bed)}, bedK = floor(bedc), bedT = fract(bedc);
+    float tone = mix(gHash(vec2(bedK, 3.0)), gHash(vec2(bedK + 1.0, 3.0)), smoothstep(0.6, 1.0, bedT));
+    vec3 rock = mix(${lin(0x110f0d)}, ${lin(0x231e1a)}, smoothstep(0.2, 0.8, tone * 0.6 + n1 * 0.4)) * (0.82 + 0.3 * n2);
+    const float cs = 7.5;
+    vec2 cells = gCells(gTurn(p, 17.0) / cs + vec2(n1, n0) * 0.9), big = gCells(gTurn(p, 71.0) / 19.0 + vec2(n0, n1) * 0.7);
+    float which = smoothstep(0.4, 0.6, n0);
+    float joint = max((1.0 - smoothstep(0.0, 0.07 + px / cs, cells.x)) * (1.0 - which), (1.0 - smoothstep(0.0, 0.03 + px / 19.0, big.x))) * fine * smoothstep(0.25, 0.6, n1 + 0.3 * (1.0 - dust0));
+    cells.y = mix(cells.y, big.y, which);
+    rock *= (0.88 + 0.22 * cells.y) * (1.0 - 0.55 * joint);
+    float riser = smoothstep(0.03, 0.12, slope);
+    rock = mix(rock, ${lin(0x2e2620)} * (0.85 + 0.3 * n3), riser * 0.35);
+    float varnish = smoothstep(0.58, 0.78, wFbm(vec3(gTurn(p, 63.0) * vec2(0.05, 0.16), 21.0)));
+    rock = mix(rock, ${lin(0x0f0c0a)}, varnish * 0.6);
+    rock *= 0.7 + 0.5 * smoothstep(0.3, 0.7, wFbm(vec3(p * 0.006, 31.0)));
+    float dust = smoothstep(0.42, 0.7, (1.0 - n1) * 0.7 + (1.0 - riser) * 0.25 + n0 * 0.2) * (1.0 - riser);
+    vec3 dustC = ${lin(0x30271f)} * (0.78 + 0.35 * n3) * (0.9 + 0.2 * n2);
+    rock = mix(rock, dustC, dust * 0.75);
+    float grit = smoothstep(0.7, 0.78, mix(0.5, wNoise(vec3(gTurn(p, 9.0) * 0.8, 14.0)), finer));
+    rock = mix(rock, ${lin(0x463b30)}, grit * 0.35 * (1.0 - dust * 0.5));
+    // The old roads: setts sunk in the dust, broken, and lost under it toward their ends.
+    vec2 setts0 = gSlabs(gTurn(p, deg), vec2(1.6, 1.0), 0.08);
+    vec3 oldC = ${lin(0x231f1b)} * (0.8 + 0.4 * mix(0.5, setts0.x, finer)) * (1.0 - 0.3 * setts0.y * finer);
+    float lost = smoothstep(0.35, 0.75, n2 * 0.6 + n1 * 0.4);
+    rock = mix(rock, oldC, old * (1.0 - lost) * (1.0 - joint * 0.5));
+    // The joints as grooves for the light, broader than the dark line drawn in them: a groove as fine as the line
+    // broke into dashes where the bump was worked out across a pixel.
+    float groove = max((1.0 - smoothstep(0.0, 0.16, cells.x)) * (1.0 - which), 1.0 - smoothstep(0.0, 0.08, big.x)) * fine * fine;
+    float rh = (n2 - 0.5) * 0.7 + (n3 - 0.5) * 0.35 + dust * 0.2 - groove * 0.9 - old * setts0.y * 0.3 * finer;
 
-    // Water: dark, still and level; a margin of wet dark stones, then pale dry stones on the bank. On a block that broke
-    // away it has drained, and leaves wet mud.
-    float drained = step(0.001, tOut);
-    float wetEdge = smoothstep(0.35, 0.7, mp.b) * (1.0 - water);
-    vec3 bankC = mix(${lin(0x7d7062)}, ${lin(0x2c2620)}, wetEdge) * (0.75 + 0.5 * n3) * (0.88 + 0.24 * n2);
-    c = mix(c, bankC, bank);
-    gH += bank * (n3 - 0.5) * 1.0;
-    gSpec = mix(gSpec, 0.5, wetEdge * bank); gRough = mix(gRough, 0.4, wetEdge * bank);
-    vec3 wet = mix(${lin(0x060505)}, ${lin(0x1c1712)} * (0.8 + 0.4 * n2), drained);
-    c = mix(c, wet, water);
-    gRough = mix(gRough, mix(0.03, 0.45, drained), water); gSpec = mix(gSpec, mix(1.0, 0.6, drained), water);
-    gFlat = water * (1.0 - drained);
+    // Under the jungle, a dark floor of earth and litter; under the dunes, a plain of their own sand.
+    vec3 litter = mix(${lin(0x18120d)}, ${lin(0x2a1c12)}, smoothstep(0.35, 0.65, n1)) * (0.8 + 0.4 * n3);
+    vec3 sand = mix(${lin(0x5d4a33)}, ${lin(0x705a3e)}, n1) * (0.88 + 0.2 * n3);
+    c = mix(mix(rock, sand, dunes), litter, jungle);
+    gH = mix(rh, (n3 - 0.5) * 0.4, max(jungle, dunes));
+    gRough = 0.94; gSpec = mix(0.1, 0.06, jungle);
 
     // The city: streets of dark setts, walks of pale slabs either side, a yard round every building paved in great
     // slabs inside a border course, and between them service courts of small setts with planted beds in rows. The
     // paving gives way to the land in a ragged edge at the city's rim.
-    float edgeN = wNoise(vec3(p * 0.05, 8.0));
-    float city = (1.0 - smoothstep(${f(plan.city - 4)}, ${f(plan.city + 6)}, r - (edgeN - 0.5) * 10.0)) * (1.0 - smoothstep(-4.0, 6.0, gSector(r, deg, ${v4(plan.forest)}) + (edgeN - 0.5) * 8.0));
+    float wedge = 0.0;
+    for (int i = 0; i < ${plan.open.length}; i++) wedge = max(wedge, smoothstep(-3.0, 4.0, gSector(r, deg, OPEN[i]) + (edgeN - 0.5) * 9.0));
+    float city = (1.0 - smoothstep(${f(plan.city - 4)}, ${f(plan.city + 6)}, r - (edgeN - 0.5) * 10.0)) * (1.0 - jungle) * (1.0 - dunes) * (1.0 - wedge);
     if (city > 0.0) {
       vec2 small = gSlabs(gTurn(p, deg), vec2(2.2, 2.2), 0.09);
-      vec3 cc = mix(${lin(0x2c2620)}, ${lin(0x3a322a)}, small.x * fine) * (1.0 - 0.3 * small.y) * (0.9 + 0.2 * n2);
+      vec3 cc = mix(${lin(0x181512)}, ${lin(0x221d18)}, small.x * fine) * (1.0 - 0.3 * small.y) * (0.9 + 0.2 * n2);
       vec2 beds = abs(fract(gTurn(p, deg) / 16.0) - 0.5) * 16.0;
       float bed = (1.0 - smoothstep(2.6, 2.6 + fwidth(beds.x) * 2.0, beds.x)) * (1.0 - smoothstep(4.6, 4.6 + fwidth(beds.y) * 2.0, beds.y));
       cc = mix(cc, ${lin(0x1d1610)} * (0.7 + 0.6 * n3), bed);
       float ch = -small.y * 0.35 * fine - bed * 0.4;
       float yard = smoothstep(0.3, 0.45, mp.r), rim = yard * (1.0 - smoothstep(0.7, 0.85, mp.r));
       vec2 ys = gSlabs(gTurn(p, deg), vec2(6.0, 6.0), 0.14);
-      cc = mix(cc, ${lin(0x5a534b)} * (0.82 + 0.3 * ys.x * fine) * (1.0 - 0.35 * ys.y) * (0.92 + 0.16 * n2), yard);
-      cc = mix(cc, ${lin(0x2e2924)}, rim * 0.8);
+      cc = mix(cc, ${lin(0x221f1c)} * (0.82 + 0.3 * ys.x * fine) * (1.0 - 0.35 * ys.y) * (0.92 + 0.16 * n2), yard);
+      cc = mix(cc, ${lin(0x15120f)}, rim * 0.8);
       ch = mix(ch, -ys.y * 0.5, yard);
       float onRoad = 0.0, walk = 0.0;
       // No street runs round the city's rim: a boulevard out at the margin would be a ring round the world.
       for (int i = 0; i < ${plan.rings.length}; i++) {
-        if (RINGS[i] > ${f(plan.margin - 8)}) continue;
+        if (RINGS[i] > ${f(plan.city - 12)}) continue;
         float d = r - RINGS[i];
         onRoad = max(onRoad, gIn(d, ${f(plan.road)}));
         walk = max(walk, gIn(abs(d) - ${f(plan.road / 2 + 2.2)}, 4.4));
@@ -387,9 +358,9 @@ float gSector(float r, float deg, vec4 q){
       }
       walk *= 1.0 - onRoad;
       vec2 setts = gSlabs(gTurn(p, deg), vec2(1.6, 1.0), 0.08);
-      vec3 street = ${lin(0x1d1b19)} * (0.82 + 0.35 * mix(0.5, setts.x, finer)) * (1.0 - 0.25 * setts.y * finer) * (0.9 + 0.2 * n2);
+      vec3 street = ${lin(0x121110)} * (0.82 + 0.35 * mix(0.5, setts.x, finer)) * (1.0 - 0.25 * setts.y * finer) * (0.9 + 0.2 * n2);
       vec2 ws = gSlabs(vec2(atan(p.x, p.y) * r, r), vec2(4.0, 2.2), 0.12);
-      vec3 walkC = ${lin(0x6e665c)} * (0.84 + 0.24 * ws.x * fine) * (1.0 - 0.32 * ws.y);
+      vec3 walkC = ${lin(0x2a2622)} * (0.84 + 0.24 * ws.x * fine) * (1.0 - 0.32 * ws.y);
       cc = mix(cc, walkC, walk);
       cc = mix(cc, street, onRoad);
       ch = mix(ch, -ws.y * 0.5, walk);
@@ -398,22 +369,22 @@ float gSector(float r, float deg, vec4 q){
       for (int i = 0; i < ${plan.squares.length}; i++) sq = max(sq, gW(gSector(r, deg, SQUARES[i])));
       vec2 ss = gSlabs(gTurn(p, deg), vec2(4.0, 4.0), 0.12);
       float band = gIn(mod(gTurn(p, deg).y, 24.0) - 12.0, 2.0);
-      cc = mix(cc, mix(${lin(0x625a51)}, ${lin(0x3a332c)}, band) * (0.86 + 0.2 * ss.x * fine) * (1.0 - 0.3 * ss.y), sq * (1.0 - water));
+      cc = mix(cc, mix(${lin(0x2a2622)}, ${lin(0x1a1714)}, band) * (0.86 + 0.2 * ss.x * fine) * (1.0 - 0.3 * ss.y), sq);
       float inPlaza = 1.0 - smoothstep(${f(plan.plaza - 1)}, ${f(plan.plaza)}, r);
       float joints = max(gLine(fract(r / 6.0 + 0.5) - 0.5, 0.06), gLine(fract(atan(p.x, p.y) * 7.639 + 0.5) - 0.5, 0.05) * step(30.0, r));
-      cc = mix(cc, ${lin(0x6a6259)} * (1.0 - 0.35 * joints * fine) * (0.92 + 0.12 * n2) * (1.0 - 0.25 * gIn(mod(r, 12.0) - 6.0, 2.0)), inPlaza);
+      cc = mix(cc, ${lin(0x2c2824)} * (1.0 - 0.35 * joints * fine) * (0.92 + 0.12 * n2) * (1.0 - 0.25 * gIn(mod(r, 12.0) - 6.0, 2.0)), inPlaza);
       emi += gRamp(0.62) * (gLine(r - 46.0, 0.8) + gLine(r - ${f(plan.plaza - 6)}, 0.6)) * inPlaza * 0.6;
-      float own = max(max(gW(gSector(r, deg, ${v4(plan.zones.temple)})), gW(gSector(r, deg, ${v4(plan.zones.port)}))), gW(gSector(r, deg, ${v4(plan.zones.procession)})));
+      float own = max(max(gW(gSector(r, deg, ${v4(plan.zones.temple)})), gW(gSector(r, deg, ${v4(plan.zones.monument)}))), gW(gSector(r, deg, ${v4(plan.zones.procession)})));
       vec2 os = gSlabs(gTurn(p, deg), vec2(9.0, 6.0), 0.15);
-      cc = mix(cc, ${lin(0x4f4841)} * (0.84 + 0.24 * os.x * fine) * (1.0 - 0.3 * os.y) * (0.9 + 0.2 * n2), own * (1.0 - onRoad));
-      c = mix(c, cc, city * (1.0 - water));
+      cc = mix(cc, ${lin(0x221e1b)} * (0.84 + 0.24 * os.x * fine) * (1.0 - 0.3 * os.y) * (0.9 + 0.2 * n2), own * (1.0 - onRoad));
+      c = mix(c, cc, city);
       gH = mix(gH, ch, city);
-      gRough = mix(gRough, mix(0.72, 0.6, onRoad), city * (1.0 - water));
-      gSpec = mix(gSpec, mix(0.4, 0.55, onRoad), city * (1.0 - water));
+      gRough = mix(gRough, mix(0.8, 0.66, onRoad), city);
+      gSpec = mix(gSpec, mix(0.14, 0.24, onRoad), city);
     }
     // What the breaking did to the top of a block: churned soil and broken stone, more of it toward the edge.
     float churn = smoothstep(0.0, 0.6, tOut) * smoothstep(0.45, 0.7, wFbm(vec3(p * 0.09, 11.0)));
-    c = mix(c, ${lin(0x2b221a)} * (0.75 + 0.5 * n3), churn * 0.7 * (1.0 - water));
+    c = mix(c, ${lin(0x2b221a)} * (0.75 + 0.5 * n3), churn * 0.7);
   } else {
     // The crust in section: the land's dark soil, the paler subsoil under it full of stones, then beds of rock,
     // broken by their own joints, a thin seam of copper, and darker rock down to where the stream's light comes up.
@@ -424,8 +395,8 @@ float gSector(float r, float deg, vec4 q){
     float n = wNoise(o * 1.1);
     if (dd < 1.3) c = ${lin(0x1b1510)} * (0.8 + 0.4 * n);
     else if (dd < 4.0) c = mix(${lin(0x33281e)}, ${lin(0x4a443e)}, smoothstep(0.6, 0.7, wNoise(o * 0.8))) * (0.8 + 0.3 * n);
-    else if (dd < 8.5) c = ${lin(0x413b35)} * (0.78 + 0.35 * block) * (1.0 - 0.25 * gLine(fract(dd / 1.4) - 0.5, 0.12) * fine);
-    else if (dd < 9.1) { c = ${lin(hex('copper'))} * 0.85; gMetal = 1.0; gRough = 0.34; gSpec = 1.0; }
+    else if (dd < 8.0) c = ${lin(0x28231f)} * (0.78 + 0.35 * block) * (1.0 - 0.25 * gLine(fract(dd / 1.4) - 0.5, 0.12) * fine);
+    else if (dd < 9.6) { c = ${lin(0xf0ad66)}; gMetal = 1.0; gRough = 0.1; gSpec = 1.0; }
     else if (dd < 14.0) c = ${lin(0x2d2a27)} * (0.8 + 0.4 * block);
     else c = ${lin(0x1c1a18)} * (0.8 + 0.4 * block);
     if (what > 1.5 && what < 2.5) {
@@ -434,7 +405,9 @@ float gSector(float r, float deg, vec4 q){
     }
     if (gMetal < 0.5) { gRough = 0.9; gSpec = 0.22; }
     // Little of the sky reaches down a crack: its faces darken fast with depth.
-    c *= mix(1.0, 0.18, smoothstep(0.5, 9.0, d));
+    if (what < 3.5) c *= mix(1.0, 0.18, smoothstep(0.5, 9.0, d));
+    // What faces down is the broken underside of a block, in its own shadow but for the core's light.
+    c *= mix(1.0, 0.4, smoothstep(-0.1, -0.6, dot(normalize(vObjN + vec3(0.0, 1e-5, 0.0)), radial)));
     gH = (wFbm(o * 0.22) - 0.5) * 2.2 * (1.0 - smoothstep(1.0, 3.0, px * 0.3));
     // The stream's light from below, on what faces into the deepest cracks: pale gold where it is strongest, falling
     // to flame and ember, and stronger toward the bottom. It lights the rock; nothing burns.
@@ -448,12 +421,7 @@ float gSector(float r, float deg, vec4 q){
   gEmi = emi;
   diffuseColor.rgb = c;
 }`,
-    normal: `normal = gBump(normal, gH, 0.0015);
-if (gFlat > 0.0) {
-  vec3 flatN = normalize(mat3(viewMatrix) * normalize(vObj - vec3(0.0, -${f(PLANET.r)}, 0.0)));
-  float rip = (wNoise(vec3(vPlan.xy * 0.7, uT * 0.15)) - 0.5) * 0.03;
-  normal = normalize(mix(normal, flatN + vec3(rip, -rip, 0.0), gFlat));
-}`,
+    normal: 'normal = gBump(normal, gH, 0.0015);',
     rough: 'roughnessFactor = gRough;',
     metal: 'metalnessFactor = gMetal;',
     emissive: 'totalEmissiveRadiance = gEmi;',

@@ -1,14 +1,16 @@
 import * as THREE from 'three';
 import { type Builder, seeded, slice } from '../../../../world/build';
-import { EDGE, seat } from '../../layout';
-import { lamp } from './floor';
-import { D2R, KIND, polar, seen, stand, tag } from './kit';
+import { CITY, DISTRICTS, seat } from '../../layout';
+import { bareness, groundAt, oldRoad, onPool } from './bare';
+import { D2R, KIND, bearing, edgeAt, polar, stand, tag } from './kit';
+
+const OPEN = DISTRICTS.filter((d) => d.kind === 'open');
 import { BROKEN, DEEP, type Plate, glowAt, inner, scarp } from './plates';
 import { inForest, onRoad } from './roads';
 
-// What the breaking did on the margin. Where it is the forest's, the jungle's floor is torn: trees thrown down with
-// their root plates standing up, roots hanging in the air from every broken face, boulders loose. Where it is the
-// city's, its streets end in the air and their lamps are down. Rubble lies along every crack and down in the splits.
+// What the breaking did on the margin. Where it is the jungle's, its floor is torn: trees thrown down with their root
+// plates standing up, roots hanging in the air from every broken face, boulders loose. Rubble lies along every crack
+// and down in the splits. Out on the bare ground short of the break, boulders lie where they came to rest.
 // Each thing on a block that moved stands on it and moved with it.
 
 type On = (x: number, z: number) => Plate | null;
@@ -20,9 +22,9 @@ const move = (x: number, y: number, z: number) => new THREE.Matrix4().makeTransl
 // Stands a thing on the land at a place of the map, turned spin degrees about its own upright, moved with the block
 // it stands on. A spin of the bearing turns its +z out from the middle.
 export function standAt(on: On, x: number, z: number, spin = 0, up = 0): THREE.Matrix4 {
-  const p = on(x, z);
-  if (!p) return seat(x, z, up, spin);
-  const v = new THREE.Vector3(x, up, z).applyMatrix4(p.m);
+  const p = on(x, z), g = groundAt(x, z);
+  if (!p) return seat(x, z, up + g, spin);
+  const v = new THREE.Vector3(x, up + g, z).applyMatrix4(p.m);
   return seat(v.x, v.z, v.y, 0).multiply(new THREE.Matrix4().makeRotationFromQuaternion(p.q)).multiply(rotY(spin));
 }
 
@@ -49,7 +51,7 @@ function root(r: () => number, len: number): THREE.BufferGeometry {
 
 export async function margin(b: Builder, made: THREE.Material, low: THREE.Material, on: On): Promise<void> {
   const r = seeded(6151);
-  const edgeIn = (deg: number) => EDGE.at(deg) - 1;
+  const edgeIn = (deg: number) => edgeAt(deg) - 1;
   const rocks = [boulder(seeded(1), true), boulder(seeded(2), true), boulder(seeded(3), false), boulder(seeded(4), false), boulder(seeded(5), false)];
   const rock = (fine: boolean) => rocks[fine ? Math.floor(r() * 2) : 2 + Math.floor(r() * 3)];
   const across = (deg: number, k: number) => { const lo = inner(deg), hi = edgeIn(deg); return polar(deg, lo + (hi - lo) * k); };
@@ -76,11 +78,17 @@ export async function margin(b: Builder, made: THREE.Material, low: THREE.Materi
   }
   await slice();
 
-  // In the city's stretch: its lamps down across the broken paving where the street ran out.
-  for (let k = 0; k < 40; k++) {
-    const deg = (r() - 0.5) * 2 * (BROKEN - 6), q = across(deg, 0.15 + 0.8 * r());
-    if (inForest(q.x, q.y) || !on(q.x, q.y) || !seen(deg, 118)) continue;
-    lamp(b, low, standAt(on, q.x, q.y, r() * 360).multiply(move(0, 0.4, 0)).multiply(rotX(70 + r() * 20)), 4.4);
+  // Out on the bare ground, short of the break: boulders lying where they came to rest, few and far apart, more of
+  // them and larger toward the edge, and none on the old roads or the pools.
+  for (let k = 0; k < 900; k++) {
+    const deg = (r() - 0.5) * 2 * (BROKEN - 4), q = polar(deg, CITY.r + r() * (inner(deg) - CITY.r));
+    for (const w of OPEN) if (r() < 0.25) { const a = w.from + r() * (w.to - w.from); q.copy(polar(a, w.r0 + r() * (CITY.r - w.r0))); }
+    const bm = bareness(q.x, q.y), t = (q.length() - CITY.r) / Math.max(1, inner(bearing(q.x, q.y)) - CITY.r);
+    if (bm < 0.5 || r() > 0.25 + 0.5 * Math.max(0, t) || onPool(q.x, q.y, 3) || oldRoad(q.x, q.y) > 0.2) continue;
+    const s2 = 0.35 + r() * r() * r() * 3.4;
+    const shape = tag(rock(s2 > 1.6).clone().scale(s2 * (0.7 + r() * 0.6), s2 * (0.5 + r() * 0.4), s2 * (0.7 + r() * 0.6)), KIND.rock);
+    stand(b, s2 > 1.3 ? made : low, shape, standAt(on, q.x, q.y, r() * 360, s2 * 0.12).multiply(rotX((r() - 0.5) * 30)));
+    if (k % 300 === 0) await slice();
   }
 
   // Boulders thrown loose on the broken land, more toward the edge; rubble along the cracks and down in the splits.

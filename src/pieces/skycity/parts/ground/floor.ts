@@ -1,21 +1,18 @@
 import * as THREE from 'three';
 import { type Builder, seeded, slice } from '../../../../world/build';
-import { AVENUES, DISTRICTS, EDGE, FOREST, MARGIN, PARKS, PLAZA, RINGS, ROAD, lots, relief, seat, within } from '../../layout';
-import { D2R, KIND, arc, flat, gap, polar, seen, stand, sweep, tag } from './kit';
-import { BROKEN, floorish, inner, slopeAt, toGeometry } from './plates';
-import { inForest } from './roads';
-import { waters } from './water';
+import { AVENUES, CITY, DISTRICTS, PARKS, PLAZA, RINGS, ROAD, districtAt, lots, seat } from '../../layout';
+import { OLD, TALL, bareness, groundAt } from './bare';
+export { TALL };
+import { D2R, KIND, arc, edgeAt, flat, gap, onDome, polar, seen, stand, sweep, tag } from './kit';
+import { BROKEN, inner } from './plates';
 
 // The land that is whole: one surface from the top of the dome out to where the land breaks, and on the far side out
-// to the torn edge. Under the city it is level and paved: streets, squares, yards. In the forest it rises in hills and
-// small mountains (relief), and there it is laid closely enough that nothing another part stands on it floats or
-// sinks. What is worked out per pixel is in the floor's material; what is drawn once is a map of the yards under the
-// city's buildings, and of the water's beds and banks.
+// to the torn edge. Under the city it is level and paved: streets, squares, yards. Outside it, where it is bare, it is
+// the planet's own ground (./bare.ts). What is worked out per pixel is in the floor's material; what is drawn once is
+// a map of the yards under the city's buildings and of the old roads.
 
 // The map: how far out from the middle it reaches, and how many pixels across it is.
-export const MAP = { r: 700, px: 2048 } as const;
-// The heights the forest's land is shaded by: its tallest mountain.
-export const TALL = 120;
+export const MAP = { r: 700, px: 1024 } as const;
 const EDGES = [PLAZA, ...RINGS];
 
 interface Square { r0: number; r1: number; from: number; to: number; pool: { a: number; r: number; ra: number; rr: number }; paths: THREE.Vector2[][]; house: 'pavilion' | 'glass'; at: THREE.Vector2 }
@@ -37,8 +34,7 @@ export function squares(): Square[] {
   });
 }
 
-// The map: red the yards round the city's buildings, green the roads and tracks (half its strength their verges),
-// blue the water (half its strength its banks); its alpha is unused.
+// The map: red the yards round the city's buildings, green the old roads; blue and alpha are unused.
 export async function floorMap(sq: Square[]): Promise<THREE.CanvasTexture> {
   const c = document.createElement('canvas');
   c.width = c.height = MAP.px;
@@ -81,29 +77,13 @@ export async function floorMap(sq: Square[]): Promise<THREE.CanvasTexture> {
     g.fill();
   }
   await slice();
-  // The ways and the water. Each channel keeps the most of what is drawn on it, so a bank never reads as water.
-  g.globalCompositeOperation = 'lighten';
-  const line = (pts: THREE.Vector2[], w: number, style: string) => {
-    g.strokeStyle = style;
-    g.lineWidth = w * k;
-    g.beginPath();
-    pts.forEach((q, i) => (i ? g.lineTo(px(q.x), px(q.y)) : g.moveTo(px(q.x), px(q.y))));
-    g.stroke();
-  };
-  const shape = (pts: THREE.Vector2[], style: string, edge: number) => {
-    g.fillStyle = g.strokeStyle = style;
-    g.lineWidth = edge * k;
-    g.beginPath();
-    pts.forEach((q, i) => (i ? g.lineTo(px(q.x), px(q.y)) : g.moveTo(px(q.x), px(q.y))));
-    g.closePath();
-    g.fill();
-    if (edge > 0) g.stroke();
-  };
-  const w = waters();
-  for (const run of w.runs) line(run.pts, run.w + 7, 'rgb(0,0,128)');
-  shape(w.shore, 'rgb(0,0,128)', 8);
-  for (const run of w.runs) line(run.pts, run.w, 'rgb(0,0,255)');
-  shape(w.shore, 'rgb(0,0,255)', 0);
+  // The old roads that run on out of the city into the bare ground, to nowhere.
+  g.strokeStyle = 'rgb(0,255,0)';
+  g.lineWidth = ROAD * k;
+  for (const o of OLD) {
+    const a0 = polar(o.deg, CITY.r - 8), a1 = polar(o.deg, o.to);
+    g.beginPath(); g.moveTo(px(a0.x), px(a0.y)); g.lineTo(px(a1.x), px(a1.y)); g.stroke();
+  }
   await slice();
   const tex = new THREE.CanvasTexture(c);
   tex.flipY = false;
@@ -116,40 +96,64 @@ export async function floorMap(sq: Square[]): Promise<THREE.CanvasTexture> {
 }
 
 // Where the whole land ends at a bearing: where it breaks, or on the far side the torn edge.
-const reachAt = (deg: number) => (seen(deg, BROKEN) ? inner(deg) : EDGE.at(deg) - 0.7);
-// The forest's window on the map, a little wider than the forest so its hills rise inside it.
-const WINDOW = { from: FOREST.from - 6, to: FOREST.to + 6, r0: FOREST.r0 - 30 } as const;
-const inWindow = (deg: number) => within(((deg % 360) + 360) % 360, WINDOW.from, WINDOW.to);
+const reachAt = (deg: number) => (seen(deg, BROKEN) ? inner(deg) : edgeAt(deg) - 0.7);
+const OPEN = DISTRICTS.filter((d) => d.kind === 'open');
+// The land is laid in coarse grids where it is level and hidden (the city, the jungle, the dunes) and finely where it
+// is bare and seen: the rim at the front, from a little inside the city's edge, and the two open wedges. The fine
+// grids share a step across, so where they meet they meet point on point: a bearing every RIM.step degrees, from a
+// whole number of steps before the first wedge.
+const RIM = { r0: CITY.r - 12, step: (OPEN[0].to - OPEN[0].from) / 64, rows: 3 } as const;
+const FRONT = { from: OPEN[1].from - 13 * RIM.step, to: 360 + OPEN[0].to + 8 } as const;
+// The far side behind the city, which is never seen: the outer grid leaves it out.
+const HIDDEN = [112, 216] as const;
 
-// The whole land. Where it is level it is laid in coarse rings; over the forest, in a fine grid that follows the
-// land's hills and mountains at the size of a tree. The two meet where the land is level, so their seam is closed.
+// The whole land, as grids laid round the middle. Each point is worked out once: where it is on the map, how high the
+// ground stands there, and from that where it is in the frame. Its normals come from the grid itself. plan holds the
+// map's place and how bare the ground is; aux how high it stands.
 export async function floorGeometry(): Promise<THREE.BufferGeometry> {
-  const f = floorish(), n = new THREE.Vector3();
-  const put = (q: THREE.Vector2) => {
-    const h = relief(q.x, q.y);
-    f.pos.push(q.x, 0, q.y); f.plan.push(q.x, q.y, 0, 0); f.aux.push(h / TALL, 0, 0);
-    slopeAt(q.x, q.y, n);
-    f.nrm.push(n.x, n.y, n.z);
-  };
-  const quad = (a: THREE.Vector2, c: THREE.Vector2, d: THREE.Vector2, e: THREE.Vector2) => { for (const q of [a, d, c, a, e, d]) put(q); };
-  const bands = [{ r0: 0, r1: 150, segs: 120, rows: 10 }, { r0: 150, r1: WINDOW.r0, segs: 240, rows: 8 }, { r0: WINDOW.r0, r1: null, segs: 240, rows: 14 }];
-  for (const b of bands) {
-    const at = (j: number, i: number) => { const deg = (j / b.segs) * 360, outer = b.r1 ?? reachAt(deg); return polar(deg, b.r0 + ((outer - b.r0) * i) / b.rows); };
-    for (let j = 0; j < b.segs; j++) {
-      const deg = (j / b.segs) * 360;
-      if (b.r1 === null && inWindow(deg + 0.75)) continue;
-      for (let i = 0; i < b.rows; i++) quad(at(j, i), at(j + 1, i), at(j + 1, i + 1), at(j, i + 1));
+  const pos: number[] = [], plan: number[] = [], aux: number[] = [], idx: number[] = [];
+  const grid = async (from: number, to: number, cols: number, r0: number, outer: (deg: number) => number, rows: number) => {
+    const base = pos.length / 3;
+    for (let j = 0; j <= cols; j++) {
+      const deg = from + ((to - from) * j) / cols, r1 = outer(deg), s = Math.sin(deg * D2R), c = Math.cos(deg * D2R);
+      for (let i = 0; i <= rows; i++) {
+        const r = Math.max(0.05, r0 + ((r1 - r0) * i) / rows), x = s * r, z = c * r, m = bareness(x, z), h = groundAt(x, z, m), v = pos.length / 3;
+        pos.push(0, 0, 0);
+        onDome(x, h, z, pos, v * 3);
+        plan.push(x, z, m, 0);
+        aux.push(h / TALL, 0, 0);
+      }
+      if (j % 16 === 0) await slice();
     }
-    await slice();
-  }
-  // The forest: the window's bearings in steps that match the outer band's at its sides, and rows a few units apart.
-  const from = WINDOW.from, span = WINDOW.to - WINDOW.from, cols = Math.round(span / 1.5) * 5, rows = 76;
-  const at = (j: number, i: number) => { const deg = from + (span * j) / cols, outer = reachAt(deg); return polar(deg, WINDOW.r0 + ((outer - WINDOW.r0) * i) / rows); };
-  for (let j = 0; j < cols; j++) {
-    for (let i = 0; i < rows; i++) quad(at(j, i), at(j + 1, i), at(j + 1, i + 1), at(j, i + 1));
-    await slice();
-  }
-  return toGeometry(f);
+    for (let j = 0; j < cols; j++) for (let i = 0; i < rows; i++) {
+      const a = base + j * (rows + 1) + i, b = a + rows + 1;
+      idx.push(a, a + 1, b + 1, a, b + 1, b);
+    }
+  };
+  const mid = () => RIM.r0;
+  await grid(0, 360, 120, 0, () => 150, 10);
+  // The city, round the two wedges.
+  await grid(OPEN[0].to, OPEN[1].from, Math.round((OPEN[1].from - OPEN[0].to) / 1.5), 150, mid, 40);
+  await grid(OPEN[1].to, 360 + OPEN[0].from, Math.round((360 + OPEN[0].from - OPEN[1].to) / 1.5), 150, mid, 40);
+  // The wedges, finely, their rows three to each of the city's.
+  for (const w of OPEN) await grid(w.from, w.to, 64, 150, mid, 40 * RIM.rows);
+  // The rim: finely across the front, coarsely at the limbs, where the jungle and the dunes stand on it.
+  const rows = (deg: number) => reachAt(deg);
+  await grid(FRONT.from, FRONT.to, Math.round((FRONT.to - FRONT.from) / RIM.step), RIM.r0, rows, 36);
+  await grid(FRONT.to - 360, HIDDEN[0], Math.round((HIDDEN[0] - FRONT.to + 360) / 1.5), RIM.r0, rows, 14);
+  await grid(HIDDEN[1], FRONT.from, Math.round((FRONT.from - HIDDEN[1]) / 1.5), RIM.r0, rows, 14);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('plan', new THREE.Float32BufferAttribute(plan, 4));
+  g.setAttribute('aux', new THREE.Float32BufferAttribute(aux, 3));
+  g.setIndex(idx);
+  await slice();
+  g.computeVertexNormals();
+  // A point whose triangles have no area has no normal, and one NaN in a shader blacks out the whole canvas.
+  const n = g.getAttribute('normal');
+  for (let i = 0; i < n.count; i++) if (!(Math.hypot(n.getX(i), n.getY(i), n.getZ(i)) > 0.5)) n.setXYZ(i, 0, 1, 0);
+  g.computeBoundingSphere();
+  return g;
 }
 
 // A section, across it and up.
@@ -177,13 +181,15 @@ export function lamp(b: Builder, low: THREE.Material, at: THREE.Matrix4, tall = 
 export async function standing(b: Builder, made: THREE.Material, low: THREE.Material, sq: Square[]): Promise<void> {
   const r = seeded(4517);
   // Kerbs along both sides of every street of the city, open where the streets cross.
-  // An arc's runs that keep out of the forest.
+  // An arc's runs that keep to the city's own streets: out of the jungle, the dunes, the open wedges and the bare
+  // ground.
+  const paved = (q: THREE.Vector2) => { const d = districtAt(q.x, q.y); return q.length() < CITY.r - 6 && (!d || d.kind === 'procession'); };
   const clear = (pts: THREE.Vector2[]) => {
     const runs: THREE.Vector2[][] = [[]];
-    for (const q of pts) { if (inForest(q.x, q.y, 4)) { if (runs[runs.length - 1].length) runs.push([]); } else runs[runs.length - 1].push(q); }
+    for (const q of pts) { if (!paved(q)) { if (runs[runs.length - 1].length) runs.push([]); } else runs[runs.length - 1].push(q); }
     return runs.filter((x) => x.length > 1);
   };
-  const inside = RINGS.filter((ring) => ring < MARGIN - 8);
+  const inside = RINGS.filter((ring) => ring < CITY.r);
   for (const ring of inside) for (const s of [-1, 1]) {
     const rr = ring + s * (ROAD / 2 + 0.3);
     for (const [a, z] of open(rr, -118, 118)) for (const run of clear(arc(rr, a, z, 7))) flat(b, low, tag(sweep(kerb(0.8, 0.7), run), KIND.stone));
@@ -192,7 +198,7 @@ export async function standing(b: Builder, made: THREE.Material, low: THREE.Mate
     if (!seen(a, 125) || a === 0) continue;
     for (const s of [-1, 1]) {
       let from = PLAZA + 1;
-      for (const ring of [...inside, MARGIN]) {
+      for (const ring of [...inside, CITY.r]) {
         const to = ring - ROAD / 2 - 1, off = polar(a + 90, s * (ROAD / 2 + 0.3));
         if (to - from > 4) for (const run of clear([polar(a, from).add(off), polar(a, (from + to) / 2).add(off), polar(a, to).add(off)])) flat(b, low, tag(sweep(kerb(0.8, 0.7), run), KIND.stone));
         from = ring + ROAD / 2 + 1;
@@ -206,34 +212,19 @@ export async function standing(b: Builder, made: THREE.Material, low: THREE.Mate
     for (let i = 0; i < n; i++) {
       const sx = i % 2 ? 1 : -1, sz = i < 2 ? 1 : -1;
       const q = polar(deg, rr + sz * (ROAD / 2 + 1.6)).add(polar(deg + 90, sx * (ROAD / 2 + 1.6)));
-      if (inForest(q.x, q.y, 6) || q.length() > inner(deg) - 3) continue;
+      if (!paved(q)) continue;
       lamp(b, low, seat(q.x, q.y), 4 + r() * 1.4);
     }
   };
   for (const ring of inside) for (const a of AVENUES) if (seen(a, 125) && a !== 0) corner(a, ring);
   for (const ring of inside) for (let k = 0; k < 9; k++) {
     const deg = (r() - 0.5) * 230, q = polar(deg, ring + (r() < 0.5 ? -1 : 1) * (ROAD / 2 + 1.6));
-    if (AVENUES.some((a) => gap(deg, a) * D2R * ring < ROAD * 1.5) || gap(deg, 0) < 12 || inForest(q.x, q.y, 6) || q.length() > inner(deg) - 3) continue;
+    if (AVENUES.some((a) => gap(deg, a) * D2R * ring < ROAD * 1.5) || gap(deg, 0) < 12 || !paved(q)) continue;
     lamp(b, low, seat(q.x, q.y), 4.4);
   }
   await slice();
   // The plaza: a ring of low lamps let into its edge.
   for (let i = 0; i < 24; i++) { const q = polar(i * 15 + 7.5, PLAZA - 3); stand(b, low, tag(new THREE.CylinderGeometry(0.6, 0.6, 1.2, 6).translate(0, 0.4, 0), KIND.light, 0.7, 0.6), seat(q.x, q.y)); }
-
-  // Where the temple quarter and the port meet the city: a low wall of dressed stone with a coping, open at the
-  // avenues.
-  for (const k of ['temple', 'port'] as const) {
-    const d = DISTRICTS.find((x) => x.kind === k)!;
-    for (const [a, z] of open(d.r0 - 1, d.from, d.to)) {
-      flat(b, made, tag(sweep([[-0.9, -0.8], [0.9, -0.8], [0.75, 1.8], [-0.75, 1.8]], arc(d.r0 - 1, a, z, 4)), KIND.stone));
-      flat(b, made, tag(sweep([[-1, 1.7], [1, 1.7], [0.9, 2.2], [-0.9, 2.2]], arc(d.r0 - 1, a, z, 4)), KIND.bronzeDeep));
-    }
-    for (const side of [d.from, d.to]) {
-      const pts = [polar(side, d.r0), polar(side, (d.r0 + d.r1) / 2), polar(side, d.r1 - 2)];
-      flat(b, made, tag(sweep([[-0.9, -0.8], [0.9, -0.8], [0.75, 1.8], [-0.75, 1.8]], pts), KIND.stone));
-    }
-  }
-  await slice();
 
   // The squares: a pool with a stone kerb, low lamps along the walks, and a pavilion or a glass house.
   for (const p of sq) {
