@@ -22,6 +22,17 @@
   fill: var(--pale);
 }
 
+.moon circle {
+  fill: var(--bg-2);
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.moon path {
+  fill: var(--pale);
+  opacity: 0.55;
+}
+
 .skyglow {
   translate: 0 calc(var(--lift) * var(--u));
   opacity: calc(var(--draw) * var(--draw));

@@ -30,15 +30,19 @@ What I care about most:
 - The city is made again from nothing. A futuristic sci-fi city that looks like a real object, not a drawing and not the old model.
 - It feels alive, with a glow behind and above it like the one behind my portrait: a far off city lighting the sky.
 - At rest the city sits low, with its falls under the foot of the screen. Scrolling brings them up, and then the stream sets off from the main fall.
-- A night sky at the top, in the corners and down the sides. Never behind my words. No blue.
+- A night sky at the top, in the corners and down the sides, like the sky of another planet: real and finely detailed, with a few bright stars that have four points, a moon in one corner and a faint band of far stars in the other. Never behind my words. No blue.
 - No opening animation yet. The city is simply there. We design the opening together once I have seen the city.
 
 Show me the city as soon as it stands in the hero, and say plainly what is at the bar and what is not.
 ```
 
+**His look at the sky: yes, with more in it**
+
+- He wants some stars with four points and is open to other things in the sky, all of it real and finely detailed, "the night sky of another planet". Item 9, test 5 and the prompt's sky line were changed to say so. The wireframe got four pointed stars, a moon and a band, drawn roughly.
+
 **For the next session**
 
-- Waiting on his look at the sky. If he does not want it, item 9 and test 5 come out and the sky line leaves the prompt.
+- His verdict on what else is in the sky comes when Claude Code shows it.
 - After the city exists: the opening, designed on it with him. The three ways Fable offered are not picked.
 
 ## 2026-11-14 · Study 27: the hero, a wireframe of layout A (Fable, web chat)

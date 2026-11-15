@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { clock } from '../../world/clock';
-import { CITY, CX, FALLS, OPEN, READ, SKY, W, WORK, layout, rimAt, rock, stars, stream, towers } from '../../hero/plan';
+import { BAND, CITY, CX, FALLS, MOON, OPEN, READ, SKY, W, WORK, layout, rimAt, rock, stars, stream, towers } from '../../hero/plan';
 import styles from './HeroDraft.module.css';
 
 // Study 27, at /lab/hero-draft: the hero's layout as outlines. Layout A, his pick.
@@ -78,6 +78,10 @@ export function HeroDraft() {
             <stop offset="0" stopColor="var(--flame)" stopOpacity="0.9" />
             <stop offset="1" stopColor="var(--flame)" stopOpacity="0" />
           </linearGradient>
+          <radialGradient id="hero-band">
+            <stop offset="0" stopColor="var(--pale)" stopOpacity="0.1" />
+            <stop offset="1" stopColor="var(--pale)" stopOpacity="0" />
+          </radialGradient>
           <radialGradient id="hero-glow">
             <stop offset="0" stopColor="var(--flame)" stopOpacity="0.34" />
             <stop offset="0.3" stopColor="var(--ember)" stopOpacity="0.8" />
@@ -90,7 +94,15 @@ export function HeroDraft() {
         </defs>
 
         <g className={styles.sky}>
+          <ellipse className={styles.band} cx={BAND.x} cy={BAND.y} rx={BAND.rx} ry={BAND.ry} transform={`rotate(${BAND.turn} ${BAND.x} ${BAND.y})`} fill="url(#hero-band)" />
           {lights.map((s, i) => <circle key={i} cx={s.x} cy={s.y} r={s.r} opacity={s.o} />)}
+          {lights.filter((s) => s.big).map((s, i) => (
+            <path key={i} className={styles.spark} opacity={s.o} d={`M ${s.x - 9} ${s.y} Q ${s.x} ${s.y} ${s.x} ${s.y - 9} Q ${s.x} ${s.y} ${s.x + 9} ${s.y} Q ${s.x} ${s.y} ${s.x} ${s.y + 9} Q ${s.x} ${s.y} ${s.x - 9} ${s.y} Z`} />
+          ))}
+          <g className={styles.moon}>
+            <circle cx={MOON.x} cy={MOON.y} r={MOON.r} />
+            <path d={`M ${MOON.x - 12} ${MOON.y - MOON.r + 3} A ${MOON.r} ${MOON.r} 0 0 0 ${MOON.x - 12} ${MOON.y + MOON.r - 3} A ${MOON.r * 0.72} ${MOON.r} 0 0 1 ${MOON.x - 12} ${MOON.y - MOON.r + 3} Z`} />
+          </g>
         </g>
         <ellipse className={styles.skyglow} cx={CX} cy={L.city + CITY.rim - SKY.glow.lift} rx={SKY.glow.rx} ry={SKY.glow.ry} fill="url(#hero-glow)" />
 

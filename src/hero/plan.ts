@@ -64,7 +64,10 @@ export function rock(): string {
 // reaches, which is also where it puts the stars out.
 export const SKY = { tries: 900, clear: { rx: 560, ry: 250 }, glow: { rx: 800, ry: 560, lift: 30 } } as const;
 
-export type Star = { x: number; y: number; r: number; o: number };
+export type Star = { x: number; y: number; r: number; o: number; big: boolean };
+// A moon in one upper corner and a faint band of far stars across the other, as shares of the board's width.
+export const MOON = { x: 1296, y: 132, r: 46 } as const;
+export const BAND = { x: 210, y: 150, rx: 420, ry: 54, turn: -24 } as const;
 
 // Stars at the top, in the corners and down the sides, none behind the words, fewer and fainter toward the city.
 export function stars(l: { words: number; city: number }): Star[] {
@@ -78,7 +81,7 @@ export function stars(l: { words: number; city: number }): Star[] {
     const keep = edge * Math.min(1, Math.max(0, inWords - 1) * 1.6) * (1 - lit) ** 1.5;
     if (hash(i * 3 + 3) > keep * 0.62) continue;
     const big = hash(i + 500) > 0.93;
-    out.push({ x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, r: big ? 1.7 : 0.6 + Math.round(hash(i + 700) * 6) / 10, o: Math.round((0.25 + 0.6 * hash(i + 900)) * (big ? 1 : 0.8) * 100) / 100 });
+    out.push({ x: Math.round(x * 10) / 10, y: Math.round(y * 10) / 10, r: big ? 1.7 : 0.6 + Math.round(hash(i + 700) * 6) / 10, big, o: Math.round((0.25 + 0.6 * hash(i + 900)) * (big ? 1 : 0.8) * 100) / 100 });
   }
   return out;
 }
