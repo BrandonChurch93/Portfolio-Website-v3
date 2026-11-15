@@ -26,7 +26,7 @@ const ALONE = 0.62;
 const LAMP = { back: 1.25, across: 2.8, up: 1.5, lift: 0.35, power: 16 };
 // The floor: where it is lit and shadowed most, in the desk's millimetres, and how far out along and across the desk
 // it has gone to nothing. The share of that reach inside which it is whole.
-const FLOOR = { at: [0, 150] as [number, number], reach: [1500, 950] as [number, number], whole: 0.42, color: 0x0e0a08 };
+const FLOOR = { at: [0, 150] as [number, number], reach: [1500, 950] as [number, number], whole: 0.3, color: 0x060504 };
 // The canvas fades to nothing over this share of its rim, so nothing can end at its edge.
 const RIM = 5;
 
