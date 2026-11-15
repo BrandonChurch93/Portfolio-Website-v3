@@ -2,6 +2,40 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · His changes to Skills built, and the desk brought to the screen's rate (Fable, Claude Code)
+
+**What Brandon said**
+
+- His third prompt, four things in order (the entry "Contact goes to Claude Code" below has it): a report, his changes to Skills, Contact, the whole page. The report was given.
+- Of the word on the floor, with a rough sketch: "slightly smaller and a bit more under the desk", and "Be nice if the word skills was cut by that shadow, maybe in half or almost". He confirmed the restatement: "Yes, you have it exactly". `BRIEF.md`, "His look at the word on the floor".
+- Nothing since. No verdict yet on the desk with its changes.
+
+**What was done**
+
+- All six of his changes to Skills are built and live at `/lab/skills`: the word on the floor (`src/pieces/desk/parts/word.ts`, `WORD` in `layout.ts`), the headphones made again as a desk part on a stand (`parts/headphones.ts` and its folder; `src/pieces/headphones/` is deleted and off the list of pieces), the PC turned (`PC_TURN = -65`), the camera composed again (its part owns `ARRANGE`), the pencil by itself.
+- Made again since the third round's reviews: the mouse (new builder, from scratch), the monitor's stand, the lamp's shade, the bench's edge and grain. The CPU's seventh round is in.
+- **The frame rate.** A fresh reviewer failed tests 25 and 42 on a 120 Hz window: 50 to 80 frames a second with the desk in view. It is mended, at full sharpness: `BRIEF.md`, "Test 25 and 42", has what changed and the numbers (120 at rest, a scroll through the desk and rows with no frame over 10.4 ms, on a production build).
+- The same reviewer failed test 40 (four surfaces shimmer on a slow scroll) and measured the first visit (the page is held in bursts for about 1.3 s while the desk builds).
+
+**With agents now, none handed back**
+
+- Headphones, second round (builder). The shimmer on the mat, the keyboard, the camera and the PC (engineer, materials only). The desk's build on a first visit (engineer: `index.ts` mount flow, the bench, PC and camera build code, `build.ts`). A naming reviewer and a bar judge on the desk as it stands on the production build.
+
+**What the next session would otherwise rediscover**
+
+- Where the desk's frame went, measured by taking things away in a 120 Hz window: three area lights about 1.9 ms, the occlusion, the bloom and the edge smoothing about 1 ms each, the floor 1 ms, a CSS mask on the canvas up to 4 ms. Point lights, the reflected room and `preserveDrawingBuffer` cost nothing that could be measured. Lowering the pixel density to 1.5 holds 120 by itself and is visibly softer at twice size, so it was not done.
+- The monitor's light is the one area light left. As two spot lights the glow on the stand and the timber in front of the screen was lost.
+- `--disable-gpu-vsync` does nothing in the test browser on this Mac: the cost of a frame can only be read from how far under 120 the page falls.
+- A scroll measured from the top includes the desk's lights coming on. When the desk was let draw out of its turn on every change of a light, that stretch ran at half rate. It draws out of turn only in the frame a light comes on or goes out, or the lamp is struck.
+- With a pointer at rest the cursor's light drifts after a while, by design, so every lit thing redraws: at rest the page is never idle.
+- A production build while the production server is running breaks the server. Stop it, build, start it.
+- The tool: `deskrate.mjs` in the session's scratch `tools/` (at rest and a scroll, in a real window, with where the long frames fell).
+
+**Next**
+
+- Take each agent's work as it lands (named paths, production build, gates, WebKit, push). Then Contact at `/lab/contact`, then `/lab/whole`.
+- Still his: his pick of the CPU's way, the PC's made up names, the stream beside the desk (test 8), the five departures of the first build.
+
 ## 2026-11-14 · The hero is next: his words on the city, and layout options in words (Fable, web chat)
 
 **What Brandon said**
