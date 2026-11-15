@@ -14,8 +14,9 @@ export const SKILLS = {
   // How far down the section the stream's leading end is when the title comes on.
   cue: 96,
   title: { x: 820, y: 110 },
-  // The headphones' hook: the middle of its plate.
-  phones: { x: 1168, y: 58, w: 150, h: 170 },
+  // The headphones: where the band bears on its hook, and how tall their host is. The pair with its hook fills about
+  // seven tenths of that.
+  phones: { x: 1168, y: 80, host: 210 },
   // The bench's own picture: it is drawn from the front left and above, and frames a fixed height of its scene, so
   // its host's height sets how large the desk is. This puts the desk's near left corner where the draft has it.
   desk: { x: -20, y: 14, w: 1340, h: 808 },

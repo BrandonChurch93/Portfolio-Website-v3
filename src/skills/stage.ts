@@ -1,4 +1,5 @@
 import type { DeskPiece } from '../pieces/desk/index';
+import type { HeadphonesPiece } from '../pieces/headphones/index';
 import { BAY, DESK, MAT, SCREEN, SHADE } from '../pieces/desk/layout';
 import { registry } from '../hooks/registry';
 import { lamp } from '../lamp/lamp';
@@ -22,7 +23,7 @@ export interface SkillsParts {
   board: HTMLElement;
   skills: HTMLElement;
   about: HTMLElement;
-  pieces: () => { cpu: StruckPiece | null; reflector: StruckPiece | null; light: StruckPiece | null; desk: DeskPiece | null };
+  pieces: () => { cpu: StruckPiece | null; reflector: StruckPiece | null; light: StruckPiece | null; desk: DeskPiece | null; phones: HeadphonesPiece | null };
   way: () => Way;
 }
 
@@ -68,6 +69,8 @@ const RISE = 10;
 const RULE = { half: 2.4 };
 // The way the lamp's shade faces where the stream strikes it. Where that is, is the desk's own (SHADE in its layout).
 const SHADE_FACE = -2.3;
+// The part of the headphones' host the pair hangs in: its share of the width, and from how far down to how far down.
+const BRUSH = [0.56, 0.2, 0.88];
 // How hard the stream strikes the first row again when its thing is asked to come to life again.
 const AGAIN = 0.8;
 // A change of tab: how long its pulse takes to reach him, and how far along that the words change.
@@ -96,14 +99,14 @@ const ramp = (age: number, [a, b]: Span) => { const k = clamp((age - a) / (b - a
 export function mountSkills(parts: SkillsParts): SkillsStage {
   const q = <T extends HTMLElement = HTMLElement>(part: string, within: Element = parts.page) => within.querySelector<T>(`[data-part="${part}"]`)!;
   const all = (part: string) => [...parts.page.querySelectorAll<HTMLElement>(`[data-part="${part}"]`)];
-  const title = q('title'), phones = q('phones'), hang = q('hang', phones), desk = q('desk');
+  const title = q('title'), phones = q('phones'), desk = q('desk');
   const rows = all('row'), names = all('name'), lists = all('lists'), thing = q('thing') as HTMLElement | null;
   const reflector = q('reflector'), light = q('light'), portrait = q('portrait'), cover = q('cover'), coverGlow = cover.firstElementChild as HTMLElement;
   const heading = q('about-title'), tabs = q('tabs'), panel = q('panel');
   const auras = all('aura'), beams = all('beam');
 
   let stream: StreamHandle | null = null, bench: DeskPiece | null = null, disposed = false;
-  let anchors: { cpu: Anchor; reflector: Anchor; strike: Anchor; lens: Anchor } = { cpu: [-0.36, 0], reflector: [0, 0], strike: [0.02, -0.14], lens: [-0.12, 0.16] };
+  let anchors: { cpu: Anchor; reflector: Anchor; strike: Anchor; lens: Anchor; hook: Anchor } = { cpu: [-0.36, 0], reflector: [0, 0], strike: [0.02, -0.14], lens: [-0.12, 0.16], hook: [0, -0.24] };
   let lives: Record<Way, number> = { shards: 1.3, band: 0.9, flash: 0.8 };
   let rules: Rail[] = [], cues: Cue[] = [];
   // The run over the top of About, as the page has it: from the reflector to where the stream strikes the light.
@@ -135,6 +138,7 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
     const put = (el: HTMLElement, x: number, y: number, host: number, a: Anchor) => { el.style.left = `calc(var(--u) * ${(x - a[0] * host - host / 2).toFixed(2)})`; el.style.top = `calc(var(--u) * ${(y - a[1] * host - host / 2).toFixed(2)})`; };
     put(reflector, A.reflector.x, A.reflector.y, A.reflector.host, anchors.reflector);
     put(light, T.lens[0], T.lens[1], A.light.host, anchors.lens);
+    put(phones, SKILLS.phones.x, SKILLS.phones.y, SKILLS.phones.host, anchors.hook);
   };
 
   const plan = (c: PlanContext): Planned => {
@@ -228,7 +232,7 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
     const lampHit = stream.struck('lamp');
     if (lampHit.at > struckAt + 0.05 && !whole) { struckAt = lampHit.at; swings.push({ t: lampHit.at, a: SWING.struck * (0.5 + 0.5 * lampHit.hard) }); }
     while (swings.length && t - swings[0].t > SWING.lasts) swings.shift();
-    set('swing', hang, '--swing', `${(whole ? 0 : swing(t)).toFixed(2)}deg`);
+    P.phones?.setSwing(whole ? 0 : (swing(t) * Math.PI) / 180);
     const near = since('near'), lit = since('lamp');
     set('desk:o', desk, 'opacity', near > 0 ? '1' : '0');
     bench?.setStream(whole ? 1 : lampHit.on, whole ? 60 : t - lampHit.at);
@@ -277,7 +281,8 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
   let before: { x: number; t: number } | null = null;
   const brush = (e: PointerEvent) => {
     if (e.pointerType === 'touch') return;
-    const r = phones.getBoundingClientRect(), inside = e.clientX > r.left && e.clientX < r.right && e.clientY > r.top && e.clientY < r.bottom, now = clock.now();
+    // The pair hangs in the middle of its host, which is wider and taller than they are.
+    const r = phones.getBoundingClientRect(), w = r.width * BRUSH[0], inside = Math.abs(e.clientX - (r.left + r.right) / 2) < w / 2 && e.clientY > r.top + r.height * BRUSH[1] && e.clientY < r.top + r.height * BRUSH[2], now = clock.now();
     if (inside && before && now - before.t < 0.2 && now - (swings[swings.length - 1]?.t ?? -9) > 0.35) {
       const v = (e.clientX - before.x) / Math.max(0.004, now - before.t);
       if (Math.abs(v) > 60) swings.push({ t: now, a: Math.sign(v) * Math.min(SWING.brush, 1.5 + Math.abs(v) / 260) });
@@ -309,9 +314,9 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
   lamp.bind();
   tiers.detect();
   place();
-  void registry.track(Promise.all([import('../pieces/cpu/index'), import('../pieces/reflector/index'), import('../pieces/studio-light/index')]).then(([cpu, refl, studio]) => {
+  void registry.track(Promise.all([import('../pieces/cpu/index'), import('../pieces/reflector/index'), import('../pieces/studio-light/index'), import('../pieces/headphones/index')]).then(([cpu, refl, studio, head]) => {
     if (disposed) return;
-    anchors = { cpu: cpu.CPU.strike, reflector: refl.REFLECTOR.strike, strike: studio.STUDIO.strike, lens: studio.STUDIO.lens };
+    anchors = { cpu: cpu.CPU.strike, reflector: refl.REFLECTOR.strike, strike: studio.STUDIO.strike, lens: studio.STUDIO.lens, hook: head.HEADPHONES.hook };
     lives = cpu.LIFE;
     place();
     stream = mountStream(parts.page, { plan });
