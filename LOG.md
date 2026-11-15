@@ -2,6 +2,32 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · The Contact wireframe turned down, and a brainstorm (Fable, web chat)
+
+**What Brandon said**
+
+- He does not love the wireframe. His words are in `BRIEF.md`, Settled, Contact, in full.
+- The content is one block, on one side, not split by the rocket. He is not sure which side.
+- The stream runs into a pool that fills with its energy, and the rocket launches from that. Not a strike on the rocket's nose. He counts the pool as signed off before.
+- The left column "just looks horrible. It's a mess."
+- He asked to brainstorm together, and for Fable's own thinking and not only the options he gave.
+
+**What was done**
+
+- His verdict written into `BRIEF.md`: Settled, Contact, Open 12 marked decided, two lines in Dropped.
+- Open 31 now opens with the verdict and what Fable put to him: what the section is for, why the first round failed, four things for any layout, three arrangements, and a pick.
+- He was shown the three arrangements as small sketches in the chat. Nothing in the repo was drawn.
+- `/lab/contact` still shows the first round. `CLAUDE.md` and the index say it was turned down.
+
+**Where the record and his memory differ, for whoever reads this next**
+
+- He said he had signed off on the stream running into a pool. The record had it as Fable's recommendation (Open 12) and as drawn in the page sketch at `/lab/home`, where the stream ran down a flume into an oval pad and the rocket lifted, with nothing in the sketch ruled. Fable moved away from it in the wireframe without saying it was a change. His word now settles it. Lesson: when a new draft drops something an earlier sketch drew, say so in the chat, whether or not it was ruled.
+
+**For the next session**
+
+- Waiting on his pick of an arrangement (A, B, C or something else) and the side. Then `/lab/contact` is drawn again: one block, the pool, the rocket launching from it.
+- Still his to say: no phone number, the line for where he is based, LinkedIn in the footer, and whether CodePen and YouTube stay there.
+
 ## 2026-11-14 · Study 26: Contact and the footer, a wireframe (Fable, web chat)
 
 **What Brandon said**

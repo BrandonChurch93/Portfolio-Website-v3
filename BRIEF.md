@@ -1189,6 +1189,13 @@ At `/lab/skills`, Study 25, built in Claude Code by Fable. The reflector, the st
     - Read beside "Nothing depends on a visitor sending a message": the form is there and it works, and nothing else on the page waits for it. The launch plays whether or not anyone writes.
     - **His phone number and where he lives are left to Fable.** Fable's calls, which he can overturn: no phone number on the page, and one short line that says where he is based and his time zone. The reasons are in Open 31.
     - **LinkedIn.** He asked whether it is already going in the footer. Fable's answer: yes, in the footer with GitHub and the résumé, and not repeated in Contact. Not a ruling until he says so.
+- **His verdict on the first wireframe: no (Nov 14).** "I do not love what you did with the contact section. I think all of the content should be on the left-hand side or potentially the right since the about me section has content to the right. I'm not sure to be honest, but I don't like the content being separated. I feel like we should have one section of content and then we should have the rocket maybe slightly off to the side, part of the background, maybe? I'm not sure." "I don't like that the stream hits the tip of the rocket. Your last proposal that we did I signed off on: it went to a pool that filled the bottom of energy and then the rocket blast off from that thing. That was a much better design than what you have here." "The issue I have with the content on the left right now is the layout just looks horrible. It's a mess. The rocket being positioned in the center is kind of tough. It would either need to sit below or on top of the contact form for this to work, or slightly off to one side with the content form laying slightly over the top of it so you can still see what's happening behind the form. I'm not sure. Let's take a moment to brainstorm together. What do you think, and don't just go with the options I'm giving you. Let's really think about the best user experience and user interface possible for the scenario."
+    - In exact terms:
+    - **All of Contact's content is one block.** It is not split by the rocket. Which side it stands on he is not sure of.
+    - **The stream does not strike the rocket.** It runs into a pool at the foot of the rocket, the pool fills with the stream's energy, and the rocket launches from the pool. He counts this as already signed off. The record had it as Fable's recommendation (Open 12) and as drawn in the page sketch (Open 25), where nothing was ruled. His word now settles it.
+    - The left column as drawn "just looks horrible. It's a mess."
+    - Where the rocket stands is open, in his words: off to one side, perhaps part of the background, below the form, or with the form laid slightly over it so what happens behind can still be seen. None of these is picked.
+    - He asked to brainstorm before anything more is built, and for Fable's own thinking and not only his options. What Fable put to him is in Open 31.
 
 ### 3D pieces
 
@@ -1261,7 +1268,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
 9. **The résumé.** A page, or only the download button.
 10. **The project page design.**
 11. **Which projects show** in each category on the home page.
-12. **What ties the bottom of the page together.** Recommendation: the stream ends by feeding the rocket's launch. Drawn in the Contact wireframe (Open 31), and not ruled.
+12. **What ties the bottom of the page together.** **Decided Nov 14: the stream runs into a pool at the foot of the rocket, the pool fills, and the rocket launches from it** (Settled, Contact). What follows is how it stood. Recommendation: the stream ends by feeding the rocket's launch.
 13. **The rocket as built.** He has not judged it yet.
 14. **Whether the site has to meet Section 508** (WCAG 2.0, levels A and AA). He asked whether the buttons do, out of curiosity. Recommendation: yes, checked as each part is built, because the engineers who read the site will check. The buttons' results are in `LOG.md`.
 
@@ -1684,7 +1691,23 @@ Each line has Fable's recommendation where there is one. None of these are rules
     - **His verdict on the derby (Nov 14), in Settled, Skills:** the CPU in its socket, the screen with its back off, the palette and brush. He is on the fence about the things being made out of the strike's shards, and found the derby too low in quality to show it. He asked whether to go on to Claude Code for a polished example or dial it in here first.
     - **Fable's answer, put to him: go to Claude Code, and prove it on one thing first.** The web chat draws in software and has only a flat strip for the stream, so another round here would be another stand in. In Claude Code the real stream and its shards run on his graphics card. One thing is built first, the CPU in its socket, to the bar, on a page of its own, with three ways of coming to life behind a switch, for him to judge in motion: put together from the strike's shards as proposed. Uncovered by a band of light that crosses it from the strike, as a card in Work is woken. Or lit by the strike's flash with its parts dropping the last short way into place, and no shards turned into parts. The other two things are built after he picks.
 
-31. **Contact and the footer: a wireframe (Nov 14). In front of him. Only what is under Settled, Contact is ruled.** At `/lab/contact`, Study 26, built in the web chat on his word that Contact is next.
+31. **Contact and the footer: a wireframe (Nov 14). He turned the first round down. A second is put to him in words, and nothing of it is built.** At `/lab/contact`, Study 26, built in the web chat on his word that Contact is next.
+    - **His verdict on the first round (Nov 14), in Settled, Contact:** no. The content is one block and not split by the rocket, the stream runs into a pool the rocket launches from and does not strike its nose, and the left column was a mess. The page still shows the first round until the second is drawn.
+    - **What Fable put to him the same day, as a brainstorm. None of it is ruled:**
+        - What the section is for, in this order: book time with him in one press. Copy his email or write a few lines without the page fighting it. End the page.
+        - Fable's read of why the first round failed: the rocket cut one job in two, so the eye had to cross it to get from the calendar button to the form. The left column was five kinds of type with nothing holding them together. A strike on the nose left the stream ending in mid air, and had nothing to do with a launch. A pool has a reason: it is what the rocket burns.
+        - **For any layout:**
+            1. One block, in the order his live site already uses: the calendar button and his email on one row, "or send a message", the form, then the line for where he is based. One width and one left edge.
+            2. The block is one plate, of the same family as the Work cards. A solid edge lets it lie over the scene. The launch's light falls on its rim and not behind words someone is typing. It ties the foot of the page to Work.
+            3. The pool is the foot of the page: long and shallow, along the bottom. The stream falls into it. It fills over the last stretch of scroll and is full at the foot of the page, which is when the rocket goes. After the launch it stays lit. It is the page's last picture, with the footer under it.
+            4. The rocket stands in the pool at one side and is never behind words.
+        - **Three arrangements:**
+            - A · Beside. The block at one side, the rocket at the other, both over the one pool, the block's lower edge lying over the pool's end. The launch and the thing he wants a visitor to do are on the last screen together. For the short time the launch runs, the two share the eye.
+            - B · Behind. The rocket large, as the ground of the section, with the block laid partly over it. The most depth. It covers half of a piece made to be looked at, puts a launch behind a form, and repeats what About does with his portrait.
+            - C · Below. The block centered as his live site has it, and under it the launch as a band of its own across the whole page, the rocket on the center line under the city. Nothing competes with the form and the page ends on the launch alone. The page is a screen longer, and when the rocket goes the form is above the screen.
+        - **Fable's pick: A, with the block at the right and the rocket at the left.** The stream leaves About under the lower left of his portrait, so it falls into the pool beside the rocket with nothing carrying it. About has its words at the left and him at the right, so the two sections do not repeat each other.
+        - The pool also answers what he had not answered, whether the rocket launches once or every time: the pool drains as the stream draws back, and the rocket is on it again by the time it fills. Fable's proposal.
+    - **What follows is the first round as it was drawn.**
     - **What it holds, from his words (Settled, Contact):** a calendar button first, a way to copy his email, and a working form. Nothing waits for a message.
     - **Fable's calls on what he left open, each his to overturn:**
         - No phone number. Everyone who reads the site already has his résumé, which carries it. A number on a public page is collected by machines and called by strangers, and this repo is public too. The calendar button does what a number is for.
@@ -1759,6 +1782,8 @@ Each line has Fable's recommendation where there is one. None of these are rules
 - In About: the stream going in behind the shoulder at the left of the picture. He meant his own left (Nov 14)
 - In the rows of skills: the sentence of proof in a middle column, and the line under each skill set's name. "It doesn't add anything." (Nov 14)
 - In About: the rail ending over his head, with the stream falling off its end into the top of his head. "I definitely don't like the stream coming in directly over my head." (Nov 14)
+- In Contact: the content in two columns either side of the rocket. "I don't like the content being separated." (Nov 14)
+- In Contact: the stream striking the spike on the rocket's nose. It runs into a pool the rocket launches from (Nov 14)
 
 ## Reference
 

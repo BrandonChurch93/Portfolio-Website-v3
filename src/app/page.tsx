@@ -14,7 +14,7 @@ export default function Index() {
       <ul className={styles.list}>
         <li>
           <Link href="/lab/contact">Contact and the footer, a wireframe</Link>
-          <span className={styles.minor}>Phase 3 · the rocket in the middle, a calendar button, your email and a working form either side of it, and the launch at the foot of the page</span>
+          <span className={styles.minor}>Phase 3 · the first round, turned down: the rocket in the middle with the content either side of it. The second round has one block of content and a pool the rocket launches from</span>
         </li>
         <li>
           <Link href="/lab/desk">The desk, a rough draft</Link>
