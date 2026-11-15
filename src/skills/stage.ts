@@ -73,7 +73,7 @@ const SHADE_FACE = -2.3;
 const QUIET = { by: 0.4, over: [0.15, 1.1] as Span, back: 0.5 };
 // The headphones on their stand, in the desk's millimetres: how high the middle of the hanging pair is, and half its
 // width and half its height. The cursor brushing through that knocks them.
-const HANG = { up: 290, half: [125, 175] };
+const HANG = { up: 330, half: [115, 140] };
 // Half the word's length and half its depth on the floor, in the desk's millimetres, with room round it.
 const WORD_HALF = [WORD.cap * 2.6, WORD.cap * 0.75];
 // How long the leading end is followed past the top of Skills. Nothing waits on it now that the title is the desk's.
