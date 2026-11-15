@@ -38,7 +38,7 @@ const RIM = 0.05;
 // frame has. Powers are as seen in a mirror.
 const ROOM = {
   env: 0.3,
-  moon: { power: 70, across: 0.8, far: 7 },
+  moon: { power: 32, across: 0.8, far: 7 },
   glow: { power: 2.6, size: [16, 5] as [number, number], at: [0, 1.2, -7] as [number, number, number] },
   strips: [
     { power: 20, size: [5.5, 0.22], at: [0.6, 3.4, 2.2], to: [0, 0, 0] },
