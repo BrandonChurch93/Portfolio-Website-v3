@@ -78,6 +78,42 @@ Show me the city as soon as it stands in the hero, and say plainly what is at th
 - Waiting on his look: the layout, how much of the city shows, when the stream sets off. Then the agreement for the hero: the city made again, the opening, and how the falls are made.
 - Still open: the two buttons' words, which are his. His second paragraph goes to About when he rewrites it.
 
+## 2026-11-14 · Contact can be scrolled, the desk's fourth reviews, and the hero joins the list (Fable, Claude Code)
+
+**What Brandon said**
+
+- A fifth item for the list, after the whole page: the hero at `/lab/hero`, then on top of `/lab/whole`. `BRIEF.md`, Settled, "The hero, the city at rest", 13 items, and 9 tests in `QUALITY.md`. What he cares about most: "The city is made again from nothing. A futuristic sci-fi city that looks like a real object, not a drawing and not the old model." "It feels alive, with a glow behind and above it like the one behind my portrait." "At rest the city sits low, with its falls under the foot of the screen." "A night sky at the top, in the corners and down the sides, like the sky of another planet... Never behind my words. No blue." "No opening animation yet." "Show me the city as soon as it stands in the hero, and say plainly what is at the bar and what is not."
+- And again: lose nothing, do not stash, reset or discard, do not stop a running builder.
+
+**What was done since the entry below**
+
+- **Contact, Study 28, at `/lab/contact`,** pushed with the pad as rough stand ins. `BRIEF.md`, "Contact, the first build, as built", has what is built, what is measured and what is not checked.
+- **The pad:** its frame is Fable's (`src/pieces/pad/`), its kit is `reference/kits/pad.md`, and three builders are on its parts. `/lab/piece/pad` has a Launch button, and `?size=860&wide=800` shows it at about the page's size.
+- **The desk, fourth reviews.** A stranger named everything on it. A bar judge passed the tablet, the PC, the monitor, the camera, the keyboard, the lamp and the mat (the last three narrowly) and failed the mouse ("the weakest thing on the desk"), the bench's timber ("smeared streaks"), the word ("a decal that glows") and the headphones (narrowly). Since then: the word is worn paint that the shadow cuts (pushed), the headphones' second round is in ("slightly" the weaker work, from "clearly"), the PC's roof stands in the desk's shade, and the swing is larger.
+- **Nothing crawls (test 40):** an engineer found the cause was not the scroll but fine geometry catching the drifting light, and faded it where it is finer than a pixel on the mat, the keyboard and the camera. Left, in files that were another engineer's at the time: the bench's bronze angle (`toCreasedNormals` in `bench/forms.ts`, untested), four thin strips on the PC's roof (`pc/case.ts`), the camera's thin copper rings (`camera/lenses.ts`).
+
+**With agents now, none handed back**
+
+- The desk's build on a first visit (engineer: `desk/index.ts` mount flow, bench, PC and camera build code, `build.ts`, `stage.ts` warm). Its files are uncommitted in the working folder.
+- The pad's stone, its table and tower, its rocket and fire (three builders).
+- The mouse, a third way: designed at the page's size first. The lamp's fifth round: a dark shade, and a lamp that reads as lit.
+
+**What the next session would otherwise rediscover**
+
+- The scripts start a dev server when none is running and stop it when they finish. With several agents shooting at once that kills a server under someone else. Keep one running (`npm run dev`).
+- Builders' half made files break the dev server's pages for minutes at a time. Check Contact and Skills against the production build on 5331, which is built from what is committed.
+- `streamCount` answers `{ riding, loose, length }`, not a number.
+- The tools for Contact are in the session's scratch `tools/`: `ctseat.mjs` (the six screens, the early waking, shards over things), `cwk.mjs` (WebKit).
+- A rebase of the index page (`src/app/page.tsx`) conflicts whenever the web chat adds a study: keep both entries.
+
+**Next, in his order**
+
+- Take each agent's work as it lands. Then a bench round for its timber and its angle's edge.
+- Finish checking Contact against its tests once the pad's parts are in, with fresh reviewers.
+- `/lab/whole`: one route from Work through Skills and About to the stone. The three planners each make a `Route` of their own, so they have to be joined: branches, landings, cues, dark stretches and solids, each moved along by the length before it.
+- The hero: a kit for the city, made new as a piece, with the sky, the glow and the falls. Then the stream from the main fall to Work's bar.
+- Still his: the CPU's way, the PC's made up names, the stream beside the desk (test 8), the first build's five departures, a message sent through the form.
+
 ## 2026-11-14 · His changes to Skills built, and the desk brought to the screen's rate (Fable, Claude Code)
 
 **What Brandon said**
