@@ -26,7 +26,7 @@ const D2R = Math.PI / 180, M = SCALE;
 const ALONE = { fill: 0.62, fov: 12 };
 // The cursor's light: how far in front of the city it stands, in metres, how far it ranges across and up as shares
 // of what the host shows, and how strong it is.
-const LAMP = { back: 2.6, across: 1.1, up: 1.1, power: 36 };
+const LAMP = { back: 2.6, across: 1.1, up: 1.1, power: 13 };
 // The canvas fades to nothing over this share of its rim, so nothing can end at its edge.
 const RIM = 0.05;
 // The room the city is seen by, as the desk's is: how strongly its things reflect it, and two wide pale lights in
@@ -42,7 +42,14 @@ const ROOM = {
 // The moon, which is in the upper right of the page's sky: the one light that gives the world a lit side and a dark
 // one. Where it stands from the world, how strong it is, and how many pixels across its shadows are drawn. It never
 // moves, so its shadows are drawn once.
-const MOON = { from: [0.56, 0.6, 0.57] as const, power: 1.5, map: { high: 4096, mid: 2048, low: 1024, static: 2048 } as Record<Tier, number>, reach: 1100 };
+const MOON = { from: [0.62, 0.55, 0.42] as const, power: 15, map: { high: 4096, mid: 2048, low: 1024, static: 2048 } as Record<Tier, number>, reach: 1100 };
+// The dim light of the sky, which fills what the moon does not reach. It is kept low: with more, the world had no
+// dark side and read as flat.
+const SKY = 0.2;
+// Depth as darkness: what is further from the eye sinks toward the page's ground, so the far side of the city
+// stands dark against the glow behind it and the near side stands clear of it. From how far in front of the
+// world's middle it begins, and how far behind it would be whole, in metres.
+const HAZE = { from: 0.9, to: 3.4 };
 // The light the core throws on the torn rock and on what broke away.
 const GLOW = { power: 0.9 };
 // The heights of the frame each part lies between, lowest first. A part none of which the screen shows is not
@@ -196,7 +203,8 @@ export function createSkyCity(): CityPiece {
 
       // The room. A light is turned down by its strength and never hidden: hiding one makes every material compile
       // again.
-      const hemi = new THREE.HemisphereLight(0x3d3731, 0x100e0c, 0.55);
+      const hemi = new THREE.HemisphereLight(0x3d3731, 0x100e0c, SKY);
+      s.fog = new THREE.Fog(hex('bg'), VIEW.back * M - HAZE.from, VIEW.back * M + HAZE.to);
       s.add(hemi);
       stage.lamp.intensity = LAMP.power;
       stage.lamp.shadow.autoUpdate = false;
