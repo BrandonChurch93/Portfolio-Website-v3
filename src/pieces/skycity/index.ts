@@ -8,6 +8,7 @@ import type { Anchor } from '../../world/struck';
 import { finish, trueDarks } from '../../world/tone';
 import { SIDE, myTurn } from '../../world/turn';
 import { AIM, DEBRIS, HEART, HOST, MOONWARD, PLANET, SCALE, SPIRE, TEAR, VIEW, coreLevel } from './layout';
+import { aimGlint } from './polish';
 import { PARTS, type CityPart, type PartFactory, type PartName, type PartState } from './part';
 
 // The world in the hero, as one piece: the top of a small planet torn in half, with the city on it, and under it
@@ -37,7 +38,7 @@ const RIM = 0.05;
 // frame has. Powers are as seen in a mirror.
 const ROOM = {
   env: 0.3,
-  moon: { power: 260, across: 0.7, far: 7 },
+  moon: { power: 70, across: 0.8, far: 7 },
   glow: { power: 2.6, size: [16, 5] as [number, number], at: [0, 1.2, -7] as [number, number, number] },
   strips: [
     { power: 20, size: [5.5, 0.22], at: [0.6, 3.4, 2.2], to: [0, 0, 0] },
@@ -165,6 +166,7 @@ export function createSkyCity(): CityPiece {
     stage.lamp.position.copy(mid).addScaledVector(right, (lampUV.x - 0.5) * wide * LAMP.across).addScaledVector(up, (0.5 - lampUV.y) * tall * LAMP.up).addScaledVector(back, LAMP.back);
     stage.lamp.target.position.copy(mid);
     cursor.copy(stage.lamp.position).divideScalar(M);
+    aimGlint(stage.lamp.position, cam);
   };
 
   // Which heights of the frame the screen shows, and so which parts are drawn.

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { hex, type PaletteName } from '../../../../config/palette';
 import { NOISE, lin } from '../../../../world/surface';
+import { polished } from '../../polish';
 import { BLINK, CORE, CROWN, DECK, LIFT, PYLON, ROOM, SQ, SUN, TERRACE, TIERS } from './form';
 
 // The spire's materials: one program for everything it is built of, and one for everything that is glass or light.
@@ -98,6 +99,7 @@ function patch(m: THREE.MeshPhysicalMaterial, key: string, c: Chunks): void {
     sh.fragmentShader = f.replace('#include <opaque_fragment>', c.hold ?? HOLD_CHUNK);
   };
   m.customProgramCacheKey = () => key;
+  polished(m);
 }
 
 // Which gate a bearing faces, as the gate's bearing in radians, and where a point is across that gate's face.
