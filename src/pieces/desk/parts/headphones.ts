@@ -5,10 +5,11 @@ import { BEAR, BEAR_Y, FOOT_AT, LAG, drawn } from './headphones/form';
 import { headphonesMaterials } from './headphones/materials';
 import { buildHeadphones } from './headphones/model';
 
-// His headphones, hanging on a desk stand at the back right of the top, across from the lamp. High end over ear
-// headphones of the site's own design: deep machined cups in dark steel, thick knitted cushions, smooth stems that
-// slide out of the band, a copper crown on one cup, and the wide knitted canopy under two polished rails. The stand is a
-// weighted foot, a post and a padded saddle the band bears on. They have no light of their own.
+// His headphones, hanging on a desk stand at the back right of the top, across from the lamp: his own AirPods Max in
+// Space Gray, as he owns them, with no mark on the outside. Anodised aluminium cups, knitted cushions, polished steel
+// stems, the Digital Crown and the noise control button on the right cup, and the knit canopy under the band's two
+// coated rails. The stand is the site's own: a weighted foot, a post and a padded saddle the canopy bears on. They
+// have no light of their own.
 // The page swings them: the pair turns about the point where the band bears on the saddle, by the angle it is handed,
 // and each cup lags a little behind on its pivot, so they have weight. The stand does not move.
 

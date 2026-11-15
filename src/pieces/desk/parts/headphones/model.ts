@@ -1,30 +1,37 @@
 import * as THREE from 'three';
 import { Builder } from '../../../../world/build';
 import {
-  ARCH, BASE, BEAR_Y, CANOPY, CUP, CUSHION, FACE, FOOT_AT, HOOK, KNUCKLE, PAIR_Q, PIVOT, POST, RAIL, SADDLE, SHELL, STEM, V, canopyUnder, frame, loft, saddleTop, sweep, turned, type Sec,
+  ARCH, BASE, BEAR_Y, BUTTON, CANOPY, CROWN, CUP, CUSHION, FOOT_AT, HOOK, HOUSING, JOINT, KNUCKLE, PAIR_Q, PIVOT, POST, RAIL, SADDLE, SHELL, STEM, V, canopyUnder, frame, loft, railAt, saddleTop, sweep, turned, type Sec,
 } from './form';
 import type { Handle, HeadphonesMats, Of } from './materials';
 
-// The headphones on their stand, built in the desk's millimetres and merged per material. The stand: a weighted foot
-// with a hide pad let into its top, a knuckle on its boss with a pin across it, a tapering post with a cable hook, and
-// a padded saddle. The pair hanging from it: the band, two flat sprung steel rails over a knitted canopy, a housing at
-// each end that a slotted stem slides out of, a yoke at each stem's foot with a pin through it, and the cups, each
-// hanging on its pin, with a turned medallion in a perforated face.
+// His AirPods Max on his stand, built in the desk's millimetres and merged per material. The stand is the site's
+// own: a weighted foot with a hide pad let into its top, a knuckle on its boss with a pin across it, a tapering post
+// with a cable hook, and a padded saddle. The pair hangs from it by its canopy: two soft coated rails arching over a
+// knit canopy, joined at each end in a housing a polished steel stem slides out of, and the cups, each a one piece
+// aluminium shell hanging on a hinge in its top, with a deep knitted cushion. The Digital Crown and the noise
+// control button stand on the top of the right cup.
 
 const X = V(1, 0, 0), Y = V(0, 1, 0), Z = V(0, 0, 1);
 
 // Two builders, one for the large forms that cast shadows and one for the fine parts that do not, and each piece's
-// kind written on its vertices so one material can tell its surfaces apart.
+// kind written on its vertices so one material can tell its surfaces apart. With `local`, a piece also carries its
+// own position before it is placed, for patterns laid out in the cup's own frame.
 class Parts {
   private cast = new Builder();
   private fine = new Builder();
   get tris() { return this.cast.tris + this.fine.tris; }
-  add(geo: THREE.BufferGeometry, h: Handle, m?: THREE.Matrix4, o: { shadow?: boolean } = {}): void {
+  add(geo: THREE.BufferGeometry, h: Handle, m?: THREE.Matrix4, o: { shadow?: boolean; local?: boolean } = {}): void {
     const g = geo.index ? geo.toNonIndexed() : geo.clone();
+    const n = g.getAttribute('position').count;
     if (!geo.userData.kinds) {
-      const n = g.getAttribute('position').count, cell = new Float32Array(n * 4);
+      const cell = new Float32Array(n * 4);
       for (let i = 0; i < n; i++) cell[i * 4] = h.kind;
       g.setAttribute('cell', new THREE.Float32BufferAttribute(cell, 4));
+    }
+    if (o.local) {
+      const cell = g.getAttribute('cell'), p = g.getAttribute('position');
+      for (let i = 0; i < n; i++) cell.setXYZW(i, cell.getX(i), p.getX(i), p.getY(i), p.getZ(i));
     }
     const casts = o.shadow ?? h.cast;
     (casts ? this.cast : this.fine).add(g, h.mat, m, { shadow: casts });
@@ -49,20 +56,21 @@ function plate(s: THREE.Shape, depth: number, bev: number, curve = 8): THREE.Buf
   return g;
 }
 
-// A knurled crown standing on y from 0 to h.
+// The Digital Crown: a knurled aluminium crown standing on y from 0 to h, its top a shallow chamfer to a flat face.
 function crown(r: number, h: number, ridges: number): THREE.BufferGeometry {
-  const g = new THREE.CylinderGeometry(r, r, h, ridges * 4, 2);
-  g.translate(0, h / 2, 0);
+  const pts: [number, number][] = [[r - 0.5, 0], [r, 0.4], [r, h - 0.7], [r - 0.6, h], [0.01, h]];
+  const seg = ridges * 4;
+  const g = new THREE.LatheGeometry(pts.map(([x, y]) => new THREE.Vector2(x, y)), seg);
   const p = g.getAttribute('position');
   for (let i = 0; i < p.count; i++) {
     const x = p.getX(i), z = p.getZ(i), rr = Math.hypot(x, z), y = p.getY(i);
-    if (rr < r * 0.6) continue;
-    const a = Math.atan2(z, x), edge = y > h - 0.01 || y < 0.01 ? 0.6 : 1;
-    const k = 1 - 0.07 * edge * (0.5 + 0.5 * Math.cos(a * ridges));
-    p.setX(i, (x / rr) * r * k); p.setZ(i, (z / rr) * r * k);
+    if (rr < r - 0.45 || y < 0.3 || y > h - 0.6) continue;
+    const a = Math.atan2(z, x), k = 1 - 0.1 * Math.abs(Math.cos(a * ridges * 0.5));
+    p.setX(i, x * k); p.setZ(i, z * k);
   }
-  g.computeVertexNormals();
-  return g;
+  const out = g.toNonIndexed();
+  out.computeVertexNormals();
+  return out;
 }
 
 // A domed pin head, standing on y from 0.
@@ -72,7 +80,7 @@ export interface HeadphonesModel {
   group: THREE.Group;
   // Turns about the bearing point for the swing.
   swing: THREE.Group;
-  // Each cup on its pivot, turned for its lag behind the band.
+  // Each cup on its hinge, turned for its lag behind the band.
   cups: [THREE.Group, THREE.Group];
   meshes: THREE.Mesh[];
   tris: number;
@@ -198,153 +206,109 @@ export function buildHeadphones(of: Of, kindOf: Record<string, number>, mats: He
 
   {
     const b = new Parts();
-    // The canopy: a knitted strip whose underside is its arch, pressed up onto the pad where it bears. Its middle stands
-    // half its thickness out from that, square to the line.
-    const n = 40, under: THREE.Vector3[] = [];
+    // The canopy: a knit strip hung from end to end, whose underside is its arch, pressed up onto the pad where it
+    // bears. Its middle stands half its thickness out from that, square to the line. Its ends run into the housings.
+    const n = 44, under: THREE.Vector3[] = [];
     const end = ARCH.crx;
-    under.push(V(-end, ARCH.cy - 7, 0));
-    for (let i = 0; i <= n; i++) { const t = Math.PI - (i / n) * Math.PI, x = end * Math.cos(t); under.push(V(x, canopyUnder(x), 0)); }
-    under.push(V(end, ARCH.cy - 7, 0));
+    under.push(V(-(end + 2.5), ARCH.ccy - 4, 0));
+    for (let i = 0; i <= n; i++) { const t = Math.PI - (i / n) * Math.PI, x = end * Math.sign(Math.cos(t)) * Math.abs(Math.cos(t)) ** 0.8; under.push(V(x, canopyUnder(x), 0)); }
+    under.push(V(end + 2.5, ARCH.ccy - 4, 0));
     const mid = under.map((p, i) => {
       const t = under[Math.min(under.length - 1, i + 1)].clone().sub(under[Math.max(0, i - 1)]);
       const nn = V(-t.y, t.x, 0).normalize();
-      if (nn.dot(V(p.x, p.y - ARCH.cy + 20, 0)) < 0) nn.negate();
+      if (nn.dot(V(p.x, p.y - ARCH.ccy + 20, 0)) < 0) nn.negate();
       return p.clone().addScaledVector(nn, CANOPY.t);
     });
-    b.add(sweep(mid, Z, CANOPY.w, CANOPY.t, 6, 10), of.canopy);
-    for (const z of [-CANOPY.w + 0.4, CANOPY.w - 0.4]) b.add(sweep(mid.map((p) => V(p.x, p.y, z)), Z, 0.95, CANOPY.t + 0.25, 2, 4), of.binding);
+    b.add(sweep(mid, Z, CANOPY.w, CANOPY.t, 6, 12, { taper: 9, ends: 0.62 }), of.canopy);
 
-    // The rails: two flat bands of sprung steel over the canopy's edges, from housing to housing, wide across the band
-    // and thin, their edges square so each holds a crisp line of light.
+    // The frame: two slim rails in a soft coating, from housing to housing, standing over the canopy.
     for (const z of [-RAIL.z, RAIL.z]) {
-      const path: THREE.Vector3[] = [V(ARCH.rx, ARCH.cy - 8, z)];
-      for (let i = 0; i <= 32; i++) { const t = (i / 32) * Math.PI; path.push(V(ARCH.rx * Math.cos(t), ARCH.cy + ARCH.ry * Math.sin(t), z)); }
-      path.push(V(-ARCH.rx, ARCH.cy - 8, z));
-      b.add(sweep(path, Z, RAIL.w, RAIL.t, 7, 10), of.rail);
+      const path: THREE.Vector3[] = [V(ARCH.rx, ARCH.cy - 7, z)];
+      for (let i = 0; i <= 48; i++) { const [x, y] = railAt((i / 48) * Math.PI); path.push(V(x, y, z)); }
+      path.push(V(-ARCH.rx, ARCH.cy - 7, z));
+      b.add(sweep(path, Z, RAIL.w, RAIL.t, 2.6, 12), of.coat);
     }
 
     for (const s of [-1, 1]) {
       const x0 = s * STEM.x, m = new THREE.Matrix4().makeTranslation(x0, 0, 0);
-      // The housing at the band's end: a sculpted capsule, taking in the rails and the canopy at its top and narrowing
-      // to its foot, where a dark mouth lets the stem out. A polished band rings it under the rails.
-      const hs: Sec[] = [
-        { x: STEM.top - 0.4, z: 3.6, y: 4.6, kind: kindOf.gap }, { x: STEM.top, z: 5.6, y: 6.6, kind: kindOf.gap }, { x: STEM.top + 0.2, z: 6.4, y: 7.0 }, { x: STEM.top + 2.4, z: 9.5, y: 7.6 }, { x: STEM.top + 8, z: 15.5, y: 8.2 },
-        { x: STEM.top + 16, z: 20.5, y: 8.4 }, { x: ARCH.cy - 4, z: 22, y: 8.4 }, { x: ARCH.cy - 1.4, z: 21.6, y: 7.8 }, { x: ARCH.cy + 0.6, z: 20.4, y: 6 }, { x: ARCH.cy + 1.4, z: 17, y: 2.5 },
-      ].map((q) => ({ ...q, kind: q.kind ?? kindOf.dark }));
-      const hg = own(loft(hs, 3.2, 28, 5, (p) => V(0, p.y, p.z)));
-      // The loft runs along x: turned upright it runs up the band's end, with its depth across the band.
+      // The housing at the band's end: the two rails run into it at its top, the canopy into its inner face, and it
+      // narrows to its foot, where the stem slides out of a dark mouth.
+      const H = HOUSING, hs: Sec[] = [
+        { x: H.foot - 0.4, z: 2.8, y: 2.1, kind: kindOf.gap }, { x: H.foot, z: 3.6, y: 2.7, kind: kindOf.gap }, { x: H.foot + 0.2, z: 4.0, y: 3.0 },
+        { x: H.foot + 1.6, z: 5.6, y: 3.7 }, { x: H.foot + 5, z: 10, y: 4.2 }, { x: H.foot + 10, z: 16, y: H.x }, { x: H.top - 4, z: H.z, y: H.x },
+        { x: H.top - 1.6, z: H.z - 0.2, y: H.x - 0.3 }, { x: H.top, z: H.z - 1.4, y: H.x - 1.4 }, { x: H.top + 0.6, z: H.z - 3.5, y: 1.6 },
+      ].map((q) => ({ ...q, kind: q.kind ?? kindOf.coat }));
       const up = new THREE.Matrix4().makeBasis(Y, X.clone().negate(), Z);
-      b.add(hg, of.dark, m.clone().multiply(up));
-      const ring: Sec[] = [{ x: ARCH.cy - 7.6, z: 22.2, y: 8.6 }, { x: ARCH.cy - 7.2, z: 22.7, y: 9.1 }, { x: ARCH.cy - 4.8, z: 22.7, y: 9.1 }, { x: ARCH.cy - 4.4, z: 22.2, y: 8.6 }].map((q) => ({ ...q, kind: kindOf.polish }));
-      b.add(own(loft(ring, 3.2, 28, 1, (p) => V(0, p.y, p.z))), of.polish, m.clone().multiply(up));
-      // The stem: a flat polished bar that slides out of the housing, pulled straight by the cup's weight, slotted
-      // down its middle and engraved with size marks, with a copper bushing where it leaves.
-      const stem = [V(x0, STEM.top + 6, 0), V(x0, STEM.foot + 2, 0)];
+      b.add(own(loft(hs, 3.4, 40, 5, (p) => V(0, p.y, p.z))), of.coat, m.clone().multiply(up));
+      // The stem: a slim bar of polished steel, from inside the housing down to the hinge.
       const sp: THREE.Vector3[] = [];
-      for (let i = 0; i <= 2; i++) sp.push(stem[0].clone().lerp(stem[1], i / 2));
-      b.add(sweep(sp, Z, STEM.w, STEM.t, 4, 12), of.stem);
-      addTurn(b, [[0.01, 0], [4.6, 0], [5.2, 0.5], [5.2, 1.6], [4.8, 2.1], [0.01, 2.2]], of.copper, frame(V(x0, STEM.top - 1.6, 0), Y, Z).multiply(new THREE.Matrix4().makeScale(1, 1, 0.82)), 16);
-      // The yoke at the stem's foot: a bridge across, and a cheek either side of the cup's lug with the pin's domed
-      // head on its outer face.
-      {
-        const P = new THREE.Matrix4().makeTranslation(x0, PIVOT.y, 0), span = PIVOT.half + 0.3, th = 1.8;
-        const br = new THREE.Shape();
-        br.moveTo(-STEM.t - 0.4, 2.6); br.lineTo(STEM.t + 0.4, 2.6); br.lineTo(STEM.t + 0.4, 6.6); br.lineTo(-STEM.t - 0.4, 6.6); br.lineTo(-STEM.t - 0.4, 2.6);
-        b.add(plate(br, (span + th) * 2, 0.6, 4), of.yoke, P);
-        const ck = new THREE.Shape();
-        ck.moveTo(-STEM.t - 0.4, 6.6);
-        ck.lineTo(-PIVOT.r - 1.2, 0);
-        ck.absarc(0, 0, PIVOT.r + 1.2, Math.PI, Math.PI * 2, false);
-        ck.lineTo(STEM.t + 0.4, 6.6);
-        ck.lineTo(-STEM.t - 0.4, 6.6);
-        for (const zs of [-1, 1]) {
-          b.add(plate(ck, th, 0.45, 10), of.yoke, P.clone().multiply(new THREE.Matrix4().makeTranslation(0, 0, zs * (span + th / 2))));
-          addTurn(b, PIN_HEAD.map(([r, y]) => [r * 0.8, y * 0.8] as [number, number]), of.copper, P.clone().multiply(frame(V(0, 0, zs * (span + th)), Z.clone().multiplyScalar(zs), X)), 16, { shadow: false });
-        }
-      }
+      for (let i = 0; i <= 3; i++) sp.push(V(x0, H.foot + 5 + (PIVOT.y + 1.2 - H.foot - 5) * (i / 3), 0));
+      b.add(sweep(sp, Z, STEM.w, STEM.t, 2.4, 14), of.stem);
+      // The hinge at its foot: a short polished barrel across the band, the cup hanging on it.
+      addTurn(b, [[0.01, -PIVOT.half], [PIVOT.r - 0.5, -PIVOT.half], [PIVOT.r, -PIVOT.half + 0.5], [PIVOT.r, PIVOT.half - 0.5], [PIVOT.r - 0.5, PIVOT.half], [0.01, PIVOT.half]], of.stem, frame(V(x0, PIVOT.y, 0), Z, X), 20, { shadow: false });
     }
     keep(b, swing, 'hpBand');
   }
 
   // ---- the cups -----------------------------------------------------------------------------------------------------
   const cups: THREE.Group[] = [];
+  const { rz, ry, n, deep, edge, dome } = CUP;
+  // The shell's top at a place across it, and the slope of its outline there.
+  const topAt = (z: number) => ry * Math.pow(Math.max(0, 1 - Math.pow(Math.abs(z) / rz, n)), 1 / n);
+  const tiltAt = (z: number) => Math.atan2(topAt(z + 0.5) - topAt(z - 0.5), 1);
   for (const s of [-1, 1]) {
     const pivot = new THREE.Group();
     pivot.position.set(s * STEM.x, PIVOT.y, 0);
     swing.add(pivot);
     const b = new Parts();
-    // Built for the right cup, its axis out along +x from the pivot; the left one is the same turned half round.
+    // Built for the cup at +x, its axis out along +x from its joint; the other is the same turned half round, so
+    // its front is this one's back.
     const flip = s < 0 ? new THREE.Matrix4().makeRotationY(Math.PI) : new THREE.Matrix4();
-    const cx = CUP.joint - STEM.x, cy = CUP.y - PIVOT.y;
-    const at = (m: THREE.Matrix4) => flip.clone().multiply(new THREE.Matrix4().makeTranslation(cx, cy, 0)).multiply(m);
+    const at = (m: THREE.Matrix4) => flip.clone().multiply(new THREE.Matrix4().makeTranslation(JOINT - STEM.x, CUP.y - PIVOT.y, 0)).multiply(m);
     const I = at(new THREE.Matrix4());
     const radial = (p: THREE.Vector3) => V(0, p.y, p.z);
-    const { rz, ry, edge, n } = CUP;
     const { side } = SHELL;
 
-    // The shell: from a small step in at the seam, sides that draw in a little with a fine groove turned round them,
-    // a long soft edge, a narrow polished chamfer, and the face, a shallow dome.
+    // The shell: a fine step in at the joint, straight sides, a long soft edge, and the face, a shallow dome. One
+    // piece of aluminium, no seam on it.
     const shell: Sec[] = [
-      { x: 0.5, z: rz - 2.0, y: ry - 2.0, kind: kindOf.polish }, { x: 1.1, z: rz - 0.9, y: ry - 0.9, kind: kindOf.polish }, { x: 1.8, z: rz - 0.25, y: ry - 0.25, kind: kindOf.polish },
-      { x: 2.2, z: rz - 0.05, y: ry - 0.05, kind: kindOf.body }, { x: 2.8, z: rz, y: ry, kind: kindOf.body },
+      { x: 0, z: rz - 1.7, y: ry - 1.7, kind: kindOf.gap }, { x: 0.45, z: rz - 0.8, y: ry - 0.8, kind: kindOf.alu }, { x: 1.1, z: rz - 0.2, y: ry - 0.2, kind: kindOf.alu },
+      { x: 2.0, z: rz, y: ry, kind: kindOf.alu }, { x: 6, z: rz, y: ry, kind: kindOf.alu }, { x: 10.5, z: rz, y: ry, kind: kindOf.alu }, { x: side, z: rz, y: ry, kind: kindOf.alu },
     ];
-    const inset = (x: number) => (1.3 * (x - 2.8)) / (side - 2.8);
-    const g0 = SHELL.groove;
-    for (const [x, d, k] of [[g0 - 0.7, 0, kindOf.body], [g0 - 0.35, SHELL.cut, kindOf.gap], [g0 + 0.35, SHELL.cut, kindOf.gap], [g0 + 0.7, 0, kindOf.body], [side, 0, kindOf.body]] as [number, number, number][]) {
-      shell.push({ x, z: rz - inset(x) - d, y: ry - inset(x) - d, kind: k });
-    }
-    for (let i = 1; i <= 5; i++) { const a = (i / 5) * SHELL.turn, d = 1.3 + edge * (1 - Math.cos(a)); shell.push({ x: side + edge * Math.sin(a), z: rz - d, y: ry - d, kind: kindOf.body }); }
-    shell.push({ x: SHELL.x2, z: rz - SHELL.d2, y: ry - SHELL.d2, kind: kindOf.polish });
-    const rings = s < 0 ? 6 : 2;
-    for (let i = 0; i <= rings; i++) { const k = 1 - i / rings, kk = Math.max(k, 0.004); shell.push({ x: SHELL.x2 + SHELL.dome * (1 - kk * kk), z: FACE.fz * kk, y: FACE.fy * kk, kind: kindOf.face }); }
-    b.add(own(loft(shell, n, 48, 4, radial)), of.body, I);
-    // The medallion, standing proud of the face's middle with a bevelled rim, on the cup whose face is seen.
-    if (s < 0) {
-      const top = SHELL.x2 + SHELL.dome + FACE.proud, r = FACE.medal;
-      addTurn(b, [[r, SHELL.x2 + 0.5], [r, top - 0.8], [r - 0.35, top - 0.25], [r - 1.0, top], [0.01, top]], of.medal, I.clone().multiply(frame(V(0, 0, 0), X, Z)), 48, { shadow: false });
-    }
-    // The seam: a dark ring set in between the shell and the cushion.
-    b.add(own(loft([{ x: 1.0, z: rz - 1.6, y: ry - 1.6 }, { x: 0, z: rz - 3.4, y: ry - 3.4 }, { x: -0.8, z: rz - 3.4, y: ry - 3.4 }].map((q) => ({ ...q, kind: kindOf.gap })), n, 40, 1, radial)), of.gap, I, { shadow: false });
+    for (let i = 1; i <= 9; i++) { const a = (i / 9) * (Math.PI / 2), d = edge * (1 - Math.cos(a)); shell.push({ x: side + edge * Math.sin(a), z: rz - d, y: ry - d, kind: kindOf.alu }); }
+    for (let i = 1; i <= 7; i++) { const k = 1 - i / 7, kk = Math.max(k, 0.004); shell.push({ x: deep + dome * (1 - kk * kk), z: (rz - edge) * kk, y: (ry - edge) * kk, kind: kindOf.alu }); }
+    b.add(own(loft(shell, n, 72, 4, radial)), of.alu, I, { local: true });
 
-    // The cushion: a full soft roll from the seam round its face to the opening, its outer wall bellied out past the
-    // shell, and the cloth over the driver set back inside.
+    // The cushion: a deep knitted roll with the shell's own outline, standing off the shell by a dark line where it
+    // is held, and the cloth over the driver set back inside its opening.
+    b.add(own(loft([{ x: 0.3, z: rz - 1.6, y: ry - 1.6 }, { x: -0.2, z: rz - 2.6, y: ry - 2.6 }, { x: -0.8, z: rz - 2.6, y: ry - 2.6 }].map((q) => ({ ...q, kind: kindOf.gap })), n, 48, 1, radial)), of.gap, I, { shadow: false });
     const cushion: Sec[] = CUSHION.prof.map(([x, w]) => ({ x, z: rz + w, y: ry + w, kind: kindOf.cushion }));
-    b.add(own(loft(cushion, 3.0, 40, 2, radial)), of.cushion, I);
+    b.add(own(loft(cushion, n, 56, 3, radial)), of.cushion, I, { local: true });
     {
-      const ins = -16, inner: Sec[] = [];
-      for (let i = 0; i <= 3; i++) { const k = 1 - i / 3, kk = Math.max(k, 0.004); inner.push({ x: -2.8 + 0.5 * (1 - kk * kk), z: (rz + ins + 0.6) * kk, y: (ry + ins + 0.6) * kk, kind: kindOf.mesh }); }
-      b.add(own(loft(inner, 3.0, 32, 2, () => V(-1, 0, 0))), of.mesh, I, { shadow: false });
+      const o = CUSHION.open, inner: Sec[] = [];
+      for (let i = 0; i <= 3; i++) { const k = 1 - i / 3, kk = Math.max(k, 0.004); inner.push({ x: CUSHION.driver + 0.8 * (1 - kk * kk), z: (rz + o + 0.4) * kk, y: (ry + o + 0.4) * kk, kind: kindOf.mesh }); }
+      b.add(own(loft(inner.map((q) => ({ ...q, kind: s > 0 ? kindOf.meshL : kindOf.mesh })), n, 40, 2, () => V(-1, 0, 0))), of.mesh, I, { shadow: false, local: true });
     }
 
-    // The pivot at the stem's foot: a polished barrel across the cup's top, held in a short lug of the cup's steel
-    // that rises from the shell, between the yoke's cheeks.
-    {
-      const P = new THREE.Matrix4().makeTranslation(STEM.x - CUP.joint, PIVOT.y - CUP.y, 0);
-      const toP = (m: THREE.Matrix4) => I.clone().multiply(P).multiply(m);
-      addTurn(b, [[0.01, -PIVOT.half], [PIVOT.r - 0.6, -PIVOT.half], [PIVOT.r, -PIVOT.half + 0.6], [PIVOT.r, PIVOT.half - 0.6], [PIVOT.r - 0.6, PIVOT.half], [0.01, PIVOT.half]], of.polish, toP(frame(V(0, 0, 0), Z, X)), 12);
-      const blk = new THREE.Shape();
-      blk.moveTo(-6.5, -6.5);
-      blk.lineTo(6.5, -6.5);
-      blk.bezierCurveTo(5.8, -3, 5, -1.5, 3.6, 0);
-      blk.absarc(0, 0, 3.6, 0, Math.PI, false);
-      blk.bezierCurveTo(-5, -1.5, -5.8, -3, -6.5, -6.5);
-      b.add(plate(blk, PIVOT.half * 2 - 3.6, 1.2), of.dark, toP(new THREE.Matrix4()));
-    }
-
-    // The crown and a button, on the top of the cup that shows its face: the crown toward the front, knurled copper on
-    // a short polished stem, the button a slim polished pill behind the pivot.
+    // The Digital Crown and the noise control button, on the top of the right cup, in line with the stem: the crown
+    // toward the front, the button between it and the stem, each set in a fine dark gap and leaning with the top.
     if (s < 0) {
-      // The shell's top at a place across it, where its rounded outline has fallen from the middle.
-      const topAt = (z: number) => (ry - 1.3) * Math.pow(1 - Math.pow(Math.abs(z) / (rz - 1.3), n), 1 / n);
-      const zc = 21, top = topAt(zc + 3.4) - 0.6, u = side - 3;
-      // The left cup is the right one turned half round, so its front is the right one's back.
-      addTurn(b, [[0.01, 0], [3.4, 0], [3.4, 1.4], [2.6, 2.2], [0.01, 2.2]], of.polish, at(new THREE.Matrix4().makeTranslation(u, top, -zc)), 32);
-      b.add(crown(4.3, 5.2, 12), of.copper, at(new THREE.Matrix4().makeTranslation(u, top + 2.1, -zc)));
-      addTurn(b, [[0.01, 0], [4.0, 0], [4.3, 0.4], [4.3, 0.8], [3.4, 1.4], [0.01, 1.6]], of.copper, at(new THREE.Matrix4().makeTranslation(u, top + 7.3, -zc)), 32);
-      const pill = new THREE.CapsuleGeometry(2.1, 9, 6, 16).rotateX(Math.PI / 2);
-      b.add(pill, of.polish, at(new THREE.Matrix4().makeTranslation(u - 1, topAt(16 + 6.5) + 0.5, 16).multiply(new THREE.Matrix4().makeScale(1, 0.55, 1))));
+      const xc = deep / 2;
+      {
+        const z = -CROWN.z, y = topAt(Math.abs(z)) - 0.9, lean = new THREE.Matrix4().makeRotationX(tiltAt(Math.abs(z)));
+        const base = new THREE.Matrix4().makeTranslation(xc, y, z).multiply(lean);
+        addTurn(b, [[0.01, -0.5], [CROWN.r + 0.45, -0.5], [CROWN.r + 0.45, 0.75], [0.01, 0.75]], of.gap, at(base), 48, { shadow: false });
+        b.add(crown(CROWN.r, CROWN.h, CROWN.ridges), of.crown, at(base.clone().multiply(new THREE.Matrix4().makeTranslation(0, 0.6, 0))), { shadow: false });
+      }
+      {
+        const z = -BUTTON.z, y = topAt(Math.abs(z)) + 0.1, lean = new THREE.Matrix4().makeRotationX(tiltAt(Math.abs(z)));
+        const base = new THREE.Matrix4().makeTranslation(xc, y, z).multiply(lean);
+        const pill = (r: number, half: number) => new THREE.CapsuleGeometry(r, half * 2, 6, 24).rotateX(Math.PI / 2);
+        b.add(pill(BUTTON.r + 0.4, BUTTON.half), of.gap, at(base.clone().multiply(new THREE.Matrix4().makeTranslation(0, -0.35, 0)).multiply(new THREE.Matrix4().makeScale(1, 0.3, 1))), { shadow: false });
+        b.add(pill(BUTTON.r, BUTTON.half), of.crown, at(base.clone().multiply(new THREE.Matrix4().makeScale(1, 0.85, 1))), { shadow: false });
+      }
     }
-    keep(b, pivot, s < 0 ? 'hpCupL' : 'hpCupR');
+    keep(b, pivot, s < 0 ? 'hpCupR' : 'hpCupL');
     cups.push(pivot);
   }
 

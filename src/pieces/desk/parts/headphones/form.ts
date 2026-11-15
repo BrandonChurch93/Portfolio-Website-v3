@@ -2,52 +2,58 @@ import * as THREE from 'three';
 import { DESK, PLACES, VIEW } from '../../layout';
 
 // The headphones on their stand, in the desk's millimetres. The pair's own frame has the point where the band bears on
-// the saddle at its origin: x runs ear to ear, from the left cup to the right, y is up, and z is across the band, toward
-// the front of the pair. The stand is built in the same turned frame, from the middle of its foot on the timber.
+// the saddle at its origin: x runs ear to ear, y is up, and z is across the band, toward the front of the pair, so the
+// cup at -x is the wearer's right. The stand is built in the same turned frame, from the middle of its foot on the timber.
 
 const D2R = Math.PI / 180;
 export const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 
 // Where the foot stands, and how far the pair and its stand are turned about the upright. From the page's view, which
-// is 24 degrees round to the left, a turn of 16 sets the ear to ear line 40 degrees off the screen's plane: the left
-// cup shows its outer face, the right one its cushion, and the band's arc is seen nearly whole.
+// is 24 degrees round to the left, a turn of 16 sets the ear to ear line 40 degrees off the screen's plane: the right
+// cup, with the crown, shows its outer face, the left one its cushion, and the band's arc is seen nearly whole.
 export const FOOT_AT = V(PLACES.headphones[0], 0, PLACES.headphones[1]);
 export const TURN = 16 * D2R;
 // How high above the top the band bears on the saddle: the rails' crown stands about level with the lamp's shade.
 export const BEAR_Y = 440;
 
-// The cups. The shell is a deep rounded oblong, ry tall and rz across, a superellipse of power n, from where it meets
-// the cushion (x = joint) out to its face (deep). The cushion stands pad in from the joint.
-export const CUP = { joint: 70, deep: 31, pad: 21, ry: 46, rz: 37, n: 3.1, y: -173, edge: 10 };
-// The shell's profile: its straight side runs to `side`, its soft edge turns `turn` toward the face, and a polished
-// chamfer cut at the edge's foot draws in to the face, which is a shallow dome. The face's half sizes and where its
-// middle stands from the cup's joint follow from these.
-const SIDE = CUP.deep - CUP.edge - 1, TURN_TO = (62 * Math.PI) / 180;
-const D1 = 1.3 + CUP.edge * (1 - Math.cos(TURN_TO)), X1 = SIDE + CUP.edge * Math.sin(TURN_TO);
-export const SHELL = { side: SIDE, turn: TURN_TO, x1: X1, d1: D1, x2: X1 + 0.9, d2: D1 + 1.5, dome: 0.9, groove: 9.5, cut: 0.5 };
-// The stem's line, and the pivot the cup hangs on at its foot: the barrel's middle, its radius and half length.
-export const STEM = { x: 85, foot: -121, top: -92, w: 5, t: 2.7 };
-export const PIVOT = { y: CUP.y + CUP.ry + 5, r: 4.4, half: 9 };
-// The cup's face, in the pivot's frame, across (z) and up (y) from its middle: its half sizes and the superellipse of
-// its outline. On it, from the rim in: an anodised band with a screw in each corner, a polished bead, a field of fine
-// perforations, and the turned medallion in the middle, which stands proud of the face, with a ring of engraved
-// ticks and a copper line let into it.
-export const FACE = {
-  yc: CUP.y - PIVOT.y, fz: CUP.rz - SHELL.d2, fy: CUP.ry - SHELL.d2, n: CUP.n,
-  band: 0.8, bead: 0.772, screw: 0.9, screwR: 1.75,
-  medal: 14, proud: 0.65, holes: [2.4, 0.74] as [number, number], rings: 1.9,
-  ticks: [9.4, 10.5, 11.8], inlay: [12.3, 13.0],
-};
+// The pair is his own AirPods Max, in Space Gray: 169 mm across, 187 tall and 83 deep.
+// The cups: one piece shells of anodised aluminium, a superellipse of power n, ry tall and rz across. Each shell runs
+// from where it meets the cushion (its joint, x = 0 in the cup's own frame) out `deep` to its face: a straight side
+// to `side`, a soft edge of radius `edge` turning into the face, which is domed by `dome`. The cushion stands `pad`
+// in from the joint, with the same outline. The cup's middle stands `y` below the bearing point, and the stem enters
+// the top of the shell at the middle of its depth, `stem` out from the pair's middle.
+export const CUP = { rz: 40, ry: 47.5, n: 3.6, deep: 25, edge: 4.5, dome: 0.8, pad: 21, y: -128, stem: 72 };
+export const SHELL = { side: CUP.deep - CUP.edge };
+// The joint's x in the pair's frame, out from the middle.
+export const JOINT = CUP.stem - CUP.deep / 2;
+// The stem: a slim polished bar, `w` across the band and `t` through it, from the hinge at the top of the cup up into
+// the housing at the foot of the band's end. The hinge is a polished barrel across the band, sunk into a slot in the
+// top of the shell, and the cup hangs on it.
+export const STEM = { x: CUP.stem, w: 3.3, t: 2.2, top: -54 };
+export const PIVOT = { y: CUP.y + CUP.ry + 0.4, r: 3.3, half: 4.4 };
+// The slot the hinge sits in: half sizes across the band (z) and along the cup's depth (x).
+export const SLOT = { z: 4.8, x: 4.2 };
+// The Digital Crown and the noise control button on the top of the right cup, toward the front: how far across the
+// band from the stem, and their sizes.
+export const CROWN = { z: 27, r: 5.6, h: 5.8, ridges: 40 };
+export const BUTTON = { z: 12.5, half: 5.2, r: 2.4 };
+// The microphone openings on the top and bottom edge of each cup: across the band, along the depth, their radius and
+// spacing.
+export const MIC = { z: 20, x: 6.0, r: 0.5, step: 1.8 };
 
-// The band's frame, two rails over a knitted canopy: the arches' middle height, the rails' half span and rise, and
-// the canopy's under them. The canopy is pressed up into the saddle's curve where it bears.
-export const ARCH = { cy: -62, rx: STEM.x, ry: 75, crx: 80, cry: 56 };
-export const RAIL = { z: 16.5, w: 2.7, t: 0.85 };
-export const CANOPY = { w: 19.5, t: 1.35 };
+// The band: a frame of two soft coated rails, joined at each end in a housing the stem slides out of, and the knit
+// canopy hung inside it from end to end. The rails' arch is a superellipse of power n: its foot cy, half span rx and
+// rise ry. The canopy's own arch is crx across and rises cry from ccy, pressed up onto the saddle where it bears; the
+// rails stand over it with a gap the light shows through.
+export const ARCH = { cy: -36, rx: CUP.stem, ry: 50, n: 2.5, crx: 66, ccy: -44, cry: 44 };
+export const RAIL = { z: 20, w: 2.3, t: 1.45 };
+export const CANOPY = { w: 18.5, t: 0.6 };
+// The housing at each end of the band: half its size across the band and through it, and its foot and top.
+export const HOUSING = { z: RAIL.z + RAIL.w + 0.3, x: 3.4, foot: STEM.top, top: ARCH.cy - 2 };
 
 // The stand: the saddle's curve and half length, the pad's half width and thickness, the cradle under it, the post
 // and the foot.
-export const SADDLE = { r: 55, half: 33, wide: 23, pad: 7.5, cradle: 10, deep: 28 };
+export const SADDLE = { r: 55, half: 24, wide: 10, pad: 5.5, cradle: 6, deep: 28 };
 // The foot: a weighted disc, its top a hide pad let in between a polished rim and a turned boss, and on the boss the
 // knuckle the post stands in: two cheeks with a pin across them, the post's flat tang between.
 export const BASE = { r: 62, h: 11, pad: [20.5, 55] as [number, number], sink: 0.7, boss: 15 };
@@ -56,21 +62,22 @@ export const KNUCKLE = { y: BASE.h + 19, gap: 3.1, cheek: 2.4, r: 6.6, pin: 2.1 
 export const POST = { r: 5.4, rTop: 4.4, from: KNUCKLE.y + 9, top: BEAR_Y - SADDLE.pad - SADDLE.deep - 12 };
 export const HOOK = { y: 150, out: 27, rise: 9, r: 1.9 };
 
-// The cushion's profile, from the seam round its face to the opening: how far it stands out from the cup's joint
-// (negative, toward the ear) and how far its outline is let out past the shell's. A welt runs round its outer wall
-// where the cover's two panels are sewn, and `welt` is how far along the profile that is, in millimetres, for the
-// stitches either side of it, and `len` the whole profile's length.
+// The cushion's profile, from the seam at the shell to the cloth over the driver: how far it stands out from the
+// cup's joint (negative, toward the ear) and how far its outline is let out past the shell's. A straight knitted wall
+// flush with the shell, a full round edge, the face it rests on the head by, a soft lip into the opening, and the
+// opening's wall back to the cloth. `len` is the profile's length.
 export const CUSHION = (() => {
-  const pad = CUP.pad;
-  const prof: [number, number][] = [[-0.8, -2.6], [-2.5, -0.6], [-5.5, 1.2], [-8.5, 1.55], [-9.3, 0.95], [-10.1, 1.55], [-13, 1.5], [-14.5, 1.1]];
-  for (let i = 1; i <= 6; i++) { const a = (i / 6) * (Math.PI / 2), r = 6.2; prof.push([-14.5 - (pad - 14.5) * Math.sin(a), 1.1 - r + r * Math.cos(a)]); }
-  const f0 = 1.1 - 6.2, f1 = -11.6;
-  for (let i = 1; i <= 2; i++) prof.push([-pad - 0.35 * Math.sin((i / 3) * Math.PI), f0 + ((f1 - f0) * i) / 3]);
-  for (let i = 0; i <= 5; i++) { const a = (i / 5) * (Math.PI / 2), r = 4.5; prof.push([-pad + r * (1 - Math.cos(a)), f1 - r * Math.sin(a)]); }
-  prof.push([-10, -16.5], [-3, -16.1], [-0.6, -15.6]);
+  const pad = CUP.pad, R = 4.5, face = -11.5, lip = 2.2;
+  const prof: [number, number][] = [[-0.6, -1.7], [-1.2, -0.6], [-2.0, -0.15]];
+  for (let i = 1; i <= 4; i++) prof.push([-2 - ((pad - R - 2) * i) / 4, 0.35 * Math.sin((i / 4) * Math.PI)]);
+  for (let i = 1; i <= 8; i++) { const a = (i / 8) * (Math.PI / 2); prof.push([-(pad - R) - R * Math.sin(a), -R * (1 - Math.cos(a))]); }
+  for (let i = 1; i <= 2; i++) prof.push([-pad - 0.35 * Math.sin((i / 3) * Math.PI), -R + ((face + R) * i) / 3]);
+  for (let i = 0; i <= 5; i++) { const a = (i / 5) * (Math.PI / 2); prof.push([-pad + lip * (1 - Math.cos(a)), face - lip * Math.sin(a)]); }
+  const open = face - lip;
+  prof.push([-15, open - 0.4], [-12.1, open - 0.6]);
   const at = [0];
   for (let i = 1; i < prof.length; i++) at.push(at[i - 1] + Math.hypot(prof[i][0] - prof[i - 1][0], prof[i][1] - prof[i - 1][1]));
-  return { prof, welt: at[4], len: at[at.length - 1] };
+  return { prof, len: at[at.length - 1], driver: -12.5, open: open - 0.6 };
 })();
 
 // The cups' lag behind the band, against the band's angle and its speed in radians a second, and the most it may be.
@@ -81,9 +88,14 @@ export const saddleTop = (x: number) => -(SADDLE.r - Math.sqrt(Math.max(0, SADDL
 const smax = (a: number, b: number, k: number) => { const h = Math.max(k - Math.abs(a - b), 0) / k; return Math.max(a, b) + (h * h * k) / 4; };
 // The canopy's underside at x: its own arch, pressed up onto the pad where the pad is higher.
 export function canopyUnder(x: number): number {
-  const k = Math.max(0, 1 - (x / ARCH.crx) ** 2), own = ARCH.cy + ARCH.cry * Math.sqrt(k);
-  const pad = Math.abs(x) < SADDLE.half ? saddleTop(x) + 0.5 : -1e3;
-  return smax(own, pad, 3);
+  const k = Math.max(0, 1 - (Math.abs(x) / ARCH.crx) ** 2.2), own = ARCH.ccy + ARCH.cry * Math.pow(k, 1 / 2.2);
+  const pad = Math.abs(x) < SADDLE.half ? saddleTop(x) + 0.4 : -1e3;
+  return smax(own, pad, 4);
+}
+// The rails' centre line at a turn t, from 0 at the right end to pi at the left.
+export function railAt(t: number): [number, number] {
+  const c = Math.cos(t), s = Math.sin(t), e = 2 / ARCH.n;
+  return [ARCH.rx * Math.sign(c) * Math.abs(c) ** e, ARCH.cy + ARCH.ry * Math.abs(s) ** e];
 }
 
 // The pair's frame and the stand's, in the desk.
