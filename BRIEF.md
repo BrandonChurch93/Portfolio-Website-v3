@@ -946,6 +946,21 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
 - **More on the third picture: the city is too small, the spire is right, and one ring (Nov 15, 10:57).** "The city kind of looks off, like the buildings aren't as big as I would hope them to be. The [spire] looks great. It would be cool if [it] had like a single ring at the top, maybe tilted, kind of like Saturn's. But the rest of the city looks a bit small. It's definitely dense enough. It just isn't as grand as I would've hoped."
     - In exact terms: the spire in the third picture is the spire he wants. One ring round it near its top, tilted, as Saturn's is: his idea, offered as "it would be cool". The city is dense enough and its buildings are too small beside the planet: they are larger, so the city is grand.
     - He is on Gemini's free plan with few messages left. Fable's view: a new chat with one whole prompt and the third picture attached for its look only, since what is left to change is the picture's structure, which an edit does poorly.
+- **The fourth concept picture: the top is right, the tear is not (Nov 15, 10:59).** From a new chat, kept as `reference/concept/04-gemini-the-top-he-likes-with-a-ring-and-large-dunes.jpg`. "I think the top part looks a lot better. The core's positioning is a bit better as well, but the 3D and detailed jaggedness is missing. It looked much better on the other iteration."
+    - In exact terms: what stands on the top in the fourth picture is the best so far. The core's place, lower in the planet, is better. The torn rock is worse: in the fourth it is a cracked wall with the core set on it, and in the second and third it is a deep hollow of broken rock with real depth, which is what he wants.
+- **The target so far, gathered from the four pictures (Nov 15). Fable's summary of what he has said, his to correct. Pictures made by an image model set the look. None is a plan to copy.**
+    1. **A clean slate.** A new model of the same idea. The built world and Study 31 are set aside, not deleted.
+    2. **The planet:** a deep half sphere of natural warm rock, about as wide as now. Seen from the front and from well above, so its land is seen laid out. Its top curves and is not a flat table.
+    3. **The tear:** the front torn open into a deep hollow of jagged broken earth with real depth, as in pictures 2 and 3. Never a cracked wall.
+    4. **The core:** a ball of the stream's light hanging low in that hollow, well under the surface, as placed in picture 4. The stream falls from it.
+    5. **The city:** of the future, plainly. Dense, with buildings that are large beside the planet, lit windows in the thousands. Grander than any picture so far.
+    6. **The spire:** as in pictures 3 and 4, on the hero's center line, the tallest thing by far, with one thin ring near its top, tilted as Saturn's is. The skyline falls from it to each side, unevenly.
+    7. **The pyramid:** in the city, among the buildings, to one side of the spire, as in picture 4.
+    8. **The desert:** a large stretch of the surface with tall dunes and sharp crests, as in pictures 2 and 4. Nothing built on it.
+    9. **Trees:** in parks and along avenues inside the city, in autumn colors. No wild forest.
+    10. **Debris:** pieces of the planet round the tear, the large ones carrying the same land as the top.
+    11. **Colors:** the site's. No blue, no green, no white.
+    12. **Made in code.** Not in Blender.
 - An idea to revisit with the hero, not decided: his first thought was the city breaking apart into the stream as the visitor scrolls. Fable's twist, which he asked to have noted: building, not breaking. The city assembles out of the stream's facets in the opening, and the stream carries the same pieces on down the page. (Nov 12)
 
 **The hero, the city at rest: the agreement (Nov 14)**
