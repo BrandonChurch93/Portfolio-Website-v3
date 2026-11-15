@@ -1448,6 +1448,16 @@ What Claude Code builds, at `/lab/contact`. The wireframe at `/lab/contact-draft
 8. Under 1100 px it is a plain stand in.
 
 
+**The whole page so far, as built (Nov 14, late evening). Study 29, at `/lab/whole`. It can be scrolled from the top of Work to the launch. Contact's pad shows rough stand ins on the hosted page until its builders hand back.**
+
+- **One stream.** Each section still plans its own route. The whole page runs them as one: Work's route as far as a little above Skills, then Skills and About's put on the end of it, then Contact's (`src/stream/join.ts`). Each section's stage runs as on its own page and is handed the one stream in place of its own (`src/whole/hub.ts`).
+- **Seen in real frames of a scroll from top to foot at 700 px a second:** one leading end the whole way. Work's cards wake, the two sides meet under the button, the one stream falls to the desk's lamp, strikes the rows, runs over About, goes in behind him, falls to the stone, the plate wakes, the stone lights and the rocket goes. Not yet measured frame by frame at each join (test 1).
+- **Each section's own page is as it was (test 5):** 19 of 20 stills of Work agree pixel for pixel with the stills from before, and the one that differs is the reduced motion still that differs from itself. Skills' and Contact's own measures hold on their own pages on the same build.
+- **Under 1100 px (test 6):** Work with its own narrow stream, and the other three as their plain stand ins. Not broken. WebKit at an iPad's size held sideways runs the whole page with no errors.
+- **Fable's calls, his to overturn (item 4, the room between sections):** about 420 units of room between Work's rail and the desk, and about 380 between About and Contact's title. The page may hold six 3D pieces at once where it held four: with five on one page the pad was never mounted.
+- **Not checked yet:** each section's cues at the same places as on its own page (test 2), frame times for the whole page and that nothing off the screen draws (3), the first visit (4).
+
+
 ### 3D pieces
 
 - The more 3D the better. The pieces do not all follow the city. Each has its own idea.

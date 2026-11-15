@@ -92,8 +92,16 @@ Show me the city as soon as it stands in the hero, and say plainly what is at th
 - **The desk, fourth reviews.** A stranger named everything on it. A bar judge passed the tablet, the PC, the monitor, the camera, the keyboard, the lamp and the mat (the last three narrowly) and failed the mouse ("the weakest thing on the desk"), the bench's timber ("smeared streaks"), the word ("a decal that glows") and the headphones (narrowly). Since then: the word is worn paint that the shadow cuts (pushed), the headphones' second round is in ("slightly" the weaker work, from "clearly"), the PC's roof stands in the desk's shade, and the swing is larger.
 - **Nothing crawls (test 40):** an engineer found the cause was not the scroll but fine geometry catching the drifting light, and faded it where it is finer than a pixel on the mat, the keyboard and the camera. Left, in files that were another engineer's at the time: the bench's bronze angle (`toCreasedNormals` in `bench/forms.ts`, untested), four thin strips on the PC's roof (`pc/case.ts`), the camera's thin copper rings (`camera/lenses.ts`).
 
+**Added later the same evening**
+
+- **The whole page, Study 29, at `/lab/whole`,** pushed. `src/stream/join.ts` joins two routes, `src/whole/hub.ts` mounts the one stream, and each section's lab component takes a `hub` and then lays itself out inside the whole page (`Shell.tsx`). `BRIEF.md`, "The whole page so far, as built".
+- **The hero's city is started:** its frame is `src/pieces/skycity/` (one stage, `lots()` gives every tower's place), its kit `reference/kits/skycity.md`, and three builders are on the ground, the spire and the towers. Nothing else of the hero exists yet: the page at `/lab/hero`, the sky, the glow, the falls, the stream from the main fall to Work's bar.
+- A section's things are looked for inside the section's own part of the page (`root` in `SkillsParts`, `parts.contact`): on the whole page two sections have parts of the same names.
+- At most six 3D pieces are mounted at once now (`PIECE_MOUNT.max`). With four, the pad never got a place on the whole page.
+
 **With agents now, none handed back**
 
+- The city's ground, spire and towers (three builders, `src/pieces/skycity/parts/`).
 - The desk's build on a first visit (engineer: `desk/index.ts` mount flow, bench, PC and camera build code, `build.ts`, `stage.ts` warm). Its files are uncommitted in the working folder.
 - The pad's stone, its table and tower, its rocket and fire (three builders).
 - The mouse, a third way: designed at the page's size first. The lamp's fifth round: a dark shade, and a lamp that reads as lit.
