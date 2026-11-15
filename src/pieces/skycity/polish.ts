@@ -15,6 +15,11 @@ import { hex } from '../../config/palette';
 // panel is seen from a surface, as the cosines of the angles from its middle at which its reflection begins and is
 // whole, how bright it is in a mirror, and the roughness at which it has faded to nothing.
 const GLINT = { near: 0.4, from: 0.975, whole: 0.988, power: 10, rough: 0.34 };
+// How bright a reflection in polished metal may be: it is left alone up to knee and eased toward top above it. A
+// mirror shows the room's lights at their full strength, and a large one then set the stage's bloom glowing over
+// the whole of itself, so it read as lit from inside and not as metal. Held, a highlight is still the brightest
+// thing on the metal and still goes pale.
+const HELD = { knee: 2.2, top: 5.5 };
 const at = { value: new THREE.Vector3() }, level = { value: 1 };
 const f = (n: number): string => n.toFixed(4);
 
@@ -38,6 +43,14 @@ export function polished<T extends THREE.Material>(m: T): T {
 	vec3 glintBack = reflect( - geometryViewDir, geometryNormal );
 	float glint = smoothstep( ${f(GLINT.from)}, ${f(GLINT.whole)}, dot( glintBack, glintTo ) ) * metalnessFactor * ( 1.0 - smoothstep( 0.0, ${f(GLINT.rough)}, roughnessFactor ) );
 	reflectedLight.directSpecular += material.specularColorBlended * vec3( ${f(tint.r)}, ${f(tint.g)}, ${f(tint.b)} ) * ( ${f(GLINT.power)} * uGlint * glint );
+	vec3 shine = reflectedLight.directSpecular + reflectedLight.indirectSpecular;
+	float shinePeak = max( shine.r, max( shine.g, shine.b ) );
+	if ( shinePeak > ${f(HELD.knee)} ) {
+		float over = shinePeak - ${f(HELD.knee)};
+		float held = mix( 1.0, ( ${f(HELD.knee)} + over / ( 1.0 + over / ${f(HELD.top - HELD.knee)} ) ) / shinePeak, metalnessFactor );
+		reflectedLight.directSpecular *= held;
+		reflectedLight.indirectSpecular *= held;
+	}
 }`);
   };
   m.customProgramCacheKey = () => `${key.call(m)}|polished`;

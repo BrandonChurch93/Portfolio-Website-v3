@@ -16,20 +16,24 @@ export class Parts {
   private fine = new Builder();
   constructor(private mats: TempleMats) {}
   get tris() { return this.cast.tris + this.fine.tris; }
-  add(geo: THREE.BufferGeometry, kind: KindName, o: { m?: THREE.Matrix4; cast?: boolean; seed?: number; flag?: number; v?: (p: THREE.Vector3) => number } = {}): void {
+  add(geo: THREE.BufferGeometry, kind: KindName, o: { m?: THREE.Matrix4; cast?: boolean; seed?: number; flag?: number; foot?: number; v?: (p: THREE.Vector3) => number } = {}): void {
     let g = geo.index ? geo.toNonIndexed() : geo.clone();
     if (!g.getAttribute('normal')) g.computeVertexNormals();
     const pos = g.getAttribute('position'), nrm = g.getAttribute('normal'), n = pos.count, cell = new Float32Array(n * 4), uv = new Float32Array(n * 2);
     const own = g.getAttribute('cell') as THREE.BufferAttribute | undefined, p = new THREE.Vector3();
+    // A stone carries how far under its own top and over its own foot each point is, for its stains and its dark foot.
+    const aged = kind === 'lime' && !own && !o.v;
+    if (aged) g.computeBoundingBox();
+    const lo = g.boundingBox?.min.y ?? 0, hi = g.boundingBox?.max.y ?? 0;
     for (let i = 0; i < n; i++) {
       p.fromBufferAttribute(pos, i);
       cell[i * 4] = K[kind];
-      cell[i * 4 + 1] = own ? own.getY(i) : o.v ? o.v(p) : 0;
-      cell[i * 4 + 2] = o.seed ?? 0;
-      cell[i * 4 + 3] = own ? own.getW(i) : o.flag ?? 0;
+      cell[i * 4 + 1] = own ? own.getY(i) : o.v ? o.v(p) : aged ? hi - p.y : 0;
+      cell[i * 4 + 2] = own ? own.getZ(i) : o.seed ?? 0;
+      cell[i * 4 + 3] = own ? own.getW(i) : aged ? p.y - lo + (o.foot ?? 0) : o.flag ?? 0;
       const ax = Math.abs(nrm.getX(i)), az = Math.abs(nrm.getZ(i));
-      uv[i * 2] = kind === 'paving' || kind === 'water' ? p.x : own ? own.getY(i) : ax > az ? p.z : p.x;
-      uv[i * 2 + 1] = kind === 'paving' || kind === 'water' ? p.z : p.y;
+      uv[i * 2] = kind === 'paving' || kind === 'pool' ? p.x : own ? own.getY(i) : ax > az ? p.z : p.x;
+      uv[i * 2 + 1] = kind === 'paving' || kind === 'pool' ? p.z : p.y;
     }
     g.setAttribute('cell', new THREE.Float32BufferAttribute(cell, 4));
     g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
@@ -157,49 +161,126 @@ export function pyramidal(half: number, tall: number, cut = 1): THREE.BufferGeom
   return prism([{ y: 0, hw: half, hd: half }, { y: yt, hw: ht, hd: ht }]);
 }
 
-// The great pyramid's casing: four faces from its foot to where it is cut, each built across in columns whose normals
-// swing through the face's swell, so a face is a little convex and reflects a band of the room that slides as the
-// light moves. Between faces, a narrow arris of its own, which holds a line of light up each corner. Each vertex
-// carries how far it is across its face, in units, for the panels' joints.
-export function casing(half: number, tall: number, yTop: number, swell: number, rise: number, arris: number, cols = 14, rows = 6): THREE.BufferGeometry {
-  const pos: number[] = [], nrm: number[] = [], cell: number[] = [];
-  const hw = (y: number) => half * (1 - y / tall);
-  const s = Math.hypot(half, tall);
+// A square pyramid, or a band of one, whose arrises are rounded: a ruled surface from a rounded square at its foot to
+// its tip, so each arris carries a line of light that slides round it as the light moves, which a sharp edge cannot.
+// Its half width at its foot, its height to its tip, the band of it from s0 to s1 as shares of that height, how much
+// of the half width each arris is rounded over, whether the flat sides and the arrises are made, how far each side
+// swells across, in degrees, and how many rows up it.
+export interface Rounded { round: number; sides?: boolean; corners?: boolean; swell?: number; rows?: number; cols?: number; arc?: number }
+export function roundedPyramid(half: number, tall: number, s0: number, s1: number, o: Rounded): THREE.BufferGeometry {
+  const rho = half * o.round, flat = half - rho, sw = (o.swell ?? 0) * D2R, rows = o.rows ?? 4, cols = o.cols ?? 6, arc = o.arc ?? 8;
+  // The foot, as points round it with their outward direction across, how far out along it, and how far along a side.
+  const ring: { b: THREE.Vector3; nh: THREE.Vector3; u: number }[][] = [];
   for (let f = 0; f < 4; f++) {
     const a = f * 90 * D2R, d = new THREE.Vector3(Math.sin(a), 0, Math.cos(a)), t = new THREE.Vector3(Math.cos(a), 0, -Math.sin(a));
-    const n0 = new THREE.Vector3().addScaledVector(d, tall / s).add(new THREE.Vector3(0, half / s, 0)).normalize();
-    const at = (u: number, y: number) => { const w = hw(y) - arris; return new THREE.Vector3().addScaledVector(d, hw(y)).addScaledVector(t, u * w).setY(y); };
-    const upFace = new THREE.Vector3().addScaledVector(d, -half / s).add(new THREE.Vector3(0, tall / s, 0)).normalize();
-    const normalAt = (u: number, y = yTop / 2) => n0.clone().addScaledVector(t, Math.tan(swell * u * D2R)).addScaledVector(upFace, Math.tan(rise * (2 * y / yTop - 1) * D2R)).normalize();
-    for (let i = 0; i < cols; i++) for (let r = 0; r < rows; r++) {
-      const u0 = -1 + (2 * i) / cols, u1 = -1 + (2 * (i + 1)) / cols, y0 = (yTop * r) / rows, y1 = (yTop * (r + 1)) / rows;
-      const q = [at(u0, y0), at(u1, y0), at(u1, y1), at(u0, y1)], nn = [normalAt(u0, y0), normalAt(u1, y0), normalAt(u1, y1), normalAt(u0, y1)], us = [u0, u1, u1, u0];
-      for (const k of [0, 1, 2, 0, 2, 3]) {
-        pos.push(q[k].x, q[k].y, q[k].z); nrm.push(nn[k].x, nn[k].y, nn[k].z);
-        cell.push(0, us[k] * (hw(q[k].y) - arris), 0, 1);
+    if (o.sides !== false) {
+      const run: { b: THREE.Vector3; nh: THREE.Vector3; u: number }[] = [];
+      for (let i = 0; i <= cols; i++) {
+        const u = -1 + (2 * i) / cols;
+        run.push({ b: d.clone().multiplyScalar(half).addScaledVector(t, u * flat), nh: d.clone().addScaledVector(t, Math.tan(sw * u)).normalize(), u });
+      }
+      ring.push(run);
+    }
+    if (o.corners !== false) {
+      const run: { b: THREE.Vector3; nh: THREE.Vector3; u: number }[] = [], c = d.clone().add(t).multiplyScalar(flat);
+      for (let i = 0; i <= arc; i++) {
+        const p = ((i / arc) * Math.PI) / 2, nh = d.clone().multiplyScalar(Math.cos(p)).addScaledVector(t, Math.sin(p));
+        const swing = new THREE.Vector3().copy(d).addScaledVector(t, Math.tan(sw)).normalize().lerp(new THREE.Vector3().copy(t).addScaledVector(d, Math.tan(sw)).normalize(), i / arc).normalize();
+        run.push({ b: c.clone().addScaledVector(nh, rho), nh: sw > 0 ? swing : nh, u: 1 });
+      }
+      ring.push(run);
+    }
+  }
+  const pos: number[] = [], nrm: number[] = [];
+  const at = (q: { b: THREE.Vector3 }, s: number) => new THREE.Vector3(q.b.x * (1 - s), tall * s, q.b.z * (1 - s));
+  const normal = (q: { b: THREE.Vector3; nh: THREE.Vector3 }) => q.nh.clone().multiplyScalar(tall).add(new THREE.Vector3(0, q.b.dot(q.nh), 0)).normalize();
+  for (const run of ring) {
+    for (let i = 0; i < run.length - 1; i++) {
+      const a = run[i], b = run[i + 1], na = normal(a), nb = normal(b);
+      for (let r = 0; r < rows; r++) {
+        const sa = s0 + ((s1 - s0) * r) / rows, sb = s0 + ((s1 - s0) * (r + 1)) / rows;
+        const q = [at(a, sa), at(b, sa), at(b, sb), at(a, sb)], nn = [na, nb, nb, na];
+        for (const k of [0, 1, 2, 0, 2, 3]) { pos.push(q[k].x, q[k].y, q[k].z); nrm.push(nn[k].x, nn[k].y, nn[k].z); }
       }
     }
-    // The arris to the next face.
-    const b = (f + 1) * 90 * D2R, d2 = new THREE.Vector3(Math.sin(b), 0, Math.cos(b)), t2 = new THREE.Vector3(Math.cos(b), 0, -Math.sin(b));
-    const at2 = (u: number, y: number) => { const w = hw(y) - arris; return new THREE.Vector3().addScaledVector(d2, hw(y)).addScaledVector(t2, u * w).setY(y); };
-    const n2 = new THREE.Vector3().addScaledVector(d2, tall / s).add(new THREE.Vector3(0, half / s, 0)).normalize();
-    const nA = normalAt(1), nB = n2.clone().addScaledVector(t2, -Math.tan(swell * D2R)).normalize(), nM = nA.clone().add(nB).normalize();
-    const q = [at(1, 0), at2(-1, 0), at2(-1, yTop), at(1, yTop)], nn = [nM, nM, nM, nM];
-    // Only the arris's middle faces between the two faces: its two long edges take each face's own normal, so the line
-    // of light along it is soft at its sides and does not break into steps.
-    nn[0] = normalAt(1, 0); nn[3] = normalAt(1, yTop);
-    for (const k of [0, 1, 2, 0, 2, 3]) { pos.push(q[k].x, q[k].y, q[k].z); nrm.push(nn[k].x, nn[k].y, nn[k].z); cell.push(0, 0, 0, 0); }
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   g.setAttribute('normal', new THREE.Float32BufferAttribute(nrm, 3));
-  g.setAttribute('cell', new THREE.Float32BufferAttribute(cell, 4));
   fixFaces(g);
   return g;
 }
 
+// A square pyramid whose faces are each folded out along their middle, so it has eight flat facets meeting at hard
+// edges: a mirror cut like this holds one light on one facet and the dark on the next, where a flat face reads as one
+// color. Its half width at its foot, its height, and how far the middle of each side stands out, as a share of the
+// half width. Each facet can be shaded as bowed from its foot to its tip, by so many degrees, so it carries a band of
+// light across it and not one even color.
+export function facetedPyramid(half: number, tall: number, fold: number, bow = 0): THREE.BufferGeometry {
+  const pos: number[] = [], tip = [0, tall, 0];
+  for (let f = 0; f < 4; f++) {
+    const a = f * 90 * D2R, d = [Math.sin(a), Math.cos(a)], t = [Math.cos(a), -Math.sin(a)];
+    const c0 = [d[0] * half - t[0] * half, 0, d[1] * half - t[1] * half], c1 = [d[0] * half + t[0] * half, 0, d[1] * half + t[1] * half];
+    const mid = [d[0] * half * (1 + fold), 0, d[1] * half * (1 + fold)];
+    pos.push(...c0, ...mid, ...tip, ...mid, ...c1, ...tip);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.computeVertexNormals();
+  fixWinding(g);
+  g.computeVertexNormals();
+  if (bow) {
+    const p = g.getAttribute('position'), n = g.getAttribute('normal'), v = new THREE.Vector3(), k = Math.tan((bow * D2R) / 2);
+    for (let i = 0; i < p.count; i++) {
+      v.fromBufferAttribute(n, i).addScaledVector(new THREE.Vector3(0, 1, 0), k * ((2 * p.getY(i)) / tall - 1)).normalize();
+      n.setXYZ(i, v.x, v.y, v.z);
+    }
+  }
+  return g;
+}
+
+// A ring swept round from a profile: the profile's points as how far out from the ring's middle line and how far in
+// front of it, each with the kind it is made of, in order round the section. It stands in the x, y plane round its
+// middle, and leaves out the stretch round its foot from -gap to gap, in radians, where it is set into its bar. The
+// normals are worked out from the profile, so its curves carry smooth lines of light. Returns one geometry a kind.
+export function sweptRing<T extends string>(r: number, profile: [number, number, T][], seg: number, gap = 0): Map<T, THREE.BufferGeometry> {
+  const out = new Map<T, { pos: number[]; nrm: number[] }>();
+  const n = profile.length, pn: [number, number][] = [];
+  for (let i = 0; i < n; i++) {
+    const a = profile[(i + n - 1) % n], b = profile[(i + 1) % n], tr = b[0] - a[0], tz = b[1] - a[1], l = Math.hypot(tr, tz) || 1;
+    pn.push([tz / l, -tr / l]);
+  }
+  let area = 0;
+  for (let i = 0; i < n; i++) { const a = profile[i], b = profile[(i + 1) % n]; area += a[0] * b[1] - b[0] * a[1]; }
+  const flip = area > 0 ? 1 : -1;
+  const a0 = -Math.PI / 2 + gap, a1 = (3 * Math.PI) / 2 - gap;
+  for (let j = 0; j < seg; j++) {
+    const ta = a0 + ((a1 - a0) * j) / seg, tb = a0 + ((a1 - a0) * (j + 1)) / seg;
+    for (let i = 0; i < n; i++) {
+      const p = profile[i], q = profile[(i + 1) % n], kind = p[2];
+      if (!out.has(kind)) out.set(kind, { pos: [], nrm: [] });
+      const o = out.get(kind)!;
+      const v = (t: number, s: [number, number, T], k: number) => {
+        const rr = r + s[0], nr = pn[k][0] * flip, nz = pn[k][1] * flip;
+        return { p: [Math.cos(t) * rr, Math.sin(t) * rr, s[1]], n: [Math.cos(t) * nr, Math.sin(t) * nr, nz] };
+      };
+      const k1 = (i + 1) % n, quad = [v(ta, p, i), v(tb, p, i), v(tb, q, k1), v(ta, q, k1)];
+      for (const k of [0, 1, 2, 0, 2, 3]) { o.pos.push(...quad[k].p); o.nrm.push(...quad[k].n); }
+    }
+  }
+  const res = new Map<T, THREE.BufferGeometry>();
+  for (const [k, o] of out) {
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(o.pos, 3));
+    g.setAttribute('normal', new THREE.Float32BufferAttribute(o.nrm, 3));
+    fixFaces(g);
+    res.set(k, g);
+  }
+  return res;
+}
+
 // Make each triangle wound so it faces the way its normals say.
-function fixFaces(g: THREE.BufferGeometry): void {
+export function fixFaces(g: THREE.BufferGeometry): void {
   const p = g.getAttribute('position') as THREE.BufferAttribute, n = g.getAttribute('normal') as THREE.BufferAttribute;
   const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), m = new THREE.Vector3();
   for (let i = 0; i < p.count; i += 3) {
@@ -215,18 +296,7 @@ function fixFaces(g: THREE.BufferGeometry): void {
   }
 }
 
-// A turned column: a round shaft on a low base, swelling a little, under a capital that flares like an open papyrus
-// head and an abacus block.
-export function column(r: number, tall: number, seg = 10): THREE.BufferGeometry[] {
-  const cap = r * 2.2;
-  const shaft: [number, number][] = [[r * 1.35, 0], [r * 1.35, r * 0.5], [r * 1.05, r * 0.6], [r * 1.08, tall * 0.25], [r, tall - cap * 0.75]];
-  const head: [number, number][] = [[r, tall - cap * 0.75], [r * 1.12, tall - cap * 0.45], [r * 1.32, tall - cap * 0.2], [r * 1.36, tall - cap * 0.12]];
-  const lathe = (pts: [number, number][]) => new THREE.LatheGeometry(pts.map(([x, y]) => new THREE.Vector2(x, y)), seg).toNonIndexed();
-  const abacus = block(r * 1.9, cap * 0.12, r * 1.9, 0.08, tall - cap * 0.12);
-  return [lathe(shaft), lathe(head), abacus];
-}
-
-// A quad, for a plane of light or water, from four corners.
+// A quad, for a plane of light or of the pool, from four corners.
 export function quad(a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vector3, d: THREE.Vector3, normal = new THREE.Vector3(0, 1, 0)): THREE.BufferGeometry {
   const g = new THREE.BufferGeometry();
   const pts = [a, b, c, a, c, d];
