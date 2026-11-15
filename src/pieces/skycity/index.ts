@@ -53,7 +53,7 @@ const HAZE = { from: 0.5, to: 2.2 };
 // How many pixels the world is drawn with at most. Its canvas is taller than the screen and every pixel of it is
 // lit by three lights through two shadow maps: at a screen's full density it drew 30 frames a second on a fast
 // laptop, and at this count 60 with room to spare. The stage's own budget is for a canvas the size of a screen.
-const PIXELS = 3.3e6;
+const PIXELS = 2.8e6;
 // The light the core throws on the torn rock and on what broke away.
 const GLOW = { power: 14 };
 // The heights of the frame each part lies between, lowest first. A part none of which the screen shows is not
