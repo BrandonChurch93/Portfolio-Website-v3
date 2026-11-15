@@ -1,179 +1,363 @@
 import * as THREE from 'three';
+import { seat } from '../../layout';
 
-// The kit every building type is made with. A type is drawn many times, each a lot of a different size, so its
-// points are given in two parts: a share of the lot (x and z from -0.5 to 0.5 across its foot, y from 0 at the
-// street to 1 at the top), which the lot's size stretches, and a length in units added to it, which nothing
-// stretches. A ledge is so many units thick and a mast so many units across on every tower, whatever its height.
-// Every face also carries where it is across itself and how wide it is, so the facade's bays and floors are worked
-// out in units in the shader and always end at a corner.
+const D2R = Math.PI / 180;
 
-export const KIND = { glass: 0, stone: 1, dark: 2, trim: 3, copper: 4, band: 5, plant: 6, lobby: 7, louvre: 8 } as const;
-// Added to a kind for a face that runs round a curve: its bays run on round it, and it has no corners to catch.
-export const ROUND = 16;
+// The kit every building is made with. Every tower is built once, in units, in its own frame (x across its lot, y up
+// from the street, z out toward the rim), and laid straight into one shared set of buffers, turned and moved onto its
+// lot. So every tower is its own building, its normals are exact, and the whole city is one draw.
+//
+// Every vertex carries what it is made of (its kind), which tower it belongs to, where it is across its face as a
+// share, how many bays that face has, and the height of the foot of the wall it is on, for the dark where masses meet.
 
-// A point: its share of the lot, then units added.
-export type P = [number, number, number, number, number, number];
-export const p = (x: number, y: number, z: number, ax = 0, ay = 0, az = 0): P => [x, y, z, ax, ay, az];
+export const K = {
+  // A curtain of glass with rooms behind it, in the tower's own skin.
+  glass: 0,
+  // Pale warm stone with tall narrow windows.
+  stone: 1,
+  // Pale warm stone, solid: piers, plinths, columns.
+  plain: 2,
+  // Near black structure, satin.
+  dark: 3,
+  gold: 4,
+  bronze: 5,
+  copper: 6,
+  // Polished metal cladding, fluted, with narrow windows: the tower's own metal, bronze or copper.
+  clad: 7,
+  // A line or a band of light.
+  light: 8,
+  // Lit glass at the street.
+  lobby: 9,
+  louvre: 10,
+  roof: 11,
+  // The tower's own accent metal: gold, bronze or copper.
+  accent: 12,
+  // Glass of a pod, a saucer, a bridge: bands of lit windows.
+  pod: 13,
+  // Glass that faces the sky, with no rooms seen behind it.
+  sky: 14,
+  // A cartouche: a panel of dark bronze with abstract marks raised in gold, in a column, and a gold border.
+  glyph: 15,
+} as const;
 
-// The lot a type is judged against while it is built, for the normals of faces made from both parts.
-const TYPICAL = { w: 30, h: 160 };
-const solid = (q: P): [number, number, number] => [q[0] * TYPICAL.w + q[3], q[1] * TYPICAL.h + q[4], q[2] * TYPICAL.w + q[5]];
+export type XZ = [number, number];
+export type Ring = XZ[];
+export type V3 = [number, number, number];
 
-export class Shape {
-  private pos: number[] = [];
-  private add: number[] = [];
-  private nrm: number[] = [];
-  private face: number[] = [];
+// The width of a bay, in units, for each facade that has windows. Solid stone counts its length in units, for its
+// blocks.
+export const BAY = { glass: 2.2, stone: 2.6, clad: 3.0, pod: 2.0 } as const;
+const bays = (k: number, len: number) => (k === K.glass ? Math.max(1, Math.round(len / BAY.glass)) : k === K.stone ? Math.max(1, Math.round(len / BAY.stone)) : k === K.clad ? Math.max(1, Math.round(len / BAY.clad)) : k === K.pod ? Math.max(1, Math.round(len / BAY.pod)) : k === K.plain || k === K.glyph ? Math.max(1, Math.round(len)) : 0);
 
-  get tris(): number { return this.pos.length / 9; }
+// Segments shorter than this, on a ring that is not round, are the bevels of its corners.
+const BEVEL_MAX = 1.7;
 
-  // One triangle with one normal, or a normal for each corner.
-  private tri(a: P, b: P, c: P, f: [number, number, number, number][], n?: [number, number, number][]): void {
-    let nn = n;
-    if (!nn) {
-      const A = new THREE.Vector3(...solid(a)), B = new THREE.Vector3(...solid(b)), C = new THREE.Vector3(...solid(c));
-      const m = B.sub(A).cross(C.sub(A)).normalize();
-      nn = [[m.x, m.y, m.z], [m.x, m.y, m.z], [m.x, m.y, m.z]];
-    }
-    [a, b, c].forEach((q, i) => {
-      this.pos.push(q[0], q[1], q[2]);
-      this.add.push(q[3], q[4], q[5]);
-      this.nrm.push(...nn![i]);
-      this.face.push(...f[i]);
-    });
+class Grow {
+  a: Float32Array;
+  n = 0;
+  constructor(size: number) { this.a = new Float32Array(size); }
+  push(...v: number[]): void {
+    if (this.n + v.length > this.a.length) { const b = new Float32Array(this.a.length * 2); b.set(this.a); this.a = b; }
+    for (const x of v) this.a[this.n++] = x;
+  }
+  get out(): Float32Array { return this.a.slice(0, this.n); }
+}
+
+// The city's buffers, and the frame of the tower being built into them. A tower is built upright in its own frame and
+// seated whole on the dome (seat in ../../layout.ts), so it stands straight out from the ground under it and never
+// spreads as it rises. Each vertex also keeps where it is on the map and how high over the ground, which is what
+// the shader works its floors, its street light and its rooms out from.
+export class City {
+  private pos = new Grow(1 << 20);
+  private nrm = new Grow(1 << 20);
+  private map = new Grow(1 << 20);
+  private face = new Grow(1 << 20);
+  private foot = new Grow(1 << 18);
+  private idx: number[] = [];
+  private verts = 0;
+  private ox = 0; private oz = 0; private c = 1; private s = 0; private id = 0;
+  private m = new THREE.Matrix4().elements;
+  // Where the tower being built began in the buffers, so it can be taken out again.
+  private from = { pos: 0, nrm: 0, map: 0, face: 0, foot: 0, idx: 0, verts: 0 };
+  get tris(): number { return this.idx.length / 3; }
+
+  at(x: number, z: number, turn: number, id: number): void {
+    this.ox = x; this.oz = z; this.c = Math.cos(turn); this.s = Math.sin(turn); this.id = id;
+    this.m = seat(x, z, 0, turn / D2R).elements;
+    this.from = { pos: this.pos.n, nrm: this.nrm.n, map: this.map.n, face: this.face.n, foot: this.foot.n, idx: this.idx.length, verts: this.verts };
   }
 
-  // A quad a, b, c, d going round its outside face anticlockwise. u runs from a to b. width is how wide the face is
-  // as a share of the lot, and across how much of it runs along the lot's z rather than its x.
-  quad(a: P, b: P, c: P, d: P, kind: number, o: { u0?: number; u1?: number; width?: number; across?: number; n?: [number, number, number][] } = {}): void {
-    const u0 = o.u0 ?? 0, u1 = o.u1 ?? 1, w = o.width ?? 0, x = o.across ?? 0;
-    const fa: [number, number, number, number] = [u0, w, x, kind], fb: [number, number, number, number] = [u1, w, x, kind];
-    const n = o.n;
-    this.tri(a, b, c, [fa, fb, fb], n && [n[0], n[1], n[2]]);
-    this.tri(a, c, d, [fa, fb, fa], n && [n[0], n[2], n[3]]);
+  // Takes the tower being built out again.
+  drop(): void {
+    const f = this.from;
+    this.pos.n = f.pos; this.nrm.n = f.nrm; this.map.n = f.map; this.face.n = f.face; this.foot.n = f.foot; this.idx.length = f.idx; this.verts = f.verts;
   }
 
-  // Walls between two rings of points, the lower and the upper, each going round anticlockwise seen from above.
-  // A round wall carries one run of bays round its whole loop and is smooth shaded.
-  walls(lo: P[], hi: P[], kind: number, round = false): void {
-    const n = lo.length;
-    const len = (a: P, b: P) => Math.hypot(b[0] - a[0], b[2] - a[2]);
-    let per = 0;
-    for (let i = 0; i < n; i++) per += len(lo[i], lo[(i + 1) % n]);
-    let run = 0;
-    const mid = (r: P[]) => r.map(solid).reduce((s, q) => [s[0] + q[0] / n, s[1] + q[2] / n], [0, 0]);
-    const [cx, cz] = mid(lo), [hx, hz] = mid(hi);
-    for (let i = 0; i < n; i++) {
-      const j = (i + 1) % n, a = lo[i], b = lo[j], seg = len(a, b);
-      if (round) {
-        const out = (q: P, up: boolean): [number, number, number] => { const s = solid(q), x = s[0] - (up ? hx : cx), z = s[2] - (up ? hz : cz), l = Math.hypot(x, z) || 1; return [x / l, 0, z / l]; };
-        this.quad(a, b, hi[j], hi[i], kind + ROUND, { u0: run / per, u1: (run + seg) / per, width: per, across: 0.5, n: [out(a, false), out(b, false), out(hi[j], true), out(hi[i], true)] });
-      } else {
-        const dx = Math.abs(b[0] - a[0]), dz = Math.abs(b[2] - a[2]);
-        this.quad(a, b, hi[j], hi[i], kind, { width: seg, across: dz / (dx + dz || 1) });
-      }
-      run += seg;
-    }
+  // Every point of the tower being built, as points of the frame.
+  *built(): Generator<V3> { for (let i = this.from.pos; i < this.pos.n; i += 3) yield [this.pos.a[i], this.pos.a[i + 1], this.pos.a[i + 2]]; }
+
+  // A point of the tower's frame, as a point of the world's frame.
+  place(q: V3): V3 {
+    const e = this.m;
+    return [e[0] * q[0] + e[4] * q[1] + e[8] * q[2] + e[12], e[1] * q[0] + e[5] * q[1] + e[9] * q[2] + e[13], e[2] * q[0] + e[6] * q[1] + e[10] * q[2] + e[14]];
+  }
+  // A point of the tower's frame on the map, with its height over the ground.
+  onMap(q: V3): V3 { return [this.ox + q[0] * this.c + q[2] * this.s, q[1], this.oz - q[0] * this.s + q[2] * this.c]; }
+
+  vert(q: V3, n: V3, frac: number, bays: number, kind: number, foot: number): number {
+    const w = this.place(q), p = this.onMap(q), e = this.m;
+    let nx = e[0] * n[0] + e[4] * n[1] + e[8] * n[2], ny = e[1] * n[0] + e[5] * n[1] + e[9] * n[2], nz = e[2] * n[0] + e[6] * n[1] + e[10] * n[2];
+    const l = Math.hypot(nx, ny, nz);
+    if (l > 1e-6) { nx /= l; ny /= l; nz /= l; } else { nx = 0; ny = 1; nz = 0; }
+    this.pos.push(w[0], w[1], w[2]);
+    this.nrm.push(nx, ny, nz);
+    this.map.push(p[0], p[1], p[2]);
+    this.face.push(frac, bays, kind, this.id);
+    this.foot.push(foot);
+    return this.verts++;
   }
 
-  // A flat lid over a ring, facing up, or down when under is set.
-  cap(ring: P[], kind: number, under = false): void {
-    const c = ring.reduce<P>((s, q) => s.map((v, i) => v + q[i] / ring.length) as P, [0, 0, 0, 0, 0, 0]);
-    const f: [number, number, number, number] = [0, 0, 0, kind];
-    for (let i = 0; i < ring.length; i++) {
-      const a = ring[i], b = ring[(i + 1) % ring.length];
-      if (under) this.tri(c, b, a, [f, f, f]);
-      else this.tri(c, a, b, [f, f, f]);
-    }
-  }
-
-  // Faces from a ring up to one point.
-  point(ring: P[], tip: P, kind: number): void {
-    for (let i = 0; i < ring.length; i++) {
-      const a = ring[i], b = ring[(i + 1) % ring.length], w = Math.hypot(b[0] - a[0], b[2] - a[2]);
-      const dx = Math.abs(b[0] - a[0]), dz = Math.abs(b[2] - a[2]);
-      this.tri(a, b, tip, [[0, w, dz / (dx + dz || 1), kind], [1, w, dz / (dx + dz || 1), kind], [0.5, w, dz / (dx + dz || 1), kind]]);
-    }
-  }
-
-  // A prism: walls from y0 to y1 and a lid.
-  prism(ring: (y: number, ay?: number) => P[], y0: number, y1: number, kind: number, o: { round?: boolean; lid?: number | false; ay0?: number; ay1?: number } = {}): void {
-    const hi = ring(y1, o.ay1 ?? 0);
-    this.walls(ring(y0, o.ay0 ?? 0), hi, kind, o.round);
-    if (o.lid !== false) this.cap(hi, o.lid ?? KIND.dark);
-  }
-
-  // A ledge round a ring at height y: a band so many units tall standing out so many units, with its top.
-  ledge(ring: (y: number, ay?: number) => P[], y: number, tall: number, out: number, kind: number, round = false): void {
-    const grow = (r: P[]) => outset(r, out);
-    const lo = grow(ring(y, -tall)), hi = grow(ring(y, 0));
-    this.walls(lo, hi, kind, round);
-    this.cap(hi, kind);
-    this.cap(lo, KIND.dark, true);
-  }
-
-  // A box in units round a point given as a share of the lot.
-  box(x: number, y: number, z: number, ax: number, ay: number, az: number, w: number, h: number, d: number, kind: number, lid = kind): void {
-    const r = (yy: number, add: number) => [p(x, yy, z, ax - w / 2, add, az - d / 2), p(x, yy, z, ax + w / 2, add, az - d / 2), p(x, yy, z, ax + w / 2, add, az + d / 2), p(x, yy, z, ax - w / 2, add, az + d / 2)].reverse() as P[];
-    const lo = r(y, ay), hi = r(y, ay + h);
-    this.walls(lo, hi, kind);
-    this.cap(hi, lid);
-  }
-
-  // An upright cylinder in units round a point given as a share of the lot.
-  drum(x: number, y: number, z: number, ay: number, r: number, h: number, seg: number, kind: number, lid = kind): void {
-    const ring = (add: number) => Array.from({ length: seg }, (_, i) => { const a = -(i / seg) * Math.PI * 2; return p(x, y, z, Math.cos(a) * r, add, Math.sin(a) * r); });
-    const hi = ring(ay + h);
-    this.walls(ring(ay), hi, kind, true);
-    this.cap(hi, lid);
-  }
+  tri(a: number, b: number, c: number): void { this.idx.push(a, b, c); }
 
   geometry(): THREE.BufferGeometry {
     const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(this.pos, 3));
-    g.setAttribute('normal', new THREE.Float32BufferAttribute(this.nrm, 3));
-    g.setAttribute('add', new THREE.Float32BufferAttribute(this.add, 3));
-    g.setAttribute('face', new THREE.Float32BufferAttribute(this.face, 4));
-    // The lot's frame reaches past its share by the units added: the bounds a lot is culled by come from the
-    // instances, which allow for that.
+    g.setAttribute('position', new THREE.BufferAttribute(this.pos.out, 3));
+    g.setAttribute('normal', new THREE.BufferAttribute(this.nrm.out, 3));
+    g.setAttribute('plan', new THREE.BufferAttribute(this.map.out, 3));
+    g.setAttribute('face', new THREE.BufferAttribute(this.face.out, 4));
+    g.setAttribute('foot', new THREE.BufferAttribute(this.foot.out, 1));
+    g.setIndex(this.verts > 65535 ? new THREE.BufferAttribute(new Uint32Array(this.idx), 1) : new THREE.BufferAttribute(new Uint16Array(this.idx), 1));
     g.computeBoundingSphere();
     return g;
   }
 }
 
-// Rings, anticlockwise seen from above (from +y): x to the right, z toward the visitor, so anticlockwise runs from
-// +x toward -z.
-export function rect(hx: number, hz: number, ox = 0, oz = 0): (y: number, ay?: number) => P[] {
-  return (y, ay = 0) => [p(ox + hx, y, oz + hz, 0, ay), p(ox + hx, y, oz - hz, 0, ay), p(ox - hx, y, oz - hz, 0, ay), p(ox - hx, y, oz + hz, 0, ay)];
-}
-// A rectangle with its corners cut by c.
-export function chamfer(hx: number, hz: number, c: number): (y: number, ay?: number) => P[] {
-  return (y, ay = 0) => [
-    p(hx, y, hz - c, 0, ay), p(hx, y, -hz + c, 0, ay), p(hx - c, y, -hz, 0, ay), p(-hx + c, y, -hz, 0, ay),
-    p(-hx, y, -hz + c, 0, ay), p(-hx, y, hz - c, 0, ay), p(-hx + c, y, hz, 0, ay), p(hx - c, y, hz, 0, ay),
-  ];
-}
-// A regular polygon, or a circle with many sides, turned by a0.
-export function ngon(n: number, r: number, a0 = 0, rz = r): (y: number, ay?: number) => P[] {
-  return (y, ay = 0) => Array.from({ length: n }, (_, i) => { const a = a0 - (i / n) * Math.PI * 2; return p(Math.cos(a) * r, y, Math.sin(a) * rz, 0, ay); });
-}
-// The same ring turned about the lot's middle.
-export function turned(ring: (y: number, ay?: number) => P[], by: number): (y: number, ay?: number) => P[] {
-  const c = Math.cos(by), s = Math.sin(by);
-  return (y, ay = 0) => ring(y, ay).map((q) => p(q[0] * c - q[2] * s, q[1], q[0] * s + q[2] * c, q[3] * c - q[5] * s, q[4], q[3] * s + q[5] * c));
+const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+const cross = (a: V3, b: V3): V3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const len3 = (a: V3) => Math.hypot(a[0], a[1], a[2]);
+const norm = (a: V3): V3 => { const l = len3(a); return l > 1e-9 ? [a[0] / l, a[1] / l, a[2] / l] : [0, 0, 0]; };
+
+export interface Level { y: number; ring: Ring }
+export interface LoftOpts {
+  // Smooth round the ring, as on a drum, and up the levels, as on a curved profile.
+  round?: boolean;
+  smoothUp?: boolean;
+  // The kind of each segment, if they differ.
+  kinds?: number[];
+  // The kind of a segment short enough to be a bevel.
+  edge?: number;
+  // The height the wall stands on, if not its own lowest level.
+  foot?: number;
 }
 
-// A convex ring pushed out by so many units, along each corner's bisector.
-export function outset(ring: P[], out: number): P[] {
+// Walls between rings at levels, every ring with as many points, each going round anticlockwise seen from above.
+export function loft(b: City, levels: Level[], kind: number, o: LoftOpts = {}): void {
+  const n = levels[0].ring.length, L = levels.length;
+  const P = (i: number, j: number): V3 => { const q = levels[i].ring[((j % n) + n) % n]; return [q[0], levels[i].y, q[1]]; };
+  const foot = o.foot ?? levels[0].y;
+  // Where a segment's kind and bays come from: its length at the lowest level.
+  const segLen = (j: number) => { let m = 0; for (let i = 0; i < L; i++) m += len3(sub(P(i, j + 1), P(i, j))); return m / L; };
+  if (o.round) {
+    let per = 0;
+    for (let j = 0; j < n; j++) per += segLen(j);
+    const nb = bays(kind, per);
+    const normal = (i: number, j: number): V3 => {
+      const h = sub(P(i, j + 1), P(i, j - 1));
+      let up = sub(P(Math.min(L - 1, i + 1), j), P(Math.max(0, i - 1), j));
+      if (len3(up) < 1e-9) up = [0, 1, 0];
+      let nn = cross(h, up);
+      if (len3(nn) < 1e-9) { const c = levels[i].ring.reduce((s, q) => [s[0] + q[0] / n, s[1] + q[1] / n], [0, 0]); const q = levels[i].ring[((j % n) + n) % n]; nn = [q[0] - c[0], 0, q[1] - c[1]]; }
+      if (len3(nn) < 1e-9) nn = [0, 1, 0];
+      return norm(nn);
+    };
+    // Shared rows of points, one more than the ring so the bays close.
+    const rows: number[][] = [];
+    for (let i = 0; i < L; i++) {
+      const row: number[] = [];
+      let run = 0;
+      for (let j = 0; j <= n; j++) {
+        row.push(b.vert(P(i, j), normal(i, j), run / per, nb, kind, foot));
+        run += segLen(j);
+      }
+      rows.push(row);
+    }
+    for (let i = 0; i < L - 1; i++) for (let j = 0; j < n; j++) {
+      const a = rows[i][j], c = rows[i][j + 1], d = rows[i + 1][j + 1], e = rows[i + 1][j];
+      b.tri(a, c, d); b.tri(a, d, e);
+    }
+    return;
+  }
+  for (let j = 0; j < n; j++) {
+    const sl = segLen(j);
+    let k = o.kinds?.[j] ?? kind;
+    if (o.edge !== undefined && sl < BEVEL_MAX) k = o.edge;
+    const nb = bays(k, sl);
+    for (let i = 0; i < L - 1; i++) {
+      const a = P(i, j), c = P(i, j + 1), d = P(i + 1, j + 1), e = P(i + 1, j);
+      let nn = cross(sub(c, a), sub(e, a));
+      if (len3(nn) < 1e-9) nn = cross(sub(d, e), sub(e, a));
+      if (o.smoothUp) {
+        const up0 = sub(P(Math.min(L - 1, i + 1), j), P(Math.max(0, i - 1), j)), up1 = sub(P(Math.min(L - 1, i + 2), j), P(i, j));
+        const h = sub(c, a);
+        const n0 = norm(cross(h, up0)), n1 = norm(cross(h, up1));
+        const A = b.vert(a, n0, 0, nb, k, foot), C = b.vert(c, n0, 1, nb, k, foot), D = b.vert(d, n1, 1, nb, k, foot), E = b.vert(e, n1, 0, nb, k, foot);
+        b.tri(A, C, D); b.tri(A, D, E);
+      } else {
+        const A = b.vert(a, nn, 0, nb, k, foot), C = b.vert(c, nn, 1, nb, k, foot), D = b.vert(d, nn, 1, nb, k, foot), E = b.vert(e, nn, 0, nb, k, foot);
+        b.tri(A, C, D); b.tri(A, D, E);
+      }
+    }
+  }
+}
+
+// A flat lid over a ring at y, facing up, or down when under is set. holes are rings cut out of it.
+export function cap(b: City, ring: Ring, y: number, kind: number, under = false, holes: Ring[] = []): void {
+  const v2 = (r: Ring) => r.map(([x, z]) => new THREE.Vector2(x, -z));
+  const tris = THREE.ShapeUtils.triangulateShape(v2(ring), holes.map(v2));
+  const all = [...ring, ...holes.flat()];
+  const ids = all.map(([x, z]) => b.vert([x, y, z], [0, under ? -1 : 1, 0], 0, 0, kind, y));
+  for (const [a, c, d] of tris) {
+    const A = all[a], C = all[c], D = all[d];
+    const up = (C[1] - A[1]) * (D[0] - A[0]) - (C[0] - A[0]) * (D[1] - A[1]) > 0;
+    if (up !== under) b.tri(ids[a], ids[c], ids[d]); else b.tri(ids[a], ids[d], ids[c]);
+  }
+}
+
+// Faces from a ring at y up to one point.
+export function point(b: City, ring: Ring, y: number, tip: V3, kind: number, edge?: number): void {
   const n = ring.length;
-  const edge = (a: P, b: P) => { const dx = b[0] * TYPICAL.w - a[0] * TYPICAL.w, dz = b[2] * TYPICAL.w - a[2] * TYPICAL.w, l = Math.hypot(dx, dz) || 1; return [dz / l, -dx / l]; };
+  for (let j = 0; j < n; j++) {
+    const a: V3 = [ring[j][0], y, ring[j][1]], c: V3 = [ring[(j + 1) % n][0], y, ring[(j + 1) % n][1]];
+    const nn = cross(sub(c, a), sub(tip, a));
+    const k = edge !== undefined && len3(sub(c, a)) < BEVEL_MAX ? edge : kind;
+    b.tri(b.vert(a, nn, 0, 0, k, y), b.vert(c, nn, 1, 0, k, y), b.vert(tip, nn, 0.5, 0, k, y));
+  }
+}
+
+// A prism: walls from y0 to y1 and a lid.
+export function prism(b: City, ring: Ring, y0: number, y1: number, kind: number, o: LoftOpts & { lid?: number | false; top?: Ring } = {}): void {
+  loft(b, [{ y: y0, ring }, { y: y1, ring: o.top ?? ring }], kind, o);
+  if (o.lid !== false) cap(b, o.top ?? ring, y1, o.lid ?? K.roof);
+}
+
+// A ledge round a ring: a band so tall, standing out so far, with its top and its underside.
+export function ledge(b: City, ring: Ring, y: number, tall: number, out: number, kind: number, o: { round?: boolean; top?: number } = {}): void {
+  const r = offset(ring, out);
+  loft(b, [{ y: y - tall, ring: r }, { y, ring: r }], kind, { round: o.round, foot: y - tall });
+  cap(b, r, y, o.top ?? kind);
+  cap(b, r, y - tall, K.dark, true);
+}
+
+// The gorge of a temple's cornice: a torus roll, then a hollow that flares out and up to a flat top.
+export function gorge(b: City, ring: Ring, y: number, tall: number, out: number, kind: number, roll: number = K.accent): void {
+  const r0 = 0.45, lv = (t: number, o: number): Level => ({ y: y + t * tall, ring: offset(ring, o) });
+  loft(b, [lv(-0.02, 0), lv(0.04, r0 * 0.7), lv(0.12, r0), lv(0.2, r0 * 0.7), lv(0.26, 0.05)], roll, { smoothUp: true, foot: y });
+  const prof: [number, number][] = [[0.26, 0.05], [0.42, 0.12 * out], [0.58, 0.32 * out], [0.74, 0.62 * out], [0.88, out], [1, out]];
+  loft(b, prof.map(([t, o]) => lv(t, o)), kind, { smoothUp: true, foot: y });
+  cap(b, offset(ring, out), y + tall, K.roof);
+}
+
+// A solid of revolution round (cx, cz): its profile is pairs of radius and height from the bottom up. A share of the
+// profile's segments may differ in kind, given as one kind for each segment.
+export function lathe(b: City, prof: [number, number][], seg: number, kind: number | number[], o: { cx?: number; cz?: number; rz?: number; a0?: number; smooth?: boolean } = {}): void {
+  const cx = o.cx ?? 0, cz = o.cz ?? 0, k = o.rz ?? 1;
+  const ring = (r: number): Ring => Array.from({ length: seg }, (_, i) => { const a = (o.a0 ?? 0) - (i / seg) * Math.PI * 2; return [cx + Math.cos(a) * r, cz + Math.sin(a) * r * k]; });
+  if (Array.isArray(kind)) {
+    for (let i = 0; i < prof.length - 1; i++) loft(b, [{ y: prof[i][1], ring: ring(prof[i][0]) }, { y: prof[i + 1][1], ring: ring(prof[i + 1][0]) }], kind[i], { round: true, foot: prof[0][1] });
+    return;
+  }
+  loft(b, prof.map(([r, y]) => ({ y, ring: ring(r) })), kind, { round: true, smoothUp: o.smooth ?? true, foot: prof[0][1] });
+}
+
+// A box round a point, so wide, tall and deep.
+export function box(b: City, x: number, y: number, z: number, w: number, h: number, d: number, kind: number, lid: number = kind, bevel = 0): void {
+  prism(b, shift(rect(w, d, bevel), x, z), y, y + h, kind, { lid, edge: bevel > 0 ? kind : undefined });
+}
+
+// An upright cylinder.
+export function cyl(b: City, x: number, y: number, z: number, r: number, h: number, seg: number, kind: number, lid: number = kind): void {
+  prism(b, circle(r, seg, x, z), y, y + h, kind, { round: true, lid });
+}
+
+// A bar from one point to another, so wide and so tall, its sides square to the ground where it can be.
+export function beam(b: City, p: V3, q: V3, w: number, h: number, kind: number): void {
+  const ax = norm(sub(q, p));
+  let side = cross(ax, [0, 1, 0]);
+  if (len3(side) < 1e-6) side = [1, 0, 0];
+  side = norm(side);
+  const up = norm(cross(side, ax));
+  const c = (o: V3, s: number, u: number): V3 => [o[0] + side[0] * s * w / 2 + up[0] * u * h / 2, o[1] + side[1] * s * w / 2 + up[1] * u * h / 2, o[2] + side[2] * s * w / 2 + up[2] * u * h / 2];
+  const corners: [number, number][] = [[1, -1], [1, 1], [-1, 1], [-1, -1]];
+  for (let i = 0; i < 4; i++) {
+    const [s0, u0] = corners[i], [s1, u1] = corners[(i + 1) % 4];
+    const a = c(p, s0, u0), d = c(p, s1, u1), e = c(q, s1, u1), f = c(q, s0, u0);
+    const nn: V3 = [side[0] * (s0 + s1) / 2 + up[0] * (u0 + u1) / 2, side[1] * (s0 + s1) / 2 + up[1] * (u0 + u1) / 2, side[2] * (s0 + s1) / 2 + up[2] * (u0 + u1) / 2];
+    const A = b.vert(a, nn, 0, 0, kind, 0), D = b.vert(d, nn, 0, 0, kind, 0), E = b.vert(e, nn, 0, 0, kind, 0), F = b.vert(f, nn, 0, 0, kind, 0);
+    const tn = cross(sub(d, a), sub(f, a));
+    if (tn[0] * nn[0] + tn[1] * nn[1] + tn[2] * nn[2] >= 0) { b.tri(A, D, E); b.tri(A, E, F); } else { b.tri(A, E, D); b.tri(A, F, E); }
+  }
+  for (const [o, sg] of [[p, -1], [q, 1]] as [V3, number][]) {
+    const nn: V3 = [ax[0] * sg, ax[1] * sg, ax[2] * sg];
+    const ids = corners.map(([s, u]) => b.vert(c(o, s, u), nn, 0, 0, kind, 0));
+    const tn = cross(sub(c(o, ...corners[1]), c(o, ...corners[0])), sub(c(o, ...corners[2]), c(o, ...corners[0])));
+    if (tn[0] * nn[0] + tn[1] * nn[1] + tn[2] * nn[2] >= 0) { b.tri(ids[0], ids[1], ids[2]); b.tri(ids[0], ids[2], ids[3]); } else { b.tri(ids[0], ids[2], ids[1]); b.tri(ids[0], ids[3], ids[2]); }
+  }
+}
+
+// A disc standing upright, facing out along z: a face, a rim and a back.
+export function disc(b: City, x: number, y: number, z: number, r: number, thick: number, seg: number, face: number, rim: number): void {
+  const pts = Array.from({ length: seg }, (_, i) => { const a = (i / seg) * Math.PI * 2; return [x + Math.cos(a) * r, y + Math.sin(a) * r] as [number, number]; });
+  for (const [zz, sg] of [[z + thick / 2, 1], [z - thick / 2, -1]] as [number, number][]) {
+    const mid = b.vert([x, y, zz], [0, 0, sg], 0, 0, face, 0);
+    const ids = pts.map(([px, py]) => b.vert([px, py, zz], [0, 0, sg], 0, 0, face, 0));
+    for (let i = 0; i < seg; i++) { const j = (i + 1) % seg; if (sg > 0) b.tri(mid, ids[i], ids[j]); else b.tri(mid, ids[j], ids[i]); }
+  }
+  for (let i = 0; i < seg; i++) {
+    const j = (i + 1) % seg, [ax, ay] = pts[i], [cx, cy] = pts[j];
+    const na: V3 = [ax - x, ay - y, 0], nc: V3 = [cx - x, cy - y, 0];
+    const A = b.vert([ax, ay, z + thick / 2], na, 0, 0, rim, 0), B = b.vert([ax, ay, z - thick / 2], na, 0, 0, rim, 0), C = b.vert([cx, cy, z - thick / 2], nc, 0, 0, rim, 0), D = b.vert([cx, cy, z + thick / 2], nc, 0, 0, rim, 0);
+    b.tri(A, C, D); b.tri(A, B, C);
+  }
+}
+
+// Rings, anticlockwise seen from above: x to the right and z toward the visitor, so anticlockwise runs from +x
+// toward -z.
+export function rect(w: number, d: number, bevel = 0): Ring {
+  const x = w / 2, z = d / 2, c = bevel;
+  if (c <= 0) return [[x, z], [x, -z], [-x, -z], [-x, z]];
+  return [[x, z - c], [x, -z + c], [x - c, -z], [-x + c, -z], [-x, -z + c], [-x, z - c], [-x + c, z], [x - c, z]];
+}
+export function circle(r: number, seg: number, cx = 0, cz = 0, rz = r, a0 = 0): Ring {
+  return Array.from({ length: seg }, (_, i) => { const a = a0 - (i / seg) * Math.PI * 2; return [cx + Math.cos(a) * r, cz + Math.sin(a) * rz] as XZ; });
+}
+// A rectangle split along its sides into the given shares, for a face of several kinds: front and back faces (along
+// x) are split at the shares in xs, the sides at zs.
+export function split(w: number, d: number, xs: number[], zs: number[], bevel = 0): Ring {
+  const x = w / 2, z = d / 2, c = bevel;
+  const out: Ring = [];
+  const along = (a: XZ, b: XZ, at: number[]) => at.forEach((t) => out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]));
+  // Right side, from front to back.
+  out.push([x, z - c]); along([x, z], [x, -z], zs); out.push([x, -z + c]);
+  if (c > 0) out.push([x - c, -z]);
+  along([x, -z], [-x, -z], xs);
+  if (c > 0) out.push([-x + c, -z]);
+  out.push([-x, -z + c]); along([-x, -z], [-x, z], zs); out.push([-x, z - c]);
+  if (c > 0) out.push([-x + c, z]);
+  along([-x, z], [x, z], xs);
+  if (c > 0) out.push([x - c, z]);
+  return out;
+}
+export const shift = (r: Ring, dx: number, dz: number): Ring => r.map(([x, z]) => [x + dx, z + dz]);
+export const scale = (r: Ring, sx: number, sz = sx): Ring => r.map(([x, z]) => [x * sx, z * sz]);
+export const turn = (r: Ring, a: number): Ring => { const c = Math.cos(a), s = Math.sin(a); return r.map(([x, z]) => [x * c - z * s, x * s + z * c]); };
+
+// A ring pushed out by so many units along each corner's bisector, or in when out is negative.
+export function offset(ring: Ring, out: number): Ring {
+  const n = ring.length;
+  const edge = (a: XZ, b: XZ): XZ => { const dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1; return [-dz / l, dx / l]; };
   return ring.map((q, i) => {
     const [ax, az] = edge(ring[(i - 1 + n) % n], q), [bx, bz] = edge(q, ring[(i + 1) % n]);
-    const k = 1 + ax * bx + az * bz;
-    const ox = ((ax + bx) / k) * out, oz = ((az + bz) / k) * out;
-    // The outward side: away from the ring's middle.
-    const cx = ring.reduce((s, r) => s + r[0], 0) / n, cz = ring.reduce((s, r) => s + r[2], 0) / n;
-    const sg = (q[0] - cx) * ox + (q[2] - cz) * oz >= 0 ? 1 : -1;
-    return p(q[0], q[1], q[2], q[3] + sg * ox, q[4], q[5] + sg * oz);
+    const k = Math.max(0.2, 1 + ax * bx + az * bz);
+    return [q[0] + ((ax + bx) / k) * out, q[1] + ((az + bz) / k) * out];
   });
 }

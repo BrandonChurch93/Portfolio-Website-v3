@@ -1,21 +1,23 @@
 import * as THREE from 'three';
 import { hex } from '../../../../config/palette';
 import { lin } from '../../../../world/surface';
+import { PLANET } from '../../layout';
 
-// The small life of the city, as points of light worked out from the clock alone in one shader: beacons that
-// breathe on the tall tops, traffic along the boulevards and the avenues, and craft that drift between the towers.
+// The small life of the core and the town, as points of light worked out from the clock alone in one shader: beacons
+// that breathe on the tall tops, and traffic along the boulevards and the avenues. The craft in the air are the
+// port's.
 // Each is a soft round spot a few pixels across with a core a little over a pixel, so one moving between pixels never
 // flickers. A spot is a small square turned to the screen, so its size is not bound by the largest point the graphics
 // card will draw. Nothing here repeats in any time a visitor would see: every speed and period is its own.
 
-export const MODE = { beacon: 0, ring: 1, avenue: 2, craft: 3 } as const;
+export const MODE = { beacon: 0, arc: 1, avenue: 2 } as const;
 
 export interface Light {
   mode: number;
-  // A beacon: where it is. Traffic on a ring: its radius, its height, where it starts (radians), its speed (units a
-  // second, signed). On an avenue: its bearing (radians), its height, where it starts (0 to 1 of the run), its speed
-  // (runs a second, signed), the run's inner and outer radius. A craft: the middle of its loop, its radii across
-  // and in depth, its height, where it starts and its speed (radians a second).
+  // A beacon: where it is, as a point of the frame. Traffic on a stretch of a boulevard: its radius, its height, where it starts (0 to 1 of the
+  // stretch), its speed (stretches a second, signed), and the bearings the stretch runs between (radians). On an
+  // avenue: its bearing (radians), its height, where it starts (0 to 1 of the run), its speed (runs a second,
+  // signed), the run's inner and outer radius.
   a: [number, number, number, number];
   b: [number, number, number, number];
   // How large in CSS pixels, its tone (0 ember to 1 pale), how bright, and its own phase.
@@ -48,17 +50,18 @@ const VBODY = /* glsl */ `
     float b = 0.5 + 0.5 * sin(uTime * la.w + ll.w * 6.2831);
     k *= 0.18 + 0.82 * pow(b, 3.0);
   } else if (lm < 1.5) {
-    float a = la.z + uTime * la.w / la.x;
+    float s = fract(la.z + uTime * la.w), a = mix(lb.x, lb.y, s);
     p = vec3(sin(a) * la.x, la.y, cos(a) * la.x);
-  } else if (lm < 2.5) {
+    k *= smoothstep(0.0, 0.03, s) * smoothstep(1.0, 0.97, s);
+  } else {
     float s = fract(la.z + uTime * la.w), r = mix(lb.x, lb.y, s);
     p = vec3(sin(la.x) * r, la.y, cos(la.x) * r);
     k *= smoothstep(0.0, 0.06, s) * smoothstep(1.0, 0.94, s);
-  } else {
-    float a = lb.z + uTime * lb.w;
-    p = vec3(la.x + cos(a) * la.z, la.w + 3.0 * sin(a * 2.3 + ll.w * 6.0), la.y + sin(a) * lb.x);
-    // A craft's light blinks now and then.
-    k *= 0.75 + 0.5 * step(0.94, fract(uTime * (0.4 + 0.2 * ll.w) + ll.w));
+  }
+  // Traffic runs on the map: it is lifted onto the dome, so far over the ground.
+  if (lm > 0.5) {
+    float far = length(p.xz), a = far / ${PLANET.r.toFixed(1)}, k2 = far < 1e-3 ? 0.0 : (${PLANET.r.toFixed(1)} + p.y) * sin(a) / far;
+    p = vec3(p.x * k2, (${PLANET.r.toFixed(1)} + p.y) * cos(a) - ${PLANET.r.toFixed(1)}, p.z * k2);
   }
   vColor = tone(ll.y) * k;
   vec4 c = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
