@@ -122,20 +122,21 @@ export const RIDGES: Ridge[] = [
     { dir: 25, len: 62, bend: 35 }, { dir: 150, len: 70, bend: -40 }, { dir: 245, len: 34, bend: 30 }, { dir: 320, len: 48, bend: -35 },
   ]),
   // A great star dune at the back right, standing over the horizon.
-  ...star(548, -205, 100, [
+  ...star(548, -205, 84, [
     { dir: 205, len: 100, bend: 40 }, { dir: 300, len: 105, bend: -35 }, { dir: 70, len: 60, bend: 30, lee: 1 }, { dir: 10, len: 85, bend: -45 },
   ], 0.6),
 ];
 
-// How much sand may lie at a place, 0 to 1: none past the torn edge or in the city, a little less near them.
-export function room(x: number, z: number, inset = 0): number {
+// How much sand may lie at a place, 0 to 1: none past the torn edge or in the city, less over the last stretch
+// before them.
+export function room(x: number, z: number, inset = 0, fade = 18): number {
   const r = Math.hypot(x, z), b = ((Math.atan2(x, z) / D2R) + 360) % 360;
   const edge = Math.min(EDGE.at(b) - 10, MARGIN - 6) - inset - r;
   const spill = r > 472 ? 14 + 22 * smooth(472, 540, r) : 0;
   const ang = within(b, DUNES.from, DUNES.to) ? Math.min(b - DUNES.from, DUNES.to - b) * D2R * r : -Math.min(Math.abs(b - DUNES.from), Math.abs(b - DUNES.to)) * D2R * r;
   const side = ang + spill - inset;
   const inner = r - DUNES.r0 + 8 - inset;
-  return smooth(0, 18, Math.min(edge, side, inner));
+  return smooth(0, fade, Math.min(edge, side, inner));
 }
 
 // How far from the court round the monument, and from the pool's shore.

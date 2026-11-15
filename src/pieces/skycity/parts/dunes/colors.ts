@@ -21,8 +21,8 @@ export const POOL = 0xd9995a;
 export const THING = {
   // Old pale stone, close to neutral.
   stone: 0x6a625a,
-  // Dark rock and dark stone: a warm near black.
-  dark: 0x0f0c0a,
+  // Dark polished stone: a warm near black that still shows its faces.
+  dark: 0x231d19,
   // Polished bronze and gold.
   bronze: hex('bronze'),
   gold: 0xf0b670,

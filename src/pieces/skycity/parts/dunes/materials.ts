@@ -36,6 +36,8 @@ vec2 dGrad = vec2(0.0);`);
   vec3 c = mix(${C('hollow')}, ${C('body')}, smoothstep(0.06, 0.4, hf + (big - 0.5) * 0.3));
   c = mix(c, ${C('crest')}, smoothstep(0.45, 1.0, hf) * (1.0 - 0.4 * max(side, 0.0)));
   c *= 0.93 + 0.14 * wNoise(vec3(mp * 0.06, 4.2));
+  // Slip faces are the coarser sand an avalanche leaves, darker and redder than the wind sorted windward faces.
+  c = mix(c, c * vec3(0.8, 0.7, 0.62), max(side, 0.0) * smoothstep(0.85, 0.7, vLevel));
   diffuseColor.rgb = c;
   {
     vec2 w = vec2(${WIND[0].toFixed(3)}, ${WIND[1].toFixed(3)});
@@ -46,7 +48,7 @@ vec2 dGrad = vec2(0.0);`);
     float th = 6.2831853 * ph;
     float slope = cos(th + 0.6 * sin(th)) * (1.0 + 0.6 * cos(th)) * 6.2831853 * ${RIPPLE.tall.toFixed(3)} / ${RIPPLE.gap.toFixed(2)};
     float lull = smoothstep(0.25, 0.75, wNoise(vec3(mp * 0.03, 6.0)));
-    dGrad = w * slope * fade * mix(0.35, 1.0, lull) * smoothstep(0.9, 0.97, vLevel) * (1.0 - max(side, 0.0));
+    dGrad = w * slope * fade * mix(0.35, 1.0, lull) * smoothstep(0.8, 0.93, vLevel) * (1.0 - max(side, 0.0));
   }
 }`);
     f = f.replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
@@ -99,7 +101,7 @@ export function poolMaterial(): THREE.MeshStandardMaterial {
   vec2 g = vec2(0.0), d;
   float ph;
 ${SWELLS.map(([b, k, t], i) => `  d = vec2(${Math.sin(b).toFixed(4)}, ${Math.cos(b).toFixed(4)});
-  ph = dot(vMap, d) * ${k.toFixed(3)} + 1.3 * sin(dot(vMap, vec2(-d.y, d.x)) * 0.06 + ${(i * 2.1).toFixed(2)});
+  ph = dot(vMap, d) * ${k.toFixed(3)} + 2.4 * sin(dot(vMap, vec2(-d.y, d.x)) * 0.09 + ${(i * 2.1).toFixed(2)}) + 1.2 * sin(dot(vMap, d) * 0.13 + ${(i * 1.3).toFixed(2)});
   g += d * cos(ph) * ${t.toFixed(3)} * (1.0 - smoothstep(0.6, 1.4, fwidth(ph)));`).join('\n')}
   vec3 tx = (viewMatrix * vec4(1.0, 0.0, 0.0, 0.0)).xyz, tz = (viewMatrix * vec4(0.0, 0.0, 1.0, 0.0)).xyz;
   tx -= normal * dot(normal, tx);
@@ -137,7 +139,7 @@ tKind = floor(vLook.w + 0.5);
   diffuseColor.rgb = c * vLook.rgb;
 }`);
     f = f.replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
-roughnessFactor = tKind < 0.5 ? 0.82 : tKind < 1.5 ? 0.62 : tKind < 2.5 ? 0.16 : 0.07;`);
+roughnessFactor = tKind < 0.5 ? 0.82 : tKind < 1.5 ? 0.34 : tKind < 2.5 ? 0.16 : 0.07;`);
     f = f.replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>
 metalnessFactor = tKind > 1.5 && tKind < 3.5 ? 1.0 : 0.0;`);
     f = f.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>

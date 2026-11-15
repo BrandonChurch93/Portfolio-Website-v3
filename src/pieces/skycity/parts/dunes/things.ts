@@ -68,8 +68,7 @@ export function things(field: Field): { geometry: THREE.BufferGeometry; lamps: T
   }
 
   // The colonnade: the heads of five columns of one hall, in the hollow between the first two rows at the front left,
-  // sand heaped against them, and the lintel the first two still carry. One has lost its head, and its drum lies in
-  // the sand. They stand at one height, as a hall's columns do, and the sand round them is deeper or shallower.
+  // sand heaped against them, and the lintel the first two still carry. One has lost its head. They stand at one height, as a hall's columns do, and the sand round them is deeper or shallower.
   {
     const cap = new THREE.LatheGeometry([[0, -0.5], [4.3, -0.5], [4.5, 0.6], [5.0, 1.6], [5.9, 3.0], [6.8, 4.5], [7.1, 5.4], [6.6, 5.9], [0, 5.9]].map(([x, y]) => new THREE.Vector2(x, y)), 32);
     const tilt = lean(0.03, 0, -0.04), tops: THREE.Vector3[] = [];
@@ -77,11 +76,7 @@ export function things(field: Field): { geometry: THREE.BufferGeometry; lamps: T
     PLACES.columns.forEach((c, i) => {
       const up = head + (r() - 0.5) * 2, m = seat(c.x, c.z, 0, 8).multiply(tilt), broken = i === 3, top = broken ? up - 7 : up;
       parts.add(fluted(4.2, Math.min(top - 24, field.height(c.x, c.z) - 4), top), KIND.stone, m, 0.95 + r() * 0.1);
-      if (broken) {
-        const fx = c.x + 9, fz = c.z + 6;
-        parts.add(fluted(4.2, -6, 6).rotateZ(Math.PI / 2), KIND.stone, stand(fx, fz, lean(0, 0.6, 0.08), 0, 2.4), 0.92);
-        return;
-      }
+      if (broken) return;
       parts.add(cap.clone().translate(0, top, 0), KIND.stone, m, 1.05);
       parts.add(rbox(11.5, 1.8, 11.5, 0.5).translate(0, top + 6.8, 0), KIND.stone, m, 1);
       tops.push(new THREE.Vector3(c.x, top + 7.7, c.z));

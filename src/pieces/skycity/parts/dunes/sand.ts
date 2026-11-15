@@ -80,14 +80,14 @@ function dune(r: Ridge): Dune | null {
 // past its ends. Taken from points of the crest and not stretches, it scalloped every slip face in grooves. Taken from
 // the one nearest point of the crest, the height jumped wherever two bends of a snaking crest were equally near, and
 // drew straight seams across the sand.
-interface At { h: number; d: number; tall: number }
+interface At { h: number; d: number; tall: number; nx: number; nz: number }
 function profile(du: Dune, H: number, d: number): number {
   if (d >= 0) { const c = 0.22 * H + 1; return softMax0(H - du.slope * d, c) - (softMax0(H, c) - H); }
   const W = du.wind * Math.max(H, 0.6 * du.tall), u = -d / W, A = du.sharp;
   return u >= 1 ? 0 : H * (1 - A * u + (2 * A - 3) * u * u + (2 - A) * u * u * u);
 }
 function heightOf(du: Dune, x: number, z: number, out: At): number {
-  let best = -Infinity, bd = 0;
+  let best = -Infinity, bd = 0, bx = 0, bz = 0;
   const far = Math.sqrt(du.tall / ALONG) + 2, wide = du.wind * du.tall + 2, lee = (du.tall / du.slope) * 2 + 8;
   for (let k = 0; k < du.m; k++) {
     const px = x - du.sx[k], pz = z - du.sz[k], tx = du.tx[k], tz = du.tz[k], l = du.sl[k], along = px * tx + pz * tz;
@@ -98,22 +98,26 @@ function heightOf(du: Dune, x: number, z: number, out: At): number {
     const d = ((px - tx * l * q) * nx + (pz - tz * l * q) * nz) / nl;
     if (d < -wide || d > lee) continue;
     const f = profile(du, du.h[i] + (du.h[j] - du.h[i]) * q, d) - ALONG * over * over;
-    if (f > best) { best = f; bd = d; }
+    if (f > best) { best = f; bd = d; bx = nx / nl; bz = nz / nl; }
   }
-  out.h = Math.max(0, best); out.d = bd; out.tall = du.tall;
+  out.h = Math.max(0, best); out.d = bd; out.tall = du.tall; out.nx = bx; out.nz = bz;
   return out.h;
 }
 
-// How much of a dune may stand at a place: none in the court, the pool or outside the sand.
-const keep = (x: number, z: number): number => room(x, z, 6) * smooth(0, 30, fromCourt(x, z)) * smooth(2, 30, fromPool(x, z));
+// How much of a dune may stand at a place: none in the court, the pool or outside the sand, and less over a long
+// stretch before the edge of the sand, so a dune comes down to it as a slope and not a wall.
+const keep = (x: number, z: number): number => room(x, z, 4, 48) * smooth(0, 30, fromCourt(x, z)) * smooth(2, 30, fromPool(x, z));
 
 // The height of the sand at a place, and what the shader needs to know of it: which face it is on, how high on its
 // dune.
 export class Field {
   private dunes: Dune[];
-  private at: At = { h: 0, d: 0, tall: 1 };
-  private own: At = { h: 0, d: 0, tall: 1 };
+  private at: At = { h: 0, d: 0, tall: 1, nx: 0, nz: 0 };
+  private own: At = { h: 0, d: 0, tall: 1, nx: 0, nz: 0 };
   side = 0; hf = 0;
+  // Whether the last place asked for is on a dune that stands clear of the sheet and of the dunes round it, and if
+  // so how far to the lee of its crest it is and which way that is.
+  ridge = false; d = 0; nx = 0; nz = 0;
   constructor(ridges: Ridge[]) { this.dunes = ridges.map(dune).filter((d): d is Dune => d !== null); }
   height(x: number, z: number): number {
     const base = sheet(x, z), k = keep(x, z);
@@ -133,12 +137,16 @@ export class Field {
     if (out > 0) f = Math.max(f, SPILL.deep * out * smooth(0.35, 0.75, tongue(x, z)) - 0.6);
     // Both change smoothly where a dune runs out into the sheet: a jump drew the grid's steps across the sand.
     this.side = top > -Infinity ? Math.sign(this.own.d) * smooth(0.5, 6, top - base) : 0;
+    this.ridge = top > base + 3 && Math.abs(f - top) < 0.5; this.d = this.own.d; this.nx = this.own.nx; this.nz = this.own.nz;
     this.hf = Math.max(0, f) / HIGH;
     return Number.isFinite(f) ? f : SHEET.sink;
   }
 }
 
-// All of the sand as one mesh, flat on the map, and the field it was made from, for standing things in it.
+// All of the sand as one mesh, flat on the map, and the field it was made from, for standing things in it. The points
+// of the fan nearest a crest are moved onto it, and each is made twice, once for the face on either side, so the crest
+// is a line in the mesh with the light on one side of it and the dark on the other. Left between points of the fan, it
+// was rounded over the width of a cell and the dunes read as draped cloth.
 export async function sand(ridges: Ridge[]): Promise<{ geometry: THREE.BufferGeometry; field: Field; tris: number }> {
   const field = new Field(ridges);
   const angles: number[] = [], rads: number[] = [];
@@ -146,17 +154,23 @@ export async function sand(ridges: Ridge[]): Promise<{ geometry: THREE.BufferGeo
   for (let b = DUNES.from - 8; b < FAN.turn; b += FAN.front / mid) angles.push(b);
   for (let b = FAN.turn; b <= DUNES.to + 8; b += FAN.back / mid) angles.push(b);
   for (let r = FAN.from; r <= FAN.to; r += FAN.step) rads.push(r);
-  const w = rads.length, n = angles.length * w;
-  const pos = new Float32Array(n * 3), attr = new Float32Array(n * 4), live = new Uint8Array(n);
-  let v = 0;
+  const w = rads.length;
+  const pos: number[] = [], attr: number[] = [], live: boolean[] = [], crest: boolean[] = [];
   for (const b of angles) {
     const s = Math.sin((b * Math.PI) / 180), c = Math.cos((b * Math.PI) / 180), edge = EDGE.at(((b % 360) + 360) % 360) - 8;
+    const near = (b < FAN.turn ? FAN.front : FAN.back) * 0.55;
     for (const r0 of rads) {
-      const r = Math.min(r0, edge), x = s * r, z = c * r, h = field.height(x, z);
-      pos[v * 3] = x; pos[v * 3 + 1] = h; pos[v * 3 + 2] = z;
-      attr[v * 4] = x; attr[v * 4 + 1] = z; attr[v * 4 + 2] = field.side; attr[v * 4 + 3] = field.hf;
-      live[v] = room(x, z, -SPILL.reach) > 0 ? 1 : 0;
-      v++;
+      const r = Math.min(r0, edge);
+      let x = s * r, z = c * r, h = field.height(x, z), on = false;
+      if (field.ridge && Math.abs(field.d) < near) {
+        x -= field.nx * field.d; z -= field.nz * field.d;
+        h = field.height(x, z);
+        on = true;
+      }
+      pos.push(x, h, z);
+      attr.push(x, z, field.side, field.hf);
+      live.push(room(x, z, -SPILL.reach) > 0);
+      crest.push(on);
     }
     await slice();
   }
@@ -171,6 +185,27 @@ export async function sand(ridges: Ridge[]): Promise<{ geometry: THREE.BufferGeo
       else index.push(a0, a1, b1, a0, b1, b0);
     }
   }
+  await slice();
+  // A face is on the windward side of the crest when the points of it that are not on the crest are.
+  const twin = new Map<number, number>();
+  for (let t = 0; t < index.length; t += 3) {
+    let sum = 0, any = false;
+    for (let k = 0; k < 3; k++) { const v = index[t + k]; if (!crest[v]) { sum += attr[v * 4 + 2]; any = true; } }
+    if (!any || sum >= 0) continue;
+    for (let k = 0; k < 3; k++) {
+      const v = index[t + k];
+      if (!crest[v]) continue;
+      let u = twin.get(v);
+      if (u === undefined) {
+        u = pos.length / 3;
+        pos.push(pos[v * 3], pos[v * 3 + 1], pos[v * 3 + 2]);
+        attr.push(attr[v * 4], attr[v * 4 + 1], -1, attr[v * 4 + 3]);
+        twin.set(v, u);
+      }
+      index[t + k] = u;
+    }
+  }
+  for (let v = 0; v < crest.length; v++) if (crest[v]) attr[v * 4 + 2] = 1;
   // Every face of a field of sand looks up: a triangle laid the other way round is turned over.
   for (let t = 0; t < index.length; t += 3) {
     const a = index[t] * 3, b = index[t + 1] * 3, c = index[t + 2] * 3;
@@ -178,7 +213,7 @@ export async function sand(ridges: Ridge[]): Promise<{ geometry: THREE.BufferGeo
     if (uz * vx - ux * vz < 0) { const k = index[t + 1]; index[t + 1] = index[t + 2]; index[t + 2] = k; }
   }
   await slice();
-  const g = new THREE.BufferGeometry();
+  const n = pos.length / 3, g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
   g.setAttribute('sand', new THREE.Float32BufferAttribute(attr, 4));
   g.setIndex(index);
