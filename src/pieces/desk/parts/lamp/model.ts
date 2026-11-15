@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { Builder, cyl } from '../../../../world/build';
 import {
-  ARM_DIR, ARM_LEN, AXIS, BULB, CAP, CROWN, ELBOW, ELBOW_PIN, ELBOW_Y, FLANK, FOOT, KNUCKLE, RIM, SADDLE_S, SHADE_N, SHADE_PIN,
+  ARM_DIR, ARM_LEN, AXIS, CAP, CROWN, ELBOW, ELBOW_PIN, ELBOW_Y, FLANK, FOOT, GLOBE, KNUCKLE, RIM, SADDLE_S, SHADE_N, SHADE_PIN,
   SHELL, SKIN, TOWARD, TURN, V, normalAt, onShade,
 } from './form';
 import type { Handle, MetalName, OtherName } from './materials';
@@ -181,11 +181,11 @@ export function buildLamp(mats: Of): LampModel {
   const b = new Parts();
   const F = FOOT.at, foot = new THREE.Matrix4().makeTranslation(F.x, F.y, F.z);
 
-  // The foot: felt under it, a heavy body of dark steel with a bronze bead turned round its edge, a groove, and the
-  // bronze boss the stem swivels in.
+  // The foot: felt under it, a heavy body under a black lacquer with a blackened bead turned round its edge, a groove,
+  // and the boss the stem swivels in.
   addTurn(b, [[0.01, 0.02], [79, 0], [80.6, 0.5], [81.2, 1.7]], mats.felt, foot, 48);
   addTurn(b, [[81.2, 1.6], [83.8, 2.2], [85.8, 3.8], [86.2, 5.5], [86.2, 11.6]], mats.foot, foot, 72);
-  addTurn(b, [[86.1, 11.4], [87.4, 12.1], [88.3, 13.8], [88.6, 15.8], [88.3, 17.8], [87.4, 19.5], [86.1, 20.2]], mats.bronze, foot, 72);
+  addTurn(b, [[86.1, 11.4], [87.4, 12.1], [88.3, 13.8], [88.6, 15.8], [88.3, 17.8], [87.4, 19.5], [86.1, 20.2]], mats.joint, foot, 72);
   addTurn(b, [[86.2, 20.1], [85.6, 20.8], [83.4, 21.6], [80.5, 22.4], [72, 24.4], [64.5, 26.0], [63.8, 26.4], [63.4, 28.6], [62.6, 29.2], [50, 31.4], [40, 32.8], [38.6, 33.0], [37.8, 32.6], [36.8, 31.8], [35.8, 32.6], [34.6, 33.4], [31.6, 34.2], [29, 35.0]], mats.foot, foot, 72);
   addTurn(b, [[29, 34.9], [28.2, 35.4], [27.0, 36.6], [25.6, 38.2], [24.6, 40], [24.2, 46.6], [24.8, 47.4], [24.8, 48.6], [24.2, 49.4], [21.6, 51.2], [15, 52], [0.01, 52.1]], mats.joint, foot, 96);
 
@@ -259,9 +259,10 @@ export function buildLamp(mats: Of): LampModel {
     }
   }
   b.add(new THREE.CircleGeometry(SHELL[0][0] + 1, 48).rotateX(-Math.PI / 2).translate(0, -SHELL[0][1] - 1.4, 0), mats.glow, sm, { shadow: false });
-  // The bulb on its socket, inside.
+  // The frosted globe on its socket, inside.
   addTurn(b, [[15.5, -26], [15.5, -8], [13, -6], [0.01, -6]], mats.steel, sm, 16);
-  b.add(new THREE.SphereGeometry(BULB.r, 18, 10), mats.glow, sm.clone().multiply(new THREE.Matrix4().makeTranslation(0, -BULB.s, 0)), { shadow: false });
+  addTurn(b, [[0.01, -GLOBE.s + GLOBE.r * 0.7], [11, -GLOBE.s + GLOBE.r * 0.8], [12.4, -30], [14.6, -26.2]], mats.steel, sm, 16, { shadow: false });
+  b.add(new THREE.SphereGeometry(GLOBE.r, 32, 18), mats.globe, sm.clone().multiply(new THREE.Matrix4().makeTranslation(0, -GLOBE.s, 0)), { shadow: false });
 
   // The mains cord out of the back of the foot, lying on the top in a curve away from the stream's side and over the
   // desk's back edge. It drops

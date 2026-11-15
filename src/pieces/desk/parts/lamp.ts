@@ -57,6 +57,11 @@ export const build: PartFactory = () => {
     return { tris, meshes: meshes.length, highest: hi, shadeTop: drawn(STRIKE), leftmost: left, footLeft,  crown: CROWN.toArray(), hit: HIT.toArray() };
   });
 
+  // For counting the lamp's pixels in a still: 1 draws it flat white, 2 only its shade, 3 all of it black, 4 only
+  // the outside of its shade, 0 as it is.
+  // The desk draws again at its next frame, so freeze it again after.
+  registry.tool('lampMask', (mode = 0) => { U.uMask.value = mode as number; });
+
   // Where the lamp is drawn, as a coarse list of points in host heights, for checking what passes over it.
   registry.tool('lampDrawn', (step = 7) => {
     const out: [number, number][] = [], p = new THREE.Vector3();

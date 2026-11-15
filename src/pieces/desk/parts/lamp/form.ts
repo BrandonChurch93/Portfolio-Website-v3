@@ -33,9 +33,10 @@ export const CAP: [number, number][] = [
   [0, 4.2], [27.2, 4.4], [28.7, 4.7], [29.1, 5.3], [28.2, 6.0], [24.5, 6.7], [20, 7.3], [17, 7.6], [16.6, 8.4], [15.6, 9.1],
   [13.4, 10.2], [9.8, 11.5], [6.6, 12.2], [5.8, 12.6], [5.6, 14.2], [4.8, 15.2], [2.9, 15.7], [0, 15.9],
 ];
-// The axis the shade opens along, which is where the stage's light aims.
-export const AXIS = V(...LIGHT.aim).normalize();
 export const BULB = { s: 50, r: 25 } as const;
+// The frosted globe seen in the shade's mouth: lower in the shade than the stage's light, so the page's view, which
+// looks into the mouth at a grazing angle, sees its lower part burning.
+export const GLOBE = { s: 68, r: 22 } as const;
 
 export function rAt(s: number): number {
   if (s <= SHELL[0][1]) return SHELL[0][0];
@@ -64,6 +65,17 @@ CAMERA.matrixWorld.extractBasis(right, up, back);
 export const TOWARD = back.clone();
 export const SCREEN_RIGHT = right.clone();
 export const SCREEN_UP = up.clone();
+
+// The axis the shade opens along. The stage's light aims down at the tablet, and a shade on that axis turns its mouth
+// away from the page's eye, so nothing of its lit inside could be seen and the lamp never read as on. So the shade is
+// tipped this far toward the eye from the light's aim, which opens a crescent of its lit inside to the page. The
+// light itself still aims where it did, inside the cone the shade leaves open.
+const TIP = 19;
+export const AXIS = (() => {
+  const aim = V(...LIGHT.aim).normalize(), eye = CAMERA.position.clone().multiplyScalar(1000).sub(BULB_AT).normalize();
+  const across = eye.addScaledVector(aim, -eye.dot(aim)).normalize();
+  return aim.multiplyScalar(Math.cos(TIP * D2R)).addScaledVector(across, Math.sin(TIP * D2R)).normalize();
+})();
 
 // Where a point of the desk is drawn, in host heights across and down from the host's middle (as the desk's where()).
 export function drawn(p: THREE.Vector3): [number, number] {
