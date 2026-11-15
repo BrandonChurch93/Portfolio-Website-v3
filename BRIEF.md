@@ -1216,6 +1216,15 @@ At `/lab/skills`, Study 25, built in Claude Code by Fable. The reflector, the st
     - He would like the sleeping card's covering, the engine turned blank with its knob, used in at least one more place. Not a ruling that it is Contact.
     - He reads the page as moving from ancient wonder (Work) to modern technology (Skills), with the accomplishments section as a possible bridge, and the rocket as the finale of that. Fable's answer is in Open 31.
 - **Yes to drawing the Sun stone pool and the sleeping plate (Nov 14).** "Yes, let's go ahead and draw them out now. If I like the design, I will cut you up into max mode and have you do a higher fidelity representation of what this could look like." In exact terms: the rocket stays for now, in arrangement A. The pool is drawn as a Sun stone laid flat and the Contact plate as the engine turned blank that wakes by the band, both on `/lab/contact`, for him to judge. Neither is approved until he has seen it. If he likes it, a higher fidelity version follows in the web chat before Claude Code.
+- **His look at the third round (Nov 14).** "I like the contact form, but let's have the card appear when the stream hits the pool beneath the rocket. We also need to make sure that when the user scrolls and the stream hits the pool, it's in the optimal position to both view the animation and the contact form with no issues. Instead of book a call, I rather be upfront with the user. They should know they're going to my Calendly link next. The copyable email, do you think we should cut that? Or just turn it into a button that's our secondary, saying copy my email? I don't really see the point of it if they can just send me an email here. Most of the time no one's gonna contact me for my portfolio, to be honest. I'm also in Boise, Idaho. Next, the subheader next to contact, that can probably be removed or put on top. I don't know what would put here that would actually benefit the user."
+    - In exact terms:
+    - **He likes the plate.** The one plate with the form, asleep as the blank, stays.
+    - **The plate wakes when the stream lands on the pool under the rocket,** not when the stream passes the plate's top.
+    - **At the moment the stream lands, the screen holds all of it:** the rocket, the stone and the whole plate, with nothing cut off. This is a rule for the build on every size of screen that can hold it.
+    - **The calendar button says where it goes.** A visitor knows the next thing they see is his Calendly page.
+    - **He is in Boise, Idaho.** The line for where he is based reads from that.
+    - **The small tag beside the title goes.** It was Fable's label saying the words were stand ins, not a part of the design, and he read it as a subheader. Nothing takes its place: he sees no line there that would help a visitor.
+    - **The email: his question, not a ruling.** Cut it, or make it the secondary button, "Copy my email". "A way to copy his email address stays" above is his own line from earlier the same day and stands until he cuts it. Fable's answer is in Open 31.
 
 ### 3D pieces
 
