@@ -2,6 +2,20 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · A, if the rocket stays, and whether the rocket fits (Fable, web chat)
+
+**What Brandon said**
+
+- A is the best arrangement if the piece is the rocket. He asked whether the rocket fits a page whose Work reads as ancient wonder and whose Skills reads as modern technology. He is open to other pieces, does not hate the rocket, and would like the card's covering used in one more place. His words are in `BRIEF.md`, Settled, Contact.
+
+**What was done**
+
+- His words written in. Open 31 has Fable's answer: keep the rocket in the page's own metal, make the pool a Sun stone laid flat that lights ring by ring, and let the Contact plate sleep as the engine turned blank. Nothing was built or drawn.
+
+**For the next session**
+
+- Waiting on his word on those three. If yes: draw the Sun stone pool and the sleeping plate into A on `/lab/contact`, then the agreement, the tests and the prompt for Claude Code.
+
 ## 2026-11-14 · Contact, second round: a derby of three arrangements (Fable, web chat)
 
 **What Brandon said**
