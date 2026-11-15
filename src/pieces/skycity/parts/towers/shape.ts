@@ -54,7 +54,7 @@ export type V3 = [number, number, number];
 // The width of a bay, in units, for each facade that has windows. Solid stone counts its length in units, for its
 // blocks.
 export const BAY = { glass: 2.2, stone: 8.0, clad: 3.0, pod: 2.0, slot: 6.0 } as const;
-const bays = (k: number, len: number) => (k === K.glass ? Math.max(1, Math.round(len / BAY.glass)) : k === K.stone ? Math.max(1, Math.round(len / BAY.stone)) : k === K.clad ? Math.max(1, Math.round(len / BAY.clad)) : k === K.pod ? Math.max(1, Math.round(len / BAY.pod)) : k === K.slot ? 1 : k === K.plain || k === K.glyph ? Math.max(1, Math.round(len)) : 0);
+export const bays = (k: number, len: number) => (k === K.glass ? Math.max(1, Math.round(len / BAY.glass)) : k === K.stone ? Math.max(1, Math.round(len / BAY.stone)) : k === K.clad ? Math.max(1, Math.round(len / BAY.clad)) : k === K.pod ? Math.max(1, Math.round(len / BAY.pod)) : k === K.slot ? 1 : k === K.plain || k === K.glyph ? Math.max(1, Math.round(len)) : 0);
 
 // Segments shorter than this, on a ring that is not round, are the bevels of its corners.
 const BEVEL_MAX = 1.7;

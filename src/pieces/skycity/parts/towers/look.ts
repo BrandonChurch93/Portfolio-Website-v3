@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { hex } from '../../../../config/palette';
 import { lin } from '../../../../world/surface';
 import { PLANET } from '../../layout';
+import { polished } from '../../polish';
 import { BAY, K } from './shape';
 
 // One material draws every tower: a standard material worked out in the shader, so the whole city is one program.
@@ -22,22 +23,43 @@ export const FRAME = { steel: 0, stone: 1, metal: 2 } as const;
 // The metals, as the table names them.
 export const METAL = { gold: 0, bronze: 1, copper: 2 } as const;
 
+// How rough each polished metal is: low, so each is a mirror of the room's strip lights and the moon, and reads as
+// metal by what it reflects. Gold is the palest and smoothest, bronze the darkest.
+const POLISH = { gold: 0.1, bronze: 0.16, copper: 0.13 };
+// How far each metal's own colour is taken toward pale: a metal reflects in its own colour, and at full colour every
+// highlight came back orange. The kit asks that a highlight on any of them be pale.
+const PALE = { gold: 0.35, bronze: 0.3, copper: 0.22 };
+// The share of towers whose channels are lined with metal and not glass.
+const METAL_SLOTS = 0.55;
 // Nothing on a tower is ever brighter than this, under the glow's threshold, so no tower can bloom.
 const PEAK = 1.45;
 // How much of the room the glass reflects, and the metals.
-const ROOM = { glass: 0.9, metal: 1.0 };
+// Stone and paving reflect little of it: with more, a grey sheen lay over every stone alike and no building could be
+// told darker than its neighbour.
+const ROOM = { glass: 0.9, metal: 1.0, stone: 0.14 };
+// And so little of the moon's and the cursor's light as a sheen, for the same reason: on a dark stone a rough sheen is
+// as bright as the stone itself and greys every building alike.
+const SHEEN = 0.3;
 // How much of the cursor's light the glass gives back: enough to slide across it pane by pane, not so much that
 // a pane it catches reads as a lit room.
 const GLASS_SPEC = 0.22;
 // The back of the city is seen through more night: toward it, a tower gives way to this share of the dark air.
-const AIR = { from: 120, to: -300, most: 0.42 };
+// It is the glow of the sky behind it that the far rows sink into, so they stand as silhouettes a little lighter
+// than the near ones: the page's dark ground warmed by that glow.
+const AIR = { from: 320, to: -320, most: 0.55, warm: 0.25 };
 const OPEN = { low: 0.3, deep: 90, shallow: 30, r0: 300, r1: 600 };
-const GAIN = { room: 1.25, lobby: 0.15, street: 0.035, spire: 0.05, light: 0.85, spill: 0.12, pod: 0.9 };
+const GAIN = { room: 1.25, lobby: 0.15, street: 0.035, spire: 0.05, light: 0.85, spill: 0.12, pod: 0.9, shop: 0.75 };
+// The light the streets throw up the walls that stand on them: how strong where it leaves the street, and over how
+// many units of height it is gone. It is light the city makes, laid on the stone by its own colour.
+const STREET = { at: 14, over: 11 };
+// A building's stone, from bronze black through umber and a warm grey to a pale sand, by the table's tone.
+const STONE = [[0.0055, 0.0047, 0.004], [0.017, 0.0125, 0.0088], [0.045, 0.038, 0.03], [0.17, 0.142, 0.104]];
 // The dark where one mass stands on another: how deep, and over how many units it comes back.
 const MEET = { k: 0.6, over: 2.6 };
 
 const gold = new THREE.Color(hex('copper-light')).lerp(new THREE.Color(hex('hot')), 0.85).getHex();
 const f2 = (x: number) => x.toFixed(2);
+const v3 = (c: number[]) => `vec3(${c.map((x) => x.toFixed(4)).join(', ')})`;
 
 const HEAD = /* glsl */ `
 uniform float uTime;
@@ -49,6 +71,8 @@ varying vec3 vCity;
 varying vec3 vCityN;
 varying vec3 vTan;
 varying float vFoot;
+varying float vHead;
+varying vec4 vLook3;
 float tRough; float tMetal; vec3 tEmit; vec2 tTilt; float tOcc; float tSky; float tRoom; float tMeet; float tSpec;
 
 float th(vec3 p){
@@ -65,6 +89,21 @@ float tPulse(float x, float a, float b, float w){
   float f0 = floor(x0) * s + clamp(fract(x0) - a, 0.0, s);
   return clamp((f1 - f0) / w, 0.0, 1.0);
 }
+float tN(vec2 p){
+  vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(th(vec3(i, 7.0)), th(vec3(i + vec2(1.0, 0.0), 7.0)), f.x), mix(th(vec3(i + vec2(0.0, 1.0), 7.0)), th(vec3(i + vec2(1.0), 7.0)), f.x), f.y);
+}
+// How worn a wall is at a point: darker in a band under its cornice and in drips of differing length run down from
+// it, and in broad stains. Drips finer than a pixel give way to their average.
+float tGrime(float hx, float under, float seed, float wear){
+  float q = hx / 1.7, qw = fwidth(q);
+  float col = floor(q), len = 3.0 + 26.0 * pow(th(vec3(col, seed, 91.0)), 2.0);
+  float drip = (1.0 - smoothstep(0.0, len, under)) * step(0.4, th(vec3(col, seed, 92.0)));
+  drip = mix(drip, 0.4 * (1.0 - smoothstep(0.0, 16.0, under)), smoothstep(0.3, 0.7, qw));
+  float band = 1.0 - smoothstep(0.0, 4.5, under);
+  float blot = tN(vec2(hx / 11.0, under / 7.0) + seed * 0.013);
+  return (1.0 - wear * (0.45 * band + 0.4 * drip)) * mix(0.72, 1.12, blot);
+}
 vec3 tTone(float t){
   return t < 0.33 ? mix(${lin(hex('ember'))} * 2.2, ${lin(hex('flame'))}, t / 0.33)
        : t < 0.66 ? mix(${lin(hex('flame'))}, ${lin(hex('hot'))}, (t - 0.33) / 0.33)
@@ -72,7 +111,8 @@ vec3 tTone(float t){
 }
 // A metal by the table's number: its colour and how rough it is.
 vec4 tMetalOf(float m){
-  return m < 0.5 ? vec4(${lin(gold)}, 0.22) : m < 1.5 ? vec4(${lin(hex('bronze'))} * 0.5, 0.42) : vec4(${lin(hex('copper'))} * 0.62, 0.36);
+  vec3 pl = ${lin(hex('pale'))};
+  return m < 0.5 ? vec4(mix(${lin(gold)}, pl, ${f2(PALE.gold)}), ${f2(POLISH.gold)}) : m < 1.5 ? vec4(mix(${lin(hex('bronze'))} * 0.7, pl * 0.55, ${f2(PALE.bronze)}), ${f2(POLISH.bronze)}) : vec4(mix(${lin(hex('copper'))} * 0.85, pl * 0.8, ${f2(PALE.copper)}), ${f2(POLISH.copper)});
 }
 // The room behind a window: where in the opening the eye looks in (0 to 1 across and up), the eye's ray in the
 // face's frame (across, up, into the wall), the room's size in units, and two numbers of the room's own. What is seen
@@ -109,7 +149,7 @@ float tInside(vec2 w, vec3 rv, vec3 S, float h1, float h2){
 
 const VHEAD = /* glsl */ `
 attribute vec4 face;
-attribute float foot;
+attribute vec2 foot;
 attribute vec3 plan;
 uniform sampler2D uTowers;
 varying vec3 vFace;
@@ -120,16 +160,20 @@ varying vec3 vCity;
 varying vec3 vCityN;
 varying vec3 vTan;
 varying float vFoot;
+varying float vHead;
+varying vec4 vLook3;
 `;
 
 const VERT = /* glsl */ `
   int tId = int(face.w + 0.5);
-  vLook = texelFetch(uTowers, ivec2(tId * 2, 0), 0);
-  vLook2 = texelFetch(uTowers, ivec2(tId * 2 + 1, 0), 0);
+  vLook = texelFetch(uTowers, ivec2(tId * 3, 0), 0);
+  vLook2 = texelFetch(uTowers, ivec2(tId * 3 + 1, 0), 0);
+  vLook3 = texelFetch(uTowers, ivec2(tId * 3 + 2, 0), 0);
   vFace = vec3(face.x, plan.y, face.y);
   vKind = face.z;
   vCity = plan;
-  vFoot = foot;
+  vFoot = foot.x;
+  vHead = foot.y;
   // The tower stands straight out from the dome: its own upright, and its normal as it was before it was seated.
   float tFar = length(plan.xz), tA = tFar / ${PLANET.r.toFixed(1)};
   vec3 tOwnUp = tFar > 1e-3 ? vec3(sin(tA) * plan.x / tFar, cos(tA), sin(tA) * plan.z / tFar) : vec3(0.0, 1.0, 0.0);
@@ -144,13 +188,22 @@ const VERT = /* glsl */ `
 const COLOR = /* glsl */ `
 {
   float kind = floor(vKind + 0.5);
+  // The channels of some towers are lined with fluted polished metal, the tower's own, and not glass: a channel of
+  // glass with floors across it is what read as an office block.
+  bool solid = false;
+  if (kind == ${K.slot}.0 && th(vec3(floor(vLook.x * 65536.0), 131.0, 0.0)) < ${f2(METAL_SLOTS)}) { kind = ${K.clad}.0; solid = true; }
   vec3 alb = vec3(0.04); tRough = 0.6; tMetal = 0.3; tEmit = vec3(0.0); tTilt = vec2(0.0); tSky = 1.0; tRoom = ${f2(ROOM.glass)}; tSpec = 1.0;
   float seed = floor(vLook.x * 65536.0);
   vec4 accentM = tMetalOf(vLook2.x), cladM = tMetalOf(vLook2.y);
-  // Every building's stone a little different: from a cool grey to a warm sand, lighter or darker.
-  vec3 stoneC = mix(vec3(0.064, 0.062, 0.058), vec3(0.086, 0.071, 0.05), th(vec3(seed, 52.0, 0.0))) * mix(0.8, 1.15, th(vec3(seed, 51.0, 0.0)));
+  // Every building's stone its own: from bronze black through umber to a few pale ones.
+  float tn = vLook3.x;
+  vec3 stoneC = tn < 0.35 ? mix(${v3(STONE[0])}, ${v3(STONE[1])}, tn / 0.35) : tn < 0.7 ? mix(${v3(STONE[1])}, ${v3(STONE[2])}, (tn - 0.35) / 0.35) : mix(${v3(STONE[2])}, ${v3(STONE[3])}, (tn - 0.7) / 0.3);
+  // Along a wall, whichever way it faces, and how far under the top of the wall a point is.
+  float hx = abs(vCityN.x) > abs(vCityN.z) ? vCity.z : vCity.x;
+  float under = vHead >= 0.0 ? max(0.0, vHead - vCity.y) : 1e3;
   float upright = 1.0 - abs(vCityN.y);
   bool isFacade = kind == ${K.glass}.0 || kind == ${K.stone}.0 || kind == ${K.clad}.0 || kind == ${K.pod}.0 || kind == ${K.slot}.0;
+  bool isStone = kind == ${K.plain}.0 || kind == ${K.stone}.0;
   // Stone is opened by few, large openings, three floors tall: never a grid of small windows.
   bool tall = kind == ${K.stone}.0 || kind == ${K.slot}.0;
   if (isFacade && vFace.z > 0.5) {
@@ -158,12 +211,12 @@ const COLOR = /* glsl */ `
     // clad metal's narrower slots, a pod's bands.
     float skin = vLook.y;
     vec3 sk = kind == ${K.stone}.0 ? vec3(0.36, 0.14, 0.86)
-            : kind == ${K.slot}.0 ? vec3(0.07, 0.12, 0.9)
-            : kind == ${K.clad}.0 ? vec3(0.37, 0.1, 0.9)
+            : kind == ${K.slot}.0 ? vec3(0.06, 0.06, 0.94)
+            : kind == ${K.clad}.0 ? vec3(0.42, 0.1, 0.9)
             : kind == ${K.pod}.0 ? vec3(0.05, 0.3, 0.78)
             : skin < 0.5 ? vec3(0.015, 0.05, 0.965) : skin < 1.5 ? vec3(0.02, 0.38, 0.94) : vec3(0.19, 0.05, 0.965);
     float bayW = kind == ${K.slot}.0 ? ${f2(BAY.slot)} : kind == ${K.stone}.0 ? ${f2(BAY.stone)} : kind == ${K.clad}.0 ? ${f2(BAY.clad)} : kind == ${K.pod}.0 ? ${f2(BAY.pod)} : ${f2(BAY.glass)};
-    float fh = vLook2.w * (tall ? 3.0 : 1.0);
+    float fh = vLook2.w * (kind == ${K.slot}.0 ? 4.0 : tall ? 3.0 : 1.0);
     bool lobby = vFoot < 0.5 && vFace.y < 1.9 * fh && kind != ${K.pod}.0 && !tall;
     if (lobby) sk = vec3(0.05, 0.06, 0.94);
     float bu = vFace.x * vFace.z;
@@ -172,10 +225,15 @@ const COLOR = /* glsl */ `
     float floorI = floor(fy), bayI = floor(bu);
     float cov = tPulse(bu, sk.x, 1.0 - sk.x, fw.x) * tPulse(fy, sk.y, sk.z, fw.y);
     float covAvg = (1.0 - 2.0 * sk.x) * (sk.z - sk.y);
+    // Stone is opened in some columns of bays and left solid in the rest, so a wall reads as slots and not as a grid.
+    float colOpen = 1.0, colShare = 1.0;
+    if (kind == ${K.stone}.0) { colOpen = step(0.75, th(vec3(bayI, seed, 121.0))); colShare = 0.25; }
+    if (kind == ${K.clad}.0) { colOpen = 0.0; colShare = 0.0; }
+    cov *= colOpen; covAvg *= colShare;
 
     // The frame round the glass.
     vec3 frame = vec3(0.03, 0.029, 0.028); float fRough = 0.34, fMetal = 0.85;
-    if (tall) { frame = stoneC; fRough = 0.72; fMetal = 0.0; }
+    if (tall) { frame = stoneC * tGrime(hx, under, seed, vLook3.y) * mix(0.7, 1.0, smoothstep(0.0, 26.0, vCity.y - vFoot)); fRough = 0.72; fMetal = 0.0; }
     else if (kind == ${K.clad}.0) { frame = cladM.rgb; fRough = cladM.a + 0.03; fMetal = 1.0; }
     else if (kind == ${K.pod}.0) { frame = vec3(0.035, 0.033, 0.03); fRough = 0.3; fMetal = 0.8; }
     else if (vLook2.z > 1.5) { frame = accentM.rgb * 0.85; fRough = accentM.a + 0.04; fMetal = 1.0; }
@@ -232,7 +290,7 @@ const COLOR = /* glsl */ `
     vec3 roomAvg = tTone(mix(0.45, 0.65, vLook.w)) * 0.55 * (0.06 + 0.45 * share) * ${f2(GAIN.room)};
     if (lobby) roomAvg = tTone(0.55) * ${f2(GAIN.lobby)} * 0.65;
     float farX = smoothstep(0.5, 1.0, fw.x), farY = smoothstep(0.5, 1.0, fw.y);
-    float covRow = (1.0 - 2.0 * sk.x) * tPulse(fy, sk.y, sk.z, fw.y);
+    float covRow = (1.0 - 2.0 * sk.x) * tPulse(fy, sk.y, sk.z, fw.y) * colShare;
     vec3 row = tTone(tone) * amp * state * 0.85 * ${f2(GAIN.room)};
     if (lobby) row = tTone(0.55) * ${f2(GAIN.lobby)} * 0.65;
     if (sloped) { row = vec3(0.0); roomAvg = vec3(0.0); }
@@ -245,13 +303,8 @@ const COLOR = /* glsl */ `
     float pane = th(vec3(bayI, floorI, seed + 41.0));
     gAlb *= mix(1.0, 0.7 + 0.6 * pane, near);
     tTilt = (vec2(th(vec3(bayI, floorI, seed + 43.0)), th(vec3(bayI, floorI, seed + 47.0))) - 0.5) * 0.08 * glass * near;
-    // Metal cladding is fluted: four flutes to a bay, so the cursor's light runs up it in long lines. Finer than
-    // a pixel, the flutes are left out and the metal is a little rougher instead.
-    if (kind == ${K.clad}.0) {
-      float fu = bu * 4.0, fl = 1.0 - smoothstep(0.2, 0.45, fwidth(fu));
-      tTilt.x += sin(fract(fu) * 6.2832) * 0.45 * fl * (1.0 - glass);
-      fRough += 0.1 * (1.0 - fl);
-    }
+    // Metal cladding is folded in geometry (fluted in ./types.ts), not fluted here: flutes worked in the shader at a
+    // size the page can see aliased into speckle on polished metal.
     if (sloped) { gAlb *= 0.5; tSky = 0.5; }
     // The glass is set back in the wall: its head is in shadow.
     float inY = clamp((fract(fy) - sk.y) / (sk.z - sk.y), 0.0, 1.0);
@@ -259,9 +312,9 @@ const COLOR = /* glsl */ `
     alb = mix(frame, gAlb, glass);
     tRough = mix(fRough, sloped ? 0.25 : 0.08, glass);
     tMetal = mix(fMetal, 0.9, glass);
-    tRoom = mix(metalFrame ? ${f2(ROOM.metal)} : ${f2(ROOM.glass)}, ${f2(ROOM.glass)}, glass);
+    tRoom = mix(metalFrame ? ${f2(ROOM.metal)} : fMetal < 0.5 ? ${f2(ROOM.stone)} : ${f2(ROOM.glass)}, ${f2(ROOM.glass)}, glass);
    
-    tSpec = mix(1.0, ${f2(GLASS_SPEC)}, glass);
+    tSpec = mix(fMetal < 0.5 ? ${f2(SHEEN)} : 1.0, ${f2(GLASS_SPEC)}, glass);
     tEmit = glow;
   } else if (kind == ${K.plain}.0 || (kind == ${K.stone}.0)) {
     // Solid stone, laid in courses, each block a little different.
@@ -276,9 +329,50 @@ const COLOR = /* glsl */ `
     float sx = vFace.x * vFace.z * 1.4, sfw = fwidth(sx);
     float streak = th(vec3(floor(sx), seed, 81.0)) * (1.0 - smoothstep(0.3, 0.7, sfw)) * (0.6 + 0.4 * th(vec3(floor(sx), floor(vFace.y / 9.0), seed + 83.0)));
     alb = stoneC * (1.0 - 0.16 * joint) * mix(1.0, 0.92 + 0.16 * blk, fineB) * (1.0 - 0.2 * streak);
+    alb *= tGrime(hx, under, seed, vLook3.y);
     // Worn: darker toward the foot of every wall, where the street's dirt has climbed it.
     alb *= mix(0.68, 1.0, smoothstep(0.0, 26.0, vCity.y - vFoot)) * mix(0.8, 1.0, smoothstep(0.0, 60.0, vCity.y));
-    tRough = 0.78; tMetal = 0.0; tRoom = 0.6;
+    tRough = 0.8; tMetal = 0.0; tRoom = ${f2(ROOM.stone)}; tSpec = ${f2(SHEEN)};
+  } else if (kind == ${K.deep}.0) {
+    // The back of a sunk opening: dark glass, and behind it a room. Openings are lit in patches of a few across and
+    // a few storeys up, as the rooms of one tenant are, each lit one its own warmth; shops at the street mostly lit.
+    float bu2 = vFace.x * vFace.z, colI = floor(bu2), u = fract(bu2);
+    float v = clamp((vCity.y - vFoot) / max(vHead - vFoot, 0.5), 0.0, 1.0);
+    float rowI = floor(vFoot * 0.37);
+    bool shop = vFoot < 0.5;
+    // A niche taller than a few storeys has its floors inside it, each a room of its own behind a dark spandrel.
+    float spand = 0.0;
+    if (vHead - vFoot > 9.0) {
+      float fy2 = (vCity.y - vFoot) / 3.1, fw2 = fwidth(fy2) * 1.15;
+      rowI = floor(fy2) + floor(vFoot) * 13.0;
+      spand = tPulse(fy2, 0.0, 0.2, fw2) * (1.0 - smoothstep(0.3, 0.8, fw2)) + 0.2 * smoothstep(0.3, 0.8, fw2);
+      v = clamp((fract(fy2) - 0.2) / 0.8, 0.0, 1.0);
+    }
+    float patchL = th(vec3(floor(colI / 2.0), floor(rowI / 3.0), seed + 101.0));
+    float share = shop ? 0.72 : clamp(vLook.z * 1.5, 0.0, 0.7);
+    float lit = step(1.0 - share, mix(patchL, th(vec3(colI, rowI, seed + 103.0)), 0.3));
+    float tone2 = clamp(0.3 + 0.42 * th(vec3(colI, rowI, seed + 105.0)) + (vLook.w - 0.5) * 0.2, 0.12, 0.85);
+    float amp2 = mix(0.3, 1.0, th(vec3(colI, rowI, seed + 107.0))) * (shop ? ${f2(GAIN.shop)} : 1.0);
+    float inside2 = mix(0.5, 1.3, v * v) * mix(1.0, 0.75, smoothstep(0.75, 1.0, v));
+    alb = vec3(0.018, 0.017, 0.016); tRough = 0.14; tMetal = 0.85; tRoom = 0.7; tSpec = 0.35;
+    tEmit = tTone(tone2) * amp2 * lit * inside2 * ${f2(GAIN.room)} * (1.0 - spand);
+  } else if (kind == ${K.roof}.0 || kind == ${K.paving}.0) {
+    // Worn paving: slabs a little different each, joints, and broad stains, gone to their average under a pixel.
+    vec2 pq = vCity.xz / 2.6;
+    float pw = max(fwidth(pq.x), fwidth(pq.y)), fine = 1.0 - smoothstep(0.25, 0.6, pw);
+    float slab = th(vec3(floor(pq), seed + 111.0));
+    float jn = max(tPulse(pq.x, 0.0, 0.08, pw), tPulse(pq.y, 0.0, 0.08, pw)) * fine;
+    float blot = tN(vCity.xz / 9.0 + seed * 0.01);
+    alb = stoneC * 0.7 * mix(1.0, 0.82 + 0.36 * slab, fine) * (1.0 - 0.3 * jn) * mix(0.55, 1.15, blot);
+    tRough = 0.88; tMetal = 0.0; tRoom = ${f2(ROOM.stone)}; tSpec = ${f2(SHEEN)};
+    if (vLook3.z < 0.28) {
+      // A roof of old bronze sheet in standing seams, dull and streaked, that the moon finds along its seams.
+      float sq = (abs(vCityN.x) > 0.0 ? vCity.x : vCity.x) / 1.6, sw = fwidth(sq), sfine = 1.0 - smoothstep(0.3, 0.7, sw);
+      float seam = tPulse(sq, 0.0, 0.12, sw) * sfine;
+      alb = ${lin(hex('bronze-deep'))} * mix(0.55, 0.95, blot) * (1.0 + 0.6 * seam);
+      tRough = mix(0.5, 0.3, seam); tMetal = 0.9; tRoom = 0.5; tSpec = 1.0;
+      tTilt.x = (seam - 0.5) * 0.2 * sfine;
+    }
   } else if (kind == ${K.dark}.0) {
     alb = vec3(0.085, 0.082, 0.078); tRough = 0.45; tMetal = 0.6; tRoom = 0.8;
   } else if (kind == ${K.gold}.0 || kind == ${K.bronze}.0 || kind == ${K.copper}.0 || kind == ${K.accent}.0) {
@@ -323,6 +417,9 @@ const COLOR = /* glsl */ `
   vec3 thrown = ${lin(hex('hot'))} * (${GAIN.street.toFixed(3)} * exp(-vCity.y / 9.0) * upright
     + ${GAIN.spire.toFixed(3)} * facing * exp(-length(vCity.xz) / 170.0) * smoothstep(0.0, 70.0, vCity.y));
   tEmit += thrown * (0.25 + 2.5 * (alb.r * (1.0 - tMetal) + 0.3 * tMetal));
+  // The street's light climbing the walls that stand on it, in pools along the street.
+  float pool = mix(0.35, 1.25, tN(vec2(hx / 13.0, seed * 0.07)));
+  tEmit += mix(${lin(hex('hot'))}, ${lin(hex('flame'))}, 0.4) * ${f2(STREET.at)} * exp(-max(vCity.y, 0.0) / ${f2(STREET.over)}) * upright * step(vFoot, 1.0) * pool * alb * (1.0 - 0.7 * tMetal);
   float open = smoothstep(${OPEN.r0.toFixed(1)}, ${OPEN.r1.toFixed(1)}, length(vCity.xz));
   tOcc = mix(${OPEN.low.toFixed(2)}, 1.0, smoothstep(0.0, mix(${OPEN.deep.toFixed(1)}, ${OPEN.shallow.toFixed(1)}, open), vCity.y));
   // Where one mass stands on another, or on the street, the foot of the wall is in the dark of the corner.
@@ -331,6 +428,9 @@ const COLOR = /* glsl */ `
   // Deep in the streets less of any light reaches a wall.
   float lowFall = mix(0.45, 1.0, smoothstep(0.0, 60.0, vCity.y)) * tMeet;
   diffuseColor.rgb = alb * lowFall;
+#ifdef TOWERS_ALB
+  diffuseColor.rgb = vec3(TOWERS_ALB); tEmit = vec3(0.0);
+#endif
 }
 `;
 
@@ -343,6 +443,9 @@ const NORMAL = /* glsl */ `
 
 const EMIT = /* glsl */ `
 totalEmissiveRadiance = tEmit;
+#ifdef TOWERS_DEBUG
+totalEmissiveRadiance = vec3(vLook3.x, vLook3.y, 0.0) * 0.5; diffuseColor.rgb = vec3(0.0);
+#endif
 `;
 
 export interface TowerLook {
@@ -350,12 +453,17 @@ export interface TowerLook {
   time: { value: number };
 }
 
-// table holds two texels for each tower: [seed, skin, the share of it lit, its light's warmth] and [its accent
-// metal, its clad metal, what frames its glass, its floor height].
+// What the table holds for each building, three texels: [seed, skin, the share of it lit, its light's warmth],
+// [its accent metal, its clad metal, what frames its glass, its floor height] and [its stone's tone, how worn it
+// is, a number of its own, unused].
+export type Row = [number, number, number, number, number, number, number, number, number, number, number, number];
 export function makeLook(table: THREE.DataTexture): TowerLook {
   const time = { value: 0 };
   const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.5, metalness: 0.5 });
   m.name = 'towers';
+  const q = typeof location === 'undefined' ? null : new URLSearchParams(location.search);
+  if (q?.has('towersDebug')) m.defines = { TOWERS_DEBUG: '' };
+  if (q?.has('towersAlb')) m.defines = { TOWERS_ALB: Number(q.get('towersAlb')).toFixed(4) };
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uTime = time;
     sh.uniforms.uTowers = { value: table };
@@ -370,16 +478,16 @@ export function makeLook(table: THREE.DataTexture): TowerLook {
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>\n${NORMAL}`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\n${EMIT}`)
       .replace('#include <aomap_fragment>', '#include <aomap_fragment>\nreflectedLight.indirectDiffuse *= tOcc; reflectedLight.indirectSpecular *= tOcc * tSky * tRoom; reflectedLight.directSpecular *= tSky * tSpec; reflectedLight.directDiffuse *= tMeet;')
-      .replace('#include <opaque_fragment>', `outgoingLight = mix(outgoingLight, ${lin(hex('bg-2'))}, ${AIR.most.toFixed(2)} * smoothstep(${AIR.from.toFixed(1)}, ${AIR.to.toFixed(1)}, vCity.z));\n{ float pk = max(outgoingLight.r, max(outgoingLight.g, outgoingLight.b)); outgoingLight *= min(1.0, ${PEAK.toFixed(2)} / max(pk, 1e-4)); }\n#include <opaque_fragment>`);
+      .replace('#include <opaque_fragment>', `outgoingLight = mix(outgoingLight, mix(${lin(hex('bg-3'))}, ${lin(hex('ember'))}, ${f2(AIR.warm)}), ${AIR.most.toFixed(2)} * smoothstep(${AIR.from.toFixed(1)}, ${AIR.to.toFixed(1)}, vCity.z));\n{ float pk = max(outgoingLight.r, max(outgoingLight.g, outgoingLight.b)); outgoingLight *= min(1.0, ${PEAK.toFixed(2)} / max(pk, 1e-4)); }\n#include <opaque_fragment>`);
   };
-  m.customProgramCacheKey = () => 'skycity-towers-2';
-  return { material: m, time };
+  m.customProgramCacheKey = () => 'skycity-towers-3';
+  return { material: polished(m), time };
 }
 
-export function towerTable(rows: [number, number, number, number, number, number, number, number][]): THREE.DataTexture {
-  const a = new Float32Array(rows.length * 8);
-  rows.forEach((r, i) => a.set(r, i * 8));
-  const t = new THREE.DataTexture(a, rows.length * 2, 1, THREE.RGBAFormat, THREE.FloatType);
+export function towerTable(rows: Row[]): THREE.DataTexture {
+  const a = new Float32Array(Math.max(1, rows.length) * 12);
+  rows.forEach((r, i) => a.set(r, i * 12));
+  const t = new THREE.DataTexture(a, Math.max(1, rows.length) * 3, 1, THREE.RGBAFormat, THREE.FloatType);
   t.minFilter = t.magFilter = THREE.NearestFilter;
   t.needsUpdate = true;
   return t;
