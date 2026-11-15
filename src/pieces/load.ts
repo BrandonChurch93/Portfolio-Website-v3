@@ -13,6 +13,7 @@ export const pieceLoaders: Record<string, () => Promise<PieceFactory>> = {
   reflector: () => import('./reflector/index').then((m) => m.createReflector),
   'studio-light': () => import('./studio-light/index').then((m) => m.createStudioLight),
   desk: () => import('./desk/index').then((m) => m.createDesk),
+  headphones: () => import('./headphones/index').then((m) => m.createHeadphones),
 };
 
 export function loaderFor(name: string): (() => Promise<PieceFactory>) | undefined {

@@ -1090,6 +1090,14 @@ One round in Claude Code. It takes in everything he ruled on Nov 14 for the two 
 29. **It gets there by rounds.** Claude Code iterates, with fresh reviewers each round, until every test passes. If a thing stops getting better, how it is made changes. The bar is never lowered.
 30. **Its lights** are the lamp, the lit monitor and the PC, fixed once lit. It is also lit by the cursor's light, which is what shows its form.
 
+*His second prompt, given to Claude Code with the screenshot (Nov 14)*
+
+- "The desk is part of this round. I do not want a stand in there." The real desk goes into `/lab/skills` in place of the rough bench, at whatever stage it has reached, and he is told plainly which of its things are at the bar and which are not.
+- "Iterate on it over and over until it is a masterpiece." "If a thing stops getting better, change how it is made. Never lower the bar." Opus builders, and fresh Opus reviewers each round. It keeps going until every test passes.
+- Of the PC: "The computer does not look great at all. I like it being glass and see through. Turn it so its long glass side faces me."
+- "The headphones by the Skills title are part of this too: their own small piece on their hook, of our own design, with no maker's mark. The same goes for the iPad and its pencil."
+- **The screenshot,** as Claude Code read it. The Atrium, from the front left: a large glass panel on the long side with the main chamber behind it, and glass on the short end to its right, with the second chamber and the front ports at the far right. Three fans over the top on a radiator, one with a lit ring at the back wall, three large ones in a column in the end wall, three with lit rings in the floor under a perforated shelf. A lit heatsink beside the socket, a round pump with a lit ring and two sleeved tubes up to the radiator, four lit sticks of memory, a long graphics card with a lit bar and a lit strip under it, sleeved cables in a combed bundle, and a strip of light round the base that falls on the floor. Its colors there are the PC Builder's rainbow. Here every one of those lights is one of the site's colors. The screenshot is not in the repo.
+
 **What is not built in this pass**
 
 - The screen with its back off and the palette and brush.

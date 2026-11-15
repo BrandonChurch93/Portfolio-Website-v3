@@ -92,6 +92,7 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 - The first prompt, in the entry "The prompt for Skills and About, the first build". What he cares about most, in his words: "Nobody can read a word of About before my portrait, the studio light's light and the glow are fully up." "The stream comes in over my own left shoulder, along the line I drew." "At the desk the stream strikes the lamp and nothing else." "Nothing of a row shows before its strike." "The CPU is hyper detailed, at the standard of my PC Builder's parts, in our colors only. I am on the fence about it being made out of the stream's shards."
 - Nothing since. No verdict on any of it yet.
 - While this was being built the web chat added the desk to the round (the entry "The desk joins the round"): items 27 to 30 and tests 29 to 42, with a second prompt for him to paste here with his PC Builder screenshot. Neither the prompt nor the screenshot had reached this session when the first build was pushed. The record on main was read and the work goes on from it.
+- He pasted the second prompt, with the screenshot, after the first build's report. What it adds is in `BRIEF.md` under item 30. All eight of the desk's builders were running from then: the bench and the mat, the lamp, the monitor, the keyboard and the mouse, the iPad and its pencil, the camera, the PC, the headphones. The screenshot was handed to the PC's builder from `shots/`, which is not committed.
 
 **Before anything else**
 
