@@ -50,6 +50,10 @@ const SKY = 0.1;
 // stands dark against the glow behind it and the near side stands clear of it. From how far in front of the
 // world's middle it begins, and how far behind it would be whole, in metres.
 const HAZE = { from: 0.5, to: 2.2 };
+// How many pixels the world is drawn with at most. Its canvas is taller than the screen and every pixel of it is
+// lit by three lights through two shadow maps: at a screen's full density it drew 30 frames a second on a fast
+// laptop, and at this count 60 with room to spare. The stage's own budget is for a canvas the size of a screen.
+const PIXELS = 3.3e6;
 // The light the core throws on the torn rock and on what broke away.
 const GLOW = { power: 14 };
 // The heights of the frame each part lies between, lowest first. A part none of which the screen shows is not
@@ -106,6 +110,13 @@ export function createSkyCity(): CityPiece {
   const aim = new THREE.Vector3(), right = new THREE.Vector3(), up = new THREE.Vector3(), back = new THREE.Vector3(), mid = new THREE.Vector3(), cursor = new THREE.Vector3();
   let reach = 1;
   const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const fit = () => {
+    if (!stage || !host) return;
+    stage.setResolutionScale(1);
+    const r = host.getBoundingClientRect(), drawn = r.width * r.height * stage.renderer.getPixelRatio() ** 2;
+    stage.setResolutionScale(Math.min(1, Math.sqrt(PIXELS / Math.max(1, drawn))));
+  };
 
   const place = () => {
     if (!stage) return;
@@ -232,11 +243,12 @@ export function createSkyCity(): CityPiece {
         reach = ball.radius / ALONE.fill;
       }
       stage.resize();
+      fit();
       place();
       const from = performance.now();
       await stage.warm();
       first = Math.round(performance.now() - from);
-      watch = new ResizeObserver(() => { stage?.resize(); stale = true; frame(); });
+      watch = new ResizeObserver(() => { stage?.resize(); fit(); stale = true; frame(); });
       watch.observe(h);
       near = new IntersectionObserver((es) => { seen = es.some((e) => e.isIntersecting); if (seen) { stale = true; frame(); } });
       near.observe(h);

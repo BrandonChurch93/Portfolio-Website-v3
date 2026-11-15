@@ -49,11 +49,15 @@ const bearing = (x: number, z: number): number => ((Math.atan2(x, z) / D2R) + 36
 // reads the same numbers), how tall its hills are, and how far in from each of its sides the hills take to rise.
 export const FOREST = { from: 222, to: 318, r0: 330, r1: 600, hills: 26, ease: [14, 60] } as const;
 // Small mountains in the forest, behind and beside the temple, for depth: each a place on the map, how far across
-// its foot is and how tall it stands.
+// its foot is and how tall it stands. They are one range and not lone cones: a ridge runs from each to the next
+// in the list, sagging to a saddle between them, and spurs run down from every summit.
 export const PEAKS: readonly { x: number; z: number; r: number; tall: number }[] = [
-  { x: -393, z: -275, r: 92, tall: 118 }, { x: -493, z: -220, r: 80, tall: 92 }, { x: -320, z: -288, r: 70, tall: 74 },
+  { x: -320, z: -288, r: 70, tall: 74 }, { x: -393, z: -275, r: 92, tall: 118 }, { x: -493, z: -220, r: 80, tall: 92 },
   { x: -470, z: -120, r: 64, tall: 58 }, { x: -429, z: 311, r: 74, tall: 66 },
 ];
+// The range's ridge: how low a saddle sags, as a share of the lower of its two summits, and how far to each side
+// of the ridge line the land falls away. The last peak stands apart, at the front.
+const RANGE = { saddle: 0.56, wide: 46, joined: 4 };
 // How high the land stands over the planet's own curve at a place on the map, the same on every call. It is level
 // under the city and at the torn edge, and in the forest it rises in hills, with the small mountains over them.
 export function relief(x: number, z: number): number {
@@ -69,8 +73,19 @@ export function relief(x: number, z: number): number {
   for (const p of PEAKS) {
     const d = Math.hypot(x - p.x, z - p.z) / p.r;
     if (d >= 1) continue;
-    const rough = 0.82 + 0.36 * value(x / 22 + p.x, z / 22 + p.z);
-    h = Math.max(h, h * 0.4 + p.tall * (1 - ease(d)) ** 1.25 * rough);
+    // Spurs: the summit falls away faster between them than along them.
+    const spur = 0.78 + 0.22 * Math.cos(5 * Math.atan2(x - p.x, z - p.z) + p.tall);
+    const rough = 0.84 + 0.32 * value(x / 22 + p.x, z / 22 + p.z);
+    h = Math.max(h, h * 0.4 + p.tall * (1 - ease(Math.min(1, d / spur))) ** 1.25 * rough);
+  }
+  for (let i = 1; i < RANGE.joined; i++) {
+    const a = PEAKS[i - 1], b = PEAKS[i], ex = b.x - a.x, ez = b.z - a.z, len = Math.hypot(ex, ez);
+    const t = Math.min(1, Math.max(0, ((x - a.x) * ex + (z - a.z) * ez) / (len * len)));
+    const off = Math.hypot(x - (a.x + ex * t), z - (a.z + ez * t)) / RANGE.wide;
+    if (off >= 1) continue;
+    const crest = a.tall + (b.tall - a.tall) * t - (1 - RANGE.saddle) * Math.min(a.tall, b.tall) * Math.sin(Math.PI * t) ** 0.8;
+    const jag = 0.86 + 0.28 * value(x / 17 + i, z / 17 - i);
+    h = Math.max(h, crest * jag * (1 - ease(off)) ** 0.9);
   }
   return h;
 }
