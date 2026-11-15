@@ -2,6 +2,34 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · Contact, third round: the Sun stone under the rocket and the sleeping plate (Fable, web chat)
+
+**What Brandon said**
+
+- "Yes, let's go ahead and draw them out now. If I like the design, I will cut you up into max mode and have you do a higher fidelity representation of what this could look like."
+
+**What was done**
+
+- `/lab/contact` is arrangement A only. `plan.ts` holds one layout, the stone (`STONE`) and the plate's band (`WAKE`).
+- The plate: a blank of rays and a knob under the form, the form clipped to a circle that grows from the corner nearest the stream (`--r`), and a ring of light at the circle's edge. How far the band has crossed is stepped on the one clock, so it can be held with `?wake=0.45` and runs back.
+- The stone: six ovals for rings, a band between each pair that lights by how full the stone is, studs, ticks and rays. The rocket's table stands on the boss.
+
+**What looking at it showed**
+
+- Lit at full strength the stone was a flat orange puck and its carving was lost. The lit bands are now part clear, every other one stronger.
+- The stream lands on the rim, so lighting the stone from the middle out, as Fable had told him, would have had the light start where the stream is not. It lights from the rim in. He has been told.
+
+**Checked**
+
+- A live run at 1440 by 900, scrolled down and back up: no errors. Down, in order: the rocket and stone come up, the title, the plate awake, the rim lit, the lower stage, the nose, the boss, the lift. Up: the boss and rim go dark, the plate sleeps, the rocket lands, the pad goes dark.
+- Tabbing into the plate from the top of the page wakes it.
+- Stills: `reference/studies/52-contact-*.jpg`, all opened.
+
+**For the next session**
+
+- Waiting on his look. If he likes it he raises the effort and asks for a higher fidelity version here: the stone as a real relief like Work's Sun stones, the plate as the real lit blank, the rocket in the page's bronze.
+- Still his to say: no phone number, the line for where he is based, LinkedIn in the footer, CodePen and YouTube.
+
 ## 2026-11-14 · A, if the rocket stays, and whether the rocket fits (Fable, web chat)
 
 **What Brandon said**

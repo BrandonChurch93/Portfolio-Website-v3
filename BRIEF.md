@@ -1742,6 +1742,14 @@ Each line has Fable's recommendation where there is one. None of these are rules
         - The covering's second place: the Contact plate. It sleeps as the engine turned blank with its knob, and wakes by the band of light when the stream reaches the section, as a card does. A pointer or keyboard focus wakes it too, as on a card.
         - Other pieces Fable weighed, each of which goes against the settled line "A rocket launch": a lighthouse, which is an ancient wonder and means a signal, with a quieter ending than a launch. An orrery that the pool sets turning, which fits Work's world and says nothing about reaching him.
         - Fable's pick: keep the rocket, in the page's metal, on a Sun stone pool, with the blank on the plate.
+    - **Drawn on his yes (Nov 14), third round, same page.** Arrangement A only. B and C are out of the code, and their stills are `reference/studies/51-contact-*.jpg`.
+        - The plate sleeps as the engine turned blank: rays round a knob. When the stream passes its top a band of light crosses it from the corner nearest the stream, the knob draws back ahead of the band, and the form is behind the band. Moving the pointer onto the plate, or tabbing into it, wakes it too. It goes back to sleep when the stream draws back.
+        - The pool is a Sun stone laid flat under the rocket: a disc with six rings, studs, ticks and rays cut into it, and a boss at its middle that the rocket's table stands on. The stream lands on its outer band.
+        - **It lights from the rim in, not from the middle out as Fable had told him.** The stream lands at the rim, so its light has to travel in to the rocket. The boss is the last to light, and that is when the rocket goes. The page says so.
+        - The plate no longer lies over the pool. The stone is round and is seen whole, 60 units clear of the plate.
+        - Scrolled back up, the stone goes dark from the middle out before the rocket has landed. It is the stone draining, and it is his to say whether that reads.
+    - What is not right, plainly: every part is outline. The stone's carving is a few rings and marks and nothing like the Sun stones in Work. The blank is drawn lines and a drawn knob, not the lit metal of a card. The lit stone is flat color.
+    - Stills: `reference/studies/52-contact-*.jpg`.
     - **What follows is the first round as it was drawn.** It is no longer on the page.
     - **What it holds, from his words (Settled, Contact):** a calendar button first, a way to copy his email, and a working form. Nothing waits for a message.
     - **Fable's calls on what he left open, each his to overturn:**

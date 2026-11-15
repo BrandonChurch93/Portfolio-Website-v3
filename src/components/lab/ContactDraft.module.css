@@ -12,15 +12,44 @@
   opacity: 0.24;
 }
 
-/* The pool: its rim, and a lip drawn over what fills it. */
-.rim {
+/* The stone: its edge, its face, the bands that light, and what is cut into it. */
+.side {
+  fill: var(--bg);
+}
+
+.face {
+  fill: var(--bg-2);
+}
+
+.lit {
+  fill: var(--flame);
+  fill-opacity: 0.5;
+  stroke: none;
+  opacity: 0;
+}
+
+.lit:nth-child(even) {
+  fill-opacity: 0.72;
+}
+
+.lit[data-boss='true'] {
+  fill: var(--hot);
+  fill-opacity: 0.95;
+}
+
+.ring {
+  fill: none;
+  stroke-width: 1;
+}
+
+.ray {
   fill: var(--bg);
   stroke-width: 1;
 }
 
-.lip {
-  fill: none;
-  stroke-width: 1.2;
+.studs ellipse {
+  fill: var(--bg);
+  stroke-width: 0.8;
 }
 
 .post {
@@ -78,11 +107,7 @@
   height: calc(var(--u) * 72);
 }
 
-.over[data-inside='true'] {
-  height: calc(var(--u) * 52);
-}
-
-.over[data-inside='true'] .title {
+.title {
   font-size: calc(var(--u) * 52);
 }
 
@@ -110,24 +135,92 @@
   color: var(--copper);
 }
 
-/* One plate holds everything. It is solid, so what it lies over cannot be seen through it. */
+/* One plate holds everything. Asleep it is the blank: engine turned rays round a knob. A band of light crosses it
+   from the corner nearest the stream, and what is behind the band is the plate awake. */
 .plate {
-  display: grid;
-  gap: calc(var(--u) * 20);
-  padding: calc(var(--u) * 30);
+  position: relative;
+  margin-top: calc(var(--u) * 28);
   border: 1px solid var(--copper);
   border-radius: calc(var(--u) * 14);
   background: var(--bg-2);
   box-shadow: 0 calc(var(--u) * 18) calc(var(--u) * 50) color-mix(in srgb, var(--bg) 80%, transparent);
-  transition: border-color calc(var(--slow, 1) * 0.6s) linear;
+  overflow: hidden;
 }
 
-.plate[data-first='true'] {
-  margin-top: calc(var(--u) * 28);
+.blank {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--copper) 26%, var(--bg-2)), var(--bg-2) 72%);
 }
 
-.plate[data-on='false'] {
-  border-color: var(--line);
+.blank::after {
+  content: '';
+  position: absolute;
+  inset: calc(var(--u) * 10);
+  border: 1px solid var(--line-strong);
+  border-radius: calc(var(--u) * 8);
+}
+
+.rays {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.rays line {
+  stroke: var(--copper-light);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.3;
+}
+
+.rays line[data-odd='true'] {
+  opacity: 0.1;
+}
+
+/* The knob draws back into the dial ahead of the band. */
+.knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--u) * 104);
+  height: calc(var(--u) * 104);
+  translate: -50% -50%;
+  scale: calc(0.55 + 0.45 * var(--knob, 1));
+  opacity: var(--knob, 1);
+  fill: var(--bg-2);
+  stroke: var(--copper-light);
+  stroke-width: 1.4;
+  filter: drop-shadow(calc(var(--u) * 7) calc(var(--u) * -7) calc(var(--u) * 6) var(--bg));
+}
+
+.knob .rim {
+  fill: color-mix(in srgb, var(--copper) 38%, var(--bg-2));
+}
+
+.knob .beads {
+  fill: none;
+  stroke-width: 4;
+  stroke-dasharray: 1.5 4.55;
+  stroke-linecap: round;
+}
+
+.awake {
+  position: relative;
+  display: grid;
+  gap: calc(var(--u) * 20);
+  padding: calc(var(--u) * 30);
+  background: var(--bg-2);
+  clip-path: circle(var(--r, 0px) at var(--fx) var(--fy));
+}
+
+.band {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: var(--band, 0);
+  background: radial-gradient(circle at var(--fx) var(--fy), transparent calc(var(--r, 0px) - 40px), color-mix(in srgb, var(--flame) 50%, transparent) calc(var(--r, 0px) - 12px), var(--pale) calc(var(--r, 0px) - 1px), transparent var(--r, 0px));
 }
 
 .fast {
