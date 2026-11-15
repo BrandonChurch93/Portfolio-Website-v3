@@ -12,6 +12,41 @@ Read `reference/kits/README.md` first: the bar, the colors and "The look" hold f
 
 **This section is the newest. Where anything below it disagrees with it, this section wins.** The frame it describes is in the code now: `src/pieces/skycity/layout.ts`, `part.ts`, `index.ts`.
 
+### The finished version (Nov 15): the newest, and it wins over everything below
+
+He scrolled the first standing build on the live site. "The planet is right. What stands on it is not yet." `BRIEF.md`, Settled, "The hero, the city at rest", items 19 to 27, and `QUALITY.md`, tests 14 to 20, are the agreement and how it is judged. Read them.
+
+**Left alone, because he likes them:** the planet's body, the torn underside, the core, the debris, the streams from the torn face, the sky, the moon, the glow, the spire's shape, the layout and his words.
+
+**His words on what changes:**
+
+1. "The city is too big. Keep it as dense as it is, but pull it back from the edge, about a quarter of the way in all the way round, and let two or three wedges of open land cut further in. Let bare ground show at the rim so I can see the curve of the planet."
+2. "It is missing the shiny metal look. I do not see any of it. I want real polished gold, bronze and copper that reflect and catch the cursor's light, used boldly. Not orange trim on grey boxes. This is art, so you have freedom, and we could do some really cool things with it." Ideas he was given: a mirror polished cap on the pyramid, gilded rings and a gilded crown on the spire, a few whole towers clad in polished bronze, domes and roofs in copper, the veins of bright metal in the torn rock coming up through the surface, "pools of mirror polished metal where a world would have lakes".
+3. "The nature area on the left has to be a dense jungle, and the scale is all wrong. This is art. It does not have to be in proportion. Make the trees big enough that anyone knows it is a jungle at a glance. The site's colors, not green."
+4. "A second natural area on the opposite side, and it has to look completely different from the jungle."
+5. "Scrap the mountain. Put a monument in its place, something spectacular. Not another pyramid."
+6. "The flying cars look bad. Either a few craft that are designed and big enough to read as craft, or none."
+7. "More kinds of building and fewer copies of the same grey block. The two blank blocks at the front of the avenue need designing or removing."
+
+**The plan is redrawn for it** (`src/pieces/skycity/layout.ts`: read it again from the top). Where a number below disagrees with these, these win:
+
+- **The city ends at 472 on the map** (`CITY.r`), about three quarters of the way to the torn edge, and is as dense as before: `lots()` gives about 110 lots at the same spacing, in bands out to 420 and a ragged fringe with gaps from 420 to 472, so the city does not end on a line.
+- **From 472 to the torn edge is bare ground.** Nothing is built on it. It is where the planet's curve is seen, and where the tear is ground breaking.
+- **Four wedges cut into the city** (`DISTRICTS`): the jungle at the left (`FOREST`, bearings 222 to 318, from 330 out), the dunes at the right (`DUNES`, 52 to 128, from 330 out), and two wedges of open ground at the front (kind `open`, bearings 24 to 44 from 270 out, and 322 to 342 from 300 out).
+- **The mountains and all water are dropped.** `PEAKS` is empty and `relief` is 0 everywhere: the land is level. Where a world would have lakes there are pools of mirror polished metal.
+- **The port and its crag are dropped.** In their place, at the right of the skyline: **the monument** (`MONUMENT`, and kind `monument`): a colossal Sun disc of polished gold standing on its rim, about 190 across, carved as Work's Sun stones are. **The dunes** (kind `dunes`) are the second natural area, round it: pale gold sand in great sweeping forms, with a pool of mirror polished metal among them.
+- **The jungle is far out of scale on purpose:** its trees are as tall as the buildings beside them, 70 to 170.
+- **The parts** (`part.ts`): `ground`, `spire`, `towers`, `temple`, `gardens` (the jungle), `dunes`, `monument`, `craft`, and under the world `tear`, `core`, `debris`, which are finished and not to be touched.
+
+**Polished metal, which every part on top of the world now shares.** This is the largest change, and he has asked for it three times.
+
+- **It is a mirror, not a color.** A polished metal is `metalness` 1 and a `roughness` of 0.05 to 0.2 on a standard material, and it looks polished only because it reflects bright things beside dark things. It is never made bright with emissive, a flat pale color or a gain in a shader: that is the "orange trim" he rejected.
+- **The stage gives it things to reflect** (`ROOM` in `index.ts`): the moon, small and very bright. The city's glow in the sky behind. Three long pale strip lights, overhead and at each side, which draw the bright hard edged lines that make a curved thing read as polished. Darkness between. And the cursor's light, whose highlight slides over polished metal as the cursor moves: that is test 15.
+- **So shape it to catch them.** A flat polished face reflects one thing and reads as a flat color. A curved or facetted one (a dome, a cylinder, a fluted column, a bevelled edge, a ring, a faceted cap) carries a bright line that moves. Give polished metal curvature, bevels and facets.
+- **Three metals a stranger can tell apart:** gold (pale and bright, between the palette's `copper-light` and `hot`), copper (redder, the palette's `copper`), bronze (dark and brown). A highlight on any of them is pale, not orange.
+- **Used boldly:** whole things made of it, not lines of it. A building clad in it, a dome, a great disc, a pool.
+- **A pool of mirror polished metal** is a level face of `roughness` about 0.03 with a slightly domed, rippled or hammered surface, so it carries the moon as a bright path and the glow as a warm sheet. It reflects the room and not the things beside it: that is accepted.
+
 ### His second look (Nov 14, late): the newest, and it wins over everything below
 
 He saw working stills of the world mid-rebuild. "It's coming along." Then:
