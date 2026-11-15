@@ -2,6 +2,17 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · His first look at the city in progress: rings, more metal, more than buildings (Fable, web chat)
+
+**What Brandon said**
+
+- From a still of Claude Code's city in progress: the spire should have rings as the carried city's does, more of the site's metals on it, and more than buildings (vehicles, green places, the builder's choice). Star Trek with the flair of ancient Egypt. `BRIEF.md`, Settled, Hero.
+
+**What was done**
+
+- His words written in. Item 4 of "The hero, the city at rest" and test 3 changed to match. A short prompt for Claude Code given in the chat.
+- Seen in his still and not in the agreement: two smaller cities at the edges of the screen. He did not speak of them. He was told.
+
 ## 2026-11-14 · The hero: the sky drawn, the opening paused, and the city handed on (Fable, web chat)
 
 **What Brandon said**
