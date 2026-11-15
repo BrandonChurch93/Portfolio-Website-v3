@@ -27,7 +27,7 @@ export const SOLID = {
   bronze: { color: tone('bronze', 0.62), rough: 0.3, metal: 1, room: 1.9 },
   copper: { color: tone('copper', 0.85), rough: 0.22, metal: 1, room: 2.2 },
   // The massif's rock: a warm dark grey, rough, split in facets, its strata worked out in the shader.
-  rock: { color: 0x48413a, rough: 0.92, metal: 0, room: 0.5 },
+  rock: { color: 0x3d3731, rough: 0.92, metal: 0, room: 0.5 },
   // Dark bronze, nearly brown black, satin: the colossi.
   umber: { color: tone('bronze-deep', 0.95), rough: 0.3, metal: 1, room: 1.5 },
   // The forecourt's paving: great slabs of a darker stone, worn, worked out in the shader from the map's own
@@ -189,14 +189,14 @@ const COLOR = /* glsl */ `
 // finer than a pixel.
 const BUMP = /* glsl */ `
   if (sk == ${K.rock} || sk == ${K.stone}) {
-    float rk = 0.0;
-    float hb = wFbm(vObj * 0.05);
+    float rk = sk == ${K.rock} ? 0.0018 : 0.0;
+    float hb = wFbm(vObj * 0.32) + 1.6 * wFbm(vObj * 0.07);
     vec3 sx = dFdx(-vViewPosition), sy = dFdy(-vViewPosition);
     vec3 r1 = cross(sy, normal), r2 = cross(normal, sx);
     float det = dot(sx, r1);
     vec3 grad = sign(det) * (dFdx(hb) * r1 + dFdy(hb) * r2);
     float fade = 1.0 - smoothstep(0.6, 1.6, length(fwidth(vObj)));
-    normal = normalize(abs(det) * normal - grad * 0.35 * rk * fade);
+    normal = normalize(abs(det) * normal - grad * rk * fade);
   }
 `;
 

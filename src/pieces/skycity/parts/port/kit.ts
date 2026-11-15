@@ -10,12 +10,9 @@ import { KIND } from './materials';
 export class Kit {
   private list: THREE.BufferGeometry[] = [];
   tris = 0;
-  // Where what is added now is put, after its own matrix: the structure it belongs to, seated on the world.
-  frame: THREE.Matrix4 | null = null;
   add(geo: THREE.BufferGeometry, kind: KindName, m?: THREE.Matrix4, a = 0, b = 0): void {
     let g = geo.index ? geo.toNonIndexed() : geo.clone();
     if (m) g.applyMatrix4(m);
-    if (this.frame) g.applyMatrix4(this.frame);
     if (!g.getAttribute('normal')) g.computeVertexNormals();
     const n = g.getAttribute('position').count;
     if (!g.getAttribute('uv')) g.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(n * 2), 2));
