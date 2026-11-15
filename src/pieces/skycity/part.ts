@@ -1,11 +1,13 @@
 import type * as THREE from 'three';
 import type { Tier } from '../../config/site';
 
-// The city is one piece with one stage, and each of its things is a part: one file in ./parts, behind this
-// contract. A part builds its group in units, in the city's own frame (./layout.ts), and is told each frame what
-// the city is doing. It never touches the stage, the camera or another part.
+// The world is one piece with one stage, and each of its things is a part: one file in ./parts, behind this
+// contract. A part builds its group in units, in the world's own frame (./layout.ts), and is told each frame what
+// the world is doing. It never touches the stage, the camera or another part.
+//   ground: the top of the dome, out to the torn edge. spire, towers, temple, gardens, port: what stands on it.
+//   tear: the torn underside, the planet's inside in section. core: the planet's core. debris: what broke away.
 
-export const PARTS = ['ground', 'spire', 'towers', 'temple', 'gardens', 'port'] as const;
+export const PARTS = ['ground', 'spire', 'towers', 'temple', 'gardens', 'port', 'tear', 'core', 'debris'] as const;
 export type PartName = (typeof PARTS)[number];
 
 export interface PartState {
@@ -15,6 +17,11 @@ export interface PartState {
   cursor: THREE.Vector3;
   // Nothing loops and nothing drifts: reduced motion, or a held frame.
   still: boolean;
+  // How bright the core burns now (coreLevel in ./layout.ts), for whatever it lights.
+  core: number;
+  // The heights of the frame the screen shows now, lowest first. The stage does not draw a part none of which is
+  // between them, and does not call its update.
+  seen: readonly [number, number];
 }
 
 export interface CityPart {

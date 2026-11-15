@@ -1,19 +1,117 @@
+import * as THREE from 'three';
 import { seeded } from '../../world/build';
 
-// The city in the hero, made new: where everything stands. Units, one a CSS pixel on a screen 1460 wide, in the
-// city's own frame: the ground it stands on is a disc that floats, with the middle of its top at the origin, where
-// the spire stands. x to the visitor's right, y up, z toward the visitor. How wide it is, how tall, and how much of
-// it shows were agreed on the wireframe at /lab/hero-draft (src/hero/plan.ts), and these are its sizes.
+// The world in the hero: where everything stands. It is the top of a small planet that has been torn in half: a
+// dome, a little less than half a sphere, curved side up, with the city on it, and under it the planet's torn
+// inside, its core, and the pieces of it that broke away (BRIEF.md, Settled, "The hero, the city at rest").
+// Units, one a CSS pixel on a screen 1460 wide. The frame: the origin is the top of the dome, where the spire
+// stands. x to the visitor's right, y up, z toward the visitor. The planet's middle, where its core is, is straight
+// down from there (HEART). Its sizes were agreed on the wireframe at /lab/hero-draft (src/hero/plan.ts).
+//
+// The plan of what stands on the world is a flat map, laid over the dome from its top: a place on the map is so far
+// to the right of the top and so far toward the visitor, measured along the ground. seat, lift and bend, below, put
+// what is on the map onto the dome. Everything stands straight out from the ground under it.
 
 // A unit in the stage's metres. The lights, the shadows and the occlusion are set up for a scene a metre or two
 // across, as the desk is.
 export const SCALE = 0.0015;
 
-// The ground: how far across it reaches, how thick its rim is, and how far down the rock under it comes, to a keel
-// under the spire.
+// The planet: its radius, how far round from its top it is kept, in degrees, and how far across its core is from
+// its middle.
+export const PLANET = { r: 675, cap: 78, core: 150 } as const;
+// The planet's middle, in the frame.
+export const HEART = [0, -PLANET.r, 0] as const;
+// How far out on the map the plan of the city and its places reaches. Beyond it, as far as the torn edge, is the
+// broken margin. rim and rock are the disc's, which the first ground was built to, and go with it.
 export const GROUND = { r: 660, rim: 16, rock: 220 } as const;
-// The spire at the middle: how tall it is, and how far across at its foot.
-export const SPIRE = { tall: 420, foot: 40 } as const;
+// The spire at the top: how tall it is, and how far across at its foot.
+export const SPIRE = { tall: 220, foot: 26 } as const;
+
+const R = PLANET.r, D2R = Math.PI / 180;
+const axis = new THREE.Vector3(), turn = new THREE.Quaternion(), one = new THREE.Vector3(1, 1, 1), at = new THREE.Vector3();
+// How the ground is turned at a place on the map: straight up there is straight out from the planet.
+function tilt(x: number, z: number, out: THREE.Quaternion): THREE.Quaternion {
+  const far = Math.hypot(x, z);
+  return far < 1e-6 ? out.identity() : out.setFromAxisAngle(axis.set(z / far, 0, -x / far), far / R);
+}
+// A place on the map, at a height above the ground there, as a point of the frame.
+export function lift(x: number, y: number, z: number, out = new THREE.Vector3()): THREE.Vector3 {
+  const far = Math.hypot(x, z), a = far / R, k = far < 1e-6 ? 0 : ((R + y) * Math.sin(a)) / far;
+  return out.set(x * k, (R + y) * Math.cos(a) - R, z * k);
+}
+// Where a thing stands and how it is turned: the matrix that puts something built upright at the origin onto the
+// ground at a place on the map, so far above it, turned so many degrees about its own upright first.
+export function seat(x: number, z: number, up = 0, spin = 0, out = new THREE.Matrix4()): THREE.Matrix4 {
+  tilt(x, z, turn);
+  if (spin) turn.multiply(new THREE.Quaternion().setFromAxisAngle(axis.set(0, 1, 0), spin * D2R));
+  return out.compose(lift(x, up, z, at), turn, one);
+}
+// Lays a geometry built flat on the map over the dome, each point where the map puts it. For what lies on the
+// ground: a floor, a road, a wall, a terrace. What stands tall is seated whole, with seat, or it would spread as it
+// rises.
+export function bend(g: THREE.BufferGeometry): THREE.BufferGeometry {
+  const p = g.getAttribute('position'), n = g.getAttribute('normal'), v = new THREE.Vector3(), q = new THREE.Quaternion();
+  for (let i = 0; i < p.count; i++) {
+    const x = p.getX(i), z = p.getZ(i);
+    lift(x, p.getY(i), z, v);
+    p.setXYZ(i, v.x, v.y, v.z);
+    if (n) {
+      v.set(n.getX(i), n.getY(i), n.getZ(i)).applyQuaternion(tilt(x, z, q));
+      n.setXYZ(i, v.x, v.y, v.z);
+    }
+  }
+  p.needsUpdate = true;
+  if (n) n.needsUpdate = true;
+  g.computeBoundingBox();
+  g.computeBoundingSphere();
+  return g;
+}
+
+const lattice = (i: number, n: number, seed: number): number => {
+  const s = Math.sin((((i % n) + n) % n) * 127.1 + seed * 311.7) * 43758.5453;
+  return s - Math.floor(s);
+};
+// A ragged number from 0 to 1 that comes back to itself round a circle: n teeth to the turn.
+const ragged = (deg: number, n: number, seed: number): number => {
+  const f = (((deg % 360) + 360) % 360) / 360 * n, i = Math.floor(f), t = f - i;
+  return lattice(i, n, seed) * (1 - t) + lattice(i + 1, n, seed) * t;
+};
+// The torn edge: how far out on the map the ground reaches at a bearing, in degrees from straight toward the
+// visitor, turning to the visitor's right. Never further than the planet is kept (out), and bitten back from
+// there by as much as bite, in large bites and small teeth. The ground above and the torn rock below both end on
+// this line, so they meet.
+export const EDGE = {
+  out: PLANET.cap * D2R * R,
+  bite: 96,
+  at(deg: number): number {
+    const big = ragged(deg, 7, 1), mid = ragged(deg, 19, 2), small = ragged(deg, 53, 3);
+    return EDGE.out - EDGE.bite * Math.min(1, 0.55 * big * big + 0.3 * mid + 0.22 * small * small);
+  },
+};
+// The broken margin: the ground from here out to the torn edge is damaged. Cracked, split, with things leaning or
+// fallen. Where a place round the core reaches further out than this, it is damaged there too.
+export const MARGIN = 760;
+
+// The torn underside. No rock hangs lower than this, as a height in the frame: under it there is only the core and
+// what broke away. Round the core the rock is torn back into a hollow this far across from the planet's middle,
+// open toward the visitor, so the core is seen from the page's view.
+export const TEAR = { low: HEART[1] - 135, hollow: 225 } as const;
+// The core: a ball of the stream's own light at the planet's middle, this far across from its middle. The site's
+// stream leaves its underside (SOURCE). How bright it burns at a time on the clock is one number that the core,
+// the light it throws and whatever it lights all read, so they flicker together.
+export const CORE = { r: PLANET.core } as const;
+export const SOURCE = [0, HEART[1] - PLANET.core, 0] as const;
+export const coreLevel = (t: number): number => 1 + 0.07 * Math.sin(t * 1.9) + 0.05 * Math.sin(t * 4.7 + 1.3) + 0.03 * Math.sin(t * 11.3 + 0.4);
+// Where streams of the stream's own light leave the torn face, as points of the frame: each is the tip of a piece
+// of the torn rock that hangs toward the visitor, and the light falls free from it. They are drawn by the stream
+// and not by the world: the world only makes the places they leave from.
+export const VENTS: readonly (readonly [number, number, number])[] = [
+  [-500, HEART[1] + 58, 250], [-330, HEART[1] + 6, 300], [-170, HEART[1] - 44, 330],
+  [170, HEART[1] - 30, 330], [330, HEART[1] + 18, 300], [500, HEART[1] + 70, 250],
+];
+// What broke away: the pieces of the planet round the torn underside and under it. None is lower than this, as a
+// height in the frame, none further from the planet's upright than this, and none higher than the torn edge.
+export const DEBRIS = { low: SPIRE.tall - 1220, far: 980, high: -R * (1 - Math.cos(PLANET.cap * D2R)) } as const;
 // It is not towers from rim to rim: he ruled that. It is a small world on a floating island: a core of towers
 // round the spire, as far out as the second boulevard, and round the core other kinds of place, none of them alike
 // (DISTRICTS below).
@@ -44,12 +142,12 @@ export const PARKS: { band: number; from: number; to: number }[] = [
 export type Kind = 'procession' | 'gardens' | 'port' | 'wild' | 'temple' | 'farms';
 export interface District { kind: Kind; from: number; to: number; r0: number; r1: number }
 export const DISTRICTS: District[] = [
-  { kind: 'procession', from: -12, to: 12, r0: 150, r1: 620 },
-  { kind: 'gardens', from: 12, to: 72, r0: 300, r1: 620 },
-  { kind: 'port', from: 72, to: 128, r0: 300, r1: 620 },
+  { kind: 'procession', from: -12, to: 12, r0: 150, r1: 700 },
+  { kind: 'gardens', from: 12, to: 72, r0: 300, r1: 760 },
+  { kind: 'port', from: 72, to: 128, r0: 300, r1: 700 },
   { kind: 'wild', from: 128, to: 250, r0: 450, r1: 620 },
-  { kind: 'temple', from: 250, to: 318, r0: 300, r1: 620 },
-  { kind: 'farms', from: 318, to: 348, r0: 300, r1: 620 },
+  { kind: 'temple', from: 250, to: 318, r0: 300, r1: 700 },
+  { kind: 'farms', from: 318, to: 348, r0: 300, r1: 760 },
 ];
 // The low town behind the core, between the second and third boulevards, from this bearing round the back to that.
 export const TOWN = { from: 128, to: 250 } as const;
@@ -86,7 +184,7 @@ export function lots(): Lot[] {
         if (AVENUES.some((b) => Math.abs(((a - b + 540) % 360) - 180) * (Math.PI / 180) * rad < ROAD / 2 + w / 2 + 3)) continue;
         if (PARKS.some((p) => p.band === band && within(a, p.from, p.to))) continue;
         if (band === 2 && !within(a, TOWN.from, TOWN.to)) continue;
-        const fall = Math.exp(-((rad / 330) ** 2)), tall = (56 + 250 * fall * (0.5 + 0.5 * lean)) * (0.8 + 0.4 * r()) * (band === 2 ? 0.6 : 1);
+        const fall = Math.exp(-((rad / 330) ** 2)), tall = (40 + 105 * fall * (0.5 + 0.5 * lean)) * (0.8 + 0.4 * r()) * (band === 2 ? 0.6 : 1);
         const t = a * (Math.PI / 180);
         if (districtAt(Math.sin(t) * rad, Math.cos(t) * rad)) continue;
         out.push({ x: Math.round(Math.sin(t) * rad * 10) / 10, z: Math.round(Math.cos(t) * rad * 10) / 10, w: Math.round(w), d: Math.round(d), turn: Math.round(a), tall: Math.round(tall), band, seed });
@@ -97,8 +195,17 @@ export function lots(): Lot[] {
 }
 
 // How it is looked at: from straight in front and a little above, in degrees, from this far away, in units. The
-// ground is seen nearly edge on, as in the wireframe: the city is a skyline.
+// view never moves: the world scrolls with the page.
 export const VIEW = { az: 0, el: 4.5, back: 9000 } as const;
-// Its host: this many units wide whatever the screen, with the middle of the ground at the middle of its width and
-// this far above its foot. The host is as tall as the page makes it.
-export const HOST = { wide: 1460, up: 400 } as const;
+// Its host: this many units wide whatever the screen, with the world on its center line, and this tall, with its
+// top this far over the tip of the spire. The foot of it is a little under the lowest of what broke away.
+export const HOST = { wide: 1460, over: 80, tall: 1370 } as const;
+// The middle of what the host shows, which the view is aimed at.
+export const AIM = [0, SPIRE.tall + HOST.over - HOST.tall / 2, 0] as const;
+// Where a point of the frame is drawn in the host: how far to the right of its center line, and how far down from
+// its top, in units.
+export function drawn(x: number, y: number, z: number): [number, number] {
+  const e = VIEW.el * D2R, se = Math.sin(e), ce = Math.cos(e), dy = y - AIM[1];
+  const k = VIEW.back / (VIEW.back - dy * se - z * ce);
+  return [x * k, HOST.tall / 2 - (dy * ce - z * se) * k];
+}

@@ -20,31 +20,31 @@
 }
 
 /* The screen's height is part of the layout. His words are set from the top of the screen: a third of the way down
-   it, less a little, and never nearer its top than a least. The city is set from its foot: the rim of its ground
-   rests a little under the foot of the screen, so its falls are hidden until the page is scrolled, unless that
-   would bring its spire up into the words, when it rests lower. */
+   it, less a little, and never nearer its top than a least. The tip of the world's spire hangs a set way under
+   them, so a taller screen shows more of the world. Its torn edge and everything under it are under the foot of
+   the screen until the page is scrolled. */
 .board {
   --u: calc(min(100vw, 2400px) / 1460);
   --screen: 100vh;
   --screen: 100svh;
   --words: max(calc(var(--u) * var(--words-least)), calc(var(--screen) * var(--words-third) - var(--u) * var(--words-rise)));
-  /* How far down the page the spire's tip is, and the middle of the city's ground. */
-  --tip: max(calc(var(--words) + var(--u) * (var(--words-tall) + var(--words-gap))), calc(var(--screen) + var(--u) * (var(--hide) - var(--city-tall))));
-  --ground: calc(var(--tip) + var(--u) * var(--city-tall));
+  /* How far down the page the spire's tip is, and the lowest of what broke away from the world. */
+  --tip: calc(var(--words) + var(--u) * (var(--words-tall) + var(--words-gap)));
+  --low: calc(var(--tip) + var(--u) * var(--city-low));
   position: relative;
   width: calc(var(--u) * 1460);
-  height: calc(var(--ground) + var(--u) * (var(--city-keel) + var(--work-under) + var(--work-tail)));
+  height: calc(var(--low) + var(--u) * (var(--work-under) + var(--work-tail)));
   margin: 0 auto;
 }
 
-/* The light a far off city throws into the sky: behind the city and above it, with no edge. */
-.glow {
+/* The night sky, which also draws the light a far off city throws into it. It ends a little under the world's torn
+   edge. */
+.sky {
   position: absolute;
-  left: calc(50% - var(--u) * var(--glow-rx));
-  top: calc(var(--ground) - var(--u) * (var(--glow-lift) + var(--glow-ry)));
-  width: calc(var(--u) * var(--glow-rx) * 2);
-  height: calc(var(--u) * var(--glow-ry) * 2);
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--flame) 30%, transparent), color-mix(in srgb, var(--ember) 24%, transparent) 42%, color-mix(in srgb, var(--ember) 8%, transparent) 72%, transparent);
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: calc(var(--tip) + var(--u) * (var(--city-edge) + var(--sky-tail)));
   pointer-events: none;
 }
 
@@ -52,7 +52,7 @@
   position: absolute;
   left: 0;
   top: calc(var(--tip) - var(--u) * var(--city-over));
-  height: calc(var(--u) * (var(--city-over) + var(--city-tall) + var(--city-under)));
+  height: calc(var(--u) * var(--city-tall));
   z-index: 1;
   pointer-events: none;
 }
@@ -132,7 +132,7 @@
 .bar {
   position: absolute;
   left: 50%;
-  top: calc(var(--ground) + var(--u) * (var(--city-keel) + var(--work-under)));
+  top: calc(var(--low) + var(--u) * var(--work-under));
   translate: -50% 0;
   height: calc(var(--u) * 46);
   display: grid;
@@ -162,7 +162,7 @@
     padding: var(--space-9) var(--gut);
   }
 
-  .glow,
+  .sky,
   .city,
   .cue,
   .bar {
@@ -191,7 +191,8 @@
 }
 
 /* One of several sections on a page that has its own ground and its own stream: it does not clip what reaches out of
-   it, it ends at the keel of the city's rock, and Work itself stands where the stand in for its bar did. */
+   it, it ends at the lowest of what broke away from the world, and Work itself stands where the stand in for its
+   bar did. */
 .page[data-embed] {
   overflow: visible;
   background: none;
@@ -199,7 +200,7 @@
 
 @media (min-width: 1100px) {
   .page[data-embed] .board {
-    height: calc(var(--ground) + var(--u) * var(--city-keel));
+    height: var(--low);
   }
 
   .page[data-embed] .bar {

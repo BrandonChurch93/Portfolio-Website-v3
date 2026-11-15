@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { hero } from '../../content/hero';
-import { BOARD, CITY, GLOW, HIDE, WORDS, WORK } from '../../hero/board';
+import { BOARD, CITY, CX, SKY, WORDS, WORK } from '../../hero/board';
 import type { HeroStage } from '../../hero/stage';
 import { HOST } from '../../pieces/skycity/layout';
 import { MetalButton } from '../MetalButton';
@@ -14,16 +14,18 @@ import styles from './HeroLab.module.css';
 const u = (n: number) => `calc(var(--u) * ${Number(n.toFixed(2))})`;
 
 // The hero, built for real (BRIEF.md, Settled, "The hero, the city at rest"). The page only lays things out: his
-// words a third of the way down the screen, the city full width along the bottom with the rim of its ground under
-// the foot of the screen, and Work's bar under it, which on this page is a stand in. The city is the piece in
-// src/pieces/skycity, at whatever stage its parts have reached. The stream plans its route from where these are
-// (src/stream/route-hero.ts): from the city's main fall, down the front of its rock, to the bar.
-// There is no opening: the city and the words are simply there. The glow behind the city is a plain one until the
-// sky is in, which draws it. ?ui=0 hides the label.
+// words a third of the way down the screen, and under them the world on the center line: at rest the spire and
+// the crown of the dome, with its torn edge, its core and what broke away under the foot of the screen. Work's bar
+// is under all of it, and on this page is a stand in. The world is the piece in src/pieces/skycity, at whatever
+// stage its parts have reached. The stream plans its route from where these are (src/stream/route-hero.ts): out
+// of the core's underside and down to the bar.
+// There is no opening: the world and the words are simply there. The night sky (src/hero/sky) is behind
+// everything, and draws the glow behind the world. ?ui=0 hides the label.
 // On a page with more sections than this one (hub), it hands the hub its plan, the hub mounts the one stream, and
-// the stream runs on from the city's rock into Work.
+// the stream runs on from the core into Work.
 export function HeroLab({ hub }: { hub?: Hub }) {
   const page = useRef<HTMLElement>(null), board = useRef<HTMLDivElement>(null), city = useRef<HTMLDivElement>(null), bar = useRef<HTMLDivElement>(null), cue = useRef<HTMLParagraphElement>(null);
+  const sky = useRef<HTMLDivElement>(null), words = useRef<HTMLElement>(null);
   const [ui, setUi] = useState(true);
   // Whether the screen is wide enough for the layout. Narrower, the page is a plain stand in with no stream and no city.
   const [wide, setWide] = useState<boolean | null>(null);
@@ -46,10 +48,35 @@ export function HeroLab({ hub }: { hub?: Hub }) {
     return () => { gone = true; made?.dispose(); };
   }, [wide, hub]);
 
+  // The sky is planned from where the page has put the words and the world.
+  useEffect(() => {
+    if (!wide || !board.current || !city.current || !sky.current || !words.current) return;
+    const b = board.current, c = city.current, w = words.current, host = sky.current;
+    let made: { replan(): void; dispose(): void } | null = null, gone = false;
+    const plan = () => {
+      const u = b.offsetWidth / BOARD.w, tip = c.offsetTop + CITY.over * u, end = tip + CITY.edge * u;
+      return {
+        w: b.offsetWidth, h: end + SKY.tail * u, u,
+        words: { x: CX * u, y: w.offsetTop + (WORDS.tall / 2) * u, rx: SKY.clear.rx * u, ry: SKY.clear.ry * u },
+        glow: { x: CX * u, y: tip + (CITY.pole + SKY.glow.down) * u, rx: SKY.glow.rx * u, ry: SKY.glow.ry * u, strength: 1 },
+        moon: { x: SKY.moon.x * u, y: SKY.moon.y * u, r: SKY.moon.r * u, with: 'none' as const },
+        band: { x: SKY.band.x * u, y: SKY.band.y * u, rx: SKY.band.rx * u, ry: SKY.band.ry * u, turn: SKY.band.turn },
+        end,
+      };
+    };
+    void import('../../hero/sky').then(({ mountSky }) => {
+      if (gone) return;
+      made = mountSky(host, plan);
+    });
+    const watch = new ResizeObserver(() => made?.replan());
+    watch.observe(b);
+    return () => { gone = true; watch.disconnect(); made?.dispose(); };
+  }, [wide]);
+
   const vars = {
     '--words-tall': WORDS.tall, '--words-least': WORDS.least, '--words-third': WORDS.third, '--words-rise': WORDS.rise, '--words-gap': WORDS.gap,
-    '--hide': HIDE, '--city-tall': CITY.tall, '--city-over': CITY.over, '--city-under': CITY.under, '--city-keel': CITY.keel, '--work-under': WORK.under, '--work-tail': WORK.tail,
-    '--glow-rx': GLOW.rx, '--glow-ry': GLOW.ry, '--glow-lift': GLOW.lift,
+    '--city-tall': CITY.tall, '--city-over': CITY.over, '--city-edge': CITY.edge, '--city-low': CITY.low, '--work-under': WORK.under, '--work-tail': WORK.tail,
+    '--sky-tail': SKY.tail,
   } as CSSProperties;
 
   return (
@@ -60,11 +87,11 @@ export function HeroLab({ hub }: { hub?: Hub }) {
         </div>
       )}
       <div ref={board} className={styles.board} style={vars}>
-        <div className={styles.glow} aria-hidden="true" />
+        <div ref={sky} className={styles.sky} aria-hidden="true" />
         <div ref={city} className={styles.city} style={{ width: u(HOST.wide) }}>
           {wide && <PieceView name="skycity" className={styles.piece} />}
         </div>
-        <header className={styles.words} style={{ width: u(WORDS.w) }}>
+        <header ref={words} className={styles.words} style={{ width: u(WORDS.w) }}>
           <p className={styles.role}>{hero.role}</p>
           <h1 className={styles.name}>{hero.name}</h1>
           <p className={styles.lead}>{hero.lead}</p>

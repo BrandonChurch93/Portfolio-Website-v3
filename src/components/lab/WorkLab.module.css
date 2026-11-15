@@ -252,6 +252,6 @@
 
 @media (min-width: 1100px) {
   .page[data-embed='under'] .section {
-    padding-top: calc(min(100vw, 2400px) / 1460 * 330);
+    padding-top: calc(min(100vw, 2400px) / 1460 * 480);
   }
 }

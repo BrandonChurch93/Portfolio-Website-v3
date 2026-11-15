@@ -6,6 +6,87 @@ Read `reference/kits/README.md` first: the bar, the colors and "The look" hold f
 
 `BRIEF.md`, Settled, "The hero, the city at rest", items 3 to 7 and 10, is the agreement. `QUALITY.md`, "The hero, the city at rest", tests 2, 3, 7 and 8, is how it is judged. The wireframe he approved is at `/lab/hero-draft` (scroll it): it settles where the city sits and how much of it shows, and nothing about its look. It is the first thing a visitor sees, and it is the thing he has asked for longest.
 
+## The torn world (Nov 14, late): what every builder shares
+
+**This section is the newest. Where anything below it disagrees with it, this section wins.** The frame it describes is in the code now: `src/pieces/skycity/layout.ts`, `part.ts`, `index.ts`.
+
+### His words
+
+- "The city no longer stands on a flat floating disc. It stands on the top of a small planet that has been ripped in half."
+- "The ground is the top of a little planet: a dome, a bit less than half a sphere, curved side up. The world is on the curved top. It is art, so everything on it is far bigger than it would be on a real planet. That gives you a lot of room to make it big, varied and grand."
+- "The underside is torn, not cut. It has to look like the planet was ripped in half: jagged, broken, its layers showing. No flat base and no clean edge."
+- "In the torn face I can see the planet's core: a real 3D thing, burning and moving. Our stream comes out of the core. The core is where the stream begins, so it has to be the same light as the stream, not lava."
+- "Streams of that same light also leave the torn face at several other points."
+- "Debris round the torn underside: pieces of the planet, from big slabs down to small shards. Some orbiting slowly, some holding still with one face to the core, some tumbling. A lot of variation, so it feels like the planet really was destroyed halfway. The smallest pieces should match the shards in the stream."
+- "The bar: this is the best 3D object on the whole site. I want a visitor to feel they are looking at a real thing that was photographed. Hyper realistic, even though nothing like it exists."
+- "I want the whole surface of this world covered in detailed 3D art, with nothing bland or empty on it."
+- The three changes before it all still hold: rings on the spire, gold, bronze and copper used freely, and a small world with many kinds of place, not towers from edge to edge. A Star Trek future city with the flair of ancient Egypt. Nature in the site's colors, never green.
+
+### The frame
+
+- **Units** are as before: one a CSS pixel on a screen 1460 wide. **The origin is the top of the dome,** where the spire stands. x to the visitor's right, y up, z toward the visitor. The planet's middle is straight down from it: `HEART`, 675 under the origin.
+- **The planet** (`PLANET`): a sphere 675 in radius, kept from its top round to 78 degrees. So the dome is about 1320 across at its torn edge and about 535 tall. The spire is 220 (`SPIRE`), down from 420: he wants more of the ground in sight at rest.
+- **The plan is a flat map laid over the dome from its top.** A place on the map is so far to the right of the top and so far toward the visitor, measured along the ground. `RINGS`, `AVENUES`, `DISTRICTS`, `lots()` and every place a part already knows are places on this map, unchanged. Three functions put the map on the dome:
+    - `seat(x, z, up, spin)` is the matrix that stands something, built upright at the origin, on the ground at a place on the map. Use it for everything that stands: a tower, a tree, a column, a statue, a craft's pad. **Everything stands straight out from the ground under it,** so the skyline fans.
+    - `lift(x, y, z)` is a place on the map, at a height above the ground there, as a point of the frame. Use it for what moves: a craft's path, a car on a road.
+    - `bend(geometry)` lays a geometry built flat on the map over the dome. Use it for what lies on the ground: a floor, a road, a wall, a terrace, a field. Not for what stands tall, which would spread as it rises.
+- **A shader that works something out from where a point is** (a plan drawn per pixel, a height, a fade) must be given the map's own coordinates as an attribute before the geometry is bent. In the frame, y is no longer height above the ground.
+- **The torn edge** is `EDGE.at(bearing)`: how far out on the map the ground reaches at a bearing. It is ragged, between about 823 and 919. The ground above and the torn rock below both end exactly on it.
+- **The broken margin:** from `MARGIN` (760 on the map) out to the torn edge the world is damaged.
+- **The core** (`CORE`, `HEART`, `SOURCE`): a ball 150 in radius at the planet's middle. `coreLevel(t)` is how bright it burns. The stage hands it to every part each frame as `s.core`.
+- **The torn underside** hangs no lower than `TEAR.low`, and is torn back round the core into a hollow `TEAR.hollow` across, open toward the visitor.
+- **The vents** (`VENTS`): six points of the frame where streams of the stream's light leave the torn face. The stream draws them. The tear makes the places.
+- **What broke away** lies inside `DEBRIS`: no lower, no further out, no higher.
+- **The view** (`VIEW`) is from straight in front and 4.5 degrees up, from far away, and it never moves. The world scrolls with the page. `drawn(x, y, z)` says where a point of the frame is drawn in the host.
+
+### What the view means for your part
+
+- **Only the front half of the world is ever seen.** What stands on the far side shows only where it rises over the crown. Spend nothing there.
+- **The limbs are the skyline.** At a bearing near 90 (the visitor's right) and 270 (the left), things stand out sideways against the sky, in outline, all the way down to the torn edge.
+- **The face toward the visitor is seen from above.** At bearings near 0, from about 300 out on the map to the torn edge, the ground faces the camera more and more squarely, until near the edge it is seen almost straight on, like a wall, with what stands on it pointing at the visitor. This is the largest surface of the world on the screen, and it is where "nothing bland or empty" is won or lost: its floor, its roofs and its tops are what is seen.
+- **At rest only the crown shows:** the spire and the ground down to about 190 under the top, which is out to about 520 on the map at the limbs. The rest comes up as the page scrolls, and then it is close to the middle of the screen with nothing competing with it.
+
+### The stage's lights, which are not yours to change
+
+- **The moon,** from the upper right and a little in front: the key light. It gives the world a lit side and a dark one. Its shadows are real and are drawn once, when the world is built. **So nothing that moves may cast a shadow** (`castShadow = false` on it), or it leaves a stain. Everything that stands still casts and receives.
+- **The cursor's light,** which moves, with its own shadows drawn when it moves.
+- **The core's light:** a light at `HEART` in the stream's hot color, flickering with `coreLevel`. It lights the torn rock and what broke away.
+- **The room,** reflected, and a dim sky light. No part adds a light of its own. A part that added a moonlight of its own takes it out.
+
+### What the stage does for a part
+
+- A part none of which is on the screen is not drawn and its `update` is not called. `s.seen` gives the heights of the frame the screen shows, for a part that wants to do less.
+- `s.core` is the core's brightness now. `s.still` is as before.
+
+### The nine parts
+
+| Part | What it is now |
+|---|---|
+| `ground` | The top of the dome out to the torn edge: its floor everywhere no other part has one, the streets and squares of the core, the roads out to the edge, and the broken margin with what is cracked, leaning and fallen |
+| `spire` | As it was, 220 tall, on the top of the dome |
+| `towers` | As they were, seated on the dome, the tallest about 165 |
+| `temple`, `gardens`, `port` | As they were, on the dome, each reaching further out than before (`DISTRICTS`) |
+| `tear` | The torn underside: the planet's inside in section, its layers, its veins of metal, the hollow round the core, the vents |
+| `core` | The planet's core: a 3D thing of the stream's own light |
+| `debris` | What broke away: slabs to shards, orbiting, holding still to the core, tumbling |
+
+### What a part may cost now
+
+| Part | Programs | Triangles | First frame |
+|---|---|---|---|
+| ground | 5 | 220,000 | 60 ms |
+| tear | 4 | 220,000 | 60 ms |
+| core | 4 | 40,000 | 20 ms |
+| debris | 3 | 90,000 | 30 ms |
+| the rest | as below | as below | as below |
+
+### How to look at it now
+
+- **The world in the hero:** `npm run shot -- "/lab/hero?ui=0" --wait 6000 --out shots/hero/<name>.jpg`, and `--scroll 400`, `700`, `1000`, `1300` for the rest of it, a screen at a time.
+- **One part alone:** `/lab/piece/skycity?only=tear&label=0&ui=0`, close with `--scale 3`.
+- **The piece at the page's size:** `/lab/piece/skycity?label=0&ui=0&size=1370&wide=1460`.
+- Many builders share one dev server. If a page will not load, another builder's file is half written: wait and try again. Do not start or stop a server.
+
 ## Changed Nov 14, night: his look at the first full build
 
 He saw the first full build and asked for three changes. `BRIEF.md`, Settled, "The hero, the city at rest", item 4, has them. **Where anything below this section disagrees with it, this section wins.**

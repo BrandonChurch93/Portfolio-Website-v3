@@ -1,0 +1,479 @@
+import { registry, stats } from '../../hooks/registry';
+import { clock } from '../../world/clock';
+import { CRATER, SECOND, SPARK, SPLAT, TINT, craters, meteorAt, meteors, mix3, scale3, sparks, stars, type Meteor, type V3 } from './field';
+import { BAND_FS, BLIT_FS, GLOW_FS, HEIGHT_FS, METEOR_FS, MOON_FS, RECT_VS, RESOLVE_FS, SPARK_FS, SPARK_VS, SPLAT_FS, SPLAT_VS } from './shaders';
+
+// The night sky of the hero, on its own canvas: the stars, the bright few with four points, a moon, a band of far
+// stars, the city's glow, and now and then a meteor. What never changes is drawn once into a texture when the plan
+// changes. Each frame after that draws only the texture, the bright few and a meteor, and only when one of them has
+// changed.
+
+export interface Oval { x: number; y: number; rx: number; ry: number }
+
+// Everything the page tells the sky, in CSS pixels of the host.
+export interface SkyPlan {
+  w: number;
+  h: number;
+  // How many pixels one unit of the page's board is.
+  u: number;
+  // The block of his words: kept wholly clear, the stars thinning toward it.
+  words: Oval;
+  // The city's glow, drawn as light, and what the stars fade into. strength 1 is as designed.
+  glow: Oval & { strength: number };
+  // with: a thin ring round the moon, a small second moon beside it, or neither.
+  moon: { x: number; y: number; r: number; with: 'none' | 'ring' | 'moon' };
+  // turn: degrees, as an SVG rotate.
+  band: Oval & { turn: number };
+  // How far down the host the sky ends. No star below it.
+  end: number;
+}
+
+export interface Sky { replan(): void; dispose(): void; meteor(): void }
+
+const MAX_DPR = 2;
+const TWINKLE = { hz: 12, amp: 0.07 } as const;
+// Every bright star's spikes lie the same way, as one lens draws them, a little off square.
+const TILT = 0.21;
+// How bright anything in the sky may get: a share of pale gold.
+const CEIL = 0.8;
+const BAND = { bright: 0.056 } as const;
+const GLOW = { peak: 0.13, down: 0.42 } as const;
+const MOON = {
+  sun: [-0.7, -0.36, 0.62] as V3,
+  earth: [0.18, -0.3, 1] as V3,
+  sunI: 0.5,
+  earthI: 0.0022,
+  exag: 1.0,
+  haloI: 0.006,
+  span: 1.02,
+  mare: [[-0.42, -0.12, 0.5], [0.0, -0.55, 0.4], [0.45, 0.05, 0.36], [-0.45, 0.55, 0.3]] as [number, number, number][],
+  ring: { open: 0.2, roll: -0.36, r: [1.62, 2.12] as [number, number] },
+} as const;
+
+const norm = (v: V3): V3 => { const l = Math.hypot(v[0], v[1], v[2]); return [v[0] / l, v[1] / l, v[2] / l]; };
+const onSphere = (x: number, y: number): V3 => [x, y, Math.sqrt(Math.max(0, 1 - x * x - y * y))];
+
+type Prog = { p: WebGLProgram; u: (n: string) => WebGLUniformLocation | null };
+
+function program(gl: WebGL2RenderingContext, vs: string, fs: string): Prog {
+  const p = gl.createProgram()!;
+  for (const [type, src] of [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]] as [number, string][]) {
+    const sh = gl.createShader(type)!;
+    gl.shaderSource(sh, src);
+    gl.compileShader(sh);
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS) && !gl.isContextLost()) throw new Error(`sky shader: ${gl.getShaderInfoLog(sh)}`);
+    gl.attachShader(p, sh);
+  }
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS) && !gl.isContextLost()) throw new Error(`sky program: ${gl.getProgramInfoLog(p)}`);
+  const found = new Map<string, WebGLUniformLocation | null>();
+  return { p, u: (n) => { if (!found.has(n)) found.set(n, gl.getUniformLocation(p, n)); return found.get(n)!; } };
+}
+
+function target(gl: WebGL2RenderingContext, w: number, h: number, float: boolean): { fb: WebGLFramebuffer; tex: WebGLTexture } {
+  const tex = gl.createTexture()!;
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texStorage2D(gl.TEXTURE_2D, 1, float ? gl.RGBA16F : gl.RGBA8, w, h);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  const fb = gl.createFramebuffer()!;
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  return { fb, tex };
+}
+
+export function mountSky(host: HTMLElement, plan: () => SkyPlan): Sky {
+  const canvas = document.createElement('canvas');
+  canvas.setAttribute('aria-hidden', 'true');
+  Object.assign(canvas.style, { position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', pointerEvents: 'none', display: 'block' });
+  // Where the browser can, the sky is added to the page as light: a premultiplied canvas that is nearly clear is
+  // blended with the ground rounded down in WebKit, which drew a dark ring where the glow begins.
+  const add = typeof CSS !== 'undefined' && CSS.supports('mix-blend-mode', 'plus-lighter');
+  if (add) canvas.style.mixBlendMode = 'plus-lighter';
+  host.appendChild(canvas);
+  const glOr = canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: true, antialias: false, depth: false, stencil: false, preserveDrawingBuffer: false });
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!glOr) return { replan() {}, dispose() { canvas.remove(); }, meteor() {} };
+  const gl = glOr;
+
+  let progs: Record<'splat' | 'band' | 'glow' | 'height' | 'moon' | 'resolve' | 'blit' | 'spark' | 'meteor', Prog>;
+  let quad: WebGLBuffer, splatVao: WebGLVertexArrayObject, sparkVao: WebGLVertexArrayObject, rectVao: WebGLVertexArrayObject;
+  let splatBuf: WebGLBuffer, sparkBuf: WebGLBuffer;
+  let floatOk = false;
+  let sky: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null;
+  let W = 1, H = 1, s = 1, sparkCount = 0, alive = true, dirty = true, visible = true, last = '';
+  let falls: Meteor[] = [];
+  let forced: { at: number; m: Meteor } | null = null;
+  let current: SkyPlan | null = null;
+  const white = scale3(TINT.pale, CEIL);
+
+  const init = () => {
+    floatOk = !!gl.getExtension('EXT_color_buffer_float');
+    progs = {
+      splat: program(gl, SPLAT_VS, SPLAT_FS),
+      band: program(gl, RECT_VS, BAND_FS),
+      glow: program(gl, RECT_VS, GLOW_FS),
+      height: program(gl, RECT_VS, HEIGHT_FS),
+      moon: program(gl, RECT_VS, MOON_FS),
+      resolve: program(gl, RECT_VS, RESOLVE_FS),
+      blit: program(gl, RECT_VS, BLIT_FS),
+      spark: program(gl, SPARK_VS, SPARK_FS),
+      meteor: program(gl, RECT_VS, METEOR_FS),
+    };
+    quad = gl.createBuffer()!;
+    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+    rectVao = gl.createVertexArray()!;
+    gl.bindVertexArray(rectVao);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+
+    splatBuf = gl.createBuffer()!;
+    splatVao = gl.createVertexArray()!;
+    gl.bindVertexArray(splatVao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, splatBuf);
+    const fs = SPLAT * 4;
+    for (const [loc, n, off] of [[1, 2, 0], [2, 3, 2], [3, 3, 5]]) {
+      gl.enableVertexAttribArray(loc);
+      gl.vertexAttribPointer(loc, n, gl.FLOAT, false, fs, off * 4);
+      gl.vertexAttribDivisor(loc, 1);
+    }
+    sparkBuf = gl.createBuffer()!;
+    sparkVao = gl.createVertexArray()!;
+    gl.bindVertexArray(sparkVao);
+    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, sparkBuf);
+    const ss = SPARK * 4;
+    for (const [loc, n, off] of [[1, 2, 0], [2, 3, 2], [3, 4, 5], [4, 2, 9]]) {
+      gl.enableVertexAttribArray(loc);
+      gl.vertexAttribPointer(loc, n, gl.FLOAT, false, ss, off * 4);
+      gl.vertexAttribDivisor(loc, 1);
+    }
+    gl.bindVertexArray(null);
+  };
+
+  const rect = (pr: Prog, x0: number, y0: number, x1: number, y1: number, w = W, h = H) => {
+    gl.uniform2f(pr.u('uSize'), w, h);
+    gl.uniform4f(pr.u('uRect'), x0, y0, x1, y1);
+    gl.bindVertexArray(rectVao);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+  };
+
+  // One moon: its surface worked out into a texture, then lit into the sky.
+  const body = (cx: number, cy: number, R: number, crs: Float32Array, look: { mare: boolean; ring: boolean; seed: number; dark: number; high: V3; low: V3 }) => {
+    const N = Math.min(1024, Math.max(160, Math.ceil(2 * R * MOON.span * 1.6)));
+    const ht = target(gl, N, N, floatOk);
+    const crTex = gl.createTexture()!;
+    const count = crs.length / CRATER;
+    gl.bindTexture(gl.TEXTURE_2D, crTex);
+    const packed = new Float32Array(count * 8);
+    for (let i = 0; i < count; i++) for (let k = 0; k < 4; k++) { packed[i * 4 + k] = crs[i * CRATER + k]; packed[(count + i) * 4 + k] = crs[i * CRATER + 4 + k]; }
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, count, 2, 0, gl.RGBA, gl.FLOAT, packed);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+
+    const hp = progs.height;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, ht.fb);
+    gl.viewport(0, 0, N, N);
+    gl.disable(gl.BLEND);
+    gl.useProgram(hp.p);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, crTex);
+    gl.uniform1i(hp.u('uCr'), 0);
+    gl.uniform1i(hp.u('uCount'), count);
+    gl.uniform1f(hp.u('uFlood'), look.mare ? 0.85 : 0);
+    gl.uniform1f(hp.u('uN'), N);
+    gl.uniform1f(hp.u('uSpan'), MOON.span);
+    gl.uniform1f(hp.u('uPx'), R);
+    gl.uniform1f(hp.u('uSeed'), look.seed);
+    gl.uniform1f(hp.u('uMareDark'), look.dark);
+    const mare = new Float32Array(16);
+    if (look.mare) MOON.mare.forEach(([x, y, r], i) => { const v = onSphere(x, y); mare.set([v[0], v[1], v[2], r], i * 4); });
+    gl.uniform4fv(hp.u('uMare'), mare);
+    rect(hp, 0, 0, N, N, N, N);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, sky!.fb);
+    gl.viewport(0, 0, W, H);
+    gl.enable(gl.BLEND);
+    gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    const mp = progs.moon;
+    gl.useProgram(mp.p);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, ht.tex);
+    gl.uniform1i(mp.u('uHt'), 0);
+    gl.uniform2f(mp.u('uCen'), cx, cy);
+    gl.uniform1f(mp.u('uRad'), R);
+    gl.uniform1f(mp.u('uSpan'), MOON.span);
+    gl.uniform1f(mp.u('uTexN'), N);
+    gl.uniform3fv(mp.u('uSun'), norm(MOON.sun));
+    gl.uniform3fv(mp.u('uEarth'), norm(MOON.earth));
+    gl.uniform1f(mp.u('uSunI'), MOON.sunI);
+    gl.uniform1f(mp.u('uEarthI'), MOON.earthI);
+    gl.uniform1f(mp.u('uExag'), MOON.exag);
+    gl.uniform3fv(mp.u('uHigh'), look.high);
+    gl.uniform3fv(mp.u('uMareC'), look.low);
+    gl.uniform3fv(mp.u('uEarthC'), mix3(TINT.hot, TINT.pale, 0.4));
+    gl.uniform3fv(mp.u('uHaloC'), mix3(TINT.pale, TINT.hot, 0.3));
+    gl.uniform1f(mp.u('uHaloI'), MOON.haloI);
+    const { open, roll, r } = MOON.ring;
+    gl.uniform1i(mp.u('uRing'), look.ring ? 1 : 0);
+    gl.uniform3fv(mp.u('uRingN'), [-Math.sin(roll) * Math.cos(open), Math.cos(roll) * Math.cos(open), Math.sin(open)]);
+    gl.uniform2f(mp.u('uRingR'), r[0], r[1]);
+    gl.uniform3fv(mp.u('uRingC'), mix3(TINT.text, TINT.copper, 0.3));
+    const reach = (look.ring ? r[1] + 0.1 : 2.7) * R;
+    gl.uniform2f(mp.u('uSize'), W, H);
+    rect(mp, cx - reach, cy - reach, cx + reach, cy + reach);
+    gl.deleteFramebuffer(ht.fb);
+    gl.deleteTexture(ht.tex);
+    gl.deleteTexture(crTex);
+  };
+
+  const build = () => {
+    const t0 = performance.now();
+    const p = plan();
+    current = p;
+    s = Math.min(MAX_DPR, devicePixelRatio || 1);
+    W = Math.max(1, Math.round(p.w * s));
+    H = Math.max(1, Math.round(p.h * s));
+    if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
+    if (sky) { gl.deleteFramebuffer(sky.fb); gl.deleteTexture(sky.tex); sky = null; }
+
+    const field = stars(p, s);
+    const bright = sparks(p, s);
+    falls = meteors(p, bright.at);
+    sparkCount = bright.count;
+    gl.bindBuffer(gl.ARRAY_BUFFER, splatBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, field.data, gl.STATIC_DRAW);
+    gl.bindBuffer(gl.ARRAY_BUFFER, sparkBuf);
+    gl.bufferData(gl.ARRAY_BUFFER, bright.data, gl.STATIC_DRAW);
+    const cpu = performance.now() - t0;
+
+    const acc = target(gl, W, H, floatOk);
+    sky = acc;
+    gl.viewport(0, 0, W, H);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.enable(gl.BLEND);
+
+    gl.blendFuncSeparate(gl.ONE, gl.ONE, gl.ZERO, gl.ONE);
+    const sp = progs.splat;
+    gl.useProgram(sp.p);
+    gl.uniform2f(sp.u('uSize'), W, H);
+    gl.uniform1f(sp.u('uS'), s);
+    gl.uniform2f(sp.u('uTilt'), Math.cos(TILT), Math.sin(TILT));
+    gl.bindVertexArray(splatVao);
+    gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, field.count);
+
+    const bp = progs.band, t = (p.band.turn * Math.PI) / 180, ax = Math.cos(t), ay = Math.sin(t);
+    const corners = [[-2, -4], [2, -4], [-2, 4], [2, 4]].map(([a, b]) => [p.band.x + a * p.band.rx * ax - b * p.band.ry * ay, p.band.y + a * p.band.rx * ay + b * p.band.ry * ax]);
+    const bx0 = Math.max(0, Math.min(...corners.map((c) => c[0]))) * s, bx1 = Math.min(p.w, Math.max(...corners.map((c) => c[0]))) * s;
+    const by0 = Math.max(0, Math.min(...corners.map((c) => c[1]))) * s, by1 = Math.min(p.end, Math.max(...corners.map((c) => c[1]))) * s;
+    gl.useProgram(bp.p);
+    gl.uniform2f(bp.u('uC'), p.band.x * s, p.band.y * s);
+    gl.uniform2f(bp.u('uAx'), ax, ay);
+    gl.uniform2f(bp.u('uR'), p.band.rx * s, p.band.ry * s);
+    gl.uniform4f(bp.u('uClear'), p.words.x * s, p.words.y * s, p.words.rx * s, p.words.ry * s);
+    gl.uniform1f(bp.u('uEnd'), p.end * s);
+    gl.uniform1f(bp.u('uFade'), 0.12 * p.h * s);
+    gl.uniform1f(bp.u('uS'), s);
+    gl.uniform1f(bp.u('uBright'), BAND.bright);
+    gl.uniform3fv(bp.u('uBody'), mix3(TINT.text, TINT.pale, 0.55));
+    gl.uniform3fv(bp.u('uCore'), mix3(TINT.pale, TINT.hot, 0.4));
+    if (bx1 > bx0 && by1 > by0) {
+      gl.blendFuncSeparate(gl.ZERO, gl.SRC_COLOR, gl.ZERO, gl.ONE);
+      gl.uniform1i(bp.u('uMode'), 0);
+      rect(bp, bx0, by0, bx1, by1);
+      gl.blendFuncSeparate(gl.ONE, gl.ONE, gl.ZERO, gl.ONE);
+      gl.uniform1i(bp.u('uMode'), 1);
+      rect(bp, bx0, by0, bx1, by1);
+    }
+
+    if (p.glow.strength > 0) {
+      const gp = progs.glow, down = Math.max(1, Math.min(GLOW.down * p.glow.ry, p.h - p.glow.y - 2));
+      gl.useProgram(gp.p);
+      gl.uniform4f(gp.u('uGlow'), p.glow.x * s, p.glow.y * s, p.glow.rx * s, p.glow.ry * s);
+      gl.uniform1f(gp.u('uDown'), down * s);
+      gl.uniform1f(gp.u('uStrength'), p.glow.strength * GLOW.peak);
+      gl.uniform3fv(gp.u('uHotC'), mix3(TINT.flame, TINT.hot, 0.22));
+      gl.uniform3fv(gp.u('uDeepC'), mix3(TINT.ember, TINT.flame, 0.35));
+      rect(gp, Math.max(0, p.glow.x - p.glow.rx) * s, Math.max(0, p.glow.y - p.glow.ry) * s, Math.min(p.w, p.glow.x + p.glow.rx) * s, Math.min(p.h, p.glow.y + down) * s);
+    }
+
+    const R = p.moon.r * s;
+    body(p.moon.x * s, p.moon.y * s, R, craters(4711, 36, [
+      { at: [0.2, 0.3], r: 0.27, kind: 2, peak: 0.3 },
+      { at: [-0.38, -0.32], r: 0.05, kind: 1, peak: 0.4 },
+      { at: [-0.05, -0.72], r: 0.035, kind: 1, peak: 0 },
+      { at: [0.55, -0.2], r: 0.11, kind: 0, peak: 0.35 },
+    ]), { mare: true, ring: p.moon.with === 'ring', seed: 3.7, dark: 0.36, high: mix3(TINT.text, TINT.pale, 0.7), low: mix3(mix3(TINT.text, TINT.pale, 0.5), TINT.bronze, 0.14) });
+    if (p.moon.with === 'moon') {
+      body((p.moon.x + SECOND.dx * p.moon.r) * s, (p.moon.y + SECOND.dy * p.moon.r) * s, R * SECOND.r, craters(907, 14, [
+        { at: [-0.25, 0.1], r: 0.36, kind: 0, peak: 0.45 },
+      ]), { mare: false, ring: false, seed: 9.1, dark: 0.5, high: mix3(TINT.text, TINT.pale, 0.6), low: mix3(TINT.text, TINT.pale, 0.6) });
+    }
+
+    const out = target(gl, W, H, false);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, out.fb);
+    gl.disable(gl.BLEND);
+    const rp = progs.resolve;
+    gl.useProgram(rp.p);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, acc.tex);
+    gl.uniform1i(rp.u('uAcc'), 0);
+    gl.uniform3fv(rp.u('uWhite'), white);
+    gl.uniform1i(rp.u('uAdd'), add ? 1 : 0);
+    rect(rp, 0, 0, W, H);
+    gl.deleteFramebuffer(acc.fb);
+    gl.deleteTexture(acc.tex);
+    sky = out;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    if (new URLSearchParams(location.search).has('hook')) {
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+      stats.skyBuildMs = performance.now() - t0;
+      stats.skyBuildCpuMs = cpu;
+      stats.skyStars = field.count;
+      stats.skyFaint = field.counts.faint;
+      stats.skyClear = field.counts.clear;
+      stats.skyBright = field.counts.bright;
+      stats.skySparks = sparkCount;
+    }
+    dirty = true;
+  };
+
+  const meteorNow = (t: number): { m: Meteor; k: NonNullable<ReturnType<typeof meteorAt>> } | null => {
+    if (still) return null;
+    if (forced) {
+      const k = meteorAt({ ...forced.m, at: forced.at }, t);
+      if (k) return { m: forced.m, k };
+    }
+    for (const m of falls) {
+      if (m.at > t) break;
+      const k = meteorAt(m, t);
+      if (k) return { m, k };
+    }
+    return null;
+  };
+
+  let draws = 0;
+  const draw = (t: number) => {
+    if (!sky) return;
+    const t0 = performance.now();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, W, H);
+    gl.disable(gl.BLEND);
+    const bl = progs.blit;
+    gl.useProgram(bl.p);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, sky.tex);
+    gl.uniform1i(bl.u('uTex'), 0);
+    rect(bl, 0, 0, W, H);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    const tw = Math.floor(t * TWINKLE.hz) / TWINKLE.hz;
+    if (sparkCount) {
+      const sp = progs.spark;
+      gl.useProgram(sp.p);
+      gl.uniform2f(sp.u('uSize'), W, H);
+      gl.uniform1f(sp.u('uT'), tw);
+      gl.uniform1f(sp.u('uAmp'), still ? 0 : TWINKLE.amp);
+      gl.uniform1f(sp.u('uS'), s);
+      gl.uniform3fv(sp.u('uWhite'), white);
+      gl.uniform3fv(sp.u('uRayC'), TINT.hot);
+      gl.uniform2f(sp.u('uTilt'), Math.cos(TILT), Math.sin(TILT));
+      gl.bindVertexArray(sparkVao);
+      gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, sparkCount);
+    }
+    const now = meteorNow(t);
+    if (now) {
+      const { m, k } = now, mp = progs.meteor;
+      const ax = (m.x0 + (m.x1 - m.x0) * k.tail) * s, ay = (m.y0 + (m.y1 - m.y0) * k.tail) * s;
+      const bx = (m.x0 + (m.x1 - m.x0) * k.head) * s, by = (m.y0 + (m.y1 - m.y0) * k.head) * s;
+      const pad = 10 * s;
+      gl.useProgram(mp.p);
+      gl.uniform2f(mp.u('uA'), ax, ay);
+      gl.uniform2f(mp.u('uB'), bx, by);
+      gl.uniform1f(mp.u('uLight'), k.light * m.bright);
+      gl.uniform1f(mp.u('uSpark'), k.spark * m.bright);
+      gl.uniform1f(mp.u('uS'), s);
+      gl.uniform3fv(mp.u('uWhite'), white);
+      gl.uniform3fv(mp.u('uHeadC'), TINT.pale);
+      gl.uniform3fv(mp.u('uTrailC'), mix3(TINT.pale, TINT.hot, 0.6));
+      gl.uniform3fv(mp.u('uTailC'), mix3(TINT.hot, TINT.flame, 0.6));
+      rect(mp, Math.min(ax, bx) - pad, Math.min(ay, by) - pad, Math.max(ax, bx) + pad, Math.max(ay, by) + pad);
+    }
+    draws++;
+    stats.skyFrameMs = performance.now() - t0;
+    stats.skyDraws = draws;
+  };
+
+  const key = (t: number) => {
+    const m = meteorNow(t);
+    if (clock.isFrozen()) return `f${t}`;
+    if (m) return `m${t}`;
+    return still ? 'still' : `t${Math.floor(t * TWINKLE.hz)}`;
+  };
+
+  init();
+  build();
+
+  const seen = new IntersectionObserver((e) => { visible = e[e.length - 1].isIntersecting; });
+  seen.observe(host);
+  const off = clock.onFrame((t) => {
+    if (!alive || !visible || gl.isContextLost()) return;
+    const k = key(t);
+    if (k === last && !dirty) return;
+    last = k;
+    dirty = false;
+    draw(t);
+  });
+
+  const lost = (e: Event) => { e.preventDefault(); sky = null; };
+  const restored = () => { init(); build(); };
+  canvas.addEventListener('webglcontextlost', lost);
+  canvas.addEventListener('webglcontextrestored', restored);
+
+  let fired = 0;
+  const fire = () => { if (falls.length) forced = { at: clock.now(), m: falls[fired++ % falls.length] }; dirty = true; };
+  registry.tool('skyMeteor', fire);
+  registry.tool('skyMeteors', () => falls.slice(0, 20));
+  registry.tool('skyPlan', () => current);
+  // Frame times, each made to wait for the graphics card: n frames with the bright few only, and n with a meteor.
+  registry.tool('skyBench', (n = 60) => {
+    const sync = () => gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+    const time = (fn: (i: number) => void) => { sync(); const t0 = performance.now(); for (let i = 0; i < n; i++) { fn(i); sync(); } return (performance.now() - t0) / n; };
+    const keep = forced;
+    forced = null;
+    const quiet = time((i) => draw(1 + i / 60));
+    const m = falls[0];
+    forced = m ? { at: 0, m } : null;
+    const lit = time((i) => draw((m ? m.dur * 0.6 : 0) + i * 0.001));
+    forced = keep;
+    sync();
+    const t0 = performance.now();
+    build();
+    sync();
+    return { quiet, meteor: lit, build: performance.now() - t0, size: [W, H] };
+  });
+
+  return {
+    replan() { if (alive && !gl.isContextLost()) build(); },
+    meteor: fire,
+    dispose() {
+      alive = false;
+      off();
+      seen.disconnect();
+      canvas.removeEventListener('webglcontextlost', lost);
+      canvas.removeEventListener('webglcontextrestored', restored);
+      gl.getExtension('WEBGL_lose_context')?.loseContext();
+      canvas.remove();
+    },
+  };
+}
+

@@ -8,25 +8,25 @@ import { Stage } from '../../world/stage';
 import type { Anchor } from '../../world/struck';
 import { finish, trueDarks } from '../../world/tone';
 import { SIDE, myTurn } from '../../world/turn';
-import { HOST, SCALE, VIEW } from './layout';
+import { AIM, DEBRIS, HEART, HOST, PLANET, SCALE, SPIRE, TEAR, VIEW, coreLevel } from './layout';
 import { PARTS, type CityPart, type PartFactory, type PartName, type PartState } from './part';
 
-// The city in the hero, made new, as one piece: the ground that floats, the spire, the core's towers, and the places
-// round the core (the temple quarter, the gardens and farms, the port). Each is a part
-// (./part.ts), built in its own file in ./parts and driven from here. This file is the stage they stand on: the
-// view, the lights and the cursor's light.
-// It is drawn at one size, a unit to the same number of pixels whatever its host's height, with the ground a set
-// distance above the foot of its host, by showing a part of a larger view whose middle is the ground's middle: the
-// picture is the same picture at every height.
+// The world in the hero, as one piece: the top of a small planet torn in half, with the city on it, and under it
+// the planet's torn inside, its core and what broke away. Each is a part (./part.ts), built in its own file in
+// ./parts and driven from here. This file is the stage they stand on: the view, the lights and the cursor's light.
+// It is drawn at one size, a unit to the same number of pixels whatever its host's height, with the top of its
+// host a set distance over the spire's tip: the picture is the same picture at every height, and a shorter host
+// only shows less of its foot.
 // ?only=spire shows one part alone.
-// It draws on a clear ground: the night sky and the glow behind it are the page's, and its falls are the stream's.
+// It draws on a clear ground: the night sky and the glow behind it are the page's, and the streams that leave the
+// torn face and the core are the stream's.
 
 const D2R = Math.PI / 180, M = SCALE;
 // A part seen alone: how much of the host's height it fills, and the field of view it is seen with.
 const ALONE = { fill: 0.62, fov: 12 };
 // The cursor's light: how far in front of the city it stands, in metres, how far it ranges across and up as shares
 // of what the host shows, and how strong it is.
-const LAMP = { back: 1.7, across: 1.1, up: 1.1, power: 16 };
+const LAMP = { back: 2.6, across: 1.1, up: 1.1, power: 36 };
 // The canvas fades to nothing over this share of its rim, so nothing can end at its edge.
 const RIM = 0.05;
 // The room the city is seen by, as the desk's is: how strongly its things reflect it, and two wide pale lights in
@@ -38,6 +38,21 @@ const ROOM = {
     { power: 9, size: [3.2, 0.6], at: [1.6, 1.5, -2.2], to: [0, 0.2, 0] },
     { power: 5, size: [3.2, 1.4], at: [-1.8, 1.4, 2.6], to: [0, 0.2, 0] },
   ] as { power: number; size: [number, number]; at: [number, number, number]; to: [number, number, number] }[],
+};
+// The moon, which is in the upper right of the page's sky: the one light that gives the world a lit side and a dark
+// one. Where it stands from the world, how strong it is, and how many pixels across its shadows are drawn. It never
+// moves, so its shadows are drawn once.
+const MOON = { from: [0.56, 0.6, 0.57] as const, power: 1.5, map: { high: 4096, mid: 2048, low: 1024, static: 2048 } as Record<Tier, number>, reach: 1100 };
+// The light the core throws on the torn rock and on what broke away.
+const GLOW = { power: 0.9 };
+// The heights of the frame each part lies between, lowest first. A part none of which the screen shows is not
+// drawn and is not told the time, so the core and what broke away cost nothing while they are under the foot of
+// the screen, and the city costs nothing once it is over the top.
+const EDGE_Y = -PLANET.r * (1 - Math.cos((PLANET.cap * Math.PI) / 180)), TOP = SPIRE.tall + HOST.over;
+const ABOVE: readonly [number, number] = [EDGE_Y - 80, TOP];
+const SPAN: Record<PartName, readonly [number, number]> = {
+  ground: [EDGE_Y - 80, 60], spire: ABOVE, towers: ABOVE, temple: ABOVE, gardens: ABOVE, port: ABOVE,
+  tear: [TEAR.low - 80, EDGE_Y + 80], core: [HEART[1] - 340, HEART[1] + 340], debris: [DEBRIS.low - 80, DEBRIS.high + 80],
 };
 function room(): THREE.Scene {
   const s = studioScene();
@@ -54,6 +69,9 @@ const loaders: Record<PartName, () => Promise<PartFactory>> = {
   ground: () => import('./parts/ground').then((m) => m.build),
   spire: () => import('./parts/spire').then((m) => m.build),
   towers: () => import('./parts/towers').then((m) => m.build),
+  tear: () => import('./parts/tear').then((m) => m.build),
+  core: () => import('./parts/core').then((m) => m.build),
+  debris: () => import('./parts/debris').then((m) => m.build),
   temple: () => import('./parts/temple').then((m) => m.build),
   gardens: () => import('./parts/gardens').then((m) => m.build),
   port: () => import('./parts/port').then((m) => m.build),
@@ -73,6 +91,8 @@ export function createSkyCity(): CityPiece {
   let parts: { name: PartName; part: CityPart }[] = [];
   let off: (() => void) | null = null, watch: ResizeObserver | null = null, near: IntersectionObserver | null = null;
   let seen = true, stale = true, moving = false, urgent = false, cast = true, hold: number | null = null, only: PartName | null = null;
+  let host: HTMLElement | null = null, moon: THREE.DirectionalLight | null = null, glow: THREE.PointLight | null = null, all = true;
+  const shows: [number, number] = [-1e9, 1e9];
   let lampUV = { x: 0.62, y: 0.3 };
   const built: Record<string, number> = {};
   let first = 0;
@@ -82,8 +102,8 @@ export function createSkyCity(): CityPiece {
 
   const place = () => {
     if (!stage) return;
-    const cam = stage.camera, a = VIEW.az * D2R, e = VIEW.el * D2R;
-    let d = VIEW.back * M, tall = 1;
+    const cam = stage.camera, a = VIEW.az * D2R, e = VIEW.el * D2R, px = stage.width / HOST.wide;
+    let d = VIEW.back * M, tall = (stage.height / px) * M;
     if (only) {
       cam.clearViewOffset();
       cam.fov = ALONE.fov;
@@ -91,38 +111,54 @@ export function createSkyCity(): CityPiece {
       cam.aspect = stage.width / stage.height;
       tall = 2 * reach;
     } else {
-      // The whole view has the stone at its middle, and the host shows its upper part, down to a little under the
-      // stone.
-      const px = stage.width / HOST.wide, whole = Math.max(stage.height, 2 * (stage.height - HOST.up * px));
-      cam.fov = (2 * Math.atan(((whole / px) * M) / (2 * d))) / D2R;
-      cam.setViewOffset(stage.width, whole, 0, 0, stage.width, stage.height);
-      tall = (stage.height / px) * M;
+      // The whole view is the host at its full height, and a host shows it from the top down.
+      aim.set(AIM[0], AIM[1], AIM[2]).multiplyScalar(M);
+      cam.fov = (2 * Math.atan((HOST.tall * M) / (2 * d))) / D2R;
+      cam.setViewOffset(stage.width, HOST.tall * px, 0, 0, stage.width, stage.height);
     }
     cam.position.set(aim.x + d * Math.cos(e) * Math.sin(a), aim.y + d * Math.sin(e), aim.z + d * Math.cos(e) * Math.cos(a));
     cam.lookAt(aim);
     cam.updateProjectionMatrix();
     cam.updateMatrixWorld(true);
     cam.matrixWorld.extractBasis(right, up, back);
-    // The middle of what the host shows, at the stone's distance.
+    // The middle of what the host shows, at the world's distance.
     mid.copy(aim);
-    if (!only) mid.addScaledVector(up, tall / 2 - HOST.up * M);
+    if (!only) mid.addScaledVector(up, (HOST.tall * M - tall) / 2);
     const wide = tall * (stage.width / stage.height);
     stage.lamp.position.copy(mid).addScaledVector(right, (lampUV.x - 0.5) * wide * LAMP.across).addScaledVector(up, (0.5 - lampUV.y) * tall * LAMP.up).addScaledVector(back, LAMP.back);
-    stage.lamp.target.position.copy(only ? aim : mid).multiplyScalar(only ? 1 : 0.5);
+    stage.lamp.target.position.copy(mid);
     cursor.copy(stage.lamp.position).divideScalar(M);
+  };
+
+  // Which heights of the frame the screen shows, and so which parts are drawn.
+  const look = () => {
+    if (!stage || !host || only || all) { shows[0] = -1e9; shows[1] = 1e9; }
+    else {
+      const r = host.getBoundingClientRect(), px = stage.width / HOST.wide;
+      shows[1] = TOP - Math.max(0, -r.top) / px;
+      shows[0] = TOP - Math.min(r.height, innerHeight - r.top) / px;
+    }
+    for (const { name, part } of parts) {
+      const on = SPAN[name][1] >= shows[0] && SPAN[name][0] <= shows[1];
+      if (on !== part.group.visible) { part.group.visible = on; stale = true; if (on) cast = true; }
+    }
   };
 
   const frame = () => {
     if (!stage || !seen) return;
     const frozen = clock.isFrozen() || hold !== null;
+    look();
     if (!stale && !moving) return;
     if (!urgent && !frozen && !myTurn(SIDE.desk)) return;
     urgent = false;
     stale = false;
     place();
-    const s: PartState = { t: hold ?? clock.now(), cursor, still: reduced || frozen || stage.tier === 'static' };
+    const t = hold ?? clock.now(), still = reduced || frozen || stage.tier === 'static';
+    const s: PartState = { t, cursor, still, core: reduced ? 1 : coreLevel(t), seen: shows };
+    if (glow) glow.intensity = GLOW.power * s.core;
     moving = false;
-    for (const { part } of parts) if (part.update?.(s) && !s.still) moving = true;
+    for (const { part } of parts) if (part.group.visible && part.update?.(s) && !s.still) moving = true;
+    if (all) { all = false; stale = true; }
     if (cast || frozen) stage.lamp.shadow.needsUpdate = true;
     cast = false;
     stage.render();
@@ -134,6 +170,7 @@ export function createSkyCity(): CityPiece {
       canvas.setAttribute('aria-hidden', 'true');
       canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;display:block';
       h.prepend(canvas);
+      host = h;
       const q = new URLSearchParams(location.search), asked = q.get('only') as PartName | null;
       only = asked && PARTS.includes(asked) ? asked : null;
       stage = new Stage(h, canvas, { tier: opts.tier, fov: ALONE.fov, near: 0.3, far: 40, bloom: { strength: 0.2, threshold: 1.8, radius: 0.35 }, ao: 0.02, aoIntensity: 1, aoSamples: 8, aoScale: 0.5, bloomScale: 0.5, envIntensity: ROOM.env, env: room, lampAngle: 0.9 });
@@ -159,6 +196,21 @@ export function createSkyCity(): CityPiece {
       stage.lamp.intensity = LAMP.power;
       stage.lamp.shadow.autoUpdate = false;
       stage.lamp.shadow.needsUpdate = true;
+      moon = new THREE.DirectionalLight(hex('pale'), MOON.power);
+      moon.position.set(...MOON.from).multiplyScalar(4).add(new THREE.Vector3(...AIM).multiplyScalar(M));
+      moon.target.position.set(...AIM).multiplyScalar(M);
+      moon.castShadow = true;
+      const reachM = MOON.reach * M, cam = moon.shadow.camera;
+      cam.left = -reachM; cam.right = reachM; cam.top = reachM; cam.bottom = -reachM; cam.near = 0.5; cam.far = 8;
+      moon.shadow.mapSize.setScalar(MOON.map[opts.tier]);
+      moon.shadow.bias = -0.0004;
+      moon.shadow.normalBias = 0.003;
+      moon.shadow.autoUpdate = false;
+      moon.shadow.needsUpdate = true;
+      s.add(moon, moon.target);
+      glow = new THREE.PointLight(hex('hot'), GLOW.power, 0, 2);
+      glow.position.set(...HEART).multiplyScalar(M);
+      s.add(glow);
 
       if (only && parts[0]) {
         root.updateMatrixWorld(true);
@@ -200,7 +252,17 @@ export function createSkyCity(): CityPiece {
     setProgress() {},
     setWaterLight() {},
     setMaking(on: boolean) { if (stage) { stage.setMaking(on, stage.scene); stale = true; } },
-    setTier(tier: Tier) { if (!stage) return; stage.setTier(tier); finish(stage, RIM); cast = true; stale = true; },
+    setTier(tier: Tier) {
+      if (!stage) return;
+      stage.setTier(tier);
+      finish(stage, RIM);
+      // The moon's shadows are drawn again, with every part showing.
+      if (moon) moon.shadow.needsUpdate = true;
+      for (const { part } of parts) part.group.visible = true;
+      all = true;
+      cast = true;
+      stale = true;
+    },
     freeze(t: number | null) { hold = t; stale = true; frame(); },
     view() {},
     dispose() {
