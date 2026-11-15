@@ -8,7 +8,7 @@ import { Stage } from '../../world/stage';
 import type { Anchor } from '../../world/struck';
 import { finish, trueDarks } from '../../world/tone';
 import { SIDE, myTurn } from '../../world/turn';
-import { AIM, DEBRIS, HEART, HOST, PLANET, SCALE, SPIRE, TEAR, VIEW, coreLevel } from './layout';
+import { AIM, DEBRIS, HEART, HOST, MOONWARD, PLANET, SCALE, SPIRE, TEAR, VIEW, coreLevel } from './layout';
 import { PARTS, type CityPart, type PartFactory, type PartName, type PartState } from './part';
 
 // The world in the hero, as one piece: the top of a small planet torn in half, with the city on it, and under it
@@ -40,9 +40,9 @@ const ROOM = {
   ] as { power: number; size: [number, number]; at: [number, number, number]; to: [number, number, number] }[],
 };
 // The moon, which is in the upper right of the page's sky: the one light that gives the world a lit side and a dark
-// one. Where it stands from the world, how strong it is, and how many pixels across its shadows are drawn. It never
+// one. Where it stands from the world (the plan has it), how strong it is, and how many pixels across its shadows are drawn. It never
 // moves, so its shadows are drawn once.
-const MOON = { from: [0.8, 0.46, 0.08] as const, power: 15, map: { high: 4096, mid: 2048, low: 1024, static: 2048 } as Record<Tier, number>, reach: 1100 };
+const MOON = { from: MOONWARD, power: 15, map: { high: 4096, mid: 2048, low: 1024, static: 2048 } as Record<Tier, number>, reach: 1100 };
 // The dim light of the sky, which fills what the moon does not reach. It is kept low: with more, the world had no
 // dark side and read as flat.
 const SKY = 0.1;

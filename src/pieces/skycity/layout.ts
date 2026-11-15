@@ -222,6 +222,11 @@ export function lots(): Lot[] {
   return out;
 }
 
+// Where the moon stands from the world: the way its light comes from, which is the world's key light. From the
+// visitor's right and a little in front, as the moon is in the upper right of the page's sky. A part that draws a
+// sheen or a shadow of its own from the moon reads it here.
+export const MOONWARD = [0.8, 0.46, 0.08] as const;
+
 // How it is looked at: from straight in front and a little above, in degrees, from this far away, in units. The
 // view never moves: the world scrolls with the page.
 export const VIEW = { az: 0, el: 4.5, back: 9000 } as const;
