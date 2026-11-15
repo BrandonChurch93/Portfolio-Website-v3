@@ -12,12 +12,13 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 
 - Study 31 is built and pushed: A, a river world, and C, a crystal world, each on the real planet. `BRIEF.md`, Settled, Hero, "Two worlds, as built" says what each holds. `CLAUDE.md` has the files.
 - Look A's first try, rows of towers round the spire, is gone. The stage and the kit from it were kept.
-- Stills kept: `reference/studies/60-hero-two-worlds-a-the-river-world.jpg` and `60-hero-two-worlds-c-the-crystal-world.jpg`.
+- Stills kept: `reference/studies/60-hero-two-worlds-a-the-river-world.jpg` and `60-hero-two-worlds-c-the-crystal-world.jpg`, each also `-close`.
 
 **What the build taught**
 
 - A ground seen nearly edge on mirrors the room behind it whatever its own color: a black planet came out cream. `material.envMapIntensity` does nothing for the scene's own environment in this version of three. Give the material the room as its own `envMap` and it does (`dim` in `src/surface-looks/kit.ts`).
 - Under the hero stage's bloom a ring of polished gold reads as a tube of neon. The study uses less.
+- The larger cause of the neon was the core's light: a point light with no shadow, which shines up through the planet onto whatever is above it. What stands on top of the planet now takes no light from it (`above` in `src/surface-looks/scene.ts`). The hero's own stage has the same light, so the built city was lit from below by it too.
 - The real `tear`, `core` and `debris` parts can be hosted on another stage from their own build functions, with nothing of the piece changed. A still with them takes about two minutes in software.
 - A shape is only different if the tallest things are not at the middle. Putting each quarter's peak part way down its river, and leaving the middle of the picture to a valley, is what broke the mound.
 
