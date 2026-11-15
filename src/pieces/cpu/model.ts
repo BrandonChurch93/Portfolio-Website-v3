@@ -25,8 +25,10 @@ export interface PartDef {
   r: number;
   // A part that swings shut on a hinge: a point on the axis, the axis, and how far open it stands.
   hinge?: { p: Vec3; d: Vec3; open: number };
-  // The row it comes home with, for the parts round the socket.
+  // The row it comes home with, for the parts round the socket, and the group that comes home as one shard: a power
+  // stage, a run of small parts.
   row?: string;
+  group?: string;
   // Its extent at rest, filled in as it is built.
   lo: Vec3;
   hi: Vec3;
@@ -154,13 +156,13 @@ export async function buildCpu(): Promise<CpuModel> {
   // Steel worn back to bright metal on its edges and corners.
   const wear = partChunks({
     head: `float cpuWear(){ float k = 1.0 - abs(vObjN.y); float bev = smoothstep(0.06, 0.3, k) * (1.0 - smoothstep(0.7, 0.96, k)); return bev * (0.3 + 0.7 * smoothstep(0.34, 0.64, wFbm(vObj * 0.8 + 5.0))); }`,
-    color: `diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 1.5 + ${lin(hex('bronze'))} * 0.04, cpuWear() * 0.6);`,
-    rough: 'roughnessFactor = mix(roughnessFactor, 0.16, cpuWear());',
+    color: `diffuseColor.rgb = mix(diffuseColor.rgb, ${lin(shade('text', 0.62))} * 0.55 + ${lin(hex('bronze'))} * 0.45, cpuWear() * 0.85);`,
+    rough: 'roughnessFactor = mix(roughnessFactor, 0.14, cpuWear());',
   }, { bounce: false });
-  const steel = metal({ name: 'cpuSteel', color: shade('text', 0.52), rough: 0.34, brush: 'x', tarnish: 0.18, patina: GREY, extra: wear });
+  const steel = metal({ name: 'cpuSteel', color: shade('text', 0.26), rough: 0.36, brush: 'x', tarnish: 0.18, patina: GREY, extra: wear });
   steel.userData.uniforms = u;
   // The lever's own steel: drawn from the same metal, a little brighter where it has been handled.
-  const leverSteel = metal({ name: 'cpuLever', color: shade('text', 0.56), rough: 0.26, brush: 'z', tarnish: 0.12, patina: GREY, extra: partChunks({}, { bounce: false }) });
+  const leverSteel = metal({ name: 'cpuLever', color: shade('text', 0.3), rough: 0.28, brush: 'z', tarnish: 0.12, patina: GREY, extra: partChunks({}, { bounce: false }) });
   leverSteel.userData.uniforms = u;
   const etch = lidEtch();
   const lidC = `vec2(${SOCKET.x.toFixed(2)}, ${SOCKET.z.toFixed(2)})`;
@@ -179,7 +181,7 @@ float cpuLines(){ float px = length(fwidth(vObj.xz)); float a = 1.0 - smoothstep
     }),
   });
   lid.userData.uniforms = { ...u, uEtch: { value: etch } };
-  lid.envMapIntensity = 0.5;
+  lid.envMapIntensity = 0.35;
   const copper = metal({ name: 'cpuCopper', color: shade('copper', 0.8), rough: 0.36, tarnish: 0.2, patina: BROWN, extra: partChunks() });
   copper.userData.uniforms = u;
   const contacts = metal({
@@ -375,7 +377,7 @@ float cpuLines(){ float px = length(fwidth(vObj.xz)); float a = 1.0 - smoothstep
   await pause();
 
   // The power header in the corner the stream strikes: eight keyed cavities with a pin in each, a latch ramp.
-  const iEps = part({ kind: 'round', c: [EPS.x, EPS.h / 2, EPS.z], r: 10, row: 'eps' });
+  const iEps = part({ kind: 'round', c: [EPS.x, EPS.h / 2, EPS.z], r: 10, row: 'eps', group: 'eps' });
   {
     const outl = rounded(rrect(0, 0, EPS.w, EPS.d, 0.7));
     const holes: THREE.Vector2[][] = [];
@@ -399,7 +401,8 @@ float cpuLines(){ float px = length(fwidth(vObj.xz)); float a = 1.0 - smoothstep
     const row = ph.turn ? 'left' : 'top';
     const turn = (x: number, y: number, z: number, cx: number, cz: number) => xf({ p: [cx + (ph.turn ? z : x), y, cz + (ph.turn ? -x : z)], r: [0, ph.turn, 0].map((v) => (v ? Math.PI / 2 : 0)) as Vec3 });
     const [cx, cz] = ph.choke;
-    const iChoke = part({ kind: 'round', c: [cx, 2.5, cz], r: 5, row });
+    const group = `stage${n}`;
+    const iChoke = part({ kind: 'round', c: [cx, 2.5, cz], r: 5, row, group });
     add(iChoke, printed(rbox(CHOKE.w, CHOKE.h, CHOKE.w, 0.5, 2), n % 2 ? 'choke2' : 'choke', CHOKE.w - 0.6, CHOKE.w - 0.6), ferrite, turn(0, 0.22 + CHOKE.h / 2, 0, cx, cz));
     add(iChoke, rbox(CHOKE.w - 0.2, 0.25, CHOKE.w - 0.2, 0.1, 1), rubber, turn(0, 0.12, 0, cx, cz));
     for (const s of [-1, 1]) {
@@ -407,12 +410,12 @@ float cpuLines(){ float px = length(fwidth(vObj.xz)); float a = 1.0 - smoothstep
       add(iChoke, box(1.2, 0.2, 3.6), copper, turn(s * (CHOKE.w / 2 + 0.45), 0.1, 0, cx, cz));
     }
     const [mx, mz] = ph.mos;
-    const iMos = part({ kind: 'round', c: [mx, 0.5, mz], r: 3.5, row });
+    const iMos = part({ kind: 'round', c: [mx, 0.5, mz], r: 3.5, row, group });
     add(iMos, printed(rbox(MOS.w, MOS.h, MOS.d, 0.1, 1), 'mos', MOS.w, MOS.d), epoxy, turn(0, 0.06 + MOS.h / 2, 0, mx, mz));
     for (let k = 0; k < 4; k++) add(iMos, box(0.42, 0.22, 0.55), copper, turn(-1.8 + k * 1.2, 0.11, MOS.d / 2 + 0.12, mx, mz));
     add(iMos, box(MOS.w - 0.8, 0.22, 0.5), copper, turn(0, 0.11, -MOS.d / 2 - 0.1, mx, mz));
     const [px, pz] = ph.cap;
-    const iCap = part({ kind: 'round', c: [px, 3.5, pz], r: 3.5, row });
+    const iCap = part({ kind: 'round', c: [px, 3.5, pz], r: 3.5, row, group });
     const can0: [number, number][] = [[3.04, 0.62], [3.15, 0.75], [3.15, 1.2], [3.0, 1.38], [2.9, 1.56], [3.0, 1.74], [3.15, 1.92], [3.15, CAP.h - 0.6], [3.12, CAP.h - 0.3], [3.0, CAP.h - 0.1], [2.82, CAP.h - 0.02], [2.6, CAP.h], [0, CAP.h]];
     add(iCap, printed(lathe(can0, 44), 'cap', 5.7, 5.7), can, turn(0, 0, 0, px, pz));
     const base = new THREE.Shape(); const bw = 3.3, ch = 1.0;
@@ -462,7 +465,7 @@ float cpuLines(){ float px = length(fwidth(vObj.xz)); float a = 1.0 - smoothstep
   const iSoic = part({ kind: 'round', c: [SOIC.x, 0.8, SOIC.z], r: 4, row: 'front' });
   add(iSoic, printed(rbox(4.9, 1.45, 3.9, 0.14, 1), 'soic', 4.9, 3.9), epoxy, at(SOIC.x, 0.2 + 0.72, SOIC.z));
   for (const s of [1, 3]) gull(iSoic, SOIC.x, SOIC.z, Math.PI / 2, 0.85, 1.95, 0.55, 1.27, 4, s);
-  const iLed = part({ kind: 'round', c: [LED.x, 0.4, LED.z], r: 2, row: 'eps' });
+  const iLed = part({ kind: 'round', c: [LED.x, 0.4, LED.z], r: 2, row: 'eps', group: 'eps' });
   add(iLed, box(1.0, 0.55, 0.8), ledM, at(LED.x, 0.3, LED.z));
   for (const s of [-1, 1]) add(iLed, box(0.32, 0.58, 0.82), copper, at(LED.x + s * 0.64, 0.3, LED.z));
   await pause();
@@ -490,7 +493,7 @@ float cpuLines(){ float px = length(fwidth(vObj.xz)); float a = 1.0 - smoothstep
 
   // The small parts, each a part of its own.
   for (const p of smallParts()) {
-    const i = part({ kind: 'round', c: [p.x, 0.4, p.z], r: 1.2, row: SMALL_ROWS[p.group] });
+    const i = part({ kind: 'round', c: [p.x, 0.4, p.z], r: 1.2, row: SMALL_ROWS[p.group], group: `run${p.group}` });
     const [w, h, d] = SMALL_SIZE[p.kind];
     const ry = p.turn ? Math.PI / 2 : 0;
     const res = p.kind.endsWith('r');
@@ -528,7 +531,7 @@ const SMALL_ROWS = ['top', 'left', 'right', 'right', 'right', 'front', 'front', 
 // The board's tiles: a jittered grid of cells cut from the square, one at each mounting hole so no hole is split,
 // their shared sides made jagged the same way from both sides so the seams close exactly. Each tile is its outline
 // (x, z) going round, its middle and its reach.
-export const TILES = { across: 6, jag: 0.9 } as const;
+export const TILES = { across: 5, jag: 1.1 } as const;
 function boardTiles(): { outline: P2[]; c: P2; r: number }[] {
   const H = BOARD.half, n = TILES.across, step = (2 * H) / n, rnd = seeded(2611);
   const seeds: P2[] = [];
@@ -591,7 +594,7 @@ function inside(p: P2, poly: P2[]): boolean {
 // The board: solder mask over copper. Traces and planes show through the mask as a lighter, raised tone; pads and
 // rings are bare copper; the ink is a pale cream; the cut edge shows its layers; the plated holes are copper.
 function boardMaterial(u: Shared, art: THREE.Texture): THREE.MeshPhysicalMaterial {
-  const m = new THREE.MeshPhysicalMaterial({ color: shade('text', 0.022), roughness: 0.42, metalness: 0, clearcoat: 0.12, clearcoatRoughness: 0.3 });
+  const m = new THREE.MeshPhysicalMaterial({ color: shade('text', 0.013), roughness: 0.42, metalness: 0, clearcoat: 0.12, clearcoatRoughness: 0.3 });
   m.name = 'cpuBoard';
   m.envMapIntensity = 0.25;
   m.specularIntensity = 0.26;
@@ -616,10 +619,11 @@ float cpuEdgeMask(){ float y = -vObj.y; return 1.0 - smoothstep(0.03, 0.06, y) *
   float cpuSide = step(abs(vObjN.y), 0.5);
   float cpuEdge = (1.0 - cpuT - cpuHole()) * cpuSide;
   float cpuLay = cpuLayer() * cpuEdge * (1.0 - cpuEdgeMask());
-  vec3 core = ${lin(shade('text-3', 0.62))} * (0.82 + 0.18 * sin((vObj.x + vObj.z) * 9.0 + vObj.y * 31.0) * sin((vObj.x - vObj.z) * 23.0));
+  vec3 core = ${lin(shade('text', 0.075))} * (0.82 + 0.18 * sin((vObj.x + vObj.z) * 9.0 + vObj.y * 31.0) * sin((vObj.x - vObj.z) * 23.0));
   cpuCol = mix(cpuCol, core, cpuEdge * (1.0 - cpuEdgeMask()));
   float cpuMet = max(max(cpuPad, cpuLay), cpuHole());
-  cpuCol = mix(cpuCol, ${lin(shade('copper', 0.8))}, cpuMet);
+  cpuCol = mix(cpuCol, ${lin(shade('copper', 0.8))}, max(cpuPad, cpuHole()));
+  cpuCol = mix(cpuCol, ${lin(shade('copper', 0.35))}, cpuLay);
   diffuseColor.rgb = cpuCol;`,
     rough: 'roughnessFactor = mix(roughnessFactor, 0.8, cpuSilk); roughnessFactor = mix(roughnessFactor, 0.62, cpuEdge); roughnessFactor = mix(roughnessFactor, 0.34, cpuMet);',
     metal: 'metalnessFactor = cpuMet;',
@@ -642,9 +646,13 @@ float cpuEdgeMask(){ float y = -vObj.y; return 1.0 - smoothstep(0.03, 0.06, y) *
       // Up close each trace carries its own light. Small, where a trace is finer than a pixel, the light covers
       // the bundle it runs in, so it can still be seen running.
       cpuFar = smoothstep(0.2, 0.46, length(fwidth(vObj.xz)));
-      float mask = mix(cpuA.r, 1.0, cpuFar);
-      float g = min(cpuWave(d, bun) * mask * (1.0 + 0.8 * cpuFar), mix(1.25, 0.72, cpuFar)) * uGlow;
-      totalEmissiveRadiance += cpuRamp(g) * g * (2.6 - 1.3 * cpuFar);
+      // Far off, the light runs as one thin line down the middle of its bundle.
+      vec4 cpuS = textureLod(uPulse, cpuUv, 0.0);
+      float cpuTi = cpuS.b / max(cpuS.r, 1e-3) * 127.5 - bun * 16.0;
+      float cpuLine = cpuS.r * (1.0 - smoothstep(0.7, 2.0, abs(cpuTi - CPU_MID[int(clamp(bun, 0.0, ${(6).toFixed(1)}))])));
+      float mask = mix(cpuA.r, cpuLine, cpuFar);
+      float g = min(cpuWave(d, bun) * mask * (1.0 + 0.8 * cpuFar), mix(1.25, 0.9, cpuFar)) * uGlow;
+      totalEmissiveRadiance += cpuRamp(g) * g * (2.6 + 2.4 * cpuFar);
     }
   }`,
   };

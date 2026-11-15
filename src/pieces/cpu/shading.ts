@@ -1,15 +1,16 @@
 import * as THREE from 'three';
 import { hex } from '../../config/palette';
 import { lin, type Chunks } from '../../world/surface';
-import { BODY, BUNDLES, PKG, SOCKET, STRIKE, toWorld } from './layout';
+import { BOARD, BODY, BUNDLES, PKG, RUN, SOCKET, STRIKE, toWorld } from './layout';
 
 // What every material of the piece shares. Each part's vertices carry its number in the cell attribute, and a small
-// float texture holds each part's transform, heat and reveal for this frame, so the whole piece moves part by part
-// from a few draw calls.
+// float texture holds each part's transform, heat and fold for this frame, so the whole piece moves part by part from
+// a few draw calls.
 //
-// A cut is always made along the eye's own rays: a point is taken down its ray to the board's top, and the cut is
-// a line on the board. So a standing part is cut edge on, and what shows at the cut is a line of light and never
-// the inside of a part.
+// A part that comes home as a shard is drawn folded: its own faces crumpled into a small jagged thing the size of
+// the shard, turned as the shard was. It opens into its faces in a few frames. The band's cut is made along the
+// eye's rays: a point is taken down its ray to the board's top and the cut is a line there, so a standing part is cut
+// edge on and what shows at the cut is a line of light and never the inside of a part.
 
 export interface Shared {
   uParts: { value: THREE.DataTexture };
@@ -25,11 +26,13 @@ export interface Shared {
   uBandOn: { value: number };
   // Where the eye is, in the piece's millimetres.
   uEye: { value: THREE.Vector3 };
+  // The rim light, as the eye sees it: the way to it in view space, and how strong it is.
+  uRim: { value: THREE.Vector4 };
 }
 
 export const PARTS_MAX = 256;
-// A part's texels: three rows of its transform, its heat, and where it is uncovered from (a point on the board, the
-// radius of the circle it shows within, how brightly that circle's edge burns).
+// A part's texels: three rows of its transform; its heat, how far it has opened (1 is whole), how far its faces are
+// crumpled, in millimetres, and how small it is drawn folded; and the point it folds about.
 export const PART_TEXELS = 5;
 
 export function shared(pulse: THREE.Texture): Shared {
@@ -39,7 +42,7 @@ export function shared(pulse: THREE.Texture): Shared {
   tex.needsUpdate = true;
   return {
     uParts: { value: tex }, uPulse: { value: pulse }, uTime: { value: 0 }, uGlow: { value: 0 }, uLit: { value: -1e4 }, uStatic: { value: 0 },
-    uBand: { value: new THREE.Vector4(0, 0, -1e5, 0) }, uBandOn: { value: 0 }, uEye: { value: new THREE.Vector3(0, 500, 0) },
+    uBand: { value: new THREE.Vector4(0, 0, -1e5, 0) }, uBandOn: { value: 0 }, uEye: { value: new THREE.Vector3(0, 500, 0) }, uRim: { value: new THREE.Vector4(0, 1, 0, 0) },
   };
 }
 
@@ -49,23 +52,32 @@ uniform highp sampler2D uParts;
 varying vec3 vCpuP;
 varying vec3 vCpuN;
 varying vec3 vCpuR;
-varying vec4 vReveal;
-varying float vHeat;`;
+varying float vHeat;
+float cpuVh(vec3 p){ p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }
+float cpuVn(vec3 x){ vec3 i = floor(x), f = fract(x); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(mix(cpuVh(i), cpuVh(i + vec3(1,0,0)), f.x), mix(cpuVh(i + vec3(0,1,0)), cpuVh(i + vec3(1,1,0)), f.x), f.y),
+             mix(mix(cpuVh(i + vec3(0,0,1)), cpuVh(i + vec3(1,0,1)), f.x), mix(cpuVh(i + vec3(0,1,1)), cpuVh(i + vec3(1,1,1)), f.x), f.y), f.z); }
+// How a folded part's faces are crumpled: a smooth field, so faces that meet stay joined as they fold.
+vec3 cpuCrumple(vec3 p){ p *= 0.42; return vec3(cpuVn(p), cpuVn(p + 17.1), cpuVn(p + 31.7)) * 2.0 - 1.0; }`;
 
 const MOVE = /* glsl */ `
   int cpuI = int(cell.w + 0.5);
   vec4 cpuR0 = texelFetch(uParts, ivec2(0, cpuI), 0), cpuR1 = texelFetch(uParts, ivec2(1, cpuI), 0), cpuR2 = texelFetch(uParts, ivec2(2, cpuI), 0);
+  vec4 cpuT3 = texelFetch(uParts, ivec2(3, cpuI), 0), cpuT4 = texelFetch(uParts, ivec2(4, cpuI), 0);
   vec3 cpuQ = transformed;
   vCpuR = cpuQ;
-  vReveal = texelFetch(uParts, ivec2(4, cpuI), 0);
+  if (cpuT3.y < 0.999) {
+    float o = cpuT3.y;
+    cpuQ = cpuT4.xyz + (cpuQ - cpuT4.xyz) * mix(cpuT3.w, 1.0, o) + cpuCrumple(cpuQ) * cpuT3.z * (1.0 - o) * (1.0 - o);
+  }
   transformed = vec3(dot(cpuR0.xyz, cpuQ) + cpuR0.w, dot(cpuR1.xyz, cpuQ) + cpuR1.w, dot(cpuR2.xyz, cpuQ) + cpuR2.w);
   vCpuP = transformed;
-  vHeat = texelFetch(uParts, ivec2(3, cpuI), 0).x;`;
+  vHeat = cpuT3.x;`;
 
 export const VERT = /* glsl */ `
 {
 ${MOVE}
-  vec3 cpuN = normalize(vec3(dot(cpuR0.xyz, objectNormal), dot(cpuR1.xyz, objectNormal), dot(cpuR2.xyz, objectNormal)));
+  vec3 cpuN = normalize(vec3(dot(cpuR0.xyz, objectNormal), dot(cpuR1.xyz, objectNormal), dot(cpuR2.xyz, objectNormal)) + 1e-6);
   vCpuN = cpuN;
   #ifndef FLAT_SHADED
   vNormal = normalize(normalMatrix * cpuN);
@@ -85,16 +97,30 @@ const EXITS = BUNDLES.map((b): [number, number] => {
   return toWorld([Math.max(-hx, Math.min(hx, x - SOCKET.x)), Math.max(-hz, Math.min(hz, z - SOCKET.z))]);
 });
 const EXIT_LIST = EXITS.map(([x, z]) => v2(x, z)).join(', ');
+// How far each bundle runs before it leaves the board, as a share of RUN: a wave runs most of that way.
+const LENGTHS = BUNDLES.map((b) => {
+  let d = 0;
+  for (let k = 1; k < b.path.length; k++) {
+    const [a, c] = [b.path[k - 1], b.path[k]];
+    const seg = Math.hypot(c[0] - a[0], c[1] - a[1]);
+    let t = 1;
+    for (let ax = 0; ax < 2; ax++) if (Math.abs(c[ax]) > BOARD.half && c[ax] !== a[ax]) t = Math.min(t, (Math.sign(c[ax]) * BOARD.half - a[ax]) / (c[ax] - a[ax]));
+    d += seg * Math.max(0, t);
+    if (t < 1) break;
+  }
+  return Math.min(1, d / RUN);
+});
+const LENGTH_LIST = LENGTHS.map((l) => l.toFixed(3)).join(', ');
+const MIDDLE_LIST = BUNDLES.map((b) => ((b.n - 1) / 2).toFixed(1)).join(', ');
 
 export const FHEAD = /* glsl */ `
 uniform sampler2D uPulse;
 uniform float uTime, uGlow, uLit, uStatic, uBandOn;
-uniform vec4 uBand;
+uniform vec4 uBand, uRim;
 uniform vec3 uEye;
 varying vec3 vCpuP;
 varying vec3 vCpuN;
 varying vec3 vCpuR;
-varying vec4 vReveal;
 varying float vHeat;
 vec3 cpuRamp(float i){
   vec3 c = mix(${C('ember')}, ${C('flame')}, smoothstep(0.04, 0.42, i));
@@ -104,34 +130,34 @@ vec3 cpuRamp(float i){
 float cpuH(float n){ n = fract(n * 0.1031); n *= n + 33.33; n *= n + n; return fract(n); }
 // A point taken down the eye's ray to the board's top.
 vec2 cpuOnBoard(vec3 p){ return uEye.xz + (p.xz - uEye.xz) * (uEye.y / max(uEye.y - p.y, 1.0)); }
-// The distance a part's reveal measures by: a rounded square, so a part spreads out of its shard square on to the board.
-float cpuSquare(vec2 d){ d = abs(d); vec2 q = d * d; q *= q; return sqrt(sqrt(q.x + q.y)); }
-// One wave on a bundle, x seconds after it left the seam, at d of the way out: a short crest with a shorter wake,
-// spent before it reaches the board's edge.
-// How far the eye is: 0 up close, 1 where a trace is finer than a pixel. Far off, a wave's wake runs longer, so a
-// travelling crest still reads as one.
+const float CPU_LEN[${LENGTHS.length}] = float[${LENGTHS.length}](${LENGTH_LIST});
+const float CPU_MID[${LENGTHS.length}] = float[${LENGTHS.length}](${MIDDLE_LIST});
+// How far the eye is: 0 up close, 1 where a trace is finer than a pixel.
 float cpuFar = 0.0;
-float cpuCrest(float x, float d, float speed, float amp){
+// One wave on bundle b, x seconds after it left the seam, at d of the way out: a crest with a wake behind it. It
+// runs most of the way to the board's edge, dimming as it goes, and is spent just before the edge.
+float cpuCrest(float x, float d, float speed, float amp, int b){
   if (x < 0.0) return 0.0;
-  float s = x * speed;
+  float s = x * speed, len = CPU_LEN[b];
   float ahead = d - s;
-  float shape = ahead > 0.0 ? exp(-pow(ahead / (0.022 + 0.01 * cpuFar), 2.0)) : exp(ahead / (0.06 + 0.11 * cpuFar)) * (0.5 + 0.5 * exp(ahead / 0.02));
-  return amp * shape * exp(-s / (0.3 + 0.2 * cpuFar)) * (1.0 - smoothstep(0.27, 0.42, s));
+  float shape = ahead > 0.0 ? exp(-pow(ahead / (0.02 + 0.008 * cpuFar), 2.0)) : exp(ahead / (0.06 + 0.1 * cpuFar)) * (0.5 + 0.5 * exp(ahead / 0.02));
+  return amp * shape * (0.45 + 0.55 * exp(-s / (0.45 * len))) * (1.0 - smoothstep(0.78 * len, 0.97 * len, s));
 }
-// The light on bundle b at d of the way out. The first wave leaves every bundle as the lights come on, a little apart;
-// after it, each bundle keeps its own beat, some beats skipped.
-float cpuWave(float d, float b){
+// The light on bundle b at d of the way out. The first wave leaves the bundles one after another as the lights come
+// on; after it, each bundle keeps its own beat, some beats skipped.
+float cpuWave(float d, float bf){
+  int b = int(clamp(bf, 0.0, ${(LENGTHS.length - 1).toFixed(1)}));
   float since = uTime - uLit;
   if (since < 0.0) return 0.0;
-  if (uStatic > 0.5) return 0.32 * exp(-d / 0.16) * (1.0 - smoothstep(0.26, 0.4, d));
-  float sum = cpuCrest(since - 0.32 * cpuH(b * 5.1 + 9.0), d, 0.8 + 0.35 * cpuH(b + 3.0), 0.6 + 0.4 * cpuH(b * 2.7 + 4.0));
-  float rate = 0.7 + 0.55 * cpuH(b * 7.13 + 1.0), phase = cpuH(b * 3.31 + 2.0) * 7.0;
+  if (uStatic > 0.5) return 0.32 * exp(-d / (0.4 * CPU_LEN[b])) * (1.0 - smoothstep(0.78 * CPU_LEN[b], 0.97 * CPU_LEN[b], d));
+  float sum = cpuCrest(since - 0.32 * cpuH(bf * 5.1 + 9.0), d, 0.7 + 0.3 * cpuH(bf + 3.0), 0.6 + 0.4 * cpuH(bf * 2.7 + 4.0), b);
+  float rate = 0.6 + 0.5 * cpuH(bf * 7.13 + 1.0), phase = cpuH(bf * 3.31 + 2.0) * 7.0;
   float k0 = floor(uTime * rate + phase);
   for (int j = 0; j < 3; j++) {
-    float k = k0 - float(j), key = k * 1.618 + b * 17.0;
+    float k = k0 - float(j), key = k * 1.618 + bf * 17.0;
     float at = (k + 0.6 * cpuH(key + 0.5) - phase) / rate;
     if (at < uLit + 0.45 || cpuH(key + 2.5) < 0.22) continue;
-    sum += cpuCrest(uTime - at, d, 0.62 + 0.4 * cpuH(key + 3.5), 0.45 + 0.55 * cpuH(key + 1.5));
+    sum += cpuCrest(uTime - at, d, 0.55 + 0.35 * cpuH(key + 3.5), 0.45 + 0.55 * cpuH(key + 1.5), b);
   }
   return sum;
 }
@@ -141,7 +167,7 @@ float cpuFlare(float b){
   if (since < 0.0) return 0.0;
   if (uStatic > 0.5) return 0.4;
   float f = exp(-pow((since - 0.32 * cpuH(b * 5.1 + 9.0)) / 0.07, 2.0)) * 1.2;
-  float rate = 0.7 + 0.55 * cpuH(b * 7.13 + 1.0), phase = cpuH(b * 3.31 + 2.0) * 7.0;
+  float rate = 0.6 + 0.5 * cpuH(b * 7.13 + 1.0), phase = cpuH(b * 3.31 + 2.0) * 7.0;
   float k0 = floor(uTime * rate + phase);
   for (int j = 0; j < 2; j++) {
     float k = k0 - float(j), key = k * 1.618 + b * 17.0;
@@ -168,26 +194,31 @@ float cpuSeam(vec3 p){
   for (int b = 0; b < ${EXITS.length}; b++) s += cpuFlare(float(b)) * exp(-length(p.xz - CPU_EXIT[b]) / 4.0) * 0.55;
   return s * near * uGlow;
 }
-// The light a part's reveal and the band throw on it: a thin hot line exactly on the cut, and for a few millimetres
-// behind it the surface lit by it.
-float cpuCutA, cpuRevA;
+// The light the band throws: a hot line exactly on the cut, and the parts just behind it plainly lit by it.
+float cpuCutA;
 vec3 cpuEdgeLight(){
-  vec3 e = vec3(0.0);
-  if (uBandOn > 0.5 && uBand.w > 0.0) {
-    float w = max(0.16, fwidth(cpuCutA) * 1.1);
-    float line = exp(-pow(cpuCutA / w, 2.0)) * uBand.w;
-    float trail = exp(-cpuCutA / 2.8) * smoothstep(0.0, 2.5, cpuCutA / w) * 0.26 * uBand.w;
-    e += mix(${C('hot')}, ${C('pale')}, 0.55 * uBand.w) * line * 3.2 + cpuRamp(trail) * trail * 1.8;
-  }
-  if (vReveal.w > 0.0) {
-    float w = max(0.16, fwidth(cpuRevA) * 0.85);
-    float i = vReveal.w * (exp(-pow(cpuRevA / w, 2.0)) + exp(-cpuRevA / 1.4) * 0.22);
-    e += cpuRamp(i) * i * 2.0;
-  }
-  return e;
+  if (uBandOn < 0.5 || uBand.w <= 0.0) return vec3(0.0);
+  float w = max(0.2, fwidth(cpuCutA) * 1.3);
+  float line = exp(-pow(cpuCutA / w, 2.0)) * uBand.w;
+  float trail = exp(-cpuCutA / 5.0) * smoothstep(0.0, 2.0, cpuCutA / w) * 0.55 * uBand.w;
+  float up = 0.55 + 0.45 * max(vCpuN.y, 0.0);
+  return mix(${C('hot')}, ${C('pale')}, 0.6 * uBand.w) * line * 4.5 + cpuRamp(trail) * trail * 2.2 * up;
 }
-// A piece of board that has just closed its seam burns along its cut sides, and cools.
-vec3 cpuHeat(){ return vHeat > 0.001 ? cpuRamp(vHeat) * vHeat * 1.8 * smoothstep(0.5, 0.95, 1.0 - abs(vCpuN.y)) : vec3(0.0); }
+// A part opening out of its shard burns along its edges and cools as it opens; a piece of the board burns only in a
+// hairline along the top of its cut sides.
+vec3 cpuHeat(){
+  if (vHeat <= 0.001) return vec3(0.0);
+  float side = smoothstep(0.55, 0.95, 1.0 - abs(vCpuN.y));
+  return cpuRamp(vHeat) * vHeat * 2.2 * side;
+}
+// The rim: a light behind, low, drawing a crisp pale line along the top edge of every part that faces it, as the
+// PC Builder's dark parts are drawn.
+vec3 cpuRimLight(vec3 n, vec3 v){
+  if (uRim.w <= 0.0) return vec3(0.0);
+  float graze = 1.0 - clamp(dot(n, v), 0.0, 1.0);
+  float toward = clamp(dot(n, uRim.xyz), 0.0, 1.0);
+  return ${C('pale')} * pow(graze, 7.0) * pow(toward, 2.0) * uRim.w;
+}
 // The light the lit traces and the seam throw on what stands beside them: low down, on faces that look sideways or
 // down, soft, and capped so it is never a bead.
 vec3 cpuBounce(vec3 albedo){
@@ -203,23 +234,22 @@ vec3 cpuBounce(vec3 albedo){
 
 export const CUT = /* glsl */ `
   cpuCutA = uBand.z - length(cpuOnBoard(vCpuP) - uBand.xy);
-  cpuRevA = vReveal.z - cpuSquare(cpuOnBoard(vCpuP) - vReveal.xy);
-  if (uBandOn > 0.5 && cpuCutA < 0.0) discard;
-  if (cpuRevA < 0.0) discard;`;
+  if (uBandOn > 0.5 && cpuCutA < 0.0) discard;`;
 
 // The chunks a part's material needs, merged with its own.
-export function partChunks(own: Chunks = {}, o: { bounce?: boolean } = {}): Chunks {
+export function partChunks(own: Chunks = {}, o: { bounce?: boolean; rim?: number } = {}): Chunks {
+  const rim = o.rim ?? 1;
   return {
     ...own,
     vhead: `${VHEAD}\n${own.vhead ?? ''}`,
     vert: `${VERT}\n${own.vert ?? ''}`,
     head: `${FHEAD}\n${own.head ?? ''}`,
     color: `${CUT}\n${own.color ?? ''}`,
-    emissive: `totalEmissiveRadiance += cpuHeat() + cpuEdgeLight()${o.bounce === false ? '' : ' + cpuBounce(diffuseColor.rgb)'};\n${own.emissive ?? ''}`,
+    emissive: `totalEmissiveRadiance += cpuHeat() + cpuEdgeLight()${rim > 0 ? ` + cpuRimLight(normal, normalize(vViewPosition)) * ${rim.toFixed(2)}` : ''}${o.bounce === false ? '' : ' + cpuBounce(diffuseColor.rgb)'};\n${own.emissive ?? ''}`,
   };
 }
 
-// Shadows are drawn from where each part is now, and nothing not yet uncovered casts one.
+// Shadows are drawn from where each part is now, folded as it is, and nothing the band has not reached casts one.
 export function depthMaterial(u: Shared): THREE.MeshDepthMaterial {
   const m = new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking });
   m.onBeforeCompile = (sh) => {
@@ -235,11 +265,9 @@ uniform vec3 uEye;
 varying vec3 vCpuP;
 varying vec3 vCpuN;
 varying vec3 vCpuR;
-varying vec4 vReveal;
 varying float vHeat;
-float cpuCutA, cpuRevA;
-vec2 cpuOnBoard(vec3 p){ return uEye.xz + (p.xz - uEye.xz) * (uEye.y / max(uEye.y - p.y, 1.0)); }
-float cpuSquare(vec2 d){ d = abs(d); vec2 q = d * d; q *= q; return sqrt(sqrt(q.x + q.y)); }`)
+float cpuCutA;
+vec2 cpuOnBoard(vec3 p){ return uEye.xz + (p.xz - uEye.xz) * (uEye.y / max(uEye.y - p.y, 1.0)); }`)
       .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>\n${CUT}`);
   };
   m.customProgramCacheKey = () => 'cpu-depth';

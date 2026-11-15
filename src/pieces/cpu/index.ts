@@ -1,15 +1,12 @@
 import * as THREE from 'three';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
-import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { RectAreaLightUniformsLib } from 'three/addons/lights/RectAreaLightUniformsLib.js';
-import { lin } from '../../world/surface';
 import { hex } from '../../config/palette';
 import type { Tier } from '../../config/site';
 import { clock } from '../../world/clock';
 import type { PieceOptions } from '../../world/piece';
 import { Stage } from '../../world/stage';
-import { trueDarks } from '../../world/tone';
+import { balance, trueDarks } from '../../world/tone';
 import { WAYS, type Anchor, type StruckPiece, type Way } from '../../world/struck';
 import { MONO, SANS } from './art';
 import { BOARD, DEG, IHS, SOCKET, STRIKE } from './layout';
@@ -59,17 +56,17 @@ const FRAME = framing();
 
 export const CPU: { strike: Anchor } = { strike: FRAME.strike };
 
-// The room's light: the palette's pale taken most of the way to its warm off white, so steel lit by it reads as
-// steel and not as copper. The stream's own light stays ember to pale.
-const ROOM_LIGHT = new THREE.Color(hex('pale')).lerp(new THREE.Color(hex('text')), 0.62);
+// The room's light is the palette's pale. The stage's white balance keeps neutral things neutral under it.
+const ROOM_LIGHT = new THREE.Color(hex('pale'));
 // The cursor's light sits where the board would mirror it to the eye at the point under the cursor, so its
 // highlight crosses the lid and the plate with the cursor.
 const LAMP = { power: 0.03, reach: 0.34, height: 0.004, bound: 0.2 } as const;
-// The key, high at the front left: it gives the whole thing its range at rest, from the near black mask to small
-// glints on the steel's edges, and throws each part's short shadow back and to the right.
-const KEY = { power: 0.55, at: [-0.3, 0.44, 0.22] as const, soft: 2.5 };
-// The rim, low behind: a crisp line along the top edge of every part.
-const RIM = { power: 0.9, at: [0.12, 0.06, -0.42] as const };
+// The key, from the left and a little above: the left side of every part is lit and the right and front sides
+// fall into shadow, so each part stands off the board, and each throws its shadow away to the right.
+const KEY = { power: 1.0, at: [-0.44, 0.3, -0.02] as const, soft: 2 };
+// The rim, low behind: it draws a crisp pale line along the top edge of every part that faces it (cpuRimLight in
+// ./shading.ts), and lights those edges a little as a light.
+const RIM = { power: 0.9, at: [0.12, 0.06, -0.42] as const, line: 3.2 };
 // Two long strip lights, where the flat lid and plate mirror them to the eye: each lies across the lid as a sharp
 // band, and the bands slide over the lid and the plate as the piece turns toward the cursor.
 const STRIPS = [
@@ -80,7 +77,7 @@ const ENV = 0.3;
 const FILL = 0.06;
 // The flash way: the key becomes the strike's flash, from the struck side and higher than the stream, its shadows
 // soft and filled, and moves back to its own place as the room comes up.
-const FLASH_KEY = { power: 6, at: [-0.32, 0.26, -0.22] as const, soft: 7, fill: 0.16 };
+const FLASH_KEY = { power: 5, at: [-0.4, 0.13, -0.32] as const, soft: 2.5, fill: 0 };
 const STRIKE_LIGHT = { base: 0.0012, flash: 0.014 } as const;
 const TURN = { yaw: 5, pitch: 3, omega: 6.5 } as const;
 // The canvas fades out at its rim, and fully outside the middle of the host's height where the row's borders run.
@@ -90,31 +87,6 @@ const SHARDS_MOST = 64;
 
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 const smooth = (k: number) => { k = clamp(k, 0, 1); return k * k * (3 - 2 * k); };
-
-// Before the picture is tone mapped, every pixel's peak is eased under a ceiling and the hottest are drawn toward pale
-// gold, so a glint stays a small sharp gold point and nothing anywhere goes to white.
-const CEILINGS = new WeakSet<object>();
-function ceiling(): ShaderPass {
-  const p = new ShaderPass({
-    uniforms: { tDiffuse: { value: null } },
-    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
-    fragmentShader: `uniform sampler2D tDiffuse; varying vec2 vUv;
-void main(){
-  vec4 c = texture2D(tDiffuse, vUv);
-  c.rgb = max(c.rgb, 0.0);
-  float m = max(c.r, max(c.g, c.b));
-  const float k = 0.55;
-  if (m > k) {
-    float n = k + (0.84 - k) * (1.0 - exp(-(m - k) / (0.84 - k)));
-    vec3 hue = mix(c.rgb / m, ${lin(hex('pale'))}, smoothstep(0.66, 0.84, n) * 0.7);
-    c.rgb = hue / max(max(hue.r, max(hue.g, hue.b)), 1e-4) * n;
-  }
-  gl_FragColor = c;
-}`,
-  });
-  CEILINGS.add(p);
-  return p;
-}
 
 let areaLib = false;
 
@@ -152,7 +124,8 @@ export function createCpu(): StruckPiece {
   const color = new THREE.Color();
   const eye = new THREE.Vector3();
   const KEY_AT = new THREE.Vector3(...KEY.at), FLASH_AT = new THREE.Vector3(...FLASH_KEY.at);
-  const ROOM = ROOM_LIGHT.clone(), HOT = new THREE.Color(hex('hot'));
+  const ROOM = ROOM_LIGHT.clone(), HOT = ROOM_LIGHT.clone();
+  const rimDir = new THREE.Vector3();
 
   const time = () => hold ?? clock.now();
   const still = () => clock.isFrozen() || hold !== null;
@@ -228,6 +201,8 @@ export function createCpu(): StruckPiece {
     key.intensity = KEY.power * room * (1 - w) + FLASH_KEY.power * w;
     key.shadow.radius = KEY.soft + (FLASH_KEY.soft - KEY.soft) * w;
     rim.intensity = RIM.power * room;
+    rimDir.set(...RIM.at).normalize().transformDirection(stage.camera.matrixWorldInverse);
+    u.uRim.value.set(rimDir.x, rimDir.y, rimDir.z, RIM.line * room);
     fill.intensity = FILL * room;
     flashFill.intensity = FLASH_KEY.fill * w;
     // Metal is seen by what it mirrors, so in the flash the room's reflections stay up: a flat lid lit by one raking
@@ -260,7 +235,7 @@ export function createCpu(): StruckPiece {
       // Near the cursor a shard catches its light, as the stream's do.
       const sp = model.root.localToWorld(eye.copy(s.p)).project(stage.camera);
       const dx = lampUV.x * W - (sp.x * 0.5 + 0.5) * W, dy = lampUV.y * H - (0.5 - sp.y * 0.5) * H;
-      mesh.setColorAt(n, color.setRGB(1, Math.exp(-(dx * dx + dy * dy) / (170 * unit) ** 2), 0));
+      mesh.setColorAt(n, color.setRGB(s.lit, Math.exp(-(dx * dx + dy * dy) / (170 * unit) ** 2), 0));
       counts[s.kind] = n + 1;
     }
     shards.forEach((m, k) => {
@@ -295,16 +270,10 @@ export function createCpu(): StruckPiece {
     held = true;
   };
 
-  // The stage's post chain, as this piece needs it: no ambient occlusion, which cannot see parts that move, and the
-  // ceiling just before the output.
+  // The stage's post chain, as this piece needs it: no ambient occlusion, which cannot see parts that move.
   const noAO = () => {
     if (!stage) return;
-    const c = stage.composer;
-    for (const p of c.passes) if (p instanceof GTAOPass) p.enabled = false;
-    if (!c.passes.some((p) => CEILINGS.has(p))) {
-      const out = c.passes.findIndex((p) => p instanceof OutputPass);
-      if (out >= 0) c.insertPass(ceiling(), out);
-    }
+    for (const p of stage.composer.passes) if (p instanceof GTAOPass) p.enabled = false;
   };
 
   const piece: StruckPiece = {
@@ -322,6 +291,7 @@ export function createCpu(): StruckPiece {
       if (!areaLib) { RectAreaLightUniformsLib.init(); areaLib = true; }
       stage = new Stage(h, canvas, { tier: opts.tier, fov: VIEW.fov, near: 0.05, far: 3, env: 'studio', envIntensity: ENV, bloom: { strength: 0.3, threshold: 3.4, radius: 0 }, lampTarget: [0, 0, 0], lampAngle: 0.62, exposure: 1.15 });
       trueDarks(stage.renderer);
+      balance(stage);
       noAO();
       // No bloom: it rounded the cursor's smallest glints into beads. The stream's own glow is drawn by the page.
       stage.bloom.enabled = false;
@@ -342,7 +312,6 @@ export function createCpu(): StruckPiece {
       turn.position.copy(STRIKE_W);
       model.root.position.copy(STRIKE_W).multiplyScalar(-1);
       turn.updateMatrixWorld(true);
-      life.setEye(model.root.worldToLocal(eye.copy(stage.camera.position)));
       key = new THREE.SpotLight(ROOM_LIGHT, KEY.power, 0, 0.42, 0.85, 2);
       key.position.copy(KEY_AT);
       key.target.position.set(0, 0, 0);
@@ -399,7 +368,7 @@ export function createCpu(): StruckPiece {
     setProgress() {},
     setWaterLight() {},
     setMaking(on) { if (stage && model) stage.setMaking(on, model.root); frame(0, true); },
-    setTier(tier: Tier) { stage?.setTier(tier); noAO(); frame(0, true); },
+    setTier(tier: Tier) { if (stage) { stage.setTier(tier); balance(stage); } noAO(); frame(0, true); },
     freeze(t) { hold = t; frame(0, true); },
     view(az, el, dist) { forced = { az, el, d: dist }; frame(0, true); },
     setStream(on, since) { streamIn = { on: clamp(on, 0, 1), since }; },
