@@ -183,10 +183,15 @@ export function createSkyCity(): CityPiece {
       const names = only ? [only] : [...PARTS];
       parts = [];
       for (const name of names) {
-        const make = await loaders[name](), from = performance.now(), part = await make({ tier: opts.tier, renderer: stage.renderer });
-        built[name] = Math.round(performance.now() - from);
-        parts.push({ name, part });
-        root.add(part.group);
+        // A part that fails is left out and the rest of the world stands: its parts are made by different hands.
+        try {
+          const make = await loaders[name](), from = performance.now(), part = await make({ tier: opts.tier, renderer: stage.renderer });
+          built[name] = Math.round(performance.now() - from);
+          parts.push({ name, part });
+          root.add(part.group);
+        } catch (e) {
+          console.error(`skycity: ${name} was not built`, e);
+        }
       }
 
       // The room. A light is turned down by its strength and never hidden: hiding one makes every material compile

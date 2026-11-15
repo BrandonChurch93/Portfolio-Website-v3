@@ -10,6 +10,26 @@ Read `reference/kits/README.md` first: the bar, the colors and "The look" hold f
 
 **This section is the newest. Where anything below it disagrees with it, this section wins.** The frame it describes is in the code now: `src/pieces/skycity/layout.ts`, `part.ts`, `index.ts`.
 
+### His look at the frame (Nov 14, late), which changes what follows
+
+He saw the frame with the old disc still on it, and said:
+
+- "There should be no platform anymore. The top of the sphere is the planet where the city should reside."
+- "The city also looks similar, it's what you had before, like you added this onto the existing design... the old design won't work here. This is a three-dimensional design. We have an entire sphere to cover."
+- "The sphere is a bit rounder than I would've hoped."
+- "I like that you added a pyramid, but overall the ground looks way more like a space station, and the ring and everything to the right look really bad."
+- "The city also looks really small. That should not be the case."
+- "I think the nature scenes should look much more like a national forest than a farm."
+
+What that changes, for everyone:
+
+- **The dome is flatter:** `PLANET` is now a radius of 748 kept to 62 degrees, so about 1320 across and 400 tall. `HEART` is no longer the sphere's middle: it is a fixed place, 540 under the top. Use `HEART`, never `-PLANET.r`.
+- **The ground is land, not a deck.** Soil, rock, hills. Nothing on it may read as a space station: no platform, no wall round the world, no decks of plating, no rings of evenly spaced lights. Outside the city the land rises in hills and ridges: `relief(x, z)`, up to 38 tall, and `seat`, `lift` and `bend` already stand things on it.
+- **The city is large.** `lots()` now gives few, large buildings, 42 to 76 across and up to 185 tall (`TALLEST`), in three bands out to 440 on the map. The spire is 240. The city fills the crown of the dome from one side of the screen's skyline to the other.
+- **Round the city is a wild forest,** as a national forest is: `DISTRICTS` has two stretches of `forest`, from 470 out to 700, and no gardens and no farms.
+- **The pyramid stays** and the temple quarter moves in, to 290 to 470 on the map at the left of the skyline, so it shows at rest on every screen. **The port is designed again from nothing,** at 290 to 470 at the right of the skyline: no ring, nothing on thin masts or stalks.
+- **The broken margin** begins at 700, and the torn edge is between about 729 and 809.
+
 ### His words
 
 - "The city no longer stands on a flat floating disc. It stands on the top of a small planet that has been ripped in half."
@@ -24,15 +44,15 @@ Read `reference/kits/README.md` first: the bar, the colors and "The look" hold f
 
 ### The frame
 
-- **Units** are as before: one a CSS pixel on a screen 1460 wide. **The origin is the top of the dome,** where the spire stands. x to the visitor's right, y up, z toward the visitor. The planet's middle is straight down from it: `HEART`, 675 under the origin.
-- **The planet** (`PLANET`): a sphere 675 in radius, kept from its top round to 78 degrees. So the dome is about 1320 across at its torn edge and about 535 tall. The spire is 220 (`SPIRE`), down from 420: he wants more of the ground in sight at rest.
+- **Units** are as before: one a CSS pixel on a screen 1460 wide. **The origin is the top of the dome,** where the spire stands. x to the visitor's right, y up, z toward the visitor. The core is straight down from it: `HEART`, 540 under the origin.
+- **The planet** (`PLANET`): its top is curved to a radius of 748 and kept round to 62 degrees. So the dome is about 1320 across at its torn edge and about 400 tall. The spire is 240 (`SPIRE`), down from 420.
 - **The plan is a flat map laid over the dome from its top.** A place on the map is so far to the right of the top and so far toward the visitor, measured along the ground. `RINGS`, `AVENUES`, `DISTRICTS`, `lots()` and every place a part already knows are places on this map, unchanged. Three functions put the map on the dome:
     - `seat(x, z, up, spin)` is the matrix that stands something, built upright at the origin, on the ground at a place on the map. Use it for everything that stands: a tower, a tree, a column, a statue, a craft's pad. **Everything stands straight out from the ground under it,** so the skyline fans.
     - `lift(x, y, z)` is a place on the map, at a height above the ground there, as a point of the frame. Use it for what moves: a craft's path, a car on a road.
     - `bend(geometry)` lays a geometry built flat on the map over the dome. Use it for what lies on the ground: a floor, a road, a wall, a terrace, a field. Not for what stands tall, which would spread as it rises.
 - **A shader that works something out from where a point is** (a plan drawn per pixel, a height, a fade) must be given the map's own coordinates as an attribute before the geometry is bent. In the frame, y is no longer height above the ground.
-- **The torn edge** is `EDGE.at(bearing)`: how far out on the map the ground reaches at a bearing. It is ragged, between about 823 and 919. The ground above and the torn rock below both end exactly on it.
-- **The broken margin:** from `MARGIN` (760 on the map) out to the torn edge the world is damaged.
+- **The torn edge** is `EDGE.at(bearing)`: how far out on the map the ground reaches at a bearing. It is ragged, between about 729 and 809. The ground above and the torn rock below both end exactly on it.
+- **The broken margin:** from `MARGIN` (700 on the map) out to the torn edge the world is damaged.
 - **The core** (`CORE`, `HEART`, `SOURCE`): a ball 150 in radius at the planet's middle. `coreLevel(t)` is how bright it burns. The stage hands it to every part each frame as `s.core`.
 - **The torn underside** hangs no lower than `TEAR.low`, and is torn back round the core into a hollow `TEAR.hollow` across, open toward the visitor.
 - **The vents** (`VENTS`): six points of the frame where streams of the stream's light leave the torn face. The stream draws them. The tear makes the places.
@@ -43,8 +63,8 @@ Read `reference/kits/README.md` first: the bar, the colors and "The look" hold f
 
 - **Only the front half of the world is ever seen.** What stands on the far side shows only where it rises over the crown. Spend nothing there.
 - **The limbs are the skyline.** At a bearing near 90 (the visitor's right) and 270 (the left), things stand out sideways against the sky, in outline, all the way down to the torn edge.
-- **The face toward the visitor is seen from above.** At bearings near 0, from about 300 out on the map to the torn edge, the ground faces the camera more and more squarely, until near the edge it is seen almost straight on, like a wall, with what stands on it pointing at the visitor. This is the largest surface of the world on the screen, and it is where "nothing bland or empty" is won or lost: its floor, its roofs and its tops are what is seen.
-- **At rest only the crown shows:** the spire and the ground down to about 190 under the top, which is out to about 520 on the map at the limbs. The rest comes up as the page scrolls, and then it is close to the middle of the screen with nothing competing with it.
+- **The face toward the visitor is seen from above.** At bearings near 0, from about 250 out on the map to the torn edge, the ground faces the camera more and more squarely, until near the edge it is seen almost straight on, like a wall, with what stands on it pointing at the visitor. This is the largest surface of the world on the screen, and it is where "nothing bland or empty" is won or lost: its floor, its roofs and its tops are what is seen.
+- **At rest only the crown shows:** the spire and the ground down to between 106 and 167 under the top, by the screen, which is out to about 400 on the map at the limbs on the shortest screen and about 510 on a common one. The rest comes up as the page scrolls, and then it is close to the middle of the screen with nothing competing with it.
 
 ### The stage's lights, which are not yours to change
 
@@ -63,9 +83,11 @@ Read `reference/kits/README.md` first: the bar, the colors and "The look" hold f
 | Part | What it is now |
 |---|---|
 | `ground` | The top of the dome out to the torn edge: its floor everywhere no other part has one, the streets and squares of the core, the roads out to the edge, and the broken margin with what is cracked, leaning and fallen |
-| `spire` | As it was, 220 tall, on the top of the dome |
-| `towers` | As they were, seated on the dome, the tallest about 165 |
-| `temple`, `gardens`, `port` | As they were, on the dome, each reaching further out than before (`DISTRICTS`) |
+| `spire` | As it was, 240 tall, on the top of the dome |
+| `towers` | The city: few, large buildings on the crown, the tallest 185 |
+| `temple` | The temple quarter and its pyramid at the left of the skyline, and the way to the spire |
+| `gardens` | The forest: a wild forest over hills, all round the city. The part keeps its old name |
+| `port` | The port at the right of the skyline, designed again from nothing |
 | `tear` | The torn underside: the planet's inside in section, its layers, its veins of metal, the hollow round the core, the vents |
 | `core` | The planet's core: a 3D thing of the stream's own light |
 | `debris` | What broke away: slabs to shards, orbiting, holding still to the core, tumbling |
@@ -84,7 +106,7 @@ Read `reference/kits/README.md` first: the bar, the colors and "The look" hold f
 
 - **The world in the hero:** `npm run shot -- "/lab/hero?ui=0" --wait 6000 --out shots/hero/<name>.jpg`, and `--scroll 400`, `700`, `1000`, `1300` for the rest of it, a screen at a time.
 - **One part alone:** `/lab/piece/skycity?only=tear&label=0&ui=0`, close with `--scale 3`.
-- **The piece at the page's size:** `/lab/piece/skycity?label=0&ui=0&size=1370&wide=1460`.
+- **The piece at the page's size:** `/lab/piece/skycity?label=0&ui=0&size=1255&wide=1460`.
 - Many builders share one dev server. If a page will not load, another builder's file is half written: wait and try again. Do not start or stop a server.
 
 ## Changed Nov 14, night: his look at the first full build

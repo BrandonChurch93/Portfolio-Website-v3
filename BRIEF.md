@@ -900,7 +900,7 @@ For Claude Code, added to the work it has in hand. His words are in the list abo
 **The torn world, as built (Nov 14, late). The frame stands, at `/lab/hero` and on top of `/lab/whole`. The parts are with their builders, and until each hands back the page shows plain stand ins for the torn underside, the core and what broke away, and the first city standing on the top of a plain dome. Not pushed: the live site still shows the first full build of the city.**
 
 - **Built by Fable:** the world's frame (`src/pieces/skycity/layout.ts`, `index.ts`, `part.ts`), the page's layout for it, the stream's route out of the core, the six streams from the torn face, and the join into Work.
-- **The sizes are the wireframe's:** a sphere 675 in radius kept to 78 degrees from its top, so about 1320 across at the torn edge, a spire 220 tall, a core 300 across at the planet's middle, 1220 from the spire's tip to the lowest of what broke away, and Work 480 under that.
+- **The sizes began as the wireframe's** and were changed by his look at the frame, below: about 1320 across at the torn edge and 400 tall, a spire 240 tall, a core 300 across, 1105 from the spire's tip to the lowest of what broke away, and Work 480 under that.
 - **Nine parts, one builder each:** the ground of the dome, the spire, the towers, the temple quarter, the gardens and farms, the port, the torn underside, the core, and what broke away. The first six carry over what was built for the disc. The disc and everything built for it is kept on the branch `kept/city-on-the-disc`.
 - **The night sky is in** (`src/hero/sky`, by a builder): stars, ten with four points, a moon in the upper right, a band of far stars in the upper left, a meteor now and then, and the glow behind the world. It ends at the world's torn edge. Its own reviewers call it a night sky and a render, not a photograph, and not plainly another world's.
 - **Fable's calls, each his to overturn:**
@@ -911,6 +911,16 @@ For Claude Code, added to the work it has in hand. His words are in the list abo
     - The torn rock is torn back round the core into a hollow that is open toward the visitor, which is how the core is seen.
     - The six streams leave the tips of pieces of torn rock that hang toward the visitor.
     - The moon is alone: the sky's builder also made one with a ring and one with a second moon, and its reviewers found both weaker.
+
+**His look at the frame (Nov 14, late), from the stills in the chat. Six rulings.** He saw the frame while the old disc was still standing on the new dome.
+
+- "There should be no platform anymore. The top of the sphere is the planet where the city should reside." **No platform and no rim: the dome's own surface is the ground.**
+- "The city also looks similar, it's what you had before, like you added this onto the existing design... the old design won't work here. This is a three-dimensional design. We have an entire sphere to cover." **The world is designed for the sphere, not moved onto it.**
+- "The sphere is a bit rounder than I would've hoped." **The dome is flatter:** still about 1320 across, about 400 tall where it was 535 (`PLANET` in `src/pieces/skycity/layout.ts`: curved to a radius of 748, kept to 62 degrees). This replaces the sizes in item 4 and in the wireframe. The core keeps its place under the torn edge, which is no longer the sphere's own middle.
+- "I like that you added a pyramid, but overall the ground looks way more like a space station, and the ring and everything to the right look really bad." **The pyramid stays. The ground is land,** hills, rock and soil, and nothing on it reads as a space station. **The port's ring and what stood with it are rejected,** and that side is designed again.
+- "The city also looks really small. That should not be the case." **The city is large:** few, large buildings filling the crown, up to 185 tall, and the spire is 240.
+- "I think the nature scenes should look much more like a national forest than a farm." **Nature is a wild forest,** as a national forest is. The farms and the terraced gardens are dropped. It is still in the site's colors and not green.
+- *Fable's calls in answering it, his to overturn:* the forest is in autumn color, which is the palette's own. The pyramid moves in toward the top so it shows at rest on every screen. The port stays a port, as the pyramid's match at the right of the skyline, with nothing on thin masts. The land rises up to 38 units in ridges outside the city. With the dome flatter the world is about 1105 from the spire's tip to the lowest of what broke away, where the wireframe has 1220.
 
 ### Work
 
