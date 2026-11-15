@@ -17,6 +17,10 @@ export default function Index() {
           <span className={styles.minor}>Phase 3 · built for real, with no opening yet: your words over a city made new that rests low on the screen, and the stream setting off from its main fall as you scroll. The city&rsquo;s ground, spire and towers are with their builders, and the sky and the falls are not in yet</span>
         </li>
         <li>
+          <Link href="/lab/hero-blockout">The hero&rsquo;s world, a grey blockout</Link>
+          <span className={styles.minor}>Phase 3 · a new model of the torn planet, started from nothing, in plain grey under your words: its shape, the camera, the city&rsquo;s sizes, the desert, the tear and where the core hangs</span>
+        </li>
+        <li>
           <Link href="/lab/surface-looks">The top of the planet, two worlds</Link>
           <span className={styles.minor}>Phase 3 · a derby for the hero, on the real planet: A, a river world of bronze with a city along its rivers and great gold rings round one spire, and C, a crystal world with a city built into a burst of amber shards</span>
         </li>

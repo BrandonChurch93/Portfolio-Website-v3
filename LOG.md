@@ -2,6 +2,32 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · A clean slate: four concept pictures, a target, and a grey blockout (Fable, web chat)
+
+**What Brandon said**
+
+- A clean slate for the hero's world. No Blender. He had Gemini make four pictures from prompts Fable wrote, and said of each what was right and wrong. From those: the target in `BRIEF.md`, Settled, Hero, "The target so far". Then go on a grey blockout, and a ruling: shadows are what make it real.
+
+**What was done**
+
+- The four pictures kept in `reference/concept/`, each named for what it is.
+- Study 32, the blockout, built and pushed at `/lab/hero-blockout`. `BRIEF.md`, "The grey blockout, as built" has its sizes. `CLAUDE.md` has the files. Stills in `reference/studies/61-*`.
+
+**What the build taught**
+
+- The pictures are seen from about 10 to 15 degrees above, not the 25 Fable first read off them. Measure the top's ellipse: its height over its width is the sine of the angle.
+- A field that is under 0 inside the rock, sampled on a grid and turned into a surface, makes broken rock well. Moving each block of the rock whole (the same shift everywhere inside one block) gives slabs, steps and overhangs with flat faces. Beds of one thickness read as laid stone: vary them.
+- Light the rock with an edge kept only where two faces meet sharply. All flat reads as voxels, and all smooth reads as clay.
+- A sheet of land cut off along the squares it was measured on has a stepped edge. Carry how far inland each point is to the shader and cut there.
+- The bowl's uneven skin must not move its top, or rock comes up through the land in patches.
+- A test that asks for more room than a clamped number can ever give returns nothing, silently: the city came out empty and the page waited for ever. A study's build should say when it fails.
+
+**Half finished, and what the next session needs**
+
+- His look at the blockout. Then the agreement for the new world replaces "The hero, the city at rest" from item 4 on, with its tests, and a prompt goes to Claude Code with the crash at its head.
+- The tear wants larger broken pieces than the blockout has.
+- The hero's page still mounts the old world. Nothing has been taken out.
+
 ## 2026-11-15 · A clean slate, no Blender, and a prompt for concept pictures (Fable, web chat)
 
 **What Brandon said**

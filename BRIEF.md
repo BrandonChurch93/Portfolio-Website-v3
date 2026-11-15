@@ -961,9 +961,24 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     10. **Debris:** pieces of the planet round the tear, the large ones carrying the same land as the top.
     11. **Colors:** the site's. No blue, no green, no white.
     12. **Made in code.** Not in Blender.
+    13. **Shadows carry the realism.** One low light with real cast shadows, deep and exact, on the dunes, in the torn rock and on the city.
 - **Go on a grey blockout, and the shadows are what make it real (Nov 15, 11:01).** "Sure, I'm willing to give it a shot. There is one thing I want to point out. The moon in our hero looks exceptionally realistic, and I think we're doing that with the way the shadows look. And I get the same vibe when I look at the sand dunes on this, and all the crevices and cracks in the [jagged rock] in this. What makes them look ultra realistic is the shadows. We should absolutely make sure that we're capturing that realism with the shadows exceptionally well."
     - In exact terms: Fable builds a plain grey blockout of the new world in real 3D, to settle its shape, the camera and how it sits under his words, before any detail. He approves that, and Claude Code then builds the look to the four pictures.
     - **A ruling for the build: shadows carry the realism.** On the dunes, in every crevice and crack of the torn rock, and on the city, as they do on the hero's moon. One low light with real cast shadows, deep and exact, is not a finish to add later: it is the thing that makes the world read as real. It is item 13 of the target above.
+- **The grey blockout, as built (Nov 15). Study 32, at `/lab/hero-blockout`. Waiting on his look. Nothing of it is a rule until he approves it.**
+    - A new model, with nothing taken from the old plan, in plain grey, lit by one low moon with real shadows and by the core's own light in the hollow. Under his words, laid out as the hero is.
+    - **The planet:** 1320 across, as before. Its top is a gentle dome that falls 118 from its middle to its rim. Under the rim its body is a bowl 560 deep.
+    - **The camera:** from the front and 12 degrees above, with 8 and 16 behind a switch. The built world is seen from 4.5. Fable told him the pictures were seen from about 25: measured, they are about 10 to 15.
+    - **At rest on a 1080 screen:** the spire with its ring and the taller buildings, with the pyramid and the dunes coming into the foot of the screen. The land, the tear and the core come up on the scroll.
+    - **The spire:** 330 tall, with one ring 132 across near its top, tipped 17 degrees. Nothing else stands over 205.
+    - **The city:** blocks 80 apart over all the land that is not desert. A tall block is one tower and a low one is four small buildings. Tallest round the spire and falling to each side unevenly. An open court in front of the spire, and an avenue lined with trees from it to where the ground is torn away.
+    - **The pyramid:** 196 across and 122 tall, in the city at the left of the spire, in a court ringed with trees.
+    - **The desert:** the right third of the land, coming round toward the visitor, with fifteen crescent dunes up to 48 tall.
+    - **The tear:** the front of the planet opened into a hollow about 600 across and the planet's whole depth, with 100 to 230 of rock left between the city and its roof, no floor, broken into blocks and beds, with cracks running out from it.
+    - **The core:** a ball 168 across, 436 under the top of the planet, which is about two thirds of the way down. The stream falls from it.
+    - **Debris:** seventeen pieces round and under the tear, two of them carrying a piece of the land.
+    - **Short of what he asked for, said to him:** the tear is jagged at a middling scale. It does not yet have the great angular slabs of pictures 2 and 3. The paving near the tear at the front left is open. Every building, tree and piece of debris is a plain stand in.
+    - **What approving it settles:** the planet's outline and depth, the camera, the spire's height, the sizes of the city, the pyramid and the desert and where each lies, where the core hangs, and how much shows at rest. **What it does not:** any material, any detail, anything that moves.
 - An idea to revisit with the hero, not decided: his first thought was the city breaking apart into the stream as the visitor scrolls. Fable's twist, which he asked to have noted: building, not breaking. The city assembles out of the stream's facets in the opening, and the stream carries the same pieces on down the page. (Nov 12)
 
 **The hero, the city at rest: the agreement (Nov 14)**
