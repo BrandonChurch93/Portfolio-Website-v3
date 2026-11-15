@@ -1225,6 +1225,13 @@ At `/lab/skills`, Study 25, built in Claude Code by Fable. The reflector, the st
     - **He is in Boise, Idaho.** The line for where he is based reads from that.
     - **The small tag beside the title goes.** It was Fable's label saying the words were stand ins, not a part of the design, and he read it as a subheader. Nothing takes its place: he sees no line there that would help a visitor.
     - **The email: his question, not a ruling.** Cut it, or make it the secondary button, "Copy my email". "A way to copy his email address stays" above is his own line from earlier the same day and stands until he cuts it. Fable's answer is in Open 31.
+- **His look at the fourth round: yes (Nov 14).** "Looks great, let's go with your recommendations and yes, you're cut up. Go ahead and build the higher fidelity mode."
+    - In exact terms, what "your recommendations" covers, each as Fable had put it to him:
+    - **The email stays, as the secondary button, "Copy my email".** This answers his question above.
+    - **No phone number on the page.**
+    - **LinkedIn, GitHub and the résumé go in the footer** and are not repeated in Contact. Whether CodePen and YouTube stay there was a question to him and not a recommendation, so it is still open.
+    - **The fourth round's design stands:** arrangement A, the one plate asleep as the blank and woken when the stream lands, the Sun stone under the rocket lighting from its rim in on the clock, the rocket launching when the boss lights, and the screen seated for the landing.
+    - **A higher fidelity version is built in the web chat next,** before anything goes to Claude Code. It is for the look: the stone as a real relief, the plate as the real blank, the rocket in the page's bronze.
 
 ### 3D pieces
 
