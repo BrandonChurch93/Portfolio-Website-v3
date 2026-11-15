@@ -961,6 +961,9 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     10. **Debris:** pieces of the planet round the tear, the large ones carrying the same land as the top.
     11. **Colors:** the site's. No blue, no green, no white.
     12. **Made in code.** Not in Blender.
+- **Go on a grey blockout, and the shadows are what make it real (Nov 15, 11:01).** "Sure, I'm willing to give it a shot. There is one thing I want to point out. The moon in our hero looks exceptionally realistic, and I think we're doing that with the way the shadows look. And I get the same vibe when I look at the sand dunes on this, and all the crevices and cracks in the [jagged rock] in this. What makes them look ultra realistic is the shadows. We should absolutely make sure that we're capturing that realism with the shadows exceptionally well."
+    - In exact terms: Fable builds a plain grey blockout of the new world in real 3D, to settle its shape, the camera and how it sits under his words, before any detail. He approves that, and Claude Code then builds the look to the four pictures.
+    - **A ruling for the build: shadows carry the realism.** On the dunes, in every crevice and crack of the torn rock, and on the city, as they do on the hero's moon. One low light with real cast shadows, deep and exact, is not a finish to add later: it is the thing that makes the world read as real. It is item 13 of the target above.
 - An idea to revisit with the hero, not decided: his first thought was the city breaking apart into the stream as the visitor scrolls. Fable's twist, which he asked to have noted: building, not breaking. The city assembles out of the stream's facets in the opening, and the stream carries the same pieces on down the page. (Nov 12)
 
 **The hero, the city at rest: the agreement (Nov 14)**
