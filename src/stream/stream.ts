@@ -55,7 +55,10 @@ export interface PlanContext { box(el: Element): Box; width: number; bottom: num
 // off says whether a place on the page is one the stream is never drawn over: no shard is drawn there.
 // quiet says how much of its size the stream keeps this far along its route, 1 being all of it: a page turns the
 // stream down along a stretch where something else should hold the eye.
-export interface Planned { route: Route; rails?: (since: (cue: string) => number) => RailShape[]; after?: (t: number) => void; off?: (x: number, y: number) => boolean; quiet?: (s: number) => number }
+// falls are places the stream's own light stands as a fall, apart from its route: across the page, from how far down
+// it to how far, and the share of the stream's width each has. They are drawn as the core is, with nothing riding.
+export interface Fall { x: number; from: number; to: number; wide: number }
+export interface Planned { route: Route; rails?: (since: (cue: string) => number) => RailShape[]; after?: (t: number) => void; off?: (x: number, y: number) => boolean; quiet?: (s: number) => number; falls?: Fall[] }
 
 // The Work section's parts, as they are on the page. A post or the rail that is not shown is left out of the route.
 // rows are the rows of cards, top to bottom. sets holds the cards by category, sets[category][place], the places
@@ -90,6 +93,10 @@ interface Options {
 }
 
 const S = STREAM;
+// A fall of the stream's light that stands apart from its route: how many steps its ribbon is laid in, how far it
+// sways to each side by its foot and over what length, in the stream's units, and how much of its width it has lost
+// by its foot.
+const FALL = { steps: 28, sway: 5, long: 46, thin: 0.55 };
 const HOLD_TIME = 20;
 const STILL_TIME = 20;
 const TAU = Math.PI * 2;
@@ -382,6 +389,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
         // what either keeps it off.
         planned = pre ? {
           route: next.route,
+          falls: [...(pre.falls ?? []), ...(under.falls ?? [])],
           rails: pre.rails || under.rails ? (since) => [...(pre.rails?.(since) ?? []), ...(under.rails?.(since) ?? [])] : undefined,
           after: (t) => { pre.after?.(t); under.after?.(t); },
           off: (x, y) => !!pre.off?.(x, y) || !!under.off?.(x, y),
@@ -411,7 +419,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       renderer.setRelief(made ? made.field : null, opts.card ? [shapeOf(opts.card)] : []);
     }
     populate();
-    const points = route.branches[0].n + route.branches[1].n + 8;
+    const points = route.branches[0].n + route.branches[1].n + 8 + (planned?.falls?.length ?? 0) * (FALL.steps + 1);
     core = new Float32Array(points * 2 * CORE_FLOATS);
     streaks = new Float32Array((budget.sparks * 12 + (sim?.maxForks ?? 40) * 60 * 6 + 220 * 12 + 120 + route.landings.length * 18) * STREAK_FLOATS);
     host.dataset.stream = made || opts.plan ? 'on' : 'off';
@@ -698,6 +706,18 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       runs[b * 2] = first / CORE_FLOATS;
       runs[b * 2 + 1] = (n - first) / CORE_FLOATS;
     }
+    // The falls that stand apart from the route: each a ribbon straight down, swaying a little, thinning to its foot.
+    falls.length = 0;
+    for (const F of planned?.falls ?? []) {
+      const first = n, len = F.to - F.from;
+      if (F.to > top - 80 && F.from < bottom + 80 && len > 1) for (let j = 0; j <= FALL.steps; j++) {
+        const k = j / FALL.steps, y = F.from + len * k, sway = FALL.sway * unit * Math.sin(y / (FALL.long * unit) + F.x) * k;
+        const w = CORE_HALF * unit * F.wide * (1 - FALL.thin * k), x = F.x + sway;
+        core[n++] = x - w; core[n++] = y; core[n++] = -CORE_HALF; core[n++] = (len * k) / unit; core[n++] = (len * (1 - k)) / unit;
+        core[n++] = x + w; core[n++] = y; core[n++] = CORE_HALF; core[n++] = (len * k) / unit; core[n++] = (len * (1 - k)) / unit;
+      }
+      falls.push(first / CORE_FLOATS, (n - first) / CORE_FLOATS);
+    }
   };
 
   // ---- sparks, forks and the hot point at each leading end
@@ -975,6 +995,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   const PROBE = 10;
   let probe: Float32Array | null = null;
   const runs: [number, number, number, number] = [0, 0, 0, 0];
+  const falls: number[] = [];
   const GLINTS = 220;
   const glint = new Float32Array(GLINTS * 6);
   let glints = 0;
@@ -1110,7 +1131,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     }
     const f: Frame = {
       view: [0, canvasTop, cssW, cssH], time: now, unit, lamp: [lx, ly, lz, 0.5 + 0.5 * led], energy: [sim.energy[0], sim.energy[1]], split: route.split / unit, end: route.join[1] / unit, look, presence,
-      core, coreRuns: runs, streaks, streakCount, shards, lots, plates: stood, swell, hush: swell ? hush : undefined,
+      core, coreRuns: runs, falls, streaks, streakCount, shards, lots, plates: stood, swell, hush: swell ? hush : undefined,
       // A lit face is never quite steady: it breathes a little, as coals do. It flares as a surge passes its stone.
       lit: stones.map((i, k) => sim!.on[i] * (still ? 1 : 0.92 + 0.08 * Math.sin(now * 2.3 + i) * Math.sin(now * 1.1 + i * 1.7)) * (Z ? Math.sqrt(1 + S.change.flare * Z.stone[k ? 1 : 0]) : 1)),
     };

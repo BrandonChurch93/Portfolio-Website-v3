@@ -61,6 +61,9 @@ export interface PlateCard {
   wipe: Float32Array | null;
 }
 
+// How lively a standing fall's light is, against a leading end at full pace.
+const FALL_ENERGY = 0.35;
+
 export interface Frame {
   view: [number, number, number, number];
   time: number;
@@ -73,6 +76,9 @@ export interface Frame {
   look: Look;
   core: Float32Array;
   coreRuns: [number, number, number, number];   // first vertex and count, for each side
+  // More runs of core after the two sides': falls of the stream's own light that stand where they are, as off the
+  // rim of the city in the hero. First vertex and count for each. Nothing rides them and they have no leading end.
+  falls?: number[];
   streaks: Float32Array;
   streakCount: number;
   shards: Float32Array;
@@ -455,7 +461,9 @@ export class StreamRenderer {
     if (!this.ok || !this.budget || !this.light || !this.scene || !this.behind || !this.whole) return;
     const { w, h } = this;
     const P = this.prog;
-    this.fill(this.coreBuffer, f.core, (f.coreRuns[0] + f.coreRuns[1] + f.coreRuns[2] + f.coreRuns[3]) * CORE_FLOATS, 'core');
+    let cored = f.coreRuns[0] + f.coreRuns[1] + f.coreRuns[2] + f.coreRuns[3];
+    if (f.falls) for (let i = 0; i < f.falls.length; i += 2) cored = Math.max(cored, f.falls[i] + f.falls[i + 1]);
+    this.fill(this.coreBuffer, f.core, cored * CORE_FLOATS, 'core');
     this.fill(this.streakBuffer, f.streaks, f.streakCount * STREAK_FLOATS, 'streaks');
     const shardCount = f.lots.reduce((n, v, i) => (i % 2 ? Math.max(n, f.lots[i - 1] + v) : n), 0);
     this.fill(this.shardBuffer, f.shards, shardCount * INSTANCE_FLOATS, 'shards');
@@ -486,6 +494,18 @@ export class StreamRenderer {
         gl.uniform1f(P.core.u('uHush'), f.hush ? f.hush[b] : 0);
       }
       gl.drawArrays(gl.TRIANGLE_STRIP, f.coreRuns[b * 2], f.coreRuns[b * 2 + 1]);
+    }
+    if (f.falls) for (let i = 0; i < f.falls.length; i += 2) {
+      if (f.falls[i + 1] < 3) continue;
+      gl.uniform1f(P.core.u('uEnergy'), FALL_ENERGY);
+      gl.uniform2f(P.core.u('uOwn'), (i + 4) * 1777, 0);
+      if (this.ends) gl.uniform1f(P.core.u('uEnd'), 1e6);
+      if (this.shapes.swell) {
+        gl.uniform3fv(P.core.u('uSwell[0]'), this.calm);
+        gl.uniform2f(P.core.u('uSwellSize'), STREAM.change.swell[1], STREAM.change.swell[2]);
+        gl.uniform1f(P.core.u('uHush'), 0);
+      }
+      gl.drawArrays(gl.TRIANGLE_STRIP, f.falls[i], f.falls[i + 1]);
     }
     if (f.streakCount > 0) {
       gl.useProgram(P.streak.p);

@@ -37,6 +37,11 @@ export function routeThroughHero(P: HeroPlan): Route {
   const branches = [measure(line, S, u), measure(line, S, u)] as [Branch, Branch];
   for (const b of branches) b.apart.fill(0);
   rides(branches, S, u);
+  // The main fall stands whether or not the page has been scrolled to it: down the rock, a height on the page
+  // gives the keel, so the stream is always drawn that far and its leading end waits at the keel to be taken on.
+  let rockEnd = 0;
+  for (let i = 2; i < rock.length; i += 2) rockEnd += Math.hypot(rock[i] - rock[i - 2], rock[i + 1] - rock[i - 1]);
+  for (const b of branches) for (let i = 0; i <= Math.min(b.n - 1, Math.floor(rockEnd / b.step)); i++) b.floor[i] = -1e9;
   const br = branches[0], C = K.strike;
   const bar: Landing = { kind: 'land', name: 'bar', side: 0, s: br.len - br.step, x: P.bar.x, y: P.bar.y, out: 0, face: UP, force: C[0], glow: C[1], arc: C[2], every: C[3], fall: K.fall * k };
   return { branches, split: br.len + 1e6, join: [Infinity, Infinity], landings: P.joined ? [] : [bar], ...S, fins: [], flows: [], fall: K.fall * k, unit: u, cues: [{ name: 'off', s: Math.min(br.len, K.off * k), over: 1 }], dark: [] };
