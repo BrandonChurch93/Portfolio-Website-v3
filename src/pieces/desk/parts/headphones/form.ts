@@ -19,24 +19,62 @@ export const BEAR_Y = 440;
 // The cups. The shell is a deep rounded oblong, ry tall and rz across, a superellipse of power n, from where it meets
 // the cushion (x = joint) out to its face (deep). The cushion stands pad in from the joint.
 export const CUP = { joint: 70, deep: 31, pad: 21, ry: 46, rz: 37, n: 3.1, y: -173, edge: 10 };
+// The shell's profile: its straight side runs to `side`, its soft edge turns `turn` toward the face, and a polished
+// chamfer cut at the edge's foot draws in to the face, which is a shallow dome. The face's half sizes and where its
+// middle stands from the cup's joint follow from these.
+const SIDE = CUP.deep - CUP.edge - 1, TURN_TO = (62 * Math.PI) / 180;
+const D1 = 1.3 + CUP.edge * (1 - Math.cos(TURN_TO)), X1 = SIDE + CUP.edge * Math.sin(TURN_TO);
+export const SHELL = { side: SIDE, turn: TURN_TO, x1: X1, d1: D1, x2: X1 + 0.9, d2: D1 + 1.5, dome: 0.9, groove: 9.5, cut: 0.5 };
 // The stem's line, and the pivot the cup hangs on at its foot: the barrel's middle, its radius and half length.
 export const STEM = { x: 85, foot: -121, top: -92, w: 5, t: 2.7 };
 export const PIVOT = { y: CUP.y + CUP.ry + 5, r: 4.4, half: 9 };
+// The cup's face, in the pivot's frame, across (z) and up (y) from its middle: its half sizes and the superellipse of
+// its outline. On it, from the rim in: an anodised band with a screw in each corner, a polished bead, a field of fine
+// perforations, and the turned medallion in the middle, which stands proud of the face, with a ring of engraved
+// ticks and a copper line let into it.
+export const FACE = {
+  yc: CUP.y - PIVOT.y, fz: CUP.rz - SHELL.d2, fy: CUP.ry - SHELL.d2, n: CUP.n,
+  band: 0.8, bead: 0.772, screw: 0.9, screwR: 1.75,
+  medal: 14, proud: 0.65, holes: [2.4, 0.74] as [number, number], rings: 1.9,
+  ticks: [9.4, 10.5, 11.8], inlay: [12.3, 13.0],
+};
 
 // The band's frame, two rails over a knitted canopy: the arches' middle height, the rails' half span and rise, and
 // the canopy's under them. The canopy is pressed up into the saddle's curve where it bears.
 export const ARCH = { cy: -62, rx: STEM.x, ry: 75, crx: 80, cry: 56 };
-export const RAIL = { z: 16.5, w: 2.3, t: 2.9 };
+export const RAIL = { z: 16.5, w: 2.7, t: 0.85 };
 export const CANOPY = { w: 19.5, t: 1.35 };
 
 // The stand: the saddle's curve and half length, the pad's half width and thickness, the cradle under it, the post
 // and the foot.
 export const SADDLE = { r: 55, half: 33, wide: 23, pad: 7.5, cradle: 10, deep: 28 };
-export const POST = { r: 8, rTop: 5.6, top: BEAR_Y - SADDLE.pad - SADDLE.deep - 12 };
-export const BASE = { r: 66, h: 13 };
+// The foot: a weighted disc, its top a hide pad let in between a polished rim and a turned boss, and on the boss the
+// knuckle the post stands in: two cheeks with a pin across them, the post's flat tang between.
+export const BASE = { r: 62, h: 11, pad: [20.5, 55] as [number, number], sink: 0.7, boss: 15 };
+export const KNUCKLE = { y: BASE.h + 19, gap: 3.1, cheek: 2.4, r: 6.6, pin: 2.1 };
+// The post, from the knuckle up, tapering; and the hook a cable hangs on, out to the stand's right.
+export const POST = { r: 5.4, rTop: 4.4, from: KNUCKLE.y + 9, top: BEAR_Y - SADDLE.pad - SADDLE.deep - 12 };
+export const HOOK = { y: 150, out: 27, rise: 9, r: 1.9 };
+
+// The cushion's profile, from the seam round its face to the opening: how far it stands out from the cup's joint
+// (negative, toward the ear) and how far its outline is let out past the shell's. A welt runs round its outer wall
+// where the cover's two panels are sewn, and `welt` is how far along the profile that is, in millimetres, for the
+// stitches either side of it, and `len` the whole profile's length.
+export const CUSHION = (() => {
+  const pad = CUP.pad;
+  const prof: [number, number][] = [[-0.8, -2.6], [-2.5, -0.6], [-5.5, 1.2], [-8.5, 1.55], [-9.3, 0.95], [-10.1, 1.55], [-13, 1.5], [-14.5, 1.1]];
+  for (let i = 1; i <= 6; i++) { const a = (i / 6) * (Math.PI / 2), r = 6.2; prof.push([-14.5 - (pad - 14.5) * Math.sin(a), 1.1 - r + r * Math.cos(a)]); }
+  const f0 = 1.1 - 6.2, f1 = -11.6;
+  for (let i = 1; i <= 2; i++) prof.push([-pad - 0.35 * Math.sin((i / 3) * Math.PI), f0 + ((f1 - f0) * i) / 3]);
+  for (let i = 0; i <= 5; i++) { const a = (i / 5) * (Math.PI / 2), r = 4.5; prof.push([-pad + r * (1 - Math.cos(a)), f1 - r * Math.sin(a)]); }
+  prof.push([-10, -16.5], [-3, -16.1], [-0.6, -15.6]);
+  const at = [0];
+  for (let i = 1; i < prof.length; i++) at.push(at[i - 1] + Math.hypot(prof[i][0] - prof[i - 1][0], prof[i][1] - prof[i - 1][1]));
+  return { prof, welt: at[4], len: at[at.length - 1] };
+})();
 
 // The cups' lag behind the band, against the band's angle and its speed in radians a second, and the most it may be.
-export const LAG = { angle: 0.24, speed: 0.07, most: 0.13 };
+export const LAG = { angle: 0.55, speed: 0.2, most: 0.3 };
 
 // The saddle's top at x, where the pad's face is: a circle through the bearing point.
 export const saddleTop = (x: number) => -(SADDLE.r - Math.sqrt(Math.max(0, SADDLE.r * SADDLE.r - x * x)));

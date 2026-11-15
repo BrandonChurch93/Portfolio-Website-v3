@@ -34,7 +34,8 @@ export const build: PartFactory = () => {
         left = Math.min(left, w[0]); right = Math.max(right, w[0]); low = Math.max(low, w[1]);
       }
     }
-    return { tris, meshes: meshes.length, highest: hi, fromTop: hi.at[1] + 0.5, left, right, low, bear: drawn(BEAR), foot: drawn(FOOT_AT) };
+    const each = Object.fromEntries(meshes.map((m) => [m.name, (m.geometry.index?.count ?? m.geometry.getAttribute('position').count) / 3]));
+    return { tris, meshes: meshes.length, each, highest: hi, fromTop: hi.at[1] + 0.5, left, right, low, bear: drawn(BEAR), foot: drawn(FOOT_AT) };
   });
 
   let shown = { a: NaN, l: NaN };
