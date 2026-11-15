@@ -1,157 +1,222 @@
 import * as THREE from 'three';
 import { lathe, rbox } from '../../../../world/build';
-import { rings } from '../keyboard/shapes';
+import { band, coons, panel, resample, sheet } from './patch';
+import { CHANNEL, DECK, DPI, FLOOR, FOOT, LED, LIFT, SEAM, THUMB, THUMB_PROUD, WHEEL, WING, channel, facing, height, onOutline, split, wing, type V2 } from './shape';
 
-// His mouse: a light, high end wireless gaming mouse, low at the front where the fingers lie and swelling to the palm
-// behind the middle. Millimetres, its foot on the mat at y = 0, its front toward -z.
+// What each surface is. One material draws them all, and each vertex carries its kind in the fourth number of its
+// cell attribute.
+export const KIND = { top: 0, edge: 1, inside: 2, frame: 3, thumb: 4, tread: 5, copper: 6, led: 7, lip: 8 } as const;
 
-// What each surface of the mouse is. One material draws them all, and each vertex carries its kind in the fourth
-// number of its cell attribute.
-export const KIND = { shell: 0, thumb: 1, wheel: 2, cradle: 3, skate: 4, side: 5 } as const;
+const V = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
+const lift = ([x, z]: V2, dy = 0) => V(x, height(x, z) + dy, z);
+const UP = () => V(0, 1, 0);
+const FACING = (p: THREE.Vector3) => V(...facing(p.x, p.z));
+const TAU = Math.PI * 2;
 
-// Its size, the height its skates lift it by, where the wheel is and how far it stands proud, and where its light is.
-export const MOUSE = { len: 124, half: 31.8, lift: 0.8, wheel: { z: -35, r: 11, w: 7.4, proud: 4.6 }, light: -18.5 } as const;
-// The seams, as places on the shell: where the two buttons end at the back (middle and sides), and how high their
-// sides run along the flanks.
-export const SEAM = { back: 1.5, side: 23 } as const;
-// The thumb's two buttons on the left flank: where each is along the mouse, its length, and the height of its middle.
-export const THUMB = { at: [-24, -8], len: [15, 14], y: 17, tall: 5.8 } as const;
-// The grip panels on both flanks, behind the thumb buttons: middle along the mouse and up, and half their size.
-export const GRIP = { z: 16, y: 12.5, hz: 14, hy: 3.6, r: 3.2 } as const;
+// Finds where f changes sign between a and b.
+function solve(f: (t: number) => number, a: number, b: number): number {
+  let fa = f(a);
+  for (let k = 0; k < 60; k++) {
+    const m = (a + b) / 2, fm = f(m);
+    if (Math.sign(fm) === Math.sign(fa)) { a = m; fa = fm; } else b = m;
+  }
+  return (a + b) / 2;
+}
+const deck = (t: number) => onOutline(DECK, t);
+// The part of the deck's outline between two places on it.
+const arc = (t0: number, t1: number, n: number) => resample((s) => deck(t0 + (t1 - t0) * s), n);
 
-// The height of the shell's back along its length: low over the fingers' ends, highest under the palm, falling away
-// steeply at the heel.
-const RISE: [number, number][] = [[-62, 14], [-55, 20], [-42, 25.5], [-24, 31], [-6, 36], [8, 38.5], [22, 37.4], [36, 32], [48, 24], [57, 14], [62, 6]];
-function rise(z: number): number {
-  if (z <= RISE[0][0]) return RISE[0][1];
-  for (let i = 0; i < RISE.length - 1; i++) {
-    const [z0, h0] = RISE[i], [z1, h1] = RISE[i + 1];
-    if (z <= z1) {
-      // A cubic through the neighbours, so the back has no corners.
-      const p = RISE[Math.max(0, i - 1)], q = RISE[Math.min(RISE.length - 1, i + 2)];
-      const t = (z - z0) / (z1 - z0), m0 = ((h1 - p[1]) / (z1 - p[0])) * (z1 - z0), m1 = ((q[1] - h0) / (q[0] - z0)) * (z1 - z0);
-      const t2 = t * t, t3 = t2 * t;
-      return (2 * t3 - 3 * t2 + 1) * h0 + (t3 - 2 * t2 + t) * m0 + (-2 * t3 + 3 * t2) * h1 + (t3 - t2) * m1;
+const OFF = SEAM.g / 2 + SEAM.ch;
+// The inner edge of a main button, beside the gap or the channel down the middle.
+const inner = (z: number) => channel(z) + OFF;
+
+// One main button: side -1 is the left, 1 the right. Its inner edge runs back from the nose beside the channel, its
+// back edge follows the split, and its front and outer edges are the deck's outline.
+function button(side: number): THREE.BufferGeometry[] {
+  const L = side < 0;
+  const tN = 1.5 * Math.PI;
+  const tFI = solve((t) => Math.abs(deck(t)[0]) - inner(deck(t)[1]), tN + side * 0.75, tN);
+  const back = (x: number) => split(x) - OFF;
+  const tBO = L ? solve((t) => deck(t)[1] - back(deck(t)[0]), Math.PI - 0.5, Math.PI + 0.6) : solve((t) => deck(t)[1] - back(deck(t)[0]), TAU + 0.5, TAU - 0.6);
+  const tFO = tN + side * 0.62;
+  const zFI = deck(tFI)[1], zBI = solve((z) => z - back(side * inner(z)), -30, 10);
+  const xBO = deck(tBO)[0];
+  const nu = 32, nv = 18;
+  const c0 = resample((s) => { const z = zFI + (zBI - zFI) * s; return [side * inner(z), z]; }, nu);
+  const c1 = arc(tFO, tBO, nu);
+  const d0 = arc(tFI, tFO, nv);
+  const d1 = resample((s) => { const x = side * inner(zBI) + (xBO - side * inner(zBI)) * s; return [x, back(x)]; }, nv);
+  const grid = coons(c0, c1, d0, d1).map((row) => row.map((p) => lift(p)));
+  return panel(grid, KIND.top, KIND.edge, KIND.inside, SEAM.ch, SEAM.wall, UP, FACING);
+}
+
+// The palm: from the split back over the hump to the tail.
+function palm(): THREE.BufferGeometry[] {
+  const front = (x: number) => split(x) + OFF;
+  const tPL = solve((t) => deck(t)[1] - front(deck(t)[0]), Math.PI + 0.5, Math.PI - 0.6);
+  const tPR = solve((t) => deck(t)[1] - front(deck(t)[0]), -0.5, 0.6);
+  const tBL = 0.78 * Math.PI, tBR = 0.22 * Math.PI;
+  const nu = 32, nv = 26;
+  const xl = deck(tPL)[0], xr = deck(tPR)[0];
+  const c0 = resample((s) => { const x = xl + (xr - xl) * s; return [x, front(x)]; }, nu);
+  const c1 = arc(tBL, tBR, nu);
+  const d0 = arc(tPL, tBL, nv);
+  const d1 = arc(tPR, tBR, nv);
+  const grid = coons(c0, c1, d0, d1).map((row) => row.map((p) => lift(p)));
+  return panel(grid, KIND.top, KIND.edge, KIND.inside, SEAM.ch, SEAM.wall, UP, FACING);
+}
+
+// What is under the shell, seen through the gaps and down the channel: a dark floor a little under it.
+function floor(): THREE.BufferGeometry {
+  const around = 40, rings = 4, grid: THREE.Vector3[][] = [];
+  for (let j = 0; j <= rings; j++) {
+    const k = 0.975 * (1 - j / rings) ** 0.8, row: THREE.Vector3[] = [];
+    for (let i = 0; i <= around; i++) {
+      const [x, z] = deck((i / around) * TAU);
+      const px = x * k, pz = z * k + (1 - k) * 6;
+      row.push(V(px, height(px, pz) - FLOOR - 1.4, pz));
     }
+    grid.push(row);
   }
-  return RISE[RISE.length - 1][1];
+  return sheet(grid, KIND.inside, (_p, n) => n.y);
 }
 
-// The width at a place along its length: a little narrower at the front, pinched where the thumb and the ring finger
-// grip, broadest under the palm.
-const width = (z: number) => 1 - 0.055 * Math.exp(-(((z + 6) / 15) ** 2)) - 0.05 * Math.min(1, Math.max(0, -z / 62)) + 0.02 * Math.exp(-(((z - 26) / 18) ** 2));
-
-// The two shallow channels the fingers lie in, down the main buttons.
-const sstep = (a: number, b: number, x: number) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
-const scoop = (x: number, z: number) => 1.15 * Math.exp(-(((Math.abs(x) - 13.5) / 7.5) ** 2)) * sstep(-62, -48, z) * (1 - sstep(-14, 2, z));
-
-// Where the shell's rings close at the top: the highest point of its back.
-const CROWN = 9;
-
-// The shell is two parts: a satin top over the buttons and the palm, and a graphite flank under it. Where they meet
-// the top stands proud of the flank by a lip, a real step that catches a pale line all round.
-export const STEP = { up: 0.6, lip: 0.75 } as const;
-
-// The sides are not the same: a thumb rest flares out low on the left, with a waist above it the thumb lies in, and
-// the right side flares out low under the ring finger.
-const window1 = (z: number, a: number, b: number) => sstep(a - 8, a + 8, z) * (1 - sstep(b - 8, b + 8, z));
-const thumbRest = (up: number, z: number) => (0.085 * Math.exp(-(((up - 0.24) / 0.11) ** 2)) - 0.04 * Math.exp(-(((up - 0.5) / 0.1) ** 2))) * window1(z, -26, 30);
-const flare = (up: number, z: number) => 0.045 * Math.exp(-(((up - 0.14) / 0.1) ** 2)) * window1(z, -12, 52);
-// The groove that splits the two main buttons, running back from the front to where the buttons end.
-const groove = (x: number, z: number, up: number) => 0.9 * Math.max(0, 1 - Math.abs(x) / 2.4) * (1 - sstep(-2, 4, z)) * sstep(0.7, 0.85, up);
-
-export function shellGeometry(): THREE.BufferGeometry {
-  const seg = 128, steps = 30, list: THREE.Vector3[][] = [];
-  const rim: [number, number][] = [];
-  for (let i = 0; i < seg; i++) {
-    const t = (i / seg) * Math.PI * 2, c = Math.cos(t), s = Math.sin(t), e = 2 / 2.35;
-    const z = (MOUSE.len / 2) * Math.sign(s) * Math.abs(s) ** e;
-    rim.push([MOUSE.half * width(z) * Math.sign(c) * Math.abs(c) ** e, z]);
+// The channel's own floor, which the wheel, the button behind it and the light stand in: true to the shell above it.
+function channelFloor(): THREE.BufferGeometry {
+  const grid: THREE.Vector3[][] = [];
+  for (let j = 0; j <= 14; j++) {
+    const z = CHANNEL.from - 4 + ((CHANNEL.to + 3 - (CHANNEL.from - 4)) * j) / 14, row: THREE.Vector3[] = [];
+    for (let i = 0; i <= 4; i++) { const x = -CHANNEL.half - 0.6 + ((2 * CHANNEL.half + 1.2) * i) / 4; row.push(V(x, height(x, z) - FLOOR, z)); }
+    grid.push(row);
   }
-  let below = -1;
-  for (let j = 0; j < steps; j++) {
-    // Rings bunch toward the foot, where the side turns hardest.
-    const u = j / steps, phi = (Math.PI / 2) * (u < 0.5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u)) * 0.999;
-    const a = Math.cos(phi) ** (2 / 2.7), up = Math.sin(phi) ** (2 / 2.1);
-    const ring = (lip: number) => rim.map(([x, z]) => {
-      const zz = z * a + CROWN * (1 - a);
-      // The sides belly out a little above the foot and tuck in under it.
-      const belly = 1 + 0.035 * Math.sin(Math.min(1, up * 1.4) * Math.PI) - 0.03 * (1 - Math.min(1, up * 6)) + (x < 0 ? thumbRest(up, zz) : flare(up, zz));
-      const xx = x * a * belly;
-      const y = MOUSE.lift + rise(zz) * up - scoop(xx, zz) * Math.min(1, Math.max(0, (up - 0.55) / 0.35)) - groove(xx, zz, up);
-      const r = Math.hypot(xx, zz - CROWN) || 1;
-      return new THREE.Vector3(xx + (xx / r) * lip, y, zz + ((zz - CROWN) / r) * lip);
-    });
-    if (below < 0 && up >= STEP.up) { list.push(ring(0)); below = list.length - 1; }
-    list.push(ring(below >= 0 ? STEP.lip : 0));
-  }
-  const g = rings(list, new THREE.Vector3(0, MOUSE.lift + rise(CROWN), CROWN));
-  // Each vertex is told which of the two parts it belongs to.
-  const n = rim.length, cell = new Float32Array(g.getAttribute('position').count * 4);
-  for (let i = 0; i < cell.length / 4; i++) cell[i * 4 + 3] = Math.floor(i / n) <= below ? KIND.side : KIND.shell;
-  g.setAttribute('cell', new THREE.Float32BufferAttribute(cell, 4));
-  return g;
+  return sheet(grid, KIND.inside, (_p, n) => n.y);
 }
 
-// The highest point of the shell over a place: read from the built shell, so what sits on it sits on it.
-export function topAt(g: THREE.BufferGeometry, x: number, z: number, r = 2.5): number {
-  const p = g.getAttribute('position');
-  let y = 0;
-  for (let i = 0; i < p.count; i++) if (Math.abs(p.getX(i) - x) < r && Math.abs(p.getZ(i) - z) < r) y = Math.max(y, p.getY(i));
-  return y;
+// The frame, as rings at each place round the mouse from its foot up to just under the shell's edge: a chamfer at the
+// foot, the thumb's lip and ledge on the left, the flank, and a flange that runs in under the shell.
+const AROUND = 96;
+interface Rows { rows: THREE.Vector3[]; n: V2; w: number }
+function plan(o: typeof DECK, t: number): { p: V2; n: V2 } {
+  const p = onOutline(o, t), a = onOutline(o, t - 0.002), b = onOutline(o, t + 0.002);
+  const tx = b[0] - a[0], tz = b[1] - a[1], l = Math.hypot(tx, tz) || 1;
+  let n: V2 = [tz / l, -tx / l];
+  if (n[0] * p[0] + n[1] * (p[1] - DECK.zm) < 0) n = [-n[0], -n[1]];
+  return { p, n };
 }
-
-// Where the side of the shell is at a height and a place along it, and which way the side faces there.
-export function sideAt(g: THREE.BufferGeometry, y: number, z: number): { x: number; n: THREE.Vector3 } {
-  const p = g.getAttribute('position'), nm = g.getAttribute('normal');
-  let best = Infinity, k = 0;
-  for (let i = 0; i < p.count; i++) {
-    if (p.getX(i) > 0) continue;
-    const d = (p.getY(i) - y) ** 2 + (p.getZ(i) - z) ** 2;
-    if (d < best) { best = d; k = i; }
-  }
-  return { x: p.getX(k), n: new THREE.Vector3(nm.getX(k), nm.getY(k), nm.getZ(k)) };
+export function frameAt(t: number): Rows {
+  const B = plan(FOOT, t), D = plan(DECK, t);
+  const w = wing(B.p[0], B.p[1], Math.sign(B.p[0]) || 1);
+  const top = height(D.p[0], D.p[1]) - SEAM.ch - 0.25;
+  const out = (p: V2, n: V2, k: number, y: number) => V(p[0] + n[0] * k, y, p[1] + n[1] * k);
+  // The flank without the thumb's rest, at a height.
+  const flank = (y: number) => { const f = (y - LIFT) / (top - LIFT); return V(B.p[0] + (D.p[0] - B.p[0]) * f, y, B.p[1] + (D.p[1] - B.p[1]) * f); };
+  const at = (y: number, k: number) => flank(y).add(V(B.n[0] * k, 0, B.n[1] * k));
+  const h = top - LIFT, mix = (a: number, b: number) => a + (b - a) * w;
+  const y1 = LIFT + 1.2, y2 = mix(LIFT + 0.17 * h, 4.6), y3 = mix(LIFT + 0.22 * h, 6.2), y4 = mix(LIFT + 0.3 * h, 7.6);
+  const r4 = at(y4, -w * WING.ledge), r9 = out(D.p, D.n, -0.35, top);
+  // The flank above the ledge is hollowed where the thumb lies, and a little full elsewhere.
+  const bulge = w * 1.7 - (1 - w) * 0.35;
+  const mid = r4.clone().lerp(r9, 0.5).add(V(-D.n[0] * bulge * 2, 0, -D.n[1] * bulge * 2));
+  const rows = [out(B.p, B.n, -1.0, LIFT), at(y1, w * 2.0), at(y2, w * WING.out), at(y3, w * (WING.out - 0.2)), r4];
+  for (const v of [0.2, 0.4, 0.6, 0.8]) rows.push(r4.clone().multiplyScalar((1 - v) ** 2).addScaledVector(mid, 2 * v * (1 - v)).addScaledVector(r9, v * v));
+  rows.push(r9, out(D.p, D.n, -3.2, top));
+  return { rows, n: D.n, w };
 }
-
-// The thumb's two buttons: each a pad with a chamfer all round, laid on the flank and following its lean.
-export function sideButtons(shell: THREE.BufferGeometry): THREE.BufferGeometry[] {
-  return THUMB.at.map((z, i) => {
-    const len = THUMB.len[i], h = THUMB.tall, r = 2.6;
-    const sh = new THREE.Shape();
-    sh.moveTo(-len / 2 + r, -h / 2);
-    sh.lineTo(len / 2 - r, -h / 2); sh.quadraticCurveTo(len / 2, -h / 2, len / 2, -h / 2 + r);
-    sh.lineTo(len / 2, h / 2 - r); sh.quadraticCurveTo(len / 2, h / 2, len / 2 - r, h / 2);
-    sh.lineTo(-len / 2 + r, h / 2); sh.quadraticCurveTo(-len / 2, h / 2, -len / 2, h / 2 - r);
-    sh.lineTo(-len / 2, -h / 2 + r); sh.quadraticCurveTo(-len / 2, -h / 2, -len / 2 + r, -h / 2);
-    const g = new THREE.ExtrudeGeometry(sh, { depth: 1.6, bevelEnabled: true, bevelThickness: 0.5, bevelSize: 0.5, bevelSegments: 1, curveSegments: 6 });
-    g.translate(0, 0, -2.1);
-    const { x, n } = sideAt(shell, THUMB.y, z);
-    // The pad's thickness runs out along the flank's normal, its length along the mouse.
-    const N = n.clone().normalize(), T = new THREE.Vector3(0, 0, 1).addScaledVector(N, -N.z).normalize(), B = new THREE.Vector3().crossVectors(N, T);
-    g.applyMatrix4(new THREE.Matrix4().makeBasis(T, B, N).setPosition(x + N.x * 0.6, THUMB.y + N.y * 0.6, z));
-    g.computeVertexNormals();
-    return g;
-  });
+// A point of the flank above the ledge: t round the mouse, v from the ledge (0) to the shell (1).
+export function upperFlank(t: number, v: number): THREE.Vector3 {
+  const { rows } = frameAt(t), [r4, , , , , r9] = rows.slice(4);
+  const mid = rows[6];
+  // The rows between are on the curve through r4, mid and r9; mid is its point at v = 0.4, so this is the same
+  // curve's control point worked back.
+  const c = mid.clone().sub(r4.clone().multiplyScalar(0.36)).sub(r9.clone().multiplyScalar(0.16)).divideScalar(0.48);
+  return r4.clone().multiplyScalar((1 - v) ** 2).addScaledVector(c, 2 * v * (1 - v)).addScaledVector(r9, v * v);
 }
-
-// The wheel: a turned copper part, two knurled bands either side of a groove, chamfered at its edges, on an axle
-// along x.
-export function wheelGeometry(): THREE.BufferGeometry {
-  const { r, w } = MOUSE.wheel, h = w / 2;
-  const g = lathe([[1.6, -h], [r - 1.6, -h], [r - 0.8, -h + 0.3], [r - 0.2, -h + 0.9], [r, -h + 1.4], [r, -0.6], [r - 0.45, -0.3], [r - 0.45, 0.3], [r, 0.6], [r, h - 1.4], [r - 0.2, h - 0.9], [r - 0.8, h - 0.3], [r - 1.6, h], [1.6, h]], 40);
-  return g.rotateZ(Math.PI / 2);
-}
-
-// What holds the wheel, seen down the slot: a dark cheek either side of it and the detents' housing behind it.
-export function cradleGeometry(wy: number): THREE.BufferGeometry[] {
-  const { z, r, w } = MOUSE.wheel;
+function frame(): THREE.BufferGeometry[] {
+  const cols = Array.from({ length: AROUND }, (_, i) => frameAt((i / AROUND) * TAU));
+  const loops = cols[0].rows.map((_, r) => cols.map((c) => c.rows[r]));
+  const outward = (p: THREE.Vector3, n: THREE.Vector3) => n.x * p.x + n.z * (p.z - DECK.zm);
+  // Hard edges at the foot's chamfer, the top of the lip, the inside of the ledge and the shell.
   return [
-    ...[-1, 1].map((s) => rbox(1.4, r * 1.1, r * 2.1, 0.5, 1).translate(s * (w / 2 + 1.1), wy - r * 0.62, z)),
-    rbox(w + 3.6, 5, 4.4, 1, 1).translate(0, wy - r * 0.7, z + r + 1.6),
+    band(loops.slice(0, 2), KIND.frame, outward),
+    band(loops.slice(1, 4), KIND.lip, outward),
+    band(loops.slice(3, 5), KIND.lip, (_p, n) => n.y),
+    band(loops.slice(4, 10), KIND.frame, outward),
+    band(loops.slice(9, 11), KIND.inside, (_p, n) => n.y),
   ];
 }
 
-// The skates under it: two thin pads of dark PTFE.
-export function skates(): THREE.BufferGeometry[] {
-  return [rbox(30, MOUSE.lift + 0.4, 7, 0.35, 1).translate(0, (MOUSE.lift + 0.4) / 2 - 0.2, -50), rbox(38, MOUSE.lift + 0.4, 8, 0.35, 1).translate(0, (MOUSE.lift + 0.4) / 2 - 0.2, 47)];
+// The thumb's two buttons: slanted pads standing proud of the hollow in the left flank, each with its chamfer and
+// its edge.
+function thumbs(): THREE.BufferGeometry[] {
+  const left = (z: number) => solve((t) => upperFlank(t, 0.5).z - z, 0.55 * Math.PI, 1.45 * Math.PI);
+  const out: THREE.BufferGeometry[] = [];
+  for (const [a, b, c, d] of THUMB) {
+    const nu = 8, nv = 5, grid: THREE.Vector3[][] = [];
+    for (let j = 0; j <= nv; j++) {
+      const v = j / nv, row: THREE.Vector3[] = [];
+      for (let i = 0; i <= nu; i++) {
+        const u = i / nu;
+        const z = (1 - v) * ((1 - u) * a[0] + u * b[0]) + v * ((1 - u) * d[0] + u * c[0]);
+        const h = (1 - v) * ((1 - u) * a[1] + u * b[1]) + v * ((1 - u) * d[1] + u * c[1]);
+        const t = left(z), p = upperFlank(t, h);
+        const pu = upperFlank(t + 0.01, h).sub(upperFlank(t - 0.01, h)), pv = upperFlank(t, h + 0.01).sub(upperFlank(t, h - 0.01));
+        const n = pu.cross(pv).normalize();
+        if (n.x > 0) n.negate();
+        // A pad is fuller across its middle than at its edges.
+        const dome = THUMB_PROUD + 0.35 * Math.sin(Math.PI * u) * Math.sin(Math.PI * v);
+        row.push(p.addScaledVector(n, dome));
+      }
+      grid.push(row);
+    }
+    out.push(...panel(grid, KIND.thumb, KIND.edge, KIND.inside, 0.5, THUMB_PROUD + 0.6, () => V(-1, 0.25, 0).normalize()));
+  }
+  return out;
 }
+
+// The wheel: a rubber tread between two turned copper hubs, on an axle across the mouse.
+export const wheelAxle = () => height(0, WHEEL.z) + WHEEL.proud - WHEEL.r;
+function wheel(): THREE.BufferGeometry[] {
+  const { r, half, tread, hub } = WHEEL, y = wheelAxle();
+  const put = (g: THREE.BufferGeometry, kind: number) => {
+    g.rotateZ(Math.PI / 2).translate(0, y, WHEEL.z);
+    const n = g.getAttribute('position').count, cell = new Float32Array(n * 4);
+    for (let i = 0; i < n; i++) cell[i * 4 + 3] = kind;
+    g.setAttribute('cell', new THREE.Float32BufferAttribute(cell, 4));
+    return g;
+  };
+  const tr = lathe([[hub - 0.3, -tread - 0.05], [r - 0.7, -tread], [r - 0.15, -tread + 0.35], [r, -tread + 0.9], [r, tread - 0.9], [r - 0.15, tread - 0.35], [r - 0.7, tread], [hub - 0.3, tread + 0.05]], 40);
+  const hubs = [-1, 1].map((s) => {
+    const pts: [number, number][] = [[1.4, s * half], [hub - 0.7, s * half], [hub - 0.2, s * (half - 0.35)], [hub, s * (half - 0.9)], [hub, s * (tread - 0.05)]];
+    return lathe(s < 0 ? pts : pts.reverse(), 40);
+  });
+  // The axle's end, a small dark boss at the middle of each hub.
+  const caps = [-1, 1].map((s) => lathe(s > 0 ? [[1.6, half - 0.1], [1.1, half + 0.4], [0, half + 0.4]] : [[0, -half - 0.4], [1.1, -half - 0.4], [1.6, -half + 0.1]], 12));
+  return [put(tr, KIND.tread), ...hubs.map((g) => put(g, KIND.copper)), ...caps.map((g) => put(g, KIND.inside))];
+}
+
+// The top of the small button behind the wheel.
+const dpiTop = () => height(0, (DPI.z0 + DPI.z1) / 2) - 0.3;
+
+// The small button behind the wheel, the light round its foot, and the copper bezel round both.
+function dpi(): THREE.BufferGeometry[] {
+  const z = (DPI.z0 + DPI.z1) / 2, len = DPI.z1 - DPI.z0, top = dpiTop();
+  const tag = (g: THREE.BufferGeometry, kind: number) => {
+    const n = g.getAttribute('position').count, cell = new Float32Array(n * 4);
+    for (let i = 0; i < n; i++) cell[i * 4 + 3] = kind;
+    g.setAttribute('cell', new THREE.Float32BufferAttribute(cell, 4));
+    return g;
+  };
+  const r = LED.ring;
+  const key = tag(rbox(DPI.half * 2, 3.2, len, 1.2, 1).translate(0, top - 1.6, z), KIND.top);
+  const led = tag(rbox(DPI.half * 2 + 2 * r, 3.2, len + 2 * r, 1.5, 1).translate(0, top - LED.under - 1.6, z), KIND.led);
+  const bezel = tag(rbox(DPI.half * 2 + 4 * r, 3.2, len + 4 * r, 1.8, 1).translate(0, top - LED.under - 0.5 - 1.6, z), KIND.copper);
+  return [key, led, bezel];
+}
+
+export interface MouseGeometry { solid: THREE.BufferGeometry[]; ledY: number; axle: number }
+
+export function mouseGeometry(): MouseGeometry {
+  const solid = [...button(-1), ...button(1), ...palm(), floor(), channelFloor(), ...frame(), ...thumbs(), ...wheel(), ...dpi()];
+  return { solid, ledY: dpiTop() - LED.under, axle: wheelAxle() };
+}
+
