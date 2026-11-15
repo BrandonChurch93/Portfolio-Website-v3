@@ -220,7 +220,13 @@ export class Stage {
     this.renderer.setRenderTarget(this.composer.readBuffer);
     let spare: THREE.Material[] = [];
     if (pace) spare = await this.compileAhead(pace);
-    else await this.renderer.compileAsync(this.scene, this.camera);
+    else {
+      const linked = this.renderer.compileAsync(this.scene, this.camera);
+      // three waits for the programs to link by asking every 10 ms, and asks nothing else of the GPU meanwhile. With
+      // no flush the browser does not begin the last link until it is next idle, about a second later.
+      this.renderer.getContext().flush();
+      await linked;
+    }
     this.renderer.setRenderTarget(prev);
     const shadows = pace ? await this.drawAhead(pace) : null;
     // The GPU driver builds a program's pipeline at its first draw, so one frame is drawn with everything shown. The
