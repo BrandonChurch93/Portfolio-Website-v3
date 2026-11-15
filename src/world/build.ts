@@ -11,6 +11,24 @@ export type Vec3 = [number, number, number];
 // handled: a detailed piece takes a few hundred milliseconds to build, too long to hold a scrolling page still.
 export const pause = (): Promise<void> => new Promise((r) => setTimeout(r, 0));
 
+// The same, handed back only once the work since the last hand back has had its share of a frame, so a build that is
+// cut fine costs no more than one cut coarsely. A message and not a timer: a timer set from a timer waits at least
+// 4 ms once they nest. `await slice()` between small steps keeps every task of a build under SLICE.
+const SLICE = 6;
+let held = 0;
+let gate: MessageChannel | null = null;
+const waiting: (() => void)[] = [];
+const handBack = (): Promise<void> => {
+  if (typeof MessageChannel === 'undefined') return pause();
+  if (!gate) { gate = new MessageChannel(); gate.port1.onmessage = () => { held = performance.now(); waiting.shift()?.(); }; }
+  return new Promise((r) => { waiting.push(r); gate!.port2.postMessage(0); });
+};
+export const slice = (): Promise<void> | void => {
+  const now = performance.now();
+  if (now - held < SLICE) return;
+  return handBack();
+};
+
 export function xf(o: { p?: Vec3; r?: Vec3; s?: number | Vec3 } = {}): THREE.Matrix4 {
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(...(o.r ?? [0, 0, 0])));
@@ -81,6 +99,60 @@ export class Builder {
     this.parts.clear();
     return out;
   }
+
+  // The same, handing the thread back between the pieces of the merge (slice()). The meshes are the same.
+  async buildInSlices(parent: THREE.Object3D, name: string): Promise<THREE.Mesh[]> {
+    const out: THREE.Mesh[] = [];
+    for (const [mat, list] of this.parts) {
+      await slice();
+      const merged = await mergeInSlices(list);
+      if (!merged) continue;
+      await slice();
+      merged.computeBoundingSphere();
+      const mesh = new THREE.Mesh(merged, mat);
+      mesh.name = `${name}:${mat.name || mat.type}`;
+      mesh.castShadow = !this.shadowless.has(mat);
+      mesh.receiveShadow = true;
+      mesh.matrixAutoUpdate = false;
+      parent.add(mesh);
+      out.push(mesh);
+      for (const g of list) g.dispose();
+    }
+    this.parts.clear();
+    return out;
+  }
+}
+
+// mergeGeometries(list, false), for geometries without an index whose attributes are all plain float arrays, copied a
+// piece at a time. Anything else is merged by mergeGeometries itself.
+async function mergeInSlices(list: THREE.BufferGeometry[]): Promise<THREE.BufferGeometry | null> {
+  const first = list[0];
+  if (!first) return mergeGeometries(list, false);
+  const names = Object.keys(first.attributes);
+  const plain = (a: THREE.BufferAttribute | THREE.InterleavedBufferAttribute, b: THREE.BufferAttribute | THREE.InterleavedBufferAttribute) =>
+    a instanceof THREE.BufferAttribute && b instanceof THREE.BufferAttribute && a.array instanceof Float32Array && b.array instanceof Float32Array && a.itemSize === b.itemSize && a.normalized === b.normalized && a.gpuType === b.gpuType;
+  const simple = list.every((g) => g.index === null && Object.keys(g.morphAttributes).length === 0 && g.morphTargetsRelative === first.morphTargetsRelative
+    && Object.keys(g.attributes).length === names.length && names.every((n) => g.attributes[n] !== undefined && plain(g.attributes[n], first.attributes[n])));
+  if (!simple || Object.keys(first.morphAttributes).length) return mergeGeometries(list, false);
+  const merged = new THREE.BufferGeometry();
+  merged.morphTargetsRelative = first.morphTargetsRelative;
+  for (const n of names) {
+    const a0 = first.attributes[n] as THREE.BufferAttribute;
+    let length = 0;
+    for (const g of list) length += g.attributes[n].count * a0.itemSize;
+    const array = new Float32Array(length);
+    let at = 0;
+    for (const g of list) {
+      const src = (g.attributes[n] as THREE.BufferAttribute).array as Float32Array;
+      array.set(src, at);
+      at += src.length;
+      await slice();
+    }
+    const attr = new THREE.BufferAttribute(array, a0.itemSize, a0.normalized);
+    attr.gpuType = a0.gpuType;
+    merged.setAttribute(n, attr);
+  }
+  return merged;
 }
 
 // A piece adds the same small rounded box hundreds of times (grip ribs, knurls, keys): each shape is made once and
