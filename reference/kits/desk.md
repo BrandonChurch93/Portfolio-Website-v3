@@ -30,6 +30,40 @@ Read `reference/kits/README.md` first: the bar, the colors, how to look at a thi
 - **Cost.** The whole desk is one canvas about 1300 by 800 px on the page with ten things in it. Merge what never moves. Say your part's triangles and draw calls. Anything that moves by itself (fans, a screen, the keys' wave) must be cheap enough to draw every frame.
 - **It sits.** Contact shadows under it on the mat or the timber, and its light lands on what is next to it.
 
+## Your files
+
+- Your part's entry is `src/pieces/desk/parts/<part>.ts`, which exports `build`, a `PartFactory`. It now wraps the rough draft's form. Replace it. Anything else of yours goes in a folder beside it, `src/pieces/desk/parts/<part>/`. Those are the only files you write.
+- `build` hands back a `DeskPart` (`src/pieces/desk/part.ts`): your `group`, in the desk's millimetres, placed where the thing stands; `alone`, the middle and the reach of the thing itself, so a glow's plane does not set how it is framed; and `update(state)`, called before each frame with the time, each light's level, where the cursor's light is over the top, and whether the frame is held still. Return true from `update` only while your thing is moving by itself.
+- Geometry helpers are in `src/world/build.ts` (`Builder`, `lathe`, `rbox`, `cyl`, `xf`, `at`, `seeded`). Read `src/pieces/handheld/model.ts` and `src/pieces/cpu/model.ts` for how a detailed thing is put together here.
+- Do not touch the stage, `index.ts`, `layout.ts`, `part.ts` or another part. If you need something from them, say so in your report and work round it.
+
+## Lights and cost, in particular
+
+- The stage owns the desk's real lights and its shadows. A part may add one real light of its own at most (the PC two), made when the part is built and never added later. Turn a light down by its strength. Never hide one or set it invisible: that makes every material on the desk compile again, and the page hitches.
+- Everything else that glows is emissive material and small additive planes, in the palette, dimmed by the level you are handed.
+- No `transmission` on any material: it draws the whole scene a second time. Glass is a thin sheet with a clear coat's reflection and a little tint, blended.
+- Textures are drawn in code on a canvas, as `src/pieces/cpu/art.ts` does, at the size they are seen. Give each mipmaps and anisotropy so nothing sparkles.
+- Compile nothing after the first frame: every material and every state your thing can be in is drawn once when it is built.
+
+## How to look at it
+
+All from the repo folder. A dev server is already running on port 5330 and is shared with the other builders: do not start another, do not stop it, do not run `npm run build`. Check types with `npx tsc --noEmit`. Another builder's part may be broken for a minute while they work: if the whole desk fails to load, look at your part alone and try the whole again later.
+
+```
+npm run shot -- "/lab/piece/desk?only=<part>&label=0&ui=0" --t 4 --wait 2500 --out shots/desk/<part>/alone.jpg
+npm run shot -- "/lab/piece/desk?only=<part>&label=0&ui=0" --t 4 --wait 2500 --scale 3 --out shots/desk/<part>/close.jpg
+npm run shot -- "/lab/piece/desk?only=<part>&label=0&ui=0&lights=0" --t 4 --wait 2500 --out shots/desk/<part>/unlit.jpg
+npm run shot -- "/lab/piece/desk?only=<part>&label=0&ui=0" --t 4 --wait 2500 --lamp 0.15,0.3 --out shots/desk/<part>/lamp-left.jpg
+npm run shot -- "/lab/piece/desk?label=0&ui=0" --t 4 --wait 3000 --out shots/desk/<part>/whole.jpg
+npm run shot -- "/lab/piece/desk?size=808&label=0&ui=0" --t 4 --wait 3000 --out shots/desk/<part>/page-size.jpg
+npm run live -- "/lab/piece/desk?only=<part>&label=0&ui=0" --scale 1 --ms 2000 --every 6 --max 16 --cols 8 --tile 300 --out shots/desk/<part>/live.jpg
+```
+
+- `--t 4` holds the clock, so a still is always the same picture. For anything that moves by itself (fans, the screen, the keys' wave), also take real frames with `npm run live`, whose options are at the top of `scripts/live.mjs`.
+- `?size=808` draws the desk in a host as tall as it is on the page at a 1440 wide screen. That is what a visitor sees. Your thing has to say what it is at that size.
+- Open every image you take with the Read tool. Never judge something you have not looked at.
+- Put your close still beside `reference/bar/pc-builder-parts.jpg` and `reference/studies/43-desk-a-second-round-close.jpg`, and ask which is the weaker work.
+
 ## Rounds
 
 - Build, look, judge against the bar assuming your first verdict is too kind, fix, look again. Several rounds before you hand back.
@@ -41,7 +75,7 @@ Read `reference/kits/README.md` first: the bar, the colors, how to look at a thi
 Each builder has one or two of these. His words are from `BRIEF.md`.
 
 - **The bench and the mat.** A · Bench, which he picked: a thick top in dark timber on two trestles, a bronze angle over the front edge with its screws, a stretcher, and two drawers with the knob he chose for the sleeping card (`knob` in the rough, and `src/metal/dial.ts` for the knob's design). The drawers move toward the near end to make a bay about 520 mm wide for the PC under the far end. A real desk's proportions: "It looks very elongated" was his word on an earlier one. The mat covers about 80 percent of the top and stops short of the monitor: stitched edge, a hide or cloth surface that takes the cursor's light softly.
-- **The lamp.** A desk lamp at the left back corner, made to take the stream's strike on the top of its shade. Struck, the shade reads as lit by the stream, and then the desk reads as lit by its own lamp: the pool of light on the mat and the tablet is the lamp's.
+- **The lamp.** A desk lamp at the left back corner, made to take the stream's strike on the top of its shade. Struck, the shade reads as lit by the stream, and then the desk reads as lit by its own lamp: the pool of light on the mat and the tablet is the lamp's. The top of its shade is a fixed point (`SHADE` in `layout.ts`) and its foot is fixed (`PLACES.lamp`). The stream comes down onto the shade from the upper right of the screen and leaves to the left. The carried lamp's stem looped up on that side, and the stream's core was drawn across it. So on the screen nothing of the lamp stands higher than the top of its shade, and nothing of it is further left than its foot: the arm comes up to the shade from below and behind.
 - **The monitor.** A curved ultrawide, 38 inches. "The screen shows real work, with depth to it. It is never a flat lit picture": an editor and a running thing, layered behind the glass, in the site's colors, that lights the desk in front of it.
 - **The keyboard and the mouse.** "The keyboard and mouse still kind of look mid." "I use wireless. I think it looks bad" of a cable. "Think like a gaming keyboard with RGB lights going on it. Of course we could keep the RGB within our color scheme, but I think we could do something fun with it." "I like high end gaming mice." A wireless gaming keyboard with no cable: its keys light in a wave as the desk comes on, and the keys nearest the cursor's light glow. Every light one of the site's colors.
 - **The iPad and its pencil.** His iPad Pro with its pencil beside it, carrying no maker's mark.

@@ -110,6 +110,9 @@ export const STREAM = {
     // The leading end never comes to rest within this far above a thing it is about to strike, in the stream's own
     // units: it goes on and strikes. Resting just short, it sat on the lamp's shade throwing sparks with the lamp dark.
     snap: 22,
+    // A shard thrown onto a row's border keeps this share of its usual bounce. At the usual bounce most were still in
+    // the air when their time ran out: about one in five came to rest on a border, where he asked that they land and fade.
+    soft: 0.45,
     // And it meets a row's thing this far short of the thing's own edge, so its core lies against the thing and not
     // over it.
     shy: 6,

@@ -135,5 +135,5 @@ export function routeThroughSkills(P: SkillsPlan): Route {
     { name: 'under', s: out, over: O.under },
   ];
   const dark: Dark[] = [{ from: light.s + 2 * u, to: lens - 2 * u, core: true }, { from: enter + K.hide * u, to: shows, core: true, ease: [3 * u, K.grow * k] }];
-  return { branches, split: br.len + 1e6, join: [Infinity, Infinity], landings, ...S, fins: [], flows: [], fall: K.fall * k, unit: u, cues, dark };
+  return { branches, split: br.len + 1e6, join: [Infinity, Infinity], landings, ...S, fins: [], flows: [], fall: K.fall * k, unit: u, cues, dark, soft: K.soft };
 }

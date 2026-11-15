@@ -576,7 +576,7 @@ export class StreamSim {
         if (face < 0 || -into > K.settle * u) {
           const k2 = 0.75 + 0.5 * hash(i, at_, this.seed);
           run *= K.grip;
-          off = -into * K.bounce * k2 * face;
+          off = -into * K.bounce * k2 * face * (this.route.soft ?? 1);
           wz = -run / Math.max(r, 1) * 0.5 * k2; wx = wx * 0.5 + (hash(i, 3, at_) - 0.5) * 9; wy = wy * 0.5 + (hash(i, 4, at_) - 0.5) * 9;
         } else if (p[o + 16] > 0.5 && run > 0) {
           const carry = K.carry * u * (0.5 + this.looseSeed[i]);

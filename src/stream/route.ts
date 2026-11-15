@@ -105,6 +105,8 @@ export interface Route extends Solids {
   unit: number;
   cues?: Cue[];
   dark?: Dark[];
+  // The share of its usual bounce a thrown shard keeps off a rail of this route. Without it, the usual.
+  soft?: number;
 }
 
 // A turn in the route: where two straight runs would meet, how early it leaves the first and how late it joins the
