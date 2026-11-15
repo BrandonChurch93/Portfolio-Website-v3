@@ -46,6 +46,32 @@ const ROOM = {
     { power: 9, size: [3.2, 0.6], at: [1.6, 1.5, -2.2], to: [0, 0.2, 0] },
   ] as { power: number; size: [number, number]; at: [number, number, number]; to: [number, number, number] }[],
 };
+// The moon, which is in the upper right of the page's sky: the one light that gives the world a lit side and a dark
+// one. Where it stands from the world (the plan has it), how strong it is, and how many pixels across its shadows are drawn. It never
+// moves, so its shadows are drawn once.
+const MOON = { from: MOONWARD, power: 15, map: { high: 4096, mid: 2048, low: 1024, static: 2048 } as Record<Tier, number>, reach: 1100 };
+// The dim light of the sky, which fills what the moon does not reach. It is kept low: with more, the world had no
+// dark side and read as flat.
+const SKY = 0.1;
+// Depth as darkness: what is further from the eye sinks toward the page's ground, so the far side of the city
+// stands dark against the glow behind it and the near side stands clear of it. From how far in front of the
+// world's middle it begins, and how far behind it would be whole, in metres.
+const HAZE = { from: 0.5, to: 2.2 };
+// How many pixels the world is drawn with at most. Its canvas is taller than the screen and every pixel of it is
+// lit by three lights through two shadow maps: at a screen's full density it drew 30 frames a second on a fast
+// laptop, and at this count 60 with room to spare. The stage's own budget is for a canvas the size of a screen.
+const PIXELS = 2.8e6;
+// The light the core throws on the torn rock and on what broke away.
+const GLOW = { power: 14 };
+// The heights of the frame each part lies between, lowest first. A part none of which the screen shows is not
+// drawn and is not told the time, so the core and what broke away cost nothing while they are under the foot of
+// the screen, and the city costs nothing once it is over the top.
+const EDGE_Y = -PLANET.r * (1 - Math.cos((PLANET.cap * Math.PI) / 180)), TOP = SPIRE.tall + HOST.over;
+const ABOVE: readonly [number, number] = [EDGE_Y - 80, TOP];
+const SPAN: Record<PartName, readonly [number, number]> = {
+  ground: [EDGE_Y - 80, 60], spire: ABOVE, towers: ABOVE, temple: ABOVE, gardens: ABOVE, dunes: ABOVE, monument: ABOVE, craft: [EDGE_Y - 300, TOP],
+  tear: [TEAR.low - 80, EDGE_Y + 80], core: [HEART[1] - 340, HEART[1] + 340], debris: [DEBRIS.low - 80, DEBRIS.high + 80],
+};
 function room(): THREE.Scene {
   const s = new THREE.Scene();
   const walls = new THREE.Mesh(new THREE.BoxGeometry(30, 20, 30), new THREE.MeshBasicMaterial({ color: new THREE.Color(0.01, 0.007, 0.005), side: THREE.BackSide }));
