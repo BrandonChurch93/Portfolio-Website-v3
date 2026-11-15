@@ -17,10 +17,12 @@ const Z = { chamferBack: 0.85, bandTop: 3.95, metalTop: 4.55, ink: 4.7, picture:
 // The stand, in its own frame: y up from the floor of the channel the tablet's edge stands in, z toward the visitor.
 // The tablet leans back at this angle; the stand's cheeks stand at ±cheek and are this thick.
 const STAND = { tilt: 24 * DEG, liner: 0.8, rubber: 1.0, base: 4, cheek: 118, cheekT: 8, back: -168, lipZ: 3.6, lipTop: 7.8, front: 10, behind: -12, at: 95 } as const;
-// The pencil: its length, its radius, and how far its flat side is from its middle. It lies by itself on the mat at
-// PLACES.pencil, square to the desk's front edge with its tip to the back, on its round side, rolled so the flat
-// faces up and toward the visitor.
-const PEN = { len: 166, r: 4.45, flat: 3.55, roll: 150 * DEG } as const;
+// The pencil is his Apple Pencil Pro, as the real one is, without the name printed on its flat: its length, its
+// radius, how far its flat side is from its middle, the round on the back end's edge and how far its face is domed,
+// the cone at the front (its length, the round on its shoulder, the round of the point) and the radius where the tip
+// screws on. It lies by itself on the mat at PLACES.pencil, square to the desk's front edge with its tip to the back,
+// resting on its flat.
+const PEN = { len: 166, r: 4.45, flat: 3.6, back: 1.5, dome: 0.4, cone: 13.3, shoulder: 3, point: 0.75, joint: 2.85 } as const;
 // The picture's brightness at full, and how much of the room the glass shows.
 const GLOW = 1.2, SHEEN = 0.05;
 // The screen's light on the mat: how wide and how far out it reaches, in millimetres, and how strong it is at full.
@@ -165,23 +167,37 @@ export const build: PartFactory = () => {
   // ---- the pencil, on its flat beside the tablet ------------------------------------------------------------------
   const [qx, qz] = PLACES.pencil;
   const pb = new Builder();
-  const pen = new THREE.Matrix4().makeTranslation(qx, MAT.h + PEN.r, qz).multiply(new THREE.Matrix4().makeRotationY(90 * DEG)).multiply(new THREE.Matrix4().makeRotationX(PEN.roll)).multiply(new THREE.Matrix4().makeTranslation(-PEN.len / 2, 0, 0));
-  const R = PEN.r, F = PEN.flat;
-  const st: [number, number, number][] = [[0, 0, 0], [0.08, 1.2, 1.2], [0.3, 2.2, 2.2], [0.7, 3.1, 3.1], [1.2, 3.7, F], [1.9, 4.1, F], [2.8, 4.35, F], [3.8, R, F]];
-  for (const [x, dr] of [[13.6, 0], [13.85, 0.13], [14.15, 0.13], [14.4, 0]] as const) st.push([x, R - dr, F - dr]);
-  st.push([135, R, F]);
-  const TAPER = 21, tipR = 2.55;
-  for (let i = 1; i <= 16; i++) {
-    const t = i / 16, e = t * t * (3 - 2 * t) * 0.35 + t * 0.65, r = R - (R - tipR) * e;
-    st.push([135 + TAPER * t, r, Math.min(r, F + (R - F) * Math.min(1, t / 0.3))]);
+  // It rests on its flat, which is at -y in its own frame, so its middle is the flat's distance above the mat.
+  const pen = new THREE.Matrix4().makeTranslation(qx, MAT.h + PEN.flat, qz).multiply(new THREE.Matrix4().makeRotationY(90 * DEG)).multiply(new THREE.Matrix4().makeTranslation(-PEN.len / 2, 0, 0));
+  const R = PEN.r, F = PEN.flat, B = PEN.shoulder, rho = PEN.point, x0 = PEN.len - PEN.cone;
+  // The cone: a round shoulder, a straight run, and a round point, its slope found so the whole is the cone's length.
+  let k = (R - rho) / (PEN.cone - B / 2);
+  for (let i = 0; i < 8; i++) {
+    const a = Math.atan(k), end = B / 2 + (R - rho * Math.cos(a)) / k - rho * Math.sin(a) + rho;
+    k *= (end - B / 2) / (PEN.cone - B / 2);
   }
+  const alpha = Math.atan(k), sTan = B / 2 + (R - rho * Math.cos(alpha)) / k, centre = sTan - rho * Math.sin(alpha);
+  const coneR = (s: number) => (s <= B ? R - (k * s * s) / (2 * B) : s <= sTan ? R - k * (s - B / 2) : Math.sqrt(Math.max(0, rho * rho - (s - centre) ** 2)));
+  const sJoint = B / 2 + (R - PEN.joint) / k, groove = 0.1;
+  // The back end is closed by a shallow dome, its edge well rounded, the flat side cut through it too. A face square to
+  // the pencil turned away from every light and read as a grey cap.
+  const stick: [number, number, number][] = [[0, 0, 0]];
+  for (const u of [0.35, 0.65, 0.88]) stick.push([PEN.dome * u * u, (R - PEN.back) * u, (F - PEN.back) * u]);
+  for (let a = 0; a <= 90; a += 15) {
+    const c = Math.cos(a * DEG), s = Math.sin(a * DEG), inset = PEN.back * (1 - s);
+    stick.push([PEN.dome + PEN.back * (1 - c), R - inset, F - inset]);
+  }
+  stick.push([x0, R, F]);
+  for (let i = 1; i <= 6; i++) stick.push([x0 + (B * i) / 6, coneR((B * i) / 6), F]);
+  // Under the flat the cone runs out of the flat: stations there keep that run out curved.
+  for (let s = B + 0.5; s < sJoint - groove; s += 0.5) if (coneR(s) > F - 0.6) stick.push([x0 + s, coneR(s), F]);
+  stick.push([x0 + sJoint - groove, coneR(sJoint - groove), F], [x0 + sJoint, PEN.joint - groove, F]);
+  const tip: [number, number, number][] = [[x0 + sJoint, PEN.joint - groove, F], [x0 + sJoint + groove, coneR(sJoint + groove), F]];
+  for (let a = alpha / DEG; a <= 90.001; a += (90 - alpha / DEG) / 8) tip.push([x0 + centre + rho * Math.sin(a * DEG), rho * Math.cos(a * DEG), F]);
+  tip[tip.length - 1][1] = 0;
   // The pencil is too thin to shadow itself cleanly from the desk's lights: its shadow on the mat is the soft one below.
-  pb.add(barrel(st), m.pencil, pen, { shadow: false });
-  // A polished band near the back end, just proud of the barrel, that catches a ring of light.
-  pb.add(barrel([[8.6, R + 0.04, F + 0.04], [8.9, R + 0.06, F + 0.06], [12.7, R + 0.06, F + 0.06], [13.0, R + 0.04, F + 0.04]]), m.chamfer, pen, { shadow: false });
-  const along = (x: number) => pen.clone().multiply(xf({ p: [x, 0, 0], r: [0, 0, -Math.PI / 2] }));
-  pb.add(turned([[tipR - 0.05, 0], [tipR + 0.07, 0.12], [tipR + 0.07, 0.95], [tipR - 0.08, 1.1]], 48), m.chamfer, along(135 + TAPER), { shadow: false });
-  pb.add(turned([[2.35, 0], [2.3, 1.0], [1.95, 3.2], [1.5, 5.4], [1.12, 6.9], [0.9, 7.55], [0.62, 7.92], [0.32, 8.1], [0, 8.15]], 40, 60), m.nib, along(135 + TAPER + 1.1), { shadow: false });
+  pb.add(barrel(stick), m.pencil, pen, { shadow: false });
+  pb.add(barrel(tip), m.nib, pen, { shadow: false });
 
   b.build(seat, 'tablet');
   pb.build(group, 'pencil');
@@ -203,7 +219,7 @@ export const build: PartFactory = () => {
   spill.renderOrder = 2;
   for (const o of [shadows, spill]) { o.matrixAutoUpdate = false; o.updateMatrix(); seat.add(o); }
   // The pencil's own hairline of shadow along where it touches the mat, and a soft one round it.
-  const penShadow = new THREE.Mesh(shadowQuads([{ c: [qx, qz], h: [1.6, 74], corner: 1.5, k: 0.8, pad: 12 }], MAT.h + 0.25), m.shadow);
+  const penShadow = new THREE.Mesh(shadowQuads([{ c: [qx, qz + 6], h: [2.2, 75], corner: 1.5, k: 0.8, pad: 12 }], MAT.h + 0.25), m.shadow);
   penShadow.name = 'pencil:shadow';
   penShadow.renderOrder = 1;
   group.add(penShadow);

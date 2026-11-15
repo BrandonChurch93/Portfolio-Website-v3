@@ -57,11 +57,15 @@ export function tabletMaterials() {
   const bronze = P('tabStand', { color: tone('text-3', 0.24), metalness: 0.8, roughness: 0.45 });
   const screw = P('tabScrew', { color: tone('text-3', 0.3), metalness: 1, roughness: 0.3 });
   const rubber = P('tabRubber', { color: tone('text-3', 0.1), metalness: 0, roughness: 0.85 });
-  // The pencil: a satin barrel in charcoal, a polished steel band and collar, and a nib of pale warm grey.
-  const pencil = P('tabPencil', { color: tone('bg', 0.6), metalness: 0, roughness: 0.38, specularIntensity: 0.8 });
+  // The pencil: one matte white piece with a soft even sheen, its tip a shade greyer. Its white is the palette's text
+  // white turned down and leaning a little cool: its lit side is too bright for the white balance to reach, and a plain
+  // white there came out cream to fresh eyes. Brighter, it also went past the tablet's screen.
+  const text = new THREE.Color(hex('text-2'));
+  const white = new THREE.Color().setScalar(((text.r + text.g + text.b) / 3) * 0.16).multiply(new THREE.Color(0.9, 0.98, 1.12));
+  const pencil = P('tabPencil', { color: white, metalness: 0, roughness: 0.5, specularIntensity: 0.5 });
   // Copper is the one accent: the stand's rod.
   const copper = P('tabCopper', { color: hex('copper'), metalness: 1, roughness: 0.5 });
-  const nib = P('tabNib', { color: tone('text-2', 0.1), metalness: 0, roughness: 0.78 });
+  const nib = P('tabNib', { color: white.clone().multiplyScalar(0.78), metalness: 0, roughness: 0.6, specularIntensity: 0.4 });
 
   // What lies on the mat, both from one shader so they are one program. A shadow (uMode 0) is a short soft dark
   // under each thing: a rounded rectangle in its own millimetres (uv), its half sizes, corner and strength in the cell
