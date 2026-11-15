@@ -169,10 +169,11 @@ export const STREAM = {
     turn: 90,
     // The landing: how strong it is against a full strike, how many sparks and forks of arc it keeps while the
     // stream lies on it, and how many times longer than the test shot's it waits between the shards it throws.
-    strike: [1.1, 1.1, 6, 2.4] as readonly [number, number, number, number],
+    strike: [0.9, 1.1, 3, 2.4] as readonly [number, number, number, number],
     // What it throws falls this far and goes, and keeps this share of its usual bounce off the stone, so it comes
-    // to rest on the stone and does not hang in the air.
-    fall: 120,
+    // to rest on the stone and does not hang in the air. The fall is short: a shard that has dropped past the
+    // stone's near edge is not on the stone, and is let go at once.
+    fall: 46,
     soft: 0.4,
     // The leading end never comes to rest within this far above the stone, in the stream's own units.
     snap: 22,

@@ -2,7 +2,7 @@ import { registry } from '../hooks/registry';
 import { lamp } from '../lamp/lamp';
 import { CARD } from '../metal/mask';
 import { plates } from '../metal/renderer';
-import { advance, asleep, band, edge, veil, type Band, type Start } from '../metal/wake';
+import { WAKE, advance, asleep, band, edge, veil, type Band, type Start } from '../metal/wake';
 import type { PadPiece } from '../pieces/pad/index';
 import { FILL, LAUNCH, ROCKET, TABLE, TOWER, burn, climbed } from '../pieces/pad/layout';
 import { STREAM } from '../stream/config';
@@ -30,13 +30,18 @@ export interface ContactParts {
 export interface ContactStage { dispose(): void }
 
 // Lines along the stone's top face that what the landing throws comes to rest on, in the pad's units: from where
-// across and how far toward the visitor to where. Both are clear of the table.
-const RESTS: [number, number, number, number][] = [[140, 0, 316, 0], [72, 150, 256, 150]];
+// across and how far toward the visitor to where. They run the stone's whole width, under the table too, where a
+// shard is not drawn: one that came to rest there must not fall on through and show again under the stone.
+const RESTS: [number, number, number, number][] = [[-316, 0, 316, 0], [-262, 150, 262, 150], [-262, -150, 262, -150]];
 // How far round the table, the tower and the rocket the stream's shards are kept off, in units.
 const CLEAR = 14;
 // The engine's fire on the plate: how strongly it lights the plate's near edge at full thrust, and how far up the
 // rocket has to have climbed, in units, for that light to have gone.
 const FIRE = { on: 0.9, gone: 900 };
+// How strongly the stream's leading end lights the sleeping plate. It falls a good way from the plate, so it is a
+// faint light on the plate's near edge: any stronger, it took the knob's shadow from the room's light and threw it
+// across the plate as one long bar.
+const END = 0.25;
 // A jump of this many seconds in how long the stream has been on the stone is no passing of time: the page was
 // opened there, or a still was asked for. Everything is put where it would have come to rest.
 const JUMP = 1;
@@ -85,7 +90,7 @@ export function mountContact(parts: ContactParts, host?: StreamHost): ContactSta
     const pr = parts.page.getBoundingClientRect();
     origin = { x: pr.left + scrollX, y: pr.top + scrollY };
     return {
-      route: routeThroughContact({ width: c.width, unit: c.unit, view: c.view, board: k, from, joined: !!c.from, land, seat: top + (CONTACT.h + CONTACT.seat) * k, rests }),
+      route: routeThroughContact({ width: c.width, unit: c.unit, view: c.view, board: k, from, joined: !!c.from, land, inward: -1, seat: top + (CONTACT.h + CONTACT.seat) * k, rests }),
       after: frame,
       off: (x, y) => keepOff.some((o) => x >= o.l && x <= o.r && y >= o.t && y <= o.b),
     };
@@ -113,7 +118,9 @@ export function mountContact(parts: ContactParts, host?: StreamHost): ContactSta
 
     // The plate: one band, from its corner nearest the landing when the stream wakes it.
     const { hw, hh, unit } = size, struck = edge(hw * (2 * SHOW.from[0] - 1), hh * (2 * SHOW.from[1] - 1), hw, hh);
-    const streamOn = whole || on, pointer = pointerOn || focusOn;
+    // The plate is the first thing the landing brings on, so it is the last to go: it stays awake until the rocket is
+    // down and the stone has all but gone dark, and its band is back as the stone's last light goes.
+    const streamOn = whole || on || lit > WAKE.cross * FILL.back, pointer = pointerOn || focusOn;
     if (held !== null) { wake.across = held; wake.from = struck; }
     else if (jump || whole) { wake.across = streamOn || pointer ? 1 : 0; wake.from = struck; wake.stream = true; }
     else advance(wake, streamOn, pointer, struck, entered, dt);
@@ -123,7 +130,7 @@ export function mountContact(parts: ContactParts, host?: StreamHost): ContactSta
       // The stream's leading end lights the blank as it falls past: it is about where the scroll has it, on the line
       // it falls down, and on the stone once it has landed.
       const landY = route.y1 + sy, y = on ? landY : Math.min(landY, STREAM.anchor * clock.view.h);
-      plates.setEnd(metal, route.x0 + (route.x1 - route.x0) * clamp(landY > 0 ? y / landY : 1) + sx, y, whole ? 0 : 1);
+      plates.setEnd(metal, route.x0 + (route.x1 - route.x0) * clamp(landY > 0 ? y / landY : 1) + sx, y, whole ? 0 : END);
       // The engine's fire lights the plate's near edge until the rocket has climbed away.
       const fire = whole ? 0 : burn(age) * FIRE.on * clamp(1 - climbed(age) / FIRE.gone), engine = onBoard(0, ROCKET.mouth + climbed(age), 0);
       plates.setStream(metal, route.l + engine[0] * k + sx, route.t + engine[1] * k + sy, fire);

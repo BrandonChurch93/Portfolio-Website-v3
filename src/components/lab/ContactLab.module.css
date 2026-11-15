@@ -40,14 +40,16 @@
   position: relative;
 }
 
-/* The pad's host stands with the stone at its foot and reaches up past the top of the screen as the stream lands,
-   so the rocket climbs out of the screen and never out of its own picture. Nothing in it takes the pointer. */
+/* The pad's host stands with the stone at its foot and reaches up well past the top of the screen as the stream
+   lands, so the rocket climbs out of the screen and never out of its own picture. It reaches a third of a screen
+   further than that: scrolled back up that far while the rocket is coming down, the rocket still comes in at the
+   top of the screen and not half way down it, cut off by its picture's edge. Nothing in it takes the pointer. */
 .pad {
   position: absolute;
   top: auto;
   bottom: calc(100% - var(--u) * var(--foot));
-  height: calc((100vh - var(--u) * 13) * 1.06);
-  height: calc((100lvh - var(--u) * 13) * 1.06);
+  height: calc((100vh - var(--u) * 13) * 1.06 + 36vh);
+  height: calc((100lvh - var(--u) * 13) * 1.06 + 36lvh);
   z-index: 1;
   pointer-events: none;
 }
@@ -120,7 +122,7 @@
   font-size: calc(var(--u) * 10.5);
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--text-3);
+  color: color-mix(in srgb, var(--text-2) 62%, var(--text-3));
 }
 
 .rule::before,
@@ -304,7 +306,7 @@
   font-size: calc(var(--u) * 10.5);
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: var(--text-3);
+  color: color-mix(in srgb, var(--text-2) 62%, var(--text-3));
 }
 
 .foot {

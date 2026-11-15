@@ -11,8 +11,10 @@ export const SCALE = 0.002;
 // its radius from the rim in. They are the carving's own (src/stream/stone.ts): the rim with its moat, the sixteen
 // plates, the twenty glyphs, the ring round the face, and the face, which the table stands over.
 export const STONE = { r: 320, edge: 13, cut: 7, rings: [1, 0.915, 0.6945, 0.5105, 0.456, 0] } as const;
-// Where the stream lands: on the outer band, at the end nearest the plate.
-export const LAND: [number, number, number] = [280, 0, 0];
+// Where the stream lands: on the outer band, the ring of plates, at the end nearest the plate. Not nearer the rim:
+// landing 40 units from it, half of what the strike threw went over the edge and fell through the air under the
+// stone.
+export const LAND: [number, number, number] = [236, 0, 0];
 
 // The launch table: a deck on legs that stand on the stone round its boss. How far it reaches to the left, where
 // the tower stands on it, and to the right, how deep it is front to back, and how high its top and its underside are.

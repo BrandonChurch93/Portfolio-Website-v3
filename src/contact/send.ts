@@ -11,7 +11,9 @@ export async function send(form: HTMLFormElement): Promise<boolean> {
   data.set('_captcha', 'false');
   try {
     const r = await fetch(contact.form.endpoint, { method: 'POST', headers: { Accept: 'application/json' }, body: data });
-    return r.ok;
+    // It answers 200 with success false when it took the post and sent nothing, as when the form is not yet confirmed.
+    const said = (await r.json().catch(() => null)) as { success?: unknown } | null;
+    return r.ok && String(said?.success ?? 'true') !== 'false';
   } catch {
     return false;
   }

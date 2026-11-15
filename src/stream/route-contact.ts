@@ -27,8 +27,10 @@ export interface ContactPlan {
   land: Pt;
   // How far down the page the foot of the screen is when it lands.
   seat: number;
-  // What the landing throws comes to rest on these: lines along the stone's top face.
+  // What the landing throws comes to rest on these: lines along the stone's top face. inward is the way most of
+  // it is thrown: toward the stone's middle, 1 to the right and -1 to the left.
   rests: Rail[];
+  inward?: number;
 }
 
 export function routeThroughContact(P: ContactPlan): Route {
@@ -45,7 +47,7 @@ export function routeThroughContact(P: ContactPlan): Route {
 
   const br = branches[0], end = br.len - br.step;
   const C = K.strike;
-  const stone: Landing = { kind: 'land', name: 'stone', side: 0, s: end, x: P.land.x, y: P.land.y, out: 0, face: UP, force: C[0], glow: C[1], arc: C[2], every: C[3], fall: K.fall * k };
+  const stone: Landing = { kind: 'land', name: 'stone', side: 0, s: end, x: P.land.x, y: P.land.y, out: P.inward ?? 0, face: UP, force: C[0], glow: C[1], arc: C[2], every: C[3], fall: K.fall * k };
 
   // A height on the page gives one distance along the route. The end is at the stone when the reading line is
   // where the seat puts it, and the difference is spread over the whole of its fall.
