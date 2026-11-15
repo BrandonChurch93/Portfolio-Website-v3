@@ -56,7 +56,7 @@ export function Plate({ finish, kind = 'plate', label, big, facts, photo, card, 
     return off;
     // The spec is fixed for a plate's life; a new photo or new words make a new plate.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finish, kind, label, big, facts, photoKey, card?.aspect, card?.stripH, card?.edge, look?.reveal, look?.push]);
+  }, [finish, kind, label, big, facts, photoKey, card?.aspect, card?.stripH, card?.edge, card?.plain, look?.reveal, look?.push]);
 
   useEffect(() => {
     const h = host.current;

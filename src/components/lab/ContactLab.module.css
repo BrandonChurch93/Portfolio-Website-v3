@@ -1,0 +1,412 @@
+.page {
+  position: relative;
+  overflow: clip;
+  background: var(--bg);
+}
+
+.head {
+  position: absolute;
+  top: var(--space-6);
+  left: var(--edge);
+  z-index: 6;
+  max-width: 26rem;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--copper-light);
+}
+
+.note {
+  margin-top: var(--space-3);
+  font-size: var(--step--1);
+  line-height: 1.6;
+  color: var(--text-3);
+}
+
+.board {
+  --u: calc(min(100vw, 2400px) / 1460);
+  position: relative;
+  width: calc(var(--u) * 1460);
+  margin: 0 auto;
+  padding-top: 78vh;
+  padding-top: 78svh;
+}
+
+.contact {
+  position: relative;
+}
+
+/* The pad's host stands with the stone at its foot and reaches up past the top of the screen as the stream lands,
+   so the rocket climbs out of the screen and never out of its own picture. Nothing in it takes the pointer. */
+.pad {
+  position: absolute;
+  top: auto;
+  bottom: calc(100% - var(--u) * var(--foot));
+  height: calc((100vh - var(--u) * 13) * 1.06);
+  height: calc((100lvh - var(--u) * 13) * 1.06);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.piece {
+  position: absolute;
+  inset: 0;
+}
+
+.title {
+  position: absolute;
+  z-index: 6;
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--text);
+  opacity: 0;
+}
+
+.plate {
+  position: absolute;
+  z-index: 4;
+  --r: calc(var(--u) * 20);
+}
+
+.metal {
+  position: absolute;
+  inset: 0;
+}
+
+/* The words and the form lie over the plate and are uncovered behind its band, in step with the metal under them
+   (--veil is set by src/contact/stage.ts). */
+.content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  -webkit-mask-image: var(--veil, none);
+  mask-image: var(--veil, none);
+  pointer-events: none;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 20);
+}
+
+.book {
+  width: calc(var(--u) * 262);
+  min-width: 0;
+}
+
+.copy {
+  width: calc(var(--u) * 178);
+  min-width: 0;
+}
+
+.rule {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--u) * 14);
+  margin: calc(var(--u) * 22) 0 calc(var(--u) * 16);
+  font-family: var(--font-mono);
+  font-size: calc(var(--u) * 10.5);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.rule::before,
+.rule::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+
+.form {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.honey {
+  display: none;
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: calc(var(--u) * 14);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--u) * 7);
+}
+
+.field > span {
+  font-family: var(--font-mono);
+  font-size: calc(var(--u) * 10.5);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--copper-light);
+}
+
+/* A field is a well milled into the plate: darker than the face, shadowed under its upper edge and lit along its
+   lower one, as a recess is under a light from above. */
+.field :is(input, textarea) {
+  box-sizing: border-box;
+  width: 100%;
+  padding: calc(var(--u) * 11) calc(var(--u) * 13);
+  border: 1px solid color-mix(in srgb, var(--bronze) 55%, transparent);
+  border-radius: calc(var(--u) * 7);
+  background: color-mix(in srgb, #000 62%, var(--bg));
+  box-shadow: inset 0 calc(var(--u) * 2) calc(var(--u) * 5) rgb(0 0 0 / 0.7), inset 0 -1px 0 color-mix(in srgb, var(--pale) 13%, transparent), 0 1px 0 color-mix(in srgb, var(--pale) 6%, transparent);
+  font-family: var(--font-body);
+  font-size: max(calc(var(--u) * 15), 13px);
+  line-height: 1.4;
+  color: var(--text);
+  caret-color: var(--flame);
+  transition: border-color var(--dur-2) var(--ease-settle), box-shadow var(--dur-2) var(--ease-settle);
+}
+
+.field textarea {
+  flex: 1;
+  min-height: 0;
+  resize: none;
+}
+
+.field :is(input, textarea):hover {
+  border-color: color-mix(in srgb, var(--copper) 60%, transparent);
+}
+
+.field :is(input, textarea):focus-visible {
+  outline: none;
+  border-color: var(--copper-light);
+  box-shadow: inset 0 calc(var(--u) * 2) calc(var(--u) * 5) rgb(0 0 0 / 0.7), inset 0 -1px 0 color-mix(in srgb, var(--pale) 22%, transparent), 0 0 0 1px color-mix(in srgb, var(--flame) 55%, transparent), 0 0 calc(var(--u) * 16) color-mix(in srgb, var(--ember) 45%, transparent);
+}
+
+.message {
+  flex: 1;
+  min-height: 0;
+  margin-top: calc(var(--u) * 14);
+}
+
+.send {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 10);
+  margin-top: calc(var(--u) * 16);
+  padding: calc(var(--u) * 14) 0;
+  border: 1px solid color-mix(in srgb, var(--copper) 70%, transparent);
+  border-radius: calc(var(--u) * 9);
+  background: linear-gradient(color-mix(in srgb, var(--bronze) 26%, transparent), color-mix(in srgb, var(--bronze-deep) 30%, transparent));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--pale) 16%, transparent), inset 0 -1px 0 rgb(0 0 0 / 0.6);
+  font-family: var(--font-display);
+  font-size: max(calc(var(--u) * 15), 13px);
+  font-weight: 600;
+  color: var(--copper-light);
+  cursor: pointer;
+  transition: border-color var(--dur-2) var(--ease-settle), color var(--dur-2) var(--ease-settle), background var(--dur-2) var(--ease-settle);
+}
+
+.send:hover,
+.send:focus-visible {
+  border-color: var(--copper-light);
+  color: var(--pale);
+  background: linear-gradient(color-mix(in srgb, var(--bronze) 44%, transparent), color-mix(in srgb, var(--bronze-deep) 44%, transparent));
+}
+
+.send:focus-visible,
+.again:focus-visible,
+.foot a:focus-visible {
+  outline: var(--focus);
+  outline-offset: var(--focus-offset);
+}
+
+.send:disabled {
+  cursor: progress;
+  color: var(--text-3);
+}
+
+.arrow {
+  transition: translate var(--dur-2) var(--ease-settle);
+}
+
+.send:hover .arrow {
+  translate: calc(var(--u) * 4) 0;
+}
+
+.failed {
+  min-height: 1.4em;
+  margin-top: calc(var(--u) * 8);
+  font-size: max(calc(var(--u) * 12.5), 12px);
+  color: var(--flame);
+}
+
+.failed:empty {
+  display: none;
+}
+
+.sent {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--u) * 10);
+  text-align: center;
+}
+
+.sentHead {
+  font-family: var(--font-display);
+  font-size: calc(var(--u) * 30);
+  font-weight: 500;
+  color: var(--copper-light);
+}
+
+.sentBody {
+  font-size: max(calc(var(--u) * 15), 13px);
+  color: var(--text-2);
+}
+
+.again {
+  margin-top: calc(var(--u) * 14);
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: calc(var(--u) * 11);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  cursor: pointer;
+}
+
+.again:hover {
+  color: var(--copper-light);
+}
+
+.based {
+  margin-top: calc(var(--u) * 14);
+  font-family: var(--font-mono);
+  font-size: calc(var(--u) * 10.5);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.foot {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  padding: 0 calc(var(--u) * 150);
+  font-size: max(calc(var(--u) * 13), 12px);
+  color: var(--text-3);
+}
+
+.foot ul {
+  display: flex;
+  gap: calc(var(--u) * 30);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: max(calc(var(--u) * 11), 11px);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.foot a {
+  color: var(--text-2);
+  text-decoration: none;
+}
+
+.foot a:hover {
+  color: var(--copper-light);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .title {
+    opacity: 1 !important;
+  }
+}
+
+/* A screen too narrow for the layout shows a plain stand in: the title and the plate's content in one column, with
+   no stream and no pad. Phones are designed in one pass after every section is finished. */
+@media (max-width: 1099.98px) {
+  .board {
+    --u: 1px;
+    width: auto;
+    padding: var(--space-9) var(--gut) 0;
+  }
+
+  .contact {
+    height: auto !important;
+  }
+
+  .pad {
+    display: none;
+  }
+
+  .title {
+    position: static;
+    font-size: var(--step-5) !important;
+    opacity: 1 !important;
+  }
+
+  .plate {
+    position: relative;
+    left: auto !important;
+    top: auto !important;
+    width: auto !important;
+    max-width: 34rem;
+    height: auto !important;
+    margin-top: var(--space-6);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-3);
+  }
+
+  .content {
+    position: static;
+    padding: var(--space-5) !important;
+    pointer-events: auto !important;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  .actions {
+    flex-wrap: wrap;
+  }
+
+  .book,
+  .copy {
+    width: auto;
+    min-width: 11rem;
+  }
+
+  .message textarea {
+    min-height: 9rem;
+  }
+
+  .foot {
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    height: auto !important;
+    padding: var(--space-7) 0 var(--space-6);
+  }
+}

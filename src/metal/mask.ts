@@ -6,8 +6,10 @@ export type PlateKind = 'plate' | 'bar' | 'placard' | 'control' | 'frame' | 'car
 // room. One design unit is a CSS pixel on a card CARD.width wide.
 // aspect: the picture's width over its height. stripH: the band's height in CSS pixels as the page laid it out, when
 // its words needed more room than the design gives. edge: a thin bead, or a wide rim that turns in to a lower face.
+// plain: a plate of the cards' family that holds no picture, as Contact's does: the edge and the dark face alone,
+// with no window and no band.
 export type CardEdge = 'thin' | 'deep';
-export interface CardShape { aspect: number; stripH?: number; edge?: CardEdge }
+export interface CardShape { aspect: number; stripH?: number; edge?: CardEdge; plain?: boolean }
 
 export const CARD = {
   width: 460,
@@ -182,14 +184,16 @@ export function paintMask(spec: PlateSpec, cssW: number, cssH: number, dpr: numb
     radius = CARD.radius * S;
     const ww = CARD.width - 2 * E.pad;
     const wh = ww / shape.aspect;
-    win = [w / 2, (E.pad + wh / 2) * S, (ww / 2) * S, (wh / 2) * S];
-    winR = (CARD.radius - E.pad) * S;
-    winRb = CARD.winRb * S;
-    winDepth = E.depth;
     bead = E.rim * S;
     bezel = CARD.bezel * S;
-    const sh = Math.max(CARD.strip * S, (shape.stripH ?? 0) * dpr);
-    strip = [w / 2, cardPicture(shape) * S + sh / 2, (ww / 2) * S, sh / 2];
+    if (!shape.plain) {
+      win = [w / 2, (E.pad + wh / 2) * S, (ww / 2) * S, (wh / 2) * S];
+      winR = (CARD.radius - E.pad) * S;
+      winRb = CARD.winRb * S;
+      winDepth = E.depth;
+      const sh = Math.max(CARD.strip * S, (shape.stripH ?? 0) * dpr);
+      strip = [w / 2, cardPicture(shape) * S + sh / 2, (ww / 2) * S, sh / 2];
+    }
   } else if (spec.kind === 'bar' || spec.kind === 'control') {
     const D = DESIGN[spec.kind];
     S = (cssH / D.height) * dpr;

@@ -148,6 +148,28 @@ export const STREAM = {
     over: { title: 0.6, near: 0.9, lamp: 1.4, row: 1.6, reflector: 0.6, light: 0.8, behind: 1.2, under: 0.6 } as Record<string, number>,
   },
 
+  // The route through Contact (routeThroughContact in route-contact.ts): one stream that falls onto the Sun stone
+  // under the rocket and ends there. Lengths are in the board's units unless they say otherwise.
+  pad: {
+    // It comes straight down onto the stone over this last stretch, turning into it by this much.
+    over: 150,
+    turn: 90,
+    // The landing: how strong it is against a full strike, how many sparks and forks of arc it keeps while the
+    // stream lies on it, and how many times longer than the test shot's it waits between the shards it throws.
+    strike: [1.1, 1.1, 6, 2.4] as readonly [number, number, number, number],
+    // What it throws falls this far and goes, and keeps this share of its usual bounce off the stone, so it comes
+    // to rest on the stone and does not hang in the air.
+    fall: 120,
+    soft: 0.4,
+    // The leading end never comes to rest within this far above the stone, in the stream's own units.
+    snap: 22,
+    // Its riding shards are let go over this last stretch, in the stream's own units: they go into the stone.
+    sink: 26,
+    // How many seconds of what the landing brings on the page follows: longer than the stone's lighting and the
+    // launch together, since the page keeps its own count from it (src/contact/stage.ts).
+    follow: 60,
+  },
+
   // When the category changes (surge.ts). Times are in seconds and lengths in units.
   change: {
     // The surge takes this long from the bar to the meeting under the button.
