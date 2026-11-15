@@ -91,6 +91,9 @@ void main() {
 	vec4 s = sRGBTransferOETF( vec4( CustomToneMapping( o ), c.a ) );
 	float n = h( gl_FragCoord.xy ) + h( gl_FragCoord.xy + 17.0 ) - 1.0;
 	s.rgb += n / 255.0 * smoothstep( 0.0005, 0.004, max( s.a, max( s.r, max( s.g, s.b ) ) ) );
+	// Light on a clear ground has color and no cover. WebKit throws away color brighter than its cover, which drew
+	// a hard edge round every glow: so light covers as much as it is bright.
+	s.a = max( s.a, max( s.r, max( s.g, s.b ) ) );
 	vec2 e = clamp( min( vUv, 1.0 - vUv ) / ${rim.toFixed(4)}, 0.0, 1.0 );
 	gl_FragColor = s * ( e.x * e.y );
 }`;
