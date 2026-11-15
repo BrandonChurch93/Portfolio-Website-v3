@@ -12,7 +12,8 @@
     "shot": "node scripts/shot.mjs",
     "strip": "node scripts/strip.mjs",
     "live": "node scripts/live.mjs",
-    "perf": "node scripts/perf.mjs"
+    "perf": "node scripts/perf.mjs",
+    "blockout": "node scripts/blockout.mjs"
   },
   "license": "UNLICENSED",
   "dependencies": {

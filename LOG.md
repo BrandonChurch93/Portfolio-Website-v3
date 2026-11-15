@@ -2,6 +2,34 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · The blockout's second round (Fable, web chat)
+
+**What Brandon said**
+
+- "Yes, you understood what I said exactly", and go. More context: the hero is seen in three steps on the scroll, the city alone at rest, then the land with its desert and trees, then the catastrophe. And a great deal of debris, orbiting and locked to the core, as Claude Code's world has. `BRIEF.md`, Settled, Hero, "More context for the blockout, and go".
+
+**What was done**
+
+- `/lab/hero-blockout` rebuilt to the plan in the entry below. `BRIEF.md`, "The blockout's second round, as built" has every size and count and what is short. `CLAUDE.md` has the files. Stills in `reference/studies/62-*`, with the plan from above.
+- `npm run blockout`, a new script: the rock alone, or the plan of the top, drawn in seconds without a browser.
+- Built, type checked, pushed. Nothing of it judged by an independent reviewer. Motion cannot be judged here and there is none.
+
+**What the build taught**
+
+- **Ripped, not cut, is a matter of how the rock is described.** A smooth hollow taken out of a smooth body is a cut whatever is done to its walls. Divide the rock into great pieces, keep each whole or take it whole, and every face left is a face where two pieces parted. A smooth description then only chooses which pieces stay.
+- **Putting each point of the surface at the middle of its cube's crossings rounds every edge off by a cube, and broken rock reads as clay.** Lighting the surface by the field's own facing at each point did not cure it: the edge was then a saw of light and dark one cube wide. Putting the point where the faces crossing its cube meet did. `nets.ts`.
+- **The desert must lie on the near half of the top.** From 12 degrees above, ground nearer the visitor is lower in the picture, so the near half is under the foot of the screen at rest, and anything tall hides the ground behind it for about five times its height. So the far half can only be city, and open land is only seen at the front.
+- **Small buildings must stay low.** Let them reach a tower's height and the skyline is a bed of pins with the towers lost in it.
+- **Look at the plan from above and at the rock alone before taking a still of the page.** A still takes minutes here. Both of those take seconds, and most faults showed in them first.
+- How far a place is from the land's edge has to be measured. Reading it off the rock's field gave 3 everywhere inland, every lot failed its margin, and the city came out empty with no error: the same fault as the first round's, a second time.
+- A land sheet that rises in dunes over a rock top that does not stands clear of the rock at a broken edge, as a shell. The rock's top now lies under the land, dunes and all.
+
+**Half finished, and what the next session needs**
+
+- His look. Then, as before: the agreement for the new world replaces "The hero, the city at rest" from item 4 on, with its tests, and a prompt goes to Claude Code with the Safari crash at its head. The crash is still not looked at, and Claude Code has not been told to stop work on the old world.
+- His ruling on the first screen ending at one place of the world on every screen.
+- The hero's page still mounts the old world. Nothing has been taken out.
+
 ## 2026-11-15 · His look at the blockout, and the plan for its second round (Fable, web chat)
 
 **What Brandon said**

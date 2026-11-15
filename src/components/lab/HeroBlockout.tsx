@@ -12,7 +12,7 @@ import { MetalButton } from '../MetalButton';
 import styles from './HeroBlockout.module.css';
 
 // Study 32: the hero's new world as a grey blockout, under his words as the hero lays them out. For its shape, the
-// camera and how it sits on the page, before any detail. ?el=18 opens it from that many degrees above, and ?ui=0
+// camera and how it sits on the page, before any detail. ?el=16 opens it from that many degrees above, and ?ui=0
 // hides the switch.
 export function HeroBlockout() {
   const host = useRef<HTMLDivElement>(null), scene = useRef<Blockout | null>(null);
@@ -70,10 +70,12 @@ export function HeroBlockout() {
       <section className={styles.notes}>
         <h2 className={styles.notesHead}>What this is</h2>
         <ul>
-          <li>A new model of the torn planet, started from nothing. Grey on purpose: it is for the shape, the camera and how it sits under your words.</li>
+          <li>The second round of the grey blockout. Grey on purpose: it is for the shape, the camera and how it sits under your words.</li>
+          <li>Three steps on the scroll. At rest, the city. Then the land: the desert, the parks, the boulevards. Then what happened to the planet.</li>
           <li>Lit as the finished world will be: one low moon from the upper right with real shadows, and the core’s own light in the hollow.</li>
-          <li>Not here yet, and not what it is for: materials, lit windows, the look of rock and sand, anything that moves, the night sky, the real stream.</li>
-          <li>Every building, tree and piece of debris is a plain form standing in for the real one.</li>
+          <li>Not here yet, and not what it is for: materials, lit windows, the look of rock and sand, the night sky, the real stream.</li>
+          <li>Nothing moves. What broke away is of four kinds, each placed as it will be: great pieces that still carry land, pieces locked to the core, belts in orbit, and small ones falling away under the core.</li>
+          <li>Every building, tree and broken piece is a plain form standing in for the real one.</li>
         </ul>
       </section>
       {ui && (
