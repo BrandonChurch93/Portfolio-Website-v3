@@ -62,20 +62,60 @@ export function outline(pts: P[], radii: number[], seg = 4): THREE.Shape {
   return s;
 }
 
+// Shades every round as the round it is. An extrusion comes with one normal per facet, and a round's facets are each
+// narrower than a pixel at the page's size: which facet a pixel's middle fell on changed its light, so the angle's
+// lower edge was a bright dashed line that came and went as the light moved. Here each corner takes the faces that
+// meet there within crease of its own, weighted by their area, so a round turns smoothly from one flat face to the
+// next and the flat faces stay flat (weighted by angle, the narrow facets tilted a whole board's face). The renderer
+// then widens the highlight on a normal that turns within a pixel.
+export function rounded(geo: THREE.BufferGeometry, crease = Math.PI / 5): THREE.BufferGeometry {
+  const g = geo.index ? geo.toNonIndexed() : geo;
+  const p = g.getAttribute('position'), count = p.count, cos = Math.cos(crease);
+  const face = new Float32Array(count);
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+  const sums = new Map<string, number[]>();
+  const key = (i: number) => `${Math.round(p.getX(i) * 1e3)},${Math.round(p.getY(i) * 1e3)},${Math.round(p.getZ(i) * 1e3)}`;
+  for (let t = 0; t < count; t += 3) {
+    a.fromBufferAttribute(p, t); b.fromBufferAttribute(p, t + 1); c.fromBufferAttribute(p, t + 2);
+    c.sub(b).cross(a.sub(b));
+    for (let k = 0; k < 3; k++) face[t + k] = t;
+    for (let k = 0; k < 3; k++) { const s = sums.get(key(t + k)); if (s) s.push(t, c.x, c.y, c.z); else sums.set(key(t + k), [t, c.x, c.y, c.z]); }
+  }
+  const out = new Float32Array(count * 3), own = new THREE.Vector3(), other = new THREE.Vector3(), sum = new THREE.Vector3();
+  for (let i = 0; i < count; i++) {
+    const s = sums.get(key(i))!;
+    for (let j = 0; j < s.length; j += 4) if (s[j] === face[i]) { own.set(s[j + 1], s[j + 2], s[j + 3]); break; }
+    const ol = own.length();
+    if (!(ol > 0)) continue;
+    own.divideScalar(ol);
+    sum.set(0, 0, 0);
+    for (let j = 0; j < s.length; j += 4) {
+      other.set(s[j + 1], s[j + 2], s[j + 3]);
+      const l = other.length();
+      if (l > 0 && other.dot(own) / l >= cos) sum.add(other);
+    }
+    if (sum.lengthSq() < 1e-12) sum.copy(own);
+    sum.normalize();
+    out.set([sum.x, sum.y, sum.z], i * 3);
+  }
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(out, 3));
+  return g;
+}
+
 // An outline drawn in a cross section and run along x, from x0 to x1, its ends eased by ease. The outline's x is
 // the desk's z, its y the desk's y.
 export function runX(shape: THREE.Shape, x0: number, x1: number, ease: number, seg = 3): THREE.BufferGeometry {
   const g = new THREE.ExtrudeGeometry(shape, { depth: x1 - x0 - 2 * ease, bevelEnabled: ease > 0, bevelThickness: ease, bevelSize: ease, bevelOffset: -ease, bevelSegments: seg, curveSegments: 4 });
   g.rotateY(-Math.PI / 2);
   g.translate(x1 - ease, 0, 0);
-  return g;
+  return rounded(g);
 }
 
 // The same, run along z from z0 to z1, its outline's x the desk's x.
 export function runZ(shape: THREE.Shape, z0: number, z1: number, ease: number, seg = 3): THREE.BufferGeometry {
   const g = new THREE.ExtrudeGeometry(shape, { depth: z1 - z0 - 2 * ease, bevelEnabled: ease > 0, bevelThickness: ease, bevelSize: ease, bevelOffset: -ease, bevelSegments: seg, curveSegments: 4 });
   g.translate(0, 0, z0 + ease);
-  return g;
+  return rounded(g);
 }
 
 // A square bar with its long arrises chamfered, the chamfer stopped short of each end where the bar is framed into

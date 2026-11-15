@@ -6,7 +6,7 @@ import { DESK } from '../layout';
 import type { PartFactory } from '../part';
 import { SoundBuilder, loftBar, outline, peg, runX, screwHead, stoppedPost } from './bench/forms';
 import { KNOB_RIM, knobBody, knobFace, rosetteMap } from './bench/knob';
-import { grain, timber, type Wear } from './bench/timber';
+import { grain, timber, type Knot, type Wear } from './bench/timber';
 
 // His bench, A · Bench as he picked it, made as a joiner would make it. A top of four boards, 58 thick, edge joined,
 // its ends showing their end grain. Two trestles, each a shaped bearer under the top and a shaped foot on the floor
@@ -28,12 +28,14 @@ const ANGLE = { top: 22, leg: 36, t: 3 };
 
 // Where the top's four boards meet, across the depth.
 const JOINTS = [-201, -4, 197];
+// The knots in the top, where the mat leaves the timber bare: one sound knot by the lamp, one pin knot at the far end.
+const KNOTS: Knot[] = [{ at: [-870, 0, 80], r: 9 }, { at: [760, 0, -300], r: 5.5 }];
 
 async function boards(b: Builder, M: THREE.Material): Promise<void> {
   const edges = [-FRONT, ...JOINTS, FRONT];
-  // Where each board's log had its pith, across the grain: far beside a quarter or rift sawn board, whose face shows
-  // straight lines, and below the one flat sawn board, whose face rises in a cathedral here and there.
-  const pith: [number, number][] = [[-720, 30], [640, -45], [10, -230], [-880, 60]];
+  // Where each board's log had its pith, across the grain: under the board, a little off its middle, at a depth
+  // that sets how broad its arches are. Every board is flat sawn, sawn from its own log.
+  const pith: [number, number][] = [[22, -130], [-30, -92], [14, -150], [-18, -78]];
   for (let i = 0; i < 4; i++) {
     const z0 = edges[i], z1 = edges[i + 1], zc = (z0 + z1) / 2;
     const back = i === 0 ? 4 : 0, front = i === 3 ? 1 : 0;
@@ -115,7 +117,7 @@ async function drawers(b: Builder, M: THREE.Material): Promise<[number, number, 
   for (const [i, x] of [[0, l + stile + ow / 2], [1, r - stile - ow / 2]] as [number, number][]) {
     b.add(grain(rbox(ow, oh, 6, 0.5).translate(x, oy, face - 34), 0.5 + i * 0.1, 'x', face - 200, oy), M);
     const fw = ow - 2 * gap, fh = oh - 2 * gap, fz = face - set;
-    b.add(grain(rbox(fw, fh, 20, 3, 3).translate(x, oy, fz - 10), 0.27 + i * 0.38, 'x', fz - 760 - i * 140, oy + 40 - i * 70), M);
+    b.add(grain(rbox(fw, fh, 20, 3, 3).translate(x, oy, fz - 10), 0.27 + i * 0.38, 'x', fz - 96 - i * 22, oy - 18 + i * 30), M);
     knobs.push([x, oy, fz]);
   }
   return knobs;
@@ -147,7 +149,7 @@ export const build: PartFactory = async () => {
     { at: [940, 0, 290], r: [90, 6, 130], k: 0.3, up: true },
     ...knobXs.map((x): Wear => ({ at: [x, oy, CASE.face], r: [55, 40, 6], k: 0.12 })),
   ];
-  const wood = timber(wear, { joints: JOINTS, below: -T - 1 }, { trestle: TX - 110, drawers: [CASE.l, CASE.r, CASE.face - 40] });
+  const wood = timber(wear, { joints: JOINTS, below: -T - 1 }, { trestle: TX - 110, drawers: [CASE.l, CASE.r, CASE.face - 40] }, KNOTS);
   await boards(b, wood);
   await trestle(b, wood, -1);
   await trestle(b, wood, 1);
