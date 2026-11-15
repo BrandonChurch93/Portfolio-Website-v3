@@ -70,6 +70,8 @@ export interface Look {
   level: { value: number };
   lamp: { value: THREE.Vector3 };
   cursor: { value: THREE.Vector3 };
+  // The middle of the case, in the world, which the glass's sheen is placed from.
+  center: { value: THREE.Vector3 };
   lampK: { value: number };
 }
 
@@ -89,6 +91,7 @@ export function makeLook(print: THREE.Texture, board: THREE.Texture): Look {
   const lamp = { value: new THREE.Vector3() };
   const lampK = { value: 1 };
   const cursor = { value: new THREE.Vector3() };
+  const center = { value: new THREE.Vector3() };
   const shell = solid('pc-shell', 0x232221, 0.4, 1);
   const inner = solid('pc-inner', 0x121111, 0.72);
   const accent = solid('pc-accent', 0x2f2d2b, 0.42, 1);
@@ -120,17 +123,21 @@ export function makeLook(print: THREE.Texture, board: THREE.Texture): Look {
   }, { uLevel: level });
   led.name = 'pc-led';
 
-  // A perforated sheet: a staggered grid of round holes 1.8 mm across with an edge a pixel wide, and its mean coverage
-  // once the holes are finer than a pixel, so nothing sparkles.
+  // A perforated sheet: a staggered grid of round holes with an edge a pixel wide, and its mean coverage once the
+  // holes are finer than a pixel, so nothing sparkles. Each sheet carries its pitch, its mean cover and how pale its
+  // metal is (perfOf), so a fine top and a coarse shelf share one program.
   const perf = patch(new THREE.MeshStandardMaterial({ color: 0x232220, roughness: 0.5, metalness: 0.6, transparent: true }), 'pc-perf', {
-    head: 'vec2 perfP(){ vec3 n = abs(vObjN); return n.y > n.x && n.y > n.z ? vObj.xz : n.x > n.z ? vObj.zy : vObj.xy; }',
+    vhead: 'attribute vec4 cell; varying vec3 vPerf;',
+    vert: 'vPerf = cell.xyz;',
+    head: 'varying vec3 vPerf;\nvec2 perfP(){ vec3 n = abs(vObjN); return n.y > n.x && n.y > n.z ? vObj.xz : n.x > n.z ? vObj.zy : vObj.xy; }',
     color: `
-  { vec2 p = perfP(); vec2 T = vec2(3.0, 5.196);
+  { float k = max(vPerf.x, 0.5); vec2 p = perfP() / k; vec2 T = vec2(3.0, 5.196);
     vec2 a = mod(p, T) - 0.5 * T; vec2 b = mod(p + 0.5 * T, T) - 0.5 * T;
     float d = min(length(a), length(b)) - 0.9;
     float far = smoothstep(0.5, 1.1, length(fwidth(p)));
     float solid = clamp(d / max(fwidth(d), 1e-4) + 0.5, 0.0, 1.0);
-    diffuseColor.a = mix(mix(0.08, 1.0, solid), 0.66, far); }`,
+    diffuseColor.rgb *= max(vPerf.z, 0.2);
+    diffuseColor.a = mix(mix(0.06, 1.0, solid), vPerf.y, far); }`,
   });
   perf.name = 'pc-perf';
 
@@ -141,7 +148,7 @@ export function makeLook(print: THREE.Texture, board: THREE.Texture): Look {
     vert: 'vFanR = length(position.xy);',
     head: 'uniform float uLevel; varying float vFanR;',
     color: `diffuseColor.rgb = ${lin(0x161514)} * (0.9 + 0.2 * wNoise(vObj * 0.3));`,
-    emissive: 'totalEmissiveRadiance = pcTone(vColor.r) * vColor.g * uLevel * (0.05 + 0.32 * (1.0 - smoothstep(18.0, 44.0, vFanR)) + 0.3 * smoothstep(46.0, 56.0, vFanR));',
+    emissive: 'totalEmissiveRadiance = pcTone(vColor.r) * vColor.g * uLevel * (0.03 + 0.16 * (1.0 - smoothstep(18.0, 40.0, vFanR)) + 0.12 * smoothstep(48.0, 56.0, vFanR));',
   }, { uLevel: level });
   bladeLit.name = 'pc-blade';
 
@@ -154,11 +161,11 @@ export function makeLook(print: THREE.Texture, board: THREE.Texture): Look {
   // that slides along the long side as the light moves; it takes no light from inside the case, as real glass shows
   // none. The rest is the light a lit part lays on the next: a ring, a fade away from a bar, a lit wordmark, the floor's
   // glow round the base; and, drawn darkening, the glass's tint and the case's shadow.
-  const uniforms = { uLevel: level, uLamp: lamp, uCursor: cursor, uLampK: lampK, uMap: { value: print }, uHalf: { value: new THREE.Vector2(227.5, 145) } };
+  const uniforms = { uLevel: level, uLamp: lamp, uCursor: cursor, uLampK: lampK, uSheen: { value: 0.03 }, uCenter: center, uMap: { value: print }, uHalf: { value: new THREE.Vector2(227.5, 145) } };
   const fxShader = {
     vertexShader: `attribute vec4 cell; varying vec4 vCell; varying vec2 vUv; varying vec3 vW; varying vec3 vN; varying vec3 vP;
 void main(){ vCell = cell; vUv = uv; vP = position; vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; vN = normalize(mat3(modelMatrix) * normal); gl_Position = projectionMatrix * viewMatrix * w; }`,
-    fragmentShader: `uniform float uLevel, uLampK; uniform vec3 uLamp, uCursor; uniform sampler2D uMap; uniform vec2 uHalf;
+    fragmentShader: `uniform float uLevel, uLampK, uSheen; uniform vec3 uLamp, uCursor, uCenter; uniform sampler2D uMap; uniform vec2 uHalf;
 varying vec4 vCell; varying vec2 vUv; varying vec3 vW; varying vec3 vN; varying vec3 vP;
 ${RAMP}
 void main(){
@@ -168,16 +175,13 @@ void main(){
     vec3 N = normalize(vN), V = normalize(cameraPosition - vW), R = reflect(-V, N);
     float fr = 0.04 + 0.96 * pow(1.0 - max(dot(N, V), 0.0), 5.0);
     float room = smoothstep(-0.2, 0.9, R.y) * 0.45;
-    vec3 L = normalize(uLamp - vW);
-    // The cursor's light is seen in the sheet where the line from the eye to the point under it crosses the sheet:
-    // a long upright band there, which slides along the glass as the light moves.
+    // A soft, broad sheen slanting across the sheet, as glass shows the room, which moves a little with the cursor's
+    // light. Low, so it never competes with what is behind it.
     vec3 across = normalize(cross(N, vec3(0.0, 1.0, 0.0)));
-    vec3 toC = uCursor - cameraPosition;
-    vec3 Pr = cameraPosition + toC * (dot(vW - cameraPosition, N) / dot(toC, N));
-    float off = dot(vW - Pr, across);
-    float streak = exp(-off * off / (0.009 * 0.009)) * 0.2 + exp(-off * off / (0.04 * 0.04)) * 0.03;
-    float spot = pow(max(dot(R, L), 0.0), 900.0) * 0.6;
-    gl_FragColor = vec4(vec3(1.0, 0.89, 0.76) * (room * fr * 0.6 + (streak + spot) * uLampK), 0.0);
+    vec3 q = vW - uCenter;
+    float u = dot(q, across) * 0.8 + q.y * 0.6 - dot(uCursor - uCenter, across) * 0.2;
+    float sheen = exp(-pow((u - uSheen) / 0.07, 2.0)) * 0.05 + exp(-pow((u - uSheen - 0.11) / 0.025, 2.0)) * 0.025;
+    gl_FragColor = vec4(vec3(1.0, 0.89, 0.76) * (room * fr * 0.6 + sheen * uLampK), 0.0);
     return;
   }
   if (mode == 5 || mode == 6) {
@@ -214,7 +218,16 @@ void main(){
   const fxDark = new THREE.ShaderMaterial({ ...fxShader, uniforms, transparent: true, depthWrite: false, blending: THREE.NormalBlending, premultipliedAlpha: true });
   fxDark.name = 'pc-fx-dark';
 
-  return { shell, inner, accent, plastic, satin, pcb, sink, sinkDark, copper, fin, rubber, void: voidM, frit, edge, sleeve, hose, led, perf, bladeLit, board: boardM, print: printM, fx, fxDark, level, lamp, cursor, lampK };
+  return { shell, inner, accent, plastic, satin, pcb, sink, sinkDark, copper, fin, rubber, void: voidM, frit, edge, sleeve, hose, led, perf, bladeLit, board: boardM, print: printM, fx, fxDark, level, lamp, cursor, center, lampK };
+}
+
+// Marks a perforated sheet: its pitch against the fine one, its cover once the holes are lost, how pale its metal.
+export function perfOf(g: THREE.BufferGeometry, pitch = 1, cover = 0.66, pale = 1): THREE.BufferGeometry {
+  const n = g.getAttribute('position').count;
+  const c = new Float32Array(n * 4);
+  for (let i = 0; i < n; i++) c.set([pitch, cover, pale, 0], i * 4);
+  g.setAttribute('cell', new THREE.Float32BufferAttribute(c, 4));
+  return g;
 }
 
 // Marks a geometry for the light shader: tone, strength, a shape value, and the mode.

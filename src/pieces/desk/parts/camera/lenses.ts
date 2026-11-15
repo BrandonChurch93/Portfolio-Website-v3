@@ -1,5 +1,5 @@
 import { at, rbox, xf } from '../../../../world/build';
-import { bandUV, element, faceUV, flatRing, iris, pebble, ribs, turned, type Put } from './forms';
+import { bandUV, DEG, element, faceUV, flatRing, iris, pebble, ribs, turned, type Put } from './forms';
 import type { CameraMaterials } from './materials';
 
 // The two lenses and the cap, each turned about its own y, in millimetres. A lens's y = 0 is the face of its mount.
@@ -88,20 +88,33 @@ export function zoom(p: Put, m: CameraMaterials, f: Facing): void {
   p.add(flatRing(0, 26, 59.5, 48), m.inside);
 }
 
-// The front cap, lying face up on the mat: a knurled rim, a dished face, two pinch tabs either side of a raised
-// middle that carries its size and a made up mark.
-export const CAP = { r: 37.5, h: 7 } as const;
+// The front cap, lying face up on the mat: a centre pinch cap. Its knurled rim is broken at each side by a ribbed tab
+// that is pressed in to free it, which is what makes its outline a cap's and not a disc's. The face is dished to a
+// raised middle, with its size and a made up mark moulded round it.
+export const CAP = { r: 37.5, h: 7, gap: 44 * DEG } as const;
 // The moulded plastic's fine grain, per millimetre.
 const FINE = 3;
 
 export function cap(p: Put, m: CameraMaterials): void {
-  p.add(ribs(turned([[30, 0], [36.9, 0], [37.5, 0.6], [37.5, 6.2], [37.0, 6.8], [35.6, 7.0]], 96), 96, 0.4, 0.6), m.ribRubber);
-  p.add(pebble(turned([[35.6, 7.0], [34.6, 6.9], [32.0, 6.0], [30.4, 5.5]], 96), FINE, 0.03), m.plastic);
-  p.add(faceUV(flatRing(0, 30.4, 5.5, 96), 'cap', CAP.r), m.plastic);
-  for (const s of [-1, 1]) {
-    // Each tab: a ribbed pad to press, and the slot it moves in.
-    p.add(pebble(rbox(7, 2.6, 19, 1.2, 1), FINE, 0.03), m.plastic, at(s * 25.5, 6.2, 0));
-    for (let k = 0; k < 5; k++) p.add(pebble(rbox(0.7, 0.6, 14, 0.25, 1), FINE, 0.03), m.plastic, at(s * (23.3 + k * 1.1), 7.6, 0));
-    p.add(rbox(1.6, 0.6, 17, 0.3, 1), m.inside, at(s * 21.2, 5.5, 0));
+  const { r, gap } = CAP;
+  // The rim, in two arcs between the tabs (an angle of 0 is +z, and the tabs stand at +x and -x).
+  const arc = Math.PI - gap;
+  const rim: [number, number][] = [[30, 0], [r - 0.6, 0], [r, 0.6], [r, 6.2], [r - 0.5, 6.8], [35.6, 7.0], [34.6, 6.9]];
+  for (const from of [Math.PI / 2 + gap / 2, -Math.PI / 2 + gap / 2]) {
+    p.add(ribs(turned(rim, 48, from, arc), 40, 0.4, 0.6), m.ribRubber);
+    // The rim's cut ends.
+    for (const a of [from, from + arc]) p.add(rbox(1.2, 6.6, 7.6, 0.4, 1), m.plastic, xf({ p: [Math.sin(a) * (r - 3.6), 3.4, Math.cos(a) * (r - 3.6)], r: [0, a, 0] }));
   }
+  // The tabs: a ribbed pad in each gap, a little lower than the rim, and the dark slot it slides in.
+  for (const side of [1, -1]) {
+    const mid = side * Math.PI / 2;
+    p.add(ribs(turned([[31, 0.6], [r - 1.1, 0.6], [r - 0.7, 1.0], [r - 0.7, 5.2], [r - 1.1, 5.7], [31, 5.7]], 24, mid - gap / 2 + 0.05, gap - 0.1), 9, 0.45, 0.5), m.ribRubber);
+    p.add(rbox(4, 0.6, 22, 0.3, 1), m.inside, at(side * 28.6, 5.8, 0));
+  }
+  // The floor the gaps look down onto.
+  p.add(flatRing(0, r - 0.4, 0.4, 64), m.inside);
+  // The dished face, the ring of moulded marks, the raised middle.
+  p.add(pebble(turned([[35.6, 7.0], [34.6, 6.9], [31.5, 5.7], [24.5, 5.2]], 96), FINE, 0.03), m.plastic);
+  p.add(faceUV(flatRing(17, 24.5, 5.2, 96), 'cap', r), m.plastic);
+  p.add(turned([[17, 5.2], [16.4, 6.1], [15.6, 6.4], [0, 6.5]], 96), m.plastic);
 }

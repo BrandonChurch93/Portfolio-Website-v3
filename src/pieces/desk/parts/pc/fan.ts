@@ -18,7 +18,7 @@ export function fan(b: Adds, L: Look, m: THREE.Matrix4, kind: FanKind, tone: num
   const flange = () => {
     const s = rrect(new THREE.Shape(), -HALF, -HALF, 120, 120, R);
     s.holes.push(circleHole(0, 0, HOLE));
-    return extrude(s, FL, 0.55, 'xy', 1, 1);
+    return extrude(s, FL, 0, 'xy', 1);
   };
   const fl = flange();
   b.add(fl, L.plastic, on(at(0, 0, -FACE)), { shadow: false });

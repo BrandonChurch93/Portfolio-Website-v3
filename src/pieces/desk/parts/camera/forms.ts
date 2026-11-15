@@ -8,8 +8,8 @@ import { ATLAS, REG, BAND_MID, type Region } from './art';
 
 export const DEG = Math.PI / 180;
 
-export function turned(pts: [number, number][], seg = 96): THREE.BufferGeometry {
-  const g = new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), seg);
+export function turned(pts: [number, number][], seg = 96, from = 0, sweep = Math.PI * 2): THREE.BufferGeometry {
+  const g = new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), seg, from, sweep);
   return toCreasedNormals(g, 32 * DEG);
 }
 

@@ -5,15 +5,19 @@ import { rings } from '../keyboard/shapes';
 // His mouse: a light, high end wireless gaming mouse, low at the front where the fingers lie and swelling to the palm
 // behind the middle. Millimetres, its foot on the mat at y = 0, its front toward -z.
 
-// Its size, the height its skates lift it by, and where the wheel and its light are.
-export const MOUSE = { len: 124, half: 31.8, lift: 0.8, wheel: { z: -35, r: 10.4, w: 7 }, light: -19.5 } as const;
-// The seams, as places on the shell: where the two buttons end at the back (middle and sides), how high their sides
-// run along the flanks, and the line the matte top shell meets the satin band under it at.
-export const SEAM = { back: 1.5, side: 23, base: 9 } as const;
+// What each surface of the mouse is. One material draws them all, and each vertex carries its kind in the fourth
+// number of its cell attribute.
+export const KIND = { shell: 0, thumb: 1, wheel: 2, cradle: 3, skate: 4, side: 5 } as const;
+
+// Its size, the height its skates lift it by, where the wheel is and how far it stands proud, and where its light is.
+export const MOUSE = { len: 124, half: 31.8, lift: 0.8, wheel: { z: -35, r: 11, w: 7.4, proud: 4.6 }, light: -18.5 } as const;
+// The seams, as places on the shell: where the two buttons end at the back (middle and sides), and how high their
+// sides run along the flanks.
+export const SEAM = { back: 1.5, side: 23 } as const;
 // The thumb's two buttons on the left flank: where each is along the mouse, its length, and the height of its middle.
-export const THUMB = { at: [-22, -6], len: [15, 14], y: 19, tall: 6.2 } as const;
+export const THUMB = { at: [-24, -8], len: [15, 14], y: 17, tall: 5.8 } as const;
 // The grip panels on both flanks, behind the thumb buttons: middle along the mouse and up, and half their size.
-export const GRIP = { z: 15, y: 16, hz: 15, hy: 5.5, r: 4.5 } as const;
+export const GRIP = { z: 16, y: 12.5, hz: 14, hy: 3.6, r: 3.2 } as const;
 
 // The height of the shell's back along its length: low over the fingers' ends, highest under the palm, falling away
 // steeply at the heel.
@@ -44,6 +48,18 @@ const scoop = (x: number, z: number) => 1.15 * Math.exp(-(((Math.abs(x) - 13.5) 
 // Where the shell's rings close at the top: the highest point of its back.
 const CROWN = 9;
 
+// The shell is two parts: a satin top over the buttons and the palm, and a graphite flank under it. Where they meet
+// the top stands proud of the flank by a lip, a real step that catches a pale line all round.
+export const STEP = { up: 0.6, lip: 0.75 } as const;
+
+// The sides are not the same: a thumb rest flares out low on the left, with a waist above it the thumb lies in, and
+// the right side flares out low under the ring finger.
+const window1 = (z: number, a: number, b: number) => sstep(a - 8, a + 8, z) * (1 - sstep(b - 8, b + 8, z));
+const thumbRest = (up: number, z: number) => (0.085 * Math.exp(-(((up - 0.24) / 0.11) ** 2)) - 0.04 * Math.exp(-(((up - 0.5) / 0.1) ** 2))) * window1(z, -26, 30);
+const flare = (up: number, z: number) => 0.045 * Math.exp(-(((up - 0.14) / 0.1) ** 2)) * window1(z, -12, 52);
+// The groove that splits the two main buttons, running back from the front to where the buttons end.
+const groove = (x: number, z: number, up: number) => 0.9 * Math.max(0, 1 - Math.abs(x) / 2.4) * (1 - sstep(-2, 4, z)) * sstep(0.7, 0.85, up);
+
 export function shellGeometry(): THREE.BufferGeometry {
   const seg = 128, steps = 30, list: THREE.Vector3[][] = [];
   const rim: [number, number][] = [];
@@ -52,19 +68,29 @@ export function shellGeometry(): THREE.BufferGeometry {
     const z = (MOUSE.len / 2) * Math.sign(s) * Math.abs(s) ** e;
     rim.push([MOUSE.half * width(z) * Math.sign(c) * Math.abs(c) ** e, z]);
   }
+  let below = -1;
   for (let j = 0; j < steps; j++) {
     // Rings bunch toward the foot, where the side turns hardest.
     const u = j / steps, phi = (Math.PI / 2) * (u < 0.5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u)) * 0.999;
     const a = Math.cos(phi) ** (2 / 2.7), up = Math.sin(phi) ** (2 / 2.1);
-    list.push(rim.map(([x, z]) => {
+    const ring = (lip: number) => rim.map(([x, z]) => {
       const zz = z * a + CROWN * (1 - a);
       // The sides belly out a little above the foot and tuck in under it.
-      const belly = 1 + 0.035 * Math.sin(Math.min(1, up * 1.4) * Math.PI) - 0.03 * (1 - Math.min(1, up * 6));
+      const belly = 1 + 0.035 * Math.sin(Math.min(1, up * 1.4) * Math.PI) - 0.03 * (1 - Math.min(1, up * 6)) + (x < 0 ? thumbRest(up, zz) : flare(up, zz));
       const xx = x * a * belly;
-      return new THREE.Vector3(xx, MOUSE.lift + rise(zz) * up - scoop(xx, zz) * Math.min(1, Math.max(0, (up - 0.55) / 0.35)), zz);
-    }));
+      const y = MOUSE.lift + rise(zz) * up - scoop(xx, zz) * Math.min(1, Math.max(0, (up - 0.55) / 0.35)) - groove(xx, zz, up);
+      const r = Math.hypot(xx, zz - CROWN) || 1;
+      return new THREE.Vector3(xx + (xx / r) * lip, y, zz + ((zz - CROWN) / r) * lip);
+    });
+    if (below < 0 && up >= STEP.up) { list.push(ring(0)); below = list.length - 1; }
+    list.push(ring(below >= 0 ? STEP.lip : 0));
   }
-  return rings(list, new THREE.Vector3(0, MOUSE.lift + rise(CROWN), CROWN));
+  const g = rings(list, new THREE.Vector3(0, MOUSE.lift + rise(CROWN), CROWN));
+  // Each vertex is told which of the two parts it belongs to.
+  const n = rim.length, cell = new Float32Array(g.getAttribute('position').count * 4);
+  for (let i = 0; i < cell.length / 4; i++) cell[i * 4 + 3] = Math.floor(i / n) <= below ? KIND.side : KIND.shell;
+  g.setAttribute('cell', new THREE.Float32BufferAttribute(cell, 4));
+  return g;
 }
 
 // The highest point of the shell over a place: read from the built shell, so what sits on it sits on it.
@@ -112,7 +138,7 @@ export function sideButtons(shell: THREE.BufferGeometry): THREE.BufferGeometry[]
 // along x.
 export function wheelGeometry(): THREE.BufferGeometry {
   const { r, w } = MOUSE.wheel, h = w / 2;
-  const g = lathe([[1.6, -h], [r - 1.6, -h], [r - 0.8, -h + 0.3], [r - 0.2, -h + 0.9], [r, -h + 1.4], [r, -0.6], [r - 0.45, -0.3], [r - 0.45, 0.3], [r, 0.6], [r, h - 1.4], [r - 0.2, h - 0.9], [r - 0.8, h - 0.3], [r - 1.6, h], [1.6, h]], 48);
+  const g = lathe([[1.6, -h], [r - 1.6, -h], [r - 0.8, -h + 0.3], [r - 0.2, -h + 0.9], [r, -h + 1.4], [r, -0.6], [r - 0.45, -0.3], [r - 0.45, 0.3], [r, 0.6], [r, h - 1.4], [r - 0.2, h - 0.9], [r - 0.8, h - 0.3], [r - 1.6, h], [1.6, h]], 40);
   return g.rotateZ(Math.PI / 2);
 }
 
@@ -120,8 +146,8 @@ export function wheelGeometry(): THREE.BufferGeometry {
 export function cradleGeometry(wy: number): THREE.BufferGeometry[] {
   const { z, r, w } = MOUSE.wheel;
   return [
-    ...[-1, 1].map((s) => rbox(1.4, r * 1.5, r * 2.2, 0.5, 1).translate(s * (w / 2 + 1.1), wy - r * 0.35, z)),
-    rbox(w + 3.6, 5, 4.4, 1, 1).translate(0, wy - 2.5, z + r + 2),
+    ...[-1, 1].map((s) => rbox(1.4, r * 1.1, r * 2.1, 0.5, 1).translate(s * (w / 2 + 1.1), wy - r * 0.62, z)),
+    rbox(w + 3.6, 5, 4.4, 1, 1).translate(0, wy - r * 0.7, z + r + 1.6),
   ];
 }
 

@@ -54,11 +54,16 @@ export const build: PartFactory = () => {
   // stepped along every skirt. The occlusion pass still darkens the caps' feet.
   for (const m of inner.build(board, 'keyboard-board')) m.receiveShadow = false;
 
-  const spill = spillLight(SOFT.nx * SOFT.cell, SOFT.nz * SOFT.cell, light.softTex, gridAt(SOFT), 0.6);
-  spill.position.y = 0.35;
   const shadow = contactShadow(CW - 4, CD - 4, CASE.r, 9, 0.62);
   shadow.position.y = 0.15;
-  group.add(shadow, spill);
+  group.add(shadow);
+  // The light the keys spill belongs on the mat. Seen alone there is no mat, and it would hang in the air.
+  const alone = typeof location !== 'undefined' && new URLSearchParams(location.search).get('only') === 'keyboard';
+  if (!alone) {
+    const spill = spillLight(SOFT.nx * SOFT.cell, SOFT.nz * SOFT.cell, light.softTex, gridAt(SOFT), 0.6);
+    spill.position.y = 0.35;
+    group.add(spill);
+  }
 
   // The pointer is given where its line meets the desk's top. The caps' tops stand well above that and lean back with
   // the board, so the line is followed back toward the eye until it meets the plane of their tops, in the board's

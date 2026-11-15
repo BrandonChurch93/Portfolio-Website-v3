@@ -13,8 +13,8 @@ export const SCREEN_PX = { w: 2048, h: 1536 } as const;
 // ember, copper and flame only where something is being made. The brightest of it is pale, in small places.
 const C = {
   chrome: '#0e0b09', bar: '#090706', panel: '#17130f', panelHi: '#241d17', well: '#110e0b', quiet: '#3d3530', quieter: '#2a2420',
-  paper: '#1c1713', guide: palette.ember, graphite: palette['text-3'], ink: palette['text-2'],
-  copper: palette.copper, flame: palette.flame, hot: palette.hot, pale: palette.pale, bronze: palette['text-3'], ember: palette.ember,
+  paper: '#211b16', guide: palette.copper, graphite: palette['text-2'], ink: palette.pale,
+  copper: palette.copper, flame: palette.flame, hot: palette.hot, pale: palette.pale, bronze: palette['text-2'], ember: palette.ember,
 };
 
 type Ctx = CanvasRenderingContext2D;
@@ -95,64 +95,55 @@ function pen(g: Ctx, raw: Pt[], w: number, color: string) {
   }
 }
 
-// Letters of a running hand, made up, in units of the height of a small letter, from where the pen comes in at the
-// baseline to where it leaves for the next. None spells anything.
-const GLYPH: Record<string, { w: number; p: Pt[]; dot?: boolean; bar?: boolean }> = {
-  n: { w: 0.66, p: [[0, 0], [0.08, 0.95], [0.12, 0.35], [0.3, 0.98], [0.48, 0.85], [0.52, 0.1], [0.66, 0.02]] },
-  m: { w: 0.92, p: [[0, 0], [0.08, 0.95], [0.12, 0.35], [0.27, 0.98], [0.4, 0.85], [0.43, 0.15], [0.46, 0.5], [0.6, 0.98], [0.75, 0.85], [0.78, 0.1], [0.92, 0.02]] },
-  u: { w: 0.64, p: [[0, 0.05], [0.07, 0.95], [0.08, 0.25], [0.24, 0], [0.44, 0.45], [0.5, 0.95], [0.48, 0.25], [0.56, 0], [0.64, 0.05]] },
-  e: { w: 0.5, p: [[0, 0.08], [0.3, 0.42], [0.4, 0.72], [0.28, 0.95], [0.12, 0.7], [0.12, 0.22], [0.3, 0], [0.5, 0.08]] },
-  o: { w: 0.58, p: [[0, 0.1], [0.18, 0.75], [0.34, 0.98], [0.48, 0.72], [0.4, 0.18], [0.2, 0], [0.08, 0.38], [0.28, 0.85], [0.58, 0.82]] },
-  a: { w: 0.6, p: [[0, 0.15], [0.36, 0.92], [0.16, 0.95], [0.03, 0.5], [0.12, 0.04], [0.32, 0.32], [0.42, 0.95], [0.4, 0.35], [0.48, 0], [0.6, 0.06]] },
-  l: { w: 0.44, p: [[0, 0], [0.24, 0.9], [0.38, 1.8], [0.3, 2.1], [0.18, 1.75], [0.17, 0.6], [0.24, 0.04], [0.44, 0.06]] },
-  t: { w: 0.44, p: [[0, 0], [0.16, 0.7], [0.24, 1.6], [0.19, 0.5], [0.26, 0.04], [0.44, 0.08]], bar: true },
-  d: { w: 0.62, p: [[0, 0.15], [0.32, 0.92], [0.12, 0.92], [0.02, 0.45], [0.13, 0.03], [0.33, 0.4], [0.47, 1.95], [0.42, 0.3], [0.5, 0], [0.62, 0.06]] },
-  r: { w: 0.52, p: [[0, 0], [0.1, 0.9], [0.16, 0.95], [0.26, 0.74], [0.36, 0.95], [0.38, 0.4], [0.45, 0], [0.52, 0.04]] },
-  s: { w: 0.46, p: [[0, 0], [0.2, 0.95], [0.38, 0.5], [0.32, 0.14], [0.14, 0.04], [0.3, 0], [0.46, 0.06]] },
-  g: { w: 0.58, p: [[0, 0.15], [0.32, 0.92], [0.12, 0.92], [0.02, 0.48], [0.12, 0.08], [0.33, 0.48], [0.42, 0.95], [0.39, -0.6], [0.22, -0.95], [0.06, -0.62], [0.3, -0.12], [0.58, 0.08]] },
-  i: { w: 0.32, p: [[0, 0], [0.12, 0.9], [0.12, 0.2], [0.21, 0], [0.32, 0.06]], dot: true },
-  h: { w: 0.66, p: [[0, 0], [0.22, 1.2], [0.3, 2.0], [0.2, 2.05], [0.12, 1.4], [0.08, 0], [0.14, 0.5], [0.32, 0.98], [0.5, 0.82], [0.53, 0.1], [0.66, 0.02]] },
+// A designer's hand lettering: single stroke capitals and figures, each a few strokes in a box one unit tall, drawn
+// with the pen above so each stroke swells and tapers, a little uneven from letter to letter.
+const ELL = (cx: number, cy: number, rx: number, ry: number, a0: number, a1: number, n = 14): Pt[] => Array.from({ length: n + 1 }, (_, i) => { const a = a0 + ((a1 - a0) * i) / n; return [cx + Math.cos(a) * rx, cy + Math.sin(a) * ry] as Pt; });
+const D2 = Math.PI / 180;
+const LETTER: Record<string, { w: number; s: Pt[][] }> = {
+  A: { w: 0.62, s: [[[0, 0], [0.31, 1], [0.62, 0]], [[0.11, 0.36], [0.51, 0.36]]] },
+  B: { w: 0.56, s: [[[0, 0], [0, 1], [0.38, 1], [0.5, 0.9], [0.5, 0.62], [0.38, 0.53], [0, 0.53]], [[0.38, 0.53], [0.56, 0.42], [0.56, 0.12], [0.42, 0], [0, 0]]] },
+  C: { w: 0.58, s: [ELL(0.32, 0.5, 0.32, 0.5, 40 * D2, 320 * D2)] },
+  D: { w: 0.6, s: [[[0, 0], [0, 1], [0.28, 1], [0.52, 0.84], [0.6, 0.5], [0.52, 0.16], [0.28, 0], [0, 0]]] },
+  E: { w: 0.52, s: [[[0.52, 1], [0, 1], [0, 0], [0.52, 0]], [[0, 0.52], [0.4, 0.52]]] },
+  F: { w: 0.5, s: [[[0.5, 1], [0, 1], [0, 0]], [[0, 0.52], [0.38, 0.52]]] },
+  G: { w: 0.62, s: [ELL(0.32, 0.5, 0.32, 0.5, 40 * D2, 330 * D2), [[0.36, 0.42], [0.62, 0.42], [0.62, 0.1]]] },
+  H: { w: 0.58, s: [[[0, 0], [0, 1]], [[0.58, 0], [0.58, 1]], [[0, 0.52], [0.58, 0.52]]] },
+  I: { w: 0.16, s: [[[0.08, 0], [0.08, 1]]] },
+  K: { w: 0.56, s: [[[0, 0], [0, 1]], [[0.54, 1], [0, 0.4]], [[0.18, 0.6], [0.58, 0]]] },
+  L: { w: 0.48, s: [[[0, 1], [0, 0], [0.48, 0]]] },
+  M: { w: 0.74, s: [[[0, 0], [0, 1], [0.37, 0.32], [0.74, 1], [0.74, 0]]] },
+  N: { w: 0.58, s: [[[0, 0], [0, 1], [0.58, 0], [0.58, 1]]] },
+  O: { w: 0.66, s: [ELL(0.33, 0.5, 0.33, 0.5, 90 * D2, 452 * D2, 20)] },
+  P: { w: 0.54, s: [[[0, 0], [0, 1], [0.38, 1], [0.54, 0.86], [0.54, 0.64], [0.38, 0.5], [0, 0.5]]] },
+  R: { w: 0.56, s: [[[0, 0], [0, 1], [0.38, 1], [0.54, 0.86], [0.54, 0.64], [0.38, 0.5], [0, 0.5]], [[0.28, 0.5], [0.58, 0]]] },
+  S: { w: 0.54, s: [[[0.52, 0.86], [0.38, 1], [0.14, 1], [0.02, 0.86], [0.04, 0.64], [0.48, 0.42], [0.56, 0.2], [0.44, 0.02], [0.14, 0], [0, 0.14]]] },
+  T: { w: 0.6, s: [[[0, 1], [0.6, 1]], [[0.3, 1], [0.3, 0]]] },
+  U: { w: 0.56, s: [[[0, 1], [0, 0.24], [0.12, 0.02], [0.44, 0.02], [0.56, 0.24], [0.56, 1]]] },
+  V: { w: 0.6, s: [[[0, 1], [0.3, 0], [0.6, 1]]] },
+  W: { w: 0.8, s: [[[0, 1], [0.2, 0], [0.4, 0.68], [0.6, 0], [0.8, 1]]] },
+  Y: { w: 0.6, s: [[[0, 1], [0.3, 0.5], [0.6, 1]], [[0.3, 0.5], [0.3, 0]]] },
+  '0': { w: 0.5, s: [ELL(0.25, 0.5, 0.25, 0.5, 90 * D2, 452 * D2, 18)] },
+  '1': { w: 0.32, s: [[[0.04, 0.8], [0.26, 1], [0.26, 0]]] },
+  '2': { w: 0.5, s: [[[0.02, 0.78], [0.18, 1], [0.44, 0.94], [0.48, 0.66], [0.02, 0], [0.5, 0]]] },
+  '3': { w: 0.5, s: [[[0.04, 0.88], [0.24, 1], [0.46, 0.86], [0.42, 0.6], [0.2, 0.54], [0.48, 0.38], [0.44, 0.08], [0.22, 0], [0.02, 0.1]]] },
+  '4': { w: 0.54, s: [[[0.4, 0], [0.4, 1], [0, 0.3], [0.54, 0.3]]] },
+  '6': { w: 0.5, s: [[[0.44, 0.96], [0.2, 0.86], [0.04, 0.5], [0.08, 0.12], [0.26, 0], [0.46, 0.14], [0.46, 0.38], [0.26, 0.52], [0.06, 0.4]]] },
+  '8': { w: 0.5, s: [[[0.25, 0.54], [0.06, 0.66], [0.08, 0.92], [0.25, 1], [0.42, 0.92], [0.44, 0.66], [0.25, 0.54], [0.03, 0.4], [0.04, 0.1], [0.25, 0], [0.46, 0.1], [0.47, 0.4], [0.25, 0.54]]] },
+  'Ø': { w: 0.62, s: [ELL(0.31, 0.5, 0.29, 0.46, 90 * D2, 452 * D2, 18), [[0.0, -0.04], [0.62, 1.04]]] },
+  '°': { w: 0.24, s: [ELL(0.12, 0.88, 0.1, 0.12, 0, 6.3, 10)] },
+  '·': { w: 0.2, s: [[[0.08, 0.48], [0.12, 0.52]]] },
+  ' ': { w: 0.34, s: [] },
 };
-const LETTERS = 'eenoatrsilmudhg';
 
-// Notes in a running hand: words of joined letters along a slanted baseline, each word one stroke of the pen, with
-// the dots and crossbars put in after.
-function hand(g: Ctx, x: number, y: number, words: number[], size: number, rnd: () => number, color: string = C.bronze, w = 3) {
-  const slant = 0.28;
-  let cx = x;
-  for (const n of words) {
-    const pts: Pt[] = [], marks: Pt[][] = [];
-    for (let i = 0; i < n; i++) {
-      const L = GLYPH[LETTERS[Math.floor(rnd() * LETTERS.length)]], k = 0.92 + rnd() * 0.16;
-      for (const [px, py] of L.p) pts.push([cx + px * size * k + py * size * slant, y - py * size * k + (rnd() - 0.5) * size * 0.04]);
-      if (L.dot) marks.push([[cx + 0.2 * size + 1.5 * size * slant, y - 1.45 * size], [cx + 0.24 * size + 1.5 * size * slant, y - 1.5 * size]]);
-      if (L.bar) marks.push([[cx - 0.05 * size + 1.1 * size * slant, y - 1.12 * size], [cx + 0.5 * size + 1.1 * size * slant, y - 1.18 * size]]);
-      cx += L.w * size * k;
-    }
-    pen(g, pts, w, color);
-    for (const mk of marks) pen(g, mk, w * 0.9, color);
-    cx += size * (0.55 + rnd() * 0.35);
-  }
-}
-
-// Figures in the same hand, for sizes: each a few short strokes, upright, in units of a figure's height.
-const FIG: Record<string, Pt[][]> = {
-  '0': [Array.from({ length: 13 }, (_, i) => { const a = (i / 12) * Math.PI * 2 + 0.4; return [0.28 + Math.sin(a) * 0.26, 0.5 + Math.cos(a) * 0.5] as Pt; })],
-  '1': [[[0.08, 0.8], [0.3, 1], [0.27, 0]]],
-  '2': [[[0.04, 0.78], [0.22, 1], [0.48, 0.86], [0.42, 0.55], [0.02, 0.02], [0.5, 0.03]]],
-  '3': [[[0.05, 0.88], [0.28, 1], [0.48, 0.82], [0.24, 0.55], [0.5, 0.3], [0.32, 0.02], [0.03, 0.12]]],
-  '4': [[[0.4, 0.02], [0.38, 1], [0.02, 0.32], [0.55, 0.32]]],
-  '6': [[[0.45, 0.98], [0.15, 0.7], [0.05, 0.25], [0.26, 0.0], [0.48, 0.22], [0.3, 0.48], [0.07, 0.3]]],
-  '8': [[[0.42, 0.85], [0.26, 1], [0.08, 0.82], [0.4, 0.4], [0.3, 0.02], [0.05, 0.18], [0.22, 0.52], [0.44, 0.78]]],
-  'Ø': [Array.from({ length: 13 }, (_, i) => { const a = (i / 12) * Math.PI * 2; return [0.3 + Math.sin(a) * 0.3, 0.48 + Math.cos(a) * 0.36] as Pt; }), [[0.0, 0.0], [0.62, 0.98]]],
-  '°': [Array.from({ length: 9 }, (_, i) => { const a = (i / 8) * Math.PI * 2; return [0.12 + Math.sin(a) * 0.1, 0.9 + Math.cos(a) * 0.1] as Pt; })],
-  ' ': [],
-};
-function figures(g: Ctx, x: number, y: number, text: string, size: number, color: string, w: number) {
+// A note in that hand: capitals one size tall, leaning a little, each letter drawn a little differently.
+function write(g: Ctx, x: number, y: number, text: string, size: number, rnd: () => number, color: string = C.bronze, w = 3.4) {
+  const slant = 0.1;
   let cx = x;
   for (const ch of text) {
-    for (const st of FIG[ch] ?? []) pen(g, st.map(([px, py]) => [cx + px * size * 0.62 + py * size * 0.1, y - py * size] as Pt), w, color);
-    cx += size * (ch === '°' ? 0.25 : ch === ' ' ? 0.3 : 0.48);
+    const L = LETTER[ch] ?? LETTER[' '];
+    const k = size * (0.95 + rnd() * 0.1), dy = (rnd() - 0.5) * size * 0.06;
+    for (const st of L.s) pen(g, st.map(([px, py]) => [cx + px * k * 0.92 + py * k * slant + (rnd() - 0.5) * size * 0.025, y + dy - py * k] as Pt), w, color);
+    cx += (L.w * 0.92 + 0.3) * size;
   }
 }
 
@@ -250,14 +241,15 @@ function drawArt(W: number, H: number) {
   }
   gi.restore();
   ink(gi, arc(S.cx, S.cy, S.boss, 0, Math.PI * 2, 48), 7, C.ink, 0.02);
-  // The stroke being drawn now: along the next ray's edge, in flame, the brush's ring where the pencil is.
+  // The stroke being drawn now, on a layer of its own that stands nearer the glass: along the next ray's edge, in
+  // flame, with the brush's ring where the pencil is.
+  const [nowC, gw2] = layer(W, H);
   const now = rayPts(1);
   const live = line(now[0], now[1], 14).slice(0, 11);
-  ink(gi, live, 8, C.flame, 0.12);
+  ink(gw2, live, 9, C.flame, 0.12);
   const end = live[live.length - 1];
-  gi.strokeStyle = C.pale; gi.lineWidth = 3; gi.globalAlpha = 0.9;
-  gi.beginPath(); gi.arc(end[0], end[1], 22, 0, Math.PI * 2); gi.stroke();
-  gi.globalAlpha = 1;
+  gw2.strokeStyle = C.pale; gw2.lineWidth = 3.5;
+  gw2.beginPath(); gw2.arc(end[0], end[1], 24, 0, Math.PI * 2); gw2.stroke();
 
   // Notes: sizes on the side view, arrows to the parts, and a few lines in his hand.
   gn.strokeStyle = C.bronze;
@@ -265,24 +257,27 @@ function drawArt(W: number, H: number) {
     sketch(gn, line([x, y0 + 8], [x, y1 - 8], 6), rnd, { w: 2.6, a: 0.9, passes: 1, wob: 0.6, color: C.bronze });
     arrowHead(gn, [x, y0 + 4], [x, y0 + 40], 18, C.bronze, 2.6);
     arrowHead(gn, [x, y1 - 4], [x, y1 - 40], 18, C.bronze, 2.6);
-    figures(gn, x + 18, (y0 + y1) / 2 + 14, y1 - y0 > 800 ? '240' : 'Ø180', 34, C.bronze, 3.4);
+    write(gn, x + 16, y1 - y0 > 800 ? S.cy - 180 : S.cy + 150, y1 - y0 > 800 ? '240' : 'Ø180', 30, rnd);
   }
   sketch(gn, line([SX, S.cy + S.tip + 50], [SX + sw, S.cy + S.tip + 50], 4), rnd, { w: 2.6, a: 0.9, passes: 1, wob: 0.4, color: C.bronze });
   arrowHead(gn, [SX, S.cy + S.tip + 50], [SX + 30, S.cy + S.tip + 50], 16, C.bronze, 2.6);
   arrowHead(gn, [SX + sw, S.cy + S.tip + 50], [SX + sw - 30, S.cy + S.tip + 50], 16, C.bronze, 2.6);
-  figures(gn, SX + 14, S.cy + S.tip + 110, '36', 34, C.bronze, 3.4);
+  write(gn, SX + sw + 22, S.cy + S.tip + 64, '36', 28, rnd);
   // A note with an arrow to the boss, and one to a ray on the right, still to be inked.
-  hand(gn, 70, 120, [5, 3, 6], 30, rnd, C.bronze, 4.2);
-  hand(gn, 70, 190, [4, 2, 7], 30, rnd, C.bronze, 4.2);
-  sketch(gn, [[330, 215], [400, 330], [450, 560], [S.cx - 40, S.cy - 30]], rnd, { w: 3, a: 0.85, passes: 1, wob: 1, color: C.bronze });
-  arrowHead(gn, [S.cx - 40, S.cy - 30], [450, 560], 22, C.bronze, 3);
-  hand(gn, 80, H - 150, [6, 4, 5], 30, rnd, C.bronze, 4.2);
-  hand(gn, 80, H - 85, [3, 8], 30, rnd, C.bronze, 4.2);
-  figures(gn, 80 + 470, H - 85, '24°', 34, C.bronze, 3.4);
+  write(gn, 70, 112, 'SUN STONE · STUDY 3', 34, rnd, C.ink, 3.8);
+  write(gn, 70, 186, 'SPIRAL CUT IN BOSS', 28, rnd);
+  sketch(gn, [[500, 176], [530, 260], [470, 520], [S.cx - 40, S.cy - 30]], rnd, { w: 3, a: 0.85, passes: 1, wob: 1, color: C.bronze });
+  arrowHead(gn, [S.cx - 40, S.cy - 30], [470, 520], 22, C.bronze, 3);
+  write(gn, 80, H - 96, '16 RAYS · BEVEL 2 MM', 28, rnd);
+  write(gn, 80, H - 40, 'FACE ANGLE 24°', 28, rnd);
+  // The rim, named, with a leader to it.
+  const rimAt: Pt = [S.cx + Math.cos(-56 * D2) * S.ring, S.cy + Math.sin(-56 * D2) * S.ring];
+  pen(gn, [[S.cx + 300, S.cy - 392], [S.cx + 250, S.cy - 330], rimAt], 3, C.bronze);
+  write(gn, S.cx + 288, S.cy - 400, 'RIM 6', 28, rnd);
   sketch(gn, arc(S.cx + 340, S.cy + 300, 70, 0, Math.PI * 2, 40), rnd, { w: 3, a: 0.8, passes: 2, wob: 2, color: C.flame });
   pen(gn, [[S.cx + 380, S.cy + 362], [S.cx + 392, S.cy + 430], [S.cx + 360, S.cy + 505]], 3.6, C.flame);
   arrowHead(gn, [S.cx + 380, S.cy + 364], [S.cx + 392, S.cy + 430], 18, C.flame, 3.2);
-  hand(gn, S.cx + 250, S.cy + 560, [4, 5], 28, rnd, C.flame, 4);
+  write(gn, S.cx + 120, S.cy + 540, 'CHECK THE FACETS', 28, rnd, C.flame, 3.8);
 
   // A thumbnail at the upper right: the stone at a slant with the stream passing it, a flame line and its shards.
   const TX = 1100, TY = 40, TW = 320, TH = 220;
@@ -305,35 +300,37 @@ function drawArt(W: number, H: number) {
   }
   gn.restore();
 
-  return { layers: [guides, sk, wash, inked, notes] };
+  return { layers: [guides, sk, wash, inked, notes], now: nowC };
 }
 
-// The screen, whole: the tool's chrome, the paper with its layers, and the panels.
-export function drawScreen(): HTMLCanvasElement {
-  const [cv, g] = layer(SCREEN_PX.w, SCREEN_PX.h);
+// Where the drawing's sheet lies on the screen, in the screen's pixels from its top left.
+export const SHEET = { x: 150, y: 104, w: 1460, h: 1360 } as const;
+// The tool's own ground, behind everything.
+export const CHROME = C.chrome;
+
+export interface ScreenArt { sheet: HTMLCanvasElement; now: HTMLCanvasElement; ui: HTMLCanvasElement }
+
+// The screen in three layers, each drawn once: the sheet with the drawing on it, the stroke being drawn, and the
+// tool's panels on a clear ground. The display stands them at their own depths behind the glass.
+export function drawScreen(): ScreenArt {
   const W = SCREEN_PX.w, H = SCREEN_PX.h;
   const rnd = seeded(4021);
-  g.fillStyle = C.chrome;
-  g.fillRect(0, 0, W, H);
-
-  // The paper.
-  const P = { x: 150, y: 104, w: 1460, h: 1360 };
+  const P = SHEET;
   const art = drawArt(P.w, P.h);
-  g.save();
-  g.shadowColor = 'rgba(0,0,0,0.75)'; g.shadowBlur = 40; g.shadowOffsetY = 10;
-  g.fillStyle = C.paper;
-  g.fillRect(P.x, P.y, P.w, P.h);
-  g.restore();
-  const tooth = g.createLinearGradient(P.x, P.y, P.x + P.w, P.y + P.h);
+  const [sheet, gs] = layer(P.w, P.h);
+  gs.fillStyle = C.paper;
+  gs.fillRect(0, 0, P.w, P.h);
+  const tooth = gs.createLinearGradient(0, 0, P.w, P.h);
   tooth.addColorStop(0, 'rgba(255,227,194,0.035)'); tooth.addColorStop(1, 'rgba(0,0,0,0.18)');
-  g.fillStyle = tooth; g.fillRect(P.x, P.y, P.w, P.h);
-  // The paper's grain, a little uneven.
+  gs.fillStyle = tooth; gs.fillRect(0, 0, P.w, P.h);
+  // The sheet's grain, a little uneven.
   for (let i = 0; i < 9000; i++) {
-    const x = P.x + rnd() * P.w, y = P.y + rnd() * P.h;
-    g.fillStyle = rnd() > 0.5 ? 'rgba(0,0,0,0.12)' : 'rgba(255,227,194,0.025)';
-    g.fillRect(x, y, 2 + rnd() * 3, 2);
+    const x = rnd() * P.w, y = rnd() * P.h;
+    gs.fillStyle = rnd() > 0.5 ? 'rgba(0,0,0,0.12)' : 'rgba(255,227,194,0.025)';
+    gs.fillRect(x, y, 2 + rnd() * 3, 2);
   }
-  for (const l of art.layers) g.drawImage(l, P.x, P.y);
+  for (const l of art.layers) gs.drawImage(l, 0, 0);
+  const [ui, g] = layer(W, H);
 
   // The top bar: a few shapes at the left, a title pill, and the tools at the right with the brush's color.
   g.fillStyle = C.bar;
@@ -348,10 +345,7 @@ export function drawScreen(): HTMLCanvasElement {
   g.strokeStyle = C.pale; g.lineWidth = 3; g.beginPath(); g.arc(1980, 38, 25, 0, Math.PI * 2); g.stroke();
 
   // The tool rail at the left: a floating panel of tools, one in use.
-  g.save();
-  g.shadowColor = 'rgba(0,0,0,0.6)'; g.shadowBlur = 24;
   g.fillStyle = C.panel; rr(g, 30, 360, 92, 760, 28); g.fill();
-  g.restore();
   for (let i = 0; i < 8; i++) {
     const y = 404 + i * 86;
     if (i === 2) { g.fillStyle = C.copper; rr(g, 46, y - 30, 60, 60, 16); g.fill(); }
@@ -364,10 +358,7 @@ export function drawScreen(): HTMLCanvasElement {
   }
 
   // The layers panel at the right: a card for each layer with its own picture, the one being drawn on lit.
-  g.save();
-  g.shadowColor = 'rgba(0,0,0,0.6)'; g.shadowBlur = 30;
   g.fillStyle = C.panel; rr(g, 1650, 104, 372, 940, 26); g.fill();
-  g.restore();
   g.fillStyle = C.quieter; rr(g, 1680, 132, 150, 20, 10); g.fill();
   g.fillStyle = C.quiet; g.beginPath(); g.arc(1984, 142, 13, 0, Math.PI * 2); g.fill();
   const order = [4, 3, 2, 1, 0];
@@ -384,10 +375,7 @@ export function drawScreen(): HTMLCanvasElement {
   });
 
   // The colors, in the site's own, the brush's marked.
-  g.save();
-  g.shadowColor = 'rgba(0,0,0,0.6)'; g.shadowBlur = 30;
   g.fillStyle = C.panel; rr(g, 1650, 1070, 372, 260, 26); g.fill();
-  g.restore();
   const sw = [palette['ember-deep'], C.ember, palette['bronze-deep'], palette.bronze, C.copper, palette['copper-light'], C.flame, C.hot, C.pale, C.ink];
   sw.forEach((c, i) => {
     const x = 1700 + (i % 5) * 68, y = 1140 + Math.floor(i / 5) * 76;
@@ -402,15 +390,20 @@ export function drawScreen(): HTMLCanvasElement {
   g.fillStyle = C.quiet;
   for (let i = 0; i < 3; i++) { g.beginPath(); g.arc(1712 + i * 84, 1412, 22, 0, Math.PI * 2); g.fill(); }
   g.fillStyle = C.quieter; rr(g, 1950 - 60, 1398, 100, 28, 14); g.fill();
-  return cv;
+  return { sheet, now: art.now, ui };
 }
 
-export function screenTexture(maxAniso: number): THREE.CanvasTexture {
-  const t = new THREE.CanvasTexture(drawScreen());
+const texture = (c: HTMLCanvasElement, aniso: number) => {
+  const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = maxAniso;
+  t.anisotropy = aniso;
   t.minFilter = THREE.LinearMipmapLinearFilter;
   t.magFilter = THREE.LinearFilter;
   t.generateMipmaps = true;
   return t;
+};
+
+export function screenTextures(aniso: number): { sheet: THREE.CanvasTexture; now: THREE.CanvasTexture; ui: THREE.CanvasTexture } {
+  const a = drawScreen();
+  return { sheet: texture(a.sheet, aniso), now: texture(a.now, aniso), ui: texture(a.ui, aniso) };
 }

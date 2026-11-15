@@ -9,7 +9,7 @@ import { ATRIUM, GROMMETS, MAIN_Z, MOUNTS, atrium, glass } from './pc/case';
 import { PUMP_FITTINGS, RAD_FITTINGS, pump, radiator, tubes } from './pc/cooler';
 import { cardRotor, fan, rotor } from './pc/fan';
 import { CARD, SOCKET, cardFanAt, gpu, support } from './pc/gpu';
-import { at, Q } from './pc/kit';
+import { Q, at, led, torus } from './pc/kit';
 import { FX, fxOf, makeLook } from './pc/look';
 import { printSheet } from './pc/print';
 import { ram } from './pc/ram';
@@ -25,7 +25,7 @@ const D2R = Math.PI / 180;
 const LAMP_BACK = 1300;
 // The PC's own two lights inside the case, at full strength, and how far each reaches, in metres: they cast no
 // shadow, so they reach no further than the case, or they light the desk's top through its timber.
-const GLOW = { low: 0.045, high: 0.055, reach: 0.32 };
+const GLOW = { low: 0.03, high: 0.038, reach: 0.32 };
 
 export const build: PartFactory = () => {
   const L = makeLook(printSheet(), boardSheet());
@@ -60,17 +60,18 @@ export const build: PartFactory = () => {
   MOUNTS.side.forEach((m, i) => place(m, [0.95, 0.62, 0.3][i], [1.0, 0.95, 0.9][i]));
   MOUNTS.bottom.forEach((m, i) => place(m, [0.08, 0.4, 0.72][i], [1.0, 0.9, 0.95][i]));
   place(MOUNTS.rear, 0.82, 0.9);
-  for (const m of radiator(b, L, radM, 0.5)) { fans.push(m); fanTones.push(0.5); fanGains.push(0.9); }
+  for (const m of radiator(b, L, radM, 0.5)) { fans.push(m); fanTones.push(0.5); fanGains.push(1.0); }
 
   // The light each lit part lays on what is beside it: the floor fans on the shelf over them and the basin under them,
-  // the side fans on the tray round their openings, and the memory on the board round it.
+  // and the memory on the board round it.
   MOUNTS.bottom.forEach((m, i) => {
     const x = m.elements[12], t = fanTones[3 + i];
     b.add(fxOf(new THREE.PlaneGeometry(150, 130), FX.spot, t, 0.22), L.fx, at(x, ATRIUM.floor + 0.4, MAIN_Z, [-Q, 0, 0]), { shadow: false });
     b.add(fxOf(new THREE.PlaneGeometry(132, 132), FX.ring, t, 0.4, 0.88), L.fx, at(x, ATRIUM.basin + 3.2, MAIN_Z, [-Q, 0, 0]), { shadow: false });
   });
-  MOUNTS.side.forEach((m, i) => b.add(fxOf(new THREE.PlaneGeometry(150, 150), FX.ring, fanTones[i], 0.28, 0.78), L.fx, at(m.elements[12], m.elements[13], ATRIUM.trayF + 0.35), { shadow: false }));
   b.add(fxOf(new THREE.PlaneGeometry(84, 176), FX.spot, 0.38, 0.4), L.fx, at(ax + 180, ay + BOARD.dimms[0].y, front + 0.3), { shadow: false });
+  // The side fans sit behind the tray: their rings show crisp just inside the tray's openings.
+  MOUNTS.side.forEach((m, i) => b.add(led(torus(55.4, 1.2, 4, 56), fanTones[i], fanGains[i]), L.led, at(m.elements[12], m.elements[13], ATRIUM.trayB - 0.8), { shadow: false }));
 
   // Its light on the floor round it, and its shadow under it.
   const span = { x: ATRIUM.x1 - ATRIUM.x0, z: ATRIUM.z1 - ATRIUM.z0 };
@@ -87,7 +88,7 @@ export const build: PartFactory = () => {
   {
     const hh = 2 * 4.2 + 2.4 + 4.3;
     const p = v(ax + BOARD.w, ay + BOARD.atx24.y, front + hh / 2), gr = g('atx24'), gz = ATRIUM.trayF;
-    run(b, L, { rows: 2, cols: 12, pitch: 4.2, wire: 1.65, rowAxis: v(0, 0, 1), combs: [24],
+    run(b, L, { rows: 2, cols: 12, pitch: 4.4, wire: 1.6, rowAxis: v(0, 0, 1), combs: [24, 52],
       path: filletPath([p.clone(), v(gr.c[0] + 14, p.y, p.z), v(gr.c[0] - 4, p.y, gz - 2), v(gr.c[0] - 30, p.y, gz - 30)], 20, 22) });
   }
   {
@@ -98,7 +99,7 @@ export const build: PartFactory = () => {
   {
     const p = v(cardM.elements[12] + SOCKET.x, cardM.elements[13] + SOCKET.y, cardM.elements[14] + SOCKET.z), gr = g('gpu');
     const z = p.z + 30.4, gz = ATRIUM.trayF;
-    run(b, L, { rows: 2, cols: 6, pitch: 3.0, wire: 1.35, rowAxis: v(0, 1, 0), combs: [16, 70],
+    run(b, L, { rows: 2, cols: 6, pitch: 3.9, wire: 1.25, rowAxis: v(0, 1, 0), combs: [16, 52, 96, 150],
       path: filletPath([p.clone(), v(p.x, p.y, z), v(p.x, gr.c[1], z), v(gr.c[0], gr.c[1], z), v(gr.c[0], gr.c[1], gz - 20)], 18.4, 16) });
   }
 
@@ -126,12 +127,13 @@ export const build: PartFactory = () => {
   spin(0.4);
 
   // The PC's own light on what is round it: low by the floor fans and up by the pump and the top fans.
-  const low = new THREE.PointLight(hex('hot'), 0, GLOW.reach, 2);
+  const low = new THREE.PointLight(hex('pale'), 0, GLOW.reach, 2);
   low.position.set(-60, 110, 112);
   const high = new THREE.PointLight(hex('pale'), 0, GLOW.reach, 2);
   high.position.set(-60, 330, 100);
   kase.add(low, high);
 
+  L.center.value.set(cx, -DESK.H + ATRIUM.y1 / 2, cz).multiplyScalar(DESK.SCALE);
   // Where the cursor's light stands: on the line from the point under it on the desk back toward the eye.
   const toEye = new THREE.Vector3(Math.sin(VIEW.az * D2R) * Math.cos(VIEW.el * D2R), Math.sin(VIEW.el * D2R), Math.cos(VIEW.az * D2R) * Math.cos(VIEW.el * D2R));
 

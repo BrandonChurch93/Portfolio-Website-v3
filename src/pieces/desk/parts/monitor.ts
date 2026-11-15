@@ -21,8 +21,9 @@ const BLINK = { on: 0.56, off: 0.44 };
 // far the cursor's light leans them.
 const SUN = { x: 1.2, y: 2.4, lean: 0.6 };
 // How far the layers slide against each other as the pointer crosses the desk, as a head moving before the glass: the
-// slant across and up at the desk's ends, and how quickly they follow it each frame.
-const HEAD = { x: 0.4, y: 0.22, follow: 0.18 };
+// most slant across and up, how far the pointer goes across and back on the desk to give most of it, and how many
+// seconds the layers take to follow it.
+const HEAD = { x: 1.6, y: 0.6, across: 600, deep: 320, ease: 0.16 };
 // The time a screen that must not move is held at.
 const HELD = 4;
 
@@ -49,6 +50,7 @@ export const build: PartFactory = async ({ tier }) => {
   const u = screen.material.uniforms;
   const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
   const quiet = reduced || tier === 'static';
+  let lastT = 0;
 
   return {
     group,
@@ -74,10 +76,13 @@ export const build: PartFactory = async ({ tier }) => {
       // from the cursor's light.
       const lx = Math.max(-1, Math.min(1, (s.cursor.x - SCREEN.x) / 900));
       u.uSun.value.set(SUN.x + lx * SUN.lean, SUN.y);
-      const hx = s.still ? 0 : HEAD.x * Math.max(-1, Math.min(1, (s.pointer.x - SCREEN.x) / 900));
-      const hy = s.still ? 0 : HEAD.y * Math.max(-1, Math.min(1, (s.pointer.z - 100) / 400));
+      const hx = s.still ? 0 : HEAD.x * Math.tanh((s.pointer.x - SCREEN.x) / HEAD.across);
+      const hy = s.still ? 0 : HEAD.y * Math.tanh((s.pointer.z - 100) / HEAD.deep);
       const head = u.uHead.value as THREE.Vector2;
-      if (s.still) head.set(hx, hy); else head.set(head.x + (hx - head.x) * HEAD.follow, head.y + (hy - head.y) * HEAD.follow);
+      const dt = Math.min(0.1, Math.max(0, s.t - lastT));
+      lastT = s.t;
+      const f = 1 - Math.exp(-dt / HEAD.ease);
+      if (s.still) head.set(hx, hy); else head.set(head.x + (hx - head.x) * f, head.y + (hy - head.y) * f);
       const settling = Math.abs(hx - head.x) + Math.abs(hy - head.y) > 0.002;
       return !s.still && (k > WAKE.live[0] || (settling && k > 0));
     },

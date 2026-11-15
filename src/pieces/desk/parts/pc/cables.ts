@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { PI, type Adds, rbox, rrectHole, rrectShape, extrude } from './kit';
+import { PI, type Adds, rbox } from './kit';
 import type { Look } from './look';
 
 // Sleeved power runs, brought over from the PC Builder (src/world/cables.ts): a path through corners each rounded to a
@@ -68,8 +68,7 @@ export function run(b: Adds, L: Look, r: Run): void {
   b.add(rbox(pw, ph, 10, 0.6, 2), L.plastic, frame(0, P[0].clone().addScaledVector(T[0], 4)));
   for (const s of r.combs ?? []) {
     const i = at(s), p = P[i];
-    const sh = rrectShape(pw + 1.2, ph + 1.2, Math.min(pw, ph) / 2);
-    for (let ri = 0; ri < r.rows; ri++) for (let ci = 0; ci < r.cols; ci++) sh.holes.push(rrectHole(r.wire * 2 + 0.2, r.wire * 2 + 0.2, r.wire, (ri - (r.rows - 1) / 2) * r.pitch, (ci - (r.cols - 1) / 2) * r.pitch));
-    b.add(extrude(sh, 3, 0.6, 'xy', 6, 1), L.sinkDark, frame(i, p).multiply(new THREE.Matrix4().makeTranslation(0, 0, -1.5)));
+    // The comb is a band the wires pass through: its holes are finer than the page can show.
+    b.add(rbox(pw + 1.2, ph + 1.2, 3, Math.min(pw, ph) / 2 - 0.1, 1), L.sink, frame(i, p));
   }
 }

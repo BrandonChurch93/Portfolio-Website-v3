@@ -72,7 +72,7 @@ export function radiator(parent: Adds, L: Look, m: THREE.Matrix4, fanTone: numbe
   const fans: THREE.Matrix4[] = [];
   for (const cx of RAD_FANS) {
     const fm = new THREE.Matrix4().makeTranslation(cx, 0, rz1 + RAD.fanT / 2).multiply(new THREE.Matrix4().makeRotationX(PI));
-    fan(b, L, fm, 'gale', fanTone, 0.9);
+    fan(b, L, fm, 'gale', fanTone, 1.15);
     fans.push(m.clone().multiply(fm));
   }
   return fans;

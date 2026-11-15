@@ -13,7 +13,7 @@ export const MOUNT = { x: 8, y: 42, z: 21 } as const;
 
 const W = BODY.w / 2;
 // The skin's pebble and the rubber's finer grain: how many to a millimetre, and how deep.
-const SKIN = { scale: 0.8, depth: 0.16 } as const;
+const SKIN = { scale: 0.7, depth: 0.3 } as const;
 const RUBBER = { scale: 2.6, depth: 0.05 } as const;
 
 // The grip, as sections up y: a tall rounded bulge forward of the body that rises a little above the top plate.
@@ -115,8 +115,8 @@ export function body(p: Put, m: CameraMaterials): void {
     d.add(turned([[12.9, 6.8], [12.6, 6.8], [12.6, 7.6], [12.0, 8.2]], 96), m.barrel);
     d.add(faceUV(new THREE.CircleGeometry(12.0, 96).rotateX(-Math.PI / 2).translate(0, 8.2, 0), region, 13), m.barrel);
     if (lock) d.add(turned([[3.9, 8.1], [3.9, 9.8], [3.5, 10.4], [0, 10.6]], 48), m.paint);
-    // Its index, a copper tick on the plate in front of it.
-    d.add(rbox(0.9, 0.3, 2.6, 0.12), m.copper, xf({ p: [Math.sin(index[0]) * index[1], 0.3, Math.cos(index[0]) * index[1]], r: [0, index[0], 0] }));
+    // Its index, a steel tick on the plate in front of it.
+    d.add(rbox(0.9, 0.3, 2.6, 0.12), m.steel, xf({ p: [Math.sin(index[0]) * index[1], 0.3, Math.cos(index[0]) * index[1]], r: [0, index[0], 0] }));
   };
   dial(-37, -8.5, 'mode', true, [Math.PI / 2, 15.8]);
   dial(50, -5, 'iso', false, [0, 15.8]);

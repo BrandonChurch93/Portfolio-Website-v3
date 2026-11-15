@@ -24,7 +24,7 @@ const WAVE = { band: 0.42, flare: 0.34 };
 const REST = { level: 0.3, swell: 0.08, period: 8.5, second: 0.045, period2: 13.7 };
 // The pointer's glow: its reach in millimetres, how quickly it follows, how long a key it left takes to cool, and how
 // much it adds at its middle.
-export const TRAIL = { reach: 31, follow: 0.075, cool: 0.55, peak: 1.05 };
+export const TRAIL = { reach: 38, follow: 0.075, cool: 0.55, peak: 1.05 };
 
 const encode = (v: number) => Math.round(Math.sqrt(Math.min(1, Math.max(0, v / 4))) * 255);
 

@@ -4,23 +4,24 @@ import { MAT, PLACES } from '../layout';
 import type { DeskPart, PartFactory } from '../part';
 import { barrel, byFacing, cap, DEG, plate, roundedPath, stadium, sweep, turned, type Step } from './tablet/forms';
 import { tabletMaterials } from './tablet/materials';
-import { screenTexture } from './tablet/screen';
+import { makeDisplay } from './tablet/display';
 
 // His tablet with its pencil beside it, on the mat at the left under the desk lamp. A large thin tablet in warm dark
 // steel and dark glass, no mark on it anywhere, propped at a drawing angle on a low bronze stand, the drawing he is
 // working on lit on its screen when the desk comes on. Nothing of it moves by itself.
 
 // The tablet, in its own frame: x across, y up the screen, z out of the screen from its back at z = 0.
-const T = { hw: 140.8, hh: 107.75, r: 18.5, thick: 5.1, display: [264.8, 198.6] as [number, number], displayR: 10 } as const;
+const T = { hw: 140.8, hh: 107.75, r: 18.5, thick: 5.1 } as const;
 // Heights through the edge, from the back up: the back's chamfer, the band, the front's chamfer, the glass.
 const Z = { chamferBack: 0.85, bandTop: 3.95, metalTop: 4.55, ink: 4.7, picture: 4.82, glass: 5.1 } as const;
 // The stand, in its own frame: y up from the floor of the channel the tablet's edge stands in, z toward the visitor.
 // The tablet leans back at this angle; the stand's cheeks stand at ±cheek and are this thick.
 const STAND = { tilt: 24 * DEG, liner: 0.8, rubber: 1.0, base: 4, cheek: 118, cheekT: 8, back: -168, lipZ: 3.6, lipTop: 7.8, front: 10, behind: -12, at: 95 } as const;
 // The pencil: its length, its radius, and how far its flat side is from its middle. It lies on that flat.
-const PEN = { len: 166, r: 4.45, flat: 3.55, at: [188, 2] as [number, number], turn: -100 * DEG } as const;
+// It lies on its round side, rolled so the flat faces up and toward the visitor.
+const PEN = { len: 166, r: 4.45, flat: 3.55, at: [188, 2] as [number, number], turn: -100 * DEG, roll: 150 * DEG } as const;
 // The picture's brightness at full, and how much of the room the glass shows.
-const GLOW = 0.88, SHEEN = 0.05;
+const GLOW = 1.2, SHEEN = 0.05;
 // The screen's light on the mat: how wide and how far out it reaches, in millimetres, and how strong it is at full.
 const SPILL = { w: 380, d: 120, k: 0.95 } as const;
 
@@ -30,8 +31,6 @@ const cheekTop = (z: number) => STAND.liner + -z * tan - STAND.rubber / cos;
 
 export const build: PartFactory = () => {
   const m = tabletMaterials();
-  const tex = screenTexture(16);
-  m.display.map = tex;
   const group = new THREE.Group();
   group.name = 'tablet';
   const [px, pz, turn] = PLACES.tablet;
@@ -62,9 +61,11 @@ export const build: PartFactory = () => {
   b.add(cap(T.hw - Z.chamferBack, T.hh - Z.chamferBack, T.r - Z.chamferBack, 0, true), m.shell, inT());
   // Under the glass: the border's black, then the picture a hair above it, then the glass over both.
   b.add(cap(T.hw - 0.84, T.hh - 0.84, T.r - 0.84, Z.ink), m.ink, inT(), { shadow: false });
-  const pic = new THREE.PlaneGeometry(T.display[0], T.display[1]);
-  pic.translate(0, 0, Z.picture);
-  b.add(pic, m.display, inT(), { shadow: false });
+  const ax = [new THREE.Vector3(), new THREE.Vector3(), new THREE.Vector3()] as [THREE.Vector3, THREE.Vector3, THREE.Vector3];
+  tab.extractBasis(...ax);
+  for (const v of ax) v.normalize();
+  const display = makeDisplay(Z.picture, ax);
+  b.add(display.geometry, display.material, inT(), { shadow: false });
   b.add(cap(T.hw - 1.3, T.hh - 1.3, T.r - 1.3, Z.glass + 0.004), m.glass, inT(), { shadow: false });
   // The camera in the border, at the middle of the top edge.
   const camY = T.hh - 4.25;
@@ -136,7 +137,7 @@ export const build: PartFactory = () => {
   }
 
   // ---- the pencil, on its flat beside the tablet ------------------------------------------------------------------
-  const pen = new THREE.Matrix4().makeTranslation(PEN.at[0], PEN.flat, PEN.at[1]).multiply(new THREE.Matrix4().makeRotationY(PEN.turn)).multiply(new THREE.Matrix4().makeTranslation(-PEN.len / 2, 0, 0));
+  const pen = new THREE.Matrix4().makeTranslation(PEN.at[0], PEN.r, PEN.at[1]).multiply(new THREE.Matrix4().makeRotationY(PEN.turn)).multiply(new THREE.Matrix4().makeRotationX(PEN.roll)).multiply(new THREE.Matrix4().makeTranslation(-PEN.len / 2, 0, 0));
   const R = PEN.r, F = PEN.flat;
   const st: [number, number, number][] = [[0, 0, 0], [0.08, 1.2, 1.2], [0.3, 2.2, 2.2], [0.7, 3.1, 3.1], [1.2, 3.7, F], [1.9, 4.1, F], [2.8, 4.35, F], [3.8, R, F]];
   for (const [x, dr] of [[13.6, 0], [13.85, 0.13], [14.15, 0.13], [14.4, 0]] as const) st.push([x, R - dr, F - dr]);
@@ -148,8 +149,10 @@ export const build: PartFactory = () => {
   }
   // The pencil is too thin to shadow itself cleanly from the desk's lights: its shadow on the mat is the soft one below.
   b.add(barrel(st), m.pencil, pen, { shadow: false });
+  // A polished band near the back end, just proud of the barrel, that catches a ring of light.
+  b.add(barrel([[8.6, R + 0.04, F + 0.04], [8.9, R + 0.06, F + 0.06], [12.7, R + 0.06, F + 0.06], [13.0, R + 0.04, F + 0.04]]), m.chamfer, pen, { shadow: false });
   const along = (x: number) => pen.clone().multiply(xf({ p: [x, 0, 0], r: [0, 0, -Math.PI / 2] }));
-  b.add(turned([[tipR - 0.05, 0], [tipR + 0.07, 0.12], [tipR + 0.07, 0.95], [tipR - 0.08, 1.1]], 48), m.copper, along(135 + TAPER), { shadow: false });
+  b.add(turned([[tipR - 0.05, 0], [tipR + 0.07, 0.12], [tipR + 0.07, 0.95], [tipR - 0.08, 1.1]], 48), m.chamfer, along(135 + TAPER), { shadow: false });
   b.add(turned([[2.35, 0], [2.3, 1.0], [1.95, 3.2], [1.5, 5.4], [1.12, 6.9], [0.9, 7.55], [0.62, 7.92], [0.32, 8.1], [0, 8.15]], 40, 60), m.nib, along(135 + TAPER + 1.1), { shadow: false });
 
   b.build(group, 'tablet');
@@ -203,12 +206,13 @@ export const build: PartFactory = () => {
       const k = s.lights.tablet;
       if (k === last) return false;
       last = k;
-      m.display.color.setScalar(k * GLOW);
+      display.material.uniforms.uK.value = k * GLOW;
       m.spill.uniforms.uK.value = alone ? 0 : k * SPILL.k;
       return false;
     },
     dispose() {
-      tex.dispose();
+      display.dispose();
+      display.material.dispose();
       group.traverse((o) => { if (o instanceof THREE.Mesh) o.geometry.dispose(); });
       for (const mat of Object.values(m)) mat.dispose();
     },

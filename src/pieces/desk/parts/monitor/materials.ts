@@ -17,6 +17,8 @@ export interface MonitorMats {
   shell: THREE.Material;
   stand: THREE.Material;
   foot: THREE.Material;
+  rim: THREE.Material;
+  pad: THREE.Material;
   copper: THREE.Material;
   glass: THREE.MeshPhysicalMaterial;
 }
@@ -61,34 +63,19 @@ float ventMask(){
       rough: 'roughnessFactor = mix(roughnessFactor, 1.0, gVent);',
     },
   });
-  // The glass keeps its reflection low and tight: a broad one lays a haze over the whole picture. It adds only what it
-  // reflects: the cursor's light, and a dim room of the desk below and a tall soft light to the right, which the
-  // panel's curve sweeps across its width.
+  // The glass adds only what it reflects, and keeps it low: the room's soft sheen below, and the cursor's light as a
+  // plain mirror would show it. A broad glare of the cursor's light greyed the whole picture.
   const glass = shade(glassLayer('monitor-glass', 0.05), 'monitor-glass', {
     head: 'uniform float uRoom; uniform float uOn;',
     emissive: /* glsl */ `
   { vec3 Vv = normalize(vViewPosition);
     vec3 Rw = (vec4(reflect(-Vv, normal), 0.0) * viewMatrix).xyz;
     float fr = 0.04 + 0.96 * pow(1.0 - max(dot(normal, Vv), 0.0), 5.0);
-    float room = 0.035 * smoothstep(-0.95, 0.1, Rw.y) + 1.1 * exp(-pow((Rw.x - 0.5) * 10.0, 2.0)) * smoothstep(-0.8, -0.4, Rw.y);
-    totalEmissiveRadiance += vec3(1.0, 0.89, 0.76) * room * fr * uRoom * mix(0.32, 0.1, uOn);
-    #if NUM_SPOT_LIGHTS > 0
-    // The spot lights, the cursor's among them: the soft patch an anti-glare coat scatters a light into, brightest where
-    // the curve faces the light, so it slides as the light moves, and a glint where it mirrors one.
-    vec3 Rv = reflect(-Vv, normal);
-    for (int i = 0; i < NUM_SPOT_LIGHTS; i++){
-      vec3 toL = spotLights[i].position + vViewPosition, Lv = normalize(toL);
-      float a = max(dot(Rv, Lv), 0.0), nl = max(dot(normal, Lv), 0.0);
-      vec3 irr = spotLights[i].color * getDistanceAttenuation(length(toL), spotLights[i].distance, spotLights[i].decay) * getSpotAttenuation(spotLights[i].coneCos, spotLights[i].penumbraCos, dot(Lv, spotLights[i].direction));
-      totalEmissiveRadiance += irr * (pow(nl, 6.0) * mix(0.009, 0.003, uOn) + pow(a, 30.0) * 0.05);
-      // One thin upright streak where the glass mirrors the light across: it slides along the curve as the light moves,
-      // and stays when the screen is lit, enough to say glass.
-      vec3 Lw = (vec4(Lv, 0.0) * viewMatrix).xyz;
-      float across = max(dot(normalize(Rw.xz), normalize(Lw.xz)), 0.0);
-      float streak = pow(across, 30000.0) * smoothstep(-0.95, -0.2, Rw.y);
-      totalEmissiveRadiance += spotLights[i].color * getSpotAttenuation(spotLights[i].coneCos, spotLights[i].penumbraCos, dot(Lv, spotLights[i].direction)) * streak * 0.03;
-    }
-    #endif
+    // A soft, broad, slanted sheen: a tall light in the room, seen in the glass. It hangs on the view, not on the
+    // cursor's light, so scrolling the page never sweeps it across the screen.
+    float u = Rw.x + 0.6 * Rw.y - 0.2;
+    float room = 0.012 * smoothstep(-0.95, 0.1, Rw.y) + 0.4 * exp(-u * u * 55.0) * smoothstep(-0.9, -0.35, Rw.y);
+    totalEmissiveRadiance += vec3(1.0, 0.89, 0.76) * room * fr * uRoom * mix(1.6, 0.12, uOn);
   }`,
   });
   glass.color.setHex(0x000000);
@@ -99,7 +86,9 @@ float ventMask(){
     shell,
     stand: steel(0x262422, 0.26),
     // The foot is blasted, not polished: lying flat, a polished face mirrors the room's lights as a pale slab.
-    foot: steel(0x1c1b1a, 0.46),
+    foot: steel(0x1c1b1a, 0.5),
+    rim: steel(0x151413, 0.34),
+    pad: steel(0x0c0b0b, 0.8),
     copper: metal({ name: 'monitor-copper', color: hex('copper'), rough: 0.26, brush: 'none', tarnish: 0.3, patina: BROWN }),
     glass,
   };

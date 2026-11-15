@@ -1,20 +1,20 @@
 import * as THREE from 'three';
 import { hex } from '../../../../config/palette';
-import { lin, shade } from '../../../../world/surface';
+import { shade } from '../../../../world/surface';
 import { byKind } from '../keyboard/materials';
-import { GRIP, MOUSE, SEAM, THUMB } from './model';
+import { GRIP, KIND, MOUSE, SEAM, THUMB } from './model';
 
 const f = (n: number) => n.toFixed(4);
 
-// What each surface of the mouse is. One material draws them all, so the mouse costs one shader program: each vertex
-// carries its kind in the fourth number of its cell attribute.
-export const KIND = { shell: 0, thumb: 1, wheel: 2, cradle: 3, skate: 4 } as const;
+// Each kind's color, roughness and metalness: the satin top, the thumb buttons, the copper wheel, its cradle, the
+// skates and the graphite flank. One material draws them all, so the mouse costs one shader program.
 const FINISH: [color: number, rough: number, metal: number][] = [
-  [0x181b1f, 0.7, 0],
-  [0x1b1e22, 0.48, 0],
-  [hex('copper'), 0.26, 1],
-  [0x0f1012, 0.7, 0],
-  [0x272a2e, 0.3, 0],
+  [0x151515, 0.42, 0],
+  [0x1c1c1c, 0.4, 0],
+  [hex('copper'), 0.24, 1],
+  [0x101010, 0.7, 0],
+  [0x2a2a2a, 0.3, 0],
+  [0x323232, 0.74, 0],
 ];
 
 export interface MouseMats {
@@ -27,17 +27,17 @@ export interface MouseMats {
 
 export function mouseMaterials(): MouseMats {
   const { z: wz } = MOUSE.wheel;
-  // The shell has two finishes. Above the parting line a matte top under a thin clear coat, whose one long highlight
-  // shows its curve and slides as the cursor's light moves; under it a satin band, smoother and a shade lighter. Its
-  // seams, the wheel's slot, the gaps round the thumb buttons, the grip panels and the light in the split behind the
-  // wheel are worked out here, each as a cut with lit lips that fades to a faint line before it is finer than a pixel.
+  // The shell has two finishes: a satin black top under a thin clear coat, whose one long highlight shows its curve and
+  // slides as the cursor's light moves, over a matte graphite flank. Its seams, the wheel's slot, the gaps round the
+  // thumb buttons, the grip panels and the light in the split behind the wheel are worked out here, each as a cut
+  // with lit lips that fades to a faint line before it is finer than a pixel.
   const mouse = shade(new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.7, specularIntensity: 0.45, clearcoat: 0.32, clearcoatRoughness: 0.3 }), 'mouse', {
     vhead: 'attribute vec4 cell; varying float vKind;',
     vert: 'vKind = cell.w;',
     head: /* glsl */ `
 uniform vec3 uLed; uniform float uWheelY;
 varying float vKind;
-int kind; float msCut; vec3 msTilt; float msSlot; float msGlow; float msBand; float msGrip; float msPit; float msCoat;
+int kind; float msCut; vec3 msTilt; float msSlot; float msGlow; float msGrip; float msPit; float msCoat;
 void msSeam(float d, vec3 gv, float on){
   float aa = max(fwidth(d), 1e-4);
   float near = 1.0 - smoothstep(0.35, 1.1, aa);
@@ -50,22 +50,20 @@ float msBox(vec2 p, vec2 h, float r){ vec2 q = abs(p) - h + r; return length(max
 vec2 msBoxDir(vec2 p, vec2 h, float r){ vec2 k = abs(p) - h + r; return max(k.x, k.y) > 0.0 ? normalize(max(k, 0.0) + 1e-4) * sign(p) : (k.x > k.y ? vec2(sign(p.x), 0.0) : vec2(0.0, sign(p.y))); }`,
     color: /* glsl */ `
   kind = int(vKind + 0.5);
-  msCut = 0.0; msTilt = vec3(0.0); msGlow = 0.0; msPit = 0.0; msSlot = 0.0; msBand = 0.0; msGrip = 0.0;
+  msCut = 0.0; msTilt = vec3(0.0); msGlow = 0.0; msPit = 0.0; msSlot = 0.0; msGrip = 0.0;
   diffuseColor.rgb = ${byKind(FINISH, 0)};
   vec3 ax = normalize(vAxX), ay = normalize(vAxY), az = normalize(cross(vAxX, vAxY));
   vec3 p = vObj;
-  if (kind == ${KIND.shell}) {
+  if (kind == ${KIND.shell} || kind == ${KIND.side}) {
     float back = ${f(SEAM.back)} - 6.5 * (p.x / 28.0) * (p.x / 28.0);
     float side = ${f(SEAM.side)} + 0.1 * (p.z + 5.0);
     float front = 1.0 - smoothstep(-0.6, 0.6, p.z - back);
     float slot = msBox(p.xz - vec2(0.0, ${f(wz)}), vec2(5.4, 12.6), 4.2);
     // The split between the buttons, from the front to the end of the buttons, broken by the wheel's slot.
-    msSeam(p.x, ax, front * smoothstep(${f(SEAM.base + 14)}, ${f(SEAM.base + 20)}, p.y) * smoothstep(-0.2, 0.6, slot));
+    msSeam(p.x, ax, front * smoothstep(23.0, 29.0, p.y) * smoothstep(-0.2, 0.6, slot));
     // Where the buttons end at the back, and where their sides meet the flanks.
     msSeam(p.z - back, az + ax * (13.0 * p.x / 784.0), smoothstep(side - 1.0, side + 1.0, p.y));
     msSeam(p.y - side, ay - az * 0.1, front);
-    // The parting line between the top shell and the band.
-    msSeam(p.y - ${f(SEAM.base)}, ay, 1.0);
     // The gaps round the thumb's two buttons, on the left flank.
     float left = step(p.x, 0.0);
     for (int i = 0; i < 2; i++) {
@@ -80,7 +78,7 @@ vec2 msBoxDir(vec2 p, vec2 h, float r){ vec2 k = abs(p) - h + r; return max(k.x,
     float lip = (1.0 - smoothstep(0.0, 0.9, abs(slot))) * (1.0 - smoothstep(0.4, 1.2, sa));
     msTilt += normalize(az * (p.z - ${f(wz)}) / 12.6 + ax * p.x / 5.4) * lip * 0.4 * sign(slot);
     // The light: a short slit in the split behind the wheel, and the little it lays on the shell round it.
-    float lp = msBox(p.xz - vec2(0.0, ${f(MOUSE.light)}), vec2(0.7, 3.4), 0.7);
+    float lp = msBox(p.xz - vec2(0.0, ${f(MOUSE.light)}), vec2(0.9, 3.8), 0.9);
     float la = max(fwidth(lp), 1e-4);
     msGlow = (1.0 - smoothstep(-la, la, lp)) + 0.22 * exp(-max(lp, 0.0) / 2.2);
     // The grip panels: rubber with a diamond knurl that is seen as texture up close, set in with a seam round each.
@@ -95,9 +93,7 @@ vec2 msBoxDir(vec2 p, vec2 h, float r){ vec2 k = abs(p) - h + r; return max(k.x,
     float su = sin(u), cu = cos(u), sv = sin(v), cv = cos(v);
     msTilt += (az * (cu * sv + su * cv) + ay * (cu * sv - su * cv)) * 0.6 * fine * msGrip;
     msPit = (0.5 - 0.5 * su * sv) * fine * msGrip;
-    msBand = 1.0 - smoothstep(${f(SEAM.base - 0.2)}, ${f(SEAM.base + 0.2)}, p.y);
     diffuseColor.rgb *= (1.0 - 0.82 * msCut) * (1.0 - 0.9 * msSlot) * (1.0 - 0.45 * msGrip) * (1.0 - 0.35 * msPit);
-    diffuseColor.rgb = mix(diffuseColor.rgb, ${lin(0x25282c)}, msBand);
   } else if (kind == ${KIND.wheel}) {
     // The wheel: a diamond knurl on each band, and the turning's fine rings on its sides, each gone before it is
     // finer than a pixel.
@@ -113,8 +109,8 @@ vec2 msBoxDir(vec2 p, vec2 h, float r){ vec2 k = abs(p) - h + r; return max(k.x,
     msTilt += tang * sin(rr * 25.0) * 0.06 * ring;
   }
   // The clear coat lies on the matte top and the thumb buttons only.
-  msCoat = kind == ${KIND.shell} ? 1.0 - max(msBand, max(msGrip, max(msCut, msSlot))) : kind == ${KIND.thumb} ? 0.6 : 0.0;`,
-    rough: `roughnessFactor = mix(mix(${byKind(FINISH, 1)}, 0.32, msBand), 0.9, max(max(msCut, msSlot), msGrip * 0.9));`,
+  msCoat = kind == ${KIND.shell} ? 1.0 - max(msCut, msSlot) : kind == ${KIND.thumb} ? 0.6 : 0.0;`,
+    rough: `roughnessFactor = mix(${byKind(FINISH, 1)}, 0.9, max(max(msCut, msSlot), msGrip * 0.9));`,
     metal: `metalnessFactor = ${byKind(FINISH, 2)};`,
     normal: 'normal = normalize(normal + msTilt);',
     emissive: 'totalEmissiveRadiance += uLed * msGlow;',
@@ -124,15 +120,6 @@ vec2 msBoxDir(vec2 p, vec2 h, float r){ vec2 k = abs(p) - h + r; return max(k.x,
   mouse.onBeforeCompile = (sh, r) => {
     before(sh, r);
     sh.fragmentShader = sh.fragmentShader.replace('material.clearcoat = clearcoat;', 'material.clearcoat = clearcoat * msCoat;');
-    // The shell is mostly the warm room reflected, which read as olive. Its plain surfaces take part of the color out
-    // of the dim light they reflect; the copper wheel, the light and the highlights keep theirs, so a glint stays pale.
-    sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', `
-  if (kind != ${KIND.wheel}) {
-    vec3 refl = max(outgoingLight - totalEmissiveRadiance, 0.0);
-    float lum = dot(refl, vec3(0.2126, 0.7152, 0.0722));
-    outgoingLight = mix(refl, vec3(lum), 0.6 * (1.0 - smoothstep(0.08, 0.5, lum))) + totalEmissiveRadiance;
-  }
-#include <opaque_fragment>`);
   };
   const led = { value: new THREE.Color(0, 0, 0) }, wheelY = { value: 0 };
   mouse.userData.uniforms = { uLed: led, uWheelY: wheelY };

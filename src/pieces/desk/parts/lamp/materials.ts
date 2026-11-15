@@ -31,15 +31,16 @@ const tone = (n: PaletteName, k: number) => new THREE.Color(hex(n)).multiplyScal
 interface Metal { color: number; rough: number; finish: number; room: number; strike: number }
 export const METAL = {
   // Warm dark steel, plainly grey beside the copper: brushed for the stem, the arm and the counterweight.
-  steel: { color: 0x8e867e, rough: 0.2, finish: 3, room: 3.4, strike: 0.5 },
+  steel: { color: 0xbab2a8, rough: 0.24, finish: 3, room: 4.6, strike: 0.5 },
   // Blackened and satin: the joints.
   joint: { color: 0x37312c, rough: 0.27, finish: 0, room: 4.2, strike: 0.5 },
   // Blackened, turned: the foot.
   foot: { color: 0x36302b, rough: 0.28, finish: 1, room: 3, strike: 0 },
   bronze: { color: tone('bronze', 0.95), rough: 0.3, finish: 0, room: 3, strike: 0.7 },
   copper: { color: tone('copper', 0.92), rough: 0.26, finish: 0, room: 3, strike: 0.7 },
-  // The shade: spun bronze, polished, so the room's lights lie on it as long sharp reflections.
-  shell: { color: tone('bronze', 1.0), rough: 0.13, finish: 2, room: 1.6, strike: 1 },
+  // The shade: spun steel, blackened and polished, so the room's lights and the cursor's lie on it as sharp
+  // reflections that slide as the light moves, and the stream's strike and the vents read strongly against it.
+  shell: { color: 0x4c4743, rough: 0.07, finish: 2, room: 2.4, strike: 1 },
   rim: { color: tone('copper-light', 0.82), rough: 0.18, finish: 0, room: 3, strike: 1 },
   cap: { color: tone('copper', 0.95), rough: 0.2, finish: 0, room: 3, strike: 1 },
 } satisfies Record<string, Metal>;
@@ -134,9 +135,9 @@ float mFinish(int k){
   float mfin = mFinish(mk);
   float mtar = smoothstep(0.52, 0.8, wFbm(vObj * 0.045 + 3.0)) * 0.15;
   diffuseColor.rgb = MC[mk] * (0.9 + 0.2 * mfin) * (1.0 - 0.35 * mtar);
-  // Where the bulb's heat has toned the shade near its crown.
-  if (mk == ${K.shell}) diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(0.62, 0.42, 0.3), (1.0 - smoothstep(4.0, 38.0, dot(vObj - ${v3(CROWN)}, ${v3(AXIS)}))) * 0.55);`,
-    rough: 'roughnessFactor = clamp(MR[mk] + 0.12 * (mfin - 0.5) + 0.2 * mtar, 0.04, 1.0);',
+  // Where the bulb's heat has darkened the shade round its crown.
+  if (mk == ${K.shell}) diffuseColor.rgb *= 1.0 - 0.3 * (1.0 - smoothstep(4.0, 30.0, dot(vObj - ${v3(CROWN)}, ${v3(AXIS)})));`,
+    rough: 'roughnessFactor = clamp(MR[mk] + 0.08 * (mfin - 0.5) + 0.15 * mtar, 0.04, 1.0);',
     emissive: `{
     float sk = strikeAt(vObj, vObjN);
     totalEmissiveRadiance += strikeRamp(sk) * min(sk, 1.6) * MS[mk];
@@ -144,7 +145,7 @@ float mFinish(int k){
     // The cap's underside faces into the shade and takes the bulb's light through the hole in the crown.
     if (mk == ${K.cap}) totalEmissiveRadiance += ${lin(hex('hot'))} * smoothstep(0.4, 0.95, dot(nn, ${v3(AXIS)})) * uLamp * 0.9;
     // The rolled rim's lip catches the bulb, inside and round the mouth: a thin bright crescent along the shade's edge.
-    if (mk == ${K.rim}) totalEmissiveRadiance += mix(${lin(hex('hot'))}, ${lin(hex('pale'))}, 0.4) * (pow(max(dot(nn, toBulb) * 0.8 + 0.2, 0.0), 2.0) + smoothstep(0.15, 0.8, dot(nn, ${v3(AXIS)})) * 0.9) * uLamp * 1.6;
+    if (mk == ${K.rim}) totalEmissiveRadiance += mix(${lin(hex('hot'))}, ${lin(hex('pale'))}, 0.4) * (pow(max(dot(nn, toBulb) * 0.8 + 0.2, 0.0), 2.0) + smoothstep(0.15, 0.8, dot(nn, ${v3(AXIS)})) * 0.9) * uLamp * 3.4;
   }`,
     room: 'radiance *= MRoom[mk];',
   });
@@ -167,7 +168,7 @@ const float OR[${os.length}] = ${arr('float', os, (x) => x.rough.toFixed(3))};`,
   float braid = mix(0.5, smoothstep(0.1, 0.4, max(abs(fract(bp.x + bp.y) - 0.5), abs(fract(bp.x - bp.y) - 0.5))), (1.0 - smoothstep(0.25, 0.55, length(fwidth(bp)))) * float(ok == ${ki('cord')}));
   diffuseColor.rgb = OC[ok] * (0.95 + 0.1 * wFbm(vObj * 0.08)) * (0.7 + 0.6 * braid);`,
     rough: 'roughnessFactor = clamp(OR[ok] - 0.12 * (braid - 0.5), 0.04, 1.0);',
-    emissive: `if (ok == ${ki('enamel')}) { float s = dot(vObj - ${v3(CROWN)}, ${v3(AXIS)}); float k = (exp(-s / 30.0) * 0.9 + 0.22) * uLamp; totalEmissiveRadiance += mix(${lin(hex('hot'))}, ${lin(hex('pale'))}, exp(-s / 22.0)) * k; }`,
+    emissive: `if (ok == ${ki('enamel')}) { float s = dot(vObj - ${v3(CROWN)}, ${v3(AXIS)}); float k = (exp(-s / 30.0) * 0.9 + 0.22 + smoothstep(55.0, 96.0, s) * 0.9) * uLamp; totalEmissiveRadiance += mix(${lin(hex('hot'))}, ${lin(hex('pale'))}, exp(-s / 22.0)) * k; }`,
     self: `if (ok == ${ki('enamel')}) directLight.color *= lampSelf( spotLight.position );`,
   });
   return m;

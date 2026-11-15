@@ -32,7 +32,7 @@ export function boardSheet(): THREE.CanvasTexture {
   g.lineCap = 'round';
   for (let i = 0; i < 520; i++) {
     let x = r() * W, y = r() * H;
-    g.strokeStyle = `rgba(${58 + r() * 20}, ${56 + r() * 18}, ${54 + r() * 16}, ${0.25 + r() * 0.25})`;
+    g.strokeStyle = `rgba(${78 + r() * 24}, ${76 + r() * 22}, ${72 + r() * 20}, ${0.3 + r() * 0.3})`;
     g.lineWidth = (0.18 + r() * 0.3) * S;
     g.beginPath(); g.moveTo(x, y);
     for (let k = 0; k < 3; k++) {
@@ -119,6 +119,8 @@ export function board(parent: Adds, L: Look, m: THREE.Matrix4): void {
   for (const [dx, dy] of [[13, -22], [13, -30.5], [20.5, -22]]) capacitor(sub, L, 194.5 + dx, dy, 7, 2.2);
   for (const y of [-180, -188.5, -250, -258.5, -275]) capacitor(sub, L, 11, y, 9, 2.6, true);
   heatsink(sub, L, vr.x0, vr.x1, vr.y0, vr.y1, vr.h, 'y', 11);
+  // The board's light along the regulator's heatsink beside the socket.
+  add(led(new THREE.BoxGeometry(1.4, vr.y0 - vr.y1 - 8, 1.6), 0.3, 1.2), L.led, at(vr.x1 + 0.9, (vr.y0 + vr.y1) / 2, T + vr.h - 6), { shadow: false });
   heatsink(sub, L, vt.x0, vt.x1, vt.y0, vt.y1, vt.h, 'x', 12, true);
 
   // The rear connectors: a shield with the ports in it, and the armored cover over them with its light in the notch.
@@ -142,7 +144,7 @@ export function board(parent: Adds, L: Look, m: THREE.Matrix4): void {
   add(extrude(roundedPoly([[14, -6], [29, -6], [29, -60], [14, -74]], 1), 1.4, 0.5, 'xy', 2, 1), L.copper, at(0, 0, T + ioTop - 0.4), { uv: 'box' });
   add(rbox(30, 146, ioTop - 8, 1, 2), L.sinkDark, at(14.8, -77, T + (ioTop - 8) / 2 + 0.2));
   add(printPlane(48, 10, SHEET.cover), L.print, at(7, -104, T + ioTop + 0.04).multiply(new THREE.Matrix4().makeRotationZ(PI / 2)), { shadow: false });
-  add(led(rbox(1.6, 82, 2.2, 0.6, 2), 0.55, 1.1), L.led, at(27.4, -76, T + ioTop - 2.6), { shadow: false });
+  add(led(rbox(1.6, 82, 2.2, 0.6, 2), 0.35, 1.4), L.led, at(27.4, -76, T + ioTop - 2.6), { shadow: false });
 
   // Memory slots with latches.
   for (const d of BOARD.dimms) {

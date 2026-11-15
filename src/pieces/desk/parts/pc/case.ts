@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { PI, Q, ZY, type Adds, at, circleHole, cyl, extrude, lathe, led, rbox, rrect, rrectHole, rrectShape, torus, xf } from './kit';
-import { FX, fxOf, type Look } from './look';
+import { FX, fxOf, perfOf, type Look } from './look';
 
 // His Atrium case, brought over from the PC Builder (src/world/parts/caseAtrium.ts, caseKit.ts and
 // src/world/layout/cases/atrium.ts): a dual chamber showcase on a low plinth, glass on the left and the front meeting at
@@ -36,11 +36,11 @@ export const GROMMETS: { id: string; c: [number, number]; s: [number, number] }[
   { id: 'bottom', c: [196, 50], s: [16, 40] },
 ];
 
-function perforated(b: Adds, L: Look, w: number, h: number, m: THREE.Matrix4, border = 3): void {
+function perforated(b: Adds, L: Look, w: number, h: number, m: THREE.Matrix4, border = 3, pitch = 1, cover = 0.66, pale = 1): void {
   const frame = rrectShape(w, h, 4);
   frame.holes.push(rrectHole(w - 2 * border, h - 2 * border, 2.5));
   b.add(extrude(frame, 1.0, 0.3, 'xy', 6, 1), L.shell, m, { shadow: false });
-  b.add(new THREE.PlaneGeometry(w - 2 * border + 0.4, h - 2 * border + 0.4), L.perf, m.clone().multiply(at(0, 0, 0.5)), { shadow: false });
+  b.add(perfOf(new THREE.PlaneGeometry(w - 2 * border + 0.4, h - 2 * border + 0.4), pitch, cover, pale), L.perf, m.clone().multiply(at(0, 0, 0.5)), { shadow: false });
 }
 
 export function atrium(b: Adds, L: Look): void {
@@ -73,14 +73,22 @@ export function atrium(b: Adds, L: Look): void {
   b.add(extrude(rp, 4.2, 1.6, 'xy', 8, 2), L.shell, at(0, 0, z0));
   perforated(b, L, 128, 382, xf({ p: [140, 224, z0 + 1.2], r: [0, PI, 0] }));
 
-  // Top: a thick plate, perforated over the fan mounts. Under the field, the light of the radiator's three fans comes
-  // up through it: a ring under each, in that fan's tone.
+  // Top: a thick plate, a fine perforated field over the fan mounts on a black filter, a seam round it and its screws.
   const top = rrectShape(x1 - x0, z1 - z0, 5);
   top.holes.push(rrectHole(390, 126, 6, -13, -main));
   b.add(extrude(top, 4, 1.2, 'xz', 8, 2), L.shell, at(0, topIn, 0));
-  perforated(b, L, 392, 128, xf({ p: [-13, y1 - 2, main], r: [-Q, 0, 0] }));
+  perforated(b, L, 392, 128, xf({ p: [-13, y1 - 2, main], r: [-Q, 0, 0] }), 3, 1, 0.55, 0.8);
   b.add(new THREE.PlaneGeometry(387, 123), L.frit, xf({ p: [-13, topIn + 0.2, main], r: [-Q, 0, 0] }), { shadow: false });
-  for (const x of [109, -13, -135]) b.add(fxOf(new THREE.PlaneGeometry(124, 124), FX.mesh, 0.5, 0.55, 0.9), L.fx, xf({ p: [x, y1 - 1.3, main], r: [-Q, 0, 0] }), { shadow: false });
+  {
+    const sx0 = x0 + 9, sx1 = x1 - 9, sz0 = z0 + 9, sz1 = z1 - 9;
+    for (const [x, z, w, d] of [[(sx0 + sx1) / 2, sz0, sx1 - sx0, 0.7], [(sx0 + sx1) / 2, sz1, sx1 - sx0, 0.7], [sx0, 0, 0.7, sz1 - sz0], [sx1, 0, 0.7, sz1 - sz0]]) {
+      b.add(new THREE.BoxGeometry(w, 0.3, d), L.frit, at(x, y1 + 0.1, z), { shadow: false });
+    }
+    for (const [x, z] of [[x0 + 18, z0 + 18], [x0 + 18, z1 - 18], [x1 - 18, z0 + 18], [x1 - 18, z1 - 18], [0, z0 + 18], [0, z1 - 18]]) {
+      b.add(lathe([[0, 0], [2.6, 0], [2.6, 0.5], [1.8, 0.9], [0, 1.0]], 12), L.sinkDark, at(x, y1, z, [-Q, 0, 0]));
+      b.add(new THREE.BoxGeometry(2.4, 0.4, 0.5), L.void, at(x, y1 + 1.0, z), { shadow: false });
+    }
+  }
   for (const sz of [1, -1]) b.add(rbox(420, 2.5, 12, 0.8, 2), L.inner, at(-13, topIn - 1.25, main + sz * 62));
 
   // Rear wall: the connector block's opening, seven slots, the exhaust fan's vent and the supply's opening.
@@ -95,7 +103,7 @@ export function atrium(b: Adds, L: Look): void {
   rear.holes.push(circleHole(fanC.z, fanC.y, 57.5));
   for (const [dy, dz] of [[52.5, 52.5], [52.5, -52.5], [-52.5, 52.5], [-52.5, -52.5]]) rear.holes.push(rrectHole(4.4, 9, 2.2, fanC.z + dz, fanC.y + dy));
   b.add(extrude(rear, 1.5, 0.7, 'xy', 16), L.shell, new THREE.Matrix4().makeTranslation(x0 + 1.5, 0, 0).multiply(ZY));
-  b.add(new THREE.CircleGeometry(57.2, 48), L.perf, xf({ p: [x0 + 0.75, fanC.y, fanC.z], r: [0, -Q, 0] }), { shadow: false });
+  b.add(perfOf(new THREE.CircleGeometry(57.2, 48)), L.perf, xf({ p: [x0 + 0.75, fanC.y, fanC.z], r: [0, -Q, 0] }), { shadow: false });
   for (const rr of [20, 34, 47]) b.add(lathe([[rr - 0.9, -0.75], [rr + 0.9, -0.75], [rr + 0.9, 0.75], [rr - 0.9, 0.75]], 48), L.shell, xf({ p: [x0 + 0.75, fanC.y, fanC.z], r: [0, Q, 0] }));
   for (let i = 0; i < 4; i++) b.add(rbox(1.5, 110, 1.8, 0.6, 1), L.shell, xf({ p: [x0 + 0.75, fanC.y, fanC.z], r: [i * PI / 4, 0, 0] }));
   // The slot covers the card does not take, each with its vents, and the ledge their screws go into.
@@ -111,7 +119,7 @@ export function atrium(b: Adds, L: Look): void {
   {
     const pz = supply.z + 43, py = supply.y + 1.5;
     b.add(rbox(4, 150, 86, 1.5, 2), L.sinkDark, at(rearIn + 2, py, pz + 0));
-    b.add(new THREE.CircleGeometry(36, 40), L.perf, xf({ p: [rearIn - 0.2, py + 22, pz], r: [0, -Q, 0] }), { shadow: false });
+    b.add(perfOf(new THREE.CircleGeometry(36, 40)), L.perf, xf({ p: [rearIn - 0.2, py + 22, pz], r: [0, -Q, 0] }), { shadow: false });
     b.add(new THREE.CircleGeometry(35, 32), L.void, xf({ p: [rearIn + 2, py + 22, pz], r: [0, -Q, 0] }), { shadow: false });
     b.add(rbox(3, 18, 27, 1, 1), L.plastic, at(rearIn - 1, py - 40, pz - 10));
     b.add(rbox(3, 10, 13, 1, 1), L.void, at(rearIn - 2.1, py - 40, pz - 10));
@@ -152,7 +160,7 @@ export function atrium(b: Adds, L: Look): void {
   const plate = rrectShape(fx1 - fx0, fzB - fzA, 3, (fx0 + fx1) / 2, -(fzA + fzB) / 2);
   plate.holes.push(rrectHole(fx1 - fx0 - 24, fzB - fzA - 24, 6, (fx0 + fx1) / 2, -(fzA + fzB) / 2));
   b.add(extrude(plate, 2, 0.5, 'xz', 6), L.shell, at(0, A.floor - 2, 0));
-  perforated(b, L, fx1 - fx0 - 22, fzB - fzA - 22, xf({ p: [(fx0 + fx1) / 2, A.floor - 1.4, (fzA + fzB) / 2], r: [-Q, 0, 0] }));
+  perforated(b, L, fx1 - fx0 - 22, fzB - fzA - 22, xf({ p: [(fx0 + fx1) / 2, A.floor - 1.4, (fzA + fzB) / 2], r: [-Q, 0, 0] }), 3, 2.4, 0.78, 2.2);
   for (const x of [fx0 + 30, (fx0 + fx1) / 2, fx1 - 30]) b.add(rbox(8, A.floor - 2 - basin - 2, 8, 2, 2), L.inner, at(x, (A.floor - 2 + basin + 2) / 2, fzB - 8));
   for (const sz of [1, -1]) b.add(rbox(fx1 - fx0 - 10, 2, 10, 0.6, 2), L.inner, at((fx0 + fx1) / 2, basin + 1.5, main + sz * 52.5));
 
@@ -184,13 +192,14 @@ export function glass(b: Adds, L: Look): void {
       // The light inside the case runs along the glass and shows at its edge as a thin pale line.
       b.add(fxOf(new THREE.PlaneGeometry(Math.max(ew, 2.4), Math.max(eh, 2.4)), FX.flat, 0.95, 0.6), L.fx, on(at(ex, ey, p.outer + 0.06)), { shadow: false });
     }
-    const border = 22;
+    // A narrow fired border: a wide one hid the rear fan and the board's edge behind it.
+    const border = 8;
     const fr = rrectShape(w - 1.5, h - 1.5, 3, cx, cy);
     fr.holes.push(rrectHole(w - 2 * border, h - 2 * border, 5, cx, cy));
     b.add(extrude(fr, 0.25, 0, 'xy', 6), L.frit, on(at(0, 0, p.inner + 0.05)), { shadow: false });
     for (const [sx, sy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
-      const x = cx + sx * (w / 2 - 12), y = cy + sy * (h / 2 - 12);
-      b.add(lathe([[0, 0], [4.4, 0], [4.6, 0.3], [4.3, 0.9], [0, 1.0]], 12), L.sinkDark, on(at(x, y, p.outer)), { shadow: false });
+      const x = cx + sx * (w / 2 - 5), y = cy + sy * (h / 2 - 5);
+      b.add(lathe([[0, 0], [3.4, 0], [3.6, 0.3], [3.3, 0.9], [0, 1.0]], 12), L.sinkDark, on(at(x, y, p.outer)), { shadow: false });
     }
   }
 }

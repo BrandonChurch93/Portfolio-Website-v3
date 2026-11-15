@@ -135,12 +135,10 @@ export async function cameraArt(maxAniso: number): Promise<CameraArt> {
   dialTop(g, ix, iy, iw, ['100', '200', '400', '800', '1600', '3200', '6400', 'A'], 'A', FILL, ACCENT);
   const [mx, my, mw] = REG.mode;
   dialTop(g, mx, my, mw, ['M', 'A', 'S', 'P', '1', '2', '3', 'B'], 'M', FILL, ACCENT);
-  // The size and mark moulded into the cap, and the model code on the body.
+  // The size and a mark moulded round the cap's raised middle, and the model code on the body.
   const [cx, cy, cw] = REG.cap;
   g.fillStyle = FILL;
   arc(g, 'ø72 · Δ', cx + cw / 2, cy + cw / 2, cw * 0.3, -Math.PI / 2, cw * 0.06, { weight: 500, f: MONO, space: 0.2 });
-  g.strokeStyle = FILL; g.lineWidth = cw * 0.008;
-  g.beginPath(); g.arc(cx + cw / 2, cy + cw / 2, cw * 0.4, 0, Math.PI * 2); g.stroke();
   const [qx, qy, qw, qh] = REG.code;
   font(g, qh * 0.55, 500, MONO);
   g.letterSpacing = `${qh * 0.08}px`;

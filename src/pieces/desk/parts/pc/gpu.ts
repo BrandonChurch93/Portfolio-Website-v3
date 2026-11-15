@@ -130,7 +130,7 @@ export function gpu(parent: Adds, L: Look, m: THREE.Matrix4): void {
       const g = new THREE.BoxGeometry(0.5, yb - ya, 0.6);
       led(g, 0, 0);
       const p = g.getAttribute('position'), cell = g.getAttribute('cell');
-      for (let k = 0; k < p.count; k++) { const up = (p.getY(k) + (yb - ya) / 2) / (yb - ya); cell.setXY(k, 0.5 + 0.4 * ((x - wa) / (wb - wa)), 0.5 * up * up); }
+      for (let k = 0; k < p.count; k++) { const up = (p.getY(k) + (yb - ya) / 2) / (yb - ya); cell.setXY(k, 0.5 + 0.4 * ((x - wa) / (wb - wa)), 0.85 * up * up); }
       b.add(g, L.led, at(x, (ya + yb) / 2, c.H - 4.9), { shadow: false });
     }
   }
@@ -153,7 +153,7 @@ export function gpu(parent: Adds, L: Look, m: THREE.Matrix4): void {
     const cutX0 = Math.max(c.pcbEnd + 4, c.end - 72);
     bp.holes.push(polyHole([[cutX0, c.clear + 18], [c.end - 16, c.clear + 28], [c.end - 16, c.H - 22], [cutX0 + 8, c.H - 22]]));
     for (let x = c.back + 120; x + 10 < cutX0 - 12; x += 13) bp.holes.push(polyHole([[x, c.H - 30], [x + 6, c.H - 30], [x + 14, c.H - 10], [x + 8, c.H - 10]]));
-    b.add(extrude(bp, bpT, 0.6, 'xy', 6, 2), L.sink, xzAt(bpY + bpT), { uv: 'box' });
+    b.add(extrude(bp, bpT, 0.6, 'xy', 6, 2), L.sinkDark, xzAt(bpY + bpT), { uv: 'box' });
     const core: [number, number] = [c.back + 78, mid - 4];
     const arm = 30.5, half = 4.5, k = Math.SQRT1_2;
     const plus: [number, number][] = [[-arm, -half], [-half, -half], [-half, -arm], [half, -arm], [half, -half], [arm, -half], [arm, half], [half, half], [half, arm], [-half, arm], [-half, half], [-arm, half]];

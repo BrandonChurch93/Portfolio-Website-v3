@@ -17,11 +17,14 @@ const black = (k: number) => new THREE.Color().setRGB(k, k, k);
 // How far off a lens's axis a light may stand and still reach its glass past the barrel: the cosines where it starts
 // to and where it fully does.
 const SEE = ['0.2', '0.5'] as const;
+// How sharply a surface must turn, in radians per metre, to be an edge: a bevel of a few millimetres' radius.
+const TURN = ['70.0', '260.0'] as const;
 
 // A bump from the height's slope across the screen, in the scene's own units (Mikkelsen's surface gradient).
 const HEAD = /* glsl */ `
 uniform sampler2D uCamInk;
 uniform float uCamEnv;
+uniform float uCamFlat;
 varying vec4 vCamCell;
 varying vec2 vCamUv;
 vec3 camBump(vec3 n, vec2 dH, float face){
@@ -60,7 +63,7 @@ const COLOR = /* glsl */ `
     camFade = 1.0 - smoothstep(0.22, 0.5, length(fwidth(q)));
     camH = smoothstep(0.25, 0.75, wNoise(q) * 0.62 + wNoise(q * 2.4 + 7.0) * 0.38);
     camDx = vec2(dFdx(camH), dFdy(camH));
-    diffuseColor.rgb *= mix(1.0, 0.78 + 0.42 * camH, camFade);
+    diffuseColor.rgb *= mix(1.0, 0.62 + 0.65 * camH, camFade);
   } else if (camKind > ${P.ink - 0.5}) {
     // Engraving filled with paint: pale, or copper where the mask's green says so.
     vec4 k = texture2D(uCamInk, vCamUv);
@@ -88,7 +91,18 @@ const ENV = /* glsl */ `
 #endif
   iblIrradiance *= uCamEnv;`;
 
-interface Finish { color: THREE.Color | number; rough: number; metal?: number; coat?: number; coatRough?: number; env?: number; spec?: number }
+// A black thing reads black when its flat faces stay dark and only its edges catch a line of light. The clear coat is
+// kept to its full strength where the surface turns sharply under the pixel (a bevel, a rounded corner) and turned
+// down to uCamFlat on the flat and gently curved faces, which otherwise mirror the room's wide panels as a grey wash.
+const EDGE = /* glsl */ `
+#ifdef USE_CLEARCOAT
+{
+  float camTurn = length(fwidth(normalize(vNormal))) / max(length(fwidth(vViewPosition)), 1e-6);
+  material.clearcoat *= mix(uCamFlat, 1.0, smoothstep(${TURN[0]}, ${TURN[1]}, camTurn));
+}
+#endif`;
+
+interface Finish { color: THREE.Color | number; rough: number; metal?: number; coat?: number; coatRough?: number; env?: number; spec?: number; flat?: number }
 
 export interface CameraMaterials {
   paint: THREE.MeshPhysicalMaterial;
@@ -120,18 +134,18 @@ export function cameraMaterials(art: CameraArt): CameraMaterials {
       clearcoat: Math.max(0.02, f.coat ?? 0), clearcoatRoughness: f.coatRough ?? 0.3,
     });
     m.name = name;
-    m.userData.uniforms = { uCamInk: { value: art.ink }, uCamEnv: { value: f.env ?? 1 } };
+    m.userData.uniforms = { uCamInk: { value: art.ink }, uCamEnv: { value: f.env ?? 1 }, uCamFlat: { value: f.flat ?? 1 } };
     shade(m, 'camera-solid', { head: HEAD, vhead: VHEAD, vert: VERT, color: COLOR, rough: ROUGH, metal: METAL, normal: NORMAL });
     const before = m.onBeforeCompile.bind(m);
-    m.onBeforeCompile = (sh, r) => { before(sh, r); sh.fragmentShader = sh.fragmentShader.replace('#include <lights_fragment_maps>', `#include <lights_fragment_maps>\n${ENV}`); };
+    m.onBeforeCompile = (sh, r) => { before(sh, r); sh.fragmentShader = sh.fragmentShader.replace('#include <lights_fragment_maps>', `#include <lights_fragment_maps>\n${ENV}`).replace('#include <lights_physical_fragment>', `#include <lights_physical_fragment>\n${EDGE}`); };
     return m;
   };
 
   // Black paint over the castings, with a clear coat whose edges catch a line of light.
-  const paint = solid('camPaint', { color: black(0.004), rough: 0.5, spec: 0.15, coat: 0.14, coatRough: 0.14, env: 0.4 });
+  const paint = solid('camPaint', { color: black(0.003), rough: 0.55, spec: 0.08, coat: 0.8, coatRough: 0.07, env: 0.3, flat: 0.04 });
   // The top plate and the finder: satin dark steel, plainly grey and plainly darker than a bright metal.
-  const plate = solid('camPlate', { color: black(0.014), rough: 0.4, metal: 1, coat: 0.1, coatRough: 0.2, env: 0.7 });
-  const skin = solid('camSkin', { color: black(0.005), rough: 0.86, spec: 0.3, env: 0.4 });
+  const plate = solid('camPlate', { color: black(0.01), rough: 0.4, metal: 1, coat: 0.7, coatRough: 0.08, env: 0.5, flat: 0.06 });
+  const skin = solid('camSkin', { color: black(0.009), rough: 0.92, spec: 0.2, env: 0.35 });
   // The lenses' black anodised barrels, which carry the engraving.
   const barrel = solid('camBarrel', { color: black(0.004), rough: 0.45, metal: 0.2, spec: 0.4, coat: 0.12, coatRough: 0.3, env: 0.5 });
   const ribMetal = solid('camRibMetal', { color: black(0.006), rough: 0.32, metal: 0.3, spec: 0.5, env: 0.6 });
@@ -149,13 +163,13 @@ export function cameraMaterials(art: CameraArt): CameraMaterials {
   const gloss = solid('camGloss', { color: black(0.004), rough: 0.06, coat: 1, coatRough: 0.04 });
 
   // Lens glass is drawn as the light its surfaces reflect, added over what lies behind it, so the inside of the lens
-  // shows through. Its coatings reflect in pale and hot, never blue, green or violet. Sunk in its barrel it sees only
-  // the lights its opening faces: no light here casts a shadow through glass, and the monitor behind the camera
-  // showed in the prime as a pale card that never moved with the cursor.
+  // shows through. Its coatings reflect in pale and hot, never blue, green or violet. It mirrors the room and the
+  // lights that move or are small: the cursor's and the desk lamp's, and only those its barrel's opening faces. A wide
+  // panel that never moves showed in the prime as a flat pale card sitting in the same place whatever the cursor did.
   const seen = THREE.ShaderChunk.lights_fragment_begin
     .replace('getPointLightInfo( pointLight, geometryPosition, directLight );', 'getPointLightInfo( pointLight, geometryPosition, directLight ); directLight.color *= camSee( directLight.direction );')
     .replace('getSpotLightInfo( spotLight, geometryPosition, directLight );', 'getSpotLightInfo( spotLight, geometryPosition, directLight ); directLight.color *= camSee( directLight.direction );')
-    .replace('rectAreaLight = rectAreaLights[ i ];', 'rectAreaLight = rectAreaLights[ i ]; rectAreaLight.color *= camSee( normalize( rectAreaLight.position - geometryPosition ) );');
+    .replace('rectAreaLight = rectAreaLights[ i ];', 'rectAreaLight = rectAreaLights[ i ]; rectAreaLight.color = vec3( 0.0 );');
   const glassP = (name: string, spec: THREE.Color, rough: number) => {
     const m = new THREE.MeshPhysicalMaterial({
       color: 0x000000, metalness: 0, roughness: rough, ior: 1.9, specularIntensity: 1, specularColor: spec,
@@ -173,7 +187,7 @@ export function cameraMaterials(art: CameraArt): CameraMaterials {
     m.customProgramCacheKey = () => 'camera-glass';
     return m;
   };
-  const glass = glassP('camGlass', new THREE.Color(hex('pale')).multiplyScalar(2.2), 0.035);
+  const glass = glassP('camGlass', new THREE.Color(hex('pale')).multiplyScalar(2.6), 0.06);
   const coat = glassP('camCoat', new THREE.Color(hex('hot')).multiplyScalar(0.6), 0.22);
 
   // A short soft contact shadow under each thing: a rounded rectangle, in its own millimetres (uv), whose half sizes,

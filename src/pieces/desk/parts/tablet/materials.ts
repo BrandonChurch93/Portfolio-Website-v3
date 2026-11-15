@@ -15,22 +15,20 @@ export function tabletMaterials() {
   const shell = P('tabShell', { color: tone('text-3', 0.36), metalness: 1, roughness: 0.38 });
   // Every cut edge, on the tablet and on its stand, is left bright and pale: the chamfer line round the tablet, the
   // bevels round the stand's cheeks and slots, the corners of its lip, the screws' heads.
-  const chamfer = P('tabChamfer', { color: tone('text-2', 0.38).lerp(tone('pale', 0.38), 0.5), metalness: 1, roughness: 0.5 });
+  const chamfer = P('tabChamfer', { color: tone('text-2', 0.55), metalness: 1, roughness: 0.4 });
   // One dark polymer for the seam, the antenna lines, the port's mouth, the speaker holes and the screws' sockets.
   const band = P('tabBand', { color: tone('text-3', 0.1), metalness: 0, roughness: 0.6 });
   // The glass's edge, which is solid and catches its own line.
-  const glassEdge = P('tabGlassEdge', { color: tone('bg', 0.55), metalness: 0, roughness: 0.12, specularIntensity: 0.6, specularColor: tone('pale', 1) });
-  // Under the glass: the black of the border, and the picture.
+  const glassEdge = P('tabGlassEdge', { color: tone('bg', 0.55), metalness: 0, roughness: 0.12, specularIntensity: 0.6 });
+  // Under the glass: the black of the border. The picture is ./display.ts.
   // The black is lit like any surface, so the room's occlusion pass sees the tablet's face and not the stand behind it.
   const ink = P('tabInk', { color: tone('bg', 0.25), metalness: 0, roughness: 1, specularIntensity: 0 });
-  const display = new THREE.MeshBasicMaterial({ color: 0x000000 });
-  display.name = 'tabDisplay';
   // The glass in front of it all, drawn as the light it reflects, added over the picture. It is an etched glass,
   // so the room is a soft sheen on it and never a mirror: a long light lies across it as a soft streak, and the
   // cursor's light is a broad pool that slides across it with the cursor. uCur is where the cursor's light is over
   // the glass, in the tablet's own millimetres, and uSheen how much of the room is lit.
   const glass = shade(P('tabGlass', {
-    color: 0x000000, metalness: 0, roughness: 0.09, ior: 1.5, specularIntensity: 0.6, specularColor: tone('pale', 1.0),
+    color: 0x000000, metalness: 0, roughness: 0.09, ior: 1.5, specularIntensity: 0.6,
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
   }), 'tablet-glass', {
     vhead: 'varying vec2 vTabUv;',
@@ -53,14 +51,14 @@ export function tabletMaterials() {
   });
   glass.userData.uniforms = { uCur: { value: new THREE.Vector2(0, 0) }, uSheen: { value: 0.03 }, uSheenColor: { value: tone('pale', 1) } };
   // The camera in the border: its lens.
-  const lens = P('tabLens', { color: tone('bg', 0.4), metalness: 0, roughness: 0.04, specularColor: tone('pale', 1), specularIntensity: 1 });
+  const lens = P('tabLens', { color: tone('bg', 0.4), metalness: 0, roughness: 0.04, specularIntensity: 1 });
   // The stand: warm dark steel with a satin coat, machined, its rod in copper, its pads in rubber, its channel lined in a dark cloth.
-  const bronze = P('tabStand', { color: tone('text-3', 0.38), metalness: 0.7, roughness: 0.42 });
+  const bronze = P('tabStand', { color: tone('text-3', 0.24), metalness: 0.8, roughness: 0.45 });
   const screw = P('tabScrew', { color: tone('text-3', 0.3), metalness: 1, roughness: 0.3 });
   const rubber = P('tabRubber', { color: tone('text-3', 0.1), metalness: 0, roughness: 0.85 });
-  // The pencil: a satin barrel in charcoal, a polished copper collar, and a nib of pale warm grey.
-  const pencil = P('tabPencil', { color: tone('text-3', 0.08), metalness: 0, roughness: 0.68 });
-  // Copper is the accent: the pencil's collar and the stand's rod.
+  // The pencil: a satin barrel in charcoal, a polished steel band and collar, and a nib of pale warm grey.
+  const pencil = P('tabPencil', { color: tone('text-3', 0.06), metalness: 0, roughness: 0.72 });
+  // Copper is the one accent: the stand's rod.
   const copper = P('tabCopper', { color: hex('copper'), metalness: 1, roughness: 0.5 });
   const nib = P('tabNib', { color: tone('text-2', 0.1), metalness: 0, roughness: 0.78 });
 
@@ -102,7 +100,7 @@ void main(){
   });
   spill.name = 'tabSpill';
 
-  return { shell, chamfer, band, glassEdge, ink, display, glass, lens, bronze, copper, screw, rubber, pencil, nib, shadow, spill };
+  return { shell, chamfer, band, glassEdge, ink, glass, lens, bronze, copper, screw, rubber, pencil, nib, shadow, spill };
 }
 
 export type TabletMaterials = ReturnType<typeof tabletMaterials>;

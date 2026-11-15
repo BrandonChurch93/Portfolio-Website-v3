@@ -37,7 +37,7 @@ const ROWS: Entry[][] = [
   [['shift', 2.25], 'Z', 'X', 'C', 'V', 'B', 'N', 'M', ',', '.', '/', ['shift', 1.75], '↑', 'end'],
   [['ctrl', 1.25], ['◇', 1.25], ['alt', 1.25], ['', 6.25], 'alt', 'fn', 'ctrl', '←', '↓', '→'],
 ];
-const ACCENT = new Set(['esc', 'enter']);
+const ACCENT = new Set(['enter']);
 
 export const KEYS: Key[] = (() => {
   const out: Key[] = [];

@@ -5,8 +5,8 @@ import type { PartFactory, PartState } from '../part';
 import { ramp } from './keyboard/light';
 import { contactShadow } from './keyboard/shapes';
 import { kind } from './keyboard/model';
-import { KIND, mouseMaterials } from './mouse/materials';
-import { MOUSE, cradleGeometry, shellGeometry, sideButtons, skates, topAt, wheelGeometry } from './mouse/model';
+import { mouseMaterials } from './mouse/materials';
+import { KIND, MOUSE, cradleGeometry, shellGeometry, sideButtons, skates, topAt, wheelGeometry } from './mouse/model';
 
 // His mouse: a high end wireless gaming mouse with a sculpted shell, split main buttons, a wheel with a tread, two
 // thumb buttons, skates under it and one small light in the split behind the wheel, which comes on with the keys.
@@ -24,10 +24,10 @@ export const build: PartFactory = () => {
   const M = mouseMaterials();
   const b = new Builder();
   const shell = shellGeometry();
-  b.add(kind(shell.clone(), KIND.shell), M.mouse);
+  b.add(shell, M.mouse);
   for (const g of sideButtons(shell)) b.add(kind(g, KIND.thumb), M.mouse);
   for (const g of skates()) b.add(kind(g, KIND.skate), M.mouse);
-  const { z, r } = MOUSE.wheel, wy = topAt(shell, 0, z) + 2.4 - r;
+  const { z, r, proud } = MOUSE.wheel, wy = topAt(shell, 0, z, 3.5) + proud - r;
   b.add(kind(wheelGeometry().translate(0, wy, z), KIND.wheel), M.mouse);
   M.wheelY.value = wy;
   for (const g of cradleGeometry(wy)) b.add(kind(g, KIND.cradle), M.mouse);

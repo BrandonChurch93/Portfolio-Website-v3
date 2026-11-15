@@ -11,6 +11,8 @@ import type { Handle, MetalName, OtherName } from './materials';
 // rim and vented cap, and the cords.
 
 const UP = V(0, 1, 0);
+// The radii of the stem and the arm: thick enough to read as a clear line at the page's size.
+const STEM_R = 8.4, ARM_R = 7.2;
 type Of = Record<MetalName | OtherName | 'glow', Handle>;
 
 // Two builders, one for the large forms that cast shadows and one for the fine parts that do not, and each piece's
@@ -203,19 +205,19 @@ export function buildLamp(mats: Of): LampModel {
   // The stem: a bronze swivel on the boss, a dark steel tube, and a bronze collar that carries the elbow's ears.
   const top = ELBOW_Y;
   addTurn(b, [[13.2, 52], [13.8, 52.7], [13.8, 55.2], [13.2, 55.8], [13.8, 56.4], [13.8, 59.4], [13.0, 60.2], [9.6, 61.1], [8.3, 61.8]], mats.bronze, foot, 64);
-  addTurn(b, [[7.6, 61.6], [7.6, top - 34]], mats.steel, foot, 40);
-  addTurn(b, [[7.6, top - 34.2], [9.6, top - 33.6], [10.4, top - 32.2], [10.4, top - 27.4], [9.8, top - 26.2], [10.4, top - 25.4], [10.4, top - 24.6], [9.6, top - 23.8], [0.01, top - 23.6]], mats.steel, foot, 48);
-  knuckle(b, mats, { at: ELBOW, pin: ELBOW_PIN, down: UP.clone().negate(), arms: [ARM_DIR, ARM_DIR.clone().negate()], armR: 6, re: 11, ld: 24, hw: 8.5 });
+  addTurn(b, [[STEM_R, 61.6], [STEM_R, top - 34]], mats.steel, foot, 40);
+  addTurn(b, [[STEM_R, top - 34.2], [9.8, top - 33.6], [10.4, top - 32.2], [10.4, top - 27.4], [9.8, top - 26.2], [10.4, top - 25.4], [10.4, top - 24.6], [9.6, top - 23.8], [0.01, top - 23.6]], mats.steel, foot, 48);
+  knuckle(b, mats, { at: ELBOW, pin: ELBOW_PIN, down: UP.clone().negate(), arms: [ARM_DIR, ARM_DIR.clone().negate()], armR: ARM_R, re: 11.5, ld: 24, hw: 8.5 });
 
   // The counterweight beyond the elbow: a turned bronze weight on a short spigot.
   {
     const tail = ARM_DIR.clone().negate(), m = along(ELBOW, tail);
-    addTurn(b, [[6, 19.3], [4.6, 20.2], [4.6, 34]], mats.steel, m, 24);
+    addTurn(b, [[ARM_R, 19.8], [4.6, 20.8], [4.6, 34]], mats.steel, m, 24);
     addTurn(b, [[4.6, 33.6], [9, 34.2], [14.6, 35.6], [15.8, 37.2], [16, 46.8], [15.2, 47.6], [16, 48.4], [16, 58.8], [15.2, 59.6], [16, 60.4], [16, 68.4], [15.2, 70.4], [11.8, 71.8], [6.2, 72.5], [0.01, 72.7]], mats.steel, m, 64);
   }
 
   // The arm: one dark steel tube from the elbow to the shade's knuckle.
-  rod(b, ELBOW.clone().addScaledVector(ARM_DIR, 19.2), KNUCKLE.clone().addScaledVector(ARM_DIR, -18.2), 6, mats.steel, 32);
+  rod(b, ELBOW.clone().addScaledVector(ARM_DIR, 19.7), KNUCKLE.clone().addScaledVector(ARM_DIR, -18.2), ARM_R, mats.steel, 32);
 
   // The shade's knuckle, on a saddle riveted to the shade's flank.
   const side = AXIS.clone().cross(FLANK).normalize();
@@ -224,7 +226,7 @@ export function buildLamp(mats: Of): LampModel {
     const dir = FLANK.clone().multiplyScalar(Math.cos(t)).addScaledVector(side, Math.sin(t)), p = onShade(s, dir, 2.3), n = normalAt(s, dir);
     b.add(new THREE.SphereGeometry(1.7, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), mats.copper, frame(p, n, AXIS).multiply(new THREE.Matrix4().makeScale(1, 0.55, 1)));
   }
-  knuckle(b, mats, { at: KNUCKLE, pin: SHADE_PIN, down: SHADE_N.clone().negate(), arms: [ARM_DIR.clone().negate()], armR: 6, re: 10, ld: 16, hw: 8 });
+  knuckle(b, mats, { at: KNUCKLE, pin: SHADE_PIN, down: SHADE_N.clone().negate(), arms: [ARM_DIR.clone().negate()], armR: ARM_R, re: 10, ld: 16, hw: 8 });
 
   // The shade: spun copper, a pale enamel inside, a rolled rim, the crown's lip and the vented cap on its posts.
   const sm = new THREE.Matrix4().compose(CROWN, TURN, new THREE.Vector3(1, 1, 1));
@@ -270,26 +272,28 @@ export function buildLamp(mats: Of): LampModel {
     addTurn(b, [[3.6, 0], [3.6, 2.2], [3.0, 3.6], [2.6, 4.2]], mats.joint, along(g0, gn), 24);
     const armAt = (t: number, o: number) => ELBOW.clone().addScaledVector(ARM_DIR, t).addScaledVector(off, o);
     const path = [
-      g0.clone().addScaledVector(gn, 3.4), g0.clone().addScaledVector(gn, 12), armAt(ARM_LEN - 36, 10.5), armAt(ARM_LEN * 0.62, 9.4),
-      armAt(ARM_LEN * 0.3, 9.4), armAt(26, 13), ELBOW.clone().addScaledVector(away, 24).addScaledVector(UP, -18),
-      F.clone().setY(top - 64).addScaledVector(away, 11), F.clone().setY(150).addScaledVector(away, 10.6), F.clone().setY(70).addScaledVector(away, 11.4),
+      g0.clone().addScaledVector(gn, 3.4), g0.clone().addScaledVector(gn, 12), armAt(ARM_LEN - 36, 11.8), armAt(ARM_LEN * 0.62, 10.6),
+      armAt(ARM_LEN * 0.3, 10.6), armAt(26, 14), ELBOW.clone().addScaledVector(away, 24).addScaledVector(UP, -18),
+      F.clone().setY(top - 64).addScaledVector(away, 12.4), F.clone().setY(150).addScaledVector(away, 12), F.clone().setY(70).addScaledVector(away, 12.6),
       F.clone().setY(48).addScaledVector(away, 26.4), F.clone().setY(43.4).addScaledVector(away, 25),
     ];
     cordTube(b, path, 2.1, mats.cord);
     for (const t of [ARM_LEN * 0.62, ARM_LEN * 0.3]) {
-      const c = armAt(t, 4.7), m = frame(c, ARM_DIR, off);
-      b.add(new THREE.CylinderGeometry(1, 1, 1, 24, 1, true).scale(7.4, 4.2, 11.8), mats.steel, m);
+      const c = armAt(t, 5.3), m = frame(c, ARM_DIR, off);
+      b.add(new THREE.CylinderGeometry(1, 1, 1, 24, 1, true).scale(8.4, 4.2, 13.2), mats.steel, m);
     }
-    const sc = F.clone().setY(150).addScaledVector(away, 5.3);
-    b.add(new THREE.CylinderGeometry(1, 1, 1, 24, 1, true).scale(8.8, 4.2, 13.8), mats.steel, frame(sc, UP, away));
+    const sc = F.clone().setY(150).addScaledVector(away, 5.8);
+    b.add(new THREE.CylinderGeometry(1, 1, 1, 24, 1, true).scale(9.6, 4.2, 14.8), mats.steel, frame(sc, UP, away));
     addTurn(b, [[3.4, 0], [3.4, 1.8], [2.8, 3.0]], mats.joint, along(F.clone().setY(43.4).addScaledVector(away, 24.5), away.clone().negate()), 20);
   }
 
-  // The mains cord out of the back of the foot, over the desk's back edge.
+  // The mains cord out of the back of the foot, lying on the top in a curve away from the stream's side and over the
+  // desk's back edge. It drops
+  // only as far as the top is thick, so seen alone it does not hang into nothing.
   {
     const s0 = F.clone().add(V(0, 8.4, -86.2));
     addTurn(b, [[3.8, 0], [3.8, 3], [3.2, 9], [2.7, 15]], mats.felt, along(s0.clone().add(V(0, 0, 1)), V(0, 0, -1)), 24);
-    cordTube(b, [s0.clone().add(V(0, 0, -12)), s0.clone().add(V(1, -2.6, -22)), V(F.x + 3, 2.2, -384), V(F.x + 4, -1.2, -392.4), V(F.x + 4.4, -12, -395.6), V(F.x + 4.6, -60, -397), V(F.x + 4.8, -200, -398)], 2.2, mats.cord);
+    cordTube(b, [s0.clone().add(V(0, 0, -12)), s0.clone().add(V(1, -3.2, -20)), V(F.x + 8, 2.2, -366), V(F.x + 34, 2.2, -374), V(F.x + 52, 2.2, -384), V(F.x + 57, 0.2, -391), V(F.x + 59, -6, -394.6), V(F.x + 60, -18, -396)], 2.2, mats.cord);
   }
 
   const group = new THREE.Group();
