@@ -973,6 +973,20 @@ For Claude Code, added to the work it has in hand. His words are in the list abo
     - The flying vehicles run in lanes between the towers, as traffic, with a few larger craft.
     - With the cap this shallow the world is about 915 from the spire's tip to the lowest of what broke away.
 
+**The finished version, as planned by Fable for building (Nov 15). Items 19 to 27 above are the agreement. This is how each is being met, and every call here is his to overturn.**
+
+- **Item 19, the city's reach:** the city ends at 472 on the map, where the torn edge is at about 561 to 664, so about three quarters of the way out. It is as dense as it was, about 110 buildings where there were 213, with a ragged fringe so it does not end on a line. Four wedges cut into it: the jungle at the left, the dunes at the right, and two of open ground at the front. Item 19's "58 of the dome's 78 degrees" was written for the first dome, which he has since had flattened twice: the build keeps its meaning, a quarter of the way in.
+- **Item 20, bare ground at the rim:** from 472 to the torn edge nothing is built. The land's builder has it as bare ground, with the broken margin at its outer side.
+- **Item 21, polished metal:** every builder on top of the world has one recipe (`reference/kits/skycity.md`, "Polished metal"): a mirror, never a glow or a pale flat color, shaped to catch light. The stage's reflected room was rebuilt to give it things to reflect: the moon, the glow, strip lights overhead, at each side and in front. Whole towers clad in bronze and gold, copper domes, gilded rings on the spire, a mirror cap and metal casing on the pyramid, veins of metal coming up through the bare ground, and pools of mirror polished metal: one in each open wedge, one by the pyramid, one among the dunes.
+- **Item 22, the jungle:** trees 70 to 120 tall with giants to 170, as tall as the buildings beside them, crown to crown.
+- **Item 23, the second natural area: dunes.** A sea of pale gold sand at the right of the world, on the moonlit side, with a pool of mirror polished metal among them. The opposite of the jungle in every way: pale where it is dark, low and smooth where it is tall and tangled.
+- **Item 24, the monument: a colossal Sun disc** of polished gold standing on its rim, about 190 across, carved as Work's Sun stones are, with a boss and no face. It stands where the crag was, in the dunes at the right of the skyline: a circle at the right to match the pyramid's triangle at the left, with the spire between. The mountains at the left, behind the pyramid, are dropped with it, and the land is level.
+- **Item 25, the craft:** five to eight designed craft, each 45 to 90 long, and a few thin lanes of small lights threading the city's canyons. The builder is told to recommend none if they cannot be made good.
+- **Item 26, more kinds of building:** the city's builder is told ten buildings a stranger can call ten things. The gate at the end of the way to the spire is being made again in polished metal, or removed.
+- **All water is dropped** with the mountains: the pools of metal are where the lake was.
+- **The port is dropped** with its crag.
+- **Item 27:** the torn underside, the core, the debris, the sky and the layout are not being worked on. Stills of them from before are kept to compare.
+
 ### Work
 
 - One section. A centered title. No featured card.

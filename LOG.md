@@ -2,6 +2,31 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · The finished version: the plan redrawn and eight builders on it (Fable, Claude Code)
+
+**What Brandon said**
+
+- The prompt in the entry below, after he scrolled the first standing build on the live site. "The planet is right. What stands on it is not yet."
+
+**What was done**
+
+- Main brought in with nothing lost (a rebase in the side checkout and `reset --keep`). The builders' uncommitted files were untouched.
+- `layout.ts` redrawn: `CITY.r` 472, `RINGS` to match with a ragged fringe, `DISTRICTS` with the jungle and the dunes as wedges, two open wedges at the front and a `monument`, `MONUMENT`, `DUNES`, `PEAKS` empty and `relief` 0 (the mountains and all water dropped), the port dropped. `part.ts`: `dunes`, `monument` and `craft` in place of `port`. The three new parts are empty until their builders hand back, so nothing that is a stand in is drawn.
+- `index.ts`: the room the world reflects rebuilt for polished metal (`ROOM`): the moon, the glow, strips overhead, at each side and in front of the world.
+- `reference/kits/skycity.md`: "The finished version (Nov 15)", with one recipe for polished metal that every builder shares.
+- Builders: the city, the land, the jungle and the spire redirected. Four new: the Sun disc, the dunes, the craft, and a fresh one on the pyramid and the way.
+- Stills of the hero at rest and at two scrolls from before, in `shots/before/`, for test 20.
+
+**Fable's calls, written into `BRIEF.md`:** the second natural area is dunes, the monument is a Sun disc carved as Work's stones, the mountains behind the pyramid go with the crag, the water becomes pools of metal.
+
+**Half finished, and what the next session needs**
+
+- Eight builders are running. Their files are uncommitted until each hands back: commit named paths only.
+- `src/pieces/skycity/parts/port.ts` and `parts/port/` are no longer loaded. Delete them once the craft's builder has handed back: it was told to copy what it wants.
+- `parts/ground/shape.ts` and `rock.ts`, and `GROUND.rim`, `GROUND.rock`, `FALLS` in `layout.ts`, are leftovers to delete once nothing reads them.
+- The frame rate holds 60 in the test browser only with the world's canvas held to 2.8 million pixels. Not measured on a 120 Hz screen. The first frame is about 1.5 seconds, mostly the land, whose builder has a target of 250 ms.
+- Not pushed since the first standing build.
+
 ## 2026-11-14 · The finished version of what stands on the world: agreed, written in, and the prompt (Fable, web chat)
 
 **What Brandon said**
