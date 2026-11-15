@@ -155,6 +155,40 @@ Show me the city as soon as it stands in the hero, and say plainly what is at th
 - Waiting on his look: the layout, how much of the city shows, when the stream sets off. Then the agreement for the hero: the city made again, the opening, and how the falls are made.
 - Still open: the two buttons' words, which are his. His second paragraph goes to About when he rewrites it.
 
+## 2026-11-14 · His look at the city: a small world, the metals, rings on the spire. And Contact's first review (Fable, Claude Code)
+
+**What Brandon said**
+
+- Three changes to the city, in `BRIEF.md`, Settled, "The hero, the city at rest", item 4: "The spire needs rings round it, like the old city's spire has... Use the old one as a reference. Do not bring the old model back." "More of our metals on the city. Gold, bronze and copper, polished and catching light... It still must not turn into one orange mass." "It is towers from rim to rim, like New York. I want it to feel like a whole small world on a floating island: a core of towers, and round it other kinds of place... What I do not want is sameness. Any nature is in the site's colors, not green. Think a Star Trek future city with ancient Egypt flair."
+
+**What was done**
+
+- The city's plan redrawn (`layout.ts`: `DISTRICTS`, `districtAt`, `TOWN`, a new `lots()`), three new parts added to the piece (`temple`, `gardens`, `port`, empty until built), the kit given a section that overrides the rest, and six builders started, one a part.
+- Contact's first independent review, and the six things in it that were Fable's, mended and checked on a production build. `BRIEF.md`, "Contact, the first build, as built".
+- The hero's falls (`falls` in `Planned`, extra runs of core in the stream's renderer, `route-hero.ts` holds the main fall to the keel).
+- The bench's fifth round is in: planks with flat sawn figure, the angle's edge holds still (measured), mid tone saturation 0.33 from 0.45. Its reviewers: holds as timber at the page's size, still "a procedural CG wood shader" close up, legs "black on black".
+- Contact and the hero each hold 120 frames a second at rest and on a scroll in a real window.
+
+**Not pushed, on purpose**
+
+- Everything since the plan was redrawn is committed and not pushed: with it, the live city would be a core of towers on a bare disc until the new parts land. Push when the first of the new places are in. Until then the live site shows the first full build.
+
+**With agents now**
+
+- The city's six parts (spire, towers, ground, temple, gardens, port) and the night sky with the glow.
+
+**What the next session would otherwise rediscover**
+
+- One half edited file anywhere in a piece breaks the dev server for every page, because `src/pieces/load.ts` reaches all of them. With six builders on one piece it is broken much of the time. Check on a production build of what is committed: `ship2`, served on 5332. The screenshot scripts take a 500 for no server and try to start one: pass `--url`.
+- A loop in the background keeps one dev server on 5330 (`while true; do if ! lsof -ti :5330 ...`), so scripts stop starting and stopping their own.
+- `streamThrown()` gives seed, x, y for each thrown shard. `ctthrown.mjs` and `ctback.mjs` in the scratch `tools/` measure where they go against the stone and the order things go away in.
+
+**Next**
+
+- Take the city's parts as they land, look at the whole, push, and show him. Then fresh reviewers on the hero.
+- The pad's second round, three builders, from the reviewer's notes: the rocket and its plume, the stone's smear and patina, the table's light and the tower's arms.
+- The sky into the hero's page. The desk's room light (a rim light was asked for by three builders: it is the stage's).
+
 ## 2026-11-14 · His look at the report: the word half way back, the pencil and the headphones as the real products (Fable, Claude Code)
 
 **What Brandon said**
