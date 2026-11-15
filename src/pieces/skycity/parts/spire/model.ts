@@ -56,18 +56,8 @@ function ringAt(o: Hoop, r: number, deg: number, up = 0): THREE.Vector3 {
   return polar(r, deg, up).applyMatrix4(ringMatrix(o));
 }
 function hoop(b: Parts, o: Hoop, h: Handle, seg: number): void {
-  const pts: THREE.Vector2[] = [], d = o.d, t = o.h, add = (x: number, y: number) => pts.push(new THREE.Vector2(o.r + x, y));
-  const c = 0.35 * t;
-  add(0.45 * d, -t);
-  for (let i = 0; i <= 3; i++) { const a = -Math.PI / 2 - (i / 3) * (Math.PI / 2); add(-d + c + c * Math.cos(a), -t + c + c * Math.sin(a)); }
-  for (let i = 0; i <= 3; i++) { const a = Math.PI - (i / 3) * (Math.PI / 2); add(-d + c + c * Math.cos(a), t - c + c * Math.sin(a)); }
-  add(0.45 * d, t);
-  const bead = t / 3;
-  for (let k = 0; k < 3; k++) {
-    const cy = t - bead - k * 2 * bead;
-    for (let i = 0; i <= 5; i++) { const a = Math.PI / 2 - (i / 5) * Math.PI; add(d - bead * 0.95 + bead * 0.95 * Math.cos(a), cy + bead * Math.sin(a)); }
-  }
-  add(0.45 * d, -t);
+  const pts: THREE.Vector2[] = [], n = 22;
+  for (let i = 0; i <= n; i++) { const a = -Math.PI / 2 - (i / n) * Math.PI * 2; pts.push(new THREE.Vector2(o.r + o.d * Math.cos(a), o.h * Math.sin(a))); }
   b.add(new THREE.LatheGeometry(pts, seg), h, ringMatrix(o));
 }
 
@@ -361,8 +351,8 @@ export async function buildSpire(of: Of): Promise<SpireModel> {
     turn(b, [[3, DOME.to - 1], [9, DOME.to - 0.4], [9, DOME.to + 1.2], [6.5, SUN.y - SUN.r + 2.2], [3, SUN.y - SUN.r + 3.6]], of.gold, 96, 40);
     b.add(new THREE.SphereGeometry(SUN.r, 48, 30).translate(0, SUN.y, 0), of.sun);
     for (const o of CROWN) {
-      hoop(b, o, of.gold, 112);
-      for (let i = 0; i < o.lights; i++) b.add(new THREE.OctahedronGeometry(1.15).scale(1, 0.75, 1).applyMatrix4(new THREE.Matrix4().setPosition(ringAt(o, o.r + o.d * 0.25, (i + 0.5) * (360 / o.lights), o.h + 0.25))), of.stud, undefined, false);
+      hoop(b, o, of.gold, 104);
+      for (let i = 0; i < o.lights; i++) b.add(new THREE.OctahedronGeometry(1.15).scale(1, 0.75, 1).applyMatrix4(new THREE.Matrix4().setPosition(ringAt(o, o.r + o.d + 0.3, (i + 0.5) * (360 / o.lights), -o.h * 0.35))), of.stud, undefined, false);
       for (const a of PIERS) {
         const p = ringAt(o, o.r - o.d * 0.6, a), edge = bladeEdge(p.y);
         b.add(bar(polar(edge - 1, a, p.y), p, o.h * 1.6, 2.4), of.gold);

@@ -18,19 +18,19 @@ export const U = {
 interface Solid { color: number; rough: number; metal: number }
 const tone = (n: PaletteName, k: number) => new THREE.Color(hex(n)).multiplyScalar(k).getHex();
 // Gold: a polished metal at the palette's own hue, between copper-light and hot, never a yellow brass.
-const GOLD = new THREE.Color(hex('copper-light')).lerp(new THREE.Color(hex('hot')), 0.7).getHex();
+const GOLD = new THREE.Color(hex('copper-light')).lerp(new THREE.Color(hex('hot')), 0.7).lerp(new THREE.Color(hex('pale')), 0.35).getHex();
 // Copper: the palette's own, redder and darker than the gold beside it.
 const COPPER = hex('copper');
 // The three metals differ in value and in finish, so they can be told apart without hue: gold is the lightest and
-// mirror polished, copper is the orange one and satin, bronze is dark and brushed. Against them the stone is pale and
+// the most mirror like, copper redder and darker, bronze brown and darkest. Against them the stone is pale and
 // matte, the steel near black, and the glass dark.
 export const SOLID = {
   stone: { color: 0x544d46, rough: 0.7, metal: 0 },
   // The courses, the roofs and the door's reveals, a darker stone.
   base: { color: 0x403a34, rough: 0.8, metal: 0 },
-  gold: { color: GOLD, rough: 0.1, metal: 1 },
-  copper: { color: COPPER, rough: 0.14, metal: 1 },
-  bronze: { color: tone('bronze', 0.8), rough: 0.17, metal: 1 },
+  gold: { color: GOLD, rough: 0.09, metal: 1 },
+  copper: { color: COPPER, rough: 0.13, metal: 1 },
+  bronze: { color: tone('bronze-deep', 1.1), rough: 0.17, metal: 1 },
   // Polished black stone for the shaft's pilasters: the obelisk's own stone, drawn by the light on its arrises.
   jet: { color: 0x15120f, rough: 0.2, metal: 0.25 },
   // Blackened steel: the deck's top, the struts, the needle.
@@ -49,6 +49,9 @@ const arr = <T>(type: string, xs: T[], f: (x: T) => string) => `${type}[${xs.len
 const f1 = (x: number) => x.toFixed(3);
 
 const HOLD = { knee: 0.9, top: 1.35 };
+// Polished metal's ceiling: high enough that the strips' highlights run to the palette's pale, low enough that the
+// moon, many hundred times brighter in a mirror, does not flood the stage's glow over the whole crown.
+const MIRROR = { knee: 4, top: 24 };
 // The heights of the lit rings, for the light each lays on what is under it.
 const RINGS_Y = CROWN.map((c) => c.y);
 const COMMON = /* glsl */ `
@@ -69,6 +72,7 @@ float bearing(vec3 p){ return atan(p.x, p.z); }
 float pulseAt(float y){ return exp(-pow((y - uPulse) / 40.0, 2.0)); }
 // What the room and the cursor's light reflect is held under pale, so a glint on glass or polished metal stays a glint
 // and never blooms. The spire's own lights are added after.
+vec3 mirrorHeld(vec3 c){ float m = max(c.r, max(c.g, c.b)); if (m <= ${f1(MIRROR.knee)}) return c; float e = m - ${f1(MIRROR.knee)}; return c * (${f1(MIRROR.knee)} + e / (1.0 + e / ${f1(MIRROR.top - MIRROR.knee)})) / m; }
 vec3 heldUnder(vec3 c){ float m = max(c.r, max(c.g, c.b)); if (m <= ${f1(HOLD.knee)}) return c; float e = m - ${f1(HOLD.knee)}; return c * (${f1(HOLD.knee)} + e / (1.0 + e / ${f1(HOLD.top - HOLD.knee)})) / m; }
 `;
 const HOLD_CHUNK = 'outgoingLight = heldUnder(outgoingLight - totalEmissiveRadiance) + totalEmissiveRadiance;\n#include <opaque_fragment>';
@@ -219,8 +223,7 @@ float cartouche(vec2 q, float px){
   float lm = uLift + ${f1(LIFT.tall / 2)};
   if ((sk == ${K('stone')} || sk == ${K('jet')}) && vObj.z > 0.0) totalEmissiveRadiance += heat(0.7) * 0.2 * exp(-abs(vObj.y - lm) / 5.0) * exp(-abs(vObj.x) / 2.5) * step(${f1(LIFT.levels[0] - 2)}, vObj.y);`,
     room: `#if defined( USE_CLEARCOAT )\n  clearcoatRadiance *= 0.0;\n#endif`,
-    // Polished metal is a mirror: what it reflects is never held down, so a highlight on it can run to pale.
-    hold: `if (SM[sk] < 0.9) outgoingLight = heldUnder(outgoingLight - totalEmissiveRadiance) + totalEmissiveRadiance;\n#include <opaque_fragment>`,
+    hold: `outgoingLight = (SM[sk] < 0.9 ? heldUnder(outgoingLight - totalEmissiveRadiance) : mirrorHeld(outgoingLight - totalEmissiveRadiance)) + totalEmissiveRadiance;\n#include <opaque_fragment>`,
   });
   return m;
 }
@@ -351,7 +354,7 @@ vec3 rooms(vec3 p, vec3 cam){
   }
   if (glassy) { float face = abs(dot(normal, normalize(vViewPosition))); em *= lk == ${L('gallery')} ? mix(0.12, 1.0, pow(face, 1.6)) : mix(0.3, 1.0, pow(face, 0.6)); }
   totalEmissiveRadiance += em;`,
-    room: `#if defined( USE_CLEARCOAT )\n  clearcoatSpecularDirect *= glassy ? 0.15 : 1.0;\n  clearcoatRadiance *= lk == ${L('sun')} ? 1.2 : lk == ${L('gallery')} ? 2.5 : glassy ? 2.5 : 1.0;\n#endif\n  radiance *= lk == ${L('sun')} ? 0.8 : lk == ${L('gallery')} ? 1.5 : glassy ? 2.0 : 1.0;\n  // The cursor's light is a small reflection on glass, not a glare across a face.\n  reflectedLight.directSpecular *= glassy ? 0.2 : 1.0;`,
+    room: `#if defined( USE_CLEARCOAT )\n  clearcoatSpecularDirect *= glassy ? 0.15 : 1.0;\n  clearcoatRadiance *= lk == ${L('sun')} ? 1.2 : 1.0;\n#endif\n  radiance *= lk == ${L('sun')} ? 0.8 : 1.0;\n  // The cursor's light is a small reflection on glass, not a glare across a face.\n  reflectedLight.directSpecular *= glassy ? 0.2 : 1.0;`,
   });
   return m;
 }
