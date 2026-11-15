@@ -1227,6 +1227,11 @@ His words are in Skills above, "What he wants changed after seeing the desk on t
 8. **The word is part of the desk's picture.** It lies on the floor: the legs' shadows cross it, and the PC's glow and the cursor's light land on it. No letter is hidden behind a leg, a drawer or the PC. It is read at a glance.
 9. **Nothing else of the desk moves or changes,** and the stream's route is as it was.
 
+*His look at the word on the floor (Nov 14).* "I think the title skills should be shrink slightly and moved upwards." "I'd just like to see it slightly smaller and a bit more under the desk. I noticed there's like a hard shadow right there that's like a line. Be nice if the word skills was cut by that shadow, maybe in half or almost?" He sent a rough sketch and said not to take it literally. Fable restated it and he confirmed: "Yes, you have it exactly with the title Skill."
+
+- In exact terms: the word is a little smaller (capitals 170 mm on the floor, from 200) and lies further under the desk (its middle 110 mm further back), so that the edge of the shadow the desk's top throws on the floor from the cursor's light falls across the letters. With the cursor near the middle of the screen the lower half of the letters is lit and the upper half is in shadow. The edge moves with the cursor, so the cut moves across the word.
+- The word's paint was made to show it: it gives back less light than it did and has less light of its own, so the lit half and the shadowed half differ.
+
 *Fable's calls in this agreement, each his to overturn:*
 
 - "Mimicking the lamp" is read as standing up at the mirrored place, on a stand, so the two ends of the top balance. If he meant them lying on the top, he says so.
