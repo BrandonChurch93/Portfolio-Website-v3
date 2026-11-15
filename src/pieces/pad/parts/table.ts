@@ -1,18 +1,37 @@
 import * as THREE from 'three';
-import { TABLE } from '../layout';
+import { registry } from '../../../hooks/registry';
+import { LAUNCH, TABLE } from '../layout';
 import type { PartFactory } from '../part';
+import { STAIR, buildTable } from './table/model';
+import { setStone, steelMaterials } from './table/steel';
 
-// A stand in until the table is made: a deck on four legs.
-export const build: PartFactory = () => {
-  const group = new THREE.Group(), steel = new THREE.MeshStandardMaterial({ color: 0x2a2826, roughness: 0.5, metalness: 0.9 });
-  const w = TABLE.r - TABLE.l, deck = new THREE.Mesh(new THREE.BoxGeometry(w, TABLE.top - TABLE.under, TABLE.deep), steel);
-  deck.position.set((TABLE.l + TABLE.r) / 2, (TABLE.top + TABLE.under) / 2, 0);
-  group.add(deck);
-  for (const x of [TABLE.l + 14, TABLE.r - 14]) for (const z of [-TABLE.deep / 2 + 12, TABLE.deep / 2 - 12]) {
-    const leg = new THREE.Mesh(new THREE.BoxGeometry(10, TABLE.under, 10), steel);
-    leg.position.set(x, TABLE.under / 2, z);
-    group.add(leg);
-  }
-  group.traverse((o) => { o.castShadow = o.receiveShadow = true; });
-  return { group, alone: { at: [(TABLE.l + TABLE.r) / 2, TABLE.top / 2, 0], r: w * 0.6 } };
+// The launch table: a steel deck over a box girder on eight legs round the stone's boss, the flame hole through it,
+// hold downs for the rocket's skirt, a rail, a stair down to the stone, and the lines from the tower's foot. It is lit
+// from below by the stone as it fills, and once the rocket has gone it stands empty on the lit stone.
+
+// The hold downs' jaws let go as the rocket lifts: when they start, in seconds from the launch, how long they take,
+// and how far they swing out, in radians.
+const LET_GO = { at: LAUNCH.lift - 0.15, take: 0.3, swing: 0.95 };
+const ease = (x: number) => { const t = Math.min(1, Math.max(0, x)); return t * t * (3 - 2 * t); };
+
+export const build: PartFactory = async () => {
+  const mats = steelMaterials();
+  const { group, tris, jaws } = await buildTable(mats);
+  registry.tool('tableStats', () => ({ tris, meshes: group.children.length }));
+  return {
+    group,
+    alone: { at: [(TABLE.l + TABLE.r + STAIR.run) / 2, TABLE.top / 2 + 4, 0], r: 105 },
+    update(s) {
+      setStone(s.fill);
+      const k = ease((s.launch - LET_GO.at) / LET_GO.take);
+      for (const j of jaws) j.group.rotation.x = -j.side * k * LET_GO.swing;
+      return false;
+    },
+    dispose() {
+      group.traverse((o) => { if (o instanceof THREE.Mesh) o.geometry.dispose(); });
+      mats.cast.dispose();
+      mats.fine.dispose();
+      mats.halo.dispose();
+    },
+  };
 };
