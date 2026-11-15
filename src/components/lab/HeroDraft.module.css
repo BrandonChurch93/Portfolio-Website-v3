@@ -17,7 +17,7 @@
   overflow: visible;
 }
 
-/* The night sky and the city's glow. The stars are there before the city is, and the glow comes up with it. */
+/* The night sky and the world's glow. */
 .sky {
   fill: var(--pale);
 }
@@ -33,19 +33,14 @@
   opacity: 0.55;
 }
 
-.skyglow {
-  translate: 0 calc(var(--lift) * var(--u));
-  opacity: calc(var(--draw) * var(--draw));
-}
 
 .page[data-sky='false'] .sky,
 .page[data-sky='false'] .skyglow {
   display: none;
 }
 
-/* The city is outlines: its look is not in this draft. It draws itself, then moves down to where it rests. */
+/* The world is outlines: its look is not in this draft. */
 .city {
-  translate: 0 calc(var(--lift) * var(--u));
   fill: var(--bg-2);
   stroke: var(--copper-light);
   stroke-width: 1.4;
@@ -53,39 +48,74 @@
   stroke-linecap: round;
 }
 
-.city path,
-.city ellipse {
-  stroke-dasharray: 1;
-  stroke-dashoffset: calc(1 - var(--draw));
-  fill-opacity: var(--draw);
+.planet {
+  fill: var(--bg-2);
+  stroke-width: 1.6;
 }
 
-.rock {
+.strata {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+
+.tower,
+.low {
   fill: var(--bg);
 }
 
 .spire {
+  fill: var(--bg);
   stroke-width: 2;
 }
 
-.park {
+.rings {
+  fill: var(--bg);
+  stroke-width: 1.4;
+}
+
+.dome,
+.tree,
+.crack {
   fill: none;
   stroke: var(--copper);
 }
 
+.farm {
+  fill: color-mix(in srgb, var(--copper) 30%, transparent);
+  stroke: var(--copper);
+  stroke-width: 1;
+}
+
+.pyramid {
+  fill: color-mix(in srgb, var(--copper) 18%, var(--bg));
+}
+
 .falls {
   stroke: none;
-  opacity: calc(var(--draw) * var(--draw));
 }
 
-.main {
-  fill: var(--flame);
-  opacity: 0.35;
-  transition: opacity 0.4s var(--ease-settle);
+.core {
+  fill: url(#hero-core);
+  stroke: var(--hot);
+  stroke-width: 1.5;
 }
 
-.page[data-on='true'] .main {
-  opacity: 1;
+.orbit {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1;
+  stroke-dasharray: 3 9;
+}
+
+.debris {
+  fill: var(--bg-2);
+  stroke-width: 1;
+}
+
+.debris[data-big='true'] {
+  fill: color-mix(in srgb, var(--copper) 16%, var(--bg-2));
+  stroke-width: 1.3;
 }
 
 .stream {

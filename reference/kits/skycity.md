@@ -1,5 +1,7 @@
 # Kit · the city in the hero
 
+**Changed Nov 14, night.** The city no longer stands on a flat disc. It stands on the torn top of a small planet, with the planet's core showing in the tear, debris round it, and the stream coming out of the core. `BRIEF.md`, Settled, "The hero, the city at rest", items 3, 4, 7, 8, 12 and 14 to 18, and the wireframe at `/lab/hero-draft` (`src/hero/plan.ts`). What follows was written for the disc: its ground, its plan of lots and its view are what change.
+
 Read `reference/kits/README.md` first: the bar, the colors and "The look" hold for everything here. This is `src/pieces/skycity/`, one piece with one stage, as the desk and the launch pad are (`reference/kits/desk.md`, `reference/kits/pad.md`), and each of its things is a part with a builder of its own: the ground that floats, the spire, and the towers.
 
 `BRIEF.md`, Settled, "The hero, the city at rest", items 3 to 7 and 10, is the agreement. `QUALITY.md`, "The hero, the city at rest", tests 2, 3, 7 and 8, is how it is judged. The wireframe he approved is at `/lab/hero-draft` (scroll it): it settles where the city sits and how much of it shows, and nothing about its look. It is the first thing a visitor sees, and it is the thing he has asked for longest.

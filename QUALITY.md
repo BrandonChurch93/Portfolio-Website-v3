@@ -550,17 +550,21 @@ What the build taught:
 
 ## The hero, the city at rest
 
-`BRIEF.md`, Settled, "The hero, the city at rest", is the agreement. It passes when all of these are true:
+`BRIEF.md`, Settled, "The hero, the city at rest", is the agreement, as changed the night of Nov 14: the city stands on the torn top of a small planet. It passes when all of these are true:
 
-1. **The layout holds on four screens** (1440 by 900, 1366 by 768, 1920 by 1080, 1720 by 1300), measured: the rim and every fall are under the foot of the screen at rest, about half of the city or more shows, and nothing of the city is behind a word or a button. Give the numbers.
-2. **A stranger shown one still says "a city of the future",** and says it looks like a real model and not a drawing. Close up it is not the weaker work beside `reference/bar/pc-builder-parts.jpg`.
-3. **Its metals:** gold, bronze and copper are plainly on it and catch light, and beside a Work card and a Sun stone it is of the same family. It is still not one orange mass: sampled, its darks, its mid tones and its bright metal are three different things, and a stranger can point to stone, metal and glass. **It is more than buildings:** the same stranger names at least three kinds of thing in it that are not towers. The spire has rings.
-4. **The glow has no edge.** No rectangle, no banding, and it reads as light in the sky and not as fog on the city.
-5. **The sky:** nothing of it behind the words' block, nothing with any blue in it, nothing below where Work begins, and fewer stars near the glow than in the corners. Counted. A stranger shown the top of the screen says it is a night sky and that it is not this world's. Close up, a four pointed star is light with a core and thin rays, not a drawn cross, and the moon has a surface. Nothing in the sky is brighter than the city.
-6. **The falls and the stream:** the falls are plainly the stream's own light. In real frames of a scroll the stream leaves the main fall with no gap and no jump and strikes Work's bar dead center.
-7. **Nothing crawls or sparkles** on the city when the page is scrolled slowly or the cursor moves.
-8. **The frame rate holds,** numbers given, with the processor slowed four times as well, and the first frame's cost is given.
+1. **The layout holds on four screens** (1440 by 900, 1366 by 768, 1920 by 1080, 1720 by 1300), measured. At rest the spire and the crown of the world show, with the ground itself seen across at least half the screen's width. The torn edge, the core and the debris are under the foot of the screen. Nothing of the world is behind a word or a button. Give the numbers.
+2. **A stranger shown one still of the whole world says what it is:** a city on a piece of a planet that has been torn or broken in half, with its core showing. And says it looks like a real model that was photographed, not a drawing and not a game. Close up it is not the weaker work beside `reference/bar/pc-builder-parts.jpg`.
+3. **Its metals:** gold, bronze and copper are plainly on it and catch light, and beside a Work card and a Sun stone it is of the same family. It is still not one orange mass: sampled, its darks, its mid tones and its bright metal are three different things, and a stranger can point to stone, metal and glass. **It is more than buildings:** the same stranger names at least three kinds of thing on it that are not towers. The spire has rings.
+4. **The glow has no edge.** No rectangle, no banding, and it reads as light in the sky and not as fog on the world.
+5. **The sky:** nothing of it behind the words' block, nothing with any blue in it, nothing below where Work begins, and fewer stars near the glow than in the corners. Counted. A stranger shown the top of the screen says it is a night sky and that it is not this world's. Close up, a four pointed star is light with a core and thin rays, not a drawn cross, and the moon has a surface. Nothing in the sky is brighter than the world.
+6. **The stream comes out of the core.** In real frames of a scroll it leaves the core with no gap and no jump, falls through the debris and strikes Work's bar dead center. The streams from the torn face are plainly the same light.
+7. **Nothing crawls or sparkles** on the world when the page is scrolled slowly or the cursor moves.
+8. **The frame rate holds** on a scroll from the top of the page to Work, numbers given, with the processor slowed four times as well, and the first frame's cost is given. With the core and the debris off the screen they cost nothing: measured.
 9. **Nothing in Work, Skills, About or Contact has changed.**
+10. **Torn, not cut.** A stranger shown the underside says it was ripped, broken or blown apart, and does not say cut, sliced or carved. No flat plane and no clean line can be found in it. The planet's layers can be counted in the break.
+11. **The core is a 3D thing and it is the stream's.** In real frames it moves, and it has depth: something of it passes in front of something else. A stranger shown the core and a still of the stream on `/lab/work` says they are the same stuff. It is not read as lava, a sun or a lamp.
+12. **The debris is of many kinds.** In real frames three ways of moving can be told apart: orbiting, holding still to the core, tumbling. Its sizes run from slabs to shards. Its smallest pieces cannot be told from the stream's shards. None is over the words, and it thins out before Work.
+13. **Room before Work.** On each of the four screens there is a place in the scroll where the torn underside, the whole core and the debris are on the screen and nothing of Work is.
 
 ## The whole page so far
 

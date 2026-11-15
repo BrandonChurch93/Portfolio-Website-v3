@@ -18,7 +18,7 @@ export default function Index() {
         </li>
         <li>
           <Link href="/lab/hero-draft">The hero, a wireframe</Link>
-          <span className={styles.minor}>Phase 3 · layout A as outlines: your words centered over the city, the city resting low with its falls under the foot of the screen, and the stream setting off from the main fall as you scroll</span>
+          <span className={styles.minor}>Phase 3 · layout A as outlines: your words over the top of a small world, its torn underside, its core and its debris under the foot of the screen, and the stream setting off from the core as you scroll</span>
         </li>
         <li>
           <Link href="/lab/whole">The whole page so far</Link>

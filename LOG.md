@@ -2,6 +2,72 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · The city becomes a torn world: the agreement rewritten, the wireframe redrawn (Fable, web chat)
+
+**What Brandon said**
+
+- Not a platform. The ground is the top of a small planet, a little less than half a sphere, curved side up, torn in half underneath, with streams leaving the torn face, the planet's core showing and burning, and the site's stream coming out of the core. It is to be the best 3D thing on the site and to look like a real object.
+- Then: debris round the torn underside, orbiting, holding still to the core and more, in many variations, kin to the stream's shards. And more room between the hero and Work.
+- His words are in `BRIEF.md`, Settled, Hero.
+
+**What was done**
+
+- `BRIEF.md`, Settled, "The hero, the city at rest": items 1, 3, 4, 7, 8 and 12 rewritten, items 14 to 18 new. `QUALITY.md`: tests 1, 2, 6 and 8 changed, tests 10 to 13 new. A note at the top of `reference/kits/skycity.md`.
+- `/lab/hero-draft` redrawn: `src/hero/plan.ts` and `HeroDraft.tsx`. The dome, what stands on it, the tear and the planet's layers, the core, the streams from the tear, the debris, and Work 480 units under the lowest debris. The wireframe's opening is out: he does not want one that traces outlines.
+- Still: `reference/studies/57-hero-the-torn-world-at-rest-and-scrolled.jpg`.
+
+**What Fable decided, and why**
+
+- **The world is as wide as the disc was, 1320 units at its torn edge.** A dome that wide is about 535 units tall, so with its spire, its inside and its debris the whole thing is about 1220 units: taller than a screen. So at rest only the spire and the crown show, and the rest comes up on the scroll. A world small enough to show whole would have been about 850 wide and its crown at rest about 550.
+- **The spire is 220, down from 260,** so more of the ground shows at rest. On a 16 to 9 screen 260 left only 78 units of the dome in sight.
+- **A taller screen shows more of the world.** The spire's tip hangs a set way under the buttons on every screen. This replaces drawing the city larger on a tall screen.
+- **Things stand straight out from the ground,** so the skyline fans.
+- **Work is 480 units under the lowest debris.** With the torn edge at the top of a 900 px screen, Work's title is still under its foot.
+
+**Measured from the plan**
+
+- At rest the ground is in sight across about 930 units of the board's 1460 on 1440 by 900, about 790 on a 16 to 9 screen and about 1140 on 1720 by 1300. The torn edge is under the foot of the screen on all of them.
+
+**Not at the bar, plainly**
+
+- The outline cannot show the thing that matters most, that it looks real. It shows sizes and order.
+- The debris does not move in the wireframe.
+- From nearly level, an underside that faces down is hidden behind its own edge. The builder has to shape the tear so the core is seen. The agreement says so and leaves how to the builder.
+- The brief's line that the opening shows the whole thing on one screen cannot hold at the page's size now. That is for the opening.
+
+**The prompt Brandon was given, for the same Claude Code session**
+
+```
+A big change to the city. It builds on the three changes I sent earlier (rings on the spire, more of our metals, not only buildings), which all still hold. You are still mid-work, so lose nothing: do not stash, reset or discard anything uncommitted. The ground's builder is the one this replaces. Handle that in whatever way loses no work.
+
+The city no longer stands on a flat floating disc. It stands on the top of a small planet that has been ripped in half.
+
+Read these first: BRIEF.md, Settled, "The hero, the city at rest". It is rewritten for this: items 1, 3, 4, 7, 8 and 12 changed, and 14 to 18 are new. QUALITY.md has the tests under the same name, 13 now. The wireframe at /lab/hero-draft is redrawn for it: scroll it from top to bottom before anything else. src/hero/plan.ts has the sizes.
+
+What it is:
+
+- The ground is the top of a little planet: a dome, a bit less than half a sphere, curved side up. The world is on the curved top. It is art, so everything on it is far bigger than it would be on a real planet. That gives you a lot of room to make it big, varied and grand.
+- The underside is torn, not cut. It has to look like the planet was ripped in half: jagged, broken, its layers showing. No flat base and no clean edge.
+- In the torn face I can see the planet's core: a real 3D thing, burning and moving. Our stream comes out of the core. The core is where the stream begins, so it has to be the same light as the stream, not lava.
+- Streams of that same light also leave the torn face at several other points.
+- Debris round the torn underside: pieces of the planet, from big slabs down to small shards. Some orbiting slowly, some holding still with one face to the core, some tumbling. A lot of variation, so it feels like the planet really was destroyed halfway. The smallest pieces should match the shards in the stream.
+- More room between the hero and Work, so the torn underside, the core and the debris can fill a screen by themselves before Work comes up.
+
+What stays as it was:
+
+- At rest I only see the top of the world: the spire and the city round it. Everything torn is under the foot of the screen until I scroll.
+- The night sky, the glow behind the world, and no opening animation yet.
+- Keep whatever you have built that carries over: the spire, the kinds of building, the sky. Rebuild what does not: the ground, and where things stand on it.
+
+The bar: this is the best 3D object on the whole site. I want a visitor to feel they are looking at a real thing that was photographed. Hyper realistic, even though nothing like it exists.
+
+Show me the world as soon as it stands in the hero, and say plainly what is at the bar and what is not.
+```
+
+**For the next session**
+
+- His verdicts on the built world go into `BRIEF.md`. Then the opening, designed on it with him. The three ways Fable offered are not picked, and the world is taller than a screen, which the opening has to deal with.
+
 ## 2026-11-14 · His first look at the city in progress: rings, more metal, more than buildings (Fable, web chat)
 
 **What Brandon said**
