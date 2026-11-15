@@ -1233,6 +1233,8 @@ At `/lab/skills`, Study 25, built in Claude Code by Fable. The reflector, the st
     - **LinkedIn, GitHub and the résumé go in the footer** and are not repeated in Contact. Whether CodePen and YouTube stay there was a question to him and not a recommendation, so it is still open.
     - **The fourth round's design stands:** arrangement A, the one plate asleep as the blank and woken when the stream lands, the Sun stone under the rocket lighting from its rim in on the clock, the rocket launching when the boss lights, and the screen seated for the landing.
     - **A higher fidelity version is built in the web chat next,** before anything goes to Claude Code. It is for the look: the stone as a real relief, the plate as the real blank, the rocket in the page's bronze.
+- **How far the higher fidelity version goes (Nov 14).** "Just emphasize I don't want you to build the finalized product, you're just building a more higher fidelity than the mockup you just provided. Claude Code will build the finalized polished version."
+    - In exact terms: the web chat's version is a step up from the outline wireframe, enough to show what the section could look like. It is not held to the bar and is not the build. Claude Code makes the finished plate, stone, rocket and launch, from this as its basic version (How we work, the workflow ruling).
 
 ### 3D pieces
 
