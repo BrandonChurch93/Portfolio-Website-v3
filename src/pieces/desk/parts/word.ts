@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { hex } from '../../../config/palette';
 import { DESK, WORD } from '../layout';
 import type { PartFactory } from '../part';
+import { seeded } from '../../../world/build';
 
 // The section's title, lying flat on the floor under the two drawers, in the desk's own perspective, as a word on a
 // rug would lie. No rug is drawn. It is the lettering the title has in the page: Sora, semi bold, capitals, a little
@@ -13,8 +14,12 @@ const INK = { cap: 300, pad: 40, face: '600 420px "Sora Variable", "Sora", syste
 // Sora's capitals stand this share of its size.
 const CAP = 0.7;
 // How much of the light that falls on it the paint gives back, and how much it shows with no light on it at all, so
-// that it is read with the cursor's light far away.
-const PAINT = { takes: 0.15, own: 0.12 };
+// that it is read with the cursor's light far away. The second is small: with more, the word glowed in the desk's
+// shadow and read as a label laid over the picture and not as paint on the floor.
+const PAINT = { takes: 0.14, own: 0.035 };
+// The paint is worn: how many places it has rubbed thin, the largest of them in pixels of the canvas, and how
+// thin the thinnest is.
+const WEAR = { places: 2600, most: 16, thin: 0.5 };
 // How far off the floor it lies, in millimetres, so the two are never drawn into one another.
 const LIFT = 0.6;
 
@@ -37,6 +42,15 @@ export const build: PartFactory = async () => {
   g.fillStyle = '#fff';
   let x = INK.pad;
   letters.forEach((l, i) => { g.fillText(l, x, INK.pad + INK.cap); x += widths[i] + gap; });
+  const r = seeded(77);
+  g.fillStyle = '#000';
+  for (let i = 0; i < WEAR.places; i++) {
+    g.globalAlpha = r() * r() * (1 - WEAR.thin);
+    g.beginPath();
+    g.ellipse(r() * canvas.width, r() * canvas.height, 1 + r() * r() * WEAR.most, 1 + r() * r() * WEAR.most * 0.6, r() * Math.PI, 0, Math.PI * 2);
+    g.fill();
+  }
+  g.globalAlpha = 1;
 
   const map = new THREE.CanvasTexture(canvas);
   map.anisotropy = 16;
@@ -44,7 +58,7 @@ export const build: PartFactory = async () => {
   map.minFilter = THREE.LinearMipmapLinearFilter;
 
   const mm = WORD.cap / INK.cap, w = canvas.width * mm, d = canvas.height * mm;
-  const tone = new THREE.Color(hex('text'));
+  const tone = new THREE.Color(hex('pale'));
   const paint = new THREE.MeshStandardMaterial({ color: tone.clone().multiplyScalar(PAINT.takes), emissive: tone, emissiveIntensity: 0, roughness: 0.92, metalness: 0, alphaMap: map, transparent: true, depthWrite: false, opacity: 0 });
   paint.name = 'desk-word';
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2), paint);
