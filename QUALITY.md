@@ -492,7 +492,7 @@ What the build taught:
 
 `BRIEF.md`, Settled, "Skills, the desk and the title changed", is the agreement. Everything under "Skills and About, the first build" above still holds. It passes when all of these are true:
 
-1. **The headphones are named at a glance.** A fresh reviewer shown one still of the whole desk at the page's size, and told nothing, names them among the things on it. Alone on the screen at three times that size they pass "The look" and are not the weaker work beside `reference/bar/pc-builder-parts.jpg`.
+1. **The headphones are named at a glance.** A fresh reviewer shown one still of the whole desk at the page's size, and told nothing, names them among the things on it. *(Added Nov 14, night, on his ruling: shown the pair close and asked the make and model, the reviewer says AirPods Max. And shown the tablet and the pencil close, says an Apple Pencil.)* Alone on the screen at three times that size they pass "The look" and are not the weaker work beside `reference/bar/pc-builder-parts.jpg`.
 2. **They stand across from the lamp** and the two ends of the top balance. From the page's view they hide none of the monitor's screen, the camera or the second lens, and nothing of them or their stand is cut off by the edge of the desk's picture.
 3. **They rock** at the lamp's strike and at the cursor's brush, about the point they hang from, and come to rest.
 4. **The camera, the second lens and the cap:** from the page's view none of the three overlaps another, and the same reviewer names all three from the same still.

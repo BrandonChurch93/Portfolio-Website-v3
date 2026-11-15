@@ -1,5 +1,7 @@
 # Kit · the headphones on their hook
 
+**Changed again Nov 14, night.** He ruled that the headphones look just like AirPods Max, as the real product, and not a pair of the site's own design: "I wanted you to make the headphones look just like one of the two I just mentioned" (AirPods Max or Sony's WH-1000XM6). `BRIEF.md`, Settled, "His second look at the word, and the pencil and the headphones as the real things". Where this file says nothing is copied, that no longer holds. No logo or wordmark is put on them.
+
 **Changed Nov 14.** The headphones no longer hang by the Skills title. They stand on the desk, across from the lamp, on a stand, as a part of the desk's piece, and are made again. `BRIEF.md`, Settled, "Skills, the desk and the title changed", items 1 to 3, and `QUALITY.md` under the same name, tests 1 to 3. What follows was written for the hook by the title: read it for how they hang and swing, not for where they are.
 
 Read `reference/kits/README.md` first. This is `src/pieces/headphones/`, a small piece of its own behind the piece contract, like the reflector and the studio light. It is one of the ten things of the desk (`BRIEF.md`, Settled, "Skills and About, the first build", item 27, and `QUALITY.md`, tests 9, 37 and 38), so read `reference/kits/desk.md` too for what every one of the ten holds to.

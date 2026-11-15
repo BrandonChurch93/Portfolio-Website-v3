@@ -34,9 +34,10 @@ export const PLACES: Record<string, [x: number, z: number, turn: number]> = {
 
 // The word that lies on the floor under the two drawers, as a word on a rug would lie: where its middle is, how tall
 // its capitals are, and how far apart its letters are set, as a share of that.
-// It lies far enough under the desk that the shadow the top throws from the cursor's light falls across it: with the
-// cursor near the middle of the screen the shadow's edge cuts the letters about in half, which is where he asked for it.
-export const WORD = { text: 'SKILLS', x: -250, z: 40, cap: 170, space: 0.06 } as const;
+// It lies far enough under the desk that the shadow the top throws from the cursor's light can fall across it, which
+// he asked for, and no further: at 40 he found it too deep into the desk, and asked for about half way back to where
+// it began, which was 150.
+export const WORD = { text: 'SKILLS', x: -250, z: 95, cap: 170, space: 0.06 } as const;
 
 // The top of the lamp's shade, where the stream strikes it.
 export const SHADE: [number, number, number] = [-716, 470, -52];

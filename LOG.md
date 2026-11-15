@@ -78,6 +78,25 @@ Show me the city as soon as it stands in the hero, and say plainly what is at th
 - Waiting on his look: the layout, how much of the city shows, when the stream sets off. Then the agreement for the hero: the city made again, the opening, and how the falls are made.
 - Still open: the two buttons' words, which are his. His second paragraph goes to About when he rewrites it.
 
+## 2026-11-14 · His look at the report: the word half way back, the pencil and the headphones as the real products (Fable, Claude Code)
+
+**What Brandon said**
+
+- The word SKILLS is "a bit too deep into the desk": lower it, "not back to where it was originally, maybe somewhere in the middle".
+- The pencil "looks more like a wand from Harry Potter" and "should look like an Apple Pencil Pro".
+- The headphones "still don't look like Sony XM6 or AirPods Max. I wanted you to make the headphones look just like one of the two". He asked whether something stops products being remade.
+- He was told: nothing stops it. The agreement's line, "of the site's own design, with nothing copied and no maker's mark", was why, and he has now overruled it for these two things. `BRIEF.md`, Settled, "His second look at the word, and the pencil and the headphones as the real things".
+
+**What was done**
+
+- The word's middle is at 95 mm, from 40 (`WORD` in `src/pieces/desk/layout.ts`). Pushed.
+- Two builders started: the headphones as AirPods Max in the dark finish, on the stand as made, and the pencil as an Apple Pencil Pro inside the tablet's part, with the tablet left as it is. Each has fresh reviewers asked for the make and model.
+- The kits (`desk.md`, `headphones.md`) and test 1 of "Skills, the desk and the title changed" say so.
+
+**Still running from before**
+
+- The rocket, the mouse's third way, the desk's build on a first visit, and the city's ground, spire and towers.
+
 ## 2026-11-14 · Contact can be scrolled, the desk's fourth reviews, and the hero joins the list (Fable, Claude Code)
 
 **What Brandon said**
