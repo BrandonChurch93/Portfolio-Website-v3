@@ -74,10 +74,11 @@ What that changes, for everyone:
 
 ### The stage's lights, which are not yours to change
 
-- **The moon,** from the upper right and a little in front: the key light. It gives the world a lit side and a dark one. Its shadows are real and are drawn once, when the world is built. **So nothing that moves may cast a shadow** (`castShadow = false` on it), or it leaves a stain. Everything that stands still casts and receives.
-- **The cursor's light,** which moves, with its own shadows drawn when it moves.
+- **It is night.** The world reads by its outline against the glow behind it, by the edges the moon catches, and by what glows in it. The side away from the moon is dark, and what is further from the eye sinks toward darkness (the scene has fog, in the page's own ground color).
+- **The moon,** from the visitor's right and only a little in front (`MOONWARD` in `layout.ts`, defined once: read it there), strong: the key light. It rakes across the world, so right hand faces and tops are lit and faces toward the visitor are in shadow. Its shadows are real and are drawn once, when the world is built. **So nothing that moves may cast a shadow** (`castShadow = false` on it), or it leaves a stain. Everything that stands still casts and receives.
+- **The cursor's light,** which moves, with its own shadows drawn when it moves. It is an accent and not the key: it shows the visitor what the night hides, where he points.
 - **The core's light:** a light at `HEART` in the stream's hot color, flickering with `coreLevel`. It lights the torn rock and what broke away.
-- **The room,** reflected, and a dim sky light. No part adds a light of its own. A part that added a moonlight of its own takes it out.
+- **The room,** reflected, and a very dim sky light. No part adds a light of its own. A part that added a moonlight of its own takes it out.
 
 ### What the stage does for a part
 
