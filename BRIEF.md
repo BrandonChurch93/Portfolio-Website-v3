@@ -1210,6 +1210,7 @@ At `/lab/skills`, Study 25, built in Claude Code by Fable. The reflector, the st
     - In exact terms: A · Beside is picked on the condition that the piece is the rocket. Whether it is the rocket is open again, by his own question. "A rocket launch, not a rocket flying through space" stands until he changes it.
     - He would like the sleeping card's covering, the engine turned blank with its knob, used in at least one more place. Not a ruling that it is Contact.
     - He reads the page as moving from ancient wonder (Work) to modern technology (Skills), with the accomplishments section as a possible bridge, and the rocket as the finale of that. Fable's answer is in Open 31.
+- **Yes to drawing the Sun stone pool and the sleeping plate (Nov 14).** "Yes, let's go ahead and draw them out now. If I like the design, I will cut you up into max mode and have you do a higher fidelity representation of what this could look like." In exact terms: the rocket stays for now, in arrangement A. The pool is drawn as a Sun stone laid flat and the Contact plate as the engine turned blank that wakes by the band, both on `/lab/contact`, for him to judge. Neither is approved until he has seen it. If he likes it, a higher fidelity version follows in the web chat before Claude Code.
 
 ### 3D pieces
 
