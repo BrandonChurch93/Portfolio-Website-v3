@@ -2,6 +2,67 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · Contact goes to Claude Code, then the whole page so far (Fable, web chat)
+
+**What Brandon said**
+
+- The fourth round of the Contact wireframe: "Looks great, let's go with your recommendations." He raised the effort and asked for a higher fidelity version, then said it should only be a step up from the mockup, then dropped it: "I don't think we need a higher fidelity version of this. We might as well just have Claude Code build it."
+- He wants a prompt to add to Claude Code's work in hand: once Skills and About are finished, build Contact, then put everything built so far together on the hosted site, where he tests. He expects only the hero, the navigation and the footer to be missing.
+- He wants a report from Claude Code on what is done and where it is. He wonders whether the tests have it in a loop of fresh reviewers and small gains. He does not want anything changed now.
+- Nothing planned for the sections in hand changes because they are being joined.
+- His words are in `BRIEF.md`, Settled, Contact.
+
+**What was done**
+
+- No higher fidelity version was built. Only reading was done toward it, and nothing of it is in the repo.
+- The wireframe moved from `/lab/contact` to `/lab/contact-draft`, so the build can have `/lab/contact`.
+- `BRIEF.md`, Settled: "Contact, the first build", 26 items, and a new section, "The whole page so far", 8 items. `QUALITY.md`: 22 tests and 7 tests under the same two names.
+
+**The prompt Brandon was given, to paste into the same Claude Code session**
+
+```
+Two things. First a report, then what comes after Skills and About.
+
+1. Where things stand. Before you go on, tell me where this round is. A list, one line for each thing: the route, Skills, About, the reflector, the studio light, the CPU and its three ways, the headphones, and each thing on the desk. For each one:
+
+- Done, in progress or not started.
+- How many rounds of build and review it has had.
+- What the last round changed that I could see with my own eyes.
+- Whether another round would change anything I would notice.
+
+Say plainly if any of them is going round in a loop of small gains. Do not change how you are working because of this. I want to see it first.
+
+2. Contact. When Skills and About are finished by their agreement, build Contact. Pull main with rebase first. BRIEF.md, Settled, "Contact, the first build" is the agreement, 26 items, and QUALITY.md has its 22 tests under the same name. The wireframe at /lab/contact-draft is the basic version: what stands where, what happens and in what order are agreed, and its look is not. Build it at /lab/contact.
+
+What I care about most there:
+
+- The plate is the same blank as a sleeping card, and it wakes when the stream lands on the stone.
+- When the stream lands I can see the rocket, the stone and the whole form, with nothing cut off.
+- The stone is the Sun stone from Work laid flat, and it lights from its rim in to the rocket.
+- The rocket fits this page. Not a white rocket.
+- The form really sends. Use the Calendly link and the email address my live site uses. They are in the live site's repo, github.com/BrandonChurch93/brandon-church-portfolio, in app/components/ContactSection.jsx.
+
+3. The whole page. After Contact, put everything we have on one page at /lab/whole: Work, Skills, About and Contact, with one stream running through all of it. BRIEF.md, Settled, "The whole page so far" is the agreement, and its 7 tests are in QUALITY.md under the same name. That is the page I test on from then on. The hero, the navigation and the footer's design are missing on purpose.
+
+Everything in the first two prompts still holds. Nothing that was planned for Skills, About or the desk changes because the sections are being joined, and nothing in Work changes.
+
+Show me Contact as soon as it can be scrolled, and say plainly what is at the bar and what is not.
+```
+
+**What the record says of where Claude Code is, read before the prompt was sent**
+
+- The page, the route through Skills and About, the reflector (four rounds) and the studio light (three rounds) are built and reviewed.
+- The CPU is in its fifth round. Tests 20 and 21 failed in four reviews running, for one fault: everything one orange tone. A new builder remade it for the fifth. A fresh reviewer has it.
+- The cause of that fault was found in shared code and not in the CPU: the stage's tone curve turned every warm dark the same brown. `src/world/tone.ts` puts it right, and "The look" in `reference/kits/README.md` is the rule that came out of it.
+- Every thing on the desk has been made new and is in its second round, and the headphones are a piece. Four fresh reviewers are on the committed build.
+- So: one thing, the CPU, went round five times, largely against a fault that was not its own. The desk is two rounds in. Whether the rounds since the tone curve are still buying anything he would notice is what the report is for.
+
+**For the next session**
+
+- His verdicts on Claude Code's report go into `BRIEF.md`. If it is in a loop, the tests and the two earlier prompts are what set it there: "fresh Opus reviewers each round", "never lower the bar", "keep going until every test passes". Changing them is his call.
+- Still his to say: whether CodePen and YouTube go in the footer, and his pick of how the CPU comes to life.
+- Next in the web chat is his to name. The hero is the section left, and he has said it is worked last.
+
 ## 2026-11-14 · Contact, fourth round: the plate wakes at the landing, and the screen is seated for it (Fable, web chat)
 
 **What Brandon said**

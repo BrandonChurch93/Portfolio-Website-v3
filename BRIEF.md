@@ -1235,6 +1235,83 @@ At `/lab/skills`, Study 25, built in Claude Code by Fable. The reflector, the st
     - **A higher fidelity version is built in the web chat next,** before anything goes to Claude Code. It is for the look: the stone as a real relief, the plate as the real blank, the rocket in the page's bronze.
 - **How far the higher fidelity version goes (Nov 14).** "Just emphasize I don't want you to build the finalized product, you're just building a more higher fidelity than the mockup you just provided. Claude Code will build the finalized polished version."
     - In exact terms: the web chat's version is a step up from the outline wireframe, enough to show what the section could look like. It is not held to the bar and is not the build. Claude Code makes the finished plate, stone, rocket and launch, from this as its basic version (How we work, the workflow ruling).
+- **No higher fidelity version. Claude Code builds it, and then the whole page is put together (Nov 14).** "Actually, sorry, I stopped you again. After thinking about it, I don't think we need a higher fidelity version of this. We might as well just have Claude Code build it. Maybe you can give me a prompt to add on his current workflow. Once he finishes with the skills section and the about me section, he can create this section as well. And then on the hosted page, we keep testing on. How to put everything together that we currently have. I believe the only things missing will be the hero, navigation, and footer." "Also, once we send this, let's have him update us on what he's done so far and where he's at. He's been working for a long time. I still think he's on the CPU, makes me wonder if you put a too strenuous test plan in place where he's in this constant loop of reviewers hyper-refining everything. That does work to a certain extent, but after a while it just slows things down with little increases. I don't want you to necessarily change anything now. I just want to update on if he's potentially in that loop." "Any other settings or anything that we were planned to do for the sections that he's working on now, should stay in place even though we're putting everything together."
+    - In exact terms:
+    - The two lines above about a higher fidelity version are set aside. Nothing more is drawn for Contact in the web chat. The fourth round's wireframe is the basic version Claude Code builds from. It has moved to `/lab/contact-draft`, so the build can have `/lab/contact`.
+    - **The order.** Skills and About are finished first. Then Contact is built. Then everything built so far is put on one page on the hosted site, and that page is what he tests on.
+    - **What is missing from that page on purpose:** the hero, the navigation and the footer.
+    - **Nothing planned for the sections in hand changes** because they are being joined: their agreements, their tests and what was asked of the builders all stand.
+    - **A report from Claude Code first:** what is done and where it is. He wonders whether the tests Fable wrote have it in a loop of fresh reviewers and small gains. He does not want the tests changed now. He wants to see whether it is in that loop.
+
+**Contact, the first build: the agreement (Nov 14)**
+
+What Claude Code builds, at `/lab/contact`. The wireframe at `/lab/contact-draft` (`src/contact/plan.ts`, `src/components/lab/ContactDraft.tsx`) is the basic version. What stands where, what happens and in what order are agreed. Its look is not: it is outlines.
+
+*The page and the stream*
+
+1. **One page, `/lab/contact`,** with Contact and a plain footer under it, laid out as the wireframe has it. The plate at the right, the rocket at the left on the stone, and nothing between them but the stream.
+2. **The real stream comes in at the top where it leaves About,** under the lower left of his portrait, and falls to the stone, swaying as it falls. "Bolt is for Work. Nowhere else" stands.
+3. **It lands on the stone's outer band,** on the side nearest the plate. The landing is a real strike, as in Work: the flash, the sparks, the thrown shards, which come to rest on the stone.
+4. **It touches nothing else.** It is never drawn over the plate, the title, the rocket or the tower.
+5. **The screen is seated for the landing.** When the stream lands, the title, the whole plate, the rocket and the stone are inside the screen, on every screen tall enough to hold them, and they are still inside it at the end of the page. The wireframe does this by reading the stream's end from a fixed distance above the foot of the screen in this section (`seat`). How the real planner does it is the builder's.
+6. **What the stream brings on goes away again** when it draws back, in the reverse order.
+
+*The plate*
+
+7. **One plate holds all of Contact's content.** It is a real plate of the cards' family (`src/metal/`): the same edge, the same dark face, lit by the same lights, the cursor and the stream.
+8. **Asleep it is the engine turned blank with its knob,** the same as a sleeping card's, at the plate's own size. It is asleep until the stream lands.
+9. **It wakes by the one band of light,** which sets out from its corner nearest the landing. No word, field or button shows ahead of the band. It goes back to sleep by the band when the stream draws back.
+10. **A pointer put on it, or keyboard focus inside it, wakes it,** as on a card. A pointer at rest that the page is scrolled under does not.
+11. **What it holds, in this order:** "Book on Calendly", "Copy my email", a rule that reads "or send a message", the form, and "Boise, Idaho · Mountain Time". The title, Contact, stands over the plate and comes on with it. No line stands beside the title.
+12. **"Book on Calendly" is the primary metal button.** It opens his Calendly page in a new tab, and says so to a screen reader.
+13. **"Copy my email" is the secondary metal button.** It copies his address and reads "Copied" for two seconds. The address is not shown.
+14. **The form works.** A name, an email, a message, "Send message". It sends the way his live site's does. While it sends it says so. Sent, it reads "Message sent" and "I'll get back to you within 24 hours." If sending fails it says so and points to "Copy my email". Its fields are made in the plate's metal, and how they look is the builder's to design and show him.
+15. **No phone number.**
+
+*The stone*
+
+16. **A Sun stone laid flat under the rocket:** the Work stones' own carving (`src/stream/stone.ts`), in the same metal, seen from above and in front, about 640 units across. Made as a piece.
+17. **Until the stream lands it is lit only by the room and the cursor.** Then it lights from its rim to its middle, ring by ring, in the stream's colors, in about two and a half seconds. The light runs in what is cut into it. It does not flood the stone one color: drawn that way in the wireframe, the stone was a flat orange disc and its carving was lost.
+18. **Its middle is the last to light,** and it is what the rocket stands on.
+19. **It stays lit while the stream is on it.** When the stream draws back it goes dark from its middle out.
+
+*The rocket*
+
+20. **Made new, as a piece.** The carried rocket (`src/pieces/rocket/`, `reference/pieces/rocket.jpg`) is the basic version for its form: about 540 units tall on a launch table, with a tower at its left whose arms reach it. It is made to the look every 3D thing on this page is now held to (`reference/kits/README.md`, "The look"), and it is not a white rocket.
+21. **It lights from its foot up** as the stone lights.
+22. **The launch.** When the stone's middle lights, the engine lights and the tower's arms draw back. About a second later the rocket lifts, and climbs out of the top of the screen. "A rocket launch, not a rocket flying through space." Its fire is in the stream's colors, and it lights the stone and the edge of the plate.
+23. **It launches every time the stream lands.** Once it has gone the table stands empty on the lit stone, with the stream still falling onto the stone.
+24. **When the stream draws back the rocket comes back down** and stands on its table again. Nothing of the stone, the table or the tower goes dark while the rocket is in the air.
+
+*The footer and the rest*
+
+25. **The footer is a plain stand in** about 100 units tall: a line with his name, and LinkedIn, GitHub and the résumé as links. Its design waits. Whether CodePen and YouTube join them is still his to say.
+26. **The words are in the page for a screen reader** whether or not the stream has landed. With reduced motion the plate is awake, the stone is lit, the rocket stands on its table and nothing launches. Under 1100 px the page is a plain stand in.
+
+*What is not built in this pass:* the hero, the navigation, the footer's design, phones, the accomplishments section, and the words, which are his.
+
+*Fable's calls in this agreement, each his to overturn:*
+
+- The stone lights on the clock once the stream is on it, and not with the scroll. The page has almost run out by then.
+- The plate's band sets out from the corner nearest the landing.
+- The rocket is a little larger than the carried one's outline, so it stands as tall as the plate.
+- No smoke. Drawn in the wireframe it read as smears.
+- Whether the stone's middle keeps the Work stone's face or is a plain boss under the table is the builder's to show him.
+- The Calendly link, and the address the copy button copies and the form sends to, are his live site's own, on his word in the prompt. That puts his address in this public repo and in the page's code, as it is on his live site today.
+
+### The whole page so far
+
+**The agreement (Nov 14).** His words are under Contact above: "on the hosted page, we keep testing on. How to put everything together that we currently have. I believe the only things missing will be the hero, navigation, and footer."
+
+1. **One page, `/lab/whole`:** Work, Skills, About, Contact and the plain footer, in that order, each as it is on its own page.
+2. **One stream, unbroken,** from the top of Work to the stone in Contact. Under Work's button the two sides meet and one stream falls into Skills at the top middle. It leaves About under his portrait and falls into Contact.
+3. **Nothing about a section changes for being joined:** its layout, its rules, its cues, its timings and its tests. "Any other settings or anything that we were planned to do for the sections that he's working on now, should stay in place even though we're putting everything together."
+4. **The room between two sections** is the builder's first call, shown to him. Nothing stands between Work and Skills: the accomplishments section is set aside (Open 26).
+5. **Missing on purpose:** the hero, the navigation and the footer's design. With no hero the stream comes in at the top of the page, as it does on `/lab/work`.
+6. **Each section keeps its own page,** for looking at it alone.
+7. **It is built after Contact,** and it is the page he tests on from then on. Whatever is built later is put into it.
+8. Under 1100 px it is a plain stand in.
+
 
 ### 3D pieces
 
@@ -1730,7 +1807,7 @@ Each line has Fable's recommendation where there is one. None of these are rules
     - **His verdict on the derby (Nov 14), in Settled, Skills:** the CPU in its socket, the screen with its back off, the palette and brush. He is on the fence about the things being made out of the strike's shards, and found the derby too low in quality to show it. He asked whether to go on to Claude Code for a polished example or dial it in here first.
     - **Fable's answer, put to him: go to Claude Code, and prove it on one thing first.** The web chat draws in software and has only a flat strip for the stream, so another round here would be another stand in. In Claude Code the real stream and its shards run on his graphics card. One thing is built first, the CPU in its socket, to the bar, on a page of its own, with three ways of coming to life behind a switch, for him to judge in motion: put together from the strike's shards as proposed. Uncovered by a band of light that crosses it from the strike, as a card in Work is woken. Or lit by the strike's flash with its parts dropping the last short way into place, and no shards turned into parts. The other two things are built after he picks.
 
-31. **Contact and the footer: a wireframe (Nov 14). He turned the first round down. A second is put to him in words, and nothing of it is built.** At `/lab/contact`, Study 26, built in the web chat on his word that Contact is next.
+31. **Contact and the footer: a wireframe (Nov 14). Four rounds. He approved the fourth, and it is the basic version for the build** (Settled, "Contact, the first build"). Study 26, built in the web chat on his word that Contact is next. It was at `/lab/contact` through its four rounds and is now at `/lab/contact-draft`. What follows is the record of the rounds, newest design last.
     - **His verdict on the first round (Nov 14), in Settled, Contact:** no. The content is one block and not split by the rocket, the stream runs into a pool the rocket launches from and does not strike its nose, and the left column was a mess. The page still shows the first round until the second is drawn.
     - **What Fable put to him the same day, as a brainstorm. None of it is ruled:**
         - What the section is for, in this order: book time with him in one press. Copy his email or write a few lines without the page fighting it. End the page.

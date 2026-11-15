@@ -488,6 +488,65 @@ What the build taught:
 - **Count what is drawn, not what is planned.** The route kept clear of the desk, his head and the words by a wide margin, and thrown shards still crossed all three. `streamList` in every frame of a real scroll found them.
 - **A test browser that is asked for nothing draws nothing.** A script that scrolled and then only waited saw a stream that had barely moved, which looked like a fault in the stream. Keep a frame loop running in the page while a script waits, and drive a scroll at a set speed from inside the page.
 
+## Contact, the first build
+
+`BRIEF.md`, Settled, "Contact, the first build", is the agreement. Everything in "The stream" above still holds, and so does the look every 3D thing on this page is held to (`reference/kits/README.md`, "The look"). It passes when all of these are true:
+
+*The stream and the screen*
+
+1. **The screen holds all of it at the landing.** In real frames of a scroll at 300 and 600 px a second, on screens 1440 by 900, 1366 by 768, 1440 by 790, 1920 by 1080, 1720 by 1300 and 1180 by 820: in the frame the stream lands, and again at the end of the page, the title, the whole plate, the rocket and the stone are inside the screen. Give the numbers.
+2. **The stream touches the stone and nothing else.** No frame has the stream or a shard over the plate, the title, the rocket or the tower. Count them, as on Skills.
+3. **The landing is a strike:** the flash, the sparks, the thrown shards, which come to rest on the stone and do not hang in the air.
+4. **Everything goes away again** when the stream draws back, in the reverse order, with nothing turning round part way.
+
+*The plate*
+
+5. **Asleep, it is the card's blank.** One still with a sleeping Work card beside the sleeping plate: the same rays, the same knob, the same edge, the same light. A stranger says they are one family without being told.
+6. **It wakes when the stream lands, and not before.** In no frame before the landing is any word, field or button to be seen.
+7. **One band, from the corner nearest the landing.** In real frames (`npm run live`) no word shows ahead of the band's line.
+8. **A pointer put on it wakes it, and so does keyboard focus.** A pointer at rest that the page is scrolled under does not.
+9. **The form sends.** A message sent from the hosted page reaches him: he checks. It says when it is sending, when it is sent and when it failed, and a failure points to "Copy my email". It can be filled in and sent with the keyboard alone, and every field has a label a screen reader reads.
+10. **"Copy my email" copies** and says so. **"Book on Calendly" opens his Calendly page** in a new tab.
+11. **Every word on the plate keeps 4.5 to 1** against what is behind it, with the cursor's light on it and with the launch's light on it.
+
+*The stone*
+
+12. **It is the Work stone laid flat.** Beside a still of a stone on `/lab/work`, it is plainly the same carving in the same metal. At the page's size its rings can be told apart.
+13. **It lights from its rim to its middle, in order,** and the middle is last. A held frame part way is the same picture every time.
+14. **Lit, its carving can still be read.** It is not a disc of one color, and nothing on it clips past pale.
+
+*The rocket*
+
+15. **It passes "The look".** A near black, a mid grey and pale glints. Copper only as an accent. Sampled, a mid tone on a neutral part has a saturation under 0.2. Its outline says rocket at the page's size.
+16. **Put beside `reference/bar/pc-builder-parts.jpg`, it is not the weaker work.**
+17. **The launch, in order:** the engine lights, the arms draw back, it lifts, it climbs out of the top of the screen. Its light lands on the stone and on the plate's edge. It is never cut off by the edge of its own canvas, and no rectangle shows.
+18. **It comes back.** When the stream draws back it comes down and stands on its table, nothing of the pad goes dark while it is in the air, and it launches again when the stream lands again.
+
+*Everything*
+
+19. **Reduced motion:** the plate awake, the stone lit, the rocket on its table, nothing moving. Under 1100 px the plain stand in is not broken.
+20. **The frame rate holds:** `npm run perf` on the page, numbers given, with the processor slowed four times as well.
+21. **Nothing in Work, Skills or About has changed.** Stills of each from before and after agree.
+22. **No errors in the console,** and `npm run build` passes.
+
+**How to judge it**
+
+- Stills for form and color, filmstrips for order, real frames for anything that happens on a scroll or a press.
+- Look at the plate and the stone beside the things they come from, not alone.
+- Say plainly what is short. He is shown it as soon as it can be scrolled.
+
+## The whole page so far
+
+`BRIEF.md`, Settled, "The whole page so far", is the agreement. It passes when all of these are true:
+
+1. **One stream, unbroken.** Real frames across each join (Work into Skills, About into Contact) show no gap in the stream, no jump, and no second leading end.
+2. **Every section does what it does alone.** Each section's cues come on at the same places on the joined page as on its own page, read with `streamCues()` and compared. Each section's own tests still pass on the joined page.
+3. **The whole page scrolled down and back up** at 300 and 600 px a second: no errors, the frame times given, and nothing that is off the screen is drawing.
+4. **The first visit:** how long before the page can be scrolled smoothly on a cold cache, given as a number.
+5. **Each section's own page is as it was.**
+6. **Under 1100 px** the plain stand in is not broken.
+7. **What is missing is said on the page's own label:** the hero, the navigation, the footer's design.
+
 ## A derby of reliefs
 
 `BRIEF.md`, Open 26, has what the derby at `/lab/accomplishments` holds. It is judged for layout and for the look of each piece, not for motion. It is worth showing when all of these are true:

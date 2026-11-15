@@ -37,7 +37,7 @@ const EDGE = `M${SX - S.rx} ${SY} v${S.edge} a${S.rx} ${P.ry} 0 0 0 ${S.rx * 2} 
 
 type Sent = 'idle' | 'sending' | 'sent';
 
-// Study 26, third round: arrangement A with the pool as a Sun stone laid flat and the plate asleep as the blank.
+// Study 26, fourth round, at /lab/contact-draft: the basic version of Contact for the build.
 // ?whole, ?launch=2 (seconds into the launch, held), ?wake=0.5 (the plate's band held that far across), ?sent,
 // ?speed=half and ?ui=0 open it on those.
 export function ContactDraft() {
@@ -174,7 +174,7 @@ export function ContactDraft() {
     <main className={draft.main} style={{ paddingBottom: 0 }}>
       <header className={draft.head}>
         <p className={draft.label}>Study 26 · Contact</p>
-        <h1 className={draft.heading}>Contact, with the Sun stone and the sleeping plate</h1>
+        <h1 className={draft.heading}>Contact, the wireframe</h1>
         <p className={draft.lede}>
           Fourth round, after your look. The plate now wakes when the stream lands on the stone, and the stream lands
           only once the screen holds the rocket, the stone and the whole plate. Scroll: the line is the stream.
