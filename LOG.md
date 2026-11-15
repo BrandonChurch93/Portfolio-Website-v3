@@ -2,6 +2,30 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · The finished surface turned down: the planet stays, the surface is rethought (Fable, web chat)
+
+**What Brandon said**
+
+- He does not love the finished surface. The jungle is bad and too dense, the dunes are bad, there is empty ground that looks like concrete, the city's design is not great, it is not one piece of art, its parts fight, and it may not match the site. He loves the exploded planet, its underside and its core. He wants the art style changed to match the site and the surface rebuilt completely. `BRIEF.md`, Settled, Hero.
+- He sent Claude Code's own report with it. Its builders' reviewers had said much the same of every part: "a painted tabletop miniature", "a mid-tier game", "lava decals", "clay or draped cloth".
+
+**What was done**
+
+- His verdict written in, with the two stills kept in `reference/studies/59-*`.
+- Fable's reading of why it failed, and a direction for the art style, were put to him in the chat. Not agreed. Nothing was built.
+- A short prompt for Claude Code was given to him: stop work on the surface, keep the planet, and spend the time on first load and frame rate of the parts that are kept.
+
+**What Fable takes from it**
+
+- The plan Fable wrote for the surface was a list of separate places (a jungle, dunes, a monument, a pyramid, craft), each handed to a separate builder with freedom to choose. That is how it became a collage. A surface has to be one design by one hand before it is split up.
+- The outline wireframe settled sizes and said nothing of the look, and the look is what failed. The next basic version from the web chat has to show the art style itself: materials, light and how a building is made.
+- Trees, sand and bare rock are what 3D made in code does worst. Everything on the site that is at the bar is a made thing in metal, lit by a moving light.
+
+**For the next session**
+
+- On his pick of a direction: a look study in the web chat, in real lit 3D, before Claude Code builds any surface.
+- Items 19 to 26 of "The hero, the city at rest" and tests 14 to 19 are to be rewritten once the style is chosen.
+
 ## 2026-11-15 · The finished version: the plan redrawn and eight builders on it (Fable, Claude Code)
 
 **What Brandon said**
