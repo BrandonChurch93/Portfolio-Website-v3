@@ -27,7 +27,7 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 **The prompt Brandon was given, to paste into the same Claude Code session**
 
 ```
-Four things, in this order. Pull main with rebase first.
+Four things, in this order. You are still mid-work, so lose nothing: do not stash, reset or discard anything uncommitted, and do not stop a builder that is running. Bring main in the way you have been doing it, when it is safe to.
 
 1. Where things stand. Before you go on, tell me where this round is. A list, one line for each thing: the route, Skills, About, the reflector, the studio light, the CPU and its three ways, the headphones, and each thing on the desk. For each one:
 
