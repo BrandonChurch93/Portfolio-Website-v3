@@ -2,6 +2,21 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · His look at the blockout, and the plan for its second round (Fable, web chat)
+
+**What Brandon said**
+
+- A good direction, not nearly there, large changes wanted. `BRIEF.md`, Settled, Hero, "His look at the grey blockout" has his words and what each means.
+
+**The plan put to him. Not agreed until he says go.**
+
+- **No more Gemini for now.** His notes are about shape and placement, which is what the blockout is for, and picture 5 already shows the tear he wants.
+- **The planet, ripped:** the bowl no longer ends on a clean rim or a clean underside. Its skin survives only in broken patches near the top. The underside ends at a different depth all the way round, deepest at one side. Great angular slabs hang round the core, as in picture 5, with long pieces hanging lower still. The rock breaks in far larger pieces than the first round's. The land's own edge is bitten all the way round.
+- **At rest, balanced:** the desert moves to the front right, toward the visitor and lower in the picture, and shrinks to about a fifth of the land. City stands behind it and to its right, so the skyline runs the full width at rest.
+- **The city, not in rows:** the one square grid goes. Five or six districts, each with its own street angle, with boulevards between them. More and taller buildings on the far side, so tops stand behind tops. A second, lower peak at the right of the spire.
+- **The ground:** wide boulevards lined with trees, with a line of light down each. Blocks of small buildings round courtyards. Three real parks and a belt of trees where the city meets the sand. Bare warm rock at the land's broken edge, with streets that end in the air.
+- **Kept:** the width, the camera, the spire and its ring, the pyramid in the city at the left, the avenue, the core's depth.
+
 ## 2026-11-15 · A clean slate: four concept pictures, a target, and a grey blockout (Fable, web chat)
 
 **What Brandon said**
