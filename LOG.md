@@ -2,6 +2,20 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · The hero is next: his words on the city, and layout options in words (Fable, web chat)
+
+**What Brandon said**
+
+- The landing page is next, layout first. The city and its opening are made again. At the end of the opening the city rests at the bottom of the screen with its falls hidden below the foot. Scrolling shows them, and then the stream sets off from the main fall. He asked for layout options and what the words block should hold, and has text for the opening paragraph. `BRIEF.md`, Settled, Hero.
+
+**What was done**
+
+- His words written in. Three layouts and a list of what the block holds were put to him in the chat. Nothing drawn, nothing built.
+
+**For the next session**
+
+- Waiting on his pick of a layout and his text. Then a wireframe, as the other sections had.
+
 ## 2026-11-14 · Contact goes to Claude Code, then the whole page so far, and his changes to the desk (Fable, web chat)
 
 **What Brandon said**

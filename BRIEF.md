@@ -793,6 +793,13 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
 
 - The city as built is not what the site is built on. "It's not like it's a masterpiece that we're building the whole site off of. That's the stream." It "is going to need a massive overhaul and the current version will probably just be shown as a draft anyways". (Nov 12)
 - The opening animation as carried from the second build is "five out of 10 at best" and "definitely needs to be redone". The city itself "looks good" and "could still use some work". The city gets revisited anyway so it ties in with the stream. (Nov 12)
+- **The hero is next in the web chat, layout first (Nov 14).** "Now I was hoping we could take a look at the landing page. I'm mainly concerned with the layout now, something we've never really dialed in. City will need to be completely redone, with a brand new opening animation. At the end of the opening animation, the city goes down to the bottom of your screen on the desktop viewport. Some of the city is obscured, including the waterfalls, and the main one that the surge will be on. Scrolling down reveals them, continue scrolling down and you'll notice the surge gets caught and starts going as you scroll." "As far as layout, what are some good options? I'm also interested in the content you proposed to put there. I have some text for it now that may be helpful. Writing our opening paragraph."
+    - In exact terms:
+    - The city is made again, and so is the opening. Both were already ruled as needing it (Nov 12, above).
+    - When the opening ends the city rests along the bottom of a desktop screen with its lower part below the screen's foot. What is hidden there includes the city's falls, and the main fall, which is where the stream begins.
+    - Scrolling brings the hidden part up into view. Scrolling further, the stream's leading end leaves the main fall and runs on down the page with the scroll, as it does everywhere else.
+    - "Waterfalls" and "surge" are his words for the city's falls and the stream. The falls were ruled Nov 11 to be the stream's own light and not what the second build drew.
+    - Open: the layout of the words and the city, and what the words block holds. He has text for the opening paragraph and has not sent it yet. Fable's options are put to him in the chat, in words. Nothing is drawn or built.
 - An idea to revisit with the hero, not decided: his first thought was the city breaking apart into the stream as the visitor scrolls. Fable's twist, which he asked to have noted: building, not breaking. The city assembles out of the stream's facets in the opening, and the stream carries the same pieces on down the page. (Nov 12)
 
 ### Work
