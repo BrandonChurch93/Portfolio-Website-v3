@@ -4,6 +4,7 @@ import type { Tier } from '../../config/site';
 import { clock } from '../../world/clock';
 import type { PieceOptions } from '../../world/piece';
 import { Stage } from '../../world/stage';
+import { trueDarks } from '../../world/tone';
 import type { Anchor, StruckPiece } from '../../world/struck';
 import { FRAME_H, RF, buildReflector, dishAxis, type ReflectorModel } from './model';
 
@@ -224,6 +225,7 @@ export function createReflector(): StruckPiece {
       await Promise.all(['700 20px "Sora Variable"', '600 20px "JetBrains Mono Variable"'].map((f) => document.fonts.load(f).catch(() => null)));
       const centre = new THREE.Vector3(...RF.D).multiplyScalar(RF.SCALE);
       stage = new Stage(h, canvas, { tier: opts.tier, fov: FOV, near: 2, far: 5, env: 'studio', envIntensity: 0.45, bloom: { strength: 0.16, threshold: 1.4, radius: 0.3 }, ao: 0.014, aoIntensity: 0.9, lampTarget: [centre.x, centre.y, centre.z], lampAngle: 0.62 });
+      trueDarks(stage.renderer);
       stage.lamp.color.set(hex('pale'));
       stage.lamp.intensity = LAMP.power;
       stage.lamp.decay = 0;

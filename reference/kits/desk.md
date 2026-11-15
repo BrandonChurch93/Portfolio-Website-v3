@@ -46,6 +46,33 @@ Read `reference/kits/README.md` first: the bar, the colors, how to look at a thi
 - Textures are drawn in code on a canvas, as `src/pieces/cpu/art.ts` does, at the size they are seen. Give each mipmaps and anisotropy so nothing sparkles.
 - Compile nothing after the first frame: every material and every state your thing can be in is drawn once when it is built.
 
+## What a part may cost
+
+The first time a visitor's browser draws the desk it compiles every shader program in it, and with all nine parts in their first round that took about eight seconds, most of it programs: 112 of them, about 90 of which were the parts' own. Each different material that changes its shader (`onBeforeCompile`), or turns on a different set of features, is another program. So each part has a budget, measured alone:
+
+```
+node -e "" && npm run shot -- "/lab/piece/desk?only=<part>&label=0&ui=0" --t 4 --wait 4000 --eval "console.log(JSON.stringify(window.__site.piece('desk').stats()))" --out shots/desk/<part>/stats.jpg
+```
+
+`stats()` gives `programs` (the empty stage alone has 21), `first` (the milliseconds the first frame took), `calls` and `triangles` (what the last pass drew). The shot script prints the page's console.
+
+| Part | Programs over the stage's 21 | Triangles built | First frame alone |
+|---|---|---|---|
+| bench | 3 | 60,000 | 400 ms |
+| mat | 1 | 5,000 | 300 ms |
+| lamp | 4 | 30,000 | 400 ms |
+| monitor | 5 | 40,000 | 400 ms |
+| keyboard | 4 | 36,000 | 400 ms |
+| mouse | 2 | 10,000 | 300 ms |
+| tablet | 4 | 15,000 | 400 ms |
+| camera | 5 | 60,000 | 400 ms |
+| pc | 8 | 150,000 | 600 ms |
+
+- **How to stay inside it.** Materials that differ only in color, roughness or metalness share one program, so make them plain materials with no shader change and let the numbers differ. Put what varies across a surface (brushing, knurl, weave, grain, wear) into one patched material per kind, driven by uniforms, attributes or a small texture, and use it for every such surface in your part. Lit things share one emissive material with the color and level as uniforms or vertex colors.
+- **Nothing is built at the first frame.** No environment map made per material, no texture drawn at first use: everything is ready when `build` returns.
+- **Shadows cost a second drawing of everything that casts one.** Only the large forms cast: turn `castShadow` off on small parts, fine detail and anything inside the PC's case.
+- If a budget cannot be met without losing what makes the thing good, say which and why in your report. Do not quietly go over.
+
 ## How to look at it
 
 All from the repo folder. A dev server is already running on port 5330 and is shared with the other builders: do not start another, do not stop it, do not run `npm run build`. Check types with `npx tsc --noEmit`. Another builder's part may be broken for a minute while they work: if the whole desk fails to load, look at your part alone and try the whole again later.

@@ -25,6 +25,8 @@ export const PLACES: Record<string, [x: number, z: number, turn: number]> = {
 
 // The top of the lamp's shade, where the stream strikes it.
 export const SHADE: [number, number, number] = [-716, 470, -52];
+// The lamp's bulb, where the desk's own lamp light stands, and the way the shade opens, which is the way it shines.
+export const BULB = { at: [-721, 399, -58] as [number, number, number], aim: [0.233, -0.914, 0.333] as [number, number, number] };
 
 // How it is looked at: from this far round to the left and this far up, in degrees, with a narrow field of view,
 // aimed at a point of the desk in metres. It frames a fixed height of its world, in metres, whatever its host's

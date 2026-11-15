@@ -4,6 +4,7 @@ import type { Tier } from '../../config/site';
 import { clock } from '../../world/clock';
 import type { PieceOptions } from '../../world/piece';
 import { Stage } from '../../world/stage';
+import { trueDarks } from '../../world/tone';
 import type { Anchor, StruckPiece } from '../../world/struck';
 import { SL, buildStudioLight, type StudioModel } from './model';
 
@@ -300,6 +301,7 @@ export function createStudioLight(): StruckPiece {
       still = opts.tier === 'static' || matchMedia('(prefers-reduced-motion: reduce)').matches;
       await document.fonts.load('600 20px "JetBrains Mono Variable"').catch(() => null);
       stage = new Stage(h, canvas, { tier: opts.tier, fov: FOV, near: 0.2, far: 6, env: 'studio', envIntensity: 0.95, bloom: { strength: 0.34, threshold: 1.6, radius: 0.18 }, ao: 0.012, aoIntensity: 0.65, lampAngle: 0.75 });
+      trueDarks(stage.renderer);
       model = await buildStudioLight();
       stage.wireDensity = 0.5;
       stage.wireEdges = 14;

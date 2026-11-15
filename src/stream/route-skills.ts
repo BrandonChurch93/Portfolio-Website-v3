@@ -55,6 +55,7 @@ export function routeThroughSkills(P: SkillsPlan): Route {
     [P.x, P.leaves, K.lamp.leave * k, K.lamp.leave * k],
     [P.lamp.x + K.lamp.from[0] * k, P.lamp.y - K.lamp.from[1] * k, K.lamp.bow[0] * k, K.lamp.bow[1] * k],
     [P.lamp.x, P.lamp.y, tight, tight],
+    [P.lamp.x - K.lamp.out[0] * k, P.lamp.y + K.lamp.out[1] * k, K.lamp.turn * k, K.lamp.turn * k],
     [P.spine, P.lamp.y + K.lamp.off * k, K.lamp.join[0] * k, K.lamp.join[1] * k],
     ...P.rows.flatMap(({ x, y }): Corner[] => [[P.spine, y - K.row.over * k, K.row.turn[0] * k, K.row.turn[1] * k], [x, y, tight, tight], [P.spine, y + K.row.over * k, K.row.turn[0] * k, K.row.turn[0] * k]]),
     [P.reflector.x, P.reflector.y, tight, tight],

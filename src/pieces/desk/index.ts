@@ -5,8 +5,9 @@ import type { Tier } from '../../config/site';
 import { clock } from '../../world/clock';
 import type { Piece, PieceOptions } from '../../world/piece';
 import { Stage } from '../../world/stage';
+import { trueDarks } from '../../world/tone';
 import type { Anchor, Struck } from '../../world/struck';
-import { BAY, DESK, PLACES, SCREEN, SHADE, VIEW } from './layout';
+import { BULB, DESK, SCREEN, SHADE, VIEW } from './layout';
 import { LIT, PARTS, type DeskLights, type DeskPart, type PartFactory, type PartName, type PartState } from './part';
 
 // The desk in Skills, as one piece: the bench and everything on and under it. Each thing is a part (./part.ts),
@@ -58,6 +59,9 @@ export interface DeskExtras {
   setLights(l: DeskLights): void;
   // Where a point of the desk is drawn in its host, in the desk's millimetres.
   where(x: number, y: number, z: number): Anchor;
+  // What it cost: the milliseconds each part took to build, what the first frame took, what the last frame drew, and
+  // how many shader programs it has had compiled. The programs are what a visitor waits for.
+  stats(): { built: Record<string, number>; first: number; calls: number; triangles: number; programs: number };
 }
 export type DeskPiece = Piece & Struck & DeskExtras;
 
@@ -73,6 +77,8 @@ export function createDesk(): DeskPiece {
   let seen = true, stale = true, moving = false, hold: number | null = null, only: PartName | null = null;
   let lampUV = { x: 0.62, y: 0.3 }, led = 0;
   let lights: DeskLights = { ...LIT };
+  const built: Record<string, number> = {};
+  let first = 0;
   const stream = { on: 0, since: 60 };
   const dials: Partial<Record<keyof DeskLights, ((k: number) => void)[]>> = {};
   const aim = new THREE.Vector3(...VIEW.aim), right = new THREE.Vector3(), up = new THREE.Vector3(), back = new THREE.Vector3(), cursor = new THREE.Vector3(), pointer = new THREE.Vector3(), ray = new THREE.Vector3();
@@ -133,6 +139,7 @@ export function createDesk(): DeskPiece {
       only = asked && PARTS.includes(asked) ? asked : null;
       if (q.get('lights') === '0') lights = { room: 1, lamp: 0, tablet: 0, monitor: 0, keys: 0, pc: 0 };
       stage = new Stage(h, canvas, { tier: opts.tier, fov: VIEW.fov, near: 0.05, far: 40, bloom: { strength: 0.16, threshold: 1.9, radius: 0.3 }, ao: 0.02, aoIntensity: 1, envIntensity: 0.3, env: 'studio', lampTarget: [0, -0.05, 0.1], lampAngle: 0.9 });
+      trueDarks(stage.renderer);
       const s = stage.scene;
       const root = new THREE.Group();
       root.scale.setScalar(M);
@@ -146,16 +153,19 @@ export function createDesk(): DeskPiece {
         root.add(floor);
       }
       const names = only ? [only] : [...PARTS];
-      parts = await Promise.all(names.map(async (name) => ({ name, part: await (await loaders[name]())({ tier: opts.tier }) })));
+      parts = await Promise.all(names.map(async (name) => {
+        const make = await loaders[name](), from = performance.now(), part = await make({ tier: opts.tier });
+        built[name] = Math.round(performance.now() - from);
+        return { name, part };
+      }));
       for (const { part } of parts) root.add(part.group);
 
-      // The desk's own lights: the lamp over the tablet, the monitor, and the PC's ember under the far end. Then the
-      // room it is seen by before any of them is on. The lamp and the room are the palette's pale, the least orange
+      // The desk's own lights: the lamp over the tablet and the monitor. The PC carries its own. Then the room it is
+      // seen by before any of them is on. The lamp and the room are the palette's pale, the least orange
       // light there is: under an orange light steel, timber and copper all came out one tone.
-      const [lx, lz] = PLACES.lamp;
       const deskLamp = new THREE.SpotLight(hex('pale'), 5.2, 0, 58 * D2R, 0.85, 2);
-      deskLamp.position.set((lx + 190) * M, 438 * M, (lz + 196) * M);
-      deskLamp.target.position.set((lx + 430) * M, 0, (lz + 330) * M);
+      deskLamp.position.set(BULB.at[0] * M, BULB.at[1] * M, BULB.at[2] * M);
+      deskLamp.target.position.set((BULB.at[0] + BULB.aim[0] * 400) * M, (BULB.at[1] + BULB.aim[1] * 400) * M, (BULB.at[2] + BULB.aim[2] * 400) * M);
       deskLamp.castShadow = true;
       deskLamp.shadow.mapSize.set(2048, 2048);
       deskLamp.shadow.bias = -0.0006;
@@ -166,8 +176,6 @@ export function createDesk(): DeskPiece {
       const monLight = new THREE.RectAreaLight(hex('hot'), 2.2, (SCREEN.w - 20) * M, (SCREEN.h - 30) * M);
       monLight.position.set(SCREEN.x * M, (SCREEN.low + SCREEN.h / 2) * M, (SCREEN.z + 24) * M);
       monLight.lookAt(SCREEN.x * M, 120 * M, (SCREEN.z + 560) * M);
-      const pcLight = new THREE.PointLight(hex('flame'), 0.4, 1.8, 2);
-      pcLight.position.set((BAY.l + BAY.r) / 2 * M, (-DESK.H + BAY.h * 0.55) * M, (BAY.front + 120) * M);
       const rim = new THREE.RectAreaLight(hex('pale'), 9, 2.6, 0.6);
       rim.position.set(1.4, 1.2, -1.8);
       rim.lookAt(0, -0.1, 0);
@@ -175,14 +183,13 @@ export function createDesk(): DeskPiece {
       fill.position.set(-1.6, 0.9, 2.4);
       fill.lookAt(0, -0.3, 0);
       const hemi = new THREE.HemisphereLight(0x4a3526, 0x120c08, 0.55);
-      s.add(deskLamp, deskLamp.target, monLight, pcLight, rim, fill, hemi);
+      s.add(deskLamp, deskLamp.target, monLight, rim, fill, hemi);
       // A light is turned down by its strength and never hidden: hiding one makes every material compile again.
       const power = (l: THREE.Light) => { const full = l.intensity; return (k: number) => { l.intensity = full * k; }; };
       const env = s.environmentIntensity;
       dials.room = [power(rim), power(fill), power(hemi), (k) => { s.environmentIntensity = env * k; }];
       dials.lamp = [power(deskLamp)];
       dials.monitor = [power(monLight)];
-      dials.pc = [power(pcLight)];
 
       // Alone, a part is looked at from the same side, close.
       if (only && parts[0]) {
@@ -190,11 +197,15 @@ export function createDesk(): DeskPiece {
         const own = parts[0].part.alone, ball = own ? new THREE.Sphere(new THREE.Vector3(...own.at).multiplyScalar(M), own.r * M) : new THREE.Box3().setFromObject(parts[0].part.group).getBoundingSphere(new THREE.Sphere());
         aim.copy(ball.center);
         reach = ball.radius / ALONE;
+        // The cursor's light is aimed at the part, not at the middle of a desk that is not there.
+        stage.lamp.target.position.copy(ball.center);
       }
       stage.resize();
       setLights(lights, true);
       place();
+      const from = performance.now();
       await stage.warm();
+      first = Math.round(performance.now() - from);
       watch = new ResizeObserver(() => { stage?.resize(); stale = true; frame(); });
       watch.observe(h);
       near = new IntersectionObserver((es) => { seen = es.some((e) => e.isIntersecting); if (seen) { stale = true; frame(); } });
@@ -222,6 +233,10 @@ export function createDesk(): DeskPiece {
       place();
       const v = new THREE.Vector3(x * M, y * M, z * M).project(stage.camera);
       return [(v.x * stage.width) / (2 * stage.height), -v.y / 2];
+    },
+    stats() {
+      const info = stage?.renderer.info.render;
+      return { built, first, calls: info?.calls ?? 0, triangles: info?.triangles ?? 0, programs: stage?.renderer.info.programs?.length ?? 0 };
     },
     setProgress() {},
     setWaterLight() {},

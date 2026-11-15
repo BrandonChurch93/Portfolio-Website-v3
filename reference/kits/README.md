@@ -30,6 +30,8 @@ Round after round, fresh reviewers failed things on this page for the same fault
 - **Metal reads as metal by what it reflects:** long sharp reflections that slide across it as the cursor's light moves, as on the sleeping card he approved (`src/metal/dial.ts`). A soft orange gradient is paint.
 - **Light is ember, flame, hot and pale, and it is light:** it comes from a lamp, a screen, an LED or the stream, and it lands on what is next to it. A material never glows to be seen, and a lit thing never washes the whole object one orange.
 - **Nothing blooms at rest,** and nothing clips past pale.
+- **The tone curve.** The shared stage's curve took the same small amount off red, green and blue in the darks, which turned every warm dark into the same saturated brown whatever the material. That was the largest cause of the sepia. A piece now asks for the corrected curve once its stage is made: `trueDarks(stage.renderer)` from `src/world/tone.ts`. The desk does. Under it darks keep their own color, so a neutral material reads neutral, and anything tuned under the old curve has to be judged again: some things come out lighter, greyer or cooler than they were. Check that no pixel is bluer than it is red.
+- **A bad number blacks out everything.** A NaN in one shader (a zero length vector normalised, a division by zero at a grazing angle, an anisotropy direction parallel to the normal) spreads through the glow pass and turns the whole canvas black, while the part alone may look fine. Guard every normalise and every division.
 
 ## The contract
 

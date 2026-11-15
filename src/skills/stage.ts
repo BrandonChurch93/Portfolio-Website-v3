@@ -67,7 +67,7 @@ const RISE = 10;
 // A rule: half its thickness, in the stream's own units.
 const RULE = { half: 2.4 };
 // The way the lamp's shade faces where the stream strikes it. Where that is, is the desk's own (SHADE in its layout).
-const SHADE_FACE = -2.2;
+const SHADE_FACE = -2.3;
 // How hard the stream strikes the first row again when its thing is asked to come to life again.
 const AGAIN = 0.8;
 // A change of tab: how long its pulse takes to reach him, and how far along that the words change.

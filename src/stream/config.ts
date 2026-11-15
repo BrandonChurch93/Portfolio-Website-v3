@@ -101,7 +101,9 @@ export const STREAM = {
   skills: {
     // Onto the lamp's shade: the turn it takes off the line it came in on, where it comes to the shade from, as far to the right and as far above it, the bow it
     // takes there, and where it joins the line it falls down beside the rows: how far below the shade, and that turn.
-    lamp: { leave: 120, from: [34, 150] as [number, number], bow: [130, 6] as [number, number], off: 130, join: [80, 70] as [number, number] },
+    // It leaves the shade to the left, nearly level, as far as `out` and down by that much, turning there by `turn`,
+    // so that it clears the lamp, whose arm and foot are below and to the left of the shade, before it falls.
+    lamp: { leave: 120, from: [34, 150] as [number, number], bow: [130, 6] as [number, number], out: [140, 16] as [number, number], turn: 46, off: 150, join: [60, 70] as [number, number] },
     // At each row it turns in to strike the thing at the row's left end, from this far above it and to this far
     // below, and the turn it takes off the line and back onto it.
     row: { over: 62, turn: [22, 3] as [number, number] },
