@@ -90,6 +90,7 @@ npm run live -- "/lab/piece/desk?only=<part>&label=0&ui=0" --scale 1 --ms 2000 -
 ```
 
 - A part alone is already drawn at about three times its size on the page, and the canvas draws at up to two device pixels to a CSS pixel. So the close still is `--scale 2`: at 3 it is only enlarged, and shows stair steps that are not in the model.
+- Add `--png` (and a `.png` name) for a still you are going to count pixels on. Without it the file is a JPEG whatever it is called.
 - `--t 4` holds the clock, so a still is always the same picture. For anything that moves by itself (fans, the screen, the keys' wave), also take real frames with `npm run live`, whose options are at the top of `scripts/live.mjs`.
 - `?size=808` draws the desk in a host as tall as it is on the page at a 1440 wide screen. That is what a visitor sees. Your thing has to say what it is at that size.
 - Open every image you take with the Read tool. Never judge something you have not looked at.

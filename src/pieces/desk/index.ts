@@ -5,7 +5,7 @@ import type { Tier } from '../../config/site';
 import { clock } from '../../world/clock';
 import type { Piece, PieceOptions } from '../../world/piece';
 import { Stage } from '../../world/stage';
-import { trueDarks } from '../../world/tone';
+import { balance, trueDarks } from '../../world/tone';
 import type { Anchor, Struck } from '../../world/struck';
 import { BULB, DESK, SCREEN, SHADE, VIEW } from './layout';
 import { LIT, PARTS, type DeskLights, type DeskPart, type PartFactory, type PartName, type PartState } from './part';
@@ -61,7 +61,7 @@ export interface DeskExtras {
   where(x: number, y: number, z: number): Anchor;
   // What it cost: the milliseconds each part took to build, what the first frame took, what the last frame drew, and
   // how many shader programs it has had compiled. The programs are what a visitor waits for.
-  stats(): { built: Record<string, number>; first: number; calls: number; triangles: number; programs: number };
+  stats(): { built: Record<string, number>; first: number; calls: number; triangles: number; programs: number; passes: string[] };
 }
 export type DeskPiece = Piece & Struck & DeskExtras;
 
@@ -138,8 +138,9 @@ export function createDesk(): DeskPiece {
       const q = new URLSearchParams(location.search), asked = q.get('only') as PartName | null;
       only = asked && PARTS.includes(asked) ? asked : null;
       if (q.get('lights') === '0') lights = { room: 1, lamp: 0, tablet: 0, monitor: 0, keys: 0, pc: 0 };
-      stage = new Stage(h, canvas, { tier: opts.tier, fov: VIEW.fov, near: 0.05, far: 40, bloom: { strength: 0.16, threshold: 1.9, radius: 0.3 }, ao: 0.02, aoIntensity: 1, envIntensity: 0.3, env: 'studio', lampTarget: [0, -0.05, 0.1], lampAngle: 0.9 });
+      stage = new Stage(h, canvas, { tier: opts.tier, fov: VIEW.fov, near: 0.05, far: 40, bloom: { strength: 0.1, threshold: 2.3, radius: 0.22 }, ao: 0.02, aoIntensity: 1, envIntensity: 0.3, env: 'studio', lampTarget: [0, -0.05, 0.1], lampAngle: 0.9 });
       trueDarks(stage.renderer);
+      balance(stage);
       const s = stage.scene;
       const root = new THREE.Group();
       root.scale.setScalar(M);
@@ -237,12 +238,12 @@ export function createDesk(): DeskPiece {
     },
     stats() {
       const info = stage?.renderer.info.render;
-      return { built, first, calls: info?.calls ?? 0, triangles: info?.triangles ?? 0, programs: stage?.renderer.info.programs?.length ?? 0 };
+      return { built, first, calls: info?.calls ?? 0, triangles: info?.triangles ?? 0, programs: stage?.renderer.info.programs?.length ?? 0, passes: stage?.composer.passes.map((x) => x.constructor.name + (x.enabled ? '' : ' off')) ?? [] };
     },
     setProgress() {},
     setWaterLight() {},
     setMaking(on: boolean) { if (stage) { stage.setMaking(on, stage.scene); stale = true; } },
-    setTier(tier: Tier) { stage?.setTier(tier); stale = true; },
+    setTier(tier: Tier) { if (!stage) return; stage.setTier(tier); balance(stage); stale = true; },
     freeze(t: number | null) { hold = t; stale = true; frame(); },
     view() {},
     dispose() {

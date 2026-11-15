@@ -25,7 +25,9 @@ export const HP = {
   // The pivot a cup turns on in its yoke: across, up and the yoke's half spread front to back.
   PIVOT: { x: 83, y: -172, z: 42 },
   // The frame's arch: its middle's height, its half span and rise for the rails, and for the canopy under them.
-  ARCH: { cy: -50, rx: 83, ry: 62, crx: 79, cry: 45.5, bear: 4.5, bearW: 15 },
+  // The canopy is pulled into a small crest where it bears on the peg: its height, how fast it falls away, and the
+  // radius of its tip, which is about the peg's, so the canopy wraps the peg and runs off it in straight lines.
+  ARCH: { cy: -50, rx: 83, ry: 66, crx: 79, cry: 43, bear: 7, bearW: 9, bearR: 4 },
   // The rails' half spread front to back, the canopy's half width.
   RAIL_Z: 19.6,
   CANOPY_W: 19,
@@ -48,8 +50,13 @@ type Sec = [rx: number, rz: number, y: number];
 // face, a turned plate set a little down inside that edge.
 const SHELL: Sec[] = [
   [31.2, 37.2, -0.6], [33.6, 39.6, 0.4], [35.7, 41.7, 1.8], [36.8, 42.8, 4], [37, 43, 7], [36.8, 42.8, 11.5],
-  [36.1, 42.1, 14.8], [34.8, 40.8, 17.6], [33.0, 39.0, 19.8], [31.6, 37.6, 20.9], [30.7, 36.7, 21.0], [30.2, 36.2, 20.5],
+  [36.1, 42.1, 14.8], [35.2, 41.2, 17.2], [34.3, 40.3, 18.7], [33.7, 39.7, 19.4],
 ];
+// The machined edge round the face: a flat polished chamfer, the lip's flat top, and the lip's inner wall down to the
+// face, each its own facet so the edges between them stay crisp.
+const CHAMFER: Sec[] = [[33.7, 39.7, 19.4], [31.6, 37.6, 21.05]];
+const LIP: Sec[] = [[31.6, 37.6, 21.05], [30.7, 36.7, 21.05]];
+const LIP_IN: Sec[] = [[30.7, 36.7, 21.05], [30.2, 36.2, 20.5]];
 const FACE: Sec[] = [[29.7, 35.7, 20.1], [29.9, 35.9, 21.0], [29.6, 35.6, 21.6], [29.0, 35.0, 21.8]];
 // The cushion, from its inner wall round its face to where it tucks under the shell: soft and full.
 const CUSHION: Sec[] = [
@@ -246,7 +253,7 @@ float hpStrip(vec3 P, vec3 R, vec3 C, vec3 D, float halfL, float halfW, float bl
   return k * smoothstep(cosL - 0.04, cosL + 0.03, facing);
 }
 float hpStrips(vec3 P, vec3 R, float blur, float edge){
-  return hpStrip(P, R, uLampW, vec3(0.0, 1.0, 0.0), 0.8, 0.045, blur) * uLampK * 2.6
+  return hpStrip(P, R, uLampW, vec3(0.0, 1.0, 0.0), 1.6, 0.035, blur) * uLampK * 2.6
     + hpStrip(P, R, ${v3(A.x, A.y + 0.9, A.z - 0.55)}, vec3(1.0, 0.0, 0.0), 0.9, 0.035, blur) * 1.5 * edge
     + hpStrip(P, R, ${v3(A.x - 0.75, A.y + 0.15, A.z - 0.62)}, vec3(0.0, 1.0, 0.0), 0.5, 0.06, blur) * 0.9 * edge
     + hpStrip(P, R, ${v3(A.x + 1.0, A.y + 0.25, A.z - 0.4)}, vec3(0.0, 1.0, 0.0), 0.8, 0.03, blur) * 0.6 * edge;
@@ -357,11 +364,12 @@ function wallMaterial(centre: { value: THREE.Vector2 }, reach: [number, number])
   return m;
 }
 
-// The canopy's line: an arch under the rails, lifted a little where the peg bears on it.
+// The canopy's crest over the peg, and its line: an arch under the rails, drawn up to that crest where it bears.
+const crest = (x: number) => { const a = HP.ARCH; return a.bear * Math.exp(-(Math.hypot(x, a.bearR) - a.bearR) / a.bearW); };
 export function canopyY(x: number): number {
   const a = HP.ARCH;
   const k = Math.max(0, 1 - (x / a.crx) ** 2);
-  return a.cy + a.cry * Math.sqrt(k) + a.bear * Math.exp(-((x / a.bearW) ** 2));
+  return a.cy + a.cry * Math.sqrt(k) + crest(x);
 }
 
 function archPath(rx: number, ry: number, cy: number, lift: (x: number) => number, z: number, end: number, n = 96): THREE.Vector3[] {
@@ -439,7 +447,7 @@ export async function buildHeadphones(): Promise<HeadphonesModel> {
     m.customProgramCacheKey = () => key;
     return m;
   };
-  const anod = metalOf('hpAnod', 'hpMetal', 0.46, 2.2, 1);
+  const anod = metalOf('hpAnod', 'hpMetal', 0.3, 2.2, 1);
   const steel = metalOf('hpSteel', 'hpMetal', 0.24, 1.2, 1);
   const polished = metalOf('hpPolished', 'hpMetal', 0.12, 1.6, 1);
   const copper = metalOf('hpCopper', 'hpMetal', 0.22, 2.4, 0.8);
@@ -492,7 +500,7 @@ export async function buildHeadphones(): Promise<HeadphonesModel> {
     const r = HP.PEG.r;
     const peg = lathe([
       [0, 0], [10.4, 0], [10.4, 1.4], [9.6, 2.6], [8.2, 3.4], [7.0, 4.8], [6.2, 7.2], [r, 10.5], [r, L - 10.5], [5.9, L - 8.6],
-      [6.9, L - 6.8], [7.6, L - 5.0], [7.9, L - 3.5], [7.7, L - 2.0], [6.9, L - 0.9], [5.0, L - 0.15], [0, L + 0.25],
+      [6.0, L - 6.8], [6.5, L - 5.0], [6.7, L - 3.5], [6.6, L - 2.0], [6.0, L - 0.9], [4.4, L - 0.15], [0, L + 0.25],
     ], 56);
     peg.rotateX(Math.PI / 2);
     peg.rotateX(-HP.PEG.tilt);
@@ -519,11 +527,14 @@ export async function buildHeadphones(): Promise<HeadphonesModel> {
     for (const z of [-HP.RAIL_Z, HP.RAIL_Z]) {
       b.add(sweep(archPath(a.rx, a.ry, a.cy, () => 0, z, a.cy - 6), zAxis, 2.1, 2.7, 3, 16), polished);
     }
-    const cp = archPath(a.crx, a.cry, a.cy, (x) => a.bear * Math.exp(-((x / a.bearW) ** 2)), 0, a.cy - 5, 128).map((p) => {
-      // The path is the canopy's middle: the arch traced is its underside, the side that bears on the peg.
-      const t = Math.atan2((p.y - a.cy) / a.cry, p.x / a.crx);
-      const nx = Math.cos(t) / a.crx, ny = Math.sin(t) / a.cry, l = Math.hypot(nx, ny) || 1;
-      return p.y > a.cy ? p.clone().add(new THREE.Vector3((nx / l) * 1.25, (ny / l) * 1.25, 0)) : p.clone().add(new THREE.Vector3(Math.sign(p.x) * 1.25, 0, 0));
+    // The path is the canopy's middle: the arch traced is its underside, the side that bears on the peg, and the
+    // middle stands half the canopy's thickness out from it, square to the line, crest and all.
+    const under = archPath(a.crx, a.cry, a.cy, crest, 0, a.cy - 5, 320);
+    const cp = under.map((p, i) => {
+      const t = under[Math.min(under.length - 1, i + 1)].clone().sub(under[Math.max(0, i - 1)]);
+      const n = new THREE.Vector3(t.y, -t.x, 0);
+      if (n.dot(p.clone().sub(new THREE.Vector3(0, a.cy, 0))) < 0) n.negate();
+      return p.clone().addScaledVector(n.normalize(), 1.25);
     });
     b.add(sweep(cp, zAxis, HP.CANOPY_W, 1.25, 6, 20), canopy);
     for (const z of [-HP.CANOPY_W, HP.CANOPY_W]) b.add(sweep(cp.map((p) => new THREE.Vector3(p.x, p.y, z)), zAxis, 1.05, 1.35, 2, 10), piping);
@@ -589,6 +600,9 @@ export async function buildHeadphones(): Promise<HeadphonesModel> {
     // In the cup's own space its axis is z, out from the head, and its face lies in xy.
     const toCup = new THREE.Matrix4().makeRotationX(Math.PI / 2);
     b.add(ringLoft(SHELL, c.n, 112), anod, toCup);
+    b.add(ringLoft(CHAMFER, c.n, 112), polished, toCup);
+    b.add(ringLoft(LIP, c.n, 112), polished, toCup);
+    b.add(ringLoft(LIP_IN, c.n, 112), anod, toCup);
     b.add(ringLoft(FACE, c.n, 112, 'top'), faceSteel, toCup);
     // The copper ring set into the face.
     b.add(ringLoft([[23.9, 28.9, 21.4], [23.6, 28.6, 22.25], [22.3, 27.3, 22.25], [22.0, 27.0, 21.4]], c.n, 112), copper, toCup);

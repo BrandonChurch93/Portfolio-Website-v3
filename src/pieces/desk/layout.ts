@@ -17,9 +17,12 @@ export const PLACES: Record<string, [x: number, z: number, turn: number]> = {
   lamp: [-868, -268, 0],
   tablet: [-600, 150, 22],
   keyboard: [-110, 196, 0],
-  mouse: [176, 190, 8],
+  // The mouse is turned toward the keyboard: seen from behind it was a smooth pebble, and turned its buttons and
+  // wheel show.
+  mouse: [176, 190, 40],
   camera: [640, 120, -36],
-  lens: [742, -30, 0],
+  // The second lens stands beside the camera, clear of it: behind it, it read as a tube growing out of the camera.
+  lens: [755, 190, 0],
   cap: [520, 262, 0],
 };
 

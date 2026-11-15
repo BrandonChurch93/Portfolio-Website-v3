@@ -50,7 +50,9 @@ export interface PlanContext { box(el: Element): Box; width: number; bottom: num
 // after is called in each frame the stream draws, once its leading end has moved and before it is drawn, so the
 // page can bring things on in the frame the stream reaches them.
 // off says whether a place on the page is one the stream is never drawn over: no shard is drawn there.
-export interface Planned { route: Route; rails?: (since: (cue: string) => number) => RailShape[]; after?: (t: number) => void; off?: (x: number, y: number) => boolean }
+// quiet says how much of its size the stream keeps this far along its route, 1 being all of it: a page turns the
+// stream down along a stretch where something else should hold the eye.
+export interface Planned { route: Route; rails?: (since: (cue: string) => number) => RailShape[]; after?: (t: number) => void; off?: (x: number, y: number) => boolean; quiet?: (s: number) => number }
 
 // The Work section's parts, as they are on the page. A post or the rail that is not shown is left out of the route.
 // rows are the rows of cards, top to bottom. sets holds the cards by category, sets[category][place], the places
@@ -646,7 +648,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       if (head > from + 1) {
         const i0 = Math.floor(from / br.step), i1 = Math.floor(to / br.step);
         const lay = (x: number, y: number, tx: number, ty: number, s: number, hold: number) => {
-          const w = route!.dark ? CORE_HALF * unit * shownAt(s, true) : CORE_HALF * unit;
+          const w = (route!.dark ? CORE_HALF * unit * shownAt(s, true) : CORE_HALF * unit) * (planned?.quiet?.(s) ?? 1);
           if (surging) { shove(b, s, tx, ty, hold, y); x += push[0]; y += push[1]; }
           let ax = x - ty * w, ay = y + tx * w, bx = x + ty * w, by = y - tx * w;
           if (carried) { bend(ax, ay, moved); ax = moved[0]; ay = moved[1]; bend(bx, by, moved); bx = moved[0]; by = moved[1]; }
@@ -829,6 +831,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       // By distance ridden, so it takes as long to grow where it rides faster.
       let grown = Math.min(1, (heads[b] - ridden) / (K.grow * u));
       if (route.dark) grown *= shownAt(d, false);
+      if (planned?.quiet) grown *= planned.quiet(d);
       at(br, d, tmp);
       const hold = mix(br.hold);
       // A rider goes with the line: where a surge kinks it or it sags, the shards on it are carried with it.

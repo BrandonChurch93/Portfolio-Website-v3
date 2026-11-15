@@ -69,6 +69,9 @@ const RISE = 10;
 const RULE = { half: 2.4 };
 // The way the lamp's shade faces where the stream strikes it. Where that is, is the desk's own (SHADE in its layout).
 const SHADE_FACE = -2.3;
+// The stream at the desk, once the lamp is lit: how much of its size it gives up, over which seconds after the
+// strike, and how far toward the first row it stays turned down before it grows back.
+const QUIET = { by: 0.3, over: [0.15, 1.1] as Span, back: 0.5 };
 // The part of the headphones' host the pair hangs in: its share of the width, and from how far down to how far down.
 const BRUSH = [0.56, 0.2, 0.88];
 // How hard the stream strikes the first row again when its thing is asked to come to life again.
@@ -105,7 +108,7 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
   const heading = q('about-title'), tabs = q('tabs'), panel = q('panel');
   const auras = all('aura'), beams = all('beam');
 
-  let stream: StreamHandle | null = null, bench: DeskPiece | null = null, disposed = false;
+  let stream: StreamHandle | null = null, bench: DeskPiece | null = null, disposed = false, hush = 0;
   let anchors: { cpu: Anchor; reflector: Anchor; strike: Anchor; lens: Anchor; hook: Anchor } = { cpu: [-0.36, 0], reflector: [0, 0], strike: [0.02, -0.14], lens: [-0.12, 0.16], hook: [0, -0.24] };
   let lives: Record<Way, number> = { shards: 1.3, band: 0.9, flash: 0.8 };
   let rules: Rail[] = [], cues: Cue[] = [];
@@ -189,6 +192,13 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
         return g <= 0.002 ? [] : [{ ...r, bx: r.ax + (r.bx - r.ax) * g, own: 1.3 + i * 0.37, blade: [1.5, 0.3], ends: [0, 0], keel: [0, 0, 0] }];
       }),
       after: frame,
+      // Once the lamp is struck the stream is turned down from the top of the page to where it turns in to the first
+      // row, so the desk it has just lit holds the eye. It is whole again by the first row.
+      quiet: (s) => {
+        if (hush <= 0) return 1;
+        const to = cues.find((c) => c.name === 'row0')?.s ?? 0, from = cues.find((c) => c.name === 'lamp')?.s ?? 0, back = from + (to - from) * QUIET.back;
+        return 1 - QUIET.by * hush * (s <= back ? 1 : clamp(1 - (s - back) / Math.max(1, to - back)));
+      },
       off: (x, y) => {
         for (const o of keepOff) if (x >= o.l && x <= o.r && y >= o.t && y <= o.b && within(x, y, o.quads[0])) return true;
         if (!outline) return false;
@@ -234,6 +244,7 @@ export function mountSkills(parts: SkillsParts): SkillsStage {
     while (swings.length && t - swings[0].t > SWING.lasts) swings.shift();
     P.phones?.setSwing(whole ? 0 : (swing(t) * Math.PI) / 180);
     const near = since('near'), lit = since('lamp');
+    hush = whole ? 1 : ramp(lit, QUIET.over);
     set('desk:o', desk, 'opacity', near > 0 ? '1' : '0');
     bench?.setStream(whole ? 1 : lampHit.on, whole ? 60 : t - lampHit.at);
     bench?.setLights({ room: ramp(near, SHOW.room), lamp: lit > 0 ? 0.6 + 0.4 * ramp(lit, SHOW.lamp) : 0, tablet: ramp(lit, SHOW.tablet), monitor: ramp(lit, SHOW.monitor), keys: ramp(lit, SHOW.keys), pc: ramp(lit, SHOW.pc) });
