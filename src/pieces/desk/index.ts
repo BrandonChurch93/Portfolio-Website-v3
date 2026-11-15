@@ -182,7 +182,8 @@ export function createDesk(): DeskPiece {
       const fill = new THREE.RectAreaLight(hex('pale'), 5, 2.6, 1.4);
       fill.position.set(-1.6, 0.9, 2.4);
       fill.lookAt(0, -0.3, 0);
-      const hemi = new THREE.HemisphereLight(0x4a3526, 0x120c08, 0.55);
+      // A warm grey, not a brown: this light reaches every surface, and a brown one tinted every neutral thing.
+      const hemi = new THREE.HemisphereLight(0x3d3731, 0x100e0c, 0.55);
       s.add(deskLamp, deskLamp.target, monLight, rim, fill, hemi);
       // A light is turned down by its strength and never hidden: hiding one makes every material compile again.
       const power = (l: THREE.Light) => { const full = l.intensity; return (k: number) => { l.intensity = full * k; }; };
