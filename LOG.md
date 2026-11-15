@@ -2,7 +2,7 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
-## 2026-11-14 · Contact goes to Claude Code, then the whole page so far (Fable, web chat)
+## 2026-11-14 · Contact goes to Claude Code, then the whole page so far, and his changes to the desk (Fable, web chat)
 
 **What Brandon said**
 
@@ -11,17 +11,23 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 - He wants a report from Claude Code on what is done and where it is. He wonders whether the tests have it in a loop of fresh reviewers and small gains. He does not want anything changed now.
 - Nothing planned for the sections in hand changes because they are being joined.
 - His words are in `BRIEF.md`, Settled, Contact.
+- Then, before the prompt was sent, six changes to Skills from his look at the desk on the hosted page: the headphones onto the desk across from the lamp and made again, the camera and the lens turned and placed again, the pencil straight and further right, the PC turned so its back is not seen, and the title onto the floor under the drawers. His words are in `BRIEF.md`, Settled, Skills, at the foot of the list.
 
 **What was done**
 
 - No higher fidelity version was built. Only reading was done toward it, and nothing of it is in the repo.
 - The wireframe moved from `/lab/contact` to `/lab/contact-draft`, so the build can have `/lab/contact`.
-- `BRIEF.md`, Settled: "Contact, the first build", 26 items, and a new section, "The whole page so far", 8 items. `QUALITY.md`: 22 tests and 7 tests under the same two names.
+- `BRIEF.md`, Settled: "Skills, the desk and the title changed", 9 items. "Contact, the first build", 26 items. A new section, "The whole page so far", 8 items. `QUALITY.md` has 8, 22 and 7 tests under the same three names.
+- A still of `/lab/piece/desk` was taken and opened to say exactly what is where now. In software, so for places only.
+
+**One thing Fable did not write**
+
+- He asked for the headphones to be known at a glance as one of two real models. Fable does not write a spec that copies a real company's product, so that is not in the agreement or the prompt. His words are in the record as he said them. The agreement asks for a pair of the site's own design that anyone names as high end over ear headphones at a glance. He was told in the chat.
 
 **The prompt Brandon was given, to paste into the same Claude Code session**
 
 ```
-Two things. First a report, then what comes after Skills and About.
+Four things, in this order. Pull main with rebase first.
 
 1. Where things stand. Before you go on, tell me where this round is. A list, one line for each thing: the route, Skills, About, the reflector, the studio light, the CPU and its three ways, the headphones, and each thing on the desk. For each one:
 
@@ -32,7 +38,16 @@ Two things. First a report, then what comes after Skills and About.
 
 Say plainly if any of them is going round in a loop of small gains. Do not change how you are working because of this. I want to see it first.
 
-2. Contact. When Skills and About are finished by their agreement, build Contact. Pull main with rebase first. BRIEF.md, Settled, "Contact, the first build" is the agreement, 26 items, and QUALITY.md has its 22 tests under the same name. The wireframe at /lab/contact-draft is the basic version: what stands where, what happens and in what order are agreed, and its look is not. Build it at /lab/contact.
+2. Changes to Skills, now that I have seen the desk on the page. BRIEF.md, Settled, "Skills, the desk and the title changed" is the agreement, 9 items, and QUALITY.md has its 8 tests under the same name. These are part of finishing Skills.
+
+- The headphones come off the hook by the title and go on the desk: at the back right, across from the lamp, in the empty spot beside the monitor, on a stand.
+- The headphones are made again. Right now the only part that looks right is the headband.
+- The camera and the lens stay about where they are. Turn them and place them again so they look better. Right now the lens stands straight behind the camera.
+- The pencil lies straight and a little further right, so it is seen by itself and not as part of the tablet.
+- Turn the PC so I never see its back. Catty-corner or up to a quarter turn, whichever shows its glass sides best.
+- The Skills title comes off the page and lies on the floor under the two drawers, in the desk's perspective, like a word on a rug with no rug drawn. Same lettering as now. It has to read at a glance.
+
+3. Contact. When Skills and About are finished by their agreements, build Contact. BRIEF.md, Settled, "Contact, the first build" is the agreement, 26 items, and QUALITY.md has its 22 tests under the same name. The wireframe at /lab/contact-draft is the basic version: what stands where, what happens and in what order are agreed, and its look is not. Build it at /lab/contact.
 
 What I care about most there:
 
@@ -42,11 +57,11 @@ What I care about most there:
 - The rocket fits this page. Not a white rocket.
 - The form really sends. Use the Calendly link and the email address my live site uses. They are in the live site's repo, github.com/BrandonChurch93/brandon-church-portfolio, in app/components/ContactSection.jsx.
 
-3. The whole page. After Contact, put everything we have on one page at /lab/whole: Work, Skills, About and Contact, with one stream running through all of it. BRIEF.md, Settled, "The whole page so far" is the agreement, and its 7 tests are in QUALITY.md under the same name. That is the page I test on from then on. The hero, the navigation and the footer's design are missing on purpose.
+4. The whole page. After Contact, put everything we have on one page at /lab/whole: Work, Skills, About and Contact, with one stream running through all of it. BRIEF.md, Settled, "The whole page so far" is the agreement, and its 7 tests are in QUALITY.md under the same name. That is the page I test on from then on. The hero, the navigation and the footer's design are missing on purpose.
 
-Everything in the first two prompts still holds. Nothing that was planned for Skills, About or the desk changes because the sections are being joined, and nothing in Work changes.
+Everything in the first two prompts still holds but what item 2 changes. Nothing else that was planned for Skills, About or the desk changes because the sections are being joined, and nothing in Work changes.
 
-Show me Contact as soon as it can be scrolled, and say plainly what is at the bar and what is not.
+Show me the desk with its changes, and then Contact, as soon as each can be scrolled, and say plainly what is at the bar and what is not.
 ```
 
 **What the record says of where Claude Code is, read before the prompt was sent**
@@ -61,6 +76,7 @@ Show me Contact as soon as it can be scrolled, and say plainly what is at the ba
 
 - His verdicts on Claude Code's report go into `BRIEF.md`. If it is in a loop, the tests and the two earlier prompts are what set it there: "fresh Opus reviewers each round", "never lower the bar", "keep going until every test passes". Changing them is his call.
 - Still his to say: whether CodePen and YouTube go in the footer, and his pick of how the CPU comes to life.
+- Not checked by Fable: how the headphones look on the page now. The still taken was of the desk alone, and they are not part of that piece yet.
 - Next in the web chat is his to name. The hero is the section left, and he has said it is worked last.
 
 ## 2026-11-14 · Contact, fourth round: the plate wakes at the landing, and the screen is seated for it (Fable, web chat)

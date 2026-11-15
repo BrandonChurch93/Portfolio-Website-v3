@@ -1,5 +1,7 @@
 # Kit · the desk, and everything on, under and beside it
 
+**Changed Nov 14.** Six things move or turn: the headphones onto the top across from the lamp, the camera with its second lens and cap, the pencil, the PC, and the Skills title onto the floor under the drawers. `BRIEF.md`, Settled, "Skills, the desk and the title changed", and `QUALITY.md` under the same name. Where this file says a place is fixed, it is fixed for everything else.
+
 Read `reference/kits/README.md` first: the bar, the colors, how to look at a thing, what not to do. This file holds what every builder of the desk shares. Each thing then has a few lines of its own at the foot.
 
 `BRIEF.md`, Settled, "Skills and About, the first build", items 27 to 30, is the agreement, and the lines under "### Skills" above it carry Brandon's own words on each thing. `QUALITY.md`, the same heading, tests 29 to 42, is how it is judged.

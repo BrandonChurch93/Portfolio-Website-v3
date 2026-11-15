@@ -488,6 +488,19 @@ What the build taught:
 - **Count what is drawn, not what is planned.** The route kept clear of the desk, his head and the words by a wide margin, and thrown shards still crossed all three. `streamList` in every frame of a real scroll found them.
 - **A test browser that is asked for nothing draws nothing.** A script that scrolled and then only waited saw a stream that had barely moved, which looked like a fault in the stream. Keep a frame loop running in the page while a script waits, and drive a scroll at a set speed from inside the page.
 
+## Skills, the desk and the title changed
+
+`BRIEF.md`, Settled, "Skills, the desk and the title changed", is the agreement. Everything under "Skills and About, the first build" above still holds. It passes when all of these are true:
+
+1. **The headphones are named at a glance.** A fresh reviewer shown one still of the whole desk at the page's size, and told nothing, names them among the things on it. Alone on the screen at three times that size they pass "The look" and are not the weaker work beside `reference/bar/pc-builder-parts.jpg`.
+2. **They stand across from the lamp** and the two ends of the top balance. From the page's view they hide none of the monitor's screen, the camera or the second lens, and nothing of them or their stand is cut off by the edge of the desk's picture.
+3. **They rock** at the lamp's strike and at the cursor's brush, about the point they hang from, and come to rest.
+4. **The camera, the second lens and the cap:** from the page's view none of the three overlaps another, and the same reviewer names all three from the same still.
+5. **The pencil** is named as a pencil in that still, with clear mat on every side of it.
+6. **The PC's back cannot be seen** from the page's view. Two glass sides are. Nothing of it passes through the top, a leg or the stretcher, and it stands under the top.
+7. **The word.** A stranger shown the section for three seconds, with the desk's lights on, says what it is called. No letter is hidden. A shadow of the desk crosses it and the cursor's light lands on it, so it lies on the floor and is not laid over the picture. It reads on a screen 1100 px wide as well as on one 1440 wide.
+8. **The rest holds.** A screen reader finds the heading before the rows. The stream and its shards are over none of the word, counted as on the rest of the desk. The lights still come on from the lamp across the desk, the frame times hold, and nothing else of the first build's tests has gone back.
+
 ## Contact, the first build
 
 `BRIEF.md`, Settled, "Contact, the first build", is the agreement. Everything in "The stream" above still holds, and so does the look every 3D thing on this page is held to (`reference/kits/README.md`, "The look"). It passes when all of these are true:
