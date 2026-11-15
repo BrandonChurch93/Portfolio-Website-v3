@@ -19,6 +19,14 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 - `reference/kits/skycity.md`: a new section, "The torn world", which every builder shares.
 - Nine builders: five told to seat what they have on the dome (spire, towers, temple, gardens and farms, port), four new (ground, the torn underside, the core, what broke away).
 
+**His look at the frame, the same night**
+
+- He saw the stills of the frame with the old disc still standing on the dome, and ruled six things. They are in `BRIEF.md`, Settled, Hero, "His look at the frame": no platform, a flatter dome, the ground as land and not a space station, a large city, a national forest and not a farm, the pyramid kept and the port's ring rejected.
+- `layout.ts` redrawn again for it: `PLANET` curved to 748 and kept to 62 degrees, `HEART` a fixed place 540 under the top and no longer the sphere's middle, `relief()` and `LAND` for hills outside the city (which `seat`, `lift` and `bend` include), `lots()` giving few, large buildings out to 440, `DISTRICTS` with the temple quarter and the port in the city at the left and right of the skyline and forest all round, the spire 240.
+- Every builder was told. The gardens' builder had just handed back its terraces and farms on the dome and was sent on as the forest's builder. The port's builder was told to design again from nothing. Every part's state at that moment is a third commit on `kept/city-on-the-disc`.
+- `index.ts` now leaves out a part that fails to build and stands the rest, since nine hands are in it at once.
+- The wireframe at `/lab/hero-draft` now disagrees with the build on the dome's shape, the spire and the world's height. The build follows his ruling.
+
 **Checked**
 
 - A production build of the committed frame passes. On `/lab/whole` one stream runs from the core into Work and Work is as it was (stills).
