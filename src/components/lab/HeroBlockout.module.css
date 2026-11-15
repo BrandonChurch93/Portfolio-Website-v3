@@ -165,6 +165,10 @@
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   translate: -50% 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-1) var(--space-5);
 }
 
 .group {

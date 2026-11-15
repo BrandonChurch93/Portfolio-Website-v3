@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { hero } from '../../content/hero';
-import type { Blockout } from '../../hero-blockout/scene';
+import type { Blockout, Close } from '../../hero-blockout/scene';
 import { HOST, VIEW, WORDS } from '../../hero-blockout/plan';
 import { registry } from '../../hooks/registry';
 import { lamp } from '../../lamp/lamp';
@@ -11,26 +11,31 @@ import { tiers } from '../../world/tier';
 import { MetalButton } from '../MetalButton';
 import styles from './HeroBlockout.module.css';
 
-// Study 32: the hero's new world as a grey blockout, under his words as the hero lays them out. For its shape, the
-// camera and how it sits on the page, before any detail. ?el=16 opens it from that many degrees above, and ?ui=0
-// hides the switch.
+// Study 32: the hero's new world, under his words as the hero lays them out, in its third round: in color. For
+// the look of the top and of the torn rock, which he signs off before anything goes to Claude Code. ?el=16 opens
+// it from that many degrees above, ?close=city, land or rock opens it close on that part, and ?ui=0 hides the
+// switches.
+const CLOSES: readonly [Close, string][] = [['whole', 'The whole'], ['city', 'The city'], ['land', 'The land'], ['rock', 'The rock']];
 export function HeroBlockout() {
   const host = useRef<HTMLDivElement>(null), scene = useRef<Blockout | null>(null);
   const [ready, setReady] = useState(false);
   const [ui, setUi] = useState(true);
   const [el, setEl] = useState<number>(VIEW.rest);
+  const [near, setNear] = useState<Close>('whole');
 
   useEffect(() => {
     const h = host.current;
     if (!h) return;
     const q = new URLSearchParams(location.search), asked = Number(q.get('el')), from = VIEW.el.find((v) => v === asked) ?? VIEW.rest;
+    const close = CLOSES.find(([k]) => k === q.get('close'))?.[0] ?? 'whole';
     if (q.get('ui') === '0') setUi(false);
     setEl(from);
+    setNear(close);
     lamp.bind();
     tiers.detect();
     let alive = true, off: (() => void) | null = null;
     void registry.track(import('../../hero-blockout/scene').then(async ({ mountBlockout }) => {
-      const made = await mountBlockout(h, tiers.get(), from);
+      const made = await mountBlockout(h, tiers.get(), from, close);
       if (!alive) { made.dispose(); return; }
       scene.current = made;
       off = clock.onFrame(() => {
@@ -43,6 +48,7 @@ export function HeroBlockout() {
   }, []);
 
   const look = (v: number) => { setEl(v); scene.current?.view(v); };
+  const go = (k: Close) => { setNear(k); scene.current?.close(k); };
   const vars = {
     '--words-tall': WORDS.tall, '--words-least': WORDS.least, '--words-third': WORDS.third, '--words-rise': WORDS.rise, '--words-gap': WORDS.gap,
     '--host-tall': HOST.tall, '--host-over': HOST.over,
@@ -51,7 +57,7 @@ export function HeroBlockout() {
   return (
     <main className={styles.page}>
       <div className={styles.head}>
-        <p className={styles.label}>Study 32 · The hero’s world, a grey blockout</p>
+        <p className={styles.label}>Study 32 · The hero’s world, in color</p>
       </div>
       <div className={styles.board} style={vars}>
         <div className={styles.glow} aria-hidden="true" />
@@ -70,12 +76,11 @@ export function HeroBlockout() {
       <section className={styles.notes}>
         <h2 className={styles.notesHead}>What this is</h2>
         <ul>
-          <li>The second round of the grey blockout. Grey on purpose: it is for the shape, the camera and how it sits under your words.</li>
-          <li>Three steps on the scroll. At rest, the city. Then the land: the desert, the parks, the boulevards. Then what happened to the planet.</li>
-          <li>Lit as the finished world will be: one low moon from the upper right with real shadows, and the core’s own light in the hollow.</li>
-          <li>Not here yet, and not what it is for: materials, lit windows, the look of rock and sand, the night sky, the real stream.</li>
-          <li>Nothing moves. What broke away is of four kinds, each placed as it will be: great pieces that still carry land, pieces locked to the core, belts in orbit, and small ones falling away under the core.</li>
-          <li>Every building, tree and broken piece is a plain form standing in for the real one.</li>
+          <li>The third round: your six changes to the top, and the same model in color. For the look, which you sign off before anything goes to Claude Code.</li>
+          <li>Three steps on the scroll. At rest, the city. Then the land. Then what happened to the planet.</li>
+          <li>The switch at the foot of the screen looks closely at the city, the land or the rock. Scroll to the top of the picture after pressing it.</li>
+          <li>Lit by one low moon from the upper right with real shadows, and by the core’s own light in the hollow.</li>
+          <li>Nothing moves. Not here: the night sky, the real stream, the real core.</li>
         </ul>
       </section>
       {ui && (
@@ -84,6 +89,12 @@ export function HeroBlockout() {
             <span className={styles.groupName}>Seen from above by</span>
             {VIEW.el.map((v) => (
               <button key={v} type="button" className={styles.choice} aria-pressed={el === v} onClick={() => look(v)}>{v}°</button>
+            ))}
+          </div>
+          <div className={styles.group} role="group" aria-label="What is looked at">
+            <span className={styles.groupName}>Look at</span>
+            {CLOSES.map(([k, name]) => (
+              <button key={k} type="button" className={styles.choice} aria-pressed={near === k} onClick={() => go(k)}>{name}</button>
             ))}
           </div>
         </div>

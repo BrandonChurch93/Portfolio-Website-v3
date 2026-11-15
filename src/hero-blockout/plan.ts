@@ -9,6 +9,10 @@
 // catastrophe. So the far half of the top is city and the near half, which is under the foot of the screen at rest,
 // is where the open land lies.
 //
+// Its third round made his six changes to the top (city and its works down both sides of the avenue, a smaller
+// desert that is whole and has no trees round it, no bare ground, kinds of plant) and took the model into color,
+// which is scene.ts's part.
+//
 // Units, one a CSS pixel on a screen 1460 wide. The origin is the top of the planet, at the spire's foot. x to the
 // visitor's right, y up, z toward the visitor.
 
@@ -34,7 +38,7 @@ export const COURT = 88;
 // The pyramid: in the city, among the buildings, to the left of the spire.
 export const PYRAMID = { x: -268, z: 78, base: 190, tall: 122, court: 134 } as const;
 // The avenue from the spire's court toward the visitor, which ends in the air where the ground is torn away.
-export const AVENUE = { half: 24, from: 60 } as const;
+export const AVENUE = { half: 28, from: 60 } as const;
 // A boulevard's half width and a street's.
 export const BOULEVARD = 11;
 export const STREET = 4.5;
@@ -107,7 +111,9 @@ const TEAR = {
 // How far inside the land's bitten edge a place is.
 function within(x: number, z: number): number {
   const th = Math.atan2(x, z);
-  return TEAR.rim + TEAR.bite * (noise(2.3 * Math.sin(th) + 5, 2.3 * Math.cos(th) + 5, 0, 37) - 0.5) - TEAR.front * Math.exp(-((th / 0.42) ** 2)) - Math.hypot(x, z);
+  // The desert is whole: nothing is bitten out of it and no crack crosses it. He found broken ground across its
+  // largest dune.
+  return TEAR.rim + TEAR.bite * (noise(2.3 * Math.sin(th) + 5, 2.3 * Math.cos(th) + 5, 0, 37) - 0.5) - TEAR.front * Math.exp(-((th / 0.42) ** 2)) - Math.hypot(x, z) + 230 * ramp(-0.22, 0.12, sands(x, z));
 }
 function whole(x: number, y: number, z: number): number {
   const th = Math.atan2(x, z), sn = Math.sin(th), cs = Math.cos(th);
@@ -266,20 +272,23 @@ export function rock(x: number, y: number, z: number): number {
 // The land.
 
 // The desert: how much of it a place on the map is, 0 to 1. At the front right, on the near half of the top, so it
-// is under the foot of the screen at rest and comes up on the first scroll. Smaller than the first round's, which
-// he found too big: where it lies, how far it reaches along and across, and how far it is turned.
-export const DESERT = { at: [296, 424] as const, r: [330, 228] as const, turn: -20 } as const;
-export function desert(x: number, z: number): number {
+// is under the foot of the screen at rest and comes up on the first scroll. Twice made smaller: it was a third of
+// the land, and then reached the avenue. Now its left edge stands off the avenue, as he drew it, and the sand runs
+// straight up to the city with no trees between. Where it lies, how far it reaches along and across, and how far
+// it is turned.
+export const DESERT = { at: [384, 414] as const, r: [262, 212] as const, turn: -20 } as const;
+function sands(x: number, z: number): number {
   const c = Math.cos(DESERT.turn * D2R), s = Math.sin(DESERT.turn * D2R), rx = x - DESERT.at[0], rz = z - DESERT.at[1];
-  return ramp(0, 0.2, 1 - Math.hypot((rx * c + rz * s) / DESERT.r[0], (-rx * s + rz * c) / DESERT.r[1]) + 0.2 * (noise(x / 110, 0, z / 110, 7) - 0.5));
+  return 1 - Math.hypot((rx * c + rz * s) / DESERT.r[0], (-rx * s + rz * c) / DESERT.r[1]) + 0.14 * (noise(x / 110, 0, z / 110, 7) - 0.5);
 }
+export const desert = (x: number, z: number): number => ramp(0, 0.1, sands(x, z));
 // The dunes: each a crescent with a long back to the wind and a steep face away from it, which the moon leaves in
-// shadow. Where it is, how long its back is, how wide it is and how tall. The ones nearest the city are the low
-// ones, so no crest stands into the first screen.
+// shadow. Where it is, how long its back is, how wide it is and how tall. The largest stands whole in the middle,
+// and the ones nearest the city are the low ones, so no crest stands into the first screen.
 const WIND = [-0.83, 0.56] as const, SLIP = 0.62;
 const DUNES: readonly (readonly [number, number, number, number, number])[] = [
-  [335, 440, 150, 118, 46], [215, 480, 120, 96, 34], [455, 360, 130, 100, 40], [262, 356, 100, 80, 22], [415, 510, 110, 86, 30],
-  [150, 420, 84, 66, 16], [512, 300, 90, 70, 20], [300, 560, 100, 80, 28], [128, 530, 80, 62, 18], [385, 292, 84, 64, 14],
+  [398, 432, 150, 118, 46], [300, 484, 110, 88, 30], [486, 364, 120, 94, 36], [330, 352, 96, 76, 20], [474, 504, 100, 80, 28],
+  [244, 424, 80, 62, 15], [546, 300, 84, 66, 18], [384, 562, 96, 76, 24], [424, 282, 80, 60, 13],
 ];
 export function dunes(x: number, z: number): number {
   let h = 0;
@@ -387,11 +396,11 @@ export function street(x: number, z: number): number {
 }
 
 // The parks: real ones, each a stretch of trees and open ground and not one empty block. Where each lies, how far
-// it reaches along and across, and how far it is turned.
+// it reaches along and across, and how far it is turned. None lies along the avenue: he wants city there.
 export interface Park { name: string; x: number; z: number; a: number; b: number; turn: number }
 export const PARKS: readonly Park[] = [
   { name: 'great', x: -322, z: 372, a: 128, b: 84, turn: 34 },
-  { name: 'mall', x: -92, z: 296, a: 150, b: 46, turn: 90 },
+  { name: 'west', x: -486, z: 150, a: 74, b: 50, turn: 62 },
   { name: 'east', x: 452, z: 96, a: 84, b: 58, turn: -30 },
 ];
 export function park(x: number, z: number): number {
@@ -412,17 +421,25 @@ export function tallAt(x: number, z: number): number {
   return (44 + crown + second + shoulder + behind) * (1 - 0.64 * ramp(110, 400, z));
 }
 
-export type Form = 'step' | 'taper' | 'drum' | 'blade' | 'twin' | 'needles' | 'box' | 'tier';
-export interface Building { x: number; z: number; w: number; d: number; tall: number; turn: number; form: Form; lean: number }
-export interface Tree { x: number; z: number; size: number }
+// What a building is as a form, and what it is clad in. The last four forms are the works along the avenue and
+// the low city's own: a hall with a colonnade, an obelisk, a tall gate post, and a building under a dome.
+export type Form = 'step' | 'taper' | 'drum' | 'blade' | 'twin' | 'needles' | 'box' | 'tier' | 'hall' | 'obelisk' | 'pylon' | 'dome';
+export type Skin = 'stone' | 'bronze' | 'glass' | 'copper';
+export interface Building { x: number; z: number; w: number; d: number; tall: number; turn: number; form: Form; skin: Skin; seed: number; lean: number }
+// The kinds of thing that grow: a broad crown, a tall slim one, a dark cone, a palm, a low bush, and a pale tree
+// in flower. He found one kind everywhere.
+export type Plant = 'broad' | 'poplar' | 'conifer' | 'palm' | 'shrub' | 'bloom';
+export interface Tree { x: number; z: number; size: number; kind: Plant; hue: number }
 export interface City { buildings: Building[]; trees: Tree[] }
 
+// How far each side of the avenue's middle is kept for the works that line it.
+const WAY = AVENUE.half + 46;
 // Whether a building may stand with its middle at a place and reach so far each way.
-function free(x: number, z: number, half: number, turn: number, off = 5): boolean {
+function free(x: number, z: number, half: number, turn: number, off = 5, way = WAY): boolean {
   const c = Math.cos(turn), s = Math.sin(turn);
   for (const [a, b] of [[0, 0], [-1, -1], [1, -1], [1, 1], [-1, 1]]) {
     const px = x + (a * c - b * s) * half, pz = z + (a * s + b * c) * half;
-    if (!standing(px, pz, 9) || desert(px, pz) > 0.04 || boulevard(px, pz) < BOULEVARD + off || avenue(px, pz) < AVENUE.half + 26 || Math.hypot(px, pz) < COURT + 6) return false;
+    if (!standing(px, pz, 9) || desert(px, pz) > 0.3 || boulevard(px, pz) < BOULEVARD + off || avenue(px, pz) < way || Math.hypot(px, pz) < COURT + 6) return false;
     if (Math.hypot(px - PYRAMID.x, pz - PYRAMID.z) < PYRAMID.court + 4 || park(px, pz) > -0.02) return false;
   }
   return true;
@@ -430,11 +447,19 @@ function free(x: number, z: number, half: number, turn: number, off = 5): boolea
 // About how far across one small building's lot is.
 const LOT = 16.5;
 const TOWERS: readonly Form[] = ['step', 'taper', 'drum', 'blade', 'twin', 'needles', 'step', 'taper'];
+// Which ground has something built on it, on the grid the land was measured on.
+let COVER: Uint8Array | null = null;
 let CITY: City | null = null;
 export function city(): City {
   if (CITY) return CITY;
   const r = seeded(7741), buildings: Building[] = [], trees: Tree[] = [];
-  const tree = (x: number, z: number, size: number, sand = 0.3) => { if (standing(x, z, 5) && desert(x, z) < sand && Math.hypot(x, z) > SPIRE.foot + 10) trees.push({ x, z, size }); };
+  const plant = (x: number, z: number, size: number, kind: Plant, sand = 0.12) => { if (standing(x, z, 5) && desert(x, z) < sand && Math.hypot(x, z) > SPIRE.foot + 10) trees.push({ x, z, size, kind, hue: hash(Math.round(x * 3), 7, Math.round(z * 3), 19) }); };
+  const clad = (di: number, tower: boolean, k: number): Skin => {
+    const name = DISTRICTS[di].name;
+    if (tower) return name === 'crown' ? (k < 0.5 ? 'glass' : k < 0.86 ? 'bronze' : 'stone') : k < 0.4 ? 'bronze' : k < 0.72 ? 'stone' : 'glass';
+    if (name === 'temple') return k < 0.86 ? 'stone' : 'copper';
+    return k < 0.42 ? 'stone' : k < 0.82 ? 'copper' : 'bronze';
+  };
   DISTRICTS.forEach((d, di) => {
     const turn = d.turn * D2R, c = Math.cos(turn), s = Math.sin(turn), reach = Math.ceil(760 / d.pitch);
     for (let iu = -reach; iu <= reach; iu++) for (let iv = -reach; iv <= reach; iv++) {
@@ -447,50 +472,85 @@ export function city(): City {
       // A tall block is one tower, standing on the whole of it.
       if (tall > 92) {
         const w = inside * (0.62 + 0.3 * size), near = Math.exp(-((Math.hypot(x, z) / 240) ** 2)), h = Math.min(TALLEST, tall * (0.66 + 0.16 * near + (0.5 - 0.1 * near) * share));
-        if (free(x, z, w, turn)) { buildings.push({ x, z, w: 2 * w, d: 2 * w * (0.74 + 0.26 * r()), tall: h, turn, form: TOWERS[Math.floor(kind * TOWERS.length)], lean: 0 }); continue; }
+        if (free(x, z, w, turn)) { buildings.push({ x, z, w: 2 * w, d: 2 * w * (0.74 + 0.26 * r()), tall: h, turn, form: TOWERS[Math.floor(kind * TOWERS.length)], skin: clad(di, true, r()), seed: r(), lean: 0 }); continue; }
       }
       // A lower one is small buildings round a courtyard with trees in it, so the city between its towers is a
       // fabric of streets and yards and not open paving.
       const n = Math.round((2 * inside) / LOT), lot = (2 * inside) / n, lo = 1, hi = n - 2;
       let stood = 0;
       for (let a = 0; a < n; a++) for (let b = 0; b < n; b++) {
-        const one = r(), two = r(), three = r(), deep = r();
+        const one = r(), two = r(), three = r(), deep = r(), skin = r(), seed = r();
         if (a >= lo && a <= hi && b >= lo && b <= hi) continue;
         if (one < 0.04) continue;
         const [px, pz] = at(-inside + (a + 0.5) * lot, -inside + (b + 0.5) * lot), w = lot * (0.42 + 0.05 * two);
         if (!free(px, pz, w, turn, 3)) continue;
         // One height to a block, give or take, and well under the towers: they are what the skyline is made of.
         const h = Math.max(8, Math.min(58, 13 + 0.34 * tall) * (0.6 + 0.5 * roll) * (0.84 + 0.32 * three) * (deep < 0.07 ? 1.6 : 1));
-        buildings.push({ x: px, z: pz, w: 2 * w, d: 2 * w * (0.9 + 0.2 * deep), tall: h, turn, form: h > 40 && two > 0.5 ? 'tier' : 'box', lean: 0 });
+        buildings.push({ x: px, z: pz, w: 2 * w, d: 2 * w * (0.9 + 0.2 * deep), tall: h, turn, form: one > 0.955 ? 'dome' : h > 40 && two > 0.5 ? 'tier' : 'box', skin: clad(di, false, skin), seed, lean: 0 });
         stood++;
       }
-      if (stood > n) for (let q = 0; q < (n === 3 ? 1 : 3); q++) { const [px, pz] = at((r() - 0.5) * lot * (n - 2.4), (r() - 0.5) * lot * (n - 2.4)); tree(px, pz, 4.4 + 1.8 * r()); }
+      if (stood > n) for (let q = 0; q < (n === 3 ? 1 : 3); q++) { const [px, pz] = at((r() - 0.5) * lot * (n - 2.4), (r() - 0.5) * lot * (n - 2.4)); plant(px, pz, 4.4 + 1.8 * r(), q ? 'broad' : 'bloom'); }
       // And a tree at each corner of the block, on the near half of the top, where the streets are seen.
-      if (stood > 1 && z > -40) for (const [a, b] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { const [px, pz] = at(a * (inside + 1.5), b * (inside + 1.5)); if (r() < 0.8 && boulevard(px, pz) > BOULEVARD + 4 && avenue(px, pz) > AVENUE.half + 24 && park(px, pz) < -0.05) tree(px, pz, 3.6 + 1.2 * r()); }
+      if (stood > 1 && z > -40) for (const [a, b] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { const [px, pz] = at(a * (inside + 1.5), b * (inside + 1.5)); if (r() < 0.8 && boulevard(px, pz) > BOULEVARD + 4 && avenue(px, pz) > WAY && park(px, pz) < -0.05) plant(px, pz, 3.6 + 1.2 * r(), di % 2 ? 'poplar' : 'broad'); }
     }
   });
-  // What stands at the land's broken edge leans toward the break.
-  for (const b of buildings) { const e = inland(b.x, b.z); if (e < 26) b.lean = (1 - e / 26) * (4 + 7 * hash(Math.round(b.x), 1, Math.round(b.z), 5)) * D2R; }
-  // Trees. Two rows down each side of the avenue, one down each side of every boulevard.
-  for (let z = AVENUE.from + 26; z < 640; z += 15) for (const side of [-1, 1]) { tree(side * (AVENUE.half + 7), z, 8.4, 0.9); tree(side * (AVENUE.half + 19), z + 7, 7.2, 0.6); }
-  for (const l of boulevards()) {
-    const len = Math.hypot(l[2] - l[0], l[3] - l[1]), nx = -(l[3] - l[1]) / len, nz = (l[2] - l[0]) / len;
-    for (let t = 8; t < len; t += 13) for (const side of [-1, 1]) {
-      const x = l[0] + ((l[2] - l[0]) * t) / len + side * (BOULEVARD - 2.5) * nx, z = l[1] + ((l[3] - l[1]) * t) / len + side * (BOULEVARD - 2.5) * nz;
-      if (Math.hypot(x, z) > COURT + 8 && avenue(x, z) > AVENUE.half + 4 && Math.hypot(x - PYRAMID.x, z - PYRAMID.z) > PYRAMID.base * 0.74) tree(x, z, 6.2);
+  // The avenue: a hall on each side, one after another, from the spire's court to where the land breaks off, with
+  // a pair of obelisks between each two and a pair of gate posts where it ends in the air. He asked for city, or
+  // the works of a civilization, down both sides of it, and for the road to be seen the whole way: so no tree
+  // stands on it.
+  let end = 0;
+  for (let z = COURT + 34; z < 640; z += 46) {
+    const low = ramp(150, 520, z);
+    for (const side of [-1, 1]) {
+      const x = side * (AVENUE.half + 24);
+      if (free(x, z, 17, 0, 3, AVENUE.half + 3)) { buildings.push({ x, z, w: 31, d: 35, tall: 44 - 16 * low + 5 * r(), turn: 0, form: 'hall', skin: 'stone', seed: r(), lean: 0 }); end = Math.max(end, z); }
+      if (standing(side * (AVENUE.half + 6), z - 23, 8) && z - 23 > COURT + 14) buildings.push({ x: side * (AVENUE.half + 6), z: z - 23, w: 5.4, d: 5.4, tall: 37 - 9 * low, turn: 0, form: 'obelisk', skin: 'stone', seed: r(), lean: 0 });
     }
   }
-  // A ring round the pyramid's court, and one round the spire's.
-  for (let i = 0; i < 46; i++) { const a = (i / 46) * Math.PI * 2; tree(PYRAMID.x + Math.sin(a) * (PYRAMID.court - 8), PYRAMID.z + Math.cos(a) * (PYRAMID.court - 8), 7.4); }
-  for (let i = 0; i < 40; i++) { const a = (i / 40) * Math.PI * 2; if (Math.abs(Math.sin(a)) * COURT > AVENUE.half + 4 || Math.cos(a) < 0) tree(Math.sin(a) * (COURT - 7), Math.cos(a) * (COURT - 7), 6.4); }
-  // The parks: trees in stands, with open ground between them.
+  for (const side of [-1, 1]) for (let z = end + 44; z > end; z -= 4) if (standing(side * (AVENUE.half + 9), z, 10)) { buildings.push({ x: side * (AVENUE.half + 9), z, w: 11, d: 9, tall: 52, turn: 0, form: 'pylon', skin: 'stone', seed: r(), lean: 0 }); break; }
+  // What stands at the land's broken edge leans toward the break.
+  for (const b of buildings) { const e = inland(b.x, b.z); if (e < 26) b.lean = (1 - e / 26) * (4 + 7 * hash(Math.round(b.x), 1, Math.round(b.z), 5)) * D2R; }
+  // Which ground is built on.
+  const cover = COVER = new Uint8Array(ACROSS * ACROSS);
+  for (const b of buildings) {
+    const reach = Math.hypot(b.w, b.d) / 2 + 7, c = Math.cos(b.turn), s = Math.sin(b.turn);
+    for (let j = Math.max(0, Math.floor((b.z - reach + SURVEY.half) / SURVEY.step)); j <= Math.min(ACROSS - 1, Math.ceil((b.z + reach + SURVEY.half) / SURVEY.step)); j++) for (let i = Math.max(0, Math.floor((b.x - reach + SURVEY.half) / SURVEY.step)); i <= Math.min(ACROSS - 1, Math.ceil((b.x + reach + SURVEY.half) / SURVEY.step)); i++) {
+      const rx = -SURVEY.half + i * SURVEY.step - b.x, rz = -SURVEY.half + j * SURVEY.step - b.z;
+      if (Math.abs(rx * c + rz * s) < b.w / 2 + 6 && Math.abs(-rx * s + rz * c) < b.d / 2 + 6) cover[i + ACROSS * j] = 1;
+    }
+  }
+  // Trees. One row down each side of every boulevard, of one kind to a boulevard.
+  boulevards().forEach((l, n) => {
+    const len = Math.hypot(l[2] - l[0], l[3] - l[1]), nx = -(l[3] - l[1]) / len, nz = (l[2] - l[0]) / len, kind: Plant = n % 3 === 0 ? 'poplar' : n % 3 === 1 ? 'broad' : 'bloom';
+    for (let t = 8; t < len; t += kind === 'poplar' ? 10 : 14) for (const side of [-1, 1]) {
+      const x = l[0] + ((l[2] - l[0]) * t) / len + side * (BOULEVARD - 2.5) * nx, z = l[1] + ((l[3] - l[1]) * t) / len + side * (BOULEVARD - 2.5) * nz;
+      if (Math.hypot(x, z) > COURT + 8 && avenue(x, z) > AVENUE.half + 12 && Math.hypot(x - PYRAMID.x, z - PYRAMID.z) > PYRAMID.base * 0.74) plant(x, z, kind === 'poplar' ? 5 : 6.2, kind);
+    }
+  });
+  // Palms round the pyramid's court, and clipped cones round the spire's.
+  for (let i = 0; i < 38; i++) { const a = (i / 38) * Math.PI * 2; plant(PYRAMID.x + Math.sin(a) * (PYRAMID.court - 8), PYRAMID.z + Math.cos(a) * (PYRAMID.court - 8), 7.6, 'palm'); }
+  for (let i = 0; i < 44; i++) { const a = (i / 44) * Math.PI * 2; if (Math.abs(Math.sin(a)) * COURT > AVENUE.half + 6 || Math.cos(a) < 0) plant(Math.sin(a) * (COURT - 7), Math.cos(a) * (COURT - 7), 5.2, 'conifer'); }
   for (let z = -660; z < 660; z += 9) for (let x = -660; x < 660; x += 9) {
-    const jx = x + 8 * (r() - 0.5), jz = z + 8 * (r() - 0.5), p = park(jx, jz), sand = desert(jx, jz), pick = r(), size = r();
-    if (p > 0.04 && noise(jx / 34, 5, jz / 34, 61) > 0.4 && pick < 0.86 && avenue(jx, jz) > AVENUE.half + 26) tree(jx, jz, 6 + 5.5 * size);
-    // And a belt of them where the city meets the sand.
-    else if (sand > 0.015 && sand < 0.34 && pick < 0.8) tree(jx, jz, 5.5 + 5 * size, 0.4);
+    const jx = x + 8 * (r() - 0.5), jz = z + 8 * (r() - 0.5), p = park(jx, jz), pick = r(), size = r(), which = r();
+    // The parks: stands of trees of several kinds, with open ground and low bushes between them.
+    if (p > 0.04) {
+      const stand = noise(jx / 34, 5, jz / 34, 61), sort = noise(jx / 70, 9, jz / 70, 83);
+      if (stand > 0.42 && pick < 0.86) plant(jx, jz, 6 + 5.5 * size, sort < 0.36 ? 'conifer' : which < 0.2 ? 'bloom' : which < 0.3 ? 'poplar' : 'broad');
+      else if (pick < 0.3) plant(jx, jz, 2.6 + 1.6 * size, 'shrub');
+      continue;
+    }
+    // Ground in the city with nothing built on it is a planted square: bushes, and a tree here and there. Near the
+    // desert some of those are palms. Nothing is left bare without a reason.
+    if (garden(jx, jz) > 0.7 && pick < 0.62 && inland(jx, jz) > 16) plant(jx, jz, which < 0.3 ? 4.6 + 2.6 * size : 2.2 + 1.5 * size, which < 0.3 ? (desert(jx + 60, jz + 40) > 0.2 && size < 0.5 ? 'palm' : size < 0.3 ? 'bloom' : 'broad') : 'shrub', 0.04);
   }
   return CITY = { buildings, trees };
+}
+// How much of a place is the city's open ground: not built on, not a road, a court, a park or sand. A planted
+// square.
+export function garden(x: number, z: number): number {
+  if (!COVER) return 0;
+  if (street(x, z) < STREET + 2 || boulevard(x, z) < BOULEVARD + 2 || avenue(x, z) < AVENUE.half + 3 || Math.hypot(x, z) < COURT + 3 || Math.hypot(x - PYRAMID.x, z - PYRAMID.z) < PYRAMID.court + 3) return 0;
+  return (1 - read(COVER as unknown as Float32Array, x, z)) * (1 - desert(x, z)) * (1 - ramp(-0.08, 0.02, park(x, z)));
 }
 
 // ---------------------------------------------------------------------------------------------------------------

@@ -1019,6 +1019,23 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     - **The torn rock is better, and he cannot judge it in grey:** not its depth, and not how its shadows will look.
     - He asked which way to go: a few more rounds here and then Claude Code, or a higher fidelity version here first. Fable's recommendation is in the chat and in `LOG.md`. Nothing is changed until he answers.
 - **Go on the higher fidelity round, here (Nov 15, 14:30).** "Yes, go ahead and make these updates." In exact terms: Fable makes his six changes to the top and takes the same model into color in one round, in the web chat: the top with real materials, lit windows, kinds of tree and kinds of ground, and the torn rock in color with the moon's shadows and the core's light. Shown at the page's size in its three steps and in close views of the city, the land and the rock. He signs that off before anything goes to Claude Code. It still does not move.
+- **The third round, in color, as built (Nov 15). Study 32, at `/lab/hero-blockout`. Waiting on his look. Nothing of it is a rule until he signs it off.** Stills in `reference/studies/63-*`.
+    - **His six changes, as made.**
+    - **The avenue:** thirteen halls down both sides, each with a row of columns to the road, from the spire's court to the land's broken edge. Seventeen obelisks with gold tips between them, and a gate post where it ends. No tree stands on it. The road is 56 wide and seen the whole way, with the line of light down its middle.
+    - **The desert:** 10% of the land, where it was 11% and before that a third. Its left edge stands off the avenue, with city between. It is whole: nothing is bitten out of it and no crack crosses it, and its largest dune stands entire in its middle. Nine dunes.
+    - **No trees round the desert:** the sand runs to the buildings' feet.
+    - **No bare patches:** ground in the city with nothing built on it is a planted square, with ground cover, bushes and a tree here and there. Bare rock shows only at the land's broken edge.
+    - **Kinds of plant:** six. Broad crowns, tall slim poplars, dark cones, palms, low bushes, and pale trees in flower, in autumn colors and no green. About 2000 of them. One kind to a boulevard, palms round the pyramid's court, clipped cones round the spire's, mixed stands in the parks.
+    - **Three parks:** the great one at the front left, one at the left beside the pyramid, one at the right. The one that ran down the avenue is gone.
+    - **The look.**
+    - **The rock:** warm, in beds of differing tone that are not level, darker the deeper it lies, with a paler dusty skin where the planet's own surface survives.
+    - **The ground:** paving in slabs, darker streets, paler boulevards and avenue, the two courts paved in rings, planted squares, the parks' grass, sand rippled across the wind.
+    - **The buildings:** 706. Stone, stone under copper roofs, bronze clad, and dark glass. Windows lit in neighbourhoods and not evenly. A tall tower ends in a band of light. Gold on domes, caps and crowns.
+    - **The spire:** a dark shaft with lit windows, gold collars, the one gold ring, a light at its tip. **The pyramid:** stone in courses under a gold cap.
+    - **What broke away:** the same rock. The great pieces carry paving, buildings and trees, or sand.
+    - **Close views** of the city, the land and the rock, behind a switch.
+    - **Short of the bar, said to him:** the buildings are still plain forms with windows drawn on them. Close up they read as a model of a city and not as a city: no balconies, ledges, bridges or roof works, and one window pattern to a material. The halls are boxes with a row of columns. The trees are a few simple forms. The dark side of the torn rock holds little detail close up. The core is a plain ball. Nothing moves.
+    - **What signing it off settles:** the palette of the world, what each thing is made of, how lit the city is, the kinds of plant and of ground, and the plan of the top with his six changes. **What it does not:** the finished detail of the buildings, anything that moves, the night sky.
 - An idea to revisit with the hero, not decided: his first thought was the city breaking apart into the stream as the visitor scrolls. Fable's twist, which he asked to have noted: building, not breaking. The city assembles out of the stream's facets in the opening, and the stream carries the same pieces on down the page. (Nov 12)
 
 **The hero, the city at rest: the agreement (Nov 14)**

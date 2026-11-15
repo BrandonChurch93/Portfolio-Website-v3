@@ -88,6 +88,7 @@ if (mode === 'view') {
 } else {
   const res = 2, half = 680, N = Math.round((2 * half) / res), buf = Buffer.alloc(N * N * 3);
   const put = (x, z, r, g, b) => { const px = Math.floor((x + half) / res), py = Math.floor((z + half) / res); if (px < 0 || py < 0 || px >= N || py >= N) return; const a = (px + N * py) * 3; buf[a] = r; buf[a + 1] = g; buf[a + 2] = b; };
+  P.city();
   let land = 0, sand = 0;
   for (let py = 0; py < N; py++) for (let px = 0; px < N; px++) {
     const x = -half + (px + 0.5) * res, z = -half + (py + 0.5) * res;
@@ -96,6 +97,7 @@ if (mode === 'view') {
     let c = [92, 90, 86];
     if (P.street(x, z) < P.STREET) c = [56, 55, 53];
     if (P.park(x, z) > 0) c = [58, 84, 52];
+    if (P.garden(x, z) > 0.5) c = [84, 100, 60];
     if (P.boulevard(x, z) < P.BOULEVARD) c = [150, 146, 138];
     if (P.boulevard(x, z) < 1.2) c = [255, 180, 90];
     if (P.avenue(x, z) < P.AVENUE.half) c = [170, 165, 155];
@@ -111,7 +113,8 @@ if (mode === 'view') {
     const c = Math.cos(b.turn), s = Math.sin(b.turn), v = Math.min(255, 110 + b.tall * 0.68);
     for (let a = -b.w / 2; a <= b.w / 2; a += 0.9) for (let d = -b.d / 2; d <= b.d / 2; d += 0.9) put(b.x + a * c - d * s, b.z + a * s + d * c, v, v * 0.97, b.tall > 92 ? v * 0.7 : v * 0.93);
   }
-  for (const t of trees) for (let a = -t.size * 0.7; a <= t.size * 0.7; a++) for (let d = -t.size * 0.7; d <= t.size * 0.7; d++) if (Math.hypot(a, d) < t.size * 0.7) put(t.x + a, t.z + d, 30, 70, 34);
+  const leaf = { broad: [30, 96, 40], poplar: [20, 60, 90], conifer: [14, 44, 24], palm: [150, 60, 150], shrub: [70, 110, 50], bloom: [220, 150, 170] };
+  for (const t of trees) for (let a = -t.size * 0.7; a <= t.size * 0.7; a++) for (let d = -t.size * 0.7; d <= t.size * 0.7; d++) if (Math.hypot(a, d) < t.size * 0.7) put(t.x + a, t.z + d, ...leaf[t.kind]);
   for (let a = -P.PYRAMID.base / 2; a < P.PYRAMID.base / 2; a++) for (let d = -P.PYRAMID.base / 2; d < P.PYRAMID.base / 2; d++) put(P.PYRAMID.x + a, P.PYRAMID.z + d, 210, 200, 150);
   for (let a = -P.SPIRE.foot; a < P.SPIRE.foot; a++) for (let d = -P.SPIRE.foot; d < P.SPIRE.foot; d++) if (Math.hypot(a, d) < P.SPIRE.foot) put(a, d, 255, 255, 255);
   // How far under the spire's tip the first screen ends, in units, on a 16:9 screen and on a 3:2 one.
@@ -119,6 +122,9 @@ if (mode === 'view') {
     for (let z = -half; z < half; z++) if (P.drawn(x, P.ground(x, z), z)[1] - P.HOST.over > fold) { put(x, z, ...col); break; }
   }
   save(flag('out', 'shots/blockout-map.png'), N, N, buf);
+  const plants = {};
+  for (const t of trees) plants[t.kind] = (plants[t.kind] ?? 0) + 1;
+  console.log(`plants ${JSON.stringify(plants)}`);
   const kinds = {};
   for (const p of P.debris()) kinds[p.kind] = (kinds[p.kind] ?? 0) + 1;
   console.log(`land ${Math.round((100 * land * res * res) / (Math.PI * 660 ** 2))}% of the whole top · sand ${(100 * sand / land).toFixed(1)}% of the land · buildings ${buildings.length}, ${buildings.filter((b) => b.tall > 92).length} of them towers · trees ${trees.length} · boulevards ${P.boulevards().length} · broken pieces ${JSON.stringify(kinds)}`);

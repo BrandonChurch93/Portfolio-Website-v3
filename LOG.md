@@ -2,6 +2,36 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · The third round: his six changes, and the model in color (Fable, web chat)
+
+**What Brandon said**
+
+- Go on the higher fidelity round here. `BRIEF.md`, Settled, Hero, "Go on the higher fidelity round".
+
+**What was done**
+
+- `/lab/hero-blockout` in its third round. His six changes to the top, and every thing given a material: `BRIEF.md`, "The third round, in color, as built" has all of it and what is short. Close views of the city, the land and the rock behind a switch (`?close=city`, `land`, `rock`). Stills in `reference/studies/63-*`.
+- Built, type checked, pushed. Nothing of it judged by an independent reviewer. Nothing moves.
+
+**What the build taught**
+
+- **A wall's windows can be drawn from two things each point of a building keeps:** where it is on its own building, and which way its wall faces there. From those the shader knows how far along the wall and how high a point is, on a box, a taper or a drum alike. No texture and no second set of coordinates.
+- **Light the windows in neighbourhoods.** One chance for every window makes a wall of static. A chance that drifts across the wall gives lit floors and dark ones, which is what a building at night looks like.
+- **Small buildings want few lit windows, and towers more.** Lit alike, the towers are lost.
+- **Veins of light in the rock, drawn as thin lines, read as scribbles** at every size. Out.
+- **Gold as a whole roof reads as a yellow tile** from above. As a thin line round a cornice it reads as gold.
+- **A band of light at a tower's top blooms into a lamp** unless it is kept low. Half of what first looked right.
+- **A change to a source file while a still is rendering reloads the page under it.** Change nothing in `src/` until the stills are done.
+- Two stills at once take longer than two one after the other here, and the second is cut off by its timeout.
+- The canvas shows as a faint box against the page unless its edge fades over a wide band (`FADE`). On a close view that fade is a vignette.
+
+**Half finished, and what the next session needs**
+
+- His look, and his sign off of the look or his changes to it. **The buildings are the weakest thing in it** and he has been told so.
+- After the sign off: the agreement for the new world replaces "The hero, the city at rest" from item 4 on, with its tests, and Claude Code builds it. He has a prompt for the Safari crash alone, which may or may not have been sent.
+- His ruling on the first screen ending at one place of the world on every screen is still open.
+- The grey blockout is gone from the page. It is in the history at `4a7e99c` and in `reference/studies/61-*` and `62-*`.
+
 ## 2026-11-15 · His look at the second round, and which way to go next (Fable, web chat)
 
 **What Brandon said**
