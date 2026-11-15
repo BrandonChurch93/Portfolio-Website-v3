@@ -846,6 +846,16 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
         - **More room between the hero and Work,** so the torn underside, the core and the debris can be looked at by themselves before Work comes up.
         - The agreement below is changed to this, and the wireframe at `/lab/hero-draft` is redrawn for it.
     - **What this changes in the rules above, each said to him in the chat:** "On a desktop it is fine if half the city or a little more shows" becomes: at rest the spire and the crown of the world show, about a third of the whole thing, and the rest comes up on the scroll. "The opening uses the whole screen with nothing cut off at the top or bottom" cannot hold at the page's size for a world taller than a screen: that is for the opening, when it is designed.
+- **His look at the torn world as first built (Nov 14, near midnight).** From two stills of Claude Code's build, kept as `reference/studies/58-hero-the-world-as-first-built-whole.jpg` and `-at-rest.jpg`. "I think the planet itself looks awesome, but the city is a bit off. For one, the mountain does not read as a mountain. The flying cars look bad. The nature area does look good. I think we could use one more natural area on the left side. In general, maybe the city is too big? I like how dense it is but maybe it covers slightly too much going to the edge? What do you think, let's plan the final polished version." "I also think it's missing that shiny metal look. I don't see any of it. We could do some really cool things with it. Remember this is art so we have some flexibility."
+    - In exact terms, from the stills:
+    - **The planet stands as built:** the torn underside, the core, the debris. He likes it.
+    - **The mountain.** Now: at the back right, a tall flat face of mottled grey and gold with a building standing on its top. It has no peak, no ridges and no slopes. To be: a thing anyone calls a mountain.
+    - **The craft in the air.** Now: rows of small lozenges with no form. To be: good, or gone.
+    - **The nature area** at the left, by the pyramid, in copper and bronze: good, kept.
+    - **One more natural area.** He said "on the left side". The one there now is on the left. Which side he means is being confirmed with him.
+    - **The city's reach.** Now: buildings cover the surface to its edge all the way round. His question, not a ruling: it may reach a little too far. He likes how dense it is.
+    - **Polished metal.** Now: the buildings are matte grey with flat orange trims, and nothing on the world reflects. To be: metal that shines, used boldly. It is art, and he gives freedom for that.
+    - **Fable's plan for the finished version is put to him in the chat and is not agreed yet.** Until it is, the agreement below stands as written.
 - An idea to revisit with the hero, not decided: his first thought was the city breaking apart into the stream as the visitor scrolls. Fable's twist, which he asked to have noted: building, not breaking. The city assembles out of the stream's facets in the opening, and the stream carries the same pieces on down the page. (Nov 12)
 
 **The hero, the city at rest: the agreement (Nov 14)**

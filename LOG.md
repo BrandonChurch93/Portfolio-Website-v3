@@ -2,6 +2,22 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-14 · His look at the torn world as first built, and a plan put to him (Fable, web chat)
+
+**What Brandon said**
+
+- The planet looks awesome. The city is off: the mountain does not read as one, the craft look bad, the nature area is good, he wants one more natural area, the city may reach a little too far toward the edge though he likes its density, and nothing on it shines as metal. He asked what Fable thinks and for a plan for the finished version. `BRIEF.md`, Settled, Hero.
+
+**What was done**
+
+- His words written in, with what the stills show. The two stills are kept in `reference/studies/58-*`.
+- A plan was put to him in the chat as a list of what is built and what is left alone. It is not agreed and nothing in the agreement has changed.
+
+**For the next session**
+
+- On his yes: the plan goes into "The hero, the city at rest" (item 4 and its tests), and a prompt for Claude Code.
+- Open with him: which side the second natural area goes on.
+
 ## 2026-11-14 · The torn world: the frame, and nine builders (Fable, Claude Code)
 
 **What Brandon said**
