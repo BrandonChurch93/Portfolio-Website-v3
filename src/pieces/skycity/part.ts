@@ -5,7 +5,7 @@ import type { Tier } from '../../config/site';
 // contract. A part builds its group in units, in the city's own frame (./layout.ts), and is told each frame what
 // the city is doing. It never touches the stage, the camera or another part.
 
-export const PARTS = ['ground', 'spire', 'towers'] as const;
+export const PARTS = ['ground', 'spire', 'towers', 'temple', 'gardens', 'port'] as const;
 export type PartName = (typeof PARTS)[number];
 
 export interface PartState {

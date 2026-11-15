@@ -11,7 +11,8 @@ import { SIDE, myTurn } from '../../world/turn';
 import { HOST, SCALE, VIEW } from './layout';
 import { PARTS, type CityPart, type PartFactory, type PartName, type PartState } from './part';
 
-// The city in the hero, made new, as one piece: the ground that floats, the spire and the towers. Each is a part
+// The city in the hero, made new, as one piece: the ground that floats, the spire, the core's towers, and the places
+// round the core (the temple quarter, the gardens and farms, the port). Each is a part
 // (./part.ts), built in its own file in ./parts and driven from here. This file is the stage they stand on: the
 // view, the lights and the cursor's light.
 // It is drawn at one size, a unit to the same number of pixels whatever its host's height, with the ground a set
@@ -53,6 +54,9 @@ const loaders: Record<PartName, () => Promise<PartFactory>> = {
   ground: () => import('./parts/ground').then((m) => m.build),
   spire: () => import('./parts/spire').then((m) => m.build),
   towers: () => import('./parts/towers').then((m) => m.build),
+  temple: () => import('./parts/temple').then((m) => m.build),
+  gardens: () => import('./parts/gardens').then((m) => m.build),
+  port: () => import('./parts/port').then((m) => m.build),
 };
 
 export interface CityExtras {

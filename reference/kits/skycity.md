@@ -6,6 +6,34 @@ Read `reference/kits/README.md` first: the bar, the colors and "The look" hold f
 
 `BRIEF.md`, Settled, "The hero, the city at rest", items 3 to 7 and 10, is the agreement. `QUALITY.md`, "The hero, the city at rest", tests 2, 3, 7 and 8, is how it is judged. The wireframe he approved is at `/lab/hero-draft` (scroll it): it settles where the city sits and how much of it shows, and nothing about its look. It is the first thing a visitor sees, and it is the thing he has asked for longest.
 
+## Changed Nov 14, night: his look at the first full build
+
+He saw the first full build and asked for three changes. `BRIEF.md`, Settled, "The hero, the city at rest", item 4, has them. **Where anything below this section disagrees with it, this section wins.**
+
+His words:
+- "The spire needs rings round it, like the old city's spire has. Look at reference/pieces/city.jpg and src/pieces/city. Use the old one as a reference. Do not bring the old model back."
+- "More of our metals on the city. Gold, bronze and copper, polished and catching light, so it ties in with the cards, the stones and the buttons. Right now it is almost all grey. It still must not turn into one orange mass."
+- "It is towers from rim to rim, like New York. I want it to feel like a whole small world on a floating island: a core of towers, and round it other kinds of place. Nature, gardens, farms, open ground, craft in the air, whatever you think works. None of those is required and the choice is yours. What I do not want is sameness. Any nature is in the site's colors, not green. Think a Star Trek future city with ancient Egypt flair."
+
+What that means for every part:
+
+- **The plan is redrawn** (`layout.ts`). Towers stand only in the core, out to the second boulevard, and in a low town behind it. Round the core are the places in `DISTRICTS`, each a stretch of ground between two bearings and two distances: the way to the spire (`procession`), the hanging gardens (`gardens`), the port (`port`), the wild far side (`wild`), the temple quarter (`temple`) and the terraced fields (`farms`). `districtAt(x, z)` says which a point is in. `lots()` now gives about 150 lots.
+- **Six parts, six builders:** the ground, the spire, the towers, and three new ones: `temple` (the temple quarter and the way to the spire), `gardens` (the gardens, the farms and the wild ground: all of the city's nature) and `port` (the port, and every craft in the air).
+- **The view decides what matters.** The city is seen from straight in front and 4.5 degrees up, so the ground is nearly edge on and a flat thing on it is a thin line. A place is what stands up from it. The left flank (the temple quarter) is seen in outline at the left of the skyline and the right flank (the port, and the gardens toward the front) at the right: those two outlines, falling from the core to the rim, are where "a whole small world" is read, and they must be nothing like each other or like the core. What lies toward the visitor (the way to the spire, the front of the gardens, the farms) is seen low in front of the towers' feet and must not hide them: keep it under about 40 units there. At rest on the page only what stands above the rim shows, and the lower third of the city is under the foot of the screen.
+- **The metals.** Polished gold, bronze and copper are used freely, as the cards' beads, the Sun stones and the buttons use them: `copper`, `copper-light`, `bronze` and `bronze-deep` in `src/config/palette.ts`, and for gold a polished metal at the palette's own hue between `copper-light` and `hot`, never a yellow brass. Polished means it is drawn by what it reflects: long sharp reflections that slide as the cursor's light moves, a pale glint on an edge, a dark side. Whole things may be metal now: a clad tower, a dome, a pyramid's casing, a ring, a roof. What still holds: **it is never one orange mass, and its materials can be told apart.** So metal sits against things that are not metal (dark glass, pale warm stone, near black structure, dark foliage, water), the three metals differ from one another in value and finish, and no single tone covers more than about a third of what is seen. "Only copper is orange, and copper is an accent" in the README's "The look" no longer limits the city.
+- **The flair of ancient Egypt, in a Star Trek future.** Not a theme park and not a copy of anything: the forms and the confidence of it. Battered walls that lean in as they rise, pylons flanking a gate, obelisks with bright caps, stepped and smooth pyramids, long colonnades, processional ways, great seated or standing figures reduced to pure geometry, sun discs, wings, cartouche shaped panels filled with abstract marks like the Sun stone's glyphs (`src/stream/stone.ts`: no real hieroglyphs, no letters). Set in a future that is clean, sweeping and optimistic: rings, saucers and pods, long cantilevers, glowing lines, craft that drift. The two meet everywhere, in every part: a pyramid whose capstone floats, an obelisk that is a mast, a pylon gate that is a hangar door.
+- **Nature in the site's colors.** No green anywhere. Foliage is copper, bronze, amber and umber, as a forest is in a late autumn evening, with pale gold where light catches it. Water is dark and reflects the lights over it. Earth and stone are warm greys and sand.
+- **No sameness.** Within a part, no two neighbours alike. Between parts, each place has its own outline, its own height and its own kind of light.
+- **What every fresh reviewer said of the first build still stands and is still yours to fix:** "a game or CG render, not a photographed model". No rooms behind the windows, no bevels on edges, glass that reflects too little, materials that are hard to tell apart close up, rock that reads as stacked slabs.
+
+### The three new parts
+
+**The temple quarter and the way to the spire (`parts/temple.ts`, `parts/temple/`).** `DISTRICTS`: `temple`, at the left of the skyline, and `procession`, on the page's center line from the front of the rim to the spire's plaza. In the quarter: one great thing that owns the left of the skyline (a pyramid about 110 to 140 tall cased in polished metal with a capstone that is lit, or something as strong: yours to design), and round it a precinct with a different outline from every side: a pylon gate, a colonnaded hall, obelisks, courts, a causeway. Its light is its own kind: few, low and warm, lamps along a causeway, a lit capstone, light from inside a hall between columns. The way to the spire is seen straight along its length, so it is two rows of things flanking the center line and getting closer together toward the spire: obelisks, plinths, braziers, a long dark pool between them that reflects the spire. Nothing on it may stand in front of the spire's foot or over the place the main fall leaves the rim (the front of the rim at x = 0), and nothing over about 40 units within 250 of the rim.
+
+**The gardens, the farms and the wild ground (`parts/gardens.ts`, `parts/gardens/`).** `DISTRICTS`: `gardens` (front right, out to the right flank), `farms` (front left) and `wild` (the far side). The gardens are hanging gardens: terraces of stone stepping down toward the rim, each planted, with groves of trees in several kinds and heights (not one tree repeated: tall slender ones, spreading ones, low clipped ones), water stepping down between them, a pavilion or a conservatory of bronze and glass, lit paths. The farms are terraced fields in bands of different crops, seen edge on as steps of different tones, with what stands on a farm: windcatchers, a silo that is an obelisk, an irrigation ring. The wild ground is hardly seen and is made cheaply: rock, a few groves, standing stones. Instance the trees. Their light is its own kind too: path lights low among the trees, light under water, a glow inside the conservatory.
+
+**The port and the craft in the air (`parts/port.ts`, `parts/port/`).** `DISTRICTS`: `port`, at the right of the skyline. Where craft land and leave: pads held out on stalks or cantilevers at several heights, a docking ring, hangars with pylon shaped doors, a control mast, cranes and gantries, docked craft of two or three kinds, cargo. Its outline is open and reaching where the temple's is solid. All the craft in the air over the whole city are yours as well: a few on slow courses in and out of the port, one large one docked or holding off the rim, small ones crossing behind the spire. From the clock alone, never visibly looping, still when `still` is set, and none crossing in front of where his words are (above y = 480). The towers' builder is taking the craft out of its part and keeping the cars and the beacons.
+
 ## His words
 
 - "The city is made again from nothing. A futuristic sci-fi city that looks like a real object, not a drawing and not the old model."
@@ -63,7 +91,12 @@ The city's canvas is as wide as the screen, and a frame on his Mac is 8 ms. `win
 |---|---|---|---|
 | Ground | 4 | 150,000 | 300 ms |
 | Spire | 3 | 60,000 | 300 ms |
-| Towers | 4 | 250,000 | 300 ms |
+| Towers | 4 | 200,000 | 300 ms |
+| Temple | 3 | 60,000 | 300 ms |
+| Gardens | 3 | 80,000 | 300 ms |
+| Port | 3 | 50,000 | 300 ms |
+
+Triangles are the model's own, as built, not what `stats()` reports across every pass.
 
 - Share materials: one program draws many things when they differ only by a uniform, an attribute or a texture. Towers are instanced.
 - Throw shadows only from what is large enough to matter: the shadow map draws everything that casts again.
