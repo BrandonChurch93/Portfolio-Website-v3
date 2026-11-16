@@ -19,7 +19,10 @@ export const footprint = (t, x, z) => {
 // The pale dune at the back right of the desert, behind the line of trees, is sand the plan's desert does not reach:
 // where it lies and how far it spreads each way.
 const BACK = { at: [485, -340], r: [118, 112] };
-const sands = (x, z) => Math.max(L.desert(x, z), L.ramp(0, 0.18, 1 - Math.hypot((x - BACK.at[0]) / BACK.r[0], (z - BACK.at[1]) / BACK.r[1]) + 0.1 * (L.noise(x / 60, 2, z / 60, 17) - 0.5)));
+// The ridge the row of trees stands on (BANK in field.ts) is sand from end to end, and a little past where it ends.
+const RIDGE = { x: [380, 398, 612, 630], z: [-345, -332, -140, -122] };
+const ridge = (x, z) => L.ramp(RIDGE.x[0], RIDGE.x[1], x) * L.ramp(RIDGE.x[3], RIDGE.x[2], x) * L.ramp(RIDGE.z[0], RIDGE.z[1], z) * L.ramp(RIDGE.z[3], RIDGE.z[2], z);
+const sands = (x, z) => Math.max(L.desert(x, z), ridge(x, z), L.ramp(0, 0.18, 1 - Math.hypot((x - BACK.at[0]) / BACK.r[0], (z - BACK.at[1]) / BACK.r[1]) + 0.1 * (L.noise(x / 60, 2, z / 60, 17) - 0.5)));
 const sandy = T.filter((t) => sands(t.x, t.z) > 0.001);
 export function desert(x, z) {
   let k = sands(x, z);

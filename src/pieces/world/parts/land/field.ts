@@ -30,14 +30,17 @@ export const PROFILE = { slip: 0.66, back: 2.5, toe: 0.16 } as const;
 // is turned from square to the wind in degrees, and how it leans (-1 to 1): one horn longer and the crest higher
 // toward it.
 export type Dune = readonly [x: number, z: number, wide: number, tall: number, horn: number, turn: number, lean: number];
+// The row of trees behind them (ROW in the layout) is seen through a saddle between the great dune's massif at the
+// left and the right front dune, and the pale dune behind the row stands where picture 9 has it (about 1078 to 1142
+// across, its top 225 down), lower than the dunes in front: Fable ruled (Nov 16) that no dune is capped for the row.
 export const DUNES: readonly Dune[] = [
-  [440, 320, 155, 52, 0.55, -4, 0.3],
+  [440, 320, 160, 58, 0.55, -4, 0.3],
   [380, 60, 125, 40, 0.6, -8, -0.3],
-  [522, 175, 140, 46, 0.6, 6, -0.2],
-  [590, -40, 95, 30, 0.7, 10, 0.2],
-  [505, -80, 110, 36, 0.65, 4, 0.25],
+  [530, 185, 140, 46, 0.6, 6, -0.2],
+  [600, -20, 95, 30, 0.7, 10, 0.2],
+  [415, -105, 105, 38, 0.65, 4, 0.25],
   [318, 300, 70, 22, 0.9, 10, 0.2],
-  [490, -345, 120, 56, 0.45, 40, 0.15],
+  [492, -305, 80, 36, 0.5, 55, 0.1],
 ];
 // How each crest wanders: a wave along it, as a share of its half width, and how many times it crosses it.
 export const WANDER = [0.07, 3.4] as const;
@@ -111,8 +114,29 @@ export function oneDune(cr: Crest, x: number, z: number): number {
   return Math.max(e, 0) + q * q * k * 0.25;
 }
 
-// A slow swell under the dunes, so the sand between them rolls and is never level.
-export const swell = (x: number, z: number): number => 3.2 * Math.sin(x * 0.017 + z * 0.011 + 1.3) * Math.sin(z * 0.021 - x * 0.007 + 0.4) + 1.3 * Math.sin(x * 0.043 - z * 0.029 + 2.1) * Math.sin(z * 0.047 + x * 0.015);
+// A slow swell under the dunes, so the sand between them rolls and is never level. It never dips under the floor's
+// own level and it runs on out to the land's edge: one that dipped there was a trough inside the rim, and the rim
+// round it read as a curb.
+export const swell = (x: number, z: number): number => 2.3 + 1.6 * Math.sin(x * 0.017 + z * 0.011 + 1.3) * Math.sin(z * 0.021 - x * 0.007 + 0.4) + 0.65 * Math.sin(x * 0.043 - z * 0.029 + 2.1) * Math.sin(z * 0.047 + x * 0.015);
+// The long low ridge of sand the row of trees behind the dunes stands on (ROW in the layout). The dome falls away to
+// the right, so for the row's feet to be drawn level at 244 down, as picture 9 has them, the sand under them stands
+// 11 units over the dome at its left end and 23 at its right: the height it needs is a quadratic in (x - 490) / 100
+// (fitted to fromPicture). Its crest wanders a little in plan and in height, so the trees stand on sand and not on a
+// ruled shelf, and each side falls as a smooth whaleback: toward the visitor over front times its height, away
+// over back times it. It fades in and out at its ends (x), and the swell under it is taken off, so the feet stay
+// where the picture has them.
+export const BANK = { z: -230, need: [16.198, 9.475, 0.976], ends: [385, 425, 560, 615], front: 3.4, back: 4.4, wander: [2.5, 0.043, 1.1], lump: [0.9, 0.071, 0.4] } as const;
+export function bank(x: number, z: number): number {
+  const [a, b, c, d] = BANK.ends;
+  if (x <= a || x >= d) return 0;
+  const sm = (t: number): number => { const k = Math.min(1, Math.max(0, t)); return k * k * (3 - 2 * k); };
+  const zc = BANK.z + BANK.wander[0] * Math.sin(x * BANK.wander[1] + BANK.wander[2]);
+  const u = (x - 490) / 100, top = BANK.need[0] + BANK.need[1] * u + BANK.need[2] * u * u + BANK.lump[0] * Math.sin(x * BANK.lump[1] + BANK.lump[2]) - swell(x, zc);
+  const H = top * sm((x - a) / (b - a)) * sm((d - x) / (d - c)), s = z - zc;
+  if (H <= 0) return 0;
+  const t = Math.abs(s) / ((s > 0 ? BANK.front : BANK.back) * Math.max(top, 1));
+  return t >= 1 ? 0 : H * 0.5 * (1 + Math.cos(Math.PI * t));
+}
 // The sand rolls over to the planet's own surface at the land's edge, over this many units in from it.
 export const ROLL = 34;
 export const roll = (inside: number): number => { const t = Math.min(1, Math.max(0, inside / ROLL)); return t * t * (3 - 2 * t); };
@@ -127,7 +151,7 @@ export function relief(x: number, z: number, inside = 1e9): number {
     if ((x - cr.at[0]) ** 2 + (z - cr.at[1]) ** 2 > cr.reach * cr.reach) continue;
     up = Math.max(up, oneDune(cr, x, z));
   }
-  return (up + swell(x, z)) * roll(inside);
+  return Math.max(up, bank(x, z)) * roll(inside) + swell(x, z);
 }
 
 // The sand's height over the dome on a grid over the desert, worked out once on the graphics card when the land is
@@ -236,8 +260,18 @@ vec4 landDuneAt(vec2 p, int d) {
 	float k = max(0.2, TOE * h), q = max(k - abs(e), 0.0) / k;
 	return vec4(max(e, 0.0) + q * q * k * 0.25, 1.0, n.x, n.y);
 }
-float landSwell(vec2 p) { return 3.2 * sin(p.x * 0.017 + p.y * 0.011 + 1.3) * sin(p.y * 0.021 - p.x * 0.007 + 0.4) + 1.3 * sin(p.x * 0.043 - p.y * 0.029 + 2.1) * sin(p.y * 0.047 + p.x * 0.015); }
+float landSwell(vec2 p) { return 2.3 + 1.6 * sin(p.x * 0.017 + p.y * 0.011 + 1.3) * sin(p.y * 0.021 - p.x * 0.007 + 0.4) + 0.65 * sin(p.x * 0.043 - p.y * 0.029 + 2.1) * sin(p.y * 0.047 + p.x * 0.015); }
 float landRoll(float inside) { return smoothstep(0.0, ${ROLL.toFixed(1)}, inside); }
+float landBank(vec2 p) {
+	if (p.x <= ${BANK.ends[0].toFixed(1)} || p.x >= ${BANK.ends[3].toFixed(1)}) return 0.0;
+	float zc = ${BANK.z.toFixed(1)} + ${BANK.wander[0].toFixed(3)} * sin(p.x * ${BANK.wander[1].toFixed(4)} + ${BANK.wander[2].toFixed(3)});
+	float u = (p.x - 490.0) / 100.0;
+	float top = ${BANK.need[0].toFixed(4)} + ${BANK.need[1].toFixed(4)} * u + ${BANK.need[2].toFixed(4)} * u * u + ${BANK.lump[0].toFixed(3)} * sin(p.x * ${BANK.lump[1].toFixed(4)} + ${BANK.lump[2].toFixed(3)}) - landSwell(vec2(p.x, zc));
+	float H = top * smoothstep(${BANK.ends[0].toFixed(1)}, ${BANK.ends[1].toFixed(1)}, p.x) * smoothstep(${BANK.ends[3].toFixed(1)}, ${BANK.ends[2].toFixed(1)}, p.x), s = p.y - zc;
+	if (H <= 0.0) return 0.0;
+	float t = abs(s) / ((s > 0.0 ? ${BANK.front.toFixed(2)} : ${BANK.back.toFixed(2)}) * max(top, 1.0));
+	return t >= 1.0 ? 0.0 : H * 0.5 * (1.0 + cos(3.14159265 * t));
+}
 // The relief at p, and of the dune that makes it: which side, the point of its crest, how far down its slip face,
 // and which dune it is.
 float landWhich;
@@ -247,7 +281,9 @@ float landRelief(vec2 p, float inside) {
 	landInfo = vec4(0.0, 0.0, 0.0, 1e3);
 	landWhich = -1.0;
 	for (int d = 0; d < ${DUNES.length}; d++) { vec4 h = landDuneAt(p, d); if (h.x > up) { up = h.x; landInfo = h; landWhich = float(d); } }
-	return (up + landSwell(p)) * landRoll(inside);
+	float bk = landBank(p);
+	if (bk > up) { up = bk; landInfo = vec4(bk, 0.0, 0.0, 1e3); landWhich = -1.0; }
+	return up * landRoll(inside) + landSwell(p);
 }
 float landHash(int i, int j, uint s) {
 	uint h = (uint(i + 4096) * 0x27d4eb2du) ^ (uint(j + 4096) * 0x165667b1u) ^ (s * 0x3c6ef372u);

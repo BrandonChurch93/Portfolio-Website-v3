@@ -1,4 +1,4 @@
-import { COURT, D2R, LIGHT, MOONWARD, PYRAMID, SCALE, WORLD } from '../../layout';
+import { COURT, D2R, LAND, LIGHT, MOONWARD, PYRAMID, SCALE, WORLD } from '../../layout';
 import { BREAK, GLSL, HEIGHT, MAP, ROLL, WIND } from './field';
 
 // The land's shader, laid over the standard material: what each place is made of, worked out per pixel from the
@@ -17,10 +17,19 @@ export interface Counts { map: number; lots: number }
 // Where each pixel's place on the sand is looked for along the eye's line: from this far before the mesh, in steps
 // of this, at most so many.
 const SEEK_EYE = [2.4, 0.4, 12] as const;
+// How near the sand the grid has to say the eye's line is for the dune field itself to be read there, in units.
+const EYE_MARGIN = 0.6;
 // How far toward the moon its ray reads the dune field itself before it reads the grid.
 const NEAR_SUN = 6;
+// How deep under the sand the ray to the moon has to pass for a place to be as deep in the shadow as it gets.
+const UNDER_MAX = 24;
 // The pale strip along the land's front edge: full this far in from the edge, and gone this far in.
 const STRIP = [9, 17] as const;
+// Where the sand over the planet's shoulder breaks off: how far down from the land's edge its lip is at the least, how
+// much further it reaches in places, and how far under that patches of it lie on the stone, in units. And the same
+// for the sand spilled over the torn lip at the front. (Sand whole for nine units down the side, its foot hung in
+// scallops, read as icing dripping down a cake.)
+const DRAPE_LIP = [5.8, 4, 8], SPILL_LIP = [0.3, 1.6, 2.5];
 
 const f = (v: number): string => (Number.isInteger(v) ? `${v}.0` : `${v}`);
 
@@ -45,7 +54,7 @@ uniform sampler2D uLight;
 uniform sampler2D uLots;
 uniform sampler2D uTowers;
 uniform sampler2D uHeight;
-uniform vec3 uSand, uSandRim, uBare, uSandDeep, uPave, uPavePale, uCourt, uGrass, uGrassDry, uGrassDeep, uEarth, uStone, uBronze;
+uniform vec3 uRock, uSand, uSandHi, uSandRim, uBare, uSandDeep, uPave, uPavePale, uCourt, uGrass, uGrassDry, uGrassDeep, uEarth, uStone, uBronze;
 const float MAP_LO = ${f(MAP.lo)}, MAP_SIZE = ${f(MAP.size)}, MAP_N = ${f(n.map)}, LOTS_N = ${f(n.lots)};
 const float LAND_BOUNCE = ${f(LIGHT.bounce)};
 // The share of the night's soft light the sand keeps: the night is lit from the visitor's side, and in full it
@@ -62,10 +71,15 @@ const float SAND_SUN = 1.0;
 // What the lit sand throws into the shadows on it, as irradiance, at a shadow's very edge; the share of it left in
 // the deepest shade; and how much sand the ray to the moon passes under (its depth summed along it, in units
 // squared) for it to fall to a third.
-const vec3 SAND_GLOW = vec3(0.34, 0.15, 0.034);
-const float SAND_DEEP = 0.03, SAND_REACH = 250.0;
-// How much of it a slip face keeps under its crest, where it looks out over the lit backs below it, against its toe.
-const float SAND_UPPER = 0.75;
+const vec3 SAND_GLOW = vec3(0.44, 0.235, 0.085);
+const float SAND_DEEP = 0.14;
+// What a slip face keeps of it: right under its crest, at its toe, and the more toward its horns.
+const vec3 HOLLOW = vec3(0.12, 0.42, 0.14);
+// How far under the sand the ray to the moon passes for a cast shadow on the floor to fall to a third of the light
+// at its far edge.
+const float CAST_REACH = 7.0;
+// How much of the upper back of a tall dune goes to pale gold.
+const float SAND_HI = 0.9;
 // How wide the bright line along each crest is, in units, at the least.
 const float CREST_LINE = 0.45;
 // How far a ripple moves a shadow's edge, as a share of the edge's softness.
@@ -75,12 +89,17 @@ ${GLSL}
 vec3 landAlbedo;
 float landRough, landMetal;
 vec3 landN;
-float landFace = 0.0, landSandK = 0.0, landSeen = 1.0, landDrape = 0.0, landRipple = 0.0, landCrestLine = 0.0, landUpper = 0.0;
+float landFace = 0.0, landSandK = 0.0, landSeen = 1.0, landDrape = 0.0, landRipple = 0.0, landCrestLine = 0.0, landHollow = 0.0;
 float landFoot = 0.1;
 vec3 landSunAt = vec3(0.0), landNs = vec3(0.0, 1.0, 0.0);
+// On a wall, the way into the land: its stored light is read a few units inside the edge, where the maps hold the
+// land's own light and not their neighbours' copied out past it (which drew a blocky camouflage on the lip).
+vec2 landInward = vec2(0.0);
 bool landRecv;
 // How deep the grooves down a slip face and the ripples across the lit sand are cut.
 const float GROOVE = 0.22, RIPPLE = 0.022;
+// How deep a chute down a slip face is, in units.
+const float CHUTE = 0.55;
 // How sharp the edge of a shadow on the sand is: one over the tangent of the moon's angular radius.
 const float SUN_EDGE = ${f(1 / Math.tan(LIGHT.moon.spread * D2R))};
 
@@ -139,6 +158,14 @@ vec2 landLocal(vec2 p, vec4 t, vec4 m, out float out1) {
 }
 
 
+// The soft chutes that avalanches leave down a slip face, a few units wide, running from under the crest to the
+// toe and wandering a little as they go: 0 between them, 1 down the middle of one.
+float landChuteAt(float along, float down, float which) {
+	float a = along / 9.0 + 0.8 * landNoise(vec2(along / 17.0, down / 9.0 + which * 5.0)) + which * 13.0;
+	float c = landNoise(vec2(a, down / 40.0 + which * 2.0)), k = landNoise(vec2(floor(a) * 0.37, which));
+	return smoothstep(0.55, 0.9, c) * (0.4 + 0.6 * k);
+}
+float onBackOf(float which, vec4 info) { return which >= 0.0 && info.y < 0.5 && info.x > 0.05 ? 1.0 : 0.0; }
 // The sand's surface at p, without and with what is finer than the dune field: the grooves that avalanches cut down a slip face,
 // deepening down it and gone at its toe, each fading to its mean as it nears a pixel.
 vec2 landSandAt(vec2 p, float inside, float fw) {
@@ -151,6 +178,7 @@ vec2 landSandAt(vec2 p, float inside, float fw) {
 		float n2 = landNoise(vec2(along / 1.1, down / 5.0 + landWhich * 3.0));
 		float amp = smoothstep(0.4, 2.5, down) * smoothstep(0.0, 1.6, I.x);
 		d = -amp * (GROOVE * (1.0 - abs(2.0 * n - 1.0)) * landKeep(2.4, 2.2 * fw) + 0.4 * GROOVE * n2 * landKeep(1.1, 2.2 * fw));
+		d -= smoothstep(1.0, 8.0, down) * smoothstep(0.0, 3.0, I.x) * CHUTE * landChuteAt(along, down, landWhich);
 	}
 	return vec2(r, r + d);
 }
@@ -173,7 +201,7 @@ float landHigh(vec2 q) {
 // what stands well past the pixel's own depth: nearer, the sand the ray sets out over is not something it passes.
 float landDepth = 0.0;
 float landSun(vec3 at, float lift, float foot, float ripple) {
-	float res = 1.0, t = 0.8 + lift, deep = 0.0, was = 0.0, step = 0.0;
+	float res = 1.0, t = 0.8 + lift, under = 0.0;
 	at.y += 0.3 * lift;
 	for (int i = 0; i < 96; i++) {
 		vec3 q = at + MOON_TO * t;
@@ -185,21 +213,19 @@ float landSun(vec3 at, float lift, float foot, float ripple) {
 		if (t < ${f(NEAR_SUN)}) { vec3 A = texture(uMapA, (q.xz - MAP_LO) / MAP_SIZE).rgb; hs = A.g * landRelief(q.xz, A.b * 64.0); }
 		else hs = landHigh(q.xz);
 		float dh = over - hs;
-		// How much sand the ray passes under, as its depth summed along it: how far into the shadow the place is, which
-		// changes smoothly from pixel to pixel where the deepest point did not. Under the first sand only: past it the
-		// ray may run under the next dune.
-		if (dh > 0.0 && deep > 0.0) break;
-		deep += 0.5 * (was + max(-dh, 0.0)) * step;
-		// Past this the shade is as deep as it gets: stopping here, and not where the steps run out, keeps it smooth.
-		if (deep > 4.0 * SAND_REACH) break;
-		was = max(-dh, 0.0);
+		// How far into the shadow the place is: the deepest the ray passes under the first sand it meets, which is near
+		// nothing by the shadow's far edge and grows toward the dune that throws it. A sum of the depth along the ray,
+		// stepped by how deep it was, jumped from pixel to pixel where the number of steps changed, and drew the
+		// lines of equal depth as dotted rings on every slip face.
+		if (dh > 0.0 && under > 0.0) break;
+		under = max(under, -dh);
+		if (under > ${f(UNDER_MAX)}) break;
 		// Softer for the first few units: a ray that sets out along a slope nearly as steep as the moon is high (the
 		// inner faces of a crescent's horns) only grazes it, and a hard test there came out as grain.
 		res = min(res, dh / max((t + 4.0) / SUN_EDGE, t > 3.0 + 7.0 * foot ? foot : 0.0));
-		step = dh < 0.0 ? clamp(-dh * 0.3, 1.0, 3.0) : clamp(dh * 0.9, 0.25, 8.0);
-		t += step;
+		t += dh < 0.0 ? 0.75 : clamp(dh * 0.9, 0.25, 8.0);
 	}
-	landDepth = deep;
+	landDepth = under;
 	// The shadow's edge is centred on the line the crest throws, with the ripples on the sand it falls on breaking it:
 	// the side of a ripple turned to the moon comes out of the shadow first.
 	return smoothstep(-1.0, 1.0, res + SHADOW_RIPPLE * ripple);
@@ -214,14 +240,24 @@ void landSurface() {
 	// The sand's lip down the planet's side: thick at the shoulder, thinning out down the side in streaks along the
 	// hollows of the stone, raggedly, until only the stone is left.
 	if (vDrape > 0.005) {
-		float s = clamp((vDrape - 0.02) / 0.98, 0.0, 1.0);
 		vec2 q = vec2(atan(vUnit.x, vUnit.z) * ${f(WORLD.half)}, vUnit.y);
-		float ragged = 0.34 * (landNoise(q / vec2(4.0, 2.6)) - 0.5) + 0.16 * (landNoise(q / 1.3 + 7.0) - 0.5);
-		float cover = 1.0 - smoothstep(0.45, 0.9, s + ragged);
-		cover *= mix(1.0, smoothstep(0.25, 0.6, landNoise(vec2(q.x / 1.7, q.y / 8.0) + 2.0)), smoothstep(0.3, 0.75, s));
-		vec3 grit = uSandRim * (0.94 + 0.12 * landNoise(q / 0.6));
-		vec3 bare = uBare * (0.82 + 0.3 * landNoise(q / 2.2 + 3.0)) * (0.9 + 0.1 * landNoise(q / 0.5));
-		landAlbedo = mix(bare, grit, cover);
+		// How far down from the land's edge, in units: the floor's sand ends there on a crisp, broken lip, a little
+		// further down in places, and under it lies on the stone only in a few uneven patches, wider than they are tall,
+		// as sand that has slid onto ledges, fewer and smaller further down.
+		float down = ${f(-WORLD.top)} + sqrt(max(1.0, ${f(WORLD.top * WORLD.top)} - dot(vUnit.xz, vUnit.xz))) - vUnit.y;
+		bool shoulder = length(vUnit.xz) > ${f(LAND.rim - 0.5)};
+		float fw = max(fwidth(down), 1e-3);
+		float lipAt = (shoulder ? ${f(DRAPE_LIP[0])} : ${f(SPILL_LIP[0])}) + (shoulder ? ${f(DRAPE_LIP[1])} : ${f(SPILL_LIP[1])}) * (0.6 * landNoise(vec2(q.x / 9.0, 0.5)) + 0.4 * landNoise(vec2(q.x / 2.2, 3.5)));
+		float lipK = 1.0 - smoothstep(lipAt - fw, lipAt + fw, down);
+		float pn = 0.65 * landNoise(vec2(q.x / 6.5, down / 1.7) + 4.0) + 0.35 * landNoise(vec2(q.x / 2.1, down / 0.8) + 9.0);
+		float under = down - lipAt, reach = shoulder ? ${f(DRAPE_LIP[2])} : ${f(SPILL_LIP[2])};
+		float cut = 0.5 + 0.38 * clamp(under / reach, 0.0, 1.0);
+		float lies = smoothstep(cut - 0.02, cut + 0.02, pn) * step(0.0, under) * step(under, reach);
+		if (max(lipK, lies) < 0.5) discard;
+		// Thinner in a patch, where the stone's own color shows through it.
+		float thin = (1.0 - lipK) * (1.0 - smoothstep(cut, cut + 0.12, pn));
+		vec3 grit = uSandRim * (0.94 + 0.12 * landNoise(q / 0.6)) * mix(1.0, 0.85, thin);
+		landAlbedo = mix(grit, uBare, 0.3 * thin);
 		landN = nG;
 		landRough = 0.95;
 		landMetal = 0.0;
@@ -304,6 +340,23 @@ void landSurface() {
 		worn *= mix(1.0, 0.55, sj) * (0.9 + 0.2 * landNoise(p / 3.1));
 		city = mix(city, worn, strip);
 		g = mix(g, sg, strip);
+		// Rubble from the break lying on it, thicker toward the edge: small broken stones of the planet's own rock, each
+		// lit on its side to the moon and dark on the other.
+		float near = 1.0 - smoothstep(1.0, 10.0, inside + 3.0 * (landNoise(p / 5.0) - 0.5));
+		if (near > 0.0) {
+			float fw = max(fwidth(p.x), fwidth(p.y));
+			for (int k = 0; k < 2; k++) {
+				float sz = k == 0 ? 1.3 : 0.6;
+				vec2 cell = floor(p / sz + float(k) * 0.5), f2 = p / sz + float(k) * 0.5 - cell;
+				ivec2 ck = ivec2(cell);
+				float h1 = landHash(ck.x, ck.y, 111u + uint(k)), h2 = landHash(ck.x, ck.y, 113u + uint(k)), h3 = landHash(ck.x, ck.y, 117u + uint(k));
+				vec2 d = (f2 - (0.25 + 0.5 * vec2(h2, h3))) * sz;
+				float r = sz * (0.16 + 0.22 * h1);
+				float on = step(1.0 - near * (k == 0 ? 0.55 : 0.75), h1) * (1.0 - smoothstep(r - fw, r + fw, length(d))) * landKeep(sz * 0.5, fw);
+				city = mix(city, uRock * (0.55 + 0.6 * h2), on);
+				g += on * d / max(r, 1e-3) * 0.9;
+			}
+		}
 	}
 
 	// The belt under the trees: dark warm earth with tufts of dry grass in it, thicker in its clumps and bare in
@@ -341,14 +394,19 @@ void landSurface() {
 			float sa = -${f(SEEK_EYE[0])}, fa = vUnit.y + dv.y * sa - landTop(p + dv.xz * sa);
 			if (fa > 0.0) {
 				float sb = sa, fb = fa;
+				// Stepped over the height grid, and read from the dune field itself only where the grid says the line is
+				// within a little of the sand: the grid rounds a crest down by up to a few tenths, so it is never trusted to
+				// say the line is under.
 				for (int k = 0; k < ${SEEK_EYE[2]}; k++) {
 					sb = sa + ${f(SEEK_EYE[1])};
-					fb = vUnit.y + dv.y * sb - landTop(p + dv.xz * sb);
+					vec2 qb = p + dv.xz * sb;
+					fb = vUnit.y + dv.y * sb - (${f(-WORLD.top)} + sqrt(max(1.0, ${f(WORLD.top * WORLD.top)} - dot(qb, qb))) + landHigh(qb));
+					if (fb < ${f(EYE_MARGIN)}) fb = vUnit.y + dv.y * sb - landTop(qb);
 					if (fb <= 0.0) break;
 					sa = sb; fa = fb;
 				}
 				if (fb <= 0.0) {
-					for (int k = 0; k < 5; k++) {
+					for (int k = 0; k < 4; k++) {
 						float sm = sa + (sb - sa) * clamp(fa / max(fa - fb, 1e-6), 0.1, 0.9);
 						float fm = vUnit.y + dv.y * sm - landTop(p + dv.xz * sm);
 						if (fm > 0.0) { sa = sm; fa = fm; } else { sb = sm; fb = fm; }
@@ -357,19 +415,22 @@ void landSurface() {
 				}
 			}
 		}
-		float relief = landRelief(p, inside);
+		float fwp = max(fwidth(p.x), fwidth(p.y));
+		// The slopes from the place itself and one place a hair away each way, toward the side of the crest the
+		// place is on, so a slope is never taken across a crest. (Two places each way cost a sixth of the frame.)
+		vec2 s0 = landSandAt(p, inside, fwp);
+		float relief = s0.x;
 		vec4 info = landInfo;
 		float which = landWhich;
-		float fwp = max(fwidth(p.x), fwidth(p.y));
 		float e = 0.05;
-		vec2 sx = landSandAt(p + vec2(e, 0.0), inside, fwp) - landSandAt(p - vec2(e, 0.0), inside, fwp), sz = landSandAt(p + vec2(0.0, e), inside, fwp) - landSandAt(p - vec2(0.0, e), inside, fwp);
-		vec2 gR = vec2(sx.y, sz.y) / (2.0 * e), gSmooth = vec2(sx.x, sz.x) / (2.0 * e);
+		vec2 sx = landSandAt(p + vec2(e, 0.0), inside, fwp) - s0, sz = landSandAt(p + vec2(0.0, e), inside, fwp) - s0;
+		vec2 gR = vec2(sx.y, sz.y) / e, gSmooth = vec2(sx.x, sz.x) / e;
 		float tx = 1.0 / MAP_N;
 		vec2 gM = vec2(texture(uMapA, uv + vec2(tx, 0.0)).g - texture(uMapA, uv - vec2(tx, 0.0)).g, texture(uMapA, uv + vec2(0.0, tx)).g - texture(uMapA, uv - vec2(0.0, tx)).g) / (2.0 * tx * MAP_SIZE);
 		// The roll at the land's edge, which the dune field is handed as one number for the whole pixel.
 		vec2 gI = vec2(texture(uMapA, uv + vec2(tx, 0.0)).b - texture(uMapA, uv - vec2(tx, 0.0)).b, texture(uMapA, uv + vec2(0.0, tx)).b - texture(uMapA, uv - vec2(0.0, tx)).b) * 64.0 / (2.0 * tx * MAP_SIZE);
 		float rl = landRoll(inside), dRoll = inside > 0.0 && inside < ${f(ROLL)} ? 6.0 * (inside / ${f(ROLL)}) * (1.0 - inside / ${f(ROLL)}) / ${f(ROLL)} : 0.0;
-		vec2 gRoll = (rl > 0.02 ? relief / rl : 0.0) * dRoll * gI;
+		vec2 gRoll = (rl > 0.02 ? (relief - landSwell(p)) / rl : 0.0) * dRoll * gI;
 		gs = sand * (gR + gRoll) + relief * gM;
 		float steep = length(gR);
 		// The dune this place is on: the height of its crest over here, how far down its slip face the place has fallen
@@ -387,17 +448,20 @@ void landSurface() {
 		// give way to each other over the desert and at a strength that wanders, dying out toward each brink, on the
 		// steep and in the lee. A wavelength that changed from place to place drew closed rings, as wood grain: each
 		// set keeps its own, and only how much of each shows changes.
-		float back = (1.0 - face) * smoothstep(0.32, 0.12, steep) * smoothstep(0.4, 4.0, fromBrink);
+		// They thin toward each brink over the upper part of a back, bunch where the sand turns round a horn (their phase
+		// follows the relief, so where the ground falls faster they lie closer), turn with it, and come in three sizes:
+		// a fine set everywhere, and two larger sets that give way to each other over the desert.
+		float back = (1.0 - face) * smoothstep(0.32, 0.12, steep) * smoothstep(0.4, 4.0, fromBrink) * mix(1.0, smoothstep(0.0, 0.4, tb), onBackOf(which, info));
 		float strength = mix(0.3, 1.0, smoothstep(0.25, 0.75, landNoise(p / 47.0 + 11.0)));
 		vec2 w = WIND;
-		const float BEND = 1.3;
+		const float BEND = 1.9;
 		float phase = dot(p, w) + BEND * relief + 13.0 * landNoise(p / 23.0) + 4.0 * landNoise(p / 8.0 + 3.0);
 		vec2 gq = w + BEND * gSmooth;
 		float big = smoothstep(0.35, 0.65, landNoise(p / 71.0 + 5.0));
 		float dh = 0.0, shade = 0.0;
-		for (int k = 0; k < 2; k++) {
-			float lam = k == 0 ? 2.3 : 3.6, wt = k == 0 ? 1.0 - big : big;
-			float q = phase / lam, fwq = fwidth(q);
+		for (int k = 0; k < 3; k++) {
+			float lam = k == 0 ? 2.3 : (k == 1 ? 3.6 : 1.15), wt = k == 0 ? 1.0 - big : (k == 1 ? big : 0.3 + 0.25 * landNoise(p / 13.0 + 2.0));
+			float q = (phase + (k == 2 ? 2.0 * landNoise(p / 4.0 + 7.0) : 0.0)) / lam, fwq = fwidth(q);
 			float k1 = landKeep(1.0, fwq), k2 = landKeep(0.5, fwq);
 			// A ripple is steep on its lee and long on its stoss side, as sand ripples are.
 			dh += wt * 6.2832 * (cos(6.2832 * q) * k1 + 0.42 * cos(12.566 * q + 0.9) * k2) / lam;
@@ -409,16 +473,23 @@ void landSurface() {
 		dune = uSand * mix(1.0, 1.1, hi) * (1.0 + 0.10 * grain * landKeep(0.7, fwp)) * (0.95 + 0.1 * landNoise(p / 31.0));
 		dune *= 1.0 + 0.06 * shade * back * strength;
 		// Toward the rim the sand is paler and creamier, as picture 9's is where it rolls over the planet's shoulder.
-		dune = mix(dune, uSandRim * (1.0 + 0.1 * grain * landKeep(0.7, fwp)), 1.0 - smoothstep(0.0, 24.0, inside));
+		dune = mix(dune, uSandRim * (1.0 + 0.1 * grain * landKeep(0.7, fwp)), 1.0 - smoothstep(0.0, 12.0, inside));
 		// A back is finer, paler sand at its brink and coarser down its flank, with a line of the palest along the brink.
 		float onBack = which >= 0.0 && info.y < 0.5 && info.x > 0.05 ? smoothstep(2.0, 6.0, hc) : 0.0;
 		dune *= mix(1.0, mix(1.09, 0.94, smoothstep(0.0, 0.9, tb)) * (1.0 + 0.08 * (1.0 - smoothstep(0.2, 1.6, fromBrink))), onBack);
+		// The upper back of a tall dune, and its brink, are the finest and palest sand: they run from the floor's apricot
+		// to pale gold, as the brightest sand of picture 9, of picture 4 and of his own picture does.
+		dune = mix(dune, uSandHi * (1.0 + 0.08 * grain * landKeep(0.7, fwp)), onBack * smoothstep(8.0, 36.0, hc) * (1.0 - smoothstep(0.1, 0.8, tb)) * SAND_HI);
 		// A slip face is the same sand as a back, a little coarser and redder: its dark is the moon's shadow and not
 		// its color. Its grain flows show as streaks down it.
-		dune = mix(dune, mix(dune, uSandDeep, 0.55) * (0.92 + 0.16 * landNoise(vec2(info.z * 19.0, info.w / 7.0) + which * 3.1)), face);
+		dune = mix(dune, mix(dune, uSandDeep, 0.3) * (0.92 + 0.16 * landNoise(vec2(info.z * 19.0, info.w / 7.0) + which * 3.1)), face);
 		// The light the sand beyond a slip face throws back up it: none under the brink, most at the toe.
 		landRipple = shade * back * strength;
-		landUpper = face * pow(1.0 - fall, 1.4);
+		// A slip face is a scooped hollow: darkest right under its crest, lifted toward its toe and its horns by what
+		// the lit floor in front of it throws back, and a little fresher and darker down each chute.
+		float chute = face > 0.0 && which >= 0.0 ? landChuteAt(info.z * texelFetch(uCrest, ivec2(1, int(which)), 0).x, info.w, which) * smoothstep(1.0, 8.0, info.w) : 0.0;
+		landHollow = (HOLLOW.x + (HOLLOW.y - HOLLOW.x) * pow(fall, 1.2) + HOLLOW.z * smoothstep(0.55, 0.95, abs(info.z))) * (1.0 - 0.45 * chute);
+		dune *= 1.0 - 0.22 * chute * face;
 		landFace = face;
 		landFoot = max(0.02, 0.46 * length(fwidth(vUnit.xz)));
 		vec2 gS = sand * (gSmooth + gRoll) + relief * gM;
@@ -455,11 +526,32 @@ void landSurface() {
 	vec3 col = mix(ground, dune, smoothstep(0.0, 1.0, sand));
 	g = mix(g, gs, smoothstep(0.0, 0.4, sand));
 	landRough = mix(landRough, 0.95, max(grass, sand));
-	// A wall the break or the edge shows: earth and broken stone in beds.
-	float bed = landNoise(vec2(p.x + p.y, vUnit.y) / 1.4) * 0.6 + landNoise(vec2(p.x - p.y, vUnit.y) / 0.5) * 0.4;
-	col = mix(col, mix(uEarth, uPavePale * 0.6, smoothstep(0.3, 0.7, bed)), wall);
+	// A wall the break or the edge shows: the planet's own stone broken into facets of every size, each turned its own
+	// way so some catch the moon and some do not, with dark cracks between, and a chipped top where it meets the
+	// ground. Courses of even stone there read as a garden wall.
+	vec3 wn = vec3(0.0);
+	if (wall > 0.01) {
+		vec2 out2 = dot(nG.xz, nG.xz) > 1e-6 ? normalize(nG.xz) : vec2(0.0, 1.0);
+		vec2 q = vec2(dot(p, vec2(-out2.y, out2.x)), vUnit.y);
+		float e1, e2;
+		vec2 o1, o2;
+		// Long broken ledges, wider than they are tall, and finer breaks inside each that only turn the stone.
+		vec2 k1 = vec2(${f(BREAK.cell)} / 6.0, ${f(BREAK.cell)} / 1.7), k2 = vec2(${f(BREAK.cell)} / 1.3);
+		vec4 f1 = landSlab(q * k1 + vec2(0.0, 13.0), o1, e1);
+		vec4 f2 = landSlab(q * k2 + vec2(41.0, 7.0), o2, e2);
+		e1 /= ${f(BREAK.cell)} / 1.7;
+		float fw = max(fwidth(q.x), fwidth(q.y));
+		float crack = landLine(e1, 0.06, fw) * landKeep(1.7, fw) * step(0.35, o1.y);
+		vec3 rock = uRock * (0.55 + 0.6 * o1.x) * (0.88 + 0.24 * o2.y * landKeep(1.3, fw)) * (0.9 + 0.2 * landNoise(q / vec2(0.8, 0.3)));
+		rock = mix(rock, uRock * 0.25, 0.75 * crack);
+		vec3 side = vec3(-out2.y, 0.0, out2.x);
+		wn = (side * (o1.y - 0.5) * 0.9 + vec3(0.0, 1.0, 0.0) * (o1.x - 0.35) * 0.7 + side * (o2.x - 0.5) * 0.45 * landKeep(1.3, fw)) * (1.0 - crack);
+		col = mix(col, rock, wall);
+		landRough = mix(landRough, 0.9, wall);
+	}
 	vec3 n = sand > 0.002 ? normalize(vec3(p.x / sqrt(max(1.0, ${f(WORLD.top * WORLD.top)} - dot(p, p))) - gs.x, 1.0, p.y / sqrt(max(1.0, ${f(WORLD.top * WORLD.top)} - dot(p, p))) - gs.y)) : nG;
-	n = normalize(mix(nG, n, smoothstep(0.0, 0.3, sand) * (1.0 - wall)));
+	n = normalize(mix(nG, n, smoothstep(0.0, 0.3, sand) * (1.0 - wall)) + wn * wall);
+	landInward = wall > 0.5 && dot(nG.xz, nG.xz) > 1e-6 ? -normalize(nG.xz) : vec2(0.0);
 	landN = normalize(n - vec3(g.x, 0.0, g.y) * (1.0 - wall) * (1.0 - smoothstep(0.0, 0.3, sand)));
 	landN = normalize(mix(landN, MOON_TO, 0.6 * landCrestLine));
 	landAlbedo = col;
@@ -496,7 +588,7 @@ export const DIRECT = /* glsl */ `
 // The light that has bounced and how open the place is, from the maps, as the world's stored light is used.
 export const LIGHT_END = /* glsl */ `
 {
-	vec2 lu = ( vUnit.xz - MAP_LO ) / MAP_SIZE;
+	vec2 lu = ( vUnit.xz + landInward * 4.0 - MAP_LO ) / MAP_SIZE;
 	float open = texture( uMapB, lu ).r, sandy = texture( uMapA, lu ).g;
 	vec3 bounced = texture( uLight, lu ).rgb;
 	irradiance *= open;
@@ -514,7 +606,7 @@ export const LIGHT_END = /* glsl */ `
 	// The light comes mostly from the lit backs the shade faces, so the ripples and grain still show in it, faintly.
 	{
 		vec3 from = normalize( vec3( -MOON_TO.x, 0.7, -MOON_TO.z ) );
-		float toward = 0.4 + 0.6 * max( dot( landN, from ), 0.0 );
-		irradiance += SAND_GLOW * landSandK * ( 1.0 - landSeen ) * ( SAND_DEEP + ( 1.0 - SAND_DEEP ) * max( exp( -landDepth / SAND_REACH ), SAND_UPPER * landUpper ) ) * toward;
+		float toward = 0.3 + 0.7 * max( dot( landN, from ), 0.0 );
+		irradiance += SAND_GLOW * landSandK * ( 1.0 - landSeen ) * mix( SAND_DEEP + ( 1.0 - SAND_DEEP ) * exp( -landDepth / CAST_REACH ), landHollow, landFace ) * toward;
 	}
 }`;

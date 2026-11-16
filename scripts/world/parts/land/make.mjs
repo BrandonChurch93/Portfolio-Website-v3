@@ -26,13 +26,18 @@ const began = performance.now(), say = (s) => console.log(`land: ${s} · ${((per
 
 // How fine everything is: the height field's spacing and how far the reduced mesh may stray from it, in units, and
 // the maps' sizes in texels.
-const FINE = draft ? { grid: 1.6, error: 0.12, map: 512, lots: 256, light: 192, hemi: 32, bounces: 1 } : { grid: 0.7, error: 0.1, map: 1024, lots: 512, light: 768, hemi: 256, bounces: 2 };
+const FINE = draft ? { grid: 1.6, error: 0.12, map: 512, lots: 256, light: 192, hemi: 32, bounces: 1 } : { grid: 0.7, error: 0.2, map: 1024, lots: 512, light: 768, hemi: 256, bounces: 2 };
 // How far the paving and the grass stand over the dome, the kerb between them, how far down the turned edge goes.
 const LIFT = { paving: 0.45, grass: 0.1, skirt: 4 };
 // The sand's lip down the planet's side: how far down it reaches (least and most, ragged along the rim), how far
 // out from the planet's surface it lies at its top and at its foot, how much that wanders, how far down its rounded
 // shoulder is, and how many rows the shoulder and the side are made of.
-const DRAPE = { down: [9, 30], off: [1.3, 0.25], lump: 0.7, round: 5, shoulder: 5, rows: 6 };
+const DRAPE = { down: [22, 30], off: [0.3, 0.2], lump: 0.25, round: 0.8, shoulder: 3, rows: 8 };
+// Where the desert meets the land's torn front edge (the lip), its sand spills over onto the stone below as a
+// talus, gently enough to catch the moon: how far out from the edge and how far down each row of it lies, and how
+// ragged its foot is. A straight strip down from the edge there, and then a steep talus, were a long black slot
+// seen against the stone.
+const SPILL = { out: [0, 3, 6.5, 10, 13], down: [0, 0.9, 1.9, 2.8, 3.6], ragged: 0.5 };
 // The belt of grass along the city's front: how far in front of front() its kerb is, and the soft, uneven edge it
 // fades out over toward the land's edge (from, to, and how much that wanders), leaving the pale strip of worn stone
 // along the edge that picture 9 has in front of its trees.
@@ -102,7 +107,6 @@ const sample = (data, x, z) => {
   png('public/world/land-lots.png', N, N, out, 3);
 }
 say('maps');
-
 // ---------------------------------------------------------------------------------------------------------------
 // The height of the land at a place.
 function height(x, z) {
@@ -114,6 +118,13 @@ function height(x, z) {
   const [ox, oz] = towardEdge(sl.cx, sl.cz), turn = (sl.b - 0.5) * 1.2, tx = ox * Math.cos(turn) - oz * Math.sin(turn), tz = ox * Math.sin(turn) + oz * Math.cos(turn);
   const drop = b * F.BREAK.drop * (0.55 + 0.9 * sl.a), tip = b * F.BREAK.tip * (0.4 + 1.2 * sl.b);
   return base - drop - tip * ((x - sl.cx) * tx + (z - sl.cz) * tz);
+}
+
+// Where the row of trees behind the dunes has its feet drawn, on the ridge raised for it (BANK in field.ts), against
+// picture 9's row (ROW in the layout).
+{
+  const feet = P.TREES.filter(([, z]) => Math.abs(z - L.ROW.z) < 0.5).map(([x, z]) => L.pictured(x, height(x, z), z)[1]);
+  say(`the row's ${feet.length} trees have their feet drawn ${Math.min(...feet).toFixed(2)} to ${Math.max(...feet).toFixed(2)} down (the picture: ${L.ROW.foot})`);
 }
 
 // The height field on a fine grid over the land, ending exactly on its edge: a vertex outside the land that a kept
@@ -193,6 +204,16 @@ for (let t = 0; t < top.indices.length; t += 3) for (let k = 0; k < 3; k++) {
   const ka = `${pa[0]},${pa[2]}`, kb = `${pb[0]},${pb[2]}`, key = ka < kb ? `${ka}|${kb}` : `${kb}|${ka}`;
   if (open.has(key)) open.delete(key); else open.set(key, [a, b]);
 }
+{
+  // Every open edge of the top should lie on the land's edge: one inside it is a crack the night shows through.
+  let inner = 0;
+  const at = [];
+  for (const [a, b] of open.values()) {
+    const x = (top.positions[a * 3] + top.positions[b * 3]) / 2, z = (top.positions[a * 3 + 2] + top.positions[b * 3 + 2]) / 2;
+    if (L.within(x, z) > 1.5) { inner++; if (at.length < 8) at.push(`${x.toFixed(0)},${z.toFixed(0)}`); }
+  }
+  if (inner) console.log(`land: ${inner} open edges inside the land (${at.join(' ')})`);
+}
 const nTop = top.positions.length / 3;
 const sp = [], sn = [], si = [], sd = [], hung = [];
 // The planet's outer surface at a height: how far from its middle line it is.
@@ -207,7 +228,7 @@ const columnOf = (v) => {
   if (column.has(v)) return column.get(v);
   const x = top.positions[v * 3], y0 = top.positions[v * 3 + 1], z = top.positions[v * 3 + 2], m = drapeOf(x, z);
   const th = Math.atan2(x, z), arc = th * L.WORLD.half, ox = Math.sin(th), oz = Math.cos(th), R0 = Math.hypot(x, z);
-  const scallop = 0.5 + 0.5 * Math.sin(arc / 6.5 + 4 * L.noise(arc / 31, 1, 0, 41));
+  const scallop = 0.6 * L.noise(arc / 11, 1, 0, 41) + 0.4 * L.noise(arc / 4.5, 5, 0, 44);
   const D = LIFT.skirt + m * (DRAPE.down[0] + (DRAPE.down[1] - DRAPE.down[0]) * (0.6 * L.noise(arc / 27, 2, 0, 42) + 0.4 * scallop));
   const off = (k) => m * (DRAPE.off[0] + (DRAPE.off[1] - DRAPE.off[0]) * k + DRAPE.lump * (L.noise(arc / 9, 3 + k * 2, 0, 43) - 0.5) * (1 - k));
   const out = skinR(y0) + DRAPE.off[0] - R0, ids = [];
@@ -218,10 +239,32 @@ const columnOf = (v) => {
   column.set(v, ids);
   return ids;
 };
+// How much of a talus an edge of the top has where it ends on the lip in the desert.
+const spillOf = (x, z) => (Math.abs(Math.hypot(x, z) - L.LAND.rim) > 0.05 && L.lip(x) - z < 0.05 ? L.ramp(0.15, 0.5, desert(x, z)) : 0);
+const spilled = new Map();
+const spillColumnOf = (v) => {
+  if (spilled.has(v)) return spilled.get(v);
+  const x = top.positions[v * 3], y0 = top.positions[v * 3 + 1], z = top.positions[v * 3 + 2], m = spillOf(x, z), [ox, oz] = towardEdge(x, z), ids = [];
+  const foot = 1 + SPILL.ragged * (L.noise(x / 7, 6, z / 7, 47) - 0.5) * 2;
+  SPILL.out.forEach((o, k) => {
+    const f = k / (SPILL.out.length - 1), r = m * (k === SPILL.out.length - 1 ? foot : 1);
+    ids.push(nTop + sp.length / 3);
+    sp.push(x + ox * o * r, y0 - (m > 0 ? SPILL.down[k] * r : LIFT.skirt * f), z + oz * o * r);
+    sd.push(m > 0 ? 0.02 + 0.98 * f : 0);
+    hung.push(1);
+  });
+  spilled.set(v, ids);
+  return ids;
+};
 for (const [a, b] of open.values()) {
   const pa = top.positions.subarray(a * 3, a * 3 + 3), pb = top.positions.subarray(b * 3, b * 3 + 3);
   if (drapeOf(pa[0], pa[2]) > 0 || drapeOf(pb[0], pb[2]) > 0) {
     const ca = columnOf(a), cb = columnOf(b);
+    for (let k = 0; k + 1 < ca.length; k++) si.push(ca[k], ca[k + 1], cb[k], cb[k], ca[k + 1], cb[k + 1]);
+    continue;
+  }
+  if (spillOf(pa[0], pa[2]) > 0 || spillOf(pb[0], pb[2]) > 0) {
+    const ca = spillColumnOf(a), cb = spillColumnOf(b);
     for (let k = 0; k + 1 < ca.length; k++) si.push(ca[k], ca[k + 1], cb[k], cb[k], ca[k + 1], cb[k + 1]);
     continue;
   }
@@ -256,7 +299,7 @@ for (const [a, b] of open.values()) {
     norms.push(acc[v * 3] / l, acc[v * 3 + 1] / l, acc[v * 3 + 2] / l);
   }
   sn.length = 0;
-  sn.push(...norms);
+  for (const v of norms) sn.push(v);
 }
 const ground = {
   positions: Float32Array.from([...top.positions, ...sp]),
@@ -264,7 +307,7 @@ const ground = {
   indices: Uint32Array.from([...top.indices, ...si]),
   drape: Float32Array.from([...new Array(nTop).fill(0), ...sd]),
 };
-say(`ground: ${(ground.indices.length / 3).toLocaleString('en-US')} triangles, ${open.size} open edges, ${column.size} of them on the drape`);
+say(`ground: ${(ground.indices.length / 3).toLocaleString('en-US')} triangles, ${open.size} open edges, ${column.size} of them on the drape, ${spilled.size} on the talus at the lip`);
 
 // ---------------------------------------------------------------------------------------------------------------
 // The light: worked out at every texel of land-light.png that is on the land, on a grid of the land itself, with
