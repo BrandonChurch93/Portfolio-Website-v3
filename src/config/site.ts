@@ -22,9 +22,10 @@ export const PIECE_MOUNT = { near: 1, far: 2.5, max: 6, fade: 260 } as const;
 export const HANDHELD = {
   // The most pixels a 3D canvas has, and a canvas as large as the screen (the stream, the sky).
   piece: 1.6e6,
-  // The hero's world, whose canvas is the tallest on the site and whose stage holds the most: fewer, so that the
-  // hero stays under what an iPad ends a page for (measured Nov 16: about 1190 MB of GPU at 1.6 million).
-  world: 1.1e6,
+  // The hero's world, whose canvas is the tallest on the site: as many as a canvas the size of the screen gets.
+  // At 1.1 million (tried Nov 16 for the 60 MB it saved) an iPad drew the world at under one pixel to a CSS
+  // pixel, and the city's windows were smears: the first thing he would see on the device he tests on.
+  world: 2.4e6,
   screen: 2.4e6,
   // The longest side of the cursor light's shadow map, and of any other light's.
   shadow: { lamp: 1024, most: 2048 },
