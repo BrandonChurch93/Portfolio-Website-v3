@@ -1209,6 +1209,10 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     5. **The hero:** the scroll cue has a halo of the page's ground and a small tick and stays as still text with reduced motion. On an iPad the world is drawn with more pixels (`HANDHELD.world`), which costs about 100 MB at the foot of the hero.
     6. **Everywhere:** a 3D piece made while it is on the screen comes on over a quarter second. Never the first piece of a page that has not been scrolled: there is still no opening.
     7. **The desk:** only the keyboard's cut edge is changed, from a cold pale line to a warm satin. Two rounds that tried to relight the desk made it worse and none of that is kept.
+    8. **The small pieces:** the reflector's arm and the studio light's drum and yoke each carry a thin line of light that follows the pointer. Nothing else about the three is changed: the CPU is as it was to the byte. One soft blown spot on the studio light's bezel is capped.
+    9. **The hero's light:** the core's light is paler where it is strongest, so the rock right beside the ball is cream and the rock further off is tan, as picture 9 has it (`LIGHT.core.pale`, and `?corepale=0` shows it as it was).
+    10. **The hero's rock:** under the hollow's floor there is to be dim rock, the far inner wall of the planet, with the stream falling in front of it, as picture 9 has it. Ours is black air there until the rock's seventh round lands.
+    11. **The hero's city:** every building is turned about 22 degrees more so its right face shows. The named tops do not move. His stepped tower's limestone is left exactly as he approved it, a cream grey in a warm city: whether it is warmed is his.
 - **The dunes are taller (Nov 16, in the night, to Claude Code).** "I think the sand dunes should be taller." Said on seeing the world on the page. In exact terms:
     - **Which:** the dunes of the desert at the right end of the top of the world.
     - **Now:** twelve crescent dunes whose crests stand 4 to 15 units over the sand (a low building beside them is 20 to 30, a tree about 15), so at the page's size they read as ripples on a flat.
