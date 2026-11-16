@@ -162,6 +162,7 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **Rebuilt to picture 9 (Nov 15, 20:55):** the fourth round is at `/lab/hero-blockout`, with stills in `reference/studies/65-*`. Waiting on his verdict (`BRIEF.md`, Hero, "The fourth round as rebuilt to picture 9").
 - **His verdict (Nov 15, 20:47):** a good starting point, a far cry from picture 9's quality, and the build must look tremendously better and not be this study with minor updates. Next: his yes to the layout, then Fable writes the world's kit and its tests so the quality level is in the repo, and Claude Code proves it on one slice before building the rest.
 - **Handed over (Nov 15, 20:52):** he approved the layout only. Next, in Claude Code on his Mac: the slice in `reference/kits/world.md` (the hollow with the core, the pyramid, the stepped gold crown), judged against `QUALITY.md`, "The hero's world, built to picture 9", then his verdict on it before anything else is built.
+- **Being built in Claude Code (Nov 15, late):** the slice, in `src/pieces/world/`, at `/lab/piece/world`. Fable wrote the frame, the world's shared light and the offline tools' specification, and judges every round. Each part has its own Opus builder: the core, the pyramid, the stepped gold crown, and for the rock's form a derby of three sculptors. Nothing has been shown to him yet. `LOG.md`, top entry
 
 
 ## Phase 0 · Foundation
