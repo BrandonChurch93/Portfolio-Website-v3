@@ -128,6 +128,16 @@ for (const [i, a] of Object.entries(AT)) {
   const z = a.z ?? (px > LEFT_END ? t[1] : a.low !== undefined ? 150 + 22 * a.low : Math.max(-300, 118 - 2.1 * (268 - py)));
   stand(t, px, py, z);
 }
+// Between the pyramid and the spire the picture's row of trees stands BEFORE the city's feet, which are hidden
+// behind the crowns at about 255 down. Buildings whose feet were seen lower than that stood in front of where the
+// row is: each goes straight back along the line of sight, its top kept, until its foot is behind the row.
+for (const t of towers) {
+  for (let k = 0; k < 60; k++) {
+    const [px, py] = W.pictured(t[0], W.ground(t[0], t[1]), t[1]);
+    if (px < 400 || px > 662 || py <= 252 || Math.hypot(t[0], t[1]) < W.COURT + size(t)) break;
+    along(t, 6);
+  }
+}
 // Any two of those at the left end that have come to stand in one another: the taller goes back, its top kept.
 const left = Object.entries(AT).filter(([, a]) => (a.px ?? 1e9) <= LEFT_END).map(([i]) => towers[i]);
 for (let pass = 0; pass < 200; pass++) {
@@ -157,7 +167,7 @@ const onGround = (px, py) => {
 // that the picture's crowns overlap the pyramid's foot, and so do these.
 const before = (x, z) => {
   const [qx, qz] = W.pyramidal(x, z), px = W.pictured(x, W.ground(x, z), z)[0];
-  return px > 338 && px < 494 && z > W.PYRAMID.z - 20 && Math.max(Math.abs(qx), Math.abs(qz)) < W.PYRAMID.base / 2 + 70;
+  return px > 300 && px < 494 && z > W.PYRAMID.z - 20 && Math.max(Math.abs(qx), Math.abs(qz)) < W.PYRAMID.base / 2 + 70;
 };
 const trees = P.trees().map((t) => [n(t.x), n(t.z), n(t.size * GROW), n(t.tone, 3), n(t.turn, 3)]).filter((t) => W.within(t[0], t[1]) > t[2] && !before(t[0], t[1]) && !towers.some((b) => Math.hypot(b[0] - t[0], b[1] - t[1]) < 0.5 * size(b) + 0.3 * t[2]));
 const kept = trees.length;
@@ -198,11 +208,14 @@ for (let px = 1063; px <= 1174; px += 9.6) { const [x, z] = onGround(px + 2.5 * 
 //   - the picture's crowns are a quarter larger than ours were and overlap into one mass: every crown is a
 //     quarter larger, where it stands.
 for (let i = trees.length - 1; i >= 0; i--) { const t = trees[i], [px, py] = W.pictured(t[0], W.ground(t[0], t[1]), t[1]); if (px > 470 && px < 650 && py > 268) trees.splice(i, 1); }
-grove(474, 646, 8.5, [263, 259], [0.85, 1.2]);
+grove(474, 646, 7.5, [262, 258], [0.9, 1.3]);
+// Right of the spire the canopy climbs the buildings' feet to about 225 down, 45 pixels deep.
+grove(712, 960, 9, [231, 227], [0.8, 1.4]);
 // Before the spire's portal the picture has open paving, 668 to 708 across: crowns stood there and cut the podium
 // off at its doors.
 for (let i = trees.length - 1; i >= 0; i--) { const t = trees[i], [px] = W.pictured(t[0], W.ground(t[0], t[1]), t[1]); if (px > 668 && px < 708 && t[1] > 30) trees.splice(i, 1); }
-for (const t of trees) t[2] = n(t[2] * 1.25);
+// A wood has a few great trees: about one crown in nine is half as large again, so the belt is not a row of beads.
+for (const t of trees) t[2] = n(t[2] * 1.25 * (r() < 0.11 ? 1.5 : 1));
 console.log(`for picture 9's edge: ${drawn} buildings drawn back from the bite, ${slid} more slid back, ${lost} left where the land is not, ${kept} of the study's trees kept, ${trees.length - kept} planted along the new edge`);
 const vents = P.vents().map((v) => [n(v.at[0]), n(v.at[1]), n(v.at[2]), v.long, v.wide, v.heat]);
 const rows = (list) => list.map((r) => `  ${JSON.stringify(r).replace(/"/g, "'")},`).join('\n');
