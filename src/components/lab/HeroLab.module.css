@@ -83,7 +83,7 @@
 .role {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: calc(var(--u) * 15);
+  font-size: max(0.75rem, calc(var(--u) * 15));
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--copper-light);
@@ -130,7 +130,7 @@
   margin: 0;
   padding: calc(var(--u) * 4) calc(var(--u) * 10);
   font-family: var(--font-mono);
-  font-size: calc(var(--u) * 10.5);
+  font-size: max(0.625rem, calc(var(--u) * 10.5));
   letter-spacing: 0.3em;
   text-transform: uppercase;
   color: var(--text-2);
