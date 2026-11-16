@@ -1,34 +1,35 @@
 import * as THREE from 'three';
-import { CORE, MOONWARD, RIM, SCALE, SOURCE, WORLD } from '../../layout';
+import { CORE, LIGHT, MOONWARD, RIM, SCALE, SOURCE, WORLD } from '../../layout';
 import { color, lit, stone, world } from '../../light';
 import { slice } from '../../../../world/build';
 import { STONE as SKIN } from '../skin/look';
 import { GRAIN, grain } from './grain';
 
 // The planet's stone: what the torn rock is made of, and what a piece that broke away may wear. A broken sandstone
-// whose color comes from the light on it. A lit face is clean stone in broad stains, paler and redder by turns,
-// carrying chunky dark gouges that run along the block's grain, gather in clusters and along the rare partings
-// between its beds, and eat into the face's edges, each with a floor the light does not reach and a lit far lip. A
-// parting is a broken stepped ledge with a lit lip, one or two to a face, never at a set pitch. A convex edge turned
-// to the light is chipped pale, a concave crease holds a darker band of dust, and what faces up carries a paler dust.
+// whose color comes from the light on it. A lit face is mostly clean stone: a fine grain of sand with pits, a few
+// hairline cracks seen only close, a tone that rolls slowly across it, and here and there a long thin scar cut into
+// it, running with the rock's layering, which fans out from the core as the slabs do. Scars gather along edges and in
+// a few places and leave whole plates clean. Each is cut: a floor in shadow, a hard dark edge under the wall that
+// faces away from the core and a lit lip on the wall that faces it. Where two plates meet, and in what is shut in,
+// the stone holds a band of deeper, redder shade. A convex edge turned to the light is chipped pale here and there.
 // The first tens of units in from the planet's outer surface and under the land are its weathered crust, the skin's
-// dusty tone, giving way to the fresh red brown deeper in. The stone adds no darkness of its own where the core's
-// light does not reach: the light and the bounce make the darks.
+// dusty tone. The stone adds no darkness of its own where the core's light does not reach: the light and the bounce
+// make the darks.
 //
-// What has a direction (the beds, the partings, the gouges' grain) is worked out in three dimensions from the place,
-// so it lies on every face as the stone would and is never stretched across one seen edge on. The grain is the one
-// map, worked out from a seed when the world loads (./grain.ts) and laid from the three axes.
+// What has a direction (the scars, the cracks) is worked out in three dimensions from the place, so it lies on every
+// face as the stone would and runs on round a crease. The grain is the one map, worked out from a seed when the world
+// loads (./grain.ts) and laid from the three axes.
 //
 //   const maps = await stoneMaps(renderer)                           once, shared by every user, released with maps.release()
 //   const m = stoneMaterial(maps, { key: 'rock', baked, spare, edge }) a standard material joined to the world's light
 //
-// A block's own number (spare: 'slab') turns its beds and sets its tone. Without one, large slow fields of the place do.
+// A block's own number (spare: 'slab') sets its tone. Without one, large slow fields of the place do.
 //
 // A part that moves its own vertices (what broke away) lays the stone in itself: STONE_VERT_PARS in its vertex
 // shader, then it sets vStoneP (the place, in units) and vStoneN (the normal, in the same frame), and calls
-// stoneShader(sh, maps, true, true) for the stone's body, grain, stains and wear without its gouges, partings, crust
-// and edges. Every name the stone puts in a shader begins with stone (or vStone, uStone): uStoneStreamPower at 0 takes
-// the page's stream's light off, for a part that lights itself from the stream.
+// stoneShader(sh, maps, true) for the whole stone, or stoneShader(sh, maps, true, true) for its body, grain, stains
+// and wear without its scars, crust and edges. Every name the stone puts in a shader begins with stone (or vStone,
+// uStone): uStoneStreamPower at 0 takes the page's stream's light off, for a part that lights itself from the stream.
 
 const mix = (a: THREE.Color, b: THREE.Color, k: number): THREE.Color => a.clone().lerp(b, k);
 const own = stone();
@@ -45,70 +46,78 @@ const crust = color(SKIN.dust.from).lerp(color(SKIN.dust.to), SKIN.dust.k + 0.3)
 export const STONE = {
   own,
   // What a redder stain, where iron has gathered, and a drier, buff one multiply the stone by.
-  redTint: [1, 0.74, 0.62] as const,
-  buffTint: [1.06, 1.05, 0.98] as const,
-  // A chipped edge and a gouge's lit lip are fresh stone, paler. Dust is paler still and greyer.
+  redTint: [1, 0.8, 0.7] as const,
+  buffTint: [1.05, 1.04, 0.97] as const,
+  // A chipped edge and a scar's lit lip are fresh stone, paler. Dust is paler still and greyer.
   chip: mix(own, color('text-2'), 0.42).multiplyScalar(1.18),
   dust: mix(own, color('text-2'), 0.45).multiplyScalar(1.05),
   // The weathered crust: the skin's dusty stone, from how far in from the planet's outer surface or under the land it
   // is full to where the fresh stone has it, in units. Under the moon the stone eases this far toward it and keeps
-  // every mark of its own.
-  crust: { color: crust, near: 10, far: 32, moon: 0.35 },
-  // What a gouge's floor is multiplied by, and a parting's shadow: a deep red brown.
-  cut: [0.36, 0.22, 0.16] as const,
+  // every mark of its own, and keeps this share of its color: the moonlit roof is a greyer tan than the hollow.
+  crust: { color: crust, near: 10, far: 32, moon: 0.35, moonChroma: 0.7 },
+  // What a scar's floor multiplies the face's stone by: much darker, and redder.
+  cut: [0.11, 0.075, 0.062] as const,
   // The stains over a face: how wide the broad and the smaller ones are, in units, how much darker and lighter they
-  // make it, and how wide the redder and the drier stains are and how much of each at most.
-  stain: { wide: [58, 22], range: [0.74, 1.12], red: [34, 0.9], buff: [47, 0.45] },
+  // make it, how much the smaller count against the broad, and how wide the redder and the drier stains are and how
+  // much of each at most. Kept broad: stains as small as the scars read as a dappled print at the page's size.
+  stain: { wide: [64, 26], range: [0.8, 1.1], small: 0.18, red: [70, 0.55], buff: [52, 0.4] },
   // How much of its color the stone keeps against its own grey, in the light and in the dark.
-  chroma: [0.9, 0.85] as const,
+  chroma: [0.9, 0.88] as const,
   // What the stone is multiplied by where the core's light is full on it: its lit faces a peach tan, as the
   // picture's are, and not a pumpkin orange. The core's light is so orange that only a stone much paler in its blue
   // and green can come out tan under it: the stone eased toward the palette's warm grey as far as `tan`, at the same
   // brightness. A face the light only grazes, and the shade, keep a redder brown, as bright as the stone: the stone adds
   // no darkness of its own there.
   litTint: tint(own, 0.55),
-  shadeTint: [1.1, 0.95, 0.84] as const,
+  // Where the core's light begins to take the stone to tan and where it is full, as the share of the light a face
+  // turned square to the core at its surface would have: in between, the mid tones keep the redder brown.
+  full: [0.1, 0.36] as const,
+  shadeTint: [1.24, 0.91, 0.74] as const,
   // Stone nearest the core is paler and less saturated, so that the core's light takes it toward a peach tan: from
   // how far from the core's middle it begins and where it is full, in units, how much at most, and the share of its
   // color it keeps there.
   hot: { color: mix(own, color('text-2'), 0.6), from: CORE.r * 2.6, full: CORE.r * 1.2, most: 0.2, chroma: 0.6 },
-  // How rough a clean face, a gouge's floor, the dust.
-  rough: [0.88, 0.96, 0.98] as const,
-  // How much it mirrors the light, as a share of what a standard material does.
+  // How rough a clean face, a scar's floor, the dust, and a grain that glints.
+  rough: [0.88, 0.96, 0.98, 0.5] as const,
+  // How much it mirrors the light, as a share of what a standard material does, and for the few grains that glint.
   sheen: 0.2,
-  // The grain's tone, lit and in the dark.
-  grainTone: [0.08, 0.1] as const,
-  // The beds: how far they lean toward the visitor and how far each block turns them, in radians.
-  bed: { lean: 0.12, turn: 0.45 },
-  // The gouges. They run along a grain that is one through each zone of the rock about `zone` units across, at a
-  // bearing of its own and rising or falling as much as `slope`. Stretched this many times along it. The cells they are cut from, in two sizes, in units. Most run along the
-  // borders of the larger cells: their half width, thinnest and thickest, in units, and the share of borders that
-  // carry one, outside a cluster and inside one. Some are a cell cut out: how far in from its border, in units, and
-  // the share of cells, outside a cluster and inside one. How wide a cluster is, in units. How many more of each
-  // within `bite` units of the face's edge, which they eat into. The faces round the core are the most scarred: out
-  // to this many of its radii a cluster is this much more likely. The width of the lit lip, in units.
-  gouge: {
-    zone: 70, slope: 0.9, stretch: 4.2, size: [7, 3.2], run: [0.35, 3.4], runs: [0.1, 1.0],
-    inset: [1.2, 2.8], cover: [0.0, 0.1], cluster: 36, nearCore: [2.4, 0.4], bite: 7, biteBy: 0.25, lip: 0.9,
+  sparkle: { share: 0.006, sheen: 0.8 },
+  // The grain's tone, lit and in the dark, and how strongly the grain and the wider wear tilt the surface.
+  grainTone: [0.11, 0.12] as const,
+  grain: { period: GRAIN.period, tilt: 0.7, wear: 1.1 },
+  // The scars. They run with the rock's layering, which fans out from the core: on every face they lie along the
+  // planes through the core's axis, `around` of them to a turn, so `every` units apart where the face is `fan` units
+  // from the axis, wandering by the warps (how wide, in units, and how far). Each plane may hold a scar, in lengths
+  // along it of about `long` units, each a wedge: blunt over the first of `taper`, in units, and drawn out to nothing
+  // over the second, as a share of its length. How wide its floor
+  // is each side of its line, least and most, and its lit lip, in units. Where they gather: a field `cluster` units
+  // across, above `clean` of it, and within `bite` units of an edge in places, `biteBy` more; none within `cave` of
+  // the core's radii and all from the second. A few shorter scars, `join`, cross from one to the next.
+  scar: {
+    around: 270, every: 6, long: 42, taper: [1.5, 0.7], half: [0.35, 1.3], lip: [0.45, 1.0], cluster: 75, clean: [0.4, 0.66],
+    bite: 12, biteBy: 0.6, cave: [1.45, 2.2], warp: [[90, 40], [31, 12], [7, 1.5]],
+    join: { every: 15, around: 54, long: 11, share: 0.35, half: [0.3, 0.8] },
   },
-  // The partings between beds: the cell each may lie in, along the beds, in units, the share of cells that hold one,
-  // how far it wanders, in units, the width of the shadow under its ledge and of its lit lip, in units, and the share
-  // of its length that is missing.
-  parting: { every: 44, share: 0.5, wander: 7, shadow: 1.3, lip: 0.55, missing: 0.3 },
+  // Hairline cracks, seen only close: a third family along the fan, `ratio` times as many planes to a turn and `every`
+  // units apart in that measure, in lengths of about `long`, their half width in units, in places `cluster` units
+  // across, how much they darken, and the jag that makes each a crack and not a ruled line (how wide, how far).
+  hair: { ratio: 2, every: 6, long: 20, half: 0.1, cluster: 45, most: 0.4, jag: [1.7, 0.9] },
   // The knapped relief: a broad swell, and the scars of flakes in two sizes, each a shallow bowl meeting the next
   // along a ridge: how wide, in units, and how deep.
-  roll: { wide: [26, 13, 5], deep: [4, 0.9, 0.18] },
+  roll: { wide: [40, 13, 5], deep: [8, 0.5, 0.16] },
   // How much lighter a flake scar's ridge is than its middle.
-  knap: 0.16,
+  knap: 0.06,
   // What tone a proud, dry place and a wet, sheltered one take: a little yellower and paler, a little redder.
   tint: { dry: [1.05, 1.03, 0.95] as const, wet: [0.98, 0.88, 0.82] as const },
-  // A concave crease holds a band of dust, darker: how wide, in units, and how much. A convex edge turned to the
-  // light is chipped pale: its widest and thinnest band, in units, the share of an edge where it is missing, and how
-  // far its bevel turns to the core.
-  crease: { wide: 5, most: 0.32 },
-  edge: { wide: 2.8, thin: 0.45, missing: 0.38, bevel: 0.5 },
-  // The grain's map, how many units a tile covers, and how strongly the grain and the wider wear tilt the surface.
-  grain: { period: GRAIN.period, tilt: 0.5, wear: 1.3 },
+  // Where two plates meet, in a concave crease, a band of deeper, redder shade: how wide, in units, what it multiplies
+  // the stone by at most, and how shut in (the stored openness) a crease is to hold it in full, and to hold none.
+  // Anything shut in holds the same shade, in full under the first of `shut` and none over the second. The stored
+  // distance to a crease does not say whether the crease is concave: knapped facets make creases everywhere.
+  crease: { wide: 8, tint: [0.5, 0.33, 0.24] as const, open: [0.18, 0.4], shut: [0.06, 0.18] },
+  // A convex edge turned to the light is chipped pale: its widest and thinnest band, in units, the share of an edge
+  // where it is missing, how far its bevel turns to the core, and how fast the stored openness must grow toward an
+  // edge, for each unit, for it to be convex, from none to full.
+  edge: { wide: 2.6, thin: 0.5, missing: 0.62, bevel: 0.5, rate: [0.006, 0.015] },
 } as const;
 
 // The stream's light on the stone: a line from the core's foot straight down, as far as the page's stream has run,
@@ -186,10 +195,12 @@ varying vec3 vStoneN;
 uniform sampler2D uStoneGrain;
 uniform vec2 uStoneStream;
 uniform float uStoneStreamPower;
-// What the stone works out once, before it is lit: its normal in the world, its color and roughness.
+// What the stone works out once, before it is lit: its normal in the world, its color, roughness and how much it
+// mirrors. Set in main(), never where they are declared.
 vec3 stoneNormal;
 vec3 stoneAlbedo;
 float stoneRough;
+float stoneSheen;
 float stoneHash1( float n ) { return fract( sin( n * 12.9898 + 4.1414 ) * 43758.5453 ); }
 float stoneHash3( vec3 p ) { p = fract( p * 0.1031 ); p += dot( p, p.zyx + 31.32 ); return fract( ( p.x + p.y ) * p.z ); }
 float stoneNoise3( vec3 p ) {
@@ -207,11 +218,8 @@ vec4 stoneNoiseD( vec3 p ) {
 	return vec4( du * vec3( k1 + k4 * u.y + k6 * u.z + k7 * u.y * u.z, k2 + k5 * u.z + k4 * u.x + k7 * u.z * u.x, k3 + k6 * u.x + k5 * u.y + k7 * u.x * u.y ),
 		a + k1 * u.x + k2 * u.y + k3 * u.z + k4 * u.x * u.y + k5 * u.y * u.z + k6 * u.z * u.x + k7 * u.x * u.y * u.z );
 }
-float stoneNoise1( float x ) { float i = floor( x ), u = fract( x ); u = u * u * ( 3.0 - 2.0 * u ); return mix( stoneHash1( i ), stoneHash1( i + 1.0 ), u ); }
 // A slope stored as a normal's red and green, as the slope itself.
 vec2 stoneSlope( vec4 t ) { vec2 xy = t.rg * 2.0 - 1.0; return xy / sqrt( max( 1.0 - dot( xy, xy ), 0.05 ) ); }
-// v turned by a about the unit axis k.
-vec3 stoneTurn( vec3 v, vec3 k, float a ) { float c = cos( a ), s = sin( a ); return v * c + cross( k, v ) * s + k * dot( k, v ) * ( 1.0 - c ); }
 // The grain from the three axes: its slope as a vector in the world, its tone and how open it is. A bias on the
 // map's level blurs it: what is left of it is its wider wear.
 void stoneGrainAt( vec3 p, vec3 w, float scale, float bias, out vec3 slope, out vec2 toneOpen ) {
@@ -220,70 +228,37 @@ void stoneGrainAt( vec3 p, vec3 w, float scale, float bias, out vec3 slope, out 
 	slope = vec3( 0.0, sx.y, sx.x ) * w.x + vec3( sy.x, 0.0, sy.y ) * w.y + vec3( sz.x, sz.y, 0.0 ) * w.z;
 	toneOpen = vec2( gx.b * w.x + gy.b * w.y + gz.b * w.z, gx.a * w.x + gy.a * w.y + gz.a * w.z );
 }
-// Cells stretched along a grain: q is the place with the grain already squeezed. Each cell's point lies in the
-// middle half of it, so the nearest is always among the eight round the place.
-vec3 stoneCellPoint( vec3 i ) { return i + 0.25 + 0.5 * vec3( stoneHash3( i + 3.1 ), stoneHash3( i + 17.3 ), stoneHash3( i + 29.7 ) ); }
-// The distance from the place to its cell's border, in units, and two numbers of the cell's own. way is the way
-// across the nearest border, in q, and other the second number of the cell across it. The border is the nearest of
-// the seven others' round the place, found in a second pass, so it never jumps where two neighbours are nearly as
-// near: taken from the second nearest point alone, it scattered into specks on a face that lay along it.
-vec3 stoneCells( vec3 q, float cell, float seed, out vec3 way, out float other ) {
-	vec3 x = q / cell + seed, b0 = floor( x - 0.5 ), p1 = vec3( 0.0 ), id = vec3( 0.0 );
-	float d1 = 1e9;
-	for ( int k = 0; k < 8; k++ ) {
-		vec3 i = b0 + vec3( float( k & 1 ), float( ( k >> 1 ) & 1 ), float( ( k >> 2 ) & 1 ) ), pt = stoneCellPoint( i );
-		float d = dot( pt - x, pt - x );
-		bool nearer = d < d1;
-		d1 = nearer ? d : d1;
-		p1 = nearer ? pt : p1;
-		id = nearer ? i : id;
-	}
-	float b = 1e9;
-	way = vec3( 1.0, 0.0, 0.0 );
-	vec3 nid = id;
-	for ( int k = 0; k < 8; k++ ) {
-		vec3 i = b0 + vec3( float( k & 1 ), float( ( k >> 1 ) & 1 ), float( ( k >> 2 ) & 1 ) ), pt = stoneCellPoint( i );
-		vec3 e = pt - p1;
-		float el = max( length( e ), 1e-4 ), bd = i == id ? 1e9 : dot( x - 0.5 * ( p1 + pt ), - e / el );
-		bool nearer = bd < b;
-		b = nearer ? bd : b;
-		way = nearer ? e : way;
-		nid = nearer ? i : nid;
-	}
-	other = stoneHash3( nid + seed * 2.9 + 0.37 );
-	return vec3( b * cell, stoneHash3( id + seed * 1.3 ), stoneHash3( id + seed * 2.9 + 0.37 ) );
+// The scars of one family. f is a field of the place whose level sets on a face run as the scars do, gF its gradient
+// in the world, and along a field that grows along them. Each cell of f holds one line at a place of its own, and
+// \`around\` cells make a turn (0: no turn), so the place where f wraps is no seam. Along the line the scar lies in
+// lengths of its own, each present where the cluster field \`dens\` is over its own number, and tapers to nothing at
+// each end and as the field thins. Gives the scar's half width there, in units (0: none), how far the place is from
+// its line, in units, measured away from the core, and in eAway the way along the face away from the core across it.
+vec2 stoneScar( vec3 p, vec3 n, vec3 lT, float f, vec3 gF, float along, float cell, float around, float len, vec2 widths, float dens, float seed, out vec3 eAway, out float side ) {
+	vec3 gT = gF - n * dot( gF, n );
+	float gTl = length( gT ), on = smoothstep( 0.3, 0.55, gTl / max( length( gF ), 1e-4 ) );
+	float u = f / cell, k = floor( u );
+	k = around > 0.0 ? mod( k, around ) : k;
+	float o = 0.25 + 0.5 * stoneHash1( k * 1.37 + seed );
+	float s = ( fract( u ) - o ) * cell / max( gTl, 1e-3 );
+	float a = along / len + 7.0 * stoneHash1( k * 7.1 + seed + 2.0 ), j = floor( a ), ua = fract( a );
+	float h0 = stoneHash1( k * 5.3 + j * 2.9 + seed + 1.1 );
+	float s0 = 0.5 * h0 * h0, s1 = s0 + 0.3 + 0.8 * stoneHash1( k * 1.9 + j * 8.3 + seed + 4.4 );
+	// A scar is a wedge: blunt where it starts and drawn out to nothing at its other end, either way round.
+	float h = stoneHash1( k * 3.17 + j * 11.3 + seed + 0.7 ), turn = step( 0.5, fract( h * 7.7 ) );
+	float e0 = ( ua - s0 ) * len, e1 = ( s1 - ua ) * len, blunt = mix( e0, e1, turn ), drawn = mix( e1, e0, turn );
+	float wedge = smoothstep( 0.0, ${f(STONE.scar.taper[0])}, blunt ) * pow( clamp( drawn / max( ${f(STONE.scar.taper[1])} * ( s1 - s0 ) * len, 1.0 ), 0.0, 1.0 ), 0.6 );
+	float hw = mix( widths.x, widths.y, pow( stoneHash1( k * 2.3 + j * 0.71 + seed ), 2.0 ) ) * ( 0.7 + 0.6 * stoneNoise3( p / 4.0 + vec3( k * 0.37 + seed ) ) );
+	hw *= step( 0.0, min( e0, e1 ) ) * wedge * smoothstep( h, h + 0.12, dens ) * on;
+	vec3 e = gT / max( gTl, 1e-4 );
+	float c = dot( e, lT ), sg = c >= 0.0 ? - 1.0 : 1.0;
+	eAway = e * sg;
+	side = abs( c );
+	return vec2( hw, s * sg );
 }
-// The same in one pass, for cells cut out whole: how far in from the border, near enough, and the cell's numbers.
-vec3 stoneCellsQuick( vec3 q, float cell, float seed ) {
-	vec3 x = q / cell + seed, b0 = floor( x - 0.5 ), p1 = vec3( 0.0 ), p2 = vec3( 0.0 ), id = vec3( 0.0 );
-	float d1 = 1e9, d2 = 1e9;
-	for ( int k = 0; k < 8; k++ ) {
-		vec3 i = b0 + vec3( float( k & 1 ), float( ( k >> 1 ) & 1 ), float( ( k >> 2 ) & 1 ) ), pt = stoneCellPoint( i );
-		float d = dot( pt - x, pt - x );
-		bool first = d < d1, second = !first && d < d2;
-		d2 = first ? d1 : ( second ? d : d2 );
-		p2 = first ? p1 : ( second ? pt : p2 );
-		d1 = first ? d : d1;
-		p1 = first ? pt : p1;
-		id = first ? i : id;
-	}
-	return vec3( ( d2 - d1 ) / max( 2.0 * length( p2 - p1 ), 1e-4 ) * cell, stoneHash3( id + seed * 1.3 ), stoneHash3( id + seed * 2.9 + 0.37 ) );
-}
-// Which of a few points scattered through space a place is nearest: that point's cell, in cells.
-vec3 stoneZone( vec3 q ) {
-	vec3 b = floor( q - 0.5 ), id = b;
-	float d1 = 1e9;
-	for ( int k = 0; k < 8; k++ ) {
-		vec3 i = b + vec3( float( k & 1 ), float( ( k >> 1 ) & 1 ), float( ( k >> 2 ) & 1 ) );
-		vec3 o = q - i - ( 0.25 + 0.5 * vec3( stoneHash3( i + 3.1 ), stoneHash3( i + 17.3 ), stoneHash3( i + 29.7 ) ) );
-		float d = dot( o, o );
-		if ( d < d1 ) { d1 = d; id = i; }
-	}
-	return id;
-}
-// The scars that flakes left when the face was knapped: cells of \`cell\` units, each a shallow bowl round a point of
-// its own, meeting its neighbours along ridges. The slope of the surface there, in the world, per unit of depth,
-// and how far out from the bowl's middle the place is, in cells.
+// The scars of the knapped faces: cells of \`cell\` units, each a shallow bowl round a point of its own, meeting its
+// neighbours along ridges. The slope of the surface there, in the world, per unit of depth, and how far out from the
+// bowl's middle the place is, in cells.
 vec4 stoneScallop( vec3 p, float cell, float seed ) {
 	vec3 q = p / cell + seed, b = floor( q - 0.5 ), best = vec3( 0.0 );
 	float d1 = 1e9;
@@ -297,6 +272,8 @@ vec4 stoneScallop( vec3 p, float cell, float seed ) {
 }`;
 
 // Works out the stone at this place. In a part's fragment shader it goes after <color_fragment>.
+const FAN = (STONE.scar.around * STONE.scar.every) / (2 * Math.PI);
+const W = STONE.scar.warp;
 const STONE_FRAG = /* glsl */ `
 {
 	vec3 p = vStoneP, n = vStoneN / max( length( vStoneN ), 1e-6 );
@@ -315,30 +292,18 @@ const STONE_FRAG = /* glsl */ `
 		seen = wLight.x;
 		moon = wLight.y;
 	#endif
-	// Each block was turned when it broke, so its beds lie at their own angle, and each is its own tone. A block's
-	// own number gives those; without one, large slow fields of the place do, which never change across a face at once.
+	// Each block is its own tone. A block's own number gives it; without one, large slow fields of the place do,
+	// which never change across a face at once.
 	#if defined( WORLD_BAKED ) && defined( STONE_SLAB )
 		float slab = wLight.w;
-		float bShift = slab * 997.0, bAxis = slab, bTurn = fract( slab * 7.31 ), bTone = fract( slab * 5.13 ), bRough = fract( slab * 9.73 );
+		float bTone = fract( slab * 5.13 ), bRough = fract( slab * 9.73 );
 		vec3 bOff = vec3( slab * 11.0, slab * 5.0, slab * 3.0 );
-		float bSeed = slab;
 	#else
 		vec4 slow = vec4( stoneNoise3( p / 170.0 + 0.3 ), stoneNoise3( p / 130.0 + 5.1 ), stoneNoise3( p / 150.0 + 9.7 ), stoneNoise3( p / 110.0 + 2.2 ) );
-		float bShift = 50.0 * slow.x, bAxis = slow.y, bTurn = slow.z, bTone = slow.w, bRough = slow.x;
+		float bTone = slow.w, bRough = slow.x;
 		vec3 bOff = slow.yzw * 3.0;
-		// A hash is only ever handed a number that is steady over a block: one of the slow fields scattered it to specks.
-		float bSeed = 0.0;
 	#endif
-	float pix = max( length( dFdx( p ) ), length( dFdy( p ) ) );
-
-	// The beds, turned by the block's own angle. The partings between them show only on a face that cuts across them.
-	vec3 across = normalize( vec3( 0.0, 1.0, ${f(STONE.bed.lean)} ) );
-	float sa = bAxis * 6.2832;
-	across = normalize( stoneTurn( across, normalize( vec3( cos( sa ), 0.35 * sin( 3.0 * sa ), sin( sa ) ) ), ${f(STONE.bed.turn)} * ( bTurn - 0.5 ) * 2.0 ) );
-	float bed = dot( p, across ) + bShift + 2.2 * ( stoneNoise3( p / 53.0 ) - 0.5 );
-	vec3 acrossT = across - n * dot( across, n );
-	float side = length( acrossT );
-	float sideK = smoothstep( 0.55, 0.8, side ) * ( 1.0 - smoothstep( 0.45, 0.75, n.y ) );
+	float pix = max( max( length( dFdx( p ) ), length( dFdy( p ) ) ), 1e-4 );
 
 	// The grain, near and wider, from the three axes. A face seen nearly edge on keeps only its grain's tone.
 	vec3 w = pow( abs( n ), vec3( 4.0 ) );
@@ -357,114 +322,92 @@ const STONE_FRAG = /* glsl */ `
 	#ifdef STONE_EDGE
 		fromEdge = vStoneEdge;
 	#endif
-	float convex = smoothstep( 0.12, 0.3, open );
-	float fineG0 = smoothstep( 0.6, 0.3, pix );
 
 	#ifndef STONE_GRAIN
-		// The partings: one cell along the beds holds at most one, at a place of its own in the cell, wandering, so two
-		// are never a set distance apart. Each is a broken ledge: a shadow under it and a lit lip over it.
-		float pu = bed / ${f(STONE.parting.every)}, pk = floor( pu );
-		float pHas = step( ${f(1 - STONE.parting.share)}, stoneHash1( pk * 3.31 + bSeed * 7.0 + 5.0 ) ) * sideK;
-		float pd = ( pu - pk - 0.25 - 0.5 * stoneHash1( pk * 1.73 + bSeed * 31.0 ) ) * ${f(STONE.parting.every)}
-			+ ${f(STONE.parting.wander)} * ( stoneNoise3( p / 29.0 + pk * vec3( 1.3, 0.7, 2.1 ) ) - 0.5 ) + 0.9 * ( stoneNoise3( p / 3.1 + pk ) - 0.5 );
-		float pw = max( fwidth( pd ), 1e-3 );
-		float pS = ${f(STONE.parting.shadow)} * ( 0.4 + 1.2 * stoneNoise3( p / 7.0 + pk * 1.9 ) ), pL = ${f(STONE.parting.lip)} * ( 0.6 + 0.8 * st3 );
-		float pOn = pHas * edgeOn * smoothstep( ${f(STONE.parting.missing - 0.05)}, ${f(STONE.parting.missing + 0.05)}, stoneNoise3( p / 9.0 + pk * vec3( 2.1, 0.3, 1.7 ) ) ) * ( 1.0 - smoothstep( 0.6, 1.4, pw ) );
-		float pShadow = smoothstep( - pS - pw, - pS + pw, pd ) * ( 1.0 - smoothstep( - pw, pw, pd ) ) * pOn;
-		float pLip = smoothstep( - pw, pw, pd ) * ( 1.0 - smoothstep( pL - pw, pL + pw, pd ) ) * pOn * smoothstep( 0.3, 1.0, pL / pw );
-		tilt += normalize( acrossT + vec3( 1e-5 ) ) * 0.9 * pLip;
+		// The scars. The rock's layering fans out from the core, so a scar lies along a plane through the core's axis,
+		// wandering. Where they gather: a few places, and edges in places. None in the cave round the core.
+		vec3 dP = p - ${C};
+		float dl = max( length( dP ), 1e-3 ), rxy = max( dot( dP.xy, dP.xy ), 1.0 );
+		vec4 w1 = stoneNoiseD( p / ${f(W[0][0])} + 3.1 ), w2 = stoneNoiseD( p / ${f(W[1][0])} + 7.7 ), w3 = stoneNoiseD( p / ${f(W[2][0])} + 1.3 );
+		float fan = atan( dP.y, abs( dP.x ) < 1e-4 ? 1e-4 : dP.x ) * ${f(+FAN.toFixed(4))} + ${f(W[0][1])} * w1.w + ${f(W[1][1])} * w2.w + ${f(W[2][1])} * w3.w;
+		vec3 gFan = vec3( - dP.y, dP.x, 0.0 ) * ( ${f(+FAN.toFixed(4))} / rxy ) + w1.xyz * ${f(W[0][1] / W[0][0])} + w2.xyz * ${f(W[1][1] / W[1][0])} + w3.xyz * ${f(W[2][1] / W[2][0])};
+		float eat = ( 1.0 - smoothstep( 0.0, ${f(STONE.scar.bite)}, fromEdge + 4.0 * ( st3 - 0.5 ) ) ) * smoothstep( 0.35, 0.6, stoneNoise3( p / 30.0 + 4.0 ) );
+		float cave = smoothstep( ${f(CORE.r * STONE.scar.cave[0])}, ${f(CORE.r * STONE.scar.cave[1])}, dC );
+		float dens = ( smoothstep( ${f(STONE.scar.clean[0])}, ${f(STONE.scar.clean[1])}, stoneNoise3( p / ${f(STONE.scar.cluster)} + bOff * 0.5 + 11.0 ) ) + ${f(STONE.scar.biteBy)} * eat ) * cave * edgeOn;
+		vec3 eA, eB;
+		float sideA, sideB;
+		vec2 sA = stoneScar( p, n, lT, fan, gFan, dl, ${f(STONE.scar.every)}, ${f(STONE.scar.around)}, ${f(STONE.scar.long)}, vec2( ${f(STONE.scar.half[0])}, ${f(STONE.scar.half[1])} ), dens, 0.0, eA, sideA );
+		vec2 sB = stoneScar( p, n, lT, 0.5 * fan + 0.85 * dl, 0.5 * gFan + 0.85 * dP / dl, dl, ${f(STONE.scar.join.every)}, ${f(STONE.scar.join.around)}, ${f(STONE.scar.join.long)},
+			vec2( ${f(STONE.scar.join.half[0])}, ${f(STONE.scar.join.half[1])} ), dens * ${f(STONE.scar.join.share)}, 3.7, eB, sideB );
+		// Whichever is nearer its line here.
+		bool useB = sB.x - abs( sB.y ) > sA.x - abs( sA.y );
+		vec2 sc = useB ? sB : sA;
+		vec3 eAway = useB ? eB : eA;
+		float sSide = useB ? sideB : sideA;
+		// Cut, not stamped: a floor in shadow, the darker under the wall that faces away from the core (the side nearer
+		// it), and a lit lip on the wall that faces it, no wider than a scar is. A scar thinner than a pixel keeps its
+		// darkness spread over the pixel; a lip thinner than a unit and a half fades rather than break into dashes.
+		float hw = sc.x, s = sc.y;
+		float hA = max( hw, 0.6 * pix ), amt = hw / hA;
+		float groove = clamp( ( hA - abs( s ) ) / pix + 0.5, 0.0, 1.0 ) * amt;
+		// A scar that runs toward the core is grazed along its length and both its walls are lit alike: it still keeps
+		// some of a cut's two sides, or it reads as a stroke of paint.
+		float facesAway = mix( 0.55, 1.0, smoothstep( 0.12, 0.45, sSide ) );
+		float under = groove * ( 1.0 - smoothstep( - 0.6 * pix, 0.6 * pix, s + 0.15 * hA ) ) * facesAway;
+		float lipW = mix( ${f(STONE.scar.lip[0])}, ${f(STONE.scar.lip[1])}, st2 ) * smoothstep( 0.0, ${f(STONE.scar.half[1])}, hw );
+		float lip = clamp( min( s - hA, hA + lipW - s ) / pix + 0.5, 0.0, 1.0 ) * facesAway * smoothstep( 1.0, 3.0, lipW / pix ) * smoothstep( 0.1, 0.4, hw );
+		tilt += eAway * ( 0.9 * under ) - eAway * ( 0.8 * lip );
+		float scarDeep = smoothstep( 0.2, 0.9, hw );
 
-		// The gouges: cells stretched along the block's own grain, in two sizes, some of them cut out, more in a cluster,
-		// along a parting and near the face's edge, so they gather into ragged runs with clean stone between. Each is cut
-		// in from its cell's border, so its outline is straight runs meeting at angles. A floor the light does not reach,
-		// walls that tilt, a lit lip on the far side from the core and a shadow under the near rim.
-		// The grain is one through each great piece of the rock, a zone found as the nearest of a few points scattered
-		// through the world, and differs from piece to piece. It must not follow the face's turn: a cell's place is
-		// turned about the world's middle, hundreds of units off, and the least wander of the grain from one pixel to
-		// the next, where the mesh is fine, scattered the gouges into specks.
-		// Warped, so where one zone meets the next is a ragged line and never a straight seam across a face.
-		vec3 zw = vec3( stoneNoise3( p / 23.0 + 4.0 ), stoneNoise3( p / 23.0 + 9.0 ), stoneNoise3( p / 23.0 + 13.0 ) ) - 0.5;
-		zw += 0.35 * ( vec3( st2, st3, stoneNoise3( p / 5.0 + 1.0 ) ) - 0.5 );
-		vec3 zid = stoneZone( ( p + 30.0 * zw ) / ${f(STONE.gouge.zone)} + 0.71 );
-		float za = 6.2832 * stoneHash3( zid * 1.7 + 0.3 ), zs = ${f(STONE.gouge.slope)} * ( 2.0 * stoneHash3( zid * 2.3 + 4.1 ) - 1.0 );
-		vec3 gd = normalize( vec3( cos( za ), zs, sin( za ) ) );
-		vec3 gSide = normalize( cross( gd, vec3( 0.0, 1.0, 0.0 ) ) + vec3( 1e-4 ) );
-		float faceOn = 1.0 - smoothstep( 0.55, 0.8, abs( dot( n, gd ) ) );
-		vec3 gp = p + 1.6 * ( vec3( st2, stoneNoise3( p / 11.0 + 3.3 ), st3 ) - 0.5 );
-		vec3 gq = gp + gd * ( dot( gp, gd ) * ${f(1 / STONE.gouge.stretch - 1)} );
-		float clusterK = smoothstep( 0.4, 0.6, stoneNoise3( p / ${f(STONE.gouge.cluster)} + bOff * 0.7 + 2.0 ) + ${f(STONE.gouge.nearCore[1])} * ( 1.0 - smoothstep( ${f(CORE.r)}, ${f(CORE.r * STONE.gouge.nearCore[0])}, dC ) ) );
-		clusterK = max( clusterK, 0.9 * pHas * ( 1.0 - smoothstep( 2.0, 9.0, abs( pd ) ) ) );
-		float eat = 1.0 - smoothstep( 0.0, ${f(STONE.gouge.bite)}, fromEdge + 3.0 * ( st3 - 0.5 ) );
-		float jag = 0.5 * ( stoneNoise3( p / 1.1 + 4.4 ) - 0.5 ) + 0.2 * ( stoneNoise3( p / 0.5 + 2.2 ) - 0.5 ) * smoothstep( 0.35, 0.2, pix );
-		float gouge = 0.0, gLip = 0.0, gShade = 0.0, gRun = 0.0, gA = 0.0, gB = 0.0, deep = 0.0;
-		// Only where the core, the moon or the stream reaches is a gouge worked out: in the dark nothing of it would
-		// show, and it is the dearest part of the stone.
-		if ( edgeOn > 0.0 && ( lit > 0.002 || moon > 0.02 || length( p.xz - vec2( ${f(SOURCE[0])}, ${f(SOURCE[2])} ) ) < ${f(STREAM.reach)} ) ) {
-			vec3 wayA;
-			float otherA;
-			vec3 cA = stoneCells( gq, ${f(STONE.gouge.size[0])}, 1.7, wayA, otherA ), cB = stoneCellsQuick( gq, ${f(STONE.gouge.size[1])}, 5.3 );
-			float aa = 0.6 * pix;
-			// A run along a border: as wide as it is here, thick in places. A chunk: a cell cut out, in from its border.
-			float runW = mix( ${f(STONE.gouge.run[0])}, ${f(STONE.gouge.run[1])}, pow( stoneNoise3( p / 4.5 + 6.6 ), 1.6 ) ) * smoothstep( 0.0, 0.6, stoneNoise3( p / 13.0 + 1.9 ) + 0.1 );
-			// Runs lie along the grain, each on one long side of a cell that carries one: a border across the grain only
-			// now and then, which joins two runs.
-			vec3 wR = wayA + gd * ( dot( wayA, gd ) * ${f(STONE.gouge.stretch - 1)} );
-			wR -= n * dot( wR, n );
-			wR /= max( length( wR ), 1e-4 );
-			float along = 1.0 - abs( dot( wR, gd ) );
-			// Whose run a border carries is settled the same from either side of it, so a place on the border never takes
-			// one cell's word on one pixel and the other's on the next.
-			float runs = ( mix( ${f(STONE.gouge.runs[0])}, ${f(STONE.gouge.runs[1])}, clusterK ) + ${f(STONE.gouge.biteBy)} * eat ) * mix( 0.3, 1.0, smoothstep( 0.6, 0.9, along ) );
-			float upSide = step( 0.0, dot( wR, gSide ) );
-			float onRun = max( step( cA.z, runs ) * upSide, step( otherA, runs ) * ( 1.0 - upSide ) ) * faceOn;
-			runW *= 0.7 + 0.6 * clusterK;
-			float inRun = runW - cA.x + jag * min( 1.0, runW / 0.9 );
-			gRun = onRun * smoothstep( - aa, aa, inRun ) * smoothstep( 0.4 * pix, 1.2 * pix, runW );
-			float onA = step( cA.y, mix( ${f(STONE.gouge.cover[0])}, ${f(STONE.gouge.cover[1])}, clusterK ) + ${f(STONE.gouge.biteBy)} * eat );
-			float inA = cA.x - mix( ${f(STONE.gouge.inset[0])}, ${f(STONE.gouge.inset[1])}, cB.z ) + jag;
-			gA = onA * smoothstep( - aa, aa, inA );
-			float onB = step( cB.y, mix( ${f(STONE.gouge.cover[0] * 0.3)}, ${f(STONE.gouge.cover[1] * 0.4)}, clusterK ) + ${f(STONE.gouge.biteBy * 0.4)} * eat ) * smoothstep( 0.9, 0.5, pix );
-			float inB = cB.x - mix( 0.25, 0.7, cB.z ) + 0.5 * jag;
-			gB = onB * smoothstep( - aa, aa, inB );
-			gouge = max( max( gRun, gA ), gB ) * edgeOn;
-			// Which way along the face the gouge's floor lies from here, and so whether this side is its far wall, which
-			// looks to the core and has a lit lip, or its near rim, under which its floor is in shadow.
-			float sideR = dot( wR, lT );
-			float inU = gRun > max( gA, gB ) ? inRun : max( inA, inB );
-			deep = smoothstep( 0.0, 1.2, inU );
-			float lipR = onRun * ( 1.0 - smoothstep( - aa, aa, inRun ) ) * ( 1.0 - smoothstep( ${f(STONE.gouge.lip * 0.4)}, ${f(STONE.gouge.lip)} + aa, - inRun ) ) * smoothstep( 0.05, 0.45, sideR );
-			float lipA = onA * ( 1.0 - smoothstep( - aa, aa, inA ) ) * ( 1.0 - smoothstep( ${f(STONE.gouge.lip * 0.4)}, ${f(STONE.gouge.lip)} + aa, - inA ) ) * smoothstep( 0.05, 0.45, - sideR );
-			gLip = max( lipR, lipA ) * ( 1.0 - gouge ) * edgeOn;
-			gShade = gRun * smoothstep( 0.05, 0.45, - sideR ) * edgeOn;
-			tilt += wR * ( 0.8 * gRun * ( 1.0 - smoothstep( 0.0, 0.6, inRun ) ) );
-		}
+		// Hairline cracks, close only: a third family along the fan, finer, longer and more of them, with no lip.
+		vec3 eH;
+		float sideH;
+		vec4 hj = stoneNoiseD( p / ${f(STONE.hair.jag[0])} + 2.3 );
+		vec2 sH = stoneScar( p, n, lT, fan * ${f(STONE.hair.ratio)} + 3.0 * w2.w + 2.0 * w3.w + ${f(STONE.hair.jag[1])} * hj.w,
+			gFan * ${f(STONE.hair.ratio)} + w2.xyz * ${f(3 / W[1][0])} + w3.xyz * ${f(2 / W[2][0])} + hj.xyz * ${f(STONE.hair.jag[1] / STONE.hair.jag[0])}, dl, ${f(STONE.hair.every)}, ${f(STONE.scar.around * STONE.hair.ratio / STONE.hair.every * STONE.scar.every)}, ${f(STONE.hair.long)},
+			vec2( ${f(STONE.hair.half)}, ${f(STONE.hair.half * 1.6)} ), smoothstep( 0.55, 0.75, stoneNoise3( p / ${f(STONE.hair.cluster)} + 5.0 ) ) * cave * edgeOn, 9.1, eH, sideH );
+		float hh = max( sH.x, 0.5 * pix );
+		float hair = clamp( ( hh - abs( sH.y ) ) / pix + 0.5, 0.0, 1.0 ) * sH.x / hh * ( 1.0 - groove );
 
 		// The weathered crust: how far in from the planet's outer surface, and under the land, the place is.
 		float shR = length( p.xz ) / ${f(WORLD.half)}, shD = max( 0.0, -( p.y + ${f(RIM)} ) ) / ${f(WORLD.deep)};
 		float inside = ( 1.0 - sqrt( shR * shR + shD * shD ) ) * mix( ${f(WORLD.half)}, ${f(WORLD.deep)}, shD / max( shR + shD, 1e-3 ) );
-		float under = sqrt( max( 1.0, ${f(WORLD.top * WORLD.top)} - dot( p.xz, p.xz ) ) ) - ${f(WORLD.top)} - p.y;
-		float crustK = 1.0 - smoothstep( ${f(STONE.crust.near)}, ${f(STONE.crust.far)}, min( inside, under ) + 12.0 * ( stoneNoise3( p / 19.0 + 3.0 ) - 0.5 ) );
-		crustK = max( crustK, ${f(STONE.crust.moon)} * smoothstep( 0.05, 0.5, moon ) * smoothstep( 0.0, 0.3, dot( n, ${MOON} ) ) );
+		float underLand = sqrt( max( 1.0, ${f(WORLD.top * WORLD.top)} - dot( p.xz, p.xz ) ) ) - ${f(WORLD.top)} - p.y;
+		float crustK = 1.0 - smoothstep( ${f(STONE.crust.near)}, ${f(STONE.crust.far)}, min( inside, underLand ) + 12.0 * ( stoneNoise3( p / 19.0 + 3.0 ) - 0.5 ) );
+		float moonK = smoothstep( 0.05, 0.5, moon ) * smoothstep( 0.0, 0.3, dot( n, ${MOON} ) );
+		crustK = max( crustK, ${f(STONE.crust.moon)} * moonK );
 
-		// A convex edge turned to the light is chipped pale, wide here and a hairline there, bitten and missing for a
-		// stretch, with a bevel turned to the core. A concave crease holds a darker band of dust.
+		// A convex edge turned to the light is chipped pale, wide here and a hairline there, missing for long stretches,
+		// thinner where the face turns edge on, with a bevel turned to the core. Where two plates meet in a concave
+		// crease, and wherever the place is shut in, the stone holds a deeper, redder shade.
 		float chipped = 0.0, crease = 0.0;
 		#ifdef STONE_EDGE
-			float band = ${f(STONE.edge.thin)} + ${f(STONE.edge.wide - STONE.edge.thin)} * pow( stoneNoise3( p / 8.0 + 2.0 ), 1.6 );
+			// Which way the stored openness runs from the crease tells a convex edge, where it grows toward the edge. It
+			// changes from one triangle to the next, so it only chooses where a chip may be. A concave crease is told by
+			// how shut in it is.
+			vec2 gO = vec2( dFdx( open ), dFdy( open ) ), gE = vec2( dFdx( fromEdge ), dFdy( fromEdge ) );
+			float rate = dot( gO, gE ) / max( dot( gE, gE ), 1e-6 );
+			float convex = smoothstep( ${f(STONE.edge.rate[0])}, ${f(STONE.edge.rate[1])}, - rate ) * smoothstep( 0.3, 0.45, open );
+			float band = ( ${f(STONE.edge.thin)} + ${f(STONE.edge.wide - STONE.edge.thin)} * pow( stoneNoise3( p / 8.0 + 2.0 ), 1.6 ) ) * mix( 0.35, 1.0, smoothstep( 0.3, 0.75, facing ) );
 			float there = smoothstep( ${f(STONE.edge.missing - 0.06)}, ${f(STONE.edge.missing + 0.06)}, stoneNoise3( p / 15.0 + 7.0 ) );
 			float ragged = fromEdge + 0.9 * band * ( stoneNoise3( p / 1.6 + 5.0 ) - 0.5 );
-			chipped = ( 1.0 - smoothstep( 0.6 * band, band, ragged ) ) * there * convex * smoothstep( 0.05, 0.3, cf ) * smoothstep( 0.25, 0.5, facing );
-			crease = ( 1.0 - smoothstep( ${f(0.3 * STONE.crease.wide)}, ${f(STONE.crease.wide)}, fromEdge + 2.5 * ( st2 - 0.5 ) ) ) * ( 1.0 - convex );
+			chipped = ( 1.0 - smoothstep( 0.6 * band, band, ragged ) ) * there * convex * smoothstep( 0.05, 0.3, cf )
+				* smoothstep( 0.25, 0.5, facing ) * smoothstep( 1.0, 3.0, band / pix ) * smoothstep( 0.6, 1.5, band );
+			float nearCrease = 1.0 - smoothstep( 0.0, ${f(STONE.crease.wide)}, fromEdge + 3.0 * ( st2 - 0.5 ) );
+			float shutIn = 1.0 - smoothstep( ${f(STONE.crease.open[0])}, ${f(STONE.crease.open[1])}, open + 0.04 * ( st1 - 0.5 ) );
+			// The cave round the core is one smooth bowl: a dip in its stored openness is not a crease, and its shade there
+			// came out a rust smudge.
+			crease = max( nearCrease * nearCrease * shutIn, 1.0 - smoothstep( ${f(STONE.crease.shut[0])}, ${f(STONE.crease.shut[1])}, open + 0.04 * ( st1 - 0.5 ) ) ) * mix( 0.2, 1.0, cave );
 		#endif
 	#endif
 
 	// The knapped relief: broad shells meeting along ridges, whose light differs across a face.
 	vec4 r1 = stoneNoiseD( p / ${f(STONE.roll.wide[0])} + bOff * 5.7 );
 	vec4 sc1 = stoneScallop( p, ${f(STONE.roll.wide[1])}, bOff.x * 3.0 ), sc2 = stoneScallop( p, ${f(STONE.roll.wide[2])}, 7.7 );
-	float fine2 = smoothstep( 0.6, 0.25, pix );
+	float fine2 = 1.0 - smoothstep( 0.25, 0.6, pix );
 	vec3 roll = r1.xyz * ${f(STONE.roll.deep[0] / STONE.roll.wide[0])} + sc1.xyz * ${f(STONE.roll.deep[1])} * ( 0.5 + bRough ) + sc2.xyz * ${f(STONE.roll.deep[2])} * fine2;
 	// A flake's bowl is a little darker at its middle, and the ridges between are proud and catch the light.
-	float knap = ( smoothstep( 0.25, 0.62, sc1.w ) - 0.5 ) + 0.2 * fine2 * ( smoothstep( 0.25, 0.62, sc2.w ) - 0.5 );
+	float knap = ( smoothstep( 0.25, 0.62, sc1.w ) - 0.5 ) + 0.4 * fine2 * ( smoothstep( 0.25, 0.62, sc2.w ) - 0.5 );
 	float up = smoothstep( 0.35, 0.75, n.y );
 	float dust = up * smoothstep( 0.2, 0.55, 0.3 + 0.45 * ( 1.0 - open ) + 0.3 * ( st1 - 0.5 ) );
 	tilt += ${f(STONE.grain.tilt)} * edgeOn * ( gNear * mix( 1.0, 1.6, dust ) + ${f(STONE.grain.wear)} * gWide * ( 1.0 - 0.6 * dust ) );
@@ -473,62 +416,83 @@ const STONE_FRAG = /* glsl */ `
 	stoneNormal = normalize( n + tilt );
 
 	// The color: the block's tone, the stains, the knapped relief, the grain, the hot zone, the crust, the marks.
-	c *= 0.92 + 0.16 * bTone;
-	float sA = stoneNoise3( p / ${f(STONE.stain.wide[0])} + bOff * 1.1 ), sB = stoneNoise3( p / ${f(STONE.stain.wide[1])} + 6.1 );
-	c *= mix( ${f(STONE.stain.range[0])}, ${f(STONE.stain.range[1])}, smoothstep( 0.22, 0.78, 0.62 * sA + 0.38 * sB + 0.15 * ( st3 - 0.5 ) ) );
-	float redK = ${f(STONE.stain.red[1])} * smoothstep( 0.42, 0.7, stoneNoise3( p / ${f(STONE.stain.red[0])} + bOff * 0.3 + 2.9 ) + 0.12 * ( st2 - 0.5 ) );
+	c *= 0.93 + 0.14 * bTone;
+	float stA = stoneNoise3( p / ${f(STONE.stain.wide[0])} + bOff * 1.1 ), stB = stoneNoise3( p / ${f(STONE.stain.wide[1])} + 6.1 );
+	c *= mix( ${f(STONE.stain.range[0])}, ${f(STONE.stain.range[1])}, smoothstep( 0.2, 0.8, ${f(1 - STONE.stain.small)} * stA + ${f(STONE.stain.small)} * stB ) );
+	float redK = ${f(STONE.stain.red[1])} * smoothstep( 0.4, 0.75, stoneNoise3( p / ${f(STONE.stain.red[0])} + bOff * 0.3 + 2.9 ) );
 	float buffK = ${f(STONE.stain.buff[1])} * smoothstep( 0.55, 0.8, stoneNoise3( p / ${f(STONE.stain.buff[0])} + 8.4 ) );
 	c *= mix( vec3( 1.0 ), ${v3(STONE.redTint)}, redK ) * mix( vec3( 1.0 ), ${v3(STONE.buffTint)}, buffK * ( 1.0 - redK ) );
 	c *= 1.0 + ${f(STONE.knap)} * knap * edgeOn;
-	c *= mix( vec3( 1.0 ), knap > 0.0 ? ${v3(STONE.tint.dry)} : ${v3(STONE.tint.wet)}, 2.0 * abs( knap ) * edgeOn );
+	c *= mix( vec3( 1.0 ), knap > 0.0 ? ${v3(STONE.tint.dry)} : ${v3(STONE.tint.wet)}, abs( knap ) * edgeOn );
+	// The grain's tone: each grain its own, and a pit is darker than the face it is in, never lighter.
 	float gAmp = mix( ${f(STONE.grainTone[0])}, ${f(STONE.grainTone[1])}, 1.0 - lit );
-	c *= ( 1.0 + gAmp * ( tNear.x - 0.5 ) * 2.0 ) * mix( 1.0 - gAmp * 1.5, 1.0, tNear.y ) * mix( 0.9, 1.0, tWide.y );
+	c *= ( 1.0 + gAmp * ( tNear.x - 0.5 ) * 2.0 ) * mix( 1.0 - gAmp * 2.0, 1.0, tNear.y ) * mix( 0.9, 1.0, tWide.y );
 	// How strong the core's light is on the face, as the light falls (LIGHT.core.fall is 1): only under its full
 	// orange does the paler stone come out tan. Under the bounce alone it read as a lavender grey.
-	float full = smoothstep( 0.08, 0.32, max( cf, 0.0 ) * seen * ${f(CORE.r)} / dC );
+	float full = smoothstep( ${f(STONE.full[0])}, ${f(STONE.full[1])}, max( cf, 0.0 ) * seen * ${f(CORE.r)} / dC );
+	// The page's stream is as orange a light: where it is strong the stone takes the same tan, or it came out a flat
+	// rust patch beside the neck. Its strength here as STREAM_LIGHT works it out, against the core's at those shares.
+	{
+		float sBelow = ${f(SOURCE[1])} - p.y;
+		vec3 sq = vec3( ${f(SOURCE[0])}, ${f(SOURCE[1])} - clamp( sBelow, 0.0, uStoneStream.y ), ${f(SOURCE[2])} ) - p;
+		float sd = max( length( sq ), 1e-3 ), sk = clamp( 1.0 - sd / ${f(STREAM.reach)}, 0.0, 1.0 );
+		float sE = ${f(STREAM.power)} * uStoneStreamPower * uStoneStream.x * sk * sk / ( 1.0 + ( sd / ${f(STREAM.near)} ) * ( sd / ${f(STREAM.near)} ) ) * max( dot( n, sq / sd ), 0.0 );
+		full = max( full, smoothstep( ${f(STONE.full[0] * LIGHT.core.power)}, ${f(STONE.full[1] * LIGHT.core.power)}, sE ) );
+	}
+	// In the cave round the core a dent the light turns from is the same stone a little darker: in the redder brown
+	// of the shade it came out a rust smudge on the clean bowl.
+	#ifndef STONE_GRAIN
+		full = max( full, 1.0 - cave );
+	#endif
 	c *= mix( ${v3(STONE.shadeTint)}, ${v3(STONE.litTint)}, full );
 	float hotK = ${f(STONE.hot.most)} * seen * smoothstep( 0.05, 0.45, cf ) * ( 1.0 - smoothstep( ${f(STONE.hot.full)}, ${f(STONE.hot.from)}, dC ) );
 	c = mix( c, ${v3(STONE.hot.color)}, hotK );
 	float rough = 0.0;
+	// A few grains glint, only on a face the light is on.
+	float glints = step( ${f(1 - STONE.sparkle.share)}, fract( tNear.x * 13.7 + tNear.y * 3.1 ) ) * tNear.y * fine2 * lit;
 	#ifndef STONE_GRAIN
 		c = mix( c, ${v3(STONE.crust.color)} * ( 0.9 + 0.2 * tNear.x ) * mix( 0.92, 1.04, st1 ), crustK );
-		vec3 cut = ${v3(STONE.cut)};
-		c = mix( c, ${v3(STONE.chip)} * ( 0.9 + 0.2 * tNear.x ), 0.6 * chipped );
-		c *= 1.0 - ${f(STONE.crease.most)} * crease;
-		c = mix( c, ${v3(STONE.own)} * ${v3(STONE.shadeTint)} * cut, 0.85 * pShadow );
-		c = mix( c, ${v3(STONE.chip)}, 0.45 * pLip * lit );
-		// A gouge's floor lies in its rim's shadow: the deep red brown of the stone out of the light, never the lit
-		// face's tan darkened, which came out a lavender grey.
-		vec3 floorC = ${v3(STONE.own)} * ${v3(STONE.shadeTint)} * cut * ( 0.9 + 0.2 * st3 ) * ( 1.0 - 0.35 * deep );
-		c = mix( c, floorC, gouge * ( 0.75 + 0.25 * deep ) );
-		c *= 1.0 - 0.5 * gShade;
-		c = mix( c, ${v3(STONE.chip)} * ( 0.92 + 0.16 * st3 ), 0.6 * gLip * lit );
-		rough = max( gouge, pShadow );
+		c = mix( c, ${v3(STONE.chip)} * ( 0.9 + 0.2 * tNear.x ), 0.55 * chipped );
+		c *= mix( vec3( 1.0 ), ${v3(STONE.crease.tint)}, crease );
+		// A scar's floor lies in shadow: the face's own stone, much darker and redder. Its own red brown under the
+		// core's orange came out a bright rust, where the picture's scars are a dark brown.
+		vec3 floorC = c * ${v3(STONE.cut)} * ( 0.9 + 0.2 * st3 ) * ( 1.0 - 0.3 * scarDeep );
+		c = mix( c, floorC, groove * ( 0.8 + 0.2 * scarDeep ) );
+		c *= 1.0 - 0.55 * under;
+		c = mix( c, ${v3(STONE.chip)} * ( 0.92 + 0.16 * st3 ), 0.6 * lip * lit );
+		c *= 1.0 - ${f(STONE.hair.most)} * hair;
+		rough = groove;
+		glints *= 1.0 - groove;
 	#endif
 	c = mix( c, ${v3(STONE.dust)} * ( 0.88 + 0.24 * tNear.x ) * mix( 0.85, 1.0, tNear.y ), 0.7 * dust );
 	float chroma = mix( mix( ${f(STONE.chroma[1])}, ${f(STONE.chroma[0])}, lit ), ${f(STONE.hot.chroma)}, hotK / ${f(STONE.hot.most)} );
 	#ifndef STONE_GRAIN
 		chroma = mix( chroma, 1.0, crustK );
+		chroma *= mix( 1.0, ${f(STONE.crust.moonChroma)}, moonK * ( 1.0 - lit ) );
 	#endif
 	stoneAlbedo = mix( vec3( dot( c, vec3( 0.2126, 0.7152, 0.0722 ) ) ), c, chroma );
-	stoneRough = mix( mix( ${f(STONE.rough[0])}, ${f(STONE.rough[1])}, rough ), ${f(STONE.rough[2])}, dust );
+	stoneRough = mix( mix( mix( ${f(STONE.rough[0])}, ${f(STONE.rough[1])}, rough ), ${f(STONE.rough[2])}, dust ), ${f(STONE.rough[3])}, glints );
+	stoneSheen = mix( ${f(STONE.sheen)}, ${f(STONE.sparkle.sheen)}, glints );
 	#ifndef STONE_GRAIN
 		stoneNormal = normalize( mix( stoneNormal, lC, ${f(STONE.edge.bevel)} * chipped ) );
 	#endif
 	diffuseColor.rgb = stoneAlbedo;
 	#ifdef STONE_DEBUG
 		diffuseColor.rgb = vec3( 0.0 );
+		int stoneMode = STONE_DEBUG > 20 ? STONE_DEBUG - 20 : STONE_DEBUG;
 		#ifdef STONE_GRAIN
-			float stoneShow = STONE_DEBUG == 1 ? open : STONE_DEBUG == 2 ? seen : STONE_DEBUG == 3 ? fromEdge / 16.0 : STONE_DEBUG == 5 ? moon : 0.0;
+			float stoneShow = stoneMode == 1 ? open : stoneMode == 2 ? seen : stoneMode == 3 ? fromEdge / 16.0 : stoneMode == 5 ? moon : 0.0;
 		#else
-			float stoneShow = STONE_DEBUG == 1 ? open : STONE_DEBUG == 2 ? seen : STONE_DEBUG == 3 ? fromEdge / 16.0 : STONE_DEBUG == 4 ? crustK : STONE_DEBUG == 5 ? moon
-				: STONE_DEBUG == 6 ? max( gouge, pShadow ) : STONE_DEBUG == 7 ? convex : STONE_DEBUG == 8 ? chipped : crease;
+			float stoneShow = stoneMode == 1 ? open : stoneMode == 2 ? seen : stoneMode == 3 ? fromEdge / 16.0 : stoneMode == 4 ? crustK : stoneMode == 5 ? moon
+				: stoneMode == 6 ? groove : stoneMode == 7 ? dens : stoneMode == 8 ? chipped : crease;
 		#endif
-		totalEmissiveRadiance = vec3( stoneShow );
+		// Over 20, the same in bands: red over a quarter, yellow over a half, pale over three quarters, as the tone
+		// curve hides the numbers.
+		totalEmissiveRadiance = STONE_DEBUG > 20 ? 0.4 * vec3( step( 0.25, stoneShow ), step( 0.5, stoneShow ), step( 0.75, stoneShow ) ) : vec3( stoneShow );
 		#ifndef STONE_GRAIN
-			if ( STONE_DEBUG == 10 ) totalEmissiveRadiance = vec3( gRun, gA, gB + pShadow );
+			if ( STONE_DEBUG == 10 ) totalEmissiveRadiance = vec3( groove, lip, under + hair );
 			if ( STONE_DEBUG == 11 ) totalEmissiveRadiance = vec3( full, lit, hotK );
-					#endif
+		#endif
 	#endif
 }`;
 
@@ -551,9 +515,9 @@ const STREAM_LIGHT = /* glsl */ `
 // the standard share the core's light came off every lit face as an orange sheen, which was most of what a lit face
 // showed whatever the stone's own color, and why it read as pumpkin and not peach tan.
 const SHEEN = /* glsl */ `
-material.specularColor *= ${f(STONE.sheen)};
+material.specularColor *= stoneSheen;
 material.specularColorBlended = material.specularColor;
-material.specularF90 *= ${f(STONE.sheen)};`;
+material.specularF90 *= stoneSheen;`;
 
 type Shader = THREE.WebGLProgramParametersWithUniforms;
 const after = (src: string, chunk: string, add: string): string => {
@@ -562,7 +526,7 @@ const after = (src: string, chunk: string, add: string): string => {
 };
 
 // Lays the stone into a standard shader's fragment stage, and the vertex stage too unless the part sets vStoneP and
-// vStoneN itself (own: true). grainOnly leaves out the gouges, the partings, the crust and the edges: the stone's
+// vStoneN itself (own: true). grainOnly leaves out the scars, the hairlines, the crust and the edges: the stone's
 // body, its grain, its stains, its knapped relief and its wear, for what broke away.
 export function stoneShader(sh: Shader, maps: StoneMaps, own = false, grainOnly = false): void {
   Object.assign(sh.uniforms, { uStoneGrain: { value: maps.grain }, uStoneStreamPower: { value: 1 }, uStoneStream: world.uniforms.uStream });
@@ -590,9 +554,9 @@ export interface StoneOptions {
   // The stone's body, grain and wear only (see stoneShader).
   grainOnly?: boolean;
   // Draws one thing the stone reads instead of the stone, to judge it: 1 openness, 2 the core's share seen, 3 the
-  // distance to an edge, 4 the crust, 5 the moon's share, 6 the gouges and partings, 7 what is taken as a convex
-  // edge, 8 the chipped edges, 9 the creases' dust, 10 the runs, the cut out cells and the small ones (red, green, blue),
-  // 11 how far the core's light is full, lit, and the hot zone.
+  // distance to an edge, 4 the crust, 5 the moon's share, 6 the scars' floors, 7 where scars gather, 8 the chipped
+  // edges, 9 the creases' shade, 10 the scars' floors, lips and shadowed sides with the hairlines (red, green, blue),
+  // 11 how far the core's light is full, lit, and the hot zone. 21 to 29 are 1 to 9 in bands of a quarter.
   debug?: number;
 }
 // A standard material of the stone, joined to the world's light.

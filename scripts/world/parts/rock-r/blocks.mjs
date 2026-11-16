@@ -1,4 +1,4 @@
-// Sculpt R, round 3: the hollow as a few heavy blocks of stone. Each block takes its outline from the picture's own
+// Sculpt R, rounds 3 to 5: the hollow as a few heavy blocks of stone. Each block takes its outline from the picture's own
 // slabs (measured/slabs.json, joined along the picture's main dark lines), and is a solid in the world: a front face
 // on one plane, leaning in toward the core, a back face its thickness behind, and broken sides at right angles to it,
 // with beds in them. Where the picture is black between masses there is no block: the backing, far behind, shows.
@@ -17,53 +17,70 @@ import { shellAlong, edgeZ, CORE_PX, J, VIEW, norm, dot } from './relief.mjs';
 
 // Samples to a picture pixel in the outlines, and how far past an outline its distance is kept, in pixels.
 export const BY = 2, MARGIN = 48;
+// The fan of a great plate: few, large cells, each one plane over 120 to 190 of the picture's pixels, with low steps:
+// on a plate turned hard to the core a high step's face is what the visitor sees, and read as a stair.
+const GREAT = { wedge: [0.32, 0.55], ring: [120, 190], drop: [2.5, 6] };
 const C = L.CORE.at;
 
 export const BLOCKS = [
-  // The ring round the core, nearest it and deepest, the brightest rock.
-  { name: 'ring-left', kind: 'plate', slabs: [61, 67, 77, 65, 69], z: 55, lean: 0.7, thick: 46, breaks: 2 },
-  { name: 'back-left', kind: 'plate', slabs: [25, 32], z: 20, lean: 1.1, thick: 60, breaks: 3 },
-  { name: 'back-top', kind: 'plate', slabs: [38, 34, 11, 13], z: -10, lean: 0.5, thick: 60, breaks: 1 },
-  { name: 'back-mid', kind: 'plate', slabs: [57], z: -30, lean: 0.6, thick: 60, breaks: 0 },
-  { name: 'back-right', kind: 'plate', slabs: [56, 35, 36, 27, 41], z: 35, lean: 1.1, thick: 56, breaks: 3 },
-  // The great plates each side, further out and nearer the visitor.
-  { name: 'right-1', kind: 'plate', slabs: [43, 86, 87], z: 105, lean: 0.6, thick: 62, breaks: 3 },
-  { name: 'right-2', kind: 'plate', slabs: [37, 28, 23], z: 170, lean: 1.0, thick: 48, breaks: 1 },
-  { name: 'left-2', kind: 'plate', slabs: [26], z: 75, lean: 1.2, thick: 52, breaks: 3 },
-  { name: 'left-1', kind: 'plate', slabs: [60, 49, 54, 46, 75, 83, 85], z: 160, lean: 1.75, thick: 66, breaks: 3 },
-  { name: 'left-low', kind: 'plate', slabs: [88, 95, 97, 99], z: 215, lean: 0.95, thick: 58, breaks: 1 },
+  // The ring round the core, nearest it and deepest, the brightest rock. Its inner part is the cave's bowl.
+  { name: 'ring-left', kind: 'plate', slabs: [61, 67, 77, 65, 69], z: 85, lean: 0.7, thick: 46 },
+  { name: 'back-left', kind: 'plate', slabs: [25, 32], z: 70, lean: 1.1, thick: 60 },
+  { name: 'back-top', kind: 'plate', slabs: [38, 34, 11, 13], z: 60, lean: 0.5, thick: 60 },
+  { name: 'back-mid', kind: 'plate', slabs: [57], z: 55, lean: 0.6, thick: 60 },
+  { name: 'back-right', kind: 'plate', slabs: [56, 35, 36, 27, 41], z: 80, lean: 1.1, thick: 56 },
+  // The great plates each side, further out and nearer the visitor: each a few great planes.
+  { name: 'right-1', kind: 'plate', slabs: [43, 86, 87], z: 105, lean: 0.6, thick: 62, fan: GREAT },
+  { name: 'right-2', kind: 'plate', slabs: [37, 28, 23], z: 170, lean: 1.0, thick: 48, fan: GREAT },
+  { name: 'left-2', kind: 'plate', slabs: [26], z: 75, lean: 1.0, thick: 52, fan: GREAT },
+  { name: 'left-1', kind: 'plate', slabs: [60, 49, 54, 46, 75, 83, 85], z: 160, lean: 1.1, thick: 66, fan: GREAT },
+  { name: 'left-low', kind: 'plate', slabs: [88, 95, 97, 99], z: 215, lean: 0.95, thick: 58, fan: GREAT },
   // Recesses turned from the core, lit only by what bounces.
-  { name: 'shade-left', kind: 'shade', slabs: [47], z: 0, out: 0.9, thick: 40, breaks: 0 },
-  { name: 'shade-right', kind: 'shade', slabs: [22], z: 120, out: 0.9, thick: 40, breaks: 0 },
-  // The floor: one shelf under the core, its front face turned up to it.
-  { name: 'floor', kind: 'floor', slabs: [84, 81, 70, 96, 98, 93], cut: 'lane', z: 225, up: 0.9, lean: 0.35, thick: 70, breaks: 2 },
+  { name: 'shade-left', kind: 'shade', slabs: [47], z: 0, out: 0.9, thick: 40 },
+  { name: 'shade-right', kind: 'plate', slabs: [22], z: 120, lean: 0.5, out: 0.3, thick: 40 },
+  // The floor: a ledge under the core, its top turned up to the core, and under its front edge a dark belly turned
+  // down and out, from the core. Both stand behind the stream's line, which falls in front of them.
+  { name: 'floor', kind: 'floor', slabs: [84, 81, 70, 96, 98, 93], cut: ['lane', 'belly', 'recess'], z: 140, up: 0.55, lean: 0.25, thick: 70 },
+  { name: 'belly', kind: 'belly', slabs: [84, 81, 70, 96, 98, 93], cut: ['lane'], only: 'belly', z: 152, down: 0.75, out: 0.25, thick: 70 },
   // Behind the stream the shelf is set back, so the stream falls in front of its lit lip.
-  { name: 'floor-back', kind: 'floor', slabs: [84, 81, 70, 96, 98, 93], only: 'lane', z: 112, up: 0.8, lean: 0.4, thick: 60, breaks: 1 },
-  { name: 'floor-left', kind: 'shade', slabs: [68], z: 115, out: 0.5, up: 0.3, thick: 50, breaks: 1 },
-  { name: 'right-low', kind: 'frame', slabs: [53, 73, 80, 78], z: 300, out: -0.2, down: 0.15, thick: 90, breaks: 2 },
+  { name: 'floor-back', kind: 'floor', slabs: [84, 81, 70, 96, 98, 93], only: 'lane', z: 112, up: 0.8, lean: 0.4, thick: 60 },
+  { name: 'floor-left', kind: 'shade', slabs: [68], z: 115, out: 0.5, up: 0.3, thick: 50 },
+  { name: 'right-low', kind: 'frame', slabs: [53, 73, 80, 78], z: 300, out: -0.2, down: 0.15, thick: 90 },
   // The roof: the land's broken lip, its top turned up to the moon; a dark lid of great slabs hanging under it in
-  // front of the core; and lit pieces hanging behind the lid's lower edge, turned to the core. z is how far behind
-  // the land's front edge the face is.
-  { name: 'lip', kind: 'roof', slabs: [0, 2, 4, 7, 20, 10, 19, 31, 24], back: -22, up: 1.0, turn: [0.9, 0, 0], thick: 60, breaks: 2 },
-  { name: 'lid-left', kind: 'roof', slabs: [21, 30, 14, 29], cut: 'stratL', back: 30, down: 0.4, thick: 110, breaks: 1 },
-  { name: 'lid-mid', kind: 'roof', slabs: [8, 5, 15], back: 12, down: 0.48, thick: 120, breaks: 1 },
-  { name: 'lid-right', kind: 'roof', slabs: [3], back: 12, down: 0.45, thick: 120, breaks: 2 },
-  { name: 'hang-right', kind: 'plate', slabs: [6, 12, 18], back: 70, lean: 1.4, thick: 44, breaks: 1 },
+  // front of the core, set far back so the lip overhangs a black band, with its lower edge brought forward as teeth
+  // that catch the core; and lit pieces hanging behind, turned to the core. z is how far behind the land's front edge
+  // the face is.
+  { name: 'lip', kind: 'roof', slabs: [0, 2, 4, 7, 20, 10, 19, 31, 24], back: -22, up: 1.2, turn: [1.9, 0, 0], thick: 60 },
+  { name: 'lid-left', kind: 'roof', slabs: [21, 30, 14, 29], cut: 'stratL', band: { foot: 24, keep: false }, back: 85, down: 0.2, out: 0.5, thick: 110 },
+  { name: 'lid-mid', kind: 'roof', slabs: [8, 5, 15], band: { foot: 26, keep: false }, back: 80, down: 0.15, out: 0.5, thick: 120 },
+  { name: 'lid-right', kind: 'roof', slabs: [3], band: { foot: 26, keep: false }, back: 80, down: 0.15, out: 0.5, thick: 120 },
+  { name: 'teeth-left', kind: 'roof', slabs: [21, 30, 14, 29], cut: 'stratL', band: { foot: 24, keep: true }, back: 28, down: 0.55, lean: 0.35, thick: 90 },
+  { name: 'teeth-mid', kind: 'roof', slabs: [8, 5, 15], band: { foot: 26, keep: true }, back: 14, down: 0.55, lean: 0.35, thick: 90 },
+  { name: 'teeth-right', kind: 'roof', slabs: [3], band: { foot: 26, keep: true }, back: 14, down: 0.5, lean: 0.35, thick: 90 },
+  { name: 'hang-right', kind: 'plate', slabs: [6, 12, 18], back: 70, lean: 1.4, thick: 44, tuck: true },
   // The frame: heavy masses standing forward at each side, near black, with voids between them.
-  { name: 'frame-left-top', kind: 'frame', slabs: [42, 50, 44], cut: 'stratL', z: 0, out: 0.4, down: 0.6, thick: 130, breaks: 1 },
+  { name: 'frame-left-top', kind: 'frame', slabs: [42, 50, 44], cut: 'stratL', z: 0, out: 0.4, down: 0.6, thick: 130 },
   // The thick broken stratum under the land at the left, its front turned up and right to the moon.
-  { name: 'strat-left', kind: 'roof', slabs: [42, 50, 44, 21, 30, 14, 29], only: 'stratL', back: -40, up: 0.6, turn: [1.2, 0, 0], thick: 90, breaks: 1 },
-  { name: 'frame-left-edge', kind: 'frame', slabs: [64, 63, 74, 79, 62, 82], z: 0, out: 0.5, down: 0.55, thick: 130, breaks: 1 },
-  { name: 'frame-left-mid', kind: 'frame', slabs: [66], z: 330, out: 0.3, down: 0.55, thick: 120, breaks: 1 },
-  { name: 'frame-left-low', kind: 'frame', slabs: [89, 91, 92, 101, 100, 102, 103, 104, 105, 94], z: 0, out: 0.38, down: 0.45, thick: 130, breaks: 2 },
-  { name: 'frame-right-edge', kind: 'frame', slabs: [39, 71, 17, 16], z: 0, out: -0.25, down: 0.18, thick: 130, breaks: 1 },
-  { name: 'frame-right-mid', kind: 'frame', slabs: [33, 76], z: 330, out: -0.2, down: 0.45, thick: 120, breaks: 1 },
-  { name: 'frame-right-low', kind: 'frame', slabs: [90], z: 0, out: -0.2, down: 0.2, thick: 130, breaks: 1 },
+  { name: 'strat-left', kind: 'roof', slabs: [42, 50, 44, 21, 30, 14, 29], only: 'stratL', back: -40, up: 0.9, turn: [1.9, 0, 0], thick: 90 },
+  { name: 'frame-left-edge', kind: 'frame', slabs: [64, 63, 74, 79, 62, 82], z: 0, out: 0.5, down: 0.55, thick: 130 },
+  // The cavity behind the left masses: a wall turned out and down from the core, black, which keeps the core's light
+  // off the masses' inner sides.
+  { name: 'frame-left-mid', kind: 'frame', slabs: [66], z: 300, out: 1.2, down: 0.5, thick: 120 },
+  { name: 'frame-left-low', kind: 'frame', slabs: [89, 91, 92, 101, 100, 102, 103, 104, 105, 94], z: 0, out: 0.38, down: 0.45, thick: 130 },
+  { name: 'frame-right-edge', kind: 'frame', slabs: [39, 71, 17, 16], add: 'tornR', z: 0, out: -0.25, down: 0.18, thick: 130 },
+  { name: 'frame-right-mid', kind: 'frame', slabs: [33, 76], z: 330, lean: 0.45, down: 0.3, thick: 120 },
+  { name: 'frame-right-low', kind: 'frame', slabs: [90], z: 0, out: -0.2, down: 0.2, thick: 130 },
 ];
 
 // Places in the picture a block is cut to, in its pixels: the shelf behind the stream, a ragged bay round its line.
 const SHAPES = {
   stratL: [[240, 262], [478, 262], [474, 329], [458, 334], [446, 331], [433, 339], [414, 336], [399, 343], [384, 339], [370, 346], [352, 341], [337, 349], [319, 343], [301, 348], [287, 339], [270, 344], [255, 338], [240, 340]],
+  // Where the pale side's torn line moved right: the strip the frame's edge block is carried out over.
+  tornR: [[1028, 300], [1080, 300], [1080, 456], [1028, 456]],
+  // Between the cave's bowl and the floor's ledge, a dark recess: no floor there, so the backing shows.
+  recess: [[566, 528], [590, 536], [612, 534], [640, 542], [668, 546], [708, 547], [736, 541], [764, 544], [790, 536], [812, 530], [818, 541], [792, 549], [762, 553], [730, 551], [700, 556], [668, 555], [636, 552], [606, 545], [584, 546], [560, 538]],
+  // Under the floor's ledge: its belly, below a ragged line under the ledge's lit top.
+  belly: [[430, 572], [470, 566], [508, 576], [546, 569], [580, 579], [622, 574], [660, 582], [700, 578], [742, 586], [786, 579], [830, 588], [880, 582], [930, 590], [930, 720], [430, 720]],
   lane: [[646, 510], [659, 521], [653, 533], [662, 547], [656, 558], [666, 571], [661, 584], [669, 596], [681, 594], [690, 603], [701, 597], [713, 599], [716, 586], [710, 574], [721, 561], [714, 549], [724, 537], [717, 524], [730, 510]],
 };
 // What of the picture is not the rock though it looked it: the stream's own light under the shelf. Its top carries on
@@ -92,9 +109,17 @@ function edt(mask, w, h, want) {
   return g;
 }
 // The signed distance of a mask, in picture pixels: under 0 inside.
-export function signed(mask, w, h, by) {
-  const out = edt(mask, w, h, 0), inn = edt(mask, w, h, 1), sd = new Float32Array(w * h);
+// It is blurred a little (`soft` passes of a five tap blur), so its zero follows the outline and not the samples'
+// staircase: a side is the outline drawn out along the line of sight, and the staircase showed on it as ruled stripes.
+export function signed(mask, w, h, by, soft = 2) {
+  const out = edt(mask, w, h, 0), inn = edt(mask, w, h, 1);
+  let sd = new Float32Array(w * h), tmp = new Float32Array(w * h);
   for (let i = 0; i < w * h; i++) sd[i] = (mask[i] ? 0.5 - Math.sqrt(out[i]) : Math.sqrt(inn[i]) - 0.5) / by;
+  const K = [1, 4, 6, 4, 1];
+  for (let pass = 0; pass < soft; pass++) {
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let a = 0; for (let k = -2; k <= 2; k++) a += K[k + 2] * sd[Math.min(w - 1, Math.max(0, x + k)) + y * w]; tmp[x + y * w] = a / 16; }
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { let a = 0; for (let k = -2; k <= 2; k++) a += K[k + 2] * tmp[x + Math.min(h - 1, Math.max(0, y + k)) * w]; sd[x + y * w] = a / 16; }
+  }
   return sd;
 }
 
@@ -158,29 +183,37 @@ export async function plan({ draft = false } = {}) {
   for (let i = 0; i < rockMask.length; i++) rockMask[i] = S.kind[i] === 1 || S.kind[i] === 2 ? 1 : 0;
   for (const poly of NOT_ROCK) for (let y = 0; y < S.H; y++) for (let x = 0; x < S.W; x++) if (inside(poly, x + 0.5, y + 0.5)) rockMask[x + y * S.W] = 0;
   const rock = { x0: 0, y0: 0, w: S.W, h: S.H, by: 1, sd: signed(rockMask, S.W, S.H, 1) };
+  const shapes = (v) => (v ? (Array.isArray(v) ? v : [v]).map((q) => SHAPES[q]) : []);
   const blocks = BLOCKS.map((b, k) => {
-    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, cx = 0, cy = 0, n = 0;
-    const cutB = b.cut ? SHAPES[b.cut] : null, onlyB = b.only ? SHAPES[b.only] : null;
+    const cuts = shapes(b.cut), onlys = shapes(b.only), adds = shapes(b.add);
+    // What of the picture the block is: its slabs (and what no slab holds inside a shape it is given), less what is
+    // cut, inside what it is held to; then, when it has a band, only (or all but) the lowest rows of each column.
+    const full = new Uint8Array(W * H);
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
     for (let i = 0; i < W * H; i++) {
-      const s = m.slab[i];
-      if (s < 0 || !b.slabs.includes(s)) continue;
-      const x = i % W, y = (i / W) | 0;
-      if (cutB && inside(cutB, (x + 0.5) / BY, (y + 0.5) / BY)) continue;
-      if (onlyB && !inside(onlyB, (x + 0.5) / BY, (y + 0.5) / BY)) continue;
-      x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); cx += x; cy += y; n++;
+      const s = m.slab[i], x = i % W, y = (i / W) | 0, px = (x + 0.5) / BY, py = (y + 0.5) / BY;
+      let take = s >= 0 && b.slabs.includes(s);
+      if (!take && adds.length && (s < 0 || b.slabs.includes(s)) && adds.some((q) => inside(q, px, py))) take = true;
+      if (!take) continue;
+      if (cuts.some((q) => inside(q, px, py))) continue;
+      if (onlys.length && !onlys.some((q) => inside(q, px, py))) continue;
+      full[i] = 1;
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y);
     }
-    if (!n) throw new Error(`blocks: ${b.name} has no pixels`);
+    if (b.band) {
+      for (let x = x0; x <= x1; x++) {
+        let foot = -1;
+        for (let y = y1; y >= y0; y--) if (full[x + y * W]) { foot = y; break; }
+        if (foot < 0) continue;
+        for (let y = y0; y <= foot; y++) { const i = x + y * W; if (full[i] && (foot - y < b.band.foot * BY) !== b.band.keep) full[i] = 0; }
+      }
+      x0 = Infinity; y0 = Infinity; x1 = -Infinity; y1 = -Infinity;
+      for (let i = 0; i < W * H; i++) if (full[i]) { const x = i % W, y = (i / W) | 0; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    }
+    if (x0 > x1) throw new Error(`blocks: ${b.name} has no pixels`);
     const pad = MARGIN * BY, bx = Math.max(0, x0 - pad), byy = Math.max(0, y0 - pad), w = Math.min(W, x1 + pad + 1) - bx, h = Math.min(H, y1 + pad + 1) - byy;
     const mask = new Uint8Array(w * h);
-    const cut = b.cut ? SHAPES[b.cut] : null, only = b.only ? SHAPES[b.only] : null;
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      const s = m.slab[(x + bx) + (y + byy) * W];
-      if (s < 0 || !b.slabs.includes(s)) continue;
-      const px = (x + bx + 0.5) / BY, py = (y + byy + 0.5) / BY;
-      if (cut && inside(cut, px, py)) continue;
-      if (only && !inside(only, px, py)) continue;
-      mask[x + y * w] = 1;
-    }
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) mask[x + y * w] = full[(x + bx) + (y + byy) * W];
     fillHoles(mask, w, h, 900 * BY * BY);
     let want = 0, seen = 0;
     for (let y = 0; y < h; y += BY) for (let x = 0; x < w; x += BY) {
@@ -190,8 +223,15 @@ export async function plan({ draft = false } = {}) {
       want += 0.2126 * S.rgb[i * 3] + 0.7152 * S.rgb[i * 3 + 1] + 0.0722 * S.rgb[i * 3 + 2]; seen++;
     }
     dropCrumbs(mask, w, h, 40 * BY * BY);
+    let cx = 0, cy = 0, n = 0;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (mask[x + y * w]) { cx += x + bx; cy += y + byy; n++; }
+    if (!n) throw new Error(`blocks: ${b.name} has no pixels`);
     const at = [(cx / n + 0.5) / BY, (cy / n + 0.5) / BY];
-    return { ...b, id: k, at, want: seen ? want / seen : 0, area: n / (BY * BY), outline: { x0: bx / BY, y0: byy / BY, w, h, by: BY, sd: signed(mask, w, h, BY) }, box: [x0 / BY - 2, y0 / BY - 2, (x1 + 1) / BY + 2, (y1 + 1) / BY + 2] };
+    // Its long axis, from the spread of its outline: the way its laminations run.
+    let sxx = 0, syy = 0, sxy = 0;
+    for (let y = 0; y < h; y += BY) for (let x = 0; x < w; x += BY) if (mask[x + y * w]) { const dx = (x + bx) / BY - at[0], dy = (y + byy) / BY - at[1]; sxx += dx * dx; syy += dy * dy; sxy += dx * dy; }
+    const long = 0.5 * Math.atan2(2 * sxy, sxx - syy);
+    return { ...b, id: k, at, long, want: seen ? want / seen : 0, area: n / (BY * BY), outline: { x0: bx / BY, y0: byy / BY, w, h, by: BY, sd: signed(mask, w, h, BY) }, box: [x0 / BY - 2, y0 / BY - 2, (x1 + 1) / BY + 2, (y1 + 1) / BY + 2] };
   });
   // The face of each block: its plane through its middle at its depth. A block of the frame stands as far forward
   // as the planet's own surface at its outer side, so it meets the skin with no gap.

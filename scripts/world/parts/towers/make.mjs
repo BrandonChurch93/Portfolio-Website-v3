@@ -7,8 +7,8 @@
 import { pack } from '../../lib/pack.mjs';
 import { png } from '../../lib/png.mjs';
 import { bake } from '../../lib/bake.mjs';
-import { L, light, linear, storeBounce } from '../../lib/plan.mjs';
-import { PALE_STONE, PLACE, STONES, WARM, WINDOW, stoneOf } from '../../../../src/pieces/world/parts/towers/windows.ts';
+import { L, P, light, linear, storeBounce } from '../../lib/plan.mjs';
+import { FRONT, PALE_STONE, PLACE, STONES, WARM, WINDOW, stoneOf } from '../../../../src/pieces/world/parts/towers/windows.ts';
 import { FIELD } from './layers.mjs';
 
 const NAMES = ['stone', 'bay', 'gold'];
@@ -25,10 +25,10 @@ const SMOOTH = { stone: 1.6, bay: 2.4, gold: 1.6, alike: 0.92 };
 // never drawn, and unless it is turned from the moon (by more than `casts`) it casts no shadow either, since the
 // moon's shadow is drawn with the faces turned from it. Such faces are left out of the file. The light is baked
 // with them all there.
-const CULL = { seen: -0.3, casts: 0.02 };
+const CULL = { seen: -0.1, casts: 0.02 };
 // How openness and the bounce are stored: in steps of this many of a byte's 255, which the light passed between
 // vertices never shows, and which packs the file a third smaller.
-const STEP = 4;
+const STEP = 8;
 const step = (v) => Math.round((Math.min(1, Math.max(0, v)) * 255) / STEP) * STEP / 255;
 
 // The layers of many meshes (each what Kit.meshes gives) as one mesh a layer. owners[k], if given, is which building
@@ -73,10 +73,18 @@ export function boxesOf(list, extra = []) {
   return [...out, ...extra];
 }
 export function skyward(positions, normals, owner, boxes, draft) {
-  const M = light().moon.toward, n = positions.length / 3, out = new Float32Array(n), rays = [];
+  return seen(positions, normals, owner, boxes, light().moon.toward, SKY.cone, draft ? 3 : SKY.rays);
+}
+// How much of the night's soft light from the visitor's side (FRONT) a place sees past the other buildings.
+export function frontward(positions, normals, owner, boxes, draft) {
+  const t = FRONT.toward, l = Math.hypot(...t);
+  return seen(positions, normals, owner, boxes, t.map((v) => v / l), FRONT.cone, draft ? 5 : FRONT.rays);
+}
+function seen(positions, normals, owner, boxes, M, coneDeg, count) {
+  const n = positions.length / 3, out = new Float32Array(n), rays = [];
   const up = [0, 1, 0], ax = [M[1] * up[2] - M[2] * up[1], M[2] * up[0] - M[0] * up[2], M[0] * up[1] - M[1] * up[0]], la = Math.hypot(...ax);
   const a = ax.map((v) => v / la), b = [M[1] * a[2] - M[2] * a[1], M[2] * a[0] - M[0] * a[2], M[0] * a[1] - M[1] * a[0]];
-  const count = draft ? 3 : SKY.rays, cone = Math.tan(SKY.cone * L.D2R);
+  const cone = Math.tan(coneDeg * L.D2R);
   for (let k = 0; k < count; k++) {
     const r = count === 1 ? 0 : cone * Math.sqrt((k + 0.5) / count), t = k * 2.39996;
     const d = M.map((v, q) => v + r * (Math.cos(t) * a[q] + Math.sin(t) * b[q])), l = Math.hypot(...d);
@@ -88,7 +96,7 @@ export function skyward(positions, normals, owner, boxes, draft) {
     for (const [dx, dy, dz] of rays) {
       let hit = false;
       for (const B of boxes) {
-        if (B.id === owner[i] || B.y1 < py) continue;
+        if (B.id === owner[i] || B.y1 < py || (B.x - px) * dx + (B.z - pz) * dz < -(B.hw + B.hd)) continue;
         // Into the box's own frame, where it is upright and square to its axes.
         const ox = px - B.x, oz = pz - B.z, lx = ox * B.c - oz * B.s, lz = ox * B.s + oz * B.c, vx = dx * B.c - dz * B.s, vz = dx * B.s + dz * B.c;
         let t0 = 0, t1 = 1e5;
@@ -113,7 +121,7 @@ function toned(pale, tone) {
   const s = STONES[stoneOf(tone)];
   return pale.map((p, c) => p * s.tint[c] * (1 - 0.7 * s.metal));
 }
-const DEPTH = PLACE.depth, FOOT = PLACE.foot;
+const FOOT = PLACE.foot;
 
 function smooth(m, values, width, r) {
   if (!(r > 0)) return values;
@@ -199,12 +207,18 @@ export async function finish({ made, win, around = [], file, draft, meta = {}, s
     // The core never reaches the city, and the baker's share of the moon is not read (the moon's own shadow is drawn
     // live): in its place is how much of the sky about the moon a place sees past the other buildings (skyward).
     const sky = boxes.length ? smooth(m, skyward(m.positions, m.normals, m.owner, boxes, draft), 1, SMOOTH[name]) : new Float32Array(n).fill(1);
+    // And in the core's place, which never reaches the city, how much of the night's light from the visitor's side
+    // a place sees past the other buildings (frontward).
+    const fore = boxes.length ? smooth(m, frontward(m.positions, m.normals, m.owner, boxes, draft), 1, SMOOTH[name]) : new Float32Array(n).fill(1);
     for (let i = 0; i < n; i++) {
-      const back = Math.min(1, Math.max(0, (m.positions[i * 3 + 2] - DEPTH[0]) / (DEPTH[1] - DEPTH[0])));
-      light4.set([0, step(sky[i]), step(l.open[i]), Math.min(1, (m.foot?.[i] ?? 0) / FOOT)], i * 4);
-      bounce4.set([step(storeBounce(l.bounce[i * 3])), step(storeBounce(l.bounce[i * 3 + 1])), step(storeBounce(l.bounce[i * 3 + 2])), back], i * 4);
+      // How far up its own building a place is, as a share of the building's height: the material lights a
+      // building from a shaded foot to a lit top by it. (How far back it is, which this held, the shader works out.)
+      const tall = P.TOWERS[m.owner?.[i]]?.[4], rise = tall ? Math.min(1, Math.max(0, (m.foot?.[i] ?? 0) / tall)) : 1;
+      light4.set([step(fore[i]), step(sky[i]), step(l.open[i]), Math.min(1, (m.foot?.[i] ?? 0) / FOOT)], i * 4);
+      bounce4.set([step(storeBounce(l.bounce[i * 3])), step(storeBounce(l.bounce[i * 3 + 1])), step(storeBounce(l.bounce[i * 3 + 2])), rise], i * 4);
     }
-    const attributes = { normal: { data: m.normals, size: 3, as: 'i16' }, light: { data: light4, size: 4, as: 'u8' }, bounce: { data: bounce4, size: 4, as: 'u8' } };
+    // A wall's normal is near one of a few directions and is kept to a byte; the gold's curves keep two.
+    const attributes = { normal: { data: m.normals, size: 3, as: name === 'gold' ? 'i16' : 'i8' }, light: { data: light4, size: 4, as: 'u8' }, bounce: { data: bounce4, size: 4, as: 'u8' } };
     // The stone's joints are laid from where a place is in the world, in the shader: only how it is laid and which
     // stone it is are stored.
     if (name === 'stone') {
@@ -212,10 +226,16 @@ export async function finish({ made, win, around = [], file, draft, meta = {}, s
       for (let i = 0; i < n; i++) { kind[i * 2] = m.attr[i * 4 + 2]; kind[i * 2 + 1] = m.attr[i * 4 + 3]; }
       attributes.kind = { data: kind, size: 2, as: 'u8' };
     }
+    // Where a place is in its field of windows, as shares of the map (two bytes each: a sixty fourth of a window),
+    // and how large a window is, exactly.
     if (name === 'bay') {
-      const cell = new Float32Array(n * 4);
-      for (let i = 0; i < n; i++) cell.set(m.attr.subarray(i * 5, i * 5 + 4), i * 4);
-      attributes.cell = { data: cell, size: 4, as: 'f32' };
+      const cell = new Float32Array(n * 2), size = new Float32Array(n * 2);
+      for (let i = 0; i < n; i++) {
+        cell.set([Math.min(1, Math.max(0, m.attr[i * 5] / win.size)), Math.min(1, Math.max(0, m.attr[i * 5 + 1] / win.tall))], i * 2);
+        size.set([m.attr[i * 5 + 2], m.attr[i * 5 + 3]], i * 2);
+      }
+      attributes.cell = { data: cell, size: 2, as: 'u16' };
+      attributes.cellSize = { data: size, size: 2, as: 'f32' };
     }
     if (name === 'gold') attributes.flute = { data: m.attr, size: 3, as: 'f32' };
     const c = cull(m.positions, m.indices, attributes);

@@ -4,11 +4,13 @@
 // boulders in front of the rock (another part's), and where the streams are. Everything else is measured from the
 // picture by see.mjs: the land's edge comes from the plan, and the lowest outline is where the open air begins.
 
-// Where the planet's own surface is torn, top to bottom. Left of the first and right of the second the planet is
+// Where the planet's own surface is torn, top to bottom. Round 5 moved the right line 12 to 20 px right at rows 320
+// to 440, onto the picture's crust measured by the skin's builder (1062 at 330, 1066 at 360 to 380, 1068 to 1070 at 400
+// to 420). Left of the first and right of the second the planet is
 // whole out to its outer surface (the skin).
 export const TORN = {
   left: [[250, 309], [262, 316], [279, 322], [281, 337], [276, 374], [284, 403], [277, 412], [279, 416], [270, 421], [272, 427], [266, 433], [270, 449], [262, 458], [259, 467], [261, 490], [257, 497], [262, 507], [251, 548], [255, 553], [248, 566], [251, 576], [246, 606], [251, 613], [249, 637], [254, 646], [262, 684], [266, 690], [264, 697], [271, 709], [282, 728]],
-  right: [[1062, 305], [1063, 322], [1058, 327], [1061, 333], [1052, 341], [1049, 361], [1057, 368], [1059, 374], [1050, 412], [1053, 418], [1046, 423], [1047, 431], [1041, 437], [1044, 447], [1052, 452], [1050, 458], [1043, 497], [1047, 503], [1040, 509], [1042, 516], [1034, 531], [1039, 546], [1044, 551], [1033, 588], [1038, 594], [1036, 602], [1046, 627], [1044, 640], [1049, 652], [1045, 664], [1048, 671], [1039, 702], [1034, 709], [1030, 728]],
+  right: [[1062, 305], [1067, 322], [1063, 327], [1066, 333], [1061, 341], [1063, 352], [1060, 361], [1068, 368], [1070, 374], [1064, 392], [1068, 400], [1066, 412], [1071, 418], [1065, 423], [1068, 431], [1058, 437], [1054, 447], [1052, 452], [1050, 458], [1043, 497], [1047, 503], [1040, 509], [1042, 516], [1034, 531], [1039, 546], [1044, 551], [1033, 588], [1038, 594], [1036, 602], [1046, 627], [1044, 640], [1049, 652], [1045, 664], [1048, 671], [1039, 702], [1034, 709], [1030, 728]],
 };
 // The lowest the rock is looked for: under it everything is air or the planet's outline.
 export const FLOOR = 728;

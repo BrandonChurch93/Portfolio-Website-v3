@@ -1,10 +1,14 @@
 import * as THREE from 'three';
 import { hex } from '../../../../config/palette';
 import { MOONWARD, SCALE } from '../../layout';
+import { STEP, TOWERS } from '../../placed';
 import { METAL, WARM as KEPT, lit } from '../../light';
-import { PALE_STONE, PLACE, STONES, WARM, WINDOW } from './windows';
+import { FRONT, PALE_STONE, PLACE, STONES, WARM, WINDOW } from './windows';
 
 const FOOT = PLACE.foot;
+// Where his stepped tower stands, so the bay's material keeps it in the light he approved (HIS in SKY_LIGHT).
+const [HX, HZ, HW, HD] = TOWERS[STEP];
+const HIS_AT = `( step( abs( vWPos.x / ${(SCALE).toFixed(5)} - ${HX.toFixed(3)} ), ${(HW * 0.75).toFixed(3)} ) * step( abs( vWPos.z / ${(SCALE).toFixed(5)} - ${HZ.toFixed(3)} ), ${(HD * 0.75).toFixed(3)} ) )`;
 
 // The towers' three materials, which every design shares: pale stone laid in blocks, the bay (bronze, and the
 // windows drawn in it, each a pane with a lit room behind it), and the world's gold. Their light is stored with
@@ -29,6 +33,10 @@ const BALANCE = 'vec3( 0.96, 1.21, 1.59 )';
 // channel[0] to channel[1]), its blocks block[0] to block[1] courses long.
 // keep: how much of its warmth a stone (the first) and a bronze cladding (the second) keep against the stage's
 // white balance: a stone none, so a pale stone reads pale and near neutral, the city's warmth being its light.
+// How the city's stone is laid against its floors: a storey's height in units, the shares of buildings laid in ashlar
+// of two courses a floor and in panels a floor tall (the rest smooth, jointed every `smooth` floors), and how dark a
+// panel's joint and a smooth stone's are against ashlar's.
+const LAID = { storey: 2.3, ways: [0.4, 0.75], smooth: 3, dark: [0.75, 0.55] };
 const STONE = { course: [0.8, 1.9], channel: [1.2, 1.6], block: [1.7, 3.0], joint: [0.05, 0.16], differ: 0.14, dark: 0.5, rough: 0.82, streak: 0.22, keep: [0, 1], night: 1.2, hue: 0.06 };
 // The moon's line on the city: the moon is behind it, so each face turned toward the moon and seen near edge on (a
 // roof, a cornice's top, a face toward the moon) or cut toward it at a corner (an arris) carries a crisp pale line
@@ -36,7 +44,8 @@ const STONE = { course: [0.8, 1.9], channel: [1.2, 1.6], block: [1.7, 3.0], join
 // of the moon's light on the face; how tight the line on a cut toward the moon is (a power of how near the face is to
 // the half way between the moon and the eye), and on a face seen edge on (a power of how near edge on); and how much
 // of the line is the stone's own color and how much the moon's.
-const RIM = { power: 0.9, cut: 7, edge: 5, own: 0.45 };
+// thin: from how many pixels a unit is drawn at the line on an upright face comes in, to where it is whole.
+const RIM = { power: 0.9, cut: 7, edge: 5, own: 0.45, thin: [2.5, 5] };
 // The sky about the moon on the city (skyward in scripts/world/parts/towers/make.mjs, stored where the moon's share
 // would be): the moon is low and behind the city, so the tops stand in its light and are paler, the tall buildings
 // lay long shadows of it across the lower ones before them, and the feet are shut out of it. power: how much of the
@@ -45,6 +54,10 @@ const RIM = { power: 0.9, cut: 7, edge: 5, own: 0.45 };
 // night's soft light from the visitor's side is taken by `fill` of the sky seen; the moon's line along a chamfer
 // fades with height to `rim` at the feet.
 // His stepped tower's limestone takes `pale` of it, so its lit piers stay the pale near neutral he approved.
+// Every building but his: how much of its light the foot of a building keeps against its top, and the curve
+// between; the sky about the moon on it, and how much of it a face turned from the moon still takes; how much more
+// of the night's soft light it takes than his.
+const SHADE = { foot: 0.15, curve: 1.1, power: 2.0, wrap: 0.55, night: 1.6 };
 const SKY = { power: 0.75, wrap: 0.4, low: -25, high: 150, feet: 0.1, fill: 0.6, rim: 0.12, pale: 0.15 };
 // The street's light on the lowest storeys: shop fronts and lamps bleeding up the walls, in the palette's hot light,
 // as radiance on the stone at the foot (power), falling to a share 1/e every `fall` units up, strongest in the
@@ -53,7 +66,9 @@ const SKY = { power: 0.75, wrap: 0.4, low: -25, high: 150, feet: 0.1, fill: 0.6,
 const STREET = { power: 0.8, fall: 9, canyon: 1.6, clump: [9, 0.65] };
 // The city's own light on its walls: the lit windows across every street, as radiance on the stone, more where the
 // place is shut in, falling to a share 1/e every `fall` units up.
-const GLOW = { power: 0.16, shut: 1.5, fall: 90 };
+// Every building but his takes less of it, and only low down (city, cityFall): its walls are lit by the night and
+// the moon from a shaded foot to a lit top (SHADE), and their glow is the street's and their own windows'.
+const GLOW = { power: 0.16, shut: 1.5, fall: 90, city: 0.05, cityFall: 30 };
 // The far rows fall darker: the walls of the back of the city keep this share of their light, its windows `lights`.
 const DEPTH = { far: 0.45, lights: 0.7 };
 const HOT = new THREE.Color(hex('hot'));
@@ -64,6 +79,10 @@ const PALE = new THREE.Color(hex('text-2')).lerp(new THREE.Color(hex('copper-lig
 // Sheet bronze and copper: how far apart its standing seams are, in units, how dark a seam is, and how much the
 // weather streaks it.
 const SHEET = { seam: 1.3, dark: 0.45, weather: 0.22 };
+// A lit room seen far off is this warm (0 flame, 0.5 hot, 1 pale); close up its color runs from its own warmth less
+// lamp[0] at its back toward pale by lamp[1] for each step of the lamp's glow. The rooms round a place, read over
+// spill[1] windows each way, light the wall between them by spill[0] of their level, so a lit clump has a glow.
+const ROOM = { far: 0.42, lamp: [-0.22, 0.32], spill: [0.9, 4] };
 const BAY = { bronze: 0.62, rough: 0.5, metal: 0.85, glass: 0.06, bevel: 0.07, copper: 0.4, stone: 0.9 };
 // A field of windows seen from far off, where a window is a few pixels or less: it is drawn as its own wall, a warm
 // stone of this tone, with only its brightest rooms lit, each a small crisp light, one at most in each block of
@@ -80,7 +99,9 @@ const BAY = { bronze: 0.62, rough: 0.5, metal: 0.85, glass: 0.06, bevel: 0.07, c
 // one even stone, `wall` as bright as a stone face and `grid` darker where its glass is; a room's own color is read
 // from `tint` pixels a window up, under that its average. The room seen behind the glass, its sill and the bevel of
 // its frame come in between `detail` pixels a window, where none of them can crawl.
-const FAR = { far: [2.4, 4.4], tint: [1.2, 2.2], detail: [5, 9], bay: 2, wall: 0.8, grid: 0.22 };
+// Where windows are filtered to their average, a clump of lit rooms gives `boost` times its average light, so it
+// still reads as a lit clump and not as a warmer wall (a lit room's glass spills past its frame, seen from far off).
+const FAR = { far: [2.4, 4.4], tint: [1.2, 2.2], detail: [5, 9], bay: 2, wall: 0.8, grid: 0.22, boost: 2.2 };
 // The gold mirrors the night as the pyramid's does, so the world's gold is one gold: a deep gold where it mirrors
 // little, the world's gold, METAL.gold, as it mirrors more, and pale gold only where it blazes (grade: the levels at
 // which each begins). What it mirrors is where its reflection points: the moon is behind the city and to the right,
@@ -92,7 +113,7 @@ const FAR = { far: [2.4, 4.4], tint: [1.2, 2.2], detail: [5, 9], bay: 2, wall: 0
 // deep gold that mirrors `field` as much, and a darker carved ring at `ring` of its radius (how far out, how wide, how much darker); the cursor's glint and the
 // moon's own on that field are cut by `glint`, which on a flat coin far off was one round spot of light.
 const DISC = { far: [0.25, 0.5], field: 7, ring: [0.66, 0.07, 0.55], glint: 0.85 };
-const GOLD = { rough: 0.17, moon: [0.1, 0.8], lit: 3.6, dark: 0.14, city: 0.1, fillet: 0.18, valley: 0.2, grade: [0.1, 1.8, 8.5], wave: [0.035, 4], shoulder: [2.6, 2.4] };
+const GOLD = { rough: 0.17, moon: [0.1, 0.8], lit: 2.6, dark: 0.14, city: 0.1, fillet: 0.18, valley: 0.2, grade: [0.1, 2.4, 5.5], wave: [0.014, 11], shoulder: [1.2, 1.1] };
 // No polished panel is perfectly flat: each face's normal wanders by up to wave[0] over wave[1] units of the world, so
 // the reflection changes across a face as on real gilding.
 // The gold also mirrors what the bake found reaching it from round about (the city's windows, the street, the
@@ -100,6 +121,9 @@ const GOLD = { rough: 0.17, moon: [0.1, 0.8], lit: 3.6, dark: 0.14, city: 0.1, f
 // faces: so a face turned from the moon is a deep gold and not a hole.
 
 const COMMON = `
+#ifndef HIS
+#define HIS 0.0
+#endif
 float tHash( vec2 p ) {
 	uvec2 q = uvec2( ivec2( floor( p ) ) + 65536 );
 	uint h = q.x * 1597334677u ^ q.y * 3812015801u;
@@ -154,7 +178,13 @@ float tRim( vec3 n, vec3 v, vec3 l ) {
 	float nl = clamp( dot( n, l ), 0.0, 1.0 ), nv = clamp( dot( n, v ), 0.0, 1.0 );
 	vec3 h = l + v;
 	h /= max( length( h ), 1e-5 );
-	return ${f(RIM.power)} * nl * ( pow( clamp( dot( n, h ), 0.0, 1.0 ), ${f(RIM.cut)} ) + pow( 1.0 - nv, ${f(RIM.edge)} ) );
+	// A wall's moon line is cut along a narrow chamfer or a jamb, which drawn thinner than a pixel and a half broke into
+	// dashes: on an upright face it fades as a unit grows past RIM.thin of a pixel. The line along a face seen edge on is
+	// for what looks up (a roof, a cornice's top), never for an upright face.
+	vec3 upV = ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz;
+	float lies = smoothstep( 0.5, 0.85, abs( dot( n, upV ) ) ), upp = max( length( fwidth( vWPos ) ), 1e-5 ) / ${f(SCALE)};
+	float thin = mix( smoothstep( ${f(RIM.thin[0])}, ${f(RIM.thin[1])}, 1.0 / upp ), 1.0, lies );
+	return ${f(RIM.power)} * nl * thin * ( pow( clamp( dot( n, h ), 0.0, 1.0 ), ${f(RIM.cut)} ) + lies * pow( 1.0 - nv, ${f(RIM.edge)} ) );
 }
 // A bright stone goes to the palette's pale gold as it nears the brightest, never to white: the moon full on pale
 // limestone, with its line, came out (243, 223, 201).
@@ -164,13 +194,18 @@ vec3 tPale( vec3 c ) {
 }
 // How high a place stands in the city, 0 at its feet and 1 at its tallest tops.
 float tUp( float y ) { return smoothstep( ${f(SKY.low)}, ${f(SKY.high)}, y / ${f(SCALE)} ); }
+// Every building but his is lit from a shaded foot to a lit top (SHADE), by how far up itself a place is: the light
+// that falls on it, and not its own windows or the street's.
+float tRise( float rise, float his ) { return mix( mix( ${f(SHADE.foot)}, 1.0, pow( clamp( rise, 0.0, 1.0 ), ${f(SHADE.curve)} ) ), 1.0, his ); }
+// How far back a place is in the city, 0 at its front rows and 1 at its back.
+float tBack( float z ) { return clamp( ( z / ${f(SCALE)} - ${f(PLACE.depth[0])} ) / ${f(PLACE.depth[1] - PLACE.depth[0])}, 0.0, 1.0 ); }
 // The moon's line is laid on the direct light from the moon only, after the stage's own.
 const vec3 tMoonward = ${v3(new THREE.Vector3(...MOONWARD).normalize().toArray())};
 float tStreet( float h, float up, float open, float along ) {
 	float side = 1.0 - smoothstep( 0.35, 0.85, abs( up ) );
 	float clump = mix( 1.0 - ${f(STREET.clump[1])}, 1.0, smoothstep( 0.35, 0.65, tNoise( vec2( along / ${f(STREET.clump[0])}, 3.7 ) ) ) );
 	float street = ${f(STREET.power)} * exp( - max( h, 0.0 ) / ${f(STREET.fall)} ) * clump * mix( 1.0, ${f(STREET.canyon)}, 1.0 - open );
-	return side * ( street + ${f(GLOW.power)} * mix( 1.0, ${f(GLOW.shut)}, 1.0 - open ) * exp( - max( h, 0.0 ) / ${f(GLOW.fall)} ) );
+	return side * ( street + mix( ${f(GLOW.city)}, ${f(GLOW.power)}, HIS ) * mix( 1.0, ${f(GLOW.shut)}, 1.0 - open ) * exp( - max( h, 0.0 ) / mix( ${f(GLOW.cityFall)}, ${f(GLOW.fall)}, HIS ) ) );
 }`;
 
 // The moon's line (tRim), laid on the stage's own light from the moon on a face of stone or of the bay, where the moon
@@ -178,7 +213,16 @@ float tStreet( float h, float up, float open, float along ) {
 // balance, so it stays the moon's pale and never goes whiter.
 const RIM_DIRECT = `
 void RE_Direct_Rim( const in IncidentLight directLight, const in vec3 geometryPosition, const in vec3 geometryNormal, const in vec3 geometryViewDir, const in vec3 geometryClearcoatNormal, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {
+	vec3 tD = reflectedLight.directDiffuse, tS = reflectedLight.directSpecular;
 	RE_Direct_Physical( directLight, geometryPosition, geometryNormal, geometryViewDir, geometryClearcoatNormal, material, reflectedLight );
+	// An upright face seen nearly edge on (a jamb, the side of a pier) is drawn thinner than a pixel, and the moon full
+	// on it broke into pale dashes: its share of the moon fades as it turns edge on.
+	{
+		float upright = 1.0 - smoothstep( 0.5, 0.85, abs( dot( geometryNormal, ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz ) ) );
+		float edge = mix( 1.0, smoothstep( 0.05, 0.3, dot( geometryNormal, geometryViewDir ) ), upright );
+		reflectedLight.directDiffuse = tD + ( reflectedLight.directDiffuse - tD ) * edge;
+		reflectedLight.directSpecular = tS + ( reflectedLight.directSpecular - tS ) * edge;
+	}
 	vec3 mw = ( viewMatrix * vec4( tMoonward, 0.0 ) ).xyz;
 	if ( dot( directLight.direction, mw ) > 0.995 ) tRimLight += directLight.color * tRim( geometryNormal, geometryViewDir, directLight.direction ) * tRimOn * tRimFade * mix( ${lin('pale')} * 0.75, material.diffuseContribution, ${f(RIM.own)} );
 }
@@ -190,11 +234,15 @@ void RE_Direct_Rim( const in IncidentLight directLight, const in vec3 geometryPo
 const SKY_LIGHT = `
 #if NUM_DIR_LIGHTS > 0
 {
-	float up = tUp( vWPos.y ), seen = wLight.y * mix( ${f(SKY.feet)}, 1.0, up );
+	// His stepped tower keeps the light he approved it in (HIS); every other building is lit from a shaded foot to a
+	// lit top (SHADE), by how far up itself a place is, and the night's light from the visitor's side is shut out
+	// where a nearer building stands before it (FRONT).
+	float up = tUp( vWPos.y ), his = HIS;
+	float seen = wLight.y * mix( 1.0, mix( ${f(SKY.feet)}, 1.0, up ), his );
 	vec3 mw = ( viewMatrix * vec4( tMoonward, 0.0 ) ).xyz;
-	float turned = mix( ${f(SKY.wrap)}, 1.0, clamp( 0.5 + 0.5 * dot( normal, mw ), 0.0, 1.0 ) );
-	irradiance += directionalLights[ 0 ].color * ( ${f(SKY.power)} * seen * turned * SKY_KEEP );
-	iblIrradiance *= mix( 1.0 - ${f(SKY.fill)}, 1.0, seen );
+	float turned = mix( mix( ${f(SHADE.wrap)}, ${f(SKY.wrap)}, his ), 1.0, clamp( 0.5 + 0.5 * dot( normal, mw ), 0.0, 1.0 ) );
+	irradiance += directionalLights[ 0 ].color * ( mix( ${f(SHADE.power)}, ${f(SKY.power)}, his ) * seen * turned * SKY_KEEP );
+	iblIrradiance *= mix( 1.0 - ${f(SKY.fill)}, 1.0, seen ) * mix( mix( ${f(FRONT.keep)}, 1.0, wLight.x ) * ${f(SHADE.night)}, 1.0, his );
 }
 #endif`;
 
@@ -204,7 +252,7 @@ function stone(): THREE.MeshStandardMaterial {
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute vec2 kind;\nvarying vec2 vKind;\nvarying vec3 vWPos;\nvarying vec3 vWNorm;\nvarying vec2 vFoot;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvKind = kind;\nvWPos = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;\nvWNorm = mat3( modelMatrix ) * objectNormal;\nvFoot = vec2( aLight.w, aBounce.w );');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>\nvarying vec2 vKind;\nvarying vec3 vWPos;\nvarying vec3 vWNorm;\nvarying vec2 vFoot;\nvec2 sFinish;\nfloat tRimOn;\nfloat tRimFade;\nvec3 tRimLight;${COMMON}`)
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>\nvarying vec2 vKind;\nvarying vec3 vWPos;\nvarying vec3 vWNorm;\nvarying vec2 vFoot;\nvec2 sFinish;\nfloat tRimOn;\nfloat tRimFade;\nvec3 tRimLight;\n#define HIS ( vKind.y < ${f(0.5 / (STONES.length - 1))} ? 1.0 : 0.0 )${COMMON}`)
       .replace('#include <lights_physical_pars_fragment>', `#include <lights_physical_pars_fragment>${RIM_DIRECT}`)
       .replace('#include <color_fragment>', `#include <color_fragment>
 tRimOn = 1.0;
@@ -219,12 +267,21 @@ tRimLight = vec3( 0.0 );
 	vec2 grain = abs( wn.y ) > 0.7 ? wp.xz : vec2( dot( wp.xz, tw ), wp.y );
 	float lay = step( 0.5, vKind.x ), vary = clamp( ( vKind.x - 0.5 * lay ) / 0.49, 0.0, 1.0 );
 	float course = lay > 0.5 ? mix( ${f(STONE.channel[0])}, ${f(STONE.channel[1])}, vary ) : mix( ${f(STONE.course[0])}, ${f(STONE.course[1])}, vary );
-	float block = course * mix( ${f(STONE.block[0])}, ${f(STONE.block[1])}, fract( vary * 7.31 ) ), jw = mix( ${f(STONE.joint[0])}, ${f(STONE.joint[1])}, lay );
+	float block = course * mix( ${f(STONE.block[0])}, ${f(STONE.block[1])}, fract( vary * 7.31 ) ), jw = mix( ${f(STONE.joint[0])}, ${f(STONE.joint[1])}, lay ), jk = 1.0, jo = 1.0;
+	// Every building but his lays its stone to its floors (LAID), one of three ways: ashlar of two courses a floor,
+	// panels a floor tall, or smooth stone jointed only every few floors.
+	if ( HIS < 0.5 && lay < 0.5 ) {
+		float way = fract( vary * 3.71 ), size = mix( 0.9, 1.12, fract( vary * 11.3 ) );
+		course = way < ${f(LAID.ways[0])} ? ${f(LAID.storey * 0.5)} * size : ( way < ${f(LAID.ways[1])} ? ${f(LAID.storey)} * size : ${f(LAID.storey * LAID.smooth)} * size );
+		block = course * ( way < ${f(LAID.ways[0])} ? mix( 1.6, 2.6, fract( vary * 7.31 ) ) : mix( 1.2, 2.0, fract( vary * 7.31 ) ) );
+		jk = way < ${f(LAID.ways[0])} ? 1.0 : ( way < ${f(LAID.ways[1])} ? ${f(LAID.dark[0])} : ${f(LAID.dark[1])} );
+		jo = way < ${f(LAID.ways[1])} ? 1.0 : 0.0;
+	}
 	float up = grain.y / course, row = floor( up ), along = grain.x / block + 0.5 * mod( row, 2.0 );
 	vec2 fw = vec2( fwidth( grain.x / block ), fwidth( up ) );
 	float jh = 1.0 - tPulse( up, 0.5 * jw / course, 1.0 - 0.5 * jw / course, fw.y );
 	float jv = ( 1.0 - tPulse( along, 0.5 * jw / block, 1.0 - 0.5 * jw / block, fw.x ) ) * ( 1.0 - lay );
-	float joint = max( jh, jv );
+	float joint = max( jh, jv * jo ) * jk;
 	float far = smoothstep( 0.3, 1.0, max( fw.x, fw.y ) );
 	float tone = mix( 1.0 + ${f(STONE.differ)} * ( tHash( vec2( floor( along ), row ) + 17.0 ) - 0.5 ), 1.0, far );
 	vec2 gw = fwidth( grain );
@@ -235,14 +292,14 @@ tRimLight = vec3( 0.0 );
 	// Each building's stone is its own, a little warmer or cooler than its kind.
 	vec3 hue = vec3( 1.0 ) + ${f(STONE.hue)} * ( fract( vary * 13.7 ) - 0.5 ) * vec3( 0.6, 0.0, -1.0 );
 	sFinish = tFinish( vKind.y );
-	diffuseColor.rgb *= tStone( vKind.y ) * hue * tone * ( 1.0 - ${f(STONE.dark)} * joint * ( 1.0 - 0.6 * sFinish.x ) ) * mix( 1.0, ${f(DEPTH.far)}, vFoot.y );
+	diffuseColor.rgb *= tStone( vKind.y ) * hue * tone * ( 1.0 - ${f(STONE.dark)} * joint * ( 1.0 - 0.6 * sFinish.x ) ) * mix( 1.0, ${f(DEPTH.far)}, tBack( vWPos.z ) );
 }`).replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = sFinish.y;')
       .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = sFinish.x;')
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
 {
 	vec3 upV = ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz;
 	totalEmissiveRadiance += diffuseColor.rgb * ( 1.0 - 0.7 * sFinish.x ) * ${lin3(HOT)} * tStreet( vFoot.x * ${f(FOOT)}, dot( normal, upV ), wLight.z, vWPos.x / ${f(SCALE)} );
-}`).replace('#include <lights_fragment_end>', `iblIrradiance *= ${f(STONE.night)};\n#define SKY_KEEP ( vKind.y < ${f(0.5 / (STONES.length - 1))} ? ${f(SKY.pale)} : 1.0 )${SKY_LIGHT}\n#include <lights_fragment_end>`).replace('#include <opaque_fragment>', `outgoingLight = tPale( tCooled( outgoingLight - totalEmissiveRadiance, tCool( vKind.y ) ) + totalEmissiveRadiance + tRimLight );
+}`).replace('#include <lights_fragment_end>', `iblIrradiance *= ${f(STONE.night)};\n#define SKY_KEEP ( vKind.y < ${f(0.5 / (STONES.length - 1))} ? ${f(SKY.pale)} : 1.0 )${SKY_LIGHT}\n#include <lights_fragment_end>`).replace('#include <opaque_fragment>', `outgoingLight = tPale( tCooled( ( outgoingLight - totalEmissiveRadiance ) * tRise( vFoot.y, HIS ), tCool( vKind.y ) ) + totalEmissiveRadiance + tRimLight );
 outgoingLight = max( mix( outgoingLight, tKeep( outgoingLight ), mix( ${f(STONE.keep[0])}, ${f(STONE.keep[1])}, sFinish.x ) ), 0.0 );
 #include <opaque_fragment>`);
   };
@@ -257,8 +314,8 @@ function bay(map: THREE.Texture): THREE.MeshStandardMaterial {
     sh.uniforms.uWin = { value: map };
     sh.uniforms.uWinSize = { value: new THREE.Vector2(img.width, img.height) };
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', '#include <common>\nattribute vec4 cell;\nvarying vec4 vCell;\nvarying vec3 vWPos;\nvarying vec3 vWNorm;\nvarying vec2 vFoot;')
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvCell = cell;\nvWPos = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;\nvWNorm = mat3( modelMatrix ) * objectNormal;\nvFoot = vec2( aLight.w, aBounce.w );');
+      .replace('#include <common>', '#include <common>\nattribute vec2 cell;\nattribute vec2 cellSize;\nuniform vec2 uWinSize;\nvarying vec4 vCell;\nvarying vec3 vWPos;\nvarying vec3 vWNorm;\nvarying vec2 vFoot;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvCell = vec4( cell * uWinSize, cellSize );\nvWPos = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;\nvWNorm = mat3( modelMatrix ) * objectNormal;\nvFoot = vec2( aLight.w, aBounce.w );');
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
 varying vec4 vCell;
@@ -270,6 +327,7 @@ uniform vec2 uWinSize;
 float tRimOn;
 float tRimFade;
 vec3 tRimLight;
+#define HIS ${HIS_AT}
 ${COMMON}
 vec3 tTint( float w ) {
 	float t = 2.0 * w;
@@ -281,7 +339,7 @@ tRimOn = 1.0;
 tRimFade = tUp( vWPos.y );
 tRimFade = mix( ${f(SKY.rim)}, 1.0, tRimFade * tRimFade ) * mix( 0.35, 1.0, wLight.y );
 tRimLight = vec3( 0.0 );
-float bGlass = 0.0, bLit = 0.0, bCopper = 0.0, bStone = 0.0, bKeep = 0.0, bFar = 0.0, bCool = ${f(STONES[FAR.bay].cool)};
+float bGlass = 0.0, bLit = 0.0, bCopper = 0.0, bStone = 0.0, bKeep = 0.0, bFar = 0.0, bSpill = 0.0, bCool = ${f(STONES[FAR.bay].cool)};
 vec3 bEmit = vec3( 0.0 );
 vec2 bTilt = vec2( 0.0 );
 vec3 bAcross = vec3( 1.0, 0.0, 0.0 );
@@ -319,7 +377,10 @@ vec3 bAcross = vec3( 1.0, 0.0, 0.0 );
 		float own = smoothstep( ${f(FAR.tint[0])}, ${f(FAR.tint[1])}, px );
 		float level = pow( d.r, ${f(WINDOW.curve)} );
 		float blind = own * step( 0.003, d.r ) * ( tHash( id + vec2( 41.0, 23.0 ) ) < ${f(WINDOW.blinds)} ? 0.2 + 0.6 * tHash( id + vec2( 7.0, 91.0 ) ) : 0.0 );
-		vec3 tint = tTint( mix( 0.45, d.g, own ) );
+		vec3 tint = tTint( mix( ${f(ROOM.far)}, d.g, own ) );
+		// The rooms round about, a few windows each way: their light on the wall between them.
+		float about = textureGrad( uWin, ( id + 0.5 ) / uWinSize, ${f(ROOM.spill[1])} * dFdx( c ) / uWinSize, ${f(ROOM.spill[1])} * dFdy( c ) / uWinSize ).r;
+		bSpill = ${f(ROOM.spill[0])} * pow( about, ${f(WINDOW.curve)} );
 		float detail = smoothstep( ${f(FAR.detail[0])}, ${f(FAR.detail[1])}, px );
 		vec3 room = vec3( ${f(WINDOW.mean)} * mix( ${f(blindMean)}, 1.0 - ${f(WINDOW.blind)} * blind, own ) );
 		if ( detail > 0.0 ) {
@@ -349,16 +410,21 @@ vec3 bAcross = vec3( 1.0, 0.0, 0.0 );
 				near = vec3( ( 0.4 + 0.22 * slat ) * ( 0.75 + 0.35 * smoothstep( low, top, p.y ) ) * ( 1.0 - 0.5 * ( 1.0 - smoothstep( low, low + 0.07, p.y ) ) ) );
 			}
 			near *= ${f(WINDOW.near)};
+			// A room is deep amber at its back and pale only near its lamp.
+			tint = mix( tint, tTint( clamp( d.g + ${f(ROOM.lamp[0])} + ${f(ROOM.lamp[1])} * ( glow - 1.0 ), 0.0, 1.0 ) ), detail );
 			room = mix( room, near, detail );
 			vec2 lo = vec2( fSide, fSill ), hi = cs - vec2( fSide, fHead );
 			float bev = ${f(BAY.bevel)};
 			float inY = step( lo.y - bev, p.y ) * step( p.y, hi.y + bev ), inX = step( lo.x - bev, p.x ) * step( p.x, hi.x + bev );
-			bTilt.x = detail * inY * 0.7 * ( step( lo.x - bev, p.x ) * step( p.x, lo.x ) - step( hi.x, p.x ) * step( p.x, hi.x + bev ) );
-			bTilt.y = detail * inX * 0.7 * ( step( lo.y - bev, p.y ) * step( p.y, lo.y ) - step( hi.y, p.y ) * step( p.y, hi.y + bev ) );
-			bLit = ( 1.0 - bGlass ) * detail * inX * step( lo.y - ${f(WINDOW.sill)}, p.y ) * step( p.y, lo.y );
+			// The frame's bevel and the lit sill are a sliver of a unit: drawn under a pixel and a half they flickered as
+			// pale U and Y shapes round the dark panes, so they come in only once they are wider than that.
+			float sliver = smoothstep( 1.5, 3.0, ${f(BAY.bevel)} / max( length( fwidth( vWPos ) ) / ${f(SCALE)}, 1e-5 ) );
+			bTilt.x = sliver * detail * inY * 0.7 * ( step( lo.x - bev, p.x ) * step( p.x, lo.x ) - step( hi.x, p.x ) * step( p.x, hi.x + bev ) );
+			bTilt.y = sliver * detail * inX * 0.7 * ( step( lo.y - bev, p.y ) * step( p.y, lo.y ) - step( hi.y, p.y ) * step( p.y, hi.y + bev ) );
+			bLit = ( 1.0 - bGlass ) * detail * smoothstep( 1.5, 3.0, ${f(WINDOW.sill)} / max( length( fwidth( vWPos ) ) / ${f(SCALE)}, 1e-5 ) ) * inX * step( lo.y - ${f(WINDOW.sill)}, p.y ) * step( p.y, lo.y );
 			bEmit += bLit * 0.4 * tint * level * ${f(WINDOW.gain)};
 		}
-		bEmit += bGlass * ${f(WINDOW.gain)} * level * tint * room;
+		bEmit += bGlass * ${f(WINDOW.gain)} * level * tint * room * mix( 1.0, ${f(FAR.boost)}, bFar );
 		vec3 wall = bStone > 0.5 ? diffuseColor.rgb : farWall;
 		diffuseColor.rgb = mix( diffuseColor.rgb, wall * ( 1.0 - ${f(FAR.grid)} * bGlass ), bFar );
 		bGlass *= 1.0 - bFar;
@@ -383,8 +449,8 @@ vec3 bAcross = vec3( 1.0, 0.0, 0.0 );
 		diffuseColor.rgb *= ( 1.0 - ${f(SHEET.dark)} * seam ) * mix( 1.0, 1.0 - ${f(SHEET.weather)} + 2.0 * ${f(SHEET.weather)} * streak, wall );
 	}
 	tRimOn = 1.0 - bGlass;
-	diffuseColor.rgb = mix( diffuseColor.rgb, vec3( 0.0 ), bGlass ) * mix( 1.0, ${f(DEPTH.far)}, vFoot.y );
-	bEmit = max( bEmit, vec3( 0.0 ) ) * mix( 1.0, ${f(DEPTH.lights)}, vFoot.y );
+	diffuseColor.rgb = mix( diffuseColor.rgb, vec3( 0.0 ), bGlass ) * mix( 1.0, ${f(DEPTH.far)}, tBack( vWPos.z ) );
+	bEmit = max( bEmit, vec3( 0.0 ) ) * mix( 1.0, ${f(DEPTH.lights)}, tBack( vWPos.z ) );
 }`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\nroughnessFactor = mix( mix( mix( roughnessFactor, ${f(STONE.rough)}, max( bStone, bFar ) ), ${f(BAY.copper)}, bCopper ), ${f(BAY.glass)}, bGlass );`)
       .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = mix( mix( mix( metalnessFactor, 0.0, max( bStone, bFar ) ), 1.0, bCopper ), 0.0, bGlass );')
@@ -403,11 +469,11 @@ if ( abs( bTilt.x ) + abs( bTilt.y ) > 0.0 ) {
 {
 	vec3 upV = ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz;
 	float matte = max( bStone, bFar ) + ( 1.0 - max( bStone, bFar ) ) * 0.25 * ( 1.0 - bGlass );
-	totalEmissiveRadiance += bEmit + diffuseColor.rgb * matte * ${lin3(HOT)} * tStreet( vFoot.x * ${f(FOOT)}, dot( normal, upV ), wLight.z, vWPos.x / ${f(SCALE)} );
+	totalEmissiveRadiance += bEmit + diffuseColor.rgb * ( 1.0 - bGlass ) * ${lin3(HOT)} * bSpill + diffuseColor.rgb * matte * ${lin3(HOT)} * tStreet( vFoot.x * ${f(FOOT)}, dot( normal, upV ), wLight.z, vWPos.x / ${f(SCALE)} );
 }`)
       .replace('#include <lights_fragment_end>', `iblIrradiance *= mix( 1.0, ${f(STONE.night)}, max( bStone, bFar ) );\n#define SKY_KEEP 1.0${SKY_LIGHT}\n#include <lights_fragment_end>`)
       .replace('#include <opaque_fragment>', `{
-	outgoingLight = tPale( tCooled( outgoingLight - totalEmissiveRadiance, bCool * max( bStone, bFar ) ) + totalEmissiveRadiance + tRimLight );
+	outgoingLight = tPale( tCooled( ( outgoingLight - totalEmissiveRadiance ) * tRise( vFoot.y, HIS ), bCool * max( bStone, bFar ) ) + totalEmissiveRadiance + tRimLight );
 	float lamp = clamp( dot( bEmit, vec3( 1.0 ) ) / max( dot( outgoingLight, vec3( 1.0 ) ), 1e-5 ), 0.0, 1.0 );
 	outgoingLight = max( mix( outgoingLight, tKeep( outgoingLight ), max( max( max( max( bGlass, bLit ), bCopper ), bKeep ), lamp ) ), 0.0 );
 }
@@ -448,7 +514,11 @@ void goldReed( const in vec3 n, out vec3 nl, out vec3 nr, out vec3 share ) {
 	nr = n * ca - across * sa;
 	float x = vFlute.x / max( vFlute.z, 1e-4 ), fw = max( fwidth( x ), 1e-5 );
 	float l = tPulse( x, ${f(a)}, 0.5, fw ), r = tPulse( x, 0.5, ${f(1 - a)}, fw );
-	share = vec3( 1.0 - l - r, l, r );
+	// A face seen near edge on packs its reeds closer than the filter can follow along a slant, and they hatched: there
+	// the reeds give way to their average.
+	vec3 eye = - vViewPosition / max( length( vViewPosition ), 1e-5 );
+	float clear = smoothstep( 0.12, 0.38, abs( dot( n, eye ) ) );
+	share = mix( vec3( ${f(2 * a)}, ${f(0.5 - a)}, ${f(0.5 - a)} ), vec3( 1.0 - l - r, l, r ), clear );
 }
 // A highlight of a point light on a face: GGX, every division guarded.
 float goldSpot( const in vec3 n, const in vec3 l, const in vec3 v, const in float rough ) {

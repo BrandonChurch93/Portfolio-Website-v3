@@ -12,7 +12,7 @@ export const WINDOW = {
   deep: 2.4,
   // The radiance of the brightest room, and the share of that its glass shows on average, for the far view and the
   // baker.
-  gain: 4,
+  gain: 2.9,
   mean: 0.6,
   // How far a blind dims what is behind it.
   blind: 0.5,
@@ -21,7 +21,7 @@ export const WINDOW = {
   reveal: 0.16,
   slat: 0.11,
   sill: 0.1,
-  near: 1.45,
+  near: 1.15,
   // The colors a room is lit in, from the warmest to the palest, as names in the palette.
   colors: ['flame', 'hot', 'pale'] as const,
   // A room's level is stored as level ** (1 / curve), and lights by level.
@@ -37,6 +37,12 @@ export const WINDOW = {
   style: 100,
 } as const;
 
+// The night's soft light from the visitor's side (NIGHT.front in ../../night.ts, which this file cannot import),
+// taken lower than it lies there, since most of what reaches a wall comes from near the horizon, and how much of it a place sees past the other buildings, baked (`open` in scripts/world/parts/towers/make.mjs)
+// over a cone `cone` degrees wide in `rays` rays: so the feet of the back rows, the canyons between buildings and
+// the lower floors behind a nearer building fall dark, keeping `keep` of it, while the tops stand in it.
+export const FRONT = { toward: [-0.1, 0.22, 1], cone: 28, rays: 14, keep: 0.3 } as const;
+
 // The towers' stones, a building's tone (0 to 1) picking one in sevenths: what each multiplies the pale stone's
 // color by in linear light, how metallic and how rough it is, and how much of the stage's white balance the light it
 // reflects is seen through (cool). The first is his stepped tower's limestone, which he approved as a pale near
@@ -45,7 +51,7 @@ export const WINDOW = {
 // a cladding of bronze, and a near black polished stone. Gold is told from them by its light, not its hue. Here so
 // the baker lights each as it is drawn.
 export const STONES = [
-  { tint: [1, 1, 1], metal: 0, rough: 0.82, cool: 1.2 },
+  { tint: [1.045, 1.03, 1.005], metal: 0, rough: 0.82, cool: 1.2 },
   { tint: [0.738, 0.421, 0.212], metal: 0, rough: 0.86, cool: 0 },
   { tint: [0.598, 0.293, 0.131], metal: 0, rough: 0.85, cool: 0 },
   { tint: [0.406, 0.190, 0.096], metal: 0, rough: 0.84, cool: 0 },

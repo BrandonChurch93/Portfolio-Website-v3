@@ -29,9 +29,11 @@ const stone = (b, extra = {}) => ({ tone: b.tone, vary: b.vary, lay: b.lay ?? 0,
 // vertices as the light baked on it needs (one every few windows).
 export function windows(b, f, s0, s1, t0, t1, back, cw, ch, o = {}) {
   const cols = Math.max(1, Math.round((s1 - s0) / cw)), rows = Math.max(1, Math.round((t1 - t0) / ch));
-  const at = b.win.take(cols, rows, b.mood + s0 * 0.37 + t0 * 0.011, o.busy ?? b.busy, true, { build: b.mood, y0: t0, ch: (t1 - t0) / rows });
+  // The face, known by where it stands and which way it looks, so every field of it shares its tenants.
+  const face = (Math.round(f.N[0] * 3 + 5) * 7 + Math.round(f.N[2] * 3 + 5)) * 101 + (Math.round(f.o[0] * 4 + f.o[2] * 7) & 1023);
+  const at = b.win.take(cols, rows, b.mood + s0 * 0.37 + t0 * 0.011, o.busy ?? b.busy, true, { build: b.mood, y0: t0, ch: (t1 - t0) / rows, u0: s0, cw: (s1 - s0) / cols, face });
   const tag = { o: on(f, s0, 0, back), T: f.T, y0: t0, c0: at.c0, r0: at.r0, cw: (s1 - s0) / cols, ch: (t1 - t0) / rows, stone: o.stone, tone: b.tone };
-  const every = o.every ?? (b.draft ? 6 : 3);
+  const every = o.every ?? (b.draft ? 6 : 4);
   b.kit.patch('bay', on(f, s0, t0, back), on(f, s1, t0, back), on(f, s1, t1, back), on(f, s0, t1, back), { nu: Math.max(1, Math.ceil(cols / every)), nv: Math.max(1, Math.ceil(rows / (every + 1))), want: f.N, tag });
 }
 
