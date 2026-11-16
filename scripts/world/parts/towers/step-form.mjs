@@ -29,6 +29,9 @@ const S = {
   urn: { at: 1.9 },
   tiers: [[31.0, 29.0, 126.0, 137.2], [26.0, 24.4, 137.2, 146.4], [21.0, 19.8, 146.4, 154.0], [16.0, 15.2, 154.0, 160.4], [11.4, 10.8, 160.4, 166.0]],
   lantern: { w: 6.0, plinth: [166.0, 166.7], body: [166.7, 168.3], point: [168.3, TALL] },
+  // How busy the tower is, and its own number, so its floors are lit whole across its four bays.
+  busy: 0.62,
+  build: 13.7,
   // How wide a flute of the crown is, about: each panel holds a whole number of them.
   reed: 1.3,
   // How far each tier of the crown leans back, in degrees, so that its flutes look up toward the moon.
@@ -86,7 +89,7 @@ export function stepTower(kit, win, draft) {
     ];
     const c = { ...S.cell, h: (s.y1 - s.y0 - S.cell.band) / S.cell.rows }, cols = Math.round((2 * b) / c.w), y0 = s.y0 + c.band, rows = c.rows;
     faces.forEach((f, i) => {
-      const at = win.take(cols, rows, i);
+      const at = win.take(cols, rows, i, S.busy, true, { build: S.build, y0, ch: c.h });
       kit.patch('bay', on(f, 0, s.y0), on(f, 2 * b, s.y0), on(f, 2 * b, y0), on(f, 0, y0), { nu: cols, nv: 1, want: f.N, tag: PLAIN });
       const g = S.grille, w0 = y0 + g.foot * c.h, w1 = y0 + (rows - g.head) * c.h, slot = (y, h) => ({ o: f.o, T: f.T, y0: y, door: g.slot, ch: h });
       kit.patch('bay', on(f, 0, y0), on(f, 2 * b, y0), on(f, 2 * b, w0), on(f, 0, w0), { nu: cols, nv: g.foot, want: f.N, tag: slot(y0, w0 - y0) });

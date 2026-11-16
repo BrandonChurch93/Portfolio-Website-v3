@@ -46,4 +46,4 @@ export const CROWN = { clear: 0.17 } as const;
 // so the belt sits dark at its foot, and darkest round the trunk's foot. How far it starts behind the trunk and how
 // far it reaches past it, and how wide it is to each side, in crown units. Each tree's card is cut short where the
 // land ends.
-export const SHADE = { back: 1.2, reach: 2.6, wide: 1.25, up: 0.04 } as const;
+export const SHADE = { back: 1.8, reach: 2.6, wide: 1.8, up: 0.04 } as const;

@@ -81,11 +81,14 @@ void main() {
 	float churn = uTime * GRAIN_CHURN, drift = uTime * GRAIN_DRIFT;
 	// Close up the middle sizes and the broad drift give way, so what is seen is the fine grain, crisp and even.
 	float near = 1.0 - smoothstep( 0.45, 0.9, fp ), salty = smoothstep( GRAN_FAR, GRAN_NEAR, fp );
-	float v = coreFine( q, fp, churn, 7u );
-	v += GRAIN_MID * ( 1.0 - 0.75 * near ) * coreNoise( q / GRAIN_MIDWAVE + vec3( churn * 0.3 ), 41u ) * coreKeep( GRAIN_MIDWAVE, fp );
+	// On a sharp screen at the page's size the grain is as coarse as on a plain one, as the picture's is: finer, the
+	// face read grainier than the picture. Close up the granules take over.
+	float fg = max( fp, GRAIN_FLOOR * smoothstep( GRAN_NEAR, GRAN_FAR, fp ) );
+	float v = coreFine( q, fg, churn, 7u );
+	v += GRAIN_MID * ( 1.0 - 0.75 * near ) * coreNoise( q / GRAIN_MIDWAVE + vec3( churn * 0.3 ), 41u ) * coreKeep( GRAIN_MIDWAVE, fg );
 	v += MOTTLE * ( 1.0 - 0.6 * near ) * ( 0.65 * coreNoise( q / MOTTLE_WAVE + vec3( drift, 0.0, - drift ), 73u ) + 0.35 * coreNoise( q / ( 0.45 * MOTTLE_WAVE ) - vec3( 0.0, drift, 0.0 ), 79u ) );
 	// Each grain's own warmth, apart from its brightness: some a little paler, some a little more gold.
-	float w = coreNoise( q / GRAIN_WAVE + vec3( 0.0, - churn, 0.0 ), 101u ) * coreKeep( GRAIN_WAVE, fp );
+	float w = coreNoise( q / GRAIN_WAVE + vec3( 0.0, - churn, 0.0 ), 101u ) * coreKeep( GRAIN_WAVE, fg );
 	// Close up the grain is granules, each lit from its heart, once they span a few pixels.
 	float near2 = smoothstep( GRAN_FAR, GRAN_NEAR, fp );
 	if ( near2 > 0.0 ) {
@@ -154,8 +157,9 @@ float coreRand( float n, float k ) { return fract( sin( n * 91.37 + k * 47.13 + 
 void main() {
 	float T = aMove.x, c = ( uTime + aMove.y ) / T, n = floor( c ), f = ( c - n ) * T;
 	float drift = T - SHARD_DROP - SHARD_REST;
-	// Where this coming starts: which side, how far round from straight down, how far out, how far toward the eye.
-	float side = coreRand( n, 1.0 ) < 0.5 ? - 1.0 : 1.0;
+	// Where this coming starts: which side, the other from the time before, how far round from straight down, how far
+	// out, how far toward the eye.
+	float side = mod( n + aMove.w, 2.0 ) < 1.0 ? - 1.0 : 1.0;
 	float th0 = radians( mix( SHARD_FROM.x, SHARD_FROM.y, coreRand( n, 2.0 ) ) ), r0 = mix( SHARD_OUT.x, SHARD_OUT.y, coreRand( n, 3.0 ) ) * uR;
 	float z0 = mix( SHARD_TOWARD.x, SHARD_TOWARD.y, coreRand( n, 4.0 ) ) * uR;
 	// Drawn in: slow at first, faster as it nears the foot.
@@ -164,8 +168,8 @@ void main() {
 	vec3 p = vec3( side * sin( th ) * r, - cos( th ) * r, z );
 	// Taken by the beam and carried down it.
 	float g = clamp( ( f - drift ) / SHARD_DROP, 0.0, 1.0 ), down = SHARD_SINK * g * g;
-	p += vec3( - p.x * 0.55 * smoothstep( 0.0, 0.6, g ), - down, 0.0 );
-	float grow = smoothstep( 0.0, SHARD_GATHER, f ) * ( 1.0 - smoothstep( 0.45, 1.0, g ) ) * step( f, drift + SHARD_DROP );
+	p += vec3( - p.x * 0.75 * smoothstep( 0.0, 0.5, g ), - down, 0.0 );
+	float grow = smoothstep( 0.0, SHARD_GATHER, f ) * ( 1.0 - 0.6 * smoothstep( 0.5, 0.85, g ) - 0.4 * smoothstep( 0.85, 1.0, g ) ) * step( f, drift + SHARD_DROP );
 	vNear = 1.0 - u;
 	float a = aSpin.w * ( uTime + 3.0 * down / SHARD_SINK ) + 6.283 * coreRand( n, 5.0 ), size = aMove.z * grow;
 	vec3 k = normalize( aSpin.xyz + vec3( coreRand( n, 6.0 ) - 0.5, coreRand( n, 7.0 ) - 0.5, 0.0 ) );

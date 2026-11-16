@@ -20,17 +20,17 @@ const C = L.CORE.at;
 
 export const BLOCKS = [
   // The ring round the core, nearest it and deepest, the brightest rock.
-  { name: 'ring-left', kind: 'plate', slabs: [61, 67, 77, 65, 69], z: 70, lean: 1.3, thick: 46, breaks: 1 },
+  { name: 'ring-left', kind: 'plate', slabs: [61, 67, 77, 65, 69], z: 55, lean: 1.3, thick: 46, breaks: 2 },
   { name: 'back-left', kind: 'plate', slabs: [25, 32], z: 20, lean: 1.1, thick: 60, breaks: 3 },
-  { name: 'back-top', kind: 'plate', slabs: [38, 34, 11, 13], z: -10, lean: 0.9, thick: 60, breaks: 1 },
+  { name: 'back-top', kind: 'plate', slabs: [38, 34, 11, 13], z: -10, lean: 0.5, thick: 60, breaks: 1 },
   { name: 'back-mid', kind: 'plate', slabs: [57], z: -30, lean: 0.6, thick: 60, breaks: 0 },
-  { name: 'back-right', kind: 'plate', slabs: [56, 35, 36, 27, 41], z: 35, lean: 1.1, thick: 56, breaks: 2 },
+  { name: 'back-right', kind: 'plate', slabs: [56, 35, 36, 27, 41], z: 35, lean: 1.1, thick: 56, breaks: 3 },
   // The great plates each side, further out and nearer the visitor.
-  { name: 'right-1', kind: 'plate', slabs: [43, 86, 87], z: 105, lean: 0.9, thick: 62, breaks: 3 },
-  { name: 'right-2', kind: 'plate', slabs: [37, 28, 23], z: 205, lean: 1.4, thick: 48, breaks: 1 },
-  { name: 'left-2', kind: 'plate', slabs: [26, 24], z: 150, lean: 1.3, thick: 52, breaks: 2 },
-  { name: 'left-1', kind: 'plate', slabs: [60, 49, 54, 46, 75, 83, 85], z: 205, lean: 1.8, thick: 66, breaks: 3 },
-  { name: 'left-low', kind: 'plate', slabs: [88, 95, 97, 99], z: 270, lean: 0.9, thick: 58, breaks: 1 },
+  { name: 'right-1', kind: 'plate', slabs: [43, 86, 87], z: 105, lean: 1.15, thick: 62, breaks: 3 },
+  { name: 'right-2', kind: 'plate', slabs: [37, 28, 23], z: 205, lean: 2.0, thick: 48, breaks: 1 },
+  { name: 'left-2', kind: 'plate', slabs: [26], z: 115, lean: 2.0, thick: 52, breaks: 3 },
+  { name: 'left-1', kind: 'plate', slabs: [60, 49, 54, 46, 75, 83, 85], z: 245, lean: 1.4, thick: 66, breaks: 3 },
+  { name: 'left-low', kind: 'plate', slabs: [88, 95, 97, 99], z: 300, lean: 1.5, thick: 58, breaks: 1 },
   // Recesses turned from the core, lit only by what bounces.
   { name: 'shade-left', kind: 'shade', slabs: [47], z: 120, out: 0.9, thick: 40, breaks: 0 },
   { name: 'shade-right', kind: 'shade', slabs: [22], z: 120, out: 0.9, thick: 40, breaks: 0 },
@@ -43,12 +43,11 @@ export const BLOCKS = [
   // The roof: the land's broken lip, its top turned up to the moon; a dark lid of great slabs hanging under it in
   // front of the core; and lit pieces hanging behind the lid's lower edge, turned to the core. z is how far behind
   // the land's front edge the face is.
-  { name: 'lip', kind: 'roof', slabs: [0, 2, 4, 7, 20, 10], back: 4, up: 1.6, turn: [0.6, 0, 0], thick: 40, breaks: 2 },
+  { name: 'lip', kind: 'roof', slabs: [0, 2, 4, 7, 20, 10, 19, 31, 24], back: -10, up: 1.6, turn: [0.6, 0, 0], thick: 40, breaks: 2 },
   { name: 'lid-left', kind: 'roof', slabs: [21, 30, 14, 29], back: 14, down: 0.42, thick: 120, breaks: 1 },
   { name: 'lid-mid', kind: 'roof', slabs: [8, 5, 15], back: 12, down: 0.48, thick: 120, breaks: 1 },
   { name: 'lid-right', kind: 'roof', slabs: [3], back: 12, down: 0.45, thick: 120, breaks: 2 },
-  { name: 'hang-left', kind: 'plate', slabs: [19, 31, 24], back: 55, lean: 0.8, thick: 40, breaks: 0 },
-  { name: 'hang-right', kind: 'plate', slabs: [6, 12, 18], back: 60, lean: 0.8, thick: 44, breaks: 1 },
+  { name: 'hang-right', kind: 'plate', slabs: [6, 12, 18], back: 70, lean: 1.4, thick: 44, breaks: 1 },
   // The frame: heavy masses standing forward at each side, near black, with voids between them.
   { name: 'frame-left-top', kind: 'frame', slabs: [42, 50, 44], z: 0, out: 0.42, thick: 130, breaks: 1 },
   { name: 'frame-left-edge', kind: 'frame', slabs: [64, 63, 74, 79, 62, 82], z: 0, out: 0.5, thick: 130, breaks: 1 },

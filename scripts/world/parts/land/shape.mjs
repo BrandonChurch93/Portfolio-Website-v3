@@ -16,9 +16,13 @@ export const footprint = (t, x, z) => {
   const dx = x - t.x, dz = z - t.z, u = dx * t.c - dz * t.s, v = dx * t.s + dz * t.c;
   return Math.hypot(Math.max(0, Math.abs(u) - t.w / 2), Math.max(0, Math.abs(v) - t.d / 2));
 };
-const sandy = T.filter((t) => L.desert(t.x, t.z) > 0.001);
+// The pale dune at the back right of the desert, behind the line of trees, is sand the plan's desert does not reach:
+// where it lies and how far it spreads each way.
+const BACK = { at: [485, -340], r: [118, 112] };
+const sands = (x, z) => Math.max(L.desert(x, z), L.ramp(0, 0.18, 1 - Math.hypot((x - BACK.at[0]) / BACK.r[0], (z - BACK.at[1]) / BACK.r[1]) + 0.1 * (L.noise(x / 60, 2, z / 60, 17) - 0.5)));
+const sandy = T.filter((t) => sands(t.x, t.z) > 0.001);
 export function desert(x, z) {
-  let k = L.desert(x, z);
+  let k = sands(x, z);
   if (k <= 0) return 0;
   for (const t of sandy) { const f = footprint(t, x, z); if (f < CLEAR[1]) k *= L.ramp(CLEAR[0], CLEAR[1], f); }
   return k;

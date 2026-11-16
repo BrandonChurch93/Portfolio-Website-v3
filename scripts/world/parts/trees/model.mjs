@@ -19,30 +19,33 @@ const FULL = { crossed: 2, sprays: [3, 1] }, LEAN = { crossed: 1, sprays: [1, 0]
 // great lumps and small ones), its cards, and its trunk (how thick at the foot, how many sides, how many limbs
 // and roots).
 const KINDS = {
-  round: { crowns: [{ at: [0, 0, 0], rx: 1, ry: 0.92, great: 4, small: 3 }], cards: FULL, trunk: { foot: 0.11, sides: 7, limbs: 3, roots: 5 } },
-  tall: { crowns: [{ at: [0, 0, 0], rx: 0.82, ry: 1.12, great: 4, small: 3 }], cards: FULL, trunk: { foot: 0.1, sides: 7, limbs: 3, roots: 4 } },
+  round: { crowns: [{ at: [0, 0, 0], rx: 1, ry: 0.92, great: 4, small: 2 }], cards: FULL, trunk: { foot: 0.1, sides: 7, limbs: 3 } },
+  tall: { crowns: [{ at: [0, 0, 0], rx: 0.8, ry: 1.16, great: 4, small: 2 }], cards: FULL, trunk: { foot: 0.09, sides: 7, limbs: 3 } },
   twin: {
     crowns: [
-      { at: [-0.42, -0.04, 0.08], rx: 0.66, ry: 0.78, great: 3, small: 2 },
-      { at: [0.44, 0.1, -0.08], rx: 0.6, ry: 0.84, great: 3, small: 2 },
+      { at: [-0.44, -0.06, 0.08], rx: 0.66, ry: 0.78, great: 3, small: 1 },
+      { at: [0.46, 0.1, -0.08], rx: 0.6, ry: 0.86, great: 3, small: 1 },
     ],
     cards: FULL,
-    trunk: { foot: 0.08, sides: 6, limbs: 2, roots: 3 },
+    trunk: { foot: 0.075, sides: 6, limbs: 2 },
   },
-  broad: { crowns: [{ at: [0, -0.06, 0], rx: 1.12, ry: 0.74, great: 4, small: 3 }], cards: FULL, trunk: { foot: 0.12, sides: 7, limbs: 3, roots: 5 } },
-  far: { crowns: [{ at: [0, 0, 0], rx: 1, ry: 0.9, great: 3, small: 2 }], cards: LEAN, clear: 0.06, trunk: { foot: 0.1, sides: 5, limbs: 0, roots: 0 } },
+  broad: { crowns: [{ at: [0, -0.06, 0], rx: 1.14, ry: 0.74, great: 5, small: 2 }], cards: FULL, trunk: { foot: 0.11, sides: 7, limbs: 3 } },
+  far: { crowns: [{ at: [0, 0, 0], rx: 1, ry: 0.9, great: 3, small: 1 }], cards: LEAN, clear: 0.06, trunk: { foot: 0.1, sides: 5, limbs: 0 } },
 };
 // The lumps of a crown, against its half widths: how big a great one is and a small one, how far out from the
 // crown's middle each stands, and how high the top one stands.
-const LUMP = { great: [0.5, 0.62], small: [0.28, 0.38], out: [0.46, 0.74], top: 0.46, heart: 0.5 };
+const LUMP = { great: [0.42, 0.54], small: [0.24, 0.32], out: [0.5, 0.84], top: 0.5, heart: 0.44 };
 // The trunk: how much wider it flares at its foot and over what height, how much thinner it is at the fork, how far
 // it is sunk, the fork's height under its crown's middle against the crown's half height, the limbs' thickness at
 // the fork and at their ends, and the roots' reach, thickness and how high on the trunk they leave it.
-const TRUNK = { flare: 0.42, rise: 0.05, taper: 0.5, sunk: 0.2, at: 0.4, limb: [0.045, 0.016], root: { reach: 0.2, thick: 0.42, from: 0.05, dip: 0.07 } };
+const TRUNK = { flare: 0.5, rise: 0.05, taper: 0.5, sunk: 0.2, at: 0.4, limb: [0.045, 0.016] };
+// The roots: the foot of the trunk spreads in lobes that run out and down into the ground (no roots of their own):
+// how many lobes, how far each stands out at the ground against the trunk's foot, and how fast it goes up the trunk.
+const ROOTS = { lobes: [3, 5], out: 0.9, rise: 0.035 };
 // How the trunk leans and bows: how far its fork stands off its foot to one side, at most, and how far its middle
 // bows out of the straight line, against the fork's height. The limbs that leave it low, under the crown, and how
 // far up the bare trunk they leave it.
-const BOLE = { lean: 0.09, bow: 0.05, low: 2, from: 0.75 };
+const BOLE = { lean: 0.09, bow: 0.05 };
 // How much a lump of leaf lets through when a ray crosses it whole, how much the ground lets through, and how open
 // the most shut in place still is. How wide the cone of sky above a place is, in radians.
 const OCCLUDE = { clump: 0.1, ground: 0.14, floor: 0.06, cone: 0.6 };
@@ -113,7 +116,7 @@ function lump(B, L, out, K, rnd, ci, crown) {
 }
 
 // A tube along a path of points, each with its radius, wearing bark. Its rings are a little out of round.
-function tube(B, path, radii, sides, rnd) {
+function tube(B, path, radii, sides, rnd, shape = () => 1) {
   const t = tileAt(TILES.bark), rings = [];
   let len = 0;
   for (let i = 0; i < path.length; i++) {
@@ -121,7 +124,7 @@ function tube(B, path, radii, sides, rnd) {
     const dir = unit(sub(path[Math.min(i + 1, path.length - 1)], path[Math.max(i - 1, 0)])), u = anyPerp(dir), w = cross(dir, u), ring = [];
     const lump = [rnd() * 6.28, 0.05 + 0.07 * rnd()];
     for (let s = 0; s <= sides; s++) {
-      const a = (s / sides) * Math.PI * 2, n = add(mul(u, Math.cos(a)), mul(w, Math.sin(a))), r = radii[i] * (1 + lump[1] * Math.sin(2 * a + lump[0]));
+      const a = (s / sides) * Math.PI * 2, n = add(mul(u, Math.cos(a)), mul(w, Math.sin(a))), r = radii[i] * (1 + lump[1] * Math.sin(2 * a + lump[0])) * shape(i, a);
       ring.push(B.vert(add(path[i], mul(n, r)), n, [t.u - t.du * 0.95 + (s / sides) * t.du * 1.9, t.v - t.dv * 0.95 + ((len * 1.5) % 1) * t.dv * 1.9], 0, -1));
     }
     rings.push(ring);
@@ -143,7 +146,7 @@ export function tree(kind, { rays = 96 } = {}) {
     const rx = S.rx, ry = S.ry, ring = S.great - 1;
     own.push({ at: [C[0] + (rnd() - 0.5) * 0.15 * rx, C[1] + LUMP.top * ry, C[2] + (rnd() - 0.5) * 0.15 * rx], r: rx * (LUMP.great[1] - 0.04 * rnd()), great: true });
     for (let i = 0; i < ring; i++) {
-      const a = ph + (i / ring) * Math.PI * 2 + (rnd() - 0.5) * 0.7, d = rx * (LUMP.out[0] + 0.06 * rnd()), y = ry * (-0.12 + 0.28 * rnd());
+      const a = ph + (i / ring) * Math.PI * 2 + (rnd() - 0.5) * 0.7, d = rx * (LUMP.out[0] + 0.1 * rnd()), y = ry * (-0.22 + 0.4 * rnd());
       own.push({ at: [C[0] + Math.cos(a) * d, C[1] + y, C[2] + Math.sin(a) * d], r: rx * (LUMP.great[0] + (LUMP.great[1] - LUMP.great[0]) * rnd()), great: true });
     }
     for (let i = 0; i < S.small; i++) {
@@ -173,34 +176,21 @@ export function tree(kind, { rays = 96 } = {}) {
     const fork = [cr.C[0] * 0.7 + lean[0], forkY, cr.C[2] * 0.7 + lean[2]];
     const foot = crowns.length > 1 ? add(base, [Math.sign(cr.C[0]) * T.foot * 0.6, 0, 0]) : base;
     const ba = la + Math.PI / 2 + (rnd() - 0.5), bow = [Math.cos(ba) * BOLE.bow * forkY, 0, Math.sin(ba) * BOLE.bow * forkY];
-    const hs = [-TRUNK.sunk, 0, 0.012, 0.03, 0.06, 0.11, 0.2, 0.3, 0.4, 0.55, 0.7, 0.85, 1];
-    const path = [], radii = [];
+    const hs = [-TRUNK.sunk, 0, 0.025, 0.07, 0.15, 0.3, 0.5, 0.75, 1];
+    const path = [], radii = [], ys = [];
     for (const h of hs) {
       const y = h < 0 ? h : h * forkY, t = Math.max(0, y) / forkY, along = t * t * (3 - 2 * t), b = Math.sin(Math.PI * t);
       path.push([foot[0] + (fork[0] - foot[0]) * along + bow[0] * b, y, foot[2] + (fork[2] - foot[2]) * along + bow[2] * b]);
       radii.push(T.foot * (1 - TRUNK.taper * t) * (1 + TRUNK.flare * Math.exp(-Math.max(0, y) / TRUNK.rise)));
+      ys.push(y);
     }
-    tube(B, path, radii, T.sides, rnd);
-    const at = (h) => { const y = h * forkY, t = h, along = t * t * (3 - 2 * t), b = Math.sin(Math.PI * t); return [foot[0] + (fork[0] - foot[0]) * along + bow[0] * b, y, foot[2] + (fork[2] - foot[2]) * along + bow[2] * b]; };
-    // Roots: each leaves the trunk a little over the ground, runs out along it and goes down into it.
-    const R = TRUNK.root, turn = rnd() * Math.PI * 2;
-    for (let k = 0; k < T.roots; k++) {
-      const a = turn + (k / T.roots) * Math.PI * 2 + (rnd() - 0.5) * 0.9, d = [Math.cos(a), 0, Math.sin(a)], reach = R.reach * (0.6 + 0.6 * rnd()) + T.foot;
-      const h0 = R.from * (0.7 + 0.6 * rnd());
-      const pts = [add(foot, [0, h0, 0]), add(foot, add(mul(d, T.foot * 0.9), [0, h0 * 0.45, 0])), add(foot, add(mul(d, reach * 0.6), [0, 0.006, 0])), add(foot, add(mul(d, reach), [0, -R.dip * 0.45, 0])), add(foot, add(mul(d, reach * 1.15), [0, -R.dip, 0]))];
-      tube(B, pts, [R.thick * T.foot, R.thick * 0.8 * T.foot, R.thick * 0.5 * T.foot, R.thick * 0.3 * T.foot, 0.004], 5, rnd);
-    }
+    const n = ROOTS.lobes[0] + Math.floor(rnd() * (ROOTS.lobes[1] - ROOTS.lobes[0] + 1)), ph = rnd() * Math.PI * 2;
+    tube(B, path, radii, T.sides + 2, rnd, (i, a) => 1 + ROOTS.out * Math.exp(-Math.max(0, ys[i]) / ROOTS.rise) * Math.max(0, Math.cos(n * a + ph)) ** 2);
     if (!T.limbs) return;
     const greats = clumps.filter((c) => c.crown === ki && c.great).sort((a, b) => a.at[1] - b.at[1]);
     for (const c of [clumps.find((q) => q.crown === ki && q.heart), ...greats.slice(0, T.limbs - 1)]) {
       const end = lerp(fork, c.at, 0.8), mid = add(lerp(fork, end, 0.45), [0, 0.08 + 0.05 * rnd(), 0]), r0 = TRUNK.limb[0] * T.foot / 0.1;
-      tube(B, [fork, mid, end], [r0, (r0 + TRUNK.limb[1]) / 2, TRUNK.limb[1]], 5, rnd);
-    }
-    // Limbs that leave the trunk low and run out under the crown to its lowest lumps, seen in the gaps beneath it.
-    for (const c of greats.slice(0, BOLE.low)) {
-      const from = at(BOLE.from * (0.85 + 0.3 * rnd()) * Math.min(1, (K.clear ?? CROWN.clear) * 1.6 / forkY)), out = sub(c.at, from);
-      const end = add(from, add(mul(out, 0.75), [0, -c.r * 0.25, 0])), mid = add(lerp(from, end, 0.5), [0, 0.05 * rnd(), 0]), r0 = TRUNK.limb[0] * 0.8 * T.foot / 0.1;
-      tube(B, [from, mid, end], [r0, r0 * 0.65, TRUNK.limb[1]], 5, rnd);
+      tube(B, [fork, mid, end], [r0, (r0 + TRUNK.limb[1]) / 2, TRUNK.limb[1]], 4, rnd);
     }
   });
 

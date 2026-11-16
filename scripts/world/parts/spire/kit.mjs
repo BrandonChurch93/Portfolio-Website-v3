@@ -212,6 +212,8 @@ export class Kit {
         const a = P(j, i), b = P(j, i + 1), c = P(j + 1, i + 1), d = P(j + 1, i);
         let g = cross(sub(add(b, c), add(a, d)), sub(add(d, c), add(a, b)));
         if (!(Math.hypot(...g) > 1e-9)) g = [-(b[2] - a[2]), 0, b[0] - a[0]];
+        if (!(Math.hypot(...g) > 1e-9)) g = [-(c[2] - d[2]), 0, c[0] - d[0]];
+        if (!(Math.hypot(...g) > 1e-9)) g = [0, 1, 0];
         F[j].push(unit(g));
       }
     }
@@ -228,6 +230,7 @@ export class Kit {
     for (let j = 0; j < F.length; j++) for (let i = 0; i < n; i++) {
       const a = P(j, i), b = P(j, i + 1), c = P(j + 1, i + 1), d = P(j + 1, i);
       if (Math.hypot(...sub(b, a)) + Math.hypot(...sub(c, d)) < 1e-6) continue;
+      if (Math.hypot(...cross(sub(c, a), sub(d, b))) < 1e-9) continue;
       if (o.skip?.(j, i, F[j][i])) continue;
       const n00 = N(j, i, 0, false), n10 = N(j, i, 1, false), n11 = N(j, i, 1, true), n01 = N(j, i, 0, true);
       const normal = (u, v) => unit(lerp(lerp(n00, n10, u), lerp(n01, n11, u), v));

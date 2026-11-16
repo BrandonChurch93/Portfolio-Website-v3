@@ -9,10 +9,10 @@ import { shardGeometry, type Moon } from './core/shards';
 
 // The core: the planet's core and the source of the site's stream at once. A ball of the stream's light hanging free
 // in the hollow, as picture 9 has it: pale gold over its face with a fine, even, luminous grain, which close up is
-// countless tiny facets, warming to deep orange in a band just inside its hard edge and a thin brighter line of
-// orange gold at the edge itself. At its foot is the root of the beam it shoots out, which is the page's stream: the
-// same braided ribbon of light, its fibres fanning up into the ball's band. A few pieces of the planet are drawn in
-// round its lower half and carried down the beam. It gives light of its own, casts no shadow and takes none, and
+// granules, as on a star, warming to deep orange in a band just inside its hard edge and a thin brighter line of
+// orange gold at the edge itself. Its light falls toward its limb and is hottest up and to the left, so it is a ball.
+// At its foot is the neck of the beam it shoots out, broad and cream, drawing itself thin to the page's stream. A few
+// pieces of the planet are drawn in round its lower half, from both sides, and carried down the beam. It gives light of its own, casts no shadow and takes none, and
 // draws no haze or glow outside itself.
 
 type Ink = readonly [number, number, number];
@@ -83,19 +83,22 @@ const NECK = {
 // takes, in seconds, how long of that it is growing in out of the dark, how long the beam takes to carry it down and
 // how far, how long it rests unseen. Where each comes from: how far round from straight down, in degrees, how far
 // out from the ball's middle and how far toward the eye, as shares of the radius. Where it is taken by the beam: how
-// far round, how far out and toward the eye. How long they are, in units, and how fast they turn over.
+// far round, how far out and toward the eye. How long they are, in units, from the least to the greatest, which are
+// handed out evenly so that no two are near one size, and how fast they turn over. Each comes from the other side
+// of the ball from the time before, and the first of them come from both sides.
 const MOONS = {
-  count: 6, glass: 1, period: [44, 78], gather: 4, drop: 2.6, sink: 95, rest: 6,
-  from: [26, 74], out: [1.3, 1.75], toward: [0.05, 0.6], foot: [7, 1.09, 0.2],
-  long: [13, 21], turn: [0.08, 0.22],
+  count: 7, glass: 1, period: [24, 40], gather: 3, drop: 3.6, sink: 150, rest: 4,
+  from: [24, 78], out: [1.3, 1.8], toward: [0.05, 0.6], foot: [9, 1.08, 0.25],
+  long: [7, 22], turn: [0.08, 0.22],
   seed: 61,
 } as const;
 
 function moons(): Moon[] {
   const r = seeded(MOONS.seed), span = (a: readonly number[]) => a[0] + (a[1] - a[0]) * r(), out: Moon[] = [];
+  const sizes = Array.from({ length: MOONS.count }, (_, i) => MOONS.long[0] + ((MOONS.long[1] - MOONS.long[0]) * ((i * 3) % MOONS.count)) / (MOONS.count - 1));
   for (let i = 0; i < MOONS.count; i++) {
     const period = span(MOONS.period);
-    out.push({ period, start: period * ((i + 0.37 * r()) / MOONS.count), size: span(MOONS.long) / 2, seed: r() * 100, axis: [r() - 0.5, r() - 0.5, r() - 0.5], rate: span(MOONS.turn) * (r() < 0.5 ? -1 : 1), glass: i >= MOONS.count - MOONS.glass });
+    out.push({ period, start: period * ((i + 0.37 * r()) / MOONS.count), size: sizes[i] / 2, seed: i, axis: [r() - 0.5, r() - 0.5, r() - 0.5], rate: span(MOONS.turn) * (r() < 0.5 ? -1 : 1), glass: i >= MOONS.count - MOONS.glass });
   }
   return out;
 }
@@ -176,6 +179,8 @@ export const build: PartFactory = (ctx) => {
       GRAIN_STEP: '0.55',
       GRAIN_FALL: '0.6',
       GRAIN_BACK: '2.2',
+      // The finest the grain is drawn at the page's size, in units, whatever the screen.
+      GRAIN_FLOOR: '0.9',
       // A middle size under the fine grain and a broad drift under both, each turned down close up.
       GRAIN_MID: '0.3',
       GRAIN_MIDWAVE: '4.5',
@@ -203,8 +208,8 @@ export const build: PartFactory = (ctx) => {
       GRAN_HEART: '0.75',
       GRAN_HEART_R: '0.62',
       GRAN_EACH: '0.2',
-      GRAN_FAR: '0.6',
-      GRAN_NEAR: '0.25',
+      GRAN_FAR: '0.44',
+      GRAN_NEAR: '0.22',
       GRAN_GAIN: '0.75',
       GRAN_UP: '0.35',
       GRAN_WARMS: '-0.45',
@@ -214,7 +219,7 @@ export const build: PartFactory = (ctx) => {
       // screen resolves its dip, which a plain one fills in with the line beside it: there it is lifted by this much,
       // over these shares of the radius, so it shows as the picture has it.
       BAND_PX: '1.0',
-      BAND_LIFT: '0.1',
+      BAND_LIFT: '0.07',
       BAND_AT: 'vec4( 0.86, 0.9, 0.965, 0.985 )',
       // A sphere: how much its light falls toward the limb, over which shares of the radius that gives way to the
       // band, and how much the whole face is lifted to keep its mean; its hottest part, how much hotter, where, as

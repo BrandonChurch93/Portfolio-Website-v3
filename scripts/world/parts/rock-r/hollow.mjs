@@ -29,7 +29,7 @@ export const FLAKES = { each: 1 / 700, wide: [5, 15], deep: [0.18, 0.3] };
 export const BACKING = { at: -95, back: 0.32, from: 100, thick: 70 };
 // The core's clearance: nothing nearer its middle than this, in units, give or take a ragged few, and nothing in
 // front of it inside its outline.
-export const CLEAR = { r: 116, rag: 7, disc: 101 };
+export const CLEAR = { r: 116, rag: 12, disc: 101 };
 // The stream's lane: nothing nearer the visitor than this behind the stream's line, and how far the bay round it
 // widens toward the visitor for each unit nearer.
 export const LANE = { z: 128, half: 12, widen: 0.85, top: -296 };
@@ -195,7 +195,7 @@ export function bare(x, y, z) {
   // Clear of the core, and nothing in front of it.
   const cx = x - A.core.at[0], cy = y - A.core.at[1], cz = z - A.core.at[2], cr = Math.hypot(cx, cy, cz);
   if (cr < CLEAR.r + CLEAR.rag + 40) {
-    const rag = CLEAR.rag * (L.noise(cx / 22 + 4, cy / 22, cz / 22, 41) - 0.5) * 2;
+    const rag = CLEAR.rag * (L.noise(cx / 30 + 4, cy / 30, cz / 30, 41) - 0.5) * 2 + 0.4 * CLEAR.rag * (L.noise(cx / 9, cy / 9 + 2, cz / 9, 43) - 0.5) * 2;
     d = Math.max(d, CLEAR.r + rag - cr);
   }
   const rho = Math.hypot(px - A.corePx[0], py - A.corePx[1]) * UNIT;

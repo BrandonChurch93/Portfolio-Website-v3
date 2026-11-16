@@ -20,6 +20,7 @@ import { bake } from '../../lib/bake.mjs';
 import { pack } from '../../lib/pack.mjs';
 import { surface, simplify } from '../../lib/surface.mjs';
 import { creased, incident } from '../../lib/mesh.mjs';
+import { build, any } from '../../lib/bvh.mjs';
 import { ALBEDO } from '../../lib/rock.mjs';
 import { plan } from './blocks.mjs';
 import { rubble } from './rubble.mjs';
@@ -29,7 +30,9 @@ import { CORE_PX, VIEW } from './relief.mjs';
 const draft = process.argv.includes('--draft');
 const t0 = performance.now(), said = (s) => console.log(`${((performance.now() - t0) / 1000).toFixed(1)} s · ${s}`);
 // The grid the field is read on, in units; the most the reduced mesh may stray, in units; the most triangles.
-const CELL = draft ? 3 : 1.4, KEEP = 0.22, BUDGET = 290000;
+const CELL = draft ? 3 : 1.5, KEEP = 0.5, BUDGET = 290000, UNSEEN = 8;
+// How much the distance to a crease counts against the shape when the mesh is reduced.
+const EDGE_WEIGHT = 0.04;
 // Faces meeting at more than this, in degrees, meet at a crease.
 const CREASE = 38;
 // How far from a crease the stored distance reaches, in units: past it the stone's face is clean.
@@ -90,7 +93,37 @@ const edge = new Float32Array(nv);
 for (let v = 0; v < nv; v++) edge[v] = Math.min(1, dist[v] / EDGE);
 said('distances to the creases');
 
-const small = await simplify({ positions: raw.positions, indices: raw.indices }, { error: KEEP, target: BUDGET, attributes: edge, weights: [EDGE * 0.12] });
+// What the visitor can ever see: the view never moves, so a vertex is seen when the line from it toward the eye
+// meets no rock. What is never seen is reduced far more, but kept closed: it still blocks the light, for this
+// part's bake and for what broke away, whose bake reads this file.
+const bvh = build(raw.positions, raw.indices), seen = new Uint8Array(nv);
+{
+  const fn = new Float32Array(nv * 3);
+  for (let t = 0; t < I.length; t += 3) {
+    const a = I[t] * 3, b = I[t + 1] * 3, c = I[t + 2] * 3;
+    const u = [P[b] - P[a], P[b + 1] - P[a + 1], P[b + 2] - P[a + 2]], w = [P[c] - P[a], P[c + 1] - P[a + 1], P[c + 2] - P[a + 2]];
+    const n = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
+    for (const v of [a, b, c]) { fn[v] += n[0]; fn[v + 1] += n[1]; fn[v + 2] += n[2]; }
+  }
+  for (let v = 0; v < nv; v++) {
+    const p = [P[v * 3], P[v * 3 + 1], P[v * 3 + 2]], [px, py] = L.pictured(...p), q = L.fromPicture(px, py, p[2] + 10);
+    const d = [q[0] - p[0], q[1] - p[1], q[2] - p[2]], dl = Math.hypot(...d);
+    const n = [fn[v * 3], fn[v * 3 + 1], fn[v * 3 + 2]], nl = Math.hypot(...n) || 1;
+    const facing = (n[0] * d[0] + n[1] * d[1] + n[2] * d[2]) / (nl * dl);
+    if (facing < -0.05) continue;
+    const k = 0.35 / nl, o = [p[0] + n[0] * k + (d[0] / dl) * 0.35, p[1] + n[1] * k + (d[1] / dl) * 0.35, p[2] + n[2] * k + (d[2] / dl) * 0.35];
+    if (!any(bvh, o[0], o[1], o[2], d[0] / dl, d[1] / dl, d[2] / dl, 4000)) seen[v] = 1;
+  }
+}
+// The seen vertices and their neighbours are held while what is never seen is reduced.
+const hold = seen.slice();
+for (let t = 0; t < I.length; t += 3) if (seen[I[t]] || seen[I[t + 1]] || seen[I[t + 2]]) { hold[I[t]] = 1; hold[I[t + 1]] = 1; hold[I[t + 2]] = 1; }
+let shown = 0;
+for (let v = 0; v < nv; v++) shown += seen[v];
+said(`seen: ${((100 * shown) / nv).toFixed(0)}% of the vertices`);
+const hidden = await simplify({ positions: raw.positions, indices: raw.indices }, { error: UNSEEN, attributes: edge, weights: [EDGE * 0.05], lock: hold });
+said(`what is never seen reduced: ${(hidden.indices.length / 3).toLocaleString('en-US')} triangles`);
+const small = await simplify({ positions: hidden.positions, indices: hidden.indices }, { error: KEEP, target: BUDGET, attributes: hidden.attributes, weights: [EDGE * EDGE_WEIGHT] });
 said(`reduced: ${(small.indices.length / 3).toLocaleString('en-US')} triangles, strays ${small.stray}`);
 const brk = creased({ positions: small.positions, indices: small.indices }, CREASE);
 const edgeOf = new Float32Array(brk.positions.length / 3);

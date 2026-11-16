@@ -16,12 +16,12 @@ import { Windows } from './windows.mjs';
 
 const draft = process.argv.includes('--draft');
 const onlyAt = process.argv.indexOf('--only'), only = onlyAt > 0 ? new Set(process.argv[onlyAt + 1].split(',').map(Number)) : null;
-// The map of the windows, in windows square; how finely faces are cut for their baked light, in units; the stones
+// The map of the windows, in windows across and down; how finely faces are cut for their baked light, in units; the stones
 // a building may be built of, as tones (./windows.ts, TONES), and how likely each is.
-const CITY = { map: 1024, edge: draft ? 10 : 6.6, tones: [[0, 0.1], [1, 0.2], [2, 0.24], [3, 0.2], [4, 0.1], [5, 0.09], [6, 0.07]], seed: 9151 };
+const CITY = { map: [1024, 128], edge: draft ? 10 : 6.6, tones: [[0, 0.22], [1, 0.24], [2, 0.16], [3, 0.12], [4, 0.1], [5, 0.08], [6, 0.08]], seed: 9151 };
 // The named buildings' stone, as a place in STONES: the obelisk's shaft is dark, as picture 9's is, the tower left
-// of the spire and the ringed pair a warm stone.
-const TONE = { 0: 4, 2: 1, 3: 2, 4: 1, 5: 3, 9: 2, 10: 1, 11: 2 };
+// of the spire a buff stone and the ringed pair a pale one.
+const TONE = { 0: 4, 2: 1, 3: 2, 4: 1, 5: 3, 9: 0, 10: 1, 11: 2 };
 // How busy a building is, how many of its rooms are lit: most are busy and some nearly dark, so the city's light
 // comes in clumps, whole buildings blazing beside quiet ones (dark: how likely a quiet one is). The low buildings
 // at the front are all busy: the picture's lit mass.
@@ -32,7 +32,11 @@ const STREET = { power: 1.1, at: 4, wide: 7 }, GROUND = 0.05;
 
 const on = [];
 P.TOWERS.forEach(([x, z, w, d], i) => { if (L.within(x, z) >= 0.6 * Math.max(w, d) && (!only || only.has(i))) on.push(i); });
-const win = new Windows(CITY.seed, CITY.map), made = [];
+const win = new Windows(CITY.seed, CITY.map), made = [], chosen = new Map();
+// The buildings near enough to one already built to be seen beside it: across, so far apart beyond their half widths,
+// and back, within so far.
+const NEAR = { across: 16, back: 90 };
+const near = (i) => [...chosen.keys()].filter((j) => Math.abs(P.TOWERS[i][0] - P.TOWERS[j][0]) < (P.TOWERS[i][2] + P.TOWERS[j][2]) / 2 + NEAR.across && Math.abs(P.TOWERS[i][1] - P.TOWERS[j][1]) < NEAR.back);
 for (const i of on) {
   const [x, z, w, d, tall, turn, form, roof, seed] = P.TOWERS[i];
   const R = L.seeded(Math.round(seed * 1e6) + i * 7919), kit = layers();
@@ -46,8 +50,11 @@ for (const i of on) {
     let stone = TONE[i];
     if (stone === undefined) { let r = R(); stone = CITY.tones.find(([, p]) => (r -= p) < 0)?.[0] ?? 0; }
     const quiet = tall > BUSY.low && R() < BUSY.dark, busy = quiet ? BUSY.quiet[0] + BUSY.quiet[1] * R() : BUSY.lively[0] + BUSY.lively[1] * R();
-    const b = { kit, win, R, E: CITY.edge, draft, tone: stone / 6, vary: R(), lay: 0, busy, mood: i * 1.37, sink: g0 - low + 1.5 };
+    const avoid = {};
+    for (const j of near(i)) for (const [what, kinds] of Object.entries(chosen.get(j))) for (const k of kinds) (avoid[what] ??= new Set()).add(k);
+    const b = { kit, win, R, E: CITY.edge, draft, tone: stone / 6, vary: R(), lay: 0, busy, mood: i * 1.37, sink: g0 - low + 1.5, avoid, chosen: {} };
     make(b, { w, d, tall, roof, form, seed, i });
+    chosen.set(i, b.chosen);
   }
   made.push(kit.meshes(placeOf(x, z, turn)));
 }
@@ -89,5 +96,5 @@ function around() {
 }
 
 const stands = on.filter((i) => i === P.STEP || design({ ...{ form: P.TOWERS[i][6], roof: P.TOWERS[i][7], seed: P.TOWERS[i][8], w: P.TOWERS[i][2] } }));
-console.log(`city: ${made.length} buildings, windows map ${win.shelf.y + win.shelf.tall} of ${win.size} rows used`);
+console.log(`city: ${made.length} buildings, windows map ${win.used} of ${win.tall} rows used`);
 await finish({ made: gather(made), win, around: around(), file: 'towers-city', draft, meta: { design: 'city', stands } });

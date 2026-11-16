@@ -1,0 +1,23 @@
+# Your part: the core. Round 7
+
+## What you own
+src/pieces/world/parts/core.ts and src/pieces/world/parts/core/. Stills in shots/world/core/ with the prefix r7-. Report: shots/world/core/r7-report.md. Read first: briefs/core-r6.md (which still holds), shots/world/core/r6-report.md and its two reviews, and the END of briefs/common.md ("Changed in the frame during the night", all of it).
+
+## Where it stands
+Round 6 scored 6 and 5.5. Kept: the ball's place, size and edge on picture 9 to a pixel, its narrow deep orange band at a hard edge with nothing outside it. The neck as a broad flared root that tapers smoothly out of the foot, plainly the source among the six small streams. A set off with nothing popping. Uniforms only, 9 calls.
+
+## What Fable did on the page's side, as you asked
+STREAM.hero.hand is [221, 222]: the page's own core is not drawn at all until 221 units under the foot, where your neck has drawn down to the ribbon's width, and is taken up there in a clean cut. Fable looked at the join on the real page after it (scrolls 760 and 1000): the zigzag and the doubled line inside the neck are gone, and the neck reads as a body of cream and gold light flowing out of the ball. So the first 221 units are entirely yours now, and nothing of the page's is painted over them. Two things follow:
+- At the cut, your neck must BE the page's ribbon, pixel for pixel: the same width, the same fibres, the same phase and clock, the same brightness. Fable saw a very small step there. Find it at three times on the real page at scroll 1000 and close it.
+- Just under the cut the page's ribbon turns flat and wide for a stretch (its own slow twist), which reads as a bulge right under your narrowest point. Your neck's last 60 units should lead into whatever the ribbon is doing at the cut at that moment (its width and its twist there are worked out from the same function and clock you already share), so the line has no waist.
+
+## What must change, most important first
+1. THE NECK IS CREAM EDGE TO EDGE, WITH AN EDGE. A reviewer saw "a pale strip about 12 units wide in a soft orange haze with no edge", where picture 9's is cream across its whole width with a crisp trumpet silhouette. Now that nothing is painted over it: its body cream to pale gold right across, a hot then flame rim only in its last unit or two, and a clean silhouette. No haze outside it (QUALITY.md fails haze round the core on sight). Alone, lower down, its sheath "breaks into ragged lobes like candle flame licks" and it ends "in a blunt cut with a grey smudge (146, 124, 101)": no lobes, no grey, and where it ends before the stream has run its length it ends in the leading end's own warm point.
+2. A LINE OF DASHES crosses the neck about 10 units under the foot at every scroll (rv1/h760-foot3x.png in the reviews' stills). Find what draws it (your quad's top edge, the ball's own lower edge drawn over the neck, or the rock's lane) and remove it.
+3. THE FACE. At three times it is "a Voronoi network of dark lanes round pale cells: crazed glaze, dry mud, a net of cracks", and at the page's size its mottle is several times coarser than the picture's salt fine grain, with darks too orange (darkest tenth green over red 0.876 against 0.899). Take the lanes out: granulation with NO outlines, finer than a unit, at several scales, cells told apart by brightness alone. And it still reads as "a frosted cream lamp, not a body burning from within": the face is flat out to a slightly darker ring. Let the light fall smoothly from a hot region toward the limb over the outer third.
+4. BEFORE THE STREAM SETS OFF. Alone, the quiet drop is "an orange funnel like a golf tee", "a flat bottomed cone laid over the band". Make it a short fillet of the ball's own light: the band swelling down a few units, cream, gathered and steady. (On the page the stream's own leading end rests at the foot before it sets off, with its sparks: that is the page's and it stays.)
+5. THE SHARDS read as "specks of dirt round the foot" at the page's size and are lost among the page's own riders. They are pieces of the planet drawn into the beam. Fewer and larger (three or four, 18 to 30 units), dark stone with a lit edge toward the ball, seen plainly to be pulled in and carried down the NECK itself, where the page's riders do not reach now.
+6. Prove the face and the shards in real frames at the page's own size (npm run live).
+
+## How to look
+Every draft: npm run match -- --at 560,320,260,330 --out shots/world/core/r7-match. Then the real page at three times round the foot at scrolls 620, 760, 900 and 1000 (npm run shot -- "/lab/hero?ui=0" --scroll <n> --t 6 --wait 15000 --png), beside shots/world/ref/core-large.jpg. Then real frames across the set off.

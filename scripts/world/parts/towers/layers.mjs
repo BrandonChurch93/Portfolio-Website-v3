@@ -39,14 +39,15 @@ export function layers() {
         return [tag.c0 + s / tag.cw, tag.r0 + t / tag.ch, tag.cw + WINDOW.style * styleOf(tag), tag.ch, tag.r0 * FIELD + tag.c0];
       },
     },
-    // Where a place is across a panel of flutes, in flutes, 1 there (0 on plain gold, 2 on the small carvings of a
-    // sun disc, which give way to a plain field far off), and what the first is over.
+    // Where a place is across a panel of flutes, in flutes, 1 there (0 on plain gold, 2 on the carving inside a sun
+    // disc's rim, which gives way to a plain field far off, with how far out from the disc's middle it is, a share of
+    // its radius, in place of the flute), and what the first is over.
     // On a face that narrows as it rises (tag.taper: its width at its foot and its head, y0 and y1, and how many
     // flutes), the flutes narrow with it, from its middle line (tag.o): the place is stored over the width there,
     // which the shader divides, since each is even across a face and their share is not.
     gold: {
       width: 3, attr: (p, n, tag) => {
-        if (tag?.disc) return [0, 2, 1];
+        if (tag?.disc) return [Math.hypot(p[0] - tag.x, p[1] - tag.cy) / tag.R, 2, 1];
         if (!tag?.flute) return [0, 0, 1];
         const s = (p[0] - tag.o[0]) * tag.T[0] + (p[2] - tag.o[2]) * tag.T[2];
         if (!tag.taper) return [s / tag.flute, 1, 1];

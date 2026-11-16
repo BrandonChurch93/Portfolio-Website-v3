@@ -16,21 +16,24 @@ const px = (card) => (LEAF_SIZE / card) * T;
 // A leaf: how long against the size a tile's leaf should be, how wide against its length, how long its stalk.
 const LEAF = { long: [0.8, 1.2], wide: [0.4, 0.55], stalk: [0.12, 0.25] };
 // How dark a leaf is where another lies over it, and how far that shadow falls and how soft it is, in leaf lengths.
-const SHADE = { dark: 0.5, off: [0.06, 0.1], soft: 0.22 };
+const SHADE = { dark: 0.55, off: [0.05, 0.2], soft: 0.26 };
 // Each lump tile: how many lobes its outline has. Its outline reaches this share of the tile at most, and its
 // middle is a disc this share of it.
 const LUMPS = [{ lobes: 3 }, { lobes: 4 }, { lobes: 5 }, { lobes: 7 }];
 const OUTLINE = { reach: 0.42, middle: 0.21, sharp: 2.4 };
-// The small clusters a lump is made of: how wide one is in leaf lengths, how many leaves each holds, how many
-// clusters for each share of the lump's area, and how much darker a cluster deep at the lump's rim is.
-const CLUSTER = { r: [1.1, 1.8], leaves: [9, 16], per: 3.6, rim: 0.22 };
+// The small clusters a lump is made of: how wide one is in leaf lengths, how many leaves each holds, and how many
+// clusters for each share of the lump's area. Each is a small mound lit from above: its leaves this much lighter
+// at its top and darker at its foot, and facing up at its top, so a lump at three times is sprigs of leaves with
+// shade between them and not an even stipple. The lump is lit the same way as a whole: its lower part darker.
+// (Up and down only: the shader turns a lump's card a little and mirrors it, never further.)
+const CLUSTER = { r: [1.3, 2.2], leaves: [12, 20], per: 2.1, top: 1.22, foot: 0.42, lump: [1.1, 0.66] };
 // The dark mat under a lump's leaves, drawn a little inside its outline: how light, and how far inside, in leaves.
-const MAT = { light: 0.11, inside: 2.2 };
+const MAT = { light: 0.06, inside: 2.2 };
 // The shade a tree lays on the ground (SHADE in design.ts), down the tile from behind its trunk to its far end: the
 // cast, as wide as the crown and as long, away from the moon, how dark at most, how it falls off across, and how far
 // past the trunk it is still whole, in crown units; the pool under the crown, which the shades of neighbours join
 // into dark earth under the belt, its radius and how dark; and the round dark at the trunk's foot.
-const BLOB = { dark: 0.9, across: 0.9, whole: 1.3, pool: { r: 1.1, dark: 0.7 }, foot: 0.38, under: 0.95 };
+const BLOB = { dark: 0.9, across: 0.9, whole: 1.3, pool: { r: 1.6, dark: 0.85 }, foot: 0.38, under: 0.95 };
 
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const hash2 = (x, y, s) => {
@@ -102,12 +105,12 @@ function twigShape(pts, w0, w1) {
 }
 
 // One leaf of size `size` (its length in pixels), with a lightness of its own times `tone`.
-function paintLeaf(cv, tile, rnd, bx, by, th, size, tone) {
+function paintLeaf(cv, tile, rnd, bx, by, th, size, tone, up = 0.5) {
   const long = size * (LEAF.long[0] + rnd() * (LEAF.long[1] - LEAF.long[0])), wide = LEAF.wide[0] + rnd() * (LEAF.wide[1] - LEAF.wide[0]);
   const leaf = leafShape(bx, by, th, long, wide, size * (LEAF.stalk[0] + rnd() * (LEAF.stalk[1] - LEAF.stalk[0])), (rnd() - 0.5) * 2);
   // A hue that leans a little from the tree's (a few lean far: a leaf turned early), how much it faces the light,
   // and which half of its fold is the lit one.
-  const light = (0.6 + 0.4 * rnd()) * tone, hue = rnd() < 0.1 ? (rnd() < 0.5 ? 0.06 : 0.94) : 0.3 + 0.4 * rnd(), face = 0.2 + 0.8 * rnd(), lit = rnd() < 0.5 ? 1 : -1;
+  const light = (0.6 + 0.4 * rnd()) * tone, hue = rnd() < 0.1 ? (rnd() < 0.5 ? 0.06 : 0.94) : 0.3 + 0.4 * rnd(), face = clamp(0.15 + 0.7 * up + 0.3 * (rnd() - 0.5)), lit = rnd() < 0.5 ? 1 : -1;
   const seed = Math.floor(rnd() * 1e6);
   cv.shade(tile, leaf.box, leaf.sd, [SHADE.off[0] * size, SHADE.off[1] * size], Math.max(1.2, SHADE.soft * size));
   cv.lay(tile, leaf.box, leaf.sd, (x, y, d) => {
@@ -152,21 +155,25 @@ function lump(cv, tile, rnd, lobes) {
   clusters.sort((p, q) => q[2] - p[2] + (rnd() - 0.5) * 0.25);
   for (const [x, y, out] of clusters) {
     const cr = size * (CLUSTER.r[0] + rnd() * (CLUSTER.r[1] - CLUSTER.r[0])), n = CLUSTER.leaves[0] + Math.floor(rnd() * (CLUSTER.leaves[1] - CLUSTER.leaves[0] + 1));
-    const tone = (1 - CLUSTER.rim * out ** 2) * (0.88 + 0.24 * rnd()), away = Math.atan2(x - c, c - y), spin = rnd() * Math.PI * 2;
+    const down = clamp(((y - c) / edge + 0.6) / 1.4), tone = (CLUSTER.lump[0] + (CLUSTER.lump[1] - CLUSTER.lump[0]) * down) * (0.86 + 0.28 * rnd());
+    const away = Math.atan2(x - c, c - y), spin = rnd() * Math.PI * 2;
     // Leaves from the cluster's heart outward: those at the lump's rim lean out of it.
     const leaves = [];
     for (let k = 0; k < n; k++) {
-      const a = spin + (k / n) * Math.PI * 2 + (rnd() - 0.5) * 0.7, rr = cr * (0.15 + 0.5 * Math.sqrt(rnd()));
-      let th = a;
-      if (out > 0.62) { let dlt = ((a - away + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI; th = away + dlt * 0.55; }
-      leaves.push([x + Math.sin(a) * rr * 0.4, y - Math.cos(a) * rr * 0.4, th, rr]);
+      const a = spin + (k / n) * Math.PI * 2 + (rnd() - 0.5) * 0.7, rr = cr * (0.1 + 0.55 * Math.sqrt(rnd()));
+      let th = a + (rnd() - 0.5) * 0.9;
+      if (out > 0.62) { let dlt = ((th - away + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI; th = away + dlt * 0.55; }
+      leaves.push([x + Math.sin(a) * rr * 0.75, y - Math.cos(a) * rr * 0.75, th, rr]);
     }
-    // Its outer leaves first, so its middle lies over them and the cluster reads as a small mound of leaves.
-    leaves.sort((p, q) => q[3] - p[3]);
-    for (const [lx, ly, th, rr] of leaves) {
+    // Its lower leaves first, so the upper lie over them and shade them: the cluster reads as a small mound of
+    // leaves lit from above.
+    const at = (l) => l[1] - Math.cos(l[2]) * size * 0.75;
+    leaves.sort((p, q) => at(q) - at(p));
+    for (const l of leaves) {
+      const [lx, ly, th, rr] = l, v = clamp((at(l) - y) / cr * 1.4 + 0.5);
       const reach = size * 1.5, tx = lx + Math.sin(th) * reach, ty = ly - Math.cos(th) * reach, m = 3;
       if (Math.min(lx, ly, tx, ty) < m || Math.max(lx, ly, tx, ty) > T - m) continue;
-      paintLeaf(cv, tile, rnd, lx, ly, th, size * (0.85 + 0.3 * rnd()), tone * (0.82 + 0.18 * (1 - rr / cr)));
+      paintLeaf(cv, tile, rnd, lx, ly, th, size * (0.85 + 0.3 * rnd()), tone * (CLUSTER.top + (CLUSTER.foot - CLUSTER.top) * v) * (0.88 + 0.12 * (1 - rr / cr)), 1 - v);
     }
   }
 }

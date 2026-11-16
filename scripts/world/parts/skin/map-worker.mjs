@@ -6,7 +6,7 @@
 import { parentPort, workerData } from 'node:worker_threads';
 import { closest } from '../../lib/bvh.mjs';
 import { L } from '../../lib/plan.mjs';
-import { CRUST, setup, fine, coarse, crust, crackOf, pitted, floored, farEdge, fbm, downOf } from './field.mjs';
+import { CRUST, SHOULDER, setup, fine, coarse, crust, chips, crackOf, pitted, floored, farEdge, fbm, downOf } from './field.mjs';
 import { frame, shellNormal, toShell } from './features.mjs';
 
 const { features, bvh, positions, normals, indices, texels, rects, perPixel, rows, moon } = workerData;
@@ -22,7 +22,7 @@ const unit = (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] 
 // How the fine relief shades itself from the moon: places along the way to the moon, in units.
 const STEPS = [0.3, 0.65, 1.1, 1.7, 2.5, 3.6];
 // Where the top of a broken face is looked for round a place: so far off, in so many directions.
-const AROUND = [0.7, 1.5, 2.6], WAYS = 8;
+const AROUND = [0.7, 1.5, 2.6, 3.8], WAYS = 8;
 
 for (let row = rows[0]; row < rows[1]; row++) {
   for (let col = 0; col < W; col++) {
@@ -64,8 +64,11 @@ for (let row = rows[0]; row < rows[1]; row++) {
       }
       section = top - above;
     }
-    const layer = section < 0 ? 0 : smooth(0.2, 0.6, section) * (1 - smooth(CRUST.layer - 0.3, CRUST.layer + 0.3, section));
-    const under = section < 0 ? 0 : smooth(CRUST.layer - 0.3, CRUST.layer + 0.3, section);
+    // The pale top layer is a little thicker or thinner from place to place, and chips near the line go through it.
+    const thick = CRUST.layer * (0.75 + 0.5 * (0.5 + 0.5 * fbm(q[0] * 0.08, q[1] * 0.08, q[2] * 0.08, 2)));
+    const layer = section < 0 ? 0 : smooth(0.2, 0.6, section) * (1 - smooth(thick - 0.3, thick + 0.3, section));
+    const under = Math.max(section < 0 ? 0 : smooth(thick - 0.3, thick + 0.3, section), smooth(0.3, 0.85, chips(q[0], q[1], q[2])));
+    const rd = -L.RIM - q[1];
 
     const tone = fbm(q[0] * 0.012, q[1] * 0.012, q[2] * 0.012, 3), mid = fbm(q[0] * 0.05, q[1] * 0.05, q[2] * 0.05, 3), mottle = fbm(q[0] * 0.33 + 4, q[1] * 0.33, q[2] * 0.33, 3);
     let m = 1, g = 0;
@@ -76,9 +79,9 @@ for (let row = rows[0]; row < rows[1]; row++) {
       m *= 0.93 + 0.2 * tone + 0.12 * mid + 0.07 * mottle;
       m *= 1 - 0.42 * smooth(0.35, 0.9, down);
       // Near the torn line the ground is shattered and its dust shaken off: darker, as the picture's is.
-      m *= 1 - 0.24 * (1 - smooth(10, 120, farEdge(q[0], q[1], q[2])));
+      m *= 1 - 0.1 * (1 - smooth(10, 60, farEdge(q[0], q[1], q[2])));
       m *= 1 + 0.07 * floor;
-      m *= 1 - 0.5 * pitted(q[0], q[1], q[2], side);
+      m *= 1 - 0.62 * pitted(q[0], q[1], q[2], side);
       // The fine relief's own shadows from the moon.
       const md = moon, dn = dot(md, bent);
       let vis = 1;
@@ -93,11 +96,21 @@ for (let row = rows[0]; row < rows[1]; row++) {
           vis = Math.min(vis, smooth(-0.06, 0.04, rise - (hs - h0) / s));
         }
       }
-      m *= 0.3 + 0.7 * vis;
+      m *= 0.18 + 0.82 * vis;
       // What the moon falls on squarely is the dust at its palest: the shader eases it toward the dust's cream.
       m *= 1 + 0.26 * smooth(0.3, 0.8, dot(md, bent)) * vis;
       m *= 1 + 0.12 * layer;
-      g = under;
+      // Sand from the land's drape lies in the hollows of the shoulder under it: where the place is lower than the
+      // ground round it, thinning out down the side.
+      let sand = 0;
+      if (rd < SHOULDER.under + 10) {
+        let around = 0;
+        for (let k = 0; k < 6; k++) { const ang = (k / 6) * 2 * Math.PI, r = toShell(q[0] + (e1[0] * Math.cos(ang) + e2[0] * Math.sin(ang)) * 4, q[1] + (e1[1] * Math.cos(ang) + e2[1] * Math.sin(ang)) * 4, q[2] + (e1[2] * Math.cos(ang) + e2[2] * Math.sin(ang)) * 4); around += coarse(r[0], r[1], r[2]) + fine(r[0], r[1], r[2], side); }
+        const low = around / 6 - (coarse(q[0], q[1], q[2]) + h0);
+        sand = Math.min(1, smooth(0.1, 0.9, low) * (1 - smooth(SHOULDER.under * 0.4, SHOULDER.under + 8, rd)) + 0.7 * (1 - smooth(3, 16, rd))) * (1 - under);
+      }
+      // The fourth number: under half, how much is the red brown under the crust; over half, how much is sand.
+      g = 0.5 - 0.5 * under + 0.5 * sand;
     } else {
       // The oldest surface: broad changes of tone, and long weathering streaks down it.
       const ex = sn[2], ez = -sn[0], el = Math.hypot(ex, ez) || 1, across = (q[0] * ex + q[2] * ez) / el;
@@ -108,24 +121,27 @@ for (let row = rows[0]; row < rows[1]; row++) {
       m *= 1 - 0.32 * pitted(q[0], q[1], q[2], side);
       const ck = crackOf(q[0], q[1], q[2]);
       m *= 1 - (ck.heat > 0 ? 0.2 : 0.5) * ck.in;
-      m *= 1 - 0.4 * under;
-      if (ck.in > 0 && ck.heat > 0) {
+      if (ck.in > 0 && ck.heat > 0 && up < 0.6 && cr.edge < 3) {
+        // Where a crack runs out over the crust's broken face, its light lies on the face and is not a cleft: drawn as
+        // a cleft there it stood out past the edge as a white blade.
+        g = 0.5 * Math.min(0.9, 0.12 * ck.heat * smooth(0.25, 0.6, up));
+      } else if (ck.in > 0 && ck.heat > 0) {
         // In a lit cleft, the light itself: the wall that faces the visitor is lit to its lip, the near one only
         // deep down, so the cleft reads as a V cut into the rock.
         const toEye = unit([o[0] - p[0], o[1] - p[1], o[2] - p[2]]), en = dot(toEye, sn), et = [toEye[0] - en * sn[0], toEye[1] - en * sn[1], toEye[2] - en * sn[2]];
         const far = dot(ck.side, et) > 0, d = ck.in;
-        const lit = far ? 0.66 + 0.34 * d ** 0.6 : 0.14 + 0.86 * d ** 2.2;
+        const lit = far ? 0.3 + 0.7 * d ** 0.9 : 0.06 + 0.94 * d ** 3;
         g = 0.5 + 0.5 * Math.min(1, (0.7 + 0.3 * ck.heat) * lit);
       } else if (ck.spill > 0 || ck.pool > 0) {
         // Beside one, the light that lands on the rock: most on faces turned to the cleft, so it is lumpy with the
         // relief. It comes from the cleft's mouth.
         const from = [ck.from[0] + sn[0] * 0.8 - p[0], ck.from[1] + sn[1] * 0.8 - p[1], ck.from[2] + sn[2] * 0.8 - p[2]], dl = Math.hypot(...from) || 1;
-        const soft = unit([n[0] + 0.35 * (bent[0] - n[0]), n[1] + 0.35 * (bent[1] - n[1]), n[2] + 0.35 * (bent[2] - n[2])]);
-        const facing = ck.pool > 0 ? Math.min(1.9, Math.max(0, 0.55 + 3 * dot(soft, from.map((x) => x / dl)))) : 1;
-        g = 0.5 * Math.min(0.98, ck.spill * (0.6 + 0.4 * facing) + ck.pool * facing);
+        const soft = unit([n[0] + 0.12 * (bent[0] - n[0]), n[1] + 0.12 * (bent[1] - n[1]), n[2] + 0.12 * (bent[2] - n[2])]);
+        // Only what faces the cleft takes its light: the rock between the arms stays dark, as the picture's does.
+        const facing = Math.min(1.8, Math.max(0, 3.2 * dot(soft, from.map((x) => x / dl)) - 0.15));
+        g = 0.5 * Math.min(0.98, ck.spill * (0.25 + 0.75 * Math.min(1, facing)) + ck.pool * facing);
       }
       m *= 1 + 0.15 * layer;
-      m *= 1 - 0.15 * under;
     }
     out.G[i] = g;
     out.B[i] = m;

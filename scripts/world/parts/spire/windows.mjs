@@ -42,7 +42,7 @@ export class Windows {
       while (r < rows) {
         const long = 1 + Math.floor(R() * 4), busy = L.noise(c / 3 + mood * 3.1, r / 9 + mood * 1.7, mood, 73) ** 1.3;
         const lit = R() < LIT.least + LIT.busy * busy, tone = R();
-        const seg = { lit, level: 0.72 + 0.28 * R() ** 1.4, warm: tone < LIT.warm ? 0.05 + 0.15 * R() : tone > 0.85 ? 0.8 + 0.18 * R() : 0.35 + 0.4 * R(), blind: R() < 0.2 ? 0.25 + 0.5 * R() : 0 };
+        const seg = { lit, level: 0.72 + 0.28 * R() ** 1.4, warm: tone < LIT.warm ? 0.05 + 0.15 * R() : tone > 0.88 ? 0.62 + 0.14 * R() : 0.3 + 0.38 * R(), blind: R() < 0.2 ? 0.25 + 0.5 * R() : 0 };
         for (let k = 0; k < long && r < rows; k++, r++) {
           let level, blind = seg.blind > 0 ? Math.min(1, Math.max(0, seg.blind + (R() - 0.5) * 0.3)) : 0;
           if (seg.lit && !dark.has(r) && R() > 0.06) level = R() < 0.06 ? 1 : seg.level * (0.82 + 0.25 * R());

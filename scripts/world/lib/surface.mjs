@@ -4,15 +4,29 @@
 //   const mesh = await surface({ module: '/abs/rock-field.mjs', args, box: [[x0, y0, z0], [x1, y1, z1]], cell: 2 })
 //   const small = await simplify(mesh, { error: 0.05 })
 //
-// The field's module exports field(x, y, z), and may export async setup(args), awaited once in each worker and, if a
-// quad needs the true slope to be split, once in the calling thread too, and lip, the most the field changes per unit
-// (1.5 if not given). Under 0 is inside, and 0 itself counts as outside.
+// The field's module exports field(x, y, z), and may export async setup(args), awaited once in each worker thread
+// and never in the calling thread, and lip, the most the field changes per unit (1.5 if not given). Under 0 is
+// inside, and 0 itself counts as outside; a zero the field does not change sign across (two pieces touching face to
+// face) is not a crossing.
 // It is dual contouring on a uniform grid with a vertex for each sheet of surface in a cell, worked out in slabs
-// across worker threads. The grid starts SHIFT of a cell before the box, so faces at round numbers do not lie on its
-// planes, and every vertex is cut to the box. A vertex goes where the planes through its cell's crossings meet, up to
-// margin cells outside its cell (one unless given): that is what keeps a corner whose point lies over a cell wall
-// sharp. Such a vertex goes back inside its cell where it would fold a quad, cut through a triangle or sit on another.
-// Returns { positions, indices, stats }, stats counting how each vertex and quad was made. check-surface.mjs proves it.
+// across worker threads. The grid starts SHIFT of a cell off the box, so faces at round numbers do not lie on its
+// planes, and runs PAD cells past the box on every side; the mesh is then cut by the box's planes, so where the
+// surface leaves the box the mesh ends in an open rim that lies on the box's faces.
+// A vertex goes where the planes through its cell's crossings meet. A cell whose crossings leave it free to slide on
+// a face or along an edge, and whose neighbours see a face its own edges missed, puts its vertex on the corner or
+// edge that face makes with its own when that is inside the cell (the foot of a piece standing on another). A vertex
+// whose planes meet outside its cell may go there, up to margin cells out (one unless given): that keeps a corner
+// sharp that lies over a cell wall, and is the one departure from a vertex inside its own cell. If another vertex is
+// already there the two become one. Where an outside vertex would fold a quad or cut through a triangle it is put on
+// a corner of its quad that lies on its own planes, or failing that back inside its cell. A quad whose split faces
+// against its own crossing is judged by the field's slope, worked out in the worker threads.
+// What one vertex a cell cannot do, measured by check-surface.mjs: two edges in one cell are not both kept, so a
+// ledge or step narrower than about two cells is cut on the slant (0.7 wide: 0.23 cells off and 47 degrees at a cell
+// of 1.37, 0.33 cells and 52 degrees at 2.5; exact at 0.3). A chip is whole when its least side is two cells or more
+// (sides 2.8 to 4: exact at a cell of 1.5; at 2.5, 1 in 343 lost and 88 percent of their area kept). Where rock is
+// that thin a few triangles face into it; at the real job's size about 0.02 percent of the area does.
+// Returns { positions, indices, stats }, stats counting how each vertex and quad was made: forced is the quads left
+// folded, thin the triangles left without area.
 import { Worker } from 'node:worker_threads';
 import { availableParallelism } from 'node:os';
 import { pathToFileURL } from 'node:url';
@@ -29,22 +43,32 @@ export const STEP = 1e-5;
 export const AGREE = 1e-3;
 export const BESIDE = 4;
 export const SHIFT = 0.3090169943749474;
+export const PAD = 2;
+export const SNAP = 1e-4;
+export const FIT = 1e-4;
 export const SNUG = 1e-3;
 export const GAP = 1e-4;
 export const CLOSE = 1e-3;
-export const ROUNDS = 12;
+export const ROUNDS = 40;
+export const PATIENCE = 3;
 export const FLAT = 1e-9;
-export const HOLD = 8;
-export const SAMPLES = 12;
+export const HOLD = 24;
+export const GROW = 6;
+export const SAMPLES = 24;
 export const SAME = Math.cos((2 * Math.PI) / 180);
 export const APART = Math.sin((5 * Math.PI) / 180);
+export const REACH = 1 / 8;
+export const PROBE = 1e-7;
+export const SUSPECT = 0;
+export const CHUNK = 1 << 16;
 
 const asURL = (m) => (String(m).startsWith('file:') ? String(m) : pathToFileURL(String(m)).href);
 
 export async function surface({ module, args, box, cell, threads, onProgress, margin = MARGIN }) {
   if (!(cell > 0)) throw new Error('surface: cell must be over 0');
-  const origin = box[0].map((v) => v - SHIFT * cell);
-  const nc = [0, 1, 2].map((a) => Math.max(1, Math.ceil((box[1][a] - origin[a]) / cell - 1e-9)));
+  if (!box?.[0] || !box[1] || [0, 1, 2].some((a) => !(box[1][a] > box[0][a]))) throw new Error('surface: box must be [[x0, y0, z0], [x1, y1, z1]] with each x1 over x0');
+  const origin = box[0].map((v) => v - (PAD + SHIFT) * cell);
+  const nc = [0, 1, 2].map((a) => Math.max(1, Math.ceil((box[1][a] + PAD * cell - origin[a]) / cell - 1e-9)));
   const nbx = Math.ceil(nc[0] / BLOCK);
   const slabWidth = Math.max(1, Math.ceil(nbx / SLABS));
   const slabs = Math.ceil(nbx / slabWidth);
@@ -52,41 +76,94 @@ export async function surface({ module, args, box, cell, threads, onProgress, ma
   const data = {
     module: asURL(module), args, origin, cell, nc, B: BLOCK, slabWidth,
     cut: CUT, margin: margin * cell, gap: GAP * cell + 2e-7 * Math.max(...box.flat().map(Math.abs)), root: ROOT, exact: EXACT * cell, step: STEP * cell, agree: AGREE, beside: BESIDE * STEP * cell,
-    snug: SNUG, same: SAME, apart: APART,
+    snug: SNUG, same: SAME, apart: APART, reach: REACH, probe: PROBE,
   };
   const t0 = performance.now();
-  const results = new Array(slabs);
-  let next = 0, finished = 0, lip = 1.5;
-  await new Promise((resolve, reject) => {
-    const workers = [];
-    let failed = false;
-    const stop = (err) => { if (failed) return; failed = true; workers.forEach((w) => w.terminate()); reject(err); };
+  const pool = await workers(count, data);
+  try {
+    const results = new Array(slabs);
+    let next = 0, finished = 0;
+    await Promise.all(pool.each.map(async (ask) => {
+      while (next < slabs) {
+        const r = await ask({ slab: next++ });
+        results[r.slab] = r;
+        onProgress?.({ phase: 'grid', done: ++finished, total: slabs });
+      }
+    }));
+    const t1 = performance.now();
+    const out = await join(results, { pool, box, cell, nc, origin }), s = out.stats, m = s.seconds;
+    s.seconds = { grid: (t1 - t0) / 1000, join: (m.tidy - t1) / 1000, quads: (m.quads - t1) / 1000, mend: (m.mend - m.quads) / 1000, tidy: (m.tidy - m.mend) / 1000 };
+    s.lip = pool.lip;
+    s.threads = count;
+    return out;
+  } finally {
+    pool.close();
+  }
+}
+
+// The worker threads, each with the field's module loaded: each[i](message) asks worker i and resolves with its
+// answer, values(points) gives the field at many points split across them, and close() ends them.
+function workers(count, data) {
+  return new Promise((resolve, reject) => {
+    const list = [], waiting = new Map();
+    let ready = 0, lip = 1.5, id = 0, failed = false, closing = false;
+    const fail = (err) => {
+      if (failed || closing) return;
+      failed = true;
+      list.forEach((w) => w.terminate());
+      for (const p of waiting.values()) p.reject(err);
+      waiting.clear();
+      reject(err);
+    };
+    const pool = {
+      get lip() { return lip; },
+      each: [],
+      close() { closing = true; list.forEach((w) => w.terminate()); },
+      async values(points) {
+        const n = points.length / 3, out = new Float64Array(n), parts = [];
+        const size = Math.max(CHUNK, Math.ceil(n / count));
+        let k = 0;
+        for (let s = 0; s < n; s += size) {
+          const e = Math.min(n, s + size), ask = pool.each[k++ % count];
+          parts.push(ask({ points: points.slice(s * 3, e * 3) }).then((r) => out.set(r.values, s)));
+        }
+        await Promise.all(parts);
+        return out;
+      },
+    };
     for (let t = 0; t < count; t++) {
       const w = new Worker(new URL('./surface-worker.mjs', import.meta.url), { workerData: data });
-      workers.push(w);
-      const give = () => { if (next < slabs) w.postMessage({ slab: next++ }); };
+      list.push(w);
+      pool.each.push((m) => new Promise((ok, no) => {
+        if (failed) { no(new Error('surface: a worker failed')); return; }
+        const key = id++;
+        waiting.set(key, { resolve: ok, reject: no });
+        w.postMessage({ ...m, id: key }, m.points ? [m.points.buffer] : []);
+      }));
       w.on('message', (m) => {
-        if (m.ready) { lip = m.lip; give(); return; }
-        results[m.slab] = m;
-        finished++;
-        onProgress?.({ phase: 'grid', done: finished, total: slabs });
-        if (finished === slabs) { workers.forEach((x) => x.terminate()); resolve(); } else give();
+        if (m.ready) { lip = m.lip; if (++ready === count) resolve(pool); return; }
+        const p = waiting.get(m.id);
+        waiting.delete(m.id);
+        p?.resolve(m);
       });
-      w.on('error', stop);
-      w.on('exit', (code) => { if (code !== 0 && finished < slabs) stop(new Error(`surface: a worker stopped with ${code}`)); });
+      w.on('error', fail);
+      w.on('exit', (code) => { if (code !== 0) fail(new Error(`surface: a worker stopped with ${code}`)); });
     }
   });
-  const t1 = performance.now();
+}
 
-  let cells = 0, verts = 0, edges = 0, evals = 0, solved = 0, featured = 0, held = 0, settled = 0;
-  for (const r of results) { cells += r.cells.length; verts += r.pos.length / 3; edges += r.edges.length; evals += r.evals; solved += r.solved; featured += r.featured; held += r.held; settled += r.settled; }
-  const pos = new Float64Array(verts * 3 + 3);
+async function join(results, { pool, box, cell, nc, origin }) {
+  let cells = 0, verts = 0, edges = 0, evals = 0, completed = 0, solved = 0, featured = 0, held = 0, settled = 0;
+  for (const r of results) { cells += r.cells.length; verts += r.pos.length / 3; edges += r.edges.length; evals += r.evals; completed += r.completed; solved += r.solved; featured += r.featured; held += r.held; settled += r.settled; }
+  const pos = new Float64Array(verts * 3 + 3), free = new Uint8Array(verts), dirs = new Float32Array(verts * 3);
   const table = new Table(cells);
   const first = new Int32Array(cells), packed = new Uint32Array(cells);
   const home = new Float64Array(verts);
   let cv = 0, vv = 0;
   for (const r of results) {
     pos.set(r.pos, vv * 3);
+    free.set(r.free, vv);
+    dirs.set(r.dirs, vv * 3);
     const nv = r.pos.length / 3;
     for (let i = 0; i < r.cells.length; i++) {
       table.set(r.cells[i], cv);
@@ -132,20 +209,18 @@ export async function surface({ module, args, box, cell, threads, onProgress, ma
   }
   const tq = performance.now();
   const yielded = outside(pos, alt, home, table, first, origin, cell, nc);
-  const keep = (arr) => { for (let i = 0; i < verts * 3; i++) if (!Number.isNaN(arr[i])) arr[i] = Math.min(box[1][i % 3], Math.max(box[0][i % 3], arr[i])); };
-  keep(pos);
-  keep(alt);
-  let made, moved = 0, crossed = 0, judge = null, stirred = null, again = false, before = Infinity;
-  const dirty = new Uint8Array(verts), join = joiner(pos, verts, quads, herm, along, nq, cell);
+  let made, moved = 0, merged = 0, crossed = 0, judged = 0, stirred = null, redo = null, before = Infinity, still = 0;
+  const verdicts = new Map(), dirty = new Uint8Array(verts), joined = new Uint8Array(verts), knit = joiner(pos, verts, quads, herm, along, nq, cell);
   for (let round = 0; ; round++) {
-    made = join(judge, stirred, again);
-    again = false;
-    if (made.wrong.length && !judge) {
-      const mod = await import(asURL(module));
-      if (mod.setup) await mod.setup(args);
-      judge = mod.field;
+    made = knit(verdicts, stirred, redo);
+    redo = null;
+    if (made.ask.length) {
+      const said = await judge(made.ask, knit.ring, pos, herm, pool, cell);
+      evals += made.ask.length * 144;
+      judged += made.ask.length;
+      redo = new Uint8Array(nq);
+      made.ask.forEach((q, i) => { verdicts.set(q, said.subarray(i * 8, i * 8 + 8)); redo[q] = 1; });
       stirred = new Uint8Array(verts);
-      again = true;
       round--;
       continue;
     }
@@ -160,33 +235,45 @@ export async function surface({ module, args, box, cell, threads, onProgress, ma
     for (const g of [...groups, ...cuts]) for (const u of g) if (u < verts) dirty[u] = 1;
     if (round === 0) crossed = cuts.length;
     for (const pair of cuts) groups.push(pair);
-    if (!groups.length || round === ROUNDS || groups.length > 0.9 * before) break;
-    before = groups.length;
-    const picks = new Set(), busy = new Set();
-    for (const g of groups) {
-      if (g.some((u) => busy.has(u))) continue;
+    const flats = groups.length;
+    for (const q of made.flat) groups.push(quads.subarray(q * 4, q * 4 + 4));
+    // Each group is mended by one change, the first of: an outside vertex of a folded quad put on a corner of it
+    // that lies on its own planes (cornered); an outside vertex put back inside its cell (alt), the nearest first; a
+    // vertex free on its face or edge put on another vertex of its quad or triangle that lies on them, once (merger).
+    // A quad of three vertices with no area is mended only by the first and last. A group with none of these is left
+    // as it is, and is not counted.
+    const picks = new Set(), busy = new Set(), onto = [];
+    let live = 0;
+    groups.forEach((g, i) => {
+      const m = g.length === 4 ? cornered(g, pos, verts, free, dirs, alt, cell) : null;
       let pick = -1, least = Infinity;
-      for (const u of g) {
+      if (!m && i < flats) for (const u of g) {
         if (u >= verts || Number.isNaN(alt[u * 3])) continue;
         const d = (good[u] ? 0 : 1e30) + (alt[u * 3] - pos[u * 3]) ** 2 + (alt[u * 3 + 1] - pos[u * 3 + 1]) ** 2 + (alt[u * 3 + 2] - pos[u * 3 + 2]) ** 2;
         if (d < least) { least = d; pick = u; }
       }
+      const last = !m && pick < 0 ? merger(g, pos, verts, free, dirs, joined, cell) : null;
+      if (!m && pick < 0 && !last) return;
+      live++;
+      if (g.some((u) => busy.has(u))) return;
       for (const u of g) busy.add(u);
-      if (pick >= 0) picks.add(pick);
-    }
+      if (m || last) onto.push(m ?? last); else picks.add(pick);
+    });
+    if (live < before) { before = live; still = 0; } else still++;
+    if (!live || round === ROUNDS || still === PATIENCE) break;
     stirred = new Uint8Array(verts);
+    for (const [v, u] of onto) { pos.set(pos.subarray(u * 3, u * 3 + 3), v * 3); alt[v * 3] = NaN; joined[v] = 1; stirred[v] = 1; }
     for (const u of picks) { pos.set(alt.subarray(u * 3, u * 3 + 3), u * 3); alt[u * 3] = NaN; stirred[u] = 1; }
+    merged += onto.length;
     moved += picks.size;
-    if (!picks.size) break;
+    if (!picks.size && !onto.length) break;
   }
   const { tri, nt, extra, collapsed, dropped, fans, forced } = made;
   const all = new Float64Array(verts * 3 + extra.length);
   all.set(pos.subarray(0, verts * 3));
   all.set(extra, verts * 3);
-  for (let i = verts * 3; i < all.length; i++) all[i] = Math.min(box[1][i % 3], Math.max(box[0][i % 3], all[i]));
   const tm = performance.now();
-  const raw = { positions: all, indices: tri.subarray(0, nt) };
-  const clean = tidy(raw);
+  const clean = tidy(clip(all, tri.subarray(0, nt), box, cell));
   const edge = box.map((corner, side) => corner.map((x) => {
     let f = Math.fround(x);
     if (side === 0 && f < x) f = Math.fround(f + Math.max(Math.abs(f), 1) * 2 ** -23);
@@ -198,16 +285,67 @@ export async function surface({ module, args, box, cell, threads, onProgress, ma
   const shifted = apart(clean, cell);
   inBox();
   const thin = uncap(clean);
+  const final = tidy(clean);
+  clean.positions = final.positions;
+  clean.indices = final.indices;
   const t2 = performance.now();
   return {
     positions: clean.positions,
     indices: clean.indices,
     stats: {
       grid: nc, cells, vertices: clean.positions.length / 3, triangles: clean.indices.length / 3,
-      evals, solved, featured, held, settled, yielded, moved, crossed, missing, collapsed, dropped, fans, forced, removed: clean.removed, shifted, thin, lip, threads: count,
-      seconds: { grid: (t1 - t0) / 1000, join: (t2 - t1) / 1000, quads: (tq - t1) / 1000, mend: (tm - tq) / 1000, tidy: (t2 - tm) / 1000 },
+      evals, completed, solved, featured, held, settled, yielded, judged, merged, moved, crossed, missing, collapsed, dropped, fans, forced, removed: clean.removed, shifted, thin,
+      seconds: { quads: tq, mend: tm, tidy: t2 },
     },
   };
+}
+
+const W3 = [[1 / 3, 1 / 3, 1 / 3], [0.6, 0.2, 0.2], [0.2, 0.6, 0.2]];
+const TRI8 = [[0, 1, 2], [0, 2, 3], [0, 1, 3], [1, 2, 3], [4, 0, 1], [4, 1, 2], [4, 2, 3], [4, 3, 0]];
+// How each quad's eight candidate triangles (the two ways to split it, and the four of a fan round its crossing) face
+// against the field's slope, worked out in the worker threads: for each, the best over three points inside it of the
+// cosine between its normal and the slope, 1 when it faces out of the rock, -1 when into it, NaN when it has no area
+// or the field has no slope at any of the three (inside two pieces that touch). A quad of three vertices has one.
+async function judge(list, ring, pos, herm, pool, cell) {
+  const h = cell * 1e-4, P = new Float64Array(list.length * 8 * 3 * 6 * 3), N = new Float64Array(list.length * 8 * 3).fill(NaN);
+  const c = new Float64Array(15);
+  list.forEach((q, i) => {
+    const v = ring(q), k = v.length;
+    for (let s = 0; s < k; s++) for (let a = 0; a < 3; a++) c[s * 3 + a] = pos[v[s] * 3 + a];
+    for (let a = 0; a < 3; a++) c[12 + a] = herm[q * 6 + a];
+    for (let t = 0; t < (k === 3 ? 1 : 8); t++) {
+      const [x, y, z] = TRI8[t];
+      const ux = c[y * 3] - c[x * 3], uy = c[y * 3 + 1] - c[x * 3 + 1], uz = c[y * 3 + 2] - c[x * 3 + 2];
+      const wx = c[z * 3] - c[x * 3], wy = c[z * 3 + 1] - c[x * 3 + 1], wz = c[z * 3 + 2] - c[x * 3 + 2];
+      const nx = uy * wz - uz * wy, ny = uz * wx - ux * wz, nz = ux * wy - uy * wx, l = Math.hypot(nx, ny, nz);
+      if (!(l > 0)) continue;
+      const o = (i * 8 + t) * 3;
+      N[o] = nx / l; N[o + 1] = ny / l; N[o + 2] = nz / l;
+      for (let p = 0; p < 3; p++) {
+        const [a0, a1, a2] = W3[p];
+        for (let a = 0; a < 3; a++) {
+          const m = c[x * 3 + a] * a0 + c[y * 3 + a] * a1 + c[z * 3 + a] * a2;
+          for (let d = 0; d < 6; d++) P[((i * 8 + t) * 3 + p) * 18 + d * 3 + a] = m + (a === d >> 1 ? (d & 1 ? -h : h) : 0);
+        }
+      }
+    }
+  });
+  const f = await pool.values(P);
+  const out = new Float64Array(list.length * 8).fill(NaN);
+  for (let j = 0; j < out.length; j++) {
+    const o = j * 3;
+    if (Number.isNaN(N[o])) continue;
+    let best = NaN;
+    for (let p = 0; p < 3; p++) {
+      const b = (j * 3 + p) * 6;
+      const gx = f[b] - f[b + 1], gy = f[b + 2] - f[b + 3], gz = f[b + 4] - f[b + 5], l = Math.hypot(gx, gy, gz);
+      if (!(l > 0)) continue;
+      const cos = (gx * N[o] + gy * N[o + 1] + gz * N[o + 2]) / l;
+      if (!(cos <= best)) best = cos;
+    }
+    out[j] = best;
+  }
+  return out;
 }
 
 // A vertex may stand outside its own cell, on a corner or an edge that lies just over the cell's wall, but not on
@@ -222,11 +360,11 @@ function outside(pos, alt, home, table, first, origin, cell, nc) {
     const key = g[0] + nc[0] * (g[1] + nc[1] * g[2]);
     if (key === home[v]) continue;
     const id = g.every((x, a) => x >= 0 && x < nc[a]) ? table.get(key) : -1;
-    let hit = false;
-    if (id >= 0) for (let u = first[id], e = id + 1 < first.length ? first[id + 1] : verts; u < e && !hit; u++) hit = close(u, v);
+    let hit = -1;
+    if (id >= 0) for (let u = first[id], e = id + 1 < first.length ? first[id + 1] : verts; u < e && hit < 0; u++) if (close(u, v)) hit = u;
     const list = there.get(key) ?? [];
-    hit ||= list.some((u) => close(u, v));
-    if (hit) { pos.set(alt.subarray(v * 3, v * 3 + 3), v * 3); alt[v * 3] = NaN; yielded++; continue; }
+    if (hit < 0) for (const u of list) if (close(u, v)) { hit = u; break; }
+    if (hit >= 0) { pos.set(pos.subarray(hit * 3, hit * 3 + 3), v * 3); yielded++; continue; }
     list.push(v);
     there.set(key, list);
   }
@@ -339,37 +477,56 @@ function pierce(P, tri, a, b, swapped = false) {
   return false;
 }
 
-// Makes the quads into triangles, and again after vertices move, redoing only the quads they touch. Vertices closer
-// than CLOSE of a cell in one quad are made one, and each quad is split, fanned or, failing both, split with a
-// triangle wrong way out (listed in wrong, so a vertex can be moved and it can be tried again).
+// Makes the quads into triangles, and again after vertices move, redoing only the quads they touch (moved) and those
+// named in redo. Vertices closer than CLOSE of a cell in one quad are made one, and each quad is split, fanned or,
+// failing both, split with a triangle wrong way out (listed in wrong, so a vertex can be moved and it can be tried
+// again). A quad whose split looks wrong by its own crossing and has no verdict yet is listed in ask, for the field
+// to judge; verdicts holds what it said (judge), and a quad's verdict is dropped when one of its vertices moves.
+// ring(q) gives the vertices a quad was last made from.
 function joiner(pos, verts, quads, herm, along, nq, cell) {
   const slots = new Uint32Array(nq * 12), kind = new Uint8Array(nq), root = new Int32Array(verts), was = new Int32Array(verts).fill(-1);
   const centres = new Map(), near = (CLOSE * cell) ** 2, least = 1e-6 * cell * cell;
   const find = (v) => { while (root[v] !== v) v = root[v] = root[root[v]]; return v; };
   const v = new Int32Array(4), ring = [];
-  let collapsed = 0;
-  const one = (q, judge) => {
+  let collapsed = 0, ask = [];
+  const one = (q, said) => {
     for (let s = 0; s < 4; s++) v[s] = root[quads[q * 4 + s]];
     const h = herm.subarray(q * 6, q * 6 + 6), o = q * 12;
     centres.delete(q);
     ring.length = 0;
     for (let s = 0; s < 4; s++) if (v[s] !== v[(s + 3) % 4]) ring.push(v[s]);
     if (ring.length < 3 || (ring.length === 4 ? ring[0] === ring[2] || ring[1] === ring[3] : ring[0] === ring[2])) { kind[q] = KIND.dropped; return; }
-    if (ring.length === 3) { slots[o] = ring[0]; slots[o + 1] = ring[1]; slots[o + 2] = ring[2]; kind[q] = KIND.three; return; }
-    const way = split(pos, v, h, along[q], least, judge, cell);
+    if (ring.length === 3) {
+      slots[o] = ring[0]; slots[o + 1] = ring[1]; slots[o + 2] = ring[2];
+      kind[q] = KIND.three;
+      if (!face(pos, ring[0], ring[1], ring[2], 0, least)) kind[q] = KIND.flat;
+      else if (said) { if (said[0] <= 0) kind[q] = KIND.odd; }
+      else if (nrm[0] * h[3] + nrm[1] * h[4] + nrm[2] * h[5] < SUSPECT) ask.push(q);
+      return;
+    }
+    const way = split(pos, v, h, along[q], least, said);
     if (way === 3) {
       centres.set(q, [h[0], h[1], h[2]]);
       for (let s = 0; s < 4; s++) { slots[o + s * 3] = FAN; slots[o + s * 3 + 1] = v[s]; slots[o + s * 3 + 2] = v[(s + 1) % 4]; }
       kind[q] = KIND.fan;
-      return;
+    } else {
+      if (way === 1 || way === 4) { slots[o] = v[0]; slots[o + 1] = v[1]; slots[o + 2] = v[2]; slots[o + 3] = v[0]; slots[o + 4] = v[2]; slots[o + 5] = v[3]; }
+      else { slots[o] = v[0]; slots[o + 1] = v[1]; slots[o + 2] = v[3]; slots[o + 3] = v[1]; slots[o + 4] = v[2]; slots[o + 5] = v[3]; }
+      kind[q] = way > 3 ? KIND.wrong : KIND.two;
     }
-    if (way === 1 || way === 4) { slots[o] = v[0]; slots[o + 1] = v[1]; slots[o + 2] = v[2]; slots[o + 3] = v[0]; slots[o + 4] = v[2]; slots[o + 5] = v[3]; }
-    else { slots[o] = v[0]; slots[o + 1] = v[1]; slots[o + 2] = v[3]; slots[o + 3] = v[1]; slots[o + 4] = v[2]; slots[o + 5] = v[3]; }
-    kind[q] = way > 3 ? KIND.wrong : KIND.two;
+    if (said) return;
+    let doubt = way > 3;
+    for (let t = 0; t < SIZE[kind[q]] && !doubt && (h[3] || h[4] || h[5]); t += 3) {
+      const a = slots[o + t] === FAN ? -1 : slots[o + t];
+      if (a < 0) { pos[pos.length - 3] = h[0]; pos[pos.length - 2] = h[1]; pos[pos.length - 1] = h[2]; }
+      if (face(pos, a < 0 ? pos.length / 3 - 1 : a, slots[o + t + 1], slots[o + t + 2], 0, least)) doubt = nrm[0] * h[3] + nrm[1] * h[4] + nrm[2] * h[5] < SUSPECT;
+    }
+    if (doubt) ask.push(q);
   };
-  return (judge, moved, again) => {
+  const knit = (verdicts, moved, redo) => {
     for (let u = 0; u < verts; u++) root[u] = u;
     collapsed = 0;
+    ask = [];
     for (let q = 0; q < nq; q++) {
       for (let s = 0; s < 4; s++) for (let t = s + 1; t < 4; t++) {
         const a = quads[q * 4 + s], b = quads[q * 4 + t];
@@ -380,50 +537,43 @@ function joiner(pos, verts, quads, herm, along, nq, cell) {
     }
     for (let u = 0; u < verts; u++) root[u] = find(u);
     for (let q = 0; q < nq; q++) {
-      let redo = !moved || (again && kind[q] === KIND.wrong);
-      for (let s = 0; s < 4 && !redo; s++) { const u = quads[q * 4 + s]; redo = moved[u] === 1 || root[u] !== was[u]; }
-      if (redo) one(q, judge);
+      let changed = !moved;
+      for (let s = 0; s < 4 && !changed; s++) { const u = quads[q * 4 + s]; changed = moved[u] === 1 || root[u] !== was[u]; }
+      if (changed && moved) verdicts.delete(q);
+      if (changed || redo?.[q]) one(q, verdicts.get(q));
     }
     was.set(root);
     let nt = 0, fans = 0, dropped = 0;
-    const wrong = [], extra = [];
+    const wrong = [], flat = [], extra = [];
     for (let q = 0; q < nq; q++) nt += SIZE[kind[q]];
     const tri = new Uint32Array(nt);
     nt = 0;
     for (let q = 0; q < nq; q++) {
       const k = kind[q], o = q * 12;
       if (k === KIND.dropped) { dropped++; continue; }
-      if (k === KIND.wrong) wrong.push(q);
+      if (k === KIND.wrong || k === KIND.odd) wrong.push(q);
+      if (k === KIND.flat) flat.push(q);
       let c = 0;
       if (k === KIND.fan) { c = verts + extra.length / 3; extra.push(...centres.get(q)); fans++; }
       for (let i = 0; i < SIZE[k]; i++) tri[nt++] = slots[o + i] === FAN ? c : slots[o + i];
     }
-    return { tri, nt, extra, wrong, collapsed, dropped, fans, forced: wrong.length };
+    return { tri, nt, extra, wrong, flat, ask, collapsed, dropped, fans, forced: wrong.length };
   };
+  knit.ring = (q) => {
+    const out = [];
+    for (let s = 0; s < 4; s++) { const a = root[quads[q * 4 + s]], b = root[quads[q * 4 + (s + 3) % 4]]; if (a !== b) out.push(a); }
+    return out.length === 4 ? [root[quads[q * 4]], root[quads[q * 4 + 1]], root[quads[q * 4 + 2]], root[quads[q * 4 + 3]]] : out;
+  };
+  return knit;
 }
 
-const KIND = { two: 0, three: 1, fan: 2, wrong: 3, dropped: 4 };
-const SIZE = [6, 3, 12, 6, 0];
+// odd is a quad of three vertices that is wrong way out, and is mended as a fold is; flat is one with no area,
+// mended only by joining two of its vertices where that keeps every slope, and otherwise left for uncap.
+const KIND = { two: 0, three: 1, fan: 2, wrong: 3, dropped: 4, odd: 5, flat: 6 };
+const SIZE = [6, 3, 12, 6, 0, 3, 3];
 const FAN = 0xffffffff;
 
 const nrm = new Float64Array(24), corner = new Int32Array(24);
-// How a triangle faces against the field's slope at three points inside it: the best of the three, 1 when it faces
-// the same way, -1 when it is wrong way out. Used only for quads the plain tests would fold.
-function slopeAt(pos, field, cell, o) {
-  const h = cell * 1e-4;
-  let best = -1;
-  for (const [w0, w1] of [[1 / 3, 1 / 3], [0.6, 0.2], [0.2, 0.6]]) {
-    const w2 = 1 - w0 - w1, p = [0, 0, 0];
-    for (let k = 0; k < 3; k++) p[k] = pos[corner[o] * 3 + k] * w0 + pos[corner[o + 1] * 3 + k] * w1 + pos[corner[o + 2] * 3 + k] * w2;
-    const gx = field(p[0] + h, p[1], p[2]) - field(p[0] - h, p[1], p[2]);
-    const gy = field(p[0], p[1] + h, p[2]) - field(p[0], p[1] - h, p[2]);
-    const gz = field(p[0], p[1], p[2] + h) - field(p[0], p[1], p[2] - h);
-    const l = Math.hypot(gx, gy, gz);
-    if (l > 0) best = Math.max(best, (gx * nrm[o] + gy * nrm[o + 1] + gz * nrm[o + 2]) / l);
-  }
-  return best;
-}
-
 function face(pos, a, b, c, o, least) {
   corner[o] = a; corner[o + 1] = b; corner[o + 2] = c;
   const ax = pos[b * 3] - pos[a * 3], ay = pos[b * 3 + 1] - pos[a * 3 + 1], az = pos[b * 3 + 2] - pos[a * 3 + 2];
@@ -437,22 +587,28 @@ function face(pos, a, b, c, o, least) {
 
 // Which way to make a quad into triangles: 1 or 2, split along one diagonal or the other, whichever folds it least
 // of those whose two triangles are both the right way out; 3, a fan round the crossing; 4 or 5, a split with a
-// triangle wrong way out, which is then mended by moving a vertex. A triangle is the right way out when it faces
-// along the grid edge the quad stands on, from its inside end to its outside end, or, failing that, when it faces
-// as the field's slope does inside it (judge, the field, once a quad has failed) or as the crossing's normal does.
-// The crossing's normal alone is no test: at a sharp edge a triangle on the other face is rightly turned 90 degrees
-// or more from it, and where vertices lie on an edge that runs along the grid edge, a right triangle can be edge on.
-function split(pos, v, h, way, least, judge, cell) {
+// triangle wrong way out, which is then mended by moving a vertex. With a verdict from the field (said, in the order
+// of TRI8) a triangle is the right way out when it faces as the field's slope does inside it. Without one it is
+// when it faces along the grid edge the quad stands on, from its inside end to its outside end, or as the crossing's
+// normal does. The crossing's normal alone is no test: at a sharp edge a triangle on the other face is rightly turned
+// 90 degrees or more from it, and where vertices lie on an edge that runs along the grid edge, a right triangle can
+// be edge on. A triangle with no area (three vertices on a line, as where two vertices lie on one edge of the rock)
+// is neither right nor wrong: uncap later flips it away. A split with one is taken only when no split without one
+// and no fan will do.
+function split(pos, v, h, way, least, said) {
   const a = Math.abs(way) - 1, s = Math.sign(way);
-  const facing = (o) => {
+  const facing = (o, t) => {
+    if (said && !Number.isNaN(said[t])) return said[t];
     if (s * nrm[o + a] > -FLAT) return 1;
-    if (!judge) return nrm[o] * h[3] + nrm[o + 1] * h[4] + nrm[o + 2] * h[5];
-    return slopeAt(pos, judge, cell, o);
+    return nrm[o] * h[3] + nrm[o + 1] * h[4] + nrm[o + 2] * h[5];
   };
-  const hasA = face(pos, v[0], v[1], v[2], 0, least) && face(pos, v[0], v[2], v[3], 3, least);
-  const hasB = face(pos, v[0], v[1], v[3], 6, least) && face(pos, v[1], v[2], v[3], 9, least);
-  const fA = hasA ? Math.min(facing(0), facing(3)) : -Infinity, fB = hasB ? Math.min(facing(6), facing(9)) : -Infinity;
-  const okA = fA > 0, okB = fB > 0;
+  const judgeOf = (p, q, r, o, t) => (face(pos, p, q, r, o, least) ? facing(o, t) : NaN);
+  const fa1 = judgeOf(v[0], v[1], v[2], 0, 0), fa2 = judgeOf(v[0], v[2], v[3], 3, 1);
+  const fb1 = judgeOf(v[0], v[1], v[3], 6, 2), fb2 = judgeOf(v[1], v[2], v[3], 9, 3);
+  const worst = (x, y) => (Number.isNaN(x) ? (Number.isNaN(y) ? -Infinity : y) : Number.isNaN(y) ? x : Math.min(x, y));
+  const flats = (x, y) => Number.isNaN(x) + Number.isNaN(y);
+  const fA = worst(fa1, fa2), fB = worst(fb1, fb2), nA = flats(fa1, fa2), nB = flats(fb1, fb2);
+  const okA = fA > 0 && !nA, okB = fB > 0 && !nB;
   if (okA || okB) {
     const sA = okA ? nrm[0] * nrm[3] + nrm[1] * nrm[4] + nrm[2] * nrm[5] : -Infinity;
     const sB = okB ? nrm[6] * nrm[9] + nrm[7] * nrm[10] + nrm[8] * nrm[11] : -Infinity;
@@ -461,9 +617,54 @@ function split(pos, v, h, way, least, judge, cell) {
   pos[pos.length - 3] = h[0]; pos[pos.length - 2] = h[1]; pos[pos.length - 1] = h[2];
   const c = pos.length / 3 - 1;
   let fan = true;
-  for (let k = 0; k < 4 && fan; k++) fan = face(pos, c, v[k], v[(k + 1) % 4], 12, least) && facing(12) > 0;
-  if (fan || (!hasA && !hasB)) return 3;
+  for (let k = 0; k < 4 && fan; k++) fan = face(pos, c, v[k], v[(k + 1) % 4], 12, least) && facing(12, 4 + k) > 0;
+  if (fan) return 3;
+  if (fA > 0 || fB > 0) return fA >= fB ? 1 : 2;
+  // Four vertices all but on one line: no split has area. A fan is kept unless the field says it faces into the rock.
+  if (fA === -Infinity && fB === -Infinity) return said && [4, 5, 6, 7].some((t) => said[t] < -0.5) ? 4 : 3;
   return fA >= fB ? 4 : 5;
+}
+
+// A vertex that stands outside its cell and folds a quad can be put on a corner of that quad (a vertex fixed where
+// three planes meet) when the corner lies on its own face or edge (free, dirs: the face's normal or the edge's way):
+// it then still lies on every plane it was made from, so no triangle's slope changes, and the two become one. The
+// nearest such pair as [vertex, corner], or null.
+function cornered(g, pos, verts, free, dirs, alt, cell) {
+  const tol = cell * FIT;
+  let best = Infinity, out = null;
+  for (const v of g) for (const u of g) {
+    if (u === v || v >= verts || u >= verts || !free[v] || free[u] || Number.isNaN(alt[v * 3])) continue;
+    const dx = pos[u * 3] - pos[v * 3], dy = pos[u * 3 + 1] - pos[v * 3 + 1], dz = pos[u * 3 + 2] - pos[v * 3 + 2];
+    const l = Math.hypot(dx, dy, dz);
+    if (!(l > 0) || l >= best) continue;
+    const d = dirs[v * 3] * dx + dirs[v * 3 + 1] * dy + dirs[v * 3 + 2] * dz;
+    const off = free[v] === 2 ? Math.abs(d) : Math.sqrt(Math.max(0, l * l - d * d));
+    if (off > tol) continue;
+    best = l; out = [v, u];
+  }
+  return out;
+}
+
+// A vertex free on its face or along its edge (free, dirs: the face's normal or the edge's way) put on another
+// vertex of the same quad or triangle (of a pair, g's first three or last three) that lies on that face or edge: it
+// still lies on every plane it was made from, so no slope changes, and the two become one. Each vertex once (joined).
+// The nearest such pair as [vertex, onto], or null.
+function merger(g, pos, verts, free, dirs, joined, cell) {
+  const tol = cell * FIT;
+  let best = Infinity, out = null;
+  const parts = g.length === 6 ? [[0, 3], [3, 6]] : [[0, g.length]];
+  for (const [s, e] of parts) for (let i = s; i < e; i++) for (let j = s; j < e; j++) {
+    const v = g[i], u = g[j];
+    if (i === j || v >= verts || u >= verts || !free[v] || joined[v]) continue;
+    const dx = pos[u * 3] - pos[v * 3], dy = pos[u * 3 + 1] - pos[v * 3 + 1], dz = pos[u * 3 + 2] - pos[v * 3 + 2];
+    const l = Math.hypot(dx, dy, dz);
+    if (!(l > 0) || l >= best) continue;
+    const d = dirs[v * 3] * dx + dirs[v * 3 + 1] * dy + dirs[v * 3 + 2] * dz;
+    const off = free[v] === 2 ? Math.abs(d) : Math.sqrt(Math.max(0, l * l - d * d));
+    if (off > tol) continue;
+    best = l; out = [v, u];
+  }
+  return out;
 }
 
 // No two vertices share a place: where two would in the stored positions, the later is moved a hair toward the
@@ -510,6 +711,59 @@ function apart(mesh, cell) {
   return moved;
 }
 
+// The mesh cut by the box's six planes, each triangle in turn (Sutherland and Hodgman), so the triangles that stay
+// keep their slopes and the rim lies on the box's faces. A point is made once for each edge it cuts, from the edge's
+// lower numbered end, so the two triangles of an edge share it. A vertex within SNAP of a cell of a plane is put on it.
+function clip(pos, tri, box, cell) {
+  let P = pos, T = tri, n = P.length / 3;
+  const near = SNAP * cell;
+  for (let a = 0; a < 3; a++) for (let side = 0; side < 2; side++) {
+    const b = box[side][a], s = side ? -1 : 1;
+    let all = true;
+    for (let v = 0; v < n; v++) {
+      if (Math.abs(P[v * 3 + a] - b) <= near) P[v * 3 + a] = b;
+      if (s * (P[v * 3 + a] - b) < 0) all = false;
+    }
+    if (all) continue;
+    const made = new Table(1024), extra = [], out = [];
+    const cut = (u, v) => {
+      const lo = Math.min(u, v), hi = Math.max(u, v), key = lo * n + hi;
+      let id = made.get(key);
+      if (id >= 0) return id;
+      const t = (b - P[lo * 3 + a]) / (P[hi * 3 + a] - P[lo * 3 + a]);
+      id = n + extra.length / 3;
+      for (let k = 0; k < 3; k++) extra.push(k === a ? b : P[lo * 3 + k] + t * (P[hi * 3 + k] - P[lo * 3 + k]));
+      made.set(key, id);
+      return id;
+    };
+    const poly = [];
+    for (let i = 0; i < T.length; i += 3) {
+      const v0 = T[i], v1 = T[i + 1], v2 = T[i + 2];
+      const i0 = s * (P[v0 * 3 + a] - b) >= 0, i1 = s * (P[v1 * 3 + a] - b) >= 0, i2 = s * (P[v2 * 3 + a] - b) >= 0;
+      if (i0 && i1 && i2) { out.push(v0, v1, v2); continue; }
+      if (!i0 && !i1 && !i2) continue;
+      poly.length = 0;
+      const vs = [v0, v1, v2], ins = [i0, i1, i2];
+      for (let k = 0; k < 3; k++) {
+        const u = vs[k], w = vs[(k + 1) % 3];
+        if (ins[k]) poly.push(u);
+        if (ins[k] !== ins[(k + 1) % 3]) poly.push(cut(u, w));
+      }
+      if (poly.length === 3) { out.push(poly[0], poly[1], poly[2]); continue; }
+      const at = (v, k) => (v < n ? P[v * 3 + k] : extra[(v - n) * 3 + k]);
+      const d02 = (at(poly[0], 0) - at(poly[2], 0)) ** 2 + (at(poly[0], 1) - at(poly[2], 1)) ** 2 + (at(poly[0], 2) - at(poly[2], 2)) ** 2;
+      const d13 = (at(poly[1], 0) - at(poly[3], 0)) ** 2 + (at(poly[1], 1) - at(poly[3], 1)) ** 2 + (at(poly[1], 2) - at(poly[3], 2)) ** 2;
+      if (d02 <= d13) out.push(poly[0], poly[1], poly[2], poly[0], poly[2], poly[3]);
+      else out.push(poly[0], poly[1], poly[3], poly[1], poly[2], poly[3]);
+    }
+    const next = new Float64Array(P.length + extra.length);
+    next.set(P);
+    next.set(extra, P.length);
+    P = next; T = Uint32Array.from(out); n = P.length / 3;
+  }
+  return { positions: P, indices: T };
+}
+
 function tidy({ positions, indices }) {
   const n = positions.length / 3;
   const out = new Float32Array(positions.length);
@@ -531,9 +785,12 @@ function tidy({ positions, indices }) {
 // Reduces a mesh with meshoptimizer, which never moves a vertex, only drops them. Its own error is an estimate that
 // a triangle can stray well past (a pit or a bump whose faces pass through the vertex it is folded into costs it
 // nothing), so unless strict is false the result is measured against the mesh it came from: every vertex of that
-// mesh must lie within error of the result and every point sampled on the result within error of that mesh. Where
-// either fails, or where the result is open where the mesh was not, the vertices there are held still and it is
-// made again. Positions are compared as places, so a mesh split at its creases (creased) is reduced as one surface.
+// mesh must lie within error of the result, and every point of the result within error of that mesh, sampled no
+// further apart than the error on a triangle up to SAMPLES errors long (further apart on a longer one). Where either
+// fails, or where the result is open where the mesh was not, the vertices there are held still and it is made again
+// until none fails (stray is how many still did after HOLD tries). Positions are compared as places, so a mesh split
+// at its creases (creased) is reduced as one surface. Returns { positions, indices, attributes, source, thin, stray,
+// furthest, holes, rounds }.
 export async function simplify(mesh, { error, target, attributes, weights, lock, strict = true } = {}) {
   if (error === undefined && target === undefined) throw new Error('simplify: give an error, a target or both');
   await MeshoptSimplifier.ready;
@@ -550,21 +807,26 @@ export async function simplify(mesh, { error, target, attributes, weights, lock,
   const place = places(positions);
   const rim = edgesOf(indices, place, nv).open;
   const check = sure ? strays({ positions, indices }, most, place) : null;
-  let out, stray = 0, holes = 0, rounds = 0, last = Infinity, zone = null;
+  // Each try holds still every vertex the try before kept, and those near where it strayed. Each time a stretch of
+  // the mesh strays again, the reach of what is held round its strays there is doubled, so it ends: in the worst
+  // case the mesh is kept as it was round every stray.
+  let out, stray = 0, holes = 0, rounds = 0, zone = null;
   for (;;) {
     out = MeshoptSimplifier.simplifyWithAttributes(indices, positions, 3, attr, k, wts, held, goal, aim, ['ErrorAbsolute'])[0];
     holes = opened(out, place, nv, rim, positions, held);
     stray = check ? check.find(out, held, zone) : 0;
-    const stalled = rounds >= 2 && stray > last * 0.75;
-    if ((!stray && !holes) || rounds === HOLD || stalled) {
-      if (zone) stray = check.find(out, new Uint8Array(nv), null);
-      break;
-    }
-    last = stray;
+    // A try changes the result most near what it newly holds, so it is measured there first; but not only there,
+    // so a try that looks clean there is measured whole before it is taken.
+    if (!stray && zone) stray = check.find(out, held, null);
+    if ((!stray && !holes) || rounds === HOLD) break;
     zone = check ? check.zone : null;
     for (let i = 0; i < out.length; i++) held[out[i]] = 1;
     rounds++;
   }
+  if (stray) stray = check.find(out, new Uint8Array(nv), null, false);
+  const kept = { positions, indices: out };
+  const thin = uncap(kept, undefined, false);
+  out = kept.indices;
   const map = new Int32Array(nv).fill(-1);
   const source = [];
   for (let i = 0; i < out.length; i++) {
@@ -580,7 +842,6 @@ export async function simplify(mesh, { error, target, attributes, weights, lock,
     attrOut = new Float32Array(src.length * k);
     for (let i = 0; i < src.length; i++) for (let j = 0; j < k; j++) attrOut[i * k + j] = attributes[src[i] * k + j];
   }
-  const thin = uncap({ positions: pos, indices: out });
   return { positions: pos, indices: out, attributes: attrOut, source: src, thin, stray: check ? stray : null, furthest: check && stray ? check.worst : 0, holes, rounds };
 }
 
@@ -693,6 +954,7 @@ function strays(mesh, error, place) {
   const short = error * Math.sqrt(3);
   const lo = bounds(mesh)[0], block = size * 8, blockOf = (x, y, z) => Math.floor((x - lo[0]) / block) + 4096 * (Math.floor((y - lo[1]) / block) + 4096 * Math.floor((z - lo[2]) / block));
   let worst = 0, zone = null;
+  const again = new Map();
   // Each round after the first holds still every vertex the round before kept, so the result changes only near the
   // vertices just held: zone is the blocks round them, and only there is the next result measured. A last measure
   // of the whole is made before the count is reported.
@@ -703,10 +965,16 @@ function strays(mesh, error, place) {
   return {
     get worst() { return worst; },
     get zone() { return zone; },
-    find(out, hold, where) {
+    find(out, hold, where, count_again = true) {
       let count = 0;
       worst = 0;
       zone = new Set();
+      const hit = new Set();
+      const growAt = (x, y, z) => {
+        const key = blockOf(x, y, z);
+        if (count_again && !hit.has(key)) { hit.add(key); again.set(key, (again.get(key) ?? 0) + 1); }
+        return 2 ** Math.min(GROW, (again.get(key) ?? 1) - 1);
+      };
       const held = new Proxy(hold, { set(t, i, v) { if (!t[i]) mark(+i); t[i] = v; return true; } });
       const inside = (x, y, z) => !where || where.has(blockOf(x, y, z));
       const kept = new Uint8Array(nv);
@@ -718,6 +986,8 @@ function strays(mesh, error, place) {
         if (d <= error) continue;
         worst = Math.max(worst, d);
         held[v] = 1;
+        const grow = growAt(p[v * 3], p[v * 3 + 1], p[v * 3 + 2]);
+        if (grow > 1) near(p[v * 3], p[v * 3 + 1], p[v * 3 + 2], edge * grow, (u) => { held[u] = 1; });
         count++;
       }
       for (let t = 0; t < out.length; t += 3) {
@@ -727,7 +997,7 @@ function strays(mesh, error, place) {
           Math.hypot(p[b * 3] - p[c * 3], p[b * 3 + 1] - p[c * 3 + 1], p[b * 3 + 2] - p[c * 3 + 2]),
           Math.hypot(p[c * 3] - p[a * 3], p[c * 3 + 1] - p[a * 3 + 1], p[c * 3 + 2] - p[a * 3 + 2]));
         if (L <= short || !inside((p[a * 3] + p[b * 3] + p[c * 3]) / 3, (p[a * 3 + 1] + p[b * 3 + 1] + p[c * 3 + 1]) / 3, (p[a * 3 + 2] + p[b * 3 + 2] + p[c * 3 + 2]) / 3) || made(a, b, c)) continue;
-        const steps = Math.min(SAMPLES, Math.max(2, Math.ceil(L / Math.max(error, edge / 2))));
+        const steps = Math.min(SAMPLES, Math.max(2, Math.ceil(L / error)));
         let far = false;
         for (let i = 0; i <= steps; i++) for (let j = 0; i + j <= steps; j++) {
           const u = i / steps, w = j / steps, o = 1 - u - w;
@@ -737,7 +1007,8 @@ function strays(mesh, error, place) {
           if (d <= error) continue;
           far = true;
           worst = Math.max(worst, d);
-          near(x, y, z, Math.min(Math.max(2 * Math.min(d, size), 2 * edge), L), (v) => { if (toTriangle(p, a, b, c, p[v * 3], p[v * 3 + 1], p[v * 3 + 2]) > error * 0.5) held[v] = 1; });
+          const grow = growAt(x, y, z), r = Math.min(Math.max(2 * Math.min(d, size), 2 * edge), L) * grow;
+          near(x, y, z, r, (v) => { if (grow > 1 || toTriangle(p, a, b, c, p[v * 3], p[v * 3 + 1], p[v * 3 + 2]) > error * 0.5) held[v] = 1; });
         }
         if (far) count++;
       }

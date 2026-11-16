@@ -33,10 +33,13 @@ const FINE = draft
   : { grid: 0.6, error: 0.5, most: 235000, samples: { core: 16, moon: 16, hemi: 160 }, bounces: 2, perPixel: MAP.perPixel };
 // How far down the surface the grid is looked at (t, 0 at the rim), and the margin round each side's part of the map.
 const DOWN = 0.93, MARGIN = 4;
-// The skirt past each torn line: how far past it, and how far down from the edge, in units.
-const SKIRT = { past: 0.5, down: 8 };
+// The skirt past each side's line: how far past it, and how far down from the edge, in units: the crust's broken
+// face in section, deep enough to meet the torn rock behind it.
+const SKIRT = { past: 0.5, down: 22 };
 // How near (the cosine) the grid's normal must be to a crease's to be taken in its place.
 const AGREE = Math.cos((24 * Math.PI) / 180), CREASE = Math.cos((32 * Math.PI) / 180);
+// How much the stored light is eased toward its neighbours', on the open ground and on a broken face, and how often.
+const EASE = { flat: 0.25, steep: 0.85, passes: 3 };
 
 const features = { craters: craters(), segs: cracks(), edges: edges(), knot: onShell(...KNOT) };
 setup(features);
@@ -152,6 +155,25 @@ say(`creased: ${n.toLocaleString('en-US')} vertices`);
 
 // ---------------------------------------------------------------------------------------------------------------
 // The light: the moon, the core (which hardly reaches the outer surface) and what bounces, each side by its stone.
+// On the broken faces the normals are eased toward their neighbours' too: each row of the grid turned its own way
+// there, which drew the face in thin bands like brushed paint.
+const nextTo = Array.from({ length: n }, () => []), steep = new Float32Array(n);
+{
+  for (let t = 0; t < lit.indices.length; t += 3) for (let k = 0; k < 3; k++) { const a = lit.indices[t + k], b = lit.indices[t + ((k + 1) % 3)]; nextTo[a].push(b); nextTo[b].push(a); }
+  for (let i = 0; i < n; i++) { const p = lit.positions.subarray(i * 3, i * 3 + 3), sn = shellNormal(...p); steep[i] = 1 - Math.max(0, lit.normals[i * 3] * sn[0] + lit.normals[i * 3 + 1] * sn[1] + lit.normals[i * 3 + 2] * sn[2]); }
+  const N = lit.normals;
+  for (let pass = 0; pass < EASE.passes * 2; pass++) {
+    const was = N.slice();
+    for (let i = 0; i < n; i++) {
+      const w = Math.min(1, Math.max(0, (steep[i] - 0.25) * 2.5)) * 0.8;
+      if (!w || !nextTo[i].length) continue;
+      const a = [0, 0, 0];
+      for (const j of nextTo[i]) for (let c = 0; c < 3; c++) a[c] += was[j * 3 + c];
+      const m = [0, 1, 2].map((c) => was[i * 3 + c] * (1 - w) + (a[c] / nextTo[i].length) * w), l = Math.hypot(...m) || 1;
+      N.set(m.map((v) => v / l), i * 3);
+    }
+  }
+}
 const stone = (s) => { const a = linear(s.from), b = linear(s.to); return a.map((v, i) => Math.min(1, (v + (b[i] - v) * s.k) * s.power)); };
 const PALE = stone(STONE.pale), DARK = stone(STONE.dark);
 const albedo = new Float32Array(n * 3);
@@ -159,6 +181,21 @@ for (let i = 0; i < n; i++) albedo.set(lit.positions[i * 3] > 0 ? PALE : DARK, i
 const LT = light();
 const baked = await bake({ meshes: [{ name: 'skin', positions: lit.positions, indices: lit.indices, normals: lit.normals, albedo, receive: true }], ...LT }, { samples: FINE.samples, bounces: FINE.bounces });
 say('baked');
+// The stored light is eased toward its neighbours', most on the broken faces: their triangles are long and thin, and
+// the light worked out at each of their corners alone drew stripes down them.
+{
+  const B = baked.skin;
+  for (let pass = 0; pass < EASE.passes; pass++) {
+    const was = { core: B.core.slice(), moon: B.moon.slice(), open: B.open.slice(), bounce: B.bounce.slice() };
+    for (let i = 0; i < n; i++) {
+      const ns = nextTo[i];
+      if (!ns.length) continue;
+      const w = EASE.flat + (EASE.steep - EASE.flat) * Math.min(1, steep[i] * 2);
+      for (const key of ['core', 'moon', 'open']) { let a = 0; for (const j of ns) a += was[key][j]; B[key][i] = was[key][i] * (1 - w) + (a / ns.length) * w; }
+      for (let c = 0; c < 3; c++) { let a = 0; for (const j of ns) a += was.bounce[j * 3 + c]; B.bounce[i * 3 + c] = was.bounce[i * 3 + c] * (1 - w) + (a / ns.length) * w; }
+    }
+  }
+}
 
 // ---------------------------------------------------------------------------------------------------------------
 // The map. Each side's part is the box of picture 9 its front lies in.

@@ -8,7 +8,7 @@ import { L } from '../../lib/plan.mjs';
 import * as H from './hollow.mjs';
 
 // How many places are tried, the most stones, how large (units), how far up a face must look, how far sunk.
-export const RUBBLE = { tries: 9000, most: 150, size: [1.6, 6.5], up: 0.5, sunk: 0.35, apart: 3 };
+export const RUBBLE = { tries: 9000, most: 110, size: [2.2, 7], up: 0.72, sunk: 0.42, apart: 3 };
 
 const hash = (a, b) => { const h = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return h - Math.floor(h); };
 const norm = (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };

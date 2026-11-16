@@ -1,13 +1,14 @@
-import { SCALE, SOURCE } from '../../layout';
+import { SCALE, SOURCE, VIEW } from '../../layout';
 import { KIND, MOTION } from './motion';
 import { LOOK, MOON_SHARE } from './table';
 
 // The shader of what broke away, laid into a standard material before the world's light (../../light.ts). Every
 // piece is drawn from its model where the table of pieces (a texture written once) puts it, and moved by the clock
 // alone (./motion.ts): no buffer is written after the piece is made.
-// It is the planet's stone, without the marks the stone shows on the faces of the hollow: on pieces this small they
-// read as cork and as a leopard's mottle. A face has fracture of its own instead: rings round where it was struck,
-// hackle lines running out from there, and a fine grit, each fading where a pixel covers it.
+// It is the planet's stone (stone() in ../../light.ts) with the hollow's own grain (the stone's grain map, laid at the
+// piece's own scale), without the hollow's pockets and grooves, which read as cork on pieces this small. Its break is
+// in its geometry (scripts/world/parts/debris/torn.mjs): what the shader adds is the tone of a face, which varies
+// across it, the paler fresh stone of a flake's scar, a weathered skin on the old faces, and a few hackle lines.
 // A piece is lit as picture 9's are: a body of warm near black, picked out by three lights. The core burns a thin edge
 // and the face behind it on the side that sees it, falling away fast with distance. The stream lights the near side
 // of what is beside it, as far as it has run. The moon, behind and to the right, draws a thin pale rim at the upper
@@ -34,6 +35,7 @@ varying vec3 vWorldP;
 varying vec3 vAt;
 varying float vSide;
 varying float wBedTone;
+varying float vFresh;
 varying float vMetal;
 varying float vFlat;
 varying float vSeed;
@@ -104,7 +106,11 @@ export const VERT_MOTION = /* glsl */ `
 	vec3 dNor = dTurnY( dRound, dTurn( axis, spin, dTurnQ( dQ, dLocalN ) ) );
 	vAt = at;
 	vSide = dA.x;
-	wBedTone = aBounce.w;
+	{
+		float dV = floor( aBounce.w * 255.0 + 0.5 );
+		wBedTone = floor( dV / 16.0 ) / 15.0;
+		vFresh = mod( dV, 16.0 ) / 15.0;
+	}
 	float dLook = dE.z;
 	vMetal = dLook > ${f(LOOK.stone + 0.5)} ? 1.0 : 0.0;
 	vFlat = dLook > ${f(LOOK.rock + 0.5)} ? 1.0 : 0.0;
@@ -122,7 +128,6 @@ export const VERT_LIGHT = /* glsl */ `
 	vWorldP = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;`;
 
 export const FRAG_PARS = /* glsl */ `
-uniform vec3 uBody;
 uniform vec3 uStone;
 uniform vec3 uSkinPale;
 uniform vec3 uSkinDark;
@@ -142,10 +147,11 @@ uniform vec3 uStreamColor;
 uniform vec2 uStream;
 uniform vec4 uRelief;
 uniform vec3 uDeep;
-uniform float uReliefTone;
 uniform vec3 uCracks;
 uniform vec3 uCracksI;
-float dTone = 0.0;
+uniform vec2 uSmallDepth;
+uniform float uSmallBurn;
+uniform float uShardMirror;
 uniform vec3 uLineA[ 6 ];
 uniform vec3 uLineB[ 6 ];
 uniform vec2 uLineI[ 6 ];
@@ -155,12 +161,20 @@ varying vec3 vWorldP;
 varying vec3 vAt;
 varying float vSide;
 varying float wBedTone;
+varying float vFresh;
 varying float vMetal;
 varying float vFlat;
 varying float vSeed;
 varying float vSeen;
 varying float vMoon;
 varying float vSkin;
+uniform sampler2D uStoneGrain;
+uniform vec3 uPatina;
+uniform vec3 uChip;
+uniform vec4 uWeather;
+uniform vec3 uGlow;
+uniform vec2 uGlowRim;
+uniform vec4 uGrainK;
 const float TAU = 6.2831853;
 // The moon as it reached this place, past the planet's shadow, which the rim is drawn from.
 vec3 dMoonColor = vec3( 0.0 );
@@ -173,40 +187,38 @@ float dNoise( vec3 p ) {
 	return mix( mix( mix( dH3( i ), dH3( i + vec3( 1, 0, 0 ) ), u.x ), mix( dH3( i + vec3( 0, 1, 0 ) ), dH3( i + vec3( 1, 1, 0 ) ), u.x ), u.y ),
 		mix( mix( dH3( i + vec3( 0, 0, 1 ) ), dH3( i + vec3( 1, 0, 1 ) ), u.x ), mix( dH3( i + vec3( 0, 1, 1 ) ), dH3( i + vec3( 1, 1, 1 ) ), u.x ), u.y ), u.z );
 }
-// The fracture on a face, as a height in units: rings round two places where the piece was struck, hackle lines
-// running out from each, and a ridged grit. px is how many units a pixel covers here: what is finer fades.
+// The hackle lines on a face, as a height in units: a few fine lines running out from one place where the piece was
+// struck, broken along their length, fading where a pixel covers them. No rings and no grit: those read as a
+// fingerprint and as hammered metal.
 float dRelief( vec3 p, vec3 ext, float seed, float px ) {
-	float big = max( ext.x, max( ext.y, ext.z ) ), h = 0.0;
-	for ( int i = 0; i < 2; i ++ ) {
-		float k = seed * 3.17 + float( i ) * 11.3;
-		vec3 c = normalize( vec3( dH( k ), dH( k + 1.7 ), dH( k + 3.9 ) ) * 2.0 - 1.0 + 1e-3 ) * ext * 1.08;
-		vec3 rel = p - c;
-		float r = max( length( rel ), 1e-4 );
-		float lam = big * ( 0.055 + 0.035 * dH( k + 6.1 ) ), far = exp( - r / ( big * 0.75 ) );
-		h += lam * uRelief.x * sin( TAU * r / lam + k ) * far * ( 1.0 - smoothstep( 0.07, 0.2, px / lam ) );
-		// Hackle lines: a noise of the way out from the struck place alone, so it runs out in lines that widen.
-		float fan = uRelief.y, wide = r / fan;
-		float line = ( dNoise( rel / r * fan + k ) - 0.5 ) * smoothstep( 0.35, 0.75, dNoise( rel * 2.7 / big + k ) );
-		h += big * uRelief.z * line * smoothstep( big * 1.4, big * 0.15, r ) * ( 1.0 - smoothstep( 0.15, 0.4, px / wide ) );
-	}
-	float g = big * 0.035, gr = 0.5 - abs( dNoise( p / g + seed ) - 0.5 );
-	h += big * uRelief.w * gr * ( 1.0 - smoothstep( 0.12, 0.35, px / g ) );
-	return h;
+	float big = max( ext.x, max( ext.y, ext.z ) );
+	float k = seed * 3.17;
+	vec3 c = normalize( vec3( dH( k ), dH( k + 1.7 ), dH( k + 3.9 ) ) * 2.0 - 1.0 + 1e-3 ) * ext * 1.08;
+	vec3 rel = p - c;
+	float r = max( length( rel ), 1e-4 ), fan = uRelief.y, wide = r / fan;
+	float line = ( dNoise( rel / r * fan + k ) - 0.5 ) * smoothstep( 0.45, 0.8, dNoise( rel * 2.7 / big + k ) );
+	return big * uRelief.z * line * smoothstep( big * 1.2, big * 0.2, r ) * ( 1.0 - smoothstep( 0.15, 0.4, px / wide ) );
 }
-// What a face shows in its tone: a fine grain of the stone at two sizes, and a few hairline fractures where the
-// piece has begun to split again, each a plane through it, dark, broken along its length. px as for the relief.
+// The stone's grain from the three axes of the piece's own frame, at the piece's own scale: its tone.
+float dGrainMap( vec3 p, vec3 n, float scale ) {
+	vec3 w = pow( abs( n ), vec3( 4.0 ) );
+	w /= max( w.x + w.y + w.z, 1e-4 );
+	return texture2D( uStoneGrain, p.zy * scale + 0.31 ).b * w.x + texture2D( uStoneGrain, p.xz * scale + 0.57 ).b * w.y + texture2D( uStoneGrain, p.xy * scale + 0.83 ).b * w.z;
+}
+// What a face shows in its tone: broad stains across it, so no face is one tone, and a few hairline fractures where
+// the piece has begun to split again, each a plane through it, dark, broken along its length. px as for the relief.
 float dGrain( vec3 p, vec3 ext, float seed, float px ) {
-	float big = max( ext.x, max( ext.y, ext.z ) ), g1 = big * 0.012, g2 = big * 0.045;
-	float t = ( dNoise( p / g1 + seed ) - 0.5 ) * ( 1.0 - smoothstep( 0.2, 0.6, px / g1 ) ) * 0.7 + ( dNoise( p / g2 + seed * 1.3 ) - 0.5 ) * ( 1.0 - smoothstep( 0.2, 0.6, px / g2 ) );
+	float big = max( ext.x, max( ext.y, ext.z ) ), g2 = big * 0.22, g3 = big * 0.07;
+	float t = ( dNoise( p / g2 + seed * 1.3 ) - 0.5 ) * 1.2 + ( dNoise( p / g3 + seed * 0.7 ) - 0.5 ) * 0.6 * ( 1.0 - smoothstep( 0.2, 0.6, px / g3 ) );
 	float split = 0.0;
-	for ( int i = 0; i < 3; i ++ ) {
+	for ( int i = 0; i < 2; i ++ ) {
 		float k = seed * 5.71 + float( i ) * 17.9;
 		vec3 n = normalize( vec3( dH( k ), dH( k + 2.3 ), dH( k + 4.7 ) ) * 2.0 - 1.0 + 1e-3 );
 		float d = abs( dot( p - ( vec3( dH( k + 6.1 ), dH( k + 7.3 ), dH( k + 8.9 ) ) * 2.0 - 1.0 ) * ext * 0.5, n ) + big * 0.02 * ( dNoise( p / ( big * 0.08 ) + k ) - 0.5 ) );
-		float w = max( big * 0.004, px * 0.7 );
-		split = max( split, ( 1.0 - smoothstep( 0.0, w, d ) ) * min( 1.0, big * 0.004 / max( px * 0.7, 1e-4 ) ) * smoothstep( 0.45, 0.7, dNoise( p / ( big * 0.18 ) + k ) ) );
+		float w = max( big * 0.003, px * 0.7 );
+		split = max( split, ( 1.0 - smoothstep( 0.0, w, d ) ) * min( 1.0, big * 0.003 / max( px * 0.7, 1e-4 ) ) * smoothstep( 0.5, 0.75, dNoise( p / ( big * 0.18 ) + k ) ) );
 	}
-	return t * 0.9 - 0.6 * split;
+	return t * 0.5 - 0.6 * split;
 }
 // A normal tilted by the slope of a height across the screen (as three's bump map does, in the same measure).
 vec3 dBump( vec3 pos, vec3 n, float hx, float hy, float face ) {
@@ -235,14 +247,25 @@ export const MOON_SWAP = /* glsl */ `
 // darker. A carried shard is dark copper.
 export const COLOR = /* glsl */ `
 	{
-		vec3 dAlb = uBody * ( 0.8 + 0.4 * wBedTone );
+		// The planet's stone. An old face carries a weathered skin, darker and greyer, which is thinner where the core
+		// burns close; a flake's scar and the rubble in a join are fresh stone, paler; each bed a little its own.
+		float dBig = max( vExt.x, max( vExt.y, vExt.z ) );
+		float dPx0 = max( max( length( dFdx( vLocal ) ), length( dFdy( vLocal ) ) ), 1e-4 );
+		float dNear = 1.0 - smoothstep( uWeather.z, uWeather.w, distance( vAt, uDebrisCore ) );
+		float dOld = ( 1.0 - vFresh ) * mix( uWeather.x, uWeather.y, dNear );
+		vec3 dAlb = mix( uStone, uPatina, dOld );
+		dAlb = mix( dAlb, uChip, vFresh * 0.55 );
+		dAlb *= 0.82 + 0.36 * wBedTone;
+		vec3 dFaceN = normalize( cross( dFdx( vLocal ), dFdy( vLocal ) ) + 1e-5 );
+		float dG = dGrainMap( vLocal, dFaceN, 1.0 / clamp( dBig * uGrainK.x, uGrainK.y, uGrainK.z ) );
+		dAlb *= 1.0 + uGrainK.w * ( dG - 0.5 ) * 2.0;
 		dAlb = mix( dAlb, ( vSide > 0.0 ? uSkinPale : uSkinDark ) * ( 0.85 + 0.3 * wBedTone ), vSkin );
 		float dBend = wLight.y * 2.0 - 1.0;
-		float dPx0 = max( max( length( dFdx( vLocal ) ), length( dFdy( vLocal ) ) ), 1e-4 );
-		float dChip = smoothstep( 0.35, 0.65, dNoise( vLocal / ( max( vExt.x, max( vExt.y, vExt.z ) ) * 0.03 ) + vSeed ) );
-		dAlb *= 1.0 + uWorn * max( dBend, 0.0 ) * ( 0.4 + 0.6 * dChip ) * ( 1.0 - vFlat ) - 0.35 * max( - dBend, 0.0 );
+		dAlb *= 1.0 + uWorn * max( dBend, 0.0 ) * ( 1.0 - vFlat ) - 0.35 * max( - dBend, 0.0 );
 		dAlb *= 1.0 + dGrain( vLocal, vExt, vSeed, dPx0 ) * ( 1.0 - vFlat );
-		diffuseColor.rgb = mix( dAlb, uShard, vMetal );
+		// A shard is dark copper, each of its faces a little its own.
+		vec3 dShard = uShard * ( 0.65 + 0.7 * dH( dot( floor( dFaceN * 3.0 + 0.5 ), vec3( 1.0, 7.0, 13.0 ) ) + vSeed ) );
+		diffuseColor.rgb = mix( dAlb, dShard, vMetal );
 	}`;
 
 export const FINISH = /* glsl */ `
@@ -255,8 +278,6 @@ export const NORMAL = /* glsl */ `
 		float dPx = max( max( length( dFdx( vLocal ) ), length( dFdy( vLocal ) ) ), 1e-4 );
 		float dHu = dRelief( vLocal, vExt, vSeed, dPx ), dRel = dHu * ${f(SCALE)};
 		normal = dBump( - vViewPosition, normal, dFdx( dRel ), dFdy( dRel ), faceDirection );
-		dTone = dHu / max( max( vExt.x, max( vExt.y, vExt.z ) ) * 0.02, 1e-3 );
-		diffuseColor.rgb *= 1.0 + uReliefTone * 0.25 * clamp( dTone, -1.0, 1.0 );
 	}`;
 
 // The three lights that pick a piece out, and what nothing reaches.
@@ -284,7 +305,8 @@ export const LIGHT = /* glsl */ `
 			vec3 dLs = normalize( ( viewMatrix * vec4( dQ / dD, 0.0 ) ).xyz );
 			float dC = dot( dN, dLs );
 			vec3 dIrr = uStreamColor * dE;
-			reflectedLight.directDiffuse += dIrr * saturate( dC * ( 1.0 - uStreamLight.w ) + uStreamLight.w ) * ( 1.0 - 0.75 * vFlat * ( 1.0 - vMetal ) ) * BRDF_Lambert( mix( uStone, material.diffuseContribution, max( vMetal, 0.5 + 0.5 * vFlat ) ) );
+			float dWrap = uStreamLight.w * ( 1.0 - vMetal );
+			reflectedLight.directDiffuse += dIrr * saturate( dC * ( 1.0 - dWrap ) + dWrap ) * ( 1.0 - 0.75 * vFlat * ( 1.0 - vMetal ) ) * BRDF_Lambert( mix( uStone, material.diffuseContribution, max( vMetal, 0.5 + 0.5 * vFlat ) ) );
 			reflectedLight.directSpecular += dIrr * saturate( dC ) * BRDF_GGX( dLs, dV, dN, material );
 		}
 		// The cracks lit from inside on the planet's left side.
@@ -295,21 +317,32 @@ export const LIGHT = /* glsl */ `
 			vec3 dKl = normalize( ( viewMatrix * vec4( dK, 0.0 ) ).xyz );
 			reflectedLight.directDiffuse += uStreamColor * dKe * saturate( dot( dN, dKl ) ) * BRDF_Lambert( uStone ) * ( 1.0 - vMetal );
 		}
-		// The small streams, which are always there, faintly.
+		// The small streams, which are always there. The page draws them over the world, so each lights what it is
+		// drawn beside: its line is taken at the depth of the place it lights (within a reach of its own), moved
+		// across as far as the view moves a thing at that depth. On an edge that stands out it burns.
 		for ( int i = 0; i < 6; i ++ ) {
-			vec3 dAB = uLineB[ i ] - uLineA[ i ];
-			float dS = clamp( dot( vWorldP - uLineA[ i ], dAB ) / max( dot( dAB, dAB ), 1e-8 ), 0.0, 1.0 );
-			vec3 dT = uLineA[ i ] + dAB * dS - vWorldP;
-			float dF = max( length( dT ), 1e-5 ), dR = uLineI[ i ].y;
-			float dI = uLineI[ i ].x * dR * dR / ( dR * dR + dF * dF );
+			vec3 dA0 = uLineA[ i ] / ${f(SCALE)}, dB0 = uLineB[ i ] / ${f(SCALE)};
+			float dZ = clamp( dP.z, dA0.z - uSmallDepth.x, dA0.z + uSmallDepth.x );
+			float dK = ( ${f(VIEW.back)} - dA0.z ) / max( ${f(VIEW.back)} - dZ, 1.0 );
+			vec3 dA1 = vec3( dA0.x * dK, dA0.y, dZ ), dB1 = vec3( dB0.x * dK, dB0.y, dZ );
+			vec3 dAB = dB1 - dA1;
+			float dS = clamp( dot( dP - dA1, dAB ) / max( dot( dAB, dAB ), 1e-6 ), 0.0, 1.0 );
+			vec3 dT = dA1 + dAB * dS - dP;
+			float dF = max( length( dT ), 1e-3 ), dR = uLineI[ i ].y;
+			float dI = uLineI[ i ].x * dR * dR / ( dR * dR + dF * dF ) * ( 1.0 - smoothstep( uSmallDepth.y * 0.5, uSmallDepth.y, dF ) ) * ( 1.0 - 0.6 * smoothstep( uSmallDepth.x * 0.4, uSmallDepth.x, abs( dP.z - dA0.z ) ) );
 			if ( dI < 1e-3 ) continue;
 			vec3 dL = normalize( ( viewMatrix * vec4( dT / dF, 0.0 ) ).xyz );
-			reflectedLight.directDiffuse += uStreamColor * dI * saturate( dot( dN, dL ) ) * BRDF_Lambert( uStone );
+			float dFace = saturate( dot( dN, dL ) );
+			reflectedLight.directDiffuse += uStreamColor * dI * dFace * ( 1.0 + uSmallBurn * dConvex ) * BRDF_Lambert( mix( uStone, material.diffuseContribution, vMetal ) );
+			reflectedLight.directSpecular += uStreamColor * dI * dFace * BRDF_GGX( dL, dV, dN, material ) * vMetal;
 		}
 		// The moon's rim: thin, pale, at the edge turned to it, where the planet does not shade the piece.
 		float dRimM = pow( dGraze, uMoonRim.y ) * smoothstep( 0.1, 0.6, dot( dN, dMoonDir ) );
 		reflectedLight.directDiffuse += dMoonColor * uRimTint * vMoon * dRimM * uMoonRim.x * ( 1.0 - vMetal );
 		reflectedLight.directSpecular += dMoonColor * vMoon * dRimM * uMoonRim.x * uMoonRim.z * F_Schlick( material.specularColor, 1.0, 1.0 ) * vMetal;
+		// The glow the page draws behind the world: a faint warm line on the outline of what the moon does not reach,
+		// so a mass in the planet's shadow still reads as a mass.
+		reflectedLight.directDiffuse += uGlow * pow( dGraze, uGlowRim.x ) * ( 1.0 - uGlowRim.y * vMoon ) * ( 1.0 - vMetal ) * smoothstep( -0.2, 0.4, dot( dN, vec3( 0.0, 0.0, -1.0 ) ) + 0.6 );
 		// The night, softly, from the visitor's side and above: enough to give a body its form, never its color.
 		reflectedLight.indirectDiffuse += uFill.rgb * wLight.z * ( uFill.a + ( 1.0 - uFill.a ) * saturate( dot( dN, uFillDir ) ) ) * BRDF_Lambert( material.diffuseContribution );
 	}`;
@@ -319,7 +352,7 @@ export const LIGHT = /* glsl */ `
 // mirrors almost none of it. A carried shard is metal and mirrors it.
 export const NIGHT = /* glsl */ `
 	iblIrradiance *= uNight;
-	radiance *= mix( uRockMirror, 1.0, vMetal );`;
+	radiance *= mix( uRockMirror, uShardMirror, vMetal );`;
 
 // Further back is darker: a piece behind the stream's column fades toward the dark.
 export const DEEP = /* glsl */ `

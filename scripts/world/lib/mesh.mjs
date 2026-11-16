@@ -383,8 +383,13 @@ export function closed(mesh) {
 
 // Flips away triangles that have all but no area (three points on a line), each into its neighbour across its longest
 // edge, so the mesh keeps every edge it had paired. thin is the least height a triangle may have, as a share of its
-// longest edge. Changes indices in place and returns how many triangles are still that thin.
-export function uncap(mesh, thin = 1e-4) {
+// longest edge. Then two triangles on the same three vertices wound against each other (a fin with no inside) are
+// both taken out, and so is a thin triangle whose middle vertex has only two other triangles: the three become the
+// one triangle they cover. Last, unless join is false, a thin triangle still left has its middle vertex joined to
+// the nearer end of its long edge, where that keeps every edge with two faces; this moves where the middle vertex's
+// other triangles end, by under the length of that edge. Changes mesh.indices (a new array if any triangle was taken out; a vertex left
+// without a triangle stays in positions) and returns how many triangles are still that thin.
+export function uncap(mesh, thin = 1e-4, join = true) {
   const p = mesh.positions, ix = mesh.indices, n = count(mesh), nt = ix.length / 3;
   const edges = new Table(ix.length);
   for (let t = 0; t < nt; t++) for (let k = 0; k < 3; k++) edges.set(ix[t * 3 + k] * n + ix[t * 3 + (k + 1) % 3], t);
@@ -431,7 +436,97 @@ export function uncap(mesh, thin = 1e-4) {
     }
     if (!flipped) break;
   }
-  return left;
+  if (!left) return 0;
+  const gone = new Uint8Array(nt), seen = new Map();
+  let out = 0;
+  for (let t = 0; t < nt; t++) {
+    const a = ix[t * 3], b = ix[t * 3 + 1], c = ix[t * 3 + 2];
+    const lo = Math.min(a, b, c), hi = Math.max(a, b, c), key = `${lo},${a + b + c - lo - hi},${hi}`;
+    const u = seen.get(key);
+    if (u === undefined) { seen.set(key, t); continue; }
+    if (gone[u]) continue;
+    const ua = ix[u * 3], ub = ix[u * 3 + 1];
+    const same = (ua === a && ub === b) || (ua === b && ub === c) || (ua === c && ub === a);
+    if (same) continue;
+    gone[t] = gone[u] = 1;
+    seen.delete(key);
+    out += 2;
+  }
+  let { start, tris } = incident(mesh);
+  for (let t = 0; t < nt; t++) {
+    if (gone[t]) continue;
+    const v = [ix[t * 3], ix[t * 3 + 1], ix[t * 3 + 2]];
+    if (!flat(v[0], v[1], v[2])) continue;
+    let k = 0;
+    for (let j = 1; j < 3; j++) if (len2(v[j], v[(j + 1) % 3]) > len2(v[k], v[(k + 1) % 3])) k = j;
+    const x = v[k], y = v[(k + 1) % 3], m = v[(k + 2) % 3];
+    const ring = [];
+    for (let i = start[m]; i < start[m + 1]; i++) if (!gone[tris[i]]) ring.push(tris[i]);
+    if (ring.length !== 3) continue;
+    const others = ring.filter((r) => r !== t);
+    let z = -1, keep = -1, drop = -1;
+    for (const r of others) {
+      const w = [ix[r * 3], ix[r * 3 + 1], ix[r * 3 + 2]];
+      const o = w.filter((q) => q !== m);
+      const far = o.find((q) => q !== x && q !== y);
+      if (far === undefined || (z >= 0 && far !== z)) { z = -2; break; }
+      z = far;
+      if (o.includes(x)) keep = r; else if (o.includes(y)) drop = r;
+    }
+    if (z < 0 || keep < 0 || drop < 0) continue;
+    for (let j = 0; j < 3; j++) if (ix[keep * 3 + j] === m) ix[keep * 3 + j] = y;
+    gone[t] = gone[drop] = 1;
+    out += 2;
+    left--;
+  }
+  for (let pass = 0; pass < 4 && left > 0 && join; pass++) {
+    ({ start, tris } = incident(mesh));
+    const touched = new Uint8Array(n);
+    let joins = 0;
+    for (let t = 0; t < nt && left > 0; t++) {
+      if (gone[t]) continue;
+      const v = [ix[t * 3], ix[t * 3 + 1], ix[t * 3 + 2]];
+      if (!flat(v[0], v[1], v[2]) || v[0] === v[1] || v[1] === v[2] || v[0] === v[2] || touched[v[0]] || touched[v[1]] || touched[v[2]]) continue;
+      let k = 0;
+      for (let j = 1; j < 3; j++) if (len2(v[j], v[(j + 1) % 3]) > len2(v[k], v[(k + 1) % 3])) k = j;
+      const m = v[(k + 2) % 3], ends = len2(m, v[k]) <= len2(m, v[(k + 1) % 3]) ? [v[k], v[(k + 1) % 3]] : [v[(k + 1) % 3], v[k]];
+      const ring = (a) => {
+        const r = new Set(), ts = [];
+        for (let i = start[a]; i < start[a + 1]; i++) {
+          const q = tris[i];
+          if (gone[q] || (ix[q * 3] !== a && ix[q * 3 + 1] !== a && ix[q * 3 + 2] !== a)) continue;
+          ts.push(q);
+          for (let j = 0; j < 3; j++) if (ix[q * 3 + j] !== a) r.add(ix[q * 3 + j]);
+        }
+        return { r, ts };
+      };
+      const M = ring(m);
+      for (const x of ends) {
+        const X = ring(x);
+        const both = M.ts.filter((q) => ix[q * 3] === x || ix[q * 3 + 1] === x || ix[q * 3 + 2] === x);
+        const opposite = new Set(both.map((q) => [ix[q * 3], ix[q * 3 + 1], ix[q * 3 + 2]].find((u) => u !== m && u !== x)));
+        let shared = 0;
+        for (const u of M.r) if (u !== x && X.r.has(u)) { if (!opposite.has(u)) { shared = -1; break; } shared++; }
+        if (shared !== opposite.size || both.length !== 2) continue;
+        for (const q of both) gone[q] = 1;
+        for (const q of M.ts) for (let j = 0; j < 3; j++) if (ix[q * 3 + j] === m) ix[q * 3 + j] = x;
+        for (const u of [m, x, ...M.r]) touched[u] = 1;
+        out += 2;
+        left--;
+        joins++;
+        break;
+      }
+    }
+    if (!joins) break;
+  }
+  if (!out) return left;
+  const kept = new Uint32Array((nt - out) * 3);
+  let w = 0;
+  for (let t = 0; t < nt; t++) if (!gone[t]) { kept[w++] = ix[t * 3]; kept[w++] = ix[t * 3 + 1]; kept[w++] = ix[t * 3 + 2]; }
+  mesh.indices = kept;
+  let still = 0;
+  for (let t = 0; t < kept.length; t += 3) if (flat(kept[t], kept[t + 1], kept[t + 2])) still++;
+  return still;
 }
 
 // How far a point is from a mesh: closest(mesh, size)(x, y, z), by buckets size across. A point further than size

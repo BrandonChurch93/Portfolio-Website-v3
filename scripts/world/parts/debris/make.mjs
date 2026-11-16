@@ -70,7 +70,7 @@ for (const p of great) {
   let { pos, nor } = laid(p);
   const need = SWAY.plate * calm(p) + 1, from = [...p.at], [px, py] = L.pictured(...from);
   // A boulder of the picture's is first turned about its own upright, which keeps its place and size.
-  if (p.pictured) {
+  if (p.pictured && !p.form) {
     const q0 = p.quat, up = rotate(q0, [0, 1, 0]);
     let best = clear(pos), bestQ = q0;
     for (let k = 1; k < 12 && best < need; k++) {

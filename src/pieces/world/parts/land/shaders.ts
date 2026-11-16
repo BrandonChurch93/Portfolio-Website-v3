@@ -22,20 +22,24 @@ const f = (v: number): string => (Number.isInteger(v) ? `${v}.0` : `${v}`);
 export const VERT_PARS = /* glsl */ `
 uniform vec3 uAt;
 uniform float uSize;
-varying vec3 vUnit;`;
+attribute float drape;
+varying vec3 vUnit;
+varying float vDrape;`;
 export const VERT = /* glsl */ `
-vUnit = uAt + position * uSize;`;
+vUnit = uAt + position * uSize;
+vDrape = drape;`;
 
 export function fragPars(n: Counts): string {
   const pc = Math.cos(PYRAMID.turn * D2R), ps = Math.sin(PYRAMID.turn * D2R);
   return /* glsl */ `
 varying vec3 vUnit;
+varying float vDrape;
 uniform sampler2D uMapA;
 uniform sampler2D uMapB;
 uniform sampler2D uLight;
 uniform sampler2D uLots;
 uniform sampler2D uTowers;
-uniform vec3 uSand, uSandDeep, uPave, uPavePale, uCourt, uGrass, uGrassDry, uGrassDeep, uEarth, uStone, uBronze;
+uniform vec3 uSand, uSandRim, uBare, uSandDeep, uPave, uPavePale, uCourt, uGrass, uGrassDry, uGrassDeep, uEarth, uStone, uBronze;
 const float MAP_LO = ${f(MAP.lo)}, MAP_SIZE = ${f(MAP.size)}, MAP_N = ${f(n.map)}, LOTS_N = ${f(n.lots)};
 const float LAND_BOUNCE = ${f(LIGHT.bounce)};
 // The share of the night's soft light the sand keeps: the night is lit from the visitor's side, and in full it
@@ -47,12 +51,16 @@ const float SAND_BOUNCE = 0.5, SAND_TINT = 3.2;
 // The moon on the sand. Lit sand is pale gold, his dunes' (213, 157, 100) to (229, 175, 110), and raising the sand's
 // albedo to reach it raised its shadows with it.
 const float SAND_SUN = 1.5;
+// What the lit sand throws into the shadows on it, as irradiance, and how much of that reaches a shadow on the floor
+// beyond a slip face's toe against the toe itself.
+const vec3 SAND_GLOW = vec3(0.9, 0.6, 0.36);
+const float SAND_FLOOR = 0.8;
 const vec3 MOON_TO = normalize(vec3(${MOONWARD.map((v) => f(v)).join(', ')}));
 ${GLSL}
 vec3 landAlbedo;
 float landRough, landMetal;
 vec3 landN;
-float landFace = 0.0, landSandK = 0.0;
+float landFace = 0.0, landSandK = 0.0, landLift = 0.0, landSeen = 1.0, landDrape = 0.0;
 float landFoot = 0.1;
 vec3 landSunAt = vec3(0.0), landNs = vec3(0.0, 1.0, 0.0);
 bool landRecv;
@@ -167,6 +175,23 @@ void landSurface() {
 	float grass = A.r, sand = A.g, inside = A.b * 64.0, dust = texture(uMapB, uv).g;
 	vec3 nG = (vec4(vNormal, 0.0) * viewMatrix).xyz;
 	nG = dot(nG, nG) > 1e-10 ? normalize(nG) : vec3(0.0, 1.0, 0.0);
+	// The sand's lip down the planet's side: thick at the shoulder, thinning out down the side in streaks along the
+	// hollows of the stone, raggedly, until only the stone is left.
+	if (vDrape > 0.005) {
+		float s = clamp((vDrape - 0.02) / 0.98, 0.0, 1.0);
+		vec2 q = vec2(atan(vUnit.x, vUnit.z) * ${f(WORLD.half)}, vUnit.y);
+		float ragged = 0.34 * (landNoise(q / vec2(4.0, 2.6)) - 0.5) + 0.16 * (landNoise(q / 1.3 + 7.0) - 0.5);
+		float cover = 1.0 - smoothstep(0.45, 0.9, s + ragged);
+		cover *= mix(1.0, smoothstep(0.25, 0.6, landNoise(vec2(q.x / 1.7, q.y / 8.0) + 2.0)), smoothstep(0.3, 0.75, s));
+		vec3 grit = uSandRim * (0.94 + 0.12 * landNoise(q / 0.6));
+		vec3 bare = uBare * (0.82 + 0.3 * landNoise(q / 2.2 + 3.0)) * (0.9 + 0.1 * landNoise(q / 0.5));
+		landAlbedo = mix(bare, grit, cover);
+		landN = nG;
+		landRough = 0.95;
+		landMetal = 0.0;
+		landDrape = 1.0;
+		return;
+	}
 	// A wall the break or the edge shows. In the desert only the turned down edge is one: there the mesh's own
 	// normals are rough where the reduction left a thin triangle, and the sand's slopes are worked out exactly.
 	float wall = (1.0 - smoothstep(0.4, 0.65, nG.y)) * mix(1.0, 1.0 - smoothstep(1.0, 3.0, inside), smoothstep(0.0, 0.5, sand));
@@ -304,28 +329,52 @@ void landSurface() {
 		vec2 gRoll = (rl > 0.02 ? relief / rl : 0.0) * dRoll * gI;
 		gs = sand * (gR + gRoll) + relief * gM;
 		float steep = length(gR);
+		// The dune this place is on: the height of its crest over here, how far down its slip face the place has fallen
+		// as a share of that, and how far down its back from the brink, in units.
+		float hc = 1e-3, fall = 0.0, fromBrink = 1e3, tb = 1.0;
+		if (which >= 0.0) {
+			int wi = int(which);
+			hc = max(landCrest(texelFetch(uCrest, ivec2(1, wi), 0), texelFetch(uCrest, ivec2(2, wi), 0), info.z).w, 1e-3);
+			if (info.y > 0.5) fall = clamp(1.0 - info.x / hc, 0.0, 1.0);
+			else if (info.x > 0.05) { tb = info.w; fromBrink = tb * BACK * hc; }
+		}
 		// On a slip face: how far down it from the crest, and how high over its toe.
 		float face = info.y * smoothstep(0.05, 0.5, info.x);
-		// Ripples across the lit sand, square to the wind, meandering, finer where the sand is steeper; none on the
-		// slip faces.
-		float back = (1.0 - face) * smoothstep(0.32, 0.12, steep);
+		// Ripples across the lit sand, square to the wind but bent round each dune as the wind is, in two sizes that
+		// give way to each other over the desert and at a strength that wanders, dying out toward each brink, on the
+		// steep and in the lee. A wavelength that changed from place to place drew closed rings, as wood grain: each
+		// set keeps its own, and only how much of each shows changes.
+		float back = (1.0 - face) * smoothstep(0.32, 0.12, steep) * smoothstep(0.4, 4.0, fromBrink);
+		float strength = mix(0.3, 1.0, smoothstep(0.25, 0.75, landNoise(p / 47.0 + 11.0)));
 		vec2 w = WIND;
-		// Their wavelength is one everywhere and only their line wanders: a wavelength that changed from place to
-		// place drew closed rings in the sand, as wood grain.
-		const float lam = 2.3;
-		float q = dot(p, w) / lam + 1.3 * landNoise(p / 21.0) + 0.5 * landNoise(p / 8.0 + 3.0);
-		float fwq = fwidth(q);
-		float k1 = landKeep(1.0, fwq), k2 = landKeep(0.5, fwq);
-		// A ripple is steep on its lee and long on its stoss side, as sand ripples are.
-		float ph = fract(q), dh = 6.2832 * (cos(6.2832 * q) * k1 + 0.42 * cos(12.566 * q + 0.9) * k2);
-		gs += back * RIPPLE * dh * w / lam * sand;
-		float hi = smoothstep(-4.0, 20.0, relief);
+		const float BEND = 1.3;
+		float phase = dot(p, w) + BEND * relief + 13.0 * landNoise(p / 23.0) + 4.0 * landNoise(p / 8.0 + 3.0);
+		vec2 gq = w + BEND * gSmooth;
+		float big = smoothstep(0.35, 0.65, landNoise(p / 71.0 + 5.0));
+		float dh = 0.0, shade = 0.0;
+		for (int k = 0; k < 2; k++) {
+			float lam = k == 0 ? 2.3 : 3.6, wt = k == 0 ? 1.0 - big : big;
+			float q = phase / lam, fwq = fwidth(q);
+			float k1 = landKeep(1.0, fwq), k2 = landKeep(0.5, fwq);
+			// A ripple is steep on its lee and long on its stoss side, as sand ripples are.
+			dh += wt * 6.2832 * (cos(6.2832 * q) * k1 + 0.42 * cos(12.566 * q + 0.9) * k2) / lam;
+			shade += wt * sin(6.2832 * q) * k1;
+		}
+		gs += back * strength * RIPPLE * dh * gq * sand;
+		float hi = smoothstep(-4.0, 30.0, relief);
 		float grain = landNoise(p / 0.35) - 0.5;
-		dune = uSand * mix(1.04, 1.16, hi) * (1.0 + 0.10 * grain * landKeep(0.7, fwp)) * (0.95 + 0.1 * landNoise(p / 31.0));
-		dune *= 1.0 + 0.06 * sin(6.2832 * q) * back * k1;
+		dune = uSand * mix(1.0, 1.1, hi) * (1.0 + 0.10 * grain * landKeep(0.7, fwp)) * (0.95 + 0.1 * landNoise(p / 31.0));
+		dune *= 1.0 + 0.06 * shade * back * strength;
+		// Toward the rim the sand is paler and creamier, as picture 9's is where it rolls over the planet's shoulder.
+		dune = mix(dune, uSandRim * (1.0 + 0.1 * grain * landKeep(0.7, fwp)), 1.0 - smoothstep(0.0, 24.0, inside));
+		// A back is finer, paler sand at its brink and coarser down its flank, with a line of the palest along the brink.
+		float onBack = which >= 0.0 && info.y < 0.5 && info.x > 0.05 ? smoothstep(2.0, 6.0, hc) : 0.0;
+		dune *= mix(1.0, mix(1.09, 0.94, smoothstep(0.0, 0.9, tb)) * (1.0 + 0.08 * (1.0 - smoothstep(0.2, 1.6, fromBrink))), onBack);
 		// A slip face is the same sand as a back, a little coarser and redder: its dark is the moon's shadow and not
 		// its color. Its grain flows show as streaks down it.
 		dune = mix(dune, mix(dune, uSandDeep, 0.55) * (0.92 + 0.16 * landNoise(vec2(info.z * 19.0, info.w / 7.0) + which * 3.1)), face);
+		// The light the sand beyond a slip face throws back up it: none under the brink, most at the toe.
+		landLift = face * pow(fall, 1.3);
 		landFace = face;
 		landFoot = max(0.02, 0.46 * length(fwidth(vUnit.xz)));
 		vec2 gS = sand * (gSmooth + gRoll) + relief * gM;
@@ -390,7 +439,8 @@ export const DIRECT = /* glsl */ `
 	// turning to it and away pixel by pixel where the moon only grazes the face, made it a field of streaks.
 	float landLee = smoothstep( 0.0, 0.14, dot( mix( landN, landNs, landSandK ), MOON_TO ) );
 	if ( landSandK > 0.0 && landLee > 0.0 ) landLee *= mix( 1.0, landSun( landSunAt, 2.0 * landFace, landFoot ), landSandK );
-	landLee *= mix( 1.0, SAND_SUN, landSandK );
+	landSeen = landLee;
+	landLee *= mix( 1.0, SAND_SUN, max( landSandK, landDrape ) );
 	reflectedLight.directDiffuse *= landLee;
 	reflectedLight.directSpecular *= landLee;
 }`;
@@ -408,4 +458,8 @@ export const LIGHT_END = /* glsl */ `
 	// with: a shadow on the sand keeps the saturated brown of his dunes.
 	b2 = max( mix( vec3( dot( b2, vec3( 0.2126, 0.7152, 0.0722 ) ) ), b2, mix( 1.0, SAND_TINT, sandy ) ), 0.0 );
 	irradiance += b2 * LAND_BOUNCE * mix( 1.0, SAND_BOUNCE, sandy );
+	// The lit sand round a shadow on the sand throws light into it: a slip face is lifted toward its toe, and the
+	// shadow it casts on the sand beyond as much as its toe is, so a face is shaded by its form and its outline is
+	// sharp only along the crest.
+	irradiance += SAND_GLOW * landSandK * ( 1.0 - landSeen ) * mix( SAND_FLOOR, landLift, landFace );
 }`;

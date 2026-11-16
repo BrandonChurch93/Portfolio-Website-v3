@@ -29,7 +29,7 @@ const stone = (b, extra = {}) => ({ tone: b.tone, vary: b.vary, lay: b.lay ?? 0,
 // vertices as the light baked on it needs (one every few windows).
 export function windows(b, f, s0, s1, t0, t1, back, cw, ch, o = {}) {
   const cols = Math.max(1, Math.round((s1 - s0) / cw)), rows = Math.max(1, Math.round((t1 - t0) / ch));
-  const at = b.win.take(cols, rows, b.mood + s0 * 0.37 + t0 * 0.011, o.busy ?? b.busy, true);
+  const at = b.win.take(cols, rows, b.mood + s0 * 0.37 + t0 * 0.011, o.busy ?? b.busy, true, { build: b.mood, y0: t0, ch: (t1 - t0) / rows });
   const tag = { o: on(f, s0, 0, back), T: f.T, y0: t0, c0: at.c0, r0: at.r0, cw: (s1 - s0) / cols, ch: (t1 - t0) / rows, stone: o.stone, tone: b.tone };
   const every = o.every ?? (b.draft ? 6 : 3);
   b.kit.patch('bay', on(f, s0, t0, back), on(f, s1, t0, back), on(f, s1, t1, back), on(f, s0, t1, back), { nu: Math.max(1, Math.ceil(cols / every)), nv: Math.max(1, Math.ceil(rows / (every + 1))), want: f.N, tag });
@@ -110,11 +110,13 @@ export function facade(b, f, len, y0, y1, st) {
 }
 
 // A shaft: the facade on each face that can be seen (the back is never seen and casts as well without it), corners
-// cut by `chamfer`, and a roof of stone over it.
+// cut by `chamfer`, and a roof of stone over it. Every corner is cut by ARRIS at least: the moon behind the city
+// draws a pale line down the cut toward it, so each shaft stands off the one behind it.
+const ARRIS = 0.5;
 // A tall shaft may end in an attic (st.attic, how tall): over a string course its top storey is let into the stone
 // in smaller windows, two to each bay below, so its head reads apart from its body.
 export function shaft(b, w, d, y0, y1, st) {
-  const c = st.chamfer ?? 0, all = faces(w, d), attic = st.attic && y1 - y0 > 4 * st.attic ? st.attic : 0, ya = y1 - attic;
+  const c = Math.max(st.chamfer ?? 0, Math.min(ARRIS, w * 0.05)), all = faces(w, d), attic = st.attic && y1 - y0 > 4 * st.attic ? st.attic : 0, ya = y1 - attic;
   const top = { ...st, punched: true, band: 0, fin: 0, out: 0, cw: st.cw * 0.62, ch: attic - 0.7, bays: Math.max(1, st.bays) * 2, middle: 1, busy: Math.min(1, (st.busy ?? b.busy) + 0.2) };
   all.forEach((s, i) => {
     if (SEEN(s)) {

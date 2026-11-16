@@ -1,15 +1,14 @@
 import { HOST, drawn } from '../../layout';
 import { STREAM, STREAM_BUDGET, unitFor } from '../../../../stream/config';
 import { CORE_HALF } from '../../../../stream/shaders';
-import { clock } from '../../../../world/clock';
 import type { Tier } from '../../../../config/site';
 import { UNBALANCE } from './grain';
 
-// The root of the beam: where the page's stream leaves the core's foot. The page's stream does not draw its own core
-// for its first stretch (STREAM.hero.hand), so here the core draws it, as the page draws it: the same braided ribbon
-// of fibres round a hot heart, at the same size on the screen, at the same place along it and on the same clock, so
-// the two are one thing where they meet. Over the ball's foot the ribbon flares open, its fibres fanning up into the
-// ball's band, and that is where the beam is rooted.
+// The neck of the beam: where the page's stream leaves the core's foot, as picture 9's neck. Broad where it leaves,
+// with the ball's band turning down into it, a cream body that draws itself thin as it is shot down, and in it the
+// page's own braided ribbon of fibres round a hot heart, at the same size on the screen, at the same place along it
+// and on the same clock, spread to the neck's width at the foot. Where it has come down to the ribbon's width it is
+// the page's ribbon, fibre for fibre, and is given over to it.
 
 // How much brighter the page makes the heart on a wide screen, and over which widths (renderer.ts, GLOW.more.heart,
 // and STREAM.presence).
@@ -32,16 +31,6 @@ export function rootScale(at: readonly [number, number, number], strands: number
   const o = drawn(at[0], at[1], at[2]), dx = drawn(at[0] + 1, at[1], at[2]), dy = drawn(at[0], at[1] - 1, at[2]);
   const presence = Math.max(0, Math.min(1, (w - STREAM.presence[0]) / (STREAM.presence[1] - STREAM.presence[0])));
   return { across: ((dx[0] - o[0]) * board) / unit, along: ((dy[1] - o[1]) * board) / unit, heart: 1 + HEART_MORE * presence, strands, host: dy[1] - o[1] };
-}
-
-// How far below the foot the page's leading end is, in units of the world: it rests on the line two thirds of the
-// way down the screen (STREAM.anchor), and the route runs straight down from the foot. null where the world is not
-// laid out as the page lays it.
-export function reachOnPage(canvas: HTMLCanvasElement, foot: readonly [number, number, number]): number {
-  const r = canvas.getBoundingClientRect(), px = r.width / HOST.wide;
-  if (px <= 0) return 0;
-  const [, down] = drawn(foot[0], foot[1], foot[2]), [, below] = drawn(foot[0], foot[1] - 1, foot[2]);
-  return (STREAM.anchor * clock.view.h - (r.top + down * px)) / ((below - down) * px);
 }
 
 // The stream's own ribbon, as src/stream/shaders.ts (coreFrag) draws it, letter for letter where it can be: x across

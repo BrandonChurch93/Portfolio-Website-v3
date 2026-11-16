@@ -4,6 +4,7 @@ import { GLINT, METAL, color, lit } from '../light';
 import { load, mesh } from '../files';
 import type { PartFactory } from '../part';
 import { standing } from './pyramid/form';
+import { shade } from './pyramid/shade';
 import * as S from './pyramid/shaders';
 
 // The pyramid: polished gold, at the front left edge of the land, a corner toward the visitor, standing straight out
@@ -32,8 +33,8 @@ const LOOK = {
   // much, and in the warm glow at the dark face's foot. Gold is richest in its middle tones: held at the darks'
   // saturation there it read as khaki or brass. Then over what levels the deep turns to the body, the body to the
   // bright, and the bright pales toward pale gold.
-  sat: { deep: 0.66, deepTurn: -11, body: 0.74, bodyTurn: -7, mid: 0.5, midTurn: -2, warm: 0.72, warmTurn: -9 },
-  grade: [0.02, 0.09, 0.3, 1.2, 1.2, 3.6],
+  sat: { deep: 0.66, deepTurn: -11, body: 0.74, bodyTurn: -7, mid: 0.64, midTurn: -2.5, warm: 0.72, warmTurn: -9 },
+  grade: [0.02, 0.09, 0.22, 0.75, 1.35, 3.2],
   // How much of the world's contact shadow a mirror keeps where it is shut in.
   contact: 0.3,
   // How much of the moon's own light the faces take as a light: none, for they mirror the moon where their night has
@@ -120,14 +121,16 @@ export const build: PartFactory = async (ctx) => {
   frame.position.copy(at);
   frame.quaternion.setFromRotationMatrix(basis);
   const o = mesh(gold, goldM);
-  o.castShadow = true;
+  o.castShadow = ctx.query.get('pyrcast') !== '0';
   o.receiveShadow = ctx.query.get('pyrshadow') === '1';
   frame.add(o);
   const group = new THREE.Group();
   group.add(frame);
+  const under = ctx.query.get('pyrshade') === '0' ? null : shade(at, basis);
+  if (under) group.add(under.mesh);
   return {
     group,
     alone: { at: [PYRAMID.x, foot + tall * 0.42, PYRAMID.z], r: PYRAMID.base * 0.68 },
-    dispose() { gold.geometry.dispose(); goldM.dispose(); },
+    dispose() { gold.geometry.dispose(); goldM.dispose(); under?.dispose(); },
   };
 };

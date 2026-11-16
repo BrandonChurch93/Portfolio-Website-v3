@@ -58,12 +58,35 @@ export function tornAt(side, py) {
 
 // The two sides that survive, each as the part of the surface between the line it is torn along and a little past
 // where it turns from the visitor (out, in degrees round from straight in front).
-export const SIDES = { left: { sign: -1, out: -98 }, right: { sign: 1, out: 98 } };
+export const SIDES = { left: { sign: -1, out: -93 }, right: { sign: 1, out: 93 } };
+
+// The line the skin ends along. The rock's torn line (TORN) is a sawtooth of even notches, and a crust that followed
+// it drew an even stepped ribbon: the skin is taken out to the sawtooth's outer points (how far each way it looks, and
+// how far it is then smoothed, in the picture's pixels), so its notches lie under the crust's broken chunks.
+const HULL = { reach: 13, soft: 7, step: 0.5 };
+const LINES = {};
+function hull(side) {
+  if (LINES[side]) return LINES[side];
+  const s = SIDES[side].sign, line = TORN[side], y0 = line[0][1], y1 = line[line.length - 1][1], n = Math.round((y1 - y0) / HULL.step) + 1;
+  // Toward the hollow is up here: the left side's hollow is to its right, the right side's to its left.
+  const raw = Array.from({ length: n }, (_, i) => -s * tornAt(side, y0 + i * HULL.step)), W = Math.round(HULL.reach / HULL.step);
+  const most = raw.map((_, i) => { let m = -Infinity; for (let j = Math.max(0, i - W); j <= Math.min(n - 1, i + W); j++) m = Math.max(m, raw[j]); return m; });
+  const G = Math.round((HULL.soft * 2.5) / HULL.step), soft = most.map((_, i) => {
+    let a = 0, w = 0;
+    for (let j = -G; j <= G; j++) { const k = Math.min(n - 1, Math.max(0, i + j)), g = Math.exp(-0.5 * ((j * HULL.step) / HULL.soft) ** 2); a += most[k] * g; w += g; }
+    return Math.max(a / w, raw[i] + 0.4);
+  });
+  return (LINES[side] = { y0, n, at: soft.map((v) => -s * v) });
+}
+export function lineAt(side, py) {
+  const h = hull(side), f = Math.min(h.n - 1, Math.max(0, (py - h.y0) / HULL.step)), i = Math.min(h.n - 2, Math.floor(f));
+  return h.at[i] + (h.at[i + 1] - h.at[i]) * (f - i);
+}
 
 // Where a side's torn line crosses a ring of the surface so far down (t): the angle round, in radians, or null where
 // the ring has nothing of that side in front of the line.
 export function edgeAngle(side, t) {
-  const s = SIDES[side].sign, f = (th) => { const [px, py] = L.pictured(...L.skinAt(th, t)); return s * (tornAt(side, py) - px); };
+  const s = SIDES[side].sign, f = (th) => { const [px, py] = L.pictured(...L.skinAt(th, t)); return s * (lineAt(side, py) - px); };
   let a = s * 5 * L.D2R, b = s * 90 * L.D2R;
   if (f(a) * f(b) > 0) return null;
   for (let i = 0; i < 50; i++) { const m = (a + b) / 2; if (f(m) * f(a) > 0) a = m; else b = m; }
@@ -112,17 +135,19 @@ const SCATTER = [[3, 4.5, 150], [4.5, 7, 64], [7, 11, 20], [11, 18, 6]];
 const WORN = [[5, 10, 34], [10, 20, 14], [20, 34, 5], [34, 52, 2]];
 
 // depth and rim are shares of the radius. A crater's lip stands up sharply from the ground round it: it is what
-// catches the moon as a thin bright line on the side away from it.
+// catches the moon as a thin bright line on the side away from it. A large one is a broad flat floor with a small
+// bump at its middle inside smooth walls: shallow enough that the moon, low over this side, leaves a crescent of
+// shadow on the wall toward it and lights the floor. Terraces drew rings like contour lines, and gullies combed the
+// shadow's edge into streaks.
 function crater(c, r, kind, seed, worn = 0, deep = 1) {
   const n = shellNormal(...c), [e1, e2] = frame(n), R = rng(seed * 7919 + 13);
   const complex = kind === 'complex';
   return {
     c, n, e1, e2, r, seed,
-    depth: (complex ? 0.3 : 0.38) * deep * r * (0.85 + 0.3 * R()) * (1 - 0.72 * worn),
-    rim: (complex ? 0.1 : 0.12) * r * (0.8 + 0.4 * R()) * (1 - 0.7 * worn),
-    floor: complex ? 0.5 + 0.12 * R() : 0,
-    terraces: complex ? 1 + Math.floor(R() * 2.2) : 0,
-    gullies: complex ? Math.round(18 + 22 * R()) : 0,
+    depth: (complex ? 0.19 : 0.44) * deep * r * (0.88 + 0.24 * R()) * (1 - 0.72 * worn),
+    rim: (complex ? 0.085 : 0.11) * r * (0.85 + 0.3 * R()) * (1 - 0.7 * worn),
+    floor: complex ? 0.56 + 0.1 * R() : 0,
+    bump: complex ? 0.1 + 0.08 * R() : 0,
     lumpy: 0.04 + 0.05 * R(),
     phase: R() * 100,
     worn,
@@ -166,18 +191,23 @@ export function placed(px, py) {
 
 export function craters() {
   // The named craters are the picture's: deep, so their crescents of shadow read from across the room.
-  const out = NAMED.map((k) => crater(placed(k.at[0], k.at[1]), k.r * L.PICTURE.unit, k.kind, k.seed, 0, k.r > 40 ? 1 : k.r > 12 ? 1.15 : 1.1));
+  const out = NAMED.map((k) => crater(placed(k.at[0], k.at[1]), k.r * L.PICTURE.unit, k.kind, k.seed, 0, k.r > 50 ? 1.2 : k.r > 40 ? 1.45 : k.r > 12 ? 1.15 : 1.1));
   const R = rng(4242);
   let seed = 100;
+  // None on the floors of the two the kit names: those are broad and smooth.
+  const big = out.slice(0, 2);
   for (const [lo, hi, count] of SCATTER) for (let i = 0; i < count; i++) {
-    const { p } = scatterOn('right', R), r = lo * (hi / lo) ** R();
+    let p, r;
+    do { p = scatterOn('right', R).p; r = lo * (hi / lo) ** R(); } while (big.some((k) => Math.hypot(p[0] - k.c[0], p[1] - k.c[1], p[2] - k.c[2]) < k.r * 1.08 + r));
     out.push(crater(p, r, r > 9 ? 'complex' : 'simple', seed++));
   }
   // None round the knot of the cracks, whose light lies on smooth rock.
   const knot = onShell(...KNOT);
   for (const [lo, hi, count] of WORN) for (let i = 0; i < count; i++) {
-    let { p } = scatterOn('left', R, 0.45);
-    while (Math.hypot(p[0] - knot[0], p[1] - knot[1], p[2] - knot[2]) < 70) p = scatterOn('left', R, 0.45).p;
+    // Nor high up: one there drew a faint arch like a doorway under the land.
+    let w = scatterOn('left', R, 0.45);
+    while (Math.hypot(w.p[0] - knot[0], w.p[1] - knot[1], w.p[2] - knot[2]) < 70 || w.py < 352) w = scatterOn('left', R, 0.45);
+    const p = w.p;
     const r = lo * (hi / lo) ** R();
     out.push(crater(p, r, r > 14 ? 'complex' : 'simple', seed++, 0.55 + 0.35 * R()));
   }
@@ -271,6 +301,11 @@ export function cracks() {
     last.w = Math.max(last.w, 0.12);
     run.push({ p: toShell(...last.p.map((v, k) => v + (dir[k] / dl) * len)), w: 0.03, heat: last.heat * 0.6 });
   }
+  // The hot arm runs on to the line the skin ends along, and is open to the break there.
+  {
+    const run = runs[0], last = run[run.length - 1], py = TRACED[0][TRACED[0].length - 1][1];
+    run.push({ p: onShell(lineAt('left', py) - 1.2, py), w: last.w * 0.85, heat: last.heat * 0.92 });
+  }
   const segs = [];
   for (const run of [...runs, ...branches]) for (let i = 0; i + 1 < run.length; i++) {
     const a = run[i], b = run[i + 1];
@@ -279,12 +314,20 @@ export function cracks() {
   return segs;
 }
 
-// The torn line of each side, on the surface, as a run of points close together.
+// The line each side ends along, on the surface, as a run of points close together, each with how far along the
+// line it is, in units (its fourth number).
 export function edges() {
   const out = {};
   for (const side of ['left', 'right']) {
     const line = TORN[side], pts = [];
-    for (let py = line[0][1]; py <= line[line.length - 1][1]; py += 0.5) { const p = sight(tornAt(side, py), py); if (p) pts.push(p); }
+    let s = 0;
+    for (let py = line[0][1]; py <= line[line.length - 1][1]; py += 0.5) {
+      const p = sight(lineAt(side, py), py);
+      if (!p) continue;
+      const q = pts[pts.length - 1];
+      if (q) s += Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+      pts.push([p[0], p[1], p[2], s]);
+    }
     out[side] = pts;
   }
   return out;

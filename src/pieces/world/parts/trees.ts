@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { hex, type PaletteName } from '../../../config/palette';
-import { D2R, MOONWARD, PYRAMID, ground, pyramidal, seeded, within } from '../layout';
+import { D2R, MOONWARD, PYRAMID, ground, noise, pyramidal, seeded, within } from '../layout';
 import { load } from '../files';
 import type { PartFactory } from '../part';
 import { TOWERS, TREES } from '../placed';
@@ -27,14 +27,15 @@ const AUTUMN: readonly { mix: readonly [PaletteName, PaletteName, number]; power
 ];
 // How much one tree differs from the next of its shade in brightness, in size and in height against its width, and
 // how far it leans (the shear of its height to one side).
-const DIFFER = { light: 0.2, size: 0.1, tall: [0.8, 1.28], lean: 0.09 } as const;
-// Which of the full models a tree in front is, and how many of the trees are each.
-const NEAR: readonly { model: number; share: number }[] = [
-  { model: MODELS.indexOf('round'), share: 0.34 },
-  { model: MODELS.indexOf('tall'), share: 0.2 },
-  { model: MODELS.indexOf('twin'), share: 0.22 },
-  { model: MODELS.indexOf('broad'), share: 0.24 },
-];
+const DIFFER = { light: 0.2, size: 0.1, tall: [0.8, 1.36], lean: 0.09 } as const;
+// Which of the full models a tree in front is: a tree larger than those round it is tall or round and stands over
+// them, a smaller one spreads or is two grown into one, and the rest change kind by place along the belt (a noise
+// across the top, PLACE units to a patch), so the wood is not one crown repeated. How far round a tree its
+// neighbours are counted (in its sizes), and how much larger or smaller than them it has to be.
+const KIND = { big: [MODELS.indexOf('tall'), MODELS.indexOf('round')], small: [MODELS.indexOf('broad'), MODELS.indexOf('twin')], all: [MODELS.indexOf('round'), MODELS.indexOf('tall'), MODELS.indexOf('twin'), MODELS.indexOf('broad')], round: 3, over: 1.1, under: 0.9 } as const;
+const PLACE = 90;
+// How much taller a crown stands, against its width, for each share it is larger than its neighbours.
+const STANDS = 0.9;
 // A tree is hidden, and takes the cheap model, when one at least as big stands this far in front of it (in its own
 // sizes) and this close to its line across.
 const HIDDEN = { front: 0.35, across: 0.55, big: 0.85 };
@@ -102,18 +103,24 @@ export const build: PartFactory = async ({ query }) => {
   // nearest tree already given one.
   const hidden = kept.map(([x, z, s]) => kept.some(([ox, oz, os]) => os >= s * HIDDEN.big && oz - z > HIDDEN.front * s && Math.abs(ox - x) < HIDDEN.across * (s + os)));
   const order = kept.map((_, i) => i).sort((a, b) => kept[a][0] - kept[b][0]), modelOf = new Array<number>(kept.length).fill(-1);
+  const rel = kept.map(([x, z, s]) => {
+    let n = 0, sum = 0;
+    for (const [ox, oz, os] of kept) if (Math.hypot(ox - x, oz - z) < KIND.round * s) { n++; sum += os; }
+    return n ? s / (sum / n) : 1;
+  });
   for (const i of order) {
     if (hidden[i]) { modelOf[i] = FAR; continue; }
     const [x, z] = kept[i];
     let nearest = -1, best = Infinity;
     for (let j = 0; j < kept.length; j++) if (j !== i && modelOf[j] >= 0 && modelOf[j] !== FAR) { const d = Math.hypot(kept[j][0] - x, kept[j][1] - z); if (d < best) { best = d; nearest = j; } }
-    const pick = (k: number) => { let a = 0; for (const n of NEAR) { a += n.share; if (k <= a) return n.model; } return NEAR[0].model; };
-    let m = pick(((kept[i][3] * 7.31 + kept[i][4] * 0.377) % 1 + 1) % 1);
-    if (nearest >= 0 && modelOf[nearest] === m) m = NEAR[(NEAR.findIndex((n) => n.model === m) + 1 + (kept[i][3] > 0.5 ? 1 : 0)) % NEAR.length].model;
+    const list = rel[i] > KIND.over ? KIND.big : rel[i] < KIND.under ? KIND.small : KIND.all;
+    const k = Math.min(list.length - 1, Math.floor(Math.min(0.999, Math.max(0, (noise(x / PLACE, z / PLACE, 0, 31) - 0.25) * 2)) * list.length));
+    let m = list[k];
+    if (nearest >= 0 && modelOf[nearest] === m) m = list[(k + 1) % list.length];
     modelOf[i] = m;
   }
 
-  const byModel: { m: THREE.Matrix4; tone: THREE.Color; tree: [number, number, number, number] }[][] = MODELS.map(() => []);
+  const byModel: { m: THREE.Matrix4; tone: THREE.Color; tree: [number, number, number, number]; reach: number[] }[][] = MODELS.map(() => []);
   kept.forEach(([x, z, size, , turn], i) => {
     let behind = 0, cover = 0;
     for (const [bx, bz, w, , tall] of TOWERS) if (bz < z - 4 && z - bz < BEHIND.deep && Math.abs(bx - x) < w / 2 + BEHIND.side) behind += tall * (1 - (z - bz) / BEHIND.deep);
@@ -123,19 +130,24 @@ export const build: PartFactory = async ({ query }) => {
       cover = Math.max(cover, (SHADED.top * os - SHADED.drop * along) / (SHADED.top * size) * (1 - off / (SHADED.side * (size + os))) ** 0.5);
     }
     const shade = shadeOf(rnd()).multiplyScalar(1 + DIFFER.light * (2 * rnd() - 1));
-    const s = size * (1 + DIFFER.size * (2 * rnd() - 1)), tall = DIFFER.tall[0] + (DIFFER.tall[1] - DIFFER.tall[0]) * rnd();
+    const s = size * (1 + DIFFER.size * (2 * rnd() - 1)), tall = Math.min(DIFFER.tall[1], Math.max(DIFFER.tall[0], 1 + STANDS * (rel[i] - 1) + 0.24 * (rnd() - 0.5)));
     const g = ground(x, z);
     for (let k = STREET.heights - 1; k >= 0; k--) {
       const share = k / (STREET.heights - 1), h = s * tall * (CROWN.clear + (STREET.top - CROWN.clear) * share);
       if (blocked(x, g + h, z)) { cover = Math.max(cover, share + 0.2); break; }
     }
-    // How much of its shade's reach stays on the land.
+    // How much of its shade's reach stays on the land, and how far the land goes behind the trunk and to each side of
+    // the shade's line (in crown units), where the shade is cut.
     let room = 1;
     for (let k = 1; k <= 16; k++) { const t = (k / 16) * SHADE.reach * s; if (within(x + away.x * t, z + away.y * t) < EDGE * s) { room = (k - 1) / 16; break; } }
+    const side = new THREE.Vector2(-away.y, away.x), reach = [[-away.x, -away.y, SHADE.back], [-side.x, -side.y, SHADE.wide], [side.x, side.y, SHADE.wide]].map(([dx, dz, most]) => {
+      for (let k = 1; k <= 16; k++) { const t = (k / 16) * most * s; if (within(x + dx * t, z + dz * t) < EDGE * s) return ((k - 1) / 16) * most; }
+      return most + 1;
+    });
     const la = rnd() * Math.PI * 2, lean = DIFFER.lean * rnd();
     const m = new THREE.Matrix4().makeTranslation(x, g, z).multiply(new THREE.Matrix4().set(1, Math.cos(la) * lean, 0, 0, 0, 1, 0, 0, 0, Math.sin(la) * lean, 1, 0, 0, 0, 0, 1))
       .multiply(new THREE.Matrix4().compose(new THREE.Vector3(), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), turn), new THREE.Vector3(s, s * tall, s)));
-    byModel[modelOf[i]].push({ m, tone: shade, tree: [rnd(), Math.min(1, behind / BEHIND.full), Math.min(1.2, Math.max(0, cover)), room] });
+    byModel[modelOf[i]].push({ m, tone: shade, tree: [rnd(), Math.min(1, behind / BEHIND.full), Math.min(1.2, Math.max(0, cover)), room], reach });
   });
 
   const uniforms = treeUniforms();
@@ -150,10 +162,11 @@ export const build: PartFactory = async ({ query }) => {
     // The second pass draws only what has soft edges, which the make script put last: the same vertices, fewer
     // triangles.
     const g = l.geometry, soft = new THREE.BufferGeometry(), from = Number(l.info.soft ?? 0), n = trees.length, own = new THREE.Matrix4().compose(l.at, new THREE.Quaternion(), new THREE.Vector3().setScalar(l.size));
-    const at = new THREE.InstancedBufferAttribute(new Float32Array(n * 16), 16), tone = new Float32Array(n * 3), tree = new Float32Array(n * 4), m = new THREE.Matrix4();
-    trees.forEach((t, i) => { m.multiplyMatrices(t.m, own).toArray(at.array, i * 16); tone.set([t.tone.r, t.tone.g, t.tone.b], i * 3); tree.set(t.tree, i * 4); });
+    const at = new THREE.InstancedBufferAttribute(new Float32Array(n * 16), 16), tone = new Float32Array(n * 3), tree = new Float32Array(n * 4), reach = new Float32Array(n * 3), m = new THREE.Matrix4();
+    trees.forEach((t, i) => { m.multiplyMatrices(t.m, own).toArray(at.array, i * 16); tone.set([t.tone.r, t.tone.g, t.tone.b], i * 3); tree.set(t.tree, i * 4); reach.set(t.reach, i * 3); });
     g.setAttribute('aTone', new THREE.InstancedBufferAttribute(tone, 3));
     g.setAttribute('aTree', new THREE.InstancedBufferAttribute(tree, 4));
+    g.setAttribute('aReach', new THREE.InstancedBufferAttribute(reach, 3));
     for (const [name, a] of Object.entries(g.attributes)) soft.setAttribute(name, a);
     const index = g.getIndex();
     if (index) soft.setIndex(new THREE.BufferAttribute(index.array.subarray(from), 1));
@@ -176,6 +189,7 @@ export const build: PartFactory = async ({ query }) => {
   // same for every model, whose cube the shade on the ground sets.
   uniforms.uAir.value = AIR.reach / cube;
   uniforms.uJitter.value = JITTER / cube;
+  uniforms.uCube.value = cube;
 
   const front = kept.reduce((a, b) => (b[1] - Math.abs(b[0]) * 0.2 > a[1] - Math.abs(a[0]) * 0.2 ? b : a), kept[0] ?? [0, 0, 8, 0, 0]);
   const [x0, z0, s0] = front;

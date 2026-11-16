@@ -29,6 +29,10 @@ const began = performance.now(), say = (s) => console.log(`land: ${s} · ${((per
 const FINE = draft ? { grid: 1.6, error: 0.12, map: 512, lots: 256, light: 192, hemi: 32, bounces: 1 } : { grid: 0.7, error: 0.1, map: 1024, lots: 512, light: 768, hemi: 256, bounces: 2 };
 // How far the paving and the grass stand over the dome, the kerb between them, how far down the turned edge goes.
 const LIFT = { paving: 0.45, grass: 0.1, skirt: 4 };
+// The sand's lip down the planet's side: how far down it reaches (least and most, ragged along the rim), how far
+// out from the planet's surface it lies at its top and at its foot, how much that wanders, how far down its rounded
+// shoulder is, and how many rows the shoulder and the side are made of.
+const DRAPE = { down: [9, 30], off: [1.3, 0.25], lump: 0.7, round: 5, shoulder: 5, rows: 6 };
 // The belt of grass along the city's front: how far in front of front() its kerb is, and the soft, uneven edge it
 // fades out over toward the land's edge (from, to, and how much that wanders), leaving the pale strip of worn stone
 // along the edge that picture 9 has in front of its trees.
@@ -57,7 +61,7 @@ const grass = new Float32Array(M * M), sand = new Float32Array(M * M), inside = 
 for (let j = 0; j < M; j++) for (let i = 0; i < M; i++) {
   const x = at(i), z = at(j), k = j * M + i;
   inside[k] = L.within(x, z);
-  sand[k] = inside[k] > -8 ? desert(x, z) : 0;
+  sand[k] = inside[k] > -16 ? desert(x, z) : 0;
   grass[k] = grassOf(x, z);
 }
 // Dust: the desert's sand blown out over the paving round it, and the dust of the break along the land's edge.
@@ -179,7 +183,9 @@ const top = creased({ positions: small.positions, indices: small.indices }, 32);
   if (none) console.log(`land: ${none} vertices had no normal`);
 }
 
-// The turned down edge: a strip from every open edge of the top straight down.
+// The land's edge. Where the desert meets the planet's rim its sand rolls over the shoulder and lies down the
+// planet's side, thinning out in a ragged, scalloped lip (DRAPE), over the planet's own surface. Everywhere else a
+// strip runs from every open edge of the top straight down.
 const open = new Map();
 for (let t = 0; t < top.indices.length; t += 3) for (let k = 0; k < 3; k++) {
   const a = top.indices[t + k], b = top.indices[t + ((k + 1) % 3)];
@@ -187,24 +193,78 @@ for (let t = 0; t < top.indices.length; t += 3) for (let k = 0; k < 3; k++) {
   const ka = `${pa[0]},${pa[2]}`, kb = `${pb[0]},${pb[2]}`, key = ka < kb ? `${ka}|${kb}` : `${kb}|${ka}`;
   if (open.has(key)) open.delete(key); else open.set(key, [a, b]);
 }
-const sp = [], sn = [], si = [];
+const nTop = top.positions.length / 3;
+const sp = [], sn = [], si = [], sd = [], hung = [];
+// The planet's outer surface at a height: how far from its middle line it is.
+const skinR = (y) => { const t = Math.max(0, -L.RIM - y) / L.WORLD.deep; return L.WORLD.half * (1 - t ** L.WORLD.full) ** (1 / L.WORLD.full); };
+// How much of a drape an edge of the top has where it ends on the rim: a full one in the desert, none on the city's.
+const drapeOf = (x, z) => {
+  if (Math.abs(Math.hypot(x, z) - L.LAND.rim) > 0.05 || L.lip(x) - z < 0.05 || x < 150) return 0;
+  return L.ramp(0.02, 0.3, desert(x, z)) * L.ramp(400, 440, x);
+};
+const column = new Map();
+const columnOf = (v) => {
+  if (column.has(v)) return column.get(v);
+  const x = top.positions[v * 3], y0 = top.positions[v * 3 + 1], z = top.positions[v * 3 + 2], m = drapeOf(x, z);
+  const th = Math.atan2(x, z), arc = th * L.WORLD.half, ox = Math.sin(th), oz = Math.cos(th), R0 = Math.hypot(x, z);
+  const scallop = 0.5 + 0.5 * Math.sin(arc / 6.5 + 4 * L.noise(arc / 31, 1, 0, 41));
+  const D = LIFT.skirt + m * (DRAPE.down[0] + (DRAPE.down[1] - DRAPE.down[0]) * (0.6 * L.noise(arc / 27, 2, 0, 42) + 0.4 * scallop));
+  const off = (k) => m * (DRAPE.off[0] + (DRAPE.off[1] - DRAPE.off[0]) * k + DRAPE.lump * (L.noise(arc / 9, 3 + k * 2, 0, 43) - 0.5) * (1 - k));
+  const out = skinR(y0) + DRAPE.off[0] - R0, ids = [];
+  const put = (r, y, s) => { ids.push(nTop + sp.length / 3); sp.push(ox * r, y, oz * r); sd.push(m > 0 ? 0.02 + 0.98 * s : 0); hung.push(1); };
+  const rows = DRAPE.shoulder + DRAPE.rows, bv = DRAPE.round * m;
+  for (let k = 0; k <= DRAPE.shoulder; k++) { const f = (k / DRAPE.shoulder) * (Math.PI / 2); put(R0 + m * out * Math.sin(f), y0 - bv * (1 - Math.cos(f)), (k / rows) * 0.999); }
+  for (let k = 1; k <= DRAPE.rows; k++) { const f = k / DRAPE.rows, y = y0 - bv - (D - bv) * f; put(m > 0 ? skinR(y) + off(f) : R0, y, (DRAPE.shoulder + k) / rows); }
+  column.set(v, ids);
+  return ids;
+};
 for (const [a, b] of open.values()) {
   const pa = top.positions.subarray(a * 3, a * 3 + 3), pb = top.positions.subarray(b * 3, b * 3 + 3);
+  if (drapeOf(pa[0], pa[2]) > 0 || drapeOf(pb[0], pb[2]) > 0) {
+    const ca = columnOf(a), cb = columnOf(b);
+    for (let k = 0; k + 1 < ca.length; k++) si.push(ca[k], ca[k + 1], cb[k], cb[k], ca[k + 1], cb[k + 1]);
+    continue;
+  }
   let nx = -(pb[2] - pa[2]), nz = pb[0] - pa[0];
   const l = Math.hypot(nx, nz) || 1;
   nx /= l; nz /= l;
-  const base = sp.length / 3;
+  const base = nTop + sp.length / 3;
   sp.push(pa[0], pa[1], pa[2], pb[0], pb[1], pb[2], pa[0], pa[1] - LIFT.skirt, pa[2], pb[0], pb[1] - LIFT.skirt, pb[2]);
+  sd.push(0, 0, 0, 0);
+  hung.push(0, 0, 0, 0);
   for (let k = 0; k < 4; k++) sn.push(nx, 0, nz);
   si.push(base, base + 2, base + 1, base + 1, base + 2, base + 3);
 }
-const nTop = top.positions.length / 3;
+// The drape's normals, from its own faces, each turned out from the planet. The straight strips keep theirs.
+{
+  const acc = new Float32Array(sp.length);
+  for (let t = 0; t < si.length; t += 3) {
+    const [a, b, c] = [si[t], si[t + 1], si[t + 2]].map((v) => v - nTop);
+    if (!hung[a]) continue;
+    const ux = sp[b * 3] - sp[a * 3], uy = sp[b * 3 + 1] - sp[a * 3 + 1], uz = sp[b * 3 + 2] - sp[a * 3 + 2];
+    const vx = sp[c * 3] - sp[a * 3], vy = sp[c * 3 + 1] - sp[a * 3 + 1], vz = sp[c * 3 + 2] - sp[a * 3 + 2];
+    let n = [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx];
+    const r = Math.hypot(sp[a * 3], sp[a * 3 + 2]) || 1;
+    if ((n[0] * sp[a * 3] + n[2] * sp[a * 3 + 2]) / r + n[1] < 0) n = n.map((v) => -v);
+    for (const v of [a, b, c]) for (let k = 0; k < 3; k++) acc[v * 3 + k] += n[k];
+  }
+  const norms = [];
+  let at = 0;
+  for (let v = 0; v < sp.length / 3; v++) {
+    if (!hung[v]) { norms.push(sn[at], sn[at + 1], sn[at + 2]); at += 3; continue; }
+    const l = Math.hypot(acc[v * 3], acc[v * 3 + 1], acc[v * 3 + 2]) || 1;
+    norms.push(acc[v * 3] / l, acc[v * 3 + 1] / l, acc[v * 3 + 2] / l);
+  }
+  sn.length = 0;
+  sn.push(...norms);
+}
 const ground = {
   positions: Float32Array.from([...top.positions, ...sp]),
   normals: Float32Array.from([...top.normals, ...sn]),
-  indices: Uint32Array.from([...top.indices, ...si.map((v) => v + nTop)]),
+  indices: Uint32Array.from([...top.indices, ...si]),
+  drape: Float32Array.from([...new Array(nTop).fill(0), ...sd]),
 };
-say(`ground: ${(ground.indices.length / 3).toLocaleString('en-US')} triangles, ${open.size} edges turned down`);
+say(`ground: ${(ground.indices.length / 3).toLocaleString('en-US')} triangles, ${open.size} open edges, ${column.size} of them on the drape`);
 
 // ---------------------------------------------------------------------------------------------------------------
 // The light: worked out at every texel of land-light.png that is on the land, on a grid of the land itself, with
@@ -303,7 +363,7 @@ say(`light: ${stats.vertices} vertices, ${(stats.rays / 1e6).toFixed(0)} million
   png('public/world/land-light.png', NL, NL, light3, 3);
 }
 
-pack('public/world/land.bin', [{ name: 'ground', positions: ground.positions, indices: ground.indices, attributes: { normal: { data: ground.normals, size: 3, as: 'i16' } }, info: { top: top.indices.length / 3 } }], {
+pack('public/world/land.bin', [{ name: 'ground', positions: ground.positions, indices: ground.indices, attributes: { normal: { data: ground.normals, size: 3, as: 'i16' }, drape: { data: ground.drape, size: 1, as: 'u8' } }, info: { top: top.indices.length / 3 } }], {
   draft, map: { a: 'land-a.png', b: 'land-b.png', lots: 'land-lots.png', light: 'land-light.png' }, lift: LIFT,
 });
 say('done');

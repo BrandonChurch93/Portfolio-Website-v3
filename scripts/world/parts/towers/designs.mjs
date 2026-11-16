@@ -25,7 +25,8 @@ const LOOKS = ['strip', 'ribbon', 'punched', 'mullion', 'paired'];
 // And each building's own: often a wider middle bay (middle: how much wider, and how likely), often an attic storey
 // of smaller windows over a string course (attic: how likely, how tall at least and how much more).
 const OWN = { middle: [0.6, 0.45, 0.7], attic: [0.6, 2.6, 1.8] };
-function look(b, w, kind = LOOKS[Math.floor(b.R() * LOOKS.length)]) {
+function look(b, w, asked) {
+  const kind = asked ?? apart(b, 'look', LOOKS, Math.floor(b.R() * LOOKS.length));
   const R = b.R, st = cut(b, w, kind);
   return { ...st, middle: R() < OWN.middle[0] ? 1 + OWN.middle[1] + OWN.middle[2] * R() : 1, attic: R() < OWN.attic[0] ? OWN.attic[1] + OWN.attic[2] * R() : 0 };
 }
@@ -49,6 +50,17 @@ function cut(b, w, kind) {
   const cw = 1.1 + 0.3 * R(), pier = 0.9 + 0.4 * R();
   return { kind, cw, ch: 1.9 + 0.4 * R(), pier, corner: 1.6 + 0.6 * R(), bays: Math.max(1, Math.round((w - 3) / (2 * cw + pier))), back: 0.9, band: 1, bandTall: 0.45, bandBack: 0.55, bandLayer: 'bay', bandTag: COPPER, out: 0.3 };
 }
+// One of `kinds`, from the building's own pick, passing over any its near neighbours already have (b.avoid, filled
+// by ./city.mjs), so no two side by side are alike; what it took is kept (b.chosen) for the neighbours after it.
+function apart(b, what, kinds, pick) {
+  const not = b.avoid?.[what] ?? new Set();
+  let k = pick;
+  for (let n = 0; n < kinds.length && not.has(kinds[k % kinds.length]); n++) k++;
+  const kind = kinds[k % kinds.length];
+  if (b.chosen) (b.chosen[what] ??= new Set()).add(kind);
+  return kind;
+}
+
 // The base every building stands on: a storey or two of channelled stone, let into by shop fronts, under a course.
 function base(b, w, d, h) {
   const lay = b.lay;
@@ -90,7 +102,8 @@ function crown(b, t, w, d, y, room) {
     if (room - (yy - y) > 3) mast(b, yy, room - (yy - y), 0.45);
     return;
   }
-  const kind = t.top ?? ['steps', 'loggia', 'turrets', 'mansard', 'plant'][Math.floor(R() * 5)];
+  const kinds = ['steps', 'loggia', 'turrets', 'mansard', 'plant'], kind = t.top ?? apart(b, 'crown', kinds, Math.floor(R() * 5));
+  if (kind === 'needle') { needle(b, w, d, y, room); return; }
   if (kind === 'steps' && room > 6) {
     // Stepped stone tiers, each smaller, each under its own cornice and let into by tall windows, under a small
     // pyramid and sometimes a finial.
@@ -162,6 +175,22 @@ function crown(b, t, w, d, y, room) {
   else if (room > 5 && R() < 0.65) mast(b, y, room * (0.7 + 0.3 * R()), 0.35);
 }
 
+// A set back top and a needle, as picture 9's tower at 1048 across has: a narrower lit storey stepped back from the
+// shaft's edge under its own cornice, a low pyramid of copper, and a slender bronze needle with a collar to the top.
+function needle(b, w, d, y, room) {
+  const N = NEEDLE, sw = w * N.wide, sd = d * N.wide, h = N.tall, stone = { tone: b.tone, vary: b.vary, lay: 0 };
+  parapet(b, w, d, y, 0.9);
+  shaft(b, sw, sd, y, y + h, { corner: 0.9, pier: 0.7, bays: 2, back: 0.5, cw: 1.1, ch: h / 3, punched: true, busy: 0.95, chamfer: 0.6 });
+  cornice(b, sw, sd, y + h, 0.8, 0.35);
+  const yc = y + h + 0.8;
+  b.kit.prism('bay', chamfered(sw * 0.8, sd * 0.8, 0.5), yc, yc + N.cap, { top: true, edge: b.E, tag: COPPER, shrink: 0.3 });
+  block(b, 'stone', 1.6, 1.6, yc + N.cap - 0.4, yc + N.cap + 1.2, { chamfer: 0.3, tag: stone });
+  block(b, 'bay', 0.7, 0.7, yc + N.cap + 1.2, y + room, { tag: PLAIN, shrink: 0.25 });
+  block(b, 'bay', 1.2, 1.2, yc + N.cap + 1.2 + (y + room - yc - N.cap) * 0.3, yc + N.cap + 1.6 + (y + room - yc - N.cap) * 0.3, { tag: COPPER });
+}
+// The set back top's width against the shaft's, how tall it is, and the copper cap's height, in units.
+const NEEDLE = { wide: 0.56, tall: 8, cap: 2.2 };
+
 // A water tank on a roof: a drum of bronze staves banded in copper, on four legs, under a low cone.
 function tank(b, x, z, y, r) {
   const at = (p) => [p[0] + x, p[1], p[2] + z], kit = b.kit;
@@ -189,7 +218,7 @@ function pergola(b, x, z, y, w, d) {
 // shallow terraces near the top. The crown is the roof's.
 function deco(b, t) {
   const { w, d, tall } = t, R = b.R;
-  const hb = clamp(tall * 0.07, 4.5, 11), room = t.roof === 'plain' ? Math.min(14, tall * 0.11) : Math.min(16, tall * 0.13);
+  const hb = clamp(tall * 0.07, 4.5, 11), room = ROOM[t.i] ?? (t.roof === 'plain' ? Math.min(14, tall * 0.11) : Math.min(16, tall * 0.13));
   base(b, w, d, hb);
   const shape = R(), k = tall > 100 ? 3 : tall > 50 ? 2 : 1;
   const tops = k === 1 ? [1] : shape < 0.34 ? (k === 3 ? [0.58, 0.82, 1] : [0.7, 1]) : shape < 0.67 ? (k === 3 ? [0.45, 0.9, 1] : [0.4, 1]) : (k === 3 ? [0.72, 0.84, 0.93, 1] : [0.78, 0.9, 1]);
@@ -210,9 +239,10 @@ function deco(b, t) {
   });
   crown(b, { ...t, top: TOPS[t.i] ?? t.top }, ww, dd, y, tall - y);
 }
-// The crowns picture 9 fixes: TOWERS[4], at 1048, 135 in the picture, is a plain stepped tower under a mast. And
-// TOWERS[8], the tall slab beside the spire, steps in at its head, as the picture's tower there does.
-const TOPS = { 4: 'steps', 8: 'steps' };
+// The crowns picture 9 fixes: TOWERS[4], at 1048, 135 in the picture, is a plain tower with a set back top and a
+// needle. And TOWERS[8], the tall slab beside the spire, steps in at its head, as the picture's tower there does.
+// TOWERS[4] ends in a set back top and a needle, the needle reaching its top, so its crown has more room.
+const TOPS = { 4: 'needle', 8: 'steps' }, ROOM = { 4: 30 };
 
 // A round tower banded in copper, as picture 9's copper ringed pair is: a drum of windows between stone piers, broad
 // copper rings round it part way up (`at`, a share of its height), a stone drum over them, and a shallow cap.
@@ -284,27 +314,31 @@ function finTower(b, t) {
 }
 
 // A short fat drum, as each of picture 9's ringed pair is: a plain round shaft of stone let into by windows, and at
-// its head a stack of thick copper bands, each rounded, standing out of it with a dark gap between one and the
-// next, under a low stone cap. x is where it stands across the building, r its radius, at its head's height.
+// its head a drum of proud stone rings with deep grooves between them, a band of copper laid in each groove, under a
+// low stone cap. x is where it stands across the building, r its radius, at its head's height.
 function bandedDrum(b, x, r, tall, o = {}) {
   const n = 28, hb = 3, R = b.R, { cw, ch } = cell(b), at = (p) => [p[0] + x, p[1], p[2]];
   const pb = { ...b, kit: { patch: (l, a, c, e, f, q) => b.kit.patch(l, at(a), at(c), at(e), at(f), q), prism: (l, poly, y0, y1, q) => b.kit.prism(l, poly.map(([u, v]) => [u + x, v]), y0, y1, q), cap: (l, poly, y, up, tag) => b.kit.cap(l, poly.map(([u, v]) => [u + x, v]), y, up, tag), box: () => {} } };
   const stone = { tone: b.tone, vary: b.vary, lay: 0 }, top = tall - DRUM.cap, low = top - DRUM.stack * (o.stack ?? 1), k = DRUM.bands + (R() < 0.5 ? 0 : -1), step = (top - low) / k;
-  revolve(pb, 'stone', [[r + 0.9, -b.sink], [r + 0.9, hb], [r + 0.3, hb + 0.6], [r, hb + 0.6]], n, { tag: { ...stone, lay: 1 }, skip: (m) => m[2] < -0.4 });
+  const skip = (m) => m[2] < -0.4, D = DRUM, rs = r + D.ring, rg = r - D.groove;
+  revolve(pb, 'stone', [[r + 0.9, -b.sink], [r + 0.9, hb], [r + 0.3, hb + 0.6], [r, hb + 0.6]], n, { tag: { ...stone, lay: 1 }, skip });
   drum(pb, r, hb + 0.6, low - 0.8, n, { cw, ch, pier: 4, out: 0.3, pierWide: 0.9 });
-  revolve(pb, 'stone', [[r, low - 0.8], [r + 0.5, low - 0.6], [r + 0.5, low]], n, { tag: stone, skip: (m) => m[2] < -0.4 });
-  // The bands: each a half round of copper about a dark recessed core.
-  revolve(pb, 'bay', [[r - 0.4, low], [r - 0.4, top]], n, { tag: PLAIN, skip: (m) => m[2] < -0.4 });
+  revolve(pb, 'stone', [[r, low - 0.8], [rs, low - 0.5], [rs, low]], n, { tag: stone, skip });
+  // Each groove: the stone ring over it falls in by a cove to the groove's floor, a band of copper rounded a little
+  // proud of the floor and still well inside the rings, and the next ring rises out of it.
   for (let i = 0; i < k; i++) {
-    const y0 = low + i * step + step * DRUM.gap * 0.5, y1 = low + (i + 1) * step - step * DRUM.gap * 0.5, ym = (y0 + y1) / 2, hh = (y1 - y0) / 2;
-    const prof = Array.from({ length: 7 }, (_, j) => { const a = -Math.PI / 2 + (Math.PI * j) / 6; return [r - 0.4 + DRUM.out * Math.cos(a) + 0.4, ym + hh * Math.sin(a)]; });
-    revolve(pb, 'bay', prof, n, { tag: COPPER, skip: (m) => m[2] < -0.5 && m[1] < 0.6 });
+    const y0 = low + i * step, y1 = y0 + step, g0 = y0 + step * D.ringTall, g1 = y1, mid = (g0 + g1) / 2, hh = (g1 - g0) / 2;
+    revolve(pb, 'stone', [[rs, i ? y0 + 0.25 : y0], [rs, g0 - 0.25], [rs - 0.3, g0], [rg, g0 + 0.15]], n, { tag: stone, skip });
+    const band = Array.from({ length: 7 }, (_, j) => { const a = -Math.PI / 2 + (Math.PI * j) / 6; return [rg + D.band * Math.cos(a), mid + hh * 0.86 * Math.sin(a)]; });
+    revolve(pb, 'bay', [[rg, g0 + 0.15], ...band, [rg, g1 - 0.15]], n, { tag: COPPER, skip });
+    revolve(pb, 'stone', [[rg, g1 - 0.15], [rs - 0.3, g1], [rs, g1 + 0.25]], n, { tag: stone, skip });
   }
-  revolve(pb, 'stone', [[r + 0.6, top], [r + 0.6, top + 0.5], [r * 0.85, top + DRUM.cap * 0.55], [r * 0.4, top + DRUM.cap * 0.9], [0.01, top + DRUM.cap]], n, { tag: stone, skip: (m) => m[2] < -0.6 && m[1] < 0.5 });
+  revolve(pb, 'stone', [[rs, top + 0.25], [rs + 0.3, top + 0.45], [rs + 0.3, top + 0.7], [r * 0.82, top + DRUM.cap * 0.6], [r * 0.35, top + DRUM.cap * 0.92], [0.01, top + DRUM.cap]], n, { tag: stone, skip: (m) => m[2] < -0.6 && m[1] < 0.5 });
 }
-// The ringed pair's drums: how tall the stack of bands is, in units (the picture's runs 176 to 196 down), how many
-// bands, the share of each band's room that is the gap over and under it, how far a band stands out, and the cap.
-const DRUM = { stack: 19, bands: 5, gap: 0.3, out: 1.25, cap: 2.2 };
+// The ringed pair's drums: how tall the stack of rings is, in units (the picture's runs 176 to 196 down), how many
+// grooves, the share of each step that is a proud ring, how far a ring stands out of the shaft and how deep a groove
+// is cut into it, how far its copper band stands out of the groove's floor, and the cap.
+const DRUM = { stack: 19, bands: 5, ringTall: 0.32, ring: 0.6, groove: 0.5, band: 0.55, cap: 1.5 };
 
 // The tower left of the spire, as picture 9 has it at 643 to 662 across: a warm stone shaft whose roof slopes down
 // to the visitor's right. Strip windows between proud piers up its faces, a cornice, and on it an attic whose top
@@ -351,24 +385,28 @@ function twin(b, t) {
   }
   const hp = clamp(tall * 0.14, 5, 12);
   base(b, w, d, hp);
-  const sw = w * 0.4, gap = w - 2 * sw - 1, xs = [-(sw + gap) / 2, (sw + gap) / 2], low = 0.86 + 0.08 * R();
-  const st = look(b, sw), ch = st.ch;
+  // The two shafts are not alike: the taller is broader, cut one way and stepped at its head, the lower narrower,
+  // cut another way, under a bronze mansard.
+  const sws = [w * 0.42, w * 0.33], gap = w - sws[0] - sws[1] - 1, xs = [-(w / 2) + 0.5 + sws[0] / 2, w / 2 - 0.5 - sws[1] / 2], low = 0.8 + 0.08 * R();
+  const st0 = look(b, sws[0]), st1 = look(b, sws[1], LOOKS[(LOOKS.indexOf(st0.kind) + 2) % LOOKS.length]), ch = st0.ch;
   xs.forEach((x, i) => {
-    const h = i === 0 ? tall : tall * low;
+    const h = i === 0 ? tall : tall * low, sw = sws[i], st = i === 0 ? st0 : st1;
     const kit = b.kit, at = (p) => [p[0] + x, p[1], p[2]];
     const sb = { ...b, kit: { patch: (l, a, c, e, f, o) => kit.patch(l, at(a), at(c), at(e), at(f), o), prism: (l, poly, y0, y1, o) => kit.prism(l, poly.map(([u, v]) => [u + x, v]), y0, y1, o), cap: (l, poly, y, up, tag) => kit.cap(l, poly.map(([u, v]) => [u + x, v]), y, up, tag), box: (l, x0, x1, y0, y1, z0, z1, o) => kit.box(l, x0 + x, x1 + x, y0, y1, z0, z1, o) } };
     const y1 = h - Math.min(9, h * 0.1);
     shaft(sb, sw, d * 0.82, hp + 0.9, y1, { ...st, chamfer: 0.9 });
     cornice(sb, sw, d * 0.82, y1, 0.8, 0.3);
-    crown(sb, { ...t, top: i === 0 ? 'steps' : 'turrets' }, sw, d * 0.82, y1 + 0.8, h - y1 - 0.8);
+    crown(sb, { ...t, top: i === 0 ? 'steps' : 'mansard' }, sw, d * 0.82, y1 + 0.8, h - y1 - 0.8);
   });
   // The bridges, each a box of windows between the shafts, with a stone floor and roof.
   for (const f of [0.45, 0.72]) {
-    const y = hp + (tall * low - hp) * f, hh = Math.max(2.4, ch * 2), z = d * 0.12, half = gap / 2 + 0.6;
-    block(b, 'stone', 2 * half, d * 0.3, y - 0.6, y, { chamfer: 0.001 });
+    const y = hp + (tall * low - hp) * f, hh = Math.max(2.4, ch * 2), z = d * 0.12, half = gap / 2 + 0.6, mx = (xs[0] + sws[0] / 2 + xs[1] - sws[1] / 2) / 2;
+    const at = (p) => [p[0] + mx, p[1], p[2]], kit = b.kit;
+    const mb = { ...b, kit: { patch: (l, a, c, e, f2, o) => kit.patch(l, at(a), at(c), at(e), at(f2), o), prism: (l, poly, y0, y1, o) => kit.prism(l, poly.map(([u, v]) => [u + mx, v]), y0, y1, o), cap: (l, poly, yy, up, tag) => kit.cap(l, poly.map(([u, v]) => [u + mx, v]), yy, up, tag), box: () => {} } };
+    block(mb, 'stone', 2 * half, d * 0.3, y - 0.6, y, { chamfer: 0.001 });
     const front = faces(2 * half, d * 0.3)[0];
-    windows(b, { ...front.f, o: [front.f.o[0], 0, front.f.o[2] + z] }, 0, 2 * half, y, y + hh, 0, 1.4, hh / 2, { every: 2 });
-    b.kit.cap('stone', chamfered(2 * half, d * 0.3, 0.001).map(([u, v]) => [u, v + z]), y + hh, true, { tone: b.tone, vary: b.vary, lay: 0 });
+    windows(mb, { ...front.f, o: [front.f.o[0], 0, front.f.o[2] + z] }, 0, 2 * half, y, y + hh, 0, 1.4, hh / 2, { every: 2 });
+    mb.kit.cap('stone', chamfered(2 * half, d * 0.3, 0.001).map(([u, v]) => [u, v + z]), y + hh, true, { tone: b.tone, vary: b.vary, lay: 0 });
   }
 }
 
@@ -447,9 +485,10 @@ function dome(b, t) {
   void R;
 }
 
-// The gold cap's flame: how wide at its foot against the lantern's width, how much it swells, where the flame's
-// point is against the plan's height, and how far over it the needle reaches.
-const FLAME = { wide: 0.22, swell: 0.14, over: 5, needle: 9 };
+// The gold cap's flame: how wide at its foot against the lantern's width, how many times that it swells to and how
+// far up (a share of its height), how hollow its ogee's upper curve is, where the flame's point is against the plan's
+// height, and how far over it the needle reaches.
+const FLAME = { wide: 0.2, swell: 1.6, at: 0.33, hollow: 1.35, over: 5, needle: 9 };
 // The saucer tower's parts, as shares of its width (the cap's radius, the stem's, the podium's) and of its height
 // (the podium's top, the stem's waist, where the bowl begins, the lip): picture 9's at 714 to 740 across.
 const SAUCER = { cap: 0.47, stem: 0.17, foot: 0.4, podium: 0.33, waist: 0.48, bowl: 0.77, lip: 0.91 };
@@ -471,13 +510,17 @@ function point(b, t) {
   if (gold) {
     // A fluted lantern of gold, a flame of eight faces that swells and draws in to a point, a ball and a needle:
     // picture 9's gold caps.
-    // A tall slim flame, as picture 9's gold cap at 968 across is: it swells a little over its foot and draws in
-    // to a long point, a ball, and a needle that stands FLAME.needle over the plan's height, its tip where the
-    // picture's is.
+    // The flame, as picture 9's gold cap at 968 across is: from its foot it swells to FLAME.swell times as wide a
+    // third of the way up, then draws in through an ogee, full and then hollow, to a long point, a ball, and a
+    // needle whose tip stands FLAME.needle over the plan's height, where the picture's is.
     fluted(b, ww * 0.78, dd * 0.78, y, y + cap * 0.2, 2);
-    const yy = y + cap * 0.2, pw = ww * FLAME.wide, top = tall + FLAME.over, H = top - yy, n = 18, prof = [[pw * 1.3, yy], [pw * 1.3, yy + 0.6], [pw, yy + 0.8]];
-    for (let i = 1; i <= n; i++) { const u = i / n; prof.push([Math.max(0.04, pw * (1 + FLAME.swell * Math.sin(Math.PI * Math.min(1, u * 2.2))) * (1 - u) ** 1.1), yy + 0.8 + (H - 0.8) * u]); }
-    revolve(b, 'gold', prof, 20, { nv: 1 });
+    const yy = y + cap * 0.2, pw = ww * FLAME.wide, top = tall + FLAME.over, H = top - yy, n = 30, prof = [[pw * 1.3, yy], [pw * 1.3, yy + 0.6], [pw, yy + 0.8]];
+    for (let i = 1; i <= n; i++) {
+      const u = i / n, a = FLAME.at, t = Math.max(0, (u - a) / (1 - a));
+      const r = u < a ? 1 + (FLAME.swell - 1) * Math.sin((Math.PI / 2) * (u / a)) : FLAME.swell * (1 - t * t * (3 - 2 * t)) ** FLAME.hollow;
+      prof.push([Math.max(0.05, pw * r), yy + 0.8 + (H - 0.8) * u]);
+    }
+    revolve(b, 'gold', prof, 28, { nv: 1 });
     revolve(b, 'gold', Array.from({ length: 7 }, (_, i) => { const a = -Math.PI / 2 + (Math.PI * i) / 6; return [Math.max(0.01, 0.42 * Math.cos(a)), top + 0.42 + 0.42 * Math.sin(a)]; }), 10, { skip: (m) => m[2] < -0.6 });
     block(b, 'gold', 0.24, 0.24, top + 0.84, tall + FLAME.needle, { shrink: 0.1 });
   } else {
@@ -500,16 +543,19 @@ function obelisk(b, t) {
   cornice(b, w - 6, d - 6, y1, 1.2, 0.4, { chamfer: 1.2 });
   block(b, 'bay', w - 7, d - 7, y1 + 1.2, y1 + 2.4, { tag: COPPER, chamfer: 1 });
   const g = w * 0.56, k = OBELISK.taper, yb = y1 + 4.2, yt = tall - g * OBELISK.cap;
+  // The point is turned on its plinth (OBELISK.turn), so two of its broad faces are seen, as the picture's two are:
+  // the one toward the moon carries its reflection, the other mirrors the dark.
+  const c = Math.cos(OBELISK.turn * Math.PI / 180), sn = Math.sin(OBELISK.turn * Math.PI / 180), turned = (poly) => poly.map(([u, v]) => [u * c + v * sn, -u * sn + v * c]);
   b.kit.prism('gold', chamfered(g + 2.4, g + 2.4, 1.6), y1 + 2.4, y1 + 3.2, { top: true, edge: b.E });
-  b.kit.prism('gold', chamfered(g + 1.2, g + 1.2, 1.2), y1 + 3.2, yb, { top: true, edge: b.E });
-  b.kit.prism('gold', chamfered(g, g, g * 0.14), yb, yt, { top: false, edge: b.E, nv: 12, shrink: k, tagOf: (pa, pb) => fluting(pa, pb, g * 0.5, k, yb, yt, OBELISK.flutes) });
+  b.kit.prism('gold', turned(chamfered(g + 1.2, g + 1.2, 1.2)), y1 + 3.2, yb, { top: true, edge: b.E });
+  b.kit.prism('gold', turned(chamfered(g, g, g * 0.08)), yb, yt, { top: false, edge: b.E, nv: 12, shrink: k, tagOf: (pa, pb) => fluting(pa, pb, g * 0.5, k, yb, yt, OBELISK.flutes) });
   const gt = g * k;
-  b.kit.prism('gold', chamfered(gt + 0.7, gt + 0.7, gt * 0.18), yt, yt + 0.7, { top: true, bottom: true, edge: b.E });
-  b.kit.prism('gold', chamfered(gt, gt, gt * 0.14), yt + 0.7, tall, { top: false, edge: b.E, shrink: 0.02 });
+  b.kit.prism('gold', turned(chamfered(gt + 0.7, gt + 0.7, gt * 0.12)), yt, yt + 0.7, { top: true, bottom: true, edge: b.E });
+  b.kit.prism('gold', turned(chamfered(gt, gt, gt * 0.08)), yt + 0.7, tall, { top: false, edge: b.E, shrink: 0.02 });
 }
 // The obelisk's point: how much narrower it is at its head than its foot, how tall its pyramidion is against its
-// width, and how many flutes each face carries.
-const OBELISK = { taper: 0.62, cap: 0.9, flutes: 5 };
+// width, how many flutes each face carries, and how far it is turned on its plinth, in degrees.
+const OBELISK = { taper: 0.62, cap: 0.9, flutes: 5, turn: 38 };
 // The tag that flutes a face of a prism that narrows, if the face is one of its broad ones.
 function fluting(pa, pb, least, k, y0, y1, n) {
   const L = Math.hypot(pb[0] - pa[0], pb[1] - pa[1]);
@@ -543,32 +589,33 @@ function disc(b, t) {
   prof[prof.length - 1][0] = 0.01;
   // The rim keeps its form far off; the field inside it, its rings and its boss give way to a plain field there.
   revolve(b, 'gold', prof.slice(0, 11), 64, { place, turn, skip: (m) => m[2] < -0.9 });
+  const CARVED = { disc: 1, x: 0, cy, R };
   revolve(b, 'gold', prof.slice(10), 64, { place, turn, skip: (m) => m[2] < -0.9, tag: CARVED });
   // Carved as the site's Sun stones are (src/stream/stone.ts), so it reads as a sun and not a wheel: no spoke runs
   // from the boss to the rim. A rim of beads; an outer band of plates with a sharp point between each two, the
   // sun's outer rays; a band of glyph blocks, broken by four great rays, wide wedges pointing out from the inner
   // ring, and four lesser ones; and round the boss the four squares of the stone's middle.
   const TAU = Math.PI * 2, n = SUN.outer, g = SUN.glyphs;
-  for (let k = 0; k < SUN.beads; k++) plate(b, cy, R - 1.95, R - 0.35, ((k + 0.12) / SUN.beads) * TAU, ((k + 0.88) / SUN.beads) * TAU, 0.3 * D + 0.5, 0.3 * D + 1.45, 0.22);
+  for (let k = 0; k < SUN.beads; k++) plate(b, cy, R - 1.95, R - 0.35, ((k + 0.12) / SUN.beads) * TAU, ((k + 0.88) / SUN.beads) * TAU, 0.3 * D + 0.5, 0.3 * D + 1.45, 0.22, CARVED);
   for (let k = 0; k < n; k++) {
     const a0 = (k / n) * TAU, a1 = ((k + 1) / n) * TAU, am = (a0 + a1) / 2;
-    if (k % 2 === 0) plate(b, cy, R * 0.67, R - 2.5, a0 + 0.035, a1 - 0.035, 0.15 * D, 0.7 * D, 0.45);
-    else ray(b, cy, R * 0.67, R - 1.2, am, (a1 - a0) * 0.42, 0.15 * D, 1.05 * D);
+    if (k % 2 === 0) plate(b, cy, R * 0.67, R - 2.5, a0 + 0.035, a1 - 0.035, 0.15 * D, 0.7 * D, 0.45, CARVED);
+    else ray(b, cy, R * 0.67, R - 1.2, am, (a1 - a0) * 0.42, 0.15 * D, 1.05 * D, CARVED);
   }
   const great = (a) => Math.min(...[1, 3, 5, 7].map((q) => Math.abs(((a - (q * TAU) / 8 + TAU * 1.5) % TAU) - TAU / 2)));
   const lesser = (a) => Math.min(...[0, 2, 4, 6].map((q) => Math.abs(((a - (q * TAU) / 8 + TAU * 1.5) % TAU) - TAU / 2)));
   for (let k = 0; k < g; k++) {
     const a0 = ((k + 0.14) / g) * TAU, a1 = ((k + 0.86) / g) * TAU, am = (a0 + a1) / 2;
     if (great(am) < 0.3 || lesser(am) < 0.12) continue;
-    plate(b, cy, R * 0.405, R * 0.6, a0, a1, 0.3 * D, 0.72 * D, 0.28);
+    plate(b, cy, R * 0.405, R * 0.6, a0, a1, 0.3 * D, 0.72 * D, 0.28, CARVED);
   }
   for (let q = 0; q < 8; q++) {
     const a = (q / 8) * TAU, big = q % 2 === 1;
-    ray(b, cy, R * 0.37, big ? R * 0.71 : R * 0.62, a, big ? 0.36 : 0.15, 0.3 * D, big ? 1.4 * D : 1.0 * D);
+    ray(b, cy, R * 0.37, big ? R * 0.71 : R * 0.62, a, big ? 0.36 : 0.15, 0.3 * D, big ? 1.4 * D : 1.0 * D, CARVED);
   }
   for (let q = 0; q < 4; q++) {
     const a = ((q + 0.5) / 4) * TAU;
-    plate(b, cy, R * 0.215, R * 0.335, a - 0.32, a + 0.32, 0.35 * D, 0.95 * D, 0.2);
+    plate(b, cy, R * 0.215, R * 0.335, a - 0.32, a + 0.32, 0.35 * D, 0.95 * D, 0.2, CARVED);
   }
 }
 // How deep the sun disc's carving is, in units.
@@ -576,28 +623,28 @@ function disc(b, t) {
 // plate and a point by turns) and glyph blocks.
 const SUN = { depth: 1.5, beads: 40, outer: 16, glyphs: 24 };
 
-// The disc's small carvings (its beads, plates and glyph blocks), which give way to a plain field where the disc is
-// small on the screen, so it reads there as its rim, its rings, its eight rays and its boss and never glitters.
-const CARVED = { disc: 1 };
+// Everything carved inside the disc's rim (its beads, plates, glyph blocks, rays, rings and boss) is tagged as such
+// (CARVED in disc), with the disc's middle: where the disc is small on the screen it gives way to a plain field of
+// deep gold with a darker ring, so the disc reads there as one coin in its rim and never glitters.
 // A place on the disc: so far out from its middle and so far round from straight up, clockwise as seen, and so far
 // out of its face.
 const onDisc = (cy, r, a, h) => [r * Math.sin(a), cy + r * Math.cos(a), h];
 // A plate: a raised block between two radii and two angles, its sides sloping in to a smaller flat top.
-function plate(b, cy, r0, r1, a0, a1, h0, h1, m) {
+function plate(b, cy, r0, r1, a0, a1, h0, h1, m, tag) {
   const P = (r, a, h) => onDisc(cy, r, a, h), am = (a0 + a1) / 2, ia0 = a0 + m / r0, ia1 = a1 - m / r0;
   const lo = [P(r0, a0, h0), P(r1, a0, h0), P(r1, a1, h0), P(r0, a1, h0)], hi = [P(r0 + m, ia0, h1), P(r1 - m, ia0, h1), P(r1 - m, ia1, h1), P(r0 + m, ia1, h1)];
   const k = b.kit, outs = [[-Math.cos(a0), Math.sin(a0), 0.6], [Math.sin(am), Math.cos(am), 0.6], [Math.cos(a1), -Math.sin(a1), 0.6], [-Math.sin(am), -Math.cos(am), 0.6]];
-  k.patch('gold', hi[0], hi[3], hi[2], hi[1], { want: [0, 0, 1], tag: CARVED });
-  for (let i = 0; i < 4; i++) { const j = (i + 1) % 4; k.patch('gold', lo[i], lo[j], hi[j], hi[i], { want: outs[i], tag: CARVED }); }
+  k.patch('gold', hi[0], hi[3], hi[2], hi[1], { want: [0, 0, 1], tag });
+  for (let i = 0; i < 4; i++) { const j = (i + 1) % 4; k.patch('gold', lo[i], lo[j], hi[j], hi[i], { want: outs[i], tag }); }
 }
 // A ray: a ridge running out from r0 to a point at r1, its two sides sloping down from the ridge, so one side of it
 // takes the light and the other does not.
-function ray(b, cy, r0, r1, a, half, h0, h1) {
+function ray(b, cy, r0, r1, a, half, h0, h1, tag) {
   const P = (r, t, h) => onDisc(cy, r, t, h), k = b.kit, tip = P(r1, a, h0 + 0.1);
   const L0 = P(r0, a - half, h0), R0 = P(r0, a + half, h0), top = P(r0, a, h1);
-  k.patch('gold', L0, tip, tip, top, { want: [-Math.cos(a), Math.sin(a), 0.7] });
-  k.patch('gold', top, tip, tip, R0, { want: [Math.cos(a), -Math.sin(a), 0.7] });
-  k.patch('gold', R0, L0, top, top, { want: [-Math.sin(a), -Math.cos(a), 0.4] });
+  k.patch('gold', L0, tip, tip, top, { want: [-Math.cos(a), Math.sin(a), 0.7], tag });
+  k.patch('gold', top, tip, tip, R0, { want: [Math.cos(a), -Math.sin(a), 0.7], tag });
+  k.patch('gold', R0, L0, top, top, { want: [-Math.sin(a), -Math.cos(a), 0.4], tag });
 }
 
 // Which design a building is built as, by its form, its roof and its own number.

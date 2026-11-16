@@ -3,7 +3,7 @@ import { hex, type PaletteName } from '../../../config/palette';
 import { load, mesh } from '../files';
 import { lit, stone as planetStone } from '../light';
 import type { PartFactory } from '../part';
-import { GLOW, STONE, UNDER } from './skin/look';
+import { GLOW, PALE_TURN, SAND, STONE, UNDER } from './skin/look';
 import * as S from './skin/shaders';
 
 // The skin: what survives of the planet's own outer surface at each side of the tear. At the visitor's left, turned
@@ -51,13 +51,15 @@ export const build: PartFactory = async ({ query, renderer }) => {
   map.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
 
   const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.93, metalness: 0 });
-  const pale = tried(query, 'skinpale'), rock = tried(query, 'skinrock');
+  // Where the mesh's own cube is, so the shader knows each place in the world's units.
+  const place = new THREE.Vector4();
+  const pale = tried(query, 'skinpale'), rock = tried(query, 'skinrock'), turn = tried(query, 'skinturn')?.[0] ?? PALE_TURN;
   m.onBeforeCompile = (sh: Shader) => {
     Object.assign(sh.uniforms, {
       uSkinMap: { value: map },
       uSkinMapSize: { value: new THREE.Vector3(map.image.width, map.image.height, map.userData.split as number) },
-      uPale: { value: stone(pale ? { ...STONE.pale, k: pale[0], power: pale[1] ?? STONE.pale.power } : STONE.pale) }, uDust: { value: stone(STONE.dust) }, uDark: { value: stone(STONE.dark) },
-      uUnder: { value: planetStone().multiplyScalar(UNDER) }, uGlowRock: { value: rock ? rock[0] : GLOW.rock },
+      uPale: { value: stone(pale ? { ...STONE.pale, k: pale[0], power: pale[1] ?? STONE.pale.power } : STONE.pale).offsetHSL(turn / 360, 0, 0) }, uDust: { value: stone(STONE.dust).offsetHSL(turn / 360, 0, 0) }, uDark: { value: stone(STONE.dark) },
+      uUnder: { value: planetStone().multiplyScalar(UNDER) }, uSand: { value: linear(SAND.of[0]).lerp(linear(SAND.of[1]), SAND.ease).multiplyScalar(SAND.power) }, uSkinPlace: { value: place }, uGlowRock: { value: rock ? rock[0] : GLOW.rock },
       uGlowPale: { value: linear(GLOW.ramp[0][0]) }, uGlowHot: { value: linear(GLOW.ramp[1][0]) }, uGlowFlame: { value: linear(GLOW.ramp[2][0]) }, uGlowEmber: { value: linear(GLOW.ramp[3][0]) },
     });
     sh.vertexShader = after(after(sh.vertexShader, 'common', S.VERT_PARS), 'begin_vertex', S.VERT);
@@ -74,6 +76,7 @@ export const build: PartFactory = async ({ query, renderer }) => {
   lit(m, { key: 'skin', baked: true });
 
   const o = mesh(skin, m);
+  place.set(o.position.x, o.position.y, o.position.z, o.scale.x);
   o.castShadow = o.receiveShadow = true;
   const group = new THREE.Group();
   group.add(o);

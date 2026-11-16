@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { slice } from '../../../world/build';
 import { CORE, DEBRIS, LIGHT, SCALE, SMALL, fromPicture } from '../layout';
+import { STONE, stoneMaps } from './rock/stone';
 import { color, lit, stone } from '../light';
 import { load } from '../files';
 import type { PartFactory } from '../part';
@@ -16,14 +17,21 @@ import * as S from './debris/shaders';
 // rests, how it is turned and how it moves (./debris/motion.ts). Here every piece is laid into one mesh, each vertex
 // knowing its piece, and the table goes to the graphics card as a texture that is written once. The vertex shader
 // moves every piece from the clock alone, so nothing is written after the part is made, and Safari keeps nothing.
-// Every piece is the planet's stone, without the marks the hollow's faces show, but a chip the stream carries, which
-// is one of the stream's own shards (src/stream/shards.ts). Near the stream the small stones are its shapes too.
+// Every piece is the planet's stone, with the hollow's own grain and without its pockets and grooves, but a chip the
+// stream carries, which is one of the stream's own shards (src/stream/shards.ts). Near the stream the small stones
+// are its shapes too.
 // ?debris=models lays each model out once in a row, to be looked at alone, and &model=G9 shows that one alone.
 
 const LOOK = {
-  // The body: the planet's stone, less red and far darker than the lit stone of the hollow, as picture 9's pieces are.
-  // A burning edge is the stone's own color (stone()).
-  body: stone().lerp(color('text-3', 0.4), 0.88),
+  // The planet's stone (stone()) is what every piece is. An old face carries a weathered skin, greyer and darker, as
+  // much as this share of it, and less where the core burns close (from the first distance to the second, in units,
+  // down to the second share); a flake's scar is fresh stone, the stone's own chip.
+  patina: stone().lerp(color('text-3', 0.5), 0.75).multiplyScalar(0.55),
+  weather: [0.85, 0.3, 230, 520] as const,
+  chip: STONE.chip,
+  // The stone's grain map, laid at a piece's own scale: a tile is this share of its size, between these many units,
+  // and how much it moves the tone.
+  grain: [0.9, 6, 48, 0.32] as const,
   // The planet's outer surface where a piece shows it: pale on the side the moon lights, dark on the other.
   skin: { pale: color('text-3').lerp(color('text-2'), 0.35).multiplyScalar(0.5), dark: color('bg-3').lerp(color('text-3'), 0.2) },
   rough: 0.86,
@@ -50,14 +58,19 @@ const LOOK = {
   mirror: 0.08,
   // How much paler an edge is where it is fresh.
   worn: 0.6,
-  // The fracture on a face: how deep the rings are against their spacing, how many hackle lines run round a struck
-  // place, how deep they are, and how deep the grit is, as shares of the piece's size.
-  relief: [0.06, 46, 0.012, 0.015] as const,
-  // How much a face's fracture shows in its tone: a flake's rings and the hackle lines catch the dust differently.
-  reliefTone: 0.9,
+  // The hackle lines on a face: how many run round the struck place, and how deep they are, as a share of the size.
+  relief: [0, 46, 0.008, 0] as const,
   // The stream's light: its color, how bright where it is full, over how many units it falls to half, how far it
   // reaches at all, and how much it wraps round a face. The small streams: how bright, and over how many units.
-  stream: { color: color('hot').lerp(color('flame'), 0.35), main: [9, 45, 260, 0.05] as const, small: [1.6, 22] as const },
+  stream: { color: color('hot').lerp(color('flame'), 0.35), main: [9, 45, 260, 0.05] as const, small: [5, 26] as const },
+  // The small streams are drawn over the world, so each lights what is drawn beside it: within this depth of its own,
+  // as far as this many units from it, and an edge that stands out burns this much more.
+  smallDepth: [340, 150] as const, smallBurn: 2.5,
+  // A carried shard mirrors this much of the night: less, so a face turned from every light is dark.
+  shardMirror: 0.3,
+  // The glow behind the world on the outline of what the moon does not reach: its color, how tight to the outline,
+  // and how much of it the moon's own rim takes away.
+  glow: color('ember').lerp(color('flame'), 0.25).multiplyScalar(0.55), glowRim: [4, 0.8] as const,
   // The cracks lit from inside on the planet's left side (picture 9's knot of them, at 235 across and 470 down), as a
   // light on what hangs near them: where it is, in the picture's pixels and how far toward the visitor, how bright,
   // over how many units it falls to half, and how far it reaches. It is what lights the left boulder's shoulder.
@@ -69,8 +82,8 @@ const LOOK = {
 const COL = COLUMNS.split(' ');
 const ROWS = 6;
 
-export const build: PartFactory = async ({ query }) => {
-  const file = await load('debris.bin');
+export const build: PartFactory = async ({ query, renderer }) => {
+  const [file, maps] = await Promise.all([load('debris.bin'), stoneMaps(renderer)]);
   const models = [...file.meshes.values()], col = Object.fromEntries(COL.map((c, i) => [c, i])) as Record<string, number>;
   let table = file.meta.pieces as number[][];
   if (query.get('debris') === 'models') {
@@ -175,14 +188,16 @@ export const build: PartFactory = async ({ query }) => {
   const uniforms = {
     uPieces: { value: pieces }, uTime: { value: 0 }, uBounceK: { value: pick(1, LOOK.bounce) }, uCoreK: { value: pick(0, LOOK.core) }, uDebrisCore: { value: new THREE.Vector3(...CORE.at) },
     uCoreSteep: { value: new THREE.Vector2(...LOOK.steep) }, uCoreSteepF: { value: new THREE.Vector2(LOOK.steep[0] * SCALE, LOOK.steep[1]) },
-    uBody: { value: LOOK.body }, uStone: { value: stone() }, uSkinPale: { value: LOOK.skin.pale }, uSkinDark: { value: LOOK.skin.dark }, uShard: { value: LOOK.shard },
+    uStone: { value: stone() }, uPatina: { value: LOOK.patina }, uChip: { value: LOOK.chip }, uWeather: { value: new THREE.Vector4(...LOOK.weather) },
+    uStoneGrain: { value: maps.grain }, uGrainK: { value: new THREE.Vector4(...LOOK.grain) }, uGlow: { value: LOOK.glow }, uGlowRim: { value: new THREE.Vector2(...LOOK.glowRim) },
+    uSmallDepth: { value: new THREE.Vector2(...LOOK.smallDepth) }, uSmallBurn: { value: LOOK.smallBurn }, uShardMirror: { value: LOOK.shardMirror }, uSkinPale: { value: LOOK.skin.pale }, uSkinDark: { value: LOOK.skin.dark }, uShard: { value: LOOK.shard },
     uWorn: { value: LOOK.worn }, uFill: { value: new THREE.Vector4(LOOK.fill.color.r, LOOK.fill.color.g, LOOK.fill.color.b, LOOK.fill.least).multiplyScalar(pick(5, 1)).setW(LOOK.fill.least) }, uFillDir: { value: new THREE.Vector3(...LOOK.fill.from).normalize() }, uRimTint: { value: LOOK.rimTint }, uNight: { value: LOOK.night }, uRockMirror: { value: LOOK.mirror },
     uMoonBody: { value: LOOK.moonBody }, uMoonRim: { value: new THREE.Vector3(pick(3, LOOK.moonRim[0]), LOOK.moonRim[1], LOOK.moonRim[2]) },
     uCoreRim: { value: new THREE.Vector4(pick(2, LOOK.coreRim[0]), LOOK.coreRim[1], LOOK.coreRim[2], 0) },
     uStreamLight: { value: new THREE.Vector4(pick(4, LOOK.stream.main[0]), ...LOOK.stream.main.slice(1)) }, uStreamColor: { value: LOOK.stream.color },
-    uRelief: { value: new THREE.Vector4(...LOOK.relief).multiplyScalar(query.has('relief') ? Number(query.get('relief')) : 1).setY(LOOK.relief[1]) }, uDeep: { value: new THREE.Vector3(...LOOK.deep) }, uReliefTone: { value: LOOK.reliefTone },
+    uRelief: { value: new THREE.Vector4(...LOOK.relief).multiplyScalar(query.has('relief') ? Number(query.get('relief')) : 1).setY(LOOK.relief[1]) }, uDeep: { value: new THREE.Vector3(...LOOK.deep) },
     uCracks: { value: at(...fromPicture(LOOK.cracks.at[0], LOOK.cracks.at[1], LOOK.cracks.at[2])) }, uCracksI: { value: new THREE.Vector3(LOOK.cracks.power, LOOK.cracks.half, LOOK.cracks.reach) },
-    uLineA: { value: lines.map((l) => l.a) }, uLineB: { value: lines.map((l) => l.b) }, uLineI: { value: lines.map(() => new THREE.Vector2(LOOK.stream.small[0], LOOK.stream.small[1] * SCALE)) },
+    uLineA: { value: lines.map((l) => l.a) }, uLineB: { value: lines.map((l) => l.b) }, uLineI: { value: lines.map(() => new THREE.Vector2(LOOK.stream.small[0], LOOK.stream.small[1])) },
   };
   const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: LOOK.rough, metalness: 0 });
   material.onBeforeCompile = (sh) => {
@@ -214,6 +229,6 @@ export const build: PartFactory = async ({ query }) => {
     group,
     alone: query.get('debris') === 'models' ? (table.length === 1 ? { at: [table[0][col.x], table[0][col.y], 150], r: 75 } : { at: [0, -860, 150], r: 380 }) : { at: [0, -800, 200], r: 720 },
     update(s) { uniforms.uTime.value = s.t; return !s.still; },
-    dispose() { geometry.dispose(); material.dispose(); pieces.dispose(); },
+    dispose() { geometry.dispose(); material.dispose(); pieces.dispose(); maps.release(); },
   };
 };

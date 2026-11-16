@@ -5,17 +5,20 @@
 
 export const WINDOW = {
   // The bronze round each pane, in units: each side, the spandrel under it, and the head over it.
-  frame: { side: 0.26, sill: 0.56, head: 0.15 },
+  frame: { side: 0.22, sill: 0.42, head: 0.14 },
   // How deep the room behind the glass is, in units.
   deep: 2.2,
   // The radiance of the brightest room, and the share of that its glass shows on average, for the far view and the
   // baker.
   gain: 2.9,
   mean: 0.62,
+  // The least a room is lit: a room with its lights off still shows the city's glow on its far wall, so the strip
+  // of glass is never a black hole in the stone.
+  dark: 0.045,
   // How far a blind dims what is behind it.
   blind: 0.5,
   // The colors a room is lit in, from the warmest to the palest, as names in the palette.
-  colors: ['flame', 'hot', 'pale'] as const,
+  colors: ['flame', 'hot', 'copper-light'] as const,
   // A room's level is stored as level ** (1 / curve), and lights by level.
   curve: 1.6,
   // A dim room is lit warmer: its light goes to the warmest color as its level falls from dim[1] to dim[0], so no
@@ -38,5 +41,5 @@ export function paleness(warm: number, level: number): number {
 
 export function shown(level: number, blind: number, cw: number, ch: number): number {
   const f = WINDOW.frame, glass = Math.max(0, cw - 2 * f.side) * Math.max(0, ch - f.sill - f.head) / Math.max(1e-6, cw * ch);
-  return glass * WINDOW.mean * level ** WINDOW.curve * (1 - WINDOW.blind * blind);
+  return glass * WINDOW.mean * Math.max(level ** WINDOW.curve, WINDOW.dark) * (1 - WINDOW.blind * blind);
 }

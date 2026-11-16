@@ -7,17 +7,25 @@
 // dust's paler stone. Under the crust, in section, is the planet's own red brown rock (LIGHT.stone in the layout) at
 // UNDER of its brightness.
 export const STONE = {
-  pale: { from: 'text-3', to: 'copper-light', k: 0.46, power: 1.8 },
+  pale: { from: 'text-3', to: 'copper-light', k: 0.46, power: 1.62 },
   dust: { from: 'text-2', to: 'copper-light', k: 0.24, power: 1.12 },
   dark: { from: 'bg-3', to: 'text', k: 0.14, power: 0.5 },
 } as const;
 export const UNDER = 0.62;
+// The land's sand, which lies in the hollows of the skin's shoulder under the land's edge: as the land has it.
+export const SAND = { of: ['pale', 'hot'], ease: 0.45, power: 0.92 } as const;
 // The dark side is turned from the moon and from the core: it is seen by the night's soft light alone. The outer
 // surface is open to the night, so it takes this many times what the world gives the rock of the hollow.
 export const NIGHT_SIDE = 2.9;
 // The pale side's shadows are near black, as picture 9's crescents are, and its light comes from the moon: it keeps
 // this share of the night and of the light that bounces to it, a quarter of the way to grey.
 export const PALE_SHADE = 0.3;
+// How the moon's light on the pale side falls away from its full where the moon is this high over the outer surface
+// (the cosine, to) to this share of it where it is this low (from), for the ground shading itself.
+export const TERMINATOR = { from: 0.1, to: 0.52, floor: 0.12 } as const;
+// The pale stone and its dust, turned this many degrees of hue toward yellow: lit by the moon's pale light, the
+// palette's own stone came out five degrees redder than the palette's hue, salmon beside the picture's cream.
+export const PALE_TURN = 5;
 
 // The map: how many of its texels to a pixel of picture 9, and the steepest slope it holds (units of height to a
 // picture pixel across). Slopes are stored as the square root of their share of that, so gentle ones keep detail.

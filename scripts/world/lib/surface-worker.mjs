@@ -1,9 +1,10 @@
 // One worker of the surface maker (surface.mjs): it loads the field's module, then turns slabs of the grid into
 // vertices (one for each sheet of surface in each cell) and the crossing edges each slab owns. Started by surface.mjs
-// with its grid in workerData. It is sent { slab } and answers with that slab's arrays.
+// with its grid in workerData. It is sent { id, slab } and answers with that slab's arrays, or { id, points } (x, y, z
+// after one another) and answers with the field's values there.
 import { parentPort, workerData } from 'node:worker_threads';
 
-const { module, args, origin, cell, nc, B, slabWidth, cut, margin, gap, root, exact, step, agree, beside, snug: SNUG, same: SAME, apart: APART } = workerData;
+const { module, args, origin, cell, nc, B, slabWidth, cut, margin, gap, root, exact, step, agree, beside, snug: SNUG, same: SAME, apart: APART, reach: REACH, probe: PROBE } = workerData;
 const mod = await import(module);
 if (mod.setup) await mod.setup(args);
 if (typeof mod.field !== 'function') throw new Error(`surface: ${module} does not export field(x, y, z)`);
@@ -46,10 +47,13 @@ class Grow {
   done() { return this.a.slice(0, this.n); }
 }
 
-const P = B + 1;
-const vals = new Float64Array(P * P * P);
-const xstamp = new Int32Array(P * P * P * 3);
-const xdata = new Float64Array(P * P * P * 3 * 6);
+// A block's values and crossings are kept with a ring one point wide round it, so a cell at the block's edge can
+// read the crossings of every cell beside it.
+const Q = B + 3;
+const ix = (i, j, k) => i + 1 + Q * (j + 1 + Q * (k + 1));
+const vals = new Float64Array(Q * Q * Q);
+const xstamp = new Int32Array(Q * Q * Q * 3);
+const xdata = new Float64Array(Q * Q * Q * 3 * 6);
 let stamp = 0;
 
 const up = new Int8Array(12);
@@ -141,7 +145,7 @@ function slope(x, y, z, f0) {
 // of the face it lies on. A root within a step of a crease takes the slope from a point beside it whose face passes
 // through the root, so its normal is always one face's own; if none is found it has no normal and adds no plane.
 function crossing(lx, ly, lz, a, gx, gy, gz, f0, f1) {
-  const li = (lx + P * (ly + P * lz)) * 3 + a;
+  const li = ix(lx, ly, lz) * 3 + a;
   if (xstamp[li] === stamp) return li * 6;
   xstamp[li] = stamp;
   const x0 = at(0, gx), y0 = at(1, gy), z0 = at(2, gz);
@@ -153,7 +157,18 @@ function crossing(lx, ly, lz, a, gx, gy, gz, f0, f1) {
       t = ta + (tb - ta) * (fa / (fa - fb));
       if (!(t > ta && t < tb)) t = (ta + tb) / 2;
       ft = field(x0 + d[0] * t, y0 + d[1] * t, z0 + d[2] * t);
-      if (Math.abs(ft) <= exact || tb - ta <= 1e-13) break;
+      if (tb - ta <= 1e-13) break;
+      if (Math.abs(ft) <= exact) {
+        // A zero is a crossing only if the field changes sign across it. Two pieces that touch face to face make a
+        // sheet of zeros inside the rock, and a piece touching another from outside makes zeros outside it.
+        const tin = ina ? -PROBE : PROBE, fi = field(x0 + d[0] * (t + tin), y0 + d[1] * (t + tin), z0 + d[2] * (t + tin));
+        const fo = field(x0 + d[0] * (t - tin), y0 + d[1] * (t - tin), z0 + d[2] * (t - tin));
+        if (fi < 0 && fo >= 0) break;
+        if (fo < 0) { if (ina) { ta = t; fa = -exact; } else { tb = t; fb = -exact; } }
+        else if (ina) { tb = t; fb = exact; } else { ta = t; fa = exact; }
+        last = 0;
+        continue;
+      }
       if ((ft < 0) === ina) { ta = t; fa = ft; if (last === -1) fb /= 2; last = -1; } else { tb = t; fb = ft; if (last === 1) fa /= 2; last = 1; }
     }
   }
@@ -179,6 +194,8 @@ function crossing(lx, ly, lz, a, gx, gy, gz, f0, f1) {
 }
 
 const out3 = new Float64Array(3);
+let RANK = 0, ORDER = 0, bi = 0, bj = 0, bk = 0;
+const LINE = new Float64Array(3);
 const qefError = (x, y, z, k) => {
   let e = 0;
   for (let i = 0; i < k; i++) {
@@ -201,10 +218,12 @@ function solve(k, mx, my, mz, lo, hi) {
   A[3] = A[1]; A[6] = A[2]; A[7] = A[5];
   eigen(A);
   const top = Math.max(w[0], w[1], w[2]);
+  RANK = 0;
   if (!(top > 0)) return false;
   let x = mx, y = my, z = mz;
   for (let j = 0; j < 3; j++) {
     if (!(w[j] > cut * top)) continue;
+    RANK++;
     const ux = V[j], uy = V[3 + j], uz = V[6 + j];
     const s = (ux * bx + uy * by + uz * bz) / w[j];
     x += s * ux; y += s * uy; z += s * uz;
@@ -363,6 +382,155 @@ function settle(lo, hi, room) {
   return true;
 }
 
+// The crossings on the edges of the 26 cells round a cell, into XQ and XN; returns how many.
+const XQ = new Float64Array(144 * 3), XN = new Float64Array(144 * 3), PT = [0, 0, 0];
+function around(i, j, k) {
+  let m = 0;
+  for (let a = 0; a < 3; a++) {
+    const b = (a + 1) % 3, c = (a + 2) % 3;
+    for (let s = -1; s <= 1; s++) for (let u = -1; u <= 2; u++) for (let v = -1; v <= 2; v++) {
+      PT[0] = i; PT[1] = j; PT[2] = k;
+      PT[a] += s; PT[b] += u; PT[c] += v;
+      const f0 = vals[ix(PT[0], PT[1], PT[2])];
+      const f1 = vals[ix(PT[0] + (a === 0), PT[1] + (a === 1), PT[2] + (a === 2))];
+      if ((f0 < 0) === (f1 < 0)) continue;
+      const d = crossing(PT[0], PT[1], PT[2], a, bi + PT[0], bj + PT[1], bk + PT[2], f0, f1);
+      if (!(xdata[d + 3] || xdata[d + 4] || xdata[d + 5])) continue;
+      for (let t = 0; t < 3; t++) { XQ[m * 3 + t] = xdata[d + t]; XN[m * 3 + t] = xdata[d + 3 + t]; }
+      m++;
+    }
+  }
+  return m;
+}
+
+// Whether a face with normal (ex, ey, ez) is really there at (x, y, z): one of the points a short way off along the
+// given directions is on the surface and has that slope.
+function there(x, y, z, ex, ey, ez, dirs, nd) {
+  const r = cell * REACH;
+  for (let i = 0; i < nd; i++) {
+    const px = x + r * dirs[i * 3], py = y + r * dirs[i * 3 + 1], pz = z + r * dirs[i * 3 + 2];
+    const f = field(px, py, pz);
+    if (Math.abs(f) > cell * SNUG) continue;
+    if (!slope(px, py, pz, f)) continue;
+    const l = Math.hypot(G[0], G[1], G[2]);
+    if (l > 0 && (G[0] * ex + G[1] * ey + G[2] * ez) / l > SAME) return true;
+  }
+  return false;
+}
+
+// A cell whose own crossings leave its vertex free to slide on a face or along an edge, beside cells that see a
+// face its own edges missed, puts its vertex where that face meets its own, if that is inside it and on the
+// surface: the foot of a piece standing on another, a notch in a face. Its own planes still hold the vertex, so this
+// changes no triangle's slope, only where on its own face the vertex sits. Reads V (the eigenvectors), w and RANK
+// as solve left them, and out3 (where it put the vertex); sets out3 and returns true when it moves it.
+const EX = new Float64Array(144 * 4), DIRS = new Float64Array(12), ND = new Float64Array(3), NA = new Float64Array(3);
+function complete(i, j, k, lo, hi, cnt) {
+  const r = RANK;
+  if (r < 1 || r > 2) return false;
+  const x0 = out3[0], y0 = out3[1], z0 = out3[2];
+  let jt = 0, jl = 0;
+  for (let t = 1; t < 3; t++) { if (w[t] > w[jt]) jt = t; if (w[t] < w[jl]) jl = t; }
+  NA[0] = V[jt]; NA[1] = V[3 + jt]; NA[2] = V[6 + jt];
+  ND[0] = V[jl]; ND[1] = V[3 + jl]; ND[2] = V[6 + jl];
+  let along = 0;
+  for (let t = 0; t < cnt; t++) along += n[t * 3] * NA[0] + n[t * 3 + 1] * NA[1] + n[t * 3 + 2] * NA[2];
+  if (along < 0) { NA[0] = -NA[0]; NA[1] = -NA[1]; NA[2] = -NA[2]; }
+  const m = around(i, j, k), tol = cell * SNUG;
+  let ne = 0;
+  for (let t = 0; t < m; t++) {
+    const ax = XN[t * 3], ay = XN[t * 3 + 1], az = XN[t * 3 + 2];
+    const d = ax * XQ[t * 3] + ay * XQ[t * 3 + 1] + az * XQ[t * 3 + 2];
+    if (r === 1) {
+      const cx = ay * NA[2] - az * NA[1], cy = az * NA[0] - ax * NA[2], cz = ax * NA[1] - ay * NA[0];
+      if (cx * cx + cy * cy + cz * cz < APART * APART) continue;
+    } else if (Math.abs(ax * ND[0] + ay * ND[1] + az * ND[2]) < APART) continue;
+    let e = 0;
+    for (; e < ne; e++) if (EX[e * 4] * ax + EX[e * 4 + 1] * ay + EX[e * 4 + 2] * az > SAME && Math.abs(EX[e * 4 + 3] - d) < tol) break;
+    if (e < ne) continue;
+    EX[ne * 4] = ax; EX[ne * 4 + 1] = ay; EX[ne * 4 + 2] = az; EX[ne * 4 + 3] = d;
+    ne++;
+  }
+  if (!ne) return false;
+  const inside = (x, y, z) => x >= lo[0] && x <= hi[0] && y >= lo[1] && y <= hi[1] && z >= lo[2] && z <= hi[2] && Math.abs(field(x, y, z)) <= tol;
+  let best = Infinity, order = 0, bx = 0, by = 0, bz = 0;
+  const offer = (x, y, z, o, line) => {
+    const d = (x - x0) ** 2 + (y - y0) ** 2 + (z - z0) ** 2;
+    if (o < order || (o === order && d >= best)) return false;
+    best = d; order = o; bx = x; by = y; bz = z;
+    if (line) LINE.set(line);
+    return true;
+  };
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const unit = (a) => { const l = Math.hypot(a[0], a[1], a[2]); return [a[0] / l, a[1] / l, a[2] / l]; };
+  const real = (x, y, z, e, dirs) => {
+    let nd = 0;
+    for (const [s1, s2] of dirs.length === 2 ? [[1, 1], [1, -1], [-1, 1], [-1, -1]] : [[1, 0], [-1, 0]]) {
+      const d = dirs.length === 2 ? unit([s1 * dirs[0][0] + s2 * dirs[1][0], s1 * dirs[0][1] + s2 * dirs[1][1], s1 * dirs[0][2] + s2 * dirs[1][2]]) : [s1 * dirs[0][0], s1 * dirs[0][1], s1 * dirs[0][2]];
+      DIRS[nd * 3] = d[0]; DIRS[nd * 3 + 1] = d[1]; DIRS[nd * 3 + 2] = d[2];
+      nd++;
+    }
+    return there(x, y, z, e[0], e[1], e[2], DIRS, nd);
+  };
+  const ex = (t) => [EX[t * 4], EX[t * 4 + 1], EX[t * 4 + 2]];
+  const exd = (t) => EX[t * 4 + 3];
+  if (r === 2) {
+    let A1 = null, A2 = null, most = 0;
+    for (let a = 0; a < cnt; a++) for (let b = a + 1; b < cnt; b++) {
+      const c = cross([n[a * 3], n[a * 3 + 1], n[a * 3 + 2]], [n[b * 3], n[b * 3 + 1], n[b * 3 + 2]]), l = Math.hypot(c[0], c[1], c[2]);
+      if (l > most) { most = l; A1 = [n[a * 3], n[a * 3 + 1], n[a * 3 + 2]]; A2 = [n[b * 3], n[b * 3 + 1], n[b * 3 + 2]]; }
+    }
+    if (!(most > APART)) return false;
+    for (let a = 0; a < ne; a++) {
+      const e = ex(a), den = e[0] * ND[0] + e[1] * ND[1] + e[2] * ND[2];
+      const t = (exd(a) - (e[0] * x0 + e[1] * y0 + e[2] * z0)) / den;
+      const x = x0 + t * ND[0], y = y0 + t * ND[1], z = z0 + t * ND[2];
+      if (!inside(x, y, z)) continue;
+      const d12 = unit(cross(A1, A2)), d1e = unit(cross(A1, e)), d2e = unit(cross(A2, e));
+      if (!real(x, y, z, e, [d1e, d2e]) || !real(x, y, z, A1, [d12, d1e]) || !real(x, y, z, A2, [d12, d2e])) continue;
+      offer(x, y, z, 3);
+    }
+  } else {
+    const A = [NA[0], NA[1], NA[2]];
+    for (let a = 0; a < ne; a++) {
+      const e = ex(a), c = A[0] * e[0] + A[1] * e[1] + A[2] * e[2], det = 1 - c * c;
+      const re = exd(a) - (e[0] * x0 + e[1] * y0 + e[2] * z0);
+      const al = (-c * re) / det, be = re / det;
+      const px = x0 + al * A[0] + be * e[0], py = y0 + al * A[1] + be * e[1], pz = z0 + al * A[2] + be * e[2];
+      const dl = unit(cross(A, e));
+      for (let b = a + 1; b < ne; b++) {
+        const g = ex(b), dg = g[0] * dl[0] + g[1] * dl[1] + g[2] * dl[2];
+        if (Math.abs(dg) < APART) continue;
+        const t = (exd(b) - (g[0] * px + g[1] * py + g[2] * pz)) / dg;
+        const x = px + t * dl[0], y = py + t * dl[1], z = pz + t * dl[2];
+        if (!inside(x, y, z)) continue;
+        const dg2 = unit(cross(A, g)), de = dl, dge = unit(cross(e, g));
+        if (!real(x, y, z, e, [de, dge]) || !real(x, y, z, g, [dg2, dge]) || !real(x, y, z, A, [de, dg2])) continue;
+        offer(x, y, z, 3);
+      }
+      if (order === 3) continue;
+      let t0 = -Infinity, t1 = Infinity;
+      const P0 = [px, py, pz];
+      for (let q = 0; q < 3; q++) {
+        if (Math.abs(dl[q]) < 1e-12) { if (P0[q] < lo[q] || P0[q] > hi[q]) { t0 = Infinity; break; } continue; }
+        let u = (lo[q] - P0[q]) / dl[q], v = (hi[q] - P0[q]) / dl[q];
+        if (u > v) { const s2 = u; u = v; v = s2; }
+        t0 = Math.max(t0, u); t1 = Math.min(t1, v);
+      }
+      if (!(t0 <= t1)) continue;
+      const t = Math.min(t1, Math.max(t0, 0));
+      const x = px + t * dl[0], y = py + t * dl[1], z = pz + t * dl[2];
+      if (!inside(x, y, z)) continue;
+      const u = unit(cross(e, dl)), uA = unit(cross(A, dl));
+      if (!real(x, y, z, e, [u]) || !real(x, y, z, A, [uA])) continue;
+      offer(x, y, z, 2, dl);
+    }
+  }
+  if (!order) return false;
+  ORDER = order;
+  out3[0] = bx; out3[1] = by; out3[2] = bz;
+  return true;
+}
+
 function leaf(bx, by, bz, o) {
   const i0 = bx * B, j0 = by * B, k0 = bz * B;
   const i1 = Math.min(i0 + B, ncx), j1 = Math.min(j0 + B, ncy), k1 = Math.min(k0 + B, ncz);
@@ -374,12 +542,17 @@ function leaf(bx, by, bz, o) {
       const y = at(1, j0 + j);
       for (let i = 0; i < px; i++) {
         const v = field(at(0, i0 + i), y, z);
-        vals[i + P * (j + P * k)] = v;
+        vals[ix(i, j, k)] = v;
         if (v < 0) neg++; else pos++;
       }
     }
   }
   if (!neg || !pos) return;
+  for (let k = -1; k <= pz; k++) for (let j = -1; j <= py; j++) for (let i = -1; i <= px; i++) {
+    if (i >= 0 && i < px && j >= 0 && j < py && k >= 0 && k < pz) continue;
+    vals[ix(i, j, k)] = field(at(0, i0 + i), at(1, j0 + j), at(2, k0 + k));
+  }
+  bi = i0; bj = j0; bk = k0;
   stamp++;
   const cv = new Float64Array(8);
   const lo = [0, 0, 0], hi = [0, 0, 0], li = [0, 0, 0], hj = [0, 0, 0];
@@ -388,7 +561,7 @@ function leaf(bx, by, bz, o) {
       for (let i = 0; i < px - 1; i++) {
         let config = 0;
         for (let c = 0; c < 8; c++) {
-          const v = vals[(i + (c & 1)) + P * ((j + ((c >> 1) & 1)) + P * (k + (c >> 2)))];
+          const v = vals[ix(i + (c & 1), j + ((c >> 1) & 1), k + (c >> 2))];
           cv[c] = v;
           if (v < 0) config |= 1 << c;
         }
@@ -446,10 +619,34 @@ function leaf(bx, by, bz, o) {
             cnt++;
           }
           mx /= cnt; my /= cnt; mz /= cnt;
-          if (solve(cnt, mx, my, mz, lo, hi)) o.solved++;
-          else if (feature(cnt, mx, my, mz, lo, hi, margin)) o.featured++;
+          let free = 0, fx = 0, fy = 0, fz = 0;
+          if (solve(cnt, mx, my, mz, lo, hi)) {
+            o.solved++;
+            if (RANK === 1 || RANK === 2) {
+              let jt = 0, jl = 0;
+              for (let t = 1; t < 3; t++) { if (w[t] > w[jt]) jt = t; if (w[t] < w[jl]) jl = t; }
+              const jj = RANK === 1 ? jt : jl;
+              free = 3 - RANK; fx = V[jj]; fy = V[3 + jj]; fz = V[6 + jj];
+            }
+            if (complete(i, j, k, lo, hi, cnt)) {
+              o.completed++;
+              if (ORDER === 3) free = 0; else { free = 1; fx = LINE[0]; fy = LINE[1]; fz = LINE[2]; }
+            }
+          } else if (feature(cnt, mx, my, mz, lo, hi, margin)) o.featured++;
           else { boxed(cnt, mx, my, mz, li, hj); o.held++; }
-          if (settle(lo, hi, margin)) o.settled++;
+          if (settle(lo, hi, margin)) {
+            o.settled++;
+            free = 0;
+            // Planes of two faces a cell or less apart (a thin chip) can meet far off the surface, too far for the
+            // slope to bring the vertex back; the crossings' own middle, brought onto the surface, is then nearer.
+            const fx0 = out3[0], fy0 = out3[1], fz0 = out3[2], f0 = Math.abs(field(fx0, fy0, fz0));
+            if (f0 > cell * SNUG) {
+              out3[0] = mx; out3[1] = my; out3[2] = mz;
+              settle(lo, hi, 0);
+              if (!(Math.abs(field(out3[0], out3[1], out3[2])) < f0)) { out3[0] = fx0; out3[1] = fy0; out3[2] = fz0; }
+            }
+          }
+          o.free.push(free); o.dirs.push(fx); o.dirs.push(fy); o.dirs.push(fz);
           const px = out3[0], py = out3[1], pz = out3[2];
           if (px < lo[0] || px > hi[0] || py < lo[1] || py > hi[1] || pz < lo[2] || pz > hi[2]) {
             const good = feature(cnt, mx, my, mz, lo, hi, -gap);
@@ -468,10 +665,10 @@ function leaf(bx, by, bz, o) {
       const gj = j0 + j;
       for (let i = 0; i < px - 1; i++) {
         const gi = i0 + i;
-        const v = vals[i + P * (j + P * k)];
+        const v = vals[ix(i, j, k)];
         const g = [gi, gj, gk];
         for (let a = 0; a < 3; a++) {
-          const u = vals[(i + (a === 0)) + P * ((j + (a === 1)) + P * (k + (a === 2)))];
+          const u = vals[ix(i + (a === 0), j + (a === 1), k + (a === 2))];
           if ((v < 0) === (u < 0)) continue;
           const b = (a + 1) % 3, c = (a + 2) % 3;
           if (g[b] < 1 || g[b] > nc[b] - 1 || g[c] < 1 || g[c] > nc[c] - 1) continue;
@@ -502,19 +699,25 @@ function node(lo, hi, o) {
   node(l2, hi, o);
 }
 
-parentPort.on('message', ({ slab }) => {
+parentPort.on('message', ({ id, slab, points }) => {
+  if (points) {
+    const values = new Float64Array(points.length / 3);
+    for (let i = 0; i < values.length; i++) values[i] = raw(points[i * 3], points[i * 3 + 1], points[i * 3 + 2]);
+    parentPort.postMessage({ id, values }, [values.buffer]);
+    return;
+  }
   const o = {
     cells: new Grow(Float64Array), first: new Grow(Int32Array), packed: new Grow(Uint32Array),
-    pos: new Grow(Float64Array), edges: new Grow(Float64Array), kinds: new Grow(Uint8Array), hermite: new Grow(Float64Array), alt: new Grow(Float64Array),
-    vcount: 0, solved: 0, featured: 0, held: 0, settled: 0,
+    pos: new Grow(Float64Array), free: new Grow(Uint8Array), dirs: new Grow(Float32Array), edges: new Grow(Float64Array), kinds: new Grow(Uint8Array), hermite: new Grow(Float64Array), alt: new Grow(Float64Array),
+    vcount: 0, completed: 0, solved: 0, featured: 0, held: 0, settled: 0,
   };
   const e0 = evals;
   const b0 = slab * slabWidth, b1 = Math.min(b0 + slabWidth, nb[0]);
   node([b0, 0, 0], [b1, nb[1], nb[2]], o);
   const res = {
-    slab, cells: o.cells.done(), first: o.first.done(), packed: o.packed.done(), pos: o.pos.done(),
-    edges: o.edges.done(), kinds: o.kinds.done(), hermite: o.hermite.done(), alt: o.alt.done(), evals: evals - e0, solved: o.solved, featured: o.featured, held: o.held, settled: o.settled,
+    id, slab, cells: o.cells.done(), first: o.first.done(), packed: o.packed.done(), pos: o.pos.done(), free: o.free.done(), dirs: o.dirs.done(),
+    edges: o.edges.done(), kinds: o.kinds.done(), hermite: o.hermite.done(), alt: o.alt.done(), evals: evals - e0, completed: o.completed, solved: o.solved, featured: o.featured, held: o.held, settled: o.settled,
   };
-  parentPort.postMessage(res, [res.cells.buffer, res.first.buffer, res.packed.buffer, res.pos.buffer, res.edges.buffer, res.kinds.buffer, res.hermite.buffer, res.alt.buffer]);
+  parentPort.postMessage(res, [res.cells.buffer, res.first.buffer, res.packed.buffer, res.pos.buffer, res.free.buffer, res.dirs.buffer, res.edges.buffer, res.kinds.buffer, res.hermite.buffer, res.alt.buffer]);
 });
 parentPort.postMessage({ ready: true, lip });

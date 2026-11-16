@@ -19,11 +19,10 @@ export const FORM = {
   // The foot course: a band `tall` high round the foot, standing `proud` out from the faces, its top edge bevelled
   // `bevel` deep.
   foot: { tall: 3.4, proud: 0.75, bevel: 0.45 },
-  // The casing. Courses are laid in units `unit` tall (measured upright) and a band of `band` units ends at a deeper
-  // joint. In each band one course is three units tall and another two. Plates are `plate` long plus `plateTall` for
-  // each unit of their course's height, each a share `jag` longer or shorter. A joint is a hairline `line` tall, and
-  // each plate's upper chamfer `lip` tall. How each plate is tilted is the shader's (NIGHT.kick, bow, tilt).
-  casing: { unit: 1.5, band: 9, plate: 5.5, plateTall: 2.2, jag: 0.35, line: 0.1, lip: 0.14 },
+  // The casing: courses all `unit` tall (measured upright), so every plate of a course is as tall as the course.
+  // Plates are `plate` long, each a share `jag` longer or shorter. A joint is a hairline `line` tall, and each plate's
+  // upper chamfer `lip` tall. How each plate is tilted is the shader's (NIGHT.kick, bow, tilt).
+  casing: { unit: 1.8, plate: 8, jag: 0.3, line: 0.1, lip: 0.14 },
 } as const;
 
 type V3 = [number, number, number];

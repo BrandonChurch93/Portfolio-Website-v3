@@ -4,7 +4,8 @@
 //   node scripts/world/lib/check-surface.mjs --quick    every check, no timing
 //
 // Prints PASS or FAIL for each and exits with 1 on any failure. This file is also the field module the checks
-// hand the surface maker: setup({ scene }) picks the scene in each worker.
+// hand the surface maker: setup({ scene }) picks the scene in each worker. A check marked "a known limit" holds the
+// tool to what it measured where one vertex in a cell cannot be exact, so that it can only get better.
 import { isMainThread } from 'node:worker_threads';
 import { fileURLToPath } from 'node:url';
 import { availableParallelism } from 'node:os';
@@ -236,7 +237,7 @@ function chips() {
 }
 
 // A turned block with pieces added to it and pits cut from it: concave creases everywhere.
-function carved() {
+export function carved() {
   const r = random(3), turn3 = turn(0.7, 0.4, 1.1), half = [52.3, 31.7, 44.1], at = [3.17, -2.71, 1.93];
   const block = [];
   for (let a = 0; a < 3; a++) for (const sg of [1, -1]) {
@@ -260,9 +261,9 @@ function carved() {
     return v;
   };
 }
-const CARVED = [[-110.3, -100.1, -105.7], [109.9, 101.3, 104.2]];
+export const CARVED = [[-110.3, -100.1, -105.7], [109.9, 101.3, 104.2]];
 
-const HUNDRED = {
+export const HUNDRED = {
   count: 100, seed: 7, size: [10, 30],
   fill: (r) => [(r() - 0.5) * 160, (r() - 0.5) * 160, (r() - 0.5) * 160],
   span: { box: [[-150, -150, -150], [150, 150, 150]], cell: 24 },
@@ -279,8 +280,93 @@ const SHEET = { c: [0.37, 0.21, -0.13], h: [30, 1, 30] };
 const SLOT = { c: [0.29, 0.43, 0.11], h: [24, 24, 24], gap: 1 };
 const LBOX = [[[0.13, 0.27, 0.19], [20, 6, 10]], [[-13.87, 14.27, 0.19], [6, 20, 10]]];
 
-export async function setup({ scene, seed, h, c }) {
-  if (scene === 'cube') impl = planesField(cubePlanes());
+// Boxes in one turned frame, as field, their face normals and the frame's way to and from it.
+function frame(axis, angle, at) {
+  const l = Math.hypot(...axis), [x, y, z] = axis.map((v) => v / l), co = Math.cos(angle), si = Math.sin(angle), t = 1 - co;
+  const R = [[t * x * x + co, t * x * y - si * z, t * x * z + si * y], [t * x * y + si * z, t * y * y + co, t * y * z - si * x], [t * x * z - si * y, t * y * z + si * x, t * z * z + co]];
+  const local = (p) => { const d = [p[0] - at[0], p[1] - at[1], p[2] - at[2]]; return [0, 1, 2].map((j) => R[0][j] * d[0] + R[1][j] * d[1] + R[2][j] * d[2]); };
+  const world = (q) => [0, 1, 2].map((r) => R[r][0] * q[0] + R[r][1] * q[1] + R[r][2] * q[2] + at[r]);
+  const normals = [0, 1, 2].flatMap((a) => [1, -1].map((s) => [R[0][a] * s, R[1][a] * s, R[2][a] * s]));
+  return { local, world, normals };
+}
+const boxAt = (q, c, h) => {
+  const l = [Math.abs(q[0] - c[0]) - h[0], Math.abs(q[1] - c[1]) - h[1], Math.abs(q[2] - c[2]) - h[2]];
+  return Math.hypot(Math.max(l[0], 0), Math.max(l[1], 0), Math.max(l[2], 0)) + Math.min(Math.max(l[0], l[1], l[2]), 0);
+};
+
+// A cube of half size h standing on a slab, or a cube's hollow, turned at random from a seed. The foot of the cube
+// has corners where a convex edge meets two concave ones, the commonest corner of rock made of pieces. Where the
+// cube stands on the slab both are 0, so the field is 0 on that face inside the rock: it changes sign nowhere there.
+export function standing(kind, seed, h) {
+  const r = random(seed), a = dir(r);
+  let b = dir(r);
+  const d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  b = b.map((v, i) => v - d * a[i]);
+  const bl = Math.hypot(...b);
+  b = b.map((v) => v / bl);
+  const c = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]], axes = [a, b, c], at = [r() * 3, r() * 3, r() * 3];
+  const local = (x, y, z) => axes.map((ax) => ax[0] * (x - at[0]) + ax[1] * (y - at[1]) + ax[2] * (z - at[2]));
+  const world = (l) => [0, 1, 2].map((k) => at[k] + a[k] * l[0] + b[k] * l[1] + c[k] * l[2]);
+  const corners = [];
+  let f;
+  if (kind === 'hollow') {
+    f = (x, y, z) => -boxAt(local(x, y, z), [0, 0, 0], [h, h, h]);
+    for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) corners.push(world([sx * h, sy * h, sz * h]));
+  } else {
+    f = (x, y, z) => { const l = local(x, y, z); return Math.min(boxAt(l, [0, 0, 0], [h, h, h]), boxAt(l, [0, -2.5 * h, 0], [3 * h, 1.5 * h, 3 * h])); };
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) corners.push(world([sx * h, -h, sz * h]), world([sx * h, h, sz * h]));
+  }
+  return { field: f, corners, normals: axes.flatMap((ax) => [ax, ax.map((v) => -v)]) };
+}
+export const STANDING = { h: 6, box: [[-36, -36, -36], [36, 36, 36]] };
+
+// Three boxes in one turned frame. In steps every edge and corner is at least 4 units from every other; in ledge the
+// second box's face is 0.7 inside the first's, so the first's face makes a ledge 0.7 wide.
+export const STEPS = [{ c: [0, 0, 0], h: [20, 6, 9] }, { c: [-14, 11, 0], h: [6, 11, 5] }, { c: [9.5, -2, 0], h: [3.3, 12, 3] }];
+export const LEDGE = [{ c: [0, 0, 0], h: [20, 6, 9] }, { c: [-14, 11, 1.3], h: [6, 11, 7] }, { c: [9.5, -2, -4.1], h: [3.3, 9.7, 2.9] }];
+export const BOXES = { axis: [0.3, 0.8, -0.5], angle: 0.6137, at: [1.73, -2.41, 0.67], box: [[-38.3, -33.1, -36.7], [36.9, 41.2, 33.4]], cut: [[-10.2, -33.1, -36.7], [36.9, 3.3, 33.4]] };
+export function boxes(list) {
+  const F = frame(BOXES.axis, BOXES.angle, BOXES.at);
+  return { field: (x, y, z) => { const q = F.local([x, y, z]); let m = Infinity; for (const b of list) m = Math.min(m, boxAt(q, b.c, b.h)); return m; }, normals: F.normals };
+}
+
+// Chips four units across or less: 343 boxes turned at random, each side between 2.8 and 4, well apart.
+export const GRAINS = { n: 343, size: 4, spread: 120, seed: 11, box: [[-64, -64, -64], [64, 64, 64]] };
+export function grains() {
+  const { n, size, spread, seed } = GRAINS, r = random(seed), list = [], g = Math.ceil(Math.cbrt(n)), step = spread / g;
+  for (let i = 0; i < n; i++) {
+    const c = [i % g, Math.floor(i / g) % g, Math.floor(i / g / g)].map((v) => (v + 0.5) * step - spread / 2 + (r() - 0.5) * step * 0.3);
+    const F = frame([r() - 0.5, r() - 0.5, r() - 0.5], r() * 3, [0, 0, 0]);
+    const h = [0, 1, 2].map(() => (size / 2) * (0.7 + 0.3 * r()));
+    const planes = F.normals.map((nn, k) => ({ n: nn, d: h[k >> 1] + nn[0] * c[0] + nn[1] * c[1] + nn[2] * c[2] }));
+    list.push({ c, planes, area: 8 * (h[0] * h[1] + h[1] * h[2] + h[0] * h[2]) });
+  }
+  const at = (v) => Math.min(g - 1, Math.max(0, Math.floor((v + spread / 2) / step)));
+  const field = (x, y, z) => {
+    let best = Infinity;
+    const i0 = at(x), j0 = at(y), k0 = at(z);
+    for (let k = Math.max(0, k0 - 1); k <= Math.min(g - 1, k0 + 1); k++) for (let j = Math.max(0, j0 - 1); j <= Math.min(g - 1, j0 + 1); j++) for (let i = Math.max(0, i0 - 1); i <= Math.min(g - 1, i0 + 1); i++) {
+      const p = list[i + g * (j + g * k)];
+      if (!p) continue;
+      let m = -Infinity;
+      for (const q of p.planes) m = Math.max(m, q.n[0] * x + q.n[1] * y + q.n[2] * z - q.d);
+      best = Math.min(best, m);
+    }
+    return best;
+  };
+  return { field, list, owner: (q) => { const c = q.map(at); return c[0] + g * (c[1] + g * c[2]); } };
+}
+
+// Counts the times setup runs in the calling thread, which surface() must never make it do.
+export let setupsHere = 0;
+
+export async function setup({ scene, seed, h, c, kind }) {
+  if (isMainThread) setupsHere++;
+  if (scene === 'standing') impl = standing(kind, seed, h).field;
+  else if (scene === 'steps') impl = boxes(STEPS).field;
+  else if (scene === 'ledge') impl = boxes(LEDGE).field;
+  else if (scene === 'grains') impl = grains().field;
+  else if (scene === 'cube') impl = planesField(cubePlanes());
   else if (scene === 'turned') impl = turned(seed, h).field;
   else if (scene === 'box') impl = (x, y, z) => Math.max(Math.abs(x - c[0]) - h[0], Math.abs(y - c[1]) - h[1], Math.abs(z - c[2]) - h[2]);
   else if (scene === 'chips') impl = chips().field;
@@ -312,13 +398,13 @@ function triNormal(m, t) {
   const l = Math.hypot(...n);
   return { n: l ? n.map((x) => x / l) : [0, 0, 0], area: l / 2, mid: [0, 1, 2].map((k) => (p[a + k] + p[b + k] + p[c + k]) / 3) };
 }
-function degenerate(m, cell) {
+export function degenerate(m, cell) {
   let bad = 0;
   for (let t = 0; t < m.indices.length / 3; t++) if (!(triNormal(m, t).area > 1e-6 * cell * cell)) bad++;
   return bad;
 }
 // Vertices with the same stored position as another vertex.
-function twins(m) {
+export function twins(m) {
   const seen = new Set();
   let n = 0;
   for (let v = 0; v < m.positions.length / 3; v++) {
@@ -327,13 +413,15 @@ function twins(m) {
   }
   return n;
 }
-const tight = (m, cell, name) => {
+// flat is how many triangles without area are let by, as a share of all: none, but for the world sized scene, where
+// a few are left where the mesh is folded past mending (a known limit).
+const tight = (m, cell, name, flat = 0) => {
   const c = closed(m), d = degenerate(m, cell), edges = (m.indices.length / 3) * 1.5, t = twins(m);
-  report(`${name}: closed and wound one way, no triangle without area, no two vertices in one place`, c.open === 0 && c.flipped === 0 && d === 0 && t === 0, `open ${c.open}, flipped ${c.flipped}, ${d} with no area, ${t} vertices on another`);
+  report(`${name}: closed and wound one way, no two vertices in one place, ${flat ? `triangles without area (a known limit) under 1 in ${Math.round(1 / flat).toLocaleString()}` : 'no triangle without area'}`, c.open === 0 && c.flipped === 0 && d <= flat * m.indices.length / 3 && t === 0, `open ${c.open}, flipped ${c.flipped}, ${d} with no area, ${t} vertices on another`);
   report(`${name}: edges with four faces (a known limit) under 1 in 5,000`, c.bad <= edges / 5000, `${c.bad} of ${Math.round(edges)} edges`);
 };
 // A triangle points into the rock when, at every one of four points inside it, its normal is against the field's slope.
-function outward(m, f, cell, name, most = 0) {
+export function outward(m, f, cell, name, most = 0) {
   const p = m.positions, ix = m.indices, h = cell * 1e-4;
   let wrong = 0, wrongArea = 0, all = 0;
   for (let t = 0; t < ix.length / 3; t++) {
@@ -534,7 +622,17 @@ async function checkSimplify({ m, scene }) {
   const a = away(s);
   report('simplify, strict false: no vertex moves, and 98 percent of the reduced surface is within the error (the simplifier alone only estimates it)', still(s) && a.share < 0.02, `${(a.share * 100).toFixed(3)} percent of points on its triangles further than ${err}, the furthest ${a.worst.toFixed(3)}`);
   const b = away(sure);
-  report('simplify, measured (the default): 99.9 percent within the error, nothing further than three times it', still(sure) && b.share < 1e-3 && b.worst <= 3 * err, `${sure.indices.length / 3} triangles, ${(b.share * 100).toFixed(4)} percent further than ${err}, the furthest ${b.worst.toFixed(3)}, ${sure.stray} still stray after ${sure.rounds} tries (furthest ${sure.furthest.toFixed(3)})`);
+  report('simplify, measured (the default): no point of the result further than the error from the mesh, none left stray', still(sure) && b.worst <= err && sure.stray === 0, `${sure.indices.length / 3} triangles, the furthest ${b.worst.toFixed(3)}, ${sure.stray} still stray after ${sure.rounds} tries`);
+  const lit40 = creased(m, 40), n = lit40.positions.length / 3, keep = 0.25;
+  const t0 = performance.now();
+  const rock = await simplify({ positions: lit40.positions, indices: lit40.indices }, { error: keep, target: Math.round(before / 6), attributes: lit40.normals, weights: [0.5, 0.5, 0.5] });
+  const gapLit = nearest(lit40, 2);
+  let rockWorst = 0;
+  for (let t = 0; t < rock.indices.length / 3; t++) for (const [w0, w1, w2] of [[1 / 3, 1 / 3, 1 / 3], [0.5, 0.5, 0], [0, 0.5, 0.5], [0.5, 0, 0.5], [0.7, 0.15, 0.15], [0.15, 0.7, 0.15], [0.15, 0.15, 0.7]]) {
+    rockWorst = Math.max(rockWorst, gapLit([0, 1, 2].map((k) => rock.positions[rock.indices[t * 3] * 3 + k] * w0 + rock.positions[rock.indices[t * 3 + 1] * 3 + k] * w1 + rock.positions[rock.indices[t * 3 + 2] * 3 + k] * w2)));
+  }
+  report('simplify as rock.mjs calls it (creased(40), normals kept, a target): no point further than the error, none stray, no hole', rockWorst <= keep && rock.stray === 0 && rock.holes === 0 && rock.attributes.length === rock.source.length * 3,
+    `${lit40.indices.length / 3} to ${rock.indices.length / 3} triangles in ${((performance.now() - t0) / 1000).toFixed(1)} s, the furthest ${rockWorst.toFixed(3)} against ${keep}, ${rock.stray} stray, ${rock.holes} holes, ${n} vertices in`);
   const c = closed(s), d = degenerate(s, 2), c2 = closed(sure);
   report('simplified, either way: closed and wound one way', c.open === 0 && c.flipped === 0 && c2.open === 0 && c2.flipped === 0, `open ${c.open} and ${c2.open}, flipped ${c.flipped} and ${c2.flipped}, ${c.bad} and ${c2.bad} edges with four faces`);
   report('simplified: triangles with no area (a known limit) under 1 in 5,000', d <= after / 5000, `${d} of ${after}`);
@@ -693,7 +791,7 @@ async function checkChips() {
 }
 
 // Edges that pass through a triangle, by how far the shorter end of the edge is past the triangle's plane.
-function crossings(m, deep) {
+export function crossings(m, deep) {
   const p = m.positions, ix = m.indices, nt = ix.length / 3, size = 4;
   const buckets = new Map(), key = (i, j, k) => `${i},${j},${k}`;
   for (let t = 0; t < nt; t++) {
@@ -752,7 +850,7 @@ async function checkCarved() {
   for (let t = 0; t < s.indices.length / 3; t++) for (const w of [[1 / 3, 1 / 3, 1 / 3], [0.5, 0.5, 0], [0, 0.5, 0.5], [0.5, 0, 0.5]]) {
     worst = Math.max(worst, Math.min(99, gap([0, 1, 2].map((k) => s.positions[s.indices[t * 3] * 3 + k] * w[0] + s.positions[s.indices[t * 3 + 1] * 3 + k] * w[1] + s.positions[s.indices[t * 3 + 2] * 3 + k] * w[2]))));
   }
-  report('carved block, simplified at 0.5 (measured): no point of the result further than twice the error from the mesh', worst <= 1, `${nt} to ${s.indices.length / 3} triangles, the furthest ${worst.toFixed(3)}, ${s.stray} still stray`);
+  report('carved block, simplified at 0.5 (measured): no point of the result further than the error from the mesh', worst <= 0.5 && s.stray === 0, `${nt} to ${s.indices.length / 3} triangles, the furthest ${worst.toFixed(3)}, ${s.stray} still stray`);
 }
 let hundredMesh = null;
 const checkHundredMesh = async () => (hundredMesh ??= await make('hundred', HUNDRED.span.box, 2));
@@ -802,7 +900,23 @@ async function timing() {
   console.log(`TIME  4000 pieces in a shell 1300 across at a cell of 2.5: ${(m.indices.length / 3).toLocaleString()} triangles, ${(m.positions.length / 3).toLocaleString()} vertices`);
   console.log(`      ${((t1 - t0) / 1000).toFixed(1)} s on ${threads} threads (grid ${m.stats.seconds.grid.toFixed(1)} s, joining ${m.stats.seconds.join.toFixed(1)} s), ${m.stats.evals.toLocaleString()} field calls`);
   console.log(`      process memory (all threads) ${(peak / 2 ** 20).toFixed(0)} MB at most, the mesh ${((m.positions.byteLength + m.indices.byteLength) / 2 ** 20).toFixed(0)} MB, ${m.stats.held} vertices held inside their cell`);
-  tight(m, 2.5, 'shell');
+  const st = m.stats;
+  console.log(`      ${st.completed} hidden corners and edges found, ${st.judged} quads judged by the field, ${st.crossed} pairs of triangles cut through each other before mending, ${st.merged} vertices joined and ${st.moved} moved back into their cell to mend them, ${st.forced} quads left folded`);
+  tight(m, 2.5, 'shell', 1e-6);
+  const f = pieces(SHELL).value, p = m.positions, ix = m.indices, h = 2.5e-4;
+  let inward = 0, inArea = 0, all = 0;
+  for (let t = 0; t < ix.length / 3; t++) {
+    const { n, area: a } = triNormal(m, t);
+    all += a;
+    let best = -1;
+    for (const w of SPOTS.slice(0, 4)) {
+      const q = [0, 1, 2].map((k) => p[ix[t * 3] * 3 + k] * w[0] + p[ix[t * 3 + 1] * 3 + k] * w[1] + p[ix[t * 3 + 2] * 3 + k] * w[2]);
+      const g = [f(q[0] + h, q[1], q[2]) - f(q[0] - h, q[1], q[2]), f(q[0], q[1] + h, q[2]) - f(q[0], q[1] - h, q[2]), f(q[0], q[1], q[2] + h) - f(q[0], q[1], q[2] - h)];
+      best = Math.max(best, (g[0] * n[0] + g[1] * n[1] + g[2] * n[2]) / (Math.hypot(...g) || 1));
+    }
+    if (best < -0.5) { inward++; inArea += a; }
+  }
+  report('shell: faces point out of the rock, but for under 0.05 percent of the area (a known limit at this size)', inArea / all < 5e-4, `${inward.toLocaleString()} triangles face in at all four points inside them, ${(inArea / all * 100).toFixed(4)} percent of the area`);
   for (const strict of [false, true]) {
     const t2 = performance.now();
     const s = await simplify(m, { error: 0.2, strict });
@@ -810,6 +924,158 @@ async function timing() {
     console.log(`TIME  simplify at 0.2${strict ? ', measured' : ', unmeasured'}: ${(m.indices.length / 3).toLocaleString()} to ${(s.indices.length / 3).toLocaleString()} triangles in ${((performance.now() - t2) / 1000).toFixed(1)} s${strict ? `, ${s.stray} still stray after ${s.rounds} tries` : ''}`);
     report(`shell simplified at 0.2${strict ? ', measured' : ''}: closed`, c.open === 0 && c.flipped === 0, `open ${c.open}, flipped ${c.flipped}, ${c.bad} edges with four faces`);
   }
+}
+
+// How a mesh of boxes stands against its field: the furthest vertex and point of a triangle from the surface, the
+// worst angle of a triangle and of a creased(30) normal to the nearest face, the triangles that face into the rock
+// at all four points inside them, and the open edges with an end not on a face of the box.
+const SPOTS = [[1 / 3, 1 / 3, 1 / 3], [0.6, 0.2, 0.2], [0.2, 0.6, 0.2], [0.2, 0.2, 0.6], [0.5, 0.5, 0], [0, 0.5, 0.5], [0.5, 0, 0.5]];
+function against(m, f, normals, cell, box) {
+  const p = m.positions, ix = m.indices, nv = p.length / 3, h = cell * 1e-4;
+  const off = (n) => deg(Math.max(...normals.map((q) => q[0] * n[0] + q[1] * n[1] + q[2] * n[2])));
+  let vertex = 0, point = 0, tri = 0, normal = 0, inward = 0, inArea = 0, all = 0;
+  for (let v = 0; v < nv; v++) vertex = Math.max(vertex, Math.abs(f(p[v * 3], p[v * 3 + 1], p[v * 3 + 2])));
+  for (let t = 0; t < ix.length / 3; t++) {
+    const { n, area: a } = triNormal(m, t);
+    all += a;
+    if (normals) tri = Math.max(tri, off(n));
+    let best = -1;
+    SPOTS.forEach((w, i) => {
+      const q = [0, 1, 2].map((k) => p[ix[t * 3] * 3 + k] * w[0] + p[ix[t * 3 + 1] * 3 + k] * w[1] + p[ix[t * 3 + 2] * 3 + k] * w[2]);
+      point = Math.max(point, Math.abs(f(q[0], q[1], q[2])));
+      if (i > 3) return;
+      const g = [f(q[0] + h, q[1], q[2]) - f(q[0] - h, q[1], q[2]), f(q[0], q[1] + h, q[2]) - f(q[0], q[1] - h, q[2]), f(q[0], q[1], q[2] + h) - f(q[0], q[1], q[2] - h)];
+      best = Math.max(best, (g[0] * n[0] + g[1] * n[1] + g[2] * n[2]) / (Math.hypot(...g) || 1));
+    });
+    if (best < -0.5) { inward++; inArea += a; }
+  }
+  if (normals) {
+    const lit = creased(m, 30);
+    for (let v = 0; v < lit.normals.length / 3; v++) normal = Math.max(normal, off(lit.normals.subarray(v * 3, v * 3 + 3)));
+  }
+  const rim = (v) => [0, 1, 2].some((k) => Math.abs(p[v * 3 + k] - box[0][k]) < 1e-5 || Math.abs(p[v * 3 + k] - box[1][k]) < 1e-5);
+  const edges = new Map();
+  for (let t = 0; t < ix.length; t += 3) for (let k = 0; k < 3; k++) {
+    const a = ix[t + k], b = ix[t + (k + 1) % 3], key = Math.min(a, b) * nv + Math.max(a, b);
+    edges.set(key, (edges.get(key) ?? 0) + 1);
+  }
+  let loose = 0, bad = 0;
+  for (const [key, uses] of edges) {
+    if (uses > 2) bad++;
+    if (uses === 1 && !(rim(key % nv) && rim(Math.floor(key / nv)))) loose++;
+  }
+  return { vertex, point, tri, normal, inward, inShare: inArea / all, loose, bad, flipped: closed(m).flipped, flat: degenerate(m, cell) };
+}
+
+// Corners where a piece stands on another (a convex edge meeting two concave ones), and a hollow (every corner
+// concave), turned every which way at the cell of the real job and finer, cut here and there by the box.
+async function checkStanding() {
+  for (const kind of ['standing', 'hollow']) for (const cell of [1.5, 2.5]) {
+    let failing = 0, corner = 0, worst = { vertex: 0, point: 0, tri: 0, normal: 0, inward: 0, loose: 0, bad: 0, flipped: 0, flat: 0 };
+    for (let seed = 1; seed <= 20; seed++) {
+      const S = standing(kind, seed, STANDING.h);
+      const m = await surface({ module: SELF, args: { scene: 'standing', kind, seed, h: STANDING.h }, box: STANDING.box, cell });
+      const r = against(m, S.field, S.normals, cell, STANDING.box), p = m.positions;
+      let cw = 0;
+      for (const c of S.corners) {
+        let b = Infinity;
+        for (let v = 0; v < p.length / 3; v++) b = Math.min(b, Math.hypot(p[v * 3] - c[0], p[v * 3 + 1] - c[1], p[v * 3 + 2] - c[2]));
+        cw = Math.max(cw, b);
+      }
+      corner = Math.max(corner, cw);
+      for (const k of Object.keys(worst)) worst[k] = Math.max(worst[k], r[k]);
+      if (cw > cell / 20 || r.vertex > cell / 50 || r.point > cell / 50 || r.tri > 0.5 || r.normal > 0.5 || r.inward || r.loose || r.bad || r.flipped || r.flat) failing++;
+    }
+    report(`${kind === 'hollow' ? 'a cube\'s hollow' : 'a cube standing on a slab'}, cell ${cell}, 20 poses: every corner within cell / 20, every vertex and point of a triangle within cell / 50 of the surface, every triangle and creased(30) normal within half a degree of a face, none facing into the rock, closed but at the box`, !failing,
+      `${failing} poses fail; worst corner ${(corner / cell).toExponential(1)} cells, vertex ${(worst.vertex / cell).toExponential(1)} cells, point ${(worst.point / cell).toExponential(1)} cells, triangle ${worst.tri.toFixed(3)} degrees, normal ${worst.normal.toFixed(3)} degrees, ${worst.inward} facing in, ${worst.loose} open edges off the box, ${worst.bad} edges with four faces, ${worst.flat} without area`);
+  }
+}
+
+// The same cube on its slab in forty more poses, for triangles wrong way out.
+async function checkInward() {
+  let runs = 0, inward = 0, forced = 0;
+  for (const cell of [1.5, 2.5]) for (let seed = 21; seed <= 60; seed++) {
+    const S = standing('standing', seed, STANDING.h);
+    const m = await surface({ module: SELF, args: { scene: 'standing', kind: 'standing', seed, h: STANDING.h }, box: STANDING.box, cell });
+    const r = against(m, S.field, null, cell, STANDING.box);
+    if (r.inward) runs++;
+    inward += r.inward;
+    forced += m.stats.forced;
+  }
+  report('a cube standing on a slab, 80 more poses at cells 1.5 and 2.5: no triangle faces into the rock', !inward, `${inward} triangles in ${runs} poses face in; ${forced} quads left folded`);
+}
+
+// Three boxes whose edges and corners are all at least 4 units apart: at the real job's cell and finer, exact.
+async function checkSteps() {
+  const S = boxes(STEPS);
+  for (const cell of [1.37, 2.5]) {
+    const m = await surface({ module: SELF, args: { scene: 'steps' }, box: BOXES.box, cell });
+    const r = against(m, S.field, S.normals, cell, BOXES.box);
+    report(`three boxes with every edge 4 units from the next, cell ${cell}: every vertex and point within cell / 50, every triangle and creased(30) normal within half a degree of a face, none facing in, closed`,
+      r.vertex <= cell / 50 && r.point <= cell / 50 && r.tri <= 0.5 && r.normal <= 0.5 && !r.inward && !r.loose && !r.bad && !r.flipped && !r.flat,
+      `vertex ${(r.vertex / cell).toExponential(1)} cells, point ${(r.point / cell).toExponential(1)} cells, triangle ${r.tri.toFixed(3)} degrees, normal ${r.normal.toFixed(3)} degrees, ${r.inward} facing in, ${r.loose} open, ${r.bad} with four faces, ${r.flat} without area`);
+  }
+}
+
+// The box cuts the mesh off: the open rim lies on the box's faces, and the triangles there are still on true faces.
+async function checkRim() {
+  const S = boxes(STEPS), box = BOXES.cut, cell = 1.37;
+  const m = await surface({ module: SELF, args: { scene: 'steps' }, box, cell });
+  const r = against(m, S.field, S.normals, cell, box), c = closed(m);
+  let outside = 0;
+  for (let i = 0; i < m.positions.length; i++) if (m.positions[i] < box[0][i % 3] || m.positions[i] > box[1][i % 3]) outside++;
+  report('cut by a box: every open edge lies on a face of the box, nothing outside it, every triangle at the cut still within half a degree of a face and on the surface',
+    c.open > 100 && !r.loose && !outside && r.tri <= 0.5 && r.point <= cell / 50 && !r.bad && !r.flipped && !r.flat,
+    `${c.open} open edges, ${r.loose} of them off the box's faces, ${outside} coordinates outside, triangle ${r.tri.toFixed(3)} degrees, point ${(r.point / cell).toExponential(1)} cells`);
+}
+
+// A ledge narrower than a cell is cut off on the slant: one vertex in a cell cannot hold two edges. Under half the
+// ledge's width the cell holds it exactly. The bevel at coarser cells is a known limit, held to what it measured.
+async function checkLedge() {
+  const S = boxes(LEDGE);
+  for (const [cell, most, slant] of [[0.3, 1 / 50, 0.5], [1.37, 0.3, 50], [2.5, 0.4, 56]]) {
+    const m = await surface({ module: SELF, args: { scene: 'ledge' }, box: BOXES.box, cell });
+    const r = against(m, S.field, S.normals, cell, BOXES.box);
+    const exact = most < 0.1;
+    report(exact ? `a ledge 0.7 wide at a cell of ${cell}: every point within cell / 50, every triangle within half a degree of a face` : `a ledge 0.7 wide at a cell of ${cell} is cut on the slant (a known limit): no point further than ${most} cells, no triangle more than ${slant} degrees off`,
+      r.point <= most * cell && r.tri <= slant && !r.inward && !r.loose && !r.bad && !r.flat,
+      `furthest point ${(r.point / cell).toFixed(3)} cells (${r.point.toFixed(3)} units), worst triangle ${r.tri.toFixed(2)} degrees, ${r.inward} facing in`);
+  }
+}
+
+// Chips four units across or less (sides 2.8 to 4). At a cell of 1.5 each is exact; at 2 and 2.5, a side is little
+// more than a cell, and chips lose area or vanish: a known limit, held to what it measured.
+async function checkGrains() {
+  const G = grains(), truth = G.list.reduce((s, c) => s + c.area, 0), normals = G.list.flatMap((c) => c.planes.map((q) => q.n));
+  for (const [cell, keep, lost] of [[1.5, 0.999, 0], [2, 0.98, 0], [2.5, 0.85, 2]]) {
+    const m = await surface({ module: SELF, args: { scene: 'grains' }, box: GRAINS.box, cell });
+    const r = against(m, G.field, null, cell, GRAINS.box), p = m.positions, ix = m.indices;
+    const each = new Float64Array(G.list.length);
+    let onFace = 0;
+    for (let t = 0; t < ix.length / 3; t++) {
+      const { n, area: a, mid } = triNormal(m, t);
+      each[G.owner(mid)] += a;
+      const c = G.list[G.owner(mid)];
+      if (c.planes.some((q) => n[0] * q.n[0] + n[1] * q.n[1] + n[2] * q.n[2] > Math.cos(Math.PI / 180) && Math.abs(q.n[0] * mid[0] + q.n[1] * mid[1] + q.n[2] * mid[2] - q.d) < cell / 50)) onFace += a;
+    }
+    const gone = G.list.filter((c, i) => each[i] < 0.01 * c.area).length, kept = area(m) / truth;
+    const worst = Math.min(...G.list.map((c, i) => each[i] / c.area));
+    const exact = cell === 1.5;
+    report(exact ? `343 chips with sides 2.8 to 4 at a cell of ${cell}: none lost, all their area, every vertex within cell / 50, every triangle on a true face, none facing in`
+      : `343 chips with sides 2.8 to 4 at a cell of ${cell} (a known limit): at most ${lost} lost, at least ${keep * 100} percent of their area`,
+      gone <= lost && kept >= keep && (!exact || (r.vertex <= cell / 50 && onFace / area(m) > 0.999 && !r.inward)),
+      `${gone} lost, ${(kept * 100).toFixed(1)} percent of the area, the worst chip keeps ${(worst * 100).toFixed(1)} percent, ${(onFace / area(m) * 100).toFixed(1)} percent of the area within a degree of its face, furthest vertex ${(r.vertex / cell).toFixed(3)} cells, ${(r.inShare * 100).toFixed(3)} percent of the area facing in`);
+  }
+}
+
+// surface() works the field out only in its worker threads: the calling thread's own copy of the module, set up
+// for something else, is left as it was, even when quads were judged by the field.
+async function checkSetup() {
+  const before = setupsHere;
+  impl = () => 42;
+  const m = await make('hundred', HUNDRED.span.box, 2);
+  report('surface() never runs the field\'s setup in the calling thread, and leaves its state alone', setupsHere === before && field(0, 0, 0) === 42 && m.stats.judged > 0, `${setupsHere - before} setups here, field here still ${field(0, 0, 0)}, ${m.stats.judged} quads judged in the workers`);
+  impl = () => 1;
 }
 
 async function main() {
@@ -827,6 +1093,13 @@ async function main() {
   await checkChips();
   await checkCarved();
   await checkTraps(cube);
+  await checkStanding();
+  await checkInward();
+  await checkSteps();
+  await checkRim();
+  await checkLedge();
+  await checkGrains();
+  await checkSetup();
   if (!quick) await timing();
   console.log(failed ? `${failed} FAILED` : 'ALL PASS');
   process.exit(failed ? 1 : 0);

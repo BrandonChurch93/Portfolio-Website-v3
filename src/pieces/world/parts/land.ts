@@ -18,7 +18,9 @@ import * as S from './land/shaders';
 // shows, the flat stones in the grass, and the bronze laid in the spire's court.
 const mix = (a: THREE.Color, b: THREE.Color, k: number): THREE.Color => a.clone().lerp(b, k);
 const LOOK = {
-  sand: mix(color('pale'), color('hot'), 0.6),
+  sand: mix(color('pale'), color('hot'), 0.45),
+  sandRim: mix(color('pale'), color('hot'), 0.3),
+  bare: mix(color('text-3'), color('copper-light'), 0.46).multiplyScalar(0.62),
   sandDeep: mix(color('copper'), color('ember'), 0.75).multiplyScalar(0.9),
   pave: mix(color('text-3'), color('copper-light'), 0.3).multiplyScalar(0.3),
   pavePale: mix(color('text-3'), color('copper-light'), 0.5).multiplyScalar(0.9),
@@ -83,7 +85,7 @@ export const build: PartFactory = async ({ query }) => {
     Object.assign(sh.uniforms, {
       uAt: { value: ground.at }, uSize: { value: ground.size },
       uMapA: { value: a }, uMapB: { value: b }, uLight: { value: light }, uLots: { value: lots }, uTowers: { value: lots3 }, uCrest: { value: crest },
-      uSand: { value: LOOK.sand }, uSandDeep: { value: LOOK.sandDeep }, uPave: { value: LOOK.pave }, uPavePale: { value: LOOK.pavePale }, uCourt: { value: LOOK.court },
+      uSand: { value: LOOK.sand }, uSandRim: { value: LOOK.sandRim }, uBare: { value: LOOK.bare }, uSandDeep: { value: LOOK.sandDeep }, uPave: { value: LOOK.pave }, uPavePale: { value: LOOK.pavePale }, uCourt: { value: LOOK.court },
       uGrass: { value: LOOK.grass }, uGrassDry: { value: LOOK.grassDry }, uGrassDeep: { value: LOOK.grassDeep }, uEarth: { value: LOOK.earth }, uStone: { value: LOOK.stone }, uBronze: { value: LOOK.bronze },
     });
     sh.vertexShader = after(after(sh.vertexShader, 'common', S.VERT_PARS), 'begin_vertex', S.VERT);
