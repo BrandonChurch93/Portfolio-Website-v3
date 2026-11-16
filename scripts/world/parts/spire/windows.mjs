@@ -15,12 +15,15 @@ import { L, linear } from '../../lib/plan.mjs';
 // floor is a calm band and not a bar. Lit by bays, the panes between two mullions together, so what is lit reads at
 // the page's size as clumps of windows parted by bronze and never as a ladder of bars. Never by a noise held up to a
 // level, whose blobs read as letters at the page's size.
-const FLOOR = { whole: 0.12, clumps: 0.4, after: 0.12, single: 0.4, off: 0.18, warm: 0.3, pale: 0.12, glow: 0.4, narrow: 0.6, calm: 0.72 };
+const FLOOR = { whole: 0.14, clumps: 0.4, after: 0.4, single: 0.4, off: 0.12, warm: 0.3, pale: 0.12, glow: 0.4, narrow: 0.6, calm: 0.9 };
 // A clump: how many bays at least and at most, and how many clumps to a floor at most.
 // A clump: how many bays at least and at most, how many clumps to a floor at most, and how often a clump starts where
 // the one on the floor under it did (clumps that moved from floor to floor drew an S, a Z or a 5 at the page's size).
-// A strip of two bays or fewer is lit a floor at a time, as one clump: one bay lit by itself there was a zigzag.
-const CLUMP = { bays: [1, 3], most: 2, keep: 0.85 };
+// A strip of `whole` bays or fewer is lit a floor at a time, as one clump: a bay or two lit by itself there drew a
+// zigzag, and in the tiers over the ring an E.
+const CLUMP = { bays: [2, 4], most: 2, keep: 0.85, whole: 4 };
+// A strip one bay wide: how many floors a lit run is, and a dark one, at least and at most.
+const RUN = { lit: [2, 6], dark: [1, 5] };
 // How much busier the floors are where the building is busy: a slow swell up the strip.
 const BUSY = { every: 11, by: 0.35 };
 export class Windows {
@@ -54,6 +57,7 @@ export class Windows {
   // Floor by floor, from the foot of the strip.
   fill(c0, r0, cols, rows, mood, pair = 1) {
     const R = this.rand, bays = Math.max(1, Math.round(cols / pair));
+    if (bays === 1 && rows > 4) return this.slot(c0, r0, cols, rows);
     let before = '', from = -1;
     for (let r = 0; r < rows; r++) {
       const busy = (1 + BUSY.by * (2 * L.noise(r / BUSY.every + mood * 1.7, mood * 3.1, mood, 73) - 1)) * (cols < 2 ? FLOOR.narrow : 1);
@@ -64,20 +68,35 @@ export class Windows {
       const level = (0.66 + 0.34 * R() ** 1.3) * (kind === 'whole' ? FLOOR.calm : 1), blinds = R() < 0.25 ? 0.2 + 0.5 * R() : 0;
       const lit = new Array(bays).fill(kind === 'whole');
       if (kind === 'clumps') {
-        const n = bays <= 2 ? 1 : 1 + Math.floor(R() * CLUMP.most);
+        const n = bays <= CLUMP.whole ? 1 : 1 + Math.floor(R() * CLUMP.most);
         for (let k = 0; k < n; k++) {
-          const long = bays <= 2 ? bays : Math.min(bays, CLUMP.bays[0] + Math.floor(R() * (CLUMP.bays[1] - CLUMP.bays[0] + 1)));
+          const long = bays <= CLUMP.whole ? bays : Math.min(bays, CLUMP.bays[0] + Math.floor(R() * (CLUMP.bays[1] - CLUMP.bays[0] + 1)));
           const a = k === 0 && from >= 0 && R() < CLUMP.keep ? Math.min(from, bays - long) : Math.floor(R() * (bays - long + 1));
           if (k === 0) from = a;
           for (let b = a; b < a + long; b++) lit[b] = true;
         }
-      } else if (kind === 'dark' && bays > 2 && R() < FLOOR.single) lit[from >= 0 ? from : Math.floor(R() * bays)] = true;
+      } else if (kind === 'dark' && bays > CLUMP.whole && R() < FLOOR.single) lit[from >= 0 ? from : Math.floor(R() * bays)] = true;
       for (let c = 0; c < cols; c++) {
         const on = lit[Math.min(bays - 1, Math.floor(c / pair))] && R() > (kind === 'whole' ? FLOOR.off : FLOOR.off * 0.4);
         const lv = on ? level * (0.85 + 0.2 * R()) : R() < FLOOR.glow ? 0.1 + 0.14 * R() : 0;
         this.set(c0 + c, r0 + r, lv, warm + (R() - 0.5) * 0.08, blinds > 0 && R() < 0.7 ? blinds + (R() - 0.5) * 0.2 : 0);
       }
       before = kind;
+    }
+  }
+  // A strip one bay wide, lit as the tenants up it are, in runs of floors: a run lit, a run dark, each its own length
+  // and warmth, so the slots up the fins are not a ladder of one lit pane to a floor.
+  slot(c0, r0, cols, rows) {
+    const R = this.rand;
+    let r = 0, on = R() < 0.5;
+    while (r < rows) {
+      const n = on ? RUN.lit[0] + Math.floor(R() * (RUN.lit[1] - RUN.lit[0] + 1)) : RUN.dark[0] + Math.floor(R() * (RUN.dark[1] - RUN.dark[0] + 1));
+      const level = 0.7 + 0.3 * R(), warm = R() < FLOOR.warm ? 0.04 + 0.14 * R() : 0.26 + 0.4 * R();
+      for (let k = 0; k < n && r < rows; k++, r++) for (let c = 0; c < cols; c++) {
+        const lit = on && R() > FLOOR.off;
+        this.set(c0 + c, r0 + r, lit ? level * (0.85 + 0.2 * R()) : R() < FLOOR.glow ? 0.1 + 0.14 * R() : 0, warm + (R() - 0.5) * 0.08, 0);
+      }
+      on = !on;
     }
   }
   // Every window of a field lit, at about this level and this paleness, with no blind: the flèche's slits and the

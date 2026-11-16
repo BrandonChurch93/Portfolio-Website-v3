@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { SPIRE } from '../layout';
 import { load, mesh } from '../files';
 import type { PartFactory } from '../part';
-import { materials, type Band } from './spire/materials';
+import { materials, type Band, type Court } from './spire/materials';
 
 // The spire: the tallest thing in the world, on the hero's center line under his name, with its ring of gold and
 // its court. Made ahead by scripts/world/parts/spire/make.mjs and shipped as public/world/spire.bin, with a map of
@@ -25,7 +25,7 @@ export const build: PartFactory = async () => {
       return t;
     }),
   ]);
-  const m = materials(map, (file.meta.ledges as number[] | undefined) ?? [0], (file.meta.profile as number[][] | undefined) ?? [[0, 0, 0], [1, 0, 0]], file.meta.ring as Band), made: { dispose(): void }[] = [map, m];
+  const m = materials(map, (file.meta.ledges as number[] | undefined) ?? [0], (file.meta.profile as number[][] | undefined) ?? [[0, 0, 0], [1, 0, 0]], file.meta.ring as Band, file.meta.court as Court), made: { dispose(): void }[] = [map, m];
   for (const [name, l] of file.meshes) {
     const part = mesh(l, m[name as 'stone' | 'bay' | 'gold' | 'ring']);
     part.castShadow = true;

@@ -39,8 +39,8 @@ const ALBEDO = Object.fromEntries(Object.entries(STONES).map(([k, v]) => [k, mix
 // The design, in units, y up from the ground under the spire. Where each ring of fins ends, and how far out it
 // stands, were read off picture 9 (fromPicture in the layout).
 const S = {
-  court: { r: L.COURT, top: 0.9, steps: [[L.COURT, 0], [L.COURT - 1.8, 0.45], [L.COURT - 3.6, 0.9]], under: -1.8 },
-  podium: { w: 54, c: 5, y0: -1, y1: 40.5, cornice: [[40.5, 41.4, 0.8], [41.4, 42.4, 1.5]], parapet: [42.4, 44.6], frieze: [37.6, 39.8] },
+  court: { r: L.COURT, top: 1.4, steps: [[L.COURT, 0.5], [L.COURT - 1.8, 0.95], [L.COURT - 3.6, 1.4]], under: -1.8 },
+  podium: { w: 54, c: 5, y0: -1, y1: 40.5, portals: { main: 4.4, side: [10.6, 16.0] }, cornice: [[40.5, 41.4, 0.8], [41.4, 42.4, 1.5]], parapet: [42.4, 44.6], frieze: [37.6, 39.8] },
   buttress: { at: 25.5, tiers: [[8, -1, 20.5], [6.6, 21.8, 32.2], [5.4, 33.4, 44.2]], finial: 1.05 },
   // Where every fin and the shaft rise from, inside the podium.
   foot: 40,
@@ -277,10 +277,10 @@ function finial(x, z, y, k) {
     win.light(glassIn(cols, rows)(g, s0, s1, door, t1, deep), S.lobby[0], S.lobby[1]);
   };
   const open = [
-    { s0: -4.4, s1: 4.4, t0: b.y0, t1: 27.5, floor: true, steps: [{ inset: 0, depth: 0.6 }, { inset: 0.7, depth: 0.6 }, { inset: 0.55, depth: 0.6 }, { inset: 0.45, depth: 0.7 }], back: portal(10.5, 3, 7) },
+    { s0: -b.portals.main, s1: b.portals.main, t0: b.y0, t1: 27.5, floor: true, steps: [{ inset: 0, depth: 0.6 }, { inset: 0.7, depth: 0.6 }, { inset: 0.55, depth: 0.6 }, { inset: 0.45, depth: 0.7 }], back: portal(10.5, 3, 7) },
     ...[-1, 1].flatMap((k) => {
       const at = (a, c) => (k < 0 ? [-c, -a] : [a, c]);
-      const [p0, p1] = at(10.6, 16.0), [w0, w1] = at(6.2, 7.8), [e0, e1] = at(19.2, 21.0);
+      const [p0, p1] = at(...b.portals.side), [w0, w1] = at(6.2, 7.8), [e0, e1] = at(19.2, 21.0);
       return [
         { s0: p0, s1: p1, t0: b.y0, t1: 15.5, floor: true, steps: [{ inset: 0, depth: 0.5 }, { inset: 0.5, depth: 0.5 }, { inset: 0.4, depth: 0.7 }], back: portal(8.2, 2, 3) },
         { s0: p0, s1: p1, t0: 18.6, t1: 33.4, steps: [{ inset: 0, depth: 0.4 }, { inset: 0.35, depth: 0.5 }], back: glassIn(4, 9) },
@@ -292,7 +292,7 @@ function finial(x, z, y, k) {
   ];
   kit.wall('stone', f, -(X - b.c), X - b.c, b.y0, b.y1, open, { edge: E, tag: RUSTED });
   {
-    const a = -(X - b.c) + 0.6, z = X - b.c - 0.6, fr = (z - a) / Math.round((z - a) / 0.85);
+    const a = -(X - b.c) + 0.6, z = X - b.c - 0.6, fr = (z - a) / Math.round((z - a) / 1.3);
     kit.prism('gold', [[a, X], [z, X], [z, X + 0.22], [a, X + 0.22]], b.frieze[0], b.frieze[1], { top: true, bottom: true, edge: E, tag: { flute: fr, o: [a, 0, X], T: [1, 0, 0] } });
   }
   for (const [y0, y1, out] of b.cornice) kit.prism('stone', chamfered(b.w + 2 * out, b.w + 2 * out, b.c + out * 0.8), y0, y1, { top: true, bottom: true, edge: E, tag: GRANITE });
@@ -673,6 +673,10 @@ const PROFILE = (() => {
   return out.map((p) => p.map((v) => Math.round(v * 100) / 100));
 })();
 const { segs, ...section } = S.ring;
-pack('public/world/spire.bin', meshes, { windows: 'spire-windows.png', triangles, draft, ledges: LEDGES, profile: PROFILE, ring: section });
+// The court as the stone's material lights it: its top, the podium's front, the radius of each step's riser, and
+// each portal's doors (the middle across, half their width, how bright their lobby is), which light the paving
+// before them.
+const COURT = { top: S.court.top, front: S.podium.w / 2, steps: S.court.steps.slice(1).map(([r]) => r), doors: (({ main, side: [a, b] }) => [[0, main, 1], [(a + b) / 2, (b - a) / 2, 0.6], [-(a + b) / 2, (b - a) / 2, 0.6]])(S.podium.portals) };
+pack('public/world/spire.bin', meshes, { windows: 'spire-windows.png', triangles, draft, ledges: LEDGES, profile: PROFILE, ring: section, court: COURT });
 png('public/world/spire-windows.png', win.size, win.size, win.data, 3);
 console.log(`spire: ${triangles} triangles (${meshes.map((m) => `${m.name} ${m.indices.length / 3}`).join(', ')}), windows lit ${(100 * win.lit()).toFixed(0)}%, ${((performance.now() - began) / 1000).toFixed(1)} s`);
