@@ -1194,6 +1194,11 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     - **Fable keeps working until he loses access to it.** No stopping to wait for him, and no stopping when the world is "done": there is always a next round.
     - **When the world is as good as Fable can get it, the rest of the site is made ready to deploy.** Fable's reading, his to correct: that means what a deployment needs (the build, memory on his iPad, speed, errors, the page scrolling end to end, the record true), not changes to sections he has approved.
     - **What follows from "until I lose access", Fable's own reading:** the work can end at any moment, so the repo is kept ready to be picked up by someone else at every step: each round committed and pushed, `LOG.md` and `PLAN.md` true, and what is short of the bar written down plainly.
+- **The dunes are taller (Nov 16, in the night, to Claude Code).** "I think the sand dunes should be taller." Said on seeing the world on the page. In exact terms:
+    - **Which:** the dunes of the desert at the right end of the top of the world.
+    - **Now:** twelve crescent dunes whose crests stand 4 to 15 units over the sand (a low building beside them is 20 to 30, a tree about 15), so at the page's size they read as ripples on a flat.
+    - **To be:** about twice that. The tallest crests about 30 units, most 16 to 24, the small ones between them 9 to 12, each steeper for it, with the sharp crest and the deep hollow face he already ruled. Their places and the desert's outline stay picture 9's.
+    - This changes one thing the picture set (how tall the dunes are), by his word. Fable's reading of how much is Fable's: he gave no number, and it is his to turn up or down.
 
 - An idea to revisit with the hero, not decided: his first thought was the city breaking apart into the stream as the visitor scrolls. Fable's twist, which he asked to have noted: building, not breaking. The city assembles out of the stream's facets in the opening, and the stream carries the same pieces on down the page. (Nov 12)
 
