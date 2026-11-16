@@ -2,6 +2,38 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · His look at the third round, read back to him before anything is built (Fable, web chat)
+
+**What Brandon said**
+
+- The top of Gemini's fourth picture is "almost perfect": its number of buildings and how they are spaced. "I'd love to re-create that exact layout." Its dunes and its trees are better than ours. Gold tops on some buildings stay. A couple of buildings behind the dunes, the pyramid in mirror metal, and at rest buildings from end to end and nearly the whole pyramid.
+- The underside is to be rebuilt "to look incredible", not only to be believed. Ours cannot be read: near and far look the same and the core's light is a haze. He marked picture 4 in red and green for a larger tear, jagged at the sides, with the core opened up.
+- "Before you do anything, let's go over all these changes." His words are in `BRIEF.md`, Settled, Hero, with the reading that was put to him.
+
+**What was done**
+
+- Nothing was built and nothing in `src/` was changed.
+- His marked picture is kept, and a sketch of how Fable reads the marks was drawn over the clean picture 4 and shown to him. Both are `reference/studies/64-*`.
+- How the sketch was made, for the next time he marks a picture: his strokes were pulled out by color (red is the only thing in a warm picture with more blue than green, green the only thing with more green than red), the red line's gaps were closed, and the part of the planet under it was flood filled and painted out. Looking at the strokes alone, on black, is what made them readable: over the picture they could not be told from the rock.
+- The reading: the red line is where the near wall ends and everything under it is torn away. The green line is a second row of rock further back, round the core. Fable added that the far side of the shell stays, or the planet becomes a slab.
+
+**Picture 4, measured. Rough: the picture has a near camera and a wide lens.**
+
+- The planet is 1410 px across at its rim in his screenshot. Against that width: the spire 32% (the third round's is 25%), the tallest tower 16% (the same as the third round), a tower 4 to 5% across (the third round's buildings are 1 to 2%), the pyramid's base 18% and its height 11% (14% and 9%), a dune 9 to 18% across.
+- About 40 buildings. The desert is about a fifth of the top, where the third round's is a tenth.
+- The towers stand in a band behind and beside the spire. The pyramid, the trees and the avenue lie in front of that band, and the desert is the front right.
+
+**What it means for the model, if he confirms**
+
+- `plan.ts`: the districts, the boulevards, the lots and the halls go. About 40 towers are placed by hand from picture 4, each three or four times the size of a building now. One kind of tree. The dunes become crescents with their steep hollow faces toward the visitor, and `MOONWARD` goes behind the world so those faces are in shadow, which also puts the torn face in the moon's shadow and leaves it to the core's light.
+- The tear is built in planes: the near wall down to his red line, a second ring round the core down to his green line, the inside of the far shell behind them. `TEAR`, `SLAB`, `CHIP` and `HANG` as they are will not give that: they were made for a planet ripped everywhere, with no face toward the visitor.
+- At rest on a 16:9 screen the first screen ends about 346 units under the spire's tip. With the spire at 330 the pyramid's foot is at about 360, so most of the pyramid is in view already. A spire at picture 4's 32% would be 420 tall and would push the towers' feet under the fold: keep the spire near 330.
+
+**Still open with him**
+
+- The three things asked: the reading of his marks, picture 4 over the earlier lines, the far side of the shell.
+- Whether the first screen ends at the same place of the world on every screen. Not built, and it goes against "a taller screen shows more of the world".
+
 ## 2026-11-15 · The Safari crash: its cause, the fix, and what is still large (Fable, Claude Code)
 
 **What Brandon said**

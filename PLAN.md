@@ -146,6 +146,8 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **Stopped (Nov 15):** all work on the hero's world as built, by his word. It stays committed and untouched while the new one is designed in the web chat
 - **Fixed in Claude Code (Nov 15):** the crash in Safari. Safari kept the memory of every 3D thing the page had let go, and of every page left for another in the same tab, until his iPad ended the page. `LOG.md`, top entry, has the cause, the measurements, what an iPad now gets, and what is still large. Waiting on his word that it holds on his iPad
 - **Taken off the screen (Nov 15):** the built world, on `/lab/hero` and `/lab/whole`, by his word. The sky, his words and the main stream are as they were, and the world's place is kept for the new one
+- **His look at the third round (Nov 15, 17:46):** the top is to be picture 4's layout, with its trees and its dunes, more buildings behind the dunes and a mirror polished pyramid. The torn rock is rebuilt to be looked at, to his marks on picture 4: about half of the underside torn away, jagged at the sides, the core in the open. He asked to go over all of it before anything is built. `BRIEF.md`, Settled, Hero
+- **In front of Brandon (Nov 15):** Fable's reading of that, as a list and as a sketch drawn over picture 4 (`reference/studies/64-picture-4-fables-reading-of-his-marks.jpg`), with every earlier line it goes against named. Three things are his to confirm: what his red and green lines mean, that picture 4 replaces what he ruled at 12:25, 12:36 and 14:25 where they differ, and that the far side of the shell stays. Nothing is built before that
 
 
 ## Phase 0 · Foundation
