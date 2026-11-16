@@ -28,9 +28,7 @@ export const contact = {
     links: [
       { label: 'LinkedIn', href: 'https://www.linkedin.com/in/brandon-church-ms' },
       { label: 'GitHub', href: 'https://github.com/BrandonChurch93' },
-      // The file is not on this site yet (the copy he shared holds a phone number, and no phone number goes on the
-      // site), so the link is held back: a link that answers 404 is worse than none.
-      { label: 'Résumé', href: '/downloads/BrandonChurch-Resume.pdf', held: true },
+      { label: 'Résumé', href: '/downloads/BrandonChurch-Resume.pdf' },
     ],
   },
 } as const;

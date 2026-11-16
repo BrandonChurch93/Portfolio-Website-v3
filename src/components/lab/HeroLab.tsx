@@ -108,7 +108,7 @@ export function HeroLab({ hub }: { hub?: Hub }) {
           <p className={styles.lead}>{hero.lead}</p>
           <div className={styles.buttons}>
             <MetalButton label={hero.work.label} href={hero.work.href} className={styles.button} />
-            {!hero.resume.held && <MetalButton label={hero.resume.label} variant="accent" href={hero.resume.href} className={styles.button} />}
+            <MetalButton label={hero.resume.label} variant="accent" href={hero.resume.href} download className={styles.button} />
           </div>
         </header>
         {/* The world as one picture, under his words, on a screen too narrow for the live world. */}
