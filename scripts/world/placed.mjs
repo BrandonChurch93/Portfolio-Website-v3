@@ -49,4 +49,12 @@ export const VENTS: readonly Vent[] = [
 ${rows(vents)}
 ];
 `);
-console.log(`placed: ${towers.length} buildings, ${trees.length} trees, ${vents.length} small streams`);
+// What broke away, as the study planned it: the field he was shown (reference/studies/65-*-what-broke-away.jpg).
+// Every piece's place, how large it is, how it moves (plate, whirl, drift, tumble), how long and how flat it is,
+// the family it moves with, and whether the study had it carry a piece of the land. It is written for the script
+// that makes the debris, and is not part of the page.
+const pieces = P.debris().map((d) => ({ at: d.at.map((v) => n(v, 1)), r: n(d.r, 2), kind: d.kind, long: n(d.long, 2), flat: n(d.flat, 2), family: d.family, ...(d.land ? { land: d.land } : {}) }));
+writeFileSync('scripts/world/debris-plan.json', `${JSON.stringify({ from: 'src/hero-blockout/plan.ts, debris()', pieces })}\n`);
+const kinds = {};
+for (const d of pieces) kinds[d.kind] = (kinds[d.kind] ?? 0) + 1;
+console.log(`placed: ${towers.length} buildings, ${trees.length} trees, ${vents.length} small streams, ${pieces.length} pieces of what broke away ${JSON.stringify(kinds)}`);

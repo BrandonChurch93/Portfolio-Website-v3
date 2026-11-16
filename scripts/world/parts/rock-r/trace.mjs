@@ -12,6 +12,15 @@ export const TORN = {
 };
 // The lowest the rock is looked for: under it everything is air or the planet's outline.
 export const FLOOR = 728;
+// Under this line, across the picture, is not the rock: at each end the lowest rock is in deep shadow over air of
+// the same dark, which the picture's pixels cannot tell apart, so it is traced. Between, the air is measured.
+export const LOWEST = [[240, 650], [252, 668], [262, 688], [276, 704], [294, 716], [318, 722], [338, 717], [352, 709], [360, 700], [372, 712], [400, 728], [1000, 728], [1012, 712], [1026, 706], [1036, 706], [1060, 700]];
+// Rock that is in shadow as dark as the air beside it, traced: the lowest mass at the left and the right side's
+// point.
+export const KEEP = [
+  [[246, 596], [300, 600], [330, 640], [352, 700], [338, 716], [318, 721], [294, 715], [276, 703], [262, 687], [252, 667], [246, 646]],
+  [[1046, 648], [1050, 664], [1044, 688], [1036, 704], [1026, 704], [1016, 690], [1010, 670], [1022, 660], [1040, 650]],
+];
 
 // The two loose boulders in front of the rock and over the air, which belong to what broke away. They are painted
 // out of the reading, and what they cover is taken as air.

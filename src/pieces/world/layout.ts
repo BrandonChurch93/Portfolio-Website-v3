@@ -152,8 +152,9 @@ export const SMALL: readonly (readonly [number, number, number, number])[] = [
 ];
 // Each small stream's own place in the world, where it leaves the rock.
 export const small = (): [number, number, number][] => SMALL.map(([px, py, z]) => fromPicture(px, py, z));
-// What broke away hangs under the planet: nothing of it is lower than this, which is what the page puts Work under.
-export const DEBRIS = { low: -1080 } as const;
+// What broke away hangs under the planet, down to the foot of the world's host: nothing of it is lower than this,
+// which is what the page puts Work under.
+export const DEBRIS = { low: -1190 } as const;
 
 // ---------------------------------------------------------------------------------------------------------------
 // The land.

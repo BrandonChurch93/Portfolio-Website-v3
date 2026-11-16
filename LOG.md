@@ -17,7 +17,9 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
     - `pyramid`: round 1 failed (peach paint, flat faces). Round 2 is running: the picture's place and size, no plinth, the lighter gold, a larger capstone, faces that grade.
     - `towers`: round 1's stepped tower is kept. Round 2 is running: its four real faults only, then the whole city in its language, all buildings lit together in one make.
     - `land`, `spire`, `trees`: round 1 running.
-    - Not started: `skin` (the cracked left side and the cratered right side, after the rock), `debris` (what broke away, with its motion), the real stream joined at the core, and the world put into `/lab/hero` and `/lab/whole`.
+    - `debris`: round 1 running, from the original plan's field, which he asked not be lost: `scripts/world/debris-plan.json` is every piece of it (1,397: 9 plates, 380 drift, 124 whirl, 884 tumble), copied out of the study by `scripts/world/placed.mjs`.
+    - `skin` (the cracked left side and the cratered right side) waits for the rock's traced edges. Its brief is written (`briefs/skin.md`).
+    - **The world is in the hero** (`src/hero/board.ts`, `stage.ts`, `HeroLab.tsx` read the new world's plan, `WORLD.shown` is true): `/lab/hero` and `/lab/whole` scroll with it, the page's own stream leaves the core's foot, and the small streams fall from the rock (`SMALL` in the plan). A production build passes. Memory in Safari's engine at an iPad's size, with stand ins still in: the hero 913 MB of GPU (it held 513 with no world and 1186 with the old one), the whole page 1277 on load and 1840 at worst.
 - **The frame now has every part's place** (`PARTS` in `part.ts`), each an empty place holder until built, and `parts/rest.ts` leaves out the stand in for whatever a part has built (`ctx.built`, `ctx.stands`).
 - **Still to do before he wakes:** the hero joined to the new world so the page scrolls to Contact, `npm run mem` and `npm run perf`, a production build, the push, the overlays and side by sides kept in `reference/studies/`, and a plain account of what is at the bar and what is not.
 

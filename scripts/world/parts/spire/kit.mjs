@@ -1,13 +1,16 @@
-// What every tower design is built with: layers of flat faced geometry, one for each of the towers' materials,
-// in the tower's own frame (x across its width, z toward its front, y up from its foot). A layer keeps, for each
-// vertex, its place, its normal, and the numbers its material reads (attr), worked out from the place, the normal
-// and a tag that the face carries. Faces are subdivided finely enough that the baked light varies across them.
+// What the spire is built with, after the towers' kit (scripts/world/parts/towers/kit.mjs): layers of flat faced
+// geometry, one for each of the spire's materials, in its own frame (x across, z toward the front, y up from the
+// court). To the towers' tools it adds lathe(), a solid turned round the upright axis from a profile. A layer
+// keeps, for each vertex, its place, its normal, and the numbers its material reads (attr), worked out from the
+// place, the normal and a tag that the face carries. Faces are subdivided finely enough that the baked light
+// varies across them.
 //
 //   const k = new Kit({ stone: { width: 3, attr }, bay: { width: 4, attr }, gold: { width: 0 } })
 //   k.patch('stone', a, b, c, d, { want: [0, 0, 1], edge: 2, tag })
 //   k.prism('gold', chamfered(30, 28, 1), 126, 137, { top: true })
 //   k.reeds('gold', face, from, to, y0, y1, count, depth)
 //   k.wall('stone', face, s0, s1, t0, t1, openings)
+//   k.lathe('gold', [[50, 0], [58, 0, true], [58, 2]], 256, { closed: true, tag })
 import * as THREE from 'three';
 
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -153,6 +156,43 @@ export class Kit {
     if (outer.s1 > inner.s1) this.patch(layer, P(inner.s1, outer.t0), P(outer.s1, outer.t0), P(outer.s1, outer.t1), P(inner.s1, outer.t1), q);
     if (outer.t1 > inner.t1) this.patch(layer, P(inner.s0, inner.t1), P(inner.s1, inner.t1), P(inner.s1, outer.t1), P(inner.s0, outer.t1), q);
     if (inner.t0 > outer.t0) this.patch(layer, P(inner.s0, outer.t0), P(inner.s1, outer.t0), P(inner.s1, inner.t0), P(inner.s0, inner.t0), q);
+  }
+  // A solid turned round the upright axis: a profile of [r, y] points (each may carry a third entry, true, where the
+  // profile turns sharply and the two sides keep their own normals), swept round in segs steps. closed joins the
+  // last point to the first. Outward is to the right of the profile's direction in the r, y plane, so a closed
+  // profile runs counter clockwise. The tag handed to attr is o.tag with r (the radius) and round (0 to 1) added.
+  lathe(layer, profile, segs, o = {}) {
+    const L = this.layers[layer], n = profile.length, closed = !!o.closed, last = closed ? n : n - 1;
+    const seg = (i) => { const a = profile[i % n], b = profile[(i + 1) % n], dr = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dr, dy) || 1; return [dy / l, -dr / l]; };
+    const rings = [];
+    for (let i = 0; i < n; i++) {
+      const prev = i > 0 || closed ? seg((i - 1 + n) % n) : null, next = i < last ? seg(i) : null;
+      if (prev && next && profile[i][2]) { rings.push({ i, nr: prev, cut: true }, { i, nr: next }); continue; }
+      const a = prev ?? next, b = next ?? prev, m = [a[0] + b[0], a[1] + b[1]], l = Math.hypot(...m) || 1;
+      rings.push({ i, nr: [m[0] / l, m[1] / l] });
+    }
+    if (closed) rings.push({ ...rings[0], wrap: true });
+    const first = rings[0];
+    if (closed && profile[0][2]) { const p = seg(n - 1); rings[rings.length - 1] = { i: 0, nr: p, wrap: true }; first.nr = seg(0); }
+    const base = L.p.length / 3, a0 = o.from ?? 0, a1 = o.to ?? Math.PI * 2;
+    for (const R of rings) {
+      const [r, y] = profile[R.i % n];
+      for (let k = 0; k <= segs; k++) {
+        const a = a0 + ((a1 - a0) * k) / segs, c = Math.cos(a), s = -Math.sin(a);
+        this.vertex(L, [r * c, y, r * s], [R.nr[0] * c, R.nr[1], R.nr[0] * s], { ...o.tag, r, round: k / segs });
+      }
+    }
+    const at = (j, k) => base + j * (segs + 1) + k;
+    for (let j = 0; j + 1 < rings.length; j++) {
+      if (rings[j].cut) continue;
+      for (let k = 0; k < segs; k++) {
+        const q = [at(j, k), at(j, k + 1), at(j + 1, k + 1), at(j + 1, k)];
+        const P = (v) => L.p.slice(v * 3, v * 3 + 3), N = (v) => L.n.slice(v * 3, v * 3 + 3);
+        const g = cross(sub(P(q[1]), P(q[0])), sub(P(q[3]), P(q[0]))), w = add(add(N(q[0]), N(q[1])), add(N(q[2]), N(q[3])));
+        if (dot(g, w) >= 0) L.i.push(q[0], q[1], q[2], q[0], q[2], q[3]);
+        else L.i.push(q[0], q[2], q[1], q[0], q[3], q[2]);
+      }
+    }
   }
   // Each layer as a mesh, moved by a matrix (sixteen numbers, column major) into the world.
   meshes(matrix) {
