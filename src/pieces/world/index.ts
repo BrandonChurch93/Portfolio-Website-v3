@@ -101,8 +101,9 @@ export function createWorld(): WorldPiece {
   let off: (() => void) | null = null, watch: ResizeObserver | null = null, near: IntersectionObserver | null = null, moon: THREE.DirectionalLight | null = null;
   let later: Tier | null = null;
   let view: [number, number] | null = null, drew: [number, number] = [0, 0], left = new Set<string>();
-  // The land as one kept picture (./kept.ts), and whether that picture is of the land as it is lit now.
-  let kept: Kept | null = null, taken = false, keeps = true;
+  // The land and the rock as kept pictures (./kept.ts), and what is in them now ('' when they are not of the world as
+  // it is lit now). ?keep=0 draws both every frame as before, and ?keep=land keeps the land alone.
+  let kept: Kept | null = null, taken = '', keeps = true, keepsRock = true;
   let seen = true, stale = true, moving = false, warming = false, cast = 3, hold: number | null = null, only: PartName | null = null, close: readonly [number, number, number] | null = null, zoom = 3;
   let lampUV = { x: 0.6, y: 0.3 }, reach = 1, first = 0;
   const stream = { on: 0, since: 60, long: 0 };
@@ -194,17 +195,26 @@ export function createWorld(): WorldPiece {
     // The moon's shadows are drawn once, with every part there to cast them. After that a part none of which is on
     // the screen is not drawn and not told the time.
     const casting = cast > 0 || frozen;
-    // The land is laid in from its picture, taken once the moon's shadows are drawn and again whenever they are
-    // drawn again or the canvas changes size. Not while they are being drawn, when the land has to cast its own.
-    const land = parts.find((p) => p.name === 'land');
-    const laid = keeps && !!kept && !!land && !casting && only === null && close === null && !left.has('land');
-    if (casting) taken = false;
-    if (laid && (!taken || !kept!.fresh())) {
-      for (const p of parts) p.part.group.visible = p === land;
-      kept!.take();
-      taken = true;
+    // The land and the rock are laid in from their pictures, taken once the moon's shadows are drawn and again
+    // whenever they are drawn again, the canvas changes size or what is in them changes. Not while the shadows are
+    // being drawn, when the land and the rock have to cast their own. What of the rock the stream can light is drawn
+    // over its picture in every frame.
+    const land = parts.find((p) => p.name === 'land'), rock = parts.find((p) => p.name === 'rock');
+    const near = rock?.part.group.userData.near as THREE.Object3D[] | undefined;
+    const laid = keeps && !!kept && !!land && !casting && only === null && close === null && !left.has('land') && !left.has('kept');
+    const stone = laid && keepsRock && !!rock && !!near && !left.has('rock') && !left.has('kept-rock');
+    const holds = stone ? 'land rock' : 'land';
+    if (casting) taken = '';
+    if (rock && near) for (const o of rock.part.group.children) o.visible = near.includes(o) === stone;
+    if (laid && (taken !== holds || !kept!.fresh())) {
+      for (const p of parts) p.part.group.visible = p === land || (stone && p === rock);
+      if (stone) for (const o of rock!.part.group.children) o.visible = !near!.includes(o);
+      kept!.take((k) => world.setCore(k));
+      world.setCore(level);
+      if (stone) for (const o of rock!.part.group.children) o.visible = near!.includes(o);
+      taken = holds;
     }
-    kept?.show(laid && land!.on);
+    kept?.show(laid && (land!.on || (stone && rock!.on)), level);
     for (const p of parts) {
       p.part.group.visible = (casting || p.on) && !left.has(p.name) && !(laid && p === land);
       if (p.on && p.part.update?.(s) && !still) moving = true;
@@ -229,6 +239,7 @@ export function createWorld(): WorldPiece {
       if (Number(q.get('zoom')) > 0) zoom = Number(q.get('zoom'));
       glow = q.get('glow') === '1';
       keeps = q.get('keep') !== '0';
+      keepsRock = q.get('keep') !== 'land';
       stage = new Stage(h, canvas, { tier: opts.tier, fov: ALONE.fov, near: 0.3, far: 40, bloom: GLOW, bloomScale: 0.5, envIntensity: LIGHT.night, env: night, lampAngle: 0.9, pixels: HANDHELD.world });
       trueDarks(stage.renderer);
       lean();
@@ -374,6 +385,7 @@ export function createWorld(): WorldPiece {
     setWaterLight() {},
     setMaking(on: boolean) { if (stage) { stage.setMaking(on, stage.scene); stale = true; } },
     // For timing a frame: the world drawn without these parts (npm run perf, scripts that call piece('world')).
+    // 'kept' draws the land and the rock every frame, and 'kept-rock' the rock, to hold a frame against the pictures.
     without(names: string[]) { left = new Set(names); stale = true; },
     setTier(tier: Tier) {
       // The page tells every piece its tier as it mounts. Told the tier it already has, the world used to throw its

@@ -402,8 +402,9 @@ const STONE_FRAG = /* glsl */ `
 
 	// The knapped relief: broad shells meeting along ridges, whose light differs across a face.
 	vec4 r1 = stoneNoiseD( p / ${f(STONE.roll.wide[0])} + bOff * 5.7 );
-	vec4 sc1 = stoneScallop( p, ${f(STONE.roll.wide[1])}, bOff.x * 3.0 ), sc2 = stoneScallop( p, ${f(STONE.roll.wide[2])}, 7.7 );
+	// The finer scars only where a pixel is fine enough to show them.
 	float fine2 = 1.0 - smoothstep( 0.25, 0.6, pix );
+	vec4 sc1 = stoneScallop( p, ${f(STONE.roll.wide[1])}, bOff.x * 3.0 ), sc2 = fine2 > 0.0 ? stoneScallop( p, ${f(STONE.roll.wide[2])}, 7.7 ) : vec4( 0.0 );
 	vec3 roll = r1.xyz * ${f(STONE.roll.deep[0] / STONE.roll.wide[0])} + sc1.xyz * ${f(STONE.roll.deep[1])} * ( 0.5 + bRough ) + sc2.xyz * ${f(STONE.roll.deep[2])} * fine2;
 	// A flake's bowl is a little darker at its middle, and the ridges between are proud and catch the light.
 	float knap = ( smoothstep( 0.25, 0.62, sc1.w ) - 0.5 ) + 0.4 * fine2 * ( smoothstep( 0.25, 0.62, sc2.w ) - 0.5 );

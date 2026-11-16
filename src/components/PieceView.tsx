@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { HANDHELD, PIECE_MOUNT, READING_LINE } from '../config/site';
+import { HANDHELD, PIECE_MOUNT, READING_LINE, SMALL_PIECES } from '../config/site';
 import { site } from '../content/site';
 import { registry, type PieceHandle } from '../hooks/registry';
 import { lamp } from '../lamp/lamp';
@@ -125,8 +125,9 @@ export function PieceView({ name, entrance = false, once, making = false, classN
     let evicted = false;
     const id = `piece:${name}`;
     // On a handheld a piece is mounted from nearer and let go sooner, so fewer hold their memory at once.
-    const from = handheld() ? Math.min(reach ?? PIECE_MOUNT.near, HANDHELD.reach) : reach ?? PIECE_MOUNT.near;
-    const gone = handheld() ? from + 1 : Math.max(PIECE_MOUNT.far, (reach ?? 0) + 1.5);
+    const small = SMALL_PIECES.includes(name), held = handheld() && !small;
+    const from = held ? Math.min(reach ?? PIECE_MOUNT.near, HANDHELD.reach) : reach ?? PIECE_MOUNT.near;
+    const gone = held ? from + 1 : Math.max(PIECE_MOUNT.far, (reach ?? 0) + 1.5);
     const check = () => {
       const dist = distanceOf(h), vh = innerHeight;
       if (dist < vh * from) {
@@ -134,7 +135,7 @@ export function PieceView({ name, entrance = false, once, making = false, classN
         // A piece that gave its place up asks again once any of it is on the screen.
         if (evicted && dist === 0) evicted = false;
         if (!mounted && !loading && !evicted) {
-          if (budget.claim(id, { distance: () => distanceOf(h), keepsStill: false, release: () => { evicted = true; stop(); } })) loading = registry.track(start());
+          if (small || budget.claim(id, { distance: () => distanceOf(h), keepsStill: false, release: () => { evicted = true; stop(); } })) loading = registry.track(start());
           else evicted = true;
         }
       } else if (dist > vh * gone) {

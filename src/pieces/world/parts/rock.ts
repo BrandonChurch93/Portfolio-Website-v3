@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import { CORE, RIM, WORLD, skinAt } from '../layout';
-import { load, mesh } from '../files';
+import { CORE, RIM, SOURCE, WORLD, skinAt } from '../layout';
+import { load, mesh, type Loaded } from '../files';
 import { lit } from '../light';
 import type { PartFactory } from '../part';
-import { stoneMaps, stoneMaterial } from './rock/stone';
+import { STREAM, stoneMaps, stoneMaterial } from './rock/stone';
 
 // The torn rock: whichever sculpt is asked for (?rock=a, default r), drawn in the planet's stone (./rock/stone.ts).
 // A world file for the rock holds two meshes: `break`, the torn rock, and `skin`, the planet's outer surface and its
@@ -28,8 +28,34 @@ function blocks(g: THREE.BufferGeometry, meta: { spare?: string; edge?: string }
   return seen.size > 8;
 }
 
+// The break's triangles the page's stream can light: any within STREAM.reach of the line from the core's foot
+// straight down (./rock/stone.ts), however far the stream has run. Everything else of the rock changes with nothing
+// but the core's level, and the world keeps it as pictures (../kept.ts): these are drawn over the pictures in every
+// frame. A geometry of their own over the break's own buffers.
+function nearStream(l: Loaded): THREE.BufferGeometry | null {
+  const g = l.geometry, pos = g.getAttribute('position') as THREE.BufferAttribute, index = g.index;
+  if (!index || !(pos.array instanceof Uint16Array) || !pos.normalized) return null;
+  const q = pos.array, ix = index.array, keep: number[] = [], R = STREAM.reach + 2, s = l.size / 65535;
+  const [sx, sy, sz] = SOURCE, [ax, ay, az] = [l.at.x, l.at.y, l.at.z];
+  for (let t = 0; t < ix.length; t += 3) {
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, z0 = Infinity, z1 = -Infinity;
+    for (let k = 0; k < 3; k++) {
+      const v = ix[t + k] * 3, x = ax + q[v] * s, y = ay + q[v + 1] * s, z = az + q[v + 2] * s;
+      x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); z0 = Math.min(z0, z); z1 = Math.max(z1, z);
+    }
+    if (x0 - R <= sx && sx <= x1 + R && z0 - R <= sz && sz <= z1 + R && y0 - R <= sy) keep.push(ix[t], ix[t + 1], ix[t + 2]);
+  }
+  if (!keep.length) return null;
+  const out = new THREE.BufferGeometry();
+  for (const [name, a] of Object.entries(g.attributes)) out.setAttribute(name, a);
+  out.setIndex(new THREE.BufferAttribute(new Uint32Array(keep), 1));
+  out.boundingBox = g.boundingBox;
+  out.boundingSphere = g.boundingSphere;
+  return out;
+}
+
 export const build: PartFactory = async ({ query, renderer }) => {
-  const group = new THREE.Group(), which = query.get('rock') ?? 'r', made: { dispose(): void }[] = [];
+  const group = new THREE.Group(), which = query.get('rock') ?? 'r', made: { dispose(): void }[] = [], near: THREE.Mesh[] = [];
   const plain = query.get('stone') === '0';
   const add = (g: THREE.BufferGeometry, m: THREE.Material): void => { made.push(g, m); };
   let release = (): void => {};
@@ -48,10 +74,21 @@ export const build: PartFactory = async ({ query, renderer }) => {
       const m = name === 'break' && maps
         ? stoneMaterial(maps, { key: 'rock', baked: true, spare: blocks(l.geometry, meta) ? 'slab' : undefined, beds: meta.beds, tans: meta.tans, edge, debug: Number(query.get('stonedebug')) || undefined })
         : lit(new THREE.MeshStandardMaterial({ color: name === 'skin' ? DARK : CLAY, roughness: 0.92, metalness: 0 }), { key: `rock-plain-${name}`, baked: true });
+      const touched = name === 'break' && maps ? nearStream(l) : null;
       const part = mesh(l, m);
       part.castShadow = part.receiveShadow = true;
       group.add(part);
       add(l.geometry, m);
+      if (touched) {
+        const own = new THREE.Mesh(touched, m);
+        own.matrix.copy(part.matrix);
+        own.matrixAutoUpdate = false;
+        own.receiveShadow = true;
+        own.visible = false;
+        group.add(own);
+        near.push(own);
+        made.push(touched);
+      }
     }
   } catch (e) {
     console.warn(String(e));
@@ -64,5 +101,6 @@ export const build: PartFactory = async ({ query, renderer }) => {
     group.add(whole);
     add(g, m);
   }
+  if (near.length) group.userData.near = near;
   return { group, alone: { at: [CORE.at[0], CORE.at[1] - 30, CORE.at[2] - 60], r: 560 }, dispose() { for (const d of made) d.dispose(); release(); } };
 };

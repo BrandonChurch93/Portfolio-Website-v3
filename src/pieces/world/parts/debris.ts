@@ -212,27 +212,44 @@ export const build: PartFactory = async ({ query, renderer }) => {
     uCracks: { value: at(...fromPicture(LOOK.cracks.at[0], LOOK.cracks.at[1], LOOK.cracks.at[2])) }, uCracksI: { value: new THREE.Vector3(pick(11, LOOK.cracks.power), LOOK.cracks.half, LOOK.cracks.reach) },
     uLineA: { value: lines.map((l) => l.a) }, uLineB: { value: lines.map((l) => l.b) }, uLineI: { value: lines.map(() => new THREE.Vector2(pick(6, LOOK.stream.small[0]), LOOK.stream.small[1])) },
   };
-  const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: STONE.rough[0], metalness: 0, side: THREE.DoubleSide });
-  material.onBeforeCompile = (sh) => {
-    Object.assign(sh.uniforms, uniforms);
-    sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', `#include <common>\n${STONE_VERT_PARS}\n${S.VERT_PARS}`)
-      .replace('#include <beginnormal_vertex>', `${S.VERT_MOTION}\nvec3 objectNormal = dNor;`)
-      .replace('#include <begin_vertex>', `#include <begin_vertex>\n${S.VERT_LIGHT}`);
-    // What is laid after a chunk here runs after the stone's own, which is laid after it next.
-    sh.fragmentShader = sh.fragmentShader
-      .replace('#include <common>', `#include <common>\n${S.FRAG_PARS}`)
-      .replace('#include <lights_physical_pars_fragment>', `#include <lights_physical_pars_fragment>\n${S.MOON_PARS}`)
-      .replace('#include <color_fragment>', `#include <color_fragment>\n${S.COLOR}`)
-      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>\n${S.NORMAL}`)
-      .replace('#include <lights_fragment_begin>', `${S.MOON_SWAP}\n#include <lights_fragment_begin>\n${S.LIGHT}`)
-      .replace('#include <lights_fragment_maps>', `#include <lights_fragment_maps>\n${S.NIGHT}`)
-      .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>\n${S.DEEP}`);
-    stoneShader(sh, maps, true, true);
-    // The stream's light on what broke away is the part's own.
-    (sh.uniforms.uStoneStreamPower as { value: number }).value = 0;
+  // Every piece is drawn twice: first its depth alone, then its stone where that depth is, so the stone is worked out
+  // once for each pixel and never for a face that a nearer one then covers. Drawn in one pass, a piece's far faces and
+  // the pieces behind it were worked out in full, wherever they came first in the table: a fifth of the part's time
+  // by the core. Both passes place every vertex by the same lines, and the depth is laid a hair deeper, so the stone
+  // always finds it. Not by declaring gl_Position invariant: with it the stone came out darker and softer on every
+  // piece. ?early=0 draws it in one pass.
+  const early = query.get('early') !== '0';
+  const make = (depth: boolean): THREE.MeshStandardMaterial => {
+    const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: STONE.rough[0], metalness: 0, side: THREE.DoubleSide });
+    m.onBeforeCompile = (sh) => {
+      Object.assign(sh.uniforms, uniforms);
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', `#include <common>\n${STONE_VERT_PARS}\n${S.VERT_PARS}`)
+        .replace('#include <beginnormal_vertex>', `${S.VERT_MOTION}\nvec3 objectNormal = dNor;`)
+        .replace('#include <begin_vertex>', `#include <begin_vertex>\n${S.VERT_LIGHT}`);
+      // What is laid after a chunk here runs after the stone's own, which is laid after it next.
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', `#include <common>\n${S.FRAG_PARS}`)
+        .replace('#include <lights_physical_pars_fragment>', `#include <lights_physical_pars_fragment>\n${S.MOON_PARS}`)
+        .replace('#include <color_fragment>', `#include <color_fragment>\n${S.COLOR}`)
+        .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>\n${S.NORMAL}`)
+        .replace('#include <lights_fragment_begin>', `${S.MOON_SWAP}\n#include <lights_fragment_begin>\n${S.LIGHT}`)
+        .replace('#include <lights_fragment_maps>', `#include <lights_fragment_maps>\n${S.NIGHT}`)
+        .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>\n${S.DEEP}`);
+      stoneShader(sh, maps, true, true);
+      // The stream's light on what broke away is the part's own.
+      (sh.uniforms.uStoneStreamPower as { value: number }).value = 0;
+      if (depth) sh.fragmentShader = sh.fragmentShader.replace(/void main\(\) \{[\s\S]*$/, 'void main() { gl_FragColor = vec4( 0.0 ); }');
+    };
+    return lit(m, { key: depth ? 'debris-depth' : 'debris', baked: true });
   };
-  lit(material, { key: 'debris', baked: true });
+  const material = make(false), deep = early ? make(true) : null;
+  if (deep) {
+    deep.colorWrite = false;
+    deep.polygonOffset = true;
+    deep.polygonOffsetFactor = 1;
+    deep.polygonOffsetUnits = 4;
+  }
 
   const mesh = new THREE.Mesh(geometry, material);
   mesh.castShadow = false;
@@ -241,10 +258,19 @@ export const build: PartFactory = async ({ query, renderer }) => {
   mesh.matrixAutoUpdate = false;
   const group = new THREE.Group();
   group.add(mesh);
+  if (deep) {
+    const first = new THREE.Mesh(geometry, deep);
+    first.castShadow = false;
+    first.receiveShadow = mesh.receiveShadow;
+    first.frustumCulled = false;
+    first.matrixAutoUpdate = false;
+    first.renderOrder = mesh.renderOrder - 1;
+    group.add(first);
+  }
   return {
     group,
     alone: query.get('debris') === 'models' ? (table.length === 1 ? { at: [table[0][col.x], table[0][col.y], 150], r: Math.max(8, table[0][col.big] * 1.1) } : { at: [0, -860, 150], r: 380 }) : { at: [0, -800, 200], r: 720 },
     update(s) { uniforms.uTime.value = s.t; return !s.still; },
-    dispose() { geometry.dispose(); material.dispose(); pieces.dispose(); maps.release(); },
+    dispose() { geometry.dispose(); material.dispose(); deep?.dispose(); pieces.dispose(); maps.release(); },
   };
 };

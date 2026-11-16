@@ -268,6 +268,8 @@ vec3 dFacets( vec3 p, vec3 n, float cell, float tilt ) {
 // a share of which hold a pit round a point of their own, of a size of its own. How far into a pit a place is, 0 to
 // 1, gone where a pixel covers a cell. A pit is never brighter than the face it is in.
 float dPits( vec3 p, float cell, float share, float px ) {
+	float seen = 1.0 - smoothstep( 0.25, 0.5, px / cell );
+	if ( seen <= 0.0 ) return 0.0;
 	vec3 q = p / cell, b = floor( q - 0.5 );
 	float pit = 0.0;
 	for ( int k = 0; k < 8; k++ ) {
@@ -277,7 +279,7 @@ float dPits( vec3 p, float cell, float share, float px ) {
 		float r = 0.12 + 0.22 * stoneHash3( i + 13.9 ), d = length( o ), w = max( px / cell, 0.02 );
 		pit = max( pit, 1.0 - smoothstep( r - w, r + w, d ) );
 	}
-	return pit * ( 1.0 - smoothstep( 0.25, 0.5, px / cell ) );
+	return pit * seen;
 }`;
 
 // The moon's own light on a piece is mostly taken off: it is behind the pieces, and lit all over by it they were a
@@ -343,8 +345,8 @@ export const COLOR = /* glsl */ `
 			dAlb *= 0.86 + 0.28 * stoneNoise3( gp / 9.0 + 2.2 );
 			// Conchoidal breaks of a middle size, as the rock's knapped faces are, larger: shallow bowls meeting along
 			// ridges, so a broad face is many breaks, its ridges a little paler and its bowls a little darker.
-			vec4 kc1 = stoneScallop( gp, uKnap.x, vSeed * 0.11 ), kc2 = stoneScallop( gp + 13.1, uKnap.z, 3.7 );
 			float kFine = 1.0 - smoothstep( 0.2, 0.45, dPx / uKnap.z );
+			vec4 kc1 = stoneScallop( gp, uKnap.x, vSeed * 0.11 ), kc2 = kFine > 0.0 ? stoneScallop( gp + 13.1, uKnap.z, 3.7 ) : vec4( 0.0 );
 			vec3 kt = kc1.xyz * uKnap.y + kc2.xyz * uKnap.w * kFine;
 			dGouge += ( kt - gn * dot( kt, gn ) ) * edgeOn;
 			float kRidge = ( smoothstep( 0.3, 0.7, kc1.w ) - 0.5 ) + 0.5 * kFine * ( smoothstep( 0.3, 0.7, kc2.w ) - 0.5 );
@@ -352,12 +354,14 @@ export const COLOR = /* glsl */ `
 			// The crumbled lip: on a broken edge, grains a crumb across, pale where they stand proud and dark between,
 			// gone where a pixel covers a crumb.
 			float edge = smoothstep( 0.5 + 0.5 * uCrumb.y * 0.6, 0.5 + 0.5 * uCrumb.y, wLight.y ) * ( 1.0 - smoothstep( 0.3, 0.6, dPx / uCrumb.x ) );
-			vec4 g1 = stoneNoiseD( gp / uCrumb.x + 5.3 ), g2 = stoneNoiseD( gp / ( uCrumb.x * 2.7 ) + 1.7 );
-			float grain = 0.6 * g1.w + 0.4 * g2.w;
-			dAlb = mix( dAlb, uChip * ( 0.95 + 0.1 * g2.w ), uCrumb.z * edge * smoothstep( 0.55, 0.75, grain ) );
-			dAlb *= 1.0 - uCrumb.w * edge * ( 1.0 - smoothstep( 0.28, 0.46, grain ) );
-			vec3 gg = g1.xyz / uCrumb.x * 0.6 + g2.xyz / ( uCrumb.x * 2.7 ) * 0.4;
-			dGouge += ( gg - gn * dot( gg, gn ) ) * uCrumb.x * 0.9 * edge;
+			if ( edge > 0.0 ) {
+				vec4 g1 = stoneNoiseD( gp / uCrumb.x + 5.3 ), g2 = stoneNoiseD( gp / ( uCrumb.x * 2.7 ) + 1.7 );
+				float grain = 0.6 * g1.w + 0.4 * g2.w;
+				dAlb = mix( dAlb, uChip * ( 0.95 + 0.1 * g2.w ), uCrumb.z * edge * smoothstep( 0.55, 0.75, grain ) );
+				dAlb *= 1.0 - uCrumb.w * edge * ( 1.0 - smoothstep( 0.28, 0.46, grain ) );
+				vec3 gg = g1.xyz / uCrumb.x * 0.6 + g2.xyz / ( uCrumb.x * 2.7 ) * 0.4;
+				dGouge += ( gg - gn * dot( gg, gn ) ) * uCrumb.x * 0.9 * edge;
+			}
 		}
 		diffuseColor.rgb = dAlb;
 	}`;
@@ -372,8 +376,15 @@ export const NORMAL = /* glsl */ `
 		float dPx = max( length( dFdx( dPs ) ), length( dFdy( dPs ) ) );
 		// The small flat breaks are a small piece's: on a great piece's large faces, one tilt to a cell read as an even
 		// mottle of polygons. Its relief is the rock's, its mesh's, its partings' and its crumbled lips'.
-		vec3 dTilt = ( dFacets( dPs, dN0, uFacet.x, uFacet.y ) * ( 1.0 - smoothstep( 0.15, 0.4, dPx / uFacet.x ) )
-			+ dFacets( dPs + 31.7, dN0, uFacet.z, uFacet.w ) * ( 1.0 - smoothstep( 0.15, 0.4, dPx / uFacet.z ) ) ) * ( 1.0 - vGreat ) + dGouge;
+		// Each field is worked out only where it adds something: never on a great piece, nor where a pixel covers its cells.
+		vec3 dTilt = dGouge;
+		if ( vGreat < 0.5 ) {
+			float dK1 = 1.0 - smoothstep( 0.15, 0.4, dPx / uFacet.x ), dK2 = 1.0 - smoothstep( 0.15, 0.4, dPx / uFacet.z );
+			vec3 dF = vec3( 0.0 );
+			if ( dK1 > 0.0 ) dF += dFacets( dPs, dN0, uFacet.x, uFacet.y ) * dK1;
+			if ( dK2 > 0.0 ) dF += dFacets( dPs + 31.7, dN0, uFacet.z, uFacet.w ) * dK2;
+			dTilt += dF;
+		}
 		vec3 dW = dTurnF( vSpin.xyz, vSpin.w, normalize( mix( dN0, stoneNormal, mix( uStoneRelief, uGreatRelief, vGreat ) ) + dTilt ) );
 		float c = cos( vTurnY ), s = sin( vTurnY );
 		normal = normalize( ( viewMatrix * vec4( dW.x * c + dW.z * s, dW.y, - dW.x * s + dW.z * c, 0.0 ) ).xyz );

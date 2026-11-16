@@ -18,6 +18,11 @@ export const READING_LINE = 0.66;
 // pieces hold a WebGL context at once, because browsers drop the oldest context past a small limit.
 // fade: how long a piece made while it is on the screen takes to come on, in milliseconds.
 export const PIECE_MOUNT = { near: 1, far: 2.5, max: 6, fade: 260 } as const;
+// The small pieces: a canvas a few hundred pixels across, about 40 MB in Safari each where the desk is over 500.
+// They are not counted among the pieces that may hold a context at once, on any device, and a handheld mounts them
+// from as far as their page asks. Counted, an iPad showed three of Skills' five and left the other two as empty
+// places until one of the three was let go, seconds later or never (his iPad, Nov 16).
+export const SMALL_PIECES: readonly string[] = ['cpu', 'watch', 'palette', 'reflector', 'studio-light'];
 
 // What a handheld is held to (src/world/device.ts). An iPad's or a phone's browser ends a page that holds more
 // graphics memory than it allows: Safari reloads it, and after a few of those says a problem repeatedly occurred.
@@ -36,7 +41,7 @@ export const HANDHELD = {
   // The stream's multisampling.
   samples: 2,
   // A piece is mounted from no further than this many screens away, and let go one screen further. And no more than
-  // this many hold a WebGL context at once: three is the most that are ever on one screen together.
+  // this many hold a WebGL context at once, the small pieces aside (SMALL_PIECES).
   reach: 1.5,
   pieces: 3,
 } as const;
