@@ -144,6 +144,17 @@ export function within(x: number, z: number): number {
   return Math.min(LAND.rim - Math.hypot(x, z), lip(x) - z);
 }
 
+// The small streams: the core's light leaking from the torn rock's underside and falling. Where picture 9 has each
+// (across and down, in its pixels, where it leaves the rock), how far toward the visitor that is, and how long it
+// is in units. They are the stream's own light, drawn by the page as the stream is.
+export const SMALL: readonly (readonly [number, number, number, number])[] = [
+  [385, 640, 330, 110], [500, 570, 300, 190], [620, 580, 230, 170], [748, 550, 210, 180], [812, 508, 250, 210], [1010, 640, 330, 110],
+];
+// Each small stream's own place in the world, where it leaves the rock.
+export const small = (): [number, number, number][] => SMALL.map(([px, py, z]) => fromPicture(px, py, z));
+// What broke away hangs under the planet: nothing of it is lower than this, which is what the page puts Work under.
+export const DEBRIS = { low: -1080 } as const;
+
 // ---------------------------------------------------------------------------------------------------------------
 // The land.
 

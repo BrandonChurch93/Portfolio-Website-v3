@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { hex } from '../../../config/palette';
-import { COURT, D2R, HOST, LAND, SOURCE, SPIRE, drawn, fromPicture, ground, within } from '../layout';
+import { COURT, D2R, HOST, LAND, SMALL, SOURCE, SPIRE, drawn, fromPicture, ground, within } from '../layout';
 import { lit } from '../light';
 import type { PartFactory } from '../part';
 import { TOWERS, TREES } from '../placed';
@@ -16,9 +16,6 @@ const DARK = 0x16110d, SPOKES = 720, RINGS = 72;
 // and its light, which in the picture is pale gold and not orange.
 export const STREAM = 7;
 export const STREAM_LIGHT = new THREE.Color(hex('pale')).multiplyScalar(1.25);
-// The small streams, where picture 9 has them: across and down in the picture's pixels where each leaves the rock,
-// how far toward the visitor that is, and how long it is in units.
-const SMALL: readonly (readonly [number, number, number, number])[] = [[385, 640, 330, 110], [500, 570, 300, 190], [620, 580, 230, 170], [748, 550, 210, 180], [812, 508, 250, 210], [1010, 640, 330, 110]];
 
 export const build: PartFactory = ({ built, stands }) => {
   const group = new THREE.Group(), plain = lit(new THREE.MeshStandardMaterial({ color: DARK, roughness: 1, metalness: 0 }), { key: 'rest', core: false });
@@ -62,14 +59,19 @@ export const build: PartFactory = ({ built, stands }) => {
   shapes.matrixAutoUpdate = false;
   group.add(shapes);
 
-  // Lines of light where the stream and the small streams will be. The page's own stream replaces them.
-  const light = new THREE.MeshBasicMaterial({ color: STREAM_LIGHT, side: THREE.DoubleSide });
-  const line = (x: number, y: number, z: number, long: number, wide: number): THREE.BufferGeometry => new THREE.PlaneGeometry(wide, long).translate(x, y - long / 2, z);
-  const foot = HOST.tall - drawn(SOURCE[0], SOURCE[1], SOURCE[2])[1];
-  const lines = mergeGeometries([line(SOURCE[0], SOURCE[1] + 6, SOURCE[2], foot + 40, STREAM), ...SMALL.map(([px, py, z, long]) => { const [x, y] = fromPicture(px, py, z); return line(x, y, z, long, 1.4); })], false);
-  const streams = new THREE.Mesh(lines, light);
-  streams.matrixAutoUpdate = false;
-  group.add(streams);
+  // Lines of light where the stream and the small streams are, for the world seen alone in the lab. On a page the
+  // stream is the page's own, drawn over the world, and these are left out.
+  const made: { dispose(): void }[] = [stand, plain];
+  if (location.pathname.startsWith('/lab/piece')) {
+    const light = new THREE.MeshBasicMaterial({ color: STREAM_LIGHT, side: THREE.DoubleSide });
+    const line = (x: number, y: number, z: number, long: number, wide: number): THREE.BufferGeometry => new THREE.PlaneGeometry(wide, long).translate(x, y - long / 2, z);
+    const foot = HOST.tall - drawn(SOURCE[0], SOURCE[1], SOURCE[2])[1];
+    const lines = mergeGeometries([line(SOURCE[0], SOURCE[1] + 6, SOURCE[2], foot + 40, STREAM), ...SMALL.map(([px, py, z, long]) => { const [x, y] = fromPicture(px, py, z); return line(x, y, z, long, 1.4); })], false);
+    const streams = new THREE.Mesh(lines, light);
+    streams.matrixAutoUpdate = false;
+    group.add(streams);
+    made.push(lines, light);
+  }
 
-  return { group, dispose() { stand.dispose(); lines.dispose(); plain.dispose(); light.dispose(); } };
+  return { group, dispose() { for (const d of made) d.dispose(); } };
 };

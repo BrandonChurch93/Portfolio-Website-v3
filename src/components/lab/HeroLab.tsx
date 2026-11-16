@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { hero } from '../../content/hero';
 import { BOARD, CITY, CX, SKY, WORDS, WORK, WORLD } from '../../hero/board';
 import type { HeroStage } from '../../hero/stage';
-import { HOST } from '../../pieces/skycity/layout';
+import { HOST } from '../../pieces/world/layout';
 import { MetalButton } from '../MetalButton';
 import { PieceView } from '../PieceView';
 import type { Hub } from '../../whole/hub';
@@ -16,7 +16,7 @@ const u = (n: number) => `calc(var(--u) * ${Number(n.toFixed(2))})`;
 // The hero, built for real (BRIEF.md, Settled, "The hero, the city at rest"). The page only lays things out: his
 // words a third of the way down the screen, and under them the world on the center line: at rest the spire and
 // the crown of the dome, with its torn edge, its core and what broke away under the foot of the screen. Work's bar
-// is under all of it, and on this page is a stand in. The world is the piece in src/pieces/skycity, at whatever
+// is under all of it, and on this page is a stand in. The world is the piece in src/pieces/world, at whatever
 // stage its parts have reached. The stream plans its route from where these are (src/stream/route-hero.ts): out
 // of the core's underside and down to the bar.
 // There is no opening: the world and the words are simply there. The night sky (src/hero/sky) is behind
@@ -89,7 +89,7 @@ export function HeroLab({ hub }: { hub?: Hub }) {
       <div ref={board} className={styles.board} style={vars}>
         <div ref={sky} className={styles.sky} aria-hidden="true" />
         <div ref={city} className={styles.city} style={{ width: u(HOST.wide) }}>
-          {wide && WORLD.shown && <PieceView name="skycity" className={styles.piece} />}
+          {wide && WORLD.shown && <PieceView name={WORLD.piece} className={styles.piece} />}
         </div>
         <header ref={words} className={styles.words} style={{ width: u(WORDS.w) }}>
           <p className={styles.role}>{hero.role}</p>

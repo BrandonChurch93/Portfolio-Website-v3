@@ -1,4 +1,4 @@
-import { DEBRIS, HOST, PLANET, SOURCE, SPIRE, drawn } from '../pieces/skycity/layout';
+import { DEBRIS, HOST, RIM, SOURCE, SPIRE, WORLD as PLANET, drawn } from '../pieces/world/layout';
 
 // The hero as built (BRIEF.md, Settled, "The hero, the city at rest"): where everything stands, on a board 1460
 // units wide that is drawn as wide as the screen up to 2400 px, as the other sections are. The wireframe he approved
@@ -18,13 +18,14 @@ const tip = drawn(0, SPIRE.tall, 0)[1], r1 = (v: number): number => Math.round(v
 // tall its host is, the top of the dome, its torn edge at the sides, the underside of the core, where the stream
 // leaves it, and the lowest of what broke away.
 export const CITY = {
-  // The most of the dome under its top that shows at rest. On a tall screen the world rests lower, so that its torn
-  // edge stays under the foot of the screen.
-  show: 130,
+  // The most of the world under its top that shows at rest: the skyline and the land, down to the land's front
+  // edge. On a tall screen the world rests lower, so that the tear and the core stay under the foot of the screen
+  // until the page is scrolled.
+  show: 75,
   over: r1(tip),
   tall: HOST.tall,
   pole: r1(drawn(0, 0, 0)[1] - tip),
-  edge: r1(drawn(0, -PLANET.r * (1 - Math.cos((PLANET.cap * Math.PI) / 180)), 0)[1] - tip),
+  edge: r1(drawn(PLANET.half, -RIM, 0)[1] - tip),
   source: r1(drawn(...SOURCE)[1] - tip),
   low: r1(drawn(0, DEBRIS.low, 0)[1] - tip),
 } as const;
@@ -44,6 +45,7 @@ export const SKY = {
 // much page follows on this page, where Work itself is not.
 export const WORK = { under: 480, bar: 360, tail: 300 } as const;
 
-// The world as built is off the page while a new one is designed (BRIEF.md, Settled, Hero, Nov 15). Its place is
-// kept, so nothing else on the page moves, and the sky and the stream are as they were. The new world goes here.
-export const WORLD = { shown: false } as const;
+// The hero's world is the new one, built to picture 9's layout (src/pieces/world/). He asked for it on the page on
+// Nov 15, before it was finished, so the page scrolls from the hero to Contact (BRIEF.md, Settled, Hero). The one
+// before it (src/pieces/skycity/) is set aside and is on no page.
+export const WORLD = { shown: true, piece: 'world' } as const;
