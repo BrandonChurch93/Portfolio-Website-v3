@@ -40,10 +40,10 @@ export const BLOCKS = [
   { name: 'shade-right', kind: 'plate', slabs: [22], z: 120, lean: 0.5, out: 0.3, thick: 40 },
   // The floor: a ledge under the core, its top turned up to the core, and under its front edge a dark belly turned
   // down and out, from the core. Both stand behind the stream's line, which falls in front of them.
-  { name: 'floor', kind: 'floor', slabs: [84, 81, 70, 96, 98, 93], cut: ['lane', 'belly', 'recess'], z: 140, up: 0.55, lean: 0.25, thick: 70 },
+  { name: 'floor', kind: 'floor', slabs: [84, 81, 70, 96, 98, 93], cut: ['lane', 'belly', 'recess'], z: 140, up: 0.4, lean: 0.2, thick: 70 },
   { name: 'belly', kind: 'belly', slabs: [84, 81, 70, 96, 98, 93], cut: ['lane'], only: 'belly', z: 152, down: 0.75, out: 0.25, thick: 70 },
   // Behind the stream the shelf is set back, so the stream falls in front of its lit lip.
-  { name: 'floor-back', kind: 'floor', slabs: [84, 81, 70, 96, 98, 93], only: 'lane', z: 112, up: 0.8, lean: 0.4, thick: 60 },
+  { name: 'floor-back', kind: 'floor', slabs: [84, 81, 70, 96, 98, 93], only: 'lane', z: 112, up: 0.5, lean: 0.3, thick: 60 },
   { name: 'floor-left', kind: 'shade', slabs: [68], z: 115, out: 0.5, up: 0.3, thick: 50 },
   { name: 'right-low', kind: 'frame', slabs: [53, 73, 80, 78], z: 300, out: -0.2, down: 0.15, thick: 90 },
   // The roof: the land's broken lip, its top turned up to the moon; a dark lid of great slabs hanging under it in
@@ -68,7 +68,7 @@ export const BLOCKS = [
   { name: 'frame-left-mid', kind: 'frame', slabs: [66], z: 300, out: 1.2, down: 0.5, thick: 120 },
   { name: 'frame-left-low', kind: 'frame', slabs: [89, 91, 92, 101, 100, 102, 103, 104, 105, 94], z: 0, out: 0.38, down: 0.45, thick: 130 },
   { name: 'frame-right-edge', kind: 'frame', slabs: [39, 71, 17, 16], add: 'tornR', z: 0, out: -0.25, down: 0.18, thick: 130 },
-  { name: 'frame-right-mid', kind: 'frame', slabs: [33, 76], z: 330, lean: 0.45, down: 0.3, thick: 120 },
+  { name: 'frame-right-mid', kind: 'frame', slabs: [33, 76], z: 330, lean: 0.85, down: 0.05, thick: 120 },
   { name: 'frame-right-low', kind: 'frame', slabs: [90], z: 0, out: -0.2, down: 0.2, thick: 130 },
 ];
 

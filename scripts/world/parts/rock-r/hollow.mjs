@@ -19,11 +19,26 @@ export const lip = 2.5;
 // its whole thickness at its outer side; along the line of sight, none of it. A side is its outline drawn out along
 // the line, so seen broad it shows every kink of the traced outline as a ruled stripe: a plate leaning hard in to the
 // core showed little but its side, as a comb (round 5).
-export const SIDES = { plate: 0.66, floor: 0.45, shade: 0.55, roof: 0.62, frame: 0.72, belly: 0.45 };
+// Round 6: far more square than round 5's, so a slab shows the visitor a dark side several units deep along its outer
+// torn edge, away from the core, and reads as a slab and not as a sheet of paper.
+export const SIDES = { plate: 0.2, floor: 0.15, shade: 0.3, roof: 0.34, frame: 0.4, belly: 0.2 };
 // One of the picture's pixels in the world's units, near enough everywhere in the hollow.
 const UNIT = L.PICTURE.unit;
 // The beds in a block's broken sides: how thick each is, and how far one stands out or in from the next, in units.
-export const BEDS = { thick: [5, 34], step: 0.6, lean: 0.08, warp: 9 };
+export const BEDS = { thick: [5, 34], step: 1.4, lean: 0.08, warp: 9 };
+// The bedding: the rock's layers, a plane of each block's own (along its length on its face, tilted out of the face by
+// `tilt` radians, either way; level in the roof's crust), in layers `thick` units thick, each standing proud of or
+// sunk behind its neighbours by up to `deep` units, so that at every parting there is a step: one lip lit, the riser
+// in shade or lit by which way it faces. A step pinches out along its length over about `pinch` units, so the
+// partings are of very different lengths. `share` of the blocks of a kind are bedded at all: the rest are clean. The
+// riser's slope, rise over run, is `steep`.
+export const BEDDING = {
+  plate: { share: 0.75, thick: [7, 30], deep: [0.8, 3.6], tilt: [0.25, 0.7], pinch: 70, steep: 1.6 },
+  floor: { share: 1, thick: [6, 18], deep: [1.5, 4.5], tilt: [0.5, 0.9], pinch: 90, steep: 1.6 },
+  roof: { share: 1, thick: [7, 20], deep: [2.5, 7], tilt: [0, 0], pinch: 80, steep: 1.6, level: true },
+  frame: { share: 0.6, thick: [9, 34], deep: [1, 4], tilt: [0.3, 0.8], pinch: 70, steep: 1.6 },
+  belly: { share: 1, thick: [6, 16], deep: [1.5, 4], tilt: [0.4, 0.9], pinch: 60, steep: 1.6 },
+};
 // The fan of cells a block's face is broken into, round the core: how wide a wedge is (radians), how far apart its
 // breaks across are (pixels), how far each cell leans in toward the core and twists (degrees), where the first cell
 // of a wedge stands from the face (units), how far each cell drops below the one inside it at their break (units),
@@ -43,10 +58,10 @@ export const FAN = {
 export const LAMINAE = { apart: 13, jitter: 0.9, half: 1.7, deep: [0.4, 1.1], gone: 0.45, offset: 0.25, pinch: 40 };
 // The knapped scars at a face's edges: three sizes, each a concave shell scar, how far in from the edge it reaches
 // and how deep at the edge, in units. The smallest only at the very edge.
+// Round 6: the smallest, which scalloped every edge into a torn paper fringe, is gone, and the middle one is shallower.
 export const DENTS = [
   { size: 20, band: 26, deep: 5 },
-  { size: 9, band: 12, deep: 2.4 },
-  { size: 4, band: 5, deep: 1.1 },
+  { size: 9, band: 10, deep: 1.4 },
 ];
 // Kept so the old probes still run: round 5 has no knapped facets inside a face.
 export const FACETS = { tilt: [0, 0], steep: [0, 0], jitter: 0, lift: 0, dish: [0, 0] };
@@ -57,15 +72,15 @@ export const SWELL = { deep: 1.1, over: 85 };
 export const BACKING = { at: -95, back: 0.32, from: 100, thick: 70, least: -205 };
 // The core's clearance: nothing nearer its middle than this, in units, give or take a ragged few, and nothing in
 // front of it inside its outline.
-export const CLEAR = { r: 116, rag: 12, disc: 101 };
+export const CLEAR = { r: 116, rag: 12, disc: 101, open: 0.3 };
 // The cave round the core: a bowl opening toward the visitor, as deep behind the core's middle as `deep`, curving
 // forward by its radius `curve`, out to a lip `lip` core radii from the core's middle in the picture (a ragged line,
 // widest where the picture's bowl is widest: `wide` at the given bearings, in degrees down from across to the
 // right), ragged at three sizes, with a shell `thick` units behind it and a slow ripple so its light falls softly. It is
 // shallow (a large curve): a deep one round the light at its focus is lit evenly, and read as a flat disc, and one
 // that falls back toward its lip read as a dark halo.
-export const BOWL = { deep: 122, curve: 400, lip: 1.26, wide: [[0, 0.1], [40, 0.02], [90, -0.14], [140, 0.0], [180, 0.12], [230, 0.04], [270, -0.12], [320, 0.06]], rag: [0.1, 0.06, 0.03], thick: 46, ripple: 6, rippleOver: 55,
-  terraces: [{ at: 0.86, fall: 7, wide: 7, rag: 11 }] };
+export const BOWL = { deep: 122, curve: 400, lip: 1.15, wide: [[0, 0.1], [40, 0.02], [90, -0.14], [140, 0.0], [180, 0.12], [230, 0.04], [270, -0.12], [320, 0.06]], rag: [0.1, 0.06, 0.03], thick: 46, ripple: 6, rippleOver: 55,
+  terraces: [{ at: 1.02, fall: 6, wide: 5, rag: 9 }, { at: 1.1, fall: 7, wide: 5, rag: 8 }] };
 // Right of `from` (units across), rock standing in front of the land's edge falls away forward by `fall` under it,
 // and so does every block tucked under the land (the roof's lid and teeth) wherever it is.
 export const BEVEL = { from: 200, fall: 2.5 };
@@ -74,6 +89,11 @@ export const BEVEL = { from: 200, fall: 2.5 };
 export const LANE = { z: 128, half: 12, widen: 0.85, top: -296 };
 
 let A = null;
+
+// The land's front edge, eased over a few tens of units: the plan's own is a line of straight runs, and a block that
+// falls away under it showed each corner as a dead straight seam (one ran down the roof at the middle, round 5).
+const lipSoft = (x) => { let a = 0; for (let k = -4; k <= 4; k++) a += L.lip(x + k * 9); return a / 9; };
+const frontZ = (x) => Math.min(lipSoft(x), Math.sqrt(Math.max(0, L.WORLD.half ** 2 - x * x)));
 
 const hash = (a, b) => { const h = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return h - Math.floor(h); };
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
@@ -131,6 +151,18 @@ function prepare(b) {
   // The laminations run along the block's own length (its outline's long axis), on its face.
   const la = [Math.cos(b.long ?? 0), Math.sin(b.long ?? 0)], lw = [J0(la, 0), J0(la, 1), J0(la, 2)];
   b.along = norm2([dot(lw, t1), dot(lw, t2)]);
+  const Bd = BEDDING[b.kind];
+  b.bedded = Boolean(Bd) && (b.bedded ?? r(35) < Bd.share);
+  if (Bd) {
+    const aw = norm([b.along[0] * t1[0] + b.along[1] * t2[0], b.along[0] * t1[1] + b.along[1] * t2[1], b.along[0] * t1[2] + b.along[1] * t2[2]]);
+    const across = norm(cross(b.n, aw)), phi = (Bd.tilt[0] + (Bd.tilt[1] - Bd.tilt[0]) * r(31)) * (r(32) < 0.5 ? -1 : 1);
+    b.bedN = Bd.level ? norm([0.12 * (r(33) - 0.5), 1, 0.3 * (r(34) - 0.5)]) : norm([0, 1, 2].map((i) => across[i] * Math.cos(phi) + b.n[i] * Math.sin(phi)));
+    b.bed0 = dot(b.bedN, P0);
+    b.layers = [-700];
+    while (b.layers[b.layers.length - 1] < 700) b.layers.push(b.layers[b.layers.length - 1] + Bd.thick[0] + (Bd.thick[1] - Bd.thick[0]) * hash(b.seed + b.layers.length, 41) ** 1.3);
+    b.bedDeep = b.layers.map((_, k) => (Bd.deep[0] + (Bd.deep[1] - Bd.deep[0]) * hash(b.seed + k, 43) ** 1.5) * (hash(b.seed + k, 44) < 0.5 ? -1 : 1) * 0.5);
+    b.bedSpec = Bd;
+  }
   const w = b.sides ?? SIDES[b.kind], e = norm([b.n[0] * (1 - w) + A.view[0] * w, b.n[1] * (1 - w) + A.view[1] * w, b.n[2] * (1 - w) + A.view[2] * w]);
   b.e = e; b.ke = 1 / Math.max(0.3, dot(b.n, e));
   const ba = r(8) * Math.PI * 2;
@@ -235,6 +267,27 @@ function laminae(b, c, u, v) {
   return LAMINAE.offset * (hash(c.lam + side * 3.7, 7) - 0.5) * 2 - cut;
 }
 
+// The bedding at a place in the world: how far the layer it lies in stands proud of the face (under 0: sunk), eased
+// across each parting over the riser's width, and pinching out along each parting's length.
+function bedding(b, x, y, z) {
+  const S = b.bedSpec, t = b.bedN[0] * x + b.bedN[1] * y + b.bedN[2] * z - b.bed0 + 3 * (L.noise(x / 41, y / 41, z / 41, (b.seed + 5) & 1023) - 0.5) * 2;
+  const Ls = b.layers;
+  let lo = 0, hi = Ls.length - 1;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (Ls[m] <= t) lo = m; else hi = m; }
+  const amp = (k) => {
+    const pinch = Math.min(1, Math.max(0, (L.noise(x / S.pinch + k * 1.7, y / S.pinch, z / S.pinch + k * 0.9, (b.seed + 13 + k) & 1023) - 0.38) * 3.2));
+    return b.bedDeep[k] * pinch;
+  };
+  const here = amp(lo);
+  // The nearer parting: below this layer (at Ls[lo]) or above it (at Ls[hi]).
+  const dLo = t - Ls[lo], dHi = Ls[hi] - t, other = amp(dLo < dHi ? lo - 1 : hi);
+  const d = Math.min(dLo, dHi), w = Math.max(1.2, Math.abs(here - other) / S.steep);
+  if (d >= w / 2) return here;
+  const k = 0.5 + 0.5 * (d / (w / 2));
+  const e = k * k * (3 - 2 * k);
+  return other + (here - other) * e;
+}
+
 // The knapped scars near a face's edge, `e` units in from it: shell shaped hollows on jittered grids of three
 // sizes, deepest at the edge and gone past each size's band. The deepest scar at a place is what is taken away.
 function dents(b, u, v, e) {
@@ -280,17 +333,17 @@ export function block(b, x, y, z) {
   const rel = [q[0] - b.P0[0], q[1] - b.P0[1], q[2] - b.P0[2]], fu = dot(rel, b.t1), fv = dot(rel, b.t2);
   const fan = fanAt(b, qx, qy);
   const scar = dents(b, fu, fv, Math.max(0, Math.min(fan.d, -outline))) * (b.fan.scars ?? 1);
-  const T = b.fan.steep;
+  const T = b.fan.steep, bed = b.bedded ? bedding(b, x, y, z) : 0;
   let face = Infinity;
   for (const [[k, j], e] of [[fan.own, -fan.d], [fan.other, fan.d]]) {
     const c = cellAt(b, k, j);
-    const H = c.o + c.g[0] * (fu - c.Q[0]) + c.g[1] * (fv - c.Q[1]) - c.dish * ((fu - c.Q[0]) ** 2 + (fv - c.Q[1]) ** 2) + (b.laminae ? laminae(b, c, fu, fv) : 0);
+    const H = c.o + c.g[0] * (fu - c.Q[0]) + c.g[1] * (fv - c.Q[1]) - c.dish * ((fu - c.Q[0]) ** 2 + (fv - c.Q[1]) ** 2) + (b.bedded ? bed : 0);
     face = Math.min(face, Math.max(s - H + sw + scar + T * Math.max(0, e), e - 24));
   }
   let f = Math.max(face, -s - b.thick, side);
   // A block tucked under the land falls away forward under its edge, so no flat top of it shows in front of the land.
   if (b.tuck) {
-    const front = z - Math.min(L.lip(x), Math.sqrt(Math.max(0, L.WORLD.half ** 2 - x * x)));
+    const front = z - frontZ(x);
     if (front > -10) f = Math.max(f, y - (L.dome(x, z) - A.under) + (front + 10) * BEVEL.fall);
   }
   return f;
@@ -364,7 +417,7 @@ export function bare(x, y, z) {
   // At the right the land's edge stands back from the planet's front: what of the rock is in front of it falls away
   // forward under it, so no flat shelf of rock shows in front of the sand.
   if (x > BEVEL.from) {
-    const front = z - Math.min(L.lip(x), Math.sqrt(Math.max(0, L.WORLD.half ** 2 - x * x)));
+    const front = z - frontZ(x);
     if (front > 0) d = Math.max(d, (y - (top - A.under) + front * BEVEL.fall) * Math.min(1, (x - BEVEL.from) / 40) - 0.01);
   }
   // Clear of the core, and nothing in front of it.
@@ -374,13 +427,37 @@ export function bare(x, y, z) {
     d = Math.max(d, CLEAR.r + rag - cr);
   }
   const rho = Math.hypot(px - A.corePx[0], py - A.corePx[1]) * UNIT;
-  if (cz > 0 && rho < CLEAR.disc + 30) d = Math.max(d, Math.min(CLEAR.disc - rho, cz));
+  // A cone opening toward the visitor, not a cylinder: a wall along the line of sight beside the ball's outline came out
+  // as a column of square teeth.
+  if (cz > -20 && rho < CLEAR.disc + 30 + CLEAR.open * Math.max(0, cz)) d = Math.max(d, Math.min(CLEAR.disc + CLEAR.open * Math.max(0, cz) - rho, cz));
   // Out of the stream's lane: a bay round its line, widening toward the visitor, under the core's foot.
   if (y < LANE.top + 40) {
     const lane = Math.max(Math.abs(x) - LANE.half - LANE.widen * Math.max(0, z - LANE.z), LANE.z - z, y - LANE.top);
     d = Math.max(d, -lane);
   }
   return d;
+}
+
+// Which block a place on the surface is of, as the stone is told it: a block's number plus one, the cave's bowl
+// (OWN.bowl), a stone of rubble (OWN.stone), the backing (OWN.backing). A face cut by something that is not a block
+// (the land, the planet, the core's clearance, the stream's lane) is of the block it cuts.
+export const OWN = { bowl: 40, stone: 41, backing: 42, count: 48 };
+export function owner(x, y, z) {
+  const [px, py] = L.pictured(x, y, z);
+  let best = OWN.backing, bv = Math.abs(backing(x, y, z, px, py)), inside = 0, iv = Infinity;
+  A.blocks.forEach((b, k) => { const v = block(b, x, y, z); if (Math.abs(v) < bv) { bv = Math.abs(v); best = k + 1; } if (v < iv) { iv = v; inside = k + 1; } });
+  const bw = Math.abs(bowl(x, y, z, px, py).shell);
+  if (bw < bv) { bv = bw; best = OWN.bowl; }
+  if (A.stones) for (const st of A.stones) { const v = Math.abs(stone(st, x, y, z)); if (v < bv) { bv = v; best = OWN.stone; } }
+  if (bv > 2 && iv < 0) best = inside;
+  return best;
+}
+// Each number's bedding, for the stone: the plane its layers lie in, and how strongly bedded it is (0: clean).
+export function beds(args) {
+  setup(args);
+  const out = Array.from({ length: OWN.count }, () => [0, 1, 0, 0]);
+  A.blocks.forEach((b, k) => { if (b.bedN) out[k + 1] = [...b.bedN.map((v) => +v.toFixed(4)), b.bedded ? +(0.55 + 0.45 * hash(b.seed, 51)).toFixed(3) : 0.12]; });
+  return out;
 }
 
 export function field(x, y, z) {

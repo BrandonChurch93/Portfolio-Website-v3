@@ -27,15 +27,16 @@ import { plan } from './blocks.mjs';
 import { rubble } from './rubble.mjs';
 import { buildSkin } from './build.mjs';
 import { CORE_PX, VIEW, J } from './relief.mjs';
+import * as H6 from './hollow.mjs';
 
 const draft = process.argv.includes('--draft');
 const t0 = performance.now(), said = (s) => console.log(`${((performance.now() - t0) / 1000).toFixed(1)} s · ${s}`);
 // The grid the field is read on, in units; the most the reduced mesh may stray, in units; the most triangles.
-const CELL = draft ? 3 : 1.5, KEEP = 0.62, BUDGET = 220000, UNSEEN = 8;
+const CELL = draft ? 3 : 1.5, KEEP = 0.62, BUDGET = 208000, UNSEEN = 8;
 // How much the distance to a crease counts against the shape when the mesh is reduced.
 const EDGE_WEIGHT = 0.04;
 // Faces meeting at more than this, in degrees, meet at a crease.
-const CREASE = 38;
+const CREASE = 38, FOLD = 30;
 // How far from a crease the stored distance reaches, in units: past it the stone's face is clean.
 export const EDGE = 16;
 // The space the hollow is made in.
@@ -69,30 +70,57 @@ if (process.argv.includes('--where')) {
   console.log(Object.entries(count).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(' · '));
 }
 
-// How far each vertex is along the surface from the nearest crease: a crease is where the mesh, split at its creases,
-// has more than one vertex at a place.
+// How far each vertex is along the surface from the nearest crease, and whether that crease is concave (where two
+// plates meet, which the stone shades) or convex (an edge, which it chips): a crease is where the mesh, split at its
+// creases, has more than one vertex at a place. A crease is concave where a face across it rises above the plane of
+// the face on this side.
 const nv = raw.positions.length / 3, split = creased(raw, CREASE), copies = new Uint8Array(nv);
 for (const s of split.source) copies[s] = Math.min(255, copies[s] + 1);
-const dist = new Float64Array(nv).fill(Infinity), { start, tris } = incident(raw), P = raw.positions, I = raw.indices;
-const heap = [];
-const push = (v, d) => { heap.push([d, v]); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
-const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { const a = 2 * i + 1, b = a + 1; let m = i; if (a < heap.length && heap[a][0] < heap[m][0]) m = a; if (b < heap.length && heap[b][0] < heap[m][0]) m = b; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
-for (let v = 0; v < nv; v++) if (copies[v] > 1) { dist[v] = 0; push(v, 0); }
-while (heap.length) {
-  const [d, v] = pop();
-  if (d > dist[v] || d > EDGE) continue;
-  for (let k = start[v]; k < start[v + 1]; k++) {
-    const t = tris[k];
-    for (let c = 0; c < 3; c++) {
-      const w = I[t * 3 + c];
-      if (w === v) continue;
-      const nd = d + Math.hypot(P[w * 3] - P[v * 3], P[w * 3 + 1] - P[v * 3 + 1], P[w * 3 + 2] - P[v * 3 + 2]);
-      if (nd < dist[w]) { dist[w] = nd; push(w, nd); }
+const { start, tris } = incident(raw), P = raw.positions, I = raw.indices;
+const nt = I.length / 3, fnr = new Float64Array(nt * 3), cen = new Float64Array(nt * 3);
+for (let t = 0; t < nt; t++) {
+  const a = I[t * 3] * 3, b = I[t * 3 + 1] * 3, c = I[t * 3 + 2] * 3;
+  const u = [P[b] - P[a], P[b + 1] - P[a + 1], P[b + 2] - P[a + 2]], w = [P[c] - P[a], P[c + 1] - P[a + 1], P[c + 2] - P[a + 2]];
+  const n = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]], l = Math.hypot(...n) || 1;
+  for (let k = 0; k < 3; k++) { fnr[t * 3 + k] = n[k] / l; cen[t * 3 + k] = (P[a + k] + P[b + k] + P[c + k]) / 3; }
+}
+// A concave join is often gentler than a crease: it is looked for down to FOLD degrees.
+const COS = Math.cos((FOLD * Math.PI) / 180), cave = new Int8Array(nv);
+for (let v = 0; v < nv; v++) {
+  let score = 0;
+  for (let i = start[v]; i < start[v + 1]; i++) for (let j = start[v]; j < start[v + 1]; j++) {
+    const ti = tris[i], tj = tris[j];
+    if (fnr[ti * 3] * fnr[tj * 3] + fnr[ti * 3 + 1] * fnr[tj * 3 + 1] + fnr[ti * 3 + 2] * fnr[tj * 3 + 2] > COS) continue;
+    const up = (cen[tj * 3] - P[v * 3]) * fnr[ti * 3] + (cen[tj * 3 + 1] - P[v * 3 + 1]) * fnr[ti * 3 + 1] + (cen[tj * 3 + 2] - P[v * 3 + 2]) * fnr[ti * 3 + 2];
+    score += up > 0 ? -1 : 1;
+  }
+  if (score < 0) cave[v] = -1;
+  else if (copies[v] > 1) cave[v] = 1;
+}
+const spread = (want) => {
+  const dist = new Float64Array(nv).fill(Infinity), heap = [];
+  const push = (v, d) => { heap.push([d, v]); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
+  const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { const a = 2 * i + 1, b = a + 1; let m = i; if (a < heap.length && heap[a][0] < heap[m][0]) m = a; if (b < heap.length && heap[b][0] < heap[m][0]) m = b; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
+  for (let v = 0; v < nv; v++) if (cave[v] === want) { dist[v] = 0; push(v, 0); }
+  while (heap.length) {
+    const [d, v] = pop();
+    if (d > dist[v] || d > EDGE) continue;
+    for (let k = start[v]; k < start[v + 1]; k++) {
+      const t = tris[k];
+      for (let c = 0; c < 3; c++) {
+        const w = I[t * 3 + c];
+        if (w === v) continue;
+        const nd = d + Math.hypot(P[w * 3] - P[v * 3], P[w * 3 + 1] - P[v * 3 + 1], P[w * 3 + 2] - P[v * 3 + 2]);
+        if (nd < dist[w]) { dist[w] = nd; push(w, nd); }
+      }
     }
   }
-}
-const edge = new Float32Array(nv);
-for (let v = 0; v < nv; v++) edge[v] = Math.min(1, dist[v] / EDGE);
+  return dist;
+};
+const toVex = spread(1), toCave = spread(-1);
+// Two numbers each: how far to the nearest crease, as a share of EDGE, and whether it is concave (0) or convex (1).
+const edge = new Float32Array(nv * 2);
+for (let v = 0; v < nv; v++) { const concave = toCave[v] <= toVex[v]; edge[v * 2] = Math.min(1, Math.min(toCave[v], toVex[v]) / EDGE); edge[v * 2 + 1] = concave ? 0 : 1; }
 said('distances to the creases');
 
 // What the visitor can ever see: the view never moves, so a vertex is seen when the line from it toward the eye
@@ -123,13 +151,20 @@ for (let t = 0; t < I.length; t += 3) if (seen[I[t]] || seen[I[t + 1]] || seen[I
 let shown = 0;
 for (let v = 0; v < nv; v++) shown += seen[v];
 said(`seen: ${((100 * shown) / nv).toFixed(0)}% of the vertices`);
-const hidden = await simplify({ positions: raw.positions, indices: raw.indices }, { error: UNSEEN, attributes: edge, weights: [EDGE * 0.05], lock: hold });
+const hidden = await simplify({ positions: raw.positions, indices: raw.indices }, { error: UNSEEN, attributes: edge, weights: [EDGE * 0.05, 0], lock: hold });
 said(`what is never seen reduced: ${(hidden.indices.length / 3).toLocaleString('en-US')} triangles`);
-const small = await simplify({ positions: hidden.positions, indices: hidden.indices }, { error: KEEP, target: BUDGET, attributes: hidden.attributes, weights: [EDGE * EDGE_WEIGHT] });
+const small = await simplify({ positions: hidden.positions, indices: hidden.indices }, { error: KEEP, target: BUDGET, attributes: hidden.attributes, weights: [EDGE * EDGE_WEIGHT, 0] });
 said(`reduced: ${(small.indices.length / 3).toLocaleString('en-US')} triangles, strays ${small.stray}`);
 const brk = creased({ positions: small.positions, indices: small.indices }, CREASE);
-const edgeOf = new Float32Array(brk.positions.length / 3);
-for (let i = 0; i < edgeOf.length; i++) edgeOf[i] = small.attributes[brk.source[i]];
+// The signed distance to a crease, under 0 toward a concave one, -1 to 1, and which block each vertex is of.
+const edgeOf = new Float32Array(brk.positions.length / 3), slabOf = new Uint8Array(edgeOf.length);
+for (let i = 0; i < edgeOf.length; i++) { const s = brk.source[i], d = Math.max(0.012, small.attributes[s * 2]); edgeOf[i] = small.attributes[s * 2 + 1] > 0.5 ? d : -d; }
+{
+  const H = await import('./hollow.mjs');
+  H.setup(args);
+  for (let i = 0; i < slabOf.length; i++) slabOf[i] = H.owner(brk.positions[i * 3], brk.positions[i * 3 + 1], brk.positions[i * 3 + 2]);
+}
+said('the blocks each vertex is of');
 
 // Nothing comes nearer the core than its clearance.
 let near = Infinity;
@@ -162,9 +197,9 @@ said('lit');
 
 const n = brk.positions.length / 3, lightOf = new Float32Array(n * 4), bounceOf = new Float32Array(n * 4), l = lit.break;
 for (let i = 0; i < n; i++) {
-  lightOf.set([l.core[i], l.moon[i], l.open[i], edgeOf[i]], i * 4);
-  bounceOf.set([storeBounce(l.bounce[i * 3]), storeBounce(l.bounce[i * 3 + 1]), storeBounce(l.bounce[i * 3 + 2]), 0], i * 4);
+  lightOf.set([l.core[i], l.moon[i], l.open[i], slabOf[i] / 255], i * 4);
+  bounceOf.set([storeBounce(l.bounce[i * 3]), storeBounce(l.bounce[i * 3 + 1]), storeBounce(l.bounce[i * 3 + 2]), 0.5 + 0.5 * edgeOf[i]], i * 4);
 }
-pack('public/world/rock-r.bin', [{ name: 'break', positions: brk.positions, indices: brk.indices, attributes: { normal: { data: brk.normals, size: 3, as: 'i16' }, light: { data: lightOf, size: 4, as: 'u8' }, bounce: { data: bounceOf, size: 4, as: 'u8' } } }], { draft, round: 5, blocks: args.blocks.length, stones: args.stones.length, edge: 'light.w', edgeUnits: EDGE });
+pack('public/world/rock-r.bin', [{ name: 'break', positions: brk.positions, indices: brk.indices, attributes: { normal: { data: brk.normals, size: 3, as: 'i16' }, light: { data: lightOf, size: 4, as: 'u8' }, bounce: { data: bounceOf, size: 4, as: 'u8' } } }], { draft, round: 6, blocks: args.blocks.length, stones: args.stones.length, edge: 'bounce.w', edgeSigned: true, edgeUnits: EDGE, spare: 'slab', beds: H6.beds(args) });
 fs.writeFileSync(new URL('./measured/blocks.json', import.meta.url), JSON.stringify(args.blocks.map((b) => ({ name: b.name, kind: b.kind, at: b.at.map((v) => +v.toFixed(1)), z: +b.z.toFixed(1), n: b.n.map((v) => +v.toFixed(4)), thick: b.thick }))));
 said('done');
