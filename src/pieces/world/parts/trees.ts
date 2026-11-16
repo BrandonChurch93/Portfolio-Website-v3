@@ -5,7 +5,7 @@ import { load } from '../files';
 import type { PartFactory } from '../part';
 import { TOWERS, TREES } from '../placed';
 import { leaves, release } from './trees/atlas';
-import { CROWN, FAR, FILES, MODELS, SHADE } from './trees/design';
+import { CROWN, DRAWN, FAR, FILES, MODELS, SHADE } from './trees/design';
 import { AIR, JITTER, treeDepth, treeMaterial, treeUniforms } from './trees/material';
 
 // The trees: the belt along the city's front and the few among the buildings, each where TREES has it (./placed.ts)
@@ -16,23 +16,23 @@ import { AIR, JITTER, treeDepth, treeMaterial, treeUniforms } from './trees/mate
 // dune stands on the dune, and one whose crown a crest in front of it mostly hides is left out, since a tuft over a
 // crest reads as cut off.
 
-// The autumn: each shade a mix of two of the palette's colors, how bright a leaf of it is, and how many of the
-// trees wear it. Amber, tan and russet most of all, bronze brown and umber, a few deep red browns and a few paler,
-// yellower crowns, so the belt reads as a wood of different trees. The warm greys take the orange out of the browns.
+// The autumn, from the deepest brown to a pale cream, as picture 9's belt has it: one crown pale, its neighbour deep
+// brown, the next amber. Each shade a mix of two of the palette's colors, how bright a leaf of it is, and how many
+// of the trees wear it, in order: a tree's own number (TREES' tone) picks its place along the list, so about one
+// crown in five is deep and one in five pale, and neighbours differ as their numbers do.
 const AUTUMN: readonly { mix: readonly [PaletteName, PaletteName, number]; power: number; share: number }[] = [
-  { mix: ['copper', 'text-3', 0.3], power: 0.82, share: 0.18 },
-  { mix: ['copper-light', 'text-3', 0.4], power: 0.78, share: 0.14 },
-  { mix: ['bronze', 'ember', 0.3], power: 1.0, share: 0.17 },
-  { mix: ['bronze', 'text-3', 0.25], power: 1.0, share: 0.15 },
-  { mix: ['bronze-deep', 'text-3', 0.25], power: 1.3, share: 0.13 },
-  { mix: ['ember', 'bronze-deep', 0.4], power: 1.5, share: 0.12 },
-  { mix: ['hot', 'copper', 0.35], power: 0.6, share: 0.11 },
+  { mix: ['bronze-deep', 'bronze', 0.3], power: 1.2, share: 0.2 },
+  { mix: ['bronze', 'bronze-deep', 0.45], power: 1.25, share: 0.15 },
+  { mix: ['bronze', 'ember', 0.2], power: 1.05, share: 0.15 },
+  { mix: ['copper', 'bronze', 0.35], power: 0.95, share: 0.15 },
+  { mix: ['copper', 'copper-light', 0.4], power: 0.9, share: 0.15 },
+  { mix: ['copper-light', 'pale', 0.15], power: 0.95, share: 0.2 },
 ];
 // How much one tree differs from the next of its shade in brightness, in size and in height against its width, and
 // how far it leans (the shear of its height to one side).
-const DIFFER = { light: 0.2, size: 0.1, tall: [0.8, 1.36], lean: 0.09 } as const;
+const DIFFER = { light: 0.12, size: 0.08, tall: [0.9, 1.1], lean: 0.06 } as const;
 // The tall model is already taller than it is wide: it is stretched no further than this.
-const SLENDER = 1.1;
+const SLENDER = 1.0;
 // Which of the full models a tree in front is: a tree larger than those round it is tall or round and stands over
 // them, a smaller one spreads or is two grown into one, and the rest change kind by place along the belt (a noise
 // across the top, PLACE units to a patch), so the wood is not one crown repeated. How far round a tree its
@@ -40,7 +40,7 @@ const SLENDER = 1.1;
 const KIND = { big: [MODELS.indexOf('tall'), MODELS.indexOf('round')], small: [MODELS.indexOf('broad'), MODELS.indexOf('twin')], all: [MODELS.indexOf('round'), MODELS.indexOf('tall'), MODELS.indexOf('twin'), MODELS.indexOf('broad')], round: 3, over: 1.1, under: 0.9 } as const;
 const PLACE = 90;
 // How much taller a crown stands, against its width, for each share it is larger than its neighbours.
-const STANDS = 0.9;
+const STANDS = 0.5;
 // A tree is hidden, and takes the cheap model, when one at least as big stands this far in front of it (in its own
 // sizes) and this close to its line across.
 const HIDDEN = { front: 0.35, across: 0.55, big: 0.85 };
@@ -100,13 +100,17 @@ const shadeOf = (k: number): THREE.Color => {
   for (const x of AUTUMN) { a += x.share; if (k <= a) { s = x; break; } }
   return new THREE.Color(hex(s.mix[0])).lerp(new THREE.Color(hex(s.mix[1])), s.mix[2]).multiplyScalar(s.power);
 };
+// ?trees=off builds no trees, so a page's cost can be measured with and without them.
+const OFF = 'off';
 
 export const build: PartFactory = async ({ query }) => {
+  if (query.get('trees') === OFF) return { group: new THREE.Group() };
   const [file, map] = await Promise.all([load(FILES.mesh), leaves()]);
   const group = new THREE.Group(), made: { dispose(): void }[] = [];
   const seats = new Map(((file.meta.seats ?? []) as number[][]).map(([x, z, y, sand, seen]) => [`${x},${z}`, { y, sand, seen }]));
   const seat = (x: number, z: number) => seats.get(`${x},${z}`) ?? { y: ground(x, z), sand: 0, seen: 1 };
-  const kept = TREES.filter(([x, z, size]) => within(x, z) >= size && seat(x, z).seen >= SEEN);
+  // Every size below is the model's: half the drawn width (DRAWN).
+  const kept = TREES.filter(([x, z, size]) => within(x, z) >= size * DRAWN && seat(x, z).seen >= SEEN).map(([x, z, size, tone, turn]) => [x, z, size * DRAWN, tone, turn] as const);
   const rnd = seeded(4049);
   // The way a tree's shade lies on the ground: away from the moon.
   const away = new THREE.Vector2(-MOONWARD[0], -MOONWARD[2]).normalize();
@@ -133,7 +137,7 @@ export const build: PartFactory = async ({ query }) => {
   }
 
   const byModel: { m: THREE.Matrix4; tone: THREE.Color; tree: [number, number, number, number]; reach: number[] }[][] = MODELS.map(() => []);
-  kept.forEach(([x, z, size, , turn], i) => {
+  kept.forEach(([x, z, size, own, turn], i) => {
     let behind = 0, cover = 0;
     for (const [bx, bz, w, , tall] of TOWERS) if (bz < z - 4 && z - bz < BEHIND.deep && Math.abs(bx - x) < w / 2 + BEHIND.side) behind += tall * (1 - (z - bz) / BEHIND.deep);
     for (const [ox, oz, os] of kept) {
@@ -142,7 +146,7 @@ export const build: PartFactory = async ({ query }) => {
       cover = Math.max(cover, (SHADED.top * os - SHADED.drop * along) / (SHADED.top * size) * (1 - off / (SHADED.side * (size + os))) ** 0.5);
     }
     cover = Math.min(cover, SHADED.most);
-    const shade = shadeOf(rnd()).multiplyScalar(1 + DIFFER.light * (2 * rnd() - 1));
+    const shade = shadeOf(own).multiplyScalar(1 + DIFFER.light * (2 * rnd() - 1));
     const s = size * (1 + DIFFER.size * (2 * rnd() - 1)), stand = Math.min(DIFFER.tall[1], Math.max(DIFFER.tall[0], 1 + STANDS * (rel[i] - 1) + 0.24 * (rnd() - 0.5)));
     const tall = modelOf[i] === MODELS.indexOf('tall') ? Math.min(stand, SLENDER) : stand;
     const { y: g, sand } = seat(x, z);
@@ -206,13 +210,13 @@ export const build: PartFactory = async ({ query }) => {
   uniforms.uJitter.value = JITTER / cube;
   uniforms.uCube.value = cube;
 
-  const front = kept.reduce((a, b) => (b[1] - Math.abs(b[0]) * 0.2 > a[1] - Math.abs(a[0]) * 0.2 ? b : a), kept[0] ?? [0, 0, 8, 0, 0]);
+  const front = kept.reduce((a, b) => (b[1] - Math.abs(b[0]) * 0.2 > a[1] - Math.abs(a[0]) * 0.2 ? b : a), kept[0] ?? ([0, 0, 4, 0, 0] as const));
   const [x0, z0, s0] = front;
   return {
     group,
-    // Seen alone, so many crowns round a tree at the front of the belt (?trees=16 is about as close as three times
+    // Seen alone, so many crowns round a tree at the front of the belt (?trees=32 is about as close as three times
     // the page's size).
-    alone: { at: [x0, seat(x0, z0).y + s0 * 1.2, z0], r: s0 * (Number(query.get('trees')) || 6) },
+    alone: { at: [x0, seat(x0, z0).y + s0, z0], r: s0 * (Number(query.get('trees')) || 6) },
     update(s) {
       uniforms.uTime.value = s.still ? 0 : s.t;
       return true;

@@ -1,11 +1,11 @@
 // The trees' design, which the make script (scripts/world/parts/trees/) and the part read alike. It imports nothing,
 // so node can read it as it is.
 //
-// One kind of tree, made as several models in a crown's own units: the crown is about 1 to each side of the trunk,
-// so a tree is drawn at TREES' size (about half its crown's width). Each crown is three or four great lumps of leaf
-// and a few small ones, each lump a mass of small leaves on a card the shader keeps facing the viewer, with cards
-// of leaves crossed through it and small sprays standing out of it. Every leaf is drawn by the script into one
-// atlas. The last model is the cheap one, for trees most of which another tree in front hides.
+// One kind of tree, made as several models in a crown's own units: the crown is about 1 to each side of the trunk.
+// Each crown is a ball first: great lumps of leaf seated on a ball, so its outline is round with small notches, and
+// a few small ones, each lump a mass of small leaves on a card the shader keeps facing the viewer, with cards of
+// leaves crossed through it. Every leaf is drawn by the script into one atlas. The last model is the cheap one, for
+// trees most of which another tree in front hides.
 
 export const FILES = { mesh: 'trees.bin', leaves: 'trees-leaves.png' } as const;
 export const MODELS = ['round', 'tall', 'twin', 'broad', 'far'] as const;
@@ -16,7 +16,10 @@ export const FAR = MODELS.indexOf('far');
 // the light; alpha, how much of the pixel is leaf. The lumps fill the first row whole, so the shader can hand a
 // lump of one tree another lump's outline by moving along the row.
 export const ATLAS = { tile: 384, cols: 4, rows: 2, levels: 8 } as const;
-export const TILES = { lumps: [0, 1, 2, 3], sprays: [4, 5], bark: 6, blob: 7 } as const;
+export const TILES = { lumps: [0, 1, 2, 3], inner: [4, 5], bark: 6, blob: 7 } as const;
+// A tree of TREES' size s is drawn s wide (laid over picture 9, the picture's crowns are as wide as the plan's sizes):
+// the models are 2 wide, so they are drawn at this share of s.
+export const DRAWN = 0.5;
 // Where each level of the atlas's chain is in its file: the first at the left, every smaller one stacked in a
 // column at its right. The file is one and a half times as wide as the atlas.
 export function level(k: number): { x: number; y: number; w: number; h: number } {
@@ -33,14 +36,15 @@ export function tileAt(tile: number): { u: number; v: number; du: number; dv: nu
 }
 
 // A leaf, in a crown's own units: how long it is. Every tile is painted so its leaves come out this size on the
-// card it is drawn on (a third of the first rounds' leaf), so a crown is a mass of small leaves, never shingles.
-export const LEAF = 0.05;
-// How wide a lump's card is against its lump, and how long a spray's card is against the lump it stands from.
-export const CARD = { lump: 1.16, spray: 0.74 } as const;
+// card it is drawn on: about a twentieth of the crown's width, so at three times the page's size a leaf is two or
+// three pixels and a crown is sprigs of leaves, never a stipple and never shingles.
+export const LEAF = 0.1;
+// How wide a lump's card is against its lump, and an inner card's against the lump it lies in.
+export const CARD = { lump: 1.16, inner: 0.8 } as const;
 
 // The crown, in its own units: how far over the ground its lowest leaves are, so a short trunk shows under it as
-// picture 9's do.
-export const CROWN = { clear: 0.17 } as const;
+// picture 9's do (a little of it: the picture's crowns sit nearly on the ground).
+export const CROWN = { clear: 0.1 } as const;
 
 // The shade a tree lays on the ground: a soft card from under the crown out along the ground away from the moon,
 // so the belt sits dark at its foot, and darkest round the trunk's foot. How far it starts behind the trunk and how

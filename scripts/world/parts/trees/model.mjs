@@ -1,52 +1,55 @@
 // One tree, made in a crown's own units (src/pieces/world/parts/trees/design.ts): a trunk, or two, whose foot spreads
-// in lobes into the ground, limbs up into the crown, and a crown of three to five great lumps of leaf and a few small
-// ones (or two crowns grown into one), and the shade it lays on the ground. Each lump is a card of
-// small leaves the shader keeps facing the viewer, cards of leaves crossed through it (which also cast its shadow),
-// and small sprays standing out of it. With every vertex its stored light: how open it is about its normal and from
-// above (darker inside the crown and beneath it), what reaches it from the ground, and the numbers the shader moves
-// and lights it by: the ball of its lump and the ball of its crown (the shader lights a leaf as a place on those two
-// balls, so a lump reads round whichever way its cards lie).
+// in lobes into the ground, limbs up into the crown, and a crown that is a ball first: great lumps of leaf seated on
+// a ball, each standing out of it by a little of its own radius, so the outline is round with small notches, a few
+// small lumps between them, and one at its heart that fills it (or two crowns grown into one). And the shade it lays
+// on the ground. Each lump is a card of small leaves the shader keeps facing the viewer, cards of leaves crossed
+// through it (which also cast its shadow), and inner cards that lie inside it. With every vertex its stored light:
+// how open it is about its normal and from above (darker inside the crown and beneath it), what reaches it from the
+// ground, and the numbers the shader moves and lights it by: the ball of its lump and the ball of its crown (the
+// shader lights a leaf as a place on those two balls, so the crown reads as one ball whichever way its cards lie).
 //
 //   import { tree } from './model.mjs'; const mesh = tree(kind, { rays })
 //   mesh = { positions, normals, uvs, sway, light, bounce, clump, crown, view, indices, info }
 import { CARD, CROWN, SHADE, TILES, tileAt } from '../../../../src/pieces/world/parts/trees/design.ts';
 import { seeded } from '../../../../src/pieces/world/layout.ts';
 
-// How many cards a lump is made of: crossed through its middle, and sprays standing out of it (each folded, so
-// two triangles more), for a great lump and a small one.
-const FULL = { crossed: 2, sprays: [3, 1] }, LEAN = { crossed: 1, sprays: [1, 0] };
+// How many cards a lump is made of: crossed through its middle, and inner cards lying inside it toward the crown's
+// outside (each folded, so two triangles more), for a great lump and a small one.
+const FULL = { crossed: 2, inner: [2, 1] }, LEAN = { crossed: 1, inner: [0, 0] };
 // Each model: its crowns (where each stands against the first's middle, its half widths across and up, how many
 // great lumps and small ones), its cards, and its trunk (how thick at the foot, how many sides, how many limbs).
 const KINDS = {
-  round: { crowns: [{ at: [0, 0, 0], rx: 1, ry: 0.92, great: 5, small: 3 }], cards: FULL, trunk: { foot: 0.1, sides: 7, limbs: 3 } },
-  tall: { crowns: [{ at: [0, 0, 0], rx: 0.8, ry: 1.16, great: 5, small: 3 }], cards: FULL, trunk: { foot: 0.09, sides: 7, limbs: 3 } },
+  round: { crowns: [{ at: [0, 0, 0], rx: 1, ry: 0.72, great: 8, small: 4 }], cards: FULL, trunk: { foot: 0.1, sides: 7, limbs: 3 } },
+  tall: { crowns: [{ at: [0, 0, 0], rx: 0.86, ry: 0.76, great: 8, small: 4 }], cards: FULL, trunk: { foot: 0.09, sides: 7, limbs: 3 } },
   twin: {
     crowns: [
-      { at: [-0.44, -0.06, 0.08], rx: 0.66, ry: 0.78, great: 3, small: 2 },
-      { at: [0.46, 0.1, -0.08], rx: 0.6, ry: 0.86, great: 4, small: 1 },
+      { at: [-0.36, -0.08, 0.06], rx: 0.68, ry: 0.56, great: 6, small: 2 },
+      { at: [0.36, 0.06, -0.06], rx: 0.66, ry: 0.6, great: 6, small: 2 },
     ],
     cards: FULL,
     trunk: { foot: 0.075, sides: 6, limbs: 2 },
   },
-  broad: { crowns: [{ at: [0, -0.06, 0], rx: 1.14, ry: 0.74, great: 6, small: 3 }], cards: FULL, trunk: { foot: 0.11, sides: 7, limbs: 3 } },
-  far: { crowns: [{ at: [0, 0, 0], rx: 1, ry: 0.9, great: 4, small: 1 }], cards: LEAN, clear: 0.06, trunk: { foot: 0.1, sides: 5, limbs: 0 } },
+  broad: { crowns: [{ at: [0, -0.04, 0], rx: 1.08, ry: 0.8, great: 9, small: 4 }], cards: FULL, trunk: { foot: 0.11, sides: 7, limbs: 3 } },
+  far: { crowns: [{ at: [0, 0, 0], rx: 1, ry: 0.72, great: 5, small: 1 }], cards: LEAN, clear: 0.06, trunk: { foot: 0.1, sides: 5, limbs: 0 } },
 };
-// The lumps of a crown, against its half widths. They differ two to three times in size within one crown, so it is
-// a few great masses and some lesser ones and never a ring of equal balls: how big the top one is, a great one and a
-// small one, how far out from the crown's middle a great one and a small one stand (a small one stands out past
-// the crown's outline and breaks it), and how high the top one stands. A great lump has a second, smaller one grown
-// into it this often (merge: how often, how big against it, how far from its middle against its radius), so some
-// masses are two lumps run together. The crown's lumps are all moved to one side by up to `lop` of its width.
-const LUMP = { crest: [0.5, 0.6], great: [0.24, 0.58], small: [0.15, 0.25], out: [0.5, 0.72], rim: [0.72, 0.9], top: 0.5, heart: 0.44, merge: [0.45, 0.5, 0.75], lop: 0.12 };
+// The lumps of a crown, against its half widths. The crown is a ball: every great lump is seated on it, its middle
+// `sink` of its radius inside the ball's surface, so its leaves stand out of the ball by a little and the outline
+// is round with small notches, never sprigs standing clear of it. They differ in size within one crown (great,
+// small), so it is a few great masses and lesser ones between them. Where they sit: spread over the ball by a
+// golden spiral, turned at random, kept off its far side (`back`, the least a lump's direction may face the
+// viewer, as a share of straight at it), with a little wander (`wander`, against its radius). The heart lump fills
+// the middle so nothing is seen through the ball. The crown's lumps are all moved to one side by up to `lop` of its
+// width.
+const LUMP = { great: [0.34, 0.5], small: [0.2, 0.28], sink: 0.85, smallSink: 0.95, back: -0.35, wander: 0.18, heart: 0.62, lop: 0.05 };
 // The trunk: how much wider it flares at its foot and over what height, how much thinner it is at the fork, how far
 // it is sunk, the fork's height under its crown's middle against the crown's half height, and the limbs it forks
 // into: how thick each is where it leaves the fork against the trunk there, and at its end against the trunk's foot,
 // how far along the way to its lump it reaches, and how far out from the trunk's line it bows. The fork is low, just
 // over the crown's lowest leaves, so the limbs are what is seen in the crown's gaps.
-const TRUNK = { flare: 0.22, rise: 0.04, taper: 0.45, sunk: 0.2, at: 0.62, limb: { from: 0.72, end: 0.16, reach: 0.85, bow: 0.18 } };
+const TRUNK = { flare: 0.4, rise: 0.05, taper: 0.45, sunk: 0.2, at: 0.62, limb: { from: 0.72, end: 0.16, reach: 0.85, bow: 0.18 } };
 // The roots: the foot of the trunk spreads in lobes that run out and down into the ground (no tubes of their own):
 // how many lobes, how far each stands out at the ground against the trunk's foot, and how fast it goes up the trunk.
-const ROOTS = { lobes: [3, 5], out: 0.6, rise: 0.03 };
+const ROOTS = { lobes: [3, 5], out: 0.85, rise: 0.035 };
 // How the trunk leans and bows: how far its fork stands off its foot to one side, at most, and how far its middle
 // bows out of the straight line, against the fork's height.
 const BOLE = { lean: 0.09, bow: 0.05 };
@@ -55,8 +58,8 @@ const BOLE = { lean: 0.09, bow: 0.05 };
 const OCCLUDE = { clump: 0.1, ground: 0.14, floor: 0.06, cone: 0.6 };
 // The light the ground under a tree sends up: the moon on dull earth, as irradiance in linear light.
 const GROUND = [0.16, 0.1, 0.06];
-// How far out from its middle a lump's leaves are seen, against its radius.
-const SEEN = 0.75;
+// How far out from its middle a lump's leaves are seen, against its radius (the atlas's outlines reach about this).
+const SEEN = 0.76;
 // How much each kind of normal makes up the one a leaf is lit by: the card's own, its lump's, the crown's.
 const NORMAL = { card: 0.12, clump: 0.5, crown: 0.6 };
 
@@ -95,7 +98,8 @@ function card(B, foot, along, across, out, long, wide, fold, tile, flip, clump, 
 }
 
 // A lump: one card of leaves facing the viewer (the shader keeps it facing the viewer, and hands it one of the
-// four outlines), cards crossed through its middle, and sprays standing out of it on its outer side.
+// four outlines), cards crossed through its middle, and inner cards that lie in it toward the crown's outside, each
+// held inside the lump so nothing stands clear of the crown.
 function lump(B, L, out, K, rnd, ci, crown) {
   const { at, r } = L;
   B.facing = 1;
@@ -108,14 +112,14 @@ function lump(B, L, out, K, rnd, ci, crown) {
   const turn = rnd() * Math.PI;
   for (let k = 0; k < K.cards.crossed; k++) {
     const a = turn + (k * Math.PI) / K.cards.crossed, face = unit([Math.sin(a), (rnd() - 0.5) * 0.5, Math.cos(a)]);
-    const across = unit(cross([0, 1, 0], face)), up = cross(face, across), w = r * (0.95 + 0.1 * rnd());
-    card(B, add(at, mul(up, -w)), up, across, face, 2 * w, 2 * w, 0, pick(TILES.lumps, rnd), rnd() < 0.5, ci, crown);
+    const across = unit(cross([0, 1, 0], face)), up = cross(face, across), w = r * (0.9 + 0.1 * rnd());
+    card(B, add(at, mul(up, -w)), up, across, face, 2 * w, 2 * w, 0, pick(TILES.inner, rnd), rnd() < 0.5, ci, crown);
   }
-  const n = K.cards.sprays[L.great ? 0 : 1];
+  const n = K.cards.inner[L.great ? 0 : 1];
   for (let k = 0; k < n; k++) {
-    const d = unit(add(mul(out, 0.9), [rnd() - 0.5, rnd() - 0.5 + 0.25, rnd() - 0.5].map((x) => x * 1.7)));
-    const across = rotate(anyPerp(d), d, rnd() * Math.PI * 2), face = cross(d, across), long = r * CARD.spray * (0.85 + 0.3 * rnd());
-    card(B, add(at, mul(d, r * (0.36 + 0.18 * rnd()))), d, across, face, long, long * 0.85, 0.3 + rnd() * 0.3, pick(TILES.sprays, rnd), rnd() < 0.5, ci, crown);
+    const d = unit(add(mul(out, 1.2), [rnd() - 0.5, rnd() - 0.5 + 0.2, rnd() - 0.5])), face = unit(add(d, [(rnd() - 0.5) * 0.6, 0.3, (rnd() - 0.5) * 0.6]));
+    const across = unit(cross([0, 1, 0], face)), up = cross(face, across), w = r * CARD.inner * 0.5 * (0.85 + 0.3 * rnd());
+    card(B, add(add(at, mul(d, r * 0.35)), mul(up, -w)), up, across, face, 2 * w, 2 * w, 0.25 + rnd() * 0.25, pick(TILES.inner, rnd), rnd() < 0.5, ci, crown);
   }
 }
 
@@ -146,36 +150,51 @@ export function tree(kind, { rays = 96 } = {}) {
   // them on its outline, and one at its heart that fills it.
   const clumps = [], crowns = [];
   K.crowns.forEach((S, ki) => {
-    const C = [S.at[0], S.at[1], S.at[2]], ph = rnd() * Math.PI * 2, own = [];
-    const rx = S.rx, ry = S.ry, ring = S.great - 1, la = rnd() * Math.PI * 2, lop = [Math.cos(la) * LUMP.lop * rx, Math.sin(la) * LUMP.lop * rx];
+    const C = [S.at[0], S.at[1], S.at[2]], own = [], rx = S.rx, ry = S.ry;
+    const la = rnd() * Math.PI * 2, lop = [Math.cos(la) * LUMP.lop * rx, Math.sin(la) * LUMP.lop * rx * 0.5];
     const span = (a, t) => a[0] + (a[1] - a[0]) * t;
-    own.push({ at: [C[0] + lop[0] * 0.5 + (rnd() - 0.5) * 0.15 * rx, C[1] + LUMP.top * ry, C[2] + lop[1] * 0.5], r: rx * span(LUMP.crest, rnd()), great: true });
-    const sizes = Array.from({ length: ring }, (_, i) => (i + rnd()) / ring).sort(() => rnd() - 0.5);
-    for (let i = 0; i < ring; i++) {
-      const a = ph + (i / ring) * Math.PI * 2 + (rnd() - 0.5) * 0.9, k = sizes[i], r = rx * span(LUMP.great, k), d = rx * span(LUMP.out, rnd()) - (r - rx * LUMP.great[0]) * 0.35, y = ry * (-0.25 + 0.5 * rnd());
-      const at = [C[0] + lop[0] + Math.cos(a) * d, C[1] + y, C[2] + lop[1] + Math.sin(a) * d];
-      own.push({ at, r, great: true });
-      if (rnd() < LUMP.merge[0]) {
-        const b = a + (rnd() < 0.5 ? -1 : 1) * (0.6 + 0.5 * rnd()), q = r * span(LUMP.merge.slice(1), rnd()), m = r * 0.85;
-        own.push({ at: [at[0] + Math.cos(b) * m, at[1] + (rnd() - 0.4) * r * 0.6, at[2] + Math.sin(b) * m], r: q, great: false });
+    // Directions over the ball, a golden spiral turned at random, those on its far side left out.
+    const ax = unit([rnd() - 0.5, rnd() - 0.5, rnd() - 0.5]), spin = rnd() * Math.PI * 2, dirs = [];
+    for (let i = 0, n = 64; i < n; i++) {
+      const y = 1 - (2 * (i + 0.5)) / n, rr = Math.sqrt(1 - y * y), a = i * 2.399963;
+      const d = rotate([rr * Math.cos(a), y, rr * Math.sin(a)], ax, spin);
+      if (d[2] >= LUMP.back) dirs.push(d);
+    }
+    // Each lump as far as it can be from those already seated, as the viewer sees them, so they spread evenly round
+    // the ball and never bunch to one side.
+    const chosen = [];
+    const take = (count) => {
+      const got = [];
+      for (let i = 0; i < count; i++) {
+        let best = dirs[Math.floor(rnd() * dirs.length)], far = -1;
+        if (chosen.length) for (const d of dirs) {
+          let near = Infinity;
+          for (const q of chosen) near = Math.min(near, Math.hypot(d[0] - q[0], d[1] - q[1], 0.6 * (d[2] - q[2])));
+          if (near > far) { far = near; best = d; }
+        }
+        chosen.push(best); got.push(best);
       }
-    }
-    for (let i = 0; i < S.small; i++) {
-      const a = ph + ((i + 0.5) / Math.max(ring, S.small)) * Math.PI * 2 + (rnd() - 0.5) * 0.8, d = rx * span(LUMP.rim, rnd()), y = ry * (-0.3 + 0.8 * rnd());
-      own.push({ at: [C[0] + lop[0] + Math.cos(a) * d, C[1] + y, C[2] + lop[1] + Math.sin(a) * d], r: rx * span(LUMP.small, rnd()), great: false });
-    }
-    own.push({ at: [C[0], C[1] - 0.05 * ry, C[2]], r: Math.min(rx, ry) * LUMP.heart, great: false, heart: true });
+      return got;
+    };
+    const seat = (d, r, sink) => {
+      const w = [d[0] + (rnd() - 0.5) * LUMP.wander, d[1] + (rnd() - 0.5) * LUMP.wander, d[2] + (rnd() - 0.5) * LUMP.wander], u = unit(w);
+      const R = 1 / Math.hypot(u[0] / rx, u[1] / ry, u[2] / rx);
+      return [C[0] + lop[0] + u[0] * (R - r * sink), C[1] + u[1] * (R - r * sink), C[2] + lop[1] + u[2] * (R - r * sink)];
+    };
+    for (const d of take(S.great)) { const r = rx * span(LUMP.great, rnd()); own.push({ at: seat(d, r, LUMP.sink), r, great: true }); }
+    for (const d of take(S.small)) { const r = rx * span(LUMP.small, rnd()); own.push({ at: seat(d, r, LUMP.smallSink), r, great: false }); }
+    own.push({ at: [C[0] + lop[0], C[1], C[2] + lop[1]], r: Math.min(rx, ry) * LUMP.heart, great: false, heart: true });
     for (const L of own) clumps.push({ ...L, crown: ki });
     crowns.push({ C, rx, ry });
   });
   // The whole tree raised so its lowest leaves are CROWN.clear over the ground.
-  const low = Math.min(...clumps.map((c) => c.at[1] - c.r * 0.92)), lift = (K.clear ?? CROWN.clear) - low;
+  const low = Math.min(...clumps.map((c) => c.at[1] - c.r * SEEN)), lift = (K.clear ?? CROWN.clear) - low;
   for (const c of clumps) c.at[1] += lift;
   for (const cr of crowns) cr.C[1] += lift;
 
   clumps.forEach((c, ci) => {
     const C = crowns[c.crown].C;
-    lump(B, c, c.heart ? [0, 1, 0] : unit(sub(c.at, C)), c.heart ? { cards: { crossed: 1, sprays: [0, 0] } } : K, rnd, ci, c.crown);
+    lump(B, c, c.heart ? [0, 1, 0] : unit(sub(c.at, C)), c.heart ? { cards: { crossed: 1, inner: [0, 0] } } : K, rnd, ci, c.crown);
   });
 
   // A trunk to each crown, from one foot (two that part a little way up, for two crowns), from a foot that spreads in
@@ -207,10 +226,16 @@ export function tree(kind, { rays = 96 } = {}) {
     }
   });
 
-  // The tree's own reach, so the model is scaled to a half width of 1: how far out its lumps' leaves are seen, not
-  // the corners of its cards, which are mostly bare.
-  const wide = clumps.map((c) => Math.hypot(c.at[0], c.at[2]) + c.r * SEEN).sort((a, b) => a - b);
-  const half = wide[Math.floor(wide.length * 0.85)], scale = 1 / half;
+  // The tree's own reach, so the model is scaled to a half width of 1: how far out its lumps' leaves are seen (not
+  // the corners of its cards, which are bare), seen from the front and taken over eight turns of the tree.
+  let reach = 0;
+  for (let k = 0; k < 8; k++) {
+    const a = (k * Math.PI) / 8, ca = Math.cos(a), sa = Math.sin(a);
+    let lo = Infinity, hi = -Infinity;
+    for (const c of clumps) { const x = c.at[0] * ca + c.at[2] * sa; lo = Math.min(lo, x - c.r * SEEN); hi = Math.max(hi, x + c.r * SEEN); }
+    reach += (hi - lo) / 16;
+  }
+  const scale = 1 / reach;
   for (let i = 0; i < B.p.length; i++) B.p[i] = mul(B.p[i], scale);
   for (const c of clumps) { c.at = mul(c.at, scale); c.r *= scale; }
   const balls = crowns.map((cr) => ({ C: mul(cr.C, scale), R: [cr.rx * scale * 0.98, cr.ry * scale * 0.98] }));
@@ -286,6 +311,6 @@ export function tree(kind, { rays = 96 } = {}) {
   }
 
   const positions = new Float32Array(B.p.flat()), uvs = new Float32Array(B.uv.flat());
-  const info = { triangles: (B.solid.length + B.soft.length) / 3, soft: B.solid.length, leaf: B.soft.length / 3, clumps: clumps.length, top: Math.max(...B.p.map((q) => q[1])), crown: balls[0].C[1], half: balls[0].R };
+  const info = { triangles: (B.solid.length + B.soft.length) / 3, soft: B.solid.length, leaf: B.soft.length / 3, clumps: clumps.length, top: Math.max(...clumps.map((c) => c.at[1] + c.r * SEEN)), crown: balls[0].C[1], half: balls[0].R };
   return { positions, normals, uvs, sway, light, bounce, clump: clumpOf, crown: crownOf, view: new Float32Array(B.view), indices: new Uint32Array([...B.solid, ...B.soft]), info };
 }

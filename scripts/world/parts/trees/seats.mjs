@@ -3,12 +3,13 @@
 // land builder's (src/pieces/world/parts/land/field.ts and scripts/world/parts/land/shape.mjs). So a tree on a dune
 // stands on the dune, and a tree a crest in front of it mostly hides is known and left out.
 //
-//   import { seats } from './seats.mjs'; const list = seats(top)   // top: a crown's top, in a tree's sizes
+//   import { seats } from './seats.mjs'; const list = seats(top)   // top: a crown's top, in a model's units
 //   list[i] = { x, z, y, sand, seen, hidden }   for TREES[i]: the land's height under it, how much sand there is
 //   under the shade it lays on the ground (0 to 1, the most anywhere on it but at the trunk's foot), the share of its
 //   crown's height a visitor sees over the land in front of it, and how many units of the crown's top the land in
 //   front hides
 import { L, P } from '../../lib/plan.mjs';
+import { DRAWN } from '../../../../src/pieces/world/parts/trees/design.ts';
 import { desert } from '../land/shape.mjs';
 import * as F from '../../../../src/pieces/world/parts/land/field.ts';
 
@@ -40,7 +41,8 @@ const AWAY = (() => { const l = Math.hypot(L.MOONWARD[0], L.MOONWARD[2]); return
 const ON = [-1.6, -0.8, 0, 0.8, 1.6, 2.4, 3.2].flatMap((a) => [-1.6, -0.8, 0, 0.8, 1.6].map((b) => [a, b])).filter(([a, b]) => Math.hypot(a, b) > 0.5);
 
 export function seats(top) {
-  return P.TREES.map(([x, z, size]) => {
+  return P.TREES.map(([x, z, plan]) => {
+    const size = plan * DRAWN;
     const y = drawnLand(x, z), sand = Math.max(...ON.map(([a, b]) => desert(x + (AWAY[0] * a - AWAY[1] * b) * size, z + (AWAY[1] * a + AWAY[0] * b) * size))), tall = top * size;
     let seen = 0, hidden = 0;
     const n = 12;

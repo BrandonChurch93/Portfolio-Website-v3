@@ -227,6 +227,24 @@ grove(712, 960, 9, [231, 227], [0.8, 1.4]);
 for (let i = trees.length - 1; i >= 0; i--) { const t = trees[i], [px] = W.pictured(t[0], W.ground(t[0], t[1]), t[1]); if (px > 668 && px < 708 && t[1] > 30) trees.splice(i, 1); }
 // No tree stands inside the pyramid, or with its trunk in its foot course.
 for (let i = trees.length - 1; i >= 0; i--) { const [qx, qz] = W.pyramidal(trees[i][0], trees[i][1]); if (Math.max(Math.abs(qx), Math.abs(qz)) < W.PYRAMID.base / 2 + 5) trees.splice(i, 1); }
+// The trees' seventh round drew every crown at its own width, and the belt came out as separate balls on bare
+// paving: its crowns were planted to touch, where the picture's overlap by about a third into a hedge that hides
+// the city's feet. So the belt is filled wherever the picture has canopy: more crowns between the first, near
+// enough to overlap. Left of the pyramid, and right of the spire where it climbs between the towers.
+const fill = (from, to, top, foot, step) => {
+  for (let py = top; py <= foot; py += step * 0.7) for (let px = from; px <= to; px += step) {
+    const [x, z] = onGround(px + step * (r() - 0.5), py + step * 0.5 * (r() - 0.5)), sz = 10.5 * (0.75 + 0.6 * r() ** 1.5);
+    if (!clear(x, z, 0.5 * sz, 0.6 * sz) || before(x, z)) continue;
+    if (towers.some((b) => Math.hypot(b[0] - x, b[1] - z) < 0.52 * size(b) + 0.3 * sz)) continue;
+    if (trees.some((o) => Math.hypot(o[0] - x, o[1] - z) < 0.34 * (o[2] + sz))) continue;
+    trees.push([n(x), n(z), n(sz), n(r(), 3), n(r() * Math.PI * 2, 3)]);
+  }
+};
+fill(108, 336, 256, 300, 7.4);
+fill(712, 1052, 224, 262, 7.4);
+// On the sand the picture has one tight row and nothing else (ROW in the plan): every other tree that stands on
+// sand, or right of the last tower where the picture is dunes, is taken out. They read as an orchard on a terrace.
+for (let i = trees.length - 1; i >= 0; i--) { const t = trees[i], [px] = W.pictured(t[0], W.ground(t[0], t[1]), t[1]); if (t[1] !== W.ROW.z && (W.desert(t[0], t[1]) > 0 || px > 1056)) trees.splice(i, 1); }
 // A wood has a few great trees: about one crown in nine is half as large again, so the belt is not a row of beads.
 for (const t of trees) t[2] = n(t[2] * 1.25 * (r() < 0.11 ? 1.5 : 1));
 console.log(`for picture 9's edge: ${drawn} buildings drawn back from the bite, ${slid} more slid back, ${lost} left where the land is not, ${kept} of the study's trees kept, ${trees.length - kept} planted along the new edge`);
@@ -246,7 +264,7 @@ ${rows(towers)}
 // The stepped gold crown: the one building of the slice.
 export const STEP = TOWERS.findIndex((t) => t[6] === 'step' && t[7] === 'gold');
 
-// Each tree: where it stands (x, z), about half its crown's width, a number of its own, and how far it is turned.
+// Each tree: where it stands (x, z), its crown's width, a number of its own, and how far it is turned.
 export type Tree = readonly [x: number, z: number, size: number, tone: number, turn: number];
 export const TREES: readonly Tree[] = [
 ${rows(trees)}
