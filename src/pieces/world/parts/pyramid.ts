@@ -12,9 +12,10 @@ import * as S from './pyramid/shaders';
 // sheet pillowed a hair and a few proud or dented, the cladding warping slowly over many sheets; a bevelled foot course stands proud round its foot,
 // and a capstone sits over a dark reveal. Every arris is rounded. Its mesh and the light that reaches it are made
 // ahead by scripts/world/parts/pyramid/make.mjs (public/world/pyramid.bin), in the pyramid's own frame. What each face
-// mirrors is ./pyramid/shaders.ts, and the shade it lays on the ground round its foot ./pyramid/shade.ts.
+// mirrors, worked out from the real reflected ray at each pixel, is ./pyramid/shaders.ts, and the shade it lays on the
+// ground round its foot ./pyramid/shade.ts.
 // While it is being judged, ?pyr=zen=6,rim=5 sets any number of LOOK by its short name (see t() below), and
-// ?pyrn=moon.heart.power=3,bow.per[0]=0.001 any number of NIGHT by its path. ?pyrshade=0 leaves out the shade on the
+// ?pyrn=lit.glare.heart[0]=1.6,sweep.lit.down=0.02 any number of NIGHT by its path. ?pyrshade=0 leaves out the shade on the
 // ground and ?pyrcast=0 its shadow in the moon's map.
 
 const LOOK = {
@@ -31,12 +32,15 @@ const LOOK = {
   rim: [1.3, 0, 0.45],
   // The gold's colors, each at the world's gold's hue (METAL.gold) turned so many degrees, at full value: its
   // saturation where it mirrors least, in its body (the lit face's night, the long reflections), where it mirrors
-  // much, and in the warm glow at the dark face's foot. Gold is richest in its middle tones: held at the darks'
+  // much, in the warm glow at the dark face's foot, on the face toward the moon where it mirrors the dark sky (a rich
+  // amber gold: at the body's hue it read as olive), and in the moon's glare. Gold is richest in its middle tones: held at the darks'
   // saturation there it read as khaki or brass. Then over what levels the deep turns to the body, the body to the
   // bright, and the bright pales toward cream. The deep is turned toward red and the bright toward cream: one hue from
   // the deepest shade to the palest read as a grade laid over grey.
-  sat: { deep: 0.7, deepTurn: -9, body: 0.74, bodyTurn: -5, mid: 0.56, midTurn: -2.5, warm: 0.72, warmTurn: -8 },
+  sat: { deep: 0.56, deepTurn: -6, body: 0.6, bodyTurn: -3.5, mid: 0.78, midTurn: -3, warm: 0.72, warmTurn: -8, lit: 0.8, litTurn: -4, hot: 0.6, hotTurn: -1 },
   grade: [0.02, 0.09, 0.22, 0.75, 0.7, 3.0],
+  // The face toward the moon: over what levels its rich gold turns to the glare's hot gold, and the hot gold to pale.
+  hot: [0.3, 1, 1, 3],
   // The highlights' cream: the palette's pale with its blue taken down so its hue is turned toward cream, inside the
   // palette's pale (its green and blue no higher than pale's).
   cream: 0.94,
@@ -103,6 +107,9 @@ export const build: PartFactory = async (ctx) => {
       uBodyC: { value: tint(t('sb', LOOK.sat.body), t('bt', LOOK.sat.bodyTurn)) },
       uMidC: { value: tint(t('sm', LOOK.sat.mid), t('mt', LOOK.sat.midTurn)) },
       uWarmC: { value: tint(t('sw', LOOK.sat.warm), t('wt', LOOK.sat.warmTurn)) },
+      uLitC: { value: tint(t('sl', LOOK.sat.lit), t('lt', LOOK.sat.litTurn)) },
+      uHotC: { value: tint(t('sh', LOOK.sat.hot), t('ht', LOOK.sat.hotTurn)) },
+      uHotAt: { value: new THREE.Vector4(t('h0', LOOK.hot[0]), t('h1', LOOK.hot[1]), t('h2', LOOK.hot[2]), t('h3', LOOK.hot[3])) },
       uPaleC: { value: new THREE.Vector3(1, pale.g / pale.r, (pale.b * t('cream', LOOK.cream)) / pale.r) },
       uGradeLo: { value: new THREE.Vector2(t('g0', LOOK.grade[0]), t('g1', LOOK.grade[1])) },
       uGradeAt: { value: new THREE.Vector4(t('g2', LOOK.grade[2]), t('g3', LOOK.grade[3]), t('g4', LOOK.grade[4]), t('g5', LOOK.grade[5])) },

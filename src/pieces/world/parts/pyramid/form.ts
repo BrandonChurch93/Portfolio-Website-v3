@@ -9,8 +9,9 @@ export const FORM = {
   // Every arris, and the body's top edge under the reveal, is rounded at each pixel: the face is bent toward its
   // neighbour as a round this wide would bend it, so the line of the night it mirrors is smooth at any size. The
   // mesh's own edges are crisp creases. A real round fine enough to keep an edge crisp is under a pixel at the page's
-  // size, and it broke that line into dots there.
-  round: { seen: { arris: 2, lip: 1.4 } },
+  // size, and it broke that line into dots there. The capstone's are rounded finer: as wide as the body's they read as
+  // a soft caramel lip on so small a stone.
+  round: { seen: { arris: 2, lip: 1.4, cap: 0.7 } },
   // The capstone: the body stops at `from`, a reveal `reveal` tall, set back `inset` from the capstone's foot, and the
   // capstone above. Picture 9's reveal is a dark line from 214 to 216 down where it meets the front arris, its apex
   // at 185. Under 2 tall the reveal is under a pixel at the page's size, and the capstone no longer reads as a stone
@@ -25,7 +26,7 @@ export const FORM = {
   // its own sheet length, from 0.65 to 1.35 of `plate`, each joint a share `jag` of that off its place. A seam is a
   // hairline `line` tall. How each sheet lies is the shader's (NIGHT.kick, bow, tilt). Even courses of short plates
   // read as running bond brick, and forty even seams as siding.
-  casing: { row: 2.6, taper: 160, every: 4, merge: 0.52, plate: 24, jag: 0.7, line: 0.1 },
+  casing: { row: 2.6, taper: 100, every: 4, merge: 0.52, plate: 24, jag: 0.7, line: 0.1 },
   // The sheet the pyramid's shade is drawn on (./shade.ts), over the ground round its foot: how far round the foot
   // course it reaches, how far along the moon's shadow, as a share of the shadow's length, how far apart its points
   // are, and how high over the plan's ground it lies.
