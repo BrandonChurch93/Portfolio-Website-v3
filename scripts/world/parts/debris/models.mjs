@@ -14,8 +14,8 @@ const FIELD = fileURLToPath(new URL('./field.mjs', import.meta.url));
 // The shared models: the class, how many, the size they are made at (half extents, before they are cut), how many
 // beds, corners broken off and chips taken out, the cell they are made with, and how many triangles each keeps.
 export const SHARED = {
-  L: { count: 4, size: [[13, 8, 10], [15, 6, 9], [11, 9.5, 10], [14, 7.5, 8.5]], beds: [2, 1, 2, 1], sides: [6, 7, 5, 7], corners: [4, 5, 4, 6], chips: [14, 12, 16, 14], steps: [1, 1, 2, 1], cell: 0.2, keep: 1800 },
-  M: { count: 5, size: [[12, 8, 10], [14, 6, 9], [10, 9, 10], [13, 8, 8], [11, 5, 10]], beds: [2, 1, 1, 2, 1], sides: [5, 6, 7, 5, 6], corners: [4, 3, 5, 4, 3], chips: [8, 6, 9, 7, 8], steps: [1, 0, 1, 0, 1], cell: 0.3, keep: 520 },
+  L: { count: 4, size: [[13, 8, 10], [15, 6, 9], [11, 9.5, 10], [14, 7.5, 8.5]], beds: [2, 1, 2, 1], sides: [6, 7, 5, 7], corners: [4, 5, 4, 6], chips: [14, 12, 16, 14], steps: [1, 1, 2, 1], cell: 0.2, keep: 1500 },
+  M: { count: 5, size: [[12, 8, 10], [14, 6, 9], [10, 9, 10], [13, 8, 8], [11, 5, 10]], beds: [2, 1, 1, 2, 1], sides: [5, 6, 7, 5, 6], corners: [4, 3, 5, 4, 3], chips: [8, 6, 9, 7, 8], steps: [1, 0, 1, 0, 1], cell: 0.3, keep: 400 },
   S: { count: 5, size: [[12, 8, 10], [14, 6, 9], [10, 9, 10], [13, 8, 8], [11, 5, 10]], beds: [1, 1, 1, 1, 1], sides: [5, 6, 5, 6, 5], corners: [3, 4, 3, 4, 3], chips: [3, 2, 4, 3, 2], steps: [0, 0, 0, 0, 0], cell: 0.45, keep: 120 },
   D: { count: 4, size: [[12, 8, 10], [14, 6, 9], [10, 9, 10], [13, 7, 8]], beds: [1, 1, 1, 1], sides: [4, 5, 5, 4], corners: [2, 3, 2, 3], chips: [0, 0, 0, 0], steps: [0, 0, 0, 0], cell: 0.8, keep: 30 },
 };

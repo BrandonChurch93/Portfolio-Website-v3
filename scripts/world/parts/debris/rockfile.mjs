@@ -1,11 +1,15 @@
 // Reads a world file (scripts/world/lib/pack.mjs wrote it) back into plain meshes, for what broke away to be kept
 // clear of the torn rock and lit with it there. read(file) gives [{ name, positions, normals, light, indices }] in units.
 import fs from 'node:fs';
+import { inflateRawSync } from 'node:zlib';
 
 const VIEW = { f32: Float32Array, u8: Uint8Array, i8: Int8Array, u16: Uint16Array, i16: Int16Array, u32: Uint32Array };
 
 export function read(file) {
-  const buf = fs.readFileSync(file), long = buf.readUInt32LE(8), head = JSON.parse(buf.subarray(12, 12 + long).toString());
+  let buf = fs.readFileSync(file);
+  // A packed file (the letters WRLZ) is unpacked first.
+  if (buf.readUInt32LE(0) === 0x5a4c5257) buf = inflateRawSync(buf.subarray(8));
+  const long = buf.readUInt32LE(8), head = JSON.parse(buf.subarray(12, 12 + long).toString());
   const base = 12 + long, ab = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
   const view = (as, offset, count) => new VIEW[as](ab, base + offset, count);
   return head.meshes.map((m) => {

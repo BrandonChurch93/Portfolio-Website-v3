@@ -9,7 +9,7 @@ export const MAP = { lo: -664, size: 1328 } as const;
 // The way the wind that laid the dunes blows: toward the visitor and to the left, away from the moon. Their low
 // backs face the moon, and their slip faces face the visitor, as wide dark bands, as picture 9's do. Turned any
 // nearer the visitor a slip face at the angle sand rests at would catch the moon.
-export const WIND = [-0.6, 0.8] as const;
+export const WIND = [-0.68, 0.733] as const;
 
 // A dune's profile: the slope of its slip face (the angle sand rests at), the mean slope of its back, how its back
 // rounds over to the crest (the share of it that stays sloped right up to the brink), how far its hollow sinks under the sand round it and how long the hollow runs out, both
@@ -34,7 +34,7 @@ export const DUNES: readonly Dune[] = [
   [350, 40, 60, 9, 0.5, 0, 0],
 ];
 // How many straight pieces each crest is drawn with.
-export const PIECES = 10;
+export const PIECES = 32;
 
 // The crest of each dune as PIECES + 1 points, and the circle outside which the dune adds nothing.
 export interface Crest { points: [number, number][]; tall: number; lean: number; at: [number, number]; reach: number }

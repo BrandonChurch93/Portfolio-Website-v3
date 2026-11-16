@@ -18,8 +18,8 @@ import * as S from './land/shaders';
 // shows, the flat stones in the grass, and the bronze laid in the spire's court.
 const mix = (a: THREE.Color, b: THREE.Color, k: number): THREE.Color => a.clone().lerp(b, k);
 const LOOK = {
-  sand: mix(color('text-2'), color('copper-light'), 0.38).multiplyScalar(0.72),
-  sandDeep: mix(color('copper'), color('bronze'), 0.5).multiplyScalar(0.6),
+  sand: mix(color('pale'), color('copper-light'), 0.55).multiplyScalar(0.62),
+  sandDeep: mix(color('copper'), color('bronze'), 0.55).multiplyScalar(0.55),
   pave: mix(color('text-3'), color('bg-3'), 0.62),
   pavePale: mix(color('text-3'), color('text-2'), 0.3).multiplyScalar(0.72),
   court: mix(color('text-3'), color('copper-light'), 0.18).multiplyScalar(0.62),

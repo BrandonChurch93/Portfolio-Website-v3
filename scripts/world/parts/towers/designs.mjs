@@ -125,6 +125,7 @@ function finTower(b, t) {
     const bay = (s.len - 2.4 - (bays - 1) * 0.7) / bays;
     for (let i = 1; i < bays; i++) {
       const s0 = 1.2 + i * (bay + 0.7) - 0.7, k = 1 - Math.abs(i / bays - 0.5) * 2, up = (tall - y1) * (0.35 + 0.65 * k);
+      if (up < 1.6) continue;
       slab(b, s.f, s0, s0 + 0.7, y1 + 0.6, y1 + up, -out);
       reveal(b, s.f, s0, s0 + 0.7, y1 + 0.6, y1 + up, -out, 0.4, { sill: false });
     }

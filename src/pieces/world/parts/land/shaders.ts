@@ -35,6 +35,9 @@ uniform sampler2D uTowers;
 uniform vec3 uSand, uSandDeep, uPave, uPavePale, uCourt, uGrass, uGrassDry, uGrassDeep, uEarth, uStone, uBronze;
 const float MAP_LO = ${f(MAP.lo)}, MAP_SIZE = ${f(MAP.size)}, MAP_N = ${f(n.map)}, LOTS_N = ${f(n.lots)};
 const float LAND_BOUNCE = ${f(LIGHT.bounce)};
+// The share of the night's soft light the sand keeps: the night is lit from the visitor's side, and in full it
+// turned the dunes' slip faces, which face the visitor, a pale grey in place of a deep warm shadow.
+const float SAND_NIGHT = 0.22;
 ${GLSL}
 vec3 landAlbedo;
 float landRough, landMetal;
@@ -257,10 +260,10 @@ normal = normalize( mat3( viewMatrix ) * landN );`;
 export const LIGHT_END = /* glsl */ `
 {
 	vec2 lu = ( vUnit.xz - MAP_LO ) / MAP_SIZE;
-	float open = texture( uMapB, lu ).r;
+	float open = texture( uMapB, lu ).r, sandy = texture( uMapA, lu ).g;
 	vec3 bounced = texture( uLight, lu ).rgb;
 	irradiance *= open;
-	iblIrradiance *= open;
+	iblIrradiance *= open * mix( 1.0, SAND_NIGHT, sandy );
 	radiance *= mix( 1.0, open, 0.7 );
 	irradiance += bounced * bounced * LAND_BOUNCE;
 }`;
