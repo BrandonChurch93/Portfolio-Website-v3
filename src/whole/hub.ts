@@ -15,8 +15,9 @@ import { mountStream, type PlanContext, type Planned, type StreamHandle, type Wo
 const SEAM = { skills: 150, contact: 40 };
 // On a screen too narrow for the layout the hero is a picture of the world, with the stream fallen from its core.
 // The page's stream begins this far down that picture, where the picture's own is fading out, so one runs on as
-// the other. With no picture it begins this many pixels over Work's title.
-const NARROW = { still: 0.8, over: 150 };
+// the other. With no picture it begins this many pixels over Work's title. And it ends this many pixels under
+// Work's button.
+const NARROW = { still: 0.8, over: 150, past: 26 };
 
 type Plan = (c: PlanContext) => Planned;
 
@@ -69,7 +70,10 @@ export function createHub(page: () => HTMLElement | null, has: { hero: boolean }
         const b = still ? box(still) : null;
         return b && b.b - b.t > 1 ? b.t + (b.b - b.t) * NARROW.still : box(title).t - NARROW.over;
       };
-      real = mountStream(host, { title, work: work.work, begins });
+      // Its two sides end at the foot of Work, beside the button. Run on to the foot of the page they crossed the
+      // words of every section under it.
+      const button = work.work.button;
+      real = mountStream(host, { title, work: work.work, begins, until: (box) => box(button).b + NARROW.past });
       return;
     }
     if (!plans.skills || !plans.contact || !tops.skills || !tops.contact || (has.hero && !plans.hero)) return;

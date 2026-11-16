@@ -355,7 +355,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       });
       const barBox = boxOf(W.bar);
       const pre = opts.before ? opts.before({ box: (el) => boxOf(el as HTMLElement), width: w, bottom, unit, view: clock.view.h }) : null, above = pre?.route.branches[0];
-      route = routeThroughWork({ title: ink, bar: barBox, cards: places, posts, rail: shown(W.rail) ? boxOf(W.rail) : null, button: shown(W.button) ? boxOf(W.button) : null, width: w, bottom: opts.plan && opts.until ? opts.until((el) => boxOf(el as HTMLElement)) : bottom, unit, from: above ? above.y[above.n - 1] : opts.begins?.((el) => boxOf(el as HTMLElement)) });
+      route = routeThroughWork({ title: ink, bar: barBox, cards: places, posts, rail: shown(W.rail) ? boxOf(W.rail) : null, button: shown(W.button) ? boxOf(W.button) : null, width: w, bottom: opts.until && (opts.plan || opts.begins) ? opts.until((el) => boxOf(el as HTMLElement)) : bottom, unit, from: above ? above.y[above.n - 1] : opts.begins?.((el) => boxOf(el as HTMLElement)) });
       if (pre) route = join(pre.route, route);
       else if (opts.begins) route.dark = [...(route.dark ?? []), { from: 0, to: unit, core: true, ease: [0, 0], source: true }];
       const landed = places.map((box) => route!.landings.flatMap((L, i) => ((L.kind === 'land' || L.kind === 'side') && Math.hypot(Math.max(box.l - L.x, 0, L.x - box.r), Math.max(box.t - L.y, 0, L.y - box.b)) < 10 * unit ? [i] : [])));
