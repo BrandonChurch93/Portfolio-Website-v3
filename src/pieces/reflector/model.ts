@@ -3,6 +3,7 @@ import { Builder, pause, lathe, rbox, xf, seeded } from '../../world/build';
 import { circle, rounded, rrect, screw, slab, type V } from '../../world/shape';
 import { dielectric, lin, metal, type Chunks } from '../../world/surface';
 import { hex } from '../../config/palette';
+import { type GlintUniforms, glintUniforms, takeGlint, withGlint } from '../../world/glint';
 
 // The reflector, in millimetres under a root scaled by 0.001. The page's ground is the wall, the plane z = 0, and the
 // visitor looks straight at it from +z. The dish's face looks up and to the right on the screen, 43 degrees above
@@ -65,10 +66,21 @@ export interface ReflectorModel {
   // Where the cursor's light on the wall is brightest, from the wall's middle: the page's side of the object nearer the lamp.
   wallC: { value: THREE.Vector2 };
   centre: THREE.Vector3;
+  glint: GlintUniforms;
   tris: number;
 }
 
 const PATINA: [number, number, number] = [0.7, 0.58, 0.5];
+// The cursor's glint on the arm's tube and its knuckle only (../../world/glint.ts): a copper line that runs along them as
+// the pointer moves. The tube and the discs take it as if the arm were crowned round a point off to its left, in the
+// root's millimetres, so the light travels from the plate up to the knuckle and is never the whole tube flashing on at
+// one angle. Every other part is lit as it was.
+const CROWN = { c: [-360, -110, 200] as const, r: 650 };
+const GLINT = {
+  tube: { tint: 'copper', sharp: 280, k: 0.75, pale: 0.2, edge: 0.6, crown: CROWN, shade: 0.7 },
+  disc: { tint: 'copper', sharp: 320, k: 0.7, pale: 0.2, edge: 0.6, crown: CROWN, shade: 0.7 },
+  knob: { sharp: 300, k: 1, pale: 0.45, edge: 0.5 },
+} as const;
 
 // The copper of the face: spun rings round the middle that catch a line of light, a face beaten all over with small
 // shallow hollows that scatter it, darker down in the hollows, and the stream's light held in a pool that runs out
@@ -373,13 +385,18 @@ export async function buildReflector(): Promise<ReflectorModel> {
   const dark = metal({ name: 'rfDark', color: 0x2c1e14, rough: 0.4, brush: 'y', tarnish: 0.2, patina: PATINA, extra: armChunks(0.16, true) });
   const bronze = metal({ name: 'rfBronze', color: hex('bronze'), rough: 0.3, brush: 'radial-z', tarnish: 0.25, patina: PATINA, extra: armChunks(0.2, false) });
   const bronzeCast = metal({ name: 'rfBronzeCast', color: 0x6e4524, rough: 0.42, cast: 0.8, tarnish: 0.35, patina: PATINA, extra: armChunks(0.16, true) });
-  const disc = metal({ name: 'rfDisc', color: new THREE.Color(hex('bronze')).lerp(new THREE.Color(hex('copper-light')), 0.4).getHex(), rough: 0.26, tarnish: 0.15, patina: PATINA, extra: armChunks(0.2, false) });
+  const disc = metal({ name: 'rfDisc', color: new THREE.Color(hex('bronze')).lerp(new THREE.Color(hex('copper-light')), 0.4).getHex(), rough: 0.26, tarnish: 0.15, patina: PATINA, extra: withGlint(GLINT.disc, armChunks(0.2, false)) });
   const knob = metal({ name: 'rfKnob', color: hex('copper'), rough: 0.27, tarnish: 0.18, patina: PATINA, extra: armChunks(0.22, false) });
+  const tube = metal({ name: 'rfTube', color: 0x2c1e14, rough: 0.4, brush: 'y', tarnish: 0.2, patina: PATINA, extra: withGlint(GLINT.tube, armChunks(0.16, true)) });
+  const lockKnob = metal({ name: 'rfLockKnob', color: hex('copper'), rough: 0.27, tarnish: 0.18, patina: PATINA, extra: withGlint(GLINT.knob, armChunks(0.22, false)) });
   const plateMetal = metal({ name: 'rfPlate', color: hex('bronze-deep'), rough: 0.46, cast: 0.7, tarnish: 0.3, patina: PATINA, extra: armChunks(0.12, true) });
   for (const m of [back, plateMetal]) m.envMapIntensity = 3.2;
   dark.envMapIntensity = 1.5;
-  for (const m of [bronze, bronzeCast, disc, knob]) m.envMapIntensity = 4;
-  for (const m of [back, dark, bronze, bronzeCast, disc, knob, plateMetal]) capBright(m, 0.95);
+  tube.envMapIntensity = 1.5;
+  for (const m of [bronze, bronzeCast, disc, knob, lockKnob]) m.envMapIntensity = 4;
+  for (const m of [back, dark, tube, bronze, bronzeCast, disc, knob, lockKnob, plateMetal]) capBright(m, 0.95);
+  const glint = glintUniforms();
+  takeGlint(glint, tube, disc, lockKnob);
   const ink = dielectric('rfInk', 0x0d0806, 0.7, { vary: 0.05 });
 
   // ---- the dish, in its own space: axis along y, the middle of the face at the origin --------------------------
@@ -506,7 +523,7 @@ export async function buildReflector(): Promise<ReflectorModel> {
       const lockOut = 15.6 + 2.2;
       b.add(toothed(23, 12, 30, 3.4), disc, facing(K.clone().addScaledVector(aK, -6), aK, u1));
       b.add(toothed(23, 12, 30, 3.4, Math.PI / 30), disc, facing(K.clone().addScaledVector(aK, 6), aK.clone().negate(), u1));
-      b.add(knurled(19, 14, 24, 0.075), knob, facing(K.clone().addScaledVector(aK, lockOut + 7), aK));
+      b.add(knurled(19, 14, 24, 0.075), lockKnob, facing(K.clone().addScaledVector(aK, lockOut + 7), aK));
       const cap = lathe([[0, 3.6], [8, 3.2], [13, 2.2], [16.5, 0.6], [17.5, 0]].reverse() as [number, number][], 64);
       b.add(cap, bronze, facing(K.clone().addScaledVector(aK, lockOut + 14), aK));
       const washer = lathe([[8, 0], [21, 0], [21.5, 0.6], [21.5, 1.6], [8, 1.6]], 64);
@@ -519,7 +536,7 @@ export async function buildReflector(): Promise<ReflectorModel> {
     {
       const u2 = P.clone().sub(K).normalize();
       const k0 = K.clone().addScaledVector(u2, 14), p0 = P.clone().addScaledVector(u2, -12);
-      b.add(new THREE.CylinderGeometry(10.5, 10.5, 1, 40, 1, true).translate(0, 0.5, 0).scale(1, k0.distanceTo(p0), 1), dark, along(k0, p0));
+      b.add(new THREE.CylinderGeometry(10.5, 10.5, 1, 40, 1, true).translate(0, 0.5, 0).scale(1, k0.distanceTo(p0), 1), tube, along(k0, p0));
       for (const [a, d] of [[K, 1], [P, -1]] as const) {
         const s0 = a.clone().addScaledVector(u2, d * 16), s1 = a.clone().addScaledVector(u2, d * 34);
         const fer = lathe([[10.6, 0], [12.8, 0.8], [13.2, 2], [13.2, 15], [12.4, 17.4], [10.6, 18]], 48);
@@ -630,5 +647,5 @@ export async function buildReflector(): Promise<ReflectorModel> {
   tris += 2;
 
   const [cA, cC] = chain.userData.ends as THREE.Vector3[];
-  return { root, dish, upper, chain, knock: { ball: B, knuckle: K, axis: aK, chainTop: cA, chainFoot: cC }, face, wall, wallC, centre: D.clone(), tris };
+  return { root, dish, upper, chain, knock: { ball: B, knuckle: K, axis: aK, chainTop: cA, chainFoot: cC }, face, wall, wallC, centre: D.clone(), glint, tris };
 }

@@ -4,6 +4,7 @@ import { hex } from '../../config/palette';
 import { Builder, pause, rbox, xf } from '../../world/build';
 import { circle, inset, rounded, rrect, screw, slab, type V } from '../../world/shape';
 import { dielectric, metal } from '../../world/surface';
+import { type GlintUniforms, glintUniforms, takeGlint, withGlint } from '../../world/glint';
 import { LENS, LENS_MIDDLE, lensGeometry, lensMaterial } from './lens';
 
 // The studio light, in millimetres under a root scaled by 0.001. The wall is the plane z = 0 and the visitor looks
@@ -143,6 +144,28 @@ const linOf = (name: 'ember' | 'flame' | 'hot') => { const c = new THREE.Color(h
 // How much of the room the metal takes, against the stage's own level: enough that its rounded edges hold a line of
 // light with the cursor far away, so the light can be found on the page before the stream reaches it.
 const EDGE_ROOM = 2.1;
+// The brightest the bronze is drawn, under the stage's glow threshold (1.6 in ./index.ts): the lamp met at the mirror
+// angle on the bezel bloomed into a soft spot. Nothing under this is changed.
+const BRONZE_TOP = 1.5;
+
+// Holds a metal's brightest light under a level, keeping its hue, so a highlight stays a crisp line or point and never
+// blooms into a soft spot.
+function capBright(m: THREE.MeshPhysicalMaterial, top: number): void {
+  const base = m.onBeforeCompile;
+  m.onBeforeCompile = (sh, r) => {
+    base.call(m, sh, r);
+    sh.fragmentShader = sh.fragmentShader.replace('#include <opaque_fragment>', `outgoingLight *= min(1.0, ${top.toFixed(2)} / max(1e-4, max(outgoingLight.r, max(outgoingLight.g, outgoingLight.b))));\n#include <opaque_fragment>`);
+  };
+}
+
+// The cursor's glint (../../world/glint.ts) on the drum's shell and on the yoke only, in the palette's copper: one tight
+// line along the drum wherever the lamp is, and a narrow line that runs round the U's corners. Every other part is lit
+// as it was. Brightened toward the pale the lines read as silver, and faces flat to the model's z axis are left out so
+// the bar's front never shows a spot.
+const GLINT = {
+  drum: { tint: 'copper', sharp: 2500, k: 0.7, pale: 0.15, turned: true },
+  yoke: { tint: 'copper', sharp: 700, k: 0.8, pale: 0.1, edge: 0.25, mask: '1.0 - smoothstep(0.996, 0.9995, abs(vObjN.z))' },
+} as const;
 
 // A barn door leaf's face, read in the leaf's own millimetres (its uv: across the hinge, and out from it) and its sizes
 // (cell: half the hinge, half the tip, its length, and 1 on a leaf). Steel goes a warm brown toward the hinge where
@@ -232,6 +255,7 @@ export interface StudioModel {
   housing: THREE.MeshPhysicalMaterial;
   leafIn: THREE.MeshPhysicalMaterial;
   wall: THREE.MeshLambertMaterial;
+  glint: GlintUniforms;
   // In the head's frame: the back of the rear cap, the middle of the lens, the barn doors' tips.
   rear: THREE.Vector3;
   lensMiddle: THREE.Vector3;
@@ -257,27 +281,34 @@ export async function buildStudioLight(): Promise<StudioModel> {
 
   // ---- materials ------------------------------------------------------------------------------------------
   // The housing is enamelled steel, a warm near black that takes the light as shading; the struck flank flashes.
-  const housing = dielectric('slHousing', 0x22170f, 0.46, {
-    coat: 0.45, vary: 0.14, scale: 0.05,
-    extra: {
-      head: 'uniform vec3 uStrike; uniform float uFlash; uniform vec3 uFlashCol;',
-      emissive: 'float sd = length(vObj - uStrike); totalEmissiveRadiance += uFlashCol * uFlash * (exp(-sd * sd / 50.0) * 7.0 + exp(-sd * sd / 600.0) * 1.1 + exp(-sd * sd / 4000.0) * 0.22);',
-    },
-  });
+  const enamel = {
+    head: 'uniform vec3 uStrike; uniform float uFlash; uniform vec3 uFlashCol;',
+    emissive: 'float sd = length(vObj - uStrike); totalEmissiveRadiance += uFlashCol * uFlash * (exp(-sd * sd / 50.0) * 7.0 + exp(-sd * sd / 600.0) * 1.1 + exp(-sd * sd / 4000.0) * 0.22);',
+  };
+  const housing = dielectric('slHousing', 0x22170f, 0.46, { coat: 0.45, vary: 0.14, scale: 0.05, extra: enamel });
   housing.userData.uniforms = { uStrike: { value: new THREE.Vector3() }, uFlash: { value: 0 }, uFlashCol: { value: new THREE.Color(hex('hot')) } };
+  // The drum's shell: the housing's enamel, with the glint's line.
+  const drum = dielectric('slDrum', 0x22170f, 0.46, { coat: 0.45, vary: 0.14, scale: 0.05, extra: withGlint(GLINT.drum, enamel) });
   const dark = dielectric('slDark', 0x1d140e, 0.5, { coat: 0.3, vary: 0.16, scale: 0.07 });
   // The wall plate is broad and flat, so at the room's level the yoke takes it would show the room as one bright sheet.
   const wallPlate = metal({ name: 'slWallPlate', color: 0x33200f, rough: 0.44, cast: 0.7, tarnish: 0.35, patina: PATINA });
   const yokeMat = metal({ name: 'slYoke', color: 0x3d2716, rough: 0.34, brush: 'y', cast: 0.4, tarnish: 0.3, patina: PATINA });
+  // The yoke itself: the mount's metal, with the glint's line. The receiver, the arm and the gusset are left without it.
+  const yokeLine = metal({ name: 'slYokeLine', color: 0x3d2716, rough: 0.34, brush: 'y', cast: 0.4, tarnish: 0.3, patina: PATINA, extra: withGlint(GLINT.yoke) });
   const bronze = metal({ name: 'slBronze', color: hex('bronze'), rough: 0.33, brush: 'radial-z', tarnish: 0.3, patina: PATINA });
+  capBright(bronze, BRONZE_TOP);
   const copper = metal({ name: 'slCopper', color: hex('copper'), rough: 0.44, tarnish: 0.25, patina: PATINA });
   const paint = dielectric('slPaint', 0x2c2017, 0.62, { vary: 0.08, scale: 0.05 });
   const leafOut = leafMaterial('slLeafOut', 0x17100b, 0.5, 0.25, false);
   const leafIn = leafMaterial('slLeafIn', 0x2c2017, 0.6, 0, true);
   const knurl = knurlMaterial();
   // The room's light lies along every rounded edge of the metal: the beads, the bar's edges, the leaves' rolled edges.
-  for (const m of [bronze, copper, yokeMat, knurl]) m.envMapIntensity = EDGE_ROOM;
+  for (const m of [bronze, copper, yokeMat, yokeLine, knurl]) m.envMapIntensity = EDGE_ROOM;
   housing.envMapIntensity = EDGE_ROOM * 0.8;
+  drum.envMapIntensity = housing.envMapIntensity;
+  const glint = glintUniforms();
+  takeGlint(glint, drum, yokeLine);
+  drum.userData.uniforms = { ...drum.userData.uniforms, ...housing.userData.uniforms };
   const glow = glowMaterial();
   const lens = lensMaterial();
   const plate = plateMaterial();
@@ -287,7 +318,7 @@ export async function buildStudioLight(): Promise<StudioModel> {
   const hb = new Builder();
   const R = SL.R;
   // The drum in front of the louvres, with a rolled bead at each end.
-  hb.add(turned([[R - 3, -44], [R + 2.5, -43], [R + 2.5, -38], [R, -36.5], [R, 55], [R + 2, 56.5], [R + 2, 59]], 128), housing);
+  hb.add(turned([[R - 3, -44], [R + 2.5, -43], [R + 2.5, -38], [R, -36.5], [R, 55], [R + 2, 56.5], [R + 2, 59]], 128), drum);
   // The louvres: eight slanted rings that let the heat out and keep the light in, on four straps.
   const LOUV = { front: -46, pitch: 7.4, n: 8 };
   for (let k = 0; k < LOUV.n; k++) {
@@ -458,11 +489,11 @@ export async function buildStudioLight(): Promise<StudioModel> {
     const shape = new THREE.Shape([...outer, ...innerL]);
     const bar = new THREE.ExtrudeGeometry(shape, { depth: SL.BAR_W - 2, bevelEnabled: true, bevelThickness: 1, bevelSize: 1, bevelOffset: -0.2, bevelSegments: 2, curveSegments: 4 });
     bar.translate(0, 0, -(SL.BAR_W - 2) / 2);
-    yb.add(toCreasedNormals(bar, 35 * D2R), yokeMat);
+    yb.add(toCreasedNormals(bar, 35 * D2R), yokeLine);
     for (const s of [-1, 1]) {
       // The arm's end, round round the pivot.
       const boss = new THREE.CylinderGeometry(SL.BAR_W / 2 + 4, SL.BAR_W / 2 + 4, T, 48); boss.rotateZ(Math.PI / 2);
-      yb.add(boss, yokeMat, xf({ p: [s * Wy, 0, 0] }));
+      yb.add(boss, yokeLine, xf({ p: [s * Wy, 0, 0] }));
       // The toothed disc between the arm and the trunnion.
       const disc = turned([[0, 0], [21, 0], [22.5, 1.2], [22.5, 4.8], [21, 6], [12, 6]], 0, { n: 30, depth: 1.8, from: 20.9 });
       disc.rotateY(Math.PI / 2);
@@ -481,9 +512,9 @@ export async function buildStudioLight(): Promise<StudioModel> {
       yb.add(stud, copper, place);
     }
     // The spigot plate bolted to the crossbar, and the spigot standing up from it.
-    yb.add(rbox(58, 9, SL.BAR_W, 2, 2), yokeMat, xf({ p: [0, Hy + T / 2 + 4.5, 0] }));
+    yb.add(rbox(58, 9, SL.BAR_W, 2, 2), yokeLine, xf({ p: [0, Hy + T / 2 + 4.5, 0] }));
     for (const s of [-1, 1]) { const sc = screw(3.2); const m = xf({ p: [s * 20, Hy + T / 2 + 9, 0], r: [-Math.PI / 2, 0, s * 0.4] }); yb.add(sc.head, copper, m); yb.add(sc.slot, dark, m); }
-    yb.add(turned([[0, 0], [15, 0], [15, 30], [13.4, 31.5], [13.4, 34], [15, 35.5], [15, 50], [13, 52], [0, 52]], 48), yokeMat, xf({ p: [0, Hy + T / 2 + 9, 0], r: [-Math.PI / 2, 0, 0] }));
+    yb.add(turned([[0, 0], [15, 0], [15, 30], [13.4, 31.5], [13.4, 34], [15, 35.5], [15, 50], [13, 52], [0, 52]], 48), yokeLine, xf({ p: [0, Hy + T / 2 + 9, 0], r: [-Math.PI / 2, 0, 0] }));
   }
   yb.build(yoke, 'yoke');
 
@@ -590,5 +621,5 @@ export async function buildStudioLight(): Promise<StudioModel> {
   const plateTop = recY + PLATE_UP + 26;
   // The light is framed on the bracket's own plate, not on the box's end of it: the anchors were set on that framing.
   const mountBox = new THREE.Box3(new THREE.Vector3(px - 52, recY - 6, 0), new THREE.Vector3(px + 52, plateTop, pz + 44));
-  return { root, yoke, head, inner, lens, glow, housing, leafIn, wall: wallMat, rear, lensMiddle, tips, mountBox, aim, buildMount };
+  return { root, yoke, head, inner, lens, glow, housing, leafIn, wall: wallMat, glint, rear, lensMiddle, tips, mountBox, aim, buildMount };
 }

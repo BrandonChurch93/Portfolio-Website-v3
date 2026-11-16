@@ -7,6 +7,7 @@ import type { PieceOptions } from '../../world/piece';
 import { Stage } from '../../world/stage';
 import { trueDarks } from '../../world/tone';
 import type { Anchor, StruckPiece } from '../../world/struck';
+import { placeGlint } from '../../world/glint';
 import { FRAME_H, RF, buildReflector, dishAxis, type ReflectorModel } from './model';
 
 // The copper reflector on its arm, fixed to the page's ground as to a wall. The stream falls onto the middle of its
@@ -23,6 +24,10 @@ const DIST = FRAME_H / 2 / Math.tan((FOV / 2) * (Math.PI / 180));
 // the light would sit by the bowl's centre of curvature and light the whole face at once; out here its highlight is a
 // place on the face that travels with the cursor.
 const LAMP = { reach: 2000, x: 50, y: 26, ease: [0.32, 0.5] as const, power: 0.62 };
+// Where the glint on the tube and the knuckle takes the lamp to be: the same sphere, swung further and sooner, so the
+// line runs the whole length of the tube across the part of the screen the pointer is in. Only the glint reads it: the
+// dish, the wall and the arm are lit by the lamp itself.
+const GLINT_LAMP = { x: 54, y: 36, ease: [0.3, 0.42] as const };
 // How far the brightest of the cursor's light on the wall leans toward the cursor, and how far it may go.
 const WALL_LEAN = 0.3, WALL_REACH = 110;
 // How far the face's normals are turned toward the visitor for the direct lights, and how much its curve is deepened
@@ -119,9 +124,14 @@ export function createReflector(): StruckPiece {
     if (!stage || !model) return;
     const dx = ((lampUV.x - 0.5) * stage.width) / Math.max(1, clock.view.w);
     const dy = ((0.5 - lampUV.y) * stage.height) / Math.max(1, clock.view.h);
-    const ax = Math.tanh(dx / LAMP.ease[0]) * LAMP.x * (Math.PI / 180), ay = Math.tanh(dy / LAMP.ease[1]) * LAMP.y * (Math.PI / 180);
-    const p = new THREE.Vector3(Math.sin(ax) * Math.cos(ay), Math.sin(ay), Math.cos(ax) * Math.cos(ay)).multiplyScalar(LAMP.reach).add(model.centre);
+    const centre = model.centre;
+    const on = (l: { x: number; y: number; ease: readonly [number, number] }) => {
+      const ax = Math.tanh(dx / l.ease[0]) * l.x * (Math.PI / 180), ay = Math.tanh(dy / l.ease[1]) * l.y * (Math.PI / 180);
+      return new THREE.Vector3(Math.sin(ax) * Math.cos(ay), Math.sin(ay), Math.cos(ax) * Math.cos(ay)).multiplyScalar(LAMP.reach).add(centre);
+    };
+    const p = on(LAMP);
     stage.lamp.position.copy(p).multiplyScalar(RF.SCALE);
+    placeGlint(model.glint, on(GLINT_LAMP).multiplyScalar(RF.SCALE), stage.camera);
     const w = model.wall.position;
     model.face.uLampD.value.copy(p).applyMatrix4(new THREE.Matrix4().copy(model.dish.matrix).invert()).normalize();
     model.wallC.value.set(clamp((p.x - w.x) * WALL_LEAN, -WALL_REACH, WALL_REACH), clamp((p.y - w.y) * WALL_LEAN, -WALL_REACH, WALL_REACH));
