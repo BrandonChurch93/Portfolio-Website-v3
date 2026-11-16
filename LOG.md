@@ -2,6 +2,54 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · The seventh picture: an underside he likes, his notes on the top, and a prompt to combine the two (Fable, web chat)
+
+**What Brandon said**
+
+- Of the picture made from picture 5: "This actually looks pretty good."
+- He asked whether to give Gemini both pictures and have it make one, the top from one and the underside from the other.
+- The pyramid's mirror is too strong: he wants it "super shiny and gold", not reflective. The buildings are all the same: a gold top on two or three roofs, spread out, or shiny bronze accents, with the site's Egyptian flair. His words are in `BRIEF.md`, Settled, Hero.
+
+**What was done**
+
+- Picture 7 is kept as `reference/concept/07-gemini-the-underside-he-likes-a-deep-hollow-with-a-clean-core.jpg`.
+- The second prompt worked because it edited the picture that already had the deep hollow, and asked for four things only.
+- Picture 6's top was put beside picture 4's. It is the same layout with three towers added at the far right and a gold pyramid. Fable had told him it had fewer towers: that was wrong, and the brief's line is corrected.
+- A third prompt was written and given to him, to run with picture 6 attached first and picture 7 second.
+
+**The references now**
+
+- The top: picture 4, as changed by picture 6 (three towers behind the dunes) and by his notes (a polished gold pyramid, gold tops on two or three towers, bronze accents).
+- What broke away: picture 6.
+- The torn rock, the hollow, the core and the stream: picture 7.
+
+**The third prompt, as given**
+
+```
+I am attaching two images. Image 1 is the top of the planet and the debris round it. Image 2 is the underside. Make one image from them.
+
+Start from image 1. Keep its camera, its city, its spire and ring, its trees, its dunes and its moon exactly as they are. Replace everything under the land with the underside of image 2: the deep hollow under an overhanging roof, the great broken slabs, the sphere of light hanging free in it, and the thin stream falling from it. Make the planet as deep as it is in image 2. The land and the rock under it must join as one object, with the same light and the same color of rock all the way through.
+
+Keep image 1's debris field: the ring of small pieces round the planet and the great pieces, moved only as far as the new underside needs. Keep the whole planet in the frame, with room under it for the debris and the stream.
+
+Then four changes:
+1. The pyramid is too much of a mirror. Make it polished gold: very shiny, with bright highlights, but with no sharp reflection of the scene in it.
+2. Three towers, spread out across the skyline, get a polished gold top. One a small pyramid cap like the tip of an obelisk, one a stepped crown, one a gold disc carved like a sun.
+3. A few other towers get polished bronze bands and fins. Leave the rest of the towers as they are.
+4. The sphere of light is a little too white. Make it pale gold with a deeper orange edge.
+
+Only warm colors. No blue, no green, no grey, no white.
+```
+
+**When it comes back**
+
+- If it holds both halves it becomes the one picture he signs off, and the look is built to it. If it loses either, the three pictures stay the references and nothing more is asked of Gemini.
+- Picture 7 as a thing to build: the hollow is a cave under a roof, which is a different shape from `TEAR` in `src/hero-blockout/plan.ts`. The roof is the land's own front edge, broken and overhanging. The hollow goes back about a third of the planet's depth and is lit by the core alone. Under the core a ledge of layered rock runs across, and under that the planet is open. The shell at the left and right is whole on its outside and broken along its inner edge. The core is about 15% of the planet's width across.
+
+**Not yet answered by him**
+
+- The fixed light on the hero, with the cursor's light as a glint on metal.
+
 ## 2026-11-15 · The sixth picture: the debris is good, the underside did not change, and a second prompt (Fable, web chat)
 
 **What Brandon said**
