@@ -781,65 +781,106 @@ float palCrack(vec2 p, float size){
   return (1.0 - smoothstep(0.0, 0.035 + px * 1.0, d2 - d1)) * (1.0 - smoothstep(0.2, 0.5, px));
 }`;
 
+// The knots: two, off centre, in open wood. Where, how large across and along the grain.
+const KNOTS = [{ x: 22, z: 42, r: 4.2 }, { x: 128, z: -24, r: 2.6 }] as const;
+// The growth rings: an axis under the board that rises toward the thumb hole, so the rings come up through the top
+// as nested arches whose tips lie round the hole, and run out as long lines to the left.
+const AXIS = { apex: 108, rise: 0.15, shallow: 6, z: HOLE.z } as const;
+
 function boardMaterial(u: Shared): THREE.MeshPhysicalMaterial {
-  const m = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.6, specularIntensity: 0.22 });
+  const m = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.6, specularIntensity: 0.1 });
   m.name = 'paletteWood';
-  m.envMapIntensity = 0.3;
+  m.envMapIntensity = 0.16;
   m.userData.uniforms = u;
   const v2 = (p: P2) => `vec2(${p[0].toFixed(1)}, ${p[1].toFixed(1)})`;
   // Walnut, from the pore to its lightest streak: the site's deep bronze and its grey, in proportion.
   const wc = (a: number, b: number) => `(${L('bronze-deep')} * ${a.toFixed(3)} + ${L('text-3')} * ${b.toFixed(3)})`;
+  const knot = (k: (typeof KNOTS)[number]) => `vec3(${k.x.toFixed(1)}, ${k.z.toFixed(1)}, ${k.r.toFixed(1)})`;
   return shade(m, 'palette-wood', partChunks({
     head: /* glsl */ `${BUMP}
-// The growth rings are cylinders round an axis that runs along the board below it, tilted and wandering, so the top
-// shows the long arcs of flat sawn wood and the rounded edge shows end grain.
-float palRings(vec3 o){
-  float z0 = 8.0 + 34.0 * sin(o.x * 0.0062 + 0.4) + 14.0 * (wNoise(vec3(o.x * 0.01, 3.0, 1.0)) - 0.5);
-  float y0 = -62.0 + 0.05 * o.x;
+const vec3 PAL_KNOT[2] = vec3[2](${KNOTS.map(knot).join(', ')});
+// The distance out from the rings' axis, with the grain bending round the knots. The axis wanders a little and lies
+// shallowest just short of the hole's far side.
+float palRadius(vec3 o){
+  float z0 = ${AXIS.z.toFixed(1)} + 16.0 * sin(o.x * 0.011 + 0.6) + 9.0 * (wNoise(vec3(o.x * 0.012, 3.0, 1.0)) - 0.5);
+  float y0 = -${AXIS.shallow.toFixed(1)} - ${AXIS.rise.toFixed(3)} * max(${AXIS.apex.toFixed(1)} - o.x, 0.0) - 0.9 * max(o.x - ${AXIS.apex.toFixed(1)}, 0.0);
   float r = length(vec2(o.z - z0, o.y - y0));
-  return (r + 3.5 * wFbm(vec3(o.x * 0.004, o.z * 0.02, o.y * 0.02 + 2.0))) / 2.7;
+  r += 2.6 * (wFbm(vec3(o.x * 0.006, o.z * 0.025, o.y * 0.02 + 2.0)) - 0.5);
+  for (int k = 0; k < 2; k++) {
+    vec2 d = (o.xz - PAL_KNOT[k].xy) / vec2(1.7, 1.0);
+    r += PAL_KNOT[k].z * 2.2 * exp(-dot(d, d) / (PAL_KNOT[k].z * PAL_KNOT[k].z * 5.0));
+  }
+  return r;
+}
+// The rings counted out from the axis: years of fast growth and slow, so the lines bunch and open.
+float palYears(float r){ return (r + 7.0 * sin(r * 0.07 + 1.3) + 1.9 * sin(r * 0.21 + 0.4)) / 2.9; }
+// Pores: short dark dashes along the grain, six rows to a year, more of them in the early wood. Under a pixel they
+// become what they average to.
+float palPores(float x, float yr, float late){
+  float v = yr * 6.0, row = floor(v), fv = fract(v) - 0.5;
+  float uu = x / 3.4 + palH(row * 1.7 + 3.0) * 13.0, cell = floor(uu), fu = fract(uu) - 0.5;
+  float h1 = palH(row * 3.1 + cell * 7.3 + 1.0), h2 = palH(row * 5.7 + cell * 1.9 + 2.0);
+  float len = 0.16 + 0.22 * h2, dens = 0.36 - 0.24 * late;
+  float aa = max(fwidth(uu), fwidth(v));
+  float dash = (1.0 - smoothstep(len - 0.05 - aa, len + 0.05 + aa, abs(fu))) * (1.0 - smoothstep(0.1, 0.24 + aa, abs(fv))) * step(h1, dens);
+  return mix(dash, dens * 0.3 * 0.55, smoothstep(0.3, 0.8, aa));
 }`,
     color: /* glsl */ `
   vec3 palO = vObj;
-  float palR = palRings(palO);
-  float palRw = fwidth(palR);
-  float palF = fract(palR + 0.25 * wNoise(vec3(palR * 0.3, palO.x * 0.01, 4.0)));
-  float palLate = smoothstep(0.5, 0.82, palF) * (1.0 - smoothstep(0.86, 1.0, palF));
-  palLate = mix(palLate, 0.35, smoothstep(0.25, 0.6, palRw));
+  float palRad = palRadius(palO);
+  float palYr = palYears(palRad);
+  float palRw = fwidth(palYr);
+  float palF = fract(palYr);
+  float palId = floor(palYr);
+  float palLate = smoothstep(0.42, 0.86, palF) * (1.0 - smoothstep(0.9, 1.0, palF));
+  // A line runs out and picks up again further along, and some years are fainter than others.
+  float palRun = smoothstep(0.26, 0.62, wNoise(vec3(palO.x * 0.014, palId * 1.37, 3.0))) * (0.55 + 0.45 * palH(palId * 2.3 + 5.0));
+  palLate *= 0.35 + 0.65 * palRun;
+  palLate = mix(palLate, 0.3, smoothstep(0.25, 0.6, palRw));
   float palTop = smoothstep(0.92, 0.99, vObjN.y);
   float palEnd = 1.0 - palTop;
-  // Pores: dashes drawn out along the grain on the top, dots on the end grain, thickest in the early wood.
-  float palPx = length(fwidth(palO));
-  float palPr = smoothstep(0.7, 0.84, wNoise(vec3(palO.x * 0.36 * (1.0 - 0.8 * palEnd) + palO.y * 3.0 * palEnd, palR * 8.5, palO.y * 3.4 * palEnd)));
-  palPr *= (0.45 + 0.55 * (1.0 - palLate)) * (1.0 - smoothstep(0.06, 0.2, palPx));
-  float palPr2 = smoothstep(0.64, 0.8, wNoise(vec3(palO.x * 0.08, palR * 2.6, 7.0))) * (1.0 - smoothstep(0.2, 0.6, palPx));
-  palPr = max(palPr, palPr2 * 0.3);
-  palPr *= 1.0 - palEnd;
-  float palStreak = smoothstep(0.28, 0.72, wFbm(vec3(palO.x * 0.0035, palR * 0.09, 5.0)));
-  float palV = wFbm(palO * 0.02 + 4.0);
-  vec3 palLight = ${wc(1.1, 0.04)}, palMid = ${wc(0.5, 0.014)}, palDark = ${wc(0.13, 0.003)}, palPore = ${wc(0.03, 0.0)};
-  vec3 palWood = mix(palMid, palLight, palStreak * 0.85) * (0.86 + 0.28 * palV);
-  palWood = mix(palWood, palDark, palLate * (0.65 + 0.3 * (1.0 - palStreak)));
+  float palPr = palPores(palO.x, palYr, palLate) * palTop * (0.75 + 0.25 * palRun);
+  float palStreak = smoothstep(0.25, 0.75, wFbm(vec3(palO.x * 0.003, palRad * 0.035, 5.0)));
+  float palV = wFbm(palO * 0.018 + 4.0);
+  vec3 palLight = ${wc(1.05, 0.04)}, palMid = ${wc(0.56, 0.016)}, palDark = ${wc(0.2, 0.004)}, palPore = ${wc(0.04, 0.0)};
+  vec3 palWood = mix(palMid, palLight, palStreak * 0.7) * (0.9 + 0.2 * palV);
+  palWood = mix(palWood, palDark, palLate * (0.4 + 0.2 * (1.0 - palStreak)));
+  // The knots: a dark heart with tight rings of its own, a darker rim, and a check across it.
+  for (int k = 0; k < 2; k++) {
+    vec2 d = (palO.xz - PAL_KNOT[k].xy) / vec2(1.25, 1.0);
+    float l = length(d), R = PAL_KNOT[k].z;
+    float inK = 1.0 - smoothstep(R * 0.92, R * 1.08, l);
+    float kr = 0.5 + 0.5 * cos(l / R * 15.0 + 2.0 * wNoise(vec3(d * 0.6, 4.0)));
+    vec3 kc = mix(${wc(0.3, 0.01)}, ${wc(0.12, 0.002)}, kr * 0.6 + 0.4 * smoothstep(R * 0.6, R, l));
+    kc = mix(kc, palPore, (1.0 - smoothstep(0.0, 0.18 + fwidth(d.y), abs(d.y + 0.3 * d.x * d.x / R))) * (1.0 - smoothstep(R * 0.2, R * 0.7, l)) * 0.8);
+    palWood = mix(palWood, kc, inK * palTop);
+    palWood *= 1.0 - 0.35 * exp(-pow((l - R * 1.15) / (R * 0.5), 2.0)) * palTop;
+  }
   // The end grain drinks the finish and is darker, its rings plain.
-  palWood *= 1.0 - 0.3 * palEnd;
+  palWood = mix(palWood, palWood * 0.7, palEnd);
+  palWood = mix(palWood, palDark, palEnd * smoothstep(0.55, 0.85, palF) * 0.5);
   // Old paint ground into the pores near where the mixing is done and along the rim.
   float palNear = exp(-length((palO.xz - ${v2([MIX.x, MIX.z])}) / vec2(90.0, 60.0))) + 0.6 * smoothstep(55.0, 100.0, length(palO.xz / vec2(1.0, 0.78)));
   float palFill = smoothstep(0.45, 0.75, wFbm(vec3(palO.xz * 0.025, 9.0))) * min(palNear, 1.0) * palTop;
   float palWhich = floor(wNoise(vec3(palO.xz * 0.01, 3.0)) * 3.999);
   vec3 palTint = palWhich < 1.0 ? palAlbedo(2) : palWhich < 2.0 ? palAlbedo(1) : palWhich < 3.0 ? palAlbedo(6) : palAlbedo(3);
-  vec3 palPoreC = mix(palPore, palTint * 0.16, palFill);
-  palWood = mix(palWood, palPoreC, palPr * 0.92);
+  vec3 palPoreC = mix(palPore, palTint * 0.07, palFill * 0.7);
+  palWood = mix(palWood, palPoreC, palPr * 0.85);
   // A faint ghost of paint wiped thin over years, in broad patches.
   float palGhost = smoothstep(0.55, 0.8, wFbm(vec3(palO.xz * 0.012, 2.0))) * min(palNear, 1.0) * palTop;
   palWood = mix(palWood, palWood * 0.6 + palTint * 0.05, palGhost * 0.5);
   // The edge and the bevel worn pale where the hand holds it, the varnish rubbed through.
   float palHand = max(exp(-pow(length(vObj.xz - vec2(${HOLE.x.toFixed(1)}, ${HOLE.z.toFixed(1)})) / 30.0, 2.0)), exp(-pow(length(vObj.xz - ${v2(BAY_AT)}) / 44.0, 2.0)));
-  float palWear = palEnd * smoothstep(0.1, 0.75, abs(vObjN.y) + 0.0) * (0.45 + 0.55 * palHand) * (0.6 + 0.4 * wNoise(palO * 0.15));
+  float palWear = palEnd * smoothstep(0.1, 0.75, abs(vObjN.y)) * (0.45 + 0.55 * palHand) * (0.6 + 0.4 * wNoise(palO * 0.15));
   palWear = max(palWear, palTop * palHand * smoothstep(0.35, 0.7, wFbm(palO * 0.06 + 2.0)) * 0.8);
   vec3 palWorn = ${wc(1.6, 0.16)};
   palWood = mix(palWood, palWorn * (0.85 + 0.3 * palV) * (1.0 - 0.4 * palLate), palWear);
   float palChip = exp(-pow(length(vObj.xz - ${v2(CHIP_AT)}) / 5.5, 2.0)) * (1.0 - palTop * 0.7);
   palWood = mix(palWood, ${wc(2.4, 0.5)}, palChip * 0.85);
+  // Each dab sits in a crisp shadow of its own, close round its foot.
+  float palOut = palOutside(palO.xz);
+  float palSit = exp(-max(palOut, 0.0) / 0.7) * step(-0.6, palOut) * palTop;
+  palWood *= 1.0 - 0.62 * palSit;
   // What is drawn on it: pencil, the burned stamp, the cup's ring.
   vec4 palA = palArt(vObj.xz) * palTop;
   float palBurn = palA.g;
@@ -847,21 +888,35 @@ float palRings(vec3 o){
   palWood = mix(palWood, ${wc(0.04, 0.0)}, smoothstep(0.35, 0.9, palBurn));
   palWood = mix(palWood, palWood * 0.5 + ${L('ember', 0.25)} * 0.25, palA.b * 0.75);
   palWood = mix(palWood, ${L('text-3', 0.2)}, palA.r * 0.8);
+  // The top's polished chamfer: a thin band of the rounded edge just over its shoulder, round the outline and the hole.
+  float palAng = acos(clamp(normalize(vObjN).y, -1.0, 1.0));
+  float palAw = max(0.09, fwidth(palAng) * 0.8);
+  float palCham = exp(-pow((palAng - 0.6) / palAw, 2.0)) * (0.09 / palAw) * (1.0 - 0.5 * palChip);
   diffuseColor.rgb = palWood;`,
-    rough: 'roughnessFactor = clamp(0.48 + 0.25 * palPr + 0.25 * palWear + 0.55 * smoothstep(0.1, 0.6, palBurn) + 0.2 * palA.b - 0.22 * palA.r + 0.25 * palChip + 0.12 * palEnd, 0.04, 1.0);',
+    rough: 'roughnessFactor = clamp(0.5 + 0.25 * palPr + 0.25 * palWear + 0.55 * smoothstep(0.1, 0.6, palBurn) + 0.2 * palA.b - 0.22 * palA.r + 0.25 * palChip + 0.12 * palEnd + 0.15 * palSit, 0.04, 1.0);',
     normal: /* glsl */ `
-  { float h = -0.03 * smoothstep(0.2, 0.9, palBurn) - 0.4 * palChip * wNoise(vObj * 1.4) + 0.002 * palLate;
+  { float h = -0.03 * smoothstep(0.2, 0.9, palBurn) - 0.4 * palChip * wNoise(vObj * 1.4) + 0.004 * palLate - 0.006 * palPr;
     normal = palBump(normal, h, 0.9); }`,
     emissive: /* glsl */ `
-  // The varnish: what it mirrors is sharp, the cursor's light as a long streak and the room's strips, broken where the
-  // finish is worn or burned, and dark in the pores.
-  { float k = (1.0 - 0.8 * palWear) * (1.0 - 0.85 * smoothstep(0.3, 0.8, palBurn)) * (1.0 - 0.7 * palPr) * (1.0 - 0.6 * palA.b) * (1.0 - 0.6 * palChip);
-    totalEmissiveRadiance += ${L('pale')} * (palTube(normal, 24000.0) * 1.3 + palTube(normal, 1500.0) * 0.06 + palStrips(normal, 30000.0) * 0.5) * k; }`,
+  // The varnish. What it mirrors is the cursor's light, as a long narrow streak in the light's own warmth with a soft
+  // fall round it, broken where the finish is worn or burned and dark in the pores. The stage's white balance takes
+  // the warmth out of dim light, so the streak is drawn in hot: after the balance it is amber to pale gold.
+  { float k = (1.0 - 0.8 * palWear) * (1.0 - 0.85 * smoothstep(0.3, 0.8, palBurn)) * (1.0 - 0.4 * palPr) * (1.0 - 0.6 * palA.b) * (1.0 - 0.6 * palChip) * (1.0 - 0.7 * palSit);
+    vec3 palGleam = ${L('hot')} * 0.88 + ${L('pale')} * 0.12;
+    vec3 palVn = normalize(nonPerturbedNormal);
+    totalEmissiveRadiance += palGleam * (palTube(palVn, 260000.0) * 1.7 + palTube(palVn, 30000.0) * 0.3 + palTube(palVn, 4000.0) * 0.05) * k * palTop;
+    totalEmissiveRadiance += ${L('hot')} * palStrips(palVn, 90000.0) * 0.03 * k * palTop;
+    // Chatoyance: the fibres lie at a tilt that turns over in bands across the grain, so a soft glow in the wood's
+    // own color moves along the board as the cursor's light does.
+    float tilt = (wNoise(vec3(vObj.x * 0.13, vObj.z * 0.008, 6.0)) * 2.0 - 1.0) * (0.5 + 0.5 * palStreak);
+    vec3 nC = normalize(palVn + vAxX * tilt * 0.22);
+    totalEmissiveRadiance += ${L('copper')} * palTube(nC, 420.0) * 0.05 * palTop * (1.0 - 0.7 * palSit) * (1.0 - 0.5 * palLate);
+    totalEmissiveRadiance += palEdgeLit(palVn, palCham); }`,
   }));
 }
 
 function paintMaterial(u: Shared): THREE.MeshPhysicalMaterial {
-  const m = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.25, clearcoat: 0.8, clearcoatRoughness: 0.1, specularIntensity: 0.7 });
+  const m = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.4, clearcoat: 0.22, clearcoatRoughness: 0.38, specularIntensity: 0.5 });
   m.name = 'palettePaint';
   m.defines = { USE_UV: '' };
   m.envMapIntensity = 0.4;
@@ -874,6 +929,7 @@ vec3 palStrokeDir(int s){ vec4 q = PAL_STROKE[s]; vec2 d = q.zw - q.xy; return v
   float palSkin = 0.0, palWet = 0.0, palRidge = 0.0, palCr = 0.0, palAge = 0.0, palPrint = 0.0;
   vec3 palC;
   if (palK < ${PAINT.mix}) {
+    palSelf = palK;
     palAge = vCell.y;
     palC = palAlbedo(PAL_DAB_PAINT[palK]);
     // Fresh: the slumped foot has dried a little and wrinkled, the peak is wet. Old: dried through, darker, cracked
@@ -884,6 +940,8 @@ vec3 palStrokeDir(int s){ vec4 q = PAL_STROKE[s]; vec2 d = q.zw - q.xy; return v
     palCr = palCrack(vObj.xz + vObj.y * 0.3, 1.7) * palAge * (1.0 - 0.5 * vCell.z);
     palC *= 1.0 - 0.85 * palCr;
     palC = mix(palC, palC * (0.85 + 0.35 * wNoise(vec3(vObj.xz * vec2(0.3, 2.5), 1.0))), vCell.z);
+    // Where it sits on the wood the paint is in its own shadow.
+    palC *= mix(0.62, 1.0, smoothstep(0.0, 0.14, vUv.y));
   } else if (palK == ${PAINT.mix}) {
     float palAl;
     int s = palTopStroke(vObj.xz, palAl);
@@ -939,29 +997,49 @@ vec3 palStrokeDir(int s){ vec4 q = PAL_STROKE[s]; vec2 d = q.zw - q.xy; return v
     palWet = 0.25 * palPrint;
   }
   diffuseColor.rgb = palC;`,
-    rough: `roughnessFactor = clamp(mix(mix(0.12, 0.42, palSkin), 0.66, palAge) - 0.06 * palRidge + 0.25 * palCr - 0.25 * palWet * (1.0 - palAge), 0.05, 1.0); if (palK == ${PAINT.pool}) roughnessFactor = 0.5 - 0.2 * vCell.y;`,
+    rough: `roughnessFactor = clamp(mix(mix(0.34, 0.55, palSkin), 0.7, palAge) - 0.06 * palRidge + 0.2 * palCr - 0.12 * palWet * (1.0 - palAge), 0.05, 1.0); if (palK == ${PAINT.pool}) roughnessFactor = 0.5 - 0.2 * vCell.y;`,
     normal: /* glsl */ `
   { float px = length(fwidth(vObj));
     float fine = 1.0 - smoothstep(0.25, 0.6, px);
     float h = palSkin * (wNoise(vObj * 0.55) - 0.5) * 0.12 * fine - palCr * 0.015;
-    if (palK == ${PAINT.mix}) { float al0; int s = palTopStroke(vObj.xz, al0); vec3 sd = palStrokeDir(s); float ac = dot(vObj.xz, vec2(-sd.y, sd.x)); h += 0.022 * sin(ac * 5.5 + wNoise(vObj * 0.6) * 3.0) * fine; }
-    if (palK < ${PAINT.mix}) { h += vCell.z * 0.05 * sin(dot(vObj.xz, vec2(0.3, 2.7))) * fine; }
+    if (palK == ${PAINT.mix}) { float al0; int s = palTopStroke(vObj.xz, al0); vec3 sd = palStrokeDir(s); float ac = dot(vObj.xz, vec2(-sd.y, sd.x)); h += 0.04 * sin(ac * 5.5 + wNoise(vObj * 0.6) * 3.0) * fine; }
+    if (palK < ${PAINT.mix}) {
+      h += vCell.z * 0.05 * sin(dot(vObj.xz, vec2(0.3, 2.7))) * fine;
+      // The ribs the tube's nozzle left along the coil, softened where it slumped, gone where it dried.
+      vec2 d = vObj.xz - PAL_DAB[palK].xy;
+      float rr = length(d) / PAL_DAB[palK].z, an = atan(d.y, d.x);
+      float coil = rr * 2.3 - an / 6.2832;
+      float ribs = sin(6.2832 * coil * 3.0 + 2.4 * wNoise(vObj * 0.35)) * smoothstep(0.25, 0.65, wNoise(vec3(an * 2.0, coil * 1.5, 7.0)));
+      h += 0.1 * ribs * (1.0 - palAge) * smoothstep(0.12, 0.4, vUv.y) * (1.0 - smoothstep(0.3, 0.65, px));
+    }
     h += palPrint * 0.03;
     normal = palBump(normal, h, 1.0); }`,
     emissive: /* glsl */ `
-  totalEmissiveRadiance += ${L('pale')} * (palTube(normal, 1600.0) * 1.6 * palWet + palTube(normal, 220.0) * 0.12 * (1.0 - palAge));
+  // A soft sheen on its ridges, as oil paint has: never a glassy pin point.
+  totalEmissiveRadiance += mix(${L('pale')}, palC * 1.4, 0.3) * (palTube(normal, 520.0) * 0.5 * palWet + palTube(normal, 90.0) * 0.08 * (1.0 - palAge));
   if (uGlow > 0.001) {
     vec3 palE = vec3(0.0);
     if (palK < ${PAINT.mix}) {
-      float thin = pow(1.0 - clamp(vUv.y, 0.0, 1.0), 1.6);
-      palE = palGlowCol(PAL_DAB_PAINT[palK]) * palDab(palK) * (0.15 + 0.95 * thin) * (1.0 + 1.5 * palCr) * 1.15;
+      // Lit, the paint is still paint: its own color brought up, shaded by its form toward the light above the
+      // strike, its foot in its own shadow. A glow strongest where it is thinnest made it read as amber jelly.
+      vec3 nO = normalize(vPalN);
+      vec3 palLs = normalize(vec3(-0.45, 1.0, 0.25));
+      float form = 0.12 + 0.88 * pow(clamp(dot(nO, palLs), 0.0, 1.0), 1.6);
+      float foot = smoothstep(0.0, 0.2, vUv.y);
+      float lit = palDab(palK);
+      vec3 gc = palGlowCol(PAL_DAB_PAINT[palK]);
+      palE = gc * lit * form * (0.35 + 0.65 * foot) * (1.0 + 0.6 * palCr) * 0.6;
+      // and its ridges catch that light as a soft sheen, a little paler than the paint
+      vec3 palVo = normalize(uEye - vPalP);
+      float sh = pow(max(dot(reflect(-palVo, normalize(normal * 0.0 + nO)), palLs), 0.0), 18.0);
+      palE += mix(gc, ${L('pale')}, 0.35) * lit * sh * 0.35 * (1.0 - palAge);
     } else if (palK == ${PAINT.mix}) {
       float al1;
       int s = palTopStroke(vObj.xz, al1);
       float g = palStroke(s, clamp(al1, 0.0, 1.1));
       palE = palRamp(0.3 + 0.7 * g) * g * (0.2 + 2.4 * smoothstep(0.15, 0.7, vCell.z));
     } else if (palK == ${PAINT.hot}) {
-      palE = ${L('hot')} * palHair(0.0) * 1.3;
+      palE = ${L('hot')} * palHair(0.0) * 0.8 * (0.35 + 0.65 * clamp(normalize(vPalN).y, 0.0, 1.0));
     } else if (palK == ${PAINT.knife}) {
       float g = 0.0; for (int s = 0; s < ${STROKES.length}; s++) g += palStroke(s, 0.9);
       palE = palRamp(0.4) * g * 0.35;
@@ -985,7 +1063,7 @@ function handleMaterial(u: Shared, satin = false): THREE.MeshPhysicalMaterial {
     head: BUMP,
     color: /* glsl */ `
   int palH4 = int(vCell.x + 0.5);
-  float palS = vUv.x, palWr = 0.0, palGr = 0.0, palTang = 0.0, palPaper = 0.0, palCoat = 1.0;
+  float palS = vUv.x, palWr = 0.0, palGr = 0.0, palTang = 0.0, palPaper = 0.0, palCoat = 1.0, palTorn = 0.0;
   vec3 palC;
   if (palH4 == 0) {
     vec3 palLq = ${L('bg-3', 0.85)} * 0.7 + ${L('text-3', 0.03)} * 0.3;
@@ -1015,6 +1093,9 @@ function handleMaterial(u: Shared, satin = false): THREE.MeshPhysicalMaterial {
     float pen = palArt(vObj.xz).r * step(0.0, vObj.y);
     palC = mix(palC, ${L('text-3', 0.16)}, pen * 0.85);
     palWr = pen;
+    // The torn end, its fibres standing up and catching the light, and the two cut edges.
+    float tw = max(0.012, fwidth(vUv.y) * 1.2), cw = max(0.012, fwidth(vUv.x) * 1.2);
+    palTorn = (1.0 - smoothstep(0.0, tw, vUv.y - 0.004)) * (0.012 / tw) + 0.6 * (1.0 - smoothstep(0.0, cw, min(vUv.x, 1.0 - vUv.x))) * (0.012 / cw) * step(vObj.y, 0.5) * step(-0.5, vObj.y);
   } else {
     vec3 palLq = ${L('bronze-deep', 0.85)} * 0.85 + ${L('text-3', 0.03)} * 0.15;
     palWr = smoothstep(0.66, 0.74, wFbm(vec3(palS * 0.2, vUv.y * 8.0, 6.0)));
@@ -1027,7 +1108,7 @@ function handleMaterial(u: Shared, satin = false): THREE.MeshPhysicalMaterial {
     normal: '{ float h = palH4 == 2 ? 0.02 * wNoise(vec3(vUv.x * 4.0, vUv.y * 110.0, 3.0)) : palH4 == 1 ? -0.04 * smoothstep(0.4, 0.6, palGr) - 0.06 * palTang : palWr * 0.15; normal = palBump(normal, h, 1.0); }',
     emissive: /* glsl */ `
   { float sharp = palH4 == 1 ? 260.0 : 1300.0, k = palH4 == 1 ? 0.35 : palH4 == 2 ? 0.0 : 1.1 * (1.0 - palWr);
-    totalEmissiveRadiance += ${L('pale')} * palTube(normal, sharp) * k; }`,
+    totalEmissiveRadiance += ${L('pale')} * palTube(normal, sharp) * k + palEdgeLit(normalize(nonPerturbedNormal), palTorn) * 0.8; }`,
   }));
 }
 
@@ -1063,7 +1144,12 @@ function metalMaterial(u: Shared): THREE.MeshPhysicalMaterial {
     normal = palBump(normal, h, 1.0); }`,
     emissive: /* glsl */ `
   { float r = clamp(roughnessFactor, 0.05, 1.0);
-    totalEmissiveRadiance += diffuseColor.rgb * palTube(normal, 2.0 / (r * r * r) + 20.0) * 1.6; }`,
+    totalEmissiveRadiance += diffuseColor.rgb * palTube(normal, 2.0 / (r * r * r) + 20.0) * 1.6;
+    // Its crisp edges: a lip, a crimp, a rivet's rim, and the thin sides of the blade, the neck and the clip.
+    vec3 nO = normalize(vPalN);
+    float em = palCurveEdge(vPalN, vObj, 0.75, 2.4);
+    if (palM == 1 || palM == 2) em = max(em, 1.0 - smoothstep(0.3, 0.7, abs(nO.y)));
+    totalEmissiveRadiance += palEdgeLit(normalize(nonPerturbedNormal), em) * (palM == 2 ? vec3(1.0) : mix(vec3(1.0), diffuseColor.rgb * 2.2, 0.35)); }`,
   }));
 }
 

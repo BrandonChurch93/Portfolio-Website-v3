@@ -72,7 +72,7 @@ const FLASH_KEY = { power: 60, at: [-0.8, 0.26, -0.62] as const, soft: 2.5, fill
 const STRIKE_LIGHT = { base: 0.012, flash: 0.16, at: [26, 22] as const } as const;
 // The cursor's light as it is mirrored: a tube this long through the lamp, lying across the picture and tipped a
 // little, so the varnish, the wet paint and the metal show it as a long streak that slides with the cursor.
-const TUBE = { len: 0.16, tilt: -14, power: 1 } as const;
+const TUBE = { len: 0.3, tilt: -14, power: 1 } as const;
 const TURN = { yaw: 5, pitch: 3, omega: 6.5 } as const;
 const MASK = 'linear-gradient(to right, transparent 2%, #000 12%, #000 88%, transparent 98%), linear-gradient(to bottom, transparent 5%, #000 11%, #000 89%, transparent 95%)';
 const SHARDS_MOST = 48;

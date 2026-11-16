@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { hex, type PaletteName } from '../../config/palette';
+import { seeded } from '../../world/build';
 import { lin, type Chunks } from '../../world/surface';
 import { BRUSH, DABS, MIX, PAINTS, STROKES, brushAxis } from './layout';
 
@@ -78,6 +79,9 @@ const DAB_PAINT = DABS.map((d) => `${d.paint}`).join(', ');
 const DAB_AGE = DABS.map((d) => d.age.toFixed(2)).join(', ');
 const STROKE_LIST = STROKES.map((s) => `vec4(${s.a[0].toFixed(1)}, ${s.a[1].toFixed(1)}, ${s.b[0].toFixed(1)}, ${s.b[1].toFixed(1)})`).join(', ');
 const BEAD = brushAxis(-1.5);
+// Each dab's foot, as model.ts lays it: how lumpy, and the phases of its lobes, drawn from the dab's seed in the same
+// order, so the shadow it sits in follows its own outline.
+const FOOT = DABS.map((d) => { const r = seeded(d.seed); return `vec4(${(0.08 + 0.1 * d.age).toFixed(3)}, ${(r() * 6.28).toFixed(4)}, ${(r() * 6.28).toFixed(4)}, ${(r() * 6.28).toFixed(4)})`; });
 
 export const VHEAD = /* glsl */ `
 attribute vec4 cell;
@@ -139,6 +143,22 @@ const float PAL_DAB_H[${N}] = float[${N}](${DAB_H});
 const int PAL_DAB_PAINT[${N}] = int[${N}](${DAB_PAINT});
 const float PAL_DAB_AGE[${N}] = float[${N}](${DAB_AGE});
 const float PAL_DAB_AT[${N}] = float[${N}](${DAB_AT.join(', ')});
+const vec4 PAL_FOOT[${N}] = vec4[${N}](${FOOT.join(', ')});
+float palFoot(int k, float a){
+  vec4 f = PAL_FOOT[k];
+  return PAL_DAB[k].z * (1.0 + f.x * sin(2.0 * a + f.y) + 0.06 * sin(3.0 * a + f.z) + 0.04 * sin(5.0 * a + f.w) + 0.025 * PAL_DAB_AGE[k] * sin(9.0 * a + f.y));
+}
+// How far a point of the board is outside the nearest dab's foot, in millimetres.
+float palOutside(vec2 p){
+  float best = 1e3;
+  for (int k = 0; k < ${N}; k++) {
+    vec2 d = p - PAL_DAB[k].xy;
+    float l = length(d);
+    if (l > PAL_DAB[k].z * 1.6 + 4.0) continue;
+    best = min(best, l - palFoot(k, atan(d.y, d.x)));
+  }
+  return best;
+}
 const vec4 PAL_STROKE[${S}] = vec4[${S}](${STROKE_LIST});
 const float PAL_STROKE_BOW[${S}] = float[${S}](${STROKES.map((v) => v.bow.toFixed(2)).join(', ')});
 const float PAL_STROKE_W[${S}] = float[${S}](${STROKES.map((v) => (v.w / 2).toFixed(2)).join(', ')});
@@ -176,9 +196,11 @@ float palTubeAt(vec3 A, vec3 B, vec3 n, float sharp){
   float rl = dot(R, Ld), dd = dot(Ld, Ld);
   float t = clamp((dot(R, L0) * rl - dot(L0, Ld)) / max(dd - rl * rl, 1e-6), 0.0, 1.0);
   vec3 L = normalize(L0 + Ld * t);
-  float a = max(dot(R, L), 0.0);
+  // exp of the half squared distance between the two ways is pow(cos, sharp), kept exact at the sharpness of a
+  // varnish, where 1 - cos is under a float's step.
+  vec3 dv = R - L;
   float fr = 0.04 + 0.96 * pow(1.0 - max(dot(n, V), 0.0), 5.0);
-  return pow(a, sharp) * (0.35 + 0.65 * fr) * step(0.0, dot(n, L));
+  return exp(-sharp * 0.5 * dot(dv, dv)) * step(0.0, dot(R, L)) * (0.35 + 0.65 * fr) * step(0.0, dot(n, L));
 }
 float palTube(vec3 n, float sharp){ return uTubeK <= 0.0 ? 0.0 : palTubeAt(uTubeA, uTubeB, n, sharp) * uTubeK; }
 // The room's two strip lights, mirrored the same way: for a finish that shows them sharp.
@@ -246,27 +268,48 @@ float palHair(float s){
 }
 // The light the lit paints lay on what is near them, on the faces turned toward them, falling off with distance as
 // a light does. Strong on the wood round each dab, so the wood takes each paint's color.
+int palSelf = -1;
 vec3 palBounce(vec3 p, vec3 n, vec3 albedo){
   if (uGlow <= 0.001) return vec3(0.0);
   vec3 sum = vec3(0.0);
   for (int k = 0; k < ${N}; k++) {
+    if (k == palSelf) continue;
     vec3 c = vec3(PAL_DAB[k].x, PAL_DAB_H[k], PAL_DAB[k].y);
     vec3 d = c - p;
     float l = length(d);
     float reach = max(l - PAL_DAB[k].z, 0.0);
     float face = 0.2 + 0.8 * max(dot(n, d / max(l, 1e-3)), 0.0);
-    float fall = exp(-reach / 9.0) * 0.8 + 0.2 * exp(-reach / 30.0);
+    float fall = exp(-reach / 7.0) * 0.85 + 0.05 * exp(-reach / 26.0);
     sum += palGlowCol(PAL_DAB_PAINT[k]) * palDab(k) * fall * face;
   }
   float mixAvg = 0.0;
   for (int s = 0; s < ${S}; s++) mixAvg += palStroke(s, 0.5);
   vec2 dm = (p.xz - PAL_MIX) / vec2(46.0, 34.0);
   float dmix = max(length(dm) - 1.0, 0.0) * 40.0;
-  sum += ${mixC(C('flame'), C('hot'), 0.5)} * mixAvg * 0.3 * exp(-dmix / 9.0) * (0.25 + 0.75 * max(n.y, 0.0));
+  sum += ${mixC(C('flame'), C('hot'), 0.5)} * mixAvg * 0.22 * exp(-dmix / 7.0) * (0.25 + 0.75 * max(n.y, 0.0));
   vec3 db = PAL_BEAD - p;
   float lb = length(db);
   sum += ${C('hot')} * palHair(0.0) * exp(-max(lb - 3.0, 0.0) / 7.0) * (0.25 + 0.75 * max(dot(n, db / max(lb, 1e-3)), 0.0));
   return min(sum, vec3(1.6)) * (0.3 + 0.7 * albedo) * 1.1;
+}
+// A crisp edge caught by the lights, as every part of the CPU has: m is where the edge is, 0 to 1. It is drawn the way
+// a thin chamfer or a rolled lip takes light: brightest where it faces the cursor's light or the light behind, and
+// never quite dark, so it runs all the way round.
+vec3 palEdgeLit(vec3 n, float m){
+  if (m <= 0.001) return vec3(0.0);
+  vec3 P = -vViewPosition, V = normalize(vViewPosition);
+  vec3 Lp = 0.5 * (uTubeA + uTubeB) - P;
+  vec3 H = normalize(Lp / max(length(Lp), 1e-5) + V);
+  float lamp = pow(max(dot(n, H), 0.0), 16.0) * uTubeK;
+  float back = pow(max(dot(n, uRim.xyz), 0.0), 1.5) * min(uRim.w, 1.0);
+  float room = min(uRim.w, 1.0);
+  return mix(${C('hot')}, ${C('pale')}, 0.32) * m * (0.16 * room + 0.9 * lamp + 0.4 * back);
+}
+// Where an edge is, worked out from how fast the surface turns: a lip, a crimp, a rivet's edge, a bevel. It fades as
+// the edge thins under a pixel rather than breaking up.
+float palCurveEdge(vec3 nObj, vec3 pObj, float lo, float hi){
+  float c = length(fwidth(nObj)) / max(length(fwidth(pObj)), 1e-4);
+  return smoothstep(lo, hi, c);
 }
 float palCutA;
 vec3 palEdgeLight(){
@@ -288,7 +331,10 @@ vec3 palRimLight(vec3 n, vec3 v){
   if (uRim.w <= 0.0) return vec3(0.0);
   float graze = 1.0 - clamp(dot(n, v), 0.0, 1.0);
   float toward = clamp(dot(n, uRim.xyz), 0.0, 1.0);
-  return ${C('pale')} * pow(graze, 6.0) * pow(toward, 2.0) * uRim.w;
+  // Where the edge is seen so nearly edge on that its light changes faster than a pixel can hold, it would be drawn as
+  // a bead at every step of the outline: there it fades instead.
+  float thin = 1.0 - smoothstep(0.12, 0.4, fwidth(pow(graze, 6.0)));
+  return ${C('pale')} * pow(graze, 6.0) * pow(toward, 2.0) * uRim.w * thin;
 }`;
 
 export const CUT = /* glsl */ `
