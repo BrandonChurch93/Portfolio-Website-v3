@@ -26,3 +26,17 @@
   line-height: 1.6;
   color: var(--text-3);
 }
+
+/* On a narrow screen the study's label stood over the hero's first words. It stands in the page above them, and
+   keeps only its name: the note is for a desk. */
+@media (max-width: 1099.98px) {
+  .head {
+    position: static;
+    max-width: none;
+    padding: var(--space-5) var(--gut) 0;
+  }
+
+  .note {
+    display: none;
+  }
+}
