@@ -97,6 +97,9 @@ const AT = {
   // pale dune that rises to 221 down at 1078 to 1140 across. Two buildings stood there. They stand deep in the
   // city now, behind its front rows, where they change nothing that is seen.
   49: { px: 1012, py: 226, z: -420 }, 67: { px: 1046, py: 229, z: -470 },
+  // Two low blocks stood squarely before the spire's podium and hid its portal, where the picture shows the
+  // spire's foot clear down to the trees. They stand behind it now.
+  26: { px: 688, py: 236, z: -260 }, 40: { px: 702, py: 226, z: -330 },
   101: { px: 126, py: 257, wide: 26 }, 95: { px: 133, py: 240, wide: 18 }, 17: { px: 151, py: 221, wide: 17 }, 107: { px: 164, py: 224, wide: 9, form: 'fin' },
   32: { px: 177, py: 213, wide: 20 }, 103: { px: 194, py: 240, wide: 13 }, 92: { px: 211, py: 205, wide: 16 }, 70: { px: 223, py: 222, wide: 14 },
   46: { px: 233, py: 228, wide: 11 }, 80: { px: 241, py: 192, wide: 17, form: 'deco' }, 97: { px: 254, py: 207, wide: 17 }, 12: { px: 272, py: 170, wide: 20, form: 'deco' },
