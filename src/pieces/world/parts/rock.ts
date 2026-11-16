@@ -9,7 +9,7 @@ import { stoneMaps, stoneMaterial } from './rock/stone';
 // A world file for the rock holds two meshes: `break`, the torn rock, and `skin`, the planet's outer surface and its
 // top, which is a plain dark shape until its own part is built. Without a file it is the planet's outline, whole.
 // ?stone=0 draws the break in the plain color the sculpts' light was worked out with, to judge form alone, and
-// ?stonedebug=1 to 7 one thing the stone reads (StoneOptions.debug in ./rock/stone.ts).
+// ?stonedebug=1 to 11 one thing the stone reads (StoneOptions.debug in ./rock/stone.ts).
 //
 // What the sculpt stores for the stone, read from the file's meta and, where the meta is silent, from the file
 // itself: meta.edge, when it is there, names where each vertex's distance to the nearest crease is (light.w or
