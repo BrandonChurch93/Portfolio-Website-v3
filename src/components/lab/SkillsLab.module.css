@@ -108,7 +108,9 @@
 .row {
   position: relative;
   display: grid;
-  grid-template-columns: calc(var(--u) * var(--thing)) 300fr 620fr;
+  /* A row's name is two lines in a column no wider than its longer line, so its lists have the room: on one line
+     the names took a third of the row and pushed the lists into what was left (his words, Nov 16). */
+  grid-template-columns: calc(var(--u) * var(--thing)) max(calc(var(--u) * 200), 9.75rem) minmax(0, 1fr);
   column-gap: calc(var(--u) * 34);
   align-items: center;
   box-sizing: border-box;
@@ -151,9 +153,13 @@
   font-size: max(1.0625rem, calc(var(--u) * 23));
   font-weight: 600;
   letter-spacing: -0.01em;
-  line-height: 1.25;
+  line-height: 1.2;
   white-space: nowrap;
   color: var(--text);
+}
+
+.name span {
+  display: block;
 }
 
 .groups {
@@ -555,6 +561,11 @@
     min-height: 0;
     padding: var(--space-5) 0;
     border-top: 1px solid var(--line);
+  }
+
+  /* One column has the width for a name on one line. */
+  .name span {
+    display: inline;
   }
 
   .groups {

@@ -98,6 +98,7 @@ export class Life {
   private pool: ShardAt[] = [];
   private spin: Float32Array;
   private light: Float32Array;
+  private arc: Float32Array;
   readonly strike = new THREE.Vector3(STRIKE.x, STRIKE.y + 1.5, STRIKE.z);
   readonly far: number;
   readonly c: [number, number];
@@ -106,6 +107,7 @@ export class Life {
     const r = seeded(4712);
     this.spin = new Float32Array(parts.length);
     this.light = new Float32Array(parts.length);
+    this.arc = new Float32Array(parts.length);
     this.own = parts.map((p) => ({
       lift: FLASH.lift[p.kind] ?? 0,
       go: (FLASH.go[p.kind] ?? 0) + 0.04 * r(),
@@ -167,6 +169,7 @@ export class Life {
     out[o + 8] = e[2]; out[o + 9] = e[6]; out[o + 10] = e[10]; out[o + 11] = e[14];
     out[o + 12] = heat; out[o + 13] = fold ? fold.open : 1; out[o + 14] = fold?.crumple ?? 0; out[o + 15] = fold?.small ?? 1;
     out[o + 16] = fold?.c.x ?? 0; out[o + 17] = fold?.c.y ?? 0; out[o + 18] = fold?.c.z ?? 0; out[o + 19] = this.light[i];
+    out[o + 20] = p.axis?.[0] ?? 0; out[o + 21] = p.axis?.[1] ?? 0; out[o + 22] = p.axis ? p.r : 0; out[o + 23] = this.arc[i];
   }
 
   private rebound(age: number, at: number, amp: number, dur: number): number {
@@ -174,10 +177,12 @@ export class Life {
     return v > 0 && v < dur ? amp * Math.sin((v / dur) * Math.PI) * (1 - v / dur) : 0;
   }
 
-  // spin is each part's turn about its arbor, light the stream's light on it.
-  at(way: Way, age: number, out: Float32Array, spin?: Float32Array, light?: Float32Array): LifeAt {
+  // spin is each part's turn about its arbor, light the stream's light on it, and arc where that light stands round
+  // the part's arbor, in the part's own turn.
+  at(way: Way, age: number, out: Float32Array, spin?: Float32Array, light?: Float32Array, arc?: Float32Array): LifeAt {
     if (spin) this.spin.set(spin); else this.spin.fill(0);
     if (light) this.light.set(light); else this.light.fill(0);
+    if (arc) this.arc.set(arc); else this.arc.fill(0);
     const L = LIFE[way];
     const res: LifeAt = { show: age > 0, room: 1, flash: 0, lit: age - LIGHTS[way], shadow: [1, 1], band: null, shards: [] };
     const id = new THREE.Matrix4();

@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Builder, lathe, pause, rbox, slice, xf, type Vec3 } from '../../world/build';
-import { watchArt } from './art';
-import { bar, disc, fieldSlab, flat, meet, shapes, teeth, union, wheel, type Field } from './geom';
+import { cartoucheArt, watchArt } from './art';
+import { bar, cut, disc, fieldSlab, flat, meet, shapes, teeth, union, wheel, type Field } from './geom';
 import {
   BACK, BALANCE, BARREL, BODY, BOW, BRIDGES, BRIDGE_TOP, CARTOUCHE, CASE, CHAIN, CHAPTER, COCK, CROWN, DIAL, DIAL_FACE, HANDS, HINGE, JEWELS,
-  MOV, NUMERALS, PALLET, PENDANT, PLATE, RATCHET, SECONDS, SPRING, TRAIN, type P2,
+  MOV, NUMERALS, PALLET, PENDANT, PLATE, RATCHET, SECONDS, SPRING, TBAR, TRAIN, type P2,
 } from './layout';
 import { FIN, depthMaterial, glassMaterial, shared, watchMaterial, type Fin, type Shared } from './shading';
 
@@ -70,12 +70,14 @@ export async function buildWatch(): Promise<WatchModel> {
   const root = new THREE.Group();
   root.scale.setScalar(0.001);
   const art = watchArt();
-  const u = shared(art);
+  const u = shared(art, cartoucheArt());
   await pause();
 
   const metalM = watchMaterial(new THREE.MeshPhysicalMaterial({ color: 0xffffff, metalness: 1, roughness: 0.3 }), u, 'watch-metal');
   metalM.name = 'watchMetal';
   metalM.envMapIntensity = 0.55;
+  // Turns on three.js's anisotropic highlight. Its direction and strength are set per pixel (GRAIN in ./shading.ts).
+  metalM.anisotropy = 1;
   const glassM = glassMaterial(new THREE.MeshPhysicalMaterial({ color: 0x050403, metalness: 0, roughness: 0.03, specularIntensity: 1, ior: 1.5, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending }), u);
   glassM.name = 'watchGlass';
 
@@ -104,13 +106,13 @@ export async function buildWatch(): Promise<WatchModel> {
     });
   };
   // A jewel in its gold chaton, held by two screws.
-  const jewel = (i: number, c: P2, y: number, r: number, turn: number) => {
+  const jewel = (i: number, c: P2, y: number, r: number, turn: number, held = true) => {
     const ch = lathe([[r, 0], [r, 0.12], [r - 0.04, 0.24], [r - 0.18, 0.3], [0.62 * r / 1.5, 0.26], [0.62 * r / 1.5, 0]], 40);
     add(i, FIN.gold, ch, at(c[0], y, c[1]));
     const jr = 0.6 * r / 1.5;
     const stone = lathe([[jr, 0.2], [jr * 0.9, 0.3], [jr * 0.55, 0.36], [0.13, 0.38], [0.13, 0.3], [0, 0.3]], 28);
     add(i, FIN.jewel, stone, at(c[0], y, c[1]));
-    for (const s of [-1, 1]) screws(i, [[c[0] + Math.cos(turn) * s * (r + 0.42), c[1] + Math.sin(turn) * s * (r + 0.42)]], y, 0.4, turn);
+    if (held) for (const s of [-1, 1]) screws(i, [[c[0] + Math.cos(turn) * s * (r + 0.42), c[1] + Math.sin(turn) * s * (r + 0.42)]], y, 0.4, turn);
   };
   const plateClip = disc(MOV.x, MOV.z, PLATE.r - 0.35);
 
@@ -163,7 +165,7 @@ export async function buildWatch(): Promise<WatchModel> {
     const g = flat(teeth(BARREL.z, BARREL.r, phase['barrel:wheel'], 'wheel'), [ringPts(0, 0, 9.5, 96)], BARREL.teeth[0], BARREL.teeth[1], 0);
     add(iBarrel, FIN.wheel, g, at(bx, 0, bz));
     // The ratchet on its arbor above the bridge, with its screw.
-    add(iBarrel, FIN.steel, wheel({ z: RATCHET.z, r: RATCHET.r, phase: 0, kind: 'ratchet', y0: RATCHET.y[0], y1: RATCHET.y[1], bev: 0.08 }), at(bx, 0, bz));
+    add(iBarrel, FIN.sun, wheel({ z: RATCHET.z, r: RATCHET.r, phase: 0, kind: 'ratchet', y0: RATCHET.y[0], y1: RATCHET.y[1], bev: 0.08 }), at(bx, 0, bz));
     const big = screwHead(1.7);
     add(iBarrel, FIN.steel, big.head, at(bx, RATCHET.y[1], bz));
     for (let k = 0; k < 3; k++) {
@@ -217,8 +219,13 @@ export async function buildWatch(): Promise<WatchModel> {
   const bridgeParts: number[] = [];
   for (const [k, br] of BRIDGES.entries()) {
     await slice();
-    const fs: Field[] = [...br.discs.map(([x, z, r]) => disc(x + MOV.x, z + MOV.z, r)), ...br.bars.map(([ax, az, bx2, bz2, r]) => bar(ax + MOV.x, az + MOV.z, bx2 + MOV.x, bz2 + MOV.z, r))];
-    const f = meet(union(fs, br.name === 'barrel' ? 2.2 : 1.4), plateClip);
+    const fs: Field[] = [
+      ...br.discs.map(([x, z, r]) => disc(x + MOV.x, z + MOV.z, r)),
+      ...br.bars.map(([ax, az, bx2, bz2, r]) => bar(ax + MOV.x, az + MOV.z, bx2 + MOV.x, bz2 + MOV.z, r)),
+      ...(br.tapers ?? []).map(([ax, az, bx2, bz2, w0, w1]) => taper(ax + MOV.x, az + MOV.z, bx2 + MOV.x, bz2 + MOV.z, w0, w1)),
+    ];
+    let f = meet(union(fs, br.k), plateClip);
+    for (const [x, z, r] of br.cuts ?? []) f = cut(f, disc(x + MOV.x, z + MOV.z, r));
     const xs = [...br.discs.map((d) => d[0]), ...br.bars.flatMap((b2) => [b2[0], b2[2]])], zs = [...br.discs.map((d) => d[1]), ...br.bars.flatMap((b2) => [b2[1], b2[3]])];
     const box: [number, number, number, number] = [Math.min(...xs) + MOV.x - 12, Math.min(...zs) + MOV.z - 12, Math.max(...xs) + MOV.x + 12, Math.max(...zs) + MOV.z + 12];
     const c = br.discs[0];
@@ -228,7 +235,7 @@ export async function buildWatch(): Promise<WatchModel> {
     screws(i, br.screws.map(M), BRIDGE_TOP, 0.9, k * 0.7);
     for (const j of JEWELS) {
       const on = (br.name === 'train' && ['center', 'third', 'fourth'].includes(j.of)) || (br.name === 'escape' && j.of === 'escape') || (br.name === 'pallet' && j.of === 'pallet');
-      if (on) jewel(i, M(j.c), j.y, j.r, ang(j.c, [0, 0]) + Math.PI / 2 + k);
+      if (on) jewel(i, M(j.c), j.y, j.r, ang(j.c, [0, 0]) + Math.PI / 2 + k, br.name === 'train');
     }
     if (br.name === 'barrel') {
       // The click: a pawl in the ratchet's teeth and the spring that holds it there.
@@ -302,25 +309,20 @@ export async function buildWatch(): Promise<WatchModel> {
   {
     const [kx, kz] = BALANCE.c, [fx, fz] = COCK.foot;
     const len = Math.hypot(fx - kx, fz - kz), ux = (fx - kx) / len, uz = (fz - kz) / len;
-    const shape = meet(union([disc(kx, kz, COCK.table), bar(kx, kz, fx, fz, 1.75), disc(fx, fz, 3.4)], 1.3), disc(0, 0, PLATE.r - 0.35));
-    const top = COCK.y0 + COCK.t;
-    for (const s of shapes(shape, [Math.min(kx, fx) - 7, Math.min(kz, fz) - 7, Math.max(kx, fx) + 7, Math.max(kz, fz) + 7], 0.07, 0.01)) {
-      const dense = (l: P2[]) => { const o: P2[] = []; l.forEach((p, k2) => { const q = l[(k2 + 1) % l.length]; const n = Math.max(1, Math.ceil(Math.hypot(q[0] - p[0], q[1] - p[1]) / 0.3)); for (let j = 0; j < n; j++) o.push([p[0] + ((q[0] - p[0]) * j) / n, p[1] + ((q[1] - p[1]) * j) / n]); }); return o; };
-      const g = flat(dense(s.outer), s.holes.map(dense), 0, COCK.t, 0.16);
-      const p = g.getAttribute('position');
-      const fall = top - BRIDGE_TOP;
-      for (let k = 0; k < p.count; k++) {
-        const x = p.getX(k), z = p.getZ(k);
-        const along = ((x - kx) * ux + (z - kz) * uz) / len;
-        const k2 = THREE.MathUtils.smoothstep(along, 0.5, 0.82);
-        p.setY(k, p.getY(k) + COCK.y0 - fall * k2);
-      }
-      const bent = toCreasedNormals(g, (35 * Math.PI) / 180);
-      add(iCock, FIN.bridge, bent, at(MOV.x, 0, MOV.z));
-    }
-    const foot = meet(union([disc(fx, fz, 3.4), bar(kx + ux * len * 0.78, kz + uz * len * 0.78, fx, fz, 1.9)], 1.0), disc(0, 0, PLATE.r - 0.35));
-    for (const g of fieldSlab(foot, [fx - 6, fz - 6, fx + 6, fz + 6], 0.08, 0.01, PLATE.y1, BRIDGE_TOP - 0.05, 0.1)) add(iCock, FIN.bridge, g, at(MOV.x, 0, MOV.z));
-    screws(iCock, [M([fx + uz * 1.6, fz - ux * 1.6]), M([fx - uz * 1.6 + ux * 0.6, fz + ux * 1.6 + uz * 0.6])], BRIDGE_TOP, 0.85, 1.2);
+    const top = COCK.y0 + COCK.t, S = COCK.step;
+    const along = (x: number, z: number) => (x - kx) * ux + (z - kz) * uz;
+    // The table and its neck stand at the table's height; past the step the foot sits on the plate at the bridges'
+    // height, and a wall under the end of the neck carries the one down to the other, so the step is cut and not a
+    // ramp.
+    const shape = meet(union([disc(kx, kz, COCK.table), taper(kx, kz, fx, fz, 2.05, 1.3), disc(fx, fz, COCK.pad)], 0.8), disc(0, 0, PLATE.r - 0.35));
+    const box: [number, number, number, number] = [Math.min(kx, fx) - 7, Math.min(kz, fz) - 7, Math.max(kx, fx) + 7, Math.max(kz, fz) + 7];
+    const table = meet(shape, (x, z) => along(x, z) - S);
+    const foot = meet(shape, (x, z) => S - along(x, z));
+    const wall = meet(shape, (x, z) => Math.abs(along(x, z) - (S - 0.3)) - 0.3);
+    for (const g of fieldSlab(table, box, 0.07, 0.01, COCK.y0, top, 0.16)) add(iCock, FIN.bridge, g, at(MOV.x, 0, MOV.z));
+    for (const g of fieldSlab(wall, box, 0.07, 0.01, BRIDGE_TOP - 0.1, COCK.y0 + 0.02, 0.04)) add(iCock, FIN.bridge, g, at(MOV.x, 0, MOV.z));
+    for (const g of fieldSlab(foot, box, 0.07, 0.01, PLATE.y1, BRIDGE_TOP, 0.16)) add(iCock, FIN.bridge, g, at(MOV.x, 0, MOV.z));
+    screws(iCock, [M([fx + uz * 1.15, fz - ux * 1.15]), M([fx - uz * 1.15, fz + ux * 1.15])], BRIDGE_TOP, 0.7, 1.2);
     jewel(iCock, [blx, blz], top, 1.45, Math.atan2(uz, ux) + Math.PI / 2);
     // The regulator: a ring round the endstone and an index pointing over the scale.
     const away = Math.atan2(uz, ux) + Math.PI + 0.06;
@@ -382,7 +384,7 @@ export async function buildWatch(): Promise<WatchModel> {
     const w = f.width;
     const map = (l: P2[]): P2[] => l.map(([uu, vv]) => [dx + uu * U[0] + (NUMERALS.r0 + vv) * d[0], dz + uu * U[1] + (NUMERALS.r0 + vv) * d[1]]);
     for (const { field, drop } of f.fields) for (const s of shapes(field, [-w / 2 - 0.6, -0.5, w / 2 + 0.6, NUMERALS.h + 0.5], 0.022, 0.009)) {
-      add(i, FIN.hand, flat(map(s.outer), s.holes.map(map), NUMERALS.y[0], NUMERALS.y[1] - drop, 0.028));
+      add(i, FIN.numeral, flat(map(s.outer), s.holes.map(map), NUMERALS.y[0], NUMERALS.y[1] - drop, 0.028));
     }
   }
   await pause();
@@ -439,19 +441,30 @@ export async function buildWatch(): Promise<WatchModel> {
       crown.computeVertexNormals();
     }
     add(iCrown, FIN.copper, toCreasedNormals(crown, (50 * Math.PI) / 180), at(dx, PENDANT.y, dz));
-    // The bow: its ends pivot in the pendant's sides, and it lies back over the crown onto the table.
+    // The bow: it pivots on a pin through a boss on the pendant, its ends against the boss's sides and the pin's
+    // riveted heads outside them, and it lies back over the crown onto the table.
     const zc = -(PENDANT.to - 0.9);
-    const path: Vec3[] = [[-2.3, PENDANT.y, zc], [-4.6, PENDANT.y - 0.4, zc - 1.4], [-7.2, 3.1, zc - 4.6], [-7.6, 2.0, zc - 8.8], [-4.8, 1.2, zc - 12.2], [0, BOW.wire + 0.05, zc - 13.6], [4.8, 1.2, zc - 12.2], [7.6, 2.0, zc - 8.8], [7.2, 3.1, zc - 4.6], [4.6, PENDANT.y - 0.4, zc - 1.4], [2.3, PENDANT.y, zc]];
+    const end = BOW.boss + BOW.wire * 0.55;
+    const path: Vec3[] = [[-end, PENDANT.y, zc], [-4.6, PENDANT.y - 0.4, zc - 1.4], [-7.2, 3.1, zc - 4.6], [-7.6, 2.0, zc - 8.8], [-4.8, 1.2, zc - 12.2], [0, BOW.wire + 0.05, zc - 13.6], [4.8, 1.2, zc - 12.2], [7.6, 2.0, zc - 8.8], [7.2, 3.1, zc - 4.6], [4.6, PENDANT.y - 0.4, zc - 1.4], [end, PENDANT.y, zc]];
     add(iCrown, FIN.copper, tube(path.map(([x, y, z]) => [x + dx, y, z + dz] as Vec3), BOW.wire, 100, 10), undefined);
-    for (const s of [-1, 1]) {
-      const knob = new THREE.SphereGeometry(BOW.wire * 1.35, 16, 10);
-      add(iCrown, FIN.copper, knob, at(dx + s * 2.0, PENDANT.y, dz + zc));
+    const h = BOW.wire * 1.05, d0 = -zc - h, d1 = -zc + h, R = BOW.boss;
+    const boss = lathe([[0, d0], [R - 0.25, d0], [R, d0 + 0.25], [R, d1 - 0.25], [R - 0.25, d1], [0, d1]], 32);
+    boss.rotateX(-Math.PI / 2);
+    add(iCrown, FIN.copper, boss, at(dx, PENDANT.y, dz));
+    const reach = end + BOW.wire + 0.12;
+    const pin = new THREE.CylinderGeometry(BOW.pin, BOW.pin, reach * 2, 12);
+    pin.rotateZ(Math.PI / 2);
+    add(iCrown, FIN.copper, pin, at(dx, PENDANT.y, dz + zc));
+    for (const e of [-1, 1]) {
+      const head = lathe([[0, 0], [BOW.pin * 1.55, 0], [BOW.pin * 1.4, BOW.pin * 0.45], [BOW.pin * 0.8, BOW.pin * 0.8], [0, BOW.pin * 0.9]], 16);
+      head.rotateZ(-e * Math.PI / 2);
+      add(iCrown, FIN.copper, head, at(dx + e * reach, PENDANT.y, dz + zc));
     }
     bowEnd = [dx, BOW.wire + 0.05, dz + zc - 13.6];
   }
   // The chain: links in turn lying flat and standing on edge, each through the last, running off the bow.
   {
-    const ctrl: P2[] = [[0, 0], [1.2, -3.6], [3.8, -7.0], [7.6, -9.4], [12.0, -10.6], [16.6, -10.6], [21.0, -9.4]];
+    const ctrl: P2[] = [[0, 0], [1.2, -3.6], [3.8, -7.0], [7.6, -9.4], [12.0, -10.6], [16.6, -10.6], [21.0, -9.4], [25.0, -7.6]];
     const curve = new THREE.CatmullRomCurve3(ctrl.map(([x, z]) => new THREE.Vector3(bowEnd[0] + x, 0, bowEnd[2] + z - 0.6)), false, 'centripetal');
     const L = curve.getLength();
     const oval: Vec3[] = [];
@@ -472,6 +485,27 @@ export async function buildWatch(): Promise<WatchModel> {
       if (stand) m.multiply(new THREE.Matrix4().makeRotationZ(Math.PI / 2));
       m.setPosition(p.x, stand ? CHAIN.wide / 2 : CHAIN.wire, p.z);
       add(i, FIN.bronze, linkG.clone(), m);
+    }
+    // The T bar: an eye standing through the last link, and the bar across the chain's run with a knob at each end.
+    {
+      const sEye = Math.min(L - 3, CHAIN.links * CHAIN.pitch + 0.15);
+      const p = curve.getPointAt(sEye / L), tg = curve.getTangentAt(sEye / L);
+      const yaw = Math.atan2(tg.x, tg.z);
+      const i = part({ kind: 'chain', side: 'dial', c: [p.x, 1, p.z], r: TBAR.len / 2, row: 'chain' });
+      const eye = new THREE.TorusGeometry(TBAR.eye, CHAIN.wire * 0.9, 8, 24);
+      eye.rotateY(Math.PI / 2);
+      add(i, FIN.bronze, eye, new THREE.Matrix4().makeRotationY(yaw).setPosition(p.x, TBAR.eye, p.z));
+      const c = p.clone().addScaledVector(tg, TBAR.eye + TBAR.r * 0.6);
+      const rod = lathe([[0, -TBAR.len / 2], [TBAR.r * 0.8, -TBAR.len / 2], [TBAR.r, -TBAR.len / 2 + 1.2], [TBAR.r * 0.85, -0.6], [TBAR.r * 1.25, -0.3], [TBAR.r * 1.25, 0.3], [TBAR.r * 0.85, 0.6], [TBAR.r, TBAR.len / 2 - 1.2], [TBAR.r * 0.8, TBAR.len / 2], [0, TBAR.len / 2]], 16);
+      rod.rotateZ(Math.PI / 2);
+      const across = new THREE.Matrix4().makeRotationY(yaw).setPosition(c.x, TBAR.knob, c.z);
+      add(i, FIN.copper, rod, across);
+      for (const e of [-1, 1]) {
+        const knob = lathe([[0, -TBAR.knob], [TBAR.knob * 0.7, -TBAR.knob * 0.75], [TBAR.knob, 0], [TBAR.knob * 0.7, TBAR.knob * 0.75], [TBAR.knob * 0.3, TBAR.knob * 1.1], [0, TBAR.knob * 1.1]], 16);
+        knob.rotateZ(-e * Math.PI / 2);
+        knob.translate(e * (TBAR.len / 2 + TBAR.knob * 0.6), 0, 0);
+        add(i, FIN.copper, knob, across);
+      }
     }
   }
   await pause();

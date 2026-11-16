@@ -18,7 +18,12 @@ const WAY_NAMES: Record<Way, string> = { shards: 'Shards', band: 'Band', flash: 
 const REACH = 5;
 // The thing at the left of each row of skills, top to bottom. The second row's is open: he turned down the screen
 // with its back off on Nov 16 (no second computer part), and its place stays empty until he picks another.
-const THINGS = ['cpu', null, 'palette'] as const;
+// A row's name on two lines: the last word under the rest, and an "&" goes down with it.
+const lines = (name: string): string[] => {
+  const w = name.split(' '), cut = w[w.length - 2] === '&' ? w.length - 2 : w.length - 1;
+  return cut > 0 ? [w.slice(0, cut).join(' '), w.slice(cut).join(' ')] : [name];
+};
+const THINGS = ['cpu', 'watch', 'palette'] as const;
 const u = (n: number) => `calc(var(--u) * ${Number(n.toFixed(2))})`;
 const at = (x: number, y: number, w?: number, h?: number): CSSProperties => ({ left: u(x), top: u(y), width: w === undefined ? undefined : u(w), height: h === undefined ? undefined : u(h) });
 
@@ -52,7 +57,7 @@ function Glow() {
 // page as its leading end reaches it (src/skills/stage.ts).
 // The desk is the piece in src/pieces/desk, at whatever stage its parts have reached. The section's title is a word
 // lying on the desk's floor, drawn by the desk: the heading in the page is for a screen reader, and is the title on a
-// screen too narrow for the desk. The first and third rows have their thing, the CPU and the palette and brush, and the second keeps an empty place. The words are placeholders and his to write.
+// screen too narrow for the desk. Each row has its thing: the CPU, the opened pocket watch, and the palette and brush. The words are placeholders and his to write.
 // ?way=band or flash opens it on that way of bringing the CPU to life, and ?ui=0 hides the label and the switch.
 // Pressing a way while the stream is on the first row strikes the row again, so the three can be compared in place.
 // On a page with more sections than this one (hub), it hands the hub its plan and the hub mounts the one stream.
@@ -140,7 +145,7 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
                     </div>
                   )}
                 </div>
-                <h3 className={styles.name} data-part="name">{c.name}</h3>
+                <h3 className={styles.name} data-part="name">{lines(c.name).map((l, k) => <span key={l}>{k ? ' ' : ''}{l}</span>)}</h3>
                 <dl className={styles.groups} data-part="lists">
                   {c.groups.map(([label, items]) => (
                     <div key={label} className={styles.group}>

@@ -46,14 +46,19 @@ export function contour(f: Field, box: [number, number, number, number], step: n
     const a = v[j * nx + i], b = v[j2 * nx + i2], t = a / (a - b);
     return [x0 + (i + (i2 - i) * t) * step, y0 + (j + (j2 - j) * t) * step];
   };
-  const key = (p: P2) => `${p[0].toFixed(5)},${p[1].toFixed(5)}`;
-  const next = new Map<string, P2>();
-  const add = (a: P2, b: P2) => next.set(key(a), b);
+  // Each crossing is known by the grid edge it lies on, not by where it is: a field that is zero at a grid point put
+  // crossings on two edges at one place, and a loop keyed by place was cut short there.
+  type E = { k: number; p: P2 };
+  const next = new Map<number, E>();
+  const at = new Map<number, P2>();
+  const add = (a: E, b: E) => { next.set(a.k, b); at.set(a.k, a.p); };
+  const H = (i: number, j: number) => (j * nx + i) * 2, Vk = (i: number, j: number) => (j * nx + i) * 2 + 1;
   for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) {
     const a = v[j * nx + i] < 0, b = v[j * nx + i + 1] < 0, c = v[(j + 1) * nx + i + 1] < 0, d = v[(j + 1) * nx + i] < 0;
     const s = (a ? 1 : 0) | (b ? 2 : 0) | (c ? 4 : 0) | (d ? 8 : 0);
     if (s === 0 || s === 15) continue;
-    const B = () => pt(i, j, i + 1, j), R = () => pt(i + 1, j, i + 1, j + 1), T = () => pt(i, j + 1, i + 1, j + 1), L = () => pt(i, j, i, j + 1);
+    const B = (): E => ({ k: H(i, j), p: pt(i, j, i + 1, j) }), R = (): E => ({ k: Vk(i + 1, j), p: pt(i + 1, j, i + 1, j + 1) });
+    const T = (): E => ({ k: H(i, j + 1), p: pt(i, j + 1, i + 1, j + 1) }), L = (): E => ({ k: Vk(i, j), p: pt(i, j, i, j + 1) });
     // Segments run with the inside on their left.
     switch (s) {
       case 1: add(L(), B()); break;
@@ -73,19 +78,17 @@ export function contour(f: Field, box: [number, number, number, number], step: n
     }
   }
   const loops: P2[][] = [];
-  const seen = new Set<string>();
-  for (const [k0, first] of next) {
+  const seen = new Set<number>();
+  for (const k0 of next.keys()) {
     if (seen.has(k0)) continue;
     const loop: P2[] = [];
-    let k = k0, p = first;
+    let k = k0;
     for (let n = 0; n < 200000; n++) {
       seen.add(k);
-      loop.push(p);
-      k = key(p);
-      if (k === k0 || seen.has(k)) break;
+      loop.push(at.get(k)!);
       const q = next.get(k);
-      if (!q) break;
-      p = q;
+      if (!q || q.k === k0 || seen.has(q.k)) break;
+      k = q.k;
     }
     if (loop.length > 4) loops.push(loop);
   }

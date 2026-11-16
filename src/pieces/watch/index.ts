@@ -259,7 +259,7 @@ export function createWatch(): StruckPiece {
     const litNow = lv.age - LIGHTS[lv.way];
     if (!still() && sv.on > RUNS && litNow >= 0 && !quiet()) ran += dt;
     const R = running(litNow, sv.on, sv.since);
-    const L = life.at(lv.way, lv.age, partData, R.spin, R.light);
+    const L = life.at(lv.way, lv.age, partData, R.spin, R.light, R.arc);
     model.u.uSpring.value = R.spring;
     model.u.uJewels.value.forEach((v, k) => v.copy(R.jewels[k]));
     spring(yaw, clamp((lampUV.x - 0.5) * 2, -1, 1) * TURN.yaw, dt);

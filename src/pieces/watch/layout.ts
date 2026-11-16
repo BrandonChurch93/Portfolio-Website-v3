@@ -26,7 +26,9 @@ export const HINGE = { y: 3.4, r: 1.45, z: [-6.6, 6.6] as P2, knuckles: 5 } as c
 export const PLATE = { r: 21.6, y0: 1.6, y1: 3.8 } as const;
 // Bridges stand on the plate and are this high at their tops.
 export const BRIDGE_TOP = 6.0;
-export const COCK = { y0: 7.05, t: 0.75, foot: [12.6, -16.9] as P2, table: 3.25, ring: 1.75 } as const;
+// The balance cock: its table over the balance at y0, a neck that runs to its foot and steps down onto the plate at
+// step millimetres from the balance's arbor, past the balance's screws.
+export const COCK = { y0: 7.05, t: 0.75, foot: [0.97, -16.99] as P2, pad: 2.3, table: 3.25, ring: 1.75, step: 6.95 } as const;
 
 // The going train. Each wheel's middle, the pitch radius and teeth of the wheel, and of the pinion on its arbor, and
 // the level the wheel lies at. Wheels that mesh lie at different levels, so a wheel crosses over the next one's
@@ -55,18 +57,28 @@ export const JEWELS: { c: P2; y: number; r: number; of: string }[] = [
   { c: C, y: BRIDGE_TOP, r: 1.75, of: 'center' },
   { c: T, y: BRIDGE_TOP, r: 1.5, of: 'third' },
   { c: F, y: BRIDGE_TOP, r: 1.5, of: 'fourth' },
-  { c: E, y: BRIDGE_TOP, r: 1.3, of: 'escape' },
-  { c: [11.72, -4.16], y: BRIDGE_TOP, r: 1.2, of: 'pallet' },
+  { c: E, y: BRIDGE_TOP, r: 0.95, of: 'escape' },
+  { c: [11.72, -4.16], y: BRIDGE_TOP, r: 0.85, of: 'pallet' },
   { c: [8.5, -11.5], y: COCK.y0 + COCK.t, r: 1.45, of: 'balance' },
 ];
 
-// The bridges, as unions of discs and bars in the movement's plane: a bar is two points and a half width.
-export interface Bridge { name: string; discs: [number, number, number][]; bars: [number, number, number, number, number][]; screws: P2[] }
+// The bridges, as unions of discs and bars in the movement's plane: a bar is two points and a half width, a taper two
+// points and a half width at each, and a cut a disc taken out, which gives an outline its hollows. The escape and
+// pallet bridges are slender, cut away over the escapement as an exhibition movement's are, so the escape wheel's
+// step and the fork's rock show beside the balance.
+export interface Bridge { name: string; discs: [number, number, number][]; bars: [number, number, number, number, number][]; tapers?: [number, number, number, number, number, number][]; cuts?: [number, number, number][]; k: number; screws: P2[] }
 export const BRIDGES: Bridge[] = [
-  { name: 'barrel', discs: [[-9.5, -6.0, 8.4]], bars: [[-9.5, -6.0, -15.6, -13.2, 4.2], [-9.5, -6.0, -18.6, 2.8, 3.4]], screws: [[-16.4, -11.8], [-17.6, 3.1], [-1.8, -12.6]] },
-  { name: 'train', discs: [[0, 0, 2.6], [5.516, 4.628, 2.3], [11.636, 4.628, 2.3]], bars: [[-6.6, 18.3, 0, 0, 1.9], [0, 0, 5.516, 4.628, 1.75], [5.516, 4.628, 11.636, 4.628, 1.75], [11.636, 4.628, 18.9, 8.6, 1.9]], screws: [[-6.2, 17.2], [18.0, 8.6]] },
-  { name: 'escape', discs: [[13.131, -0.95, 2.0]], bars: [[13.131, -0.95, 19.6, -2.2, 1.6]], screws: [[18.6, -2.1]] },
-  { name: 'pallet', discs: [[11.72, -4.16, 1.8]], bars: [[11.72, -4.16, 17.2, -9.8, 1.45]], screws: [[16.5, -9.2]] },
+  {
+    name: 'barrel', k: 0.9,
+    discs: [[-9.5, -6.0, 8.15], [-16.4, -11.8, 1.75], [-17.6, 3.1, 1.75], [-2.4, -13.1, 1.6]],
+    bars: [],
+    tapers: [[-9.5, -6.0, -16.4, -11.8, 4.2, 1.45], [-9.5, -6.0, -17.6, 3.1, 3.8, 1.45], [-9.5, -6.0, -2.4, -13.1, 3.4, 1.3]],
+    cuts: [[-22.4, -4.6, 4.1], [-9.6, -19.0, 3.6]],
+    screws: [[-16.4, -11.8], [-17.6, 3.1], [-2.4, -13.1]],
+  },
+  { name: 'train', k: 1.4, discs: [[0, 0, 2.6], [5.516, 4.628, 2.3], [11.636, 4.628, 2.3]], bars: [[-6.6, 18.3, 0, 0, 1.9], [0, 0, 5.516, 4.628, 1.75], [5.516, 4.628, 11.636, 4.628, 1.75], [11.636, 4.628, 18.9, 8.6, 1.9]], screws: [[-6.2, 17.2], [18.0, 8.6]] },
+  { name: 'escape', k: 0.5, discs: [[13.131, -0.95, 1.4], [18.8, -2.05, 1.1]], bars: [[13.131, -0.95, 18.8, -2.05, 0.6]], screws: [[18.8, -2.05]] },
+  { name: 'pallet', k: 0.5, discs: [[11.72, -4.16, 1.25], [16.6, -9.3, 1.1]], bars: [[11.72, -4.16, 16.6, -9.3, 0.55]], screws: [[16.6, -9.3]] },
 ];
 
 // The dial, from the body's middle. The chapter ring and the minute track, the numerals' band, the small seconds at
@@ -83,8 +95,11 @@ export const TIME = { h: 10, m: 9, s: 36 } as const;
 // The pendant, crown and bow at twelve, and the chain off the bow, in the dial's coordinates.
 export const PENDANT = { r: 1.7, from: 24.9, to: 28.4, y: 4.6 } as const;
 export const CROWN = { r: 3.3, len: 3.8, flutes: 36 } as const;
-export const BOW = { wire: 0.95 } as const;
-export const CHAIN = { links: 11, pitch: 3.15, long: 4.3, wide: 2.7, wire: 0.5 } as const;
+// The bow's wire, the boss on the pendant it pivots on, and the pin through both.
+export const BOW = { wire: 0.95, boss: 2.45, pin: 0.42 } as const;
+export const CHAIN = { links: 9, pitch: 3.15, long: 4.3, wide: 2.7, wire: 0.5 } as const;
+// The T bar at the chain's end, which goes through a waistcoat's buttonhole: a rod with a knob at each end, on an eye.
+export const TBAR = { len: 11, r: 0.6, knob: 0.95, eye: 1.25 } as const;
 
 // The way the eye's horizontal runs across the table, and so the case's left most point in the picture: where the
 // stream meets the watch, at the middle of the case back's wall.

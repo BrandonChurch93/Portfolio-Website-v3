@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { seeded } from '../../world/build';
 import { BALANCE, BARREL, BRIDGES, CARTOUCHE, CHAPTER, COCK, DIAL, MOV, SECONDS, type P2 } from './layout';
-import { ART } from './shading';
+import { ART, CART } from './shading';
 
 // What is cut and printed on the watch, drawn once on a 2D canvas laid over the table from above, in millimetres:
 // red is engraving (cut into the metal, dark, and its edges catch the light), green is print (the dial's dark
@@ -120,19 +120,9 @@ export function watchArt(): THREE.CanvasTexture {
   }
   text(g, 'SECONDES', sx, sz + 1.25, 0.34, { space: 0.18, weight: 600 });
 
-  // The maker's cartouche: a framed gold plaque with the name cut into it.
+  // The movement. The barrel bridge: the name round the ratchet, the number under it.
   g.strokeStyle = ENGRAVE;
   g.fillStyle = ENGRAVE;
-  const cx = dx + CARTOUCHE.c[0], cz = dz + CARTOUCHE.c[1];
-  g.lineWidth = 0.07;
-  const plaque = (inset: number) => { const w = CARTOUCHE.w / 2 - inset, d = CARTOUCHE.d / 2 - inset, k = 1.0 - inset * 0.5; g.beginPath(); g.moveTo(cx - w + k, cz - d); g.lineTo(cx + w - k, cz - d); g.quadraticCurveTo(cx + w, cz - d, cx + w, cz - d + k); g.lineTo(cx + w, cz + d - k); g.quadraticCurveTo(cx + w, cz + d, cx + w - k, cz + d); g.lineTo(cx - w + k, cz + d); g.quadraticCurveTo(cx - w, cz + d, cx - w, cz + d - k); g.lineTo(cx - w, cz - d + k); g.quadraticCurveTo(cx - w, cz - d, cx - w + k, cz - d); g.stroke(); };
-  plaque(0.32);
-  g.lineWidth = 0.04;
-  plaque(0.5);
-  text(g, 'Orlen & Vasse', cx, cz - 0.42, 1.05, { italic: true, weight: 600, space: 0.02 });
-  text(g, 'Nº 41762  ·  BRÉVETÉ', cx, cz + 0.82, 0.42, { weight: 600, space: 0.22 });
-
-  // The movement. The barrel bridge: the name round the ratchet, the number under it.
   const mx = MOV.x, mz = MOV.z;
   const [bx, bz] = BARREL.c;
   arcText(g, 'ORLEN & VASSE  ·  FILS', mx + bx, mz + bz, 7.55, -Math.PI / 2 - 0.25, 0.92, true, 600);
@@ -159,9 +149,9 @@ export function watchArt(): THREE.CanvasTexture {
     }
     ring(g, bx3, bz3, COCK.table - 0.22, 0.04);
     // The neck: a stem of foliage from the table to the foot.
-    const steps = 5;
+    const steps = 4, len = Math.hypot(fx - kx, fz - kz);
     for (let i = 0; i < steps; i++) {
-      const t = 0.55 + (i / steps) * 0.38;
+      const t = (3.7 + i * 0.8) / len;
       const px = bx3 + (fx - kx) * t, pz = bz3 + (fz - kz) * t;
       scroll(g, px, pz, 0.85, 0.9, away + (i % 2 ? 1.6 : -1.6), i % 2 ? 1 : -1, 0.05, r);
     }
@@ -220,6 +210,10 @@ export function watchArt(): THREE.CanvasTexture {
     g.restore();
   }
 
+  return sheet(c);
+}
+
+function sheet(c: HTMLCanvasElement): THREE.CanvasTexture {
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.NoColorSpace;
   t.anisotropy = 8;
@@ -227,4 +221,27 @@ export function watchArt(): THREE.CanvasTexture {
   t.generateMipmaps = true;
   t.minFilter = THREE.LinearMipmapLinearFilter;
   return t;
+}
+
+// The maker's cartouche: a framed gold plaque with the name cut into it, on a sheet of its own at five times the
+// big sheet's fineness, so the cut letters stay sharp at three times the page's size.
+export function cartoucheArt(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = Math.round(CART.w * CART.px);
+  c.height = Math.round(CART.d * CART.px);
+  const g = c.getContext('2d') as Ctx;
+  g.fillStyle = '#000';
+  g.fillRect(0, 0, c.width, c.height);
+  g.setTransform(CART.px, 0, 0, CART.px, -CART.x0 * CART.px, -CART.z0 * CART.px);
+  g.strokeStyle = ENGRAVE;
+  g.fillStyle = ENGRAVE;
+  const cx = CART.x0 + CART.w / 2, cz = CART.z0 + CART.d / 2;
+  const plaque = (inset: number) => { const w = CARTOUCHE.w / 2 - inset, d = CARTOUCHE.d / 2 - inset, k = 1.0 - inset * 0.5; g.beginPath(); g.moveTo(cx - w + k, cz - d); g.lineTo(cx + w - k, cz - d); g.quadraticCurveTo(cx + w, cz - d, cx + w, cz - d + k); g.lineTo(cx + w, cz + d - k); g.quadraticCurveTo(cx + w, cz + d, cx + w - k, cz + d); g.lineTo(cx - w + k, cz + d); g.quadraticCurveTo(cx - w, cz + d, cx - w, cz + d - k); g.lineTo(cx - w, cz - d + k); g.quadraticCurveTo(cx - w, cz - d, cx - w + k, cz - d); g.stroke(); };
+  g.lineWidth = 0.07;
+  plaque(0.32);
+  g.lineWidth = 0.035;
+  plaque(0.5);
+  text(g, 'Orlen & Vasse', cx, cz - 0.42, 1.05, { italic: true, weight: 600, space: 0.02 });
+  text(g, 'Nº 41762  ·  BRÉVETÉ', cx, cz + 0.82, 0.42, { weight: 700, space: 0.22 });
+  return sheet(c);
 }
