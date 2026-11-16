@@ -26,6 +26,9 @@ export interface PartState {
   // lab, where a plain line stands in for it, on is 0. What it lights is told the same through the shared light
   // (uStream in ./light.ts), which in the lab is the whole line, lit.
   stream: { on: number; since: number; long: number };
+  // Where the cursor is in the world's host, as shares of its width and height from its top left (the same is in
+  // the shared light as uPointer).
+  pointer: { x: number; y: number };
   // Nothing loops and nothing drifts: reduced motion, the static tier, or a held frame.
   still: boolean;
 }

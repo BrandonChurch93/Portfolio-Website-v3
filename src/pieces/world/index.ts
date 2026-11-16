@@ -128,6 +128,7 @@ export function createWorld(): WorldPiece {
     const span = only ? 2 * reach : HOST.tall * M;
     glint.copy(aim).addScaledVector(right, (lampUV.x - 0.5) * span * GLINT.range).addScaledVector(up, (0.5 - lampUV.y) * span * GLINT.range).addScaledVector(back, GLINT.back).applyMatrix4(cam.matrixWorldInverse);
     world.setGlint(glint, GLINT.power);
+    world.setPointer(lampUV.x, lampUV.y);
   };
 
   // What of the host is on the screen, as places down it in units, and so which parts are.
@@ -156,7 +157,7 @@ export function createWorld(): WorldPiece {
     place();
     const now = hold ?? clock.now(), still = reduced || frozen || stage.tier === 'static', level = still && hold === null && !clock.isFrozen() ? 1 : coreLevel(now);
     world.setCore(level);
-    const s: PartState = { t: now, core: level, stream, still };
+    const s: PartState = { t: now, core: level, stream, pointer: lampUV, still };
     moving = false;
     // The moon's shadows are drawn once, with every part there to cast them. After that a part none of which is on
     // the screen is not drawn and not told the time.
