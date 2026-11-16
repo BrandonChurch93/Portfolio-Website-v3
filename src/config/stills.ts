@@ -12,6 +12,8 @@ export const STILLS = {
   world: { file: '/media/world-still.webp', route: '/lab/hero?ui=0', screen: [1460, 1500], top: 'world', t: 9, keep: { x: 40, y: 0, w: 1380, h: 1000 }, quality: 0.8, least: 540 },
   // The desk with its lights on and the section's title on its floor.
   desk: { file: '/media/desk-still.webp', route: '/lab/piece/desk?label=0&ui=0&size=808&wide=1460', screen: [1440, 900], top: '', t: 6, keep: { x: 236, y: 96, w: 968, h: 744 }, quality: 0.82, least: 430 },
+  // The launch pad with its stone lit and the rocket on its table, for the foot of Contact.
+  pad: { file: '/media/pad-still.webp', route: '/lab/piece/pad?size=860&wide=800&fill=1&label=0&ui=0', screen: [1440, 900], top: '', t: 6, keep: { x: 370, y: 70, w: 700, h: 820 }, quality: 0.82, least: 0 },
   // What a shared link shows: the hero's first screen at the size link previews ask for. A JPEG, which every
   // service that makes a preview can read.
   share: { file: '/media/share.jpg', route: '/lab/hero?ui=0', screen: [1200, 630], top: '', t: 6, keep: { x: 0, y: 0, w: 1200, h: 630 }, quality: 0.86, least: 0 },

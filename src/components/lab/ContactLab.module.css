@@ -359,6 +359,11 @@
 
 /* A screen too narrow for the layout shows a plain stand in: the title and the plate's content in one column, with
    no stream and no pad. Phones are designed in one pass after every section is finished. */
+/* The launch pad as one picture, for a narrow screen. Not there at all on a wide one. */
+.still {
+  display: none;
+}
+
 @media (max-width: 1099.98px) {
   .board {
     --u: 1px;
@@ -406,8 +411,24 @@
 
   .book,
   .copy {
+    flex: 1 1 11rem;
     width: auto;
     min-width: 11rem;
+  }
+
+  /* The pad stands under the plate, lit, as the page's last picture. It fades into the page all round. */
+  .still {
+    display: block;
+    max-width: 26rem;
+    margin: var(--space-6) auto 0;
+    -webkit-mask-image: radial-gradient(ellipse 70% 62% at 50% 52%, #000 72%, transparent);
+    mask-image: radial-gradient(ellipse 70% 62% at 50% 52%, #000 72%, transparent);
+  }
+
+  .still img {
+    display: block;
+    width: 100%;
+    height: auto;
   }
 
   .message textarea {
@@ -418,7 +439,18 @@
     flex-wrap: wrap;
     gap: var(--space-3);
     height: auto !important;
-    padding: var(--space-7) 0 var(--space-6);
+    padding: var(--space-5) 0 var(--space-6);
+  }
+}
+
+/* On a phone a name and an email side by side are each too narrow to read what was typed. */
+@media (max-width: 559.98px) {
+  .pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .content {
+    padding: var(--space-4) !important;
   }
 }
 
@@ -432,5 +464,13 @@
 @media (min-width: 1100px) {
   .page[data-embed] .board {
     padding-top: calc(var(--u) * 380);
+  }
+}
+
+/* On a narrow whole page the section before ends with its own room under it: a second helping here left most of a
+   screen empty between About's last line and this title. */
+@media (max-width: 1099.98px) {
+  .page[data-embed] .board {
+    padding-top: var(--space-5);
   }
 }

@@ -12,6 +12,7 @@ import { PieceView } from '../PieceView';
 import { Plate } from '../Plate';
 import type { Hub } from '../../whole/hub';
 import { Shell } from './Shell';
+import { Still } from '../Still';
 import styles from './ContactLab.module.css';
 
 // The pad is mounted from this many screens away, so it is not being built as the stream reaches it.
@@ -165,6 +166,7 @@ export function ContactLab({ hub }: { hub?: Hub }) {
             </div>
           </div>
         </section>
+        <Still name="pad" className={styles.still} />
         <footer className={styles.foot} style={{ height: u(CONTACT.foot) }}>
           <p>{contact.foot.line} · © {new Date().getFullYear()}</p>
           <ul>
