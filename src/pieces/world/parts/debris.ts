@@ -1,60 +1,71 @@
 import * as THREE from 'three';
 import { slice } from '../../../world/build';
-import { CORE, DEBRIS, LIGHT, SCALE, SMALL, fromPicture } from '../layout';
-import { STONE, stoneMaps } from './rock/stone';
+import { CORE, DEBRIS, LIGHT, MOONWARD, SCALE, SMALL, fromPicture } from '../layout';
+import { STONE, STONE_VERT_PARS, stoneMaps, stoneShader } from './rock/stone';
 import { color, lit, stone } from '../light';
 import { load } from '../files';
 import type { PartFactory } from '../part';
-import { STREAM } from '../../../stream/config';
-import { FACET_KINDS, VERTEX_FLOATS, buildShards, facetKind } from '../../../stream/shards';
 import { KIND } from './debris/motion';
 import { COLUMNS, LOOK as DRAWN, MOON_SHARE } from './debris/table';
 import * as S from './debris/shaders';
 
 // What broke away: the pieces of the planet that hang under it, caught in its gravity, as one scene. The field is
 // the original plan's (scripts/world/debris-plan.json), made by scripts/world/parts/debris/make.mjs into
-// public/world/debris.bin: some twenty-nine rock models, and a table of every piece, which model it wears, where it
+// public/world/debris.bin: some fifty rock models, and a table of every piece, which model it wears, where it
 // rests, how it is turned and how it moves (./debris/motion.ts). Here every piece is laid into one mesh, each vertex
 // knowing its piece, and the table goes to the graphics card as a texture that is written once. The vertex shader
 // moves every piece from the clock alone, so nothing is written after the part is made, and Safari keeps nothing.
-// Every piece is the planet's stone, with the hollow's own grain and without its pockets and grooves, but a chip the
-// stream carries, which is one of the stream's own shards (src/stream/shards.ts). Near the stream the small stones
-// are its shapes too.
-// ?debris=models lays each model out once in a row, to be looked at alone, and &model=G9 shows that one alone.
+// Every piece is the planet's stone (./rock/stone.ts), the hollow's own body, grain, stains and knapped relief.
+// ?debris=models lays each model out once in a row under a plain light, to be looked at alone, and &model=G9 shows
+// that one alone. ?debrisshow=1 to 8 draws one number the shader works with in place of the light (see DEEP).
 
 const LOOK = {
-  // The planet's stone (stone()) is what every piece is. An old face carries a weathered skin, greyer and darker, as
-  // much as this share of it, and less where the core burns close (from the first distance to the second, in units,
-  // down to the second share); a flake's scar is fresh stone, the stone's own chip.
-  patina: stone().lerp(color('text-3', 0.5), 0.9).multiplyScalar(0.5),
-  weather: [0.92, 0.5, 160, 380] as const,
+  // An old face carries a weathered skin, greyer and this much as bright as the stone, and less of it where the core
+  // burns close (from the first distance to the second, in units, down to the second share); a flake's scar is
+  // fresh stone, the stone's own chip.
+  weather: [0.36, 0.45, 160, 380] as const,
   chip: STONE.chip,
-  // The stone's grain map, laid at a piece's own scale: a tile is this share of its size, between these many units,
-  // and how much it moves the tone.
-  grain: [0.9, 6, 48, 0.32] as const,
-  // The strata: how thick a bed is, as a share of the piece's size, how much the beds wander, and how much a bed's
-  // tone differs from the next.
-  strata: [0.045, 0.5, 0.16] as const,
-  // The fine relief of a broken face, which the light finds: how high the broken ridges stand as a share of the
-  // piece's size, how wide they are as a share of it, and how high the grain stands as a share of its tile.
-  broken: [0.0045, 0.07, 0.02] as const,
   // The planet's outer surface where a piece shows it: pale on the side the moon lights, dark on the other.
   skin: { pale: color('text-3').lerp(color('text-2'), 0.35).multiplyScalar(0.5), dark: color('bg-3').lerp(color('text-3'), 0.2) },
-  rough: 0.86,
-  // A carried shard's metal: the stream's own shards are dark copper.
-  shard: color('copper').lerp(color('bronze-deep'), 0.35),
   // How much of the light the rock bounces reaches a piece, and of the core's light on its faces, and past what
   // distance, in units, that falls away as a further power.
   bounce: 0.1,
   core: 0.22,
   steep: [270, 2.6] as const,
-  // The core's burning edge: how bright, how tight to the outline, how much a broken edge turned to it catches.
-  coreRim: [1.6, 5, 0.3] as const,
-  // The moon: how much of its light a face turned to it keeps (it is behind the pieces), and the rim it draws: how
-  // bright, how tight to the outline, and how much of the stone's color it takes (none is the moon's own pale).
+  // The core's burning edge on a smaller piece: how bright, how tight to the outline, and how much a great piece's
+  // broken edge turned to it catches.
+  coreRim: [1.6, 5, 0.22] as const,
+  // A great piece is lit by which way each face turns: the core's light on a face turned to it (a share of the
+  // core's own strength, the distance in units past which it falls away, and how fast), and the moon's on a face
+  // turned to the moon (a share of its strength).
+  great: [0.12, 450, 1.5, 0.2] as const,
+  // How much brighter the core's light is on a great piece's edges that stand out.
+  greatEdge: 1.5,
+  // Picture 9's two boulders: how much of that core light they take, how much of the moon's the left one and the
+  // right one take (the left one's top planes are pale in the picture, the right one is near black), and how much of
+  // the core each place of theirs is taken to see at least.
+  boulder: [2.2, 1.6, 0.25, 0.8] as const,
+  // The right boulder is near black but for its crest: how much of that core light its body keeps, and its edges.
+  crest: [0.08, 2.6] as const,
+  // A great piece's tone across it: the darkest and lightest of its stains, how wide they are in units, and how dark
+  // the stone is where it is most shut in.
+  greatTone: [0.62, 1.18, 34, 0.45] as const,
+  // How much more of the night's soft light a great piece takes than a small one, and the left boulder.
+  greatFill: [1.6, 1.6] as const,
+  // The left boulder: how strong the light of the small stream beside its right flank is, and the pale light on its
+  // top planes: both are in the picture.
+  boulderLit: [1.4, 0.5] as const,
+  // The gouges along a great piece's beds: how far apart, in units, how long, and how wide each side of its line at
+  // least and at most.
+  gouge: [13, 95, 0.3, 0.8] as const,
+  // The moon: how much of its light a face turned to it keeps (it is behind the pieces), and its rim: how bright, how
+  // wide in units (a rim thinner than about a unit and a half breaks into dashes), and how much of it is left where the
+  // planet shades a smaller piece from the moon. A smaller piece takes it on its faces turned to the moon, each face
+  // whole, this much of it, and most where the face is seen edge on: its edges stay sharp. Its color is the moon's
+  // own, a little cooler.
   moonBody: 0.03,
-  moonRim: [2.4, 9, 0.6] as const,
-  rimTint: color('pale').lerp(color('hot'), 0.25),
+  moonRim: [1.5, 2.2, 0.55, 0.45] as const,
+  rimColor: color(LIGHT.moon.color, LIGHT.moon.power).multiply(color('text').lerp(color('text-2'), 0.3)),
   // The night's soft light on a body, from the visitor's side and above (in the camera's frame): its color and
   // strength, how much reaches a face turned from it, and where it comes from. It gives a body its form.
   fill: { color: color('pale').lerp(color('text-2'), 0.5).multiplyScalar(0.12), least: 0.12, from: [-0.35, 0.55, 0.75] as const },
@@ -62,20 +73,19 @@ const LOOK = {
   // much of the night the rock mirrors.
   night: new THREE.Color(1 / LIGHT.warm[0], 1 / LIGHT.warm[1], 1 / LIGHT.warm[2]).multiply(color('pale')).multiplyScalar(0.2),
   mirror: 0.08,
-  // How much paler an edge is where it is fresh.
-  worn: 0.6,
-  // The hackle lines on a face: how many run round the struck place, and how deep they are, as a share of the size.
-  relief: [0, 46, 0.008, 0] as const,
+  // How much paler a great piece's edge is where it stands out.
+  worn: 0.45,
   // The stream's light: its color, how bright where it is full, over how many units it falls to half, how far it
-  // reaches at all, and how much it wraps round a face. The small streams: how bright, and over how many units.
-  stream: { color: color('hot').lerp(color('flame'), 0.35), main: [9, 45, 260, 0.05] as const, small: [2.6, 24] as const },
+  // reaches at all. The small streams: how bright, and over how many units.
+  stream: { color: color('hot').lerp(color('flame'), 0.35), main: [9, 45, 260] as const, small: [2.6, 24] as const },
+  // A flake the stream carries: how bright its edge toward the stream burns, how wide that edge is in units, and how
+  // much of the stream's light its body keeps.
+  carried: [7, 1.6, 0.25] as const,
   // The small streams are drawn over the world, so each lights what is drawn beside it: within this depth of its own,
   // as far as this many units from it, and an edge that stands out burns this much more.
-  smallDepth: [340, 150] as const, smallBurn: 2.5,
-  // A carried shard mirrors this much of the night: less, so a face turned from every light is dark.
-  shardMirror: 0.3,
-  // The glow behind the world on the outline of what the moon does not reach: its color, how tight to the outline,
-  // and how much of it the moon's own rim takes away.
+  smallDepth: [340, 150] as const, smallBurn: 1,
+  // The glow behind the world on the outline of what is far to each side: its color, how tight to the outline, and
+  // how much of it the moon's own rim takes away.
   glow: color('ember').lerp(color('flame'), 0.25).multiplyScalar(0.14), glowRim: [5, 0.85] as const,
   // The cracks lit from inside on the planet's left side (picture 9's knot of them, at 235 across and 470 down), as a
   // light on what hangs near them: where it is, in the picture's pixels and how far toward the visitor, how bright,
@@ -83,6 +93,15 @@ const LOOK = {
   cracks: { at: [235, 470, 450] as const, power: 2.5, half: 90, reach: 320 },
   // Further back is darker: between these places toward the visitor, down to this share.
   deep: [-260, 60, 0.3] as const,
+  // The stone is laid as if each piece lay at a place of its own deep in the planet, inside this box (its middle and
+  // its size, in units), far from the core and the crust, and how much of its relief a piece keeps.
+  stoneAt: [0, -180, -250] as const, stoneSpread: [240, 80, 200] as const, relief: 0.5, greatRelief: 0.3,
+  // The small flat breaks a broken face is made of: the larger ones' size in units and how far each is tilted, and
+  // the smaller ones'.
+  facets: [9, 0.26, 3.2, 0.15] as const,
+  // The pits and crumbs of a broken face: their cell in units, the share of cells that hold one, how dark a pit is,
+  // and the smaller cells.
+  pits: [2.6, 0.3, 0.4, 1.1] as const,
 };
 // How each row of the table is laid into the texture: the columns of the file's table.
 const COL = COLUMNS.split(' ');
@@ -101,6 +120,7 @@ export const build: PartFactory = async ({ query, renderer }) => {
       Object.assign(row, { [col.model]: i, [col.x]: x, [col.y]: y, [col.z]: 150, [col.qw]: 1, [col.kind]: KIND.scatter, [col.family]: 200 + i, [col.core]: 0.5, [col.ax]: 1 });
       row[col.sx] = row[col.sy] = row[col.sz] = own ? 1 : 14;
       if (own) { const s = 110 / Math.max(m.size, 1); row[col.sx] = row[col.sy] = row[col.sz] = Math.min(1, s); row[col.big] = m.size * 0.5 * row[col.sx]; }
+      else row[col.big] = 14;
       return row;
     });
     const one = models.findIndex((m) => m.name === query.get('model'));
@@ -110,7 +130,7 @@ export const build: PartFactory = async ({ query, renderer }) => {
   // The table, as a texture: a column for each piece and a row for each thing about it.
   const n = table.length, data = new Float32Array(n * ROWS * 4), put = (row: number, i: number, v: number[]) => data.set(v, (row * n + i) * 4);
   const plates = new Map<number, number[]>();
-  for (const p of table) if (p[col.kind] === KIND.plate) plates.set(p[col.family], [p[col.x], p[col.y], p[col.z]]);
+  for (const p of table) if (p[col.kind] === KIND.plate && !plates.has(p[col.family])) plates.set(p[col.family], [p[col.x], p[col.y], p[col.z]]);
   table.forEach((p, i) => {
     const c = (k: string) => p[col[k]];
     put(0, i, [c('x'), c('y'), c('z'), c('kind')]);
@@ -124,37 +144,18 @@ export const build: PartFactory = async ({ query, renderer }) => {
   pieces.magFilter = pieces.minFilter = THREE.NearestFilter;
   pieces.needsUpdate = true;
 
-  // Every piece laid into one mesh from its model, each vertex knowing its piece. A chip the stream carries wears one
-  // of the stream's own shards, so nobody can say where what broke away ends and the stream's shards begin.
-  const shards = buildShards(STREAM.seed), [least, most] = STREAM.sizes.facets.map((v) => v * STREAM.scale);
-  const faceted = (p: number[]) => (p[col.look] ?? (p[col.kind] === KIND.fall ? DRAWN.shard : DRAWN.rock)) !== DRAWN.rock;
-  const facetOf = (i: number, p: number[]) => shards.kinds[facetKind(Math.min(1, Math.max(0, (p[col.sx] - least) / (most - least))), ((i * 0.618034) % 1 + 1) % 1) % FACET_KINDS];
+  // Every piece laid into one mesh from its model, each vertex knowing its piece.
   let verts = 0, tris = 0;
-  table.forEach((p, i) => {
-    if (faceted(p)) { const f = facetOf(i, p); verts += f.count; tris += f.count / 3; return; }
+  for (const p of table) {
     const g = models[p[col.model]].geometry;
     verts += g.attributes.position.count;
     tris += (g.index?.count ?? 0) / 3;
-  });
+  }
   const pos = new Float32Array(verts * 3), nor = new Int16Array(verts * 4), light = new Uint8Array(verts * 4), bounce = new Uint8Array(verts * 4), id = new Uint16Array(verts), idx = new Uint32Array(tris * 3);
   let v = 0, t = 0;
   for (let i = 0; i < n; i++) {
     const p = table[i], core = Math.round(p[col.core] * 255), b = [p[col.br], p[col.bg], p[col.bb]].map((x) => Math.round(x * 255)), open = 1 - (p[col.shut] ?? 0);
     const moon = Math.round(255 * MOON_SHARE * (p[col.moon] ?? 1));
-    if (faceted(p)) {
-      const f = facetOf(i, p);
-      for (let j = 0; j < f.count; j++) {
-        const o = (f.first + j) * VERTEX_FLOATS;
-        for (let a = 0; a < 3; a++) { pos[(v + j) * 3 + a] = shards.data[o + a]; nor[(v + j) * 4 + a] = Math.round(shards.data[o + 3 + a] * 32767); }
-        light.set([core, 128, Math.round(255 * open), moon], (v + j) * 4);
-        bounce.set([b[0], b[1], b[2], 0], (v + j) * 4);
-        id[v + j] = i;
-        idx[t + j] = v + j;
-      }
-      v += f.count;
-      t += f.count;
-      continue;
-    }
     const m = models[p[col.model]], g = m.geometry, k = g.attributes.position.count, q = g.attributes.position.array as Uint16Array;
     const nn = (g.attributes.normal as THREE.InterleavedBufferAttribute).data.array as Int16Array, ll = g.attributes.aLight.array as Uint8Array, bb = g.attributes.aBounce.array as Uint8Array;
     const shared = Boolean(m.info.shared);
@@ -188,39 +189,45 @@ export const build: PartFactory = async ({ query, renderer }) => {
   // page's stream has run (uStream in ../light.ts).
   const at = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z).multiplyScalar(SCALE);
   const lines = SMALL.map(([px, py, z, long]) => { const [x, y] = fromPicture(px, py, z); return { a: at(x, y, z), b: at(x, y - long, z) }; });
-  // While the light is being set: ?debrislight=core,bounce,coreRim,moonRim,stream,fill,small,glow tries other
+  // While the light is being set: ?debrislight=core,bounce,coreRim,moonRim,stream,fill,small,glow,great,carried,greatMoon tries other
   // strengths without a change of code.
   const tried = (query.get('debrislight') ?? '').split(',').map(Number), pick = (i: number, usual: number): number => (Number.isFinite(tried[i]) && query.has('debrislight') && tried[i] >= 0 && String(query.get('debrislight')).split(',')[i] !== '' ? tried[i] : usual);
   const uniforms = {
     uPieces: { value: pieces }, uTime: { value: 0 }, uBounceK: { value: pick(1, LOOK.bounce) }, uCoreK: { value: pick(0, LOOK.core) }, uDebrisCore: { value: new THREE.Vector3(...CORE.at) },
     uCoreSteep: { value: new THREE.Vector2(...LOOK.steep) }, uCoreSteepF: { value: new THREE.Vector2(LOOK.steep[0] * SCALE, LOOK.steep[1]) },
-    uStone: { value: stone() }, uPatina: { value: LOOK.patina }, uChip: { value: LOOK.chip }, uWeather: { value: new THREE.Vector4(...LOOK.weather) },
-    uStoneGrain: { value: maps.grain }, uGrainK: { value: new THREE.Vector4(...LOOK.grain) }, uStrata: { value: new THREE.Vector3(...LOOK.strata) }, uRough: { value: new THREE.Vector3(...LOOK.broken) }, uGlow: { value: LOOK.glow.clone().multiplyScalar(pick(7, 1)) }, uGlowRim: { value: new THREE.Vector2(...LOOK.glowRim) },
-    uSmallDepth: { value: new THREE.Vector2(...LOOK.smallDepth) }, uSmallBurn: { value: LOOK.smallBurn }, uShardMirror: { value: LOOK.shardMirror }, uSkinPale: { value: LOOK.skin.pale }, uSkinDark: { value: LOOK.skin.dark }, uShard: { value: LOOK.shard },
-    uWorn: { value: LOOK.worn }, uFill: { value: new THREE.Vector4(LOOK.fill.color.r, LOOK.fill.color.g, LOOK.fill.color.b, LOOK.fill.least).multiplyScalar(pick(5, 1)).setW(LOOK.fill.least) }, uFillDir: { value: new THREE.Vector3(...LOOK.fill.from).normalize() }, uRimTint: { value: LOOK.rimTint }, uNight: { value: LOOK.night }, uRockMirror: { value: LOOK.mirror },
-    uMoonBody: { value: LOOK.moonBody }, uMoonRim: { value: new THREE.Vector3(pick(3, LOOK.moonRim[0]), LOOK.moonRim[1], LOOK.moonRim[2]) },
-    uCoreRim: { value: new THREE.Vector4(pick(2, LOOK.coreRim[0]), LOOK.coreRim[1], LOOK.coreRim[2], 0) },
-    uStreamLight: { value: new THREE.Vector4(pick(4, LOOK.stream.main[0]), ...LOOK.stream.main.slice(1)) }, uStreamColor: { value: LOOK.stream.color },
-    uRelief: { value: new THREE.Vector4(...LOOK.relief).multiplyScalar(query.has('relief') ? Number(query.get('relief')) : 1).setY(LOOK.relief[1]) }, uDeep: { value: new THREE.Vector3(...LOOK.deep) },
+    uStone: { value: stone() }, uChip: { value: LOOK.chip }, uWeather: { value: new THREE.Vector4(...LOOK.weather) },
+    uGlow: { value: LOOK.glow.clone().multiplyScalar(pick(7, 1)) }, uGlowRim: { value: new THREE.Vector2(...LOOK.glowRim) },
+    uSmallDepth: { value: new THREE.Vector2(...LOOK.smallDepth) }, uSmallBurn: { value: LOOK.smallBurn }, uSkinPale: { value: LOOK.skin.pale }, uSkinDark: { value: LOOK.skin.dark },
+    uWorn: { value: LOOK.worn }, uFill: { value: new THREE.Vector4(LOOK.fill.color.r, LOOK.fill.color.g, LOOK.fill.color.b, LOOK.fill.least).multiplyScalar(pick(5, 1)).setW(LOOK.fill.least) }, uFillDir: { value: new THREE.Vector3(...LOOK.fill.from).normalize() },
+    uNight: { value: LOOK.night }, uRockMirror: { value: LOOK.mirror },
+    uMoonBody: { value: LOOK.moonBody }, uMoonRim: { value: new THREE.Vector4(pick(3, LOOK.moonRim[0]), LOOK.moonRim[1], LOOK.moonRim[2], LOOK.moonRim[3]) }, uMoonRimColor: { value: LOOK.rimColor }, uMoonWay: { value: new THREE.Vector3(...MOONWARD).normalize() },
+    uCoreRim: { value: new THREE.Vector4(pick(2, LOOK.coreRim[0]), LOOK.coreRim[1], LOOK.coreRim[2], 0) }, uBoulder: { value: new THREE.Vector4(...LOOK.boulder) }, uGreatEdge: { value: LOOK.greatEdge }, uCrest: { value: new THREE.Vector2(...LOOK.crest) }, uGreatTone: { value: new THREE.Vector4(...LOOK.greatTone) }, uGreatFill: { value: new THREE.Vector2(...LOOK.greatFill) }, uBoulderLit: { value: new THREE.Vector2(...LOOK.boulderLit) },
+    uGreat: { value: new THREE.Vector4(pick(8, LOOK.great[0]), LOOK.great[1] * SCALE, LOOK.great[2], pick(10, LOOK.great[3])) }, uGouge: { value: new THREE.Vector4(...LOOK.gouge) },
+    uStreamLight: { value: new THREE.Vector4(pick(4, LOOK.stream.main[0]), ...LOOK.stream.main.slice(1), 0) }, uStreamColor: { value: LOOK.stream.color }, uCarried: { value: new THREE.Vector3(pick(9, LOOK.carried[0]), LOOK.carried[1], LOOK.carried[2]) },
+    uDeep: { value: new THREE.Vector3(...LOOK.deep) }, uStudio: { value: query.get('debris') === 'models' ? 1 : 0 }, uShow: { value: Number(query.get('debrisshow') ?? 0) || 0 },
+    uStoneAt: { value: new THREE.Vector3(...LOOK.stoneAt) }, uStoneSpread: { value: new THREE.Vector3(...LOOK.stoneSpread) }, uStoneRelief: { value: LOOK.relief }, uGreatRelief: { value: LOOK.greatRelief }, uFacet: { value: new THREE.Vector4(...LOOK.facets) }, uPits: { value: new THREE.Vector4(...LOOK.pits) },
     uCracks: { value: at(...fromPicture(LOOK.cracks.at[0], LOOK.cracks.at[1], LOOK.cracks.at[2])) }, uCracksI: { value: new THREE.Vector3(LOOK.cracks.power, LOOK.cracks.half, LOOK.cracks.reach) },
     uLineA: { value: lines.map((l) => l.a) }, uLineB: { value: lines.map((l) => l.b) }, uLineI: { value: lines.map(() => new THREE.Vector2(pick(6, LOOK.stream.small[0]), LOOK.stream.small[1])) },
   };
-  const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: LOOK.rough, metalness: 0 });
+  const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: STONE.rough[0], metalness: 0, side: THREE.DoubleSide });
   material.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, uniforms);
     sh.vertexShader = sh.vertexShader
-      .replace('#include <common>', `#include <common>\n${S.VERT_PARS}`)
+      .replace('#include <common>', `#include <common>\n${STONE_VERT_PARS}\n${S.VERT_PARS}`)
       .replace('#include <beginnormal_vertex>', `${S.VERT_MOTION}\nvec3 objectNormal = dNor;`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>\n${S.VERT_LIGHT}`);
+    // What is laid after a chunk here runs after the stone's own, which is laid after it next.
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>\n${S.FRAG_PARS}`)
       .replace('#include <lights_physical_pars_fragment>', `#include <lights_physical_pars_fragment>\n${S.MOON_PARS}`)
       .replace('#include <color_fragment>', `#include <color_fragment>\n${S.COLOR}`)
-      .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>\n${S.FINISH}`)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>\n${S.NORMAL}`)
       .replace('#include <lights_fragment_begin>', `${S.MOON_SWAP}\n#include <lights_fragment_begin>\n${S.LIGHT}`)
       .replace('#include <lights_fragment_maps>', `#include <lights_fragment_maps>\n${S.NIGHT}`)
       .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>\n${S.DEEP}`);
+    stoneShader(sh, maps, true, true);
+    // The stream's light on what broke away is the part's own.
+    (sh.uniforms.uStoneStreamPower as { value: number }).value = 0;
   };
   lit(material, { key: 'debris', baked: true });
 
@@ -233,7 +240,7 @@ export const build: PartFactory = async ({ query, renderer }) => {
   group.add(mesh);
   return {
     group,
-    alone: query.get('debris') === 'models' ? (table.length === 1 ? { at: [table[0][col.x], table[0][col.y], 150], r: 75 } : { at: [0, -860, 150], r: 380 }) : { at: [0, -800, 200], r: 720 },
+    alone: query.get('debris') === 'models' ? (table.length === 1 ? { at: [table[0][col.x], table[0][col.y], 150], r: Math.max(8, table[0][col.big] * 1.1) } : { at: [0, -860, 150], r: 380 }) : { at: [0, -800, 200], r: 720 },
     update(s) { uniforms.uTime.value = s.t; return !s.still; },
     dispose() { geometry.dispose(); material.dispose(); pieces.dispose(); maps.release(); },
   };
