@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { categories } from '../../content/work';
+import { ALL_WORK, categories } from '../../content/work';
 import { mountStream } from '../../stream/stream';
 import { mountSwap, type Swap } from '../../stream/surge';
 import type { Hub } from '../../whole/hub';
@@ -90,7 +90,7 @@ export function WorkLab({ hub, under }: { hub?: Hub; under?: boolean }) {
         <div className={styles.foot}>
           <div ref={rail} className={styles.rail} aria-hidden="true" />
           <div ref={button} className={styles.button}>
-            <MetalButton label="View all work" variant="primary" />
+            <MetalButton label="View all work" variant="primary" href={ALL_WORK} />
           </div>
         </div>
       </section>

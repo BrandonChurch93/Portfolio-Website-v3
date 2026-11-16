@@ -31,6 +31,8 @@ export interface WorkCategory {
 
 const GITHUB = 'https://github.com/BrandonChurch93';
 const LIVE_SITE = 'https://www.brandonchurchportfolio.com/projects';
+// Where "View all work" goes until this site has its own page of all the work: his live site's, as a case study does.
+export const ALL_WORK = LIVE_SITE;
 
 export const software: WorkItem[] = [
   {

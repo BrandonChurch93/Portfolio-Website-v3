@@ -168,7 +168,7 @@ export function ContactLab({ hub }: { hub?: Hub }) {
         <footer className={styles.foot} style={{ height: u(CONTACT.foot) }}>
           <p>{contact.foot.line} · © {new Date().getFullYear()}</p>
           <ul>
-            {contact.foot.links.map((l) => <li key={l.label}><a href={l.href} target={l.href.startsWith('http') ? '_blank' : undefined} rel={l.href.startsWith('http') ? 'noopener noreferrer' : undefined}>{l.label}</a></li>)}
+            {contact.foot.links.filter((l) => !('held' in l)).map((l) => <li key={l.label}><a href={l.href} target={l.href.startsWith('http') ? '_blank' : undefined} rel={l.href.startsWith('http') ? 'noopener noreferrer' : undefined}>{l.label}</a></li>)}
           </ul>
         </footer>
       </div>
