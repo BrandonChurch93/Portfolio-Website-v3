@@ -22,6 +22,10 @@ const FLOOR = { whole: 0.14, clumps: 0.42, after: 0.2, single: 0.4, off: 0.12, w
 // A strip of `whole` bays or fewer is lit a floor at a time, as one clump: a bay or two lit by itself there drew a
 // zigzag, and in the tiers over the ring an E.
 const CLUMP = { bays: [2, 4], most: 2, keep: 0, whole: 4 };
+// Floors let a group at a time: the chance a group is lit right across, the chance one run of its bays is (that run's
+// length as a share of the bays, at least and at most), how much dimmer a floor of it may be, and the chance a room
+// of it is off, and how bright its lit floors are (at least, and how much more at most).
+const GROUP = { whole: 0.48, part: 0.38, long: [0.5, 0.85], floor: 0.12, off: 0.06, level: [0.85, 0.15] };
 // A strip one bay wide: how many floors a lit run is, and a dark one, at least and at most.
 const RUN = { lit: [2, 6], dark: [1, 5] };
 // How much busier the floors are where the building is busy: a slow swell up the strip.
@@ -37,14 +41,16 @@ export class Windows {
     this.fill(0, 0, this.size, this.size, 99);
   }
   // A field of cols by rows windows, lit by bays of `pair` windows: where it begins in the map.
-  take(cols, rows, mood = 0, pair = 1) {
+  // With `group`, the floors between two spandrels are let together: lit the same way, the same bays, so the strip
+  // reads at the page's size as stacked bays of lit floors and never as a smudge.
+  take(cols, rows, mood = 0, pair = 1, group = 1) {
     const s = this.shelf;
     if (s.x + cols > this.size) { s.x = 0; s.y += s.tall; s.tall = 0; }
     if (s.y + rows > this.size) throw new Error(`windows: no room for ${cols} by ${rows}`);
     const at = { c0: s.x, r0: s.y, cols, rows };
     s.x += cols;
     s.tall = Math.max(s.tall, rows);
-    this.fill(at.c0, at.r0, cols, rows, mood, pair);
+    this.fill(at.c0, at.r0, cols, rows, mood, pair, group);
     this.fields.push(at);
     return at;
   }
@@ -55,9 +61,10 @@ export class Windows {
     this.data[i + 2] = Math.round(Math.min(1, Math.max(0, level > 0 ? blind : 0)) * 255);
   }
   // Floor by floor, from the foot of the strip.
-  fill(c0, r0, cols, rows, mood, pair = 1) {
+  fill(c0, r0, cols, rows, mood, pair = 1, group = 1) {
     const R = this.rand, bays = Math.max(1, Math.round(cols / pair));
     if (bays === 1 && rows > 4) return this.slot(c0, r0, cols, rows);
+    if (group > 1) return this.groups(c0, r0, cols, rows, pair, group);
     let before = '', from = -1;
     for (let r = 0; r < rows; r++) {
       const busy = (1 + BUSY.by * (2 * L.noise(r / BUSY.every + mood * 1.7, mood * 3.1, mood, 73) - 1)) * (cols < 2 ? FLOOR.narrow : 1);
@@ -82,6 +89,23 @@ export class Windows {
         this.set(c0 + c, r0 + r, lv, warm + (R() - 0.5) * 0.08, blinds > 0 && R() < 0.7 ? blinds + (R() - 0.5) * 0.2 : 0);
       }
       before = kind;
+    }
+  }
+  // Floors let a group at a time (GROUP): the whole group lit right across, or one run of bays lit up all its floors,
+  // or dark; each floor of it a little brighter or dimmer, a room off now and then, the tenant's warmth the same.
+  groups(c0, r0, cols, rows, pair, group) {
+    const R = this.rand, bays = Math.max(1, Math.round(cols / pair));
+    for (let g = 0; g * group < rows; g++) {
+      const t = R(), kind = t < GROUP.whole ? 'whole' : t < GROUP.whole + GROUP.part ? 'part' : 'dark';
+      const warm = R() < FLOOR.warm ? 0.04 + 0.14 * R() : 0.26 + 0.32 * R(), level = GROUP.level[0] + GROUP.level[1] * R();
+      const long = Math.max(1, Math.min(bays - 1, Math.round(bays * (GROUP.long[0] + (GROUP.long[1] - GROUP.long[0]) * R())))), a = Math.floor(R() * (bays - long + 1));
+      for (let r = g * group; r < Math.min(rows, (g + 1) * group); r++) {
+        const floor = level * (1 - GROUP.floor * R());
+        for (let c = 0; c < cols; c++) {
+          const b = Math.min(bays - 1, Math.floor(c / pair)), on = (kind === 'whole' || (kind === 'part' && b >= a && b < a + long)) && R() > GROUP.off;
+          this.set(c0 + c, r0 + r, on ? floor * (0.9 + 0.1 * R()) : R() < FLOOR.glow ? 0.1 + 0.12 * R() : 0, warm + (R() - 0.5) * 0.06, 0);
+        }
+      }
     }
   }
   // A strip one bay wide, lit as the tenants up it are, in runs of floors: a run lit, a run dark, each its own length

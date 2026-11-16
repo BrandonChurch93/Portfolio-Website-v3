@@ -10,7 +10,10 @@
 //   mend(mesh)                           the same mesh with no crack: each polygon is filled alone, so where one's
 //                                        vertex lies on the edge of a triangle of the next, that triangle is split
 //                                        there, at a vertex of its own with its own normal
-const EPS = 1e-7;
+// A level is on a corner within this: fill() rounds its levels to a millionth, and at a tenth of a millionth a face's
+// own lowest corner, rounded, was missed, and the first row of the foot course's bevel was never filled. That left a
+// crack along the whole front foot, which broke into dashes at the page's size.
+const EPS = 1e-5;
 
 export function plane(n, p) {
   const l = Math.hypot(...n), u = n.map((v) => v / l);

@@ -266,6 +266,13 @@ export const build: PartFactory = async ({ query }) => {
 
   const uniforms = treeUniforms();
   uniforms.uShade.value.copy(away);
+  // The pyramid's face toward the moon and the visitor, and the middle of its light (a third of the way in from its
+  // foot and up its height), which lights the crowns in front of it.
+  {
+    const k = Math.sin(PYRAMID.turn * D2R), c = Math.cos(PYRAMID.turn * D2R), out = PYRAMID.base / 3;
+    uniforms.uGold.value.set(PYRAMID.x + k * out, ground(PYRAMID.x, PYRAMID.z) + PYRAMID.tall / 3, PYRAMID.z + c * out, 1);
+    uniforms.uGoldN.value.set(k, c);
+  }
   const passes = [treeMaterial(map, 0, uniforms, query.get('treelook')), treeMaterial(map, 1, uniforms, query.get('treelook'))], depth = treeDepth(map, uniforms);
   made.push(passes[0], passes[1], depth);
   let cube = 1;

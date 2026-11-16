@@ -33,7 +33,7 @@ const SHADE = { dark: 0.55, off: [0.05, 0.2], soft: 0.26 };
 // its own, so some patches are fine and some coarse and no two leaves beside each other match. Those at the rim
 // stand out of the mat by up to OUT.tip of a leaf, foot inside, so a lump's outline is leaves and never an arc.
 // Mounds are laid from the rim inward, as a ball is seen.
-const MOUNDS = { lump: { count: [9, 13], out: 1.12, r: [0.36, 0.62], heart: 0.8, layers: 1.9 }, core: { count: [13, 18], out: 1.08, r: [0.3, 0.52], heart: 0.7, layers: 1.8 } };
+const MOUNDS = { lump: { count: [9, 13], out: 1.12, r: [0.36, 0.62], heart: 0.8, layers: 1.75 }, core: { count: [13, 18], out: 1.08, r: [0.3, 0.52], heart: 0.7, layers: 1.8 } };
 // A leaf's own size against the tile's: a patch's (a noise across the tile, from and to) times its own (from and to),
 // how far from pointing out of its mound it may turn, and how many of a mound's leaves lie any way at all.
 const SIZES = { patch: [0.7, 1.3], own: [0.6, 1.35], turn: 1.2, any: 0.3 };
@@ -59,11 +59,14 @@ const NOTCH = [0.4, 0.2];
 const MAT = { light: 0.06, gap: 0.015, inside: 0.6 };
 // The shade a tree lays on the ground (SHADE in design.ts), down the tile from behind its trunk to its far end, in
 // crown units. A crown from `low` to `high` over the ground lays its shade from `rate` times the one to `rate` times
-// the other away from the trunk (under half what the moon's height would give: see SHADE in design.ts), as wide as the crown is at that height
-// (its outline, a ball of radius `r` about `mid`), broken by the lumps of its outline (a noise `ragged` deep, `lumps`
-// to a crown) and softer and fainter the further it falls (`soft`, `fade`, a share of the way out). Between it and the trunk the trunk's
-// own thin shade. How dark the cast is, and the small pool where the trunk meets the ground (its radius, how dark).
-const BLOB = { low: 0.18, high: 1.75, rate: 1.15, mid: 0.95, r: 0.82, ragged: 0.5, lumps: 3.2, soft: [0.22, 0.75], dark: 0.62, fade: 0.65, trunk: { wide: 0.05, dark: 0.1 }, foot: { r: 0.42, dark: 0.5 } };
+// the other away from the trunk (`rate` is the moon's: one over the tangent of its 22 degrees), as wide as the crown
+// is at that height (its outline, a ball as wide as the crown and `r` tall about `mid`), broken by the lumps of its
+// outline (a noise `ragged` deep, `lumps` to a crown), dappled where the moon comes through the gaps of the crown
+// (`dapple`, how much light and how large a patch, in crown units) and softer and fainter the further it falls
+// (`soft`, `fade`, a share of the way out). Between it and the trunk the trunk's own thin shade. How dark the cast
+// is, and the small pool where the trunk meets the ground (its radius, how dark). It is stored in `steps` levels,
+// which the eye cannot tell apart on the ground and which keep the atlas's file from growing.
+const BLOB = { low: 0.18, high: 1.75, rate: 2.47, mid: 0.95, r: 0.9, ragged: 0.4, lumps: 2.2, soft: [0.18, 0.7], dark: 0.66, fade: 0.4, dapple: { deep: 0.45, size: 0.45 }, steps: 32, trunk: { wide: 0.05, dark: 0.35 }, foot: { r: 0.3, dark: 0.55 } };
 
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const hash2 = (x, y, s) => {
@@ -210,12 +213,13 @@ function blob(cv, tile) {
   for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
     const i = (oy + y) * W + ox + x, across = ((x + 0.5) / T * 2 - 1) * G.wide, along = -G.back + ((y + 0.5) / T) * long;
     // The crown's half width at the height whose shade falls here, and how soft its edge is there.
-    const h = along / BLOB.rate, q = (h - BLOB.mid) / BLOB.r, half = q * q < 1 ? Math.sqrt(1 - q * q) * BLOB.r * 1.05 : 0;
+    const h = along / BLOB.rate, q = (h - BLOB.mid) / BLOB.r, half = q * q < 1 ? Math.sqrt(1 - q * q) * 1.05 : 0;
     const t = clamp((along - from) / (to - from)), soft = BLOB.soft[0] + (BLOB.soft[1] - BLOB.soft[0]) * t;
     const rag = BLOB.ragged * (noise(along * BLOB.lumps / 2, across * BLOB.lumps / 2, 0, 41) - 0.5) * 2 * half;
     const edge = clamp((half + rag - Math.abs(across)) / soft + 0.5);
     const ends = clamp((along - from + 0.1) / 0.3) * clamp((to + 0.2 - along) / (0.5 + soft));
-    const cast = BLOB.dark * edge * ends * (1 - BLOB.fade * t);
+    const dapple = 1 - BLOB.dapple.deep * Math.max(0, Math.min(1, (noise(along / BLOB.dapple.size, across / BLOB.dapple.size, 0, 43) - 0.45) / 0.25));
+    const cast = BLOB.dark * edge * ends * (1 - BLOB.fade * t) * dapple;
     const trunk = BLOB.trunk.dark * clamp(1 - Math.abs(across) / BLOB.trunk.wide) * clamp(along / 0.1) * clamp((from + 0.3 - along) / 0.3);
     const foot = BLOB.foot.dark * Math.exp(-((Math.hypot(across, along) / BLOB.foot.r) ** 2) * 2.2);
     cv.L[i] = 0; cv.A[i] = 1 - (1 - cast) * (1 - foot) * (1 - trunk);
@@ -317,7 +321,7 @@ export function paint({ seed = 7 } = {}) {
     const at = level(k), t = T >> k;
     for (let y = 0; y < lv.h; y++) for (let x = 0; x < lv.w; x++) {
       const i = y * lv.w + x, o = ((at.y + y) * FW + at.x + x) * 4, a = clamp(lv.A[i]);
-      const e = isLeafy.has(Math.floor(x / t) + ATLAS.cols * Math.floor(y / t)) ? 0.5 * (Math.max(clamp(lv.S[i]), a) + a) : a;
+      const tile = Math.floor(x / t) + ATLAS.cols * Math.floor(y / t), e = isLeafy.has(tile) ? 0.5 * (Math.max(clamp(lv.S[i]), a) + a) : tile === TILES.blob ? Math.round(a * BLOB.steps) / BLOB.steps : a;
       data[o] = Math.round(clamp(lv.L[i]) * 255); data[o + 1] = Math.round(clamp(lv.G[i]) * 255); data[o + 2] = Math.round(clamp(lv.B[i]) * 255); data[o + 3] = Math.round(e * 255);
     }
   });

@@ -22,11 +22,12 @@ export const FORM = {
   foot: { tall: 3.4, proud: 0.75, bevel: 0.45 },
   // The casing: long sheets in courses. The face is ruled in rows `row` tall at its foot, thinning upward so a row
   // `taper` up is half as tall as one at the foot, and a share `merge` of the lines between rows is no seam (every
-  // `every`th is), so courses run from one row to `every` rows tall and no two neighbours need agree. Each course has
-  // its own sheet length, from 0.65 to 1.35 of `plate`, each joint a share `jag` of that off its place. A seam is a
-  // hairline `line` tall. How each sheet lies is the shader's (NIGHT.kick, bow, tilt). Even courses of short plates
-  // read as running bond brick, and forty even seams as siding.
-  casing: { row: 2.6, taper: 100, every: 4, merge: 0.52, plate: 24, jag: 0.7, line: 0.1 },
+  // `every`th is), so courses run from one row to `every` rows tall and no two neighbours need agree. The sheets are
+  // `plate` long and every course's upright joints are in line with the ones under it (`jag` off their place), so a
+  // joint runs through from the foot to the top, as clad metal is jointed: staggered course by course they read as
+  // brick. A seam is a hairline `line` tall. How each sheet lies is the shader's (NIGHT.tilt). Forty even seams read
+  // as siding.
+  casing: { row: 2.6, taper: 100, every: 4, merge: 0.52, plate: 34, jag: 0, line: 0.1 },
   // The sheet the pyramid's shade is drawn on (./shade.ts), over the ground round its foot: how far round the foot
   // course it reaches, how far along the moon's shadow, as a share of the shadow's length, how far apart its points
   // are, and how high over the plan's ground it lies.
