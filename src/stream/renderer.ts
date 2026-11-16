@@ -14,9 +14,7 @@ import { STONE } from './stone';
 
 type GL = WebGL2RenderingContext;
 
-export const INSTANCE_FLOATS = 16;
-export const CORE_FLOATS = 5;
-export const STREAK_FLOATS = 5;
+export { CORE_FLOATS, INSTANCE_FLOATS, STREAK_FLOATS } from './shaders';
 // Shards are drawn in three lots, each sorted by kind: solid ones behind the core, solid ones in front, clear ones.
 export const LAYERS = 3;
 export const KINDS = Math.max(FACET_KINDS, FIRST_KINDS);
@@ -117,6 +115,11 @@ const MESH = [3, 3, 3, 1, 3, 3, 3];
 
 interface Target { tex: WebGLTexture; fbo: WebGLFramebuffer; w: number; h: number }
 
+// What changes each frame, laid along the rows of a float texture (G.FEED): its texture unit, and how many floats
+// to a texel.
+const FEEDS = { core: { unit: 8, per: 1 }, streaks: { unit: 9, per: 1 }, shards: { unit: 10, per: 4 } } as const;
+type FeedKey = keyof typeof FEEDS;
+
 function compile(gl: GL, vs: string, fs: string, attribs: string[]) {
   const p = gl.createProgram()!;
   for (const [type, src] of [[gl.VERTEX_SHADER, vs], [gl.FRAGMENT_SHADER, fs]] as [number, string][]) {
@@ -152,12 +155,10 @@ export class StreamRenderer {
   private ends = false;
   private prog: Record<string, Program> = {};
   private quad!: WebGLVertexArrayObject;
-  private coreArray!: WebGLVertexArrayObject;
-  private coreBuffer!: WebGLBuffer;
-  private streakArray!: WebGLVertexArrayObject;
-  private streakBuffer!: WebGLBuffer;
+  // The core and the streaks have no vertex buffer at all: each vertex is read from its feed by its number.
+  private bare!: WebGLVertexArrayObject;
   private shardArray!: WebGLVertexArrayObject;
-  private shardBuffer!: WebGLBuffer;
+  private feeds: Record<FeedKey, { tex: WebGLTexture | null; rows: number }> = { core: { tex: null, rows: 0 }, streaks: { tex: null, rows: 0 }, shards: { tex: null, rows: 0 } };
   private light: Target | null = null;
   private down: Target[] = [];
   private up: Target[] = [];
@@ -182,7 +183,6 @@ export class StreamRenderer {
   private w = 0;
   private h = 0;
   private dpr = 1;
-  private sizes = { core: 0, streaks: 0, shards: 0 };
 
   constructor(private canvas: HTMLCanvasElement, private meshes: ShardMeshes) {
     const gl = canvas.getContext('webgl2', { antialias: false, alpha: true, premultipliedAlpha: true, depth: false, stencil: false, powerPreference: 'high-performance' }) as GL | null;
@@ -200,24 +200,12 @@ export class StreamRenderer {
     gl.enableVertexAttribArray(0);
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
 
-    const moving = (floats: number, parts: number[]) => {
-      const array = gl.createVertexArray()!, buffer = gl.createBuffer()!;
-      gl.bindVertexArray(array);
-      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-      let at = 0;
-      parts.forEach((size, i) => { gl.enableVertexAttribArray(i); gl.vertexAttribPointer(i, size, gl.FLOAT, false, floats * 4, at * 4); at += size; });
-      return { array, buffer };
-    };
-    ({ array: this.coreArray, buffer: this.coreBuffer } = moving(CORE_FLOATS, [2, 3]));
-    ({ array: this.streakArray, buffer: this.streakBuffer } = moving(STREAK_FLOATS, [2, 3]));
+    this.bare = gl.createVertexArray()!;
 
     this.shardArray = gl.createVertexArray()!;
     gl.bindVertexArray(this.shardArray);
     fixed(meshes.data);
     MESH.reduce((at, size, i) => { gl.enableVertexAttribArray(i); gl.vertexAttribPointer(i, size, gl.FLOAT, false, VERTEX_FLOATS * 4, at * 4); return at + size; }, 0);
-    this.shardBuffer = gl.createBuffer()!;
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.shardBuffer);
-    for (let i = 0; i < 4; i++) { gl.enableVertexAttribArray(MESH.length + i); gl.vertexAttribDivisor(MESH.length + i, 1); }
     gl.bindVertexArray(null);
 
     gl.bindTexture(gl.TEXTURE_2D, this.sdf);
@@ -244,10 +232,10 @@ export class StreamRenderer {
     this.budget = budget;
     this.shapes = shapes;
     this.ends = ends;
-    const shard = ['aPos', 'aNormal', 'aEdge', 'aTag', 'aBevel0', 'aBevel1', 'aBevel2', 'iPlace', 'iTurn', 'iCore', 'iMore'];
+    const shard = ['aPos', 'aNormal', 'aEdge', 'aTag', 'aBevel0', 'aBevel1', 'aBevel2'];
     this.prog = {
-      core: compile(gl, G.CORE_VERT, G.coreFrag(budget.split ? 9 : 7, ends, !!shapes.swell, !!shapes.born), ['aPos', 'aAlong']),
-      streak: compile(gl, G.STREAK_VERT, G.STREAK_FRAG, ['aPos', 'aLight']),
+      core: compile(gl, G.CORE_VERT, G.coreFrag(budget.split ? 9 : 7, ends, !!shapes.swell, !!shapes.born), []),
+      streak: compile(gl, G.STREAK_VERT, G.STREAK_FRAG, []),
       down: compile(gl, G.FULL_VERT, G.downFrag(f), ['aPos']),
       up: compile(gl, G.FULL_VERT, G.upFrag(f), ['aPos']),
       title: compile(gl, G.RELIEF_VERT, G.titleFrag(f), ['aPos']),
@@ -259,6 +247,10 @@ export class StreamRenderer {
       light: compile(gl, G.FULL_VERT, G.lightFrag(f), ['aPos']),
       final: compile(gl, G.FULL_VERT, G.finalFrag(f, shapes), ['aPos']),
     };
+    for (const [name, key] of [['core', 'core'], ['streak', 'streaks'], ['solid', 'shards'], ['clear', 'shards'], ['copper', 'shards'], ['glass', 'shards']] as [string, FeedKey][]) {
+      gl.useProgram(this.prog[name].p);
+      gl.uniform1i(this.prog[name].u('uFeed'), FEEDS[key].unit);
+    }
     if (shapes.plates) {
       this.prog.hole = compile(gl, G.PLATE_VERT, G.PLATE_HOLE_FRAG, ['aPos']);
       this.prog.plate = compile(gl, G.PLATE_VERT, G.plateLightFrag(f), ['aPos']);
@@ -411,11 +403,23 @@ export class StreamRenderer {
     this.bars = bars;
   }
 
-  private fill(buffer: WebGLBuffer, data: Float32Array, floats: number, key: 'core' | 'streaks' | 'shards'): void {
-    const gl = this.gl;
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    if (this.sizes[key] < data.length) { gl.bufferData(gl.ARRAY_BUFFER, data.byteLength, gl.DYNAMIC_DRAW); this.sizes[key] = data.length; }
-    if (floats > 0) gl.bufferSubData(gl.ARRAY_BUFFER, 0, data, 0, floats);
+  // The first floats of data into its feed, row after row. The texture is made again, taller, only when data grows.
+  private fill(key: FeedKey, data: Float32Array, floats: number): void {
+    const gl = this.gl, { unit, per } = FEEDS[key], feed = this.feeds[key];
+    const rows = Math.max(1, Math.ceil(data.length / per / G.FEED));
+    gl.activeTexture(gl.TEXTURE0 + unit);
+    if (!feed.tex || feed.rows < rows) {
+      if (feed.tex) gl.deleteTexture(feed.tex);
+      feed.tex = gl.createTexture()!;
+      feed.rows = rows;
+      gl.bindTexture(gl.TEXTURE_2D, feed.tex);
+      gl.texStorage2D(gl.TEXTURE_2D, 1, per === 4 ? gl.RGBA32F : gl.R32F, G.FEED, rows);
+      this.filter(gl.NEAREST);
+    } else gl.bindTexture(gl.TEXTURE_2D, feed.tex);
+    const format = per === 4 ? gl.RGBA : gl.RED, texels = floats / per, full = Math.floor(texels / G.FEED), rest = texels - full * G.FEED;
+    if (full > 0) gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, G.FEED, full, format, gl.FLOAT, data, 0);
+    if (rest > 0) gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, full, rest, 1, format, gl.FLOAT, data, full * G.FEED * per);
+    gl.activeTexture(gl.TEXTURE0);
   }
 
   private lit(p: Program, f: Frame): void {
@@ -449,11 +453,10 @@ export class StreamRenderer {
 
   private shards(p: Program, f: Frame, layer: number, kinds: number, firstKind: number): void {
     const gl = this.gl;
-    const stride = INSTANCE_FLOATS * 4;
     for (let k = 0; k < kinds; k++) {
       const o = (layer * KINDS + k) * 2, first = f.lots[o], count = f.lots[o + 1];
       if (count <= 0) continue;
-      for (let i = 0; i < 4; i++) gl.vertexAttribPointer(MESH.length + i, 4, gl.FLOAT, false, stride, first * stride + i * 16);
+      gl.uniform1i(p.u('uFirst'), first);
       const mesh = this.meshes.kinds[firstKind + k];
       gl.drawArraysInstanced(gl.TRIANGLES, mesh.first, mesh.count, count);
     }
@@ -466,10 +469,10 @@ export class StreamRenderer {
     const P = this.prog;
     let cored = f.coreRuns[0] + f.coreRuns[1] + f.coreRuns[2] + f.coreRuns[3];
     if (f.falls) for (let i = 0; i < f.falls.length; i += 2) cored = Math.max(cored, f.falls[i] + f.falls[i + 1]);
-    this.fill(this.coreBuffer, f.core, cored * CORE_FLOATS, 'core');
-    this.fill(this.streakBuffer, f.streaks, f.streakCount * STREAK_FLOATS, 'streaks');
+    this.fill('core', f.core, cored * G.CORE_FLOATS);
+    this.fill('streaks', f.streaks, f.streakCount * G.STREAK_FLOATS);
     const shardCount = f.lots.reduce((n, v, i) => (i % 2 ? Math.max(n, f.lots[i - 1] + v) : n), 0);
-    this.fill(this.shardBuffer, f.shards, shardCount * INSTANCE_FLOATS, 'shards');
+    this.fill('shards', f.shards, shardCount * G.INSTANCE_FLOATS);
 
     // ---- the light
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.light.fbo);
@@ -486,7 +489,7 @@ export class StreamRenderer {
     gl.uniform1f(P.core.u('uTime'), f.time);
     gl.uniform1f(P.core.u('uHeart'), 1 + GLOW.more.heart * f.presence);
     if (this.shapes.born) { gl.uniform1f(P.core.u('uBorn'), f.from ?? 0); gl.uniform1f(P.core.u('uRise'), STREAM.hero.rise); }
-    gl.bindVertexArray(this.coreArray);
+    gl.bindVertexArray(this.bare);
     for (let b = 0; b < 2; b++) {
       if (f.coreRuns[b * 2 + 1] < 3) continue;
       gl.uniform1f(P.core.u('uEnergy'), f.energy[b]);
@@ -497,7 +500,8 @@ export class StreamRenderer {
         gl.uniform2f(P.core.u('uSwellSize'), STREAM.change.swell[1], STREAM.change.swell[2]);
         gl.uniform1f(P.core.u('uHush'), f.hush ? f.hush[b] : 0);
       }
-      gl.drawArrays(gl.TRIANGLE_STRIP, f.coreRuns[b * 2], f.coreRuns[b * 2 + 1]);
+      gl.uniform1i(P.core.u('uFirst'), f.coreRuns[b * 2]);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, f.coreRuns[b * 2 + 1]);
     }
     if (f.falls) for (let i = 0; i < f.falls.length; i += 2) {
       if (f.falls[i + 1] < 3) continue;
@@ -509,12 +513,14 @@ export class StreamRenderer {
         gl.uniform2f(P.core.u('uSwellSize'), STREAM.change.swell[1], STREAM.change.swell[2]);
         gl.uniform1f(P.core.u('uHush'), 0);
       }
-      gl.drawArrays(gl.TRIANGLE_STRIP, f.falls[i], f.falls[i + 1]);
+      gl.uniform1i(P.core.u('uFirst'), f.falls[i]);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, f.falls[i + 1]);
     }
     if (f.streakCount > 0) {
       gl.useProgram(P.streak.p);
+      gl.uniform1i(P.streak.u('uFirst'), 0);
       gl.uniform4fv(P.streak.u('uView'), f.view);
-      gl.bindVertexArray(this.streakArray);
+      gl.bindVertexArray(this.bare);
       gl.drawArrays(gl.TRIANGLES, 0, f.streakCount);
     }
     gl.blendEquation(gl.FUNC_ADD);
@@ -597,7 +603,6 @@ export class StreamRenderer {
       this.lit(p, f);
       gl.uniform1f(p.u('uDeep'), GLOW.deep * f.unit);
       gl.bindVertexArray(this.shardArray);
-      gl.bindBuffer(gl.ARRAY_BUFFER, this.shardBuffer);
       gl.disable(gl.BLEND);
       gl.enable(gl.DEPTH_TEST);
       gl.depthFunc(gl.LESS);

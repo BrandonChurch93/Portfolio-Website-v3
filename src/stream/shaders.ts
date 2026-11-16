@@ -46,6 +46,21 @@ float noise2(vec2 p){ vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * 
 float dither(vec2 p){ float a = hash2(p * 0.61 + 0.37), b = hash2(p * 0.83 + 7.13); return (a + b - 1.0) / 255.0; }
 `;
 
+export const INSTANCE_FLOATS = 16;
+export const CORE_FLOATS = 5;
+export const STREAK_FLOATS = 5;
+// What changes each frame reaches the vertex shaders in float textures this many texels wide, never in a vertex
+// buffer: Safari was measured charging a page 100 MB or more for every buffer rewritten each frame, never given back,
+// and nothing for a texture (LOG.md, Nov 15). Measured again on Nov 16 in the test WebKit on his Mac the saving was
+// small (Work about 25 MB lower) and the picture byte for byte the same: it is kept for the iPad, where the cost
+// was first seen and has not been measured since.
+export const FEED = 2048;
+const FEED_OF = `
+uniform highp sampler2D uFeed;
+uniform int uFirst;
+float feed(int i){ return texelFetch(uFeed, ivec2(i % ${FEED}, i / ${FEED}), 0).r; }
+`;
+
 export const FULL_VERT = `${HEAD}
 in vec2 aPos;
 out vec2 vUv;
@@ -53,12 +68,15 @@ void main(){ vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }`;
 
 // ---- the core: one ribbon to each side of the route, and a bundle of strands of light worked out across it
 
+// A vertex is its place, then across the core, along it, and behind its leading end, all in units.
 export const CORE_VERT = `${HEAD}
-in vec2 aPos;
-in vec3 aAlong;   // across the core, along it, and behind its leading end, all in units
 out vec3 vAlong;
-${CLIP}
-void main(){ vAlong = aAlong; gl_Position = clip(aPos, 0.0); }`;
+${CLIP}${FEED_OF}
+void main(){
+  int i = (uFirst + gl_VertexID) * ${CORE_FLOATS};
+  vAlong = vec3(feed(i + 2), feed(i + 3), feed(i + 4));
+  gl_Position = clip(vec2(feed(i), feed(i + 1)), 0.0);
+}`;
 
 // ends: the route has a place where the two sides meet again, and a side's own strands fade out there as they faded
 // in where the sides parted. swell: a surge can run along the core, and the core is brighter where its front is.
@@ -133,12 +151,15 @@ void main(){
 
 // ---- sparks, forks of arc and the hot point at each leading end: thin streaks and small round lights
 
+// A vertex is its place, then across (-1 to 1), amount, along (-1 to 1, used by round lights only).
 export const STREAK_VERT = `${HEAD}
-in vec2 aPos;
-in vec3 aLight;   // across (-1 to 1), amount, along (-1 to 1, used by round lights only)
 out vec3 vLight;
-${CLIP}
-void main(){ vLight = aLight; gl_Position = clip(aPos, 0.0); }`;
+${CLIP}${FEED_OF}
+void main(){
+  int i = (uFirst + gl_VertexID) * ${STREAK_FLOATS};
+  vLight = vec3(feed(i + 2), feed(i + 3), feed(i + 4));
+  gl_Position = clip(vec2(feed(i), feed(i + 1)), 0.0);
+}`;
 
 export const STREAK_FRAG = `${HEAD}
 in vec3 vLight;
@@ -699,10 +720,8 @@ in vec3 aNormal;
 in vec3 aEdge;
 in float aTag;
 in vec3 aBevel0, aBevel1, aBevel2;
-in vec4 iPlace;   // x, y, z, size
-in vec4 iTurn;    // which way it is turned, as a quaternion
-in vec4 iCore;    // the nearest point of the core, and the way the core runs there
-in vec4 iMore;    // its own random number, how much of the core's light reaches it, spare, how near the cursor is
+uniform highp sampler2D uFeed;
+uniform int uFirst;   // where this draw's shards begin among all of them
 uniform float uDeep;
 out vec3 vP, vN, vEdge, vObj;
 out float vTag;
@@ -712,6 +731,12 @@ flat out vec3 vB0, vB1, vB2;
 ${CLIP}
 vec3 turn(vec4 q, vec3 v){ return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v); }
 void main(){
+  int at = (uFirst + gl_InstanceID) * ${INSTANCE_FLOATS / 4};
+  ivec2 c = ivec2(at % ${FEED}, at / ${FEED});
+  vec4 iPlace = texelFetch(uFeed, c, 0);                // x, y, z, size
+  vec4 iTurn = texelFetch(uFeed, c + ivec2(1, 0), 0);   // which way it is turned, as a quaternion
+  vec4 iCore = texelFetch(uFeed, c + ivec2(2, 0), 0);   // the nearest point of the core, and the way the core runs there
+  vec4 iMore = texelFetch(uFeed, c + ivec2(3, 0), 0);   // its own random number, how much of the core's light reaches it, spare, how near the cursor is
   vec3 w = iPlace.xyz + turn(iTurn, aPos * iPlace.w);
   vP = w; vN = turn(iTurn, aNormal); vEdge = aEdge * iPlace.w; vObj = aPos; vTag = aTag;
   vCore = iCore; vMore = iMore; vSize = iPlace.w;
