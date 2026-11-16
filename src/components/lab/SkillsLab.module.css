@@ -164,30 +164,55 @@
   margin: 0;
 }
 
+/* A label in a column of its own and its items as a block beside it, so a wrapped line hangs under the items
+   and never under the label. */
 .group {
-  font-size: max(0.8125rem, calc(var(--u) * 13.5));
-  line-height: 1.5;
-  text-wrap: pretty;
+  --sep: 1.15em;
+  display: grid;
+  grid-template-columns: calc(var(--u) * 136) minmax(0, 1fr);
+  column-gap: calc(var(--u) * 18);
+  align-items: baseline;
+  font-size: max(0.875rem, calc(var(--u) * 14.5));
+  line-height: 1.55;
 }
 
 .group dt {
-  display: inline;
-  margin-right: calc(var(--u) * 10);
+  margin: 0;
   font-family: var(--font-mono);
   font-size: max(0.6875rem, calc(var(--u) * 11.5));
+  line-height: 1.4;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--copper);
 }
 
 .group dd {
-  display: inline;
   margin: 0;
+  overflow: hidden;
   color: var(--text-2);
 }
 
+/* Each item carries the dot before it, and the block is drawn that far to the left of its clipped box: the dot
+   before the first item of every line falls outside it, so no line begins or ends on one. */
+.items {
+  display: flex;
+  flex-wrap: wrap;
+  margin-left: calc(var(--sep) * -1);
+}
+
 .item {
+  position: relative;
+  padding-left: var(--sep);
   white-space: nowrap;
+}
+
+.item::before {
+  content: '\00b7' / '';
+  position: absolute;
+  left: 0;
+  width: var(--sep);
+  text-align: center;
+  color: var(--text-3);
 }
 
 /* The light behind him and the light the studio light throws. Wider than the board, so that on a very wide screen
@@ -518,6 +543,11 @@
   .groups {
     margin-top: var(--space-3);
     gap: var(--space-3);
+  }
+
+  .group {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--space-1);
   }
 
   .about {

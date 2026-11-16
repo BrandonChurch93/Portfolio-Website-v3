@@ -403,7 +403,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
         pulses = [];
       }
       const under = planned?.rails?.(sinceOf) ?? [];
-      renderer.configure(budget, { cards: base.reliefs.length + places.length, posts: route.posts.length, rails: base.bars.length + more, plates: cards.length, drawn: drawn.length + more, swell: !!(A && B) }, route.join[0] < Infinity);
+      renderer.configure(budget, { cards: base.reliefs.length + places.length, posts: route.posts.length, rails: base.bars.length + more, plates: cards.length, drawn: drawn.length + more, swell: !!(A && B), born: !!route.dark?.some((d) => d.source) }, route.join[0] < Infinity);
       renderer.resize(Math.round(cssW * dpr), Math.round(cssH * dpr), dpr);
       renderer.setRelief(made ? made.field : null, base.reliefs, base.posts, [...base.rails, ...under], [], [...base.bars, ...under]);
       stones = route.landings.flatMap((L, i) => (L.kind === 'post' ? [i] : []));
@@ -411,7 +411,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     } else if (opts.plan) {
       planned = opts.plan({ box: (el) => boxOf(el as HTMLElement), width: w, bottom, unit, view: clock.view.h });
       route = planned.route;
-      renderer.configure(budget, { cards: 0, posts: 0, rails: route.rails.length, drawn: route.rails.length, swell: true });
+      renderer.configure(budget, { cards: 0, posts: 0, rails: route.rails.length, drawn: route.rails.length, swell: true, born: !!route.dark?.some((d) => d.source) });
       renderer.resize(Math.round(cssW * dpr), Math.round(cssH * dpr), dpr);
       renderer.setRelief(null, [], [], planned.rails?.(sinceOf) ?? [], [], route.rails);
       pulses = [];
@@ -673,7 +673,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     for (const d of route!.dark!) {
       if (core && !d.core) continue;
       const before = s < (d.from + d.to) / 2, over = core ? d.ease?.[before ? 0 : 1] ?? 3 * unit : S.skills.hide * unit, into = Math.min(s - d.from, d.to - s);
-      if (into > -over) k = Math.min(k, Math.max(0, -into / over));
+      if (into >= -over) k = Math.min(k, over > 0 ? Math.max(0, -into / over) : 0);
     }
     return k;
   };
@@ -999,6 +999,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   let probe: Float32Array | null = null;
   const runs: [number, number, number, number] = [0, 0, 0, 0];
   const falls: number[] = [];
+  const ground: [number, number] = [0, 1];
   const GLINTS = 220;
   const glint = new Float32Array(GLINTS * 6);
   let glints = 0;
@@ -1132,8 +1133,12 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
         hush[0] = Math.max(hush[0], S.change.hush[0] * 0.5 * Math.min(1, f.age / S.change.hush[1]));
       }
     }
+    // Where the stream begins part way down its route, as it does under the hero's core, the page takes its light
+    // only from there down, coming to the whole of it over a little way.
+    const born = route.dark?.find((d) => d.source);
+    if (born) { at(route.branches[0], born.to, tmp); ground[0] = tmp[1]; ground[1] = tmp[1] + S.hero.lit * unit; }
     const f: Frame = {
-      view: [0, canvasTop, cssW, cssH], time: now, unit, lamp: [lx, ly, lz, 0.5 + 0.5 * led], energy: [sim.energy[0], sim.energy[1]], split: route.split / unit, end: route.join[1] / unit, look, presence,
+      view: [0, canvasTop, cssW, cssH], time: now, unit, lamp: [lx, ly, lz, 0.5 + 0.5 * led], energy: [sim.energy[0], sim.energy[1]], split: route.split / unit, end: route.join[1] / unit, from: born ? born.to / unit : 0, ground: born ? ground : undefined, look, presence,
       core, coreRuns: runs, falls, streaks, streakCount, shards, lots, plates: stood, swell, hush: swell ? hush : undefined,
       // A lit face is never quite steady: it breathes a little, as coals do. It flares as a surge passes its stone.
       lit: stones.map((i, k) => sim!.on[i] * (still ? 1 : 0.92 + 0.08 * Math.sin(now * 2.3 + i) * Math.sin(now * 1.1 + i * 1.7)) * (Z ? Math.sqrt(1 + S.change.flare * Z.stone[k ? 1 : 0]) : 1)),

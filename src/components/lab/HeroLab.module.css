@@ -135,6 +135,20 @@
   text-transform: uppercase;
   color: var(--text-2);
   pointer-events: none;
+  /* It lies over the world's torn front edge on every screen. A halo of the page's ground keeps its letters
+     clear of the rock without drawing a box. */
+  text-shadow: 0 0 calc(var(--u) * 5) var(--bg), 0 0 calc(var(--u) * 12) var(--bg), 0 0 calc(var(--u) * 22) var(--bg);
+}
+
+.cue::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 100%;
+  width: 1px;
+  height: calc(var(--u) * 14);
+  background: linear-gradient(var(--copper-light), transparent);
+  opacity: 0.8;
 }
 
 /* Work's bar, as a stand in on this page: where the stream strikes. */
@@ -155,11 +169,6 @@
   color: var(--text-3);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .cue {
-    display: none;
-  }
-}
 
 /* A screen too narrow for the layout shows a plain stand in: his words, with no stream and no city. Phones are
    designed in one pass after every section is finished. */

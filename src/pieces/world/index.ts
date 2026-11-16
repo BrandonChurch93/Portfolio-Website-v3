@@ -49,6 +49,11 @@ const CLOSE: Record<string, readonly [number, number, number]> = {
 // The moon's shadow map: how far each side of the planet's middle it reaches, in units, how many pixels square by
 // tier, and where the planet's middle is.
 const MOON = { reach: 980, mid: -330, far: 4.5, map: { high: 4096, mid: 2048, low: 1024, static: 4096 } as Record<Tier, number>, bias: -0.0005, normalBias: 0.0026, radius: 1.6 };
+// While the shadows are being set: ?moonbias=, ?moonnormal= and ?moonradius= try another of each without a change of code.
+const moonTried = (name: string, usual: number): number => {
+  const v = typeof location === 'undefined' ? null : new URLSearchParams(location.search).get(name);
+  return v !== null && Number.isFinite(Number(v)) ? Number(v) : usual;
+};
 // The cursor's glint: how far in front of the world it stands, in metres, how far it ranges as a share of what the
 // host shows, and how strong it is.
 export { GLINT };
@@ -196,9 +201,9 @@ export function createWorld(): WorldPiece {
       moon.castShadow = true;
       moon.shadow.mapSize.setScalar(MOON.map[opts.tier]);
       Object.assign(moon.shadow.camera, { left: -MOON.reach * M, right: MOON.reach * M, top: MOON.reach * M, bottom: -MOON.reach * M, near: 0.5, far: 2 * MOON.far });
-      moon.shadow.bias = MOON.bias;
-      moon.shadow.normalBias = MOON.normalBias;
-      moon.shadow.radius = MOON.radius;
+      moon.shadow.bias = moonTried('moonbias', MOON.bias);
+      moon.shadow.normalBias = moonTried('moonnormal', MOON.normalBias);
+      moon.shadow.radius = moonTried('moonradius', MOON.radius);
       moon.shadow.autoUpdate = false;
       moon.target.position.set(0, MOON.mid * M, 0);
       moon.position.set(...MOONWARD).normalize().multiplyScalar(MOON.far).add(moon.target.position);

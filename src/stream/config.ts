@@ -160,11 +160,15 @@ export const STREAM = {
     // How far the leading end has fallen from the core when the page is told it has set off.
     off: 30,
     // Where the stream leaves the core it is the core's own to draw (the neck, in src/pieces/world/parts/core): the
-    // stream's core is not drawn for the first of these, and is taken up over the stretch to the second.
-    // The page's last pass lays its stream over whatever is under it, so it cannot be hidden inside the neck: the
-    // stream's core is taken up where the neck has drawn down to the ribbon's own width and is the same pattern,
-    // fibre for fibre, over a few units.
+    // stream's core is not drawn for the first of these, and is taken up over the stretch to the second. The page's
+    // last pass lays its stream over whatever is under it, so it cannot be hidden inside the neck: it is taken up
+    // where the neck has drawn down to the ribbon's own width. It is taken up by light and not by width: its heart
+    // comes on over a few units and its strands over the next stretch, as they do at the top of a page (`born` in
+    // the core's shader), and the page takes the stream's light only from there down, all of it `lit` units further
+    // on. Begun at its whole strength the stream met the neck in a flat streak with its strands fanned out beside
+    // it, and opened from a point its ribbon was squeezed into a zigzag.
     hand: [221, 222] as readonly [number, number],
+    lit: 70,
     // It falls dead straight this far from the core before it begins to sway: the neck is the core's, drawn
     // straight down, and the stream's own line has to lie exactly along it.
     straight: 280,

@@ -37,6 +37,7 @@ const asked = new URLSearchParams(typeof location !== 'undefined' ? location.sea
 const tried = (name: string, usual: number): number => (asked.has(name) && Number.isFinite(Number(asked.get(name))) ? Number(asked.get(name)) : usual);
 const POWER = tried('corepower', LIGHT.core.power), FILL = tried('fill', LIGHT.fill);
 const TINT = asked.has('filltint') ? String(asked.get('filltint')).split(',').map(Number) : LIGHT.warm;
+const KNEE = tried('bounceknee', LIGHT.bounced[2]);
 
 // The cursor's glint on polished metal: how far in front of the world the light stands, in scene units, how far it
 // moves for the cursor crossing the host, as a share of the host's height, and its strength. A part reads it here
@@ -105,7 +106,14 @@ const VERT = `
 	// Light that has bounced off red brown stone under an orange core comes back twice as orange, and every dark it
 	// lit was rust. Picture 9's darks are a nearly neutral brown: the bounce keeps part of its color and is lifted,
 	// so a face turned from the core is a deep brown and not black.
-	wBounce = mix( vec3( dot( wBounce, vec3( 0.2126, 0.7152, 0.0722 ) ) ), wBounce, ${LIGHT.bounced[0].toFixed(3)} ) * ${LIGHT.bounced[1].toFixed(3)};
+	float wLum = dot( wBounce, vec3( 0.2126, 0.7152, 0.0722 ) );
+	wBounce = mix( vec3( wLum ), wBounce, ${LIGHT.bounced[0].toFixed(3)} ) * ${LIGHT.bounced[1].toFixed(3)};
+	// Lifted evenly, the weakest bounce lay on the masses far from the core as a brown veil, where picture 9's are
+	// near black. Under the knee it falls away fast, and over it it is left as it was. Only for what the core
+	// lights: what stands on top is in the night's light, and its shade is not the hollow's.
+	#ifdef WORLD_CORE
+		wBounce *= wLum * wLum / ( wLum * wLum + ${(KNEE * KNEE).toFixed(5)} + 1e-6 );
+	#endif
 #endif`;
 const FRAG_PARS = `
 uniform vec3 uCoreAt;

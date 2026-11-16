@@ -218,8 +218,10 @@ export const LIGHT = {
   sky: { color: 'ember', power: 0.05 },
   // The most irradiance a stored bounce can hold.
   bounce: 8,
-  // How much of its own color the stored bounce keeps (the rest is its grey), and how much it is lifted.
-  bounced: [0.5, 1.7],
+  // How much of its own color the stored bounce keeps (the rest is its grey), how much it is lifted, and its knee
+  // on what the core lights: a bounce weaker than that falls away fast, so the masses far from the core go near
+  // black, as picture 9's are, and the faces round the core keep what they had.
+  bounced: [0.5, 1.7, 0.5],
   // How strongly a thing reflects the night round it, and the share of that which falls on a matte face as light.
   // The night is made for metal to mirror: as light on rock it was a second moon with no shadows, which filled
   // every gap in the hollow with grey.

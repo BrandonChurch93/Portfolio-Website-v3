@@ -138,7 +138,7 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
                   {c.groups.map(([label, items]) => (
                     <div key={label} className={styles.group}>
                       <dt>{label}</dt>
-                      <dd>{items.map((item, k) => <span key={item}>{k ? ' ' : ''}<span className={styles.item}>{item}{k < items.length - 1 ? ' ·' : ''}</span></span>)}</dd>
+                      <dd><span className={styles.items}>{items.map((item) => <span key={item} className={styles.item}>{item}</span>)}</span></dd>
                     </div>
                   ))}
                 </dl>

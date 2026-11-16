@@ -64,14 +64,15 @@ void main(){ vAlong = aAlong; gl_Position = clip(aPos, 0.0); }`;
 // in where the sides parted. swell: a surge can run along the core, and the core is brighter where its front is.
 // Without either the shader is the test shot's, letter for letter.
 export const SWELLS = 4;
-export const coreFrag = (strands: number, ends = false, swell = false) => `${HEAD}
+export const coreFrag = (strands: number, ends = false, swell = false, born = false) => `${HEAD}
 in vec3 vAlong;
 uniform float uTime, uEnergy, uHeart;
 uniform vec2 uOwn;   // a shift that gives each side its own strands, and where along the route they begin${ends ? `
 uniform float uEnd;  // where along the route they end` : ''}${swell ? `
 uniform vec3 uSwell[${SWELLS}];   // each front: where along the route it is, how much brighter it makes the core, and which way it runs (1 down the route, -1 up it)
 uniform vec2 uSwellSize;          // how far ahead of a front the swell reaches, and how far behind
-uniform float uHush;              // how far the core ahead of a front is turned down, 0 to 1` : ''}
+uniform float uHush;              // how far the core ahead of a front is turned down, 0 to 1` : ''}${born ? `
+uniform float uBorn;              // where along the route the stream begins` : ''}
 out vec4 frag;
 ${NOISE}
 void main(){
@@ -107,7 +108,7 @@ void main(){
   // falls away slowly through hot and flame to ember. A sharp even edge is what makes a tube.
   float gather = 1.0 - abs(face);
   float q = x / mix(0.8, 1.4, gather);
-  sum += mix(1.7, 3.0, gather * gather) * uHeart / pow(1.0 + q * q, 1.6);
+  sum += mix(1.7, 3.0, gather * gather) * uHeart / pow(1.0 + q * q, 1.6)${born ? ' * smoothstep(uBorn - 1.0, uBorn + 7.0, vAlong.y)' : ''};
   // Light runs down it, and it burns hotter toward its leading end.
   float run = 0.84 + 0.16 * sin(s / 83.0 - t * 2.1) * sin(s / 211.0 - t * 0.9 + 0.8);
   float head = 1.0 - smoothstep(0.0, 120.0, lead);
@@ -882,7 +883,8 @@ void main(){
 // and its shaders are then the test shot's, letter for letter.
 // rails counts every straight solid that throws a shadow. drawn says whether any rail is drawn at all.
 // swell says whether a surge can run along the core.
-export interface Shapes { cards: number; posts: number; rails: number; plates?: number; drawn?: number; swell?: boolean }
+// born: the stream begins part way down its route, and its heart comes to its whole light over a little way there.
+export interface Shapes { cards: number; posts: number; rails: number; plates?: number; drawn?: number; swell?: boolean; born?: boolean }
 const plain = (n: Shapes) => n.cards <= 1 && !n.posts && !n.rails;
 
 const RAIL_FIELD = `
@@ -901,6 +903,7 @@ uniform vec4 uRails[${Math.max(1, n.rails)}];
 uniform float uRailHalves[${Math.max(1, n.rails)}];
 uniform float uPage, uRelief;
 uniform sampler2D uMask;   // how much of each pixel a project card covers`}
+uniform vec2 uLit;         // down the page: where it begins to take the stream's light, and where it takes all of it
 out vec4 frag;
 ${CLIP}${LIT}${RAMP}${NOISE}${TITLE_FIELD}${plain(n) ? '' : RAIL_FIELD}
 float shapes(vec2 p){
@@ -933,6 +936,7 @@ void main(){
   vec3 page = ramp(amount * uPage * mix(0.16, 1.0, shade)) * (0.8 + 0.4 * grain);${plain(n) ? '' : `
   // A project card is not the page: its own light is laid on it elsewhere.
   page *= 1.0 - texture(uMask, vUv).r;`}
+  page *= smoothstep(uLit.x, uLit.y, p.y);
   vec3 col = scene.rgb + page * (1.0 - scene.a);
   col = max(pow(min(col, uPale), vec3(1.0 / 2.2)) + dither(gl_FragCoord.xy), 0.0);
   // Light is laid over the page, not added to it: WebKit throws away any color brighter than its own alpha, so every

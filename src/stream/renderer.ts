@@ -73,6 +73,8 @@ export interface Frame {
   energy: [number, number];
   split: number;                                 // where the two sides part, in units along the route
   end: number;                                   // where the second side's own core ends, if the two meet again
+  from?: number;                                 // where along the route the stream begins, when that is not its top
+  ground?: [number, number];                     // down the page: where the page begins to take the stream's light, and where it takes all of it
   presence: number;                              // 0 on a narrow screen to 1 on a wide one
   look: Look;
   core: Float32Array;
@@ -235,7 +237,7 @@ export class StreamRenderer {
   // Programs that depend on the budget, or on how many things stand on the page, are built again when those change.
   // ends: the two sides of the stream meet again.
   configure(budget: StreamBudget, shapes: G.Shapes = { cards: 1, posts: 0, rails: 0 }, ends = false): void {
-    const same = this.budget === budget && this.ends === ends && !this.shapes.swell === !shapes.swell && this.shapes.cards === shapes.cards && this.shapes.posts === shapes.posts && this.shapes.rails === shapes.rails && !this.shapes.plates === !shapes.plates && !this.shapes.drawn === !shapes.drawn;
+    const same = this.budget === budget && this.ends === ends && !this.shapes.swell === !shapes.swell && this.shapes.cards === shapes.cards && this.shapes.posts === shapes.posts && this.shapes.rails === shapes.rails && !this.shapes.plates === !shapes.plates && !this.shapes.drawn === !shapes.drawn && !this.shapes.born === !shapes.born;
     if (!this.ok || same) return;
     const gl = this.gl, f = this.float;
     for (const old of Object.values(this.prog)) gl.deleteProgram(old.p);
@@ -244,7 +246,7 @@ export class StreamRenderer {
     this.ends = ends;
     const shard = ['aPos', 'aNormal', 'aEdge', 'aTag', 'aBevel0', 'aBevel1', 'aBevel2', 'iPlace', 'iTurn', 'iCore', 'iMore'];
     this.prog = {
-      core: compile(gl, G.CORE_VERT, G.coreFrag(budget.split ? 9 : 7, ends, !!shapes.swell), ['aPos', 'aAlong']),
+      core: compile(gl, G.CORE_VERT, G.coreFrag(budget.split ? 9 : 7, ends, !!shapes.swell, !!shapes.born), ['aPos', 'aAlong']),
       streak: compile(gl, G.STREAK_VERT, G.STREAK_FRAG, ['aPos', 'aLight']),
       down: compile(gl, G.FULL_VERT, G.downFrag(f), ['aPos']),
       up: compile(gl, G.FULL_VERT, G.upFrag(f), ['aPos']),
@@ -483,11 +485,12 @@ export class StreamRenderer {
     gl.uniform4fv(P.core.u('uView'), f.view);
     gl.uniform1f(P.core.u('uTime'), f.time);
     gl.uniform1f(P.core.u('uHeart'), 1 + GLOW.more.heart * f.presence);
+    if (this.shapes.born) gl.uniform1f(P.core.u('uBorn'), f.from ?? 0);
     gl.bindVertexArray(this.coreArray);
     for (let b = 0; b < 2; b++) {
       if (f.coreRuns[b * 2 + 1] < 3) continue;
       gl.uniform1f(P.core.u('uEnergy'), f.energy[b]);
-      gl.uniform2f(P.core.u('uOwn'), b * 1777, b * f.split);
+      gl.uniform2f(P.core.u('uOwn'), b * 1777, b ? f.split : f.from ?? 0);
       if (this.ends) gl.uniform1f(P.core.u('uEnd'), b ? f.end : 1e6);
       if (this.shapes.swell) {
         gl.uniform3fv(P.core.u('uSwell[0]'), f.swell ? f.swell[b] : this.calm);
@@ -705,6 +708,7 @@ export class StreamRenderer {
     gl.bindTexture(gl.TEXTURE_2D, this.whole.tex);
     gl.uniform1i(P.final.u('uScene'), 0);
     gl.uniform1f(P.final.u('uPage'), GLOW.page + GLOW.more.page * f.presence);
+    gl.uniform2f(P.final.u('uLit'), f.ground ? f.ground[0] : -1e9, f.ground ? f.ground[1] : -1e9 + 1);
     gl.uniform1f(P.final.u('uRelief'), this.title || this.cards.length ? 1 : 0);
     if (this.shapes.cards > 1 || this.shapes.posts || this.shapes.rails) {
       const n = this.shapes;
