@@ -54,7 +54,9 @@ function moonSeen(q, sn, h0, side, md) {
 // is a little lighter or darker than the next (FRACTURE: each grain's size, how far its planes tip, in units of
 // height to a unit across, and how wide its cracks are). A face carved only by large facets and soft dents read as
 // crumpled foil.
-const FRACTURE = [{ size: 8, tip: 0.5, crack: 0.3, dark: 0.5, seed: 3 }, { size: 3.4, tip: 0.22, crack: 0.14, dark: 0.12, seed: 9 }];
+// The steps between the planes are left to the light: drawn as dark lines between them they read as a net of
+// cracks, and at one small grain all over as crumpled paper. A few large planes, and a finer grain of small ones.
+const FRACTURE = [{ size: 13, tip: 0.16, crack: 0, dark: 0, seed: 3 }, { size: 4.6, tip: 0.05, crack: 0, dark: 0, seed: 9 }];
 const hashOf = (i, j, k, s) => { let n = Math.imul(i, 374761393) ^ Math.imul(j, 668265263) ^ Math.imul(k, 1440662683) ^ Math.imul(s, 1274126177); n = Math.imul(n ^ (n >>> 13), 1274126177); return ((n ^ (n >>> 16)) >>> 0) / 4294967296; };
 const FR = { h: 0, tone: 1 };
 function fractured(p) {
@@ -68,8 +70,8 @@ function fractured(p) {
       if (d < d1) { d2 = d1; d1 = d; b = [i, j, k, sx, sy, sz]; } else if (d < d2) d2 = d;
     }
     const [i, j, k, sx, sy, sz] = b, t = unit([hashOf(i, j, k, g.seed + 3) - 0.5, hashOf(i, j, k, g.seed + 4) - 0.5, hashOf(i, j, k, g.seed + 5) - 0.5]);
-    FR.h += g.tip * g.size * ((fx - sx) * t[0] + (fy - sy) * t[1] + (fz - sz) * t[2]) - g.crack * 2.2 * (1 - smooth(0, g.crack / g.size * 2.5, (d2 - d1) / 2));
-    FR.tone *= (0.88 + 0.24 * hashOf(i, j, k, g.seed + 6)) * (1 - g.dark * (1 - smooth(0, g.crack / g.size * 2, (d2 - d1) / 2)));
+    FR.h += g.tip * g.size * ((fx - sx) * t[0] + (fy - sy) * t[1] + (fz - sz) * t[2]);
+    FR.tone *= 0.9 + 0.2 * hashOf(i, j, k, g.seed + 6);
   }
   return FR;
 }
@@ -109,8 +111,8 @@ for (let row = rows[0]; row < rows[1]; row++) {
       // On its weathered top the crust's own old ground shows: pitted and lumpy, as the outer surface is.
       const top = blockTop(CODE[a] * w + CODE[b] * u + CODE[c] * v), pit = top > 0.5 ? pitted(q[0], q[1], q[2], 1) : 0;
       const fr = fractured(p);
-      out.H[i] = fr.h + 0.1 * fbm(p[0] / 1.3, p[1] / 1.3, p[2] / 1.3, 2) + (top > 0.5 ? (fine(q[0], q[1], q[2], 1) - 0.1) * smooth(0.5, 0.9, top) * 0.6 : 0);
-      out.B[i] = (0.9 + 0.14 * fbm(p[0] * 0.08, p[1] * 0.08, p[2] * 0.08, 2)) * fr.tone * (1 - 0.6 * pit);
+      out.H[i] = fr.h + 0.1 * fbm(p[0] / 1.3, p[1] / 1.3, p[2] / 1.3, 2) + (top > 0.5 ? (fine(q[0], q[1], q[2], 1) - 0.1) * smooth(0.5, 0.9, top) * 0.25 : 0);
+      out.B[i] = (0.9 + 0.14 * fbm(p[0] * 0.08, p[1] * 0.08, p[2] * 0.08, 2)) * fr.tone * (1 - 0.25 * pit);
       out.G[i] = side > 0 ? blockSeen(p, n, moon) : 0;
       continue;
     }
@@ -119,8 +121,12 @@ for (let row = rows[0]; row < rows[1]; row++) {
     // the outer surface over each point, it was drawn down the face in streaks. They take a relief of their own.
     const toLine = edgeDistance(q[0], q[1], q[2]), deep = L.shell(...p) < 1 ? Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]) : 0;
     // The crust in section: a steep face in the band by the line, or anything well under the outer surface at the line.
-    const isFace = (up < 0.6 && toLine < CRUST.band) || (toLine < 4 && deep > 2.5);
-    const h0 = isFace ? 0.3 * fbm(p[0] / 1.7, p[1] / 1.7, p[2] / 1.7, 2) : fine(q[0], q[1], q[2], side);
+    const isFace = side > 0 ? up < 0.25 : (up < 0.6 && toLine < CRUST.band) || (toLine < 4 && deep > 2.5);
+    // On the pale side's lip, where it rounds over into the break, the relief is the stone's own where it is and not
+    // the outer surface's over it: taken from over it, its pits were drawn down the slope in streaks.
+    // It is broken stone as well as pitted: a few large fracture planes and a grain, so it never reads as plaster.
+    const lip = side > 0 && up < 0.88 && toLine < 24, lfr = lip ? { ...fractured(p) } : null;
+    const h0 = lip ? fine(p[0], p[1], p[2], side) + 1.6 * lfr.h + 0.35 * fbm(p[0] / 1.1, p[1] / 1.1, p[2] / 1.1, 2) : isFace ? 0.3 * fbm(p[0] / 1.7, p[1] / 1.7, p[2] / 1.7, 2) : fine(q[0], q[1], q[2], side);
     out.H[i] = h0;
     const r1 = toShell(q[0] + e1[0] * D, q[1] + e1[1] * D, q[2] + e1[2] * D), r2 = toShell(q[0] + e2[0] * D, q[1] + e2[1] * D, q[2] + e2[2] * D);
     const g1 = isFace ? 0 : (fine(r1[0], r1[1], r1[2], side) - h0) / D, g2 = isFace ? 0 : (fine(r2[0], r2[1], r2[2], side) - h0) / D;
@@ -162,7 +168,7 @@ for (let row = rows[0]; row < rows[1]; row++) {
       // A crater's floor sits back in its bowl: it glared when it was the palest dust of the side.
       m *= 1 - 0.06 * floor;
       // A pit is darker only a little: its shadow is its own (vis), and its wall turned to the moon is lit.
-      m *= 1 - (isFace ? 0 : 0.28 * pitted(q[0], q[1], q[2], side));
+      m *= lip ? lfr.tone * (1 - 0.5 * pitted(p[0], p[1], p[2], side)) * (0.9 + 0.2 * fbm(p[0] / 3.3, p[1] / 3.3, p[2] / 3.3, 2)) : 1 - (isFace ? 0 : 0.28 * pitted(q[0], q[1], q[2], side));
       // What of the moon reaches the place: a march toward it over the whole relief, the craters and the pits, so every
       // shadow is the shape of what throws it, round where a rim is round, and its edge is as soft as the moon is wide.
       // Taken from the bake's share at each vertex it was the shape of the triangles: black polygons, needles, stripes.

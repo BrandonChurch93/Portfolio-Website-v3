@@ -13,7 +13,7 @@ import * as S from './skin/shaders';
 // edges are geometry, and the map, laid over picture 9's own pixels, holds the relief finer than that, the stone's
 // color and the cracks' light. ?skinat=x,y,z,r frames the skin alone on any place of it. While its light is being
 // set, ?skinpale=k,power tries another pale stone, ?skinrock= another strength for the cracks' light on the rock,
-// ?skinknot=power,reach,hot,hotR another light round the knot and ?skindark=fill,rim,slab another night on the dark side.
+// ?skinknot=power,reach,,notch another light round the knot and ?skindark=fill,rim,slab another night on the dark side.
 
 type Shader = THREE.WebGLProgramParametersWithUniforms;
 const after = (src: string, chunk: string, add: string): string => {
@@ -98,7 +98,7 @@ export const build: PartFactory = async ({ query, renderer }) => {
   const info = skin.info as { map: number[]; dark: [number, number]; knot: number[]; torn: number[]; cracks: number[] };
   if (!info.knot || !info.torn || info.torn.length !== 67 || !info.cracks) throw new Error('skin.bin is older than its shader: make it again with scripts/world/parts/skin/make.mjs');
   const ck = crackTextures(info.cracks);
-  const K = [KNOT_POOL.power, KNOT_POOL.reach, KNOT_POOL.hot, KNOT_POOL.hotR].map((v, i) => knot?.[i] ?? v);
+  const K = [KNOT_POOL.power, KNOT_POOL.reach, 0, KNOT_POOL.notch].map((v, i) => knot?.[i] ?? v);
   m.onBeforeCompile = (sh: Shader) => {
     Object.assign(sh.uniforms, {
       uSkinMap: { value: map },

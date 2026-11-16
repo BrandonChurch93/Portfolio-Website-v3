@@ -29,31 +29,20 @@ const PLAN = {
     { y0: 590, y1: 628, in: 15, over: 10, T: 22, sink: 6, tilt: 15 },
     { y0: 628, y1: 652, in: 9, over: 5, T: 14, sink: 3, tilt: 6 },
   ],
-  right: [
-    { y0: 305, y1: 332, in: 28, over: 1.4, T: 18, sink: 0.5, tilt: 4 },
-    { y0: 332, y1: 378, in: 36, over: 2.7, T: 28, sink: 3, tilt: 10 },
-    { y0: 378, y1: 396, in: 24, over: 0.9, T: 14, sink: 1, tilt: 3 },
-    { y0: 396, y1: 446, in: 38, over: 3.1, T: 30, sink: 6, tilt: 16 },
-    { y0: 404, y1: 438, from: 7, over: 22, T: 11, sink: 11, tilt: 46, hang: true },
-    { y0: 446, y1: 470, in: 28, over: 1.4, T: 18, sink: 2, tilt: 6 },
-    { y0: 470, y1: 516, in: 34, over: 2.7, T: 26, sink: 5, tilt: 12 },
-    { y0: 516, y1: 532, in: 22, over: 0.9, T: 12, sink: 1, tilt: 3 },
-    { y0: 532, y1: 578, in: 18, over: 2.7, T: 24, sink: 7, tilt: 18 },
-    { y0: 584, y1: 614, from: 5, over: 19, T: 10, sink: 10, tilt: 52, hang: true },
-    { y0: 578, y1: 600, in: 12, over: 1.4, T: 16, sink: 2, tilt: 5 },
-    { y0: 600, y1: 646, in: 16, over: 2.7, T: 26, sink: 5, tilt: 13 },
-    { y0: 646, y1: 672, in: 20, over: 1.4, T: 14, sink: 2, tilt: 6 },
-    { y0: 672, y1: 700, in: 18, over: 1.8, T: 14, sink: 4, tilt: 10 },
-  ],
+  // The pale side's crust is not broken into blocks: it wraps the break as one thick rounded lip of the skin itself
+  // (field.mjs, BEVEL). A column of blocks there read as a straight stacked seam.
+  right: [],
 };
 // At the top of the dark side, blocks that face the visitor, read off picture 9 as the rectangle each covers (across,
 // down, in its pixels): the great slab of pale crust that stands proud of the dark face over the hollow, and the two
 // chunks broken from it that hang under it. Each stands `ahead` units in front of whatever is there in the picture
 // (the dark face or the torn rock's blocks), is `T` thick into the planet, and its face looks up by `lean` degrees.
+// `slant` turns its two ends (radians, start and end) so it narrows or leans as picture 9's shards do, and `scallop` and
+// `pits` are how many scallops and pits its face carries to a square unit (fewer and larger than a line block's).
 const FACING = [
-  { px: [270, 327], py: [317, 351], T: 40, ahead: 5, lean: 14, slab: true },
-  { px: [279, 313], py: [350, 413], T: 16, ahead: 3, lean: -6, hang: true },
-  { px: [261, 292], py: [415, 454], T: 12, ahead: 2.5, lean: -10, hang: true },
+  { px: [277, 398], py: [315, 348], T: 34, ahead: 5, lean: 30, slab: true, slant: [0.12, -0.3], scallop: 1 / 260, pits: 1 / 210 },
+  { px: [282, 313], py: [349, 405], T: 14, ahead: 3, lean: -8, hang: true, slant: [-0.26, -0.07], scallop: 1 / 150, pits: 1 / 160 },
+  { px: [262, 287], py: [416, 454], T: 11, ahead: 2.5, lean: -12, hang: true, slant: [0.38, 0.2], scallop: 1 / 150, pits: 1 / 160 },
 ];
 // The crack left between the skin and each block's back, in units; the planet's curve the tops follow; how worn the
 // tops are and how rough every face, in units.
@@ -65,12 +54,18 @@ const PALE_TIP = 12;
 // each is as a share of its radius), and deep pits in its weathered top (PIT: the same). Without them every face was
 // a plane with soft dents, which read as foam or stucco.
 const DISH = { per: 1 / 34, r: [1.8, 7.5], deep: [0.18, 0.42] }, PIT = { per: 1 / 30, r: [0.6, 2.2], deep: [0.55, 0.9] };
+// On the faces that face the visitor, few and large: a face carved by many small scallops and pits read as crumpled
+// paper. A few broad conchoidal breaks, and a few big pits in the crust's old top.
+const BIG_DISH = { r: [5, 13], deep: [0.12, 0.3] }, BIG_PIT = { r: [1.6, 4.6], deep: [0.5, 0.8] };
 // How the skin's edge wanders along the blocks' backs: how far, in pixels, at what grain of rows, and over how many rows
 // it changes from one block's back to the next (a jump between two rows tilted the skin's grid there, which drew a
 // line right across the side).
 // It wanders only away from the hollow, over the blocks' backs, at a coarse grain and a fine one: wandering both ways
 // at one grain of 2.6 pixels, the pale side's edge read as a clean straight cut.
 const CUT = { wander: 5.5, every: 14, fine: [1.6, 3.4], ease: 5 };
+// Where no block stands (the whole pale side) the skin's broken edge wanders the same way at a broader grain and a
+// sharper fine one, so its outline against the hollow is notched and never the smooth line it is read from.
+const BARE = { wander: 7, every: 24, fine: [1.3, 7.5] };
 
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const add = (a, b, k = 1) => [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k];
@@ -124,10 +119,10 @@ function facing(f, i, depthAt) {
   const slant = (m, u) => unit([m[0] * Math.cos(u), m[0] * Math.sin(u), m[2]]);
   const faces = {
     bottom: face(R, [0, 0, -1], [0, 0, -T], [[0, a1], [0, b1], null], 4, 0.4, T * 0.12),
-    front: face(R, [0, 1, 0], [0, b1, 0], [[0, a1], null, [-T, 0]], 10 + Math.floor((len * T) / 50), 0.75, 2.8 + 0.04 * len),
+    front: face(R, [0, 1, 0], [0, b1, 0], [[0, a1], null, [-T, 0]], 5 + Math.floor((len * T) / 160), 0.6, 2.2 + 0.03 * len),
     back: face(R, [0, -1, 0], [0, 0, 0], [[0, a1], null, [-T, 0]], f.slab ? 2 : 4, f.slab ? 0.12 : 0.5, f.slab ? 0.6 : 1.5),
-    start: face(R, slant([-1, 0, 0], (R() - 0.5) * 0.9), [0, 0, 0], [null, [0, b1], [-T, 0]], 6, 0.6, 2.4),
-    end: face(R, slant([1, 0, 0], (R() - 0.5) * 0.9), [a1, 0, 0], [null, [0, b1], [-T, 0]], 7, 0.65, 3),
+    start: face(R, slant([-1, 0, 0], f.slant[0]), [0, 0, 0], [null, [0, b1], [-T, 0]], 4, 0.45, 1.6),
+    end: face(R, slant([1, 0, 0], f.slant[1]), [a1, 0, 0], [null, [0, b1], [-T, 0]], 4, 0.45, 1.8),
   };
   const chips = [];
   for (let c = 0; c < Math.round(6 + (a1 * b1) / 120); c++) {
@@ -136,14 +131,14 @@ function facing(f, i, depthAt) {
     chips.push({ at, size: (e < 0.75 ? 1 + 3.5 * R() ** 1.4 : 0.8 + 1.6 * R()) * Math.min(1, T / 14), r: [...q, ...r1, ...r2] });
   }
   // Its face toward the visitor is the crust's old top, pitted deep and broken in scallops; its foot is broken too.
-  const dish = [...hollows(R, Math.round(a1 * b1 * DISH.per), DISH, [[0, a1], [0, b1], null], [2, 1], 0), ...hollows(R, Math.round(a1 * T * DISH.per), DISH, [[0, a1], null, [-T, 0]], [1, 1], b1)];
-  const pit = hollows(R, Math.round(a1 * b1 * PIT.per * (f.slab ? 1.4 : 1)), PIT, [[0, a1], [0, b1], null], [2, 1], 0);
+  const dish = [...hollows(R, Math.round(a1 * b1 * f.scallop), BIG_DISH, [[0, a1], [0, b1], null], [2, 1], 0), ...hollows(R, Math.round(a1 * T * DISH.per * 0.6), DISH, [[0, a1], null, [-T, 0]], [1, 1], b1)];
+  const pit = hollows(R, Math.round(a1 * b1 * f.pits), BIG_PIT, [[0, a1], [0, b1], null], [2, 1], 0);
   const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
   for (const ca of [-4, a1 + 4]) for (const cb of [-4, b1 + 4]) for (const cn of [-T - 5, 4]) {
     const w = add(add(add(tl, a, ca), b, cb), n, cn);
     for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], w[k] - 3); hi[k] = Math.max(hi[k], w[k] + 3); }
   }
-  return [{ side: 'left', facing: true, hang: !!f.hang, slab: !!f.slab, y0: f.py[0], y1: f.py[1], o: tl, a, b, n, R: 1e5, wear: f.slab ? 3.4 : 2.4, grain: GRAIN * 1.5, lump: LUMP * 3, seed: R() * 50, faces, chips, dish: [...dish, ...pit], lo, hi, cut: null }];
+  return [{ side: 'left', facing: true, hang: !!f.hang, slab: !!f.slab, y0: f.py[0], y1: f.py[1], o: tl, a, b, n, R: 1e5, wear: f.slab ? 2 : 1.4, grain: GRAIN, lump: LUMP * 1.2, seed: R() * 50, faces, chips, dish: [...dish, ...pit], lo, hi, cut: null }];
 }
 
 const HULL = {};
@@ -241,7 +236,11 @@ export function cutAt(side, py) {
   for (let i = -4; i <= 4; i++) a += insetAt(side, py + (i * CUT.ease) / 4);
   const inset = a / 9;
   const wander = Math.max(0, CUT.wander * (0.55 + fbm(py / CUT.every, side === 'left' ? 3.1 : 7.7, 0.5, 2)) + CUT.fine[0] * fbm(py / CUT.fine[1], 5.3, side === 'left' ? 1.1 : 2.9, 1));
-  return line - s * (inset > 0.5 ? inset + wander : inset);
+  if (inset <= 0.5 && side === 'right') {
+    const k = 8.8, bare = Math.max(0, BARE.wander * (0.5 + fbm(py / BARE.every, k, 0.5, 3)) + BARE.fine[0] * Math.abs(fbm(py / BARE.fine[1], 5.3 + k, 1.9, 2)) * 2);
+    return line - s * (inset + bare);
+  }
+  return line - s * (inset + wander);
 }
 
 // One mesh of every block of one side, with each vertex's side and how near its block's weathered top it is (1 on
@@ -250,6 +249,7 @@ export async function makeBlocks(plan, { cell, error }) {
   const module = fileURLToPath(new URL('./block-field.mjs', import.meta.url));
   const parts = [];
   for (const side of ['left', 'right']) {
+    if (!plan[side].length) continue;
     const blocks = plan[side], lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
     for (const k of blocks) for (let i = 0; i < 3; i++) { lo[i] = Math.min(lo[i], k.lo[i]); hi[i] = Math.max(hi[i], k.hi[i]); }
     const raw = await surface({ module, args: { blocks }, box: [lo, hi], cell });

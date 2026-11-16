@@ -54,6 +54,9 @@ const EASE = { flat: 0.25, steep: 0.85, passes: 3 };
 const SHARP = 0.6;
 // How much of a weathered top the face of a chunk hanging under the slab is taken as.
 const HUNG = 0.6;
+// How far in from where the pale side stops its lip is lit as the crust wrapping the break, in picture 9's pixels.
+const LIP_LIT = [9, 17];
+const smoothstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
 // The cracks are cut by the shader from their own lines (crackLines), not into the mesh or the map.
 const lines = crackLines();
@@ -205,7 +208,9 @@ const code = [];
   for (let i = 0; i < nSkin; i++) {
     const x = lit.positions[i * 3], y = lit.positions[i * 3 + 1], z = lit.positions[i * 3 + 2], [px, py] = L.pictured(x, y, z), side = x > 0 ? 'right' : 'left';
     const toCut = (side === 'left' ? -1 : 1) * (px - cutAt(side, py)), under = (1 - L.shell(x, y, z)) * L.WORLD.half;
-    if (toCut < 1.6 && (under > 0.8 || toCut < 0.7)) edgeCode[i] = BLOCK_CODE.edge;
+    if (side === 'left' && toCut < 1.6 && (under > 0.8 || toCut < 0.7)) edgeCode[i] = BLOCK_CODE.edge;
+    // The pale side's thick lip where it wraps the break, which the night's light from the visitor's side finds.
+    else if (side === 'right') edgeCode[i] = BLOCK_CODE.lip * (1 - smoothstep(LIP_LIT[0], LIP_LIT[1], toCut));
   }
   code.push(edgeCode);
   for (const { blocks, mesh } of made) {

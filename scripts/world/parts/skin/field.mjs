@@ -87,14 +87,16 @@ const EMPTY = [];
 let CUT_LINE = null;
 // The pale side's edge at the tear is rounded down into the break, as thick crust is when it breaks: over how many of
 // picture 9's pixels in from where the skin stops, and how far down, in units.
-const BEVEL = { reach: 9, drop: 7 };
+// The lip is round as a thick slab's broken edge is, `drop` deep at the line. As a quarter of an ellipse its last
+// stretch stood edge on to the visitor and its triangles were drawn out into a fringe.
+const BEVEL = { reach: 15, drop: 12 };
 function bevel(x, y, z) {
   if (!CUT_LINE || x <= 0) return 0;
   const [px, py] = L.pictured(x, y, z), f = Math.min(CUT_LINE.at.length - 1.001, Math.max(0, (py - CUT_LINE.from) / CUT_LINE.step)), i = Math.floor(f);
   const d = px - (CUT_LINE.at[i] + (CUT_LINE.at[i + 1] - CUT_LINE.at[i]) * (f - i));
   if (d >= BEVEL.reach) return 0;
   const k = 1 - Math.max(0, d) / BEVEL.reach;
-  return BEVEL.drop * k * k;
+  return BEVEL.drop * k ** 1.7 * (1 + 0.45 * perlin(x / 23, y / 23, z / 23) + 0.15 * perlin(x / 6, y / 6, z / 6));
 }
 let CR = null, SG = null, ED = null, FAR = null, KNOT = [0, 0, 0], SL = null;
 // How a crack's light is measured: its spill runs this many of its half widths past its lip, plus this far, as a
@@ -379,7 +381,10 @@ export const SHOULDER = { round: 16, in: 11, under: 52, shade: [10, 30] };
 // how much that wanders round the rim), how far under the rim its crest is, how far down it runs on the open side and
 // how much further by the tear, where picture 9's lip is thickest and waves down, and how far it is tucked under the
 // land at the rim.
-export const LIP = { out: 3.4, wander: 0.4, crest: 6, down: 40, tear: 26, tuck: 2.5 };
+// It is broken, not turned: in chunks some 13 units across, each standing out its own way and with its crest a little
+// higher or lower than the next (ragged, units), and toward the tear its crest dips (dip, units) with the ground above
+// it tucked back under the sand, as picture 9's lip dips to about 293 down near 1110 across.
+export const LIP = { out: 3.4, wander: 0.4, crest: 6, down: 40, tear: 26, tuck: 2.5, chunk: 13, ragged: 3, dip: 12 };
 // Bites knocked out of the dark side where it turns from the visitor, so its outline is broken and not a lathe's arc:
 // two grains of them (the spacing of their cells, how many of the cells hold one, their radii and depths, in units),
 // each a scoop with a flat floor and a steep wall, and how near edge on the surface must be for them to be cut (the
@@ -421,8 +426,10 @@ export function coarse(x, y, z) {
   if (x > 0) {
     h -= bevel(x, y, z);
     const near = 1 - smooth(15, 110, farEdge(x, y, z)), down = LIP.down + LIP.tear * near;
-    const out = LIP.out * (1 + LIP.wander * fbm(x / 47 + 2, y / 31, z / 47, 2) * 2);
-    h += out * smooth(-1, LIP.crest, rd) * (1 - smooth(down * 0.4, down, rd)) - LIP.tuck * (1 - smooth(0, 2.5, rd));
+    const c = cells(x + 3 * perlin(x / 11, y / 11, z / 11), y, z, LIP.chunk, 91, C3), hc = hash(c.i, c.j, c.k, 92), hd = hash(c.i, c.j, c.k, 93);
+    const crest = Math.max(2, LIP.crest + LIP.dip * near + (hd - 0.5) * LIP.ragged);
+    const out = LIP.out * (1 + LIP.wander * fbm(x / 47 + 2, y / 31, z / 47, 2) * 2) * (0.7 + 0.6 * hc);
+    h += out * smooth(-1, crest, rd) * (1 - smooth(down * 0.4, down, rd)) - LIP.tuck * (1 - smooth(0, 2.5, rd)) - 2.2 * near * (1 - smooth(crest * 0.4, crest, rd));
     return h;
   }
   // and a little under the sand's drape, all the way down it, so no lump of the skin shows through the sand.
@@ -453,15 +460,23 @@ export function gathered(x, y, z, side) {
   const bands = smooth(-0.2, 0.2, fbm(x / 90 + 4, y / 60, z / 90, 3) + 0.3 * toward);
   const knot = side > 0 ? 1 : 0.5 + 0.5 * smooth(25, 75, Math.hypot(x - KNOT[0], y - KNOT[1], z - KNOT[2]));
   // On the crust's chunks by the line fewer: their tops are its old weathered top, broken and chipped, not pitted.
-  const crustTop = 0.3 + 0.7 * smooth(8, 36, edgeDistance(x, y, z));
+  // On the pale side the crust's own top wraps the break, pitted as the ground is right to its edge.
+  const crustTop = side > 0 ? 1 : 0.3 + 0.7 * smooth(8, 36, edgeDistance(x, y, z));
   // Pitted all over, densest by the break and toward the lower limb, as picture 9's pale side is.
   return (side > 0 ? 1 : 0.35) * knot * crustTop * (0.42 + 0.75 * toward ** 1.3) * (0.5 + 0.5 * bands) * (1 - floored(x, y, z));
 }
 
 // Pits too small for the geometry, in three sizes whose radii follow a power law within each, as craters do.
 const PITS = [{ size: 15, seed: 11, r: [2.4, 8], keep: 0.3 }, { size: 6.5, seed: 23, r: [0.9, 3], keep: 0.4 }, { size: 2.6, seed: 37, r: [0.3, 0.95], keep: 0.42 }];
+// Each pit has an age: a fresh one is deep with a sharp raised lip, an old one shallow and worn soft, and most are
+// between (AGE: the share of each, and how deep and how high its lip is against a middling one). Toward the lower limb
+// some are drawn out down the slope into gouges and scars (GOUGE: from and to how far down, how many of them, how far).
+const AGE = { fresh: 0.16, worn: 0.38, deep: [1.35, 0.45], lip: [1.8, 0.3] }, GOUGE = { from: 0.42, to: 0.85, share: 0.55, most: 2.6 };
 function pits(x, y, z, side, nx, ny, nz, density) {
   let h = 0;
+  const ex0 = nz, ez0 = -nx, el0 = Math.hypot(ex0, ez0) || 1, e1 = [ex0 / el0, 0, ez0 / el0];
+  const e2 = [ny * e1[2], nz * e1[0] - nx * e1[2], -ny * e1[0]];
+  const gouge = side > 0 ? smooth(GOUGE.from, GOUGE.to, downOf(y)) : 0;
   for (let l = 0; l < PITS.length; l++) {
     const P = PITS[l], fx = x / P.size, fy = y / P.size, fz = z / P.size, X = Math.floor(fx), Y = Math.floor(fy), Z = Math.floor(fz);
     const keep = P.keep * density;
@@ -473,13 +488,18 @@ function pits(x, y, z, side, nx, ny, nz, density) {
       if (Math.abs(dn) > P.size * 0.5) continue;
       const u = hash(i, j, k, P.seed + 4), r = P.r[0] * (P.r[1] / P.r[0]) ** (u * u);
       const ex = sx - dn * nx, ey = sy - dn * ny, ez = sz - dn * nz;
-      // Each pit a little out of round, and a little deeper on one side.
+      // Each pit a little out of round, and a little deeper on one side; low down some are drawn out into gouges.
       const lop = 1 + 0.16 * Math.sin(3 * Math.atan2(ey, ex + ez) + 6.28 * hash(i, j, k, P.seed + 5));
-      const xr = Math.hypot(ex, ey, ez) / (r * lop);
+      const long = 1 + (GOUGE.most - 1) * gouge * (hash(i, j, k, P.seed + 8) < GOUGE.share ? 1 : 0) * hash(i, j, k, P.seed + 9);
+      const c1 = ex * e1[0] + ey * e1[1] + ez * e1[2], c2 = ex * e2[0] + ey * e2[1] + ez * e2[2];
+      const xr = Math.hypot(c1, c2 / long) / (r * lop);
       if (xr > 1.9) continue;
-      // Shallow enough that the wall turned to the moon is lit as a crescent, with a raised lip round it.
-      const deep = 0.3 + 0.22 * hash(i, j, k, P.seed + 6), lip = 0.16;
-      h += xr < 1 ? -deep * r + (deep + lip) * r * xr ** 2.4 : lip * r * Math.exp(-(xr - 1) * 4.5);
+      // Shallow enough that the wall turned to the moon is lit as a crescent, with a raised lip round it; how deep and
+      // how sharp by its age.
+      const age = hash(i, j, k, P.seed + 7), fresh = age < AGE.fresh, worn = age > 1 - AGE.worn;
+      const deep = (0.3 + 0.22 * hash(i, j, k, P.seed + 6)) * (fresh ? AGE.deep[0] : worn ? AGE.deep[1] : 1), lip = 0.16 * (fresh ? AGE.lip[0] : worn ? AGE.lip[1] : 1);
+      const wall = worn ? 1.5 : fresh ? 3 : 2.4;
+      h += xr < 1 ? -deep * r + (deep + lip) * r * xr ** wall : lip * r * Math.exp(-(xr - 1) * (worn ? 2.5 : 4.5));
     }
   }
   return h;

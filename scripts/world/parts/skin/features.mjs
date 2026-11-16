@@ -117,13 +117,13 @@ export function edgeAngle(side, t, line = lineAt) {
 export const NAMED = [
   { at: [1173, 421], r: 49, kind: 'complex', seed: 1 },
   { at: [1097, 584], r: 43, kind: 'complex', seed: 2 },
-  { at: [1104, 374], r: 15, kind: 'simple', seed: 3 },
-  { at: [1222, 350], r: 9, kind: 'simple', seed: 4 },
-  { at: [1250, 364], r: 12, kind: 'simple', seed: 5 },
-  { at: [1229, 470], r: 17, kind: 'simple', seed: 6, exact: true },
-  { at: [1165, 523], r: 14, kind: 'simple', seed: 7, exact: true },
-  { at: [1100, 496], r: 9, kind: 'simple', seed: 8 },
-  { at: [1124, 489], r: 6, kind: 'simple', seed: 9 },
+  { at: [1104, 374], r: 17, kind: 'simple', seed: 3 },
+  { at: [1222, 350], r: 11, kind: 'simple', seed: 4 },
+  { at: [1250, 364], r: 13, kind: 'simple', seed: 5 },
+  { at: [1229, 470], r: 19, kind: 'simple', seed: 6, exact: true },
+  { at: [1165, 523], r: 15, kind: 'simple', seed: 7, exact: true },
+  { at: [1100, 496], r: 11, kind: 'simple', seed: 8 },
+  { at: [1124, 489], r: 8, kind: 'simple', seed: 9 },
   { at: [1137, 614], r: 8, kind: 'simple', seed: 10 },
   { at: [1112, 642], r: 7, kind: 'simple', seed: 11 },
   { at: [1063, 462], r: 30, kind: 'complex', seed: 12 },
@@ -188,8 +188,15 @@ function crater(c, r, kind, seed, worn = 0, deep = 1, own = {}) {
 const OWN = {
   1: { rim: 0.2, flank: 3.6, crest: 0.14, floor: 0.62, terraces: 1, slump: 0.6, hummock: 0.04, bump: 0.07, deepen: 0.88, moat: [0.12, 0.42, 0.26] },
   2: { rim: 0.14, flank: 1.6, crest: 0.1, floor: 0.26, terraces: 1, slump: 0.3, hummock: 0.04, bump: 0.08, deepen: 0.95 },
-  6: { deepen: 1.5 },
-  7: { deepen: 1.35 },
+  // The picture's middle scale: rimmed bowls whose lip stands up broad enough to catch the moon, and shallow enough
+  // that the wall turned to it is lit as a crescent, never a black hole with nothing round it.
+  3: { rim: 0.26, flank: 2, deepen: 0.85 },
+  4: { rim: 0.28, flank: 2, deepen: 0.8 },
+  5: { rim: 0.28, flank: 2, deepen: 0.8 },
+  6: { rim: 0.26, flank: 2, deepen: 1.1 },
+  7: { rim: 0.26, flank: 2, deepen: 1.05 },
+  8: { rim: 0.28, flank: 2.2, deepen: 0.85 },
+  9: { rim: 0.3, flank: 2.2, deepen: 0.85 },
 };
 
 const areaAt = (t) => { const r = Math.sqrt(1 - t * t), dr = (C.half * t) / r; return r * Math.hypot(dr, C.deep); };
@@ -250,7 +257,8 @@ export function craters() {
   for (const [lo, hi, count] of WORN) for (let i = 0; i < count; i++) {
     // Nor high up: one there drew a faint arch like a doorway under the land.
     let w = scatterOn('left', R, 0.45);
-    while (Math.hypot(w.p[0] - knot[0], w.p[1] - knot[1], w.p[2] - knot[2]) < 70 || w.py < 352) w = scatterOn('left', R, 0.45);
+    // Nor near the outline, where one is seen edge on and was drawn as a long grey streak.
+    while (Math.hypot(w.p[0] - knot[0], w.p[1] - knot[1], w.p[2] - knot[2]) < 70 || w.py < 352 || shellNormal(...w.p)[2] < 0.42) w = scatterOn('left', R, 0.45);
     const p = w.p;
     const r = lo * (hi / lo) ** R();
     out.push(crater(p, r, r > 14 ? 'complex' : 'simple', seed++, 0.55 + 0.35 * R()));
