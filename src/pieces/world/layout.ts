@@ -62,7 +62,9 @@ export const HOST = { wide: 1460, tall: 1520, over: 80 } as const;
 // upper right and behind the world, as picture 9 is lit: the land and the roof shade the hollow from it, so the
 // hollow is the core's alone, the rock's front faces are dark, the cratered right side and the dunes' backs are
 // lit, and the pyramid's right face catches it. In front of the world it lit the whole hollow grey.
-export const MOONWARD = [0.84, 0.46, -0.28] as const;
+// It stands low, about 22 degrees over the world's right shoulder (it was 27): low enough that a dune, a crater's
+// rim or a tower throws a shadow two and a half times as long as it is tall, which is what shows a thing's height.
+export const MOONWARD = [0.86, 0.36, -0.28] as const;
 
 // Where a point is drawn in the host: how far to the right of its center line, and how far down from its top.
 export function drawn(x: number, y: number, z: number): [number, number] {
@@ -192,7 +194,8 @@ export const front = (x: number): number => 322 - 0.00042 * x * x;
 // A color is a name in the palette (src/config/palette.ts).
 export const LIGHT = {
   // The moon: the irradiance on a face turned straight to it, and the angular radius of its disc, in degrees.
-  moon: { color: 'pale', power: 2.6, spread: 0.7 },
+  // Stronger than it was at 27 degrees, by as much as level ground lost when it was lowered.
+  moon: { color: 'pale', power: 3.2, spread: 0.7 },
   // The core: the irradiance at its own surface on a face turned to it. Further off it falls as (r / d) to the
   // power of fall. 2 is what a ball of light does in empty space. Lower carries its light further across the hollow.
   // At 24 every face near it came out a pale peach, where picture 9's hollow is a deep red brown: 16 keeps the
