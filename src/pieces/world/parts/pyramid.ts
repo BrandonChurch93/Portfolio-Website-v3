@@ -8,8 +8,8 @@ import { shade } from './pyramid/shade';
 import * as S from './pyramid/shaders';
 
 // The pyramid: polished gold, at the front left edge of the land, a corner toward the visitor, standing straight out
-// from the dome on the ground itself. Its body is cased in even courses of plates, the cladding warping slowly over
-// many plates and each plate a hair different in tilt and polish; a bevelled foot course stands proud round its foot,
+// from the dome on the ground itself. Its body is cased in long unequal sheets, the cladding warping slowly over
+// many sheets and each sheet a hair different in tilt and polish; a bevelled foot course stands proud round its foot,
 // and a capstone sits over a dark reveal. Every arris is rounded. Its mesh and the light that reaches it are made
 // ahead by scripts/world/parts/pyramid/make.mjs (public/world/pyramid.bin), in the pyramid's own frame. What each face
 // mirrors is ./pyramid/shaders.ts, and the shade it lays on the ground round its foot ./pyramid/shade.ts.
@@ -34,7 +34,7 @@ const LOOK = {
   // much, and in the warm glow at the dark face's foot. Gold is richest in its middle tones: held at the darks'
   // saturation there it read as khaki or brass. Then over what levels the deep turns to the body, the body to the
   // bright, and the bright pales toward pale gold.
-  sat: { deep: 0.66, deepTurn: -11, body: 0.74, bodyTurn: -7, mid: 0.64, midTurn: -2.5, warm: 0.72, warmTurn: -9 },
+  sat: { deep: 0.68, deepTurn: -6, body: 0.74, bodyTurn: -5, mid: 0.64, midTurn: -2.5, warm: 0.72, warmTurn: -6 },
   grade: [0.02, 0.09, 0.22, 0.75, 0.6, 3.5],
   // How much of the world's contact shadow a mirror keeps where it is shut in.
   contact: 0.3,

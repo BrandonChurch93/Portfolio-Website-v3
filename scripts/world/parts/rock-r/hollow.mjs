@@ -1,6 +1,8 @@
-// Sculpt R, round 3: the hollow as a field for the surface maker (scripts/world/lib/surface.mjs), under 0 inside the
-// rock. A union of heavy blocks (blocks.mjs), each a solid bounded by its face's plane, its back and its broken
-// sides, broken across by one or two steps, chipped at its edges, with beds in its sides. Behind them a backing, the
+// Sculpt R, round 4: the hollow as a field for the surface maker (scripts/world/lib/surface.mjs), under 0 inside the
+// rock. A union of heavy blocks (blocks.mjs), each a solid bounded by its face, its back and its broken sides. A face
+// is a fan of wedges round the core, each broken across and leaning in toward it, and each cell knapped into facets
+// at angles of their own, meeting in steps along straight breaks. Edges chipped, beds of uneven thickness in the
+// sides. Behind them a backing, the
 // inner shell of the cave, far back and closed. All of it is kept inside the planet, under the land, inside what of
 // the picture is the rock, and out of the stream's lane.
 //
@@ -11,7 +13,7 @@ import { below } from '../land/shape.mjs';
 export const lip = 2.5;
 // How far a block's broken sides run along the line of sight rather than square to its face: square, a plate shows
 // its whole thickness at its outer side; along the line of sight, none of it. The frame shows only a sliver.
-export const SIDES = { plate: 0.6, floor: 0.3, shade: 0.4, roof: 0.5, frame: 0.85 };
+export const SIDES = { plate: 0.6, floor: 0.3, shade: 0.4, roof: 0.5, frame: 0.55 };
 // One of the picture's pixels in the world's units, near enough everywhere in the hollow.
 const UNIT = L.PICTURE.unit;
 // The beds in a block's broken sides: how thick each is, and how far one stands out or in from the next, in units.
@@ -38,8 +40,8 @@ export const SWELL = { deep: 1.6, over: 70, fine: 0, fineOver: 16 };
 // as a share of their width.
 export const FLAKES = { each: 1 / 700, wide: [5, 15], deep: [0.18, 0.3] };
 // The backing: how far behind the core's middle it is straight behind the core, and how much further back it goes
-// for each pixel out from the core.
-export const BACKING = { at: -95, back: 0.32, from: 100, thick: 70 };
+// for each pixel out from the core, and the furthest back it goes (inside the space the hollow is made in).
+export const BACKING = { at: -95, back: 0.32, from: 100, thick: 70, least: -205 };
 // The core's clearance: nothing nearer its middle than this, in units, give or take a ragged few, and nothing in
 // front of it inside its outline.
 export const CLEAR = { r: 116, rag: 12, disc: 101 };
@@ -252,7 +254,8 @@ export function block(b, x, y, z) {
 // The backing: the inner shell of the cave far behind everything, falling back as it goes out from the core.
 function backing(x, y, z, px, py) {
   const rho = Math.hypot(px - A.corePx[0], py - A.corePx[1]);
-  const z0 = BACKING.at - BACKING.back * Math.max(0, rho - BACKING.from), zb = z0 + 6 * (L.noise(x / 50, y / 50, 3.3, 77) - 0.5);
+  const z0 = Math.max(BACKING.least, BACKING.at - BACKING.back * Math.max(0, rho - BACKING.from));
+  const zb = z0 + 6 * (L.noise(x / 50, y / 50, 3.3, 77) - 0.5);
   return Math.max(z - zb, z0 - BACKING.thick - z);
 }
 

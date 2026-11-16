@@ -38,14 +38,15 @@ const along = (u, v, k, m) => [u[0] * k + v[0] * m, u[1] * k + v[1] * m, u[2] * 
 // The left: one broken wedge. Its outline, clockwise from the top left (picture 372, 580), and how far each side
 // leans toward the visitor: the right flank, toward the core and the small stream beside it, is turned to be seen,
 // and is layered.
-const LEFT = [[-69, 56, 0.22], [13, 62, 0.35], [25, 47, 0.62], [65, -16, 0.55], [57, -37, -0.15], [2, -62, -0.2], [-45, -41, -0.1], [-66, 3, -0.05]];
+const LEFT = [[-69, 56, 0.12], [13, 62, 0.15], [25, 47, 0.34], [65, -18, 0.3], [58, -46, -0.08], [4, -76, -0.1], [-46, -52, -0.06], [-66, 0, -0.04]];
 const wedge = () => {
   const planes = LEFT.map(([x, y, lean], i) => {
     const [qx, qy] = LEFT[(i + 1) % LEFT.length], n = axis(-(qy - y), qx - x, 0);
-    return through(axis(n[0], n[1], lean), [x, y, 0]);
+    // Each side passes through the outline where the mass is widest: at its back if it leans toward the visitor.
+    return through(axis(n[0], n[1], lean), [x, y, lean > 0 ? -46 : 44]);
   });
   planes.push(through(axis(0.08, -0.12, 1), [0, 0, 44]), through(axis(-0.12, 0.06, -1), [0, 0, -46]));
-  planes.push(through(axis(-0.6, 0.55, 0.6), [-58, 50, 30]), through(axis(0.5, -0.6, 0.6), [48, -40, 30]));
+  planes.push(through(axis(-0.6, 0.55, 0.6), [-62, 52, 36]), through(axis(0.5, -0.6, 0.6), [52, -44, 36]));
   return planes;
 };
 // The right: a long shard, about two to one, lying from lower left to upper right, a jagged ridge along its upper
@@ -63,8 +64,8 @@ const shard = () => [
   through(axis(...along(W, A, 0.6, 0.6).map((v, k) => v + 0.5 * Z[k])), along(W, A, 29, 54)),
 ];
 export const BOULDERS = {
-  9: { form: { planes: wedge() }, size: [70, 62, 48], layer: [0.08, -0.12, 1], blocks: 2, drop: 0, rubble: 10, scars: 3, chips: 90, steps: 2, strata: 0, ridge: null },
-  10: { form: { planes: shard() }, size: [88, 45, 40], layer: axis(-0.3, 0.2, 1), blocks: 3, drop: 0, rubble: 8, scars: 2, chips: 110, steps: 2, strata: 0, ridge: W },
+  9: { form: { planes: wedge() }, size: [70, 62, 48], layer: [0.08, -0.12, 1], blocks: 1, drop: 0, rubble: 10, scars: 3, chips: 110, steps: 2, strata: 0.015, ridge: [0.82, -0.3, 0.48] },
+  10: { form: { planes: shard() }, size: [88, 45, 40], layer: axis(-0.3, 0.2, 1), blocks: 1, drop: 0, rubble: 8, scars: 2, chips: 110, steps: 2, strata: 0, ridge: W },
 };
 // How far round an edge is looked at for how bent it is, as a share of the model's size, and how bent is the most
 // that is stored.

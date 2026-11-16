@@ -1,12 +1,9 @@
 import * as THREE from 'three';
 import { seeded } from '../../layout';
 
-// Pieces of the planet, a few of them, being drawn in round the core's lower half to its beam. They are the stream's
-// own shards: each is a facet as the stream makes them (src/stream/shards.ts, made again here), a small body with
-// three or four needle points pulled far out of it, flattened but never to a sheet, sometimes with a second lobe
-// grown out of it at a slant, which notches its outline. Every vertex keeps how far it is from each edge of its face
-// and which way the bevel of each of those edges looks, so the edges can catch the light without anything drawn
-// round them. Where each is comes from what is stored with it and the time alone, worked out in its shader: nothing
+// Pieces of the planet, a few of them, being drawn in round the core's lower half to its beam: broken lumps of its
+// rock. Every vertex keeps how far it is from each edge of its face and which way the bevel of each of those edges
+// looks, so the edges can catch the light without anything drawn round them. Where each is comes from what is stored with it and the time alone, worked out in its shader: nothing
 // is written again once it is made, and a held frame is always the same picture.
 
 type V3 = [number, number, number];
@@ -38,24 +35,11 @@ function hull(pts: V3[]): Solid {
   return { pts, faces };
 }
 
-// One facet, as triangles: for each vertex its place, the way its face looks, how far it is from each of its
-// face's three edges, and the way the bevel of each of those edges looks. Its farthest point is 1 from its middle.
+// Solids as triangles: for each vertex its place, the way its face looks, how far it is from each of its face's three
+// edges, and the way the bevel of each of those edges looks. Its farthest point is 1 from its middle.
 export const FLOATS = 18;
-function facet(r: () => number, big: number): number[] {
-  const ball = (): V3 => { const z = r() * 2 - 1, a = r() * Math.PI * 2, s = Math.sqrt(1 - z * z); return [s * Math.cos(a), s * Math.sin(a), z]; };
-  const scale = (p: V3, k: number): V3 => [p[0] * k, p[1] * k, p[2] * k];
-  const size = 0.44 - 0.2 * big, body: V3[] = [], points: V3[] = [];
-  for (let i = 0; i < 4; i++) body.push(scale(ball(), size * (0.7 + 0.3 * r())));
-  for (let i = 0, n = 3 + Math.floor(r() * 2); i < n; i++) points.push(scale(ball(), i === 0 ? 1.25 + 0.45 * r() : 0.8 + 0.6 * r()));
-  const squash: V3 = [1, 0.5 + 0.3 * r(), 0.56 + 0.2 * r()];
-  const lobe = (more: V3[]): Solid => hull([...body, ...more].map((p): V3 => [p[0] * squash[0], p[1] * squash[1], p[2] * squash[2]]));
-  const parts = [lobe(points)];
-  if (r() < 0.12 + 0.4 * big) {
-    const slant = r() * Math.PI * 2, along = (a: number, tilt: number, reach: number): V3 => [Math.cos(a) * Math.cos(tilt) * reach, Math.sin(a) * Math.cos(tilt) * reach, Math.sin(tilt) * reach];
-    const second: V3[] = [along(slant, (r() - 0.5) * 0.6, 1 + 0.5 * r())];
-    if (r() < 0.6) second.push(along(slant + (0.4 + 0.5 * r()) * (r() < 0.5 ? -1 : 1), (r() - 0.5) * 0.9, 0.6 + 0.5 * r()));
-    parts.push(lobe(second));
-  }
+const scale = (p: V3, k: number): V3 => [p[0] * k, p[1] * k, p[2] * k];
+function emit(parts: Solid[]): number[] {
   const used = parts.flatMap((s) => [...new Set(s.faces.flat())].map((i) => s.pts[i]));
   const lo: V3 = [Infinity, Infinity, Infinity], hi: V3 = [-Infinity, -Infinity, -Infinity];
   for (const p of used) for (let a = 0; a < 3; a++) { lo[a] = Math.min(lo[a], p[a]); hi[a] = Math.max(hi[a], p[a]); }
@@ -78,17 +62,28 @@ function facet(r: () => number, big: number): number[] {
   return out;
 }
 
+// A piece of the planet's rock: a broken lump, a score of points in a flattened round body and a few pulled out to
+// corners, with its skin drawn tight round them, so every face is a flat break and every edge a hard one.
+function chunk(r: () => number): number[] {
+  const ball = (): V3 => { const z = r() * 2 - 1, a = r() * Math.PI * 2, s = Math.sqrt(1 - z * z); return [s * Math.cos(a), s * Math.sin(a), z]; };
+  const pts: V3[] = [];
+  for (let i = 0; i < 22; i++) pts.push(scale(ball(), 0.5 + 0.5 * r() * r()));
+  for (let i = 0, n = 2 + Math.floor(r() * 3); i < n; i++) pts.push(scale(ball(), 1.05 + 0.35 * r()));
+  const squash: V3 = [1, 0.7 + 0.2 * r(), 0.6 + 0.2 * r()];
+  return emit([hull(pts.map((p): V3 => [p[0] * squash[0], p[1] * squash[1], p[2] * squash[2]]))]);
+}
+
 // What each shard is given to move by, four numbers to each:
 //   move: how long one of its comings takes, in seconds, where in that it starts, half its length, in units, and
 //         its own seed
 //   spin: the axis it turns about, and how fast, in radians a second
-export interface Moon { period: number; start: number; size: number; seed: number; axis: V3; rate: number; glass: boolean }
+export interface Moon { period: number; start: number; size: number; seed: number; axis: V3; rate: number }
 
 export function shardGeometry(moons: readonly Moon[], seed: number): THREE.BufferGeometry {
   const r = seeded(seed), cols = { position: 3, normal: 3, aEdge: 3, aB0: 3, aB1: 3, aB2: 3, aMove: 4, aSpin: 4 } as const;
   const data: Record<keyof typeof cols, number[]> = { position: [], normal: [], aEdge: [], aB0: [], aB1: [], aB2: [], aMove: [], aSpin: [] };
-  moons.forEach((m, i) => {
-    const mesh = facet(r, 0.35 + 0.5 * (i % 2));
+  moons.forEach((m) => {
+    const mesh = chunk(r);
     for (let v = 0; v < mesh.length; v += FLOATS) {
       data.position.push(mesh[v], mesh[v + 1], mesh[v + 2]);
       data.normal.push(mesh[v + 3], mesh[v + 4], mesh[v + 5]);

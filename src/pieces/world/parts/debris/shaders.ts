@@ -178,6 +178,7 @@ uniform vec3 uGlow;
 uniform vec2 uGlowRim;
 uniform vec4 uGrainK;
 uniform vec3 uStrata;
+uniform vec3 uRough;
 const float TAU = 6.2831853;
 // The moon as it reached this place, past the planet's shadow, which the rim is drawn from.
 vec3 dMoonColor = vec3( 0.0 );
@@ -257,7 +258,7 @@ export const COLOR = /* glsl */ `
 		float dNear = 1.0 - smoothstep( uWeather.z, uWeather.w, distance( vAt, uDebrisCore ) );
 		float dOld = ( 1.0 - vFresh ) * mix( uWeather.x, uWeather.y, dNear );
 		vec3 dAlb = mix( uStone, uPatina, dOld );
-		dAlb = mix( dAlb, uChip, vFresh * 0.55 );
+		dAlb = mix( dAlb, uChip, vFresh * 0.22 );
 		dAlb *= 0.82 + 0.36 * wBedTone;
 		vec3 dFaceN = normalize( cross( dFdx( vLocal ), dFdy( vLocal ) ) + 1e-5 );
 		float dG = dGrainMap( vLocal, dFaceN, 1.0 / clamp( dBig * uGrainK.x, uGrainK.y, uGrainK.z ) );
@@ -284,7 +285,17 @@ export const FINISH = /* glsl */ `
 export const NORMAL = /* glsl */ `
 	if ( vFlat < 0.5 ) {
 		float dPx = max( max( length( dFdx( vLocal ) ), length( dFdy( vLocal ) ) ), 1e-4 );
-		float dHu = dRelief( vLocal, vExt, vSeed, dPx ), dRel = dHu * ${f(SCALE)};
+		// The hackle lines, the stone's own grain as a relief, and the fine broken ridges of a fracture surface, each
+		// gone where a pixel covers it, so a face is never a smooth plane.
+		float dBg = max( vExt.x, max( vExt.y, vExt.z ) ), dSc = clamp( dBg * uGrainK.x, uGrainK.y, uGrainK.z );
+		vec3 dNf = normalize( cross( dFdx( vLocal ), dFdy( vLocal ) ) + 1e-5 );
+		float dRidge = 0.0, dW = dBg * uRough.y;
+		for ( int i = 0; i < 2; i ++ ) {
+			float dK = pow( 2.3, float( i ) );
+			dRidge += ( 0.5 - abs( dNoise( vLocal * dK / dW + vSeed * 1.7 ) - 0.5 ) ) / dK * ( 1.0 - smoothstep( 0.15, 0.4, dPx * dK / dW ) );
+		}
+		float dHu = dRelief( vLocal, vExt, vSeed, dPx ) + uRough.x * dBg * dRidge + uRough.z * dSc * ( dGrainMap( vLocal, dNf, 1.0 / dSc ) - 0.5 ) * ( 1.0 - smoothstep( 0.002, 0.006, dPx / dSc ) );
+		float dRel = dHu * ${f(SCALE)};
 		normal = dBump( - vViewPosition, normal, dFdx( dRel ), dFdy( dRel ), faceDirection );
 	}`;
 
@@ -331,7 +342,7 @@ export const LIGHT = /* glsl */ `
 		for ( int i = 0; i < 6; i ++ ) {
 			vec3 dA0 = uLineA[ i ] / ${f(SCALE)}, dB0 = uLineB[ i ] / ${f(SCALE)};
 			float dZ = clamp( dP.z, dA0.z - uSmallDepth.x, dA0.z + uSmallDepth.x );
-			float dK = ( ${f(VIEW.back)} - dA0.z ) / max( ${f(VIEW.back)} - dZ, 1.0 );
+			float dK = ( ${f(VIEW.back)} - dZ ) / max( ${f(VIEW.back)} - dA0.z, 1.0 );
 			vec3 dA1 = vec3( dA0.x * dK, dA0.y, dZ ), dB1 = vec3( dB0.x * dK, dB0.y, dZ );
 			vec3 dAB = dB1 - dA1;
 			float dS = clamp( dot( dP - dA1, dAB ) / max( dot( dAB, dAB ), 1e-6 ), 0.0, 1.0 );
@@ -340,10 +351,11 @@ export const LIGHT = /* glsl */ `
 			float dI = uLineI[ i ].x * dR * dR / ( dR * dR + dF * dF ) * ( 1.0 - smoothstep( uSmallDepth.y * 0.5, uSmallDepth.y, dF ) ) * ( 1.0 - 0.6 * smoothstep( uSmallDepth.x * 0.4, uSmallDepth.x, abs( dP.z - dA0.z ) ) );
 			// A stream that falls behind a piece, across it on the screen, is hidden by it and lights none of it.
 			float dSize = max( vExt.x, max( vExt.y, vExt.z ) );
-			dI *= mix( 1.0, smoothstep( 0.75, 0.95, abs( dA1.x - vAt.x ) / max( dSize, 1.0 ) ), step( dA0.z + 20.0, vAt.z ) );
+			dI *= mix( 1.0, smoothstep( 0.82, 1.0, abs( dA1.x - vAt.x ) / max( dSize, 1.0 ) ), step( dA0.z + 20.0, vAt.z ) );
 			if ( dI < 1e-3 ) continue;
 			vec3 dL = normalize( ( viewMatrix * vec4( dT / dF, 0.0 ) ).xyz );
 			float dFace = saturate( dot( dN, dL ) );
+			dFace *= dFace;
 			reflectedLight.directDiffuse += uStreamColor * dI * dFace * ( 1.0 + uSmallBurn * dConvex ) * BRDF_Lambert( mix( uStone, material.diffuseContribution, vMetal ) );
 			reflectedLight.directSpecular += uStreamColor * dI * dFace * BRDF_GGX( dL, dV, dN, material ) * vMetal;
 		}

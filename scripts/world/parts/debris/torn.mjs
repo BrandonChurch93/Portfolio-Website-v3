@@ -62,7 +62,7 @@ export const TORN = {
   swell: 0.005, swellOver: 0.4, ridge: 0, ridgeOver: 0.13, wander: 0.0015, wanderOver: 0.05,
   // The secondary breaks across each block: how many, how far round from the way out they are turned (radians, at
   // most), and how deep under the surface each cuts. Each leaves a crisp facet, never a swell: a swell reads as cloth.
-  facets: 6, facetTurn: 0.65, facetCut: [0.008, 0.045],
+  facets: 6, facetTurn: 0.55, facetCut: [0.006, 0.03],
 };
 
 export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, skin = null, top = false, rubble = 10, scars = 4, flat = TORN.flat, form = null, chips = 80, steps = 2, strata = TORN.strata, ridge = null, facets = TORN.facets }) {
@@ -143,6 +143,13 @@ export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, ski
     }
     return lo;
   };
+  // Where the block's surface is along a way from its seed, and which way the surface faces there. A plane that cuts
+  // the block is turned from that, never from the way it was found by: turned from that, it slices the block.
+  const faceAt = (cl, n) => {
+    const out = outTo(cl, n, true), at = [cl.seed[0] + n[0] * out, cl.seed[1] + n[1] * out, cl.seed[2] + n[2] * out], e = big * 0.004;
+    const f = (x, y, z) => { const p = [x, y, z]; let d = inHull(p); for (const q of cl.planes) d = Math.max(d, dot(q.n, p) - q.h); for (const q of cl.own) d = Math.max(d, dot(q.n, p) - q.h); return d; };
+    return { at, sn: unit([f(at[0] + e, at[1], at[2]) - f(at[0] - e, at[1], at[2]), f(at[0], at[1] + e, at[2]) - f(at[0], at[1] - e, at[2]), f(at[0], at[1], at[2] + e) - f(at[0], at[1], at[2] - e)]) };
+  };
   for (const cl of cells) {
     const out = unit(cl.seed[0] || cl.seed[1] || cl.seed[2] ? cl.seed : [r() - 0.5, r() - 0.5, r() - 0.5]);
     if (r() < T.moved) {
@@ -160,14 +167,14 @@ export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, ski
   for (const cl of cells) for (let i = 0; i < T.corners; i++) {
     const n = unit([r() * 2 - 1, r() * 2 - 1, r() * 2 - 1]);
     if (top && n[1] > 0.3) continue;
-    cl.own.push({ n, h: dot(n, cl.seed) + outTo(cl, n, true) - big * between(T.corner[0], T.corner[1]) });
+    const { at, sn } = faceAt(cl, n), m = jitter(sn, 1.1);
+    cl.own.push({ n: m, h: dot(m, at) - big * between(T.corner[0], T.corner[1]) });
   }
   // The secondary breaks: each block's surface broken again by planes turned a little from it, at uneven depths.
   for (const cl of cells) for (let i = 0; i < facets; i++) {
     let n = unit([r() - 0.5, r() - 0.5, r() - 0.5]);
     if (top && n[1] > 0.3) continue;
-    const out = outTo(cl, n, true), at = [cl.seed[0] + n[0] * out, cl.seed[1] + n[1] * out, cl.seed[2] + n[2] * out];
-    const m = jitter(n, T.facetTurn * 2);
+    const { at, sn } = faceAt(cl, n), m = jitter(sn, T.facetTurn);
     cl.own.push({ n: m, h: dot(m, at) - big * between(T.facetCut[0], T.facetCut[1]) });
   }
   // The stepped breaks: a face that drops a little part of the way across it, along a ragged riser. Each is the
@@ -175,8 +182,7 @@ export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, ski
   for (const cl of cells) for (let i = 0; i < steps; i++) {
     let n = jitter(unit([r() - 0.5, r() - 0.5, r() - 0.5]), 0.2);
     if (top && n[1] > 0.3) n = unit([n[0], -Math.abs(n[1]), n[2]]);
-    const out = outTo(cl, n, true), at = [cl.seed[0] + n[0] * out, cl.seed[1] + n[1] * out, cl.seed[2] + n[2] * out];
-    const n1 = jitter(n, 0.12), across = unit(cross(n1, jitter([0, 1, 0], 2.4)));
+    const { at, sn } = faceAt(cl, n), n1 = jitter(sn, 0.12), across = unit(cross(n1, jitter([0, 1, 0], 2.4)));
     cl.steps.push({ n1, h1: dot(n1, at) - big * between(T.step[0], T.step[1]), n2: across, h2: dot(across, at) + big * 0.25 * (r() - 0.5) });
   }
   const kept = cells.filter((cl) => !cl.gone);

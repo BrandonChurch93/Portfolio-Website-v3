@@ -35,6 +35,9 @@ const LOOK = {
   // The strata: how thick a bed is, as a share of the piece's size, how much the beds wander, and how much a bed's
   // tone differs from the next.
   strata: [0.045, 0.5, 0.16] as const,
+  // The fine relief of a broken face, which the light finds: how high the broken ridges stand as a share of the
+  // piece's size, how wide they are as a share of it, and how high the grain stands as a share of its tile.
+  broken: [0.0045, 0.07, 0.02] as const,
   // The planet's outer surface where a piece shows it: pale on the side the moon lights, dark on the other.
   skin: { pale: color('text-3').lerp(color('text-2'), 0.35).multiplyScalar(0.5), dark: color('bg-3').lerp(color('text-3'), 0.2) },
   rough: 0.86,
@@ -50,7 +53,7 @@ const LOOK = {
   // The moon: how much of its light a face turned to it keeps (it is behind the pieces), and the rim it draws: how
   // bright, how tight to the outline, and how much of the stone's color it takes (none is the moon's own pale).
   moonBody: 0.03,
-  moonRim: [2, 6, 0.6] as const,
+  moonRim: [2.4, 9, 0.6] as const,
   rimTint: color('pale').lerp(color('hot'), 0.25),
   // The night's soft light on a body, from the visitor's side and above (in the camera's frame): its color and
   // strength, how much reaches a face turned from it, and where it comes from. It gives a body its form.
@@ -65,7 +68,7 @@ const LOOK = {
   relief: [0, 46, 0.008, 0] as const,
   // The stream's light: its color, how bright where it is full, over how many units it falls to half, how far it
   // reaches at all, and how much it wraps round a face. The small streams: how bright, and over how many units.
-  stream: { color: color('hot').lerp(color('flame'), 0.35), main: [9, 45, 260, 0.05] as const, small: [6, 30] as const },
+  stream: { color: color('hot').lerp(color('flame'), 0.35), main: [9, 45, 260, 0.05] as const, small: [2.6, 24] as const },
   // The small streams are drawn over the world, so each lights what is drawn beside it: within this depth of its own,
   // as far as this many units from it, and an edge that stands out burns this much more.
   smallDepth: [340, 150] as const, smallBurn: 2.5,
@@ -192,7 +195,7 @@ export const build: PartFactory = async ({ query, renderer }) => {
     uPieces: { value: pieces }, uTime: { value: 0 }, uBounceK: { value: pick(1, LOOK.bounce) }, uCoreK: { value: pick(0, LOOK.core) }, uDebrisCore: { value: new THREE.Vector3(...CORE.at) },
     uCoreSteep: { value: new THREE.Vector2(...LOOK.steep) }, uCoreSteepF: { value: new THREE.Vector2(LOOK.steep[0] * SCALE, LOOK.steep[1]) },
     uStone: { value: stone() }, uPatina: { value: LOOK.patina }, uChip: { value: LOOK.chip }, uWeather: { value: new THREE.Vector4(...LOOK.weather) },
-    uStoneGrain: { value: maps.grain }, uGrainK: { value: new THREE.Vector4(...LOOK.grain) }, uStrata: { value: new THREE.Vector3(...LOOK.strata) }, uGlow: { value: LOOK.glow.clone().multiplyScalar(pick(7, 1)) }, uGlowRim: { value: new THREE.Vector2(...LOOK.glowRim) },
+    uStoneGrain: { value: maps.grain }, uGrainK: { value: new THREE.Vector4(...LOOK.grain) }, uStrata: { value: new THREE.Vector3(...LOOK.strata) }, uRough: { value: new THREE.Vector3(...LOOK.broken) }, uGlow: { value: LOOK.glow.clone().multiplyScalar(pick(7, 1)) }, uGlowRim: { value: new THREE.Vector2(...LOOK.glowRim) },
     uSmallDepth: { value: new THREE.Vector2(...LOOK.smallDepth) }, uSmallBurn: { value: LOOK.smallBurn }, uShardMirror: { value: LOOK.shardMirror }, uSkinPale: { value: LOOK.skin.pale }, uSkinDark: { value: LOOK.skin.dark }, uShard: { value: LOOK.shard },
     uWorn: { value: LOOK.worn }, uFill: { value: new THREE.Vector4(LOOK.fill.color.r, LOOK.fill.color.g, LOOK.fill.color.b, LOOK.fill.least).multiplyScalar(pick(5, 1)).setW(LOOK.fill.least) }, uFillDir: { value: new THREE.Vector3(...LOOK.fill.from).normalize() }, uRimTint: { value: LOOK.rimTint }, uNight: { value: LOOK.night }, uRockMirror: { value: LOOK.mirror },
     uMoonBody: { value: LOOK.moonBody }, uMoonRim: { value: new THREE.Vector3(pick(3, LOOK.moonRim[0]), LOOK.moonRim[1], LOOK.moonRim[2]) },

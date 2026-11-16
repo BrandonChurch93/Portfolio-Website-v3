@@ -3,17 +3,20 @@ import { hex, type PaletteName } from '../../../config/palette';
 import { STREAM as PAGE } from '../../../stream/config';
 import { CORE, SOURCE, seeded } from '../layout';
 import type { PartFactory } from '../part';
-import { BALL_FRAG, BALL_VERT, GLASS_FRAG, SHARD_VERT, SOLID_FRAG } from './core/shaders';
+import { BALL_FRAG, BALL_VERT, SHARD_VERT, SOLID_FRAG } from './core/shaders';
+import { stone } from '../light';
 import { ROOT_FRAG, ROOT_VERT, rootScale, strandsFor } from './core/root';
 import { shardGeometry, type Moon } from './core/shards';
 
 // The core: the planet's core and the source of the site's stream at once. A ball of the stream's light hanging free
 // in the hollow, as picture 9 has it: pale gold over its face with a fine, even, luminous grain, which close up is
-// granules, as on a star, warming to deep orange in a band just inside its hard edge and a thin brighter line of
-// orange gold at the edge itself. Its light falls toward its limb and is hottest up and to the left, so it is a ball.
-// At its foot is the neck of the beam it shoots out, broad and cream, drawing itself thin to the page's stream. A few
-// pieces of the planet are drawn in round its lower half, from both sides, and carried down the beam. It gives light of its own, casts no shadow and takes none, and
-// draws no haze or glow outside itself.
+// granules of several sizes told apart by their brightness alone, warming to deep orange in a band just inside its
+// hard edge and a thin brighter line of orange gold at the edge itself. Its light falls a little toward its limb and
+// is hottest up and to the left, so it is a ball. At its foot is the neck of the beam it shoots out: the ball and the
+// neck are one shape, its face pours down into it and its band turns down along its sides, and it draws itself thin,
+// cream and then the stream's pale, to the page's own ribbon at the cut where the page takes it up. A few
+// pieces of the planet's rock are drawn in round its lower half, from both sides, and carried down the beam. It gives
+// light of its own, casts no shadow and takes none, and draws no haze or glow outside itself.
 
 type Ink = readonly [number, number, number];
 type Stops = readonly (readonly [number, Ink])[];
@@ -46,7 +49,7 @@ const RIM: Stops = [
 // grain takes more light than a dim one gives up.
 const GRAIN = {
   bright: [0.1787, 0.1966, 0.2152],
-  dim: [-0.058, -0.069, -0.0861],
+  dim: [-0.06, -0.064, -0.074],
   warm: [0.0391, 0.0239, 0.0013],
   pale: [-0.0269, -0.0133, 0.0072],
 } as const;
@@ -57,21 +60,23 @@ const TURN = { axis: new THREE.Vector3(0.18, 1, 0.22).normalize(), rate: 0.012 }
 // The neck of the beam, in units of the world down from the ball's foot unless they say otherwise. Picture 9's
 // neck, as the root of a beam shot down out of the ball with force, drawing itself thin to the page's ribbon by the
 // cut, where the page's own stream takes it up (STREAM.hero.hand).
-//   foot: half its width where it leaves, along a taper that goes as pow of what is left of the way to the cut;
-//     fillet: how it flares where the band turns down into it, wider by the first over the depth and the second;
-//     meet: how far over the foot the fillet has met the ball's outline; rib: the half width it comes down to, the
+//   foot: half its width where it leaves, under the fillet, which falls away over about fall units, as picture 9's
+//     does; fillet: how much wider it is at the foot where the band turns down into it, falling away over about the
+//     second; meet: how far over the foot the fillet goes on widening inside the ball; rib: the half width it comes down to, the
 //     heart of the page's ribbon, round which the ribbon's own fibres spread as they will; cream: over which depths its
 //     body turns from the ball's own cream to the stream's pale, paler: how much paler than the ball it is, and grain:
 //     how much its cream is gathered along the fibres; band: how much narrower the band is along the neck's sides
 //     than round the ball, and how round its turn is, in units; down: by which depth the band is that narrow, and by
-//     which the neck's own color has taken over from the ball's face and band
+//     which the neck's own color has taken over from the ball's face and band; into: how far over the foot
+//     the beam's light begins inside the ball
 //   quiet: how wide it is before the stream sets off, against after; drop: how far it hangs then; tip: how long its
 //     end is, at most, and round: how sharp its point is once it runs
 //   a: how bright its body is; rim: over how many units at its edge it goes from nothing to its body, and how that
 //     goes; streak: how much of the body is gathered along its fibres; body: over which depths the body gives way to
 //     the ribbon alone
 //   spread: how wide, in half widths, the fibres lie when they are not spread, and heartOpen: how much the heart opens
-//     with them; fibre: how much of them there is; run: the light that runs down it: how much, how long, how fast
+//     with them; fibre: how much of them there is, and match: how much more toward the cut, where the page's glow is over its own; sheet: over how many units
+//     before the cut the faint sheet between them comes in; run: the light that runs down it: how much, how long, how fast
 //   up: how far over the foot it reaches inside the ball; give: over how many units past the cut it is given over
 //   hush: how bright it is before it sets off, against after; surge: the light that runs down it as it sets off: how
 //     much, how fast in units a second, how long
@@ -79,24 +84,24 @@ const TURN = { axis: new THREE.Vector3(0.18, 1, 0.22).normalize(), rate: 0.012 }
 //   over: from which amount to which the neck's light takes the place of the band's inside the ball
 //   plane: how far down the plane it is drawn on reaches, and wide: half its width; held: how far it runs held on
 const NECK = {
-  foot: 19, rib: 4, pow: 1.3, fillet: [80, 12], meet: 6, cream: [60, 190], paler: 1.07, grain: 0.08, band: [10, 2.5], down: [6, 40],
+  foot: 13, rib: 2.1, fall: 60, fillet: [4.5, 4], meet: 4, cream: [20, 120], paler: 1.14, grain: 0.08, band: [10, 2.5], down: [2, 14], into: 14,
   quiet: 0.55, drop: 8, tip: 40, round: 0.5,
   a: 1.9, rim: [1.6, 0.6], streak: 0.28, body: [150, 212],
-  spread: 22, heartOpen: 0.5, fibre: 1, run: [0.06, 26, 2.4], up: 16, give: 6,
-  hush: 0.85, surge: [0.5, 210, 18], floor: 0.008, energy: 1, over: [0.12, 0.9], plane: 300, wide: 64, held: 262,
+  spread: 22, heartOpen: 0.5, fibre: 1, match: 1.6, sheet: 24, run: [0.06, 26, 2.4], up: 16, give: 6,
+  hush: 0.85, surge: [0.5, 210, 18], floor: 0.008, energy: 1, over: [0.12, 0.9], plane: 300, wide: 64, held: 190,
 } as const;
 
-// The pieces of the planet the beam draws in: how many, how many of those are glass, how long a coming of each
-// takes, in seconds, how long of that it is growing in out of the dark, how long the beam takes to carry it down and
-// how far, how long it rests unseen. Where each comes from: how far round from straight down, in degrees, how far
-// out from the ball's middle and how far toward the eye, as shares of the radius. Where it is taken by the beam: how
-// far round, how far out and toward the eye. How long they are, in units, from the least to the greatest, which are
-// handed out evenly so that no two are near one size, and how fast they turn over. Each comes from the other side
-// of the ball from the time before, and the first of them come from both sides.
+// The pieces of the planet the beam draws in: how many, how long a coming of each takes, in seconds, how long of that
+// it is growing in out of the dark, how long the beam takes to carry it down and how far, how long it rests unseen.
+// Where each comes from: how far round from straight down, in degrees, how far out from the ball's middle and how far
+// toward the eye, as shares of the radius. Where it is taken by the beam: how far round, how far out and toward the
+// eye. How long they are, in units, from the least to the greatest, which are handed out evenly so that no two are
+// near one size, and how fast they turn over, and how much faster once the beam has them. Each comes from the other
+// side of the ball from the time before, and the first of them come from both sides.
 const MOONS = {
-  count: 7, glass: 1, period: [24, 40], gather: 3, drop: 3.6, sink: 150, rest: 4,
-  from: [24, 78], out: [1.3, 1.8], toward: [0.05, 0.6], foot: [9, 1.08, 0.25],
-  long: [7, 22], turn: [0.08, 0.22],
+  count: 4, period: [17, 23], gather: 2.5, drop: 4.5, sink: 190, rest: 3,
+  from: [30, 70], out: [1.35, 1.75], toward: [0.15, 0.5], foot: [8, 1.12, 0.3],
+  long: [18, 30], turn: [0.1, 0.25], carried: 3,
   seed: 61,
 } as const;
 
@@ -105,7 +110,7 @@ function moons(): Moon[] {
   const sizes = Array.from({ length: MOONS.count }, (_, i) => MOONS.long[0] + ((MOONS.long[1] - MOONS.long[0]) * ((i * 3) % MOONS.count)) / (MOONS.count - 1));
   for (let i = 0; i < MOONS.count; i++) {
     const period = span(MOONS.period);
-    out.push({ period, start: period * ((i + 0.37 * r()) / MOONS.count), size: sizes[i] / 2, seed: i, axis: [r() - 0.5, r() - 0.5, r() - 0.5], rate: span(MOONS.turn) * (r() < 0.5 ? -1 : 1), glass: i >= MOONS.count - MOONS.glass });
+    out.push({ period, start: period * ((i + 0.37 * r()) / MOONS.count), size: sizes[i] / 2, seed: i, axis: [r() - 0.5, r() - 0.5, r() - 0.5], rate: span(MOONS.turn) * (r() < 0.5 ? -1 : 1) });
   }
   return out;
 }
@@ -113,12 +118,10 @@ function moons(): Moon[] {
 // The rings of the ball's shell at each level of cost.
 const RINGS = { full: 48, lean: 40 } as const;
 
-// How a shard takes the core's light, as amounts of light: what a face shows that mirrors the night outside the
-// hollow, the hollow's lit walls, or the ball sharp and soft, how rough its faces are, how much light a face turned
-// to the ball takes, how near the ball it has to be for all of that, how bright its edges are and its points, and
-// how much light the beam gives one on it and how far that reaches. And for glass: how much light it holds, how strongly it mirrors the ball and lights its edges, and how much it
-// dims what is behind it.
-const SHARD = { room: 0.02, wall: 0.06, flash: 4, sheen: 0.1, rough: 0.06, diffuse: 0.05, near: 2.5, edge: 3, tip: 0.3, beam: 1.6, beamW: 10, held: 0.12, glint: 0.5, glassEdge: 0.9, dim: 0.22 } as const;
+// How a piece of rock takes the core's light: how much of the night's light it has where the ball does not reach,
+// how much a face turned to the ball takes, how near the ball it has to be for all of it, how bright an edge whose
+// bevel looks toward the ball is and how squarely it has to look, and how much light the beam gives one riding it and how far that reaches.
+const SHARD = { night: 0.02, face: 1.1, near: 2.5, edge: [1.4, 6], beam: 1.4, beamW: 10 } as const;
 
 const vec = (c: readonly number[]): THREE.Vector3 => new THREE.Vector3(c[0], c[1], c[2]);
 // A color of the palette as the page's stream holds it: each channel to the power 2.2 (src/stream/renderer.ts, lin).
@@ -159,10 +162,10 @@ export const build: PartFactory = (ctx) => {
   const rootDefines = {
     ROOT_STRANDS: strands, ROOT_ENERGY: f(NECK.energy), ROOT_HUSH: f(NECK.hush), ROOT_FLOOR: f(NECK.floor),
     ROOT_SURGE: f(NECK.surge[0]), ROOT_SURGE_V: f(NECK.surge[1]), ROOT_SURGE_W: f(NECK.surge[2]), ROOT_OVER: v2(NECK.over),
-    NECK_FOOT: f(NECK.foot), NECK_CUT: f(PAGE.hero.hand[0] / host.host), NECK_POW: f(NECK.pow), NECK_RIB: f(NECK.rib), NECK_CREAM: v2(NECK.cream), NECK_PALER: f(NECK.paler), NECK_GRAIN: f(NECK.grain),
+    NECK_FOOT: f(NECK.foot), NECK_CUT: f(PAGE.hero.hand[0] / host.host), NECK_FALL: f(NECK.fall), NECK_RIB: f(NECK.rib), NECK_CREAM: v2(NECK.cream), NECK_PALER: f(NECK.paler), NECK_GRAIN: f(NECK.grain),
     NECK_FILLET: v2(NECK.fillet), NECK_MEET: f(NECK.meet), NECK_QUIET: f(NECK.quiet), NECK_ROUND: f(NECK.round), NECK_DROP: f(NECK.drop), NECK_TIP: f(NECK.tip),
     NECK_BODY: v2(NECK.body), NECK_A: f(NECK.a), NECK_RIM: f(NECK.rim[0]), NECK_RIM_POW: f(NECK.rim[1]), NECK_STREAK: f(NECK.streak),
-    NECK_SPREAD: f(NECK.spread), NECK_HEART_OPEN: f(NECK.heartOpen),
+    NECK_SPREAD: f(NECK.spread), NECK_MATCH: f(NECK.match), NECK_SHEET: f(NECK.sheet), NECK_HEART_OPEN: f(NECK.heartOpen),
     RIM_N: RIM.length,
     // The grain: the largest granule in units, how many sizes, each half the last, how much weaker each finer one is,
     // over how many of its own sizes a pixel has to be for it to show, and how far the sizes kept may be turned up to
@@ -171,7 +174,7 @@ export const build: PartFactory = (ctx) => {
     GRAIN_CELL: '1.6',
     GRAIN_SIZES: 4,
     GRAIN_FALL: '0.8',
-    GRAIN_SEEN: '1.2',
+    GRAIN_SEEN: '1.4',
     GRAIN_BACK: '1.6',
     GRAIN_JITTER: '0.8',
     GRAIN_WANDER: '0.08',
@@ -182,17 +185,17 @@ export const build: PartFactory = (ctx) => {
     MOTTLE: '0.14',
     MOTTLE_WAVE: '34.0',
     // From grain to steps of the grain's light, for brightness and for warmth, and how much of both the band loses.
-    GRAIN_GAIN: '1.6',
+    GRAIN_GAIN: '1.95',
     GRAIN_WARM: '1.2',
     GRAIN_BAND: '0.8',
-    NECK_BAND: f(NECK.band[0]), NECK_TURN: f(NECK.band[1]), NECK_DOWN: v2(NECK.down),
+    NECK_BAND: f(NECK.band[0]), NECK_TURN: f(NECK.band[1]), NECK_DOWN: v2(NECK.down), NECK_INTO: f(NECK.into),
     // A sphere: how much its light falls toward the limb, from which share of the radius, how that goes, and over
     // which shares it gives way to the band, and how much the whole face is lifted to keep its mean.
-    LIMB: '0.16',
+    LIMB: '0.08',
     LIMB_FROM: '0.4',
     LIMB_POW: '1.4',
     LIMB_TO: 'vec2( 0.84, 0.93 )',
-    FACE_GAIN: '1.03',
+    FACE_GAIN: '0.985',
     NECK_FIBRE: f(NECK.fibre), NECK_RUN: `vec3( ${f(NECK.run[0])}, ${f(NECK.run[1])}, ${f(NECK.run[2])} )`, NECK_UP: f(NECK.up), NECK_GIVE: f(NECK.give),
   };
 
@@ -219,7 +222,7 @@ export const build: PartFactory = (ctx) => {
       // Over which shares of the radius the grain over the foot comes to be read on the neck's plane.
       NECK_FOOT_UP: 'vec2( 0.8, 0.97 )',
       // Its hottest part: how much hotter, where, as shares of the radius, and how wide.
-      HOT: '0.07',
+      HOT: '0.05',
       HOT_AT: 'vec2( -0.28, 0.3 )',
       HOT_R: '0.6',
     },
@@ -249,43 +252,27 @@ export const build: PartFactory = (ctx) => {
   root.position.copy(at);
   root.renderOrder = over ? 19 : 0;
 
-  // What glass dims what is behind it toward: the ball's own color, twice over, so it takes most from the blue.
-  const tint = vec(RIM[0][1]).divideScalar(RIM[0][1][0]);
   const shardU = {
     uTime: ballU.uTime, uLevel: ballU.uLevel, uEye: ballU.uEye, uR: ballU.uR,
     uBall: { value: vec(RIM[0][1]) },
-    uCopper: { value: new THREE.Color(hex('copper')) },
-    uCopperLight: { value: new THREE.Color(hex('copper-light')) },
-    uHot: { value: new THREE.Color(hex('hot')) },
-    uTint: { value: tint.clone().multiply(tint) },
+    uStone: { value: stone() },
   };
   const shardDefines = {
-    SHARD_GATHER: f(MOONS.gather), SHARD_DROP: f(MOONS.drop), SHARD_SINK: f(MOONS.sink), SHARD_REST: f(MOONS.rest),
+    SHARD_GATHER: f(MOONS.gather), SHARD_DROP: f(MOONS.drop), SHARD_SINK: f(MOONS.sink), SHARD_REST: f(MOONS.rest), SHARD_CARRIED: f(MOONS.carried),
     SHARD_FROM: `vec2( ${f(MOONS.from[0])}, ${f(MOONS.from[1])} )`, SHARD_OUT: `vec2( ${f(MOONS.out[0])}, ${f(MOONS.out[1])} )`, SHARD_TOWARD: `vec2( ${f(MOONS.toward[0])}, ${f(MOONS.toward[1])} )`,
     SHARD_FOOT: `vec3( ${f(MOONS.foot[0])}, ${f(MOONS.foot[1])}, ${f(MOONS.foot[2])} )`,
-    SHARD_ROOM: f(SHARD.room), SHARD_WALL: f(SHARD.wall), SHARD_FLASH: f(SHARD.flash), SHARD_ROUGH: f(SHARD.rough), SHARD_DIFFUSE: f(SHARD.diffuse), SHARD_SHEEN: f(SHARD.sheen), SHARD_NEAR: f(SHARD.near), SHARD_EDGE: f(SHARD.edge), SHARD_TIP: f(SHARD.tip),
+    SHARD_NIGHT: f(SHARD.night), SHARD_FACE: f(SHARD.face), SHARD_NEAR: f(SHARD.near), SHARD_EDGE: f(SHARD.edge[0]), SHARD_EDGE_POW: f(SHARD.edge[1]),
     SHARD_BEAM: f(SHARD.beam), SHARD_BEAM_W: f(SHARD.beamW),
-    GLASS_HELD: f(SHARD.held), GLASS_GLINT: f(SHARD.glint), GLASS_EDGE: f(SHARD.glassEdge), GLASS_DIM: f(SHARD.dim),
   };
-  const all = moons();
-  const solidG = shardGeometry(all.filter((m) => !m.glass), MOONS.seed), glassG = shardGeometry(all.filter((m) => m.glass), MOONS.seed + 1);
+  const solidG = shardGeometry(moons(), MOONS.seed);
   const solidM = new THREE.ShaderMaterial({ name: 'world-core-shard', uniforms: shardU, defines: shardDefines, vertexShader: SHARD_VERT, fragmentShader: SOLID_FRAG });
-  // Glass is drawn twice from one program: first what it takes from behind it, then what it gives.
-  const glassOf = (give: boolean) => new THREE.ShaderMaterial({
-    name: 'world-core-glass', uniforms: { ...shardU, uGive: { value: give ? 1 : 0 } }, defines: shardDefines, vertexShader: SHARD_VERT, fragmentShader: GLASS_FRAG,
-    transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.CustomBlending,
-    blendSrc: give ? THREE.OneFactor : THREE.ZeroFactor, blendDst: give ? THREE.OneFactor : THREE.SrcColorFactor,
-  });
-  const takeM = glassOf(false), giveM = glassOf(true);
-  const solid = new THREE.Mesh(solidG, solidM), take = new THREE.Mesh(glassG, takeM), give = new THREE.Mesh(glassG, giveM);
-  for (const m of [solid, take, give]) m.position.copy(at);
-  take.renderOrder = 2;
-  give.renderOrder = 3;
+  const solid = new THREE.Mesh(solidG, solidM);
+  solid.position.copy(at);
 
-  for (const m of [ball, root, solid, take, give]) { m.castShadow = m.receiveShadow = false; m.frustumCulled = false; }
+  for (const m of [ball, root, solid]) { m.castShadow = m.receiveShadow = false; m.frustumCulled = false; }
   const eye = new THREE.Vector3();
   ball.onBeforeRender = (_r, _s, camera) => { ballU.uEye.value.copy(ball.worldToLocal(eye.copy(camera.position))); };
-  group.add(root, ball, solid, take, give);
+  group.add(root, ball, solid);
 
   const q = new THREE.Quaternion(), m4 = new THREE.Matrix4();
   let wide = -1;
@@ -310,6 +297,6 @@ export const build: PartFactory = (ctx) => {
       rootU.uTurn.value.setFromMatrix4(m4.makeRotationFromQuaternion(q.setFromAxisAngle(TURN.axis, (s.t * TURN.rate) % (2 * Math.PI))));
             return true;
     },
-    dispose() { for (const d of [ballG, ballM, rootG, rootM, solidG, solidM, glassG, takeM, giveM]) d.dispose(); },
+    dispose() { for (const d of [ballG, ballM, rootG, rootM, solidG, solidM]) d.dispose(); },
   };
 };

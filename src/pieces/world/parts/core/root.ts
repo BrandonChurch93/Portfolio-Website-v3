@@ -2,7 +2,7 @@ import { HOST, drawn } from '../../layout';
 import { STREAM, STREAM_BUDGET, unitFor } from '../../../../stream/config';
 import { CORE_HALF } from '../../../../stream/shaders';
 import type { Tier } from '../../../../config/site';
-import { GRAIN } from './grain';
+import { UNBALANCE } from './grain';
 
 // The neck of the beam: where the page's stream leaves the core's foot, as picture 9's neck. Broad where it leaves,
 // with the ball's band turning down into it, a cream body that draws itself thin as it is shot down, and in it the
@@ -36,16 +36,17 @@ export function rootScale(at: readonly [number, number, number], strands: number
 // The stream's own ribbon, as src/stream/shaders.ts (coreFrag) draws it, letter for letter where it can be: x across
 // and s along it in stream units, t the clock, lead how far its leading end is past this place. Two things are the
 // root's own: F, how far the ribbon is flared open here, which spreads the fibres and widens the heart without making
-// any fibre softer, and the heart's own share of that.
+// any fibre softer, and the heart's own share of that. And how much of the faint sheet between the fibres is drawn:
+// in the neck it is only where the page's own takes it up, or its twisting outline reads as a flame's.
 export const ROOT_STREAM = /* glsl */ `
 float rootHash( float n ) { return fract( sin( n * 127.1 ) * 43758.5453 ); }
-float rootStream( float x, float s, float t, float lead, float heart, float F, float Fh ) {
+float rootStream( float x, float s, float t, float lead, float heart, float F, float Fh, float sheet ) {
 	float tip = smoothstep( 0.0, 120.0, lead );
 	float twist = s / 58.0 - t * 0.36 + 1.3 * sin( s / 143.0 - t * 0.12 );
 	float face = cos( twist ), depth = sin( twist );
 	float wide = mix( 10.0, 20.0, 0.5 + 0.5 * sin( s / 97.0 - t * 0.21 + 1.0 ) ) * mix( 0.25, 1.0, tip );
 	float span = wide * abs( face ) + 0.6;
-	float sum = 0.1 * smoothstep( span + 2.6, span * 0.55, abs( x ) ) * ( 0.35 + 0.65 * abs( face ) );
+	float sum = 0.1 * sheet * smoothstep( span + 2.6, span * 0.55, abs( x ) ) * ( 0.35 + 0.65 * abs( face ) );
 	for ( int j = 0; j < ROOT_STRANDS; j ++ ) {
 		float f = float( j ), a = rootHash( f + 1.0 ), b = rootHash( f + 7.3 ), c = rootHash( f + 13.9 );
 		float u0 = ( f + 0.5 ) / float( ROOT_STRANDS ) * 2.0 - 1.0 + ( a - 0.5 ) * 0.5;
@@ -111,13 +112,12 @@ vec2 neckReach() {
 	float reach = max( NECK_DROP, uRootState.y );
 	return vec2( reach, min( NECK_TIP, 0.9 * reach ) );
 }
-// Half the neck's width here, in units of the world: broad where it leaves, with the fillet over the foot where the
-// ball's band turns down into it, drawing itself thin in one long taper to whatever the page's ribbon is doing at the
-// cut, its own width and twist there, so the line has no waist. Its end is round before it sets off, a drop, and
-// a point once it runs.
+// Half the neck's width here, in units of the world, as picture 9's: broad where it leaves, with the fillet over the
+// foot where the ball's band turns down into it, drawing itself thin quickly and then slowly, to the heart of the
+// page's ribbon by the cut. Its end is round before it sets off, a drop, and a point once it runs.
 float neckWidth( float d, float rib, vec2 R, float on ) {
 	float k = clamp( max( d, 0.0 ) / NECK_CUT, 0.0, 1.0 );
-	float w = rib + ( NECK_FOOT - rib ) * pow( 1.0 - k, NECK_POW ) + ( 1.0 - k ) * NECK_FILLET.x / ( max( d, - NECK_MEET ) + NECK_FILLET.y );
+	float w = rib + ( NECK_FOOT - rib ) * exp( - max( d, 0.0 ) / NECK_FALL ) * ( 1.0 - k * k ) + NECK_FILLET.x * exp( - max( d, - NECK_MEET ) / NECK_FILLET.y );
 	w *= mix( NECK_QUIET, 1.0, on );
 	float e = clamp( ( R.x - d ) / max( R.y, 1e-3 ), 0.0, 1.0 );
 	return w * mix( sqrt( e * ( 2.0 - e ) ), pow( e, NECK_ROUND ), on );
@@ -153,6 +153,10 @@ float coreAt( float rr, float x, float d ) {
 	float side = d >= M.y ? ( e >= 0.0 ? NECK_BAND * e : 1e3 ) : corner;
 	return 1.0 - coreSmin( ball, side, NECK_TURN ) / uR;
 }
+// Over the foot the beam's light begins inside the ball: the face there turns to the neck's own cream, paler than the
+// face, inside the band and the band's turn. How much, and the color. rb is as coreAt gives it.
+float coreInto( float rb, float d ) { return smoothstep( - NECK_INTO, 0.0, d ) * smoothstep( 0.92, 0.8, rb ); }
+vec3 coreFoot( vec3 col, float rb, float d ) { return mix( col, uCream * NECK_PALER, coreInto( rb, d ) ); }
 // The neck's light here, as an amount of the stream's light, how much of it is the ball's own cream, how bright that
 // cream is, and how far inside its edge the place is, in units.
 vec4 rootAmount( float x, float d ) {
@@ -171,7 +175,7 @@ vec4 rootAmount( float x, float d ) {
 	// has drawn itself down to the ribbon. Nothing of them is drawn outside the neck while it has a body.
 	float F = max( 1.0, w / NECK_SPREAD ), Fh = 1.0 + NECK_HEART_OPEN * ( F - 1.0 );
 	float heart = uRootScale.z * smoothstep( - NECK_UP, 0.0, d );
-	float fib = rootStream( xs, s, t, lead, heart, F, Fh );
+	float fib = rootStream( xs, s, t, lead, heart, F, Fh, smoothstep( NECK_CUT - NECK_SHEET, NECK_CUT, d ) );
 	float wc = mix( w + 0.5, ( 1.2 * span + 3.5 ) / uRootScale.x, 1.0 - B );
 	fib *= 1.0 - smoothstep( wc - fx, wc + fx, ax );
 	// The body is its fibres gathered: a little brighter along each, so it is never a flat tube, and light runs down it.
@@ -181,7 +185,8 @@ vec4 rootAmount( float x, float d ) {
 	// Quiet before it sets off, and as it does, a surge of light runs down it from the foot.
 	float surge = ROOT_SURGE * exp( - pow( ( d - since * ROOT_SURGE_V ) / ROOT_SURGE_W, 2.0 ) ) * ( 1.0 - smoothstep( 0.5, 1.2, since ) ) * on;
 	float level = mix( ROOT_HUSH, 1.0, on ) * ( 1.0 + surge );
-	float a = ( B * body + NECK_FIBRE * fib * mix( 1.0, rim, B ) ) * level;
+	// Toward the cut the ribbon is as bright as the page's, which lays a glow over its own.
+	float a = ( B * body + NECK_FIBRE * fib * mix( 1.0, rim, B ) * mix( 1.0, NECK_MATCH, smoothstep( NECK_BODY.x, NECK_CUT, d ) ) ) * level;
 	// Given over to the page's stream where the page draws its own.
 	a *= 1.0 - uRootState.z * smoothstep( NECK_CUT, NECK_CUT + NECK_GIVE, d );
 	// Where it leaves the ball its body is the ball's own light, and it turns to the stream's as it draws itself thin.
@@ -220,7 +225,7 @@ vec4 rootColor( float a ) {
 vec4 neckColor( vec4 l, float x, float d ) {
 	vec4 c = mix( rootColor( l.x ), vec4( uCream * NECK_PALER * l.z, 1.0 ), l.y );
 	float rb = coreAt( length( vec2( x, d + uR ) ) / uR, x, d ), fx = max( fwidth( x ), 1e-3 );
-	vec3 ball = coreRim( rb ) * coreFall( rb ) * mix( NECK_PALER * l.z, 1.0, smoothstep( 0.6, 0.85, rb ) );
+	vec3 ball = coreFoot( coreRim( rb ) * coreFall( rb ), rb, d );
 	float k = ( 1.0 - smoothstep( NECK_DOWN.x, NECK_DOWN.y, d ) ) * smoothstep( - 0.5 * fx, 0.5 * fx, l.w );
 	return mix( c, vec4( ball, 1.0 ), k );
 }
@@ -238,7 +243,7 @@ export const ROOT_FRAG = /* glsl */ `
 precision highp float;
 uniform float uTime;
 varying vec2 vAt;
-${GRAIN}
+${UNBALANCE}
 ${ROOT_LIGHT}
 void main() {
 	float d = - uR - vAt.y;
@@ -247,13 +252,5 @@ void main() {
 	l.x = max( l.x * smoothstep( - NECK_MEET - 2.0, - NECK_MEET, d ) - ROOT_FLOOR, 0.0 );
 	if ( l.x < 0.002 ) discard;
 	vec4 c = neckColor( l, vAt.x, d );
-	// The face's grain runs on down into it a little way, as the face's own light does, and is gone as it turns to the
-	// stream's.
-	if ( d < NECK_DOWN.y ) {
-		vec3 q = uTurn * vec3( vAt.x, vAt.y, 0.0 );
-		float fp = max( max( length( dFdx( q ) ), length( dFdy( q ) ) ), 1e-4 );
-		vec2 g = coreSalt( q, fp, uTime ) * ( 1.0 - smoothstep( 0.0, NECK_DOWN.y, d ) );
-		c.rgb *= mix( vec3( 1.0 ), coreTint( GRAIN_GAIN * g.x, GRAIN_WARM * g.y ), c.a );
-	}
 	gl_FragColor = vec4( coreUnbalance( c.rgb ), c.a );
 }`;

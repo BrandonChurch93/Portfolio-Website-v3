@@ -1,0 +1,23 @@
+# Your part: the torn rock (sculpt R). Round 5: a cave, a few great slabs, and black between them
+
+## What you own
+scripts/world/parts/rock-r/ and public/world/rock-r.bin. No TypeScript. Stills in shots/world/rock-r/ with the prefix r5-. Report: shots/world/rock-r/r5-report.md. Read first: shots/world/rock-r/r4-report.md and its two reviews, briefs/rock-r4.md (its targets still hold), and the END of briefs/common.md (all of it: the darks changed in the frame for you).
+
+## Where it stands
+Round 4 scored 5 and 4.5. Kept, and not to be lost: the outline trace (rims, lip, roof's lower edge, both torn edges and the core within a few pixels of picture 9). The fan of wedges leaning in toward the core, mirrored either side, which is what makes it read as a crater of broken rock at the page's size. The underside under the stream as one ragged line with no battlement. Real volumes. One draw call.
+
+## What Fable changed for you
+You said the darks were brown because the frame's fill and lifted bounce lit faces the core cannot reach, and you were right. The stored bounce now has a knee (LIGHT.bounced[2] in layout.ts, 0.5): a weak bounce falls away fast, a strong one is untouched. With your round 4 file the masses beside the hollow are near black with a little form and the ring is as it was (shots/world/frame/knee-all.jpg: top left before, middle left now). Measure your regions again before you change a depth for the sake of a dark.
+
+## What must change, most important first
+Fable, with r4-match-hollow-beside.jpg open: yours is a crazed wall, evenly lit, in facets of one size. The picture's is three things, and this round is those three.
+1. A CAVE ROUND THE CORE. The picture's core sits in a smooth concave bowl, about 0.3 to 0.6 radii beyond the ball: one soft gradient of light from pale peach by the ball to amber at its lip, with almost no facets in it. Carve it. The great slabs begin at its lip. Inside the lit ring put steps that face AWAY from the core, so it has the picture's spread of bright and black (yours is a uniform plateau at 0.35 to 0.37, the picture's median is 0.21).
+2. A FEW GREAT SLABS. Each large plate is ONE plane across 100 to 150 picture pixels (the picture's two left slabs at 390..450 and 300..360 are the model), with fine parallel laminations running its length and chipped, stepped edges. Not eight to fifteen facets of one size. Where a face is knapped, the facets curve a little (conchoidal) and come at three scales, the smallest only at edges. A flat one tone polygon at three times is the low poly look, which fails on sight.
+3. BLACK. The left half of the hollow is 28 percent black where the picture's is 40. Open the voids the picture has: a deep overhang band under the land's lip (about 290 to 330 down), a cavity behind the left masses (285..370 across, 400..540 down), a dark recess between the lit ring and the floor, and a dark belly with a few lit edges hanging under the floor. The floor is a LEDGE with a lit top, separate from the ring. Lit rock must not run unbroken from the ring to the underside's silhouette.
+4. THE LIP. The pale stratum under the land's edge is thinner and darker than the picture's: a pale grey slab 40 to 60 picture pixels thick with a lit top edge. Lower the right hanging mass from about 650 to about 690 down at 1040 across.
+5. THE TORN LINES. The skin's builder measured the pale side's torn line 15 picture pixels LEFT of the picture's at rows 320 to 430 (shots/world/skin/s4-grid-edge.jpg, ruled): move it. At the top of the dark side the skin now carries the picture's pale slab out past your line (rows 312 to 411, to 348 across): keep your blocks from poking through it there. Say in your report exactly what moved, for the skin and the debris to be made again.
+6. ARTIFACTS. Dotted bright specks along crack edges near 990 to 1000 across ("shattered glass"). Bright hairline seams leaking along plane edges on the right lower mass. Lit facets ending in sawtooth fringes of tiny triangles (the reduction). The comb ladders that are left: two diagonal ribbed strips under the grey stratum at the upper left, ribbed bands in the dark lid under the lip at 480 to 560 across, a stair stepped comb under the roof's middle at 480 to 650.
+7. WEIGHT. 4.25 MB and 291,654 triangles. A few great planes need far fewer triangles than a crazed wall: 3 MB or under, with the detail where it is seen.
+
+## How to look
+Every draft: npm run match -- --at 240,250,900,400 --out shots/world/rock-r/r5-match-hollow first, then your regions' numbers, then close:hollow at three times, then the real page (npm run shot -- "/lab/hero?ui=0" --scroll 700 --t 6 --wait 12000). From across the room: a cave of light in the middle of black broken rock.

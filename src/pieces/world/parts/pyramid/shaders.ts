@@ -1,19 +1,24 @@
-import { FORM } from './form';
-import { MOONWARD, PYRAMID } from '../../layout';
+import { FORM, standing } from './form';
+import { MOONWARD, PYRAMID, WORLD } from '../../layout';
 
 // The pyramid's shaders, laid into a physical material (onBeforeCompile) before the world's light (../../light.ts).
 // Polished gold is what it mirrors and the lights it catches. The moon stands behind the world to the right, and the
 // half way direction between it and the visitor lies a few degrees off the normal of the face toward it. The plates
 // of that face are set with a kick at their foot that turns them that few degrees, and the face bows a hair, so the
 // moon's own highlight lands on the face and spreads over it as one sheet. The gold is polished over a hand worked
-// face: a broad lobe (the face's own slow unevenness) that lays the saturated body of the blaze, and a narrow one
-// (the polish) that is its pale heart. The cladding warps slowly over many plates, which is all that moves its tone;
-// a plate shows by its hairline joints, a catch on a chamfer here and there, and a few plates a step off. The polish
-// also mirrors the land's pale lip low on the face, a sharp line broken by a hair at each joint. The face turned from
-// the moon mirrors the night, lighter toward its foot, a soft long sheen of the horizon's glow, and low down the belt
-// of trees and the land's strip before it, blurred. The front arris turns up to a light high overhead (uZen) as one
-// pale line; the outlines and the capstone's border are quiet. The cursor is mirrored as a tall thin streak up the
-// slope, paler than what it crosses with a touch of dark beside it, shifted plate by plate.
+// face: a broad lobe (the face's own slow unevenness) that lays the blaze over most of the face, and a narrower one
+// (the polish) that is its pale heart, low on the face, with a fall from it the eye can follow. The face is clad in
+// long unequal sheets in courses of one to three rows; the cladding warps slowly over many sheets, which is all that
+// moves their tone; the long seams lead, catching the light as fine bright lines more often than they show dark, and
+// most upright joints are closed out of sight. The face toward the moon is a mirror of two fields: under one sharp,
+// slightly bowed line it mirrors the bright, brightest just under the line, and over it the night sky, a deep
+// saturated gold; low on it the land's lit edge, as a band a little warmer. The face turned from the moon is near
+// black at its top and mirrors one broad dim band of the horizon's glow, two towers of the city dark and upright
+// against it with four windows lit, and low down the belt of trees as one sharp dark band. The capstone is one flat
+// polished stone with the same two fields under and over its own mirrored horizon. The front arris turns up to a
+// light high overhead (uZen) as one pale line; the outlines and the capstone's border are quiet. The cursor is
+// mirrored as one short streak on each flat face, upright as the view has it and tapered at both ends, which slides
+// across the face as the pointer moves anywhere over the top of the world.
 // How much a place mirrors is then given its color, as polished gold gives it: deep where it mirrors little, richest
 // through its middle tones, and paling toward pale gold only where it mirrors much.
 
@@ -21,6 +26,13 @@ const f = (v: number): string => v.toFixed(5);
 const v2 = (a: readonly number[]): string => `vec2( ${f(a[0])}, ${f(a[1])} )`;
 const HALF = PYRAMID.base / 2, TALL = PYRAMID.tall, SLANT = Math.hypot(HALF, TALL);
 const SLOPE = Math.atan2(TALL, HALF);
+const AX = standing(PYRAMID.x, PYRAMID.z, WORLD.top, PYRAMID.turn);
+// How far across the face turned from the moon a line runs for each unit up it, to be upright as the view has it: what
+// it mirrors of the city stands upright there, and so does the cursor's streak. Up the face's own slope they read as
+// gashes, or as a third arris.
+const UPRIGHT = -((HALF / TALL) * AX.x[0] + AX.y[0]) / AX.z[0];
+// The same on the face toward the moon.
+const UPRIGHT_LIT = ((HALF / TALL) * AX.z[0] - AX.y[0]) / AX.x[0];
 // The angle between two neighbouring faces' normals.
 const TURN = Math.acos(HALF ** 2 / (HALF ** 2 + TALL ** 2));
 const MOON = (() => { const l = Math.hypot(...MOONWARD); return MOONWARD.map((v) => v / l); })();
@@ -36,52 +48,79 @@ const C = FORM.casing;
 export const NIGHT = {
   // How each stone is laid, as tilts of its normal across the face and up it, in radians. The plates' kick: their
   // foot stands out so they face a little down the slope, and a hair toward the front arris, which turns them to the
-  // moon's half way direction as the view has it (-0.033 across, -0.287 up, measured from the plan with the moon at 22 degrees). It is laid off
+  // moon's half way direction as the view has it (0.018 across, -0.366 up at the heart, worked out from the plan as it
+  // is: PYRAMID's turn and slope and MOONWARD; it must be worked out again when any of them changes). It is laid off
   // within `clear` of an arris (`cap` on the capstone) and `top` under the reveal, where the plates meet the arris
   // stones flush. Then the face's bow: so much tilt for each unit from the face's heart, across and up the slope;
   // the heart, across and up; and the capstone's own bow, which is a polished stone of its own.
-  kick: { at: [-0.033, -0.287], clear: [0.3, 1.6], cap: [0.6, 3.5], top: 2.5 },
-  bow: { per: [0.0006, 0.0018], heart: [6, 20], cap: 0 },
-  // How each plate lies off the face, steady across it: the cladding's slow warp, a noise over cells `cells` plates
-  // across and courses up, by up to `warp`; each plate's own by up to `plate`; and a share `share` of plates a clear
+  kick: { at: [0.018, -0.355], clear: [0.3, 1.6], cap: [0.6, 3.5], top: 2.5 },
+  bow: { per: [0.0006, 0.0018], heart: [6, 25], cap: 0 },
+  // How each sheet lies off the face, steady across it: the cladding's slow warp, a noise over cells `cells` sheets
+  // across and rows up, by up to `warp`; each sheet's own by up to `plate`; and a share `share` of sheets a clear
   // step off by `odd`. Kept this small the face reads as one sheet first: a plate a step off its neighbours in the
   // blaze read as a patchwork.
-  tilt: { warp: 0.016, cells: [6, 12], plate: 0.0011, odd: 0.0055, share: 0.035 },
+  // At 0.016 the warp moved what the deep face mirrors far off by several units from sheet to sheet, and the face read
+  // as planks.
+  tilt: { warp: 0.004, cells: [6, 12], plate: 0.0009, odd: 0.003, share: 0.035 },
   // The moon's highlight, GGX's lobe at two roughnesses: the broad body of the blaze and its narrow pale heart, each
   // with how bright at its peak, and the heart's lobe raised to a power so its edge falls off faster than GGX's long
-  // skirt (with it the heart was a soft round spot); how much each plate's polish differs; the share of the moon seen (baked) over which
-  // it comes on; and how much brighter the capstone's polish takes it.
-  moon: { body: { rough: 0.5, power: 1.05 }, heart: { rough: 0.34, power: 2.2, sharp: 2.2 }, vary: 0.03, seen: [0.15, 0.7], cap: 1.35 },
+  // skirt (with it the heart was a soft round spot); how much each sheet's polish differs; the share of the moon seen
+  // (baked) over which it comes on; and how much brighter the capstone's polish takes it. The heart sits low on the
+  // face (bow.heart) and the grade's pale begins early (LOOK.grade in ../pyramid.ts), so two thirds of the face is pale
+  // gold and only the heart reaches the palette's pale: the brief's blaze, not a clipped plateau.
+  moon: { body: { rough: 0.5, power: 1.05 }, heart: { rough: 0.34, power: 2.2, sharp: 2.2 }, vary: 0.012, seen: [0.15, 0.7], cap: 1.35 },
   lit: {
+    // The face toward the moon is a mirror of two fields: under one sharp, slightly bowed line it mirrors the bright
+    // (the moon's light and the lit land), over it the night sky above the land, a deep gold. The line: how far off
+    // what it mirrors stands, its height at the face's middle, how much it falls for each unit across toward the
+    // right, how much it bows up at the middle, and how much it wanders. Over it: the sky's level just over the line
+    // and toward the apex, over how far up the one turns to the other, and the share of the moon's highlight it
+    // keeps. Under it the horizon is brightest: so much more, falling off over so far. And how much of the body's
+    // saturated color the sky keeps where the grade would turn it toward the middle tones.
+    sky: { D: 60, mid: 43, slope: -0.2, bow: 3.5, wander: 0.8, glow: 0.42, top: 0.1, rise: 26, leak: 0.07, lip: [0.9, 7], rich: 0.75 },
     // The night the face toward the moon mirrors where the moon's highlight is not: its level at the foot and at the
     // apex, and how much lighter it is toward the moon, at the face's right.
     night: { D: 520, low: 0.05, top: 0.075, moonward: 0.3 },
     // The land's lit edge and the pale ground before the pyramid, mirrored low on the face as a band under a crisp
     // upper edge: how far off the edge stands, how high it is mirrored at the face's left and how much it rises
-    // across it, how much brighter the band is than what is above it, and how much warmer (the color it is mixed
-    // toward, as a share of each channel, and how far).
-    land: { D: 45, at: 9, rise: 0.06, power: 0.3, warm: [1, 0.93, 0.78], warmth: 0.75 },
+    // across it, how much the band adds to what the face mirrors, and how much warmer (the share by which it pales
+    // less for its level).
+    land: { D: 45, at: 9, rise: 0.06, power: 0.8, warmth: 0.35 },
   },
   dark: {
     // The night: its level at the foot of the face and at its top (each piece, the body and the capstone, its own),
     // which is what the satin gold mirrors there: lighter toward the horizon low down.
-    night: { D: 520, low: 0.08, top: 0.018 },
-    // The horizon's glow mirrored as a soft long sheen across the face: how high it crosses the face's left, how
-    // much it falls across it, how wide, and how much it lifts the night.
-    sheen: { D: 520, at: 34, rise: -0.25, wide: 13, power: 1.8 },
-    // The belt of trees before the face, mirrored low on it and blurred by the gold: how far off, how far apart the
-    // crowns stand, how high their tops are mirrored, their radius, how soft, and how bright, the darkest to the
-    // lightest.
-    trees: { D: 45, gap: 8, tall: [6, 12], r: [3.6, 6], soft: 2.6, power: [0.13, 0.26] },
+    night: { D: 520, low: 0.05, top: 0.018 },
+    // The horizon's glow mirrored as one broad dim band across the face, which must read at the page's size: how high
+    // it crosses the face's left, how much it falls across it, how wide, and how much it lifts the night.
+    sheen: { D: 520, at: 40, rise: -0.15, wide: 10, power: 3.2 },
+    // The belt of trees before the face, mirrored low on it as one sharp dark band with the crowns' round tops along
+    // its upper edge: how far off, how far apart the crowns stand, how high their tops are mirrored, their radius,
+    // and how dark. Blurred, they read as dirt.
+    trees: { D: 45, gap: 5.5, tall: [5.5, 9.5], r: [2.4, 4.4], belt: 4.2, level: 0.016 },
+    // Two towers of the city behind, mirrored as dark outlines against the horizon's glow, and four of their windows
+    // lit: how far off, each tower (across from, across to, its top, and a narrower top: from, to, how high), each
+    // window (across, up), all across as at the face's foot, for each stands upright (UPRIGHT), a window's size, how
+    // much a tower dims what is behind it, and how bright a window is, the dimmest to the brightest.
+    city: {
+      D: 160,
+      towers: [[-13, -7, 42, -11, -9, 47], [22.5, 26.5, 30, 23.6, 25.4, 32.5]],
+      windows: [[-11.2, 36.5], [-8.5, 39.6], [-10, 30.2], [24.5, 26.6]],
+      win: [0.75, 1.05],
+      dim: 0.3,
+      light: [0.45, 0.85],
+    },
   },
   // The land's pale strip at the foot, mirrored in the lowest courses of each face: how tall, how bright on the face
   // toward the moon and on the other.
-  strip: { tall: 2.2, lit: 0.3, dark: 0.16 },
+  strip: { tall: 2.2, lit: 0.1, dark: 0.08 },
   // The cursor's light, mirrored as one straight streak up the face: how far across from the face's middle it can
   // be drawn (where the cursor's ray meets the face's plane is drawn in toward the middle by a tanh of this), the
   // heights its middle is held between, how far up and down it runs (the height at which it is down to a third),
-  // how wide it is, how bright on the face toward the moon and on the other, and how far from an arris it is gone.
-  glint: { reach: 56, rest: [16, 60], long: 34, wide: 1.1, power: [2.2, 0.7], clear: [1.5, 5] },
+  // how wide it is at its middle (it tapers to nothing at both ends), how bright on the face toward the moon and on
+  // the other, and how far from an arris it is gone. The face it lies on is the face's own flat plane: found with the
+  // kicked and bowed normal, where the cursor's ray met it moved from pixel to pixel and the streak bowed.
+  glint: { reach: 56, rest: [18, 56], long: 17, wide: 3.4, power: [1.6, 0.6], clear: [2, 6] },
   // The front arris's line: how much dimmer it is high up than low, and how much it wavers along its length.
   arris: { high: 0.5, waver: 0.35 },
   // The left hand outline's edge light, kept to almost nothing: the city's glow along the horizon behind it, how
@@ -91,7 +130,7 @@ export const NIGHT = {
   // (over what share of a hash it comes in); over how many pixels a row must be for the seams to show at all; and the
   // catch of light on each sheet's upper chamfer, on the face toward the moon and on the other, and the share of
   // sheets on which it is full.
-  joint: { line: 0.3, plate: 0.35, shows: [0.62, 0.96], fade: [3, 6], catch: [0.4, 0.06], catchShare: 0.6 },
+  joint: { line: 0.3, plate: 0.35, shows: [0.62, 0.96], fade: [3, 6], catch: [0.4, 0.035], catchShare: 0.6 },
   // How much each plate's mirrored light differs from its neighbours'.
   plate: 0.008,
   // The foot course's bevel and the shadow line over it, the neck in the reveal, and the body's level top round the
@@ -99,9 +138,12 @@ export const NIGHT = {
   edges: { bevel: 1.1, shadow: 0.55, shadowTall: 0.45, neck: 0.012, ledge: [0.12, 0.6] },
   // The capstone's border, kept to almost nothing: a faint groove so far in from its edges, how dark at most. Then its
   // face toward the moon: the moon's light at its foot and at its apex, as a share of what the stone's polish gives,
-  // and the band of the horizon's glow it mirrors: how high over the capstone's foot at its middle, how much it rises
-  // across, how wide, and how bright.
-  cap: { border: 2.8, groove: 0.2, dark: 0.35, rake: [0.75, 1.25], band: { at: 9, rise: -0.12, wide: 3.2, power: 1.4 } },
+  // and the horizon it mirrors, edge to edge: a sharp upper line so high over the capstone's foot at its middle,
+  // rising so much across, with the glow under it falling off over `wide` at the left and `wideR` at the right, as
+  // bright as `power` at the left and `powerR` at the right, and over the line the night sky, as on the face under it:
+  // its level just over the line and toward the apex, and over how far. A band of one width and brightness laid on
+  // the stone read as tape.
+  cap: { border: 2.8, groove: 0.2, dark: 0.35, rake: [0.6, 1.05], band: { at: 9.5, rise: -0.1, wide: 0.9, wideR: 3.4, power: 0.7, powerR: 2.2 }, sky: [0.5, 0.2, 9] },
 };
 export type Night = typeof NIGHT;
 
@@ -165,7 +207,7 @@ uniform vec3 uRough;
 uniform float uContact;
 uniform float uMoonSpec;
 uniform mat3 uToWorld;
-float pSoft = 1.0, pWarm = 0.0, pEdge = 1e3, pArris = 0.0, pLand = 0.0;
+float pSoft = 1.0, pWarm = 0.0, pEdge = 1e3, pArris = 0.0, pLand = 0.0, pSky = 0.0;
 float pyrHash( vec2 p ) {
 	vec3 q = fract( vec3( p.xyx ) * vec3( 0.1031, 0.1030, 0.0973 ) );
 	q += dot( q, q.yzx + 33.33 );
@@ -212,34 +254,54 @@ float pyrLand( vec2 q, vec2 s, float fB, float fT ) {
 	float fp = max( fB + ${f(L.land.D)} * fT, 1e-4 ), d = k.y - ( ${f(L.land.at)} + ${f(L.land.rise)} * ( k.x + ${f(HALF)} ) + 1.2 * pyrNoise( vec2( k.x / 31.0, 4.0 ) ) );
 	return clamp( 0.5 - d / fp, 0.0, 1.0 );
 }
+// The face toward the moon's two fields: how much of the pixel lies over the mirrored line between the bright and
+// the night sky, and in d how far over it (under it, less than 0). fB is how far a pixel spans on the face and fT how
+// far its ray turns, so the line is one pixel crisp at any size; each sheet's own tilt moves it by a hair.
+float pyrSky( vec2 q, vec2 s, float fB, float fT, out float d ) {
+	vec2 k = PYR_AT( ${f(L.sky.D)} );
+	float u = clamp( k.x / ${f(HALF)}, - 1.0, 1.0 );
+	d = k.y - ( ${f(L.sky.mid)} + ${f(L.sky.slope)} * k.x + ${f(L.sky.bow)} * ( 1.0 - u * u ) + ${f(L.sky.wander)} * ( pyrNoise( vec2( k.x / 17.0, 6.0 ) ) - 0.5 ) );
+	return clamp( 0.5 + d / max( fB + ${f(L.sky.D)} * fT, 1e-4 ), 0.0, 1.0 );
+}
+// A box at c, half size h, as a share of the pixel f wide that it covers.
+float pyrBox( vec2 p, vec2 c, vec2 h, float f ) {
+	vec2 e = abs( p - c ) - h;
+	return clamp( 0.5 - max( e.x, e.y ) / max( f, 1e-4 ), 0.0, 1.0 );
+}
 // What the face turned from the moon mirrors: the night, lighter toward the horizon low on each piece (lo and hi are
-// the piece's foot and top), the horizon's glow as a soft long sheen across it, and low down the trees before it and
-// the land's strip, all blurred by the satin gold.
-float pyrDarkNight( vec2 q, vec2 s, float lo, float hi ) {
+// the piece's foot and top), the horizon's glow as a soft long sheen across it, two towers of the city dark against
+// that glow with a few of their windows lit, and low down the belt of trees as one sharp dark band and the land's
+// strip under it. fB and fT as for pyrSky: what is mirrored sharp is one pixel crisp at any size.
+float pyrDarkNight( vec2 q, vec2 s, float lo, float hi, float fB, float fT ) {
 	vec2 k = PYR_AT( ${f(D.night.D)} );
 	float h = clamp( ( k.y - lo ) / max( hi - lo, 1.0 ), 0.0, 1.0 );
 	float l = mix( ${f(D.night.low)}, ${f(D.night.top)}, smoothstep( 0.0, 1.0, h ) );
 	vec2 g = PYR_AT( ${f(D.sheen.D)} );
 	float sd = ( g.y - ( ${f(D.sheen.at)} + ${f(D.sheen.rise)} * ( g.x + ${f(HALF)} ) ) ) / ${f(D.sheen.wide)};
 	l *= 1.0 + ${f(D.sheen.power)} * exp( - sd * sd ) * ( 0.75 + 0.25 * pyrNoise( vec2( g.x / 23.0, 5.0 ) ) );
-	// The crowns, each a round top, the nearest of three, over the belt of their own shade, all blurred by the satin.
+	float base = l;
+	if ( hi < ${f(TALL - 1)} ) {
+		vec2 t = PYR_AT( ${f(D.city.D)} );
+		t.x -= ${f(UPRIGHT)} * t.y;
+		float ft = fB + ${f(D.city.D)} * fT, tower = 0.0;
+		${D.city.towers.map((w) => `tower = max( tower, max( pyrBox( t, vec2( ${f((w[0] + w[1]) / 2)}, ${f(w[2] / 2)} ), vec2( ${f((w[1] - w[0]) / 2)}, ${f(w[2] / 2)} ), ft ), pyrBox( t, vec2( ${f((w[3] + w[4]) / 2)}, ${f(w[5] / 2)} ), vec2( ${f((w[4] - w[3]) / 2)}, ${f(w[5] / 2)} ), ft ) ) );`).join('\n\t\t')}
+		l = mix( l, l * ${f(D.city.dim)}, tower );
+		${D.city.windows.map((w, i) => `l = mix( l, ${f(D.city.light[0] + ((D.city.light[1] - D.city.light[0]) * ((i * 7) % 4)) / 3)}, pyrBox( t, vec2( ${f(w[0])}, ${f(w[1])} ), vec2( ${f(D.city.win[0] / 2)}, ${f(D.city.win[1] / 2)} ), ft ) );`).join('\n\t\t')}
+	}
+	// The crowns, each a round top, the nearest of three, on the belt of their trunks' shade: one sharp dark band.
 	vec2 p = PYR_AT( ${f(TR.D)} );
-	float c0 = floor( p.x / ${f(TR.gap)} ), crown = 0.0, lit = 0.0;
+	float fp = fB + ${f(TR.D)} * fT, c0 = floor( p.x / ${f(TR.gap)} ), e = p.y - ${f(TR.belt)} - 0.8 * pyrNoise( vec2( p.x / 9.0, 1.0 ) );
 	for ( int i = - 1; i <= 1; i++ ) {
 		float c = c0 + float( i ), cx = ( c + 0.15 + 0.7 * pyrHash( vec2( c, 3.3 ) ) ) * ${f(TR.gap)};
 		float r = mix( ${f(TR.r[0])}, ${f(TR.r[1])}, pyrHash( vec2( c, 5.9 ) ) );
 		float top = mix( ${f(TR.tall[0])}, ${f(TR.tall[1])}, pyrHash( vec2( c, 8.1 ) ) );
-		float e = length( vec2( p.x - cx, ( p.y - ( top - r ) ) * 1.2 ) ) - r;
-		float on = 1.0 - smoothstep( - ${f(TR.soft)}, ${f(TR.soft)}, e );
-		float lc = mix( ${f(TR.power[0])}, ${f(TR.power[1])}, pyrHash( vec2( c, 11.7 ) ) ) * ( 0.75 + 0.25 * smoothstep( top - 2.0 * r, top, p.y ) );
-		lit = on > crown ? lc : lit;
-		crown = max( crown, on );
+		e = min( e, length( vec2( p.x - cx, ( p.y - ( top - r ) ) * 1.15 ) ) - r );
 	}
-	float belt = 1.0 - smoothstep( ${f(TR.tall[0] * 0.55)} - ${f(TR.soft)}, ${f(TR.tall[0] * 0.55)} + ${f(TR.soft)}, p.y + 1.5 * pyrNoise( vec2( p.x / 11.0, 1.0 ) ) );
-	float tree = max( crown, belt ), shade = mix( ${f(TR.power[0] * 0.8)}, lit, crown / max( tree, 1e-4 ) );
+	e += 0.45 * ( pyrNoise( p * 0.9 ) - 0.5 ) + 0.25 * ( pyrNoise( p * 2.3 + 7.0 ) - 0.5 );
+	float tree = clamp( 0.5 - e / max( fp, 1e-4 ), 0.0, 1.0 );
 	float strip = ${f(N.strip.dark)} * exp( - max( p.y, 0.0 ) / ${f(N.strip.tall)} ) * ( 0.8 + 0.2 * pyrNoise( vec2( p.x / 13.0, 9.0 ) ) );
-	float under = mix( l, shade, tree ) + strip;
-	pWarm = clamp( ( under - l ) / max( under, 1e-4 ), 0.0, 1.0 );
+	float under = mix( l, ${f(TR.level)}, tree ) + strip;
+	pWarm = clamp( ( under - base ) / max( under, 1e-4 ), 0.0, 1.0 );
 	return under;
 }
 // The light high overhead that the rounded front arris turns to, the glow along the horizon behind that the rounded
@@ -384,7 +446,7 @@ float pLevel = 0.0;
 	else if ( ledge ) pLevel = mix( ${f(E.ledge[0])}, ${f(E.ledge[1])}, smoothstep( - 0.4, 0.6, rW.x ) );
 	else if ( bevel ) pLevel = 0.03 + ${f(E.bevel)} * smoothstep( 0.45, 0.95, rW.y );
 	else if ( toMoon ) pLevel = pyrLitNight( q, s );
-	else pLevel = vKind > 0.875 ? pyrDarkNight( q, s, ${f(capFoot)}, ${f(TALL)} ) : pyrDarkNight( q, s, 0.0, ${f(FORM.cap.from)} );
+	else pLevel = vKind > 0.875 ? pyrDarkNight( q, s, ${f(capFoot)}, ${f(TALL)}, fB, fT ) : pyrDarkNight( q, s, 0.0, ${f(FORM.cap.from)}, fB, fT );
 	// The land's pale strip at the foot, in the lowest courses of the face toward the moon, and the land's lit edge.
 	if ( stone && vKind < 0.1 && toMoon ) {
 		pLand = pyrLand( q, s, fB, fT );
@@ -397,11 +459,21 @@ float pLevel = 0.0;
 	#ifdef WORLD_BAKED
 		seen = smoothstep( ${f(M.seen[0])}, ${f(M.seen[1])}, wLight.y );
 	#endif
+	float lobe = 0.0;
 	if ( ! neck ) {
 		float c = dot( nW, hW ), polish = ( vKind > 0.875 ? ${f(M.cap)} : 1.0 ) * smoothstep( 0.0, 0.2, dot( nW, mW ) ) * seen;
-		pLevel += polish * ( ${f(M.body.power)} * pyrLobe( c, ${f(M.body.rough)} * pSoft ) + ${f(M.heart.power)} * pow( pyrLobe( c, ${f(M.heart.rough)} * pSoft ), ${f(M.heart.sharp)} ) );
+		lobe = polish * ( ${f(M.body.power)} * pyrLobe( c, ${f(M.body.rough)} * pSoft ) + ${f(M.heart.power)} * pow( pyrLobe( c, ${f(M.heart.rough)} * pSoft ), ${f(M.heart.sharp)} ) );
+		pLevel += lobe;
 	}
-	pLevel *= 1.0 + ${f(L.land.power)} * pLand;
+	pLevel += ${f(L.land.power)} * pLand;
+	// The face toward the moon in two fields: the bright under the mirrored line, brightest just under it where the
+	// horizon is, and the night sky over it, a deep gold that darkens toward the apex.
+	if ( stone && vKind < 0.1 && toMoon ) {
+		float d, above = pyrSky( q, s, fB, fT, d );
+		pSky = above;
+		float sky = mix( ${f(L.sky.glow)}, ${f(L.sky.top)}, smoothstep( 0.0, ${f(L.sky.rise)}, d ) ) * ( 0.9 + 0.2 * pyrNoise( vec2( q.x / 21.0, 8.0 ) ) ) + ${f(L.sky.leak)} * lobe;
+		pLevel = mix( pLevel + ${f(L.sky.lip[0])} * exp( min( d, 0.0 ) / ${f(L.sky.lip[1])} ), sky, above );
+	}
 	// The capstone's face toward the moon is one flat polished stone: the moon's light rakes along its upper slope, so
 	// it is brightest toward the apex, and it mirrors one band of the horizon's glow with sharp edges. A highlight in
 	// the middle of its face read as a sphere's, or plastic.
@@ -409,7 +481,11 @@ float pLevel = 0.0;
 		float hc = clamp( ( vQ.y - ${f(capFoot)} ) / ${f(TALL - capFoot)}, 0.0, 1.0 ), fy = max( fwidth( vQ.y ), 1e-4 );
 		pLevel *= mix( ${f(K.rake[0])}, ${f(K.rake[1])}, smoothstep( 0.15, 0.95, hc ) );
 		float yb = ${f(capFoot)} + ${f(K.band.at)} + ${f(K.band.rise)} * q.x;
-		pLevel += ${f(K.band.power)} * pyrLine( vQ.y - yb, ${f(K.band.wide)}, fy );
+		float hw = ${f(HALF)} * ( 1.0 - vQ.y / ${f(TALL)} ), r = smoothstep( - hw, hw, q.x ), db = yb - vQ.y;
+		float glow = mix( ${f(K.band.power)}, ${f(K.band.powerR)}, r ) * exp( - max( db, 0.0 ) / mix( ${f(K.band.wide)}, ${f(K.band.wideR)}, r ) );
+		float sky = mix( ${f(K.sky[0])}, ${f(K.sky[1])}, smoothstep( 0.0, ${f(K.sky[2])}, - db ) ) + ${f(L.sky.leak)} * lobe;
+		pSky = clamp( 0.5 - db / fy, 0.0, 1.0 );
+		pLevel = mix( pLevel + glow, sky, pSky );
 	}
 	// The front arris's line is brightest low and wavers along its length as a polished round does: of one weight from
 	// top to foot it read as a drawn stroke. The outlines are kept faint, and uneven.
@@ -424,12 +500,13 @@ float pLevel = 0.0;
 		// meets the face's plane, across and up, is drawn in toward the face's middle (as a far light's reflection
 		// moves less than the light), so the streak is on the face wherever the pointer is over the top of the world,
 		// and slides across it as the pointer moves. Nothing of a sheet's tilt moves it: it is the face's own.
-		float gk = dot( n0, vRay ), gt = dot( n0, geometryPosition ) / ( abs( gk ) > 1e-6 ? gk : 1e-6 );
+		vec3 nF = normalize( ( viewMatrix * vec4( uToWorld * nL, 0.0 ) ).xyz );
+		float gk = dot( nF, vRay ), gt = dot( nF, geometryPosition ) / ( abs( gk ) > 1e-6 ? gk : 1e-6 );
 		vec3 gOff = ( vec4( geometryPosition - vRay * gt, 0.0 ) * viewMatrix ).xyz * uToWorld / uUnit;
 		vec2 hit = q - vec2( dot( gOff, tA ), dot( gOff, tU ) * ${f(TALL / SLANT)} );
 		float gx = ${f(G.reach)} * tanh( hit.x / ${f(G.reach)} ), gy = clamp( hit.y, ${f(G.rest[0])}, ${f(G.rest[1])} );
 		float fg = max( fB, 1e-3 ), along = exp( - pow( ( vQ.y - gy ) / ${f(G.long)}, 2.0 ) );
-		float core = pyrLine( q.x - gx, ${f(G.wide)}, fg );
+		float gd = q.x - gx - ( toMoon ? ${f(UPRIGHT_LIT)} : ${f(UPRIGHT)} ) * ( vQ.y - gy ), gw = ${f(G.wide)} * sqrt( along ), core = pyrLine( gd, gw, fg ) * ( 0.55 + 0.45 * exp( - gd * gd / max( 0.09 * gw * gw, 1e-4 ) ) );
 		float on = step( 0.0, gt ) * min( uGlint.r, 1.0 ) * along * smoothstep( ${f(G.clear[0])}, ${f(G.clear[1])}, pEdge );
 		pLevel += on * core * ( toMoon ? ${f(G.power[0])} : ${f(G.power[1])} );
 	}
@@ -463,9 +540,11 @@ float pLevel = 0.0;
 		lv *= 1.0 - ${f(K.dark)} * pyrNoise( vec2( ( s + y ) / 5.0, 17.0 ) ) * pyrLine( d - ${f(K.border)}, ${f(K.groove)}, fd );
 	}
 	vec3 deep = mix( mix( uDeepC, uBodyC, smoothstep( uGradeLo.x, uGradeLo.y, lv ) ), uWarmC, pWarm );
-	vec3 c = mix( mix( deep, uMidC, smoothstep( uGradeAt.x, uGradeAt.y, lv ) ), uPaleC, smoothstep( uGradeAt.z, uGradeAt.w, lv ) ) * lv;
-	// The land's lit edge and pale ground mirrored low on the face toward the moon are warmer than the night's blaze.
-	outgoingLight = c * mix( vec3( 1.0 ), vec3( ${L.land.warm.map(f).join(', ')} ), pLand * ${f(L.land.warmth)} );
+	// The land's lit edge and pale ground mirrored low on the face toward the moon are warmer than the night's blaze:
+	// they pale less for their level. Scaling the color by channel did nothing there, as the tone curve pales it again.
+	// The night sky over the line in the face toward the moon is a deep, saturated gold: it keeps the body's color.
+	vec3 c = mix( mix( deep, uMidC, smoothstep( uGradeAt.x, uGradeAt.y, lv ) * ( 1.0 - ${f(L.sky.rich)} * pSky ) ), uPaleC, smoothstep( uGradeAt.z, uGradeAt.w, lv ) * ( 1.0 - ${f(L.land.warmth)} * pLand ) ) * lv;
+	outgoingLight = c;
 }`;
   return { PARS, COLOR, ROUGH, NORMAL, ENV, GRADE };
 }
