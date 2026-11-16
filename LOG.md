@@ -2,6 +2,48 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · The sixth picture: the debris is good, the underside did not change, and a second prompt (Fable, web chat)
+
+**What Brandon said**
+
+- "It doesn't [look] like [it] updated the bottom much at all, but the debris field looks pretty good though."
+
+**What came back, and why**
+
+- Kept as `reference/concept/06-gemini-the-debris-field-he-likes-with-the-underside-barely-changed.jpg`, 1024 by 572.
+- The underside is picture 4's again: a flat cracked wall, the core in front of it, a smooth bowl at the sides. None of the planes asked for.
+- The top was not kept either: the world is smaller in the frame, with fewer towers and a small gold pyramid.
+- The debris is what was asked for and reads well: a thin tilted ring that passes in front of the planet and behind it, a few great pieces, one with towers and trees on it.
+- **Why:** an edit keeps the shapes that are in the picture it is given. Picture 4's underside is the cracked wall, so the wall stayed. The prompt was 1265 words and asked for changes to the top, a whole new underside, debris, light and color at once, and what was easy to add (debris, a gold pyramid) is what got done.
+
+**What that changes**
+
+- Edit the picture whose underside is already nearest to what he wants. That is picture 5, his favorite for the tear and the core: a deep hollow under an overhanging roof, great slabs, the bottom open. What it lacks is what he asked for at 12:25 and 17:46: a larger opening, sides that do not end smooth, sharper cracks, and a core that is a clear ball and not a burst of fire.
+- Keep an edit prompt short and to one part of the picture. Name what stays first.
+- The top and the underside do not have to come from one picture. Picture 4 is the top, picture 6 the debris, and the underside comes from the next one.
+
+**The second prompt, as given, to run with picture 5 attached**
+
+```
+Edit the attached image. Change only the torn underside of the planet. Keep the city, the land on top, the loose rocks floating under the planet, the camera and the framing exactly as they are.
+
+1. Make the torn opening bigger. About a third wider and a third deeper, so that close to half of the planet's front is gone. Keep what makes it good now: the deep hollow, the overhanging roof, the great angular slabs of rock. It must stay a deep hollow you look into. Do not turn it into a flat wall.
+
+2. No smooth edges anywhere. The smooth outer shell at the left and the right now ends in a clean curve. Break it. Where the shell meets the opening it is snapped off in big jagged steps, with long splinters of rock left hanging. Tear more away on the right than on the left, so the two sides do not match.
+
+3. Sharper cracks. The rock is in huge flat-faced blocks with sharp edges, split by deep cracks that are black inside.
+
+4. A new core. Replace the burst of fire with a clean sphere of light, like a small sun, hanging free in the middle of the hollow and touching nothing. Grained surface, pale gold at its center, deep orange at its edge, a hard sharp outline. Its light falls clearly on the rock round it, brightest on the nearest faces, and every slab throws a hard black shadow away from it. No fire, no flames, no lava, no smoke, no haze.
+
+5. The stream under the core becomes one thin straight line of the same light, falling out of the bottom of the frame. Light, not liquid.
+
+Colors stay warm: near black, browns, bronze, orange and pale gold. No blue, no green, no grey, no white.
+```
+
+**Not yet answered by him**
+
+- The fixed light on the hero with the cursor as a glint, that picture 4 replaces the earlier lines where they differ, and that the far side of the planet stays.
+
 ## 2026-11-15 · A prompt for Gemini for the underside, and his thought on a fixed light (Fable, web chat)
 
 **What Brandon said**
