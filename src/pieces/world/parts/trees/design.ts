@@ -36,14 +36,14 @@ export function tileAt(tile: number): { u: number; v: number; du: number; dv: nu
 // card it is drawn on (a third of the first rounds' leaf), so a crown is a mass of small leaves, never shingles.
 export const LEAF = 0.05;
 // How wide a lump's card is against its lump, and how long a spray's card is against the lump it stands from.
-export const CARD = { lump: 1.16, spray: 0.72 } as const;
+export const CARD = { lump: 1.16, spray: 0.74 } as const;
 
 // The crown, in its own units: how far over the ground its lowest leaves are, so a short trunk shows under it as
 // picture 9's do.
-export const CROWN = { clear: 0.24 } as const;
+export const CROWN = { clear: 0.17 } as const;
 
 // The shade a tree lays on the ground: a soft card from under the crown out along the ground away from the moon,
 // so the belt sits dark at its foot, and darkest round the trunk's foot. How far it starts behind the trunk and how
 // far it reaches past it, and how wide it is to each side, in crown units. Each tree's card is cut short where the
 // land ends.
-export const SHADE = { back: 0.9, reach: 3.2, wide: 1.5, up: 0.04 } as const;
+export const SHADE = { back: 1.2, reach: 2.6, wide: 1.25, up: 0.04 } as const;

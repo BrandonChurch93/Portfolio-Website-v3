@@ -14,19 +14,20 @@ import { AIR, JITTER, treeDepth, treeMaterial, treeUniforms } from './trees/mate
 // of which a tree in front of it hides is drawn with the cheap model. A tree whose ground the tear took is left out.
 
 // The autumn: each shade a mix of two of the palette's colors, how bright a leaf of it is, and how many of the
-// trees wear it. Russet and bronze browns most of all, tan, umber, a dark red brown, a few peach and a few copper.
-// The warm grey takes the orange out of the browns, as picture 9's crowns are brown and peach, not copper.
+// trees wear it. Amber, tan and russet most of all, bronze brown and umber, a few deep red browns and a few paler,
+// yellower crowns, so the belt reads as a wood of different trees. The warm greys take the orange out of the browns.
 const AUTUMN: readonly { mix: readonly [PaletteName, PaletteName, number]; power: number; share: number }[] = [
-  { mix: ['bronze', 'ember', 0.35], power: 1.0, share: 0.2 },
-  { mix: ['bronze', 'text-3', 0.3], power: 1.0, share: 0.18 },
-  { mix: ['copper', 'text-3', 0.35], power: 0.8, share: 0.16 },
-  { mix: ['bronze-deep', 'text-3', 0.25], power: 1.3, share: 0.14 },
+  { mix: ['copper', 'text-3', 0.3], power: 0.82, share: 0.18 },
+  { mix: ['copper-light', 'text-3', 0.4], power: 0.78, share: 0.14 },
+  { mix: ['bronze', 'ember', 0.3], power: 1.0, share: 0.17 },
+  { mix: ['bronze', 'text-3', 0.25], power: 1.0, share: 0.15 },
+  { mix: ['bronze-deep', 'text-3', 0.25], power: 1.3, share: 0.13 },
   { mix: ['ember', 'bronze-deep', 0.4], power: 1.5, share: 0.12 },
-  { mix: ['copper-light', 'text-3', 0.35], power: 0.75, share: 0.1 },
-  { mix: ['copper', 'bronze', 0.4], power: 0.8, share: 0.1 },
+  { mix: ['hot', 'text-2', 0.45], power: 0.6, share: 0.11 },
 ];
-// How much one tree differs from the next of its shade in brightness, in size and in height against its width.
-const DIFFER = { light: 0.16, size: 0.1, tall: [0.84, 1.18] } as const;
+// How much one tree differs from the next of its shade in brightness, in size and in height against its width, and
+// how far it leans (the shear of its height to one side).
+const DIFFER = { light: 0.2, size: 0.1, tall: [0.8, 1.28], lean: 0.09 } as const;
 // Which of the full models a tree in front is, and how many of the trees are each.
 const NEAR: readonly { model: number; share: number }[] = [
   { model: MODELS.indexOf('round'), share: 0.34 },
@@ -131,7 +132,9 @@ export const build: PartFactory = async ({ query }) => {
     // How much of its shade's reach stays on the land.
     let room = 1;
     for (let k = 1; k <= 16; k++) { const t = (k / 16) * SHADE.reach * s; if (within(x + away.x * t, z + away.y * t) < EDGE * s) { room = (k - 1) / 16; break; } }
-    const m = new THREE.Matrix4().compose(new THREE.Vector3(x, g, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), turn), new THREE.Vector3(s, s * tall, s));
+    const la = rnd() * Math.PI * 2, lean = DIFFER.lean * rnd();
+    const m = new THREE.Matrix4().makeTranslation(x, g, z).multiply(new THREE.Matrix4().set(1, Math.cos(la) * lean, 0, 0, 0, 1, 0, 0, 0, Math.sin(la) * lean, 1, 0, 0, 0, 0, 1))
+      .multiply(new THREE.Matrix4().compose(new THREE.Vector3(), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), turn), new THREE.Vector3(s, s * tall, s)));
     byModel[modelOf[i]].push({ m, tone: shade, tree: [rnd(), Math.min(1, behind / BEHIND.full), Math.min(1.2, Math.max(0, cover)), room] });
   });
 

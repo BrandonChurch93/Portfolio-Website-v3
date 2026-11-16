@@ -4,7 +4,7 @@ import { STREAM as PAGE } from '../../../stream/config';
 import { CORE, SOURCE, seeded } from '../layout';
 import type { PartFactory } from '../part';
 import { BALL_FRAG, BALL_VERT, GLASS_FRAG, SHARD_VERT, SOLID_FRAG } from './core/shaders';
-import { ROOT_FRAG, ROOT_VERT, reachOnPage, rootScale, strandsFor } from './core/root';
+import { ROOT_FRAG, ROOT_VERT, rootScale, strandsFor } from './core/root';
 import { shardGeometry, type Moon } from './core/shards';
 
 // The core: the planet's core and the source of the site's stream at once. A ball of the stream's light hanging free
@@ -55,29 +55,28 @@ const GRAIN = {
 // The body under the grain turns the other way about a nearer axis, more slowly.
 const TURN = { axis: new THREE.Vector3(0.18, 1, 0.22).normalize(), rate: 0.012, deep: new THREE.Vector3(-0.3, 1, 0.1).normalize(), deepRate: -0.007 } as const;
 
-// The root of the beam, in units of the world down from the ball's foot unless they say otherwise.
-//   flare0, fall0, flare1, fall1: how far the ribbon is opened at the foot, as two flares gone over those depths, as
-//     picture 9's neck flares into the ball
-//   heart: how much more than the fibres the heart opens with it, which is the bright gathering at the foot, and
-//     heartHug: how far it spreads along the band inside the ball, heartUp: how far over the foot it reaches, and
-//     fan: how much brighter the fibres are where they fan up into the band
-//   beam: half the ribbon's width, in stream units, and hug: how close to the ball's limb its fibres fan up inside it
-//   in: over which shares of the radius the fan comes on inside the ball, and up: how far over the foot it reaches
-//   above: how fast it is gone outside the ball close under it, and how much more slowly for each unit lower, and
-//     floor: the faintest light it lets go
-//   glow: the light that hugs the ribbon on the page, its amount and its width in stream units
-//   foot: the band hot where the beam is rooted: how far in from the edge it reaches, how far round each side, in
-//     radians, and how far out; and gather, how bright it is before the stream sets off and after
-//   quiet: before the stream has set off, over how far below the foot its lip fades and how bright, against the beam
-//   over: from which amount to which the root's light takes the place of the band's inside the ball
-//   hand: where the page's stream takes over, in the board's units (STREAM.hero.hand), and give: over how much of
-//     that the root is given up. The page's route has begun to sway by then and the two lines drew apart
-//   surge: as it sets off, the light that runs down it: how much, how fast in units a second, how long
-//   long: how far down the plane it is drawn on reaches
-//   energy: how much the page's leading end brightens the ribbon near it, as the page does at a middling energy
-const ROOT = {
-  flare0: 0.45, fall0: 7, flare1: 0.4, fall1: 26, heart: 2.2, heartHug: 0.35, heartUp: 9, fan: 0.8, beam: 15, hug: 0.92, in: [0.8, 0.93], up: 30, above: [1.5, 1.4], floor: 0.008,
-  glow: [0.16, 4.5], quiet: 3, foot: [7, 0.36, 1.5], gather: [1.0, 1.35], over: [0.12, 0.9], hush: 0.72, hand: PAGE.hero.hand, give: 0.65, surge: [0.7, 210, 18], long: 130, energy: 1,
+// The neck of the beam, in units of the world down from the ball's foot unless they say otherwise. Picture 9's
+// neck, as the root of a beam shot down out of the ball with force, drawing itself thin.
+//   foot: half its width where it leaves; rib: half the page's ribbon's, which it comes down to by long, along a
+//     taper that goes as this power of what is left of the way
+//   fillet: how it flares where the band turns down into it: it is wider by the first over the depth and the second
+//   meet: how far over the foot the fillet has met the ball's outline, over which nothing of it is drawn outside the ball
+//   drop: how far it hangs before the stream sets off; tip: how long its point is, at most, and round: how round
+//   body: over which depths its cream body gives way to the ribbon alone, and a: how bright the body is at its heart;
+//     soft: how its light falls toward its edges
+//   spread: how wide, in half widths, the stream's fibres lie when they are not spread, and heartOpen: how much the
+//     heart opens with them; fibre: how much of them there is; lanes: how much the body is gathered along them, and
+//     run: the light that runs down it: how much, its length in units and how fast
+//   up: how far over the foot it reaches inside the ball; give: over which depths it is given over to the page
+//   hush: how bright it is before it sets off, against after; surge: the light that runs down it as it sets off: how
+//     much, how fast in units a second, how long
+//   floor: the faintest light it lets go; energy: how much the page's leading end brightens the ribbon near it
+//   over: from which amount to which the neck's light takes the place of the band's inside the ball
+//   long: how far down the plane it is drawn on reaches, and wide: half its width
+const NECK = {
+  foot: 19, rib: 4, long: 220, pow: 1.3, fillet: [80, 12], meet: 6, round: 0.4, drop: 16, tip: 40,
+  body: [120, 225], a: 1.7, soft: 1.15, spread: 22, heartOpen: 0.5, fibre: 1.3, lanes: [0.62, 0.55], run: [0.1, 26, 2.4], up: 14, give: [222, 262],
+  hush: 0.8, surge: [0.5, 210, 18], floor: 0.008, energy: 1, over: [0.12, 0.9], plane: 300, wide: 64,
 } as const;
 
 // The pieces of the planet the beam draws in: how many, how many of those are glass, how long a coming of each
@@ -138,14 +137,14 @@ export const build: PartFactory = (ctx) => {
     uHot: { value: lin('hot') },
     uPale: { value: lin('pale') },
   };
-  const f = (n: number) => n.toFixed(4);
+  const f = (n: number) => n.toFixed(4), v2 = (a: readonly number[]) => `vec2( ${f(a[0])}, ${f(a[1])} )`;
   const rootDefines = {
-    ROOT_STRANDS: strands, ROOT_ENERGY: f(ROOT.energy), ROOT_BEAM: f(ROOT.beam), ROOT_HUG: f(ROOT.hug),
-    ROOT_FLARE0: f(ROOT.flare0), ROOT_FALL0: f(ROOT.fall0), ROOT_FLARE1: f(ROOT.flare1), ROOT_FALL1: f(ROOT.fall1), ROOT_HEART_OPEN: f(ROOT.heart), ROOT_HEART_HUG: f(ROOT.heartHug), ROOT_HEART_UP: f(ROOT.heartUp), ROOT_FAN: f(ROOT.fan),
-    ROOT_GLOW: f(ROOT.glow[0]), ROOT_GLOW_W: f(ROOT.glow[1]), ROOT_QUIET: f(ROOT.quiet), ROOT_HUSH: f(ROOT.hush),
-    ROOT_HOST: f(host.host), ROOT_HAND0: f(ROOT.hand[0]), ROOT_HAND1: f(ROOT.hand[1]), ROOT_GIVE: f(ROOT.give),
-    ROOT_SURGE: f(ROOT.surge[0]), ROOT_SURGE_V: f(ROOT.surge[1]), ROOT_SURGE_W: f(ROOT.surge[2]), ROOT_ABOVE: f(ROOT.above[0]), ROOT_ABOVE_OPEN: f(ROOT.above[1]), ROOT_FLOOR: f(ROOT.floor), ROOT_FOOT: `vec3( ${f(ROOT.foot[0])}, ${f(ROOT.foot[1])}, ${f(ROOT.foot[2])} )`, ROOT_GATHER: `vec2( ${f(ROOT.gather[0])}, ${f(ROOT.gather[1])} )`,
-    ROOT_IN: `vec2( ${f(ROOT.in[0])}, ${f(ROOT.in[1])} )`, ROOT_UP: f(ROOT.up), ROOT_OVER: `vec2( ${f(ROOT.over[0])}, ${f(ROOT.over[1])} )`, ROOT_EDGE: f(ROOT.beam * 4),
+    ROOT_STRANDS: strands, ROOT_ENERGY: f(NECK.energy), ROOT_HUSH: f(NECK.hush), ROOT_FLOOR: f(NECK.floor),
+    ROOT_SURGE: f(NECK.surge[0]), ROOT_SURGE_V: f(NECK.surge[1]), ROOT_SURGE_W: f(NECK.surge[2]), ROOT_OVER: v2(NECK.over),
+    NECK_FOOT: f(NECK.foot), NECK_RIB: f(NECK.rib), NECK_LONG: f(NECK.long), NECK_POW: f(NECK.pow),
+    NECK_FILLET: v2(NECK.fillet), NECK_MEET: f(NECK.meet), NECK_ROUND: f(NECK.round), NECK_DROP: f(NECK.drop), NECK_TIP: f(NECK.tip),
+    NECK_BODY: v2(NECK.body), NECK_A: f(NECK.a), NECK_SOFT: f(NECK.soft), NECK_SPREAD: f(NECK.spread), NECK_HEART_OPEN: f(NECK.heartOpen),
+    NECK_FIBRE: f(NECK.fibre), NECK_LANES: v2(NECK.lanes), NECK_RUN: `vec3( ${f(NECK.run[0])}, ${f(NECK.run[1])}, ${f(NECK.run[2])} )`, NECK_UP: f(NECK.up), NECK_GIVE: v2(NECK.give),
   };
 
   const ballU = {
@@ -189,33 +188,43 @@ export const build: PartFactory = (ctx) => {
       // How fast the grain churns in place and the broad drift moves, in wavelengths a second.
       GRAIN_CHURN: '0.03',
       GRAIN_DRIFT: '0.012',
-      // The grain close up: how much of it there is, its cell in units, each grain's size and how far it strays in
-      // cells, how fast each twinkles in turns a second, its strength, and how much of the noise is kept under it.
-      SALT: '1.0',
-      SALT_CELL: '1.5',
-      SALT_TWINKLE: '0.04',
-      // How far each facet's point strays from the middle of its cell, as a share of a cell, and how many facets a
-      // cell is cut into.
-      FACET_JITTER: '0.9',
-      FACET_CUTS: 3,
-      // A facet's light: how far the few bright ones stand out and how few they are, how much each turns over in
-      // time, how much the light runs across one facet, and how much a cell's warmth differs from the next.
-      FACET_LIFT: '1.0',
-      FACET_SKEW: '1.4',
-      FACET_TURN: '0.12',
-      FACET_TILT: '0.45',
-      FACET_WARM: '0.3',
-      SALT_GAIN: '0.85',
-      SALT_UNDER: '0.15',
-      // How much warmer a dimmer grain is close up, as the enlarged picture's are.
-      SALT_WARMS: '0.4',
-      // How far a facet leans off the ball, how much of its light that turns toward or from the eye, and its flash:
-      // how bright, how tight, and from which way, off the eye's, it comes.
-      FACET_LEAN: '0.6',
-      FACET_VIEW: '2.4',
-      FACET_GLINT: '7.0',
-      FACET_SHINE: '70.0',
-      GLINT_FROM: 'vec3( -0.45, 0.55, 0.3 )',
+      // The grain close up, granules: the largest cell in units, how much smaller each next size is and how much
+      // weaker, how far each cell's point strays and wanders, how wide its dark lane is and how dark, how bright its
+      // heart and how wide, as a share of a cell, and how much each differs from the next. Over which pixel sizes, in
+      // units, the granules take the grain's place, how strong they are and how much of that a bright one keeps, how much warmer a dim one is, how much of the
+      // grain is kept under them, and how fast they churn.
+      GRAN_CELL: '4.5',
+      GRAN_STEP: '0.5',
+      GRAN_FALL: '0.45',
+      GRAN_JITTER: '0.85',
+      GRAN_WANDER: '0.08',
+      GRAN_LANE: '0.15',
+      GRAN_DARK: '0.8',
+      GRAN_HEART: '0.75',
+      GRAN_HEART_R: '0.62',
+      GRAN_EACH: '0.2',
+      GRAN_FAR: '0.6',
+      GRAN_NEAR: '0.25',
+      GRAN_GAIN: '0.75',
+      GRAN_UP: '0.35',
+      GRAN_WARMS: '-0.45',
+      GRAN_UNDER: '0.25',
+      GRAN_TURN: '0.05',
+      // The band is read over at least this many units, a pixel's width at the page's size on a plain screen. A sharper
+      // screen resolves its dip, which a plain one fills in with the line beside it: there it is lifted by this much,
+      // over these shares of the radius, so it shows as the picture has it.
+      BAND_PX: '1.0',
+      BAND_LIFT: '0.1',
+      BAND_AT: 'vec4( 0.86, 0.9, 0.965, 0.985 )',
+      // A sphere: how much its light falls toward the limb, over which shares of the radius that gives way to the
+      // band, and how much the whole face is lifted to keep its mean; its hottest part, how much hotter, where, as
+      // shares of the radius, and how wide.
+      LIMB: '0.22',
+      LIMB_TO: 'vec2( 0.84, 0.93 )',
+      FACE_GAIN: '1.0',
+      HOT: '0.08',
+      HOT_AT: 'vec2( -0.28, 0.3 )',
+      HOT_R: '0.55',
       // The body under the grain: how deep, as a share of the radius, the size of its veins in units, how sharp they
       // are and their mean, how much of them shows, and where the skin over them is thin: its size and how thin.
       DEEP: '0.16',
@@ -236,7 +245,7 @@ export const build: PartFactory = (ctx) => {
 
   // The root under the ball, on the plane through its middle that faces the eye. Its top is well inside the ball,
   // which draws over it there.
-  const rootG = new THREE.PlaneGeometry(2 * ROOT.beam * 4, ROOT.long + ROOT.up, 1, 1).translate(0, -R - (ROOT.long - ROOT.up) / 2, 0);
+  const rootG = new THREE.PlaneGeometry(2 * NECK.wide, NECK.plane + 2 * NECK.up, 1, 1).translate(0, -R - (NECK.plane - 2 * NECK.up) / 2, 0);
   const rootM = new THREE.ShaderMaterial({
     name: 'world-core-root',
     uniforms: rootU,
@@ -297,7 +306,7 @@ export const build: PartFactory = (ctx) => {
 
   return {
     group,
-    alone: { at: [CORE.at[0], CORE.at[1] - ROOT.long / 3, CORE.at[2]], r: R + ROOT.long / 3 + 6 },
+    alone: { at: [CORE.at[0], CORE.at[1] - NECK.long / 2, CORE.at[2]], r: R + NECK.long / 2 + 20 },
     update(s) {
       rootU.uTime.value = s.t;
       ballU.uLevel.value = s.core;
@@ -308,9 +317,10 @@ export const build: PartFactory = (ctx) => {
         rootU.uRootScale.value.set(k.across, k.along, k.heart);
       }
       const state = rootU.uRootState.value, on = held ? 1 : s.stream.on;
-      // Held on in the lab, the beam is as it is on the page with the page's own stream left out below.
-      const reach = held || lab ? 4 * ROOT.long : reachOnPage(ctx.renderer.domElement, SOURCE);
-      state.set(on, Math.max(0, reach), 1, held ? 60 : s.stream.since);
+      // Held on in the lab, the beam is as it is on the page with the page's own stream left out below. The page
+      // tells how far its leading end has run in the board's units, which are the host's.
+      const reach = held ? NECK.plane : lab ? 0 : s.stream.long / host.host;
+      state.set(on, Math.max(0, reach), held || lab ? 0 : 1, held ? 60 : s.stream.since);
       ballU.uTurn.value.setFromMatrix4(m4.makeRotationFromQuaternion(q.setFromAxisAngle(TURN.axis, (s.t * TURN.rate) % (2 * Math.PI))));
       ballU.uTurnIn.value.setFromMatrix4(m4.makeRotationFromQuaternion(q.setFromAxisAngle(TURN.deep, (s.t * TURN.deepRate) % (2 * Math.PI))));
       return true;

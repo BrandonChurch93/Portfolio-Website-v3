@@ -6,10 +6,11 @@
 // block's outer face is broken at its own depth. Flakes have come off its edges as shallow scooped scars with a sharp
 // rim, small rubble clings in its hollows and on its ledges, and every face swells and wanders a little.
 //
-//   args = { seed, size: [a, b, c], layer: [x, y, z], blocks, drop, skin: { dir, R, pits } | null, top, rubble, scars }
+//   args = { seed, size: [a, b, c], layer: [x, y, z], blocks, drop, skin: { dir, R, pits } | null, top, rubble, scars, flat }
 //
 // size is the half extents of the mass before anything is broken off it, layer the way across its beds, blocks how
-// many blocks it splits into and drop how many of them are gone. shape(args) gives the same solid to the make
+// many blocks it splits into and drop how many of them are gone, and flat how much flatter its blocks are across
+// its beds (TORN.flat unless given). shape(args) gives the same solid to the make
 // script, with which block and which bed each place is in and where the planet's outer surface is.
 import { noise, seeded } from '../../../../src/pieces/world/layout.ts';
 
@@ -43,7 +44,7 @@ export const TORN = {
   swell: 0.009, swellOver: 0.3, ridge: 0.006, ridgeOver: 0.11, wander: 0.003, wanderOver: 0.05, grit: 0.0015, gritOver: 0.018,
 };
 
-export function shape({ seed, size, layer = [0, 1, 0], blocks = 7, drop = 1, skin = null, top = false, rubble = 12, scars = 10 }) {
+export function shape({ seed, size, layer = [0, 1, 0], blocks = 7, drop = 1, skin = null, top = false, rubble = 12, scars = 10, flat = TORN.flat }) {
   const r = seeded(seed), [a, b, c] = size, big = Math.max(a, b, c), T = TORN;
   const reach = (n) => Math.abs(n[0]) * a + Math.abs(n[1]) * b + Math.abs(n[2]) * c;
   const jitter = (v, k) => unit([v[0] + k * (r() - 0.5), v[1] + k * (r() - 0.5), v[2] + k * (r() - 0.5)]);
@@ -83,7 +84,7 @@ export function shape({ seed, size, layer = [0, 1, 0], blocks = 7, drop = 1, ski
   };
 
   // The blocks: points inside the mass, and the planes half way between each two, measured flatter across the beds.
-  const Ln = unit(layer), squash = (p) => { const s = dot(p, Ln) * (T.flat - 1); return [p[0] + Ln[0] * s, p[1] + Ln[1] * s, p[2] + Ln[2] * s]; };
+  const Ln = unit(layer), squash = (p) => { const s = dot(p, Ln) * (flat - 1); return [p[0] + Ln[0] * s, p[1] + Ln[1] * s, p[2] + Ln[2] * s]; };
   const seeds = [];
   for (let tries = 0; seeds.length < blocks && tries < 4000; tries++) {
     const p = [a * (r() * 2 - 1) * 0.95, b * (r() * 2 - 1) * 0.9, c * (r() * 2 - 1) * 0.9];

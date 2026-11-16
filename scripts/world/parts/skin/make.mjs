@@ -21,7 +21,7 @@ import { pack } from '../../lib/pack.mjs';
 import { simplify } from '../../lib/surface.mjs';
 import { L, light, linear, storeBounce } from '../../lib/plan.mjs';
 import { MAP, STONE } from '../../../../src/pieces/world/parts/skin/look.ts';
-import { SIDES, craters, cracks, edges, edgeAngle, shellNormal } from './features.mjs';
+import { KNOT, SIDES, craters, cracks, edges, edgeAngle, onShell, shellNormal } from './features.mjs';
 import { setup, coarse } from './field.mjs';
 
 const draft = process.argv.includes('--draft');
@@ -33,10 +33,12 @@ const FINE = draft
   : { grid: 0.6, error: 0.5, most: 235000, samples: { core: 16, moon: 16, hemi: 160 }, bounces: 2, perPixel: MAP.perPixel };
 // How far down the surface the grid is looked at (t, 0 at the rim), and the margin round each side's part of the map.
 const DOWN = 0.93, MARGIN = 4;
+// The skirt past each torn line: how far past it, and how far down from the edge, in units.
+const SKIRT = { past: 0.5, down: 8 };
 // How near (the cosine) the grid's normal must be to a crease's to be taken in its place.
 const AGREE = Math.cos((24 * Math.PI) / 180), CREASE = Math.cos((32 * Math.PI) / 180);
 
-const features = { craters: craters(), segs: cracks(), edges: edges() };
+const features = { craters: craters(), segs: cracks(), edges: edges(), knot: onShell(...KNOT) };
 setup(features);
 say(`features: ${features.craters.length} craters, ${features.segs.length} lengths of crack, ${features.edges.left.length + features.edges.right.length} points of torn line`);
 
@@ -61,15 +63,20 @@ function grid(side) {
     if (e === null || Math.abs(e) >= Math.abs(out)) { if (rows.length) break; continue; }
     rows.push({ t, e });
   }
-  let cols = 0;
-  for (const { t, e } of rows) cols = Math.max(cols, Math.ceil((L.WORLD.half * Math.sqrt(1 - t * t) * Math.abs(e - out)) / FINE.grid));
-  const V = rows.length * (cols + 1), pos = new Float32Array(V * 3), h = new Float32Array(V), lock = new Uint8Array(V);
+  let span = 0;
+  for (const { t, e } of rows) span = Math.max(span, Math.ceil((L.WORLD.half * Math.sqrt(1 - t * t) * Math.abs(e - out)) / FINE.grid));
+  // Past the torn line one more column, a skirt that goes straight down into the planet from the edge: where the
+  // crust has fallen at the line, it closes what would be a slot between the skin and the torn rock.
+  const cols = span + 1, V = rows.length * (cols + 1), pos = new Float32Array(V * 3), h = new Float32Array(V), lock = new Uint8Array(V);
   rows.forEach(({ t, e }, k) => {
+    const ring = L.WORLD.half * Math.sqrt(1 - t * t);
     for (let j = 0; j <= cols; j++) {
-      const th = out + ((e - out) * j) / cols, q = L.skinAt(th, t), n = shellNormal(...q), v = k * (cols + 1) + j, d = coarse(...q);
+      const skirt = j === cols, th = skirt ? e + Math.sign(e - out) * SKIRT.past / ring : out + ((e - out) * j) / span;
+      const q = L.skinAt(th, t), n = shellNormal(...q), v = k * (cols + 1) + j;
+      const d = skirt ? Math.min(h[v - 1], 0) - SKIRT.down : coarse(...q);
       h[v] = d;
       pos.set([q[0] + n[0] * d, q[1] + n[1] * d, q[2] + n[2] * d], v * 3);
-      if (k === 0 || k === rows.length - 1 || j === 0 || j === cols) lock[v] = 1;
+      if (k === 0 || k === rows.length - 1 || j === 0 || j >= span) lock[v] = 1;
     }
   });
   // The normal at each point of the grid, from its neighbours: the reduced mesh keeps these where the surface is
@@ -210,13 +217,14 @@ for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
   const i = y * MW + x;
   if (!SIDE[i]) { rgba.set([128, 128, 128, 0], i * 4); continue; }
   const su = slope(i, x > 0 ? i - 1 : -1, x < MW - 1 ? i + 1 : -1), sv = slope(i, y > 0 ? i - MW : -1, y < MH - 1 ? i + MW : -1);
-  rgba.set([enc(su), enc(sv), Math.round(Math.min(1, B[i] / 2) * 255), Math.round(Math.sqrt(Math.min(1, G[i])) * 255)], i * 4);
+  rgba.set([enc(su), enc(sv), Math.round(Math.min(1, B[i] / 2) * 255), Math.round(Math.min(1, Math.max(0, G[i])) * 255)], i * 4);
 }
 // Texels outside the skin take their nearest neighbour's color, so a texel at an edge does not blend toward grey.
+const SIDE_FILL = new Uint8Array(T);
 for (let pass = 0; pass < 3; pass++) for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
   const i = y * MW + x;
-  if (SIDE[i]) continue;
-  for (const j of [i - 1, i + 1, i - MW, i + MW]) if (j >= 0 && j < T && SIDE[j]) { rgba[i * 4 + 2] = rgba[j * 4 + 2]; break; }
+  if (SIDE[i] || SIDE_FILL[i]) continue;
+  for (const j of [i - 1, i + 1, i - MW, i + MW]) if (j >= 0 && j < T && (SIDE[j] || SIDE_FILL[j])) { rgba[i * 4 + 2] = rgba[j * 4 + 2]; rgba[i * 4 + 3] = rgba[j * 4 + 3]; SIDE_FILL[i] = 1; break; }
 }
 const head = Buffer.alloc(16);
 head.write('SKNM', 0, 'latin1');

@@ -77,7 +77,7 @@ float rootStream( float x, float s, float t, float lead, float heart, float F, f
 }
 `;
 
-// The root's light at a place of the plane through the ball's middle, x across from the beam's line and d down from
+// The neck's light at a place of the plane through the ball's middle, x across from the beam's line and d down from
 // the foot, both in units of the world (d is under 0 inside the ball), as an amount of the stream's light. And that
 // amount as the light the world has to be handed for the screen to show the page's own color for it.
 //   uRootScale: stream units to a unit of the world across and along, and the page's heart
@@ -91,47 +91,51 @@ uniform vec3 uFlame;
 uniform vec3 uHot;
 uniform vec3 uPale;
 ${ROOT_STREAM}
-// Half the ball's width at a height h over its foot.
-float rootLimb( float h ) { return h > 0.0 ? sqrt( max( 2.0 * uR * h - h * h, 0.0 ) ) : 0.0; }
-// How far the ribbon is opened under the foot, as the neck of picture 9 flares into the ball: 1 well down the beam.
-float rootOpen( float d ) {
-	float b = max( d, 0.0 );
-	return 1.0 + ROOT_FLARE0 * exp( - b / ROOT_FALL0 ) + ROOT_FLARE1 * exp( - b / ROOT_FALL1 );
+// Half the neck's width this far under the foot, before its tip is shaped: broad where it leaves, drawing itself
+// thin in one long even taper to the page's ribbon, and over the foot the fillet, where the ball's band turns down
+// into it on each side: a curve that meets the ball's outline as it leaves it, as the neck of a drop does.
+float neckWidth( float d ) {
+	float t = clamp( max( d, 0.0 ) / NECK_LONG, 0.0, 1.0 );
+	float w = NECK_RIB + ( NECK_FOOT - NECK_RIB ) * pow( 1.0 - t, NECK_POW );
+	return w + NECK_FILLET.x / max( d + NECK_FILLET.y, 1.0 );
 }
-// The ball's band where the beam is rooted: hottest at the foot and along the inside of the edge, for a little way
-// round the ball each side of it. Outside the ball it is gone within a unit or two.
-float rootFoot( float x, float d ) {
-	vec2 p = vec2( x, - uR - d );
-	float e = uR - length( p ), phi = atan( p.x, max( - p.y, 1e-3 ) );
-	float o = max( - e, 0.0 ) / ROOT_FOOT.z;
-	return exp( - max( e, 0.0 ) / ROOT_FOOT.x - o * o - phi * phi / ( ROOT_FOOT.y * ROOT_FOOT.y ) );
+// How far down it reaches, and how long its tip is: before the stream sets off a short drop at the foot, then as far
+// as the page's leading end.
+vec2 neckReach() {
+	float reach = max( NECK_DROP, uRootState.y );
+	return vec2( reach, min( NECK_TIP, 0.9 * reach ) );
 }
 float rootAmount( float x, float d ) {
-	float xs = x * uRootScale.x, s = d * uRootScale.y, t = uTime, on = uRootState.x;
-	float open = rootOpen( d ), l = rootLimb( - d ) * uRootScale.x / ROOT_BEAM * ROOT_HUG;
-	// Over the foot the fibres fan up along the inside of the ball's band.
-	float F = sqrt( open * open + l * l ), Fh = 1.0 + ROOT_HEART_OPEN * ( open - 1.0 ) + ROOT_HEART_HUG * l;
-	float gx = xs / ( ROOT_GLOW_W * Fh ), glow = ROOT_GLOW * exp( - gx * gx );
-	// Over the foot the heart gives way to the fibres, which run on up into the band brighter than below.
-	float heart = uRootScale.z * smoothstep( - ROOT_HEART_UP, 0.0, d ), up = 1.0 + ROOT_FAN * smoothstep( 0.0, - 6.0, d );
-	float since = uRootState.w, burst = on * ( 1.0 - smoothstep( 0.4, 1.1, since ) );
-	float a = mix( ROOT_GATHER.x, ROOT_GATHER.y, on ) * ( 1.0 + ROOT_SURGE * burst ) * rootFoot( x, d );
-	// Before the stream has set off: the light gathering in the band at the foot, and only a lip of it below.
-	if ( on < 0.999 ) {
-		float q = rootStream( xs, s, t, 1e4, heart, F, Fh ) * up + glow;
-		a += ( 1.0 - on ) * ROOT_HUSH * q * exp( - max( d, 0.0 ) / ROOT_QUIET );
-	}
-	// Once it has: the beam, as far as the leading end, given over to the page's stream where the page draws its own.
-	if ( on > 0.001 ) {
-		float lead = ( uRootState.y - d ) * uRootScale.y;
-		float b = rootStream( xs, s, t, lead, heart, F, Fh ) * up + glow * smoothstep( 0.0, 12.0, lead );
-		float given = uRootState.z * smoothstep( ROOT_HAND0, ROOT_HAND0 + ROOT_GIVE * ( ROOT_HAND1 - ROOT_HAND0 ), d * ROOT_HOST );
-		// It leaves with force: a surge of light runs down it from the foot as it sets off.
-		float at = since * ROOT_SURGE_V;
-		float surge = ROOT_SURGE * exp( - pow( ( d - at ) / ROOT_SURGE_W, 2.0 ) ) * ( 1.0 - smoothstep( 0.5, 1.2, since ) );
-		a += on * b * ( 1.0 + surge ) * ( 1.0 - given );
-	}
-	return a;
+	float on = uRootState.x, since = uRootState.w, t = uTime, fx = max( fwidth( x ), 1e-3 );
+	vec2 R = neckReach();
+	float k = clamp( ( R.x - d ) / R.y, 0.0, 1.0 );
+	if ( k <= 0.0 ) return 0.0;
+	float w0 = neckWidth( d ), w = w0 * pow( k, NECK_ROUND ), ax = abs( x );
+	// The body: a cream heart, hot and then flame toward its edges, which are the stream's edges and nothing round
+	// them. It gives way to the ribbon alone as it comes down to the ribbon's width.
+	float body = 1.0 - smoothstep( NECK_BODY.x, NECK_BODY.y, d ), u = ax / max( w, 1e-3 );
+	float px = fx / max( w, 1e-3 );
+	float cut = 1.0 - smoothstep( 1.0 - px, 1.0 + px, u );
+	float shape = pow( max( 1.0 - u * u, 0.0 ), NECK_SOFT ) * cut;
+	// The stream's own fibres run in it, spread to its width at the foot and the page's own, fibre for fibre, where it
+	// has drawn itself down to the ribbon.
+	float F = max( 1.0, w0 / NECK_SPREAD ), Fh = 1.0 + NECK_HEART_OPEN * ( F - 1.0 );
+	float xs = x * uRootScale.x, s = max( d, 0.0 ) * uRootScale.y;
+	float lead = on > 0.001 ? ( R.x - d ) * uRootScale.y : 1e4;
+	float heart = uRootScale.z * smoothstep( - NECK_UP, 0.0, d );
+	float fib = rootStream( xs, s, t, lead, heart, F, Fh );
+	fib *= mix( 1.0, 1.0 - smoothstep( 0.85, 1.35, u ), body );
+	// The body is its fibres gathered: brighter along each and dimmer between, and light runs down it.
+	float lanes = NECK_LANES.x + NECK_LANES.y * clamp( fib, 0.0, 1.5 ) / 1.5;
+	float run = 1.0 + NECK_RUN.x * sin( d / NECK_RUN.y - t * NECK_RUN.z + 0.7 * sin( x / 9.0 ) );
+	// Quiet before it sets off, and as it does, a surge of light runs down it from the foot.
+	float surge = ROOT_SURGE * exp( - pow( ( d - since * ROOT_SURGE_V ) / ROOT_SURGE_W, 2.0 ) ) * ( 1.0 - smoothstep( 0.5, 1.2, since ) ) * on;
+	float level = mix( ROOT_HUSH, 1.0, on ) * ( 1.0 + surge );
+	float a = ( NECK_A * body * shape * lanes * run * ( 0.55 + 0.45 * k ) + NECK_FIBRE * fib ) * level;
+	// Inside the ball it is gone a little over the foot, into the face.
+	a *= smoothstep( - NECK_UP, - 0.35 * NECK_UP, d );
+	// Given over to the page's stream where the page draws its own.
+	return a * ( 1.0 - uRootState.z * smoothstep( NECK_GIVE.x, NECK_GIVE.y, d ) );
 }
 vec3 rootRamp( float a ) {
 	vec3 c = uEmber * clamp( a / 0.11, 0.0, 1.0 );
@@ -162,7 +166,7 @@ vec4 rootColor( float a ) {
 }
 `;
 
-// The plane the root is drawn on, through the ball's middle and facing the eye. Inside the ball the ball draws it.
+// The plane the neck is drawn on, through the ball's middle and facing the eye. Inside the ball the ball draws it.
 export const ROOT_VERT = /* glsl */ `
 varying vec2 vAt;
 void main() {
@@ -178,14 +182,9 @@ varying vec2 vAt;
 ${UNBALANCE}
 ${ROOT_LIGHT}
 void main() {
-	float d = - uR - vAt.y, a = rootAmount( vAt.x, d );
-	// Outside the ball and close under it, it is gone within a unit or two of the ball's edge: what fans up into
-	// the band is drawn by the ball.
-	float e = max( length( vAt ) - uR, 0.0 ) / ( ROOT_ABOVE + ROOT_ABOVE_OPEN * max( d, 0.0 ) );
-	a *= exp( - e * e );
+	float d = - uR - vAt.y, a = rootAmount( vAt.x, d ) * smoothstep( - NECK_MEET - 2.0, - NECK_MEET, d );
 	// The faintest light is let go, so nothing fades out as a wide brown film.
 	a = max( a - ROOT_FLOOR, 0.0 );
-	a *= smoothstep( ROOT_EDGE, ROOT_EDGE * 0.7, abs( vAt.x ) );
 	if ( a < 0.002 ) discard;
 	vec4 c = rootColor( a );
 	gl_FragColor = vec4( coreUnbalance( c.rgb ), c.a );

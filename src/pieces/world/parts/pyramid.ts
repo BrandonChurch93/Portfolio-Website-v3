@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 import { HOST, PYRAMID, SCALE, WORLD, ground } from '../layout';
-import { METAL, color, lit } from '../light';
+import { GLINT, METAL, color, lit } from '../light';
 import { load, mesh } from '../files';
-import { GLINT } from '../index';
 import type { PartFactory } from '../part';
 import { standing } from './pyramid/form';
 import * as S from './pyramid/shaders';
@@ -27,14 +26,14 @@ const LOOK = {
   // The glow along the horizon behind the world and to the right, which the rounded right hand outline turns to over
   // all of its round that is seen: how bright, and from what height to what height, as the sine of the angle over
   // the horizon. It stops short of what the face toward the moon mirrors.
-  rim: [5, 0, 0.45],
+  rim: [1.3, 0, 0.45],
   // The gold's colors, each at the world's gold's hue (METAL.gold) turned so many degrees, at full value: its
   // saturation where it mirrors least, in its body (the lit face's night, the long reflections), where it mirrors
   // much, and in the warm glow at the dark face's foot. Gold is richest in its middle tones: held at the darks'
   // saturation there it read as khaki or brass. Then over what levels the deep turns to the body, the body to the
   // bright, and the bright pales toward pale gold.
-  sat: { deep: 0.64, deepTurn: -5, body: 0.76, bodyTurn: -5, mid: 0.55, midTurn: -4.5, warm: 0.72, warmTurn: -9 },
-  grade: [0.02, 0.09, 0.3, 1.2, 1.5, 4.5],
+  sat: { deep: 0.66, deepTurn: -11, body: 0.74, bodyTurn: -7, mid: 0.5, midTurn: -2, warm: 0.72, warmTurn: -9 },
+  grade: [0.02, 0.09, 0.3, 1.2, 1.2, 3.6],
   // How much of the world's contact shadow a mirror keeps where it is shut in.
   contact: 0.3,
   // How much of the moon's own light the faces take as a light: none, for they mirror the moon where their night has

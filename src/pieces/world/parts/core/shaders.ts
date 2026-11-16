@@ -67,6 +67,9 @@ void main() {
 	// How far out from the ball's middle the ray passes, as a share of its radius: 1 at its edge.
 	float rr = sqrt( max( c, 0.0 ) ) / uR;
 	float px = max( fwidth( rr ), 1e-5 ), cover = clamp( ( 1.0 - rr ) / px + 0.5, 0.0, 1.0 );
+	// The band is read over at least the width a pixel has at the page's size on a plain screen, so a sharper screen
+	// shows it as the picture has it and no darker.
+	float bandPx = max( px, BAND_PX / uR );
 	if ( cover <= 0.0 ) discard;
 	float h = max( uR * uR - c, 0.0 );
 	vec3 P = ro + rd * ( - b - sqrt( h ) );
@@ -77,21 +80,20 @@ void main() {
 	float fp = max( max( length( dFdx( q ) ), length( dFdy( q ) ) ), 1e-4 );
 	float churn = uTime * GRAIN_CHURN, drift = uTime * GRAIN_DRIFT;
 	// Close up the middle sizes and the broad drift give way, so what is seen is the fine grain, crisp and even.
-	float near = 1.0 - smoothstep( 0.45, 0.9, fp );
+	float near = 1.0 - smoothstep( 0.45, 0.9, fp ), salty = smoothstep( GRAN_FAR, GRAN_NEAR, fp );
 	float v = coreFine( q, fp, churn, 7u );
 	v += GRAIN_MID * ( 1.0 - 0.75 * near ) * coreNoise( q / GRAIN_MIDWAVE + vec3( churn * 0.3 ), 41u ) * coreKeep( GRAIN_MIDWAVE, fp );
 	v += MOTTLE * ( 1.0 - 0.6 * near ) * ( 0.65 * coreNoise( q / MOTTLE_WAVE + vec3( drift, 0.0, - drift ), 73u ) + 0.35 * coreNoise( q / ( 0.45 * MOTTLE_WAVE ) - vec3( 0.0, drift, 0.0 ), 79u ) );
 	// Each grain's own warmth, apart from its brightness: some a little paler, some a little more gold.
 	float w = coreNoise( q / GRAIN_WAVE + vec3( 0.0, - churn, 0.0 ), 101u ) * coreKeep( GRAIN_WAVE, fp );
-	// Close up the grain is facets, once a facet spans a few pixels, each leaning its own way off the ball.
-	float salty = smoothstep( 0.9, 0.45, fp ) * SALT;
-	if ( salty > 0.0 ) {
-		cNorm = uTurn * ( P / uR );
-		cView = uTurn * - rd;
-		cGlint = uTurn * coreDir( - rd + GLINT_FROM );
-		vec2 g = coreFacets( q / SALT_CELL, uTime * SALT_TWINKLE, fp / SALT_CELL, 211u );
-		v = mix( v, SALT_GAIN * g.x + SALT_UNDER * v, salty );
-		w = mix( w, SALT_GAIN * ( g.y - SALT_WARMS * g.x ), salty );
+	// Close up the grain is granules, each lit from its heart, once they span a few pixels.
+	float near2 = smoothstep( GRAN_FAR, GRAN_NEAR, fp );
+	if ( near2 > 0.0 ) {
+		// The face is near the brightest the screen shows, so a granule is mostly told apart by the dark round it.
+		float g = coreGranules( q, uTime * GRAN_TURN, fp );
+		g = g > 0.0 ? g * GRAN_UP : g;
+		v = mix( v, GRAN_GAIN * g + GRAN_UNDER * v, near2 );
+		w = mix( w, GRAN_WARMS * g + GRAN_UNDER * w, near2 );
 	}
 	// Under the grain is a brighter body, deeper in the ball and turning the other way, seen where the skin over it
 	// is thin: veins of light that slide under the grain as it turns.
@@ -106,12 +108,18 @@ void main() {
 	v = clamp( GRAIN_GAIN * v * quiet, - 3.0, 3.0 );
 	w = clamp( GRAIN_WARM * w * quiet, - 3.0, 3.0 );
 	vec3 tint = 1.0 + abs( v ) * ( v > 0.0 ? uBright : uDim ) + abs( w ) * ( w > 0.0 ? uWarm : uGrainPale );
-	vec3 col = coreBand( rr, px ) * max( tint, vec3( 0.0 ) );
+	vec3 col = coreBand( rr, bandPx ) * max( tint, vec3( 0.0 ) );
+	col *= 1.0 + BAND_LIFT * ( 1.0 - smoothstep( 0.6, 0.95, px * uR ) ) * smoothstep( BAND_AT.x, BAND_AT.y, rr ) * ( 1.0 - smoothstep( BAND_AT.z, BAND_AT.w, rr ) );
+	// A sphere and not a disc: its light falls toward the limb, and its hottest part lies a little up and to the left,
+	// toward the eye's side of it.
+	float mu = sqrt( max( 1.0 - rr * rr, 0.0 ) );
+	vec2 hp = P.xy / uR - HOT_AT;
+	col *= mix( FACE_GAIN * ( 1.0 - LIMB * ( 1.0 - mu ) ) * ( 1.0 + HOT * exp( - dot( hp, hp ) / ( HOT_R * HOT_R ) ) ), 1.0, smoothstep( LIMB_TO.x, LIMB_TO.y, rr ) );
 
-	// The root of the beam: its fibres fan up from the foot into the band, read on the plane through the ball's
-	// middle, where the root below the ball is drawn, so the two are one.
+	// The neck of the beam: over the foot the band turns down into it, read on the plane through the ball's middle,
+	// where the neck below the ball is drawn, so the two are one.
 	vec3 Q = ro + rd * ( - ro.z / ( abs( rd.z ) > 1e-4 ? rd.z : - 1e-4 ) );
-	float d = - uR - Q.y, ra = rootAmount( Q.x, d ) * smoothstep( ROOT_IN.x, ROOT_IN.y, rr ) * smoothstep( - ROOT_UP, 0.0, d );
+	float d = - uR - Q.y, ra = rootAmount( Q.x, d );
 	col = mix( col * uLevel, rootColor( ra ).rgb, smoothstep( ROOT_OVER.x, ROOT_OVER.y, ra ) );
 
 	gl_FragColor = vec4( coreUnbalance( col * cover ) / max( cover, 1e-3 ), cover );

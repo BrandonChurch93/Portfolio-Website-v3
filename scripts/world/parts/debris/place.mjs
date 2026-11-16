@@ -20,9 +20,11 @@ export const classOf = (r) => (r >= CLASSES.L ? 'L' : r >= CLASSES.M ? 'M' : r >
 
 // Picture 9's two great boulders, read off the picture (its pixels, the middle of each), with their half extents,
 // across, up and through. The left is a chunky dark lump whose top meets the rock, the right a taller one.
+// The left one stands in front of the shelf of rock over it (which reaches 450 toward the visitor there), so that it
+// has the picture's height without entering the rock: the picture's floor there is higher than the rock's.
 const BOULDERS = [
-  { px: [436, 646], z: 230, size: [66, 44, 64], family: 9, turn: 0.55 },
-  { px: [905, 634], z: 250, size: [60, 60, 55], family: 10, turn: -0.2 },
+  { px: [440, 626], z: 570, size: [58, 60, 48], family: 9, turn: 0.55 },
+  { px: [900, 640], z: 250, size: [66, 68, 58], family: 10, turn: -0.2 },
 ];
 // The smaller pieces picture 9 has under the hollow, among the small streams: where each is in the picture's pixels
 // and about how wide, and how far toward the visitor.
@@ -40,18 +42,35 @@ const SCATTER = [
 // rock, densest at the top and thinning toward the foot. Its top and foot as the plan has them, where they go, and
 // how much more it gathers at the top (a power of the share of the way down).
 const HANG = { from: [-560, -1196], to: [-455, -1180], gather: 1.35 };
+// Great pieces moved from where the plan and the hang put them, by family: the one at the lower left stood in the
+// picture's band beside the left boulder and outshone it, so it hangs lower and further out.
+const SHIFT = { 0: [-30, -95, -40] };
 // The stream's lane on the page. The page draws its stream over the world, swaying up to about 15 units each side of
 // the line down from the core's foot. Within front units of that line every piece is behind the stream, so the
 // stream drawn over it is right, and a piece larger than small keeps out of a lane lane units each side of it.
-export const LANE = { front: 60, lane: 20, small: 8 };
+// A piece further behind the stream than deep is not in its way, whatever its size: it is seen through the stream.
+export const LANE = { front: 60, lane: 20, small: 8, deep: 90 };
 // The whirl: three arms round the stream, each on one side of it, in uneven clumps with stragglers, swinging round
 // it and back. Each arm's side, how high its top and foot are, how far out it reaches, how far round it swings
 // (radians) and how many clumps it gathers in.
+// The field is lopsided, as the picture's is: the left arm is long and full, the two on the right shorter, one high
+// and one low, with the right boulder's dark space kept clear over the first. share is each arm's part of the pieces.
 export const ARMS = [
-  { family: 41, side: 1, y: [-505, -640], R: [120, 300], swing: 0.42, clumps: 5 },
-  { family: 42, side: -1, y: [-560, -720], R: [110, 320], swing: 0.5, clumps: 6 },
-  { family: 43, side: 1, y: [-690, -860], R: [140, 340], swing: 0.36, clumps: 4 },
+  { family: 41, side: 1, y: [-575, -700], R: [150, 290], swing: 0.4, clumps: 4, share: 0.26 },
+  { family: 42, side: -1, y: [-520, -840], R: [100, 350], swing: 0.5, clumps: 7, share: 0.48 },
+  { family: 43, side: 1, y: [-820, -990], R: [170, 330], swing: 0.3, clumps: 3, share: 0.26 },
 ];
+// The column behind the stream: pieces at several depths behind it, which the stream is seen over. Their family,
+// how many, how far each side of the stream's line they are (on the screen), how far behind it, how high, and the
+// largest.
+const DEEP = { family: 62, count: 64, across: 120, behind: [70, 420], y: [-470, -1120], most: 26 };
+// The dust trails the families and the stream, and lies nowhere else: the share of it that trails the stream, and
+// how far out from a piece it trails, as a share of the piece's size.
+const DUST = { lane: 0.22, trail: [1.1, 3.4], most: 170 };
+// Near the stream the small pieces of stone are the stream's own shapes: how near, on the screen, and the largest.
+export const FACETED = { near: 150, most: 6 };
+// How large a carried shard is, from its middle to its farthest point: the stream's own riding shards on the page.
+const CARRIED = [4.5, 15];
 // How near the host's sides and foot a piece may come, and how near the torn rock, in units.
 const EDGE = { side: 8, foot: 14, rock: 3 };
 // How much of its bounds a great piece is taken to fill when it is placed.
@@ -97,7 +116,7 @@ export function place(bvh) {
   const lane = (q, reach, sway) => {
     const [sx] = L.drawn(q[0], q[1], q[2]), off = Math.abs(sx - core[0]);
     if (off < LANE.front + reach + sway && q[2] + reach + sway > cz) return 'front';
-    if (reach > LANE.small && off < LANE.lane + reach + sway) return 'lane';
+    if (reach > LANE.small && off < LANE.lane + reach + sway && cz - (q[2] + reach + sway) < LANE.deep) return 'lane';
     return null;
   };
 
@@ -123,7 +142,8 @@ export function place(bvh) {
       if (l) return l;
     }
     if (z > L.CORE.at[2] - 60 && Math.hypot(sx - core[0], sy - core[1]) < L.CORE.r * 1.1 + reach + sway) return 'core';
-    if (p.kind !== 'fall' && p.kind !== 'whirl') {
+    // The picture's boulders hang where it has them, whatever small stream the page draws over them.
+    if (p.kind !== 'fall' && p.kind !== 'whirl' && !(p.kind === 'plate' && p.pictured)) {
       for (let i = 0; i < stream.length; i++) {
         const [qx, qy, qz] = stream[i], long = L.SMALL[i][3], [tx] = L.drawn(qx, qy, qz);
         if (z > qz - 12 && y + reach + sway > qy - long && y - reach - sway < qy && Math.abs(sx - tx) < reach + sway + 3) return 'small';
@@ -174,7 +194,7 @@ export function place(bvh) {
   const plates = plan.filter((q) => q.kind === 'plate'), moved = new Map();
   // The great pieces first, each carrying its ring with it, and each clump drawn up as one.
   for (const d of plates) {
-    const to = hang(d.at[1]), p = add({ ...d, at: [d.at[0], to, d.at[2]] }, 'plate', { land: d.land });
+    const s = SHIFT[d.family] ?? [0, 0, 0], to = hang(d.at[1]), p = add({ ...d, at: [d.at[0] + s[0], to + s[1], d.at[2] + s[2]] }, 'plate', { land: d.land });
     if (p) moved.set(d.family, [p.at[0] - d.at[0], p.at[1] - d.at[1], p.at[2] - d.at[2]]);
   }
   for (const b of BOULDERS) add({ at: L.fromPicture(b.px[0], b.px[1], b.z), r: Math.max(...b.size) / 0.85, long: 1, flat: 0, family: b.family }, 'plate', { turn: b.turn, pictured: true, size: b.size });
@@ -187,7 +207,7 @@ export function place(bvh) {
       add({ at: [g.at[0] + across, g.at[1] + across * tilt + along * lean + 0.1 * far * bell(), g.at[2] + along], r: size, long: 1.2 + r(), flat: r(), family: 20 + b.family }, 'ring');
     }
   }
-  const clumps = new Map();
+  const clumps = new Map(), dusts = [];
   for (const d of plan.filter((q) => kindOf(q) === 'clump')) { const c = clumps.get(d.family) ?? [0, 0]; clumps.set(d.family, [c[0] + d.at[1], c[1] + 1]); }
   for (const d of plan.filter((q) => q.kind !== 'plate' && q.kind !== 'whirl')) {
     const kind = kindOf(d);
@@ -197,20 +217,24 @@ export function place(bvh) {
       if (!m) { said.out++; continue; }
       at = [at[0] + m[0], at[1] + m[1], at[2] + m[2]];
     } else if (kind === 'clump') { const [sum, n] = clumps.get(d.family), mid = sum / n; at = [at[0], at[1] + hang(mid) - mid, at[2]]; }
-    else if (kind === 'dust') at = [at[0], hang(at[1]), at[2]];
-    else if (kind === 'fall') {
-      // A chip that falls along the stream falls behind it.
-      const reach = d.r * Math.max(d.long, 1);
-      at = [at[0], at[1], Math.min(at[2], cz - 8 - reach - 30 * r())];
+    else if (kind === 'dust') { dusts.push(d); continue; }
+    let size = d.r;
+    if (kind === 'fall') {
+      // A chip the stream carries is one of its riding shards, as large on the page as they are, and falls behind it.
+      size = (CARRIED[0] + (CARRIED[1] - CARRIED[0]) * r() ** 2) / 1.3;
+      at = [at[0], at[1], Math.min(at[2], cz - 8 - size * 1.3 - 30 * r())];
     }
-    add({ ...d, at }, kind);
+    add({ ...d, at, r: size }, kind);
   }
 
   // The whirl: the plan's whirling pieces, largest first, laid into uneven arms: clumps of mixed sizes along each
   // arm, gaps between them, and stragglers.
   const whirl = plan.filter((q) => q.kind === 'whirl').sort((p, q) => q.r - p.r);
+  // Dealt in turn, largest first, each arm taking its share.
+  const dealt = ARMS.map(() => []), got = ARMS.map(() => 0);
+  for (const d of whirl) { const ai = ARMS.reduce((b, a, i) => ((got[i] + 1) / a.share < (got[b] + 1) / ARMS[b].share ? i : b), 0); dealt[ai].push(d); got[ai]++; }
   ARMS.forEach((arm, ai) => {
-    const members = whirl.filter((_, i) => i % ARMS.length === ai);
+    const members = dealt[ai];
     const heads = Array.from({ length: arm.clumps }, (_, k) => {
       const t = (k + 0.25 + 0.5 * r()) / arm.clumps;
       return { t, R: arm.R[0] + (arm.R[1] - arm.R[0]) * (0.15 + 0.7 * r()), spread: 0.4 + 0.8 * r() };
@@ -231,16 +255,42 @@ export function place(bvh) {
     });
   });
 
+  // The column behind the stream, thinning downward, more of it to the left.
+  for (let k = 0; k < DEEP.count; k++) {
+    const t = r() ** 1.3, y = DEEP.y[0] + (DEEP.y[1] - DEEP.y[0]) * t, back = DEEP.behind[0] + (DEEP.behind[1] - DEEP.behind[0]) * r() ** 0.8;
+    const side = r() < 0.6 ? -1 : 1, x = side * DEEP.across * r() ** 0.7, size = 1.5 + DEEP.most * r() ** 3.2;
+    add({ at: [x, y, cz - back], r: size, long: 1.1 + r(), flat: r(), family: DEEP.family }, 'clump');
+  }
+
   for (const [px, py, wide, z] of UNDER) add({ at: L.fromPicture(px, py, z), r: (wide * L.PICTURE.unit) / 2.2, long: 1.2 + 0.4 * r(), flat: r(), family: 70 }, 'scatter', { pictured: true });
   for (const s of SCATTER) for (let k = 0; k < s.count; k++) {
     const px = s.from[0] + (s.to[0] - s.from[0]) * r(), py = s.from[1] + (s.to[1] - s.from[1]) * r(), size = 0.9 + s.most * r() ** 2.6;
     add({ at: L.fromPicture(px, py, 120 + 200 * r()), r: size, long: 1.2 + r(), flat: r(), family: s.family }, 'scatter', { pictured: true });
   }
 
+  // The dust: each grain trails a piece of the field, the larger the more, out from it and away from the core, and
+  // moves as that piece's family does. Some trails the stream, behind it.
+  const anchors = pieces.filter((p) => p.kind !== 'fall'), weight = anchors.map((p) => Math.max(...extents(p)) ** 1.2), total = weight.reduce((a, b) => a + b, 0);
+  for (const d of dusts) {
+    if (r() < DUST.lane) {
+      add({ ...d, at: [24 * bell(), DEEP.y[0] + (DEEP.y[1] - DEEP.y[0]) * r() ** 1.2, cz - 20 - 160 * r()] }, 'dust');
+      continue;
+    }
+    let pick = r() * total, k = 0;
+    while (k < anchors.length - 1 && pick > weight[k]) pick -= weight[k++];
+    const a = anchors[k], reach = Math.max(...extents(a)), away = unit(a.at.map((v, i) => v - L.CORE.at[i]));
+    const out = unit([away[0] * 0.7 + bell(), away[1] * 0.7 + bell() - 0.4, away[2] * 0.3 + bell() * 0.6]), far = Math.min(DUST.most, reach * (DUST.trail[0] + (DUST.trail[1] - DUST.trail[0]) * r() ** 1.5));
+    const at = a.at.map((v, i) => v + out[i] * far);
+    const kind = a.kind === 'plate' ? 'ring' : a.kind, family = a.kind === 'plate' ? a.family + 20 : a.family;
+    const p = { at, r: d.r, long: d.long, flat: d.flat, family, kind, ...(a.kind === 'whirl' ? { swing: a.swing } : {}) };
+    if (settle(p)) pieces.push(p);
+  }
+
   // How each is turned at rest and how it turns. A great piece keeps one face to the core: its thin axis points at
   // it. Every other piece is turned any way, and turns over about an axis of its own, slowly, the larger the slower.
   for (const p of pieces) {
     p.cls = p.kind === 'plate' ? 'G' : classOf(p.r);
+    if (p.kind !== 'fall' && p.kind !== 'plate' && p.r <= FACETED.most && Math.abs(L.drawn(...p.at)[0] - core[0]) < FACETED.near) p.facet = true;
     p.phase = r();
     if (p.kind === 'plate') {
       // A boulder of the picture's stands as the picture has it, leaning only a little toward the core.
@@ -272,6 +322,14 @@ export function place(bvh) {
       if (!any(bvh, x, y, z, d[0] / l, d[1] / l, d[2] / l, l)) seen++;
     }
     p.core = seen / 48;
+    // And how much of it the moon reaches, past the planet: from its middle and six places round it.
+    const e = extents(p), mw = unit([...L.MOONWARD]);
+    let lit = 0;
+    for (let i = 0; i < 7; i++) {
+      const o = i === 0 ? [0, 0, 0] : [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]][i - 1].map((v, k) => v * e[k] * 0.7);
+      if (!any(bvh, x + o[0], y + o[1], z + o[2], mw[0], mw[1], mw[2], 4000)) lit++;
+    }
+    p.moon = lit / 7;
   }
   said.kept = pieces.length;
   said.kinds = Object.fromEntries(Object.keys(KIND).map((k) => [k, pieces.filter((p) => p.kind === k).length]));

@@ -18,7 +18,7 @@ import process from 'node:process';
 import { png } from '../../lib/png.mjs';
 
 const draft = process.argv.includes('--draft');
-export const GRAIN = { size: draft ? 256 : 1024, period: 48, grain: 0.46, pits: 650 };
+export const GRAIN = { size: draft ? 256 : 1024, period: 48, grain: 0.7, pits: 650 };
 const t0 = performance.now(), said = (s) => console.log(`${((performance.now() - t0) / 1000).toFixed(1)} s · ${s}`);
 
 function seeded(seed) {
@@ -116,7 +116,7 @@ function grain() {
     const l = Math.hypot(hx, hy, 1);
     out[i * 4] = Math.round((-hx / l * 0.5 + 0.5) * 255);
     out[i * 4 + 1] = Math.round((-hy / l * 0.5 + 0.5) * 255);
-    out[i * 4 + 2] = byte(0.5 + 0.55 * (tone[i] - 0.5) + 0.25 * fine[i]);
+    out[i * 4 + 2] = byte(0.5 + 0.8 * (tone[i] - 0.5) + 0.25 * fine[i]);
     out[i * 4 + 3] = byte(1 - 3 * Math.max(0, soft[i] - h[i]) - 1.4 * pit[i] - 0.08 * gap[i]);
   }
   png('public/world/rockmat-grain.png', n, n, out, 4);

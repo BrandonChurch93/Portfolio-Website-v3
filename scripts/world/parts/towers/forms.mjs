@@ -23,14 +23,14 @@ export function faces(w, d) {
   ];
 }
 const SEEN = (s) => s.side !== 'back';
-const stone = (b, extra = {}) => ({ tone: b.tone, lay: b.lay ?? 0, ...extra });
+const stone = (b, extra = {}) => ({ tone: b.tone, vary: b.vary, lay: b.lay ?? 0, ...extra });
 
 // A field of windows filling a rectangle of a face, set back by `back`: a patch of the bay's material, with as many
 // vertices as the light baked on it needs (one every few windows).
 export function windows(b, f, s0, s1, t0, t1, back, cw, ch, o = {}) {
   const cols = Math.max(1, Math.round((s1 - s0) / cw)), rows = Math.max(1, Math.round((t1 - t0) / ch));
   const at = b.win.take(cols, rows, b.mood + s0 * 0.37 + t0 * 0.011, o.busy ?? b.busy, true);
-  const tag = { o: on(f, s0, 0, back), T: f.T, y0: t0, c0: at.c0, r0: at.r0, cw: (s1 - s0) / cols, ch: (t1 - t0) / rows, stone: o.stone };
+  const tag = { o: on(f, s0, 0, back), T: f.T, y0: t0, c0: at.c0, r0: at.r0, cw: (s1 - s0) / cols, ch: (t1 - t0) / rows, stone: o.stone, tone: b.tone };
   const every = o.every ?? (b.draft ? 6 : 3);
   b.kit.patch('bay', on(f, s0, t0, back), on(f, s1, t0, back), on(f, s1, t1, back), on(f, s0, t1, back), { nu: Math.max(1, Math.ceil(cols / every)), nv: Math.max(1, Math.ceil(rows / (every + 1))), want: f.N, tag });
 }
@@ -64,6 +64,9 @@ export function facade(b, f, len, y0, y1, st) {
   let n = Math.max(1, st.bays), bay = (len - 2 * corner - (n - 1) * pier) / n;
   while (n > 1 && bay < Math.max(1.5, 1.5 * st.cw)) { n--; bay = (len - 2 * corner - (n - 1) * pier) / n; }
   if (bay < 1.5) { slab(b, f, 0, len, y0, y1); return; }
+  // The middle bay of an odd number is wider (st.middle times the others), as a facade's is.
+  const mid = n >= 3 && n % 2 === 1 ? st.middle ?? 1 : 1, unit = (len - 2 * corner - (n - 1) * pier) / (n - 1 + mid);
+  const width = (i) => (n >= 3 && n % 2 === 1 && i === (n - 1) / 2 ? unit * mid : unit), from = (i) => corner + Array.from({ length: i }, (_, k) => width(k) + pier).reduce((a, v) => a + v, 0);
   const out = st.out ?? 0;
   const proud = (s0, s1) => {
     if (out > 0) {
@@ -74,7 +77,8 @@ export function facade(b, f, len, y0, y1, st) {
   proud(0, corner);
   proud(len - corner, len);
   for (let i = 0; i < n; i++) {
-    const s0 = corner + i * (bay + pier), s1 = s0 + bay;
+    const s0 = from(i), s1 = s0 + width(i);
+    bay = s1 - s0;
     if (i > 0) proud(s0 - pier, s0);
     reveal(b, f, s0, s1, y0, y1, 0, st.back, { head: false, sill: false });
     if (st.band) {
@@ -107,10 +111,22 @@ export function facade(b, f, len, y0, y1, st) {
 
 // A shaft: the facade on each face that can be seen (the back is never seen and casts as well without it), corners
 // cut by `chamfer`, and a roof of stone over it.
+// A tall shaft may end in an attic (st.attic, how tall): over a string course its top storey is let into the stone
+// in smaller windows, two to each bay below, so its head reads apart from its body.
 export function shaft(b, w, d, y0, y1, st) {
-  const c = st.chamfer ?? 0, all = faces(w, d);
+  const c = st.chamfer ?? 0, all = faces(w, d), attic = st.attic && y1 - y0 > 4 * st.attic ? st.attic : 0, ya = y1 - attic;
+  const top = { ...st, punched: true, band: 0, fin: 0, out: 0, cw: st.cw * 0.62, ch: attic - 0.7, bays: Math.max(1, st.bays) * 2, middle: 1, busy: Math.min(1, (st.busy ?? b.busy) + 0.2) };
   all.forEach((s, i) => {
-    if (SEEN(s)) facade(b, { ...s.f, o: on(s.f, c, 0) }, s.len - 2 * c, y0, y1, st);
+    if (SEEN(s)) {
+      const g = { ...s.f, o: on(s.f, c, 0) };
+      facade(b, g, s.len - 2 * c, y0, attic ? ya - 0.7 : y1, st);
+      if (attic) {
+        slab(b, g, 0, s.len - 2 * c, ya - 0.7, ya, -0.35);
+        b.kit.patch('stone', on(g, 0, ya, -0.35), on(g, s.len - 2 * c, ya, -0.35), on(g, s.len - 2 * c, ya, 0), on(g, 0, ya, 0), { edge: b.E, want: [0, 1, 0], tag: stone(b) });
+        b.kit.patch('stone', on(g, 0, ya - 0.7, 0), on(g, s.len - 2 * c, ya - 0.7, 0), on(g, s.len - 2 * c, ya - 0.7, -0.35), on(g, 0, ya - 0.7, -0.35), { edge: b.E, want: [0, -1, 0], tag: stone(b) });
+        facade(b, g, s.len - 2 * c, ya, y1, top);
+      }
+    }
     if (c > 0) {
       const n = all[(i + 1) % 4], a = on(s.f, s.len - c, 0), e = on(n.f, c, 0);
       b.kit.patch('stone', [a[0], y0, a[2]], [e[0], y0, e[2]], [e[0], y1, e[2]], [a[0], y1, a[2]], { edge: b.E, want: [a[0] + e[0], 0, a[2] + e[2]], tag: stone(b) });

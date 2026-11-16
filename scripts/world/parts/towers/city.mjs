@@ -18,9 +18,14 @@ const draft = process.argv.includes('--draft');
 const onlyAt = process.argv.indexOf('--only'), only = onlyAt > 0 ? new Set(process.argv[onlyAt + 1].split(',').map(Number)) : null;
 // The map of the windows, in windows square; how finely faces are cut for their baked light, in units; the stones
 // a building may be built of, as tones (./windows.ts, TONES), and how likely each is.
-const CITY = { map: 1024, edge: draft ? 10 : 6, tones: [[0, 0.25], [0.35, 0.2], [0.5, 0.25], [0.75, 0.15], [1, 0.15]], seed: 9151 };
-// The named buildings' stone: the obelisk's shaft is dark, as picture 9's is.
-const TONE = { 0: 0.85, 2: 0.25, 3: 0.4, 4: 0.15, 5: 0.5 };
+const CITY = { map: 1024, edge: draft ? 10 : 6.6, tones: [[0, 0.1], [1, 0.2], [2, 0.24], [3, 0.2], [4, 0.1], [5, 0.09], [6, 0.07]], seed: 9151 };
+// The named buildings' stone, as a place in STONES: the obelisk's shaft is dark, as picture 9's is, the tower left
+// of the spire and the ringed pair a warm stone.
+const TONE = { 0: 4, 2: 1, 3: 2, 4: 1, 5: 3, 9: 2, 10: 1, 11: 2 };
+// How busy a building is, how many of its rooms are lit: most are busy and some nearly dark, so the city's light
+// comes in clumps, whole buildings blazing beside quiet ones (dark: how likely a quiet one is). The low buildings
+// at the front are all busy: the picture's lit mass.
+const BUSY = { dark: 0.24, quiet: [0.04, 0.16], lively: [0.55, 0.45], low: 45 };
 // The street's light on the ground about each building, as radiance at its brightest, how far out from a wall it is
 // brightest and how wide that band is, in units. The ground's own color.
 const STREET = { power: 1.1, at: 4, wide: 7 }, GROUND = 0.05;
@@ -38,9 +43,10 @@ for (const i of on) {
     const c = Math.cos(turn * L.D2R), s = Math.sin(turn * L.D2R), g0 = L.ground(x, z);
     let low = g0;
     for (const [u, v] of [[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, d / 2], [-w / 2, d / 2]]) low = Math.min(low, L.ground(x + u * c + v * s, z - u * s + v * c));
-    let tone = TONE[i];
-    if (tone === undefined) { let r = R(); tone = CITY.tones.find(([, p]) => (r -= p) < 0)?.[0] ?? 0; }
-    const b = { kit, win, R, E: CITY.edge, draft, tone, lay: 0, busy: 0.1 + 0.85 * R() ** 1.3, mood: i * 1.37, sink: g0 - low + 1.5 };
+    let stone = TONE[i];
+    if (stone === undefined) { let r = R(); stone = CITY.tones.find(([, p]) => (r -= p) < 0)?.[0] ?? 0; }
+    const quiet = tall > BUSY.low && R() < BUSY.dark, busy = quiet ? BUSY.quiet[0] + BUSY.quiet[1] * R() : BUSY.lively[0] + BUSY.lively[1] * R();
+    const b = { kit, win, R, E: CITY.edge, draft, tone: stone / 6, vary: R(), lay: 0, busy, mood: i * 1.37, sink: g0 - low + 1.5 };
     make(b, { w, d, tall, roof, form, seed, i });
   }
   made.push(kit.meshes(placeOf(x, z, turn)));

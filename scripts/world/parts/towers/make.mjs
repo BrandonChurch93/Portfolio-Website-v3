@@ -8,7 +8,7 @@ import { pack } from '../../lib/pack.mjs';
 import { png } from '../../lib/png.mjs';
 import { bake } from '../../lib/bake.mjs';
 import { light, linear, storeBounce } from '../../lib/plan.mjs';
-import { TONES, WARM, WINDOW } from '../../../../src/pieces/world/parts/towers/windows.ts';
+import { PLACE, STONES, WARM, WINDOW, stoneOf } from '../../../../src/pieces/world/parts/towers/windows.ts';
 import { FIELD } from './layers.mjs';
 
 const NAMES = ['stone', 'bay', 'gold'];
@@ -28,9 +28,10 @@ export function gather(list) {
     const parts = list.map((m) => m[name]).filter((m) => m && m.indices.length);
     const width = list.find((m) => m[name])?.[name].width ?? 0;
     const nv = parts.reduce((s, m) => s + m.positions.length / 3, 0), ni = parts.reduce((s, m) => s + m.indices.length, 0);
-    const positions = new Float32Array(nv * 3), normals = new Float32Array(nv * 3), attr = new Float32Array(nv * width), indices = new Uint32Array(ni);
+    const positions = new Float32Array(nv * 3), normals = new Float32Array(nv * 3), attr = new Float32Array(nv * width), indices = new Uint32Array(ni), foot = new Float32Array(nv);
     let v = 0, i = 0;
     for (const m of parts) {
+      for (let k = 0; k < m.positions.length / 3; k++) foot[v + k] = Math.max(0, m.local[k * 3 + 1]);
       positions.set(m.positions, v * 3);
       normals.set(m.normals, v * 3);
       attr.set(m.attr, v * width);
@@ -38,16 +39,17 @@ export function gather(list) {
       v += m.positions.length / 3;
       i += m.indices.length;
     }
-    out[name] = { positions, normals, indices, attr, width };
+    out[name] = { positions, normals, indices, attr, width, foot };
   }
   return out;
 }
 
-// The pale stone as a stone of a tone (TONES).
+// The pale stone as a stone of a tone (STONES): a metal gives back little of what falls on it diffusely.
 function toned(pale, tone) {
-  const t = tone * 2, k = Math.min(1, Math.floor(t)), f = t - k, a = TONES[k], b = TONES[Math.min(2, k + 1)];
-  return pale.map((p, c) => p * (a[c] + (b[c] - a[c]) * f));
+  const s = STONES[stoneOf(tone)];
+  return pale.map((p, c) => p * s.tint[c] * (1 - 0.7 * s.metal));
 }
+const DEPTH = PLACE.depth, FOOT = PLACE.foot;
 
 function smooth(m, values, width, r) {
   if (!(r > 0)) return values;
@@ -77,7 +79,7 @@ export async function finish({ made, win, around = [], file, draft, meta = {}, s
   for (let i = 0; i < nb; i++) {
     const [u, v, raw, ch, at] = bay.attr.subarray(i * 5, i * 5 + 5);
     if (!(raw > 0)) { albedoBay.set(raw === 0 && v > 0.5 ? copper : bronze, i * 3); continue; }
-    const style = Math.floor(raw / WINDOW.style), cw = raw - style * WINDOW.style, frame = style ? toned(pale, (style - 1) / 4) : bronze;
+    const style = Math.floor(raw / WINDOW.style), cw = raw - style * WINDOW.style, frame = style && style <= STONES.length ? toned(pale, (style - 1) / (STONES.length - 1)) : bronze;
     albedoBay.set(ALBEDO.glass.map((g, k) => 0.5 * g + 0.5 * frame[k]), i * 3);
     const e = win.about(u, v, cw, ch, at % FIELD, Math.floor(at / FIELD), REACH);
     emit.set(e.map((x) => Math.PI * x), i * 3);
@@ -103,8 +105,9 @@ export async function finish({ made, win, around = [], file, draft, meta = {}, s
     const m = made[name], raw = lit[name], n = m.positions.length / 3, light4 = new Float32Array(n * 4), bounce4 = new Float32Array(n * 4);
     const l = { ...raw, open: smooth(m, raw.open, 1, SMOOTH[name]), bounce: smooth(m, raw.bounce, 3, SMOOTH[name]) };
     for (let i = 0; i < n; i++) {
-      light4.set([l.core[i], l.moon[i], l.open[i], 0], i * 4);
-      bounce4.set([storeBounce(l.bounce[i * 3]), storeBounce(l.bounce[i * 3 + 1]), storeBounce(l.bounce[i * 3 + 2]), 0], i * 4);
+      const back = Math.min(1, Math.max(0, (m.positions[i * 3 + 2] - DEPTH[0]) / (DEPTH[1] - DEPTH[0])));
+      light4.set([l.core[i], l.moon[i], l.open[i], Math.min(1, (m.foot?.[i] ?? 0) / FOOT)], i * 4);
+      bounce4.set([storeBounce(l.bounce[i * 3]), storeBounce(l.bounce[i * 3 + 1]), storeBounce(l.bounce[i * 3 + 2]), back], i * 4);
     }
     const attributes = { normal: { data: m.normals, size: 3, as: 'i16' }, light: { data: light4, size: 4, as: 'u8' }, bounce: { data: bounce4, size: 4, as: 'u8' } };
     if (name === 'stone') {

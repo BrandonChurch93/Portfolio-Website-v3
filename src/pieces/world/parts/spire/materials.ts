@@ -43,7 +43,7 @@ const ENGRAVE = { lines: [0.95, -2.65], wide: 0.28, depth: 0.7, chain: { mid: -0
 // even satin. How rough, and how much of the night it mirrors where it does not face the moon. The cursor's light
 // lies on it as a wider sheen than on the rest, so it slides round the band as the cursor moves: how strong, and how
 // tight (a power of how near the face is to turned between the cursor and the eye).
-const RING = { rough: 0.1, shade: 0.5, glint: 3, lobe: 14 };
+const RING = { rough: 0.1, shade: 0.9, glint: 3, lobe: 14 };
 // The fluting on the stone's front faces, drawn and not built: how much of each flute is the groove (the rest is
 // the fillet between), how far its walls turn, in radians, and how much its bottom is shut in. Every so many units
 // up the flutes stop at a belt, so tall.

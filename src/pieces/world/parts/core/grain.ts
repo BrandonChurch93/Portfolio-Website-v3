@@ -49,63 +49,39 @@ float coreNoise( vec3 p, uint seed ) {
 // hold is kept: held back further, the face went smooth at the page's size.
 float coreKeep( float wave, float fp ) { return 1.0 - smoothstep( wave / 2.0, wave / 1.25, fp ); }
 
-// The grain as it is seen close up: countless tiny facets, as the stream's shards are from far off. Space is cut
-// into cells round scattered points, and the plane the grain lies in slices them, so every cell it shows is a
-// polygon with straight sides. Each cell is cut again into a few facets by planes through its point, as a cut stone
-// is, so its pieces run to points. Each facet has its own brightness and warmth, which turn over slowly. Nothing is
-// drawn round them: where two meet, the two lights are blended over the width of a pixel and no more. w is that
-// width in cells. Returns brightness and warmth, each about -1 to 1.
 uvec3 coreHash( ivec3 c, uint seed ) { return corePcg( uvec3( c + 4096 ) + uvec3( seed, seed * 7u + 3u, seed * 13u + 5u ) ); }
 vec3 coreUnit( uvec3 h ) { return vec3( h & 0xffffu ) / 65535.0; }
 vec3 coreHigh( uvec3 h ) { return vec3( h >> 16u ) / 65535.0; }
-// A facet is flat and tilted, so the light on it runs across it from one side to the other. Most facets are close
-// to the light round them and a few catch it and are brighter: a facet is never much darker than the face. Each
-// leans its own way off the ball's surface, so how much of its light comes to the eye differs from the next, and as
-// the ball turns it changes: a facet that comes to face the glint's way flashes and goes again. cNorm is the ball's
-// surface, cView the way to the eye and cGlint the way a facet faces to flash, all turned with the face.
-vec3 cNorm, cView, cGlint;
-vec2 coreLight( uvec3 h, int k, float t, vec3 d ) {
-	uvec3 g = corePcg( h + uvec3( uint( k ) * 977u + 11u ) );
-	vec3 r = coreUnit( g ), r2 = coreHigh( g ) * 2.0 - 1.0;
-	float turn = sin( 6.2832 * ( r.y + t * ( 0.5 + r.z ) ) );
-	vec3 nf = coreDir( cNorm + FACET_LEAN * r2 );
-	float lit = FACET_LIFT * ( pow( r.x, FACET_SKEW ) - 1.0 / ( FACET_SKEW + 1.0 ) ) + FACET_TURN * turn + FACET_TILT * dot( r2, d );
-	lit += FACET_VIEW * ( dot( nf, cView ) - dot( cNorm, cView ) ) + FACET_GLINT * pow( max( dot( nf, cGlint ), 0.0 ), FACET_SHINE );
-	return vec2( lit, FACET_WARM * ( coreHigh( h ).y * 2.0 - 1.0 ) );
-}
-// Which facet of a cell a place is in, the light of that facet, and how far the place is from the facet's sides.
-vec2 coreCut( vec3 d, uvec3 h, float t, float w ) {
-	vec3 a[ FACET_CUTS ];
-	for ( int k = 0; k < FACET_CUTS; k ++ ) {
-		vec3 r = coreUnit( corePcg( h + uvec3( uint( k ) * 31u + 3u ) ) ) * 2.0 - 1.0;
-		a[ k ] = r / max( length( r ), 1e-3 );
-	}
-	int best = 0, next = 1;
-	float b0 = - 1e9, b1 = - 1e9;
-	for ( int k = 0; k < FACET_CUTS; k ++ ) {
-		float s = dot( a[ k ], d );
-		if ( s > b0 ) { b1 = b0; next = best; b0 = s; best = k; } else if ( s > b1 ) { b1 = s; next = k; }
-	}
-	float side = ( b0 - b1 ) / max( length( a[ best ] - a[ next ] ), 1e-3 );
-	return mix( coreLight( h, next, t, d ), coreLight( h, best, t, d ), 0.5 + 0.5 * smoothstep( 0.0, w, side ) );
-}
-vec2 coreFacets( vec3 p, float t, float w, uint seed ) {
+// The face close up: granules, as on the face of a star. Space is cut into cells round points that wander slowly,
+// and the ball's surface slices them, so each granule is seen foreshortened toward the edge as the ball turns. Each
+// is brightest at its heart and falls to a dark lane where it meets the next, and each has its own brightness. w is a
+// pixel's width in cells, which the lane is never narrower than. Returns about -1 to 1.
+float coreCells( vec3 p, float t, float w, uint seed ) {
 	ivec3 base = ivec3( floor( p ) );
-	float d0 = 1e9, d1 = 1e9;
+	float d0 = 1e9, d1 = 1e9, own = 0.0;
 	vec3 s0 = vec3( 0.0 ), s1 = vec3( 0.0 );
-	ivec3 c0 = base, c1 = base;
 	for ( int i = 0; i < 27; i ++ ) {
 		ivec3 c = base + ivec3( i % 3 - 1, ( i / 3 ) % 3 - 1, i / 9 - 1 );
-		vec3 s = vec3( c ) + 0.5 + ( coreUnit( coreHash( c, seed ) ) - 0.5 ) * FACET_JITTER;
+		uvec3 h = coreHash( c, seed );
+		vec3 r = coreUnit( h ), r2 = coreHigh( h );
+		vec3 s = vec3( c ) + 0.5 + ( r - 0.5 ) * GRAN_JITTER + GRAN_WANDER * sin( 6.2832 * ( r2 + t * ( 0.6 + 0.8 * r.zxy ) ) );
 		vec3 e = p - s;
 		float d = dot( e, e );
-		if ( d < d0 ) { d1 = d0; s1 = s0; c1 = c0; d0 = d; s0 = s; c0 = c; } else if ( d < d1 ) { d1 = d; s1 = s; c1 = c; }
+		if ( d < d0 ) { d1 = d0; s1 = s0; d0 = d; s0 = s; own = r2.x; } else if ( d < d1 ) { d1 = d; s1 = s; }
 	}
-	// How far the place is from the side between its cell and the next: half the difference of the squares over the
-	// distance between their points.
 	float side = ( d1 - d0 ) / max( 2.0 * length( s1 - s0 ), 1e-3 );
-	vec2 own = coreCut( p - s0, coreHash( c0, seed + 1u ), t, w ), near = coreCut( p - s1, coreHash( c1, seed + 1u ), t, w );
-	return mix( near, own, 0.5 + 0.5 * smoothstep( 0.0, w, side ) );
+	float lane = smoothstep( 0.0, GRAN_LANE + w, side );
+	float heart = 1.0 - smoothstep( 0.0, GRAN_HEART_R, sqrt( d0 ) );
+	return GRAN_EACH * ( own * 2.0 - 1.0 ) + GRAN_HEART * ( heart - 0.3 ) + GRAN_DARK * ( lane - 0.75 );
+}
+// Granules of three sizes, each let go as it gets smaller than a few pixels.
+float coreGranules( vec3 q, float t, float fp ) {
+	float v = 0.0;
+	for ( int i = 0; i < 3; i ++ ) {
+		float cell = GRAN_CELL * pow( GRAN_STEP, float( i ) ), a = pow( GRAN_FALL, float( i ) );
+		v += a * coreKeep( cell * 0.6, fp ) * coreCells( q / cell, t * ( 1.0 + 0.7 * float( i ) ), fp / cell, 307u + uint( i ) * 53u );
+	}
+	return v;
 }
 
 ${UNBALANCE}

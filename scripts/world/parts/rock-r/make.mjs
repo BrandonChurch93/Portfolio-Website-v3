@@ -1,97 +1,135 @@
-// Makes sculpt R of the rock and writes public/world/rock-r.bin: picture 9's rock measured from its pixels and built
-// as great slabs in the camera's space, lit by the world's own light.
+// Makes sculpt R of the rock and writes public/world/rock-r.bin: picture 9's hollow as a few heavy blocks of stone
+// (round 3). The blocks take their outlines from the picture's own slabs (blocks.mjs), are made solid in the world
+// (hollow.mjs), and are lit by the world's own light.
 //
 //   node scripts/world/parts/rock-r/see.mjs        what of the picture is the rock (previews only)
-//   node scripts/world/parts/rock-r/slabs.mjs      its great slabs and their pieces: measured/slabs.json
-//   node scripts/world/parts/rock-r/make.mjs       the shipped file, from measured/slabs.json
+//   node scripts/world/parts/rock-r/slabs.mjs      the picture's slabs: measured/slabs.json
+//   node scripts/world/parts/rock-r/make.mjs       the shipped file
 //   node scripts/world/parts/rock-r/make.mjs --draft   fast and rough
 //
-// The steps: each slab is given a plane and a depth (great.mjs), the mesh is cut (carve.mjs) and any slab that
-// comes too near the core is moved back whole, the light that reaches every point is worked out by the world's
-// baker, and the planes are found again with what the baker found, ROUNDS times. It prints how far each round's
-// light is from the picture's, face by face. The spare number stored with the light is a number of each slab's own,
-// 0 to 1, the same over the whole slab, for the material to turn and shift its maps by.
+// The steps: the field is turned into a mesh that keeps its sharp edges, each vertex is given how far it is along
+// the surface from its face's nearest crease, the mesh is reduced with that kept, split at its creases, lit by the
+// world's baker with the planet's shell and top blocking light, and written as `break` alone. The stored light's
+// fourth number is the distance to the crease, as a share of EDGE (meta.edge, meta.edgeUnits), which the stone's
+// material reads for its chipped edges.
 import fs from 'node:fs';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 import { L, light, storeBounce } from '../../lib/plan.mjs';
 import { bake } from '../../lib/bake.mjs';
 import { pack } from '../../lib/pack.mjs';
-import { Great, hash } from './great.mjs';
-import { carve } from './carve.mjs';
+import { surface, simplify } from '../../lib/surface.mjs';
+import { creased, incident } from '../../lib/mesh.mjs';
+import { ALBEDO } from '../../lib/rock.mjs';
+import { plan } from './blocks.mjs';
+import { rubble } from './rubble.mjs';
 import { buildSkin } from './build.mjs';
-import { ALBEDO, CORE_LUM, MOON_LUM, lum, dot, illum } from './relief.mjs';
+import { CORE_PX, VIEW } from './relief.mjs';
 
 const draft = process.argv.includes('--draft');
-const ROUNDS = draft ? 1 : 3;
 const t0 = performance.now(), said = (s) => console.log(`${((performance.now() - t0) / 1000).toFixed(1)} s · ${s}`);
-const json = JSON.parse(fs.readFileSync(new URL('./measured/slabs.json', import.meta.url), 'utf8'));
-const G = new Great(json);
-const LT = light(), C = L.CORE.at;
-const samples = draft ? { core: 24, moon: 8, hemi: 48 } : { core: 64, moon: 16, hemi: 192 };
+// The grid the field is read on, in units; the most the reduced mesh may stray, in units; the most triangles.
+const CELL = draft ? 3 : 1.4, KEEP = 0.22, BUDGET = 290000;
+// Faces meeting at more than this, in degrees, meet at a crease.
+const CREASE = 38;
+// How far from a crease the stored distance reaches, in units: past it the stone's face is clean.
+export const EDGE = 16;
+// The space the hollow is made in.
+const BOX = [[-500, -560, -290], [450, 2, 640]];
+// How far under the land's surface the rock's top stays, in units.
+const UNDER = 3.5;
 
-G.solve();
-const roles = {};
-for (const s of G.slabs) roles[s.role] = (roles[s.role] ?? 0) + 1;
-said(`solved: ${G.slabs.length} slabs (${Object.entries(roles).map(([k, v]) => `${v} ${k}`).join(', ')}), ${G.pieces.length} pieces`);
-const skin = buildSkin();
-said(`skin: ${(skin.indices.length / 3).toLocaleString('en-US')} triangles`);
+const module = fileURLToPath(new URL('./hollow.mjs', import.meta.url));
+const args = await plan({ draft });
+args.corePx = [...CORE_PX];
+args.view = [...VIEW];
+args.under = UNDER;
+said(`plan: ${args.blocks.length} blocks`);
+args.stones = await rubble(args, { draft });
+said(`rubble: ${args.stones.length} stones`);
 
-// Cut the mesh, moving back whole any slab that came too near the core, until none does.
-const cut = () => {
-  let m;
-  for (let k = 0; k < 4; k++) {
-    m = carve(G);
-    let moved = 0;
-    m.push.forEach((v, s) => { if (v > 0) { G.slabs[s].shift -= v; moved++; } });
-    if (!moved) break;
-    said(`${moved} slabs moved back clear of the core`);
+const raw = await surface({ module, args, box: BOX, cell: CELL });
+said(`surface: ${(raw.indices.length / 3).toLocaleString('en-US')} triangles`);
+if (process.argv.includes('--where')) {
+  const H = await import('./hollow.mjs'), count = {};
+  H.setup(args);
+  for (let t = 0; t < raw.indices.length / 3; t += 7) {
+    const c = [0, 1, 2].map((k) => (raw.positions[raw.indices[t * 3] * 3 + k] + raw.positions[raw.indices[t * 3 + 1] * 3 + k] + raw.positions[raw.indices[t * 3 + 2] * 3 + k]) / 3);
+    let best = 'backing', bd = Infinity;
+    for (const b of args.blocks) { const v = Math.abs(H.block(b, ...c)); if (v < bd) { bd = v; best = b.name; } }
+    const [px, py] = L.pictured(...c);
+    const what = Math.abs(H.sample(args.rock, px, py) * L.PICTURE.unit) < 1.2 ? 'mask wall' : bd < 1.2 ? best : 'other';
+    count[what] = (count[what] ?? 0) + 7;
   }
-  return m;
-};
-
-let brk, lit;
-for (let round = 0; round <= ROUNDS; round++) {
-  brk = cut();
-  said(`break: ${(brk.indices.length / 3).toLocaleString('en-US')} triangles, ${brk.stones} stones`);
-  const last = round === ROUNDS;
-  lit = await bake({ meshes: [{ name: 'break', positions: brk.positions, indices: brk.indices, normals: brk.normals, albedo: ALBEDO, receive: true }, { name: 'skin', positions: skin.positions, indices: skin.indices, normals: skin.normals, albedo: ALBEDO, receive: last }], ...LT }, { samples: last ? samples : { core: 16, moon: 6, hemi: 32 }, bounces: last ? 2 : 1 });
-  // What each slab's face got, against what the picture wants of it.
-  const S = G.slabs.length, acc = Array.from({ length: S }, () => ({ core: 0, moon: 0, bounce: 0, e: 0, c: 0 }));
-  const b = lit.break, P = brk.positions, Nn = brk.normals;
-  for (let v = 0; v < brk.face.length; v++) {
-    if (brk.kind[v] !== 0) continue;
-    const s = brk.slab[v], p = [P[v * 3], P[v * 3 + 1], P[v * 3 + 2]], n = [Nn[v * 3], Nn[v * 3 + 1], Nn[v * 3 + 2]];
-    const d = Math.hypot(C[0] - p[0], C[1] - p[1], C[2] - p[2]), l = [(C[0] - p[0]) / d, (C[1] - p[1]) / d, (C[2] - p[2]) / d];
-    const bl = lum([b.bounce[v * 3], b.bounce[v * 3 + 1], b.bounce[v * 3 + 2]]);
-    const e = CORE_LUM * b.core[v] * (L.CORE.r / d) ** LT.core.fall * illum(dot(n, l), Math.min(1, L.CORE.r / d)) + MOON_LUM * b.moon[v] * illum(dot(n, LT.moon.toward), Math.sin(LT.moon.spread)) + bl;
-    const a = acc[s];
-    a.core += b.core[v]; a.moon += b.moon[v]; a.bounce += bl; a.e += e; a.c++;
-  }
-  let err = 0, abs = 0, wsum = 0;
-  const byRole = {};
-  for (const s of G.slabs) {
-    const a = acc[s.id];
-    if (!a.c) continue;
-    const got = a.e / a.c, want = s.want, w = s.area * s.shown, stops = Math.log2((got + 0.03) / (want + 0.03));
-    err += stops * w; abs += Math.abs(stops) * w; wsum += w;
-    s.got = got; s.lit = { core: a.core / a.c, moon: a.moon / a.c, bounce: a.bounce / a.c };
-    const r = (byRole[s.role] ??= { core: 0, w: 0, got: 0, want: 0 });
-    r.core += s.lit.core * s.area; r.got += got * s.area; r.want += want * s.area; r.w += s.area;
-  }
-  said(`round ${round}: light against the picture's: mean ${(err / wsum).toFixed(2)} stops, mean size ${(abs / wsum).toFixed(2)} stops · ${Object.entries(byRole).map(([k, r]) => `${k} core seen ${(r.core / r.w).toFixed(2)}, got ${(r.got / r.w).toFixed(3)} want ${(r.want / r.w).toFixed(3)}`).join(' · ')}`);
-  if (last) break;
-  G.solve({ lit: G.slabs.map((s) => s.lit ?? null) });
+  console.log(Object.entries(count).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${v}`).join(' · '));
 }
 
-// The file: `break` and `skin`, each with its normals, its stored light and its bounce.
-const out = (name, m, l, spare) => {
-  const n = m.positions.length / 3, lightOf = new Float32Array(n * 4), bounceOf = new Float32Array(n * 4);
-  for (let i = 0; i < n; i++) {
-    lightOf.set([l.core[i], l.moon[i], l.open[i], spare(i)], i * 4);
-    bounceOf.set([storeBounce(l.bounce[i * 3]), storeBounce(l.bounce[i * 3 + 1]), storeBounce(l.bounce[i * 3 + 2]), 0], i * 4);
+// How far each vertex is along the surface from the nearest crease: a crease is where the mesh, split at its creases,
+// has more than one vertex at a place.
+const nv = raw.positions.length / 3, split = creased(raw, CREASE), copies = new Uint8Array(nv);
+for (const s of split.source) copies[s] = Math.min(255, copies[s] + 1);
+const dist = new Float64Array(nv).fill(Infinity), { start, tris } = incident(raw), P = raw.positions, I = raw.indices;
+const heap = [];
+const push = (v, d) => { heap.push([d, v]); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } };
+const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { heap[0] = last; let i = 0; for (;;) { const a = 2 * i + 1, b = a + 1; let m = i; if (a < heap.length && heap[a][0] < heap[m][0]) m = a; if (b < heap.length && heap[b][0] < heap[m][0]) m = b; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return top; };
+for (let v = 0; v < nv; v++) if (copies[v] > 1) { dist[v] = 0; push(v, 0); }
+while (heap.length) {
+  const [d, v] = pop();
+  if (d > dist[v] || d > EDGE) continue;
+  for (let k = start[v]; k < start[v + 1]; k++) {
+    const t = tris[k];
+    for (let c = 0; c < 3; c++) {
+      const w = I[t * 3 + c];
+      if (w === v) continue;
+      const nd = d + Math.hypot(P[w * 3] - P[v * 3], P[w * 3 + 1] - P[v * 3 + 1], P[w * 3 + 2] - P[v * 3 + 2]);
+      if (nd < dist[w]) { dist[w] = nd; push(w, nd); }
+    }
   }
-  return { name, positions: m.positions, indices: m.indices, attributes: { normal: { data: m.normals, size: 3, as: 'i16' }, light: { data: lightOf, size: 4, as: 'u8' }, bounce: { data: bounceOf, size: 4, as: 'u8' } } };
-};
-pack('public/world/rock-r.bin', [out('break', brk, lit.break, (i) => hash(brk.slab[i], 23)), out('skin', skin, lit.skin, () => 0)], { draft, slabs: G.slabs.length, pieces: G.pieces.length });
-fs.writeFileSync(new URL('./measured/solved.json', import.meta.url), JSON.stringify(G.slabs.map((s) => ({ id: s.id, role: s.role, z: +s.z.toFixed(2), shift: +s.shift.toFixed(2), n: s.n.map((v) => +v.toFixed(4)), want: +s.want.toFixed(4), got: +(s.got ?? 0).toFixed(4), lit: s.lit }))));
+}
+const edge = new Float32Array(nv);
+for (let v = 0; v < nv; v++) edge[v] = Math.min(1, dist[v] / EDGE);
+said('distances to the creases');
+
+const small = await simplify({ positions: raw.positions, indices: raw.indices }, { error: KEEP, target: BUDGET, attributes: edge, weights: [EDGE * 0.12] });
+said(`reduced: ${(small.indices.length / 3).toLocaleString('en-US')} triangles, strays ${small.stray}`);
+const brk = creased({ positions: small.positions, indices: small.indices }, CREASE);
+const edgeOf = new Float32Array(brk.positions.length / 3);
+for (let i = 0; i < edgeOf.length; i++) edgeOf[i] = small.attributes[brk.source[i]];
+
+// Nothing comes nearer the core than its clearance.
+let near = Infinity;
+for (let i = 0; i < brk.positions.length; i += 3) near = Math.min(near, Math.hypot(brk.positions[i] - L.CORE.at[0], brk.positions[i + 1] - L.CORE.at[1], brk.positions[i + 2] - L.CORE.at[2]));
+said(`nearest the core's middle: ${near.toFixed(1)} units (its radius is ${L.CORE.r})`);
+
+const skin = buildSkin();
+const samples = draft ? { core: 24, moon: 8, hemi: 48 } : { core: 64, moon: 16, hemi: 160 };
+const lit = await bake({ meshes: [{ name: 'break', positions: brk.positions, indices: brk.indices, normals: brk.normals, albedo: ALBEDO, receive: true }, { name: 'skin', positions: skin.positions, indices: skin.indices, normals: skin.normals, albedo: ALBEDO, receive: false }], ...light() }, { samples, bounces: draft ? 1 : 2 });
+said('lit');
+{
+  // What each block's face got: the share of the core it sees and the light that reaches it, on the face only.
+  const H = await import('./hollow.mjs'), LT = light(), C = L.CORE.at, out = [];
+  H.setup(args);
+  const lum = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2], CL = lum(LT.core.color), ML = lum(LT.moon.color), AL = lum(ALBEDO);
+  const illum = (c, s) => (c >= s ? c : c <= -s ? 0 : ((c + s) * (c + s)) / (4 * s));
+  for (const b of args.blocks) {
+    let k = 0, core = 0, e = 0;
+    for (let i = 0; i < brk.positions.length / 3; i += 3) {
+      const p = [brk.positions[i * 3], brk.positions[i * 3 + 1], brk.positions[i * 3 + 2]], nn = [brk.normals[i * 3], brk.normals[i * 3 + 1], brk.normals[i * 3 + 2]];
+      if (nn[0] * b.n[0] + nn[1] * b.n[1] + nn[2] * b.n[2] < 0.9 || Math.abs(H.block(b, ...p)) > 0.6) continue;
+      const d = Math.hypot(C[0] - p[0], C[1] - p[1], C[2] - p[2]), l = [(C[0] - p[0]) / d, (C[1] - p[1]) / d, (C[2] - p[2]) / d];
+      const E = CL * lit.break.core[i] * (L.CORE.r / d) ** LT.core.fall * illum(nn[0] * l[0] + nn[1] * l[1] + nn[2] * l[2], Math.min(1, L.CORE.r / d)) + ML * lit.break.moon[i] * illum(nn[0] * LT.moon.toward[0] + nn[1] * LT.moon.toward[1] + nn[2] * LT.moon.toward[2], Math.sin(LT.moon.spread)) + lum([lit.break.bounce[i * 3], lit.break.bounce[i * 3 + 1], lit.break.bounce[i * 3 + 2]]);
+      k++; core += lit.break.core[i]; e += E;
+    }
+    out.push(`${b.name} want ${b.want.toFixed(3)} ${k ? `core ${(core / k).toFixed(2)} lum ${((AL / Math.PI) * e / k).toFixed(3)}` : 'none'}`);
+  }
+  console.log(out.join(' · '));
+}
+
+const n = brk.positions.length / 3, lightOf = new Float32Array(n * 4), bounceOf = new Float32Array(n * 4), l = lit.break;
+for (let i = 0; i < n; i++) {
+  lightOf.set([l.core[i], l.moon[i], l.open[i], edgeOf[i]], i * 4);
+  bounceOf.set([storeBounce(l.bounce[i * 3]), storeBounce(l.bounce[i * 3 + 1]), storeBounce(l.bounce[i * 3 + 2]), 0], i * 4);
+}
+pack('public/world/rock-r.bin', [{ name: 'break', positions: brk.positions, indices: brk.indices, attributes: { normal: { data: brk.normals, size: 3, as: 'i16' }, light: { data: lightOf, size: 4, as: 'u8' }, bounce: { data: bounceOf, size: 4, as: 'u8' } } }], { draft, round: 3, blocks: args.blocks.length, stones: args.stones.length, edge: 'light.w', edgeUnits: EDGE });
+fs.writeFileSync(new URL('./measured/blocks.json', import.meta.url), JSON.stringify(args.blocks.map((b) => ({ name: b.name, kind: b.kind, at: b.at.map((v) => +v.toFixed(1)), z: +b.z.toFixed(1), n: b.n.map((v) => +v.toFixed(4)), thick: b.thick }))));
 said('done');

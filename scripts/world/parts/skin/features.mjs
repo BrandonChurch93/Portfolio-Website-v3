@@ -5,6 +5,7 @@
 //   import { SIDES, CRATERS, CRACKS, EDGES, onShell, shellNormal, toShell, frame } from './features.mjs'
 import { L } from '../../lib/plan.mjs';
 import { TORN } from '../rock-r/trace.mjs';
+import { fbm } from './field.mjs';
 
 const C = L.WORLD, RIM = L.RIM, A2 = C.half * C.half, C2 = C.deep * C.deep;
 export const CENTER = [0, -RIM, 0];
@@ -104,18 +105,21 @@ export function rng(seed) {
   };
 }
 
-// The scatter of smaller craters made as geometry, on the pale side: so many between each pair of radii, in units.
-const SCATTER = [[3, 4.5, 70], [4.5, 7, 34], [7, 11, 14], [11, 16, 5]];
-// And as a few old worn ones on the dark side, so it is the same planet: shallow and soft.
-const WORN = [[6, 14, 7], [14, 26, 3]];
+// The scatter of smaller craters made as geometry, on the pale side: so many between each pair of radii, in units,
+// many small and few large, as a power law has them.
+const SCATTER = [[3, 4.5, 150], [4.5, 7, 64], [7, 11, 20], [11, 18, 6]];
+// And old worn ones on the dark side, so it is the same planet: shallow and soft, the oldest nearly gone.
+const WORN = [[5, 10, 34], [10, 20, 14], [20, 34, 5], [34, 52, 2]];
 
-function crater(c, r, kind, seed, worn = 0) {
+// depth and rim are shares of the radius. A crater's lip stands up sharply from the ground round it: it is what
+// catches the moon as a thin bright line on the side away from it.
+function crater(c, r, kind, seed, worn = 0, deep = 1) {
   const n = shellNormal(...c), [e1, e2] = frame(n), R = rng(seed * 7919 + 13);
   const complex = kind === 'complex';
   return {
     c, n, e1, e2, r, seed,
-    depth: (complex ? 0.25 : 0.34) * r * (0.85 + 0.3 * R()) * (1 - 0.7 * worn),
-    rim: (complex ? 0.06 : 0.09) * r * (0.8 + 0.4 * R()) * (1 - 0.6 * worn),
+    depth: (complex ? 0.3 : 0.38) * deep * r * (0.85 + 0.3 * R()) * (1 - 0.72 * worn),
+    rim: (complex ? 0.1 : 0.12) * r * (0.8 + 0.4 * R()) * (1 - 0.7 * worn),
     floor: complex ? 0.5 + 0.12 * R() : 0,
     terraces: complex ? 1 + Math.floor(R() * 2.2) : 0,
     gullies: complex ? Math.round(18 + 22 * R()) : 0,
@@ -127,14 +131,19 @@ function crater(c, r, kind, seed, worn = 0) {
 
 const areaAt = (t) => { const r = Math.sqrt(1 - t * t), dr = (C.half * t) / r; return r * Math.hypot(dr, C.deep); };
 const AREA_MOST = Math.max(...Array.from({ length: 87 }, (_, i) => areaAt(i / 100)));
-function scatterOn(side, R) {
+// Craters are gathered toward the torn line and down toward the lower limb, with broad smooth bands between.
+function scatterOn(side, R, even = 0.32) {
   for (;;) {
-    const t = R() * 0.86, th = SIDES[side].sign * (20 + 75 * R()) * L.D2R;
+    const t = R() * 0.9, th = SIDES[side].sign * (20 + 75 * R()) * L.D2R;
     if (R() * AREA_MOST > areaAt(t)) continue;
     const e = edgeAngle(side, t);
     if (e === null || SIDES[side].sign * (th - e) < 0) continue;
     const p = L.skinAt(th, t), [px, py] = L.pictured(...p);
     if (py < 290) continue;
+    const ring = C.half * Math.sqrt(Math.max(0, 1 - t * t)), fromEdge = Math.abs(th - e) * ring;
+    const toward = Math.max(Math.exp(-fromEdge / 90), Math.min(1, Math.max(0, (t - 0.4) / 0.4)));
+    const band = Math.min(1, Math.max(0, 0.5 + 2.2 * fbm(p[0] / 90 + 4, p[1] / 60, p[2] / 90, 3)));
+    if (R() > even + (1 - even) * toward * (0.25 + 0.75 * band)) continue;
     return { p, px, py, t };
   }
 }
@@ -156,16 +165,21 @@ export function placed(px, py) {
 }
 
 export function craters() {
-  const out = NAMED.map((k) => crater(placed(k.at[0], k.at[1]), k.r * L.PICTURE.unit, k.kind, k.seed));
+  // The named craters are the picture's: deep, so their crescents of shadow read from across the room.
+  const out = NAMED.map((k) => crater(placed(k.at[0], k.at[1]), k.r * L.PICTURE.unit, k.kind, k.seed, 0, k.r > 40 ? 1 : k.r > 12 ? 1.15 : 1.1));
   const R = rng(4242);
   let seed = 100;
   for (const [lo, hi, count] of SCATTER) for (let i = 0; i < count; i++) {
     const { p } = scatterOn('right', R), r = lo * (hi / lo) ** R();
     out.push(crater(p, r, r > 9 ? 'complex' : 'simple', seed++));
   }
+  // None round the knot of the cracks, whose light lies on smooth rock.
+  const knot = onShell(...KNOT);
   for (const [lo, hi, count] of WORN) for (let i = 0; i < count; i++) {
-    const { p } = scatterOn('left', R), r = lo * (hi / lo) ** R();
-    out.push(crater(p, r, 'simple', seed++, 0.75));
+    let { p } = scatterOn('left', R, 0.45);
+    while (Math.hypot(p[0] - knot[0], p[1] - knot[1], p[2] - knot[2]) < 70) p = scatterOn('left', R, 0.45).p;
+    const r = lo * (hi / lo) ** R();
+    out.push(crater(p, r, r > 14 ? 'complex' : 'simple', seed++, 0.55 + 0.35 * R()));
   }
   return out;
 }
@@ -176,10 +190,10 @@ export function craters() {
 // straight and turn sharply. heat 0 is a dark fissure with no light in it.
 export const KNOT = [225, 478];
 // The traced widths are what the picture shows at its size; the clefts are cut this much wider so they read as clefts.
-const WIDEN = 1.25;
+const WIDEN = 1.55;
 export const TRACED = [
   // to the tear: the widest and hottest
-  [[225, 478, 2.4, 1], [236, 474, 2.2, 1], [246, 472, 2.1, 1], [252, 470, 2.3, 1], [259, 469, 2.6, 1]],
+  [[225, 478, 2.4, 1], [236, 474, 2.2, 1], [246, 472, 2.1, 1], [252, 470, 2.3, 1], [259, 469, 2.5, 1], [268, 468, 2.3, 0.96]],
   // down and to the left, then along
   [[225, 478, 2.2, 1], [221, 492, 1.9, 0.95], [217, 503, 1.6, 0.9], [205, 506, 1.2, 0.8], [192, 505, 1.0, 0.72], [181, 506, 0.85, 0.62], [172, 499, 0.7, 0.55], [163, 491, 0.55, 0.45], [151, 484, 0.4, 0.36], [144, 481, 0.2, 0.25]],
   // up and to the left
@@ -230,7 +244,7 @@ export function cracks() {
   const branches = [];
   for (const run of runs.slice(0, 10)) for (let i = 1; i < run.length - 1; i++) {
     const a = run[i];
-    if (a.heat <= 0 || R() > 0.2) continue;
+    if (a.heat <= 0 || R() > 0.11 || a.heat > 0.8) continue;
     const b = run[i + 1], n = shellNormal(...a.p);
     const dir = [b.p[0] - a.p[0], b.p[1] - a.p[1], b.p[2] - a.p[2]], dl = Math.hypot(...dir);
     if (dl < 1e-6) continue;
@@ -249,7 +263,8 @@ export function cracks() {
     branches.push(pts);
   }
   // Hairline tips: every lit run thins to nothing past its last traced point.
-  for (const run of runs) {
+  // The hot arm runs into the torn line and ends there: it is open to the break, not tipped.
+  for (const run of runs.slice(1)) {
     const last = run[run.length - 1], prev = run[run.length - 2];
     if (!prev || last.heat <= 0) continue;
     const dir = last.p.map((v, k) => v - prev.p[k]), dl = Math.hypot(...dir) || 1, len = 4 + 5 * R();

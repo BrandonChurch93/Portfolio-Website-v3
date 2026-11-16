@@ -17,16 +17,17 @@ import process from 'node:process';
 import { bake } from '../../lib/bake.mjs';
 import { build, closest, gap } from '../../lib/bvh.mjs';
 import { pack } from '../../lib/pack.mjs';
-import { L, light, linear, storeBounce } from '../../lib/plan.mjs';
+import { L, light, stone, storeBounce } from '../../lib/plan.mjs';
 import { KIND, SWAY } from '../../../../src/pieces/world/parts/debris/motion.ts';
-import { makeModels } from './models.mjs';
+import { COLUMNS, LOOK, MOON_SHARE } from '../../../../src/pieces/world/parts/debris/table.ts';
+import { SHARED, makeModels } from './models.mjs';
 import { calm, extents, place, rotate } from './place.mjs';
 import { read } from './rockfile.mjs';
 
 const draft = process.argv.includes('--draft');
 const ROCK = 'public/world/rock-r.bin', OUT = 'public/world/debris.bin';
-// The color the light is worked out with, which is the torn rock's (scripts/world/lib/rock.mjs).
-const ALBEDO = linear('text-3');
+// The color the light is worked out with: the planet's stone, which the torn rock is lit with too.
+const ALBEDO = stone();
 const t0 = performance.now(), said = (s) => console.log(`${((performance.now() - t0) / 1000).toFixed(1)} s · ${s}`);
 
 // The torn rock, as one mesh.
@@ -41,7 +42,7 @@ said(`placed: ${JSON.stringify(placed)}`);
 const models = await makeModels(pieces, draft, said);
 const byName = new Map(models.map((m, i) => [m.name, i]));
 const hashOf = (n) => { let x = Math.imul(n ^ 0x27d4eb2d, 0x165667b1); x ^= x >>> 15; return (x >>> 0) / 4294967296; };
-pieces.forEach((p, i) => { p.model = p.cls === 'G' ? byName.get(`G${p.family}`) : byName.get(`${p.cls}${Math.floor(hashOf(i * 7 + 3) * ({ L: 4, M: 5, S: 5, D: 4 })[p.cls])}`); });
+pieces.forEach((p, i) => { p.model = p.cls === 'G' ? byName.get(`G${p.family}`) : byName.get(`${p.cls}${Math.floor(hashOf(i * 7 + 3) * SHARED[p.cls].count)}`); });
 
 // How shut in each place of a shared model is, alone.
 for (const m of models.filter((q) => q.shared)) {
@@ -87,7 +88,7 @@ for (const p of great) {
   meshes.push({ name: models[p.model].name, positions: pos, indices: models[p.model].indices, normals: nor, albedo: ALBEDO, receive: true });
 }
 const lit = await bake({ meshes, ...light() }, { samples: draft ? { core: 24, moon: 8, hemi: 64 } : { core: 64, moon: 16, hemi: 224 }, bounces: 1 });
-for (const p of great) { const m = models[p.model]; m.core = lit[m.name].core; m.open = lit[m.name].open; m.bounce = lit[m.name].bounce; }
+for (const p of great) { const m = models[p.model]; m.core = lit[m.name].core; m.open = lit[m.name].open; m.bounce = lit[m.name].bounce; m.moon = lit[m.name].moon; }
 said('the great pieces are lit');
 
 // The light bounced to a small piece where it rests: the torn rock round it as the core lights it, seen from the
@@ -153,7 +154,9 @@ said('the pieces are lit by each other');
 const out = models.map((m) => {
   const n = m.positions.length / 3, lightOf = new Float32Array(n * 4), bounceOf = new Float32Array(n * 4);
   for (let i = 0; i < n; i++) {
-    lightOf.set([m.shared ? 1 : m.core[i], m.curv[i], m.open[i], m.skin[i]], i * 4);
+    // The spare place holds whether this is the planet's outer surface (over a half) and how much of the moon reaches
+    // it past the planet (the rest): on a shared model the page fills that in for each piece.
+    lightOf.set([m.shared ? 1 : m.core[i], m.curv[i], m.open[i], 0.5 * m.skin[i] + MOON_SHARE * (m.shared ? 0 : m.moon[i])], i * 4);
     bounceOf.set([m.shared ? 0 : storeBounce(m.bounce[i * 3]), m.shared ? 0 : storeBounce(m.bounce[i * 3 + 1]), m.shared ? 0 : storeBounce(m.bounce[i * 3 + 2]), m.bed[i]], i * 4);
   }
   return { name: m.name, positions: m.positions, indices: m.indices, info: { shared: m.shared }, attributes: { normal: { data: m.normals, size: 3, as: 'i16' }, light: { data: lightOf, size: 4, as: 'u8' }, bounce: { data: bounceOf, size: 4, as: 'u8' } } };
@@ -161,12 +164,13 @@ const out = models.map((m) => {
 const r3 = (v) => Math.round(v * 1000) / 1000;
 // A chip the stream carries is one of the stream's own shards (src/stream/shards.ts), which the page makes, as
 // large as the piece.
-const e = (p) => (p.cls === 'G' ? [1, 1, 1] : p.kind === 'fall' ? [p.r * 1.3, p.r * 1.3, p.r * 1.3] : extents(p));
+const e = (p) => (p.cls === 'G' ? [1, 1, 1] : p.kind === 'fall' ? [p.r * 1.3, p.r * 1.3, p.r * 1.3] : p.facet ? Array(3).fill(Math.max(...extents(p)) * 1.25) : extents(p));
 const table = pieces.map((p) => [
   p.model, ...p.at.map(r3), ...p.quat.map(r3), ...e(p).map(r3), KIND[p.kind], p.family, r3(p.phase), ...p.spin.map(r3), r3(p.core),
   ...(p.cls === 'G' ? [0, 0, 0] : p.bounce.map((v) => r3(storeBounce(v)))),
   r3(p.kind === 'fall' ? p.fast : p.kind === 'ring' ? p.family - 20 : p.kind === 'whirl' ? p.swing : 0), r3(p.shut ?? 0),
+  r3(p.moon), p.kind === 'fall' ? LOOK.shard : p.facet ? LOOK.stone : LOOK.rock,
 ]);
-const tris = pieces.reduce((s, p) => s + models[p.model].indices.length / 3, 0);
-pack(OUT, out, { draft, columns: 'model x y z qx qy qz qw sx sy sz kind family phase ax ay az spin core br bg bb extra shut', pieces: table, placed, triangles: tris });
+const tris = pieces.reduce((s, p) => s + (p.kind === 'fall' || p.facet ? 8 : models[p.model].indices.length / 3), 0);
+pack(OUT, out, { draft, columns: COLUMNS, pieces: table, placed, triangles: tris });
 said(`done: ${pieces.length} pieces, ${tris.toLocaleString('en-US')} triangles drawn`);

@@ -33,9 +33,29 @@ export const WINDOW = {
   style: 100,
 } as const;
 
-// The towers' stones, as what each multiplies the pale stone's color by in linear light: the pale stone, a warm
-// sandstone and a dark granite, at 0, 0.5 and 1 of a face's tone. Here so the baker lights each as it is drawn.
-export const TONES = [[1, 1, 1], [0.74, 0.6, 0.45], [0.3, 0.26, 0.23]] as const;
+// The towers' stones, a building's tone (0 to 1) picking one in sixths: what each multiplies the pale stone's color
+// by in linear light, how metallic and how rough it is. A pale limestone, a buff stone, a sandstone, a red brown
+// stone, a dark granite, a cladding of bronze and a near black polished stone. Here so the baker lights each as it
+// is drawn.
+export const STONES = [
+  { tint: [1, 1, 1], metal: 0, rough: 0.82 },
+  { tint: [0.8, 0.66, 0.5], metal: 0, rough: 0.85 },
+  { tint: [0.62, 0.45, 0.3], metal: 0, rough: 0.86 },
+  { tint: [0.45, 0.27, 0.17], metal: 0, rough: 0.8 },
+  { tint: [0.24, 0.2, 0.17], metal: 0, rough: 0.7 },
+  { tint: [0.46, 0.27, 0.12], metal: 0.85, rough: 0.42 },
+  { tint: [0.1, 0.085, 0.075], metal: 0.3, rough: 0.16 },
+] as const;
+// What the make stores with each place for the material: how high over its building's foot it is, as a share of
+// `foot` units (the street's light is on the lowest storeys), and how far back it is in z from the city's front
+// rows to its back (`depth`, z at each), where the far rows fall darker.
+export const PLACE = { foot: 48, depth: [260, -170] } as const;
+export const stoneOf = (tone: number): number => Math.min(STONES.length - 1, Math.max(0, Math.round(tone * (STONES.length - 1))));
+// A field of windows carries its building's stone, as a style stored in the window's width (WINDOW.style times
+// it): 0 none, 1 + the stone's place for windows let into that stone, 1 + STONES.length + it for windows in bronze
+// on a building of that stone, whose wall seen from far off is that stone.
+export const styleOf = (tag: { stone?: number; tone?: number }): number =>
+  tag.stone !== undefined ? 1 + stoneOf(tag.stone) : tag.tone !== undefined ? 1 + STONES.length + stoneOf(tag.tone) : 0;
 // How far the pale stone is drawn from the palette's text-2 toward its copper-light, in linear light: a warm
 // limestone, so the city's walls are warm in the night's light and not greige.
 export const WARM = 0.5;

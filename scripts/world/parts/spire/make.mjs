@@ -77,9 +77,11 @@ const S = {
   needle: { y: 231, collar: 2.5 },
   // The ring: a broad flat band whose middle is RING.r out. Its section, out from that middle and up from it: a
   // rolled bead round its outer edge (where its middle is, its radius, and how far round it runs before it meets
-  // the flat faces), the flat faces each side (how far up), on which the engraving is drawn, and a smaller rolled
-  // lip round its inner edge (where, and its radius), so both edges of the band show.
-  ring: { bead: [2.15, 0.88, 142], face: 0.48, lip: [-3.15, 0.48], segs: draft ? 160 : 256 },
+  // the faces), the faces each side (how far up at their edges, and how much higher they are crowned at their
+  // middle, so each mirrors a gradient of the night from the horizon's glow to the dome and the band reads as one),
+  // on which the engraving is drawn, and a smaller rolled lip round its inner edge (where, and its radius), so both
+  // edges of the band show.
+  ring: { bead: [2.15, 0.88, 142], face: 0.48, crown: 0.42, lip: [-3.15, 0.48], segs: draft ? 160 : 256 },
 };
 const RINGS = [{ R: S.shaft.R, e: 0, top: S.shaft.step }, ...S.rings];
 // Where a ring's shoulder begins: it climbs in by its facets from upright at R, ending just inside the faces of the
@@ -378,7 +380,7 @@ const ringKit = new Kit({ gold: { width: 3, attr: kit.layers.gold.attr } });
   const R = RING.r, q = S.ring, [bo, br] = q.bead, ty = q.face, [lo, lr] = q.lip, prof = [];
   const A = 180 - Math.asin(Math.min(1, ty / br)) / L.D2R, n = 16, edge = bo + br * Math.cos(A * L.D2R);
   for (let k = 0; k <= n; k++) { const a = -A + (2 * A * k) / n; prof.push([R + bo + br * Math.cos(a * L.D2R), br * Math.sin(a * L.D2R), k === 0 || k === n]); }
-  const flat = (sg) => { const out = [], m = Math.ceil((edge - lo) / 0.8); for (let k = 1; k < m; k++) out.push([R + edge - ((edge - lo) * k) / m, sg * ty]); return out; };
+  const flat = (sg) => { const out = [], m = Math.ceil((edge - lo) / 0.6); for (let k = 1; k < m; k++) { const u = (2 * k) / m - 1; out.push([R + edge - ((edge - lo) * k) / m, sg * (ty + q.crown * (1 - u * u))]); } return out; };
   prof.push(...flat(1));
   for (let a = 90; a <= 270; a += 20) prof.push([R + lo + lr * Math.cos(a * L.D2R), lr * Math.sin(a * L.D2R)]);
   prof.push(...flat(-1).reverse());

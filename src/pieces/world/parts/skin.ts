@@ -1,10 +1,9 @@
 import * as THREE from 'three';
 import { hex, type PaletteName } from '../../../config/palette';
-import { RIM, WORLD } from '../layout';
 import { load, mesh } from '../files';
-import { lit } from '../light';
+import { lit, stone as planetStone } from '../light';
 import type { PartFactory } from '../part';
-import { GLOW, STONE } from './skin/look';
+import { GLOW, STONE, UNDER } from './skin/look';
 import * as S from './skin/shaders';
 
 // The skin: what survives of the planet's own outer surface at each side of the tear. At the visitor's left, turned
@@ -12,7 +11,8 @@ import * as S from './skin/shaders';
 // moon, the pale stone with its craters. Its mesh and its map are made ahead by scripts/world/parts/skin/make.mjs
 // (public/world/skin.bin and skin-map.bin): the craters, the wide part of the cracks and the broken crust at the torn
 // edges are geometry, and the map, laid over picture 9's own pixels, holds the relief finer than that, the stone's
-// color and the cracks' light. ?skinat=x,y,z,r frames the skin alone on any place of it.
+// color and the cracks' light. ?skinat=x,y,z,r frames the skin alone on any place of it. While its light is being
+// set, ?skinpale=k,power tries another pale stone and ?skinrock= another strength for the cracks' light on the rock.
 
 type Shader = THREE.WebGLProgramParametersWithUniforms;
 const after = (src: string, chunk: string, add: string): string => {
@@ -21,11 +21,9 @@ const after = (src: string, chunk: string, add: string): string => {
 };
 const linear = (name: PaletteName): THREE.Color => new THREE.Color(hex(name));
 const stone = (s: { from: PaletteName; to: PaletteName; k: number; power: number }): THREE.Color => linear(s.from).lerp(linear(s.to), s.k).multiplyScalar(s.power);
+const tried = (q: URLSearchParams, name: string): number[] | null => { const v = q.get(name)?.split(',').map(Number); return v && v.every(Number.isFinite) ? v : null; };
 // Seen alone, this place of it fills the frame.
 const ALONE = { at: [0, -260, 0] as [number, number, number], r: 700 };
-// While the rock still draws its own plain outer surface where the skin is, ?skinlift=1 lifts the skin clear of it
-// by so many units, only for looking at it.
-const LIFT = 22;
 
 async function readMap(file: string): Promise<THREE.DataTexture> {
   const res = await fetch(`/world/${file}`);
@@ -53,11 +51,13 @@ export const build: PartFactory = async ({ query, renderer }) => {
   map.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
 
   const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.93, metalness: 0 });
+  const pale = tried(query, 'skinpale'), rock = tried(query, 'skinrock');
   m.onBeforeCompile = (sh: Shader) => {
     Object.assign(sh.uniforms, {
       uSkinMap: { value: map },
       uSkinMapSize: { value: new THREE.Vector3(map.image.width, map.image.height, map.userData.split as number) },
-      uPale: { value: stone(STONE.pale) }, uDust: { value: stone(STONE.dust) }, uDark: { value: stone(STONE.dark) },
+      uPale: { value: stone(pale ? { ...STONE.pale, k: pale[0], power: pale[1] ?? STONE.pale.power } : STONE.pale) }, uDust: { value: stone(STONE.dust) }, uDark: { value: stone(STONE.dark) },
+      uUnder: { value: planetStone().multiplyScalar(UNDER) }, uGlowRock: { value: rock ? rock[0] : GLOW.rock },
       uGlowPale: { value: linear(GLOW.ramp[0][0]) }, uGlowHot: { value: linear(GLOW.ramp[1][0]) }, uGlowFlame: { value: linear(GLOW.ramp[2][0]) }, uGlowEmber: { value: linear(GLOW.ramp[3][0]) },
     });
     sh.vertexShader = after(after(sh.vertexShader, 'common', S.VERT_PARS), 'begin_vertex', S.VERT);
@@ -77,11 +77,6 @@ export const build: PartFactory = async ({ query, renderer }) => {
   o.castShadow = o.receiveShadow = true;
   const group = new THREE.Group();
   group.add(o);
-  if (query.get('skinlift') === '1') {
-    const k = (WORLD.half + LIFT) / WORLD.half;
-    group.scale.setScalar(k);
-    group.position.set(0, -RIM * (1 - k), 0);
-  }
   const at = query.get('skinat')?.split(',').map(Number);
   return {
     group,

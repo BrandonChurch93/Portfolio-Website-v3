@@ -12,26 +12,31 @@ import { shape as tornShape } from './torn.mjs';
 
 const FIELD = fileURLToPath(new URL('./field.mjs', import.meta.url)), TORN = fileURLToPath(new URL('./torn.mjs', import.meta.url));
 
-// The shared models: the class, how many, the size they are made at (half extents, before they are cut), how many
-// beds, corners broken off and chips taken out, the cell they are made with, and how many triangles each keeps.
+// The shared models: the class, how many, the size they are made at (half extents, before they are broken), and
+// the cell they are made with and how many triangles each keeps. The large, middling and small ones are torn rock as
+// the great pieces are (./torn.mjs), more cheaply: fewer blocks, fewer scars and less rubble, each made at a size
+// where the torn method's cracks are as wide, against the piece, as a great piece's. The dust is a broken block
+// (./field.mjs).
 export const SHARED = {
-  L: { count: 4, size: [[13, 8, 10], [15, 6, 9], [11, 9.5, 10], [14, 7.5, 8.5]], beds: [2, 1, 2, 1], sides: [6, 7, 5, 7], corners: [4, 5, 4, 6], chips: [14, 12, 16, 14], steps: [1, 1, 2, 1], cell: 0.2, keep: 1500 },
-  M: { count: 5, size: [[12, 8, 10], [14, 6, 9], [10, 9, 10], [13, 8, 8], [11, 5, 10]], beds: [2, 1, 1, 2, 1], sides: [5, 6, 7, 5, 6], corners: [4, 3, 5, 4, 3], chips: [8, 6, 9, 7, 8], steps: [1, 0, 1, 0, 1], cell: 0.3, keep: 400 },
-  S: { count: 5, size: [[12, 8, 10], [14, 6, 9], [10, 9, 10], [13, 8, 8], [11, 5, 10]], beds: [1, 1, 1, 1, 1], sides: [5, 6, 5, 6, 5], corners: [3, 4, 3, 4, 3], chips: [3, 2, 4, 3, 2], steps: [0, 0, 0, 0, 0], cell: 0.45, keep: 120 },
-  D: { count: 4, size: [[12, 8, 10], [14, 6, 9], [10, 9, 10], [13, 7, 8]], beds: [1, 1, 1, 1], sides: [4, 5, 5, 4], corners: [2, 3, 2, 3], chips: [0, 0, 0, 0], steps: [0, 0, 0, 0], cell: 0.8, keep: 30 },
+  L: { count: 5, torn: true, size: [[52, 32, 40], [60, 24, 36], [44, 38, 40], [56, 30, 34], [48, 26, 44]], blocks: [4, 3, 4, 3, 3], drop: [1, 1, 0, 1, 1], rubble: [5, 3, 4, 2, 4], scars: [6, 5, 7, 6, 5], cell: 0.55, keep: 1000 },
+  M: { count: 5, torn: true, size: [[48, 32, 40], [56, 24, 36], [40, 36, 40], [52, 32, 32], [44, 20, 40]], blocks: [3, 2, 3, 2, 3], drop: [0, 1, 1, 0, 1], rubble: [2, 1, 0, 2, 1], scars: [4, 3, 4, 3, 4], cell: 0.8, keep: 260 },
+  S: { count: 5, torn: true, size: [[48, 32, 40], [56, 24, 36], [40, 36, 40], [52, 32, 32], [44, 20, 40]], blocks: [2, 2, 2, 2, 2], drop: [0, 0, 0, 0, 0], rubble: [0, 0, 0, 0, 0], scars: [2, 2, 3, 2, 2], cell: 1.3, keep: 72 },
+  D: { count: 4, torn: false, size: [[12, 8, 10], [14, 6, 9], [10, 9, 10], [13, 7, 8]], beds: [1, 1, 1, 1], sides: [4, 5, 5, 4], corners: [2, 3, 2, 3], chips: [0, 0, 0, 0], steps: [0, 0, 0, 0], cell: 0.8, keep: 20 },
 };
 // A great piece: the cell it is made with, how many triangles it keeps, and which carry the planet's outer surface.
-export const GREAT = { cell: 0.75, keep: 12500, skin: { 1: { R: 5, pits: 1 }, 3: { R: 5.5, pits: 0 } } };
+export const GREAT = { cell: 0.75, keep: 10500, skin: { 1: { R: 5, pits: 1 }, 3: { R: 5.5, pits: 0 } } };
+// Picture 9's two boulders are chunky lumps, not slabs: their blocks are hardly flatter across the beds, and more of them.
+export const BOULDER = { flat: 1.15, blocks: 9, rubble: 16 };
 // How far round an edge is looked at for how bent it is, as a share of the model's size, and how bent is the most
 // that is stored.
 const BEND = { reach: 0.05, most: 3 };
 
 const hash = (n) => { let x = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b); x ^= x >>> 13; x = Math.imul(x, 0xc2b2ae35); return ((x ^ (x >>> 16)) >>> 0) / 4294967296; };
 
-async function one(args, cell, keep, draft, torn = false) {
+async function one(args, cell, keep, draft, torn = false, loose = 0.008) {
   const s = torn ? tornShape(args) : shape(args), big = Math.max(...args.size), step = draft ? cell * 1.8 : cell;
   const raw = await surface({ module: torn ? TORN : FIELD, args, box: s.box, cell: step });
-  const small = await simplify(raw, { target: draft ? Math.round(keep * 0.6) : keep, error: big * (torn ? 0.008 : 0.02), strict: false });
+  const small = await simplify(raw, { target: draft ? Math.round(keep * 0.6) : keep, error: big * (torn ? loose : 0.02), strict: false });
   const welded = { positions: small.positions, indices: small.indices };
   const bend = curvature(welded, big * BEND.reach);
   const m = creased(welded, torn ? 28 : 32), n = m.positions.length / 3;
@@ -52,8 +57,11 @@ async function one(args, cell, keep, draft, torn = false) {
 export async function makeModels(pieces, draft, said) {
   const out = [];
   for (const [cls, spec] of Object.entries(SHARED)) for (let i = 0; i < spec.count; i++) {
-    const args = { seed: 1000 * (cls.charCodeAt(0) - 64) + 17 * i + 3, size: spec.size[i], beds: spec.beds[i], layer: [0.15 * (i % 2 ? 1 : -1), 1, 0.1], sides: spec.sides[i], corners: spec.corners[i], chips: spec.chips[i], steps: spec.steps[i] };
-    const m = await one(args, spec.cell, spec.keep, draft);
+    const seed = 1000 * (cls.charCodeAt(0) - 64) + 17 * i + 3, layer = [0.15 * (i % 2 ? 1 : -1), 1, 0.1];
+    const args = spec.torn
+      ? { seed, size: spec.size[i], layer, blocks: spec.blocks[i], drop: spec.drop[i], rubble: spec.rubble[i], scars: spec.scars[i], skin: null, top: false }
+      : { seed, size: spec.size[i], beds: spec.beds[i], layer, sides: spec.sides[i], corners: spec.corners[i], chips: spec.chips[i], steps: spec.steps[i] };
+    const m = await one(args, spec.cell, spec.keep, draft, spec.torn, 0.06);
     // Stored as a cube from -1 to 1, which each piece stretches to its own size: a normal is stretched the other way.
     const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity], n = m.positions.length / 3;
     for (let v = 0; v < n; v++) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], m.positions[v * 3 + k]); hi[k] = Math.max(hi[k], m.positions[v * 3 + k]); }
@@ -72,6 +80,7 @@ export async function makeModels(pieces, draft, said) {
       seed: 50000 + p.family * 131, size: extents(p), layer: [0.3 * (h(1) - 0.5), 1, 0.3 * (h(2) - 0.5)],
       blocks: 6 + Math.floor(h(3) * 4), drop: 1 + Math.floor(h(4) * 2), rubble: 10 + Math.floor(h(5) * 8), scars: 9 + Math.floor(h(6) * 6),
       skin: skin ? { dir: p.outer, R: skin.R, pits: skin.pits } : null, top: Boolean(p.land),
+      ...(p.pictured ? BOULDER : {}),
     };
     const m = await one(args, GREAT.cell * Math.max(0.7, p.r / 60), GREAT.keep, draft, true);
     out.push({ name: `G${p.family}`, cls: 'G', shared: false, family: p.family, ...m });

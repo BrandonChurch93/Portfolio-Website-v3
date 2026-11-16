@@ -26,10 +26,11 @@ const OUTLINE = { reach: 0.42, middle: 0.21, sharp: 2.4 };
 const CLUSTER = { r: [1.1, 1.8], leaves: [9, 16], per: 3.6, rim: 0.22 };
 // The dark mat under a lump's leaves, drawn a little inside its outline: how light, and how far inside, in leaves.
 const MAT = { light: 0.11, inside: 2.2 };
-// The shade a tree lays on the ground (SHADE in design.ts), down the tile from behind its trunk to its far end: how
-// dark it is at most, how it falls off across, how far past the trunk it is still whole, in crown units, and the
-// round dark at the trunk's foot, its radius and how dark it is.
-const BLOB = { dark: 0.72, across: 1.3, whole: 0.7, foot: 0.7, under: 0.92 };
+// The shade a tree lays on the ground (SHADE in design.ts), down the tile from behind its trunk to its far end: the
+// cast, as wide as the crown and as long, away from the moon, how dark at most, how it falls off across, and how far
+// past the trunk it is still whole, in crown units; the pool under the crown, which the shades of neighbours join
+// into dark earth under the belt, its radius and how dark; and the round dark at the trunk's foot.
+const BLOB = { dark: 0.9, across: 0.9, whole: 1.3, pool: { r: 1.1, dark: 0.7 }, foot: 0.38, under: 0.95 };
 
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const hash2 = (x, y, s) => {
@@ -218,10 +219,12 @@ function blob(cv, tile) {
   const ox = (tile % ATLAS.cols) * T, oy = Math.floor(tile / ATLAS.cols) * T, G = GROUND_SHADE, long = G.back + G.reach;
   for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
     const i = (oy + y) * W + ox + x, across = ((x + 0.5) / T * 2 - 1) * G.wide, along = -G.back + ((y + 0.5) / T) * long, u = across / G.wide;
-    const side = clamp(1 - u * u) ** BLOB.across, start = clamp((along + 0.25) / 0.6), end = clamp(1 - (along - BLOB.whole) / (G.reach - BLOB.whole));
-    const cast = BLOB.dark * side * start * start * (3 - 2 * start) * end ** 1.6;
-    const foot = BLOB.under * Math.exp(-((Math.hypot(across, along) / BLOB.foot) ** 2) * 2.2);
-    cv.L[i] = 0; cv.A[i] = 1 - (1 - cast) * (1 - foot);
+    const side = clamp(1 - u * u) ** BLOB.across, start = clamp((along + 0.3) / 0.6), end = clamp(1 - (along - BLOB.whole) / (G.reach - BLOB.whole));
+    const cast = BLOB.dark * side * start * start * (3 - 2 * start) * end ** 1.4;
+    const r = Math.hypot(across, along), rim = clamp(1 - Math.abs(along) / G.back) * clamp(1 - Math.abs(u));
+    const pool = BLOB.pool.dark * Math.exp(-((r / BLOB.pool.r) ** 2) * 1.6) * Math.min(1, rim * 3);
+    const foot = BLOB.under * Math.exp(-((r / BLOB.foot) ** 2) * 2.2);
+    cv.L[i] = 0; cv.A[i] = 1 - (1 - cast) * (1 - foot) * (1 - pool);
   }
 }
 

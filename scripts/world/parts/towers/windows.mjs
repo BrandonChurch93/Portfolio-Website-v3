@@ -10,7 +10,9 @@ import { L, linear } from '../../lib/plan.mjs';
 // How many rooms of a field are lit: a share of them, at least on[0] and on[1] more for the busiest; how bright a
 // lit room is at least, and how often an unlit one is dimly lit. Fewer rooms, more brightly: a city's windows seen
 // from far off are its brightest rooms, and the rest is its wall.
-const LIT = { on: [0.2, 0.6], level: 0.62, dim: 0.1 };
+// A floor is lit as a whole with a chance of floor[0] and floor[1] more for the busiest, and a lit floor lights its
+// rooms this many times as often (full), a dark one this share as often (empty).
+const LIT = { on: [0.2, 0.6], level: 0.62, dim: 0.1, floor: [0.05, 0.9], full: 2.2, empty: 0.06 };
 
 export class Windows {
   constructor(seed, size = WINDOW.map) {
@@ -41,8 +43,12 @@ export class Windows {
   }
   fill(c0, r0, cols, rows, mood, busy, clump = false) {
     const R = this.rand, below = [], on = LIT.on[0] + LIT.on[1] * busy;
+    // A floor is lit or dark as a whole, mostly: a busy building has most of its floors lit end to end, a quiet one
+    // a floor or two. A floor keeps its state for a few floors running, as a tenant's would.
+    let floor = R() < LIT.floor[0] + LIT.floor[1] * busy, held = 0;
     for (let r = 0; r < rows; r++) {
-      const row = [], dark = clump && R() < 0.2 ? 0.12 : 1;
+      if (clump && held-- <= 0) { floor = R() < LIT.floor[0] + LIT.floor[1] * busy; held = Math.floor(R() * 3); }
+      const row = [], dark = clump ? (floor ? LIT.full : LIT.empty) : 1;
       let c = 0;
       while (c < cols) {
         const long = 2 + Math.floor(R() * 4);
@@ -52,7 +58,7 @@ export class Windows {
           const near = clump ? L.noise(c / 3 + mood * 3.1, r / 9 + mood * 1.7, mood, 71) ** 1.6 * 1.5 : L.noise(c / 4.5 + mood * 3.1, r / 6 + mood * 1.7, mood, 71);
           const lit = R() < (0.2 + 0.6 * near) * on / 0.5 * dark;
           const tone = R();
-          seg = { from: c, long, lit, level: (clump ? LIT.level : 0.3) + (clump ? 1 - LIT.level : 0.7) * R() ** 1.3, warm: tone < 0.1 ? 0.08 + 0.12 * R() : tone > 0.75 ? 0.85 + 0.15 * R() : 0.45 + 0.45 * R(), blind: R() < 0.3 ? 0.2 + 0.6 * R() : 0 };
+          seg = { from: c, long, lit, level: (clump ? LIT.level : 0.3) + (clump ? 1 - LIT.level : 0.7) * R() ** 1.3, warm: tone < 0.15 ? 0.12 + 0.18 * R() : tone > 0.82 ? 0.72 + 0.23 * R() : 0.32 + 0.3 * R(), blind: R() < 0.3 ? 0.2 + 0.6 * R() : 0 };
         }
         row.push({ ...seg, from: c, long });
         for (let k = 0; k < long && c < cols; k++, c++) {
