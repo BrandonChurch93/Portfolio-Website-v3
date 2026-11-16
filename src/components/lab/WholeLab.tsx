@@ -16,15 +16,16 @@ import styles from './WholeLab.module.css';
 // opening and the footer's design are missing on purpose, and the label says so. ?ui=0 hides it.
 export function WholeLab() {
   const page = useRef<HTMLElement>(null);
-  const [hub, setHub] = useState<Hub | null>(null);
+  // Made with the page and not after it, so the sections are in the page's own HTML: made in an effect, the page
+  // was sent with no words in it at all.
+  const [hub] = useState<Hub>(() => createHub(() => page.current, () => ({ hero: matchMedia(`(min-width: ${BOARD.least}px)`).matches })));
   const [ui, setUi] = useState(true);
 
   useEffect(() => {
     setUi(new URLSearchParams(location.search).get('ui') !== '0');
-    const made = createHub(() => page.current, { hero: matchMedia(`(min-width: ${BOARD.least}px)`).matches });
-    setHub(made);
-    return () => made.dispose();
-  }, []);
+    hub.wake();
+    return () => hub.dispose();
+  }, [hub]);
 
   return (
     <main ref={page} className={styles.page}>
@@ -34,14 +35,10 @@ export function WholeLab() {
           <p className={styles.note}>The hero, Work, Skills, About and Contact with one stream. Not here yet, on purpose: the opening, the navigation and the footer&rsquo;s design.</p>
         </header>
       )}
-      {hub && (
-        <>
-          <HeroLab hub={hub} />
-          <WorkLab hub={hub} under />
-          <SkillsLab hub={hub} />
-          <ContactLab hub={hub} />
-        </>
-      )}
+      <HeroLab hub={hub} />
+      <WorkLab hub={hub} under />
+      <SkillsLab hub={hub} />
+      <ContactLab hub={hub} />
     </main>
   );
 }

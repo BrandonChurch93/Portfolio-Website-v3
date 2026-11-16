@@ -58,7 +58,7 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
   const page = useRef<HTMLElement>(null), board = useRef<HTMLDivElement>(null), skills = useRef<HTMLElement>(null), about = useRef<HTMLElement>(null);
   const stage = useRef<SkillsStage | null>(null);
   const pieces = useRef<{ cpu: StruckPiece | null; reflector: StruckPiece | null; light: StruckPiece | null; desk: DeskPiece | null }>({ cpu: null, reflector: null, light: null, desk: null });
-  const [ui, setUi] = useState(true);
+  const [ui, setUi] = useState(!hub);
   const [way, setWay] = useState<Way>('shards');
   const [tab, setTab] = useState(0);
   const [showing, setShowing] = useState(0);

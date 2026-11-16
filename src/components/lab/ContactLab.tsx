@@ -35,7 +35,7 @@ export function ContactLab({ hub }: { hub?: Hub }) {
   const id = useId().replace(/:/g, '');
   const page = useRef<HTMLElement>(null), board = useRef<HTMLDivElement>(null), section = useRef<HTMLElement>(null), form = useRef<HTMLFormElement>(null);
   const pad = useRef<PadPiece | null>(null);
-  const [ui, setUi] = useState(true);
+  const [ui, setUi] = useState(!hub);
   // Whether the screen is wide enough for the layout. Narrower, the page is a plain stand in with no stream and no pad.
   const [wide, setWide] = useState<boolean | null>(null);
   const [copied, setCopied] = useState(false);

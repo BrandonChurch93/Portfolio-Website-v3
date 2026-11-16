@@ -32,7 +32,7 @@ export function HeroLab({ hub }: { hub?: Hub }) {
   const page = useRef<HTMLElement>(null), board = useRef<HTMLDivElement>(null), city = useRef<HTMLDivElement>(null), bar = useRef<HTMLDivElement>(null), cue = useRef<HTMLParagraphElement>(null);
   const sky = useRef<HTMLDivElement>(null), words = useRef<HTMLElement>(null);
   const world = useRef<{ setStream(on: number, since: number): void } | null>(null);
-  const [ui, setUi] = useState(true);
+  const [ui, setUi] = useState(!hub);
   // Whether the screen is wide enough for the layout. Narrower, the page is a plain stand in with no stream and no city.
   const [wide, setWide] = useState<boolean | null>(null);
 

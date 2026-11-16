@@ -31,10 +31,15 @@ export interface Hub {
   // The hero, over Work, and what it runs its stream down to: the top of Work's title.
   hero(): StreamHost;
   workTop(): HTMLElement | null;
+  // After dispose, when the same page is shown again: React in development takes a page down and puts it straight
+  // back, and the sections hand their parts over again before the page itself is told.
+  wake(): void;
   dispose(): void;
 }
 
-export function createHub(page: () => HTMLElement | null, has: { hero: boolean } = { hero: false }): Hub {
+// `has` is asked when the stream is mounted and not before: the hub is made while the page is still being written
+// on the server, where there is no screen to measure.
+export function createHub(page: () => HTMLElement | null, has: () => { hero: boolean } = () => ({ hero: false })): Hub {
   let real: StreamHandle | null = null, gone = false;
   let work: { title: HTMLElement; work: WorkParts } | null = null;
   const plans: { skills: Plan | null; contact: Plan | null; hero: Plan | null } = { skills: null, contact: null, hero: null };
@@ -76,7 +81,7 @@ export function createHub(page: () => HTMLElement | null, has: { hero: boolean }
       real = mountStream(host, { title, work: work.work, begins, until: (box) => box(button).b + NARROW.past });
       return;
     }
-    if (!plans.skills || !plans.contact || !tops.skills || !tops.contact || (has.hero && !plans.hero)) return;
+    if (!plans.skills || !plans.contact || !tops.skills || !tops.contact || (has().hero && !plans.hero)) return;
     const skills = plans.skills, contact = plans.contact, sTop = tops.skills, cTop = tops.contact;
     real = mountStream(host, {
       title: work.title,
@@ -105,6 +110,7 @@ export function createHub(page: () => HTMLElement | null, has: { hero: boolean }
     contact(top) { tops.contact = top; return (plan) => { plans.contact = plan; mount(); return handle; }; },
     hero() { return (plan) => { plans.hero = plan; mount(); return handle; }; },
     workTop: () => work?.title ?? null,
+    wake() { gone = false; mount(); },
     dispose() { gone = true; real?.dispose(); real = null; },
   };
 }

@@ -35,7 +35,7 @@ export function WorkLab({ hub, under }: { hub?: Hub; under?: boolean }) {
   const rail = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLDivElement>(null);
   const swap = useRef<Swap | null>(null);
-  const [ui, setUi] = useState(true);
+  const [ui, setUi] = useState(!hub);
   const [category, setCategory] = useState(0);
 
   useEffect(() => {
