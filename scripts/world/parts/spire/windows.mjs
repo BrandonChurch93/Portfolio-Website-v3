@@ -9,10 +9,11 @@ import { WINDOW, paleness, shown } from '../../../../src/pieces/world/parts/spir
 import { L, linear } from '../../lib/plan.mjs';
 
 // How a floor is lit: the chance it is lit right across, the chance it is a run, and how much likelier the floor
-// over a lit floor is lit right across too; in a dark floor the chance of one room lit; in a lit floor the chance
+// over a lit floor is lit right across too, and how often a run keeps to the side the last run was on (runs that
+// change sides floor to floor drew an S or a Z at the page's size); in a dark floor the chance of one room lit; in a lit floor the chance
 // a room of it is off; how many floors are the warmest tenants, how many the palest; how many dark rooms show a glow
 // from further in; and how much less often a strip one window wide is lit, so it is not one long line of light.
-const FLOOR = { whole: 0.27, run: 0.2, after: 0.25, single: 0.3, off: 0.08, warm: 0.3, pale: 0.12, glow: 0.18, narrow: 0.6 };
+const FLOOR = { whole: 0.33, run: 0.1, keep: 0.85, after: 0.25, single: 0.3, off: 0.08, warm: 0.3, pale: 0.12, glow: 0.18, narrow: 0.6 };
 // How much busier the floors are where the building is busy: a slow swell up the strip.
 const BUSY = { every: 11, by: 0.35 };
 
@@ -47,7 +48,7 @@ export class Windows {
   // Floor by floor, from the foot of the strip.
   fill(c0, r0, cols, rows, mood) {
     const R = this.rand;
-    let before = false;
+    let before = false, side = R() < 0.5;
     for (let r = 0; r < rows; r++) {
       const busy = (1 + BUSY.by * (2 * L.noise(r / BUSY.every + mood * 1.7, mood * 3.1, mood, 73) - 1)) * (cols < 2 ? FLOOR.narrow : 1);
       const t = R(), tone = R(), whole = before ? FLOOR.whole + FLOOR.after : FLOOR.whole;
@@ -57,7 +58,8 @@ export class Windows {
       let a = 0, b = cols;
       if (kind === 'run') {
         const half = Math.ceil(cols / 2), long = cols < 2 ? 1 : half + Math.floor(R() * (cols - half));
-        a = R() < 0.5 ? 0 : cols - long;
+        if (R() > FLOOR.keep) side = !side;
+        a = side ? 0 : cols - long;
         b = a + long;
       }
       const single = kind === 'dark' && R() < FLOOR.single ? Math.floor(R() * cols) : -1;

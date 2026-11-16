@@ -33,7 +33,7 @@ const { tall: TALL, ring: RING } = L.SPIRE;
 // granite, the court's paving laid in rings, and pale limestone trim.
 const LAY = { granite: 0, rusticated: 1, court: 2, trim: 3 };
 const mixed = (a, b, k, s) => linear(a).map((v, i) => (v + (linear(b)[i] - v) * k) * s);
-const ALBEDO = { granite: mixed('text-3', 'bronze', 0.04, 0.65), trim: mixed('text-2', 'copper-light', 0.3, 0.42), court: mixed('text-3', 'bronze', 0.4, 0.4) };
+const ALBEDO = { granite: mixed('text-3', 'bronze', 0.42, 0.58), trim: mixed('text-2', 'copper-light', 0.3, 0.42), court: mixed('text-3', 'bronze', 0.4, 0.4) };
 
 // The design, in units, y up from the ground under the spire. Where each ring of fins ends, and how far out it
 // stands, were read off picture 9 (fromPicture in the layout).
@@ -77,19 +77,20 @@ const S = {
   strip: { half: 4.8, deep: 1.0, plaque: 3.2, runs: [{ cols: 5, floor: 2.15 }, { cols: 5, floor: 2.05 }, { cols: 4, floor: 2.1 }] },
   // A slot of windows up the front of each fin of the two inner rings, at the inner side of its face, with a
   // fluted pier between it and the bevel: how wide, how deep, where it begins and how far under the shoulder it ends.
-  slot: { wide: 1.8, deep: 0.8, from: 46, under: 3.2, floor: 2.1, rings: 2 },
+  slot: { wide: 1.8, deep: 0.8, from: 46, under: 3.2, floor: 2.1, cols: 1, rings: 2 },
   // The bronze mullions between the columns, how wide, and how far each stands out of the glass: deep enough to
   // throw a shadow across the pane under the night's light from above.
   mullion: { wide: 0.2, out: 0.55 },
   // The band of gold round each fin where its shoulder begins: how far it stands out and how tall it is.
   collar: { out: 0.22, tall: 0.75 },
-  // The ring: a broad flat band whose middle is RING.r out. Its section, out from that middle and up from it: a
-  // rolled bead round its outer edge (where its middle is, its radius, and how far round it runs before it meets
-  // the faces), the faces each side (how far up at their edges, and how much higher they are crowned at their
-  // middle, so each mirrors a gradient of the night from the horizon's glow to the dome and the band reads as one),
-  // on which the engraving is drawn, and a smaller rolled lip round its inner edge (where, and its radius), so both
-  // edges of the band show.
-  ring: { bead: [2.2, 0.95, 142], face: 0.6, crown: 0.85, lip: [-9.25, 0.55], segs: draft ? 160 : 288 },
+  // The ring: a heavy flat band whose middle is RING.r out, as picture 9's is: a flat top, an outer and an inner face
+  // the height of the band, so it reads in two tones, the lit top and its darker edge. Its section, out from that
+  // middle and up from it: where its outer and inner faces stand, half its height, the round of its four arrises,
+  // how much its top is crowned (and its underside half that), and a small rolled bead round the middle of its outer
+  // face (its radius, and how far it stands out), which takes one hard narrow line of light. The arrises are round
+  // enough to be a pixel across at the page's size on the smallest screen: the band's outline always lies on a curve,
+  // which is what lets its outline be given the share of each pixel it covers.
+  ring: { out: 3.1, in: -9.8, half: 1.25, arris: 0.9, crown: 0.25, bead: [0.32, 0.22], segs: draft ? 160 : 288 },
 };
 const RINGS = [{ R: S.shaft.R, e: 0, top: S.shaft.to }, ...S.rings];
 // Where a ring's shoulder begins: it climbs in by its facets from upright at R, ending just inside the faces of the
@@ -120,6 +121,7 @@ const kit = new Kit({
       if (!tag || tag.plain) return [0, 0, 0, 0];
       const s = (p[0] - tag.o[0]) * tag.T[0] + (p[2] - tag.o[2]) * tag.T[2], t = p[1] - tag.y0;
       if (tag.door) return [s / tag.door, t / tag.ch, -tag.door, tag.ch];
+      if (tag.louvre) return [s, t / tag.louvre, 0, -tag.louvre];
       return [tag.c0 + s / tag.cw, tag.r0 + t / tag.ch, tag.cw, tag.ch];
     },
   },
@@ -233,14 +235,15 @@ function sweep(k) {
   kit.lathe('stone', prof.map(([r, y, s]) => [r, y, s]), draft ? 64 : 160, { tag: { lay: LAY.court } });
 }
 
-// A turned gold finial on a plinth of trim, size k: a collar, a swelling vase, a waist, a second collar and a
-// slender point.
+// A cast gold finial on a plinth of trim, size k, as a founder makes one: a base with a cavetto under a flat ring, a
+// neck, a round bulb, a crisp collar over it, and a straight spike with one small ring part way, every moulding with
+// a sharp edge.
 function finial(x, z, y, k) {
   kit.prism('stone', square(x, z, 2.0 * k, 0.4 * k), y - 0.4, y + 0.55 * k, { top: true, tag: TRIM });
   kit.prism('stone', square(x, z, 1.55 * k, 0.3 * k), y + 0.55 * k, y + 0.95 * k, { top: true, tag: TRIM });
-  const prof = [[0, 0], [0.62, 0, true], [0.62, 0.22, true], [0.45, 0.32], [0.5, 0.55], [0.66, 0.95], [0.7, 1.3], [0.6, 1.7], [0.38, 2.05], [0.24, 2.3, true], [0.42, 2.42, true], [0.42, 2.58, true], [0.26, 2.7], [0.19, 3.3], [0.1, 4.3], [0.02, 5.2], [0, 5.25]];
+  const prof = [[0, 0], [0.62, 0, true], [0.62, 0.16, true], [0.5, 0.2], [0.44, 0.3, true], [0.56, 0.34, true], [0.56, 0.5, true], [0.32, 0.56, true], [0.27, 0.72], [0.45, 0.86], [0.58, 1.05], [0.62, 1.3], [0.58, 1.55], [0.45, 1.74], [0.3, 1.87], [0.26, 1.94, true], [0.43, 1.97, true], [0.43, 2.13, true], [0.3, 2.17, true], [0.23, 2.24], [0.19, 2.62, true], [0.27, 2.66, true], [0.27, 2.78, true], [0.17, 2.82, true], [0.14, 3.3], [0.09, 3.95], [0.05, 4.6], [0.02, 5.1], [0, 5.25]];
   const turned = new Kit({ gold: { width: 3, attr: kit.layers.gold.attr } });
-  turned.lathe('gold', prof.map(([r, h, s]) => [r * k, y + 0.95 * k + h * k, s]), draft ? 8 : 14);
+  turned.lathe('gold', prof.map(([r, h, s]) => [r * k, y + 0.95 * k + h * k, s]), draft ? 8 : 16);
   const m = turned.meshes(new THREE.Matrix4().makeTranslation(x, 0, z).toArray()).gold, G = kit.layers.gold, base = G.p.length / 3;
   for (let i = 0; i < m.positions.length; i++) { G.p.push(m.positions[i]); G.n.push(m.normals[i]); }
   for (let i = 0; i < m.attr.length; i++) G.a.push(m.attr[i]);
@@ -317,7 +320,7 @@ S.rings.forEach((r, k) => {
     lofted('stone', list);
     if (slot) {
       const f = face([sx > 0 ? slot.a : -slot.b, 0, r.R - slot.deep], [1, 0, 0], [0, 0, 1]);
-      glazing(f, 0, q.wide, q.from, top - 0.5, 1, q.floor, 40 + k * 4 + (sx > 0 ? 1 : 0));
+      glazing(f, 0, q.wide, q.from, top - 0.5, 2 * q.cols, q.floor, 40 + k * 4 + (sx > 0 ? 1 : 0), 2);
     }
     if (sz > 0) {
       const c = S.collar, band = finPlan(ring, r.R + c.out, sx, sz);
@@ -387,60 +390,70 @@ function interp(at, y) {
   return at[at.length - 1][1];
 }
 
-// The strips of windows. A field of upright panes in bronze, its columns parted by bronze mullions, a floor to a
-// row; under each pane a bronze spandrel, which the material draws. The glass stands a little proud of the back of
+// The strips of windows. A field of upright panes in bronze, a floor to a row, each bay between two bronze mullions
+// (every `pair` columns) holding that many narrow panes, so the lit floors read at the page's size as warm bands of
+// fine windows and never as blocks; under each pane a bronze spandrel, which the material draws. The glass stands a little proud of the back of
 // its notch, so the two never fight.
-function glazing(f, s0, s1, y0, y1, cols, floor, mood) {
+function glazing(f, s0, s1, y0, y1, cols, floor, mood, pair = 1) {
   const rows = Math.max(1, Math.round((y1 - y0) / floor)), ch = (y1 - y0) / rows, cw = (s1 - s0) / cols, at = win.take(cols, rows, mood), o = on(f, s0, 0, -0.03);
   kit.patch('bay', on(f, s0, y0, -0.03), on(f, s1, y0, -0.03), on(f, s1, y1, -0.03), on(f, s0, y1, -0.03), { nu: cols, nv: draft ? Math.ceil(rows / 3) : rows, want: f.N, tag: { o, T: f.T, y0, c0: at.c0, r0: at.r0, cw, ch } });
   const m = S.mullion, P2 = (sv, out) => { const q = on(f, sv, 0); return [q[0] + f.N[0] * out, q[2] + f.N[2] * out]; };
-  for (let c = 1; c < cols; c++) {
+  for (let c = pair; c < cols; c += pair) {
     const s = s0 + c * cw;
     kit.prism('bay', [P2(s - m.wide / 2, 0), P2(s - m.wide / 2, m.out), P2(s + m.wide / 2, m.out), P2(s + m.wide / 2, 0)], y0, y1, { edge: E * 2, tag: PLAIN, top: true });
   }
   return at;
 }
-// A plaque of gold over the strip, its reeds drawn by the gold's material and not built, so they come to their
-// average where they are finer than a pixel. Each plaque is its own design: how wide a reed is, and how the field is
-// parted (rows: into so many rows by bars of gold; panels: into so many panels by plain gold stiles).
-const PLAQUES = [{ reed: 0.95, rows: 1, panels: 1 }, { reed: 1.15, rows: 2, panels: 1 }, { reed: 1.0, rows: 1, panels: 3 }];
+// A grille over the strip where each ring of fins ends, as the plant floors of a tower are: louvres of bronze,
+// level blades each tilted to shed the rain, drawn by the bay's material and not built, so they come to their
+// average where they are finer than a pixel, in a frame of gold. Each is its own design: how far apart its blades
+// are, and how the field is parted (rows: into so many rows by bars of gold; panels: into so many panels by stiles).
+const PLAQUES = [{ blade: 0.55, rows: 1, panels: 1 }, { blade: 0.6, rows: 2, panels: 1 }, { blade: 0.5, rows: 1, panels: 3 }];
 function plaque(f, s0, s1, y0, y1, design) {
-  const bar = 0.32, stile = 0.4, { reed, rows, panels } = design;
+  const bar = 0.32, stile = 0.4, { blade, rows, panels } = design;
   kit.patch('bay', on(f, s0, y0, -0.03), on(f, s1, y0, -0.03), on(f, s1, y1, -0.03), on(f, s0, y1, -0.03), { nu: 4, want: f.N, tag: PLAIN });
   const g = { ...f, o: on(f, 0, 0, -0.12) }, pw = (s1 - s0 - 0.7 - stile * (panels - 1)) / panels, rh = (y1 - y0 - 0.9 - bar * (rows - 1)) / rows;
   for (let p = 0; p < panels; p++) for (let r = 0; r < rows; r++) {
-    const a = s0 + 0.35 + p * (pw + stile), b = a + pw, c = y0 + 0.45 + r * (rh + bar), d = c + rh, count = Math.max(2, Math.round(pw / reed));
-    kit.patch('gold', on(g, a, c), on(g, b, c), on(g, b, d), on(g, a, d), { nu: 1, nv: 1, want: f.N, tag: { flute: pw / count, o: on(g, a, 0), T: f.T } });
+    const a = s0 + 0.35 + p * (pw + stile), b = a + pw, c = y0 + 0.45 + r * (rh + bar), d = c + rh, pitch = rh / Math.max(2, Math.round(rh / blade));
+    kit.patch('bay', on(f, a, c, -0.06), on(f, b, c, -0.06), on(f, b, d, -0.06), on(f, a, d, -0.06), { nu: 1, nv: 1, want: f.N, tag: { louvre: pitch, o: on(f, a, 0), T: f.T, y0: c } });
   }
   const frame = (a, b, c, d) => kit.prism('gold', [[on(g, a, 0)[0], on(g, a, 0)[2]], [on(g, b, 0)[0], on(g, b, 0)[2]], [on(g, b, 0, -0.2)[0], on(g, b, 0, -0.2)[2]], [on(g, a, 0, -0.2)[0], on(g, a, 0, -0.2)[2]]], c, d, { top: true, bottom: true });
   for (let r = 1; r < rows; r++) { const c = y0 + 0.45 + r * (rh + bar) - bar; frame(s0 + 0.35, s1 - 0.35, c, c + bar); }
   for (let p = 1; p < panels; p++) { const a = s0 + 0.35 + p * (pw + stile) - stile; frame(a, a + stile, y0 + 0.45, y1 - 0.45); }
+  frame(s0 + 0.1, s1 - 0.1, y0 + 0.13, y0 + 0.45);
+  frame(s0 + 0.1, s1 - 0.1, y1 - 0.45, y1 - 0.13);
+  frame(s0 + 0.1, s0 + 0.35, y0 + 0.45, y1 - 0.45);
+  frame(s1 - 0.35, s1 - 0.1, y0 + 0.45, y1 - 0.45);
 }
 // The shaft's strip, in runs between plaques, and the tiers' strips over it.
 {
   const R = S.shaft.R, d = S.strip.deep, f = face([0, 0, R - d], [1, 0, 0], [0, 0, 1]), h = S.strip.half;
   const breaks = [S.rings[2].top, S.rings[1].top, S.rings[0].top].map((y) => [y - S.strip.plaque / 2, y + S.strip.plaque / 2]);
   const runs = [[S.podium.parapet[1] + 0.6, breaks[0][0]], [breaks[0][1], breaks[1][0]], [breaks[1][1], breaks[2][0]]];
-  runs.forEach(([y0, y1], i) => { const r = S.strip.runs[i]; glazing(f, -h, h, y0, y1, r.cols, r.floor, 11 + i * 3); });
+  runs.forEach(([y0, y1], i) => { const r = S.strip.runs[i]; glazing(f, -h, h, y0, y1, 2 * r.cols, r.floor, 11 + i * 3, 2); });
   breaks.forEach(([y0, y1], i) => plaque(f, -h, h, y0, y1, PLAQUES[i]));
   SHAFT.tiers.forEach((t, i) => {
     const g = face([0, 0, t.R - d], [1, 0, 0], [0, 0, 1]);
-    glazing(g, -t.half, t.half, t.y0 + 0.3, t.y1, t.cols, t.floor, 23 + i * 3);
+    glazing(g, -t.half, t.half, t.y0 + 0.3, t.y1, 2 * t.cols, t.floor, 23 + i * 3, 2);
   });
 }
 
 // The ring, in its own frame, turned into place: tilted about x, then about z, at its height on the shaft.
 const ringKit = new Kit({ gold: { width: 3, attr: kit.layers.gold.attr } });
 {
-  // Counter clockwise round the section: up the bead's outer side to where it meets the top face, in across the
-  // top face, round the inner lip, and out across the underside.
-  const R = RING.r, q = S.ring, [bo, br] = q.bead, ty = q.face, [lo, lr] = q.lip, prof = [];
-  const A = 180 - Math.asin(Math.min(1, ty / br)) / L.D2R, n = 16, edge = bo + br * Math.cos(A * L.D2R);
-  for (let k = 0; k <= n; k++) { const a = -A + (2 * A * k) / n; prof.push([R + bo + br * Math.cos(a * L.D2R), br * Math.sin(a * L.D2R), k === 0 || k === n]); }
-  const flat = (sg) => { const out = [], m = Math.ceil((edge - lo) / 0.6); for (let k = 1; k < m; k++) { const u = (2 * k) / m - 1; out.push([R + edge - ((edge - lo) * k) / m, sg * (ty + q.crown * (1 - u * u))]); } return out; };
-  prof.push(...flat(1));
-  for (let a = 90; a <= 270; a += 20) prof.push([R + lo + lr * Math.cos(a * L.D2R), lr * Math.sin(a * L.D2R)]);
-  prof.push(...flat(-1).reverse());
+  // Counter clockwise round the section: up the outer face and over its bead, in across the top, down the inner
+  // face, and out across the underside, each corner rounded.
+  const R = RING.r, q = S.ring, { out: xo, in: xi, half: h, arris: a, crown } = q, [br, bs] = q.bead, prof = [];
+  const arc = (cx, cy, r, a0, a1, n, sharp = false) => { for (let k = 0; k <= n; k++) { const t = (a0 + ((a1 - a0) * k) / n) * L.D2R; prof.push([R + cx + r * Math.cos(t), cy + r * Math.sin(t), sharp && (k === 0 || k === n)]); } };
+  const flat = (y0, sg, from, to) => { const m = Math.ceil(Math.abs(to - from) / 0.6); for (let k = 1; k < m; k++) { const u = (2 * k) / m - 1; prof.push([R + from + ((to - from) * k) / m, y0 + sg * crown * (1 - u * u)]); } };
+  const bc = xo + bs - br, ba = Math.acos(Math.min(1, (xo - bc) / br)) / L.D2R;
+  arc(xo - a, -h + a, a, -90, 0, 8);
+  arc(bc, 0, br, -ba, ba, 10, true);
+  arc(xo - a, h - a, a, 0, 90, 8);
+  flat(h, 1, xo - a, xi + a);
+  arc(xi + a, h - a, a, 90, 180, 8);
+  arc(xi + a, -h + a, a, 180, 270, 8);
+  flat(-h, -0.5, xi + a, xo - a);
   ringKit.lathe('gold', prof, q.segs, { closed: true, tag: { ring: true } });
 }
 const ringAt = new THREE.Matrix4().makeTranslation(0, TALL * RING.up, 0).multiply(new THREE.Matrix4().makeRotationZ(RING.tilt[1] * L.D2R)).multiply(new THREE.Matrix4().makeRotationX(RING.tilt[0] * L.D2R));
@@ -528,8 +541,9 @@ console.log(`bake: ${stats.vertices} vertices, ${stats.triangles} triangles, ${s
 // with the strip's reveals in shadow. Each is a row of lamps aimed up and a little in, worked out here with a shadow
 // ray each and added to the stored bounce. They are not seen: what is seen is the light they lay. How strong a lamp
 // is, how narrow its beam (a power of its cosine), how far in from straight up it leans, in degrees, how far apart
-// the lamps are, and how far out from a face.
-const FLOOD = { power: 60, beam: 5, lean: 22, every: 1.4, off: 2.4, most: 4 };
+// the lamps are, how far out from a face, the most it lays on one place, and how far its light is eased from the
+// palette's hot toward flame, so the foot of the tower is warm from below.
+const FLOOD = { power: 60, beam: 5, lean: 22, every: 1.4, off: 2.4, most: 4, warm: 0.4 };
 const floodAt = (() => {
   const lamps = [], row = (X, y, power, off = FLOOD.off) => {
     const r = X + off, n = Math.max(2, Math.round((2 * r) / FLOOD.every)), c = Math.cos(FLOOD.lean * L.D2R), k = Math.sin(FLOOD.lean * L.D2R);
@@ -605,10 +619,10 @@ function smooth(m, values, width, r) {
 const meshes = ['stone', 'bay', 'gold'].map((name) => {
   const m = made[name], raw = lit[name], n = m.positions.length / 3, light4 = new Float32Array(n * 4), bounce4 = new Float32Array(n * 4);
   const l = { ...raw, open: smooth(m, raw.open, 1, SMOOTH[name]), bounce: smooth(m, raw.bounce, 3, SMOOTH[name]) };
-  const hot = linear('hot');
+  const hot = linear('hot'), flame = linear('flame');
   for (let i = 0; i < n; i++) {
     const e = Math.min(FLOOD.most, floodAt(m.positions.subarray(i * 3, i * 3 + 3), m.normals.subarray(i * 3, i * 3 + 3)));
-    if (e > 0) for (let q = 0; q < 3; q++) l.bounce[i * 3 + q] += e * hot[q];
+    if (e > 0) for (let q = 0; q < 3; q++) l.bounce[i * 3 + q] += e * (hot[q] + (flame[q] - hot[q]) * FLOOD.warm);
   }
   for (let i = 0; i < n; i++) {
     light4.set([l.core[i], l.moon[i], l.open[i], 0], i * 4);
@@ -620,6 +634,28 @@ const meshes = ['stone', 'bay', 'gold'].map((name) => {
   if (name === 'gold') attributes.gild = { data: m.attr, size: 3, as: 'f32' };
   return { name, positions: m.positions, indices: m.indices, attributes, info: { triangles: m.indices.length / 3 } };
 });
+// The ring is drawn apart from the rest of the gold, after everything solid, so that its outline can be given the
+// share of each pixel it covers and never steps. Its faces are drawn in the order they can lie behind one another as
+// seen: the underside, the top, the inner face, the outer face, so that a face whose outline is softened is drawn over what lies
+// behind it.
+{
+  const at = meshes.findIndex((m) => m.name === 'gold'), g = meshes[at], n0 = g.positions.length / 3 - ring.positions.length / 3;
+  const R = RING.r, q = S.ring;
+  const local = ring.local, kind = (t) => {
+    let rr = 0, y = 0;
+    for (let k = 0; k < 3; k++) { const v = ring.indices[t * 3 + k]; rr += Math.hypot(local[v * 3], local[v * 3 + 2]) / 3; y += local[v * 3 + 1] / 3; }
+    return rr > R + q.out - q.arris - 0.02 ? 3 : rr < R + q.in + q.arris + 0.02 ? 2 : y > 0 ? 1 : 0;
+  };
+  const tris = [...Array(ring.indices.length / 3).keys()].map((t) => [kind(t), t]).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const ringIdx = new Uint32Array(ring.indices.length);
+  tris.forEach(([, t], i) => { for (let k = 0; k < 3; k++) ringIdx[i * 3 + k] = ring.indices[t * 3 + k]; });
+  const cut = (data, size, from, to) => data.subarray(from * size, to * size);
+  const part = (from, to) => Object.fromEntries(Object.entries(g.attributes).map(([k, a]) => [k, { ...a, data: cut(a.data, a.size, from, to) }]));
+  const ng = g.indices.length - ring.indices.length;
+  meshes.splice(at, 1,
+    { name: 'gold', positions: cut(g.positions, 3, 0, n0), indices: g.indices.subarray(0, ng), attributes: part(0, n0), info: { triangles: ng / 3 } },
+    { name: 'ring', positions: cut(g.positions, 3, n0, n0 + ring.positions.length / 3), indices: ringIdx, attributes: part(n0, n0 + ring.positions.length / 3), info: { triangles: ringIdx.length / 3 } });
+}
 const triangles = meshes.reduce((s, m) => s + m.indices.length / 3, 0);
 // Every ledge, cornice and finial the rain runs off, as heights: the stone's material darkens the face under each,
 // and under the belts across the fluted fronts, which it draws.

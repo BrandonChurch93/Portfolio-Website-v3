@@ -7,7 +7,7 @@ import { materials } from './spire/materials';
 // The spire: the tallest thing in the world, on the hero's center line under his name, with its ring of gold and
 // its court. Made ahead by scripts/world/parts/spire/make.mjs and shipped as public/world/spire.bin, with a map of
 // the state of its windows (spire-windows.png). Nothing of it moves, so all of it casts the moon's shadow: the ring's
-// falls on the shaft.
+// falls on the shaft. The ring is its own mesh, drawn after everything solid, so its outline can be softened.
 
 const FILE = 'spire.bin', WINDOWS = 'spire-windows.png';
 
@@ -26,7 +26,7 @@ export const build: PartFactory = async () => {
   ]);
   const m = materials(map, (file.meta.ledges as number[] | undefined) ?? [0], (file.meta.profile as number[][] | undefined) ?? [[0, 0, 0], [1, 0, 0]]), made: { dispose(): void }[] = [map, m];
   for (const [name, l] of file.meshes) {
-    const part = mesh(l, m[name as 'stone' | 'bay' | 'gold']);
+    const part = mesh(l, m[name as 'stone' | 'bay' | 'gold' | 'ring']);
     part.castShadow = true;
     part.receiveShadow = true;
     group.add(part);
