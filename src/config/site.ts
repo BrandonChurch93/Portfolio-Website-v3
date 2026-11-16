@@ -22,10 +22,11 @@ export const PIECE_MOUNT = { near: 1, far: 2.5, max: 6, fade: 260 } as const;
 export const HANDHELD = {
   // The most pixels a 3D canvas has, and a canvas as large as the screen (the stream, the sky).
   piece: 1.6e6,
-  // The hero's world, whose canvas is the tallest on the site: as many as a canvas the size of the screen gets.
-  // At 1.1 million (tried Nov 16 for the 60 MB it saved) an iPad drew the world at under one pixel to a CSS
-  // pixel, and the city's windows were smears: the first thing he would see on the device he tests on.
-  world: 2.4e6,
+  // The hero's world, whose canvas is the tallest on the site. Measured in WebKit on Nov 16, the hero held 1128 MB
+  // of GPU at 1.1 million pixels and 1319 at 2.4 million: about 150 MB for each million. At 1.1 million an iPad
+  // drew the world at under one pixel to a CSS pixel and the city's windows were smears, the first thing he would
+  // see on the device he tests on. This is the middle: a little over one pixel to a CSS pixel.
+  world: 1.8e6,
   screen: 2.4e6,
   // The longest side of the cursor light's shadow map, and of any other light's.
   shadow: { lamp: 1024, most: 2048 },
