@@ -13,8 +13,10 @@ import { mountStream, type PlanContext, type Planned, type StreamHandle, type Wo
 // How far above where Skills takes the stream off its line Work's route hands it over, and how far above the top
 // of Contact About's does, in the board's units.
 const SEAM = { skills: 150, contact: 40 };
-// On a screen too narrow for the layout: how far over Work's title the stream begins, in pixels.
-const NARROW = { over: 150 };
+// On a screen too narrow for the layout the hero is a picture of the world, with the stream fallen from its core.
+// The page's stream begins this far down that picture, where the picture's own is fading out, so one runs on as
+// the other. With no picture it begins this many pixels over Work's title.
+const NARROW = { still: 0.8, over: 150 };
 
 type Plan = (c: PlanContext) => Planned;
 
@@ -60,8 +62,16 @@ export function createHub(page: () => HTMLElement | null, has: { hero: boolean }
     const host = page();
     if (real || gone || !host || !work) return;
     // A screen too narrow for the sections under Work shows them as plain stand ins, and Work runs its stream alone.
-    // With the hero's stand in above it, the stream begins a little over Work's title and not at the top of the page.
-    if (!wide()) { const title = work.title; real = mountStream(host, { title, work: work.work, begins: (box) => box(title).t - NARROW.over }); return; }
+    // With the hero's stand in above it, the stream begins under the hero and not at the top of the page.
+    if (!wide()) {
+      const title = work.title, still = host.querySelector('[data-part="still"]');
+      const begins = (box: (el: Element) => Box): number => {
+        const b = still ? box(still) : null;
+        return b && b.b - b.t > 1 ? b.t + (b.b - b.t) * NARROW.still : box(title).t - NARROW.over;
+      };
+      real = mountStream(host, { title, work: work.work, begins });
+      return;
+    }
     if (!plans.skills || !plans.contact || !tops.skills || !tops.contact || (has.hero && !plans.hero)) return;
     const skills = plans.skills, contact = plans.contact, sTop = tops.skills, cTop = tops.contact;
     real = mountStream(host, {

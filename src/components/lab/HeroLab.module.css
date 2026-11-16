@@ -151,6 +151,11 @@
   opacity: 0.8;
 }
 
+/* The world as one picture, for a narrow screen. Not there at all on a wide one. */
+.still {
+  display: none;
+}
+
 /* Work's bar, as a stand in on this page: where the stream strikes. */
 .bar {
   position: absolute;
@@ -191,6 +196,26 @@
     position: static;
     width: auto !important;
     translate: none;
+  }
+
+  /* As wide as the screen, and on a phone wider: the picture is centred on the spire and its two ends are off the
+     screen, so the city and the core are large enough to read. It fades into the page at its sides and its foot. */
+  .still {
+    display: block;
+    overflow: hidden;
+    margin: var(--space-7) calc(var(--gut) * -1) 0;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent), linear-gradient(transparent, #000 12%, #000 76%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent), linear-gradient(transparent, #000 12%, #000 76%, transparent);
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
+  }
+
+  .still img {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin-left: 50%;
+    translate: -50% 0;
   }
 
   .name {

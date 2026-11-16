@@ -255,3 +255,13 @@
     padding-top: calc(min(100vw, 2400px) / 1460 * 480);
   }
 }
+
+/* On a narrow whole page Work stands under the hero's picture of the world: the stream needs room to fall into it,
+   and not the whole screen above and below that the section has when it is a page by itself. */
+@media (max-width: 1099.98px) {
+  .page[data-embed] .section {
+    padding-top: 44vh;
+    padding-top: 44svh;
+    padding-bottom: var(--space-8);
+  }
+}

@@ -16,7 +16,8 @@
     "mem": "node scripts/mem.mjs",
     "blockout": "node scripts/blockout.mjs",
     "look": "node scripts/world/look.mjs",
-    "match": "node scripts/world/match.mjs"
+    "match": "node scripts/world/match.mjs",
+    "still": "node scripts/world/still.mjs"
   },
   "license": "UNLICENSED",
   "dependencies": {

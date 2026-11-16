@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { hero } from '../../content/hero';
+import { STILL } from '../../hero/still';
 import { BOARD, CITY, CX, SKY, WORDS, WORK, WORLD } from '../../hero/board';
 import type { HeroStage } from '../../hero/stage';
 import { HOST } from '../../pieces/world/layout';
@@ -25,6 +26,9 @@ const u = (n: number) => `calc(var(--u) * ${Number(n.toFixed(2))})`;
 // of the core's underside and down to the bar.
 // There is no opening: the world and the words are simply there. The night sky (src/hero/sky) is behind
 // everything, and draws the glow behind the world. ?ui=0 hides the label.
+// A picture of nothing, one pixel square: what the still's image holds on a screen wide enough for the live world.
+const BLANK = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+
 // On a page with more sections than this one (hub), it hands the hub its plan, the hub mounts the one stream, and
 // the stream runs on from the core into Work.
 export function HeroLab({ hub }: { hub?: Hub }) {
@@ -110,6 +114,14 @@ export function HeroLab({ hub }: { hub?: Hub }) {
             <MetalButton label={hero.contact.label} variant="accent" href={hero.contact.href} className={styles.button} />
           </div>
         </header>
+        {/* The world as one picture, under his words, on a screen too narrow for the live world. A wide screen
+            matches no source and never fetches it. */}
+        <div className={styles.still} data-part="still" aria-hidden="true">
+          <picture>
+            <source media={`(max-width: ${BOARD.least - 0.02}px)`} srcSet={STILL.file} />
+            <img src={BLANK} alt="" width={STILL.keep.w} height={STILL.keep.h} decoding="async" style={{ minWidth: STILL.least }} />
+          </picture>
+        </div>
         <p ref={cue} className={styles.cue} aria-hidden="true">{hero.cue}</p>
         <div ref={bar} id={hub ? undefined : 'work'} className={styles.bar} style={{ width: u(WORK.bar) }} aria-hidden="true">
           <span>Work begins here</span>
