@@ -22,8 +22,9 @@ import * as S from './debris/shaders';
 const LOOK = {
   // A flake's scar is fresh stone, the stone's own chip.
   chip: STONE.chip,
-  // The planet's outer surface where a piece shows it: pale on the side the moon lights, dark on the other.
-  skin: { pale: color('text-3').lerp(color('text-2'), 0.35).multiplyScalar(0.5), dark: color('bg-3').lerp(color('text-3'), 0.2) },
+  // The planet's outer surface where a piece shows it: pale on the side the moon lights, dark on the other, each the
+  // planet's own stone weathered a little toward its dust, never grey beside the stone's broken faces.
+  skin: { pale: stone().multiplyScalar(0.7).lerp(color('text-3').multiplyScalar(0.5), 0.3), dark: stone().multiplyScalar(0.3).lerp(color('bg-3'), 0.3) },
   // How much of the light the rock bounces reaches a piece, and of the core's light on its faces, and past what
   // distance, in units, that falls away as a further power.
   bounce: 0.1,
@@ -37,29 +38,35 @@ const LOOK = {
   great: [0.12, 450, 1.5] as const,
   // How much of the core's light a great piece's broad faces take, and how much more its edges that stand out: the
   // picture's masses are dark with a lit broken rim.
-  greatEdge: [0.6, 3] as const,
+  greatEdge: [0.6, 1.6] as const,
   // Picture 9's two boulders: how much of that core light they take, how much of the moon's the left one and the
   // right one take (the left one's top planes are pale in the picture, the right one is near black), and how much of
   // the core each place of theirs is taken to see at least.
-  boulder: [2.2, 3, 0.25, 0.8] as const,
+  boulder: [2.2, 1.2, 0.5, 0.8] as const,
   // The right boulder is near black but for its crest: how much of that core light its body keeps, and its edges.
   crest: [0.08, 4] as const,
+  // The way the right boulder's crest faces (its upper left, toward the core), and how much more of the small stream
+  // beside it the left boulder's flank takes.
+  crestWay: [-0.55, 0.8, 0.25] as const, flank: 4,
   // A great piece's tone across it: the darkest and lightest of its stains, how wide they are in units, and how dark
   // the stone is where it is most shut in.
   greatTone: [0.62, 1.18, 34, 0.45] as const,
   // How much of the night's soft light a great piece takes against a small one, and picture 9's two boulders.
-  greatFill: [0.35, 1.6] as const,
+  greatFill: [0.35, 0.8] as const,
   // A great piece's bedding, as bands of tone: how far apart the wider and finer layers are, in units, how much one
   // layer's tone differs from the next, wide and fine, and over how many units one eases into the next.
   beds: [14, 4.5, 0.22, 0.1] as const, bedEase: 1.2,
   // Its conchoidal breaks, larger than the rock's (STONE.roll): the larger's cell in units and depth, the smaller's.
-  knap: [16, 1.4, 6.5, 0.6] as const,
+  knap: [16, 0.6, 6.5, 0.3] as const,
   // The crumbled lip on a great piece's broken edges: a crumb's size in units, how far into an edge's bend it
   // reaches, and how pale and how dark its grains go.
   crumb: [1.7, 0.35, 0.55, 0.6] as const,
-  // The moon on a great piece's faces turned to it: the share of its light, how much more its broken edges take, and
-  // the share of its color the stone keeps under it (STONE.crust.moonChroma, as the rock's moonlit crust).
-  greatMoon: [0.025, 4, STONE.crust.moonChroma] as const,
+  // The moon on a great piece's faces turned to it: the share of its light, how much more a face takes the nearer it
+  // is seen edge on (the moon is behind the pieces, so that is their upper right rim), and the share of its color the
+  // stone keeps under it: all of it, so a moonlit face is the stone's own hue and never grey beside a warm one.
+  greatMoon: [0.35, 7, 1] as const,
+  // Which of those faces are its rim: from how far each is seen edge on to how far, and how far its stone goes pale.
+  moonEdge: [0.55, 0.9, 0.35] as const,
   // A smaller piece's light across it, on its side away from the core and toward it, and its own tone's swing.
   grade: [0.15, 1.25, 0.3] as const,
   // The moon: how much of its light a face turned to it keeps (it is behind the pieces), and its rim: how bright, how
@@ -81,7 +88,12 @@ const LOOK = {
   worn: 0.45,
   // The stream's light: its color, how bright where it is full, over how many units it falls to half, how far it
   // reaches at all. The small streams: how bright, and over how many units.
-  stream: { color: color('hot').lerp(color('flame'), 0.35), main: [7, 30, 200] as const, small: [2.6, 24] as const },
+  stream: { color: color('hot').lerp(color('flame'), 0.35), main: [4.5, 30, 200] as const, small: [2.6, 24] as const },
+  // Light grows paler as it grows strong on a smaller piece, as the core's does (LIGHT.core.pale): from what
+  // brightness to what, and how far toward the palette's pale it goes. A lit face was a saturated orange.
+  pale: [0.02, 0.22, 0.4] as const,
+  // The grain inside a smaller piece's face, so no face is one tone: its two sizes in units, and how far it moves the tone.
+  grain: [1.2, 0.45, 0.6] as const,
   // A flake the stream carries: how bright its edge toward the stream burns, how wide that edge is in units, and how
   // much of the stream's light its body keeps.
   carried: [7, 1.6, 0.25] as const,
@@ -204,8 +216,8 @@ export const build: PartFactory = async ({ query, renderer }) => {
     uWorn: { value: LOOK.worn }, uFill: { value: new THREE.Vector4(LOOK.fill.color.r, LOOK.fill.color.g, LOOK.fill.color.b, LOOK.fill.least).multiplyScalar(pick(5, 1)).setW(LOOK.fill.least) }, uFillDir: { value: new THREE.Vector3(...LOOK.fill.from).normalize() },
     uNight: { value: LOOK.night }, uRockMirror: { value: LOOK.mirror },
     uMoonBody: { value: LOOK.moonBody }, uMoonRim: { value: new THREE.Vector4(pick(3, LOOK.moonRim[0]), LOOK.moonRim[1], LOOK.moonRim[2], LOOK.moonRim[3]) }, uMoonRimColor: { value: LOOK.rimColor }, uMoonWay: { value: new THREE.Vector3(...MOONWARD).normalize() },
-    uCoreRim: { value: new THREE.Vector4(pick(2, LOOK.coreRim[0]), LOOK.coreRim[1], LOOK.coreRim[2], 0) }, uBoulder: { value: new THREE.Vector4(...LOOK.boulder) }, uGreatEdge: { value: new THREE.Vector2(...LOOK.greatEdge) }, uCrest: { value: new THREE.Vector2(...LOOK.crest) }, uGreatTone: { value: new THREE.Vector4(...LOOK.greatTone) }, uGreatFill: { value: new THREE.Vector2(...LOOK.greatFill) },
-    uGreat: { value: new THREE.Vector4(pick(8, LOOK.great[0]), LOOK.great[1] * SCALE, LOOK.great[2], 0) }, uBeds: { value: new THREE.Vector4(...LOOK.beds) }, uBedEase: { value: LOOK.bedEase }, uKnap: { value: new THREE.Vector4(...LOOK.knap) }, uCrumb: { value: new THREE.Vector4(...LOOK.crumb) }, uGreatMoon: { value: new THREE.Vector3(pick(10, LOOK.greatMoon[0]), LOOK.greatMoon[1], LOOK.greatMoon[2]) }, uGrade: { value: new THREE.Vector3(...LOOK.grade) },
+    uCoreRim: { value: new THREE.Vector4(pick(2, LOOK.coreRim[0]), LOOK.coreRim[1], LOOK.coreRim[2], 0) }, uBoulder: { value: new THREE.Vector4(...LOOK.boulder) }, uGreatEdge: { value: new THREE.Vector2(...LOOK.greatEdge) }, uCrest: { value: new THREE.Vector2(...LOOK.crest) }, uCrestWay: { value: new THREE.Vector3(...LOOK.crestWay).normalize() }, uFlank: { value: LOOK.flank }, uGreatTone: { value: new THREE.Vector4(...LOOK.greatTone) }, uGreatFill: { value: new THREE.Vector2(...LOOK.greatFill) },
+    uGreat: { value: new THREE.Vector4(pick(8, LOOK.great[0]), LOOK.great[1] * SCALE, LOOK.great[2], 0) }, uBeds: { value: new THREE.Vector4(...LOOK.beds) }, uBedEase: { value: LOOK.bedEase }, uKnap: { value: new THREE.Vector4(...LOOK.knap) }, uCrumb: { value: new THREE.Vector4(...LOOK.crumb) }, uGreatMoon: { value: new THREE.Vector3(pick(10, LOOK.greatMoon[0]), LOOK.greatMoon[1], LOOK.greatMoon[2]) }, uGrade: { value: new THREE.Vector3(...LOOK.grade) }, uMoonEdge: { value: new THREE.Vector3(...LOOK.moonEdge) }, uPale: { value: new THREE.Vector3(...LOOK.pale) }, uPaleTint: { value: (() => { const c = color('pale'); const l = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b; return new THREE.Vector3(c.r / l, c.g / l, c.b / l); })() }, uGrain: { value: new THREE.Vector3(...LOOK.grain) },
     uStreamLight: { value: new THREE.Vector4(pick(4, LOOK.stream.main[0]), ...LOOK.stream.main.slice(1), 0) }, uStreamColor: { value: LOOK.stream.color }, uCarried: { value: new THREE.Vector3(pick(9, LOOK.carried[0]), LOOK.carried[1], LOOK.carried[2]) },
     uDeep: { value: new THREE.Vector3(...LOOK.deep) }, uStudio: { value: query.get('debris') === 'models' ? 1 : 0 }, uShow: { value: Number(query.get('debrisshow') ?? 0) || 0 },
     uStoneAt: { value: new THREE.Vector3(...LOOK.stoneAt) }, uStoneSpread: { value: new THREE.Vector3(...LOOK.stoneSpread) }, uStoneRelief: { value: LOOK.relief }, uGreatRelief: { value: LOOK.greatRelief }, uFacet: { value: new THREE.Vector4(...LOOK.facets) }, uPits: { value: new THREE.Vector3(...LOOK.pits) },

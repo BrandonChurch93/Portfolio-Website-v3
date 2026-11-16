@@ -7,7 +7,7 @@
 // swells or wanders. Nothing is a ruled line or a flat polygon at three times.
 //
 //   args = { seed, size: [a, b, c], layer: [x, y, z], blocks, drop, skin: { dir, R, pits } | null, top, rubble,
-//            flat, form, chips, steps, strata, ridge }
+//            flat, form, chips, steps, strata, ridge, crag }
 //
 // size is the half extents of the mass before anything is broken off it, layer the way across its beds, blocks how
 // many blocks it splits into and drop how many of them are gone, flat how much flatter its blocks are across its
@@ -15,7 +15,8 @@
 // in place of a mass grown at random, and lumps, when given, are craggy chunks grown into it or making it ([x, y, z,
 // a, b, c] each: a middle and half extents): picture 9's two boulders are laid out so, on the picture's own outline. chips is how many flakes come off its
 // edges, steps how many stepped breaks cross each block, strata how far a bed stands proud as a share of the size,
-// and ridge a way out of the piece along which its edges are broken harder (a jagged ridge). shape(args) gives the
+// and ridge a way out of the piece along which its edges are broken harder (a jagged ridge). crag (on unless false)
+// lays CRAG over all of it where the visitor sees it. shape(args) gives the
 // same solid to the make script, with which block and which bed each place is in, where the planet's outer surface
 // is, and how fresh the break is at each place.
 import { noise, seeded } from '../../../../src/pieces/world/layout.ts';
@@ -76,7 +77,25 @@ export const TORN = {
   planes: 18, planeTurn: [0.07, 0.22], planeCut: [0.006, 0.025],
 };
 
-export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, skin = null, top = false, rubble = 10, flat = TORN.flat, form = null, chips = 80, steps = 2, strata = TORN.strata, ridge = null, facets = TORN.facets, view = null, every = TORN.every, crest = 0, lumps = null }) {
+// The crag, in units: what makes a great piece rock at three times and not a cut block. Its broad planes are bent a
+// little (how far, and over how far, as shares of its size), and every part of it the visitor can see is broken by
+// scars and lumps 5 to 20 units across: a scar is a shallow flake struck off a face, or a bite out of an edge that
+// breaks its lip, and a lump is a craggy knob standing out of it, so the outline is never a straight run. How much of
+// the seen surface the scars cover, how large one is (its half size, smallest and largest, and a power toward the
+// small), the share taken from edges, the share of the rest that are lumps, how deep each goes (as shares of its
+// size: a face's scar, an edge's bite, a lump's height, and how much larger than the rest a face's scar and a lump
+// are), and which surfaces are seen (by how far each faces the visitor). A face is lumpy and its scars broad and
+// shallow: deep scars on a face read as punched pits, a sponge, wherever the moon lit it.
+// The bend is two: a broad one and a finer one, each how far and over how far.
+// And the great bites: so many large bites out of its seen edges for each hundred units of its size, each so large
+// as a share of its size, so its outline is never a block's. How far an edge may face the visitor and still be
+// bitten, and how far for a great bite.
+export const CRAG = {
+  bend: [0.035, 0.45, 0.01, 0.13], cover: 1.7, size: [3.5, 14], small: 1, edge: 0.35, lumps: 0.55,
+  scar: [0.06, 0.14, 1.6], bite: [0.4, 0.75], lump: [0.08, 0.22, 1.5], seen: [-0.5, 0.1], great: [9, 0.09, 0.2], side: 0.35, rim: 0.25,
+};
+
+export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, skin = null, top = false, rubble = 10, flat = TORN.flat, form = null, chips = 80, steps = 2, strata = TORN.strata, ridge = null, facets = TORN.facets, view = null, every = TORN.every, crest = 0, lumps = null, crag = true }) {
   const r = seeded(seed), [a, b, c] = size, big = Math.max(a, b, c), T = TORN;
   const reach = (n) => Math.abs(n[0]) * a + Math.abs(n[1]) * b + Math.abs(n[2]) * c;
   const jitter = (v, k) => unit([v[0] + k * (r() - 0.5), v[1] + k * (r() - 0.5), v[2] + k * (r() - 0.5)]);
@@ -398,19 +417,99 @@ export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, ski
     for (const p of pits) d = Math.max(d, p.r - Math.hypot(x - p.at[0], y - p.at[1], z - p.at[2]));
     return d;
   };
-  const at = (x, y, z) => Math.min(Math.max(bare(x, y, z), flaked(x, y, z)), rubbleOf(x, y, z)) + relief(x, y, z);
-  // How fresh the break is at a place: a flake's scar and a rubble stone are fresh stone, a stepped riser a little
-  // less, a block's old face not at all.
-  const fresh = (x, y, z) => {
-    const b0 = bare(x, y, z), f = flaked(x, y, z), st = rubbleOf(x, y, z);
+  // The crag (CRAG). Scars and lumps are each a convex knob of a dozen breaks, squat across the surface it stands on,
+  // laid where the visitor sees the piece: a third of the scars on its edges, the rest over its faces.
+  const base = (x, y, z) => Math.min(Math.max(bare(x, y, z), flaked(x, y, z)), rubbleOf(x, y, z));
+  const K = CRAG, toward = view ? unit(view) : [0, 0, 1], seenOf = (n) => smoothstepJs(K.seen[0], K.seen[1], dot(n, toward));
+  const knob = (at, n, R, f, many = 10) => {
+    const planes = [], turn = r() * Math.PI * 2, count = many + Math.floor(r() * 5);
+    for (let i = 0; i < count; i++) {
+      const u = (i + 0.5) / count, th = Math.acos(1 - 2 * u), ph = i * 2.39996 + turn;
+      const m = jitter([Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)], 0.5), mn = dot(m, n);
+      planes.push({ n: m, h: R * Math.sqrt(f * f * mn * mn + 1 - mn * mn) * (0.8 + 0.32 * r()) + dot(m, at) });
+    }
+    return { at, R: R * 1.3, planes };
+  };
+  const knobOf = (k, p) => { let e = -Infinity; for (const q of k.planes) e = Math.max(e, dot(q.n, p) - q.h); return e; };
+  const scars = [], knobs = [];
+  if (crag) {
+    const most = Math.min(K.size[1], big * 0.3), least = Math.min(K.size[0], most * 0.5);
+    const sizeOf = () => least * (most / least) ** (r() ** K.small);
+    let mean = 0;
+    for (let i = 0; i < 64; i++) { const s = least * (most / least) ** (((i + 0.5) / 64) ** K.small); mean += (s * s) / 64; }
+    const seenArea = 4 * Math.PI * ((a * b + b * c + c * a) / 3) * 0.55, want = Math.round((K.cover * seenArea) / (Math.PI * mean));
+    // A bite is taken from an edge seen from the side, never from one that faces the visitor: from the front a bite
+    // is a dark hole in a lit face. The great bites only from the outline itself.
+    const way = (e) => dot(unit([e.nA[0] + e.nB[0], e.nA[1] + e.nB[1], e.nA[2] + e.nB[2]]), toward);
+    const outEdges = edges.filter((e) => Math.abs(way(e)) < K.side), rimEdges = edges.filter((e) => Math.abs(way(e)) < K.rim);
+    for (let i = 0; rimEdges.length && i < Math.round((K.great[0] * big) / 100); i++) {
+      const e = rimEdges[Math.floor(r() * rimEdges.length)], n = unit([e.nA[0] + e.nB[0], e.nA[1] + e.nB[1], e.nA[2] + e.nB[2]]);
+      const R = big * between(K.great[1], K.great[2]), f = between(K.bite[0], K.bite[1]), o = between(-0.2, 0.35);
+      scars.push(knob([e.q[0] + n[0] * R * f * o, e.q[1] + n[1] * R * f * o, e.q[2] + n[2] * R * f * o], n, R, f));
+    }
+    for (let i = 0, tries = 0; i < want && tries < want * 8; tries++) {
+      const R = sizeOf();
+      if (outEdges.length && r() < K.edge) {
+        const e = outEdges[Math.floor(r() * outEdges.length)], n = unit([e.nA[0] + e.nB[0], e.nA[1] + e.nB[1], e.nA[2] + e.nB[2]]);
+        const f = between(K.bite[0], K.bite[1]), o = between(-0.35, 0.25);
+        scars.push(knob([e.q[0] + n[0] * R * f * o, e.q[1] + n[1] * R * f * o, e.q[2] + n[2] * R * f * o], n, R, f));
+        i++;
+        continue;
+      }
+      const dir = unit([r() - 0.5, r() - 0.5, r() - 0.5]), q = onto(dir, base), n = normalOf(base, q, big * 0.002);
+      if (r() > seenOf(n)) continue;
+      i++;
+      if (r() < K.lumps) {
+        const f = between(0.35, 0.7), o = 1 - between(K.lump[0], K.lump[1]) / f, L = R * K.lump[2];
+        knobs.push(knob([q[0] - n[0] * L * f * o, q[1] - n[1] * L * f * o, q[2] - n[2] * L * f * o], n, L, f, 18));
+      } else {
+        const f = between(K.scar[0], K.scar[1]), o = between(-0.1, 0.5), S = R * K.scar[2];
+        scars.push(knob([q[0] + n[0] * S * f * o, q[1] + n[1] * S * f * o, q[2] + n[2] * S * f * o], n, S, f));
+      }
+    }
+  }
+  const CG = 10, cgrid = new Map();
+  for (const [list, tag] of [[scars, 0], [knobs, 1]]) for (const k of list) {
+    for (let i = Math.floor((k.at[0] - k.R) / CG); i <= Math.floor((k.at[0] + k.R) / CG); i++)
+      for (let j = Math.floor((k.at[1] - k.R) / CG); j <= Math.floor((k.at[1] + k.R) / CG); j++)
+        for (let m = Math.floor((k.at[2] - k.R) / CG); m <= Math.floor((k.at[2] + k.R) / CG); m++) {
+          const g = cgrid.get(key(i, j, m)) ?? [[], []];
+          g[tag].push(k);
+          cgrid.set(key(i, j, m), g);
+        }
+  }
+  // The field with the crag on it, and which of scar, knob or neither is what the surface is at a place.
+  const cragged = (x, y, z, d) => {
+    const g = cgrid.get(key(Math.floor(x / CG), Math.floor(y / CG), Math.floor(z / CG)));
+    if (!g) return [d, 0];
+    const p = [x, y, z];
+    let what = 0;
+    for (const k of g[1]) { const e = knobOf(k, p); if (e < d) { d = e; what = 2; } }
+    for (const k of g[0]) { const e = -knobOf(k, p); if (e > d) { d = e; what = 1; } }
+    return [d, what];
+  };
+  const bendK = crag ? big * (K.bend[0] + K.bend[2]) : 0;
+  const bend1 = (x, y, z, k, w, s) => [k * (noise(x / w, y / w, z / w, s & 1023) - 0.5) * 2, k * (noise(x / w + 13, y / w, z / w, (s + 1) & 1023) - 0.5) * 2, k * (noise(x / w, y / w + 29, z / w, (s + 2) & 1023) - 0.5) * 2];
+  const bent = (x, y, z) => {
+    if (!bendK) return [x, y, z];
+    const a1 = bend1(x, y, z, big * K.bend[0], big * K.bend[1], seed + 21), a2 = bend1(x, y, z, big * K.bend[2], big * K.bend[3], seed + 41);
+    return [x + a1[0] + a2[0], y + a1[1] + a2[1], z + a1[2] + a2[2]];
+  };
+
+  const at = (x0, y0, z0) => { const [x, y, z] = bent(x0, y0, z0); return cragged(x, y, z, base(x, y, z))[0] + relief(x, y, z); };
+  // How fresh the break is at a place: a flake's scar, a scar of the crag and a rubble stone are fresh stone, a
+  // block's old face and a knob of the crag not at all.
+  const fresh = (x0, y0, z0) => {
+    const [x, y, z] = bent(x0, y0, z0), b0 = bare(x, y, z), f = flaked(x, y, z), st = rubbleOf(x, y, z), what = cragged(x, y, z, Math.min(Math.max(b0, f), st))[1];
+    if (what) return what === 1 ? 1 : 0;
     if (st < Math.max(b0, f) - 1e-3) return 0.7;
     if (f > b0 - big * 0.001) return 1;
     return 0;
   };
-  const onSkin = (x, y, z) => (sphere ? Math.abs(Math.hypot(x - sphere.at[0], y - sphere.at[1], z - sphere.at[2]) - sphere.R) : Infinity);
-  const blockOf = (x, y, z) => { const p = [x, y, z], w = warp(x, y, z); let best = 0, bd = Infinity; kept.forEach((cl, i) => { const d = block(p, w, 0, cl); if (d < bd) { bd = d; best = i; } }); return best; };
-  const bedOf = (x, y, z) => Math.floor(bedS(x, y, z));
-  const isRubble = (x, y, z) => rubbleOf(x, y, z) < Math.max(bare(x, y, z), flaked(x, y, z)) - 1e-3;
+  const onSkin = (x0, y0, z0) => { const [x, y, z] = bent(x0, y0, z0); return sphere ? Math.abs(Math.hypot(x - sphere.at[0], y - sphere.at[1], z - sphere.at[2]) - sphere.R) : Infinity; };
+  const blockOf = (x0, y0, z0) => { const p = bent(x0, y0, z0), w = warp(...p); let best = 0, bd = Infinity; kept.forEach((cl, i) => { const d = block(p, w, 0, cl); if (d < bd) { bd = d; best = i; } }); return best; };
+  const bedOf = (x0, y0, z0) => Math.floor(bedS(...bent(x0, y0, z0)));
+  const isRubble = (x0, y0, z0) => { const [x, y, z] = bent(x0, y0, z0); return rubbleOf(x, y, z) < Math.max(bare(x, y, z), flaked(x, y, z)) - 1e-3; };
   const least = [Infinity, Infinity, Infinity], most = [-Infinity, -Infinity, -Infinity];
   for (let i = 0; i < 800; i++) {
     const u = (i + 0.5) / 800, th = Math.acos(1 - 2 * u), ph = i * 2.39996, q = onto([Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)], (x, y, z) => Math.min(mass(x, y, z), rubbleOf(x, y, z)));
@@ -423,6 +522,6 @@ export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, ski
     const q = [-2 * big + i * step, -2 * big + j * step, -2 * big + k * step];
     if (Math.min(mass(q[0], q[1], q[2]), rubbleOf(q[0], q[1], q[2])) < 0) for (let m = 0; m < 3; m++) { least[m] = Math.min(least[m], q[m] - step); most[m] = Math.max(most[m], q[m] + step); }
   }
-  const spare = big * 0.08;
+  const spare = big * 0.08 + bendK + Math.max(0, ...knobs.map((k) => k.R));
   return { at, onSkin, blockOf, bedOf, isRubble, fresh, flakes: flakes.length, edges: edges.length, box: [least.map((v) => v - spare), most.map((v) => v + spare)] };
 }

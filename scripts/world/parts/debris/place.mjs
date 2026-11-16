@@ -23,7 +23,7 @@ export const classOf = (r) => (r >= CLASSES.L ? 'L' : r >= CLASSES.M ? 'M' : r >
 // frame, so it is not turned. The left one stands in front of the shelf of rock over it, so that it has the
 // picture's height without entering the rock.
 const BOULDERS = [
-  { px: [438, 633], z: 570, size: [82, 62, 48], family: 9 },
+  { px: [438, 633], z: 570, size: [74, 62, 48], family: 9 },
   { px: [903, 632], z: 250, size: [74, 67, 44], family: 10 },
 ];
 // The great pieces are huge where they hang close under the planet and smaller further down: how much larger than
@@ -67,10 +67,12 @@ export const LANE = { front: 60, lane: 20, small: 8, deep: 90 };
 // clumps it gathers in.
 // The field is lopsided, as the picture's is: the left arm is long and full, the two on the right shorter, one high
 // and one low, with the right boulder's dark space kept clear over the first. share is each arm's part of the pieces.
+// Each arm sweeps down and out from under its side of the planet and never back in, so the three never close into a
+// ring round the stream: a ring of them read as a wreath with an empty hole in it.
 export const ARMS = [
-  { family: 41, side: 1, y: [-560, -700], R: [140, 300], turn: [2.5, 0.72], swing: 0.3, clumps: 4, share: 0.24 },
-  { family: 42, side: -1, y: [-480, -920], R: [100, 360], turn: [2.75, 0.62], swing: 0.35, clumps: 6, share: 0.5 },
-  { family: 43, side: 1, y: [-830, -1020], R: [190, 300], turn: [2.3, 0.85], swing: 0.25, clumps: 3, share: 0.26 },
+  { family: 41, side: 1, y: [-500, -720], R: [130, 360], turn: [1.95, 1.1], swing: 0.2, clumps: 4, share: 0.26 },
+  { family: 42, side: -1, y: [-470, -920], R: [110, 450], turn: [2.0, 1.05], swing: 0.22, clumps: 6, share: 0.5 },
+  { family: 43, side: 1, y: [-800, -1020], R: [220, 430], turn: [1.7, 1.0], swing: 0.18, clumps: 3, share: 0.24 },
 ];
 // The column behind the stream: pieces at several depths behind it, which the stream is seen over. Their family,
 // how many, how far each side of the stream's line they are (on the screen), how far behind it, how high, and the

@@ -181,6 +181,10 @@ uniform vec4 uBoulder;
 uniform vec2 uGreatEdge;
 // The right boulder is near black but for its crest: how much of the core's light its body keeps, and its edges.
 uniform vec2 uCrest;
+// Which way the right boulder's crest faces, in the world: only its edges turned that way, on its side that way, burn. And how much more of
+// the small stream beside it the left boulder takes on its flank, which picture 9 has lit warm.
+uniform vec3 uCrestWay;
+uniform float uFlank;
 // A great piece's tone across it: the darkest and lightest of its stains, how wide they are in units, and how dark
 // it is where it is most shut in.
 uniform vec4 uGreatTone;
@@ -198,9 +202,17 @@ uniform vec4 uCrumb;
 // The moon on a great piece: the share of its light a face turned to it takes, and how much more its broken edges
 // take, and the share of its color the stone keeps under it (the rock's moonlit crust keeps as much).
 uniform vec3 uGreatMoon;
+// Where a great piece's moonlit faces are its rim: from how far they are seen edge on to how far, and how much paler.
+uniform vec3 uMoonEdge;
 // A smaller piece's light across it: on its side away from the core and toward it, and how much a tone of its own
 // moves it.
 uniform vec3 uGrade;
+// Light paler as it grows strong on a smaller piece: from what brightness to what, and how far; and the pale itself,
+// at a brightness of one.
+uniform vec3 uPale;
+uniform vec3 uPaleTint;
+// The grain inside a smaller piece's face: its two sizes in units, and how far it moves the tone.
+uniform vec3 uGrain;
 uniform vec2 uCoreSteepF;
 uniform vec4 uStreamLight;
 uniform vec3 uStreamColor;
@@ -293,10 +305,13 @@ void RE_Direct_Debris( const in IncidentLight directLight, const in vec3 geometr
 	// face seen nearly edge on is drawn thinner than a pixel and would break into a bright dashed sliver: it fades.
 	if ( vGreat > 0.5 ) {
 		vec3 dMoonAlb = mix( vec3( dot( material.diffuseColor, vec3( 0.2126, 0.7152, 0.0722 ) ) ), material.diffuseColor, uGreatMoon.z );
-		float dThin = 1.0 - smoothstep( 0.8, 0.95, 1.0 - saturate( dot( dGeoN, geometryViewDir ) ) );
-		float dEdge = smoothstep( 0.56, 0.8, wLight.y );
-		float dSpread = 0.55 + 0.7 * stoneNoise3( vStoneP / 26.0 + 4.1 );
-		reflectedLight.directDiffuse += directLight.color * uGreatMoon.x * ( 1.0 + uGreatMoon.y * dEdge ) * dSpread * dThin * mix( 1.0, vSide < 0.0 ? uBoulder.y : uBoulder.z, vBoulder ) * vMoon * saturate( dot( geometryNormal, directLight.direction ) ) * BRDF_Lambert( dMoonAlb );
+		float dGr = 1.0 - saturate( dot( dGeoN, geometryViewDir ) );
+		float dThin = 1.0 - smoothstep( 0.9, 0.985, dGr );
+		float dRim = smoothstep( uMoonEdge.x, uMoonEdge.y, dGr ) + 0.5 * smoothstep( 0.56, 0.8, wLight.y );
+		// Where it is a rim the stone goes paler under it, toward the palette's pale and never toward grey.
+		dMoonAlb = mix( dMoonAlb, dot( dMoonAlb, vec3( 0.2126, 0.7152, 0.0722 ) ) * uPaleTint, uMoonEdge.z * saturate( dRim ) );
+		float dSpread = 0.6 + 0.6 * stoneNoise3( vStoneP / 26.0 + 4.1 );
+		reflectedLight.directDiffuse += directLight.color * uGreatMoon.x * ( 1.0 + uGreatMoon.y * dRim ) * dSpread * dThin * mix( 1.0, vSide < 0.0 ? uBoulder.y : uBoulder.z, vBoulder ) * vMoon * saturate( dot( geometryNormal, directLight.direction ) ) * BRDF_Lambert( dMoonAlb );
 	}
 }`;
 export const MOON_SWAP = /* glsl */ `
@@ -319,7 +334,13 @@ export const COLOR = /* glsl */ `
 		float dBend = vGreat > 0.5 ? wLight.y * 2.0 - 1.0 : 0.0;
 		dAlb *= 1.0 + uWorn * max( dBend, 0.0 ) - 0.35 * max( - dBend, 0.0 );
 		// Pits, only the finer: the larger read as a leopard's spots on a lit face and as cork on a small piece.
-		dAlb *= 1.0 - uPits.y * mix( 0.35, 0.6, vGreat ) * dPits( vStoneP + 17.3, uPits.z, uPits.x, dPx );
+		dAlb *= 1.0 - uPits.y * 0.35 * ( 1.0 - vGreat ) * dPits( vStoneP + 17.3, uPits.z, uPits.x, dPx );
+		// A smaller piece's face is grained, at two sizes, gone where a pixel covers a grain.
+		if ( vGreat < 0.5 ) {
+			float dG1 = stoneNoise3( vStoneP / uGrain.x + 7.3 ) * ( 1.0 - smoothstep( 0.3, 0.7, dPx / uGrain.x ) ) + 0.5 * smoothstep( 0.3, 0.7, dPx / uGrain.x );
+			float dG2 = stoneNoise3( vStoneP / uGrain.y + 2.9 ) * ( 1.0 - smoothstep( 0.3, 0.7, dPx / uGrain.y ) ) + 0.5 * smoothstep( 0.3, 0.7, dPx / uGrain.y );
+			dAlb *= 1.0 + uGrain.z * ( 0.65 * ( dG1 - 0.5 ) + 0.35 * ( dG2 - 0.5 ) ) * 2.0;
+		}
 		dGouge = vec3( 0.0 );
 		if ( vGreat > 0.5 ) {
 			vec3 gp = vStoneP, gn = normalize( vStoneN ), bN = normalize( vBed );
@@ -406,7 +427,7 @@ export const LIGHT = /* glsl */ `
 			// core, falling with distance: the light is the face's, so it thins and breaks with the relief.
 			float dK = uGreat.x * mix( 1.0, uBoulder.x, vBoulder ) * uCoreLevel * pow( min( 1.0, uGreat.y / dFar ), uGreat.z );
 			float dEdgeK = smoothstep( 0.2, 0.7, wLight.y * 2.0 - 1.0 );
-			dK *= vBoulder > 0.5 && vSide > 0.0 ? uCrest.x + uCrest.y * dEdgeK : uGreatEdge.x + uGreatEdge.y * dEdgeK;
+			dK *= vBoulder > 0.5 && vSide > 0.0 ? uCrest.x + uCrest.y * dEdgeK * smoothstep( 0.05, 0.5, dot( dG, normalize( ( viewMatrix * vec4( uCrestWay, 0.0 ) ).xyz ) ) ) * smoothstep( 0.3, 0.75, dot( vRel, uCrestWay ) / max( dSize, 1.0 ) ) : uGreatEdge.x + uGreatEdge.y * dEdgeK;
 			reflectedLight.directDiffuse += uCoreColor * dK * mix( vSeen, max( vSeen, uBoulder.w ), vBoulder ) * saturate( dot( dN, dLc ) ) * smoothstep( - 0.05, 0.25, dot( dG, dLc ) ) * BRDF_Lambert( material.diffuseContribution );
 		}
 		// The stream: from the core's foot straight down as far as it has run, as strong as it is there.
@@ -447,7 +468,7 @@ export const LIGHT = /* glsl */ `
 			float dF = max( length( dT ), 1e-3 ), dR = uLineI[ i ].y;
 			float dI = uLineI[ i ].x * dR * dR / ( dR * dR + dF * dF ) * ( 1.0 - smoothstep( uSmallDepth.y * 0.5, uSmallDepth.y, dF ) ) * ( 1.0 - 0.6 * smoothstep( uSmallDepth.x * 0.4, uSmallDepth.x, abs( dP.z - dA0.z ) ) );
 			// A stream that falls behind a piece, across it on the screen, is hidden by it and lights none of it.
-			dI *= mix( 1.0, smoothstep( 0.82, 1.0, abs( dA1.x - vAt.x ) / max( dSize, 1.0 ) ), step( dA0.z + 20.0, vAt.z ) );
+			dI *= mix( 1.0, smoothstep( 0.82, 1.0, abs( dA1.x - vAt.x ) / max( dSize, 1.0 ) ), step( dA0.z + 20.0, vAt.z ) * ( 1.0 - vBoulder ) ) * mix( 1.0, uFlank, vBoulder * step( vSide, 0.0 ) );
 			if ( dI < 1e-3 ) continue;
 			vec3 dL = normalize( ( viewMatrix * vec4( dT / dF, 0.0 ) ).xyz );
 			float dFc = saturate( dot( dN, dL ) );
@@ -497,6 +518,10 @@ export const DEEP = /* glsl */ `
 		reflectedLight.directSpecular = vec3( 0.0 );
 		reflectedLight.indirectSpecular = vec3( 0.0 );
 	} else {
+		if ( vGreat < 0.5 ) {
+			float dL = dot( reflectedLight.directDiffuse, vec3( 0.2126, 0.7152, 0.0722 ) );
+			reflectedLight.directDiffuse = mix( reflectedLight.directDiffuse, dL * uPaleTint, uPale.z * smoothstep( uPale.x, uPale.y, dL ) );
+		}
 		float dK = mix( uDeep.z, 1.0, smoothstep( uDeep.x, uDeep.y, vAt.z ) );
 		reflectedLight.directDiffuse *= dK;
 		reflectedLight.indirectDiffuse *= dK;
