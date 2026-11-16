@@ -212,9 +212,19 @@
     --grid: min(30rem, 100vw - 6.25rem);
   }
 
+  /* One row of four, as on a wide screen, each as wide as its word: in two rows of two it was a block of words
+     twice the bar's height ("the category selection for one is really bad looks", his words on the phone). */
   .bar {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(4, auto);
+    justify-content: space-between;
     width: min(calc(var(--grid) + 2.4rem), 100vw - 5.25rem);
+    padding: 0 clamp(0.2rem, 1.4vw, 1.2rem);
+  }
+
+  .category {
+    padding: 0 clamp(0.3rem, 1.3vw, 0.9rem);
+    font-size: clamp(0.5625rem, 2.78vw, var(--step--1));
+    white-space: nowrap;
   }
 
   .layer {
