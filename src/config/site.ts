@@ -2,6 +2,9 @@
 import { hex, palette } from './palette';
 
 export const SITE_NAME = 'Brandon Church';
+// Where the site is served, for the addresses a shared link carries. The Vercel address until he names the domain it
+// launches on (PLAN.md, Ready to deploy, Owner).
+export const SITE_URL = 'https://portfolio-website-v3-wheat.vercel.app';
 
 // The names the carried 3D pieces use for the palette. waterAmber3d is the stream's color as a number.
 export const COLORS = { bg: palette.bg, amber: palette.flame, accent: palette['copper-light'], text: palette.text, waterAmber3d: hex('flame') } as const;
