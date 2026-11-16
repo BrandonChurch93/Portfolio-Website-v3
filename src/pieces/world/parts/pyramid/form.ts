@@ -19,10 +19,17 @@ export const FORM = {
   // The foot course: a band `tall` high round the foot, standing `proud` out from the faces, its top edge bevelled
   // `bevel` deep.
   foot: { tall: 3.4, proud: 0.75, bevel: 0.45 },
-  // The casing: courses all `unit` tall (measured upright), so every plate of a course is as tall as the course.
-  // Plates are `plate` long, each a share `jag` longer or shorter. A joint is a hairline `line` tall, and each plate's
-  // upper chamfer `lip` tall. How each plate is tilted is the shader's (NIGHT.kick, bow, tilt).
-  casing: { unit: 1.8, plate: 8, jag: 0.3, line: 0.1, lip: 0.14 },
+  // The casing: long sheets in courses. The face is ruled in rows `row` tall (measured upright), and a share `merge`
+  // of the lines between rows is no seam, so a course is one, two or three rows tall (every third line is a seam) and
+  // every sheet of a course is as tall as the course. Sheets are `plate` long, each joint a share `jag` of that off
+  // its place, so they run from a third to nearly twice that. A seam is a hairline `line` tall, and each sheet's
+  // upper chamfer `lip` tall. How each sheet is tilted is the shader's (NIGHT.kick, bow, tilt). Even courses of short
+  // plates read as running bond brick, and at the page's size as ribbing.
+  casing: { row: 3, merge: 0.42, plate: 26, jag: 0.7, line: 0.1, lip: 0.16 },
+  // The sheet the pyramid's shade is drawn on (./shade.ts), over the ground round its foot: how far round the foot
+  // course it reaches, how far along the moon's shadow, as a share of the shadow's length, how far apart its points
+  // are, and how high over the plan's ground it lies.
+  shade: { reach: 14, along: 0.55, cell: 5, lift: 0.6 },
 } as const;
 
 type V3 = [number, number, number];

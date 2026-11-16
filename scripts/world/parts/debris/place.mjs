@@ -24,7 +24,7 @@ export const classOf = (r) => (r >= CLASSES.L ? 'L' : r >= CLASSES.M ? 'M' : r >
 // picture's height without entering the rock.
 const BOULDERS = [
   { px: [438, 633], z: 570, size: [70, 62, 48], family: 9 },
-  { px: [900, 630], z: 250, size: [72, 38, 36], family: 10 },
+  { px: [905, 636], z: 250, size: [88, 45, 40], family: 10 },
 ];
 // The great pieces are huge where they hang close under the planet and smaller further down: how much larger than
 // the plan has them at the top and at the foot of where they hang, and the share of flatness they keep at most.

@@ -25,7 +25,11 @@ const SMOOTH = { stone: 1.6, bay: 2.4, gold: 1.6, alike: 0.92 };
 // never drawn, and unless it is turned from the moon (by more than `casts`) it casts no shadow either, since the
 // moon's shadow is drawn with the faces turned from it. Such faces are left out of the file. The light is baked
 // with them all there.
-const CULL = { seen: -0.12, casts: 0.02 };
+const CULL = { seen: -0.3, casts: 0.02 };
+// How openness and the bounce are stored: in steps of this many of a byte's 255, which the light passed between
+// vertices never shows, and which packs the file a third smaller.
+const STEP = 4;
+const step = (v) => Math.round((Math.min(1, Math.max(0, v)) * 255) / STEP) * STEP / 255;
 
 // The layers of many meshes (each what Kit.meshes gives) as one mesh a layer.
 export function gather(list) {
@@ -142,8 +146,8 @@ export async function finish({ made, win, around = [], file, draft, meta = {}, s
     // both are stored as nothing, which packs to nothing.
     for (let i = 0; i < n; i++) {
       const back = Math.min(1, Math.max(0, (m.positions[i * 3 + 2] - DEPTH[0]) / (DEPTH[1] - DEPTH[0])));
-      light4.set([0, 0, l.open[i], Math.min(1, (m.foot?.[i] ?? 0) / FOOT)], i * 4);
-      bounce4.set([storeBounce(l.bounce[i * 3]), storeBounce(l.bounce[i * 3 + 1]), storeBounce(l.bounce[i * 3 + 2]), back], i * 4);
+      light4.set([0, 0, step(l.open[i]), Math.min(1, (m.foot?.[i] ?? 0) / FOOT)], i * 4);
+      bounce4.set([step(storeBounce(l.bounce[i * 3])), step(storeBounce(l.bounce[i * 3 + 1])), step(storeBounce(l.bounce[i * 3 + 2])), back], i * 4);
     }
     const attributes = { normal: { data: m.normals, size: 3, as: 'i16' }, light: { data: light4, size: 4, as: 'u8' }, bounce: { data: bounce4, size: 4, as: 'u8' } };
     // The stone's joints are laid from where a place is in the world, in the shader: only how it is laid and which

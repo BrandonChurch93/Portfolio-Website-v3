@@ -33,7 +33,7 @@ const { tall: TALL, ring: RING } = L.SPIRE;
 // granite, the court's paving laid in rings, and pale limestone trim.
 const LAY = { granite: 0, rusticated: 1, court: 2, trim: 3 };
 const mixed = (a, b, k, s) => linear(a).map((v, i) => (v + (linear(b)[i] - v) * k) * s);
-const ALBEDO = { granite: mixed('text-3', 'bronze', 0.42, 0.62), trim: mixed('text-2', 'copper-light', 0.3, 0.42), court: mixed('text-3', 'bronze', 0.4, 0.4) };
+const ALBEDO = { granite: mixed('text-3', 'bronze', 0.04, 0.65), trim: mixed('text-2', 'copper-light', 0.3, 0.42), court: mixed('text-3', 'bronze', 0.4, 0.4) };
 
 // The design, in units, y up from the ground under the spire. Where each ring of fins ends, and how far out it
 // stands, were read off picture 9 (fromPicture in the layout).
@@ -89,7 +89,7 @@ const S = {
   // middle, so each mirrors a gradient of the night from the horizon's glow to the dome and the band reads as one),
   // on which the engraving is drawn, and a smaller rolled lip round its inner edge (where, and its radius), so both
   // edges of the band show.
-  ring: { bead: [2.2, 0.95, 142], face: 0.6, crown: 0.34, lip: [-9.25, 0.55], segs: draft ? 160 : 288 },
+  ring: { bead: [2.2, 0.95, 142], face: 0.6, crown: 0.85, lip: [-9.25, 0.55], segs: draft ? 160 : 288 },
 };
 const RINGS = [{ R: S.shaft.R, e: 0, top: S.shaft.to }, ...S.rings];
 // Where a ring's shoulder begins: it climbs in by its facets from upright at R, ending just inside the faces of the
@@ -621,6 +621,23 @@ const meshes = ['stone', 'bay', 'gold'].map((name) => {
   return { name, positions: m.positions, indices: m.indices, attributes, info: { triangles: m.indices.length / 3 } };
 });
 const triangles = meshes.reduce((s, m) => s + m.indices.length / 3, 0);
-pack('public/world/spire.bin', meshes, { windows: 'spire-windows.png', triangles, draft });
+// Every ledge, cornice and finial the rain runs off, as heights: the stone's material darkens the face under each,
+// and under the belts across the fluted fronts, which it draws.
+const LEDGES = (() => {
+  const b = S.podium, t = S.buttress, F = S.fleche, n = Math.round((F.to - F.from) / F.every);
+  const all = [b.y1, b.parapet[1], ...t.tiers.map((r) => r[2]), ...S.rings.map((r) => r.shoulder.from), S.shaft.to, ...S.shaft.tiers.map((r) => r.y), S.shaft.top];
+  for (let k = 0; k < n; k++) all.push(F.from + ((F.to - F.from) * k) / n);
+  return [...new Set(all.map((v) => Math.round(v * 100) / 100))].sort((a, c) => a - c);
+})();
+// The tower as the ring's gold mirrors it: up its height, how far out its faces stand and how wide its strip of
+// windows is, as points a line is drawn through (a step is two points at nearly one height).
+const PROFILE = (() => {
+  const F = S.fleche, r0 = S.rings[0], out = [[S.foot, r0.R, S.strip.half], [r0.shoulder.from, r0.R, S.strip.half], [r0.top, S.shaft.R, S.strip.half]];
+  S.shaft.tiers.forEach((t, i) => { const end = S.shaft.tiers[i + 1]?.y ?? S.shaft.top; out.push([t.y, out[out.length - 1][1], out[out.length - 1][2]], [t.y + 0.01, t.R, t.half], [end, t.R, t.half]); });
+  for (let k = 0; k <= 6; k++) { const y = F.from + ((F.to - F.from) * k) / 6; out.push([y, F.end + (F.R - F.end) * Math.pow(1 - k / 6, F.bow), 0]); }
+  out.push([TALL, 0.2, 0]);
+  return out.map((p) => p.map((v) => Math.round(v * 100) / 100));
+})();
+pack('public/world/spire.bin', meshes, { windows: 'spire-windows.png', triangles, draft, ledges: LEDGES, profile: PROFILE });
 png('public/world/spire-windows.png', win.size, win.size, win.data, 3);
 console.log(`spire: ${triangles} triangles (${meshes.map((m) => `${m.name} ${m.indices.length / 3}`).join(', ')}), windows lit ${(100 * win.lit()).toFixed(0)}%, ${((performance.now() - began) / 1000).toFixed(1)} s`);

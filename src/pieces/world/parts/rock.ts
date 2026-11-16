@@ -8,7 +8,8 @@ import { stoneMaps, stoneMaterial } from './rock/stone';
 // The torn rock: whichever sculpt is asked for (?rock=a, default r), drawn in the planet's stone (./rock/stone.ts).
 // A world file for the rock holds two meshes: `break`, the torn rock, and `skin`, the planet's outer surface and its
 // top, which is a plain dark shape until its own part is built. Without a file it is the planet's outline, whole.
-// ?stone=0 draws the break in the plain color the sculpts' light was worked out with, to judge form alone.
+// ?stone=0 draws the break in the plain color the sculpts' light was worked out with, to judge form alone, and
+// ?stonedebug=1 to 7 one thing the stone reads (StoneOptions.debug in ./rock/stone.ts).
 //
 // What the sculpt stores for the stone, read from the file's meta and, where the meta is silent, from the file
 // itself: meta.edge, when it is there, names where each vertex's distance to the nearest crease is (light.w or
@@ -43,7 +44,7 @@ export const build: PartFactory = async ({ query, renderer }) => {
       // plain shell lay exactly where they are and fought them for every pixel. ?shell=1 draws it again.
       if (name === 'skin' && query.get('shell') !== '1') continue;
       const m = name === 'break' && maps
-        ? stoneMaterial(maps, { key: 'rock', baked: true, spare: blocks(l.geometry, meta) ? 'slab' : undefined, edge })
+        ? stoneMaterial(maps, { key: 'rock', baked: true, spare: blocks(l.geometry, meta) ? 'slab' : undefined, edge, debug: Number(query.get('stonedebug')) || undefined })
         : lit(new THREE.MeshStandardMaterial({ color: name === 'skin' ? DARK : CLAY, roughness: 0.92, metalness: 0 }), { key: `rock-plain-${name}`, baked: true });
       const part = mesh(l, m);
       part.castShadow = part.receiveShadow = true;

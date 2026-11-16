@@ -8,13 +8,14 @@ import { shade } from './pyramid/shade';
 import * as S from './pyramid/shaders';
 
 // The pyramid: polished gold, at the front left edge of the land, a corner toward the visitor, standing straight out
-// from the dome on the ground itself. Its body is cased in courses of plates of differing heights, in bands that end
-// at a deeper joint, each plate a hair different in tilt and polish; a bevelled foot course stands proud round its
-// foot, and a capstone with a raised border sits over a dark reveal. Every arris is rounded. Its mesh and the light
-// that reaches it are made ahead by scripts/world/parts/pyramid/make.mjs (public/world/pyramid.bin), in the
-// pyramid's own frame. What each face mirrors is ./pyramid/shaders.ts.
+// from the dome on the ground itself. Its body is cased in even courses of plates, the cladding warping slowly over
+// many plates and each plate a hair different in tilt and polish; a bevelled foot course stands proud round its foot,
+// and a capstone sits over a dark reveal. Every arris is rounded. Its mesh and the light that reaches it are made
+// ahead by scripts/world/parts/pyramid/make.mjs (public/world/pyramid.bin), in the pyramid's own frame. What each face
+// mirrors is ./pyramid/shaders.ts, and the shade it lays on the ground round its foot ./pyramid/shade.ts.
 // While it is being judged, ?pyr=zen=6,rim=5 sets any number of LOOK by its short name (see t() below), and
-// ?pyrn=lit.field.wide=20,edges.ledge[1]=0.4 any number of NIGHT by its path.
+// ?pyrn=moon.heart.power=3,bow.per[0]=0.001 any number of NIGHT by its path. ?pyrshade=0 leaves out the shade on the
+// ground and ?pyrcast=0 its shadow in the moon's map.
 
 const LOOK = {
   // The body's roughness, the capstone's, and how much each plate's polish differs, as a share of how soft what it
@@ -34,7 +35,7 @@ const LOOK = {
   // saturation there it read as khaki or brass. Then over what levels the deep turns to the body, the body to the
   // bright, and the bright pales toward pale gold.
   sat: { deep: 0.66, deepTurn: -11, body: 0.74, bodyTurn: -7, mid: 0.64, midTurn: -2.5, warm: 0.72, warmTurn: -9 },
-  grade: [0.02, 0.09, 0.22, 0.75, 1.35, 3.2],
+  grade: [0.02, 0.09, 0.22, 0.75, 0.6, 3.5],
   // How much of the world's contact shadow a mirror keeps where it is shut in.
   contact: 0.3,
   // How much of the moon's own light the faces take as a light: none, for they mirror the moon where their night has
@@ -126,11 +127,11 @@ export const build: PartFactory = async (ctx) => {
   frame.add(o);
   const group = new THREE.Group();
   group.add(frame);
-  const under = ctx.query.get('pyrshade') === '0' ? null : shade(at, basis);
+  const sheet = file.meshes.get('shade'), under = !sheet || ctx.query.get('pyrshade') === '0' ? null : shade(sheet, at, basis);
   if (under) group.add(under.mesh);
   return {
     group,
     alone: { at: [PYRAMID.x, foot + tall * 0.42, PYRAMID.z], r: PYRAMID.base * 0.68 },
-    dispose() { gold.geometry.dispose(); goldM.dispose(); under?.dispose(); },
+    dispose() { gold.geometry.dispose(); sheet?.geometry.dispose(); goldM.dispose(); under?.dispose(); },
   };
 };

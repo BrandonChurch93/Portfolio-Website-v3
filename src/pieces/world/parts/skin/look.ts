@@ -7,9 +7,9 @@
 // dust's paler stone. Under the crust, in section, is the planet's own red brown rock (LIGHT.stone in the layout) at
 // UNDER of its brightness.
 export const STONE = {
-  pale: { from: 'text-3', to: 'copper-light', k: 0.46, power: 1.62 },
+  pale: { from: 'text-3', to: 'copper-light', k: 0.46, power: 1.36 },
   dust: { from: 'text-2', to: 'copper-light', k: 0.24, power: 1.12 },
-  dark: { from: 'bg-3', to: 'text', k: 0.14, power: 0.5 },
+  dark: { from: 'bg-3', to: 'text', k: 0.24, power: 0.42 },
 } as const;
 export const UNDER = 0.62;
 // The land's sand, which lies in the hollows of the skin's shoulder under the land's edge: as the land has it.
@@ -20,6 +20,11 @@ export const NIGHT_SIDE = 2.9;
 // The pale side's shadows are near black, as picture 9's crescents are, and its light comes from the moon: it keeps
 // this share of the night and of the light that bounces to it, a quarter of the way to grey.
 export const PALE_SHADE = 0.3;
+// What reaches the pale side's shadows has bounced off warm sand and warm stone first: a share of each of red, green
+// and blue. Untinted, the side's shaded half came out a grey brown where picture 9's is a warm one.
+export const PALE_WARM = [1.12, 0.93, 0.72] as const;
+// The dark stone turned toward yellow, as the pale is: under the night's warm fill it came out a maroon black.
+export const DARK_TURN = 8;
 // How the moon's light on the pale side falls away from its full where the moon is this high over the outer surface
 // (the cosine, to) to this share of it where it is this low (from), for the ground shading itself.
 export const TERMINATOR = { from: 0.1, to: 0.52, floor: 0.12 } as const;
@@ -29,7 +34,7 @@ export const PALE_TURN = 5;
 
 // The map: how many of its texels to a pixel of picture 9, and the steepest slope it holds (units of height to a
 // picture pixel across). Slopes are stored as the square root of their share of that, so gentle ones keep detail.
-export const MAP = { perPixel: 3, slope: 5 } as const;
+export const MAP = { perPixel: 2.2, slope: 5 } as const;
 
 // The cracks' own light: how bright it is where it is hottest, as a share of the palette's pale, and the light it
 // passes through as it cools (pale gold, the hot orange, flame, ember), each at the share of glow it is reached at.

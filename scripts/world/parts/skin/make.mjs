@@ -22,7 +22,7 @@ import { simplify } from '../../lib/surface.mjs';
 import { L, light, linear, storeBounce } from '../../lib/plan.mjs';
 import { MAP, STONE } from '../../../../src/pieces/world/parts/skin/look.ts';
 import { KNOT, SIDES, craters, cracks, edges, edgeAngle, onShell, shellNormal } from './features.mjs';
-import { setup, coarse } from './field.mjs';
+import { setup, coarse, perlin } from './field.mjs';
 
 const draft = process.argv.includes('--draft');
 const began = performance.now(), say = (s) => console.log(`skin: ${s} · ${((performance.now() - began) / 1000).toFixed(1)} s`);
@@ -30,12 +30,13 @@ const began = performance.now(), say = (s) => console.log(`skin: ${s} · ${((per
 // keep, the bake's rays, and the map's texels to a picture pixel.
 const FINE = draft
   ? { grid: 1.4, error: 0.2, most: 120000, samples: { core: 8, moon: 6, hemi: 24 }, bounces: 1, perPixel: 1.5 }
-  : { grid: 0.6, error: 0.5, most: 235000, samples: { core: 16, moon: 16, hemi: 160 }, bounces: 2, perPixel: MAP.perPixel };
+  : { grid: 0.6, error: 0.5, most: 135000, samples: { core: 16, moon: 16, hemi: 160 }, bounces: 2, perPixel: MAP.perPixel };
 // How far down the surface the grid is looked at (t, 0 at the rim), and the margin round each side's part of the map.
 const DOWN = 0.93, MARGIN = 4;
-// The skirt past each side's line: how far past it, and how far down from the edge, in units: the crust's broken
-// face in section, deep enough to meet the torn rock behind it.
-const SKIRT = { past: 0.5, down: 22 };
+// The skirt past each side's line: how far past it it runs as it goes down, how far down from the edge, in units, and
+// in how many steps: the crust's broken face in section, deep enough to meet the torn rock behind it. Made in one step
+// it was long thin quads, one to a row of the grid, which drew the face in bands like brushed paint.
+const SKIRT = { past: [0.4, 2.4], down: { left: 14, right: 22 }, cols: 6 };
 // How near (the cosine) the grid's normal must be to a crease's to be taken in its place.
 const AGREE = Math.cos((24 * Math.PI) / 180), CREASE = Math.cos((32 * Math.PI) / 180);
 // How much the stored light is eased toward its neighbours', on the open ground and on a broken face, and how often.
@@ -68,15 +69,17 @@ function grid(side) {
   }
   let span = 0;
   for (const { t, e } of rows) span = Math.max(span, Math.ceil((L.WORLD.half * Math.sqrt(1 - t * t) * Math.abs(e - out)) / FINE.grid));
-  // Past the torn line one more column, a skirt that goes straight down into the planet from the edge: where the
-  // crust has fallen at the line, it closes what would be a slot between the skin and the torn rock.
-  const cols = span + 1, V = rows.length * (cols + 1), pos = new Float32Array(V * 3), h = new Float32Array(V), lock = new Uint8Array(V);
+  // Past the torn line a few more columns, a skirt that goes down into the planet from the edge, lumpy as broken rock:
+  // it is the crust in section, and closes what would be a slot between the skin and the torn rock.
+  const cols = span + SKIRT.cols, V = rows.length * (cols + 1), pos = new Float32Array(V * 3), h = new Float32Array(V), lock = new Uint8Array(V);
   rows.forEach(({ t, e }, k) => {
-    const ring = L.WORLD.half * Math.sqrt(1 - t * t);
+    const ring = L.WORLD.half * Math.sqrt(1 - t * t), edgeH = { at: 0 };
     for (let j = 0; j <= cols; j++) {
-      const skirt = j === cols, th = skirt ? e + Math.sign(e - out) * SKIRT.past / ring : out + ((e - out) * j) / span;
+      const m = j - span, f = m / SKIRT.cols, skirt = m > 0, arc = t * L.WORLD.deep;
+      const th = skirt ? e + (Math.sign(e - out) * (SKIRT.past[0] + (SKIRT.past[1] - SKIRT.past[0]) * f + 0.45 * perlin(arc / 3.1, f * 2.3, side.length))) / ring : out + ((e - out) * Math.min(j, span)) / span;
       const q = L.skinAt(th, t), n = shellNormal(...q), v = k * (cols + 1) + j;
-      const d = skirt ? Math.min(h[v - 1], 0) - SKIRT.down : coarse(...q);
+      if (m === 0) edgeH.at = coarse(...q);
+      const d = skirt ? Math.min(edgeH.at, 0) - SKIRT.down[side] * f ** 0.9 * (0.8 + 0.4 * (0.5 + 0.5 * perlin(arc / 5.3, f * 3.7, 9 + side.length))) : m === 0 ? edgeH.at : coarse(...q);
       h[v] = d;
       pos.set([q[0] + n[0] * d, q[1] + n[1] * d, q[2] + n[2] * d], v * 3);
       if (k === 0 || k === rows.length - 1 || j === 0 || j >= span) lock[v] = 1;
@@ -252,16 +255,19 @@ const slope = (i, a, b) => {
 const enc = (s) => { const v = Math.min(1, Math.abs(s) / MAP.slope); return Math.round(127.5 + 127.5 * Math.sign(s) * Math.sqrt(v)); };
 for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
   const i = y * MW + x;
-  if (!SIDE[i]) { rgba.set([128, 128, 128, 0], i * 4); continue; }
+  if (!SIDE[i]) { rgba.set([128, 128, 128, x >= rects[1].ox ? 128 : 0], i * 4); continue; }
   const su = slope(i, x > 0 ? i - 1 : -1, x < MW - 1 ? i + 1 : -1), sv = slope(i, y > 0 ? i - MW : -1, y < MH - 1 ? i + MW : -1);
   rgba.set([enc(su), enc(sv), Math.round(Math.min(1, B[i] / 2) * 255), Math.round(Math.min(1, Math.max(0, G[i])) * 255)], i * 4);
 }
 // Texels outside the skin take their nearest neighbour's color, so a texel at an edge does not blend toward grey.
 const SIDE_FILL = new Uint8Array(T);
-for (let pass = 0; pass < 3; pass++) for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
+for (let pass = 0; pass < 16; pass++) for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
   const i = y * MW + x;
   if (SIDE[i] || SIDE_FILL[i]) continue;
-  for (const j of [i - 1, i + 1, i - MW, i + MW]) if (j >= 0 && j < T && (SIDE[j] || SIDE_FILL[j])) { rgba[i * 4 + 2] = rgba[j * 4 + 2]; rgba[i * 4 + 3] = rgba[j * 4 + 3]; SIDE_FILL[i] = 1; break; }
+  // Only from within the same side's part of the map: wrapping round a row's end took the pale side's numbers into
+  // the dark side's, where they read as the cracks' light, a lit dotted line round the dark side's outline.
+  const own = rects.find((r) => x >= r.ox && x < r.ox + r.w);
+  for (const [j, ok] of [[i - 1, x > own.ox], [i + 1, x < own.ox + own.w - 1], [i - MW, y > 0], [i + MW, y < MH - 1]]) if (ok && (SIDE[j] || SIDE_FILL[j])) { rgba[i * 4 + 2] = rgba[j * 4 + 2]; rgba[i * 4 + 3] = rgba[j * 4 + 3]; SIDE_FILL[i] = 1; break; }
 }
 const head = Buffer.alloc(16);
 head.write('SKNM', 0, 'latin1');

@@ -329,7 +329,7 @@ function bandedDrum(b, x, r, tall, o = {}) {
   for (let i = 0; i < k; i++) {
     const y0 = low + i * step, y1 = y0 + step, g0 = y0 + step * D.ringTall, g1 = y1, mid = (g0 + g1) / 2, hh = (g1 - g0) / 2;
     revolve(pb, 'stone', [[rs, i ? y0 + 0.25 : y0], [rs, g0 - 0.25], [rs - 0.3, g0], [rg, g0 + 0.15]], n, { tag: stone, skip });
-    const band = Array.from({ length: 7 }, (_, j) => { const a = -Math.PI / 2 + (Math.PI * j) / 6; return [rg + D.band * Math.cos(a), mid + hh * 0.86 * Math.sin(a)]; });
+    const band = Array.from({ length: 7 }, (_, j) => { const a = -Math.PI / 2 + (Math.PI * j) / 6; return [rg + D.band * Math.cos(a), mid + hh * 0.7 * Math.sin(a)]; });
     revolve(pb, 'bay', [[rg, g0 + 0.15], ...band, [rg, g1 - 0.15]], n, { tag: COPPER, skip });
     revolve(pb, 'stone', [[rg, g1 - 0.15], [rs - 0.3, g1], [rs, g1 + 0.25]], n, { tag: stone, skip });
   }
@@ -338,7 +338,7 @@ function bandedDrum(b, x, r, tall, o = {}) {
 // The ringed pair's drums: how tall the stack of rings is, in units (the picture's runs 176 to 196 down), how many
 // grooves, the share of each step that is a proud ring, how far a ring stands out of the shaft and how deep a groove
 // is cut into it, how far its copper band stands out of the groove's floor, and the cap.
-const DRUM = { stack: 19, bands: 5, ringTall: 0.32, ring: 0.6, groove: 0.5, band: 0.55, cap: 1.5 };
+const DRUM = { stack: 19, bands: 5, ringTall: 0.38, ring: 0.7, groove: 0.6, band: 0.3, cap: 1.5 };
 
 // The tower left of the spire, as picture 9 has it at 643 to 662 across: a warm stone shaft whose roof slopes down
 // to the visitor's right. Strip windows between proud piers up its faces, a cornice, and on it an attic whose top
@@ -531,7 +531,7 @@ function point(b, t) {
 }
 
 // The obelisk tower: a slender dark shaft of windows on a base, and on it a tall point of gold, square with cut
-// corners, its four faces fluted, the flutes narrowing with them, on a stepped plinth, under a band and a pyramidion.
+// corners, on a stepped plinth, under a band and a pyramidion.
 function obelisk(b, t) {
   const { w, d, tall } = t, { cw, ch } = cell(b), gold = tall * 0.35, hb = 10;
   base(b, w, d, hb);
@@ -548,20 +548,15 @@ function obelisk(b, t) {
   const c = Math.cos(OBELISK.turn * Math.PI / 180), sn = Math.sin(OBELISK.turn * Math.PI / 180), turned = (poly) => poly.map(([u, v]) => [u * c + v * sn, -u * sn + v * c]);
   b.kit.prism('gold', chamfered(g + 2.4, g + 2.4, 1.6), y1 + 2.4, y1 + 3.2, { top: true, edge: b.E });
   b.kit.prism('gold', turned(chamfered(g + 1.2, g + 1.2, 1.2)), y1 + 3.2, yb, { top: true, edge: b.E });
-  b.kit.prism('gold', turned(chamfered(g, g, g * 0.08)), yb, yt, { top: false, edge: b.E, nv: 12, shrink: k, tagOf: (pa, pb) => fluting(pa, pb, g * 0.5, k, yb, yt, OBELISK.flutes) });
+  b.kit.prism('gold', turned(chamfered(g, g, g * 0.08)), yb, yt, { top: false, edge: b.E, nv: 12, shrink: k });
   const gt = g * k;
   b.kit.prism('gold', turned(chamfered(gt + 0.7, gt + 0.7, gt * 0.12)), yt, yt + 0.7, { top: true, bottom: true, edge: b.E });
   b.kit.prism('gold', turned(chamfered(gt, gt, gt * 0.08)), yt + 0.7, tall, { top: false, edge: b.E, shrink: 0.02 });
 }
 // The obelisk's point: how much narrower it is at its head than its foot, how tall its pyramidion is against its
-// width, how many flutes each face carries, and how far it is turned on its plinth, in degrees.
-const OBELISK = { taper: 0.62, cap: 0.9, flutes: 5, turn: 38 };
-// The tag that flutes a face of a prism that narrows, if the face is one of its broad ones.
-function fluting(pa, pb, least, k, y0, y1, n) {
-  const L = Math.hypot(pb[0] - pa[0], pb[1] - pa[1]);
-  if (L < least) return undefined;
-  return { flute: n, taper: [L, L * k, y0, y1], o: [(pa[0] + pb[0]) / 2, 0, (pa[1] + pb[1]) / 2], T: [(pb[0] - pa[0]) / L, 0, (pb[1] - pa[1]) / L] };
-}
+// width, and how far it is turned on its plinth, in degrees. Its faces are plain polished gold, so the one toward the
+// moon blazes as one face, as the picture's does: fluted, it read as a ladder of light and dark.
+const OBELISK = { taper: 0.62, cap: 0.9, turn: 30 };
 
 // The sun disc tower: a shaft that steps in, a collar and a neck, and on it a great disc of gold carved as the
 // site's Sun stones are: a rounded rim, a dished field, a ring of sixteen plates, rays at the quarters and between

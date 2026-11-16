@@ -100,7 +100,8 @@ export const VERT_MOTION = /* glsl */ `
 		at += vec3( ${f(M.scatter.slide)} * sin( TAU * t / ${f(M.scatter.slideT)} + fa ), ${f(M.scatter.rise)} * sin( TAU * t / ${f(M.scatter.riseT)} + fb ), 0.0 );
 	}
 	vLocal = position * dS.xyz;
-	vExt = dS.xyz;
+	// A great piece is drawn at its own size: its extent is how large it is.
+	vExt = kind < ${f(KIND.plate + 0.5)} ? vec3( max( dE.w, 1.0 ) ) : dS.xyz;
 	vec3 dLocalN = normalize( normal / max( dS.xyz, vec3( 1e-4 ) ) );
 	vec3 dPos = dTurnY( dRound, dTurn( axis, spin, dTurnQ( dQ, vLocal * grow ) ) ) + at;
 	vec3 dNor = dTurnY( dRound, dTurn( axis, spin, dTurnQ( dQ, dLocalN ) ) );
@@ -129,6 +130,7 @@ export const VERT_LIGHT = /* glsl */ `
 
 export const FRAG_PARS = /* glsl */ `
 uniform vec3 uStone;
+uniform vec3 uDebrisCore;
 uniform vec3 uSkinPale;
 uniform vec3 uSkinDark;
 uniform vec3 uShard;
@@ -175,6 +177,7 @@ uniform vec4 uWeather;
 uniform vec3 uGlow;
 uniform vec2 uGlowRim;
 uniform vec4 uGrainK;
+uniform vec3 uStrata;
 const float TAU = 6.2831853;
 // The moon as it reached this place, past the planet's shadow, which the rim is drawn from.
 vec3 dMoonColor = vec3( 0.0 );
@@ -259,6 +262,11 @@ export const COLOR = /* glsl */ `
 		vec3 dFaceN = normalize( cross( dFdx( vLocal ), dFdy( vLocal ) ) + 1e-5 );
 		float dG = dGrainMap( vLocal, dFaceN, 1.0 / clamp( dBig * uGrainK.x, uGrainK.y, uGrainK.z ) );
 		dAlb *= 1.0 + uGrainK.w * ( dG - 0.5 ) * 2.0;
+		// The strata: thin beds across the piece, each a little its own tone, showing on the broken sides that cut
+		// across them, wandering, and gone where a bed is finer than a few pixels.
+		float dBedW = dBig * uStrata.x, dB = vLocal.y / dBedW + uStrata.y * ( dNoise( vLocal / ( dBig * 0.3 ) + vSeed ) - 0.5 );
+		float dAcross = 1.0 - smoothstep( 0.55, 0.85, abs( dFaceN.y ) );
+		dAlb *= 1.0 + uStrata.z * ( dH( floor( dB ) + vSeed * 0.37 ) - 0.5 ) * 2.0 * dAcross * ( 1.0 - smoothstep( 0.15, 0.35, dPx0 / dBedW ) );
 		dAlb = mix( dAlb, ( vSide > 0.0 ? uSkinPale : uSkinDark ) * ( 0.85 + 0.3 * wBedTone ), vSkin );
 		float dBend = wLight.y * 2.0 - 1.0;
 		dAlb *= 1.0 + uWorn * max( dBend, 0.0 ) * ( 1.0 - vFlat ) - 0.35 * max( - dBend, 0.0 );
@@ -330,6 +338,9 @@ export const LIGHT = /* glsl */ `
 			vec3 dT = dA1 + dAB * dS - dP;
 			float dF = max( length( dT ), 1e-3 ), dR = uLineI[ i ].y;
 			float dI = uLineI[ i ].x * dR * dR / ( dR * dR + dF * dF ) * ( 1.0 - smoothstep( uSmallDepth.y * 0.5, uSmallDepth.y, dF ) ) * ( 1.0 - 0.6 * smoothstep( uSmallDepth.x * 0.4, uSmallDepth.x, abs( dP.z - dA0.z ) ) );
+			// A stream that falls behind a piece, across it on the screen, is hidden by it and lights none of it.
+			float dSize = max( vExt.x, max( vExt.y, vExt.z ) );
+			dI *= mix( 1.0, smoothstep( 0.75, 0.95, abs( dA1.x - vAt.x ) / max( dSize, 1.0 ) ), step( dA0.z + 20.0, vAt.z ) );
 			if ( dI < 1e-3 ) continue;
 			vec3 dL = normalize( ( viewMatrix * vec4( dT / dF, 0.0 ) ).xyz );
 			float dFace = saturate( dot( dN, dL ) );
@@ -342,7 +353,7 @@ export const LIGHT = /* glsl */ `
 		reflectedLight.directSpecular += dMoonColor * vMoon * dRimM * uMoonRim.x * uMoonRim.z * F_Schlick( material.specularColor, 1.0, 1.0 ) * vMetal;
 		// The glow the page draws behind the world: a faint warm line on the outline of what the moon does not reach,
 		// so a mass in the planet's shadow still reads as a mass.
-		reflectedLight.directDiffuse += uGlow * pow( dGraze, uGlowRim.x ) * ( 1.0 - uGlowRim.y * vMoon ) * ( 1.0 - vMetal ) * smoothstep( -0.2, 0.4, dot( dN, vec3( 0.0, 0.0, -1.0 ) ) + 0.6 );
+		reflectedLight.directDiffuse += uGlow * pow( dGraze, uGlowRim.x ) * ( 1.0 - uGlowRim.y * vMoon ) * ( 1.0 - vMetal ) * saturate( 1.0 - dFall * 40.0 ) * smoothstep( 120.0, 320.0, abs( vAt.x ) );
 		// The night, softly, from the visitor's side and above: enough to give a body its form, never its color.
 		reflectedLight.indirectDiffuse += uFill.rgb * wLight.z * ( uFill.a + ( 1.0 - uFill.a ) * saturate( dot( dN, uFillDir ) ) ) * BRDF_Lambert( material.diffuseContribution );
 	}`;

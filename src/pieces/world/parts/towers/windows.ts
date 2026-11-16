@@ -38,18 +38,21 @@ export const WINDOW = {
 } as const;
 
 // The towers' stones, a building's tone (0 to 1) picking one in sixths: what each multiplies the pale stone's color
-// by in linear light, how metallic and how rough it is. A pale limestone, a buff stone, a grey granite, a brownstone,
+// by in linear light, how metallic and how rough it is, and how much of the stage's white balance the light it
+// reflects is seen through (cool): the night it is seen by is a warm one, and his stepped tower's limestone, which he
+// approved, measured a pale near neutral (150, 138, 124) in the frame it was made in, where the whole stage was
+// balanced; the buff and brown stones keep more of the night's warmth. A pale limestone, a buff stone, a grey granite, a brownstone,
 // a dark granite, a cladding of bronze and a near black polished stone. Only metal and light are saturated in the
 // city: every stone is near neutral, so the gold reads as gold on stone and the city's warmth is its light. Here so
 // the baker lights each as it is drawn.
 export const STONES = [
-  { tint: [1, 1, 1], metal: 0, rough: 0.82 },
-  { tint: [0.86, 0.8, 0.71], metal: 0, rough: 0.85 },
-  { tint: [0.5, 0.5, 0.5], metal: 0, rough: 0.78 },
-  { tint: [0.5, 0.42, 0.35], metal: 0, rough: 0.84 },
-  { tint: [0.17, 0.165, 0.16], metal: 0, rough: 0.66 },
-  { tint: [0.46, 0.27, 0.12], metal: 0.85, rough: 0.42 },
-  { tint: [0.06, 0.056, 0.053], metal: 0.3, rough: 0.16 },
+  { tint: [1, 1, 1], metal: 0, rough: 0.82, cool: 1.2 },
+  { tint: [0.56, 0.45, 0.33], metal: 0, rough: 0.85, cool: 0.45 },
+  { tint: [0.32, 0.31, 0.3], metal: 0, rough: 0.78, cool: 0.8 },
+  { tint: [0.33, 0.23, 0.155], metal: 0, rough: 0.84, cool: 0.3 },
+  { tint: [0.17, 0.165, 0.16], metal: 0, rough: 0.66, cool: 0.7 },
+  { tint: [0.46, 0.27, 0.12], metal: 0.85, rough: 0.42, cool: 0 },
+  { tint: [0.06, 0.056, 0.053], metal: 0.3, rough: 0.16, cool: 0.5 },
 ] as const;
 // What the make stores with each place for the material: how high over its building's foot it is, as a share of
 // `foot` units (the street's light is on the lowest storeys), and how far back it is in z from the city's front
@@ -66,6 +69,8 @@ export const styleOf = (tag: { stone?: number; tone?: number }): number =>
 export const WARM = 0.04;
 // How much lighter than text-2 the pale stone is: a limestone of about two thirds albedo.
 export const PALE_STONE = 1.28;
+// The gold's flutes: how far each flank of a flute is turned from its face, in degrees, stored with the flute.
+export const FLUTE = { flank: 44 };
 
 // A room's blind, as far down as it is (0 none), from its place in the map: the same hash the shader works it out by.
 export function hash2(x: number, y: number): number {

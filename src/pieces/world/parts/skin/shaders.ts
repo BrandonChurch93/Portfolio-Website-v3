@@ -1,4 +1,4 @@
-import { GLOW, MAP, NIGHT_SIDE, PALE_SHADE, TERMINATOR } from './look';
+import { GLOW, MAP, NIGHT_SIDE, PALE_SHADE, PALE_WARM, TERMINATOR } from './look';
 import { MOONWARD, RIM, SCALE, WORLD } from '../../layout';
 
 // The skin's own changes to the standard shader. Its map is laid over picture 9's pixels, so a texel's slope is a
@@ -61,7 +61,7 @@ skinPale = step( uSkinMapSize.z, vAtlas.x * uSkinMapSize.x );
 	float sl = length( sg ), nl = length( vSkinN );
 	skinShell = sl > 1e-12 ? sg / sl : vec3( 0.0, 1.0, 0.0 );
 	float up = nl > 1e-6 ? dot( vSkinN / nl, skinShell ) : 1.0;
-	vec3 dark = mix( uDark * b, uUnder * ( 0.5 + 0.5 * b ), smoothstep( 0.62, 0.4, up ) );
+	vec3 dark = mix( uDark * b, uUnder * ( 0.3 + 0.4 * b ), smoothstep( 0.62, 0.4, up ) );
 	diffuseColor.rgb = mix( dark, pale, skinPale );
 }`;
 
@@ -98,7 +98,14 @@ export const NIGHT = `
 {
 	float mn = dot( skinShell, normalize( vec3( ${MOONWARD.map((v) => f(v)).join(', ')} ) ) );
 	float rake = mix( 1.0, ${f(TERMINATOR.floor)} + ${f(1 - TERMINATOR.floor)} * smoothstep( ${f(TERMINATOR.from)}, ${f(TERMINATOR.to)}, mn ), skinPale );
+	// A broken face turned from the moon takes none of it: the shadow map, nearly edge on there, lit it in flickering
+	// teeth, one to a row of the mesh.
+	float fl = length( vSkinN ), fm = fl > 1e-6 ? dot( vSkinN / fl, normalize( vec3( ${MOONWARD.map((v) => f(v)).join(', ')} ) ) ) : 1.0;
+	rake *= smoothstep( -0.04, 0.22, fm );
 	reflectedLight.directDiffuse *= rake;
 	reflectedLight.directSpecular *= rake;
 }
-reflectedLight.indirectDiffuse = mix( reflectedLight.indirectDiffuse * ${f(NIGHT_SIDE)}, mix( reflectedLight.indirectDiffuse, vec3( dot( reflectedLight.indirectDiffuse, vec3( 0.3333 ) ) ), 0.25 ) * ${f(PALE_SHADE)}, skinPale );`;
+// The dark side reflects little of the night: at its outline, seen edge on, it drew a thin lit line round the planet
+// that picture 9 does not have.
+reflectedLight.indirectSpecular *= mix( 0.2, 1.0, skinPale );
+reflectedLight.indirectDiffuse = mix( reflectedLight.indirectDiffuse * ${f(NIGHT_SIDE)}, reflectedLight.indirectDiffuse * ${f(PALE_SHADE)} * vec3( ${PALE_WARM.map(f).join(', ')} ), skinPale );`;

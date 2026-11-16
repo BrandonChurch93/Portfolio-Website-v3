@@ -28,7 +28,9 @@ const S = {
   parapet: { y1: 127.3, inset: 0.15, c: 2.0 },
   urn: { at: 1.9 },
   tiers: [[31.0, 29.0, 126.0, 137.2], [26.0, 24.4, 137.2, 146.4], [21.0, 19.8, 146.4, 154.0], [16.0, 15.2, 154.0, 160.4], [11.4, 10.8, 160.4, 166.0]],
-  lantern: { w: 6.0, plinth: [166.0, 166.7], body: [166.7, 168.3], point: [168.3, TALL] },
+  // The plan's height (TALL) was lowered to picture 9's after the crown was drawn, to under the lantern's top: the
+  // point stands `point` units over the lantern, past the plan's height, so the tower keeps the point he saw.
+  lantern: { w: 6.0, plinth: [166.0, 166.7], body: [166.7, 168.3], point: 3.6 },
   // How busy the tower is, and its own number, so its floors are lit whole across its four bays.
   busy: 0.62,
   build: 13.7,
@@ -124,6 +126,6 @@ export function stepTower(kit, win, draft) {
     const t = S.lantern, w = t.w;
     kit.prism('gold', chamfered(w + 2.4, w + 2.4, 0.6), t.plinth[0], t.plinth[1], { top: true });
     fl(w, w, t.body[0], t.body[1], 6);
-    kit.prism('gold', chamfered(w * 0.62, w * 0.62, 0.4), t.point[0], t.point[1], { shrink: 0.04 });
+    kit.prism('gold', chamfered(w * 0.62, w * 0.62, 0.4), t.body[1], Math.max(TALL, t.body[1] + t.point), { shrink: 0.04 });
   }
 }

@@ -52,36 +52,50 @@ float coreKeep( float wave, float fp ) { return 1.0 - smoothstep( wave / 2.0, wa
 uvec3 coreHash( ivec3 c, uint seed ) { return corePcg( uvec3( c + 4096 ) + uvec3( seed, seed * 7u + 3u, seed * 13u + 5u ) ); }
 vec3 coreUnit( uvec3 h ) { return vec3( h & 0xffffu ) / 65535.0; }
 vec3 coreHigh( uvec3 h ) { return vec3( h >> 16u ) / 65535.0; }
-// The face close up: granules, as on the face of a star. Space is cut into cells round points that wander slowly,
-// and the ball's surface slices them, so each granule is seen foreshortened toward the edge as the ball turns. Each
-// is brightest at its heart and falls to a dark lane where it meets the next, and each has its own brightness. w is a
-// pixel's width in cells, which the lane is never narrower than. Returns about -1 to 1.
-float coreCells( vec3 p, float t, float w, uint seed ) {
-	ivec3 base = ivec3( floor( p ) );
-	float d0 = 1e9, d1 = 1e9, own = 0.0;
+// One size of the grain: granules, as cells round points that wander slowly, each with its own brightness and its own
+// warmth, and nothing drawn between them: where two meet, the one gives way to the other across a pixel, so no
+// outline and no lane is ever seen, only one granule beside another. The ball's surface slices them, so each is seen
+// foreshortened toward the edge as the ball turns. w is a pixel's width in cells. Each about -1 to 1.
+vec2 coreGranule( vec3 p, float t, float w, uint seed ) {
+	ivec3 base = ivec3( floor( p - 0.5 ) );
+	float d0 = 1e9, d1 = 1e9;
+	vec2 v0 = vec2( 0.0 ), v1 = vec2( 0.0 );
 	vec3 s0 = vec3( 0.0 ), s1 = vec3( 0.0 );
-	for ( int i = 0; i < 27; i ++ ) {
-		ivec3 c = base + ivec3( i % 3 - 1, ( i / 3 ) % 3 - 1, i / 9 - 1 );
+	for ( int i = 0; i < 8; i ++ ) {
+		ivec3 c = base + ivec3( i & 1, ( i >> 1 ) & 1, i >> 2 );
 		uvec3 h = coreHash( c, seed );
 		vec3 r = coreUnit( h ), r2 = coreHigh( h );
-		vec3 s = vec3( c ) + 0.5 + ( r - 0.5 ) * GRAN_JITTER + GRAN_WANDER * sin( 6.2832 * ( r2 + t * ( 0.6 + 0.8 * r.zxy ) ) );
+		vec3 s = vec3( c ) + 0.5 + ( r - 0.5 ) * GRAIN_JITTER + GRAIN_WANDER * sin( 6.2832 * ( r2 + t * ( 0.6 + 0.8 * r.zxy ) ) );
 		vec3 e = p - s;
 		float d = dot( e, e );
-		if ( d < d0 ) { d1 = d0; s1 = s0; d0 = d; s0 = s; own = r2.x; } else if ( d < d1 ) { d1 = d; s1 = s; }
+		vec2 v = vec2( r2.x, r2.y ) * 2.0 - 1.0;
+		if ( d < d0 ) { d1 = d0; v1 = v0; s1 = s0; d0 = d; v0 = v; s0 = s; } else if ( d < d1 ) { d1 = d; v1 = v; s1 = s; }
 	}
 	float side = ( d1 - d0 ) / max( 2.0 * length( s1 - s0 ), 1e-3 );
-	float lane = smoothstep( 0.0, GRAN_LANE + w, side );
-	float heart = 1.0 - smoothstep( 0.0, GRAN_HEART_R, sqrt( d0 ) );
-	return GRAN_EACH * ( own * 2.0 - 1.0 ) + GRAN_HEART * ( heart - 0.3 ) + GRAN_DARK * ( lane - 0.75 );
+	return mix( 0.5 * ( v0 + v1 ), v0, smoothstep( 0.0, max( w, 0.02 ), side ) );
 }
-// Granules of three sizes, each let go as it gets smaller than a few pixels.
-float coreGranules( vec3 q, float t, float fp ) {
-	float v = 0.0;
-	for ( int i = 0; i < 3; i ++ ) {
-		float cell = GRAN_CELL * pow( GRAN_STEP, float( i ) ), a = pow( GRAN_FALL, float( i ) );
-		v += a * coreKeep( cell * 0.6, fp ) * coreCells( q / cell, t * ( 1.0 + 0.7 * float( i ) ), fp / cell, 307u + uint( i ) * 53u );
+// The grain at a place q, in units: granules of a few sizes, each finer one half the last, every size finer than
+// a pixel let go and its share given back to the sizes kept, so the face is as busy at any size. Brightness and
+// warmth, each about -1 to 1.
+vec2 coreSalt( vec3 q, float fp, float t ) {
+	vec2 s = vec2( 0.0 );
+	float kept = 0.0, all = 0.0;
+	for ( int i = 0; i < GRAIN_SIZES; i ++ ) {
+		float cell = GRAIN_CELL * pow( 0.5, float( i ) ), a = pow( GRAIN_FALL, float( i ) ), k = coreKeep( cell * GRAIN_SEEN, fp );
+		if ( k > 0.0 ) s += a * k * coreGranule( q / cell + vec3( 0.0, t * GRAIN_CHURN * ( 1.0 + 0.5 * float( i ) ), 0.0 ), t * GRAIN_TURN, fp / cell, 7u + uint( i ) * 31u );
+		kept += a * a * k * k;
+		all += a * a;
 	}
-	return v;
+	return s * min( sqrt( all / max( kept, 1e-3 ) ), GRAIN_BACK );
+}
+// The grain's light as shares of the light where it is, from its steps of brightness and of warmth.
+uniform mat3 uTurn;
+uniform vec3 uBright;
+uniform vec3 uDim;
+uniform vec3 uWarm;
+uniform vec3 uGrainPale;
+vec3 coreTint( float v, float w ) {
+	return max( 1.0 + abs( v ) * ( v > 0.0 ? uBright : uDim ) + abs( w ) * ( w > 0.0 ? uWarm : uGrainPale ), vec3( 0.0 ) );
 }
 
 ${UNBALANCE}

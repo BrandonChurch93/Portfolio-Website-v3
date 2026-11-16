@@ -24,9 +24,17 @@ const OUTLINE = { reach: 0.42, middle: 0.21, sharp: 2.4 };
 // The small clusters a lump is made of: how wide one is in leaf lengths, how many leaves each holds, and how many
 // clusters for each share of the lump's area. Each is a small mound lit from above: its leaves this much lighter
 // at its top and darker at its foot, and facing up at its top, so a lump at three times is sprigs of leaves with
-// shade between them and not an even stipple. The lump is lit the same way as a whole: its lower part darker.
+// shade between them and not an even stipple. The lump is NOT lit as a whole here: every lump wore the same baked
+// bright top and dark foot, and the crown read as pom poms. The shader lights a lump by where it is on its crown;
+// here only its lower part is a little darker (lump), and each cluster is a lightness of its own (differ), some
+// sunk and dark, some standing out, so no two parts of a lump are the same tone.
 // (Up and down only: the shader turns a lump's card a little and mirrors it, never further.)
-const CLUSTER = { r: [1.3, 2.2], leaves: [12, 20], per: 2.1, top: 1.22, foot: 0.42, lump: [1.1, 0.66] };
+const CLUSTER = { r: [1.4, 2.6], leaves: [14, 24], per: 1.7, top: 1.18, foot: 0.5, lump: [1.0, 0.86], differ: [0.6, 1.15] };
+// Holes through a lump, where what is behind it shows (the crown's dark heart, a limb, the sky): how many, how wide
+// in leaves, and how far out from the lump's middle, as a share of its outline. And how deep the notches in the
+// outline are, in leaves, at two scales.
+const HOLES = { count: [2, 5], r: [1.4, 2.8], out: [0.2, 0.72] };
+const NOTCH = [1.5, 0.7];
 // The dark mat under a lump's leaves, drawn a little inside its outline: how light, and how far inside, in leaves.
 const MAT = { light: 0.06, inside: 2.2 };
 // The shade a tree lays on the ground (SHADE in design.ts), down the tile from behind its trunk to its far end: the
@@ -128,7 +136,11 @@ function paintLeaf(cv, tile, rnd, bx, by, th, size, tone, up = 0.5) {
 // outline is small leaves.
 function lump(cv, tile, rnd, lobes) {
   const c = T / 2, size = px(CARD.lump * LUMP * 2), mid = OUTLINE.middle * T, ph = rnd() * Math.PI * 2;
-  const balls = [[c, c, mid]];
+  const balls = [[c, c, mid]], holes = [];
+  for (let i = 0, n = HOLES.count[0] + Math.floor(rnd() * (HOLES.count[1] - HOLES.count[0] + 1)); i < n; i++) {
+    const a = rnd() * Math.PI * 2, d = OUTLINE.reach * T * (HOLES.out[0] + (HOLES.out[1] - HOLES.out[0]) * rnd());
+    holes.push([c + Math.cos(a) * d, c + Math.sin(a) * d, size * (HOLES.r[0] + (HOLES.r[1] - HOLES.r[0]) * rnd())]);
+  }
   for (let i = 0; i < lobes; i++) {
     const a = ph + (i / lobes) * Math.PI * 2 + (rnd() - 0.5) * (2.4 / lobes), r = mid * (0.62 + 0.3 * rnd()) * (lobes > 5 ? 0.8 : 1), d = Math.min(OUTLINE.reach * T - r - size * 1.2, mid * (0.85 + 0.3 * rnd()));
     balls.push([c + Math.cos(a) * d, c + Math.sin(a) * d, r]);
@@ -137,8 +149,10 @@ function lump(cv, tile, rnd, lobes) {
   const shape = (x, y) => {
     let k = 0;
     for (const [bx, by, r] of balls) k += Math.exp(-((Math.hypot(x - bx, y - by) / r) ** 2) * OUTLINE.sharp);
-    const n = noise(x / (size * 1.6), y / (size * 1.6), 0, tile * 13) - 0.5;
-    return (Math.exp(-OUTLINE.sharp) - k) * mid * 1.6 + n * size * 0.8;
+    const n = noise(x / (size * 3.2), y / (size * 3.2), 0, tile * 13) - 0.5, n2 = noise(x / (size * 1.2), y / (size * 1.2), 0, tile * 17) - 0.5;
+    let d = (Math.exp(-OUTLINE.sharp) - k) * mid * 1.6 + n * size * 2 * NOTCH[0] + n2 * size * 2 * NOTCH[1];
+    for (const [hx, hy, hr] of holes) d = Math.max(d, hr - Math.hypot(x - hx, y - hy) + (noise(x / size, y / size, 1, tile * 7) - 0.5) * size * 1.6);
+    return d;
   };
   const edge = OUTLINE.reach * T;
   cv.lay(tile, [c - edge, c - edge, c + edge, c + edge], (x, y) => shape(x, y) + MAT.inside * size, (x, y) => [MAT.light * (0.7 + 0.6 * noise(x / size, y / size, 0, 5)), 0.5, 0.3]);
@@ -155,7 +169,7 @@ function lump(cv, tile, rnd, lobes) {
   clusters.sort((p, q) => q[2] - p[2] + (rnd() - 0.5) * 0.25);
   for (const [x, y, out] of clusters) {
     const cr = size * (CLUSTER.r[0] + rnd() * (CLUSTER.r[1] - CLUSTER.r[0])), n = CLUSTER.leaves[0] + Math.floor(rnd() * (CLUSTER.leaves[1] - CLUSTER.leaves[0] + 1));
-    const down = clamp(((y - c) / edge + 0.6) / 1.4), tone = (CLUSTER.lump[0] + (CLUSTER.lump[1] - CLUSTER.lump[0]) * down) * (0.86 + 0.28 * rnd());
+    const down = clamp(((y - c) / edge + 0.6) / 1.4), tone = (CLUSTER.lump[0] + (CLUSTER.lump[1] - CLUSTER.lump[0]) * down) * (CLUSTER.differ[0] + (CLUSTER.differ[1] - CLUSTER.differ[0]) * rnd());
     const away = Math.atan2(x - c, c - y), spin = rnd() * Math.PI * 2;
     // Leaves from the cluster's heart outward: those at the lump's rim lean out of it.
     const leaves = [];

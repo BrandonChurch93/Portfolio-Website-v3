@@ -120,9 +120,35 @@ const out = await bake({
 }, { samples: draft ? { core: 1, moon: 8, hemi: 96 } : { core: 1, moon: 32, hemi: 640 }, bounces: 2, reach: 260, seed: 7 });
 console.log(`bake: ${((performance.now() - t0) / 1000).toFixed(1)} s`);
 
+// The sheet under its shade (src/pieces/world/parts/pyramid/shade.ts): over the ground round its foot and along the
+// first stretch of its shadow from the moon, which falls toward the visitor and to the left, draped on the plan's
+// ground and stored in the world's units. The court inside the foot is left out.
+function sheet() {
+  const S = FORM.shade, out = half + FORM.foot.proud, r = out + S.reach;
+  const dot = (a, v) => a[0] * v[0] + a[1] * v[1] + a[2] * v[2], lm = [dot(L.MOONWARD, ax.x), dot(L.MOONWARD, ax.y), dot(L.MOONWARD, ax.z)];
+  const flat = Math.hypot(lm[0], lm[2]), long = (tall * flat) / Math.max(lm[1], 0.05);
+  const sx = (-lm[0] / flat) * long * S.along, sz = (-lm[2] / flat) * long * S.along;
+  const x0 = Math.min(-r, -r + sx), x1 = Math.max(r, r + sx), z0 = Math.min(-r, -r + sz), z1 = Math.max(r, r + sz);
+  const step = draft ? S.cell * 2 : S.cell, nx = Math.ceil((x1 - x0) / step), nz = Math.ceil((z1 - z0) / step);
+  const pos = [], idx = [], keep = [];
+  for (let j = 0; j <= nz; j++) for (let i = 0; i <= nx; i++) {
+    const lx = x0 + i * step, lz = z0 + j * step;
+    const x = L.PYRAMID.x + lx * ax.x[0] + lz * ax.z[0], z = L.PYRAMID.z + lx * ax.x[2] + lz * ax.z[2];
+    pos.push(x, L.ground(x, z) + S.lift, z);
+    keep.push(L.within(x, z) > -2);
+  }
+  const inside = (i, j) => Math.abs(x0 + i * step) < out - 3 && Math.abs(z0 + j * step) < out - 3;
+  for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
+    const a = j * (nx + 1) + i, b = a + 1, d = a + nx + 1, e = d + 1;
+    if (!keep[a] || !keep[b] || !keep[d] || !keep[e] || (inside(i, j) && inside(i + 1, j + 1))) continue;
+    idx.push(a, d, b, b, d, e);
+  }
+  return { name: 'shade', positions: Float32Array.from(pos), indices: Uint32Array.from(idx), attributes: {} };
+}
+
 const b = out.gold, n = gold.positions.length / 3, lightA = new Float32Array(n * 4), bounce = new Float32Array(n * 4);
 for (let i = 0; i < n; i++) {
   lightA.set([b.core[i], b.moon[i], b.open[i], gold.kind[i]], i * 4);
   bounce.set([storeBounce(b.bounce[i * 3]), storeBounce(b.bounce[i * 3 + 1]), storeBounce(b.bounce[i * 3 + 2]), 0], i * 4);
 }
-pack(OUT, [{ name: 'gold', positions: gold.positions, indices: gold.indices, attributes: { normal: { data: gold.normals, size: 3, as: 'i16' }, light: { data: lightA, size: 4, as: 'u8' }, bounce: { data: bounce, size: 4, as: 'u8' } } }], { draft, foot });
+pack(OUT, [{ name: 'gold', positions: gold.positions, indices: gold.indices, attributes: { normal: { data: gold.normals, size: 3, as: 'i16' }, light: { data: lightA, size: 4, as: 'u8' }, bounce: { data: bounce, size: 4, as: 'u8' } } }, sheet()], { draft, foot });

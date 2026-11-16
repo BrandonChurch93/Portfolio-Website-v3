@@ -52,31 +52,38 @@ const GRAIN = {
 } as const;
 
 // How the face turns: about which axis, and how fast, in radians a second. Slow, as something enormous.
-// The body under the grain turns the other way about a nearer axis, more slowly.
-const TURN = { axis: new THREE.Vector3(0.18, 1, 0.22).normalize(), rate: 0.012, deep: new THREE.Vector3(-0.3, 1, 0.1).normalize(), deepRate: -0.007 } as const;
+const TURN = { axis: new THREE.Vector3(0.18, 1, 0.22).normalize(), rate: 0.012 } as const;
 
 // The neck of the beam, in units of the world down from the ball's foot unless they say otherwise. Picture 9's
-// neck, as the root of a beam shot down out of the ball with force, drawing itself thin.
-//   foot: half its width where it leaves; rib: half the page's ribbon's, which it comes down to by long, along a
-//     taper that goes as this power of what is left of the way
-//   fillet: how it flares where the band turns down into it: it is wider by the first over the depth and the second
-//   meet: how far over the foot the fillet has met the ball's outline, over which nothing of it is drawn outside the ball
-//   drop: how far it hangs before the stream sets off; tip: how long its point is, at most, and round: how round
-//   body: over which depths its cream body gives way to the ribbon alone, and a: how bright the body is at its heart;
-//     soft: how its light falls toward its edges
-//   spread: how wide, in half widths, the stream's fibres lie when they are not spread, and heartOpen: how much the
-//     heart opens with them; fibre: how much of them there is; lanes: how much the body is gathered along them, and
-//     run: the light that runs down it: how much, its length in units and how fast
-//   up: how far over the foot it reaches inside the ball; give: over which depths it is given over to the page
+// neck, as the root of a beam shot down out of the ball with force, drawing itself thin to the page's ribbon by the
+// cut, where the page's own stream takes it up (STREAM.hero.hand).
+//   foot: half its width where it leaves, along a taper that goes as pow of what is left of the way to the cut;
+//     fillet: how it flares where the band turns down into it, wider by the first over the depth and the second;
+//     meet: how far over the foot the fillet has met the ball's outline; rib: the half width it comes down to, the
+//     heart of the page's ribbon, round which the ribbon's own fibres spread as they will; cream: over which depths its
+//     body turns from the ball's own cream to the stream's pale, paler: how much paler than the ball it is, and grain:
+//     how much its cream is gathered along the fibres; band: how much narrower the band is along the neck's sides
+//     than round the ball, and how round its turn is, in units; down: by which depth the band is that narrow, and by
+//     which the neck's own color has taken over from the ball's face and band
+//   quiet: how wide it is before the stream sets off, against after; drop: how far it hangs then; tip: how long its
+//     end is, at most, and round: how sharp its point is once it runs
+//   a: how bright its body is; rim: over how many units at its edge it goes from nothing to its body, and how that
+//     goes; streak: how much of the body is gathered along its fibres; body: over which depths the body gives way to
+//     the ribbon alone
+//   spread: how wide, in half widths, the fibres lie when they are not spread, and heartOpen: how much the heart opens
+//     with them; fibre: how much of them there is; run: the light that runs down it: how much, how long, how fast
+//   up: how far over the foot it reaches inside the ball; give: over how many units past the cut it is given over
 //   hush: how bright it is before it sets off, against after; surge: the light that runs down it as it sets off: how
 //     much, how fast in units a second, how long
 //   floor: the faintest light it lets go; energy: how much the page's leading end brightens the ribbon near it
 //   over: from which amount to which the neck's light takes the place of the band's inside the ball
-//   long: how far down the plane it is drawn on reaches, and wide: half its width
+//   plane: how far down the plane it is drawn on reaches, and wide: half its width; held: how far it runs held on
 const NECK = {
-  foot: 19, rib: 4, long: 220, pow: 1.3, fillet: [80, 12], meet: 6, round: 0.4, drop: 16, tip: 40,
-  body: [120, 225], a: 1.7, soft: 1.15, spread: 22, heartOpen: 0.5, fibre: 1.3, lanes: [0.62, 0.55], run: [0.1, 26, 2.4], up: 14, give: [222, 262],
-  hush: 0.8, surge: [0.5, 210, 18], floor: 0.008, energy: 1, over: [0.12, 0.9], plane: 300, wide: 64,
+  foot: 19, rib: 4, pow: 1.3, fillet: [80, 12], meet: 6, cream: [60, 190], paler: 1.07, grain: 0.08, band: [10, 2.5], down: [6, 40],
+  quiet: 0.55, drop: 8, tip: 40, round: 0.5,
+  a: 1.9, rim: [1.6, 0.6], streak: 0.28, body: [150, 212],
+  spread: 22, heartOpen: 0.5, fibre: 1, run: [0.06, 26, 2.4], up: 16, give: 6,
+  hush: 0.85, surge: [0.5, 210, 18], floor: 0.008, energy: 1, over: [0.12, 0.9], plane: 300, wide: 64, held: 262,
 } as const;
 
 // The pieces of the planet the beam draws in: how many, how many of those are glass, how long a coming of each
@@ -139,29 +146,60 @@ export const build: PartFactory = (ctx) => {
     uFlame: { value: lin('flame') },
     uHot: { value: lin('hot') },
     uPale: { value: lin('pale') },
+    uCream: { value: vec(RIM[0][1]) },
+    uRimAt: { value: RIM.map(([r]) => r) },
+    uRim: { value: RIM.map(([, c]) => vec(c)) },
+    uTurn: { value: new THREE.Matrix3() },
+    uBright: { value: vec(GRAIN.bright) },
+    uDim: { value: vec(GRAIN.dim) },
+    uWarm: { value: vec(GRAIN.warm) },
+    uGrainPale: { value: vec(GRAIN.pale) },
   };
   const f = (n: number) => n.toFixed(4), v2 = (a: readonly number[]) => `vec2( ${f(a[0])}, ${f(a[1])} )`;
   const rootDefines = {
     ROOT_STRANDS: strands, ROOT_ENERGY: f(NECK.energy), ROOT_HUSH: f(NECK.hush), ROOT_FLOOR: f(NECK.floor),
     ROOT_SURGE: f(NECK.surge[0]), ROOT_SURGE_V: f(NECK.surge[1]), ROOT_SURGE_W: f(NECK.surge[2]), ROOT_OVER: v2(NECK.over),
-    NECK_FOOT: f(NECK.foot), NECK_RIB: f(NECK.rib), NECK_LONG: f(NECK.long), NECK_POW: f(NECK.pow),
-    NECK_FILLET: v2(NECK.fillet), NECK_MEET: f(NECK.meet), NECK_ROUND: f(NECK.round), NECK_DROP: f(NECK.drop), NECK_TIP: f(NECK.tip),
-    NECK_BODY: v2(NECK.body), NECK_A: f(NECK.a), NECK_SOFT: f(NECK.soft), NECK_SPREAD: f(NECK.spread), NECK_HEART_OPEN: f(NECK.heartOpen),
-    NECK_FIBRE: f(NECK.fibre), NECK_LANES: v2(NECK.lanes), NECK_RUN: `vec3( ${f(NECK.run[0])}, ${f(NECK.run[1])}, ${f(NECK.run[2])} )`, NECK_UP: f(NECK.up), NECK_GIVE: v2(NECK.give),
+    NECK_FOOT: f(NECK.foot), NECK_CUT: f(PAGE.hero.hand[0] / host.host), NECK_POW: f(NECK.pow), NECK_RIB: f(NECK.rib), NECK_CREAM: v2(NECK.cream), NECK_PALER: f(NECK.paler), NECK_GRAIN: f(NECK.grain),
+    NECK_FILLET: v2(NECK.fillet), NECK_MEET: f(NECK.meet), NECK_QUIET: f(NECK.quiet), NECK_ROUND: f(NECK.round), NECK_DROP: f(NECK.drop), NECK_TIP: f(NECK.tip),
+    NECK_BODY: v2(NECK.body), NECK_A: f(NECK.a), NECK_RIM: f(NECK.rim[0]), NECK_RIM_POW: f(NECK.rim[1]), NECK_STREAK: f(NECK.streak),
+    NECK_SPREAD: f(NECK.spread), NECK_HEART_OPEN: f(NECK.heartOpen),
+    RIM_N: RIM.length,
+    // The grain: the largest granule in units, how many sizes, each half the last, how much weaker each finer one is,
+    // over how many of its own sizes a pixel has to be for it to show, and how far the sizes kept may be turned up to
+    // stand in for those let go. How far each granule's point strays and wanders, and how fast the grain churns in
+    // place, the granules wander and the broad drift moves.
+    GRAIN_CELL: '1.6',
+    GRAIN_SIZES: 4,
+    GRAIN_FALL: '0.8',
+    GRAIN_SEEN: '1.2',
+    GRAIN_BACK: '1.6',
+    GRAIN_JITTER: '0.8',
+    GRAIN_WANDER: '0.08',
+    GRAIN_CHURN: '0.03',
+    GRAIN_TURN: '0.05',
+    GRAIN_DRIFT: '0.012',
+    // A broad drift under the grain, and its size in units.
+    MOTTLE: '0.14',
+    MOTTLE_WAVE: '34.0',
+    // From grain to steps of the grain's light, for brightness and for warmth, and how much of both the band loses.
+    GRAIN_GAIN: '1.6',
+    GRAIN_WARM: '1.2',
+    GRAIN_BAND: '0.8',
+    NECK_BAND: f(NECK.band[0]), NECK_TURN: f(NECK.band[1]), NECK_DOWN: v2(NECK.down),
+    // A sphere: how much its light falls toward the limb, from which share of the radius, how that goes, and over
+    // which shares it gives way to the band, and how much the whole face is lifted to keep its mean.
+    LIMB: '0.16',
+    LIMB_FROM: '0.4',
+    LIMB_POW: '1.4',
+    LIMB_TO: 'vec2( 0.84, 0.93 )',
+    FACE_GAIN: '1.03',
+    NECK_FIBRE: f(NECK.fibre), NECK_RUN: `vec3( ${f(NECK.run[0])}, ${f(NECK.run[1])}, ${f(NECK.run[2])} )`, NECK_UP: f(NECK.up), NECK_GIVE: f(NECK.give),
   };
 
   const ballU = {
     ...rootU,
     uEye: { value: new THREE.Vector3() },
     uLevel: { value: 1 },
-    uTurn: { value: new THREE.Matrix3() },
-    uTurnIn: { value: new THREE.Matrix3() },
-    uRimAt: { value: RIM.map(([r]) => r) },
-    uRim: { value: RIM.map(([, c]) => vec(c)) },
-    uBright: { value: vec(GRAIN.bright) },
-    uDim: { value: vec(GRAIN.dim) },
-    uWarm: { value: vec(GRAIN.warm) },
-    uGrainPale: { value: vec(GRAIN.pale) },
   };
   const ballM = new THREE.ShaderMaterial({
     name: 'world-core',
@@ -172,75 +210,18 @@ export const build: PartFactory = (ctx) => {
     depthTest: !over,
     defines: {
       ...rootDefines,
-      RIM_N: RIM.length,
-      // The finest grain's wavelength in units, how much shorter each finer one is and how much weaker, and how far
-      // the sizes kept may be turned up to stand in for those let go.
-      GRAIN_WAVE: '2.4',
-      GRAIN_STEP: '0.55',
-      GRAIN_FALL: '0.6',
-      GRAIN_BACK: '2.2',
-      // The finest the grain is drawn at the page's size, in units, whatever the screen.
-      GRAIN_FLOOR: '0.9',
-      // A middle size under the fine grain and a broad drift under both, each turned down close up.
-      GRAIN_MID: '0.3',
-      GRAIN_MIDWAVE: '4.5',
-      MOTTLE: '0.3',
-      MOTTLE_WAVE: '34.0',
-      // From noise to steps of the grain's light, for brightness and for warmth, and how much of both the band loses.
-      GRAIN_GAIN: '5.2',
-      GRAIN_WARM: '4.0',
-      GRAIN_BAND: '0.8',
-      // How fast the grain churns in place and the broad drift moves, in wavelengths a second.
-      GRAIN_CHURN: '0.03',
-      GRAIN_DRIFT: '0.012',
-      // The grain close up, granules: the largest cell in units, how much smaller each next size is and how much
-      // weaker, how far each cell's point strays and wanders, how wide its dark lane is and how dark, how bright its
-      // heart and how wide, as a share of a cell, and how much each differs from the next. Over which pixel sizes, in
-      // units, the granules take the grain's place, how strong they are and how much of that a bright one keeps, how much warmer a dim one is, how much of the
-      // grain is kept under them, and how fast they churn.
-      GRAN_CELL: '4.5',
-      GRAN_STEP: '0.5',
-      GRAN_FALL: '0.45',
-      GRAN_JITTER: '0.85',
-      GRAN_WANDER: '0.08',
-      GRAN_LANE: '0.15',
-      GRAN_DARK: '0.8',
-      GRAN_HEART: '0.75',
-      GRAN_HEART_R: '0.62',
-      GRAN_EACH: '0.2',
-      GRAN_FAR: '0.44',
-      GRAN_NEAR: '0.22',
-      GRAN_GAIN: '0.75',
-      GRAN_UP: '0.35',
-      GRAN_WARMS: '-0.45',
-      GRAN_UNDER: '0.25',
-      GRAN_TURN: '0.05',
       // The band is read over at least this many units, a pixel's width at the page's size on a plain screen. A sharper
       // screen resolves its dip, which a plain one fills in with the line beside it: there it is lifted by this much,
       // over these shares of the radius, so it shows as the picture has it.
       BAND_PX: '1.0',
       BAND_LIFT: '0.07',
       BAND_AT: 'vec4( 0.86, 0.9, 0.965, 0.985 )',
-      // A sphere: how much its light falls toward the limb, over which shares of the radius that gives way to the
-      // band, and how much the whole face is lifted to keep its mean; its hottest part, how much hotter, where, as
-      // shares of the radius, and how wide.
-      LIMB: '0.22',
-      LIMB_TO: 'vec2( 0.84, 0.93 )',
-      FACE_GAIN: '1.0',
-      HOT: '0.08',
+      // Over which shares of the radius the grain over the foot comes to be read on the neck's plane.
+      NECK_FOOT_UP: 'vec2( 0.8, 0.97 )',
+      // Its hottest part: how much hotter, where, as shares of the radius, and how wide.
+      HOT: '0.07',
       HOT_AT: 'vec2( -0.28, 0.3 )',
-      HOT_R: '0.55',
-      // The body under the grain: how deep, as a share of the radius, the size of its veins in units, how sharp they
-      // are and their mean, how much of them shows, and where the skin over them is thin: its size and how thin.
-      DEEP: '0.16',
-      DEEP_AT: '0.9',
-      DEEP_WAVE: '16.0',
-      DEEP_SHARP: '5.0',
-      DEEP_MEAN: '0.2',
-      DEEP_SKIN: '9.0',
-      DEEP_THIN: 'vec2( -0.25, 0.45 )',
-      // How much more of the body shows close up, where the facets would hide it.
-      DEEP_NEAR: '2.5',
+      HOT_R: '0.6',
     },
   });
   const ballG = new THREE.SphereGeometry(R * 1.03, rings * 2, rings);
@@ -311,7 +292,7 @@ export const build: PartFactory = (ctx) => {
 
   return {
     group,
-    alone: { at: [CORE.at[0], CORE.at[1] - NECK.long / 2, CORE.at[2]], r: R + NECK.long / 2 + 20 },
+    alone: { at: [CORE.at[0], CORE.at[1] - NECK.held / 2, CORE.at[2]], r: R + NECK.held / 2 + 20 },
     update(s) {
       rootU.uTime.value = s.t;
       ballU.uLevel.value = s.core;
@@ -324,11 +305,10 @@ export const build: PartFactory = (ctx) => {
       const state = rootU.uRootState.value, on = held ? 1 : s.stream.on;
       // Held on in the lab, the beam is as it is on the page with the page's own stream left out below. The page
       // tells how far its leading end has run in the board's units, which are the host's.
-      const reach = held ? NECK.plane : lab ? 0 : s.stream.long / host.host;
+      const reach = held ? NECK.held : lab ? 0 : s.stream.long / host.host;
       state.set(on, Math.max(0, reach), held || lab ? 0 : 1, held ? 60 : s.stream.since);
-      ballU.uTurn.value.setFromMatrix4(m4.makeRotationFromQuaternion(q.setFromAxisAngle(TURN.axis, (s.t * TURN.rate) % (2 * Math.PI))));
-      ballU.uTurnIn.value.setFromMatrix4(m4.makeRotationFromQuaternion(q.setFromAxisAngle(TURN.deep, (s.t * TURN.deepRate) % (2 * Math.PI))));
-      return true;
+      rootU.uTurn.value.setFromMatrix4(m4.makeRotationFromQuaternion(q.setFromAxisAngle(TURN.axis, (s.t * TURN.rate) % (2 * Math.PI))));
+            return true;
     },
     dispose() { for (const d of [ballG, ballM, rootG, rootM, solidG, solidM, glassG, takeM, giveM]) d.dispose(); },
   };

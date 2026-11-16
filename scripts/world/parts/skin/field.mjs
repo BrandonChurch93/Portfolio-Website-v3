@@ -89,7 +89,7 @@ let CR = null, SG = null, ED = null, FAR = null, KNOT = [0, 0, 0];
 // the hottest lengths it pools on the rock out to `pool` units, from lengths at least `hot` hot.
 // An even halo along every arm read as neon, and a pool 24 units round the knot as an airbrushed blob: the light is
 // held to the cleft's own lips and, round the hottest lengths, to faces close by.
-const SPILL = { per: 0.1, base: 0.2, reach: 4, pool: 5, hot: 0.82, strength: 0.35 };
+const SPILL = { per: 0.1, base: 0.2, reach: 4, pool: 8, hot: 0.8, strength: 0.25 };
 // The torn edge's broken crust: chunks of very different lengths along the line (len, units, most of them short),
 // each running `depth` in from it. A chunk's broken face stands back from the line by `ofs`; some are let down by
 // `drop` and lean toward the hollow by `lean`; between them the crust is split by a crack `gap` wide at the face and
@@ -228,7 +228,7 @@ function crackAt(x, y, z) {
       let k = 0;
       if (pool > 0) {
         k = heat * heat * Math.exp(-((out / (pool * 0.42)) ** 1.5));
-        pooled *= 1 - Math.min(0.999, 0.48 * k);
+        pooled *= 1 - Math.min(0.999, 0.42 * k);
       }
       // The light here comes from the nearest lit cleft that gives the most.
       if (Math.max(k, sp) > best) { best = Math.max(k, sp); CK.from[0] = x + cx; CK.from[1] = y + cy; CK.from[2] = z + cz; CK.fromW = w; }
@@ -290,8 +290,10 @@ export function chips(x, y, z) {
   if (e > CRUST.chips) return 0;
   const c = cells(x + 1.3 * perlin(x * 0.3, y * 0.3, z * 0.3), y, z, 4.4, 51, C3), hb = hash(c.i, c.j, c.k, 52), inset = (c.d2 - c.d1) / 2;
   const near = 1 - smooth(CRUST.chips * 0.35, CRUST.chips, e);
-  if (hb > 0.12 + 0.3 * near) return 0;
-  return (0.5 + 1.1 * hash(c.i, c.j, c.k, 53)) * smooth(0.25, 0.9, inset) * near;
+  if (hb > 0.06 + 0.16 * near) return 0;
+  // Rounded hollows, not cells cut out whole: cut out whole they laid a net of small tiles along the line.
+  const r = 1.2 + 1.4 * hash(c.i, c.j, c.k, 54);
+  return (0.5 + 1.1 * hash(c.i, c.j, c.k, 53)) * (1 - smooth(r * 0.45, r, c.d1)) * smooth(0.1, 0.6, inset) * near;
 }
 const C3 = {};
 
@@ -302,14 +304,21 @@ const swell = (x, y, z) => 2.6 * fbm(x / 70, y / 70, z / 70, 3) + 1.5 * fbm(x / 
 // The top of the skin, under the land's edge: a rounded, crumbly shoulder that turns in under it (how far down from
 // the rim it rounds, and how far in it is at the rim), with the ground's lumps kept down for `under` units, where the
 // land's sand lies over it, so nothing of it stands above the land.
-export const SHOULDER = { round: 16, in: 11, under: 40 };
+export const SHOULDER = { round: 16, in: 11, under: 52 };
 export function coarse(x, y, z) {
   let h = swell(x, y, z) * (1 - 0.8 * floored(x, y, z));
   for (const k of CR.at(x, y, z)) h += craterHeight(k, x, y, z);
-  h += crackAt(x, y, z).geo;
+  // A cleft shallows out as it reaches the line, so it is not cut on down the crust's broken face.
+  const ck = crackAt(x, y, z);
+  h += ck.geo * smooth(0.5, 3.5, edgeDistance(x, y, z));
+  // Round the hot lengths the rock is broken into lumps by the heat, so the light from the cleft lands on their faces
+  // turned to it and not on an even dark: spread evenly it read as a smudge of airbrush.
+  if (ck.pool > 0.01) h += Math.min(1, ck.pool * 3) * (1.6 * fbm(x * 0.17 + 3, y * 0.17, z * 0.17, 2) + 0.5 * Math.abs(fbm(x * 0.45, y * 0.45 + 5, z * 0.45, 2)));
   h -= crust(x, y, z).drop;
   const rd = rimDistance(y);
-  h = h > 0 ? h * smooth(SHOULDER.under * 0.55, SHOULDER.under, rd) : h * (0.45 + 0.55 * smooth(6, SHOULDER.under * 0.9, rd));
+  h = h > 0 ? h * smooth(SHOULDER.under * 0.72, SHOULDER.under, rd) : h * (0.45 + 0.55 * smooth(6, SHOULDER.under * 0.9, rd));
+  // and a little under the sand's drape, all the way down it, so no lump of the skin shows through the sand.
+  h -= 0.9 * (1 - smooth(SHOULDER.under * 0.6, SHOULDER.under * 0.78, rd));
   if (rd < SHOULDER.round) {
     const f = 1 - rd / SHOULDER.round;
     h -= SHOULDER.in * f * f * (1 + 0.22 * perlin(x / 6, y / 6, z / 6)) + 1.4 * Math.abs(perlin(x / 2.6, y / 2.6, z / 2.6)) * f;
@@ -333,8 +342,10 @@ export function floored(x, y, z) {
 export function gathered(x, y, z, side) {
   const toward = Math.max(0.8 * (1 - smooth(0, GATHER, farEdge(x, y, z))), smooth(0.3, 0.72, downOf(y)));
   const bands = smooth(-0.2, 0.2, fbm(x / 90 + 4, y / 60, z / 90, 3) + 0.3 * toward);
-  const knot = side > 0 ? 1 : 0.15 + 0.85 * smooth(25, 75, Math.hypot(x - KNOT[0], y - KNOT[1], z - KNOT[2]));
-  return (side > 0 ? 1 : 0.35) * knot * (0.38 + 1.15 * toward ** 1.2) * (0.22 + 0.78 * bands) * (1 - 0.88 * floored(x, y, z));
+  const knot = side > 0 ? 1 : 0.5 + 0.5 * smooth(25, 75, Math.hypot(x - KNOT[0], y - KNOT[1], z - KNOT[2]));
+  // On the crust's chunks by the line fewer: their tops are its old weathered top, broken and chipped, not pitted.
+  const crustTop = 0.3 + 0.7 * smooth(8, 36, edgeDistance(x, y, z));
+  return (side > 0 ? 1 : 0.35) * knot * crustTop * (0.38 + 1.15 * toward ** 1.2) * (0.22 + 0.78 * bands) * (1 - 0.88 * floored(x, y, z));
 }
 
 // Pits too small for the geometry, in three sizes whose radii follow a power law within each, as craters do.
@@ -376,7 +387,8 @@ export function fine(x, y, z, side) {
     const ex = nz, ez = -nx, el = Math.hypot(ex, ez) || 1, a = (x * ex + z * ez) / el;
     h += 0.3 * fbm(a * 0.5, y * 0.05, 7.7, 3) + 0.12 * Math.abs(fbm(a * 1.6, y * 0.12, 3.1, 2)) + 0.08 * fbm(x * 1.7, y * 1.7, z * 1.7, 2);
   }
-  h += crackAt(x, y, z).fine;
+  const ck = crackAt(x, y, z);
+  h += ck.fine;
   h -= chips(x, y, z);
   return h;
 }

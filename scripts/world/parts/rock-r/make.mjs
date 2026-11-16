@@ -25,7 +25,7 @@ import { ALBEDO } from '../../lib/rock.mjs';
 import { plan } from './blocks.mjs';
 import { rubble } from './rubble.mjs';
 import { buildSkin } from './build.mjs';
-import { CORE_PX, VIEW } from './relief.mjs';
+import { CORE_PX, VIEW, J } from './relief.mjs';
 
 const draft = process.argv.includes('--draft');
 const t0 = performance.now(), said = (s) => console.log(`${((performance.now() - t0) / 1000).toFixed(1)} s · ${s}`);
@@ -46,6 +46,7 @@ const module = fileURLToPath(new URL('./hollow.mjs', import.meta.url));
 const args = await plan({ draft });
 args.corePx = [...CORE_PX];
 args.view = [...VIEW];
+args.J = J;
 args.under = UNDER;
 said(`plan: ${args.blocks.length} blocks`);
 args.stones = await rubble(args, { draft });
@@ -145,15 +146,15 @@ said('lit');
   const lum = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2], CL = lum(LT.core.color), ML = lum(LT.moon.color), AL = lum(ALBEDO);
   const illum = (c, s) => (c >= s ? c : c <= -s ? 0 : ((c + s) * (c + s)) / (4 * s));
   for (const b of args.blocks) {
-    let k = 0, core = 0, e = 0;
+    let k = 0, core = 0, e = 0, moon = 0;
     for (let i = 0; i < brk.positions.length / 3; i += 3) {
       const p = [brk.positions[i * 3], brk.positions[i * 3 + 1], brk.positions[i * 3 + 2]], nn = [brk.normals[i * 3], brk.normals[i * 3 + 1], brk.normals[i * 3 + 2]];
       if (nn[0] * b.n[0] + nn[1] * b.n[1] + nn[2] * b.n[2] < 0.9 || Math.abs(H.block(b, ...p)) > 0.6) continue;
       const d = Math.hypot(C[0] - p[0], C[1] - p[1], C[2] - p[2]), l = [(C[0] - p[0]) / d, (C[1] - p[1]) / d, (C[2] - p[2]) / d];
       const E = CL * lit.break.core[i] * (L.CORE.r / d) ** LT.core.fall * illum(nn[0] * l[0] + nn[1] * l[1] + nn[2] * l[2], Math.min(1, L.CORE.r / d)) + ML * lit.break.moon[i] * illum(nn[0] * LT.moon.toward[0] + nn[1] * LT.moon.toward[1] + nn[2] * LT.moon.toward[2], Math.sin(LT.moon.spread)) + lum([lit.break.bounce[i * 3], lit.break.bounce[i * 3 + 1], lit.break.bounce[i * 3 + 2]]);
-      k++; core += lit.break.core[i]; e += E;
+      k++; core += lit.break.core[i]; e += E; moon += lit.break.moon[i];
     }
-    out.push(`${b.name} want ${b.want.toFixed(3)} ${k ? `core ${(core / k).toFixed(2)} lum ${((AL / Math.PI) * e / k).toFixed(3)}` : 'none'}`);
+    out.push(`${b.name} want ${b.want.toFixed(3)} ${k ? `core ${(core / k).toFixed(2)} moon ${(moon / k).toFixed(2)} lum ${((AL / Math.PI) * e / k).toFixed(3)}` : 'none'}`);
   }
   console.log(out.join(' · '));
 }

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { hex } from '../../../../config/palette';
 import { SCALE } from '../../layout';
 import { lit } from '../../light';
+import { NIGHT as SKY } from '../../night';
 import { ATLAS, TILES } from './design';
 
 // The trees' one material, drawn twice. The first pass draws every pixel that is more than half leaf, solid, with
@@ -15,16 +16,18 @@ import { ATLAS, TILES } from './design';
 // number, so no two trees show the same lump. A card crossed through a lump fades out as it turns edge on to the
 // viewer, where its leaves would smear into a streak.
 //
-// A leaf is the tree's own shade (an instance's aTone) times the atlas's lightness and hue for that leaf. It is lit
-// as a place on two balls at once, its lump's and its crown's (the make script stores both with every vertex): so
-// a lump is round whichever way its cards lie, and the crown is one mass with its lumps standing in it. The moon is
-// behind the world and to the right, and it is the light that shapes a crown: it reaches a leaf through the crown
-// and the lump between them (so the crown's upper right takes it and its heart does not), wraps a little round each
-// lump, and turns what it lights toward peach and pale gold, never toward a hotter orange. The light of the sky from
-// above does the same. The night's soft light from the viewer's side is kept low, and it too is shut out of the
-// crown's inside and underside, so the face toward the viewer is dim and the gaps between crowns are near black.
-// Round its outline, where the city's windows stand behind it, light comes through its leaves, warm. A tree in the
-// shade of the trees or the buildings nearer the moon (an instance's aTree.z) takes that much less of it.
+// A leaf is the tree's own shade (an instance's aTone) times the atlas's lightness and hue for that leaf. Every leaf
+// of a lump stands for the front of its lump, and is lit as a place on two balls at once, its lump's and its
+// crown's (the make script stores both with every vertex). The crown is lit as one thing: the moon, behind the world
+// and to the right, reaches a leaf through the crown (so the crown's upper right takes it and its heart does not)
+// and wraps a little round it. Each lump only breaks that light up: its top whole, its foot in shade (tLump), so a
+// lump on the crown's shaded side is dim all over and never wears a cap of its own. What is deep behind the crown's
+// front, seen through the gaps between lumps, is its dark heart (tHeart). What the moon lights turns toward a tan,
+// never toward a hotter orange, and so does the rest of the light on what the moon lights. The light of the sky
+// from above and the night's soft light from the viewer's side are broken up by the lumps the same way, and shut
+// out of the crown's inside and underside. Round its outline, where the city's windows stand behind it, light comes
+// through its leaves, warm. A tree in the shade of the trees or the buildings nearer the moon (an instance's aTree.z)
+// takes that much less of it.
 
 // How the leaves move in the air: how far, in a crown's own units, and how fast, in radians a second.
 export const AIR = { reach: 0.01, rate: [0.55, 1.37, 0.83] } as const;
@@ -32,7 +35,7 @@ export const AIR = { reach: 0.01, rate: [0.55, 1.37, 0.83] } as const;
 // of one model have the same outline.
 export const JITTER = 0.09;
 // The bark's color, as a mix of the palette's darkest bronze and a warm grey, how bright, and how rough each thing is.
-const BARK = { color: 'bronze-deep', grey: 'text-3', mix: 0.12, power: 0.62 } as const;
+const BARK = { color: 'bronze-deep', grey: 'text-3', mix: 0.08, power: 0.42 } as const;
 const ROUGH = { leaf: 0.72, bark: 0.95 };
 // Light through the leaves at a crown's outline from the lit city behind it, as a share of the palette's hot light,
 // and how tight to the outline it keeps.
@@ -48,17 +51,18 @@ const FACE = 0.35;
 const BALL = { clump: 0.45, crown: 1.0 };
 // The moon in a crown: how far its light wraps round the crown past the line where it would set, how much of it the
 // leaves let through for each radius of crown it crosses on its way in, and how bright.
-const MOON = { wrap: 0.3, crown: 1.15, power: 0.62 };
+const MOON = { wrap: 0.3, crown: 1.15, power: 0.52 };
 // A lump within its crown's one light: the share of the crown's light its foot keeps, against its top, and how far
 // toward straight up the side of a lump that is lit turns from the moon. So a lump has a lit top and a shaded foot,
 // and a lump on the crown's shaded side is dim all over: the lump only breaks up the crown's light, never caps it.
-const LUMP = { foot: 0.25, up: 0.6, edge: [-0.35, 0.65] } as const;
+const LUMP = { foot: 0.5, up: 0.6, edge: [-0.45, 0.75] } as const;
 // How the atlas's lightness (red) becomes how light a leaf is: what the darkest (the dark mat between sprigs) and
 // the lightest keep of the tree's own shade.
 const PAINT = [0.36, 1.4] as const;
-// What the moon and the sky turn a leaf they light toward, and how far at most: a peach, never the leaf's own shade
-// made brighter.
-const PALE = { color: 'copper-light', toward: 'text-2', mix: 0.35, power: 0.95, most: 0.85, from: 0.05, full: 0.6, top: 0.7, back: 0.7, ambient: 0.7 } as const;
+// What the moon and the sky turn a leaf they light toward, and how far at most: a tan, never the leaf's own shade
+// made brighter. From how much of the moon a leaf takes it starts and is whole, and how far the night and the fill on
+// such a leaf are turned to the same hue (ambient), so a lit top reads tan and not salmon.
+const PALE = { color: 'copper-light', toward: 'text-2', mix: 0.5, power: 0.95, most: 0.75, from: 0.05, full: 0.6, top: 0.7, back: 1.0, ambient: 1.0 } as const;
 // The night's soft light on the leaves, against what it gives everything else on top of the world, and how much of
 // it reaches a leaf with no sky above it, against one under open sky.
 const NIGHT = { leaf: 1.8, bark: 0.7, covered: 0.45 };
@@ -78,7 +82,7 @@ const FILL = { color: 'copper', grey: 'text-2', mix: 0.5, power: 3.6, shut: 0.3,
 // between lumps is the crown's dark heart. A leaf turned down, under the crown, keeps this share of the night.
 const INSIDE = { crown: 1.6, rest: 1.8, front: 0.3, beneath: 0.22 };
 // How far one lump's shade differs from the next in hue and in lightness.
-const CLUMPS = { hue: 0.4, light: 0.16 };
+const CLUMPS = { hue: 0.4, light: 0.28 };
 // The most green a leaf may have against its red, and blue against its green, in linear light.
 const WARM = { green: 0.34, blue: 0.32 };
 // A card crossed through a lump is gone by the time it is turned this far edge on (the cosine of its angle to the
@@ -86,7 +90,7 @@ const WARM = { green: 0.34, blue: 0.32 };
 const GLANCE = [0.16, 0.42] as const;
 // The moon behind the crown, caught in the leaves of its outline on the moon's side: how bright, how close to the
 // outline it keeps (a share of the crown's radius seen from the viewer), and how sharply it turns to the moon.
-const BACKLIT = { power: 0.3, from: 0.55, turn: 1.5 } as const;
+const BACKLIT = { power: 0.12, from: 0.55, turn: 1.5 } as const;
 // The shade on the ground is drawn this much nearer the viewer along the line of sight, in units, so the land's
 // own small rises do not cut it into strips. At the world's low view that lifts it off the ground by a tenth of it.
 const NEARER = 6;
@@ -96,6 +100,15 @@ const GROUNDED = 1.7;
 // The shade on the ground fades out over this much (in crown units) before the land's edge behind the trunk and to
 // each side of it.
 const KEEP = 0.35;
+// On sand the moon's own shadow of a tree lies on the dune from the shadow map, and the dark earth the shade stands
+// for is not there: this share of the shade goes on sand.
+const SAND = 0.8;
+// Where a leaf is drawn in depth: drawn where its flat card lies, two cards crossing met in a ruler straight line, and
+// two lumps or two trees met as flat cards do. Each leaf is drawn this share of the way from its card to the front of
+// its lump's ball, so lumps meet one another as balls do, and stands nearer by as much as it is lighter in the atlas
+// (relief, in its lump's radii: a sprig's lit top is nearer than the dark between sprigs), so where two cards or
+// two lumps meet the line follows the leaves. The card that faces the viewer stands a little nearer (face).
+const DEPTH = { pull: 0.65, relief: 0.4, mid: 0.5, face: 0.06 } as const;
 // ?treelook=moon, night or top shows one light alone, shade the shade on the ground lit, and mask every leaf and
 // trunk in one flat red, so a script can tell the trees' pixels from the rest of a still.
 const LOOKS: Record<string, number> = { moon: 1, night: 2, top: 3, shade: 4, mask: 5, lump: 6, heart: 7 };
@@ -177,10 +190,10 @@ export function treeMaterial(map: THREE.Texture, pass: 0 | 1, uniforms: TreeUnif
       .replace('#include <common>', `#include <common>${MOVE_PARS}
 attribute vec3 aTone;
 attribute vec4 crown;
-attribute vec3 aReach;
+attribute vec4 aReach;
 uniform float uNearer;
 varying vec2 vShadeAt;
-varying vec3 vReach;
+varying vec4 vReach;
 varying vec4 vClump;
 varying vec4 vCrown;
 varying float vPhase;
@@ -213,6 +226,7 @@ vView = view;
 }`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>
+uniform mat4 projectionMatrix;
 uniform sampler2D uLeaves;
 uniform float uPass;
 uniform float uLook;
@@ -223,7 +237,7 @@ uniform vec3 uTop;
 uniform vec3 uFill;
 varying vec2 vLeafUv;
 varying vec2 vShadeAt;
-varying vec3 vReach;
+varying vec4 vReach;
 varying vec3 vTone;
 varying vec4 vTree;
 varying float vLow;
@@ -312,7 +326,7 @@ if ( tBlob > 0.5 ) {
 	if ( uPass < 0.5 || tA < 0.004 ) discard;
 	// Cut where the land ends behind the trunk and to each side (vReach, in crown units), softly.
 	float tIn = ( 1.0 - smoothstep( vReach.x - ${f(KEEP)}, vReach.x, - vShadeAt.x ) ) * ( 1.0 - smoothstep( vReach.y - ${f(KEEP)}, vReach.y, - vShadeAt.y ) ) * ( 1.0 - smoothstep( vReach.z - ${f(KEEP)}, vReach.z, vShadeAt.y ) );
-	diffuseColor = vec4( 0.0, 0.0, 0.0, ( 1.0 - pow( 1.0 - min( tA, 0.999 ), ${f(GROUNDED)} ) ) * tIn );
+	diffuseColor = vec4( 0.0, 0.0, 0.0, ( 1.0 - pow( 1.0 - min( tA, 0.999 ), ${f(GROUNDED)} ) ) * tIn * ( 1.0 - ${f(SAND)} * vReach.w ) );
 } else {
 	if ( uPass < 0.5 ) {
 		if ( tA < 0.5 ) discard;
@@ -337,7 +351,13 @@ roughnessFactor = mix( roughnessFactor, 1.0, tBlob );`)
 material.specularColor *= ${f(SHEEN.face)};
 material.specularColorBlended *= ${f(SHEEN.face)};
 material.specularF90 = ${f(SHEEN.graze)};`)
-      .replace('#include <opaque_fragment>', `outgoingLight *= 1.0 - tBlob;
+      .replace('#include <opaque_fragment>', `{
+	vec3 q = tP;
+	if ( vCrown.w > 1e-5 && tLeafy > 0.5 ) q = mix( tP, tS, ${f(DEPTH.pull)} ) + normalize( vViewPosition ) * vClump.w * ( ${f(DEPTH.relief)} * ( tLeaf.r - ${f(DEPTH.mid)} ) + ${f(DEPTH.face)} * vView );
+	vec4 clip = projectionMatrix * vec4( q, 1.0 );
+	gl_FragDepth = tLeafy > 0.5 ? 0.5 + 0.5 * clip.z / clip.w : gl_FragCoord.z;
+}
+outgoingLight *= 1.0 - tBlob;
 outgoingLight += vec3( 2.0, 0.6, 0.0 ) * tBlob * step( 3.5, uLook ) * step( uLook, 4.5 );
 if ( uLook > 4.5 && uLook < 5.5 ) outgoingLight = vec3( 4.0, 0.0, 0.0 ) * ( 1.0 - tBlob );
 if ( uLook > 5.5 ) outgoingLight = vec3( uLook < 6.5 ? tLump( tUpV ) : tHeart ) * tLeafy;
@@ -352,10 +372,11 @@ tClumpB = vClump;
 if ( vCrown.w > 1e-5 && tLeafy > 0.5 ) {
 	vec3 V = normalize( vViewPosition );
 	vec3 dK = tP - vCrown.xyz, nK = tBall( tP, V, vCrown ), nL = tBall( tP, V, vClump );
-	// A leaf of the card that faces the viewer stands for the front of its lump: it is lit and shut in where that
-	// front is, not where the flat card is (which made every lump a disc darker at its middle).
-	tS = vView > 0.5 ? vClump.xyz + nL * vClump.w : tP;
-	tNL = vView > 0.5 ? nL : normalize( tP - vClump.xyz + 1e-4 * V );
+	// Every leaf of a lump stands for the front of its lump, whichever of its cards it is on: it is lit and shut in
+	// where that front is, not where its flat card is (which made every lump a disc darker at its middle, and drew a
+	// straight seam where a crossed card came through the card in front).
+	tS = vClump.xyz + nL * vClump.w;
+	tNL = nL;
 	tOut = length( dK - dot( dK, V ) * V ) / max( vCrown.w, 1e-4 );
 	normal = normalize( ${f(BALL.clump)} * nL + ${f(BALL.crown)} * nK + 1e-4 * V );
 	float deep = tDeep( tS, V, vCrown );
@@ -368,7 +389,8 @@ if ( vCrown.w > 1e-5 && tLeafy > 0.5 ) {
       .replace('#include <lights_fragment_end>', `vec3 tTopE = vec3( 0.0 );
 material.diffuseContribution = mix( material.diffuseContribution, tTan( material.diffuseContribution ), ${f(PALE.ambient)} * smoothstep( ${f(PALE.from)}, ${f(PALE.full)}, tSeen ) * tLeafy );
 {
-	float night = mix( ${f(NIGHT.bark)}, ${f(NIGHT.leaf)} * tShut * tBelow * tLump( tUpV ) * mix( ${f(NIGHT.covered)}, 1.0, wLight.y ) * ( 1.0 - ${f(COVER.night)} * vTree.z * vLow ), tLeafy );
+	vec3 tFrontV = normalize( ( viewMatrix * vec4( ${SKY.front.toward.map(f).join(', ')}, 0.0 ) ).xyz );
+	float night = mix( ${f(NIGHT.bark)}, ${f(NIGHT.leaf)} * tShut * tBelow * tLump( normalize( tFrontV + tUpV ) ) * mix( ${f(NIGHT.covered)}, 1.0, wLight.y ) * ( 1.0 - ${f(COVER.night)} * vTree.z * vLow ), tLeafy );
 	vec3 deep = mix( vec3( 1.0 ), diffuseColor.rgb / max( diffuseColor.r, 1e-4 ), ${f(DEEP)} * tLeafy );
 	irradiance *= night * deep;
 	iblIrradiance *= night * deep;

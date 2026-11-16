@@ -37,7 +37,7 @@ export const TORN = {
   // How far a block that has moved stands out or sinks, and the share that have moved: split in place, barely.
   shift: [0.004, 0.018], moved: 0.5,
   // An opened crack: how wide, in units, and the share of blocks that have one.
-  crack: [0.5, 1.2], cracked: 0.12,
+  crack: [0.5, 1.2], cracked: 0,
   // How far a join between blocks wanders from a plane, and over how far: a break is never ruled.
   rag: 0.035, ragOver: 0.16,
   // A block's outer face broken at its own depth: how deep, at most.
@@ -47,21 +47,25 @@ export const TORN = {
   // The flakes off the edges: their radius (a share of the size, from the smallest, and how many times larger the
   // largest is), how deep each bites into the face it spreads over and into the other face (shares of its radius),
   // and how much longer it runs into its face than along the edge.
-  flake: [0.011, 7], bite: [0.14, 0.32], under: [0.03, 0.12], spread: [1.15, 1.8],
+  flake: [0.022, 5], bite: [0.1, 0.22], under: [0.05, 0.16], spread: [1.6, 2.6],
   // The stepped breaks across a block's faces: how far a step drops, how ragged its riser is, and over how far.
-  step: [0.008, 0.03], riser: 0.03, riserOver: 0.07,
+  step: [0.02, 0.055], riser: 0.04, riserOver: 0.08,
   // The beds: how thick (a share of the size), how much they wander, and how far one stands proud (strata, unless
-  // given).
-  bed: [0.045, 0.09], bedWander: 0.25, strata: 0.0045,
+  // given). None by default: a step finer than two cells of the mesh comes out as a comb of slivers, so the fine
+  // strata are the shader's (../../../../src/pieces/world/parts/debris/shaders.ts) and only a boulder's are cut.
+  bed: [0.07, 0.12], bedWander: 0.25, strata: 0,
   // The large shallow scars where a broad flake left a face: how wide, and how deep against their width.
   scar: [0.12, 0.3], scoop: [0.05, 0.1],
   // The rubble: how large each piece is, and how far it is sunk into the rock as a share of its size.
   stone: [0.02, 0.06], sunk: 0.35,
   // How much every face swells, ridges and wanders, and over how far: no grit, which reads as hammered metal.
-  swell: 0.008, swellOver: 0.32, ridge: 0.0035, ridgeOver: 0.08, wander: 0.0025, wanderOver: 0.045,
+  swell: 0.005, swellOver: 0.4, ridge: 0, ridgeOver: 0.13, wander: 0.0015, wanderOver: 0.05,
+  // The secondary breaks across each block: how many, how far round from the way out they are turned (radians, at
+  // most), and how deep under the surface each cuts. Each leaves a crisp facet, never a swell: a swell reads as cloth.
+  facets: 6, facetTurn: 0.65, facetCut: [0.008, 0.045],
 };
 
-export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, skin = null, top = false, rubble = 10, scars = 4, flat = TORN.flat, form = null, chips = 80, steps = 2, strata = TORN.strata, ridge = null }) {
+export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, skin = null, top = false, rubble = 10, scars = 4, flat = TORN.flat, form = null, chips = 80, steps = 2, strata = TORN.strata, ridge = null, facets = TORN.facets }) {
   const r = seeded(seed), [a, b, c] = size, big = Math.max(a, b, c), T = TORN;
   const reach = (n) => Math.abs(n[0]) * a + Math.abs(n[1]) * b + Math.abs(n[2]) * c;
   const jitter = (v, k) => unit([v[0] + k * (r() - 0.5), v[1] + k * (r() - 0.5), v[2] + k * (r() - 0.5)]);
@@ -157,6 +161,14 @@ export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, ski
     const n = unit([r() * 2 - 1, r() * 2 - 1, r() * 2 - 1]);
     if (top && n[1] > 0.3) continue;
     cl.own.push({ n, h: dot(n, cl.seed) + outTo(cl, n, true) - big * between(T.corner[0], T.corner[1]) });
+  }
+  // The secondary breaks: each block's surface broken again by planes turned a little from it, at uneven depths.
+  for (const cl of cells) for (let i = 0; i < facets; i++) {
+    let n = unit([r() - 0.5, r() - 0.5, r() - 0.5]);
+    if (top && n[1] > 0.3) continue;
+    const out = outTo(cl, n, true), at = [cl.seed[0] + n[0] * out, cl.seed[1] + n[1] * out, cl.seed[2] + n[2] * out];
+    const m = jitter(n, T.facetTurn * 2);
+    cl.own.push({ n: m, h: dot(m, at) - big * between(T.facetCut[0], T.facetCut[1]) });
   }
   // The stepped breaks: a face that drops a little part of the way across it, along a ragged riser. Each is the
   // block's face at one of its outer ways, turned a little, lowered on one side of a plane across it.

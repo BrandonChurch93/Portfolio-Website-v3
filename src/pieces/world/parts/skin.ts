@@ -3,7 +3,7 @@ import { hex, type PaletteName } from '../../../config/palette';
 import { load, mesh } from '../files';
 import { lit, stone as planetStone } from '../light';
 import type { PartFactory } from '../part';
-import { GLOW, PALE_TURN, SAND, STONE, UNDER } from './skin/look';
+import { DARK_TURN, GLOW, PALE_TURN, SAND, STONE, UNDER } from './skin/look';
 import * as S from './skin/shaders';
 
 // The skin: what survives of the planet's own outer surface at each side of the tear. At the visitor's left, turned
@@ -58,7 +58,7 @@ export const build: PartFactory = async ({ query, renderer }) => {
     Object.assign(sh.uniforms, {
       uSkinMap: { value: map },
       uSkinMapSize: { value: new THREE.Vector3(map.image.width, map.image.height, map.userData.split as number) },
-      uPale: { value: stone(pale ? { ...STONE.pale, k: pale[0], power: pale[1] ?? STONE.pale.power } : STONE.pale).offsetHSL(turn / 360, 0, 0) }, uDust: { value: stone(STONE.dust).offsetHSL(turn / 360, 0, 0) }, uDark: { value: stone(STONE.dark) },
+      uPale: { value: stone(pale ? { ...STONE.pale, k: pale[0], power: pale[1] ?? STONE.pale.power } : STONE.pale).offsetHSL(turn / 360, 0, 0) }, uDust: { value: stone(STONE.dust).offsetHSL(turn / 360, 0, 0) }, uDark: { value: stone(STONE.dark).offsetHSL(DARK_TURN / 360, 0, 0) },
       uUnder: { value: planetStone().multiplyScalar(UNDER) }, uSand: { value: linear(SAND.of[0]).lerp(linear(SAND.of[1]), SAND.ease).multiplyScalar(SAND.power) }, uSkinPlace: { value: place }, uGlowRock: { value: rock ? rock[0] : GLOW.rock },
       uGlowPale: { value: linear(GLOW.ramp[0][0]) }, uGlowHot: { value: linear(GLOW.ramp[1][0]) }, uGlowFlame: { value: linear(GLOW.ramp[2][0]) }, uGlowEmber: { value: linear(GLOW.ramp[3][0]) },
     });

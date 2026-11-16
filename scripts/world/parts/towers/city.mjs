@@ -18,7 +18,7 @@ const draft = process.argv.includes('--draft');
 const onlyAt = process.argv.indexOf('--only'), only = onlyAt > 0 ? new Set(process.argv[onlyAt + 1].split(',').map(Number)) : null;
 // The map of the windows, in windows across and down; how finely faces are cut for their baked light, in units; the stones
 // a building may be built of, as tones (./windows.ts, TONES), and how likely each is.
-const CITY = { map: [1024, 128], edge: draft ? 10 : 6.6, tones: [[0, 0.22], [1, 0.24], [2, 0.16], [3, 0.12], [4, 0.1], [5, 0.08], [6, 0.08]], seed: 9151 };
+const CITY = { map: [1024, 128], edge: draft ? 10 : 6.6, tones: [[0, 0.1], [1, 0.26], [2, 0.14], [3, 0.2], [4, 0.12], [5, 0.08], [6, 0.1]], seed: 9151 };
 // The named buildings' stone, as a place in STONES: the obelisk's shaft is dark, as picture 9's is, the tower left
 // of the spire a buff stone and the ringed pair a pale one.
 const TONE = { 0: 4, 2: 1, 3: 2, 4: 1, 5: 3, 9: 0, 10: 1, 11: 2 };
@@ -32,7 +32,7 @@ const STREET = { power: 1.1, at: 4, wide: 7 }, GROUND = 0.05;
 
 const on = [];
 P.TOWERS.forEach(([x, z, w, d], i) => { if (L.within(x, z) >= 0.6 * Math.max(w, d) && (!only || only.has(i))) on.push(i); });
-const win = new Windows(CITY.seed, CITY.map), made = [], chosen = new Map();
+const win = new Windows(CITY.seed, CITY.map), made = [], chosen = new Map(), tones = new Array(7).fill(0);
 // The buildings near enough to one already built to be seen beside it: across, so far apart beyond their half widths,
 // and back, within so far.
 const NEAR = { across: 16, back: 90 };
@@ -55,6 +55,7 @@ for (const i of on) {
     const b = { kit, win, R, E: CITY.edge, draft, tone: stone / 6, vary: R(), lay: 0, busy, mood: i * 1.37, sink: g0 - low + 1.5, avoid, chosen: {} };
     make(b, { w, d, tall, roof, form, seed, i });
     chosen.set(i, b.chosen);
+    tones[stone]++;
   }
   made.push(kit.meshes(placeOf(x, z, turn)));
 }
@@ -96,5 +97,5 @@ function around() {
 }
 
 const stands = on.filter((i) => i === P.STEP || design({ ...{ form: P.TOWERS[i][6], roof: P.TOWERS[i][7], seed: P.TOWERS[i][8], w: P.TOWERS[i][2] } }));
-console.log(`city: ${made.length} buildings, windows map ${win.used} of ${win.tall} rows used`);
+console.log(`city: ${made.length} buildings (of each stone ${tones.join(', ')}), windows map ${win.used} of ${win.tall} rows used`);
 await finish({ made: gather(made), win, around: around(), file: 'towers-city', draft, meta: { design: 'city', stands } });

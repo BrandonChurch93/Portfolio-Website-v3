@@ -6,7 +6,7 @@
 import { parentPort, workerData } from 'node:worker_threads';
 import { closest } from '../../lib/bvh.mjs';
 import { L } from '../../lib/plan.mjs';
-import { CRUST, SHOULDER, setup, fine, coarse, crust, chips, crackOf, pitted, floored, farEdge, fbm, downOf } from './field.mjs';
+import { CRUST, SHOULDER, setup, fine, coarse, crust, chips, crackOf, edgeDistance, pitted, floored, farEdge, fbm, downOf } from './field.mjs';
 import { frame, shellNormal, toShell } from './features.mjs';
 
 const { features, bvh, positions, normals, indices, texels, rects, perPixel, rows, moon } = workerData;
@@ -41,14 +41,19 @@ for (let row = rows[0]; row < rows[1]; row++) {
     const side = rect.side, q = toShell(...p);
     out.side[i] = side;
     out.at.set(p, i * 3);
-    const h0 = fine(q[0], q[1], q[2], side);
+    const sn = shellNormal(...q), [e1, e2] = frame(sn), D = 0.3, up = dot(n, sn);
+    // On the crust's broken faces the outer surface's own fine relief is not there to be seen: taken from the place on
+    // the outer surface over each point, it was drawn down the face in streaks. They take a relief of their own.
+    const toLine = edgeDistance(q[0], q[1], q[2]), deep = L.shell(...p) < 1 ? Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]) : 0;
+    // The crust in section: a steep face in the band by the line, or anything well under the outer surface at the line.
+    const isFace = (up < 0.6 && toLine < CRUST.band) || (toLine < 4 && deep > 2.5);
+    const h0 = isFace ? 0.3 * fbm(p[0] / 1.7, p[1] / 1.7, p[2] / 1.7, 2) : fine(q[0], q[1], q[2], side);
     out.H[i] = h0;
-    const sn = shellNormal(...q), [e1, e2] = frame(sn), D = 0.3;
     const r1 = toShell(q[0] + e1[0] * D, q[1] + e1[1] * D, q[2] + e1[2] * D), r2 = toShell(q[0] + e2[0] * D, q[1] + e2[1] * D, q[2] + e2[2] * D);
-    const g1 = (fine(r1[0], r1[1], r1[2], side) - h0) / D, g2 = (fine(r2[0], r2[1], r2[2], side) - h0) / D;
+    const g1 = isFace ? 0 : (fine(r1[0], r1[1], r1[2], side) - h0) / D, g2 = isFace ? 0 : (fine(r2[0], r2[1], r2[2], side) - h0) / D;
     // The face here with the fine relief on it.
     const bent = unit([n[0] - e1[0] * g1 - e2[0] * g2, n[1] - e1[1] * g1 - e2[1] * g2, n[2] - e1[2] * g1 - e2[2] * g2]);
-    const up = dot(n, sn), above = (L.shell(...p) >= 1 ? 1 : -1) * Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+    const above = (L.shell(...p) >= 1 ? 1 : -1) * Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
     const down = downOf(q[1]), floor = floored(q[0], q[1], q[2]);
 
     // A broken face at a torn edge: how far under the top of the face it is. The pale top layer of the crust shows
@@ -79,13 +84,14 @@ for (let row = rows[0]; row < rows[1]; row++) {
       m *= 0.93 + 0.2 * tone + 0.12 * mid + 0.07 * mottle;
       m *= 1 - 0.42 * smooth(0.35, 0.9, down);
       // Near the torn line the ground is shattered and its dust shaken off: darker, as the picture's is.
-      m *= 1 - 0.1 * (1 - smooth(10, 60, farEdge(q[0], q[1], q[2])));
+      m *= 1 - 0.2 * (1 - smooth(10, 60, farEdge(q[0], q[1], q[2])));
       m *= 1 + 0.07 * floor;
-      m *= 1 - 0.62 * pitted(q[0], q[1], q[2], side);
+      m *= 1 - (isFace ? 0 : 0.62 * pitted(q[0], q[1], q[2], side));
       // The fine relief's own shadows from the moon.
       const md = moon, dn = dot(md, bent);
       let vis = 1;
-      if (dn <= 0.02) vis = smooth(-0.08, 0.02, dn);
+      if (isFace) vis = 1;
+      else if (dn <= 0.02) vis = smooth(-0.08, 0.02, dn);
       else {
         let tx = md[0] - dn * sn[0], ty = md[1] - dn * sn[1], tz = md[2] - dn * sn[2];
         const tl = Math.hypot(tx, ty, tz) || 1;
@@ -118,25 +124,25 @@ for (let row = rows[0]; row < rows[1]; row++) {
       m *= 0.62 + 0.75 * (0.5 + 0.5 * Math.max(-1, Math.min(1, 1.4 * tone)));
       m *= 0.7 + 0.6 * (0.5 + 0.5 * Math.max(-1, Math.min(1, 1.6 * streak))) + 0.16 * fineStreak;
       m *= 0.92 + 0.1 * mottle;
-      m *= 1 - 0.32 * pitted(q[0], q[1], q[2], side);
+      m *= 1 - (isFace ? 0 : 0.32 * pitted(q[0], q[1], q[2], side));
       const ck = crackOf(q[0], q[1], q[2]);
       m *= 1 - (ck.heat > 0 ? 0.2 : 0.5) * ck.in;
-      if (ck.in > 0 && ck.heat > 0 && up < 0.6 && cr.edge < 3) {
+      if (ck.in > 0 && ck.heat > 0 && isFace && toLine < 4) {
         // Where a crack runs out over the crust's broken face, its light lies on the face and is not a cleft: drawn as
         // a cleft there it stood out past the edge as a white blade.
-        g = 0.5 * Math.min(0.9, 0.12 * ck.heat * smooth(0.25, 0.6, up));
+        g = 0;
       } else if (ck.in > 0 && ck.heat > 0) {
         // In a lit cleft, the light itself: the wall that faces the visitor is lit to its lip, the near one only
         // deep down, so the cleft reads as a V cut into the rock.
         const toEye = unit([o[0] - p[0], o[1] - p[1], o[2] - p[2]]), en = dot(toEye, sn), et = [toEye[0] - en * sn[0], toEye[1] - en * sn[1], toEye[2] - en * sn[2]];
         const far = dot(ck.side, et) > 0, d = ck.in;
-        const lit = far ? 0.3 + 0.7 * d ** 0.9 : 0.06 + 0.94 * d ** 3;
+        const lit = far ? 0.45 + 0.55 * d ** 0.8 : 0.06 + 0.94 * d ** 3;
         g = 0.5 + 0.5 * Math.min(1, (0.7 + 0.3 * ck.heat) * lit);
-      } else if (ck.spill > 0 || ck.pool > 0) {
+      } else if ((ck.spill > 0 || ck.pool > 0) && !(isFace && toLine < 4)) {
         // Beside one, the light that lands on the rock: most on faces turned to the cleft, so it is lumpy with the
         // relief. It comes from the cleft's mouth.
         const from = [ck.from[0] + sn[0] * 0.8 - p[0], ck.from[1] + sn[1] * 0.8 - p[1], ck.from[2] + sn[2] * 0.8 - p[2]], dl = Math.hypot(...from) || 1;
-        const soft = unit([n[0] + 0.12 * (bent[0] - n[0]), n[1] + 0.12 * (bent[1] - n[1]), n[2] + 0.12 * (bent[2] - n[2])]);
+        const soft = unit([n[0] + 0.15 * (bent[0] - n[0]), n[1] + 0.15 * (bent[1] - n[1]), n[2] + 0.15 * (bent[2] - n[2])]);
         // Only what faces the cleft takes its light: the rock between the arms stays dark, as the picture's does.
         const facing = Math.min(1.8, Math.max(0, 3.2 * dot(soft, from.map((x) => x / dl)) - 0.15));
         g = 0.5 * Math.min(0.98, ck.spill * (0.25 + 0.75 * Math.min(1, facing)) + ck.pool * facing);

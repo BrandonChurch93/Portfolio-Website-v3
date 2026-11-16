@@ -18,49 +18,16 @@ export const BALL_FRAG = /* glsl */ `
 precision highp float;
 precision highp int;
 uniform vec3 uEye;
-uniform float uR;
 uniform float uTime;
 uniform float uLevel;
-uniform mat3 uTurn;
-uniform mat3 uTurnIn;
-uniform float uRimAt[ RIM_N ];
-uniform vec3 uRim[ RIM_N ];
-uniform vec3 uBright;
-uniform vec3 uDim;
-uniform vec3 uWarm;
-uniform vec3 uGrainPale;
 varying vec3 vLocal;
 ${GRAIN}
 ${ROOT_LIGHT}
 
-// The face's light from its middle out to its edge, as picture 9 has it: even to about 0.7 of the radius, warming
-// through gold, a dip of deep orange just inside the edge and a thin brighter line of orange gold at the edge itself.
-vec3 coreRim( float rr ) {
-	vec3 c = uRim[ 0 ];
-	for ( int i = 1; i < RIM_N; i ++ ) {
-		float a = uRimAt[ i - 1 ], b = uRimAt[ i ];
-		if ( rr > a ) c = mix( uRim[ i - 1 ], uRim[ i ], clamp( ( rr - a ) / max( b - a, 1e-4 ), 0.0, 1.0 ) );
-	}
-	return c;
-}
 // The dip and the line are each a pixel or two wide on the page, so the band is read over the pixel's own width.
 vec3 coreBand( float rr, float px ) {
 	return ( coreRim( rr - 0.33 * px ) + coreRim( rr ) + coreRim( rr + 0.33 * px ) ) / 3.0;
 }
-// The fine grain at a place q, in units: grains of about one unit, with every size finer than the pixel let go and
-// its share given back to the sizes kept.
-float coreFine( vec3 q, float fp, float churn, uint seed ) {
-	float s = 0.0, kept = 0.0, all = 0.0;
-	for ( int i = 0; i < 3; i ++ ) {
-		float wave = GRAIN_WAVE * pow( GRAIN_STEP, float( i ) ), a = pow( GRAIN_FALL, float( i ) ), k = coreKeep( wave, fp );
-		vec3 at = q / wave + vec3( 0.0, churn * ( 1.0 + 0.6 * float( i ) ), 0.0 );
-		s += a * k * coreNoise( at, seed + uint( i ) * 31u );
-		kept += a * a * k * k;
-		all += a * a;
-	}
-	return s * min( sqrt( all / max( kept, 1e-3 ) ), GRAIN_BACK );
-}
-
 void main() {
 	vec3 ro = uEye, rd = coreDir( vLocal - uEye );
 	float b = dot( ro, rd ), c = dot( ro, ro ) - b * b;
@@ -74,56 +41,38 @@ void main() {
 	float h = max( uR * uR - c, 0.0 );
 	vec3 P = ro + rd * ( - b - sqrt( h ) );
 
+	// The neck of the beam, read on the plane through the ball's middle, where the neck below the ball is drawn, so the
+	// two are one shape: where it leaves, the band turns down along its sides, and the face's own light runs down into it.
+	vec3 Q = ro + rd * ( - ro.z / ( abs( rd.z ) > 1e-4 ? rd.z : - 1e-4 ) );
+	float rb = coreAt( rr, Q.x, - uR - Q.y );
+
+
 	// The grain lies on the ball and turns with it, slowly, as something enormous turns: fastest across the middle and
 	// slower toward the edge, where it is seen on a slant. It churns in place as it goes.
+	// Over the foot it is read on that plane too, as the neck below is, so the grain runs on down into the neck with no
+	// seam, and is not lost where the ball's surface turns away from the eye.
+	float wm = neckWidth( - NECK_MEET, NECK_RIB, neckReach(), uRootState.x );
+	float foot = smoothstep( NECK_FOOT_UP.x, NECK_FOOT_UP.y, rr ) * smoothstep( wm + 4.0, wm - 4.0, abs( Q.x ) ) * step( Q.y, 0.0 );
 	vec3 q = uTurn * P;
 	float fp = max( max( length( dFdx( q ) ), length( dFdy( q ) ) ), 1e-4 );
-	float churn = uTime * GRAIN_CHURN, drift = uTime * GRAIN_DRIFT;
-	// Close up the middle sizes and the broad drift give way, so what is seen is the fine grain, crisp and even.
-	float near = 1.0 - smoothstep( 0.45, 0.9, fp ), salty = smoothstep( GRAN_FAR, GRAN_NEAR, fp );
-	// On a sharp screen at the page's size the grain is as coarse as on a plain one, as the picture's is: finer, the
-	// face read grainier than the picture. Close up the granules take over.
-	float fg = max( fp, GRAIN_FLOOR * smoothstep( GRAN_NEAR, GRAN_FAR, fp ) );
-	float v = coreFine( q, fg, churn, 7u );
-	v += GRAIN_MID * ( 1.0 - 0.75 * near ) * coreNoise( q / GRAIN_MIDWAVE + vec3( churn * 0.3 ), 41u ) * coreKeep( GRAIN_MIDWAVE, fg );
-	v += MOTTLE * ( 1.0 - 0.6 * near ) * ( 0.65 * coreNoise( q / MOTTLE_WAVE + vec3( drift, 0.0, - drift ), 73u ) + 0.35 * coreNoise( q / ( 0.45 * MOTTLE_WAVE ) - vec3( 0.0, drift, 0.0 ), 79u ) );
-	// Each grain's own warmth, apart from its brightness: some a little paler, some a little more gold.
-	float w = coreNoise( q / GRAIN_WAVE + vec3( 0.0, - churn, 0.0 ), 101u ) * coreKeep( GRAIN_WAVE, fg );
-	// Close up the grain is granules, each lit from its heart, once they span a few pixels.
-	float near2 = smoothstep( GRAN_FAR, GRAN_NEAR, fp );
-	if ( near2 > 0.0 ) {
-		// The face is near the brightest the screen shows, so a granule is mostly told apart by the dark round it.
-		float g = coreGranules( q, uTime * GRAN_TURN, fp );
-		g = g > 0.0 ? g * GRAN_UP : g;
-		v = mix( v, GRAN_GAIN * g + GRAN_UNDER * v, near2 );
-		w = mix( w, GRAN_WARMS * g + GRAN_UNDER * w, near2 );
-	}
-	// Under the grain is a brighter body, deeper in the ball and turning the other way, seen where the skin over it
-	// is thin: veins of light that slide under the grain as it turns.
-	float bi = dot( ro, rd ), hi = DEEP_AT * DEEP_AT * uR * uR - c;
-	vec3 Pi = hi > 0.0 ? ro + rd * ( - bi - sqrt( hi ) ) : ro - rd * bi, qi = uTurnIn * Pi;
-	float vein = pow( 1.0 - abs( coreNoise( qi / DEEP_WAVE, 151u ) ), DEEP_SHARP ) * coreKeep( DEEP_WAVE * 0.25, fp );
-	float thin = smoothstep( DEEP_THIN.x, DEEP_THIN.y, coreNoise( q / DEEP_SKIN, 163u ) );
-	v += DEEP * ( 1.0 + DEEP_NEAR * salty ) * ( vein - DEEP_MEAN ) * ( 0.35 + 0.65 * thin ) * ( 1.0 - smoothstep( 0.7, 0.9, rr ) );
+	vec3 qn = uTurn * vec3( Q.xy, 0.0 );
+	float fn = max( max( length( dFdx( qn ) ), length( dFdy( qn ) ) ), 1e-4 );
+	vec2 g = coreSalt( q, fp, uTime );
+	if ( foot > 0.0 ) g = mix( g, coreSalt( qn, fn, uTime ), foot );
+	float drift = uTime * GRAIN_DRIFT;
+	float v = g.x + MOTTLE * ( 0.65 * coreNoise( q / MOTTLE_WAVE + vec3( drift, 0.0, - drift ), 73u ) + 0.35 * coreNoise( q / ( 0.45 * MOTTLE_WAVE ) - vec3( 0.0, drift, 0.0 ), 79u ) );
+	float w = g.y;
 
 	// Quieter across the band, which picture 9 has smooth.
-	float quiet = 1.0 - GRAIN_BAND * smoothstep( 0.84, 0.935, rr );
+	float quiet = 1.0 - GRAIN_BAND * smoothstep( 0.84, 0.935, rb );
 	v = clamp( GRAIN_GAIN * v * quiet, - 3.0, 3.0 );
 	w = clamp( GRAIN_WARM * w * quiet, - 3.0, 3.0 );
-	vec3 tint = 1.0 + abs( v ) * ( v > 0.0 ? uBright : uDim ) + abs( w ) * ( w > 0.0 ? uWarm : uGrainPale );
-	vec3 col = coreBand( rr, bandPx ) * max( tint, vec3( 0.0 ) );
-	col *= 1.0 + BAND_LIFT * ( 1.0 - smoothstep( 0.6, 0.95, px * uR ) ) * smoothstep( BAND_AT.x, BAND_AT.y, rr ) * ( 1.0 - smoothstep( BAND_AT.z, BAND_AT.w, rr ) );
-	// A sphere and not a disc: its light falls toward the limb, and its hottest part lies a little up and to the left,
-	// toward the eye's side of it.
-	float mu = sqrt( max( 1.0 - rr * rr, 0.0 ) );
+	vec3 col = coreBand( rb, bandPx ) * coreTint( v, w );
+	col *= 1.0 + BAND_LIFT * ( 1.0 - smoothstep( 0.6, 0.95, px * uR ) ) * smoothstep( BAND_AT.x, BAND_AT.y, rb ) * ( 1.0 - smoothstep( BAND_AT.z, BAND_AT.w, rb ) );
+	// A sphere and not a disc: its light falls smoothly from a hot region a little up and to the left, toward the eye's
+	// side of it, out to the limb over the outer third, and there gives way to the band.
 	vec2 hp = P.xy / uR - HOT_AT;
-	col *= mix( FACE_GAIN * ( 1.0 - LIMB * ( 1.0 - mu ) ) * ( 1.0 + HOT * exp( - dot( hp, hp ) / ( HOT_R * HOT_R ) ) ), 1.0, smoothstep( LIMB_TO.x, LIMB_TO.y, rr ) );
-
-	// The neck of the beam: over the foot the band turns down into it, read on the plane through the ball's middle,
-	// where the neck below the ball is drawn, so the two are one.
-	vec3 Q = ro + rd * ( - ro.z / ( abs( rd.z ) > 1e-4 ? rd.z : - 1e-4 ) );
-	float d = - uR - Q.y, ra = rootAmount( Q.x, d );
-	col = mix( col * uLevel, rootColor( ra ).rgb, smoothstep( ROOT_OVER.x, ROOT_OVER.y, ra ) );
+	col *= coreFall( rb ) * mix( 1.0 + HOT * exp( - dot( hp, hp ) / ( HOT_R * HOT_R ) ), 1.0, smoothstep( LIMB_TO.x, LIMB_TO.y, rb ) ) * uLevel;
 
 	gl_FragColor = vec4( coreUnbalance( col * cover ) / max( cover, 1e-3 ), cover );
 }`;

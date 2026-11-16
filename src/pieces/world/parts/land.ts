@@ -3,7 +3,7 @@ import { color, lit } from '../light';
 import { load, mesh } from '../files';
 import type { PartFactory } from '../part';
 import { TOWERS } from '../placed';
-import { DUNES, ROW, crestTexels } from './land/field';
+import { DUNES, GLSL, HEIGHT, MAP, ROW, crestTexels } from './land/field';
 import * as S from './land/shaders';
 
 // The land: the top of the planet that the city, the trees, the pyramid and the spire stand on, and the desert with
@@ -61,12 +61,36 @@ function floats(data: Float32Array, wide: number, tall: number): THREE.DataTextu
   return t;
 }
 
-export const build: PartFactory = async ({ query }) => {
+// The sand's height over the dome on the grid HEIGHT, drawn once on the graphics card from the same dune field as
+// everything else, for the ray to the moon to read in one look a step in place of working every dune out again.
+function heights(renderer: THREE.WebGLRenderer, mapA: THREE.Texture, crest: THREE.Texture): THREE.WebGLRenderTarget {
+  const target = new THREE.WebGLRenderTarget(HEIGHT.texels[0], HEIGHT.texels[1], { type: THREE.HalfFloatType, format: THREE.RedFormat, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, depthBuffer: false, generateMipmaps: false });
+  const f = (v: number): string => v.toFixed(4);
+  const material = new THREE.ShaderMaterial({
+    uniforms: { uMapA: { value: mapA }, uCrest: { value: crest } },
+    vertexShader: 'varying vec2 vAt;\nvoid main() { vAt = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+    fragmentShader: `uniform sampler2D uMapA;\nvarying vec2 vAt;\n${GLSL}\nvoid main() {\n\tvec2 p = vec2(${f(HEIGHT.lo[0])}, ${f(HEIGHT.lo[1])}) + vAt * vec2(${f(HEIGHT.size[0])}, ${f(HEIGHT.size[1])});\n\tvec3 A = texture2D(uMapA, (p - ${f(MAP.lo)}) / ${f(MAP.size)}).rgb;\n\tgl_FragColor = vec4(A.g * landRelief(p, A.b * 64.0), 0.0, 0.0, 1.0);\n}`,
+    depthTest: false, depthWrite: false, toneMapped: false,
+  });
+  const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material), scene = new THREE.Scene();
+  quad.frustumCulled = false;
+  scene.add(quad);
+  const was = renderer.getRenderTarget();
+  renderer.setRenderTarget(target);
+  renderer.render(scene, new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1));
+  renderer.setRenderTarget(was);
+  quad.geometry.dispose();
+  material.dispose();
+  return target;
+}
+
+export const build: PartFactory = async ({ query, renderer }) => {
   if (query.get('landdebug') === 'off') return { group: new THREE.Group() };
   const [file, a, b, lots, light] = await Promise.all([load('land.bin'), picture('land-a.png', false), picture('land-b.png', false), picture('land-lots.png', true), picture('land-light.png', false)]);
   const ground = file.meshes.get('ground');
   if (!ground) throw new Error('land.bin holds no ground: make it again with scripts/world/parts/land/make.mjs');
   const crest = floats(crestTexels(), ROW, DUNES.length);
+  const high = heights(renderer, a, crest);
   const towers = new Float32Array(TOWERS.length * 8);
   TOWERS.forEach(([x, z, w, d, tall, turn], i) => {
     const r = (turn * Math.PI) / 180;
@@ -84,7 +108,7 @@ export const build: PartFactory = async ({ query }) => {
   m.onBeforeCompile = (sh: Shader) => {
     Object.assign(sh.uniforms, {
       uAt: { value: ground.at }, uSize: { value: ground.size },
-      uMapA: { value: a }, uMapB: { value: b }, uLight: { value: light }, uLots: { value: lots }, uTowers: { value: lots3 }, uCrest: { value: crest },
+      uMapA: { value: a }, uMapB: { value: b }, uLight: { value: light }, uLots: { value: lots }, uTowers: { value: lots3 }, uCrest: { value: crest }, uHeight: { value: high.texture },
       uSand: { value: LOOK.sand }, uSandRim: { value: LOOK.sandRim }, uBare: { value: LOOK.bare }, uSandDeep: { value: LOOK.sandDeep }, uPave: { value: LOOK.pave }, uPavePale: { value: LOOK.pavePale }, uCourt: { value: LOOK.court },
       uGrass: { value: LOOK.grass }, uGrassDry: { value: LOOK.grassDry }, uGrassDeep: { value: LOOK.grassDeep }, uEarth: { value: LOOK.earth }, uStone: { value: LOOK.stone }, uBronze: { value: LOOK.bronze },
     });
@@ -110,6 +134,6 @@ export const build: PartFactory = async ({ query }) => {
     group,
     // ?landat=x,y,z,r frames the land alone on any place of it, for judging one place close.
     alone: (() => { const [x, y, z, r] = (query.get('landat') ?? '0,0,120,560').split(',').map(Number); return { at: [x, y, z] as [number, number, number], r }; })(),
-    dispose() { ground.geometry.dispose(); m.dispose(); for (const t of [a, b, lots, light, crest, lots3]) t.dispose(); },
+    dispose() { ground.geometry.dispose(); m.dispose(); for (const t of [a, b, lots, light, crest, lots3]) t.dispose(); high.dispose(); },
   };
 };

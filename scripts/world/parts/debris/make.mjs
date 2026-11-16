@@ -169,7 +169,7 @@ const table = pieces.map((p) => [
   p.model, ...p.at.map(r3), ...p.quat.map(r3), ...e(p).map(r3), KIND[p.kind], p.family, r3(p.phase), ...p.spin.map(r3), r3(p.core),
   ...(p.cls === 'G' ? [0, 0, 0] : p.bounce.map((v) => r3(storeBounce(v)))),
   r3(p.kind === 'fall' ? p.fast : p.kind === 'ring' ? p.family - 20 : p.kind === 'whirl' ? p.swing : 0), r3(p.shut ?? 0),
-  r3(p.moon), p.kind === 'fall' ? LOOK.shard : p.facet ? LOOK.stone : LOOK.rock,
+  r3(p.moon), p.kind === 'fall' ? LOOK.shard : p.facet ? LOOK.stone : LOOK.rock, r3(Math.max(...extents(p))),
 ]);
 const tris = pieces.reduce((s, p) => s + (p.kind === 'fall' || p.facet ? 8 : models[p.model].indices.length / 3), 0);
 pack(OUT, out, { draft, columns: COLUMNS, pieces: table, placed, triangles: tris });

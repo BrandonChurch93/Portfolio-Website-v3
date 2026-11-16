@@ -11,17 +11,16 @@ export const MAP = { lo: -664, size: 1328 } as const;
 // moon and in full shadow, and the slip face is turned far enough toward the visitor to be seen. Turned any nearer
 // the visitor a slip face would catch the moon, and the backs would turn from the visitor and be lost behind
 // their crests.
-export const WIND = [-0.927, 0.375] as const;
+export const WIND = [-0.99, 0.14] as const;
 
 // A dune's profile: the slope of its slip face (the angle sand rests at), how long its back is against its height,
-// and how round the toe of its slip face is, as a share of the crest's height over it. The back is steepest a third
-// of the way down from the brink, a shoulder that faces the moon squarely, and eases to level at its foot; at that
-// length its steepest is still under the angle sand rests at, and the brink stays a sharp break onto the slip face.
+// and how round the toe of its slip face is, as a share of the crest's height over it. At that length the back's
+// steepest (backOf) is still under the angle sand rests at, and the brink stays a sharp break onto the slip face.
 // He ruled the dunes taller twice (Nov 16, 01:15 and 02:00): "they need to be a lot taller". The tallest stand
 // about 60 units, as tall as a mid sized building, and the dunes are few and great, each climbing the back of the
 // next. A dune cannot be taller against its width than both its sides at the angle sand rests at allow, so it is
 // made wider at the base, and the dunes overlap.
-export const PROFILE = { slip: 0.66, back: 2.15, toe: 0.16 } as const;
+export const PROFILE = { slip: 0.66, back: 2.5, toe: 0.16 } as const;
 // Each dune is a barchan: a crescent, its crest running roughly away from the visitor, its back to the moon at the
 // right and its slip face to the left. Five great ones fill the desert, the first three where picture 9 has its great
 // dark faces (about 1020 to 1080, 1100 to 1165 and 1195 to 1215 across), smaller ones between them, and the last the
@@ -32,14 +31,13 @@ export const PROFILE = { slip: 0.66, back: 2.15, toe: 0.16 } as const;
 // toward it.
 export type Dune = readonly [x: number, z: number, wide: number, tall: number, horn: number, turn: number, lean: number];
 export const DUNES: readonly Dune[] = [
-  [440, 330, 120, 50, 0.6, -4, 0.3],
-  [545, 180, 110, 46, 0.65, 6, -0.2],
-  [585, 5, 75, 30, 0.8, 10, 0.2],
-  [385, 110, 100, 42, 0.7, -8, -0.3],
-  [485, -60, 85, 35, 0.75, 4, 0.25],
-  [330, 285, 55, 22, 1.0, 10, 0.2],
-  [470, 235, 45, 18, 1.1, -6, -0.3],
-  [490, -345, 100, 54, 0.5, 40, 0.15],
+  [440, 320, 155, 52, 0.55, -4, 0.3],
+  [380, 60, 125, 40, 0.6, -8, -0.3],
+  [522, 175, 140, 46, 0.6, 6, -0.2],
+  [590, -40, 95, 30, 0.7, 10, 0.2],
+  [505, -80, 110, 36, 0.65, 4, 0.25],
+  [318, 300, 70, 22, 0.9, 10, 0.2],
+  [490, -345, 120, 56, 0.45, 40, 0.15],
 ];
 // How each crest wanders: a wave along it, as a share of its half width, and how many times it crosses it.
 export const WANDER = [0.07, 3.4] as const;
@@ -73,9 +71,9 @@ function crestAt(cr: Crest, u: number): [number, number, number, number] {
 // gentler under the last low reach of a horn, where a slip face a fraction of a unit high was seen edge on as a row
 // of dark specks.
 export const slipUnder = (h: number): number => { const t = Math.min(1, Math.max(0, (h - 0.5) / 2)); return PROFILE.slip * (0.35 + 0.65 * t * t * (3 - 2 * t)); };
-// The slip face at a place: sand resting at its angle from the nearest point of the crest, found first among a few
-// places along it and then exactly. Its height, and the point of the crest, -1 to 1.
-function lee(cr: Crest, A: number, D: number): [number, number] {
+// The nearest point of the crest to a place, found first among a few places along it and then exactly: the point,
+// -1 to 1, how far off it the place is, and which side of it, 1 downwind (the slip face) and -1 upwind (the back).
+function nearest(cr: Crest, A: number, D: number): [number, number, number] {
   const W = cr.wide;
   let bu = -1, bd = Infinity;
   for (let k = 0; k < SEEK; k++) { const u = -1 + (2 * k) / (SEEK - 1), [d] = crestAt(cr, u), r = (A - u * W) ** 2 + (D - d) ** 2; if (r < bd) { bd = r; bu = u; } }
@@ -83,31 +81,40 @@ function lee(cr: Crest, A: number, D: number): [number, number] {
     const [d, d1, d2] = crestAt(cr, bu), ex = bu * W - A, ez = d - D, g = ex * W + ez * d1, g2 = W * W + d1 * d1 + ez * d2;
     bu = Math.max(-1, Math.min(1, bu - g / Math.max(g2, 1e-6)));
   }
-  const [d, , , h] = crestAt(cr, bu);
-  return [h - slipUnder(h) * Math.hypot(A - bu * W, D - d), bu];
+  const [d, d1] = crestAt(cr, bu), ex = A - bu * W, ez = D - d;
+  return [bu, Math.hypot(ex, ez), ez * W - ex * d1 > 0 ? 1 : -1];
 }
-// A back's height at t, 0 at the brink to 1 at its foot, as a share of the crest's: it leaves the brink at three
-// quarters of its steepest, is steepest a third of the way down, and meets the sand round it level.
-export const backOf = (t: number): number => (1 - t) * (1 - t) * (1 + t);
-// One dune's height at a place: its back on the side the wind comes from, rising to the brink, and on the other side
-// its slip face, as a smooth toe into the sand round it.
+// A back's height at t, 0 at the brink to 1 at its foot, as a share of the crest's: a broad convex shoulder that
+// leaves the brink gently, is steepest a little short of half way down, where it faces the moon most squarely, and
+// meets the sand round it level.
+export const SHOULDER = 1.6;
+export const backOf = (t: number): number => (1 - t) * (1 - t) * (1 + SHOULDER * t);
+// What one point of the crest, u, makes of a place: upwind its back, falling from the brink with the distance from
+// that point, and downwind its slip face, sand resting at its angle square to the crest there, after as much of a
+// back's fall as the place lies along the crest from that point. The two meet on the line square to the crest, so no
+// place jumps from one to the other. And how far toward the slip face the place is, 0 to 1, for its toe.
+// How fast the crest's height changes along it at u, per unit along it.
+function rise(cr: Crest, u: number, d1: number): number {
+  const f = 1 - u * u, L = 0.2 * cr.lean;
+  return (cr.tall * (-4 * u * f * (1 + L * u) + f * f * L)) / Math.hypot(cr.wide, d1);
+}
+// One dune's height at a place, from the nearest point of its crest: upwind its back, falling from the brink, and
+// downwind its slip face, sand resting at its angle, as a smooth toe into the sand round it. Where the crest falls
+// toward a horn, the sand beside it is held up by the higher crest along from it, so that it falls no more steeply
+// than sand can stand: the distance from the crest is shortened by as much (worked out exactly for a straight crest
+// rising evenly, which near its nearest point a crest is).
 export function oneDune(cr: Crest, x: number, z: number): number {
-  const rx = x - cr.at[0], rz = z - cr.at[1], [wx, wz] = cr.wind, A = -rx * wz + rz * wx, D = rx * wx + rz * wz, u = A / cr.wide;
-  if (Math.abs(u) < 1) {
-    const [d, d1, , h] = crestAt(cr, u);
-    if (D < d) {
-      const t = (d - D) / Math.sqrt(1 + (d1 / cr.wide) ** 2) / (PROFILE.back * Math.max(h, 1e-3));
-      return t < 1 ? h * backOf(t) : 0;
-    }
-  }
-  const [e, bu] = lee(cr, A, D), k = Math.max(0.2, PROFILE.toe * crestAt(cr, bu)[3]), g = Math.max(k - Math.abs(e), 0) / k;
-  return Math.max(e, 0) + g * g * k * 0.25;
+  const rx = x - cr.at[0], rz = z - cr.at[1], [wx, wz] = cr.wind, A = -rx * wz + rz * wx, D = rx * wx + rz * wz;
+  const [bu, r, side] = nearest(cr, A, D), [, d1, , h] = crestAt(cr, bu), g = rise(cr, bu, d1);
+  if (side < 0) { const m = 1.4 / PROFILE.back, t = (r * Math.sqrt(1 - Math.min(0.8, (g * g) / (m * m)))) / (PROFILE.back * Math.max(h, 1e-3)); return t < 1 ? h * backOf(t) : 0; }
+  const s = slipUnder(h), e = h - r * Math.sqrt(s * s - Math.min(0.8 * s * s, g * g)), k = Math.max(0.2, PROFILE.toe * h), q = Math.max(k - Math.abs(e), 0) / k;
+  return Math.max(e, 0) + q * q * k * 0.25;
 }
 
 // A slow swell under the dunes, so the sand between them rolls and is never level.
 export const swell = (x: number, z: number): number => 3.2 * Math.sin(x * 0.017 + z * 0.011 + 1.3) * Math.sin(z * 0.021 - x * 0.007 + 0.4) + 1.3 * Math.sin(x * 0.043 - z * 0.029 + 2.1) * Math.sin(z * 0.047 + x * 0.015);
 // The sand rolls over to the planet's own surface at the land's edge, over this many units in from it.
-export const ROLL = 18;
+export const ROLL = 34;
 export const roll = (inside: number): number => { const t = Math.min(1, Math.max(0, inside / ROLL)); return t * t * (3 - 2 * t); };
 
 let made: Crest[] | null = null;
@@ -122,6 +129,11 @@ export function relief(x: number, z: number, inside = 1e9): number {
   }
   return (up + swell(x, z)) * roll(inside);
 }
+
+// The sand's height over the dome on a grid over the desert, worked out once on the graphics card when the land is
+// built (heights in land.ts) and read by the ray to the moon, which crosses many dunes: where the grid lies (x,
+// z), how far it reaches, how many texels it has each way, and the most the sand stands over the dome.
+export const HEIGHT = { lo: [236, -484], size: [430, 1024], texels: [512, 1216], most: 64 } as const;
 
 // The crests as a float texture for the shader, a row for each dune: (x, z, wind), (wide, tall, horn, lean),
 // (phase, reach, 0, 0).
@@ -174,7 +186,7 @@ export const GLSL = /* glsl */ `
 uniform sampler2D uCrest;
 const vec2 WIND = vec2(${WIND[0].toFixed(4)}, ${WIND[1].toFixed(4)});
 const float SLIP = ${PROFILE.slip.toFixed(4)}, BACK = ${PROFILE.back.toFixed(4)}, TOE = ${PROFILE.toe.toFixed(4)};
-float landBack(float t) { return (1.0 - t) * (1.0 - t) * (1.0 + t); }
+float landBack(float t) { return (1.0 - t) * (1.0 - t) * (1.0 + ${SHOULDER.toFixed(4)} * t); }
 // The crest at u: (how far downwind, its first and second rates with u, how tall).
 vec4 landCrest(vec4 b, vec4 c, float u) {
 	float au = abs(u), sg = u < 0.0 ? -1.0 : 1.0, W = b.x, k = b.z * W, L = 0.3 * b.w, tilt = 1.0 + L * u;
@@ -188,9 +200,9 @@ vec4 landCrest(vec4 b, vec4 c, float u) {
 		k * (g2 * tilt + 2.0 * L * g1) - kw * ${(WANDER[1] * WANDER[1]).toFixed(4)} * sin(ph),
 		b.y * f * f * (1.0 + 0.2 * b.w * u));
 }
-// The slip face at q (across, downwind): sand resting at its angle from the nearest point of the crest. Its height,
-// and the point of the crest, -1 to 1.
-vec2 landLee(vec4 b, vec4 c, vec2 q) {
+// The nearest point of the crest to q (across, downwind): (the point, -1 to 1, how far off it, which side: 1 on the
+// slip face, -1 on the back).
+vec3 landNear(vec4 b, vec4 c, vec2 q) {
 	float W = b.x, bu = -1.0, bd = 1e20;
 	for (int k = 0; k < ${SEEK}; k++) { float u = -1.0 + 2.0 * float(k) / ${(SEEK - 1).toFixed(1)}; vec4 l = landCrest(b, c, u); vec2 e = vec2(u * W, l.x) - q; float r = dot(e, e); if (r < bd) { bd = r; bu = u; } }
 	for (int it = 0; it < 5; it++) {
@@ -200,26 +212,29 @@ vec2 landLee(vec4 b, vec4 c, vec2 q) {
 		bu = clamp(bu - g / max(g2, 1e-6), -1.0, 1.0);
 	}
 	vec4 l = landCrest(b, c, bu);
-	return vec2(l.w - SLIP * (0.35 + 0.65 * smoothstep(0.5, 2.5, l.w)) * length(q - vec2(bu * W, l.x)), bu);
+	vec2 e = q - vec2(bu * W, l.x);
+	return vec3(bu, length(e), e.y * W - e.x * l.y > 0.0 ? 1.0 : -1.0);
 }
+// How fast the crest's height changes along it at u, per unit along it.
+float landRise(vec4 b, float u, float d1) { float f = 1.0 - u * u, L = 0.2 * b.w; return b.y * (-4.0 * u * f * (1.0 + L * u) + f * f * L) / length(vec2(b.x, d1)); }
 // One dune at p: (its height, which side of the crest the place is, 1 on the slip face, the point of the crest
-// across it, -1 to 1, and how far down the slip face from the crest the place is, in units).
+// nearest it, -1 to 1, and on the slip face how far down it from the crest the place is in units, on the back how
+// far down it as a share of its length).
 vec4 landDuneAt(vec2 p, int d) {
 	vec4 a = texelFetch(uCrest, ivec2(0, d), 0), b = texelFetch(uCrest, ivec2(1, d), 0), c = texelFetch(uCrest, ivec2(2, d), 0);
 	vec2 r = p - a.xy;
 	if (dot(r, r) > c.y * c.y) return vec4(0.0, 0.0, 0.0, 1e3);
-	float A = -r.x * a.w + r.y * a.z, D = r.x * a.z + r.y * a.w, u = A / b.x;
-	if (abs(u) < 1.0) {
-		vec4 l = landCrest(b, c, u);
-		if (D < l.x) {
-			float t = (l.x - D) / sqrt(1.0 + (l.y / b.x) * (l.y / b.x)) / (BACK * max(l.w, 1e-3));
-			return vec4(t < 1.0 ? l.w * landBack(t) : 0.0, 0.0, u, t);
-		}
+	vec3 n = landNear(b, c, vec2(-r.x * a.w + r.y * a.z, r.x * a.z + r.y * a.w));
+	vec4 l = landCrest(b, c, n.x);
+	float h = l.w, g = landRise(b, n.x, l.y);
+	if (n.z < 0.0) {
+		const float M = ${(1.4 / PROFILE.back).toFixed(4)};
+		float t = n.y * sqrt(1.0 - min(0.8, g * g / (M * M))) / (BACK * max(h, 1e-3));
+		return vec4(t < 1.0 ? h * landBack(t) : 0.0, 0.0, n.x, t);
 	}
-	vec2 e = landLee(b, c, vec2(A, D));
-	vec4 l = landCrest(b, c, e.y);
-	float k = max(0.2, TOE * l.w), g = max(k - abs(e.x), 0.0) / k;
-	return vec4(max(e.x, 0.0) + g * g * k * 0.25, 1.0, e.y, (l.w - e.x) / (SLIP * (0.35 + 0.65 * smoothstep(0.5, 2.5, l.w))));
+	float s = SLIP * (0.35 + 0.65 * smoothstep(0.5, 2.5, h)), e = h - n.y * sqrt(s * s - min(0.8 * s * s, g * g));
+	float k = max(0.2, TOE * h), q = max(k - abs(e), 0.0) / k;
+	return vec4(max(e, 0.0) + q * q * k * 0.25, 1.0, n.x, n.y);
 }
 float landSwell(vec2 p) { return 3.2 * sin(p.x * 0.017 + p.y * 0.011 + 1.3) * sin(p.y * 0.021 - p.x * 0.007 + 0.4) + 1.3 * sin(p.x * 0.043 - p.y * 0.029 + 2.1) * sin(p.y * 0.047 + p.x * 0.015); }
 float landRoll(float inside) { return smoothstep(0.0, ${ROLL.toFixed(1)}, inside); }

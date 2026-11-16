@@ -58,7 +58,7 @@ export function tornAt(side, py) {
 
 // The two sides that survive, each as the part of the surface between the line it is torn along and a little past
 // where it turns from the visitor (out, in degrees round from straight in front).
-export const SIDES = { left: { sign: -1, out: -93 }, right: { sign: 1, out: 93 } };
+export const SIDES = { left: { sign: -1, out: -97 }, right: { sign: 1, out: 97 } };
 
 // The line the skin ends along. The rock's torn line (TORN) is a sawtooth of even notches, and a crust that followed
 // it drew an even stepped ribbon: the skin is taken out to the sawtooth's outer points (how far each way it looks, and

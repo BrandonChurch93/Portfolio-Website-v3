@@ -1,64 +1,36 @@
 import * as THREE from 'three';
-import { MOONWARD, PYRAMID, ground, within } from '../../layout';
+import { MOONWARD, PYRAMID } from '../../layout';
+import { mesh as place, type Loaded } from '../../files';
 import { FORM } from './form';
 
 // The shade the pyramid lays on the ground under and round it, drawn over whatever is there (the land, its court)
 // as a multiply: the angle where the foot course meets the ground, shut in, and its shadow from the moon, which
 // falls toward the visitor and to the left. The stage's shadow map lays that shadow as well, but at the map's size it
 // is a thin line behind the trees; here it is worked out exactly from the pyramid's own planes, soft by how far it
-// falls, as the moon's disc makes it. It is a sheet over the ground made at load, in the world's units.
+// falls, as the moon's disc makes it. It is drawn on a sheet over the ground made ahead by make.mjs (FORM.shade).
 
 export const SHADE = {
-  // How far round the foot course the sheet reaches, how far along the shadow, as a share of its length, and how
-  // far apart its points are.
-  reach: 14, along: 0.55, cell: 2.5,
-  // How high over the plan's ground it lies.
-  lift: 0.5,
   // The contact shade: how dark at the foot and how far it runs, near and far.
-  contact: [0.55, 2.4, 0.18, 9],
+  contact: [0.6, 3.2, 0.24, 12],
   // The moon's shadow: how dark, and how soft its edge is near the foot and for each unit it falls.
   shadow: { dark: 0.42, soft: 0.5, per: 0.014 },
 } as const;
 
-export function shade(at: THREE.Vector3, basis: THREE.Matrix4): { mesh: THREE.Mesh; dispose(): void } {
+export function shade(sheet: Loaded, at: THREE.Vector3, basis: THREE.Matrix4): { mesh: THREE.Mesh; dispose(): void } {
   const half = PYRAMID.base / 2, tall = PYRAMID.tall, out = half + FORM.foot.proud;
   const inv = basis.clone().transpose();
   const moon = new THREE.Vector3(...MOONWARD).normalize().applyMatrix4(inv);
-  const fall = new THREE.Vector2(-moon.x, -moon.z).normalize().multiplyScalar((tall * Math.hypot(moon.x, moon.z)) / Math.max(moon.y, 0.05));
-  const ax = new THREE.Vector3().setFromMatrixColumn(basis, 0), az = new THREE.Vector3().setFromMatrixColumn(basis, 2);
-
-  // The sheet covers the foot and the shadow's first stretch, in the pyramid's own across and along.
-  const r = out + SHADE.reach, sx = fall.x * SHADE.along, sz = fall.y * SHADE.along;
-  const x0 = Math.min(-r, -r + sx), x1 = Math.max(r, r + sx), z0 = Math.min(-r, -r + sz), z1 = Math.max(r, r + sz);
-  const nx = Math.ceil((x1 - x0) / SHADE.cell), nz = Math.ceil((z1 - z0) / SHADE.cell);
-  const pos: number[] = [], idx: number[] = [], keep: boolean[] = [];
-  const p = new THREE.Vector3();
-  for (let j = 0; j <= nz; j++) for (let i = 0; i <= nx; i++) {
-    const lx = x0 + i * SHADE.cell, lz = z0 + j * SHADE.cell;
-    p.copy(at).addScaledVector(ax, lx).addScaledVector(az, lz);
-    pos.push(p.x, ground(p.x, p.z) + SHADE.lift, p.z);
-    keep.push(within(p.x, p.z) > -2);
-  }
-  const inside = (i: number, j: number): boolean => Math.abs(x0 + i * SHADE.cell) < out - 3 && Math.abs(z0 + j * SHADE.cell) < out - 3;
-  for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) {
-    const a = j * (nx + 1) + i, b = a + 1, d = a + nx + 1, e = d + 1;
-    if (!keep[a] || !keep[b] || !keep[d] || !keep[e]) continue;
-    if (inside(i, j) && inside(i + 1, j + 1)) continue;
-    idx.push(a, d, b, b, d, e);
-  }
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  geometry.setIndex(idx);
-
   const toLocal = new THREE.Matrix4().makeTranslation(-at.x, -at.y, -at.z).premultiply(inv);
   const f = (v: number): string => v.toFixed(5);
   const material = new THREE.ShaderMaterial({
-    uniforms: { uLocal: { value: toLocal } },
+    uniforms: { uLocal: { value: toLocal }, uAt: { value: sheet.at }, uSize: { value: sheet.size } },
     vertexShader: `
 uniform mat4 uLocal;
+uniform vec3 uAt;
+uniform float uSize;
 varying vec3 vL;
 void main() {
-	vL = ( uLocal * vec4( position, 1.0 ) ).xyz;
+	vL = ( uLocal * vec4( uAt + position * uSize, 1.0 ) ).xyz;
 	gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
 }`,
     fragmentShader: `
@@ -98,7 +70,6 @@ void main() {
     polygonOffsetFactor: -2,
     polygonOffsetUnits: -2,
   });
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.frustumCulled = false;
-  return { mesh, dispose() { geometry.dispose(); material.dispose(); } };
+  const mesh = place(sheet, material);
+  return { mesh, dispose() { material.dispose(); } };
 }

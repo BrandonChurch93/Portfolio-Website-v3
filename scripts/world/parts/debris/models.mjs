@@ -18,16 +18,16 @@ const FIELD = fileURLToPath(new URL('./field.mjs', import.meta.url)), TORN = fil
 // where the torn method's cracks are as wide, against the piece, as a great piece's. The dust is a broken block
 // (./field.mjs).
 export const SHARED = {
-  L: { count: 5, torn: true, size: [[52, 32, 40], [60, 24, 36], [44, 38, 40], [56, 30, 34], [48, 26, 44]], blocks: [3, 2, 3, 2, 3], drop: [1, 0, 0, 1, 0], rubble: [4, 2, 3, 2, 3], scars: [1, 1, 2, 1, 1], chips: [26, 22, 28, 24, 22], steps: [1, 1, 2, 1, 1], cell: 0.6, keep: 640 },
-  M: { count: 5, torn: true, size: [[48, 32, 40], [56, 24, 36], [40, 36, 40], [52, 32, 32], [44, 20, 40]], blocks: [2, 1, 2, 1, 2], drop: [0, 0, 0, 0, 0], rubble: [0, 0, 0, 0, 0], scars: [1, 0, 1, 0, 1], chips: [8, 7, 9, 7, 8], steps: [1, 1, 0, 1, 1], cell: 0.9, keep: 150 },
-  S: { count: 5, torn: true, size: [[48, 32, 40], [56, 24, 36], [40, 36, 40], [52, 32, 32], [44, 20, 40]], blocks: [1, 1, 1, 1, 1], drop: [0, 0, 0, 0, 0], rubble: [0, 0, 0, 0, 0], scars: [0, 0, 0, 0, 0], chips: [3, 2, 3, 2, 3], steps: [0, 0, 0, 0, 0], cell: 1.4, keep: 44 },
+  L: { count: 5, torn: true, size: [[52, 32, 40], [60, 24, 36], [44, 38, 40], [56, 30, 34], [48, 26, 44]], blocks: [3, 2, 3, 2, 3], drop: [1, 0, 0, 1, 0], rubble: [4, 2, 3, 2, 3], scars: [1, 1, 2, 1, 1], chips: [10, 8, 11, 9, 8], steps: [1, 1, 1, 1, 1], cell: 0.6, keep: 640, facets: 4 },
+  M: { count: 5, torn: true, size: [[48, 32, 40], [56, 24, 36], [40, 36, 40], [52, 32, 32], [44, 20, 40]], blocks: [2, 1, 2, 1, 2], drop: [0, 0, 0, 0, 0], rubble: [0, 0, 0, 0, 0], scars: [1, 0, 1, 0, 1], chips: [3, 3, 4, 3, 3], steps: [0, 0, 0, 0, 0], cell: 0.9, keep: 150, facets: 2 },
+  S: { count: 5, torn: true, size: [[48, 32, 40], [56, 24, 36], [40, 36, 40], [52, 32, 32], [44, 20, 40]], blocks: [1, 1, 1, 1, 1], drop: [0, 0, 0, 0, 0], rubble: [0, 0, 0, 0, 0], scars: [0, 0, 0, 0, 0], chips: [1, 1, 1, 1, 1], steps: [0, 0, 0, 0, 0], cell: 1.4, keep: 44, facets: 1 },
   D: { count: 4, torn: false, size: [[12, 8, 10], [14, 6, 9], [10, 9, 10], [13, 7, 8]], beds: [1, 1, 1, 1], sides: [4, 5, 5, 4], corners: [2, 3, 2, 3], chips: [0, 0, 0, 0], steps: [0, 0, 0, 0], cell: 0.8, keep: 16 },
 };
 // A great piece: its cell, as a share of its size and at least, how many triangles it keeps (so many for each unit
 // of its size, between the least and the most, and a boulder of the picture's the most), how far the reduced mesh may
 // stray, as a share of its size (past the count it keeps: the count is what binds), and which carry the
 // planet's outer surface.
-export const GREAT = { cell: [0.0085, 0.6], keep: [85, 7000, 14500], stray: 0.015, skin: { 1: { R: 5, pits: 1 }, 3: { R: 5.5, pits: 0 } } };
+export const GREAT = { cell: [0.0085, 0.6], keep: [85, 5500, 14500], stray: 0.015, skin: { 1: { R: 5, pits: 1 }, 3: { R: 5.5, pits: 0 } } };
 // Picture 9's two boulders, each to the picture's own form, in the piece's own frame (x across the screen, y up, z
 // toward the visitor), in units: the planes of the mass ([nx, ny, nz, h]), its half extents, its beds, how many
 // blocks it splits into, and the way along which its edges are broken hardest. Read off ruled enlargements of the
@@ -52,19 +52,19 @@ const wedge = () => {
 // left, its right end broken off blunt and its left end tapered.
 const A = axis(0.81, 0.58, 0), W = axis(-0.58, 0.81, 0), Z = [0, 0, 1];
 const shard = () => [
-  through(axis(...along(W, Z, 1, 0.75)), along(W, Z, 31, 6)),
-  through(axis(...along(W, Z, 1, -0.6)), along(W, Z, 31, 6)),
-  through(axis(...along(W, Z, -1, 0.12)), along(W, Z, -28, 0)),
-  through(axis(...along(Z, W, 1, 0.15)), [0, 0, 30]),
-  through(axis(...along(Z, W, -1, -0.1)), [0, 0, -34]),
-  through(axis(...along(A, Z, 1, 0.3).map((v, k) => v - 0.2 * W[k])), along(A, Z, 70, 0)),
-  through(axis(...along(A, W, -1, 0.7)), along(A, W, -60, 0)),
-  through(axis(...along(A, W, -1, -0.5).map((v, k) => v + 0.3 * Z[k])), along(A, W, -66, 0)),
-  through(axis(...along(W, A, 0.6, 0.6).map((v, k) => v + 0.5 * Z[k])), along(W, A, 24, 44)),
+  through(axis(...along(W, Z, 1, 0.75)), along(W, Z, 37, 6)),
+  through(axis(...along(W, Z, 1, -0.6)), along(W, Z, 37, 6)),
+  through(axis(...along(W, Z, -1, 0.12)), along(W, Z, -33, 0)),
+  through(axis(...along(Z, W, 1, 0.15)), [0, 0, 32]),
+  through(axis(...along(Z, W, -1, -0.1)), [0, 0, -36]),
+  through(axis(...along(A, Z, 1, 0.3).map((v, k) => v - 0.2 * W[k])), along(A, Z, 86, 0)),
+  through(axis(...along(A, W, -1, 0.7)), along(A, W, -74, 0)),
+  through(axis(...along(A, W, -1, -0.5).map((v, k) => v + 0.3 * Z[k])), along(A, W, -80, 0)),
+  through(axis(...along(W, A, 0.6, 0.6).map((v, k) => v + 0.5 * Z[k])), along(W, A, 29, 54)),
 ];
 export const BOULDERS = {
-  9: { form: { planes: wedge() }, size: [70, 62, 48], layer: [0.85, 0.53, 0], blocks: 2, drop: 0, rubble: 10, scars: 3, chips: 190, steps: 2, strata: 0.006, ridge: null },
-  10: { form: { planes: shard() }, size: [72, 38, 36], layer: axis(-0.3, 0.2, 1), blocks: 3, drop: 0, rubble: 8, scars: 2, chips: 220, steps: 2, strata: 0.004, ridge: W },
+  9: { form: { planes: wedge() }, size: [70, 62, 48], layer: [0.08, -0.12, 1], blocks: 2, drop: 0, rubble: 10, scars: 3, chips: 90, steps: 2, strata: 0, ridge: null },
+  10: { form: { planes: shard() }, size: [88, 45, 40], layer: axis(-0.3, 0.2, 1), blocks: 3, drop: 0, rubble: 8, scars: 2, chips: 110, steps: 2, strata: 0, ridge: W },
 };
 // How far round an edge is looked at for how bent it is, as a share of the model's size, and how bent is the most
 // that is stored.
@@ -80,7 +80,7 @@ async function one(args, cell, keep, draft, torn = false, stray = null) {
   const small = await simplify(raw, { target: draft ? Math.round(keep * 0.6) : keep, error: big * (stray ?? 0.2), strict: false });
   const welded = { positions: small.positions, indices: small.indices };
   const bend = curvature(welded, big * BEND.reach);
-  const m = creased(welded, torn ? 30 : 32), n = m.positions.length / 3;
+  const m = creased(welded, torn ? 24 : 32), n = m.positions.length / 3;
   const curv = new Float32Array(n), bed = new Float32Array(n), skin = new Float32Array(n);
   for (let i = 0; i < n; i++) {
     const [x, y, z] = [m.positions[i * 3], m.positions[i * 3 + 1], m.positions[i * 3 + 2]];
@@ -99,7 +99,7 @@ export async function makeModels(pieces, draft, said) {
   for (const [cls, spec] of Object.entries(SHARED)) for (let i = 0; i < spec.count; i++) {
     const seed = 1000 * (cls.charCodeAt(0) - 64) + 17 * i + 3, layer = [0.15 * (i % 2 ? 1 : -1), 1, 0.1];
     const args = spec.torn
-      ? { seed, size: spec.size[i], layer, blocks: spec.blocks[i], drop: spec.drop[i], rubble: spec.rubble[i], scars: spec.scars[i], chips: spec.chips[i], steps: spec.steps[i], skin: null, top: false }
+      ? { seed, size: spec.size[i], layer, blocks: spec.blocks[i], drop: spec.drop[i], rubble: spec.rubble[i], scars: spec.scars[i], chips: spec.chips[i], steps: spec.steps[i], facets: spec.facets, skin: null, top: false }
       : { seed, size: spec.size[i], beds: spec.beds[i], layer, sides: spec.sides[i], corners: spec.corners[i], chips: spec.chips[i], steps: spec.steps[i] };
     const m = await one(args, spec.cell, spec.keep, draft, spec.torn);
     // Stored as a cube from -1 to 1, which each piece stretches to its own size: a normal is stretched the other way.
@@ -118,7 +118,7 @@ export async function makeModels(pieces, draft, said) {
     const skin = GREAT.skin[p.family], h = (k) => hash(p.family * 977 + k), size = extents(p), big = Math.max(...size);
     const args = {
       seed: 50000 + p.family * 131, size, layer: [0.3 * (h(1) - 0.5), 1, 0.3 * (h(2) - 0.5)],
-      blocks: 3 + Math.floor(h(3) * 3), drop: Math.floor(h(4) * 2), rubble: 14 + Math.floor(h(5) * 10), scars: 3 + Math.floor(h(6) * 4), chips: Math.round(big * 1.1), steps: 2,
+      blocks: 3 + Math.floor(h(3) * 3), drop: Math.floor(h(4) * 2), rubble: 14 + Math.floor(h(5) * 10), scars: 3 + Math.floor(h(6) * 4), chips: Math.round(big * 0.5), steps: 2,
       skin: skin ? { dir: p.outer, R: skin.R, pits: skin.pits } : null, top: Boolean(p.land),
       ...(BOULDERS[p.family] ?? {}),
     };

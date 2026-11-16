@@ -11,6 +11,7 @@
 // it is, and how many breaks run across it. Every number here was set by eye against picture 9 and the stills.
 import { L } from '../../lib/plan.mjs';
 import { slabMap } from './raster.mjs';
+import { crisp } from './knap.mjs';
 import { see, inside } from './see.mjs';
 import { shellAlong, edgeZ, CORE_PX, J, VIEW, norm, dot } from './relief.mjs';
 
@@ -27,24 +28,24 @@ export const BLOCKS = [
   { name: 'back-right', kind: 'plate', slabs: [56, 35, 36, 27, 41], z: 35, lean: 1.1, thick: 56, breaks: 3 },
   // The great plates each side, further out and nearer the visitor.
   { name: 'right-1', kind: 'plate', slabs: [43, 86, 87], z: 105, lean: 1.15, thick: 62, breaks: 3 },
-  { name: 'right-2', kind: 'plate', slabs: [37, 28, 23], z: 205, lean: 2.0, thick: 48, breaks: 1 },
-  { name: 'left-2', kind: 'plate', slabs: [26], z: 115, lean: 2.0, thick: 52, breaks: 3 },
-  { name: 'left-1', kind: 'plate', slabs: [60, 49, 54, 46, 75, 83, 85], z: 245, lean: 1.4, thick: 66, breaks: 3 },
-  { name: 'left-low', kind: 'plate', slabs: [88, 95, 97, 99], z: 300, lean: 1.5, thick: 58, breaks: 1 },
+  { name: 'right-2', kind: 'plate', slabs: [37, 28, 23], z: 170, lean: 1.0, thick: 48, breaks: 1 },
+  { name: 'left-2', kind: 'plate', slabs: [26], z: 75, lean: 1.2, thick: 52, breaks: 3 },
+  { name: 'left-1', kind: 'plate', slabs: [60, 49, 54, 46, 75, 83, 85], z: 175, lean: 1.3, thick: 66, breaks: 3 },
+  { name: 'left-low', kind: 'plate', slabs: [88, 95, 97, 99], z: 215, lean: 0.95, thick: 58, breaks: 1 },
   // Recesses turned from the core, lit only by what bounces.
-  { name: 'shade-left', kind: 'shade', slabs: [47], z: 120, out: 0.9, thick: 40, breaks: 0 },
+  { name: 'shade-left', kind: 'shade', slabs: [47], z: 0, out: 0.9, thick: 40, breaks: 0 },
   { name: 'shade-right', kind: 'shade', slabs: [22], z: 120, out: 0.9, thick: 40, breaks: 0 },
   // The floor: one shelf under the core, its front face turned up to it.
   { name: 'floor', kind: 'floor', slabs: [84, 81, 70, 96, 98, 93], cut: 'lane', z: 225, up: 0.9, lean: 0.35, thick: 70, breaks: 2 },
   // Behind the stream the shelf is set back, so the stream falls in front of its lit lip.
   { name: 'floor-back', kind: 'floor', slabs: [84, 81, 70, 96, 98, 93], only: 'lane', z: 112, up: 0.8, lean: 0.4, thick: 60, breaks: 1 },
-  { name: 'floor-left', kind: 'shade', slabs: [68], z: 190, out: 0.5, up: 0.3, thick: 50, breaks: 1 },
+  { name: 'floor-left', kind: 'shade', slabs: [68], z: 115, out: 0.5, up: 0.3, thick: 50, breaks: 1 },
   { name: 'right-low', kind: 'frame', slabs: [53, 73, 80, 78], z: 300, out: -0.2, down: 0.15, thick: 90, breaks: 2 },
   // The roof: the land's broken lip, its top turned up to the moon; a dark lid of great slabs hanging under it in
   // front of the core; and lit pieces hanging behind the lid's lower edge, turned to the core. z is how far behind
   // the land's front edge the face is.
-  { name: 'lip', kind: 'roof', slabs: [0, 2, 4, 7, 20, 10, 19, 31, 24], back: -10, up: 1.6, turn: [0.6, 0, 0], thick: 40, breaks: 2 },
-  { name: 'lid-left', kind: 'roof', slabs: [21, 30, 14, 29], back: 14, down: 0.42, thick: 120, breaks: 1 },
+  { name: 'lip', kind: 'roof', slabs: [0, 2, 4, 7, 20, 10, 19, 31, 24], back: -22, up: 1.0, turn: [0.9, 0, 0], thick: 60, breaks: 2 },
+  { name: 'lid-left', kind: 'roof', slabs: [21, 30, 14, 29], back: -16, up: 0.5, turn: [0.9, 0, 0], thick: 110, breaks: 1 },
   { name: 'lid-mid', kind: 'roof', slabs: [8, 5, 15], back: 12, down: 0.48, thick: 120, breaks: 1 },
   { name: 'lid-right', kind: 'roof', slabs: [3], back: 12, down: 0.45, thick: 120, breaks: 2 },
   { name: 'hang-right', kind: 'plate', slabs: [6, 12, 18], back: 70, lean: 1.4, thick: 44, breaks: 1 },
@@ -62,8 +63,9 @@ export const BLOCKS = [
 const SHAPES = {
   lane: [[646, 510], [659, 521], [653, 533], [662, 547], [656, 558], [666, 571], [661, 584], [669, 596], [681, 594], [690, 603], [701, 597], [713, 599], [716, 586], [710, 574], [721, 561], [714, 549], [724, 537], [717, 524], [730, 510]],
 };
-// What of the picture is not the rock though it looked it: the stream's own light under the shelf.
-const NOT_ROCK = [[[650, 640], [652, 601], [663, 597], [669, 603], [681, 597], [690, 606], [701, 600], [713, 603], [722, 594], [726, 640]]];
+// What of the picture is not the rock though it looked it: the stream's own light under the shelf. Its top carries on
+// the shelf's own underside from either side of the stream, so nothing hangs lower there than beside it.
+const NOT_ROCK = [[[646, 640], [648, 571], [657, 568], [666, 570], [674, 574], [683, 578], [692, 582], [702, 584], [713, 582], [722, 583], [731, 586], [733, 640]]];
 
 const hash = (a, b) => { const h = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return h - Math.floor(h); };
 
@@ -146,7 +148,7 @@ export function faceNormal(b, at, P) {
 // The plan: each block's outline as a distance in the picture, its face's plane, and what the field needs besides.
 export async function plan({ draft = false } = {}) {
   const json = (await import('node:fs')).readFileSync(new URL('./measured/slabs.json', import.meta.url), 'utf8');
-  const m = slabMap(JSON.parse(json), BY), S = await see();
+  const m = slabMap(crisp(JSON.parse(json)), BY), S = await see();
   const W = m.W, H = m.H;
   // What of the picture is the rock: rock seen and rock hidden, between the torn edges and over the open air.
   const rockMask = new Uint8Array(S.W * S.H);

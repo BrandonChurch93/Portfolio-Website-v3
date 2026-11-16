@@ -24,7 +24,7 @@ export const build: PartFactory = async () => {
       return t;
     }),
   ]);
-  const m = materials(map), made: { dispose(): void }[] = [map, m];
+  const m = materials(map, (file.meta.ledges as number[] | undefined) ?? [0], (file.meta.profile as number[][] | undefined) ?? [[0, 0, 0], [1, 0, 0]]), made: { dispose(): void }[] = [map, m];
   for (const [name, l] of file.meshes) {
     const part = mesh(l, m[name as 'stone' | 'bay' | 'gold']);
     part.castShadow = true;

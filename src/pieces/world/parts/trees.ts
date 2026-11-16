@@ -12,6 +12,9 @@ import { AIR, JITTER, treeDepth, treeMaterial, treeUniforms } from './trees/mate
 // and as wide. Models of one kind of tree, made ahead by scripts/world/parts/trees/ with their stored light, each
 // drawn for many trees at once with a place, a turn, a size, a height, a shade and a number of its own. A tree most
 // of which a tree in front of it hides is drawn with the cheap model. A tree whose ground the tear took is left out.
+// Each stands on the land as it is drawn (the make script stores where, from the land's own field): a tree on a
+// dune stands on the dune, and one whose crown a crest in front of it mostly hides is left out, since a tuft over a
+// crest reads as cut off.
 
 // The autumn: each shade a mix of two of the palette's colors, how bright a leaf of it is, and how many of the
 // trees wear it. Amber, tan and russet most of all, bronze brown and umber, a few deep red browns and a few paler,
@@ -28,6 +31,8 @@ const AUTUMN: readonly { mix: readonly [PaletteName, PaletteName, number]; power
 // How much one tree differs from the next of its shade in brightness, in size and in height against its width, and
 // how far it leans (the shear of its height to one side).
 const DIFFER = { light: 0.2, size: 0.1, tall: [0.8, 1.36], lean: 0.09 } as const;
+// The tall model is already taller than it is wide: it is stretched no further than this.
+const SLENDER = 1.1;
 // Which of the full models a tree in front is: a tree larger than those round it is tall or round and stands over
 // them, a smaller one spreads or is two grown into one, and the rest change kind by place along the belt (a noise
 // across the top, PLACE units to a patch), so the wood is not one crown repeated. How far round a tree its
@@ -45,11 +50,14 @@ const BEHIND = { deep: 260, side: 26, full: 260 };
 // The moon's shade from the trees nearer it: how far toward the moon a tree is looked for (in the two trees' sizes
 // together) and how near its line, how far a crown's shade drops for each unit it falls (the moon is 27 degrees
 // up), and how high a crown's top stands in its own sizes. A tree's crown is in that shade up to the highest any
-// of them reaches on it, as a share of its height. The trees take no shade of the moon's from its shadow map: the
-// towers behind would cover the whole belt, where picture 9 has its tops lit.
-const SHADED = { far: 3, side: 0.7, drop: 0.52, top: 2 };
+// of them reaches on it, as a share of its height, and never past `most` of it: a crown lets the moon through its
+// gaps, and picture 9 has the top of every crown in the belt lit. The trees take no shade of the moon's from its
+// shadow map: the towers behind would cover the whole belt.
+const SHADED = { far: 3, side: 0.7, drop: 0.52, top: 2, most: 0.55 };
 // The shade on the ground is cut where it would pass this far inside the land's edge, in the tree's sizes.
 const EDGE = 0.4;
+// A tree is drawn only if at least this share of its crown is seen over the land in front of it.
+const SEEN = 0.4;
 // The moon's shade from the buildings and the pyramid: how many places up a crown are looked from toward the moon,
 // how far a building is looked for, the step of the march over the pyramid, and how high a crown stands in its
 // own sizes. A crown is in that shade up to the highest of those places a building hides from the moon, as with
@@ -94,7 +102,9 @@ const shadeOf = (k: number): THREE.Color => {
 export const build: PartFactory = async ({ query }) => {
   const [file, map] = await Promise.all([load(FILES.mesh), leaves()]);
   const group = new THREE.Group(), made: { dispose(): void }[] = [];
-  const kept = TREES.filter(([x, z, size]) => within(x, z) >= size);
+  const seats = new Map(((file.meta.seats ?? []) as number[][]).map(([x, z, y, sand, seen]) => [`${x},${z}`, { y, sand, seen }]));
+  const seat = (x: number, z: number) => seats.get(`${x},${z}`) ?? { y: ground(x, z), sand: 0, seen: 1 };
+  const kept = TREES.filter(([x, z, size]) => within(x, z) >= size && seat(x, z).seen >= SEEN);
   const rnd = seeded(4049);
   // The way a tree's shade lies on the ground: away from the moon.
   const away = new THREE.Vector2(-MOONWARD[0], -MOONWARD[2]).normalize();
@@ -129,9 +139,11 @@ export const build: PartFactory = async ({ query }) => {
       if (along <= 0 || along > SHADED.far * (size + os) || off > SHADED.side * (size + os)) continue;
       cover = Math.max(cover, (SHADED.top * os - SHADED.drop * along) / (SHADED.top * size) * (1 - off / (SHADED.side * (size + os))) ** 0.5);
     }
+    cover = Math.min(cover, SHADED.most);
     const shade = shadeOf(rnd()).multiplyScalar(1 + DIFFER.light * (2 * rnd() - 1));
-    const s = size * (1 + DIFFER.size * (2 * rnd() - 1)), tall = Math.min(DIFFER.tall[1], Math.max(DIFFER.tall[0], 1 + STANDS * (rel[i] - 1) + 0.24 * (rnd() - 0.5)));
-    const g = ground(x, z);
+    const s = size * (1 + DIFFER.size * (2 * rnd() - 1)), stand = Math.min(DIFFER.tall[1], Math.max(DIFFER.tall[0], 1 + STANDS * (rel[i] - 1) + 0.24 * (rnd() - 0.5)));
+    const tall = modelOf[i] === MODELS.indexOf('tall') ? Math.min(stand, SLENDER) : stand;
+    const { y: g, sand } = seat(x, z);
     for (let k = STREET.heights - 1; k >= 0; k--) {
       const share = k / (STREET.heights - 1), h = s * tall * (CROWN.clear + (STREET.top - CROWN.clear) * share);
       if (blocked(x, g + h, z)) { cover = Math.max(cover, share + 0.2); break; }
@@ -144,6 +156,7 @@ export const build: PartFactory = async ({ query }) => {
       for (let k = 1; k <= 16; k++) { const t = (k / 16) * most * s; if (within(x + dx * t, z + dz * t) < EDGE * s) return ((k - 1) / 16) * most; }
       return most + 1;
     });
+    reach.push(sand);
     const la = rnd() * Math.PI * 2, lean = DIFFER.lean * rnd();
     const m = new THREE.Matrix4().makeTranslation(x, g, z).multiply(new THREE.Matrix4().set(1, Math.cos(la) * lean, 0, 0, 0, 1, 0, 0, 0, Math.sin(la) * lean, 1, 0, 0, 0, 0, 1))
       .multiply(new THREE.Matrix4().compose(new THREE.Vector3(), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), turn), new THREE.Vector3(s, s * tall, s)));
@@ -162,11 +175,11 @@ export const build: PartFactory = async ({ query }) => {
     // The second pass draws only what has soft edges, which the make script put last: the same vertices, fewer
     // triangles.
     const g = l.geometry, soft = new THREE.BufferGeometry(), from = Number(l.info.soft ?? 0), n = trees.length, own = new THREE.Matrix4().compose(l.at, new THREE.Quaternion(), new THREE.Vector3().setScalar(l.size));
-    const at = new THREE.InstancedBufferAttribute(new Float32Array(n * 16), 16), tone = new Float32Array(n * 3), tree = new Float32Array(n * 4), reach = new Float32Array(n * 3), m = new THREE.Matrix4();
-    trees.forEach((t, i) => { m.multiplyMatrices(t.m, own).toArray(at.array, i * 16); tone.set([t.tone.r, t.tone.g, t.tone.b], i * 3); tree.set(t.tree, i * 4); reach.set(t.reach, i * 3); });
+    const at = new THREE.InstancedBufferAttribute(new Float32Array(n * 16), 16), tone = new Float32Array(n * 3), tree = new Float32Array(n * 4), reach = new Float32Array(n * 4), m = new THREE.Matrix4();
+    trees.forEach((t, i) => { m.multiplyMatrices(t.m, own).toArray(at.array, i * 16); tone.set([t.tone.r, t.tone.g, t.tone.b], i * 3); tree.set(t.tree, i * 4); reach.set(t.reach, i * 4); });
     g.setAttribute('aTone', new THREE.InstancedBufferAttribute(tone, 3));
     g.setAttribute('aTree', new THREE.InstancedBufferAttribute(tree, 4));
-    g.setAttribute('aReach', new THREE.InstancedBufferAttribute(reach, 3));
+    g.setAttribute('aReach', new THREE.InstancedBufferAttribute(reach, 4));
     for (const [name, a] of Object.entries(g.attributes)) soft.setAttribute(name, a);
     const index = g.getIndex();
     if (index) soft.setIndex(new THREE.BufferAttribute(index.array.subarray(from), 1));
@@ -197,7 +210,7 @@ export const build: PartFactory = async ({ query }) => {
     group,
     // Seen alone, so many crowns round a tree at the front of the belt (?trees=16 is about as close as three times
     // the page's size).
-    alone: { at: [x0, ground(x0, z0) + s0 * 1.2, z0], r: s0 * (Number(query.get('trees')) || 6) },
+    alone: { at: [x0, seat(x0, z0).y + s0 * 1.2, z0], r: s0 * (Number(query.get('trees')) || 6) },
     update(s) {
       uniforms.uTime.value = s.still ? 0 : s.t;
       return true;

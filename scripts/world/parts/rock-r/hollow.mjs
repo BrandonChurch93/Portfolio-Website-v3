@@ -11,14 +11,27 @@ import { below } from '../land/shape.mjs';
 export const lip = 2.5;
 // How far a block's broken sides run along the line of sight rather than square to its face: square, a plate shows
 // its whole thickness at its outer side; along the line of sight, none of it. The frame shows only a sliver.
-export const SIDES = { plate: 0, floor: 0, shade: 0.2, roof: 0.5, frame: 0.85 };
+export const SIDES = { plate: 0.6, floor: 0.3, shade: 0.4, roof: 0.5, frame: 0.85 };
 // One of the picture's pixels in the world's units, near enough everywhere in the hollow.
 const UNIT = L.PICTURE.unit;
-// The breaks across a block: how far each part stands back from the one before, how far it is turned (radians), and
-// how ragged the line between them is, in pixels.
-export const BREAK = { sunk: [6, 18], turn: [0.07, 0.17], rag: 2.6 };
 // The beds in a block's broken sides: how thick each is, and how far one stands out or in from the next, in units.
-export const BEDS = { thick: [14, 26], step: 0.9, lean: 0.08 };
+export const BEDS = { thick: [5, 34], step: 1.6, lean: 0.08, warp: 9 };
+// The fan of cells a block's face is broken into, round the core: how wide a wedge is (radians), how far apart its
+// breaks across are (pixels), how far each cell leans in toward the core and twists (degrees), how far a cell stands
+// from the face (units), how far the wedges curl (radians for each 100 pixels across, mirrored either side of the
+// core, so they lean as picture 9's do), and how far apart its facets are (units). inward 1 leans a cell in toward
+// the core; 0 turns it at random.
+export const FAN = {
+  all: { wedge: [0.24, 0.55], ring: [55, 130], lean: [-5, 9], twist: 9, sunk: [-11, 4], spiral: 0.22, slant: 0.5, facet: 30, inward: 1, rise: 14 },
+  frame: { wedge: [0.12, 0.3], ring: [50, 120], lean: [-6, 14], twist: 12, facet: 34 },
+  roof: { wedge: [0.1, 0.26], ring: [24, 60], lean: [2, 12], twist: 12, facet: 28 },
+  floor: { wedge: [0.14, 0.3], ring: [26, 60], lean: [2, 12], facet: 26 },
+  shade: { facet: 28 },
+};
+// The knapped facets: how far each is turned from its cell (degrees), how far its seed may wander in its square of the
+// grid (a share), how far one stands proud or sunk (units), and how much it dishes in (over 0) or swells (under 0).
+// A share of them (steep) are turned much further, into shade.
+export const FACETS = { tilt: [3, 12], steep: [0.07, 22], jitter: 0.85, lift: 0.8, dish: [-0.004, 0.01] };
 // A broken face is never flat: a slow swell and a finer wander, in units, and over how far.
 export const SWELL = { deep: 1.6, over: 70, fine: 0, fineOver: 16 };
 // The flakes taken off a block's front edges: how many to a square pixel of its face, how wide in units, how deep
@@ -58,7 +71,8 @@ export function setup(args) {
   for (const b of A.blocks) prepare(b);
 }
 
-// What a block needs at each evaluation: its parts (one more for each break), its flakes and its box in the world.
+// What a block needs at each evaluation: its face's own axes, its fan of wedges round the core, its knapped facets,
+// its flakes and its box in the world.
 function prepare(b) {
   const r = (k) => hash(b.seed, k);
   const P0 = L.fromPicture(b.at[0], b.at[1], b.z);
@@ -69,28 +83,29 @@ function prepare(b) {
   b.e = e; b.ke = 1 / Math.max(0.3, dot(b.n, e));
   const ba = r(8) * Math.PI * 2;
   b.bedTilt = [Math.cos(ba), Math.sin(ba)];
-  // The breaks: lines across the block in the picture, through a place near its middle, across its long way.
-  const ext = [b.box[2] - b.box[0], b.box[3] - b.box[1]], long = ext[0] > ext[1] ? [1, 0] : [0, 1];
-  b.lines = [];
-  for (let j = 0; j < (b.breaks ?? 0); j++) {
-    const along = [-0.2, 0.24, 0.02][j] + 0.16 * (r(10 + j) - 0.5);
-    const c = [b.at[0] + long[0] * along * ext[0], b.at[1] + long[1] * along * ext[1]];
-    const th = Math.atan2(long[1], long[0]) + Math.PI / 2 + (j === 2 ? Math.PI / 2 : 0) + 0.7 * (r(20 + j) - 0.5);
-    b.lines.push({ c, t: [Math.cos(th), Math.sin(th)], m: [-Math.sin(th), Math.cos(th)], seed: b.seed * 7 + j });
-  }
-  // Each part: how far back it stands and how it is turned.
-  b.parts = [];
-  for (let p = 0; p < 1 << b.lines.length; p++) {
-    let sunk = 0;
-    const tilt = [0, 0, 0];
-    for (let j = 0; j < b.lines.length; j++) if (p & (1 << j)) {
-      sunk += BREAK.sunk[0] + (BREAK.sunk[1] - BREAK.sunk[0]) * r(30 + j);
-      const turn = BREAK.turn[0] + (BREAK.turn[1] - BREAK.turn[0]) * r(40 + j), a = r(50 + j) * Math.PI * 2;
-      for (let i = 0; i < 3; i++) tilt[i] += turn * (Math.cos(a) * t1[i] + Math.sin(a) * t2[i]);
+  // The beds in its sides: each its own thickness, so no two courses are alike.
+  b.bedAt = [0];
+  for (let k = 0; b.bedAt[k] < 400; k++) b.bedAt.push(b.bedAt[k] + BEDS.thick[0] + (BEDS.thick[1] - BEDS.thick[0]) * hash(b.seed + k, 9) ** 1.4);
+  // The fan: wedges round the core, each its own width, each broken across at radii of its own.
+  const F = { ...FAN.all, ...(FAN[b.kind] ?? {}) };
+  b.fan = F;
+  const widths = [];
+  let sum = 0;
+  for (let k = 0; sum < Math.PI * 2; k++) { const wd = F.wedge[0] + (F.wedge[1] - F.wedge[0]) * r(200 + k); widths.push(wd); sum += wd; }
+  const scale = (Math.PI * 2) / sum, turn0 = r(199) * Math.PI * 2;
+  b.wedges = [turn0];
+  for (const wd of widths) b.wedges.push(b.wedges[b.wedges.length - 1] + wd * scale);
+  // Its breaks across: straight lines over the wedge, each at a slant of its own, never arcs round the core.
+  b.rings = widths.map((_, k) => {
+    const out = [], mid = (b.wedges[k] + b.wedges[k + 1]) / 2;
+    for (let j = 0, R = 0; R < 900; j++) {
+      R += F.ring[0] + (F.ring[1] - F.ring[0]) * hash(b.seed * 3 + k, 300 + j);
+      const a = mid + F.slant * (hash(b.seed * 3 + k, 500 + j) - 0.5) * 2;
+      out.push({ R, d: [Math.cos(a), Math.sin(a)], cos: Math.cos(a - mid) });
     }
-    const n = norm([b.n[0] + tilt[0], b.n[1] + tilt[1], b.n[2] + tilt[2]]);
-    b.parts.push({ n, h: dot(n, P0) - sunk });
-  }
+    return out;
+  });
+  b.cells = new Map();
   // The flakes, at places along the outline found from the outline's own distance.
   b.flakes = [];
   const want = Math.round(b.area * FLAKES.each * (b.kind === 'frame' || b.kind === 'roof' ? 0.6 : 1));
@@ -111,12 +126,79 @@ function prepare(b) {
   // The block's box in the world: its outline's corners on its face and its back.
   const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
   for (const [px, py] of [[b.box[0], b.box[1]], [b.box[2], b.box[1]], [b.box[0], b.box[3]], [b.box[2], b.box[3]]]) {
-    const F = onFace(b, px, py);
-    for (const s of [6, -b.thick - 6]) for (let i = 0; i < 3; i++) { const v = F[i] + b.e[i] * s * b.ke; lo[i] = Math.min(lo[i], v); hi[i] = Math.max(hi[i], v); }
+    const F2 = onFace(b, px, py);
+    for (const s of [6 + F.rise, -b.thick - 6]) for (let i = 0; i < 3; i++) { const v = F2[i] + b.e[i] * s * b.ke; lo[i] = Math.min(lo[i], v); hi[i] = Math.max(hi[i], v); }
   }
   // The sides are at right angles to the face: a side reaches out as far as the face is turned from the view.
   const pad = b.thick + 30;
   b.lo = lo.map((v) => v - pad); b.hi = hi.map((v) => v + pad);
+}
+
+const TAU = Math.PI * 2;
+// Where a place of the picture is in a block's fan: its wedge, its band across the wedge, and how far it is to the
+// nearest break between cells (in units), with the cell across that break.
+function fanAt(b, px, py) {
+  const dx = px - A.corePx[0], dy = py - A.corePx[1], rr = Math.hypot(dx, dy);
+  let th = Math.atan2(dy, dx) - b.fan.spiral * dx / 100 - b.wedges[0];
+  th = ((th % TAU) + TAU) % TAU;
+  const W = b.wedges, N = W.length - 1;
+  let k = 0;
+  while (k < N - 1 && W[k + 1] - W[0] <= th) k++;
+  const lo = th - (W[k] - W[0]), hi = W[k + 1] - W[0] - th;
+  const band = (kk) => { let j = 0, near = Infinity; for (const g of b.rings[kk]) { const p = dx * g.d[0] + dy * g.d[1] - g.R * g.cos; if (p > 0) j++; near = Math.min(near, Math.abs(p)); if (g.R > rr + 200) break; } return [j, near]; };
+  const [j, dr] = band(k);
+  const da = rr * Math.sin(Math.min(Math.min(lo, hi), 1.2));
+  let other;
+  if (da < dr) { const kk = lo < hi ? (k + N - 1) % N : (k + 1) % N; other = [kk, band(kk)[0]]; } else {
+    let up = true, best = Infinity;
+    for (const g of b.rings[k]) { const p = dx * g.d[0] + dy * g.d[1] - g.R * g.cos; if (Math.abs(p) < best) { best = Math.abs(p); up = p < 0; } if (g.R > rr + 200) break; }
+    other = [k, up ? j + 1 : Math.max(0, j - 1)];
+  }
+  return { own: [k, j], other, d: Math.min(da, dr) * UNIT };
+}
+
+// A cell of the fan: how far it stands from the block's face and how it is turned, as a height over the face's own
+// axes. Each leans in toward the core by an angle of its own, with a twist across it.
+function cellOf(b, k, j) {
+  const key = k * 1000 + j;
+  let c = b.cells.get(key);
+  if (c) return c;
+  const F = b.fan, h = (q) => hash(b.seed * 7 + key, q);
+  const R = b.rings[k], rm = Math.max(30, ((R[j - 1]?.R ?? 0) + (R[j]?.R ?? 900)) / 2), tw = (b.wedges[k] + b.wedges[k + 1]) / 2;
+  let th = tw;
+  for (let it = 0; it < 3; it++) th = tw + F.spiral * rm * Math.cos(th) / 100;
+  const px = A.corePx[0] + rm * Math.cos(th), py = A.corePx[1] + rm * Math.sin(th);
+  const Q = onFace(b, px, py), qu = dot([Q[0] - b.P0[0], Q[1] - b.P0[1], Q[2] - b.P0[2]], b.t1), qv = dot([Q[0] - b.P0[0], Q[1] - b.P0[1], Q[2] - b.P0[2]], b.t2);
+  const out = [Math.cos(th), Math.sin(th)], Ow = [J0(out, 0), J0(out, 1), J0(out, 2)], o2 = norm2([dot(Ow, b.t1), dot(Ow, b.t2)]);
+  const lean = Math.tan((F.lean[0] + (F.lean[1] - F.lean[0]) * h(1)) * Math.PI / 180) * F.inward;
+  const twist = Math.tan((h(2) - 0.5) * 2 * F.twist * Math.PI / 180);
+  const g = [o2[0] * lean - o2[1] * twist, o2[1] * lean + o2[0] * twist];
+  c = { Q: [qu, qv], g, o: F.sunk[0] + (F.sunk[1] - F.sunk[0]) * h(3) };
+  b.cells.set(key, c);
+  return c;
+}
+const J0 = (o, i) => A.J[0][i] * o[0] + A.J[1][i] * o[1];
+const norm2 = (a) => { const l = Math.hypot(a[0], a[1]) || 1; return [a[0] / l, a[1] / l]; };
+
+// The knapped facets of a face: seeds on a jittered grid of the face's own axes, each a shallow scar of its own, a
+// plane turned from the face by 5 to 25 degrees with a slight dish or swell. The two nearest seeds and how far the
+// place is from the break between them.
+function facetsAt(b, u, v) {
+  const S = b.fan.facet, i0 = Math.floor(u / S), j0 = Math.floor(v / S);
+  let a = null, c = null, da = Infinity, dc = Infinity;
+  for (let i = i0 - 1; i <= i0 + 1; i++) for (let j = j0 - 1; j <= j0 + 1; j++) {
+    const sx = (i + 0.5 + FACETS.jitter * (hash(b.seed + i * 13.1, j * 7.3) - 0.5)) * S, sy = (j + 0.5 + FACETS.jitter * (hash(b.seed + j * 5.7, i * 11.9 + 3) - 0.5)) * S;
+    const d = (u - sx) ** 2 + (v - sy) ** 2;
+    if (d < da) { c = a; dc = da; a = [sx, sy, i, j]; da = d; } else if (d < dc) { c = [sx, sy, i, j]; dc = d; }
+  }
+  const sep = Math.hypot(c[0] - a[0], c[1] - a[1]) || 1;
+  return { a, c, d: (dc - da) / (2 * sep) };
+}
+function facetH(b, s, u, v) {
+  const h = (q) => hash(b.seed * 11 + s[2] * 37.3, s[3] * 53.9 + q);
+  const ang = (h(5) < FACETS.steep[0] ? FACETS.steep[1] : FACETS.tilt[0] + (FACETS.tilt[1] - FACETS.tilt[0]) * h(1) ** 1.6) * Math.PI / 180, dir = h(2) * TAU, t = Math.tan(ang);
+  const du = u - s[0], dv = v - s[1];
+  return FACETS.lift * (h(3) - 0.5) * 2 + t * (Math.cos(dir) * du + Math.sin(dir) * dv) + (FACETS.dish[0] + (FACETS.dish[1] - FACETS.dish[0]) * h(4)) * (du * du + dv * dv);
 }
 
 // The place on a block's face seen at a place in the picture.
@@ -134,24 +216,27 @@ export function block(b, x, y, z) {
   const out = boxGap(p, b.lo, b.hi);
   if (out > 0) return out + 1;
   const s = dot(b.n, p) - b.h, k = s * b.ke, q = [x - b.e[0] * k, y - b.e[1] * k, z - b.e[2] * k], [qx, qy] = L.pictured(q[0], q[1], q[2]);
-  // The broken sides, with the beds in them.
-  const u = -s, bt = BEDS.thick[0] + (BEDS.thick[1] - BEDS.thick[0]) * hash(b.seed, 7);
-  const bed = b.beds ? Math.floor((u + BEDS.lean * ((qx - b.at[0]) * b.bedTilt[0] + (qy - b.at[1]) * b.bedTilt[1]) * UNIT) / bt) : 0;
-  const side = sample(b.outline, qx, qy) * UNIT - (b.beds && u > 3 ? BEDS.step * (hash(bed, b.seed) - 0.5) * 2 : 0);
-  // The face: each part its own plane, divided by the ragged lines of the breaks.
-  const sw = SWELL.deep * (L.noise(x / SWELL.over, y / SWELL.over, z / SWELL.over, (b.seed + 3) & 1023) - 0.5) * 2
-    + SWELL.fine * (L.noise(x / SWELL.fineOver, y / SWELL.fineOver, z / SWELL.fineOver, (b.seed + 5) & 1023) - 0.5) * 2;
+  // The broken sides, with the beds in them: courses of uneven thickness that wander and pinch out.
+  const u0 = -s, warp = BEDS.warp * (L.noise(qx / 34, qy / 34, b.seed & 1023, 5) - 0.5) * 2;
+  let side = sample(b.outline, qx, qy) * UNIT;
+  if (b.beds && u0 > 3) {
+    const t = u0 + BEDS.lean * ((qx - b.at[0]) * b.bedTilt[0] + (qy - b.at[1]) * b.bedTilt[1]) * UNIT + warp;
+    let k = 0;
+    while (k < b.bedAt.length - 2 && b.bedAt[k + 1] <= Math.abs(t)) k++;
+    const pinch = Math.max(0, L.noise(qx / 60, qy / 60, k * 3.1, (b.seed + 11) & 1023) * 2 - 0.6);
+    side -= BEDS.step * (hash(k, b.seed) - 0.5) * 2 * pinch;
+  }
+  // The face: the fan's cells, each broken into knapped facets, each cell and each facet its own plane; at a break
+  // the two sides meet in a step.
+  const sw = SWELL.deep * (L.noise(x / SWELL.over, y / SWELL.over, z / SWELL.over, (b.seed + 3) & 1023) - 0.5) * 2;
+  const rel = [q[0] - b.P0[0], q[1] - b.P0[1], q[2] - b.P0[2]], fu = dot(rel, b.t1), fv = dot(rel, b.t2);
+  const fan = fanAt(b, qx, qy), fc = facetsAt(b, fu, fv);
+  const cells = [[cellOf(b, ...fan.own), -fan.d], [cellOf(b, ...fan.other), fan.d]];
+  const fac = [[facetH(b, fc.a, fu, fv), -fc.d], [facetH(b, fc.c, fu, fv), fc.d]];
   let face = Infinity;
-  const g = b.lines.map((l) => {
-    const dx = qx - l.c[0], dy = qy - l.c[1], along = dx * l.t[0] + dy * l.t[1];
-    const rag = BREAK.rag * ((L.noise(along / 9, 0.5, 0.5, l.seed & 1023) - 0.5) * 2 + 0.5 * (L.noise(along / 3, 1.5, 0.5, (l.seed + 1) & 1023) - 0.5) * 2);
-    return (dx * l.m[0] + dy * l.m[1] - rag) * UNIT;
-  });
-  for (let k = 0; k < b.parts.length; k++) {
-    const pt = b.parts[k];
-    let f = dot(pt.n, p) - pt.h + sw;
-    for (let j = 0; j < g.length; j++) f = Math.max(f, k & (1 << j) ? -g[j] : g[j]);
-    face = Math.min(face, f);
+  for (const [c, cd] of cells) {
+    const H = c.o + c.g[0] * (fu - c.Q[0]) + c.g[1] * (fv - c.Q[1]);
+    for (const [fh, fd] of fac) face = Math.min(face, Math.max(s - H - fh + sw, cd, fd));
   }
   let f = Math.max(face, -s - b.thick, side);
   // The flakes taken off its front edges.
