@@ -31,7 +31,7 @@ const AUTUMN: readonly { mix: readonly [PaletteName, PaletteName, number]; power
   { mix: ['copper-light', 'hot', 0.3], power: 0.92, share: 0.16 },
 ];// How much one tree differs from the next of its shade in brightness, in size and in height against its width, and
 // how far it leans (the shear of its height to one side).
-const DIFFER = { light: 0.12, size: 0.14, tall: [0.85, 1.16], lean: 0.06 } as const;
+const DIFFER = { light: 0.2, size: 0.2, tall: [0.82, 1.16], lean: 0.06 } as const;
 // The tall model is already taller than it is wide: it is stretched no further than this.
 const SLENDER = 1.0;
 // Which of the full models a tree in front is: a tree larger than those round it is tall or round and stands over
@@ -49,7 +49,7 @@ const STANDS = 0.5;
 // ragged and lets the next through. A crown of which under `least` is seen is not drawn (well under the tenth
 // the brief allows, since an ellipse is not quite the crown), and one of which under
 // `back` is seen takes the cheap model. ?treecull=0 draws every crown, to check that none of those left out shows.
-const VIEWED = { up: 0.9, wide: 0.95, tall: 0.8, solid: 0.82, least: 0.04, back: 0.25 } as const;
+const VIEWED = { up: 0.9, wide: 0.95, tall: 0.8, solid: 0.82, least: 0.04, back: 0.34 } as const;
 // The city behind a tree: how far behind it and to each side a building is counted, and how tall the buildings
 // behind have to be together for its outline to be lit in full.
 const BEHIND = { deep: 260, side: 26, full: 260 };
@@ -266,6 +266,13 @@ export const build: PartFactory = async ({ query }) => {
 
   const uniforms = treeUniforms();
   uniforms.uShade.value.copy(away);
+  // The pyramid's face toward the moon and the visitor, and the middle of its light (a third of the way in from its
+  // foot and up its height), which lights the crowns in front of it.
+  {
+    const k = Math.sin(PYRAMID.turn * D2R), c = Math.cos(PYRAMID.turn * D2R), out = PYRAMID.base / 3;
+    uniforms.uGold.value.set(PYRAMID.x + k * out, ground(PYRAMID.x, PYRAMID.z) + PYRAMID.tall / 3, PYRAMID.z + c * out, 1);
+    uniforms.uGoldN.value.set(k, c);
+  }
   const passes = [treeMaterial(map, 0, uniforms, query.get('treelook')), treeMaterial(map, 1, uniforms, query.get('treelook'))], depth = treeDepth(map, uniforms);
   made.push(passes[0], passes[1], depth);
   let cube = 1;

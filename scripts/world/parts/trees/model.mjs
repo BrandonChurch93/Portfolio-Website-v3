@@ -43,7 +43,10 @@ const KINDS = {
 // area), how large a lump is against its mass, how far its middle is sunk inside the mass's surface (against its own
 // radius), how far a mass is moved and grown at random, and how wide the card at its heart is against it (the mass's
 // own leaves, which fill it from every side, so no turn of the tree shows a hole). The cheap model has fewer.
-const FILL = { base: 1.6, per: 3.6, far: 0.5, size: [0.44, 0.58], sink: 0.78, flat: 0.86, move: 0.07, grow: 0.08, core: 0.84, heart: 0.5 };
+// How far each mass stands from its crown's middle and how large it is, against MASSES: drawn closer and fuller,
+// a crown reads as one head at the page's size, its masses its lobes and not trees of their own.
+const GATHER = { at: 0.72, size: 1.0 };
+const FILL = { base: 0.8, per: 2.2, far: 0.6, size: [0.56, 0.74], sink: 0.78, flat: 0.86, move: 0.07, grow: 0.08, core: 0.84, heart: 0.5 };
 // The trunk: how much wider it flares at its foot and over what height, how much thinner it is at the fork, how far
 // it is sunk, the fork's height under its crown's middle against the crown's half height, and the limbs it forks
 // into: how thick each is where it leaves the fork against the trunk there, and at its end against the trunk's foot,
@@ -138,8 +141,8 @@ export function tree(kind, { rays = 96 } = {}) {
     const C = [...S.at], flip = rnd() < 0.5 ? -1 : 1;
     crowns.push({ C, rx: S.rx, ry: S.ry });
     for (const [mx, my, mz, mr] of S.masses) {
-      const r = mr * S.rx * (1 + FILL.grow * (2 * rnd() - 1));
-      const at = [C[0] + (flip * mx + FILL.move * (2 * rnd() - 1)) * S.rx, C[1] + (my + FILL.move * (2 * rnd() - 1)) * S.ry, C[2] + (mz + FILL.move * (2 * rnd() - 1)) * S.rx];
+      const r = mr * GATHER.size * S.rx * (1 + FILL.grow * (2 * rnd() - 1));
+      const at = [C[0] + (flip * mx * GATHER.at + FILL.move * (2 * rnd() - 1)) * S.rx, C[1] + (my * GATHER.at + FILL.move * (2 * rnd() - 1)) * S.ry, C[2] + (mz * GATHER.at + FILL.move * (2 * rnd() - 1)) * S.rx];
       masses.push({ at, r, crown: ki });
     }
     masses.push({ at: [...C], r: Math.min(S.rx, S.ry) * FILL.heart, crown: ki, heart: true });

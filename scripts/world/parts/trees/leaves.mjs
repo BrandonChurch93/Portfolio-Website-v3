@@ -33,7 +33,7 @@ const SHADE = { dark: 0.55, off: [0.05, 0.2], soft: 0.26 };
 // its own, so some patches are fine and some coarse and no two leaves beside each other match. Those at the rim
 // stand out of the mat by up to OUT.tip of a leaf, foot inside, so a lump's outline is leaves and never an arc.
 // Mounds are laid from the rim inward, as a ball is seen.
-const MOUNDS = { lump: { count: [9, 13], out: 1.12, r: [0.36, 0.62], heart: 0.8, layers: 1.9 }, core: { count: [13, 18], out: 1.08, r: [0.3, 0.52], heart: 0.7, layers: 1.8 } };
+const MOUNDS = { lump: { count: [9, 13], out: 1.12, r: [0.36, 0.62], heart: 0.8, layers: 1.75 }, core: { count: [13, 18], out: 1.08, r: [0.3, 0.52], heart: 0.7, layers: 1.8 } };
 // A leaf's own size against the tile's: a patch's (a noise across the tile, from and to) times its own (from and to),
 // how far from pointing out of its mound it may turn, and how many of a mound's leaves lie any way at all.
 const SIZES = { patch: [0.7, 1.3], own: [0.6, 1.35], turn: 1.2, any: 0.3 };
@@ -42,7 +42,11 @@ const OUT = { tip: 0.6 };
 // Each mound is lit from above: its leaves this much lighter at its top and darker at its foot. Each mound is a
 // lightness of its own (differ), some sunk and dark, some standing out. The lump is NOT lit as a whole here (the
 // shader lights it by where it is on its mass and crown): only its lower part is a little darker (lump).
-const CLUSTER = { top: 1.3, foot: 0.3, lump: [1.0, 0.8], differ: [0.55, 1.15] };
+const CLUSTER = { top: 1.2, foot: 0.42, lump: [1.0, 0.82], differ: [0.55, 1.15] };
+// Holes in the dark mat between mounds, where no leaf lies over it, so close up the night or what stands behind
+// shows through a lump: how coarse the noise that places them is (in leaves), from what value of it a hole opens and
+// where it is whole, and how far inside the lump's outline they are kept (in leaves).
+const HOLES = { scale: 0.9, from: 0.74, full: 0.78, inside: 1.0 };
 // Sprigs: a few small islands of leaf off a lump's rim, clear of it, so its outline is broken by leaves standing out
 // with the dark or the sky between them: how many, how far out (shares of the tile's middle disc past its rim), how
 // large (shares of the middle disc).
@@ -59,11 +63,14 @@ const NOTCH = [0.4, 0.2];
 const MAT = { light: 0.06, gap: 0.015, inside: 0.6 };
 // The shade a tree lays on the ground (SHADE in design.ts), down the tile from behind its trunk to its far end, in
 // crown units. A crown from `low` to `high` over the ground lays its shade from `rate` times the one to `rate` times
-// the other away from the trunk (under half what the moon's height would give: see SHADE in design.ts), as wide as the crown is at that height
-// (its outline, a ball of radius `r` about `mid`), broken by the lumps of its outline (a noise `ragged` deep, `lumps`
-// to a crown) and softer and fainter the further it falls (`soft`, `fade`, a share of the way out). Between it and the trunk the trunk's
-// own thin shade. How dark the cast is, and the small pool where the trunk meets the ground (its radius, how dark).
-const BLOB = { low: 0.18, high: 1.75, rate: 1.15, mid: 0.95, r: 0.82, ragged: 0.5, lumps: 3.2, soft: [0.22, 0.75], dark: 0.62, fade: 0.65, trunk: { wide: 0.05, dark: 0.1 }, foot: { r: 0.42, dark: 0.5 } };
+// the other away from the trunk (`rate` is the moon's: one over the tangent of its 22 degrees), as wide as the crown
+// is at that height (its outline, a ball as wide as the crown and `r` tall about `mid`), broken by the lumps of its
+// outline (a noise `ragged` deep, `lumps` to a crown), dappled where the moon comes through the gaps of the crown
+// (`dapple`, how much light and how large a patch, in crown units) and softer and fainter the further it falls
+// (`soft`, `fade`, a share of the way out). Between it and the trunk the trunk's own thin shade. How dark the cast
+// is, and the small pool where the trunk meets the ground (its radius, how dark). It is stored in `steps` levels,
+// which the eye cannot tell apart on the ground and which keep the atlas's file from growing.
+const BLOB = { low: 0.18, high: 1.75, rate: 2.47, mid: 0.95, r: 0.9, ragged: 0.4, lumps: 2.2, soft: [0.18, 0.7], dark: 0.66, fade: 0.4, dapple: { deep: 0.45, size: 0.45 }, steps: 32, trunk: { wide: 0.05, dark: 0.35 }, foot: { r: 0.3, dark: 0.55 } };
 
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const hash2 = (x, y, s) => {
@@ -74,10 +81,10 @@ const hash2 = (x, y, s) => {
 
 // The first level as numbers: lightness, hue, facing, coverage, each 0 to 1.
 class Canvas {
-  constructor() { this.L = new Float32Array(W * H); this.G = new Float32Array(W * H).fill(0.5); this.B = new Float32Array(W * H).fill(0.5); this.A = new Float32Array(W * H); }
+  constructor() { this.L = new Float32Array(W * H); this.G = new Float32Array(W * H).fill(0.5); this.B = new Float32Array(W * H).fill(0.5); this.A = new Float32Array(W * H); this.F = new Float32Array(W * H); }
   // Lays a shape over the canvas inside one tile: sd(x, y) is its signed distance in pixels, under 0 inside, and
   // look(x, y, d) gives its [lightness, hue, facing] there.
-  lay(tile, box, sd, look) {
+  lay(tile, box, sd, look, leaf = false) {
     const ox = (tile % ATLAS.cols) * T, oy = Math.floor(tile / ATLAS.cols) * T;
     const [x0, y0, x1, y1] = box;
     for (let y = Math.max(0, Math.floor(y0)); y <= Math.min(T - 1, Math.ceil(y1)); y++) for (let x = Math.max(0, Math.floor(x0)); x <= Math.min(T - 1, Math.ceil(x1)); x++) {
@@ -89,6 +96,7 @@ class Canvas {
       this.G[i] += (g - this.G[i]) * k;
       this.B[i] += (b - this.B[i]) * k;
       this.A[i] = a + old * (1 - a);
+      if (leaf) this.F[i] = a + this.F[i] * (1 - a);
     }
   }
   // Darkens what is already painted under a shape that is about to be laid, offset and blurred: its shadow.
@@ -136,7 +144,7 @@ function paintLeaf(cv, tile, rnd, bx, by, th, size, tone, up = 0.5) {
     const rim = 1 - 0.16 * clamp(1 + d / Math.max(1, size * 0.08));
     const speck = 1 + 0.08 * (hash2(Math.floor(x), Math.floor(y), seed) - 0.5);
     return [clamp(light * (LEAF.fold + (1 - LEAF.fold) * fold) * (0.9 + 0.12 * along) * rib * rim * speck), hue, face];
-  });
+  }, true);
 }
 
 // A lump: mounds of leaves over a dark mat that joins them.
@@ -161,6 +169,7 @@ function lump(cv, tile, rnd, kind) {
   cv.lay(tile, [c - edge, c - edge, c + edge, c + edge], (x, y) => shape(x, y) + MAT.inside * size, (x, y) => [MAT.light * (0.7 + 0.6 * noise(x / size, y / size, 0, 5)), 0.5, 0.3]);
   // How large the leaves are in each patch of the tile.
   const patch = (x, y) => SIZES.patch[0] + (SIZES.patch[1] - SIZES.patch[0]) * Math.min(1, Math.max(0, (noise(x / (size * 2.2), y / (size * 2.2), 0, tile * 7 + 3) - 0.2) / 0.6));
+  const holeAt = (x, y) => noise(x / (size * HOLES.scale), y / (size * HOLES.scale), 0, tile * 23 + 9);
   const order = balls.map((b, i) => [b, i === 0 ? -1 : Math.hypot(b[0] - c, b[1] - c) + (rnd() - 0.5) * mid * 0.3]).sort((p, q) => q[1] - p[1]);
   for (const [[x, y, cr]] of order) {
     const m = Math.max(3, Math.round((R.layers * Math.PI * cr * cr) / (0.42 * size * size * 0.8)));
@@ -175,6 +184,7 @@ function lump(cv, tile, rnd, kind) {
       let long = size * patch(lx0, ly0) * (SIZES.own[0] + (SIZES.own[1] - SIZES.own[0]) * rnd() ** 1.3);
       const back = long * 0.55, lx = lx0 - Math.sin(th) * back, ly = ly0 + Math.cos(th) * back;
       if (shape(lx, ly) > -size * 0.1) continue;
+      if (shape(lx0, ly0) < -HOLES.inside * size && holeAt(lx0, ly0) > HOLES.from - 0.04) continue;
       for (let t = 0; t < 4 && shape(lx + Math.sin(th) * long * 1.2, ly - Math.cos(th) * long * 1.2) > size * OUT.tip; t++) long *= 0.8;
       const reach = long * 1.35, tx = lx + Math.sin(th) * reach, ty = ly - Math.cos(th) * reach;
       if (Math.min(lx, ly, tx, ty) < 3 || Math.max(lx, ly, tx, ty) > T - 3) continue;
@@ -187,6 +197,13 @@ function lump(cv, tile, rnd, kind) {
       const [lx, ly, th, rr, long] = l, v = clamp((at(l) - y) / cr * 1.3 + 0.5);
       paintLeaf(cv, tile, rnd, lx, ly, th, long, tone * (CLUSTER.top + (CLUSTER.foot - CLUSTER.top) * v) * (0.88 + 0.12 * (1 - rr / cr)), 1 - v);
     }
+  }
+  const ox = (tile % ATLAS.cols) * T, oy = Math.floor(tile / ATLAS.cols) * T;
+  for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
+    const qx = x + 0.5, qy = y + 0.5, i = (oy + y) * W + ox + x;
+    if (cv.A[i] <= 0) continue;
+    const n = holeAt(qx, qy), hole = clamp((n - HOLES.from) / (HOLES.full - HOLES.from));
+    cv.A[i] *= 1 - hole * (1 - cv.F[i]);
   }
 }
 
@@ -210,12 +227,13 @@ function blob(cv, tile) {
   for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
     const i = (oy + y) * W + ox + x, across = ((x + 0.5) / T * 2 - 1) * G.wide, along = -G.back + ((y + 0.5) / T) * long;
     // The crown's half width at the height whose shade falls here, and how soft its edge is there.
-    const h = along / BLOB.rate, q = (h - BLOB.mid) / BLOB.r, half = q * q < 1 ? Math.sqrt(1 - q * q) * BLOB.r * 1.05 : 0;
+    const h = along / BLOB.rate, q = (h - BLOB.mid) / BLOB.r, half = q * q < 1 ? Math.sqrt(1 - q * q) * 1.05 : 0;
     const t = clamp((along - from) / (to - from)), soft = BLOB.soft[0] + (BLOB.soft[1] - BLOB.soft[0]) * t;
     const rag = BLOB.ragged * (noise(along * BLOB.lumps / 2, across * BLOB.lumps / 2, 0, 41) - 0.5) * 2 * half;
     const edge = clamp((half + rag - Math.abs(across)) / soft + 0.5);
     const ends = clamp((along - from + 0.1) / 0.3) * clamp((to + 0.2 - along) / (0.5 + soft));
-    const cast = BLOB.dark * edge * ends * (1 - BLOB.fade * t);
+    const dapple = 1 - BLOB.dapple.deep * Math.max(0, Math.min(1, (noise(along / BLOB.dapple.size, across / BLOB.dapple.size, 0, 43) - 0.45) / 0.25));
+    const cast = BLOB.dark * edge * ends * (1 - BLOB.fade * t) * dapple;
     const trunk = BLOB.trunk.dark * clamp(1 - Math.abs(across) / BLOB.trunk.wide) * clamp(along / 0.1) * clamp((from + 0.3 - along) / 0.3);
     const foot = BLOB.foot.dark * Math.exp(-((Math.hypot(across, along) / BLOB.foot.r) ** 2) * 2.2);
     cv.L[i] = 0; cv.A[i] = 1 - (1 - cast) * (1 - foot) * (1 - trunk);
@@ -317,7 +335,7 @@ export function paint({ seed = 7 } = {}) {
     const at = level(k), t = T >> k;
     for (let y = 0; y < lv.h; y++) for (let x = 0; x < lv.w; x++) {
       const i = y * lv.w + x, o = ((at.y + y) * FW + at.x + x) * 4, a = clamp(lv.A[i]);
-      const e = isLeafy.has(Math.floor(x / t) + ATLAS.cols * Math.floor(y / t)) ? 0.5 * (Math.max(clamp(lv.S[i]), a) + a) : a;
+      const tile = Math.floor(x / t) + ATLAS.cols * Math.floor(y / t), e = isLeafy.has(tile) ? 0.5 * (Math.max(clamp(lv.S[i]), a) + a) : tile === TILES.blob ? Math.round(a * BLOB.steps) / BLOB.steps : a;
       data[o] = Math.round(clamp(lv.L[i]) * 255); data[o + 1] = Math.round(clamp(lv.G[i]) * 255); data[o + 2] = Math.round(clamp(lv.B[i]) * 255); data[o + 3] = Math.round(e * 255);
     }
   });

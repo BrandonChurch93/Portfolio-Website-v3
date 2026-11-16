@@ -19,7 +19,7 @@ export const ATLAS = { tile: 384, cols: 4, rows: 2, levels: 8 } as const;
 export const TILES = { lumps: [0, 1, 2, 3], core: [4, 5], bark: 6, blob: 7 } as const;
 // A tree of TREES' size s is drawn a little wider than s, so the crowns of a rank overlap by about a third and no
 // ground shows between two of them, as picture 9's do: the models are 2 wide, so they are drawn at this share of s.
-export const DRAWN = 0.56;
+export const DRAWN = 0.52;
 // Where each level of the atlas's chain is in its file: the first at the left, every smaller one stacked in a
 // column at its right. The file is one and a half times as wide as the atlas.
 export function level(k: number): { x: number; y: number; w: number; h: number } {
@@ -42,7 +42,7 @@ export const LEAF = 0.055;
 // How wide a lump's card is against its lump, and the card at a mass's heart against the ball it fills. And the
 // size of each that its tiles are painted for (a lump's radius and a heart's, in a crown's units): smaller or larger
 // lumps wear smaller or larger leaves.
-export const CARD = { lump: 1.16, core: 1.08, painted: { lump: 0.21, core: 0.36 } } as const;
+export const CARD = { lump: 1.16, core: 0.92, painted: { lump: 0.28, core: 0.36 } } as const;
 
 // The crown, in its own units: how far over the ground its lowest leaves are, on the full models and on the cheap
 // one: low, so only a little of each thin trunk shows under the front ranks and no paving shows between the
@@ -52,6 +52,6 @@ export const CROWN = { clear: 0.06, far: 0.05 } as const;
 // The shade a tree lays on the ground: a card under the tree out along the ground away from the moon, which holds
 // the crown's own outline thrown there (BLOB in scripts/world/parts/trees/leaves.mjs). How far it starts behind the
 // trunk and how far it reaches past it, and how wide it is to each side, in crown units. Each tree's card is cut
-// short where the land ends. The moon at 22 degrees would lay it about 4.4 out, and drawn that long every tree on
-// open paving threw a thin hard streak that read as a skid mark: it is drawn as a ragged pool under half as long.
-export const SHADE = { back: 0.5, reach: 2.6, wide: 1.0, up: 0.04 } as const;
+// short where the land ends. The moon is 22 degrees up, so the shade is as long as the moon makes it, about two and
+// a half times the crown's height, as every other shadow in the world is: as wide as the crown, soft and dappled.
+export const SHADE = { back: 0.5, reach: 4.7, wide: 1.15, up: 0.04 } as const;
