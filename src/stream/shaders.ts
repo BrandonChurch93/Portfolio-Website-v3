@@ -82,6 +82,9 @@ void main(){
 // in where the sides parted. swell: a surge can run along the core, and the core is brighter where its front is.
 // Without either the shader is the test shot's, letter for letter.
 export const SWELLS = 4;
+// Where the stream begins part way down its route: the share of its heart's width it starts at, and over how many
+// units that thread comes to its whole light.
+const BORN = { thread: 0.3, lit: 6 };
 export const coreFrag = (strands: number, ends = false, swell = false, born = false) => `${HEAD}
 in vec3 vAlong;
 uniform float uTime, uEnergy, uHeart;
@@ -127,8 +130,12 @@ void main(){
   // The heart of it, one fibre in the middle of the band: fierce where the ribbon is on edge, and there its light
   // falls away slowly through hot and flame to ember. A sharp even edge is what makes a tube.
   float gather = 1.0 - abs(face);
-  float q = x / mix(0.8, 1.4, gather);
-  sum += mix(1.7, 3.0, gather * gather) * uHeart / pow(1.0 + q * q, 1.6)${born ? ' * smoothstep(uBorn, uBorn + uOpen, vAlong.y)' : ''};
+  float q = x / mix(0.8, 1.4, gather);${born ? `
+  // Where it takes over from the core's neck it opens by width and not by light: a thread at its whole light that
+  // widens to the heart. Brought up by light, it was a dim orange that covered the neck's pale end, since light on
+  // the page covers what is under it as far as it is bright: a dark waist between the two.
+  q /= mix(${BORN.thread.toFixed(2)}, 1.0, smoothstep(uBorn, uBorn + uOpen, vAlong.y));` : ''}
+  sum += mix(1.7, 3.0, gather * gather) * uHeart / pow(1.0 + q * q, 1.6)${born ? ` * smoothstep(uBorn, uBorn + ${BORN.lit.toFixed(1)}, vAlong.y)` : ''};
   // Light runs down it, and it burns hotter toward its leading end.
   float run = 0.84 + 0.16 * sin(s / 83.0 - t * 2.1) * sin(s / 211.0 - t * 0.9 + 0.8);
   float head = 1.0 - smoothstep(0.0, 120.0, lead);
