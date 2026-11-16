@@ -2569,7 +2569,8 @@ Each line has Fable's recommendation where there is one. None of these are rules
     - **About on a phone:** his portrait stands under the title with its light behind it, the tabs lie over its fading foot, and the words come after. Under the words, as it was, his forearms ended in the air over most of a screen of empty ground.
     - **Contact on a phone:** the two buttons are as wide as the plate, a name and an email are one above the other, and under the plate the launch pad stands lit as one picture (36 KB), the page's last image.
     - **Work's category bar under 1100 px (Nov 16, about 06:00):** one row of four, as on a wide screen, each word as wide as it is and the type scaled to the screen, from a 320 px phone up. It was two rows of two, a block of words twice the bar's height (his words of Nov 13: "the category selection for one is really bad looks").
-    - **Still to design in the mobile pass, none of it started:** Contact's plate as metal and not an outline, an upright iPad's own layout, whether anything on a phone moves with the scroll below Work. Open 18 stands.
+    - **An upright iPad and Contact's plate (Nov 16, about 07:00):** About and Contact are each one column a person can read in the middle of the screen. Under 1100 px Contact's plate is a plate in plain paint, a dark bronze face with a bead of copper along its upper edge, where it was a bare outline.
+    - **Still to design in the mobile pass, none of it started:** whether an upright iPad gets the live world and the live desk in place of their pictures, and whether anything on a phone moves with the scroll below Work. Open 18 stands.
 
 ## Dropped
 
