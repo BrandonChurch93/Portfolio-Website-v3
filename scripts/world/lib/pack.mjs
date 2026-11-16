@@ -11,6 +11,7 @@
 // starting on a multiple of four bytes.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { deflateRawSync } from 'node:zlib';
 
 const KINDS = {
   f32: { bytes: 4, make: (n) => new Float32Array(n), put: (v) => v },
@@ -64,8 +65,14 @@ export function pack(file, meshes, meta = {}) {
   head.writeUInt32LE(json.length + pad, 8);
   mkdirSync(dirname(file), { recursive: true });
   const all = Buffer.concat([head, json, Buffer.alloc(pad, 0x20), ...blocks]);
-  writeFileSync(file, all);
+  // The file is that, packed down: the letters WRLZ, its length unpacked, and the packed bytes. A host serves a
+  // file of this kind as it is, so packing it here is what makes it small on the wire.
+  const mark = Buffer.alloc(8);
+  mark.write('WRLZ', 0, 'latin1');
+  mark.writeUInt32LE(all.length, 4);
+  const small = Buffer.concat([mark, deflateRawSync(all, { level: 9 })]);
+  writeFileSync(file, small);
   const tris = header.meshes.reduce((s, m) => s + (m.index ? m.index.count / 3 : m.vertices / 3), 0);
-  console.log(`pack: ${file} · ${header.meshes.length} meshes · ${Math.round(tris).toLocaleString('en-US')} triangles · ${(all.length / 1048576).toFixed(2)} MB`);
+  console.log(`pack: ${file} · ${header.meshes.length} meshes · ${Math.round(tris).toLocaleString('en-US')} triangles · ${(small.length / 1048576).toFixed(2)} MB (${(all.length / 1048576).toFixed(2)} unpacked)`);
   return header;
 }

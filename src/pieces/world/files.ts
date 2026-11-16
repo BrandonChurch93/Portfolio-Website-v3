@@ -27,7 +27,10 @@ const NAMES: Record<string, string> = { light: 'aLight', bounce: 'aBounce' };
 export async function load(file: string): Promise<WorldFile> {
   const res = await fetch(`/world/${file}`);
   if (!res.ok) throw new Error(`The world's file ${file} is missing (${res.status}). Make it with: npm run world`);
-  const buf = await res.arrayBuffer(), head = new DataView(buf);
+  let buf = await res.arrayBuffer();
+  // A packed file (the letters WRLZ) is unpacked first. One written before files were packed is read as it is.
+  if (new DataView(buf).getUint32(0, true) === 0x5a4c5257) buf = await new Response(new Blob([buf.slice(8)]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer();
+  const head = new DataView(buf);
   if (head.getUint32(0, true) !== 0x444c5257) throw new Error(`${file} is not a world file`);
   const long = head.getUint32(8, true), header = JSON.parse(new TextDecoder().decode(new Uint8Array(buf, 12, long))) as Header, base = 12 + long;
   const meshes = new Map<string, Loaded>();
