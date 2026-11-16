@@ -17,8 +17,12 @@ import * as S from './land/shaders';
 // worn stone and the courts' pale flags, the grass in its autumn browns (lit, dry, in its clumps), the earth a break
 // shows, the flat stones in the grass, and the bronze laid in the spire's court.
 const mix = (a: THREE.Color, b: THREE.Color, k: number): THREE.Color => a.clone().lerp(b, k);
+// The sand is three colors: his dunes' and picture 9's lit sand is a saturated gold brown (saturation 0.61 to 0.66),
+// palest on the crests, deeper down the flanks and a little redder on the floor between the dunes.
 const LOOK = {
-  sand: mix(color('pale'), color('hot'), 0.45),
+  sand: mix(color('hot'), color('pale'), 0.15),
+  sandCrest: mix(color('pale'), color('hot'), 0.5),
+  sandFloor: mix(color('hot'), color('copper-light'), 0.45),
   sandRim: mix(color('pale'), color('hot'), 0.3),
   bare: mix(color('text-3'), color('copper-light'), 0.46).multiplyScalar(0.62),
   sandDeep: mix(color('copper'), color('ember'), 0.75).multiplyScalar(0.9),
@@ -84,7 +88,7 @@ function heights(renderer: THREE.WebGLRenderer, mapA: THREE.Texture, crest: THRE
   return target;
 }
 
-export const build: PartFactory = async ({ query, renderer }) => {
+export const build: PartFactory = async ({ query, renderer, handheld }) => {
   if (query.get('landdebug') === 'off') return { group: new THREE.Group() };
   const [file, a, b, lots, light] = await Promise.all([load('land.bin'), picture('land-a.png', false), picture('land-b.png', false), picture('land-lots.png', true), picture('land-light.png', false)]);
   const ground = file.meshes.get('ground');
@@ -98,7 +102,7 @@ export const build: PartFactory = async ({ query, renderer }) => {
     towers.set([w, d, tall, 0], i * 8 + 4);
   });
   const lots3 = floats(towers, 2, TOWERS.length);
-  const counts = { map: (a.image as HTMLImageElement).width, lots: (lots.image as HTMLImageElement).width };
+  const counts = { map: (a.image as HTMLImageElement).width, lots: (lots.image as HTMLImageElement).width, lean: handheld };
 
   // Stone, sand and grass reflect little: seen nearly edge on, a full reflection turned the dark paving a pale grey.
   // Drawn from both sides: the reduced mesh turns a few of its steepest triangles, at a kerb, a slab's step or a
@@ -109,7 +113,7 @@ export const build: PartFactory = async ({ query, renderer }) => {
     Object.assign(sh.uniforms, {
       uAt: { value: ground.at }, uSize: { value: ground.size },
       uMapA: { value: a }, uMapB: { value: b }, uLight: { value: light }, uLots: { value: lots }, uTowers: { value: lots3 }, uCrest: { value: crest }, uHeight: { value: high.texture },
-      uSand: { value: LOOK.sand }, uSandRim: { value: LOOK.sandRim }, uBare: { value: LOOK.bare }, uSandDeep: { value: LOOK.sandDeep }, uPave: { value: LOOK.pave }, uPavePale: { value: LOOK.pavePale }, uCourt: { value: LOOK.court },
+      uSand: { value: LOOK.sand }, uSandCrest: { value: LOOK.sandCrest }, uSandFloor: { value: LOOK.sandFloor }, uSandRim: { value: LOOK.sandRim }, uBare: { value: LOOK.bare }, uSandDeep: { value: LOOK.sandDeep }, uPave: { value: LOOK.pave }, uPavePale: { value: LOOK.pavePale }, uCourt: { value: LOOK.court },
       uGrass: { value: LOOK.grass }, uGrassDry: { value: LOOK.grassDry }, uGrassDeep: { value: LOOK.grassDeep }, uEarth: { value: LOOK.earth }, uStone: { value: LOOK.stone }, uBronze: { value: LOOK.bronze },
     });
     sh.vertexShader = after(after(sh.vertexShader, 'common', S.VERT_PARS), 'begin_vertex', S.VERT);
