@@ -184,19 +184,23 @@
   translate: -50% 0;
 }
 
-/* Once the stream is drawing, it draws the title, the bar, the stones and the rail itself, lit. A card is its own
+/* The stream says it is drawing on whatever page it is mounted on: this section's own, or the whole page's, which
+   is why the rule looks for it on any ancestor. Looking only on this section's own page, the whole page showed the
+   plain title, the bar's outline, the stones' circles and the rail's line under the stream's own (he saw the rail's
+   line as a gold bar across the foot of Work).
+   Once the stream is drawing, it draws the title, the bar, the stones and the rail itself, lit. A card is its own
    lit plate, and the stream only lays its light on it. */
-.page[data-stream='on'] .title {
+:global([data-stream='on']) .title {
   color: transparent;
 }
 
-.page[data-stream='on'] .bar {
+:global([data-stream='on']) .bar {
   border-color: transparent;
   background: none;
 }
 
-.page[data-stream='on'] .stone,
-.page[data-stream='on'] .rail {
+:global([data-stream='on']) .stone,
+:global([data-stream='on']) .rail {
   border-color: transparent;
   background: none;
 }

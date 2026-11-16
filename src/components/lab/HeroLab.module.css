@@ -187,15 +187,24 @@
 
   .sky,
   .city,
-  .cue,
   .bar {
     display: none;
   }
 
+  /* The first screen ends at the city's foot, as a wide screen's does, and the tear and the core come with the
+     scroll (his ruling, Nov 16): his words take what the screen has above the city, and the picture's top, which
+     is the city (the first quarter of its width in height), stands at the foot of the screen. */
   .words {
     position: static;
     width: auto !important;
     translate: none;
+    min-height: calc(100vh - var(--space-9) - max(100vw, 540px) * 0.25);
+    min-height: calc(100svh - var(--space-9) - max(100vw, 540px) * 0.25);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding-bottom: 6vh;
   }
 
   /* As wide as the screen, and on a phone wider: the picture is centred on the spire and its two ends are off the
@@ -203,9 +212,9 @@
   .still {
     display: block;
     overflow: hidden;
-    margin: var(--space-7) calc(var(--gut) * -1) 0;
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent), linear-gradient(transparent, #000 12%, #000 76%, transparent);
-    mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent), linear-gradient(transparent, #000 12%, #000 76%, transparent);
+    margin: 0 calc(var(--gut) * -1) 0;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent), linear-gradient(transparent, #000 9%, #000 76%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent), linear-gradient(transparent, #000 9%, #000 76%, transparent);
     -webkit-mask-composite: source-in;
     mask-composite: intersect;
   }

@@ -29,7 +29,7 @@ const u = (n: number) => `calc(var(--u) * ${Number(n.toFixed(2))})`;
 // On a page with more sections than this one (hub), it hands the hub its plan, the hub mounts the one stream, and
 // the stream runs on from the core into Work.
 export function HeroLab({ hub }: { hub?: Hub }) {
-  const page = useRef<HTMLElement>(null), board = useRef<HTMLDivElement>(null), city = useRef<HTMLDivElement>(null), bar = useRef<HTMLDivElement>(null), cue = useRef<HTMLParagraphElement>(null);
+  const page = useRef<HTMLElement>(null), board = useRef<HTMLDivElement>(null), city = useRef<HTMLDivElement>(null), bar = useRef<HTMLDivElement>(null);
   const sky = useRef<HTMLDivElement>(null), words = useRef<HTMLElement>(null);
   const world = useRef<{ setStream(on: number, since: number): void } | null>(null);
   const [ui, setUi] = useState(!hub);
@@ -53,7 +53,7 @@ export function HeroLab({ hub }: { hub?: Hub }) {
     let made: HeroStage | null = null, gone = false;
     void import('../../hero/stage').then(({ mountHero }) => {
       if (gone) return;
-      made = mountHero({ page: hub?.page() ?? page.current!, board: board.current!, city: city.current!, bar: () => (hub ? hub.workTop() : bar.current), cue: cue.current, world: () => world.current }, hub?.hero());
+      made = mountHero({ page: hub?.page() ?? page.current!, board: board.current!, city: city.current!, bar: () => (hub ? hub.workTop() : bar.current), cue: null, world: () => world.current }, hub?.hero());
     });
     return () => { gone = true; made?.dispose(); };
   }, [wide, hub]);
@@ -113,7 +113,6 @@ export function HeroLab({ hub }: { hub?: Hub }) {
         </header>
         {/* The world as one picture, under his words, on a screen too narrow for the live world. */}
         <Still name="world" className={styles.still} />
-        <p ref={cue} className={styles.cue} aria-hidden="true">{hero.cue}</p>
         <div ref={bar} id={hub ? undefined : 'work'} className={styles.bar} style={{ width: u(WORK.bar) }} aria-hidden="true">
           <span>Work begins here</span>
         </div>
