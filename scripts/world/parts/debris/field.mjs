@@ -1,6 +1,6 @@
 // One piece of what broke away, as a field for the surface maker (scripts/world/lib/surface.mjs): under 0 inside.
 // A broken block of the planet's rock: a solid cut by a few broad planes, its corners broken off, chips taken out of
-// its edges, and, where it is layered, each bed broken a little differently from the next with a seam between them.
+// its edges, and, where it is layered, each bed broken a little differently from the next.
 // One face may be the planet's outer surface, gently curved and pitted.
 //
 //   args = { seed, size: [a, b, c], beds, layer: [x, y, z], sides, corners, chips, steps, skin: { dir, R, pits } | null, top }
@@ -50,7 +50,6 @@ export function shape({ seed, size, beds = 1, layer = [0, 1, 0], sides = 6, corn
   for (let k = 1; k < beds; k++) cuts.push(lo + ((hi - lo) * (k + 0.4 * (r() - 0.5))) / beds);
   cuts.push(hi + 1);
   const shift = cuts.slice(1).map(() => planes.map((p) => (p.side && r() < 0.45 ? -big * (0.025 + 0.07 * r()) : 0)));
-  const seam = big * 0.006;
 
   const body = (x, y, z, k) => {
     let d = -Infinity;
@@ -115,14 +114,10 @@ export function shape({ seed, size, beds = 1, layer = [0, 1, 0], sides = 6, corn
 
   // A broken face is never quite flat and an edge never ruler straight: a slow swell across every face, and a finer
   // one that wanders each edge a little.
-  const wave = big * 0.016, grain = big * 0.32, fine = big * 0.006, fineGrain = big * 0.085;
+  const wave = big * 0.009, grain = big * 0.32, fine = big * 0.0025, fineGrain = big * 0.085;
   const at = (x, y, z) => {
     let d = pre(x, y, z);
-    // The seams between beds: a groove that narrows as it goes in.
-    if (beds > 1) {
-      const s = L[0] * x + L[1] * y + L[2] * z;
-      for (let k = 1; k < beds; k++) d = Math.max(d, -(Math.abs(s - cuts[k]) - seam - 0.7 * d));
-    }
+    // No groove between beds: one narrower than a pixel drew as a dashed line of light. A bed steps back instead.
     for (const h of holes) d = Math.max(d, h.R - Math.hypot(x - h.at[0], y - h.at[1], z - h.at[2]));
     for (const q of drops) d = Math.max(d, Math.min(q.n1[0] * x + q.n1[1] * y + q.n1[2] * z - q.h1, q.n2[0] * x + q.n2[1] * y + q.n2[2] * z - q.h2));
     for (const p of pits) d = Math.max(d, p.r - Math.hypot(x - p.at[0], y - p.at[1], z - p.at[2]));

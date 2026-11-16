@@ -11,7 +11,7 @@
 //
 // A place is (px, py, z): the picture's pixels across and down, and how far toward the visitor (world units).
 // fromPicture in the plan turns it into the world.
-import { L, light, linear } from '../../lib/plan.mjs';
+import { L, light, stone } from '../../lib/plan.mjs';
 import { Earcut } from 'three/src/extras/Earcut.js';
 import { TOP, SKIN, AIR } from './facets.mjs';
 import { landEdge } from './see.mjs';
@@ -28,7 +28,8 @@ export function tornAt(side, py) {
 
 const LT = light();
 const lum = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
-export const ALBEDO = linear('text-3');
+// The planet's stone, which the baker lights the rock with and the stone's material wears.
+export const ALBEDO = stone();
 const A_LUM = lum(ALBEDO), CORE_LUM = lum(LT.core.color), MOON_LUM = lum(LT.moon.color), MOON_S = Math.sin(LT.moon.spread);
 const C = L.CORE.at, CR = L.CORE.r;
 // The core's own place in the picture.

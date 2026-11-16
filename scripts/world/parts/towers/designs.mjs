@@ -174,8 +174,11 @@ function deco(b, t) {
       ww = Math.max(8, ww * pull); dd = Math.max(8, dd * pull);
     }
   });
-  crown(b, t, ww, dd, y, tall - y);
+  crown(b, { ...t, top: TOPS[t.i] ?? t.top }, ww, dd, y, tall - y);
 }
+// The crowns picture 9 fixes: TOWERS[4], at 1048, 135 in the picture, is a plain stepped tower under a mast. And
+// TOWERS[8], the tall slab beside the spire, steps in at its head, as the picture's tower there does.
+const TOPS = { 4: 'steps', 8: 'steps' };
 
 // A round tower banded in copper, as picture 9's copper ringed pair is: a drum of windows between stone piers, broad
 // copper rings round it part way up (`at`, a share of its height), a stone drum over them, and a shallow cap.
@@ -218,7 +221,7 @@ function slabTower(b, t) {
   if (t.roof === 'bronze') {
     block(b, 'bay', w - 0.6, d - 0.6, y1 + 0.9, y1 + 2.0, { tag: COPPER, chamfer: 0.4 });
     crown(b, { ...t, roof: 'plain' }, w - 1.2, d - 1.2, y1 + 2.0, tall - y1 - 2.0);
-  } else crown(b, t, w - 1.2, d - 1.2, y1 + 0.9, tall - y1 - 0.9);
+  } else crown(b, { ...t, top: TOPS[t.i] ?? t.top }, w - 1.2, d - 1.2, y1 + 0.9, tall - y1 - 0.9);
 }
 
 // The fin tower: deep stone fins stand out of every face, close set, and rise past the roof in steps, the middle
@@ -336,11 +339,11 @@ function point(b, t) {
   const { w, d, tall } = t, R = b.R, { cw, ch } = cell(b), gold = t.roof === 'gold';
   const hb = clamp(tall * 0.07, 4.5, 11), cap = gold ? tall * 0.24 : tall * 0.16;
   base(b, w, d, hb);
-  const tops = [0.62, 0.86, 1], span = tall - cap - hb - 0.9;
+  const tops = [0.62, 0.86, 1], span = tall - cap - hb - 0.9, st = look(b, w - 2, gold ? 'strip' : 'paired');
   let y = hb + 0.9, ww = w - 2, dd = d - 2;
   tops.forEach((f, i) => {
     const y1 = hb + 0.9 + span * f - 1;
-    shaft(b, ww, dd, y, y1, { corner: Math.max(1.2, ww * 0.12), pier: 0.9, bays: ww > 20 ? 2 : 1, back: 1.3, cw, ch, chamfer: ww * 0.14, fin: gold ? 0 : 4 });
+    shaft(b, ww, dd, y, y1, { ...st, bays: Math.max(1, Math.round((st.bays * ww) / (w - 2))), chamfer: ww * 0.14 });
     cornice(b, ww, dd, y1, 1, 0.3, { chamfer: ww * 0.14 });
     y = y1 + 1;
     if (i < 2) { ww *= 0.82; dd *= 0.82; }
@@ -351,7 +354,7 @@ function point(b, t) {
     fluted(b, ww * 0.78, dd * 0.78, y, y + cap * 0.2, 2);
     const yy = y + cap * 0.2, pw = ww * 0.36, top = tall - cap * 0.16, H = top - yy, n = 14, prof = [[pw * 1.25, yy], [pw * 1.25, yy + 0.6], [pw, yy + 0.8]];
     for (let i = 1; i <= n; i++) { const u = i / n; prof.push([Math.max(0.05, pw * (1 + 0.35 * Math.sin(Math.PI * Math.min(1, u * 1.6))) * (1 - u) ** 1.25), yy + 0.8 + (H - 0.8) * u]); }
-    revolve(b, 'gold', prof, 8, { a0: Math.PI / 8, flat: true, nv: 1 });
+    revolve(b, 'gold', prof, 20, { nv: 1 });
     revolve(b, 'gold', Array.from({ length: 7 }, (_, i) => { const a = -Math.PI / 2 + (Math.PI * i) / 6; return [Math.max(0.01, 0.55 * Math.cos(a)), top + 0.55 + 0.55 * Math.sin(a)]; }), 10, { skip: (m) => m[2] < -0.6 });
     block(b, 'gold', 0.3, 0.3, top + 1.1, tall, { shrink: 0.1 });
   } else {
@@ -367,9 +370,10 @@ function obelisk(b, t) {
   const { w, d, tall } = t, { cw, ch } = cell(b), gold = tall * 0.35, hb = 10;
   base(b, w, d, hb);
   const y1 = tall - gold - 3, mid = hb + 0.9 + (y1 - hb) * 0.55;
-  shaft(b, w - 2, d - 2, hb + 0.9, mid, { corner: 2.2, pier: 1, bays: 2, back: 1.5, cw, ch, chamfer: 1.4 });
+  const st = look(b, w - 2, 'strip');
+  shaft(b, w - 2, d - 2, hb + 0.9, mid, { ...st, chamfer: 1.4 });
   cornice(b, w - 2, d - 2, mid, 1, 0.35, { chamfer: 1.4 });
-  shaft(b, w - 6, d - 6, mid + 1, y1, { corner: 1.8, pier: 0.9, bays: 2, back: 1.4, cw, ch, chamfer: 1.2 });
+  shaft(b, w - 6, d - 6, mid + 1, y1, { ...st, bays: Math.max(1, st.bays - 1), chamfer: 1.2 });
   cornice(b, w - 6, d - 6, y1, 1.2, 0.4, { chamfer: 1.2 });
   block(b, 'bay', w - 7, d - 7, y1 + 1.2, y1 + 2.4, { tag: COPPER, chamfer: 1 });
   const g = w * 0.56, k = OBELISK.taper, yb = y1 + 4.2, yt = tall - g * OBELISK.cap;
@@ -398,9 +402,9 @@ function disc(b, t) {
   const { w, d, tall } = t, { cw, ch } = cell(b), r = w * 0.44, hb = 9;
   base(b, w, d, hb);
   const low = tall * 0.3, y1 = tall - 2 * r - 15;
-  shaft(b, w - 2, d - 2, hb + 0.9, low, { corner: 2, pier: 1, bays: 2, back: 1.5, cw, ch });
+  shaft(b, w - 2, d - 2, hb + 0.9, low, look(b, w - 2, 'punched'));
   cornice(b, w - 2, d - 2, low, 1, 0.35);
-  shaft(b, w * 0.7, d * 0.7, low + 1, y1, { corner: 2, pier: 1, bays: 1, back: 1.5, cw, ch, chamfer: 1.2 });
+  shaft(b, w * 0.7, d * 0.7, low + 1, y1, { ...look(b, w * 0.7, 'mullion'), chamfer: 1.2 });
   cornice(b, w * 0.7, d * 0.7, y1, 1.2, 0.4, { chamfer: 1.2 });
   block(b, 'stone', w * 0.5, d * 0.5, y1 + 1.2, y1 + 5, { chamfer: 1 });
   block(b, 'bay', w * 0.54, d * 0.54, y1 + 5, y1 + 6, { tag: COPPER, chamfer: 1.1 });
@@ -415,11 +419,37 @@ function disc(b, t) {
   const prof = [[R, -D], ...arc(R - 1.15, 1.15, 0.3 * D, 0, Math.PI, 8), [c1 + q1, 0.12 * D], ...arc(c1, q1, 0.12 * D, 0, Math.PI, 6), [c2 + q2, 0.32 * D], ...arc(c2, q2, 0.32 * D, 0, Math.PI, 6), [rb, 0.16 * D], ...arc(0, rb, 0.16 * D, 0, Math.PI / 2, 8).map(([x, y]) => [x, 0.16 * D + (y - 0.16 * D) * (1.9 * D / rb)])];
   prof[prof.length - 1][0] = 0.01;
   revolve(b, 'gold', prof, 64, { place, turn, skip: (m) => m[2] < -0.9 });
-  for (let k = 0; k < 16; k++) plate(b, cy, r * 0.665, r - 2.5, ((k + 0.08) / 16) * Math.PI * 2, ((k + 0.92) / 16) * Math.PI * 2, 0.15 * D, 0.75 * D, 0.5);
-  for (let k = 0; k < 8; k++) ray(b, cy, r * 0.35, k % 2 ? r * 0.8 : r - 0.4, (k / 8) * Math.PI * 2, k % 2 ? 0.09 : 0.14, 0.2 * D, k % 2 ? 1.0 * D : 1.3 * D);
+  // Carved as the site's Sun stones are (src/stream/stone.ts), so it reads as a sun and not a wheel: no spoke runs
+  // from the boss to the rim. A rim of beads; an outer band of plates with a sharp point between each two, the
+  // sun's outer rays; a band of glyph blocks, broken by four great rays, wide wedges pointing out from the inner
+  // ring, and four lesser ones; and round the boss the four squares of the stone's middle.
+  const TAU = Math.PI * 2, n = SUN.outer, g = SUN.glyphs;
+  for (let k = 0; k < SUN.beads; k++) plate(b, cy, R - 1.95, R - 0.35, ((k + 0.12) / SUN.beads) * TAU, ((k + 0.88) / SUN.beads) * TAU, 0.3 * D + 0.5, 0.3 * D + 1.45, 0.22);
+  for (let k = 0; k < n; k++) {
+    const a0 = (k / n) * TAU, a1 = ((k + 1) / n) * TAU, am = (a0 + a1) / 2;
+    if (k % 2 === 0) plate(b, cy, R * 0.67, R - 2.5, a0 + 0.035, a1 - 0.035, 0.15 * D, 0.7 * D, 0.45);
+    else ray(b, cy, R * 0.67, R - 1.2, am, (a1 - a0) * 0.42, 0.15 * D, 1.05 * D);
+  }
+  const great = (a) => Math.min(...[1, 3, 5, 7].map((q) => Math.abs(((a - (q * TAU) / 8 + TAU * 1.5) % TAU) - TAU / 2)));
+  const lesser = (a) => Math.min(...[0, 2, 4, 6].map((q) => Math.abs(((a - (q * TAU) / 8 + TAU * 1.5) % TAU) - TAU / 2)));
+  for (let k = 0; k < g; k++) {
+    const a0 = ((k + 0.14) / g) * TAU, a1 = ((k + 0.86) / g) * TAU, am = (a0 + a1) / 2;
+    if (great(am) < 0.3 || lesser(am) < 0.12) continue;
+    plate(b, cy, R * 0.405, R * 0.6, a0, a1, 0.3 * D, 0.72 * D, 0.28);
+  }
+  for (let q = 0; q < 8; q++) {
+    const a = (q / 8) * TAU, big = q % 2 === 1;
+    ray(b, cy, R * 0.37, big ? R * 0.71 : R * 0.62, a, big ? 0.36 : 0.15, 0.3 * D, big ? 1.4 * D : 1.0 * D);
+  }
+  for (let q = 0; q < 4; q++) {
+    const a = ((q + 0.5) / 4) * TAU;
+    plate(b, cy, R * 0.215, R * 0.335, a - 0.32, a + 0.32, 0.35 * D, 0.95 * D, 0.2);
+  }
 }
 // How deep the sun disc's carving is, in units.
-const SUN = { depth: 1.5 };
+// How deep the sun disc's carving is, in units, and how many beads round its rim, places in its outer band (a
+// plate and a point by turns) and glyph blocks.
+const SUN = { depth: 1.5, beads: 40, outer: 16, glyphs: 24 };
 
 // A place on the disc: so far out from its middle and so far round from straight up, clockwise as seen, and so far
 // out of its face.

@@ -5,10 +5,14 @@
 // pale warm grey (ALBEDO in scripts/world/lib/rock.mjs), dusted paler on top; the dark side is a deep warm near
 // black; the crust's top layer, seen in section at a torn edge, is the dust's paler stone.
 export const STONE = {
-  pale: { from: 'text-3', to: 'text-2', k: 0.12, power: 1 },
-  dust: { from: 'text-2', to: 'text-3', k: 0.25, power: 1 },
-  dark: { from: 'bg-3', to: 'text-3', k: 0.1, power: 1.25 },
+  pale: { from: 'text-3', to: 'copper-light', k: 0.13, power: 1.38 },
+  dust: { from: 'text-2', to: 'copper-light', k: 0.2, power: 1.15 },
+  dark: { from: 'bg-3', to: 'text-3', k: 0.16, power: 1 },
 } as const;
+// The dark side is turned from the moon and from the core: it is seen by the night's soft light alone, which the
+// world gives the rock of the hollow only a tenth of. The outer surface is open to the night, so it takes this many
+// times that.
+export const NIGHT_SIDE = 2.6;
 
 // The map: how many of its texels to a pixel of picture 9, and the steepest slope it holds (units of height to a
 // picture pixel across). Slopes are stored as the square root of their share of that, so gentle ones keep detail.

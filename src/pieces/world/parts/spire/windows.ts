@@ -26,8 +26,6 @@ export const WINDOW = {
   blur: 1.8,
   // The map of every window's state: this many texels square, one a window.
   map: 128,
-  // The small lamps in the lantern, as radiance in the palette's hot light.
-  lamp: 5,
 } as const;
 
 // What one window shows on average across its cell, as a share of WINDOW.gain in its own color: how lit it is

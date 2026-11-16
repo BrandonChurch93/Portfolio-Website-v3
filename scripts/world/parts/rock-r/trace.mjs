@@ -41,4 +41,4 @@ export const STREAMS = [
   { x: 1010, from: 650, to: 768 },
 ];
 // The core: its middle and the radius that covers it and its rim of light.
-export const CORE = { at: [688, 437], r: 97 };
+export const CORE = { at: [688, 437], r: 93 };

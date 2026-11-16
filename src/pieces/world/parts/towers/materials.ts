@@ -24,7 +24,7 @@ const BALANCE = 'vec3( 0.96, 1.21, 1.59 )';
 // pale stone, and a sandstone or a granite, keeps against the stage's white balance.
 // How much of the night's soft light from the visitor's side a wall takes: the moon is behind the city, so its faces
 // toward the visitor are a deep warm stone, drawn by the moon on their right edges and warmed by the windows.
-const STONE = { course: [1.15, 1.5], block: [2.6, 3.6], joint: [0.05, 0.16], differ: 0.14, dark: 0.5, rough: 0.82, streak: 0.22, keep: [0.85, 1], night: 0.55 };
+const STONE = { course: [1.15, 1.5], block: [2.6, 3.6], joint: [0.05, 0.16], differ: 0.14, dark: 0.5, rough: 0.82, streak: 0.22, keep: [0.85, 1], night: 0.85 };
 // The pale stone, which every stone of the towers is a tone of.
 const PALE = new THREE.Color(hex('text-2')).lerp(new THREE.Color(hex('copper-light')), WARM);
 // The bronze of the bay: how dark against the world's bronze, and how rough; the glass's roughness.
@@ -35,7 +35,7 @@ const BAY = { bronze: 0.62, rough: 0.5, metal: 0.85, glass: 0.06, bevel: 0.07, c
 // field. A room is lit there from `lit[0]` of its level to fully at `lit[1]`, and a light smaller than a pixel is
 // brightened by up to `boost` so that it gives the light of a whole one. Its dark glass shows as `grid` darker than
 // the wall, filtered, so the field keeps its weave and comes to an even tone where it is finer than a pixel.
-const FAR = { far: [2.4, 4.4], dot: 2.0, lit: [0.1, 0.28], boost: 4, tone: 0.32, wall: 0.95, grid: 0.22 };
+const FAR = { far: [2.4, 4.4], dot: 1.5, lit: [0.06, 0.22], boost: 4, tone: 0.32, wall: 1.05, grid: 0.22 };
 // The gold mirrors the night as the pyramid's does, so the world's gold is one gold: a deep gold where it mirrors
 // little, the world's gold, METAL.gold, as it mirrors more, and pale gold only in a narrow highlight (grade: the
 // levels at which each begins). It mirrors the night more toward the moon (sheen: as bright where the moon's light
@@ -44,7 +44,7 @@ const FAR = { far: [2.4, 4.4], dot: 2.0, lit: [0.1, 0.28], boost: 4, tone: 0.32,
 // each face of a thing is its own shade. The stage's white balance is undone on it, so every gold pixel stays gold.
 // The night's soft light from the visitor's side is mirrored only `front` as much (NIGHT.front in ../../night.ts):
 // mirrored in full it lit every face toward the visitor one even tan, and gold read as satin, not polished.
-const GOLD = { rough: 0.17, sheen: [0.9, 5, 0.9], shade: 0.6, left: 0.75, front: 0.5, city: 0.6, flank: 34, fillet: 0.18, valley: 0.3, grade: [0.12, 1.2, 5.5] };
+const GOLD = { rough: 0.17, sheen: [1.1, 5, 0.9], shade: 0.6, left: 0.75, front: 0.75, city: 0.6, flank: 34, fillet: 0.18, valley: 0.3, grade: [0.12, 1.2, 5.5] };
 // The gold also mirrors what the bake found reaching it from round about (the city's windows, the street, the
 // stone), which the night has none of, as an even light of that strength over the half of the world it faces: so
 // a face turned from the moon is a deep gold and not a hole.

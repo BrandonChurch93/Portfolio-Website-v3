@@ -52,25 +52,32 @@ const GRAIN = {
 } as const;
 
 // How the face turns: about which axis, and how fast, in radians a second. Slow, as something enormous.
-const TURN = { axis: new THREE.Vector3(0.28, 1, 0.34).normalize(), rate: 0.0075 } as const;
+// The body under the grain turns the other way about a nearer axis, more slowly.
+const TURN = { axis: new THREE.Vector3(0.18, 1, 0.22).normalize(), rate: 0.012, deep: new THREE.Vector3(-0.3, 1, 0.1).normalize(), deepRate: -0.007 } as const;
 
 // The root of the beam, in units of the world down from the ball's foot unless they say otherwise.
 //   flare0, fall0, flare1, fall1: how far the ribbon is opened at the foot, as two flares gone over those depths, as
 //     picture 9's neck flares into the ball
 //   heart: how much more than the fibres the heart opens with it, which is the bright gathering at the foot, and
-//     heartHug: how far it spreads along the band inside the ball
+//     heartHug: how far it spreads along the band inside the ball, heartUp: how far over the foot it reaches, and
+//     fan: how much brighter the fibres are where they fan up into the band
 //   beam: half the ribbon's width, in stream units, and hug: how close to the ball's limb its fibres fan up inside it
 //   in: over which shares of the radius the fan comes on inside the ball, and up: how far over the foot it reaches
-//   above: how fast it is gone over the foot outside the ball
+//   above: how fast it is gone outside the ball close under it, and how much more slowly for each unit lower, and
+//     floor: the faintest light it lets go
 //   glow: the light that hugs the ribbon on the page, its amount and its width in stream units
-//   quiet: before the stream has set off, over how far the gathering fades and how bright it is, against the beam
+//   foot: the band hot where the beam is rooted: how far in from the edge it reaches, how far round each side, in
+//     radians, and how far out; and gather, how bright it is before the stream sets off and after
+//   quiet: before the stream has set off, over how far below the foot its lip fades and how bright, against the beam
 //   over: from which amount to which the root's light takes the place of the band's inside the ball
-//   hand: where the page's stream takes over, in the board's units (STREAM.hero.hand)
+//   hand: where the page's stream takes over, in the board's units (STREAM.hero.hand), and give: over how much of
+//     that the root is given up. The page's route has begun to sway by then and the two lines drew apart
 //   surge: as it sets off, the light that runs down it: how much, how fast in units a second, how long
 //   long: how far down the plane it is drawn on reaches
+//   energy: how much the page's leading end brightens the ribbon near it, as the page does at a middling energy
 const ROOT = {
-  flare0: 0.45, fall0: 7, flare1: 0.4, fall1: 26, heart: 2.2, heartHug: 0.35, beam: 15, hug: 0.92, in: [0.8, 0.93], up: 16, above: 3.5,
-  glow: [0.16, 4.5], quiet: 7, over: [0.12, 0.9], hush: 0.72, hand: PAGE.hero.hand, surge: [0.7, 210, 18], long: 130, energy: 1,
+  flare0: 0.45, fall0: 7, flare1: 0.4, fall1: 26, heart: 2.2, heartHug: 0.35, heartUp: 9, fan: 0.8, beam: 15, hug: 0.92, in: [0.8, 0.93], up: 30, above: [1.5, 1.4], floor: 0.008,
+  glow: [0.16, 4.5], quiet: 3, foot: [7, 0.36, 1.5], gather: [1.0, 1.35], over: [0.12, 0.9], hush: 0.72, hand: PAGE.hero.hand, give: 0.65, surge: [0.7, 210, 18], long: 130, energy: 1,
 } as const;
 
 // The pieces of the planet the beam draws in: how many, how many of those are glass, how long a coming of each
@@ -81,7 +88,7 @@ const ROOT = {
 const MOONS = {
   count: 6, glass: 1, period: [44, 78], gather: 4, drop: 2.6, sink: 95, rest: 6,
   from: [26, 74], out: [1.3, 1.75], toward: [0.05, 0.6], foot: [7, 1.09, 0.2],
-  long: [11, 17], turn: [0.08, 0.22],
+  long: [13, 21], turn: [0.08, 0.22],
   seed: 61,
 } as const;
 
@@ -98,11 +105,11 @@ function moons(): Moon[] {
 const RINGS = { full: 48, lean: 40 } as const;
 
 // How a shard takes the core's light, as amounts of light: what a face shows that mirrors the night outside the
-// hollow, the hollow's lit walls, or the ball, how rough its faces are, how much light a face turned to the ball
-// takes when close, how bright its edges are, and how much light the beam gives one on it and how far that reaches.
-// And for glass: how much light it holds, how strongly it mirrors the ball and lights its edges, and how much it
+// hollow, the hollow's lit walls, or the ball sharp and soft, how rough its faces are, how much light a face turned
+// to the ball takes, how near the ball it has to be for all of that, how bright its edges are and its points, and
+// how much light the beam gives one on it and how far that reaches. And for glass: how much light it holds, how strongly it mirrors the ball and lights its edges, and how much it
 // dims what is behind it.
-const SHARD = { room: 0.1, wall: 0.5, flash: 2.4, rough: 0.05, diffuse: 3.2, edge: 2.6, beam: 2.2, beamW: 10, held: 0.12, glint: 0.5, glassEdge: 0.9, dim: 0.22 } as const;
+const SHARD = { room: 0.02, wall: 0.06, flash: 4, sheen: 0.1, rough: 0.06, diffuse: 0.05, near: 2.5, edge: 3, tip: 0.3, beam: 1.6, beamW: 10, held: 0.12, glint: 0.5, glassEdge: 0.9, dim: 0.22 } as const;
 
 const vec = (c: readonly number[]): THREE.Vector3 => new THREE.Vector3(c[0], c[1], c[2]);
 // A color of the palette as the page's stream holds it: each channel to the power 2.2 (src/stream/renderer.ts, lin).
@@ -125,7 +132,7 @@ export const build: PartFactory = (ctx) => {
     uR: { value: R },
     uTime: { value: 0 },
     uRootScale: { value: new THREE.Vector3(host.across, host.along, host.heart) },
-    uRootState: { value: new THREE.Vector4(0, 0, lab || held ? 0 : 1, 60) },
+    uRootState: { value: new THREE.Vector4(0, 0, 1, 60) },
     uEmber: { value: lin('ember') },
     uFlame: { value: lin('flame') },
     uHot: { value: lin('hot') },
@@ -134,10 +141,10 @@ export const build: PartFactory = (ctx) => {
   const f = (n: number) => n.toFixed(4);
   const rootDefines = {
     ROOT_STRANDS: strands, ROOT_ENERGY: f(ROOT.energy), ROOT_BEAM: f(ROOT.beam), ROOT_HUG: f(ROOT.hug),
-    ROOT_FLARE0: f(ROOT.flare0), ROOT_FALL0: f(ROOT.fall0), ROOT_FLARE1: f(ROOT.flare1), ROOT_FALL1: f(ROOT.fall1), ROOT_HEART_OPEN: f(ROOT.heart), ROOT_HEART_HUG: f(ROOT.heartHug),
+    ROOT_FLARE0: f(ROOT.flare0), ROOT_FALL0: f(ROOT.fall0), ROOT_FLARE1: f(ROOT.flare1), ROOT_FALL1: f(ROOT.fall1), ROOT_HEART_OPEN: f(ROOT.heart), ROOT_HEART_HUG: f(ROOT.heartHug), ROOT_HEART_UP: f(ROOT.heartUp), ROOT_FAN: f(ROOT.fan),
     ROOT_GLOW: f(ROOT.glow[0]), ROOT_GLOW_W: f(ROOT.glow[1]), ROOT_QUIET: f(ROOT.quiet), ROOT_HUSH: f(ROOT.hush),
-    ROOT_HOST: f(host.host), ROOT_HAND0: f(ROOT.hand[0]), ROOT_HAND1: f(ROOT.hand[1]),
-    ROOT_SURGE: f(ROOT.surge[0]), ROOT_SURGE_V: f(ROOT.surge[1]), ROOT_SURGE_W: f(ROOT.surge[2]), ROOT_ABOVE: f(ROOT.above),
+    ROOT_HOST: f(host.host), ROOT_HAND0: f(ROOT.hand[0]), ROOT_HAND1: f(ROOT.hand[1]), ROOT_GIVE: f(ROOT.give),
+    ROOT_SURGE: f(ROOT.surge[0]), ROOT_SURGE_V: f(ROOT.surge[1]), ROOT_SURGE_W: f(ROOT.surge[2]), ROOT_ABOVE: f(ROOT.above[0]), ROOT_ABOVE_OPEN: f(ROOT.above[1]), ROOT_FLOOR: f(ROOT.floor), ROOT_FOOT: `vec3( ${f(ROOT.foot[0])}, ${f(ROOT.foot[1])}, ${f(ROOT.foot[2])} )`, ROOT_GATHER: `vec2( ${f(ROOT.gather[0])}, ${f(ROOT.gather[1])} )`,
     ROOT_IN: `vec2( ${f(ROOT.in[0])}, ${f(ROOT.in[1])} )`, ROOT_UP: f(ROOT.up), ROOT_OVER: `vec2( ${f(ROOT.over[0])}, ${f(ROOT.over[1])} )`, ROOT_EDGE: f(ROOT.beam * 4),
   };
 
@@ -146,6 +153,7 @@ export const build: PartFactory = (ctx) => {
     uEye: { value: new THREE.Vector3() },
     uLevel: { value: 1 },
     uTurn: { value: new THREE.Matrix3() },
+    uTurnIn: { value: new THREE.Matrix3() },
     uRimAt: { value: RIM.map(([r]) => r) },
     uRim: { value: RIM.map(([, c]) => vec(c)) },
     uBright: { value: vec(GRAIN.bright) },
@@ -184,7 +192,7 @@ export const build: PartFactory = (ctx) => {
       // The grain close up: how much of it there is, its cell in units, each grain's size and how far it strays in
       // cells, how fast each twinkles in turns a second, its strength, and how much of the noise is kept under it.
       SALT: '1.0',
-      SALT_CELL: '1.1',
+      SALT_CELL: '1.5',
       SALT_TWINKLE: '0.04',
       // How far each facet's point strays from the middle of its cell, as a share of a cell, and how many facets a
       // cell is cut into.
@@ -195,12 +203,30 @@ export const build: PartFactory = (ctx) => {
       FACET_LIFT: '1.0',
       FACET_SKEW: '1.4',
       FACET_TURN: '0.12',
-      FACET_TILT: '0.9',
+      FACET_TILT: '0.45',
       FACET_WARM: '0.3',
       SALT_GAIN: '0.85',
       SALT_UNDER: '0.15',
       // How much warmer a dimmer grain is close up, as the enlarged picture's are.
       SALT_WARMS: '0.4',
+      // How far a facet leans off the ball, how much of its light that turns toward or from the eye, and its flash:
+      // how bright, how tight, and from which way, off the eye's, it comes.
+      FACET_LEAN: '0.6',
+      FACET_VIEW: '2.4',
+      FACET_GLINT: '7.0',
+      FACET_SHINE: '70.0',
+      GLINT_FROM: 'vec3( -0.45, 0.55, 0.3 )',
+      // The body under the grain: how deep, as a share of the radius, the size of its veins in units, how sharp they
+      // are and their mean, how much of them shows, and where the skin over them is thin: its size and how thin.
+      DEEP: '0.16',
+      DEEP_AT: '0.9',
+      DEEP_WAVE: '16.0',
+      DEEP_SHARP: '5.0',
+      DEEP_MEAN: '0.2',
+      DEEP_SKIN: '9.0',
+      DEEP_THIN: 'vec2( -0.25, 0.45 )',
+      // How much more of the body shows close up, where the facets would hide it.
+      DEEP_NEAR: '2.5',
     },
   });
   const ballG = new THREE.SphereGeometry(R * 1.03, rings * 2, rings);
@@ -242,7 +268,7 @@ export const build: PartFactory = (ctx) => {
     SHARD_GATHER: f(MOONS.gather), SHARD_DROP: f(MOONS.drop), SHARD_SINK: f(MOONS.sink), SHARD_REST: f(MOONS.rest),
     SHARD_FROM: `vec2( ${f(MOONS.from[0])}, ${f(MOONS.from[1])} )`, SHARD_OUT: `vec2( ${f(MOONS.out[0])}, ${f(MOONS.out[1])} )`, SHARD_TOWARD: `vec2( ${f(MOONS.toward[0])}, ${f(MOONS.toward[1])} )`,
     SHARD_FOOT: `vec3( ${f(MOONS.foot[0])}, ${f(MOONS.foot[1])}, ${f(MOONS.foot[2])} )`,
-    SHARD_ROOM: f(SHARD.room), SHARD_WALL: f(SHARD.wall), SHARD_FLASH: f(SHARD.flash), SHARD_ROUGH: f(SHARD.rough), SHARD_DIFFUSE: f(SHARD.diffuse), SHARD_EDGE: f(SHARD.edge),
+    SHARD_ROOM: f(SHARD.room), SHARD_WALL: f(SHARD.wall), SHARD_FLASH: f(SHARD.flash), SHARD_ROUGH: f(SHARD.rough), SHARD_DIFFUSE: f(SHARD.diffuse), SHARD_SHEEN: f(SHARD.sheen), SHARD_NEAR: f(SHARD.near), SHARD_EDGE: f(SHARD.edge), SHARD_TIP: f(SHARD.tip),
     SHARD_BEAM: f(SHARD.beam), SHARD_BEAM_W: f(SHARD.beamW),
     GLASS_HELD: f(SHARD.held), GLASS_GLINT: f(SHARD.glint), GLASS_EDGE: f(SHARD.glassEdge), GLASS_DIM: f(SHARD.dim),
   };
@@ -282,9 +308,11 @@ export const build: PartFactory = (ctx) => {
         rootU.uRootScale.value.set(k.across, k.along, k.heart);
       }
       const state = rootU.uRootState.value, on = held ? 1 : s.stream.on;
-      const reach = held || lab ? ROOT.long : reachOnPage(ctx.renderer.domElement, SOURCE);
-      state.set(on, Math.max(0, reach), lab || held ? 0 : 1, held ? 60 : s.stream.since);
+      // Held on in the lab, the beam is as it is on the page with the page's own stream left out below.
+      const reach = held || lab ? 4 * ROOT.long : reachOnPage(ctx.renderer.domElement, SOURCE);
+      state.set(on, Math.max(0, reach), 1, held ? 60 : s.stream.since);
       ballU.uTurn.value.setFromMatrix4(m4.makeRotationFromQuaternion(q.setFromAxisAngle(TURN.axis, (s.t * TURN.rate) % (2 * Math.PI))));
+      ballU.uTurnIn.value.setFromMatrix4(m4.makeRotationFromQuaternion(q.setFromAxisAngle(TURN.deep, (s.t * TURN.deepRate) % (2 * Math.PI))));
       return true;
     },
     dispose() { for (const d of [ballG, ballM, rootG, rootM, solidG, solidM, glassG, takeM, giveM]) d.dispose(); },

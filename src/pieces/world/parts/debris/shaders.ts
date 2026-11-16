@@ -1,21 +1,26 @@
+import { STONE_VERT_PARS } from '../rock/stone';
 import { KIND, MOTION } from './motion';
 
-// The shader of what broke away, laid into a standard material before the world's light (../../light.ts).
-// Every piece is drawn from its model where the table of pieces (a texture written once) puts it, and moved by the
-// clock alone (./motion.ts): no buffer is written after the piece is made. Its fine breaks come from the detail map,
-// read in the piece's own frame from three sides, as small shadows. The stream and the small streams light it.
+// The shader of what broke away, laid into a standard material before the planet's stone (../rock/stone.ts) and the
+// world's light (../../light.ts). Every piece is drawn from its model where the table of pieces (a texture written
+// once) puts it, and moved by the clock alone (./motion.ts): no buffer is written after the piece is made. It wears
+// the planet's stone in its own frame, so the stone moves with it, each piece at its own place in the stone's beds.
+// The stream and the small streams light it.
 
 const f = (v: number): string => (Number.isInteger(v) ? `${v}.0` : `${v}`);
 const M = MOTION;
-// How large the detail map's grain is on a piece, against its size: on a great piece, and on the rest, as a share of
-// their size at this many units, between these.
-const GRAIN = { great: 1.7, at: 26, least: 0.22, most: 1.4 };
+// Where a piece is in the stone's beds: each is given its own place, far from the core, by its number. And how much
+// finer the stone is laid on a piece than on the torn rock, on a great piece and on the rest: a piece is smaller than
+// the faces of the hollow, and the stone's grain at the hollow's size reads on it as crumpled foil.
+const BEDS = { up: 2000, step: [97, 41] as const, every: 23, fine: [1.7, 2.6] as const };
 
 export const VERT_PARS = /* glsl */ `
 uniform highp sampler2D uPieces;
 uniform float uTime;
-uniform vec3 uCoreAt;
+// The core, in the world's units (the world's light has its own, in the stage's measure).
+uniform vec3 uDebrisCore;
 uniform float uBounceK;
+uniform float uCoreK;
 attribute float aPiece;
 varying vec3 vLocal;
 varying vec3 vLocalN;
@@ -23,7 +28,10 @@ varying vec3 vWorldP;
 varying float vSide;
 varying float wBedTone;
 varying float vMetal;
-varying float vGrain;
+varying vec3 vR0;
+varying vec3 vR1;
+varying vec3 vR2;
+${STONE_VERT_PARS}
 const float TAU = 6.2831853;
 float dHash( float n ) { return fract( sin( n * 12.9898 + 4.1414 ) * 43758.5453 ); }
 vec3 dTurnQ( vec4 q, vec3 v ) { return v + 2.0 * cross( q.xyz, cross( q.xyz, v ) + q.w * v ); }
@@ -51,7 +59,7 @@ export const VERT_MOTION = /* glsl */ `
 	float spin = dX.w * t + dE.x * TAU, dRound = 0.0, grow = 1.0;
 	if ( kind < ${f(KIND.plate + 0.5)} ) {
 		at += dPlate( fam, t );
-		axis = normalize( uCoreAt - dA.xyz );
+		axis = normalize( uDebrisCore - dA.xyz );
 		spin = ${f(M.plate.rock)} * sin( TAU * t / ${f(M.plate.rockT)} + fc );
 	} else if ( kind < ${f(KIND.ring + 0.5)} ) {
 		float swing = ${f(M.ring.swing)} * sin( TAU * t / ${f(M.ring.swingT)} + dHash( dE.y * 3.1 ) * TAU );
@@ -60,22 +68,22 @@ export const VERT_MOTION = /* glsl */ `
 	} else if ( kind < ${f(KIND.clump + 0.5)} ) {
 		at += vec3( ${f(M.clump.slide)} * sin( TAU * t / ${f(M.clump.slideT)} + fa ), ${f(M.clump.rise)} * sin( TAU * t / ${f(M.clump.riseT)} + fb ), ${f(M.clump.deep)} * sin( TAU * t / ${f(M.clump.slideT * 1.41)} + fc ) );
 	} else if ( kind < ${f(KIND.whirl + 0.5)} ) {
-		vec3 rel = vec3( dA.x, 0.0, dA.z - uCoreAt.z );
+		vec3 rel = vec3( dA.x, 0.0, dA.z - uDebrisCore.z );
 		float period = ${f(M.whirl.swingT[0])} + ${f(M.whirl.swingT[1] - M.whirl.swingT[0])} * dHash( fam * 7.7 );
 		dRound = dE.y * sin( TAU * t / period + fa );
 		vec3 now = dTurnY( dRound, rel );
-		at = vec3( now.x, dA.y - ${f(M.whirl.tilt)} * ( now.z - rel.z ), now.z + uCoreAt.z );
+		at = vec3( now.x, dA.y - ${f(M.whirl.tilt)} * ( now.z - rel.z ), now.z + uDebrisCore.z );
 	} else if ( kind < ${f(KIND.fall + 0.5)} ) {
 		float span = ${f(M.fall.from - M.fall.to)};
 		float u = fract( ( ${f(M.fall.from)} - dA.y ) / span + dE.y * t / span ), s = pow( u, ${f(M.fall.gather)} );
-		float y = ${f(M.fall.from)} - span * s, k = 1.0 - ${f(M.fall.pull)} * s, back = uCoreAt.z - ${f(M.fall.behind)};
+		float y = ${f(M.fall.from)} - span * s, k = 1.0 - ${f(M.fall.pull)} * s, back = uDebrisCore.z - ${f(M.fall.behind)};
 		at = vec3( dA.x * k, y, back + ( dA.z - back ) * k );
 		grow = smoothstep( ${f(M.fall.from)}, ${f(M.fall.from - M.fall.fade)}, y ) * smoothstep( ${f(M.fall.to)}, ${f(M.fall.to + M.fall.fade)}, y );
 	} else if ( kind < ${f(KIND.dust + 0.5)} ) {
-		vec3 rel = vec3( dA.x, 0.0, dA.z - uCoreAt.z );
+		vec3 rel = vec3( dA.x, 0.0, dA.z - uDebrisCore.z );
 		dRound = ${f(M.dust.turn)} * sin( TAU * t / ${f(M.dust.turnT)} + fa );
 		vec3 now = dTurnY( dRound, rel );
-		at = vec3( now.x, dA.y + ${f(M.dust.rise)} * sin( TAU * t / ${f(M.dust.riseT)} + fb ), now.z + uCoreAt.z );
+		at = vec3( now.x, dA.y + ${f(M.dust.rise)} * sin( TAU * t / ${f(M.dust.riseT)} + fb ), now.z + uDebrisCore.z );
 	} else {
 		at += vec3( ${f(M.scatter.slide)} * sin( TAU * t / ${f(M.scatter.slideT)} + fa ), ${f(M.scatter.rise)} * sin( TAU * t / ${f(M.scatter.riseT)} + fb ), 0.0 );
 	}
@@ -86,103 +94,73 @@ export const VERT_MOTION = /* glsl */ `
 	vSide = dA.x;
 	wBedTone = aBounce.w;
 	vMetal = abs( kind - ${f(KIND.fall)} ) < 0.5 ? 1.0 : 0.0;
-	vGrain = kind < ${f(KIND.plate + 0.5)} ? ${f(GRAIN.great)} : clamp( max( dS.x, max( dS.y, dS.z ) ) / ${f(GRAIN.at)}, ${f(GRAIN.least)}, ${f(GRAIN.most)} );`;
+	vR0 = dTurnY( dRound, dTurn( axis, spin, dTurnQ( dQ, vec3( 1.0, 0.0, 0.0 ) ) ) );
+	vR1 = dTurnY( dRound, dTurn( axis, spin, dTurnQ( dQ, vec3( 0.0, 1.0, 0.0 ) ) ) );
+	vR2 = dTurnY( dRound, dTurn( axis, spin, dTurnQ( dQ, vec3( 0.0, 0.0, 1.0 ) ) ) );
+	vStoneP = vLocal * ( kind < ${f(KIND.plate + 0.5)} ? ${f(BEDS.fine[0])} : ${f(BEDS.fine[1])} ) + vec3( 0.0, ${f(BEDS.up)} + ${f(BEDS.step[0])} * float( dId ), ${f(BEDS.step[1])} * mod( float( dId ), ${f(BEDS.every)} ) );
+	vStoneN = vLocalN;`;
 
 export const FRAG_PARS = /* glsl */ `
-uniform sampler2D uDetail;
-uniform vec3 uRock;
-uniform vec3 uRust;
 uniform vec3 uSkinPale;
 uniform vec3 uSkinDark;
 uniform vec3 uShard;
-uniform vec4 uLook;
+uniform float uWorn;
+uniform float uGrain;
 uniform vec3 uFloor;
 uniform vec2 uRim;
 uniform vec3 uNight;
+uniform float uEdge;
 uniform float uRockMirror;
-uniform vec3 uStreamA[ 7 ];
-uniform vec3 uStreamB[ 7 ];
-uniform vec2 uStreamI[ 7 ];
-uniform vec3 uStreamColor;
+uniform vec3 uLineA[ 7 ];
+uniform vec3 uLineB[ 7 ];
+uniform vec2 uLineI[ 7 ];
+uniform vec3 uLineColor;
 varying vec3 vLocal;
 varying vec3 vLocalN;
 varying vec3 vWorldP;
 varying float vSide;
 varying float wBedTone;
 varying float vMetal;
-varying float vGrain;
-// The detail map read from three sides of the piece in its own frame, at two sizes, each as large as the piece's
-// grain: its height, its tone, and how its height changes across the piece (in the piece's own frame). The change
-// is taken from the map a texel either side, so it runs smoothly across each texel and never shows the texels.
-vec2 dRead( vec2 uv, out vec2 slope ) {
-	const float E = 1.0 / 512.0;
-	slope = vec2( texture2D( uDetail, uv + vec2( E, 0.0 ) ).r - texture2D( uDetail, uv - vec2( E, 0.0 ) ).r, texture2D( uDetail, uv + vec2( 0.0, E ) ).r - texture2D( uDetail, uv - vec2( 0.0, E ) ).r ) / ( 2.0 * E );
-	return texture2D( uDetail, uv ).rg;
-}
-vec2 dDetail( vec3 p, vec3 n, out vec3 grad ) {
-	vec3 w = pow( abs( n ), vec3( 4.0 ) );
-	w /= max( w.x + w.y + w.z, 1e-5 );
-	vec2 out2 = vec2( 0.0 );
-	grad = vec3( 0.0 );
-	for ( int k = 0; k < 2; k ++ ) {
-		float S = ( k == 0 ? uLook.x : uLook.y ) * vGrain, a = k == 0 ? 1.0 : 0.45;
-		vec2 o = k == 0 ? vec2( 0.0 ) : vec2( 0.37 ), sx, sy, sz;
-		vec2 tx = dRead( p.yz / S + o, sx ), ty = dRead( p.zx / S + o, sy ), tz = dRead( p.xy / S + o, sz );
-		out2 += vec2( a, k == 0 ? 0.7 : 0.3 ) * ( tx * w.x + ty * w.y + tz * w.z );
-		grad += a * ( w.x * vec3( 0.0, sx.x, sx.y ) + w.y * vec3( sy.y, 0.0, sy.x ) + w.z * vec3( sz.x, sz.y, 0.0 ) ) / S;
-	}
-	return out2;
-}`;
+varying vec3 vR0;
+varying vec3 vR1;
+varying vec3 vR2;`;
 
-// The rock's color: its bed's tone, the map's, the planet's outer surface where it shows, edges worn bright and
-// creases dark.
+// After the stone has worked out its color: the planet's outer surface where a piece shows it, an edge worn a
+// little brighter where the piece is too small for the stone to find its edges, and a chip the stream carries,
+// which is the stream's own shard: dark polished metal, which shows the light only where a face turns to it.
 export const COLOR = /* glsl */ `
-	vec3 dGrad;
-	vec2 dD = dDetail( vLocal, vLocalN, dGrad );
-	float dBed = wBedTone;
-	vec3 dRock = mix( uRock, uRust, smoothstep( 0.55, 0.95, dBed ) * 0.8 ) * ( 0.78 + 0.42 * dBed );
-	dRock *= 0.82 + 0.36 * dD.y;
-	vec3 dSkin = vSide > 0.0 ? uSkinPale : uSkinDark;
-	dRock = mix( dRock, dSkin * ( 0.85 + 0.3 * dD.y ), wLight.w );
-	float dBend = wLight.y * 2.0 - 1.0;
-	dRock *= 1.0 + uLook.z * max( dBend, 0.0 ) - 0.35 * max( - dBend, 0.0 );
-	diffuseColor.rgb = mix( dRock, uShard, vMetal );`;
+	{
+		vec3 dSkin = vSide > 0.0 ? uSkinPale : uSkinDark;
+		diffuseColor.rgb = mix( diffuseColor.rgb, dSkin * ( 0.85 + 0.3 * wBedTone ), wLight.w );
+		float dBend = wLight.y * 2.0 - 1.0;
+		diffuseColor.rgb *= 1.0 + uWorn * max( dBend, 0.0 ) - 0.3 * max( - dBend, 0.0 );
+		diffuseColor.rgb = mix( diffuseColor.rgb, uShard, vMetal );
+	}`;
 
-// A chip the stream carries is the stream's own shard: dark polished metal, which shows the light only where a face
-// turns to it.
 export const FINISH = /* glsl */ `
 	metalnessFactor = mix( metalnessFactor, 0.92, vMetal );
-	roughnessFactor = mix( roughnessFactor, 0.24, vMetal );`;
+	roughnessFactor = mix( roughnessFactor, 0.13, vMetal );`;
 
-// The map's height as small shadows: the normal is bent by how the height changes across the pixel, worked out from
-// how it changes across the piece, and the bending fades where a pixel covers more of the piece than the map holds.
+// The stone's normal is in the piece's own frame: turned as the piece is turned. Its grain is laid on gently, since
+// at the hollow's strength it reads on a piece as hammered foil. A carried chip keeps its flat faces.
 export const NORMAL = /* glsl */ `
-	{
-		float dFoot = length( fwidth( vLocal ) ) / max( vGrain, 0.05 );
-		float dK = uLook.w * vGrain * ( 1.0 - smoothstep( 0.5, 2.0, dFoot ) ) * ( 1.0 - 0.6 * wLight.w ) * ( 1.0 - vMetal );
-		vec3 dSx = dFdx( - vViewPosition ), dSy = dFdy( - vViewPosition );
-		vec3 dR1 = cross( dSy, normal ), dR2 = cross( normal, dSx );
-		float dDet = dot( dSx, dR1 ) * faceDirection;
-		vec2 dH = vec2( dot( dGrad, dFdx( vLocal ) ), dot( dGrad, dFdy( vLocal ) ) ) * dK;
-		vec3 dG = sign( dDet ) * ( dH.x * dR1 + dH.y * dR2 );
-		normal = normalize( abs( dDet ) * normal - dG );
-	}`;
+	normal = normalize( ( viewMatrix * vec4( mat3( vR0, vR1, vR2 ) * normalize( mix( normalize( vStoneN ), sNormal, uGrain * ( 1.0 - vMetal ) ) ), 0.0 ) ).xyz );`;
 
 // The stream down the middle and the small streams: lines of light, each lighting what faces it, strongest near it.
 // The moon is behind the world and to the right: past what the stage's own light gives, a face it lights shows a
 // crisp pale edge where it turns from the eye. And no face falls to grey: what nothing reaches is a warm brown black.
 export const STREAM = /* glsl */ `
 	for ( int i = 0; i < 7; i ++ ) {
-		vec3 dAB = uStreamB[ i ] - uStreamA[ i ];
-		float dS = clamp( dot( vWorldP - uStreamA[ i ], dAB ) / max( dot( dAB, dAB ), 1e-8 ), 0.0, 1.0 );
-		vec3 dTo = uStreamA[ i ] + dAB * dS - vWorldP;
+		vec3 dAB = uLineB[ i ] - uLineA[ i ];
+		float dS = clamp( dot( vWorldP - uLineA[ i ], dAB ) / max( dot( dAB, dAB ), 1e-8 ), 0.0, 1.0 );
+		vec3 dTo = uLineA[ i ] + dAB * dS - vWorldP;
 		float dFar = max( length( dTo ), 1e-5 );
-		float dReach = uStreamI[ i ].y;
-		float dE = uStreamI[ i ].x * dReach * dReach / ( dReach * dReach + dFar * dFar );
+		float dReach = uLineI[ i ].y;
+		float dE = uLineI[ i ].x * dReach * dReach / ( dReach * dReach + dFar * dFar );
 		if ( dE < 1e-3 ) continue;
 		vec3 dL = normalize( ( viewMatrix * vec4( dTo / dFar, 0.0 ) ).xyz );
 		float dC = dot( geometryNormal, dL );
-		vec3 dIrr = uStreamColor * dE * mix( 1.0, wLight.z, 0.6 );
+		vec3 dIrr = uLineColor * dE * mix( 1.0, wLight.z, 0.6 );
 		reflectedLight.directDiffuse += dIrr * saturate( dC * 0.94 + 0.06 ) * BRDF_Lambert( material.diffuseContribution );
 		reflectedLight.directSpecular += dIrr * saturate( dC ) * BRDF_GGX( dL, geometryViewDir, geometryNormal, material );
 	}
@@ -192,6 +170,12 @@ export const STREAM = /* glsl */ `
 		reflectedLight.directDiffuse += directLight.color * dM * dEdge * uRim.x * BRDF_Lambert( material.diffuseContribution ) * mix( 1.0, wLight.z, 0.5 );
 	}
 	#endif
+	{
+		vec3 dTo = ( viewMatrix * vec4( uCoreAt, 1.0 ) ).xyz - geometryPosition;
+		float dFar = max( length( dTo ), 1e-6 ), dEdge = max( wLight.y * 2.0 - 1.0, 0.0 );
+		float dFace = saturate( dot( normal, dTo / dFar ) );
+		reflectedLight.directDiffuse += uCoreColor * ( uCoreLevel * wLight.x * pow( min( 1.0, uCoreR / dFar ), uCoreFall ) ) * dFace * dEdge * uEdge * BRDF_Lambert( material.diffuseContribution );
+	}
 	reflectedLight.directDiffuse += uFloor * wLight.z * BRDF_Lambert( material.diffuseContribution );`;
 
 // What the night gives a piece, which the world's light then scales (../../light.ts): on rock it is warmed, so a

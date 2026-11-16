@@ -25,7 +25,7 @@ const EDGE = { chamfer: [0.55, 1.05], side: 7, show: 0.85, room: 0.42 };
 // Where a ring turns by more than this (the cosine of the turn), its strips keep a sharp corner.
 const CORNER = Math.cos((38 * Math.PI) / 180);
 // How near the core anything may come, the core's disc in the picture, and the clear column the stream falls down.
-const CLEAR = L.CORE.r + 16, DISC = 88, STREAM = { half: 11, below: CORE_PX[1] + 88, z: 138 };
+const CLEAR = L.CORE.r + 16, DISC = 94, STREAM = { half: 6, below: CORE_PX[1] + 88, z: 138 };
 // Stones on what faces up: how far up a face must face, how many in an angle and over a face, and how large.
 const STONES = { up: 0.42, angle: 0.3, per: 520, size: [1.2, 4.6] };
 const C = L.CORE.at;
@@ -62,8 +62,9 @@ export function carve(G) {
     z = Math.max(z, -260);
     const back = clearOf(px, py, z);
     const sl = G.pieces[f].slab;
-    // A slab the core hides is only kept clear of it, place by place; one that is seen is moved back whole.
-    if (back > 0) { if (inDisc(px, py) || G.slabs[sl].shown < 0.3) z -= back + 0.5; else push[sl] = Math.max(push[sl], back + 1); }
+    // Where the core hides it a place is only kept clear of it; any slab that is seen past the core's edge is moved
+    // back whole, so no ring is turned round the core.
+    if (back > 0) { if (inDisc(px, py)) z -= back + 0.5; else push[sl] = Math.max(push[sl], back + 1); }
     if (Math.abs(px - CORE_PX[0]) < STREAM.half && py > STREAM.below) z = Math.min(z, STREAM.z);
     return z;
   };

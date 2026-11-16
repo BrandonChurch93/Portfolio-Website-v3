@@ -1,11 +1,11 @@
 import * as THREE from 'three';
 import { hex, type PaletteName } from '../../../config/palette';
-import { MOONWARD, ground, seeded, within } from '../layout';
+import { D2R, MOONWARD, PYRAMID, ground, pyramidal, seeded, within } from '../layout';
 import { load } from '../files';
 import type { PartFactory } from '../part';
 import { TOWERS, TREES } from '../placed';
 import { leaves, release } from './trees/atlas';
-import { FAR, FILES, MODELS, SHADE } from './trees/design';
+import { CROWN, FAR, FILES, MODELS, SHADE } from './trees/design';
 import { AIR, JITTER, treeDepth, treeMaterial, treeUniforms } from './trees/material';
 
 // The trees: the belt along the city's front and the few among the buildings, each where TREES has it (./placed.ts)
@@ -14,23 +14,25 @@ import { AIR, JITTER, treeDepth, treeMaterial, treeUniforms } from './trees/mate
 // of which a tree in front of it hides is drawn with the cheap model. A tree whose ground the tear took is left out.
 
 // The autumn: each shade a mix of two of the palette's colors, how bright a leaf of it is, and how many of the
-// trees wear it. Deep bronze browns, russet and copper most of all, some tan, a few ember reds and a few pale gold.
+// trees wear it. Russet and bronze browns most of all, tan, umber, a dark red brown, a few peach and a few copper.
+// The warm grey takes the orange out of the browns, as picture 9's crowns are brown and peach, not copper.
 const AUTUMN: readonly { mix: readonly [PaletteName, PaletteName, number]; power: number; share: number }[] = [
-  { mix: ['bronze', 'bronze-deep', 0.45], power: 1.0, share: 0.2 },
-  { mix: ['bronze', 'ember', 0.3], power: 0.95, share: 0.18 },
-  { mix: ['copper', 'bronze', 0.45], power: 0.78, share: 0.18 },
-  { mix: ['copper-light', 'bronze', 0.55], power: 0.72, share: 0.13 },
-  { mix: ['flame', 'ember', 0.62], power: 0.95, share: 0.1 },
-  { mix: ['bronze-deep', 'ember', 0.3], power: 1.25, share: 0.11 },
-  { mix: ['copper-light', 'hot', 0.3], power: 0.6, share: 0.1 },
+  { mix: ['bronze', 'ember', 0.35], power: 1.0, share: 0.2 },
+  { mix: ['bronze', 'text-3', 0.3], power: 1.0, share: 0.18 },
+  { mix: ['copper', 'text-3', 0.35], power: 0.8, share: 0.16 },
+  { mix: ['bronze-deep', 'text-3', 0.25], power: 1.3, share: 0.14 },
+  { mix: ['ember', 'bronze-deep', 0.4], power: 1.5, share: 0.12 },
+  { mix: ['copper-light', 'text-3', 0.35], power: 0.75, share: 0.1 },
+  { mix: ['copper', 'bronze', 0.4], power: 0.8, share: 0.1 },
 ];
 // How much one tree differs from the next of its shade in brightness, in size and in height against its width.
 const DIFFER = { light: 0.16, size: 0.1, tall: [0.84, 1.18] } as const;
 // Which of the full models a tree in front is, and how many of the trees are each.
 const NEAR: readonly { model: number; share: number }[] = [
-  { model: MODELS.indexOf('round'), share: 0.45 },
-  { model: MODELS.indexOf('tall'), share: 0.25 },
-  { model: MODELS.indexOf('twin'), share: 0.3 },
+  { model: MODELS.indexOf('round'), share: 0.34 },
+  { model: MODELS.indexOf('tall'), share: 0.2 },
+  { model: MODELS.indexOf('twin'), share: 0.22 },
+  { model: MODELS.indexOf('broad'), share: 0.24 },
 ];
 // A tree is hidden, and takes the cheap model, when one at least as big stands this far in front of it (in its own
 // sizes) and this close to its line across.
@@ -46,6 +48,40 @@ const BEHIND = { deep: 260, side: 26, full: 260 };
 const SHADED = { far: 3, side: 0.7, drop: 0.52, top: 2 };
 // The shade on the ground is cut where it would pass this far inside the land's edge, in the tree's sizes.
 const EDGE = 0.4;
+// The moon's shade from the buildings and the pyramid: how many places up a crown are looked from toward the moon,
+// how far a building is looked for, the step of the march over the pyramid, and how high a crown stands in its
+// own sizes. A crown is in that shade up to the highest of those places a building hides from the moon, as with
+// the trees': so a tree in the street's shade is not lit as if it stood in the open. The trees take no shade from
+// the moon's shadow map (above), so this is how they agree with the paving at their feet.
+const STREET = { heights: 7, far: 700, step: 3, top: 2.1 };
+
+// Whether a ray from p toward the moon is stopped by a building, or by the pyramid.
+const moon = new THREE.Vector3(...MOONWARD).normalize();
+function blocked(px: number, py: number, pz: number): boolean {
+  for (const [bx, bz, w, d, tall, turn] of TOWERS) {
+    const dx = bx - px, dz = bz - pz;
+    if (dx * dx + dz * dz > STREET.far * STREET.far) continue;
+    const c = Math.cos(turn * D2R), s = Math.sin(turn * D2R), base = ground(bx, bz) - 2;
+    // Into the building's own frame, then the slabs of its box.
+    const ox = -dx * c + dz * s, oz = -dx * s - dz * c, oy = py - base, rx = moon.x * c - moon.z * s, rz = moon.x * s + moon.z * c;
+    let t0 = 0, t1 = STREET.far;
+    for (const [o, r, h0, h1] of [[ox, rx, -w / 2, w / 2], [oy, moon.y, 0, tall], [oz, rz, -d / 2, d / 2]] as const) {
+      if (Math.abs(r) < 1e-6) { if (o < h0 || o > h1) { t1 = -1; break; } continue; }
+      const a = (h0 - o) / r, b = (h1 - o) / r;
+      t0 = Math.max(t0, Math.min(a, b)); t1 = Math.min(t1, Math.max(a, b));
+      if (t0 > t1) break;
+    }
+    if (t0 <= t1 && t1 > 0) return true;
+  }
+  if (Math.hypot(px - PYRAMID.x, pz - PYRAMID.z) < PYRAMID.base * 2.4) {
+    const g = ground(PYRAMID.x, PYRAMID.z);
+    for (let t = STREET.step; py + moon.y * t < g + PYRAMID.tall; t += STREET.step) {
+      const [a, b] = pyramidal(px + moon.x * t, pz + moon.z * t), m = Math.max(Math.abs(a), Math.abs(b)) / (PYRAMID.base / 2);
+      if (m < 1 && py + moon.y * t < g + PYRAMID.tall * (1 - m)) return true;
+    }
+  }
+  return false;
+}
 
 const shadeOf = (k: number): THREE.Color => {
   let a = 0, s = AUTUMN[AUTUMN.length - 1];
@@ -87,11 +123,16 @@ export const build: PartFactory = async ({ query }) => {
     }
     const shade = shadeOf(rnd()).multiplyScalar(1 + DIFFER.light * (2 * rnd() - 1));
     const s = size * (1 + DIFFER.size * (2 * rnd() - 1)), tall = DIFFER.tall[0] + (DIFFER.tall[1] - DIFFER.tall[0]) * rnd();
+    const g = ground(x, z);
+    for (let k = STREET.heights - 1; k >= 0; k--) {
+      const share = k / (STREET.heights - 1), h = s * tall * (CROWN.clear + (STREET.top - CROWN.clear) * share);
+      if (blocked(x, g + h, z)) { cover = Math.max(cover, share + 0.2); break; }
+    }
     // How much of its shade's reach stays on the land.
     let room = 1;
     for (let k = 1; k <= 16; k++) { const t = (k / 16) * SHADE.reach * s; if (within(x + away.x * t, z + away.y * t) < EDGE * s) { room = (k - 1) / 16; break; } }
-    const m = new THREE.Matrix4().compose(new THREE.Vector3(x, ground(x, z), z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), turn), new THREE.Vector3(s, s * tall, s));
-    byModel[modelOf[i]].push({ m, tone: shade, tree: [rnd(), Math.min(1, behind / BEHIND.full), Math.min(1, Math.max(0, cover)), room] });
+    const m = new THREE.Matrix4().compose(new THREE.Vector3(x, g, z), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), turn), new THREE.Vector3(s, s * tall, s));
+    byModel[modelOf[i]].push({ m, tone: shade, tree: [rnd(), Math.min(1, behind / BEHIND.full), Math.min(1.2, Math.max(0, cover)), room] });
   });
 
   const uniforms = treeUniforms();

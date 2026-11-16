@@ -20,16 +20,25 @@ import { prior, shellAlong, edgeZ, topAt, CORE_PX, J, VIEW, ALBEDO, CORE_LUM, MO
 
 const LT = light(), C = L.CORE.at, CR = L.CORE.r, MOON_S = Math.sin(LT.moon.spread);
 // The frame: how near the visitor, and how far a mass is turned out from the core (as a share added to the view).
-export const FRAME = { near: 300, far: 470, from: 14, out: 0.42 };
+// A mass of the frame is no wider across and no taller than `mass`, in the picture's pixels, and its slabs stand up to
+// `step` units proud or sunk on it.
+export const FRAME = { near: 300, far: 470, from: 14, out: 0.42, mass: [150, 230], step: 3 };
 // How far a slab is set from the funnel by a number of its own, and how hard it is pulled toward its neighbours.
 const LAYER = { jitter: 26, pull: 0.6 };
 // The floor: how far under the core's middle and how far to each side of it, in the picture's pixels, and how far up
 // its faces are turned.
 const FLOOR = { below: 80, half: 250, up: 1.1 };
+// How far from the view a face may be turned, as the least cosine: a face seen nearer edge on than this is drawn out
+// into streaks. The roof's front, which hangs over the visitor's eye line, is held nearer still.
+const FACING = { most: 0.36, roof: 0.6 };
+// The roof's front: how far down it is turned, as a share added to the view.
+const ROOF = { down: 0.45 };
 // A gap: how far behind the slabs round it.
 const GAP = { least: 120, more: 110 };
 // The pieces of one slab: how far each is turned from the slab, in radians, and how far it stands proud or sunk.
 const SHEAR = { turn: [0.012, 0.045], step: [0.5, 2.6] };
+// How far each layer of a slab's strata stands below the one before, in units.
+const STRATA = { step: [0.8, 2.2] };
 // A slab's thickness, in units.
 export const THICK = [15, 40];
 export const hash = (a, b) => { const h = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return h - Math.floor(h); };
@@ -91,7 +100,8 @@ export class Great {
       // Lit pale and cool at the top of the roof: by the moon, not the core.
       const c = [0, 1, 2].map((q) => s.pieces.reduce((t, p) => t + this.pieces[p].rgb[q] * this.pieces[p].area, 0) / s.area);
       s.moon = s.role !== 'gap' && s.at[1] < 400 && s.Y > 0.02 && (c[0] - c[2]) / (c[0] + 1e-4) < 0.62;
-      s.roof = s.role === 'frame' && s.at[1] < topAt(s.at[0]) + 42 && s.at[0] > 380 && s.at[0] < 1000;
+      // The roof's front: dark rock over the hollow, which hangs from the land's edge, not a mass at the side.
+      s.roof = s.role === 'frame' && ((s.at[1] < topAt(s.at[0]) + 42 && s.at[0] > 380 && s.at[0] < 1000) || (s.at[0] > 478 && s.at[0] < 905));
       s.shift = 0; s.a = 0; s.b = 0;
     }
     // Slabs next to each other, with the length they share.
@@ -101,6 +111,35 @@ export class Great {
       const a = this.pieces[ch.L].slab, b = this.pieces[ch.R].slab;
       if (a === b) continue;
       this.snbr[a].set(b, (this.snbr[a].get(b) ?? 0) + ch.len); this.snbr[b].set(a, (this.snbr[b].get(a) ?? 0) + ch.len);
+    }
+    this.massOf();
+  }
+
+  // The frame's great masses: neighbouring slabs of the frame joined, the largest first, as long as what they make
+  // stays inside FRAME.mass, each mass one plane with its slabs a few units proud or sunk on it.
+  massOf() {
+    const box = this.slabs.map((s) => {
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      for (const f of s.pieces) for (const lp of this.loops[f]) for (const p of lp.ids) { const [x, y] = this.pts[p]; x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+      return [x0, y0, x1, y1];
+    });
+    const side = (s) => s.role === 'frame' && !s.roof;
+    this.masses = [];
+    for (const s of [...this.slabs].sort((a, b) => b.area - a.area)) {
+      if (!side(s) || s.mass !== undefined) continue;
+      const m = { id: this.masses.length, slabs: [s.id], box: box[s.id].slice() };
+      s.mass = m.id;
+      for (let h = 0; h < m.slabs.length; h++) for (const [o] of this.snbr[m.slabs[h]]) {
+        const t = this.slabs[o];
+        if (!side(t) || t.mass !== undefined) continue;
+        const b = [Math.min(m.box[0], box[o][0]), Math.min(m.box[1], box[o][1]), Math.max(m.box[2], box[o][2]), Math.max(m.box[3], box[o][3])];
+        if (b[2] - b[0] > FRAME.mass[0] || b[3] - b[1] > FRAME.mass[1]) continue;
+        m.box = b; m.slabs.push(o); t.mass = m.id;
+      }
+      const A = m.slabs.reduce((t, q) => t + this.slabs[q].area, 0);
+      m.at = [0, 1].map((k) => m.slabs.reduce((t, q) => t + this.slabs[q].at[k] * this.slabs[q].area, 0) / A);
+      m.wide = Math.min(m.box[2] - m.box[0], m.box[3] - m.box[1]);
+      this.masses.push(m);
     }
   }
 
@@ -133,7 +172,7 @@ export class Great {
     const K = 3000;
     for (let i = 0; i < K; i++) {
       const y = 1 - (i + 0.5) / K, r = Math.sqrt(1 - y * y), th = i * 2.399963229728653, d = [Math.cos(th) * r, Math.sin(th) * r, y];
-      if (dot(d, VIEW) > 0.3) cands.push(d);
+      if (dot(d, VIEW) > FACING.most) cands.push(d);
     }
     // Depths first from the funnel, so the tilts are found where each slab will be.
     for (const s of this.slabs) {
@@ -147,21 +186,27 @@ export class Great {
         const d = Math.hypot(C[0] - Pw[0], C[1] - Pw[1], C[2] - Pw[2]), toCore = [(C[0] - Pw[0]) / d, (C[1] - Pw[1]) / d, (C[2] - Pw[2]) / d];
         // Out from the core across the picture, as a direction in the world.
         const ox = px - CORE_PX[0], oy = py - CORE_PX[1], ol = Math.hypot(ox, oy) || 1, out = norm([J[0][0] * ox + J[1][0] * oy, J[0][1] * ox + J[1][1] * oy, J[0][2] * ox + J[1][2] * oy].map((v) => v / ol));
-        if (s.role === 'frame') {
-          const h = (q) => hash(s.id, q) - 0.5;
-          s.n = s.roof ? norm([VIEW[0] + 0.25 * h(1), VIEW[1] - 0.12 + 0.1 * h(2), VIEW[2]]) : norm(VIEW.map((v, i) => v + FRAME.out * out[i] + [0.2 * h(1), 0.25 * h(2), 0][i]));
+        if (s.role === 'frame' && !s.roof) {
+          const m = this.masses[s.mass], h = (q) => hash(m.id + 900, q) - 0.5;
+          const mx = m.at[0] - CORE_PX[0], my = m.at[1] - CORE_PX[1], ml = Math.hypot(mx, my) || 1;
+          const mo = norm([J[0][0] * mx + J[1][0] * my, J[0][1] * mx + J[1][1] * my, J[0][2] * mx + J[1][2] * my].map((v) => v / ml));
+          s.n = norm(VIEW.map((v, i) => v + FRAME.out * mo[i] + [0.12 * h(1), 0.15 * h(2), 0][i]));
         } else if (s.role === 'gap') s.n = VIEW.slice();
         else {
           // The floor under the core is a shelf: what is lit on it faces up, toward the core over it.
           const floor = s.at[1] > CORE_PX[1] + FLOOR.below && Math.abs(s.at[0] - CORE_PX[0]) < FLOOR.half;
-          const ref = floor ? norm(VIEW.map((v, i) => v + FLOOR.up * [0, 1, 0][i] + 0.4 * toCore[i])) : s.role === 'lit' ? norm(VIEW.map((v, i) => v + 1.15 * toCore[i])) : norm(VIEW.map((v, i) => v + 0.9 * out[i]));
+          // The roof's front hangs in front of the core: turned down toward the hollow, it catches only the edge of
+          // the core's light, which is what the picture gives it.
+          const ref = s.roof ? norm(VIEW.map((v, i) => v + ROOF.down * [0, -1, 0][i])) : floor ? norm(VIEW.map((v, i) => v + FLOOR.up * [0, 1, 0][i] + 0.4 * toCore[i])) : s.role === 'lit' ? norm(VIEW.map((v, i) => v + 1.15 * toCore[i])) : norm(VIEW.map((v, i) => v + 0.9 * out[i]));
           const lt = lit?.[s.id] ?? { core: s.role === 'lit' ? 1 : 0.6, moon: s.moon ? 1 : 0, bounce: 0.05 * CORE_LUM * (CR / Math.max(d, CR)) ** 1.45 };
           // The light is judged over the whole slab, as the picture's brightness is its mean over the whole slab:
           // near the core it is many times what it is at the slab's middle.
           const at = this.samples(s);
           const want = s.want, e0 = 0.03;
           let best = null, bc = Infinity;
+          const least = s.roof ? FACING.roof : FACING.most;
           for (const n of cands) {
+            if (dot(n, VIEW) < least) continue;
             let e = 0;
             for (const [Q, w] of at) e += w * this.light(n, Q, lt);
             const err = Math.log((e + e0) / (want + e0));
@@ -219,7 +264,11 @@ export class Great {
       }
       p.n = n;
       [p.a, p.b] = this.plane(n);
-      p.z = this.slabAt(p.slab, ...p.at) - s.shift + (many ? (h(5) < 0.5 ? -1 : 1) * (SHEAR.step[0] + (SHEAR.step[1] - SHEAR.step[0]) * h(6)) : 0);
+      // A layer of the strata stands lower than the one before it by the slab's own step; any other piece of a broken
+      // slab stands a little proud or sunk.
+      const sheared = (h(5) < 0.5 ? -1 : 1) * (SHEAR.step[0] + (SHEAR.step[1] - SHEAR.step[0]) * h(6));
+      const layer = p.stratum !== undefined ? -p.stratum * (STRATA.step[0] + (STRATA.step[1] - STRATA.step[0]) * hash(s.id, 31)) + 0.25 * sheared : sheared;
+      p.z = this.slabAt(p.slab, ...p.at) - s.shift + (many ? layer : 0);
     }
   }
 
@@ -228,6 +277,12 @@ export class Great {
   frameZ(s) {
     const [px, py] = s.at;
     if (s.roof) { const x = L.fromPicture(px, py, 300)[0]; return edgeZ(x) - 8 - 0.25 * Math.max(0, py - topAt(px)); }
+    if (s.mass !== undefined) {
+      // A slab of a mass lies on the mass's plane, a few units proud or sunk.
+      const m = this.masses[s.mass], sh = shellAlong(...m.at), most = sh ? sh.near - FRAME.from - 0.25 * m.wide : FRAME.far;
+      const zm = Math.max(FRAME.near, Math.min(FRAME.far, most));
+      return zm + s.a * (px - m.at[0]) + s.b * (py - m.at[1]) + FRAME.step * (hash(s.id, 61) - 0.5) * 2;
+    }
     const sh = shellAlong(px, py), most = sh ? sh.near - FRAME.from - 0.5 * (s.wide ?? 0) : FRAME.far;
     return Math.max(FRAME.near, Math.min(FRAME.far, most));
   }

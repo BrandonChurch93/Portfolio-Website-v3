@@ -40,7 +40,8 @@ const bevels = plinthFaces.map((p) => {
 });
 const plinth = polytope([...plinthFaces, ...bevels, flat([0, 1, 0], footTall, 'ledge'), DOWN], 'plinth');
 
-const neckHalf = half * (1 - from / tall) - FORM.cap.inset;
+// The neck is set back from the capstone's foot, so nothing of it stands out past the capstone's faces.
+const neckHalf = half * (1 - (from + reveal) / tall) - FORM.cap.inset;
 const neck = polytope([
   flat([1, 0, 0], neckHalf, 'neck'), flat([-1, 0, 0], neckHalf, 'neck'), flat([0, 0, 1], neckHalf, 'neck'), flat([0, 0, -1], neckHalf, 'neck'),
   flat([0, 1, 0], from + reveal + 0.3, 'hidden'), flat([0, -1, 0], -(from - 0.3), 'hidden'),

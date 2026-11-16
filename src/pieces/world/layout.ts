@@ -207,8 +207,9 @@ export const LIGHT = {
   // every gap in the hollow with grey.
   night: 0.55,
   // On the torn rock that share is tinted warm (`warm`, red, green and blue): untinted it turned the masses round
-  // the hollow grey, and at a tenth of this they were a flat black with no form.
-  fill: 0.35,
+  // the hollow grey. At 0.35 they were an even brown where picture 9's are black with a few lit edges, so the
+  // black is left to the rock's own shape and this only keeps a dark from going dead.
+  fill: 0.15,
   warm: [1, 0.58, 0.36],
   // The planet's stone under white light: the first of these palette colors eased toward the second, and how bright.
   // The baker lights the rock with it and the stone's material wears it.

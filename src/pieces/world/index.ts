@@ -8,7 +8,7 @@ import type { Piece, PieceOptions } from '../../world/piece';
 import { Stage } from '../../world/stage';
 import { finish, trueDarks } from '../../world/tone';
 import { CORE, D2R, HOST, LIGHT, MOONWARD, PYRAMID, SCALE, SPIRE, VIEW, coreLevel, drawn, ground } from './layout';
-import { GLINT, STREAM_LONG, color, world } from './light';
+import { GLINT, STREAM_LONG, WARM, color, world } from './light';
 import { night } from './night';
 import { PARTS, type PartFactory, type PartName, type PartState, type WorldPart } from './part';
 import { STEP, TOWERS } from './placed';
@@ -35,6 +35,15 @@ const CLOSE: Record<string, readonly [number, number, number]> = {
   hollow: [CORE.at[0], CORE.at[1] - 10, CORE.at[2]],
   pyramid: [PYRAMID.x, ground(PYRAMID.x, PYRAMID.z) + PYRAMID.tall * 0.45, PYRAMID.z],
   crown: [TOWERS[STEP][0], ground(TOWERS[STEP][0], TOWERS[STEP][1]) + TOWERS[STEP][4] * 0.72, TOWERS[STEP][1]],
+  // The rest are for the parts' builders: what broke away, each side of the planet's skin, the city's left end,
+  // the spire, the dunes and the belt of trees.
+  debris: [0, -700, 200],
+  right: [520, -260, 380],
+  left: [-520, -260, 380],
+  city: [-520, 60, 0],
+  spire: [0, SPIRE.tall * 0.55, 0],
+  dunes: [470, 10, 240],
+  trees: [120, 8, 290],
 };
 // The moon's shadow map: how far each side of the planet's middle it reaches, in units, how many pixels square by
 // tier, and where the planet's middle is.
@@ -44,10 +53,6 @@ const MOON = { reach: 980, mid: -330, far: 4.5, map: { high: 4096, mid: 2048, lo
 export { GLINT };
 // The glow: how strong, how far it spreads, and how bright a thing has to be to have one (pale is about 1).
 const GLOW = { strength: 0.14, radius: 0.08, threshold: 1.7 };
-// How much of the stage's white balance the world keeps. The balance was made for things seen in a warm room, to
-// let a grey thing read grey. Here it took the warmth out of every dark: sand in shadow, rock out of the core's
-// light and the shade of the trees all came out grey, where the picture's darks are a deep warm brown.
-const WARM = 0.25;
 // The canvas fades to nothing over this share of its rim, so nothing can end at its edge.
 const RIM = 0.02;
 

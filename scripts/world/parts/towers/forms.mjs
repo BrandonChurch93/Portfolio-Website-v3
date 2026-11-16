@@ -59,8 +59,10 @@ export function reveal(b, f, s0, s1, t0, t1, a, c, o = {}) {
 //             (a spandrel of bronze or copper, bandTag), out: how far the piers stand proud, busy, punched: the
 //             windows let into the stone of the wall and not into bronze }
 export function facade(b, f, len, y0, y1, st) {
-  const corner = Math.min(st.corner, len * 0.3), pier = st.pier, n = Math.max(1, st.bays);
-  const bay = (len - 2 * corner - (n - 1) * pier) / n;
+  const corner = Math.min(st.corner, len * 0.3), pier = st.pier;
+  // As many bays as fit, each at least a window and a half wide, so a narrow face is not left blank.
+  let n = Math.max(1, st.bays), bay = (len - 2 * corner - (n - 1) * pier) / n;
+  while (n > 1 && bay < Math.max(1.5, 1.5 * st.cw)) { n--; bay = (len - 2 * corner - (n - 1) * pier) / n; }
   if (bay < 1.5) { slab(b, f, 0, len, y0, y1); return; }
   const out = st.out ?? 0;
   const proud = (s0, s1) => {

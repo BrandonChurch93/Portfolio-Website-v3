@@ -38,7 +38,7 @@ export const WINDOW = {
 export const TONES = [[1, 1, 1], [0.74, 0.6, 0.45], [0.3, 0.26, 0.23]] as const;
 // How far the pale stone is drawn from the palette's text-2 toward its copper-light, in linear light: a warm
 // limestone, so the city's walls are warm in the night's light and not greige.
-export const WARM = 0.42;
+export const WARM = 0.5;
 
 // What one window shows on average across its cell, as a share of WINDOW.gain in its own color: how lit it is
 // (0 to 1, as stored), and how far a blind is down (0 to 1).

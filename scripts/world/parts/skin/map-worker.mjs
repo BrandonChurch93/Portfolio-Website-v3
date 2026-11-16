@@ -5,7 +5,8 @@ import { parentPort, workerData } from 'node:worker_threads';
 import { closest } from '../../lib/bvh.mjs';
 import { L } from '../../lib/plan.mjs';
 import { setup, fine, glow, cleft, intact, pitted, fbm } from './field.mjs';
-import { toShell } from './features.mjs';
+import { frame, shellNormal as shellNormalOf, toShell } from './features.mjs';
+const shellNormalAt = (q) => shellNormalOf(q[0], q[1], q[2]);
 
 const { features, bvh, positions, normals, indices, texels, rects, perPixel, rows, moon } = workerData;
 setup(features);
@@ -39,7 +40,11 @@ for (let row = rows[0]; row < rows[1]; row++) {
     out.at.set(p, i * 3);
     const h0 = fine(q[0], q[1], q[2], side);
     out.H[i] = h0;
-    out.G[i] = glow(q[0], q[1], q[2]);
+    // The fine relief's slope along the surface here, which turns a face toward or away from a crack's light.
+    const sn0 = shellNormalAt(q), [e1, e2] = frame(sn0), D = 0.3;
+    const r1 = toShell(q[0] + e1[0] * D, q[1] + e1[1] * D, q[2] + e1[2] * D), r2 = toShell(q[0] + e2[0] * D, q[1] + e2[1] * D, q[2] + e2[2] * D);
+    const g1 = (fine(r1[0], r1[1], r1[2], side) - h0) / D, g2 = (fine(r2[0], r2[1], r2[2], side) - h0) / D;
+    out.G[i] = glow(q[0], q[1], q[2], [e1[0] * g1 + e2[0] * g2, e1[1] * g1 + e2[1] * g2, e1[2] * g1 + e2[2] * g2]);
     // The stone's color here, as a multiple of its side's own.
     const sn = (() => { const g = [q[0] / L.WORLD.half ** 2, Math.min(0, q[1] + L.RIM) / L.WORLD.deep ** 2, q[2] / L.WORLD.half ** 2], l = Math.hypot(...g) || 1; return g.map((x) => x / l); })();
     const up = n[0] * sn[0] + n[1] * sn[1] + n[2] * sn[2];
@@ -76,7 +81,7 @@ for (let row = rows[0]; row < rows[1]; row++) {
     // steps below are.
     if (below > 0.35) {
       const layer = below < 1.6 ? 1 : 0;
-      m *= layer ? (side > 0 ? 1.18 : 2.6) : side > 0 ? 0.42 : 1.15;
+      m *= layer ? (side > 0 ? 1.25 : 2.6) : side > 0 ? 0.68 : 1.15;
     }
     out.B[i] = m;
   }

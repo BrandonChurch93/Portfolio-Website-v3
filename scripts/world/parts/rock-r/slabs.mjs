@@ -30,6 +30,9 @@ const CREVICE = { near: 3, dark: 0.012, share: 0.3, round: 7, least: 10, most: 3
 const CRUMB = 30;
 // Strata: a slab at least this long and wide is cut, the lines turned from its length by up to `turn` radians, and a
 // layer under `least` pixels goes back.
+// Chips: on a run between two slabs of at least `run` pixels, each piece at least `area`, one every `every` pixels,
+// `wide` across and `deep` into one side, none within `margin` of the run's ends.
+const CHIP = { run: 18, area: 300, every: [10, 26], wide: [3, 7], deep: [1, 2.4], margin: 4 };
 const STRATA = { long: 70, wide: 22, turn: 0.09, least: 60 };
 const OUT = new URL('./measured/slabs.json', import.meta.url).pathname;
 
@@ -259,7 +262,36 @@ export async function slabs() {
   };
   const chains = outline(W, H, plab, kind, rgb, { tol: tolOf, wobble: (a, b) => (kindOf(a, b) === 'slab' ? 0.4 : 0.2) });
   for (const ch of chains) ch.kind = kindOf(ch.L, ch.R);
+  chip(chains, pieces);
   return { W, H, pieces, slabs: slabsOut, chains, plab, slabOfPiece, kind };
+}
+
+// Chips knocked out of the edges where two slabs meet: along a long run, every so often, a short stretch of it is
+// bent to a point to one side or the other, a small bite out of one slab's edge.
+function chip(chains, pieces) {
+  const h = (a, b) => { const v = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return v - Math.floor(v); };
+  chains.forEach((ch, c) => {
+    if (ch.kind !== 'slab' || ch.L < 0 || ch.R < 0 || ch.closed) return;
+    if (pieces[ch.L].area < CHIP.area || pieces[ch.R].area < CHIP.area) return;
+    const p = ch.pts, len = [0];
+    for (let i = 1; i < p.length; i++) len.push(len[i - 1] + Math.hypot(p[i][0] - p[i - 1][0], p[i][1] - p[i - 1][1]));
+    const total = len[len.length - 1];
+    if (total < CHIP.run) return;
+    const at = (t) => { let i = 1; while (i < p.length - 1 && len[i] < t) i++; const k = (t - len[i - 1]) / (len[i] - len[i - 1] || 1); return [p[i - 1][0] + (p[i][0] - p[i - 1][0]) * k, p[i - 1][1] + (p[i][1] - p[i - 1][1]) * k]; };
+    const out = [p[0]];
+    let t = CHIP.margin + CHIP.every[0] * h(c, 1), last = 0, q = 0;
+    while (t + CHIP.wide[1] < total - CHIP.margin) {
+      const w = CHIP.wide[0] + (CHIP.wide[1] - CHIP.wide[0]) * h(c, q + 2), a = at(t), b = at(t + w), m = at(t + w * (0.35 + 0.3 * h(c, q + 3)));
+      const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1, d = (CHIP.deep[0] + (CHIP.deep[1] - CHIP.deep[0]) * h(c, q + 4)) * (h(c, q + 5) < 0.5 ? -1 : 1);
+      for (let i = 0; i < p.length; i++) if (len[i] > last && len[i] < t) out.push(p[i]);
+      out.push(a, [m[0] - (dy / l) * d, m[1] + (dx / l) * d], b);
+      last = t + w;
+      t += w + CHIP.every[0] + (CHIP.every[1] - CHIP.every[0]) * h(c, q + 6);
+      q += 7;
+    }
+    for (let i = 0; i < p.length; i++) if (len[i] > last && i > 0) out.push(p[i]);
+    ch.pts = out.map(([x, y]) => [Math.round(x * 100) / 100, Math.round(y * 100) / 100]);
+  });
 }
 
 // What each piece is in the picture: its size, how much of it the picture shows, its middle, its brightness and color.

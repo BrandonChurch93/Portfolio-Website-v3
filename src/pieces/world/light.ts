@@ -43,6 +43,12 @@ const TINT = asked.has('filltint') ? String(asked.get('filltint')).split(',').ma
 // (the stage, which sets it, also hands it on under the same name).
 export const GLINT = { back: 2.2, range: 1.3, power: 1.4 };
 
+// How much of the stage's white balance the world keeps. The balance was made for things seen in a warm room, to
+// let a grey thing read grey. Here it took the warmth out of every dark: sand in shadow, rock out of the core's
+// light and the shade of the trees all came out grey, where the picture's darks are a deep warm brown. A part whose
+// own shader undoes the balance divides by this share of it.
+export const WARM = 0.25;
+
 // As far as the stream is ever taken to have run: past the lowest of what broke away.
 export const STREAM_LONG = 4000;
 

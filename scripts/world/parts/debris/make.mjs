@@ -1,4 +1,5 @@
-// Makes what broke away (src/pieces/world/parts/debris.ts): public/world/debris.bin and public/world/debris-detail.png.
+// Makes what broke away (src/pieces/world/parts/debris.ts): public/world/debris.bin. It wears the planet's stone
+// (src/pieces/world/parts/rock/stone.ts), whose maps are the rock's.
 //
 //   node scripts/world/parts/debris/make.mjs           the shipped files
 //   node scripts/world/parts/debris/make.mjs --draft   fast: coarser models and fewer samples in the bake
@@ -18,13 +19,12 @@ import { build, closest, gap } from '../../lib/bvh.mjs';
 import { pack } from '../../lib/pack.mjs';
 import { L, light, linear, storeBounce } from '../../lib/plan.mjs';
 import { KIND, SWAY } from '../../../../src/pieces/world/parts/debris/motion.ts';
-import { detail } from './detail.mjs';
 import { makeModels } from './models.mjs';
 import { calm, extents, place, rotate } from './place.mjs';
 import { read } from './rockfile.mjs';
 
 const draft = process.argv.includes('--draft');
-const ROCK = 'public/world/rock-r.bin', OUT = 'public/world/debris.bin', DETAIL = { file: 'public/world/debris-detail.png', size: 512 };
+const ROCK = 'public/world/rock-r.bin', OUT = 'public/world/debris.bin';
 // The color the light is worked out with, which is the torn rock's (scripts/world/lib/rock.mjs).
 const ALBEDO = linear('text-3');
 const t0 = performance.now(), said = (s) => console.log(`${((performance.now() - t0) / 1000).toFixed(1)} s · ${s}`);
@@ -63,10 +63,24 @@ const laid = (p) => {
   }
   return { pos, nor };
 };
+const mul = (a, b) => [a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1], a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0], a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3], a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]];
 const clear = (pos) => { let least = Infinity; for (let i = 0; i < pos.length / 3; i += 5) least = Math.min(least, gap(bvh, pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2], 40, 0)); return least; };
 for (const p of great) {
   let { pos, nor } = laid(p);
   const need = SWAY.plate * calm(p) + 1, from = [...p.at], [px, py] = L.pictured(...from);
+  // A boulder of the picture's is first turned about its own upright, which keeps its place and size.
+  if (p.pictured) {
+    const q0 = p.quat, up = rotate(q0, [0, 1, 0]);
+    let best = clear(pos), bestQ = q0;
+    for (let k = 1; k < 12 && best < need; k++) {
+      const a = (k * Math.PI) / 6, s0 = Math.sin(a / 2), turn = [up[0] * s0, up[1] * s0, up[2] * s0, Math.cos(a / 2)];
+      p.quat = mul(turn, q0);
+      const c = clear(laid(p).pos);
+      if (c > best) { best = c; bestQ = p.quat; }
+    }
+    p.quat = bestQ;
+    ({ pos, nor } = laid(p));
+  }
   const tries = [...Array.from({ length: 12 }, (_, k) => L.fromPicture(px, py, from[2] + (k % 2 ? -1 : 1) * 12 * (1 + (k >> 1)))), ...Array.from({ length: 12 }, (_, k) => [from[0], from[1] - 4 * (k + 1), from[2]])];
   for (let k = 0; clear(pos) < need && k < tries.length; k++) { p.at = tries[k]; ({ pos, nor } = laid(p)); }
   if (p.at.some((v, i) => v !== from[i])) said(`G${p.family} kept clear of the rock: moved ${p.at.map((v, i) => (v - from[i]).toFixed(0)).join(', ')}, ${clear(pos).toFixed(1)} from it`);
@@ -155,5 +169,4 @@ const table = pieces.map((p) => [
 ]);
 const tris = pieces.reduce((s, p) => s + models[p.model].indices.length / 3, 0);
 pack(OUT, out, { draft, columns: 'model x y z qx qy qz qw sx sy sz kind family phase ax ay az spin core br bg bb extra shut', pieces: table, placed, triangles: tris });
-detail(DETAIL.file, DETAIL.size);
 said(`done: ${pieces.length} pieces, ${tris.toLocaleString('en-US')} triangles drawn`);

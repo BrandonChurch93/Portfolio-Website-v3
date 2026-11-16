@@ -40,7 +40,7 @@ export const TORN = {
   // The rubble: how large each piece is, and how far it is sunk into the rock as a share of its size.
   stone: [0.025, 0.07], sunk: 0.35,
   // How much every face swells and wanders, and over how far.
-  swell: 0.014, swellOver: 0.3, ridge: 0.011, ridgeOver: 0.11, wander: 0.005, wanderOver: 0.05, grit: 0.0025, gritOver: 0.018,
+  swell: 0.009, swellOver: 0.3, ridge: 0.006, ridgeOver: 0.11, wander: 0.003, wanderOver: 0.05, grit: 0.0015, gritOver: 0.018,
 };
 
 export function shape({ seed, size, layer = [0, 1, 0], blocks = 7, drop = 1, skin = null, top = false, rubble = 12, scars = 10 }) {

@@ -78,7 +78,7 @@ export async function see() {
       const half = bg + 0.35 * (bv - bg);
       while (a > best - 20 && Y(a - 1, y) > half) a--;
       while (b < best + 20 && Y(b + 1, y) > half) b++;
-      const pad = s.main ? 4 : 2;
+      const pad = 2;
       for (let x = a - pad; x <= b + pad; x++) hide[x + y * W] = 1;
     }
     for (let dy = -5; dy <= 5; dy++) for (let dx = -5; dx <= 5; dx++) if (dx * dx + dy * dy <= 25) hide[Math.round(s.x) + dx + (s.from + dy) * W] = 1;

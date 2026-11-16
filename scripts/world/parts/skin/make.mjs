@@ -30,9 +30,11 @@ const began = performance.now(), say = (s) => console.log(`skin: ${s} · ${((per
 // keep, the bake's rays, and the map's texels to a picture pixel.
 const FINE = draft
   ? { grid: 1.4, error: 0.2, most: 120000, samples: { core: 8, moon: 6, hemi: 24 }, bounces: 1, perPixel: 1.5 }
-  : { grid: 0.5, error: 0.09, most: 235000, samples: { core: 16, moon: 16, hemi: 160 }, bounces: 2, perPixel: MAP.perPixel };
+  : { grid: 0.6, error: 0.5, most: 235000, samples: { core: 16, moon: 16, hemi: 160 }, bounces: 2, perPixel: MAP.perPixel };
 // How far down the surface the grid is looked at (t, 0 at the rim), and the margin round each side's part of the map.
 const DOWN = 0.93, MARGIN = 4;
+// How near (the cosine) the grid's normal must be to a crease's to be taken in its place.
+const AGREE = Math.cos((24 * Math.PI) / 180), CREASE = Math.cos((32 * Math.PI) / 180);
 
 const features = { craters: craters(), segs: cracks(), edges: edges() };
 setup(features);
@@ -70,6 +72,24 @@ function grid(side) {
       if (k === 0 || k === rows.length - 1 || j === 0 || j === cols) lock[v] = 1;
     }
   });
+  // The normal at each point of the grid, from its neighbours: the reduced mesh keeps these where the surface is
+  // smooth, since the long thin triangles a reduction leaves give poor normals of their own.
+  const nor = new Float32Array(V * 3), sharp = new Uint8Array(V), C = cols + 1, at = (k, j) => (Math.min(rows.length - 1, Math.max(0, k)) * C + Math.min(cols, Math.max(0, j))) * 3;
+  const across = (a, b, c, d) => {
+    const u = [pos[a] - pos[b], pos[a + 1] - pos[b + 1], pos[a + 2] - pos[b + 2]], w = [pos[c] - pos[d], pos[c + 1] - pos[d + 1], pos[c + 2] - pos[d + 2]];
+    const nn = [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]], l = Math.hypot(...nn) || 1;
+    return nn.map((x) => x / l);
+  };
+  for (let k = 0; k < rows.length; k++) for (let j = 0; j <= cols; j++) {
+    const q = at(k, j), sn = shellNormal(pos[q], pos[q + 1], pos[q + 2]);
+    const out = (nn) => (nn[0] * sn[0] + nn[1] * sn[1] + nn[2] * sn[2] < 0 ? nn.map((x) => -x) : nn);
+    nor.set(out(across(at(k, j + 1), at(k, j - 1), at(k + 1, j), at(k - 1, j))), q);
+    // A point is on a crease where the surface's four quarters round it turn apart.
+    const quarters = [across(at(k, j + 1), q, at(k + 1, j), q), across(at(k, j - 1), q, at(k + 1, j), q), across(at(k, j + 1), q, at(k - 1, j), q), across(at(k, j - 1), q, at(k - 1, j), q)].map(out);
+    let least = 1;
+    for (let a = 0; a < 4; a++) for (let b = a + 1; b < 4; b++) least = Math.min(least, quarters[a][0] * quarters[b][0] + quarters[a][1] * quarters[b][1] + quarters[a][2] * quarters[b][2]);
+    if (least < CREASE) sharp[q / 3] = 1;
+  }
   const idx = [];
   for (let k = 0; k + 1 < rows.length; k++) for (let j = 0; j < cols; j++) {
     const a = k * (cols + 1) + j, b = a + 1, c = a + cols + 1, d = c + 1;
@@ -82,26 +102,45 @@ function grid(side) {
     idx.push(...tris);
   }
   say(`${side}: ${rows.length} rings of ${cols + 1}, ${(idx.length / 3).toLocaleString('en-US')} triangles`);
-  return { positions: pos, indices: Uint32Array.from(idx), lock };
+  return { positions: pos, normals: nor, sharp, indices: Uint32Array.from(idx), lock };
 }
 const parts = ['left', 'right'].map(grid);
 
 // One mesh of both sides.
 const nv = parts.reduce((a, p) => a + p.positions.length / 3, 0), ni = parts.reduce((a, p) => a + p.indices.length, 0);
-const whole = { positions: new Float32Array(nv * 3), indices: new Uint32Array(ni) }, lock = new Uint8Array(nv);
+const whole = { positions: new Float32Array(nv * 3), indices: new Uint32Array(ni) }, lock = new Uint8Array(nv), gridNormals = new Float32Array(nv * 3), gridSharp = new Uint8Array(nv);
 {
   let vo = 0, io = 0;
   for (const p of parts) {
     whole.positions.set(p.positions, vo * 3);
+    gridNormals.set(p.normals, vo * 3);
+    gridSharp.set(p.sharp, vo);
     lock.set(p.lock, vo);
     for (let i = 0; i < p.indices.length; i++) whole.indices[io + i] = p.indices[i] + vo;
     vo += p.positions.length / 3; io += p.indices.length;
   }
 }
-const small = await simplify(whole, { error: FINE.error, target: FINE.most, lock });
+const small = await simplify(whole, { error: FINE.error, target: FINE.most, lock, strict: false });
 say(`reduced: ${(small.indices.length / 3).toLocaleString('en-US')} triangles`);
 const lit = creased(small, 38);
 const n = lit.positions.length / 3;
+{
+  // Where a point of the reduced mesh was not split at a crease, it takes the grid's own normal there.
+  const keyOf = (p, i) => `${p[i * 3]},${p[i * 3 + 1]},${p[i * 3 + 2]}`, kept = new Map(), split = new Uint32Array(small.positions.length / 3);
+  for (let i = 0; i < small.positions.length / 3; i++) kept.set(keyOf(small.positions, i), i);
+  const from = new Int32Array(small.positions.length / 3).fill(-1);
+  for (let i = 0; i < nv; i++) { const s = kept.get(keyOf(whole.positions, i)); if (s !== undefined) from[s] = i; }
+  for (let i = 0; i < n; i++) split[lit.source[i]]++;
+  let took = 0;
+  for (let i = 0; i < n; i++) {
+    const s = lit.source[i], g = from[s];
+    if (g < 0) continue;
+    const a = lit.normals, gn = gridNormals, c = a[i * 3] * gn[g * 3] + a[i * 3 + 1] * gn[g * 3 + 1] + a[i * 3 + 2] * gn[g * 3 + 2];
+    // A point on a crease of the surface keeps the crease's own normal, unless the grid's is close to it.
+    if (!gridSharp[g] || split[s] === 1 || c > AGREE) { a.set(gn.subarray(g * 3, g * 3 + 3), i * 3); took++; }
+  }
+  say(`${took.toLocaleString('en-US')} of ${n.toLocaleString('en-US')} points take the grid's normal`);
+}
 say(`creased: ${n.toLocaleString('en-US')} vertices`);
 
 // ---------------------------------------------------------------------------------------------------------------

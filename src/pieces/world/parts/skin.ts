@@ -25,7 +25,7 @@ const stone = (s: { from: PaletteName; to: PaletteName; k: number; power: number
 const ALONE = { at: [0, -260, 0] as [number, number, number], r: 700 };
 // While the rock still draws its own plain outer surface where the skin is, ?skinlift=1 lifts the skin clear of it
 // by so many units, only for looking at it.
-const LIFT = 14;
+const LIFT = 22;
 
 async function readMap(file: string): Promise<THREE.DataTexture> {
   const res = await fetch(`/world/${file}`);
@@ -65,6 +65,7 @@ export const build: PartFactory = async ({ query, renderer }) => {
     fr = after(fr, 'color_fragment', S.COLOR);
     fr = after(fr, 'normal_fragment_maps', S.NORMAL);
     fr = after(fr, 'emissivemap_fragment', S.EMIT);
+    fr = after(fr, 'lights_fragment_end', S.NIGHT);
     // ?skindebug=<a color in GLSL> draws that in place of the skin, for finding what a fault comes from.
     const debug = query.get('skindebug');
     if (debug) fr = after(fr, 'opaque_fragment', `gl_FragColor = vec4( ${debug}, 1.0 );`);

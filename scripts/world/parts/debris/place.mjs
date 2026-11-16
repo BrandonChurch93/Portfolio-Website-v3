@@ -21,7 +21,7 @@ export const classOf = (r) => (r >= CLASSES.L ? 'L' : r >= CLASSES.M ? 'M' : r >
 // Picture 9's two great boulders, read off the picture (its pixels, the middle of each), with their half extents,
 // across, up and through. The left is a chunky dark lump whose top meets the rock, the right a taller one.
 const BOULDERS = [
-  { px: [436, 640], z: 230, size: [64, 40, 58], family: 9, turn: 0.55 },
+  { px: [436, 646], z: 230, size: [66, 44, 64], family: 9, turn: 0.55 },
   { px: [905, 634], z: 250, size: [60, 60, 55], family: 10, turn: -0.2 },
 ];
 // The smaller pieces picture 9 has under the hollow, among the small streams: where each is in the picture's pixels

@@ -6,9 +6,9 @@
 import { WINDOW, paleness, shown } from '../../../../src/pieces/world/parts/spire/windows.ts';
 import { L, linear } from '../../lib/plan.mjs';
 
-// How many rooms are lit at least, how many more where a clump is busy, how many are the warmest, how many dark rooms
+// How many rooms are lit at least, how many more where a clump is busy (sparse, and each lit room bright), how many are the warmest, how many dark rooms
 // show a glow from further in, and how many floors are dark right across.
-const LIT = { least: 0.36, busy: 0.7, warm: 0.25, glow: 0.3, floor: 0.06 };
+const LIT = { least: 0.1, busy: 0.5, warm: 0.25, glow: 0.22, floor: 0.08 };
 
 export class Windows {
   constructor(seed) {
@@ -40,9 +40,9 @@ export class Windows {
     for (let c = 0; c < cols; c++) {
       let r = 0;
       while (r < rows) {
-        const long = 2 + Math.floor(R() * 7), busy = L.noise(c / 3 + mood * 3.1, r / 9 + mood * 1.7, mood, 73) ** 1.3;
+        const long = 1 + Math.floor(R() * 4), busy = L.noise(c / 3 + mood * 3.1, r / 9 + mood * 1.7, mood, 73) ** 1.3;
         const lit = R() < LIT.least + LIT.busy * busy, tone = R();
-        const seg = { lit, level: 0.45 + 0.55 * R() ** 1.4, warm: tone < LIT.warm ? 0.05 + 0.15 * R() : tone > 0.85 ? 0.8 + 0.18 * R() : 0.35 + 0.4 * R(), blind: R() < 0.2 ? 0.25 + 0.5 * R() : 0 };
+        const seg = { lit, level: 0.72 + 0.28 * R() ** 1.4, warm: tone < LIT.warm ? 0.05 + 0.15 * R() : tone > 0.85 ? 0.8 + 0.18 * R() : 0.35 + 0.4 * R(), blind: R() < 0.2 ? 0.25 + 0.5 * R() : 0 };
         for (let k = 0; k < long && r < rows; k++, r++) {
           let level, blind = seg.blind > 0 ? Math.min(1, Math.max(0, seg.blind + (R() - 0.5) * 0.3)) : 0;
           if (seg.lit && !dark.has(r) && R() > 0.06) level = R() < 0.06 ? 1 : seg.level * (0.82 + 0.25 * R());
@@ -55,6 +55,16 @@ export class Windows {
           this.data[i + 2] = Math.round(blind * 255);
         }
       }
+    }
+  }
+  // Every window of a field lit, at about this level and this paleness, with no blind: the lantern's slits and the
+  // lancets of the upper shaft, which are lamps and not rooms.
+  light(at, level, warm) {
+    for (let r = 0; r < at.rows; r++) for (let c = 0; c < at.cols; c++) {
+      const i = ((at.r0 + r) * this.size + at.c0 + c) * 3;
+      this.data[i] = Math.round(Math.min(1, level * (0.9 + 0.1 * this.rand())) * 255);
+      this.data[i + 1] = Math.round(warm * 255);
+      this.data[i + 2] = 0;
     }
   }
   read(c, r) {

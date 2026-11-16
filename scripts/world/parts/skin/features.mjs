@@ -114,17 +114,17 @@ function crater(c, r, kind, seed, worn = 0) {
   const complex = kind === 'complex';
   return {
     c, n, e1, e2, r, seed,
-    depth: (complex ? 0.19 : 0.24) * r * (0.85 + 0.3 * R()) * (1 - 0.7 * worn),
-    rim: (complex ? 0.055 : 0.085) * r * (0.8 + 0.4 * R()) * (1 - 0.6 * worn),
-    floor: complex ? 0.42 + 0.12 * R() : 0,
-    terraces: complex ? 2 + Math.floor(R() * 2) : 0,
-    lumpy: 0.05 + 0.04 * R(),
+    depth: (complex ? 0.25 : 0.34) * r * (0.85 + 0.3 * R()) * (1 - 0.7 * worn),
+    rim: (complex ? 0.06 : 0.09) * r * (0.8 + 0.4 * R()) * (1 - 0.6 * worn),
+    floor: complex ? 0.5 + 0.12 * R() : 0,
+    terraces: complex ? 1 + Math.floor(R() * 2.2) : 0,
+    gullies: complex ? Math.round(18 + 22 * R()) : 0,
+    lumpy: 0.04 + 0.05 * R(),
     phase: R() * 100,
     worn,
   };
 }
 
-// A place on a side, chosen evenly over its surface.
 const areaAt = (t) => { const r = Math.sqrt(1 - t * t), dr = (C.half * t) / r; return r * Math.hypot(dr, C.deep); };
 const AREA_MOST = Math.max(...Array.from({ length: 87 }, (_, i) => areaAt(i / 100)));
 function scatterOn(side, R) {
@@ -175,6 +175,8 @@ export function craters() {
 // cleft there in units and how hot its light is (1 pale gold, under 0.3 ember). The knot is at 225, 478. They run
 // straight and turn sharply. heat 0 is a dark fissure with no light in it.
 export const KNOT = [225, 478];
+// The traced widths are what the picture shows at its size; the clefts are cut this much wider so they read as clefts.
+const WIDEN = 1.25;
 export const TRACED = [
   // to the tear: the widest and hottest
   [[225, 478, 2.4, 1], [236, 474, 2.2, 1], [246, 472, 2.1, 1], [252, 470, 2.3, 1], [259, 469, 2.6, 1]],
@@ -212,14 +214,14 @@ export function cracks() {
     const pts = [];
     for (let i = 0; i < tr.length; i++) {
       const [px, py, w, heat] = tr[i];
-      pts.push({ p: lift(px, py), w, heat });
+      pts.push({ p: lift(px, py), w: w * WIDEN, heat });
       if (i === tr.length - 1) break;
       // A kink or two between traced points: rock breaks in straight runs with sharp turns.
       const [qx, qy, qw, qh] = tr[i + 1], dx = qx - px, dy = qy - py, len = Math.hypot(dx, dy), nx = -dy / len, ny = dx / len;
       const kinks = len > 9 ? 2 : len > 5 ? 1 : 0;
       for (let k = 1; k <= kinks; k++) {
         const f = (k / (kinks + 1)) + (R() - 0.5) * 0.18, off = (R() - 0.5) * Math.min(3.2, len * 0.22);
-        pts.push({ p: lift(px + dx * f + nx * off, py + dy * f + ny * off), w: w + (qw - w) * f, heat: heat + (qh - heat) * f });
+        pts.push({ p: lift(px + dx * f + nx * off, py + dy * f + ny * off), w: (w + (qw - w) * f) * WIDEN, heat: heat + (qh - heat) * f });
       }
     }
     runs.push(pts);
@@ -228,14 +230,14 @@ export function cracks() {
   const branches = [];
   for (const run of runs.slice(0, 10)) for (let i = 1; i < run.length - 1; i++) {
     const a = run[i];
-    if (a.heat <= 0 || R() > 0.55) continue;
+    if (a.heat <= 0 || R() > 0.2) continue;
     const b = run[i + 1], n = shellNormal(...a.p);
     const dir = [b.p[0] - a.p[0], b.p[1] - a.p[1], b.p[2] - a.p[2]], dl = Math.hypot(...dir);
     if (dl < 1e-6) continue;
     const t1 = dir.map((v) => v / dl), side = [n[1] * t1[2] - n[2] * t1[1], n[2] * t1[0] - n[0] * t1[2], n[0] * t1[1] - n[1] * t1[0]];
     const turn = (R() < 0.5 ? -1 : 1) * (0.5 + 0.7 * R());
     let d = t1.map((v, k) => v * Math.cos(turn) + side[k] * Math.sin(turn)), p = a.p, w = a.w * (0.35 + 0.2 * R()), heat = a.heat * (0.55 + 0.2 * R());
-    const pts = [{ p, w, heat }], legs = 2 + Math.floor(R() * 3), long = (5 + 14 * R()) * (0.6 + a.w * 0.4);
+    const pts = [{ p, w, heat }], legs = 2 + Math.floor(R() * 2), long = (10 + 18 * R()) * (0.6 + a.w * 0.4);
     for (let k = 0; k < legs; k++) {
       const len = long / legs * (0.6 + 0.8 * R()), q = [p[0] + d[0] * len, p[1] + d[1] * len, p[2] + d[2] * len];
       p = toShell(...q);

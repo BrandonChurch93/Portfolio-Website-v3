@@ -29,5 +29,5 @@ export const towardEdge = (x, z) => {
 };
 export function below(x, z) {
   const sunk = F.BREAK.drop * 1.45 + F.BREAK.tip * F.BREAK.cell * 1.6;
-  return L.dome(x, z) + desert(x, z) * F.relief(x, z) - (L.within(x, z) < F.BREAK.reach + F.BREAK.cell ? sunk : 0);
+  return L.dome(x, z) + desert(x, z) * F.relief(x, z, L.within(x, z)) - (L.within(x, z) < F.BREAK.reach + F.BREAK.cell ? sunk : 0);
 }

@@ -59,12 +59,18 @@ uvec3 coreHash( ivec3 c, uint seed ) { return corePcg( uvec3( c + 4096 ) + uvec3
 vec3 coreUnit( uvec3 h ) { return vec3( h & 0xffffu ) / 65535.0; }
 vec3 coreHigh( uvec3 h ) { return vec3( h >> 16u ) / 65535.0; }
 // A facet is flat and tilted, so the light on it runs across it from one side to the other. Most facets are close
-// to the light round them and a few catch it and are brighter: a facet is never much darker than the face.
+// to the light round them and a few catch it and are brighter: a facet is never much darker than the face. Each
+// leans its own way off the ball's surface, so how much of its light comes to the eye differs from the next, and as
+// the ball turns it changes: a facet that comes to face the glint's way flashes and goes again. cNorm is the ball's
+// surface, cView the way to the eye and cGlint the way a facet faces to flash, all turned with the face.
+vec3 cNorm, cView, cGlint;
 vec2 coreLight( uvec3 h, int k, float t, vec3 d ) {
 	uvec3 g = corePcg( h + uvec3( uint( k ) * 977u + 11u ) );
 	vec3 r = coreUnit( g ), r2 = coreHigh( g ) * 2.0 - 1.0;
 	float turn = sin( 6.2832 * ( r.y + t * ( 0.5 + r.z ) ) );
+	vec3 nf = coreDir( cNorm + FACET_LEAN * r2 );
 	float lit = FACET_LIFT * ( pow( r.x, FACET_SKEW ) - 1.0 / ( FACET_SKEW + 1.0 ) ) + FACET_TURN * turn + FACET_TILT * dot( r2, d );
+	lit += FACET_VIEW * ( dot( nf, cView ) - dot( cNorm, cView ) ) + FACET_GLINT * pow( max( dot( nf, cGlint ), 0.0 ), FACET_SHINE );
 	return vec2( lit, FACET_WARM * ( coreHigh( h ).y * 2.0 - 1.0 ) );
 }
 // Which facet of a cell a place is in, the light of that facet, and how far the place is from the facet's sides.

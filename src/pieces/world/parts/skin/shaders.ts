@@ -1,4 +1,4 @@
-import { GLOW, MAP } from './look';
+import { GLOW, MAP, NIGHT_SIDE } from './look';
 import { SCALE } from '../../layout';
 
 // The skin's own changes to the standard shader. Its map is laid over picture 9's pixels, so a texel's slope is a
@@ -66,3 +66,6 @@ export const EMIT = `
 	float onRock = 0.22 + 2.4 * dot( diffuseColor.rgb, vec3( 0.3333 ) );
 	totalEmissiveRadiance += skinGlow( l ) * l * ${f(GLOW.power)} * uCoreLevel * mix( onRock, 1.0, inside ) * ( 1.0 - skinPale );
 }`;
+
+export const NIGHT = `
+reflectedLight.indirectDiffuse *= mix( ${f(NIGHT_SIDE)}, 1.0, skinPale );`;

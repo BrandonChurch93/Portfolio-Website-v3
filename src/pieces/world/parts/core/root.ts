@@ -55,7 +55,7 @@ float rootStream( float x, float s, float t, float lead, float heart, float F, f
 	float twist = s / 58.0 - t * 0.36 + 1.3 * sin( s / 143.0 - t * 0.12 );
 	float face = cos( twist ), depth = sin( twist );
 	float wide = mix( 10.0, 20.0, 0.5 + 0.5 * sin( s / 97.0 - t * 0.21 + 1.0 ) ) * mix( 0.25, 1.0, tip );
-	float span = ( wide * abs( face ) + 0.6 ) * F;
+	float span = wide * abs( face ) + 0.6;
 	float sum = 0.1 * smoothstep( span + 2.6, span * 0.55, abs( x ) ) * ( 0.35 + 0.65 * abs( face ) );
 	for ( int j = 0; j < ROOT_STRANDS; j ++ ) {
 		float f = float( j ), a = rootHash( f + 1.0 ), b = rootHash( f + 7.3 ), c = rootHash( f + 13.9 );
@@ -98,25 +98,36 @@ float rootOpen( float d ) {
 	float b = max( d, 0.0 );
 	return 1.0 + ROOT_FLARE0 * exp( - b / ROOT_FALL0 ) + ROOT_FLARE1 * exp( - b / ROOT_FALL1 );
 }
+// The ball's band where the beam is rooted: hottest at the foot and along the inside of the edge, for a little way
+// round the ball each side of it. Outside the ball it is gone within a unit or two.
+float rootFoot( float x, float d ) {
+	vec2 p = vec2( x, - uR - d );
+	float e = uR - length( p ), phi = atan( p.x, max( - p.y, 1e-3 ) );
+	float o = max( - e, 0.0 ) / ROOT_FOOT.z;
+	return exp( - max( e, 0.0 ) / ROOT_FOOT.x - o * o - phi * phi / ( ROOT_FOOT.y * ROOT_FOOT.y ) );
+}
 float rootAmount( float x, float d ) {
 	float xs = x * uRootScale.x, s = d * uRootScale.y, t = uTime, on = uRootState.x;
 	float open = rootOpen( d ), l = rootLimb( - d ) * uRootScale.x / ROOT_BEAM * ROOT_HUG;
 	// Over the foot the fibres fan up along the inside of the ball's band.
 	float F = sqrt( open * open + l * l ), Fh = 1.0 + ROOT_HEART_OPEN * ( open - 1.0 ) + ROOT_HEART_HUG * l;
 	float gx = xs / ( ROOT_GLOW_W * Fh ), glow = ROOT_GLOW * exp( - gx * gx );
-	float a = 0.0;
-	// Before the stream has set off: a short gathering under the foot, whole, its end rounded, quieter.
+	// Over the foot the heart gives way to the fibres, which run on up into the band brighter than below.
+	float heart = uRootScale.z * smoothstep( - ROOT_HEART_UP, 0.0, d ), up = 1.0 + ROOT_FAN * smoothstep( 0.0, - 6.0, d );
+	float since = uRootState.w, burst = on * ( 1.0 - smoothstep( 0.4, 1.1, since ) );
+	float a = mix( ROOT_GATHER.x, ROOT_GATHER.y, on ) * ( 1.0 + ROOT_SURGE * burst ) * rootFoot( x, d );
+	// Before the stream has set off: the light gathering in the band at the foot, and only a lip of it below.
 	if ( on < 0.999 ) {
-		float q = rootStream( xs, s, t, 1e4, uRootScale.z, F, Fh ) + glow;
+		float q = rootStream( xs, s, t, 1e4, heart, F, Fh ) * up + glow;
 		a += ( 1.0 - on ) * ROOT_HUSH * q * exp( - max( d, 0.0 ) / ROOT_QUIET );
 	}
 	// Once it has: the beam, as far as the leading end, given over to the page's stream where the page draws its own.
 	if ( on > 0.001 ) {
 		float lead = ( uRootState.y - d ) * uRootScale.y;
-		float b = rootStream( xs, s, t, lead, uRootScale.z, F, Fh ) + glow * smoothstep( 0.0, 12.0, lead );
-		float given = uRootState.z * clamp( ( d * ROOT_HOST - ROOT_HAND0 ) / ( ROOT_HAND1 - ROOT_HAND0 ), 0.0, 1.0 );
+		float b = rootStream( xs, s, t, lead, heart, F, Fh ) * up + glow * smoothstep( 0.0, 12.0, lead );
+		float given = uRootState.z * smoothstep( ROOT_HAND0, ROOT_HAND0 + ROOT_GIVE * ( ROOT_HAND1 - ROOT_HAND0 ), d * ROOT_HOST );
 		// It leaves with force: a surge of light runs down it from the foot as it sets off.
-		float since = uRootState.w, at = since * ROOT_SURGE_V;
+		float at = since * ROOT_SURGE_V;
 		float surge = ROOT_SURGE * exp( - pow( ( d - at ) / ROOT_SURGE_W, 2.0 ) ) * ( 1.0 - smoothstep( 0.5, 1.2, since ) );
 		a += on * b * ( 1.0 + surge ) * ( 1.0 - given );
 	}
@@ -147,7 +158,7 @@ vec4 rootColor( float a ) {
 	vec3 e = pow( min( rootRamp( a ), uPale ), vec3( 1.0 / 2.2 ) );
 	vec3 T = mix( e / 12.92, pow( ( e + 0.055 ) / 1.055, vec3( 2.4 ) ), step( 0.04045, e ) );
 	float m = max( e.r, max( e.g, e.b ) );
-	return vec4( rootUntone( T ), m * m );
+	return vec4( rootUntone( T ), m * m * m );
 }
 `;
 
@@ -168,8 +179,12 @@ ${UNBALANCE}
 ${ROOT_LIGHT}
 void main() {
 	float d = - uR - vAt.y, a = rootAmount( vAt.x, d );
-	// Over the foot and outside the ball it hugs the ball's limb and is gone a few units up.
-	if ( d < 0.0 ) a *= exp( d / ROOT_ABOVE );
+	// Outside the ball and close under it, it is gone within a unit or two of the ball's edge: what fans up into
+	// the band is drawn by the ball.
+	float e = max( length( vAt ) - uR, 0.0 ) / ( ROOT_ABOVE + ROOT_ABOVE_OPEN * max( d, 0.0 ) );
+	a *= exp( - e * e );
+	// The faintest light is let go, so nothing fades out as a wide brown film.
+	a = max( a - ROOT_FLOOR, 0.0 );
 	a *= smoothstep( ROOT_EDGE, ROOT_EDGE * 0.7, abs( vAt.x ) );
 	if ( a < 0.002 ) discard;
 	vec4 c = rootColor( a );

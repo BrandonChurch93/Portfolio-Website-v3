@@ -52,7 +52,7 @@ export class Windows {
           const near = clump ? L.noise(c / 3 + mood * 3.1, r / 9 + mood * 1.7, mood, 71) ** 1.6 * 1.5 : L.noise(c / 4.5 + mood * 3.1, r / 6 + mood * 1.7, mood, 71);
           const lit = R() < (0.2 + 0.6 * near) * on / 0.5 * dark;
           const tone = R();
-          seg = { from: c, long, lit, level: (clump ? LIT.level[0] : 0.3) + (clump ? 1 - LIT.level[0] : 0.7) * R() ** 1.3, warm: tone < 0.1 ? 0.08 + 0.12 * R() : tone > 0.75 ? 0.85 + 0.15 * R() : 0.45 + 0.45 * R(), blind: R() < 0.3 ? 0.2 + 0.6 * R() : 0 };
+          seg = { from: c, long, lit, level: (clump ? LIT.level : 0.3) + (clump ? 1 - LIT.level : 0.7) * R() ** 1.3, warm: tone < 0.1 ? 0.08 + 0.12 * R() : tone > 0.75 ? 0.85 + 0.15 * R() : 0.45 + 0.45 * R(), blind: R() < 0.3 ? 0.2 + 0.6 * R() : 0 };
         }
         row.push({ ...seg, from: c, long });
         for (let k = 0; k < long && c < cols; k++, c++) {

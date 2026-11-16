@@ -10,11 +10,11 @@ import * as S from './pyramid/shaders';
 // The pyramid: polished gold, at the front left edge of the land, a corner toward the visitor, standing straight out
 // from the dome on the ground itself. Its body is cased in courses of plates of differing heights, in bands that end
 // at a deeper joint, each plate a hair different in tilt and polish; a bevelled foot course stands proud round its
-// foot, and a capstone with a raised border sits over a fine reveal. Every arris is rounded. Its mesh and the light
+// foot, and a capstone with a raised border sits over a dark reveal. Every arris is rounded. Its mesh and the light
 // that reaches it are made ahead by scripts/world/parts/pyramid/make.mjs (public/world/pyramid.bin), in the
 // pyramid's own frame. What each face mirrors is ./pyramid/shaders.ts.
 // While it is being judged, ?pyr=zen=6,rim=5 sets any number of LOOK by its short name (see t() below), and
-// ?pyrn=lit.field.wide=20,dark.way.power=0.08 any number of NIGHT by its path.
+// ?pyrn=lit.field.wide=20,edges.ledge[1]=0.4 any number of NIGHT by its path.
 
 const LOOK = {
   // The body's roughness, the capstone's, and how much each plate's polish differs, as a share of how soft what it
@@ -29,10 +29,12 @@ const LOOK = {
   // the horizon. It stops short of what the face toward the moon mirrors.
   rim: [5, 0, 0.45],
   // The gold's colors, each at the world's gold's hue (METAL.gold) turned so many degrees, at full value: its
-  // saturation where it mirrors least, through the middle, and in the warm glow at the dark face's foot. Then over
-  // what levels the deep turns to the middle, and the middle pales toward pale gold.
-  sat: { deep: 0.78, deepTurn: -2, mid: 0.58, warm: 0.85, warmTurn: -8 },
-  grade: [0.03, 0.5, 1.4, 4.5],
+  // saturation where it mirrors least, in its body (the lit face's night, the long reflections), where it mirrors
+  // much, and in the warm glow at the dark face's foot. Gold is richest in its middle tones: held at the darks'
+  // saturation there it read as khaki or brass. Then over what levels the deep turns to the body, the body to the
+  // bright, and the bright pales toward pale gold.
+  sat: { deep: 0.64, deepTurn: -5, body: 0.76, bodyTurn: -5, mid: 0.55, midTurn: -4.5, warm: 0.72, warmTurn: -9 },
+  grade: [0.02, 0.09, 0.3, 1.2, 1.5, 4.5],
   // How much of the world's contact shadow a mirror keeps where it is shut in.
   contact: 0.3,
   // How much of the moon's own light the faces take as a light: none, for they mirror the moon where their night has
@@ -93,10 +95,12 @@ export const build: PartFactory = async (ctx) => {
       uZenW: { value: new THREE.Vector2(t('z0', LOOK.zenith.edge[0]), t('z1', LOOK.zenith.edge[1])) },
       uRim: { value: new THREE.Vector3(t('rim', LOOK.rim[0]), t('rimlo', LOOK.rim[1]), t('rimhi', LOOK.rim[2])) },
       uDeepC: { value: tint(t('sd', LOOK.sat.deep), t('dt', LOOK.sat.deepTurn)) },
-      uMidC: { value: tint(t('sm', LOOK.sat.mid)) },
+      uBodyC: { value: tint(t('sb', LOOK.sat.body), t('bt', LOOK.sat.bodyTurn)) },
+      uMidC: { value: tint(t('sm', LOOK.sat.mid), t('mt', LOOK.sat.midTurn)) },
       uWarmC: { value: tint(t('sw', LOOK.sat.warm), t('wt', LOOK.sat.warmTurn)) },
       uPaleC: { value: new THREE.Vector3(1, pale.g / pale.r, pale.b / pale.r) },
-      uGradeAt: { value: new THREE.Vector4(t('g0', LOOK.grade[0]), t('g1', LOOK.grade[1]), t('g2', LOOK.grade[2]), t('g3', LOOK.grade[3])) },
+      uGradeLo: { value: new THREE.Vector2(t('g0', LOOK.grade[0]), t('g1', LOOK.grade[1])) },
+      uGradeAt: { value: new THREE.Vector4(t('g2', LOOK.grade[2]), t('g3', LOOK.grade[3]), t('g4', LOOK.grade[4]), t('g5', LOOK.grade[5])) },
       uRough: { value: new THREE.Vector3(t('rough', LOOK.rough.body), t('cap', LOOK.rough.cap), t('vary', LOOK.rough.vary)) },
       uContact: { value: t('contact', LOOK.contact) },
       uMoonSpec: { value: t('moon', LOOK.moon) },

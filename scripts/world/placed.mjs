@@ -75,6 +75,60 @@ towers.forEach((t, i) => {
   }
   lost++;
 });
+// The city's third round, laid over picture 9 building by building off a ruled grid (scripts/world/grid.mjs), where
+// two reviewers measured it thinner and blockier than the picture at its left end and wrong in three places beside
+// the spire. Each entry is a building by its place in the list: where its top's middle is in the picture (px, py),
+// how wide it is seen there (wide, in the picture's pixels), how far toward the visitor it stands (z) and, where the
+// picture has another kind of building, its form. What is left out is kept as it is.
+//   - Left of the spire a dark slab stood 50 pixels over the picture's skyline: it is the tower with the sloping
+//     roof at 652, 161.
+//   - The ringed pair is two fat banded drums side by side at 776 to 808, their tops at 174, in front of their
+//     neighbours. What stood there is the pale tower behind them (790, 148), the slim one at 811 and the one at 836.
+//   - The left end, 110 to 350 across: the picture packs sixteen narrow towers shoulder to shoulder, stepping up
+//     toward the pyramid, over a low lit mass. The study had about six wide blocks with sky between them.
+const AT = {
+  10: { px: 652, py: 161, wide: 19 },
+  9: { px: 792, py: 174, wide: 32, z: -21 },
+  77: { px: 790, py: 148, wide: 16 },
+  111: { px: 811, py: 163, wide: 11, z: -110, form: 'slab' },
+  66: { px: 836, py: 174, wide: 15 },
+  69: { py: 190 },
+  101: { px: 126, py: 257, wide: 26 }, 95: { px: 133, py: 240, wide: 18 }, 17: { px: 151, py: 221, wide: 17 }, 107: { px: 164, py: 224, wide: 9, form: 'fin' },
+  32: { px: 177, py: 213, wide: 20 }, 103: { px: 194, py: 240, wide: 13 }, 92: { px: 211, py: 205, wide: 16 }, 70: { px: 223, py: 222, wide: 14 },
+  46: { px: 233, py: 228, wide: 11 }, 80: { px: 241, py: 192, wide: 17, form: 'deco' }, 97: { px: 254, py: 207, wide: 17 }, 12: { px: 272, py: 170, wide: 20, form: 'deco' },
+  33: { px: 290, py: 200, wide: 17 }, 112: { px: 303, py: 212, wide: 10 }, 79: { px: 316, py: 186, wide: 17, form: 'deco' }, 13: { px: 341, py: 162, wide: 18 },
+  15: { px: 118, py: 264, wide: 14, low: 0 }, 31: { px: 142, py: 252, wide: 18, low: 1 }, 16: { px: 160, py: 247, wide: 14, low: 2 }, 84: { px: 185, py: 250, wide: 16, low: 0 },
+  71: { px: 203, py: 247, wide: 14, low: 1 }, 75: { px: 218, py: 251, wide: 14, low: 2 }, 18: { px: 236, py: 249, wide: 16, low: 0 }, 19: { px: 252, py: 247, wide: 14, low: 1 },
+  105: { px: 266, py: 245, wide: 14, low: 2 }, 20: { px: 284, py: 243, wide: 16, low: 0 },
+};
+const LEFT_END = 350, seenWide = (t) => Math.abs(t[2] * Math.cos(t[5] * P.D2R)) + Math.abs(t[3] * Math.sin(t[5] * P.D2R));
+const stand = (t, px, py, z) => {
+  // Drawn in toward the middle of the land until it stands on it, its top kept where the picture has it.
+  let depth = z;
+  for (let k = 0; k < 120; k++) { const [x] = W.fromPicture(px, py, depth); if (W.within(x, depth) > 0.5 * size(t) + 8) break; depth -= depth > 0 ? 4 : -4; }
+  const [x, y] = W.fromPicture(px, py, depth);
+  t[0] = n(x); t[1] = n(depth); t[4] = n(Math.max(14, y - W.ground(x, depth)));
+};
+for (const [i, a] of Object.entries(AT)) {
+  const t = towers[i], [cx, cy] = W.pictured(t[0], W.ground(t[0], t[1]) + t[4], t[1]), px = a.px ?? cx, py = a.py ?? cy;
+  if (a.wide) { const k = (a.wide * W.PICTURE.unit) / seenWide(t); t[2] = n(t[2] * k); t[3] = n(t[3] * k); }
+  if (a.form) t[6] = a.form;
+  // At the left end the low lit mass stands in front, and the towers behind it by their height, the tallest furthest back.
+  const z = a.z ?? (px > LEFT_END ? t[1] : a.low !== undefined ? 150 + 22 * a.low : Math.max(-300, 118 - 2.1 * (268 - py)));
+  stand(t, px, py, z);
+}
+// Any two of those at the left end that have come to stand in one another: the taller goes back, its top kept.
+const left = Object.entries(AT).filter(([, a]) => (a.px ?? 1e9) <= LEFT_END).map(([i]) => towers[i]);
+for (let pass = 0; pass < 200; pass++) {
+  let moved = false;
+  for (const a of left) for (const b of left) {
+    if (a === b || a[4] < b[4] || Math.hypot(a[0] - b[0], a[1] - b[1]) > 0.5 * (size(a) + size(b)) + 1.5) continue;
+    const [px, py] = W.pictured(a[0], W.ground(a[0], a[1]) + a[4], a[1]);
+    stand(a, px, py, a[1] - 5);
+    moved = true;
+  }
+  if (!moved) break;
+}
 // The trees. Laid over picture 9, the study's belt was one thin row of small crowns with ground between them, and
 // it ran across the pyramid's front, where the picture has none. The picture's belt is two to four crowns deep,
 // its crowns are about a third larger, they stand in overlapping groups with uneven gaps, they are thickest right
@@ -94,7 +148,7 @@ const before = (x, z) => {
   const [qx, qz] = W.pyramidal(x, z), px = W.pictured(x, W.ground(x, z), z)[0];
   return px > 338 && px < 480 && z > W.PYRAMID.z - 20 && Math.max(Math.abs(qx), Math.abs(qz)) < W.PYRAMID.base / 2 + 70;
 };
-const trees = P.trees().map((t) => [n(t.x), n(t.z), n(t.size * GROW), n(t.tone, 3), n(t.turn, 3)]).filter((t) => W.within(t[0], t[1]) > t[2] && !before(t[0], t[1]));
+const trees = P.trees().map((t) => [n(t.x), n(t.z), n(t.size * GROW), n(t.tone, 3), n(t.turn, 3)]).filter((t) => W.within(t[0], t[1]) > t[2] && !before(t[0], t[1]) && !towers.some((b) => Math.hypot(b[0] - t[0], b[1] - t[1]) < 0.5 * size(b) + 0.3 * t[2]));
 const kept = trees.length;
 const plant = (x, z, sz) => {
   if (!clear(x, z, 0.6 * sz, 0.8 * sz) || before(x, z)) return;

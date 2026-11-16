@@ -30,8 +30,9 @@ const FINE = draft ? { grid: 1.6, error: 0.12, map: 512, lots: 256, light: 192, 
 // How far the paving and the grass stand over the dome, the kerb between them, how far down the turned edge goes.
 const LIFT = { paving: 0.45, grass: 0.1, skirt: 4 };
 // The belt of grass along the city's front: how far in front of front() its kerb is, and the soft, uneven edge it
-// fades out over toward the land's edge (from, to, and how much that wanders).
-const BELT = { kerb: 3, from: 3, to: 12, wander: 9 };
+// fades out over toward the land's edge (from, to, and how much that wanders), leaving the pale strip of worn stone
+// along the edge that picture 9 has in front of its trees.
+const BELT = { kerb: 3, from: 13, to: 21, wander: 6 };
 // The city's own light on its walls, as radiance, for what it throws on the ground.
 const CITY = 0.12;
 
@@ -101,7 +102,7 @@ say('maps');
 // ---------------------------------------------------------------------------------------------------------------
 // The height of the land at a place.
 function height(x, z) {
-  const d = desert(x, z), g = sample(grass, x, z), base = L.dome(x, z) + d * F.relief(x, z) + (1 - d) * (LIFT.paving + (LIFT.grass - LIFT.paving) * g);
+  const d = desert(x, z), g = sample(grass, x, z), base = L.dome(x, z) + d * F.relief(x, z, L.within(x, z)) + (1 - d) * (LIFT.paving + (LIFT.grass - LIFT.paving) * g);
   const w = L.within(x, z);
   if (w > F.BREAK.reach + F.BREAK.cell) return base;
   const sl = F.slabOf(x, z), b = F.broken(L.within(sl.cx, sl.cz)) * (1 - desert(sl.cx, sl.cz));
@@ -150,14 +151,15 @@ for (let t = 0; t < idx.length; t += 3) {
   if (uz * vx - ux * vz > 1e-4) kept.push(a, b, c);
 }
 say(`height field: ${(P0.length / 3).toLocaleString('en-US')} vertices, ${(kept.length / 3).toLocaleString('en-US')} triangles`);
-// Held in place: the land's edge, and every crest and every foot of a slip face, where the sand turns sharply, so
-// the reduced mesh keeps the dunes' outline as fine as the height field's and no crest is cut short.
+// Held in place: the land's edge, and every crest and every foot of a slip face, where the sand turns sharply in any
+// direction (a barchan's crest curves round to its horns), so the reduced mesh keeps the dunes' outline as fine as
+// the height field's and no crest is cut short.
 const lock = Uint8Array.from(edge), CREST = { step: 0.7, turn: 0.22 };
 for (let v = 0; v < lock.length; v++) {
   const x = P0[v * 3], z = P0[v * 3 + 2];
   if (desert(x, z) <= 0.05) continue;
-  const e = CREST.step, wx = F.WIND[0] * e, wz = F.WIND[1] * e, h = F.relief(x, z);
-  if (Math.abs(F.relief(x + wx, z + wz) + F.relief(x - wx, z - wz) - 2 * h) > CREST.turn) lock[v] = 1;
+  const e = CREST.step, w = L.within(x, z), h = F.relief(x, z, w);
+  for (const [dx, dz] of [[1, 0], [0, 1], [0.7071, 0.7071], [0.7071, -0.7071]]) if (Math.abs(F.relief(x + dx * e, z + dz * e, w) + F.relief(x - dx * e, z - dz * e, w) - 2 * h) > CREST.turn) { lock[v] = 1; break; }
 }
 const small = await simplify({ positions: P0, indices: Uint32Array.from(kept) }, { error: FINE.error, lock, strict: false });
 {
@@ -272,9 +274,16 @@ say(`light: ${stats.vertices} vertices, ${(stats.rays / 1e6).toFixed(0)} million
     out.set([l.open[v], dustAt(x, z), 0, storeBounce(l.bounce[v * 3]), storeBounce(l.bounce[v * 3 + 1]), storeBounce(l.bounce[v * 3 + 2])].map((c) => Math.round(Math.min(1, Math.max(0, c)) * 255)), k * 6);
     have[k] = 1;
   }
+  // Under a building nothing is seen, and the shut in dark the box left there showed as a dark footprint wherever a
+  // building's own shape did not cover its box: a texel under a building takes the light round it.
+  for (const t of T) {
+    const r = Math.hypot(t.w, t.d) / 2 + ls, i0 = Math.max(0, Math.floor((t.x - r - F.MAP.lo) / ls)), i1 = Math.min(NL - 1, Math.ceil((t.x + r - F.MAP.lo) / ls));
+    const j0 = Math.max(0, Math.floor((t.z - r - F.MAP.lo) / ls)), j1 = Math.min(NL - 1, Math.ceil((t.z + r - F.MAP.lo) / ls));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) if (footprint(t, lat(i), lat(j)) < 0.4) have[j * NL + i] = 0;
+  }
   // Out past the land's edge each texel takes its nearest neighbour's light, so the edge is never darkened by
   // what lies beyond it.
-  for (let pass = 0; pass < 6; pass++) {
+  for (let pass = 0; pass < 40; pass++) {
     const was = have.slice();
     for (let j = 0; j < NL; j++) for (let i = 0; i < NL; i++) {
       const k = j * NL + i;

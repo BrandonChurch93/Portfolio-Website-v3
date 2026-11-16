@@ -22,6 +22,7 @@ uniform float uR;
 uniform float uTime;
 uniform float uLevel;
 uniform mat3 uTurn;
+uniform mat3 uTurnIn;
 uniform float uRimAt[ RIM_N ];
 uniform vec3 uRim[ RIM_N ];
 uniform vec3 uBright;
@@ -70,10 +71,9 @@ void main() {
 	float h = max( uR * uR - c, 0.0 );
 	vec3 P = ro + rd * ( - b - sqrt( h ) );
 
-	// The grain lies in the plane through the ball's middle that faces the eye, so it is as even at the edge as at
-	// the middle: laid on the sphere it was squeezed toward the edge into streaks along the circle. It turns slowly
-	// and churns in place.
-	vec3 q = uTurn * ( ro - rd * b );
+	// The grain lies on the ball and turns with it, slowly, as something enormous turns: fastest across the middle and
+	// slower toward the edge, where it is seen on a slant. It churns in place as it goes.
+	vec3 q = uTurn * P;
 	float fp = max( max( length( dFdx( q ) ), length( dFdy( q ) ) ), 1e-4 );
 	float churn = uTime * GRAIN_CHURN, drift = uTime * GRAIN_DRIFT;
 	// Close up the middle sizes and the broad drift give way, so what is seen is the fine grain, crisp and even.
@@ -83,13 +83,23 @@ void main() {
 	v += MOTTLE * ( 1.0 - 0.6 * near ) * ( 0.65 * coreNoise( q / MOTTLE_WAVE + vec3( drift, 0.0, - drift ), 73u ) + 0.35 * coreNoise( q / ( 0.45 * MOTTLE_WAVE ) - vec3( 0.0, drift, 0.0 ), 79u ) );
 	// Each grain's own warmth, apart from its brightness: some a little paler, some a little more gold.
 	float w = coreNoise( q / GRAIN_WAVE + vec3( 0.0, - churn, 0.0 ), 101u ) * coreKeep( GRAIN_WAVE, fp );
-	// Close up the grain is facets, once a facet spans a few pixels.
+	// Close up the grain is facets, once a facet spans a few pixels, each leaning its own way off the ball.
 	float salty = smoothstep( 0.9, 0.45, fp ) * SALT;
 	if ( salty > 0.0 ) {
+		cNorm = uTurn * ( P / uR );
+		cView = uTurn * - rd;
+		cGlint = uTurn * coreDir( - rd + GLINT_FROM );
 		vec2 g = coreFacets( q / SALT_CELL, uTime * SALT_TWINKLE, fp / SALT_CELL, 211u );
 		v = mix( v, SALT_GAIN * g.x + SALT_UNDER * v, salty );
 		w = mix( w, SALT_GAIN * ( g.y - SALT_WARMS * g.x ), salty );
 	}
+	// Under the grain is a brighter body, deeper in the ball and turning the other way, seen where the skin over it
+	// is thin: veins of light that slide under the grain as it turns.
+	float bi = dot( ro, rd ), hi = DEEP_AT * DEEP_AT * uR * uR - c;
+	vec3 Pi = hi > 0.0 ? ro + rd * ( - bi - sqrt( hi ) ) : ro - rd * bi, qi = uTurnIn * Pi;
+	float vein = pow( 1.0 - abs( coreNoise( qi / DEEP_WAVE, 151u ) ), DEEP_SHARP ) * coreKeep( DEEP_WAVE * 0.25, fp );
+	float thin = smoothstep( DEEP_THIN.x, DEEP_THIN.y, coreNoise( q / DEEP_SKIN, 163u ) );
+	v += DEEP * ( 1.0 + DEEP_NEAR * salty ) * ( vein - DEEP_MEAN ) * ( 0.35 + 0.65 * thin ) * ( 1.0 - smoothstep( 0.7, 0.9, rr ) );
 
 	// Quieter across the band, which picture 9 has smooth.
 	float quiet = 1.0 - GRAIN_BAND * smoothstep( 0.84, 0.935, rr );
@@ -195,7 +205,7 @@ float coreLine( out vec3 B ) {
 	B /= max( length( B ), 1e-4 );
 	return 1.0 - smoothstep( 0.35 * w, w, e );
 }
-float coreTip() { return pow( smoothstep( 0.68, 1.0, length( vObj ) ), 3.0 ); }
+float coreTip() { return pow( smoothstep( 0.8, 1.0, length( vObj ) ), 3.0 ); }
 // The ball: which way it is, how large it looks (the sine of its half angle), and how much of its light arrives.
 vec3 coreBallAt( out float s, out float fall ) {
 	float d = max( length( vP ), 1e-3 );
@@ -226,13 +236,14 @@ void main() {
 	if ( dot( N, V ) < 0.0 ) N = - N;
 	float s, fall, beam;
 	vec3 L = coreBallAt( s, fall ), Lb = coreBeamAt( beam );
-	float line = coreLine( B );
-	float seen = coreSeen( N, V, L, s, SHARD_ROUGH ), graze = pow( 1.0 - max( dot( N, V ), 0.0 ), 3.0 );
-	// What a face mirrors that is not the ball: the hollow's walls, lit by the core, or, for a face turned to the eye,
-	// the night outside the hollow.
-	float room = mix( SHARD_WALL, SHARD_ROOM, smoothstep( 0.2, 0.85, reflect( - V, N ).z ) ) * ( 0.35 + 0.65 * min( fall * 4.0, 1.0 ) );
-	float light = room * ( 1.0 - seen ) * ( 0.7 + graze ) + SHARD_FLASH * seen * min( fall * 3.0, 1.0 ) + SHARD_DIFFUSE * fall * coreOn( N, L, s ) + beam * max( dot( N, Lb ), 0.0 );
-	float rim = ( min( fall * 3.0, 1.0 ) * coreOn( B, L, s ) + beam * max( dot( B, Lb ), 0.0 ) ) * line + coreTip() * ( coreOn( normalize( vObj ), L, s ) + beam ) * 0.6;
+	float line = coreLine( B ), lit = min( fall * SHARD_NEAR, 1.0 );
+	// As the stream's do, a face shows nearly nothing but what it mirrors: the ball, which flashes a whole face pale,
+	// or else the hollow's lit walls, or for a face turned to the eye the night outside the hollow.
+	float seen = coreSeen( N, V, L, s, SHARD_ROUGH ), sheen = coreSeen( N, V, L, s, 0.35 );
+	float room = mix( SHARD_WALL, SHARD_ROOM, smoothstep( 0.2, 0.85, reflect( - V, N ).z ) );
+	float light = room * ( 0.16 + 0.6 * lit ) + lit * ( SHARD_FLASH * seen + SHARD_SHEEN * sheen + SHARD_DIFFUSE * max( dot( N, L ), 0.0 ) + 0.03 ) + beam * ( 0.2 + 0.8 * pow( max( dot( N, Lb ), 0.0 ), 4.0 ) );
+	// Its edges catch the ball where their bevels look toward it, as a bright hairline, and so do its points.
+	float rim = ( lit * pow( max( dot( B, L ), 0.0 ), 2.0 ) + beam * max( dot( B, Lb ), 0.0 ) ) * line + coreTip() * ( lit * max( dot( normalize( vObj ), L ), 0.0 ) + beam ) * SHARD_TIP;
 	light = max( light, SHARD_EDGE * rim );
 	vec3 col = mix( uCopper, uCopperLight, 0.3 * clamp( light - 0.6, 0.0, 1.0 ) ) * vec3( 1.0, 0.92, 0.8 ) * light * 1.35;
 	float mx = max( col.r, max( col.g, col.b ) );
