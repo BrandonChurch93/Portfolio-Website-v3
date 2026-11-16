@@ -72,12 +72,13 @@ uniform float uEnd;  // where along the route they end` : ''}${swell ? `
 uniform vec3 uSwell[${SWELLS}];   // each front: where along the route it is, how much brighter it makes the core, and which way it runs (1 down the route, -1 up it)
 uniform vec2 uSwellSize;          // how far ahead of a front the swell reaches, and how far behind
 uniform float uHush;              // how far the core ahead of a front is turned down, 0 to 1` : ''}${born ? `
-uniform float uBorn;              // where along the route the stream begins` : ''}
+uniform float uBorn;              // where along the route the stream begins
+uniform float uRise;              // and over how far its strands gather there` : ''}
 out vec4 frag;
 ${NOISE}
 void main(){
   float x = vAlong.x, lead = vAlong.z, t = uTime;
-  float begun = smoothstep(uOwn.y, uOwn.y + 34.0, vAlong.y)${ends ? ' * (1.0 - smoothstep(uEnd - 34.0, uEnd, vAlong.y))' : ''}, s = vAlong.y + uOwn.x;
+  float begun = smoothstep(uOwn.y, uOwn.y + ${born ? 'uRise' : '34.0'}, vAlong.y)${ends ? ' * (1.0 - smoothstep(uEnd - 34.0, uEnd, vAlong.y))' : ''}, s = vAlong.y + uOwn.x;
   // The core is a ribbon of light: a band of fine fibres lying side by side, which turns slowly as it runs. Seen
   // flat it is a wide soft band with every fibre showing. Seen on edge all of it gathers into one fierce line.
   // So its width and its brightness are never the same for long, and the fibres always make one smooth form.

@@ -677,7 +677,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     let k = 1;
     for (const d of route!.dark!) {
       if (core && !d.core) continue;
-      const before = s < (d.from + d.to) / 2, over = core ? d.ease?.[before ? 0 : 1] ?? 3 * unit : S.skills.hide * unit, into = Math.min(s - d.from, d.to - s);
+      const before = s < (d.from + d.to) / 2, over = core ? d.ease?.[before ? 0 : 1] ?? 3 * unit : (d.source && !before ? S.hero.gather : S.skills.hide) * unit, into = Math.min(s - d.from, d.to - s);
       if (into >= -over) k = Math.min(k, over > 0 ? Math.max(0, -into / over) : 0);
     }
     return k;
