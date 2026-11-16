@@ -45,7 +45,8 @@ export function layers() {
     // Where a place is across a panel of flutes, in flutes, how far its flanks are turned (0.5 and that share of a
     // right angle; 0 on plain gold, 2 on the carving inside a sun
     // disc's rim, which gives way to a plain field far off, with how far out from the disc's middle it is, a share of
-    // its radius, in place of the flute), and what the first is over.
+    // its radius, in place of the flute; 3 on a lit room seen through gold, as the stepped tower's lantern is, with how
+    // far up it a place is, tag.glow being its foot and head), and what the first is over.
     // On a face that narrows as it rises (tag.taper: its width at its foot and its head, y0 and y1, and how many
     // flutes), the flutes narrow with it, from its middle line (tag.o): the place is stored over the width there,
     // which the shader divides, since each is even across a face and their share is not. tag.flank turns a face's
@@ -53,6 +54,7 @@ export function layers() {
     gold: {
       width: 3, attr: (p, n, tag) => {
         if (tag?.disc) return [Math.hypot(p[0] - tag.x, p[1] - tag.cy) / tag.R, 2, 1];
+        if (tag?.glow) return [(p[1] - tag.glow[0]) / (tag.glow[1] - tag.glow[0]), 3, 1];
         if (!tag?.flute) return [0, 0, 1];
         const s = (p[0] - tag.o[0]) * tag.T[0] + (p[2] - tag.o[2]) * tag.T[2], flank = 0.5 + (tag.flank ?? FLUTE.flank) / 90;
         if (!tag.taper) return [s / tag.flute, flank, 1];

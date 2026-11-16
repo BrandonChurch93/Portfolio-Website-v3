@@ -46,14 +46,14 @@ export const FRONT = { toward: [0.75, 0.06, 0.7], cone: 28, rays: 14, keep: 0.3 
 
 // The towers' stones, a building's tone (0 to 1) picking one in eighths: what each multiplies the pale stone's
 // color by in linear light, how metallic and how rough it is, and how much of the stage's white balance the light it
-// reflects is seen through (cool). The first is his stepped tower's limestone, which he approved as a pale near
-// neutral (150, 138, 124) and which no other building is built of. Every other stone is warm, as picture 9's city is
-// one warm brown mass, and they differ in value and in how much color they hold, so a stranger can name more than
-// one: a sandstone, a terracotta, a warm grey granite, two browns, a cladding of bronze, a near black polished stone,
-// and a pale travertine. Gold is told from them by its light, not its hue. Here so the baker lights each as it is
-// drawn.
+// reflects is seen through (cool). The first is his stepped tower's cream travertine, the palest stone in the city,
+// which no other building is built of (it was a pale near neutral limestone until Nov 16, which beside the city read
+// as a cold grey). Every other stone is warm, as picture 9's city is one warm brown mass, and they differ in value
+// and in how much color they hold, so a stranger can name more than one: a sandstone, a terracotta, a warm grey
+// granite, two browns, a cladding of bronze, a near black polished stone, and a pale travertine. Gold is told from
+// them by its light, not its hue. Here so the baker lights each as it is drawn.
 export const STONES = [
-  { tint: [1.045, 1.03, 1.005], metal: 0, rough: 0.82, cool: 1.2 },
+  { tint: [1.0, 0.83, 0.56], metal: 0, rough: 0.84, cool: 0 },
   { tint: [0.7, 0.47, 0.285], metal: 0, rough: 0.86, cool: 0 },
   { tint: [0.598, 0.293, 0.131], metal: 0, rough: 0.85, cool: 0 },
   { tint: [0.35, 0.262, 0.2], metal: 0, rough: 0.7, cool: 0 },
@@ -79,10 +79,13 @@ export const styleOf = (tag: { stone?: number; tone?: number; curtain?: boolean 
 // is gone, and whole from px[1]. A sliver lit by the moon drawn under a pixel broke into pale dashes.
 export const SLIVER = { most: 3, px: [0.7, 1.8] } as const;
 // How far the pale stone is drawn from the palette's text-2 toward its copper-light, in linear light. Little: the
-// light it is seen by is warm, and his stepped tower's limestone is a pale, nearly neutral stone under a gold crown.
+// light it is seen by is warm, and the stones are tints of it (STONES).
 export const WARM = 0.04;
 // How much lighter than text-2 the pale stone is: a limestone of about two thirds albedo.
 export const PALE_STONE = 1.28;
+// The stepped tower's lantern, from its foot to its head, in units over the tower's foot: its room is lit, and its
+// light lies on the gold round it (LANTERN in ./materials.ts).
+export const LANTERN_AT = [166.7, 168.3] as const;
 // The gold's flutes: how far each flank of a flute is turned from its face, in degrees, stored with the flute.
 export const FLUTE = { flank: 44 };
 

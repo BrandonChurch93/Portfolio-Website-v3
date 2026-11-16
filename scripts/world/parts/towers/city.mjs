@@ -19,7 +19,7 @@ const draft = process.argv.includes('--draft');
 const onlyAt = process.argv.indexOf('--only'), only = onlyAt > 0 ? new Set(process.argv[onlyAt + 1].split(',').map(Number)) : null;
 // The map of the windows, in windows across and down; how finely faces are cut for their baked light, in units; the stones
 // a building may be built of, as places in STONES (./windows.ts), and how likely each is: never the first, his stepped
-// tower's limestone.
+// tower's travertine.
 const CITY = { map: [1024, 128], edge: draft ? 10 : 11, tones: [[1, 0.18], [2, 0.18], [3, 0.17], [4, 0.12], [5, 0.09], [6, 0.06], [7, 0.07], [8, 0.13]], seed: 9151 };
 // The named buildings' stone, as a place in STONES: the obelisk's shaft a warm grey granite, as picture 9's is a mid
 // brown lit by its windows, and the ringed pair a sandstone.

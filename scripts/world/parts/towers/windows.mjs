@@ -161,6 +161,22 @@ export class Windows {
       }
     }
   }
+  // A field of cols by rows windows drawn inside one already taken (at), from its column dc and row dr, each window's
+  // level and paleness (0 to 1) given by paint(c, r): so a building can lay its own light in the place of what take
+  // gave it, which keeps every later building's windows as they were.
+  within(at, dc, dr, cols, rows, paint) {
+    if (dc + cols > at.cols || dr + rows > at.rows) throw new Error(`windows: ${cols} by ${rows} does not fit at ${dc}, ${dr}`);
+    const f = { c0: at.c0 + dc, r0: at.r0 + dr, cols, rows }, k = this.fields.length, [ls, ws] = WINDOW.steps;
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      const [lv, wm] = paint(c, r), i = ((f.r0 + r) * this.size + f.c0 + c) * 3, lq = Math.round(Math.min(1, Math.max(0, lv)) * ls);
+      this.data[i] = Math.round((lq / ls) * 255);
+      this.data[i + 1] = lq ? Math.round((Math.round(Math.min(1, Math.max(0, wm)) * ws) / ws) * 255) : 0;
+      this.data[i + 2] = 0;
+      this.owner[(f.r0 + r) * this.size + f.c0 + c] = k;
+    }
+    this.fields.push(f);
+    return f;
+  }
   read(c, r) {
     const i = (r * this.size + c) * 3;
     return { level: this.data[i] / 255, warm: this.data[i + 1] / 255, blind: this.data[i] ? blindOf(c, r) : 0 };

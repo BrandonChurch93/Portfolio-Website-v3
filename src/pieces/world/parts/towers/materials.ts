@@ -3,11 +3,11 @@ import { hex } from '../../../../config/palette';
 import { MOONWARD, SCALE, ground } from '../../layout';
 import { STEP, TOWERS } from '../../placed';
 import { METAL, WARM as KEPT, lit } from '../../light';
-import { FRONT, PALE_STONE, PLACE, SLIVER, STONES, WARM, WINDOW } from './windows';
+import { FRONT, LANTERN_AT, PALE_STONE, PLACE, SLIVER, STONES, WARM, WINDOW } from './windows';
 import { OBELISK, SUN, discAt, obeliskPoint } from './marks';
 
 const FOOT = PLACE.foot;
-// Where his stepped tower stands, so the bay's material keeps it in the light he approved (HIS in SKY_LIGHT).
+// Where his stepped tower stands, so the gold's material lights his crown as its own (MARK.his, LANTERN).
 const [HX, HZ, HW, HD] = TOWERS[STEP];
 const HIS_AT = `( step( abs( vWPos.x / ${(SCALE).toFixed(5)} - ${HX.toFixed(3)} ), ${(HW * 0.75).toFixed(3)} ) * step( abs( vWPos.z / ${(SCALE).toFixed(5)} - ${HZ.toFixed(3)} ), ${(HD * 0.75).toFixed(3)} ) )`;
 
@@ -46,9 +46,10 @@ const FLOOD = { power: 1.5, reach: 0.25 };
 // of its light, as the spire's chamfers do, and each silhouette stands off the one behind it. How bright, as a share
 // of the moon's light on the face; how tight the line on a cut toward the moon is (a power of how near the face is to
 // the half way between the moon and the eye), and on a face seen edge on (a power of how near edge on); and how much
-// of the line is the stone's own color and how much the moon's.
+// of the line is the stone's own color and how much the moon's (his stepped tower's travertine: his, so its lit
+// corner stays a warm cream and never goes to a pale line).
 // thin: from how many pixels a unit is drawn at the line on an upright face comes in, to where it is whole.
-const RIM = { power: 0.9, cut: 7, edge: 5, own: 0.45, thin: [2.5, 5], top: [2.5, 7] };
+const RIM = { power: 0.9, cut: 7, edge: 5, own: 0.45, his: 0.9, thin: [2.5, 5], top: [2.5, 7] };
 // The sky about the moon on the city (skyward in scripts/world/parts/towers/make.mjs, stored where the moon's share
 // would be): the moon is low and behind the city, so the tops stand in its light and are paler, the tall buildings
 // lay long shadows of it across the lower ones before them, and the feet are shut out of it. power: how much of the
@@ -56,47 +57,49 @@ const RIM = { power: 0.9, cut: 7, edge: 5, own: 0.45, thin: [2.5, 5], top: [2.5,
 // city is, in units, from its feet (low) to its tallest tops (high), and how much of it the feet keep (feet); the
 // night's soft light from the visitor's side is taken by `fill` of the sky seen; the moon's line along a chamfer
 // fades with height to `rim` at the feet.
-// His stepped tower's limestone takes `pale` of it, so its lit piers stay the pale near neutral he approved.
-// Every building but his: how much of its light the foot of a building keeps against its top, and the curve
+// Every building: how much of its light the foot of a building keeps against its top, and the curve
 // between; the sky about the moon on it, taken by a face's own cosine to the moon (raised to `lobe`), and how much of it
 // a face turned from the moon still takes (wrap: little, the face turned to the moon is the lit one and the front a
 // clear step darker); how much of it a place shut in keeps (shut, by its stored openness from open[0] to open[1]: the
-// feet, under a ledge); how much of the night's soft light it takes against his, and how much of the stored bounce,
-// which lies on every face alike. The moon's own shadow map lies on nearly every face turned to it (it is low, and
+// feet, under a ledge); how much of the night's soft light it takes, and how much of the stored bounce, which lies
+// on every face alike; and how much of the sky about the moon his stepped tower's travertine takes (his), the palest
+// stone in the city, whose face to the moon at the whole of it went to the hot light's cap. The moon's own shadow map lies on nearly every face turned to it (it is low, and
 // the city is close set), so this, which no building's live shadow cuts, is what gives the city its two faces.
-const SHADE = { foot: 0.35, curve: 1.1, power: 8, wrap: 0.03, lobe: 0.8, shut: 0.35, open: [0.35, 0.9], night: 0.15, bounce: 0.45 };
-const SKY = { power: 0.75, wrap: 0.4, low: -25, high: 150, feet: 0.1, fill: 0.6, rim: 0.12, pale: 0.15 };
+const SHADE = { foot: 0.35, curve: 1.1, power: 8, wrap: 0.03, lobe: 0.8, shut: 0.35, open: [0.35, 0.9], night: 0.15, bounce: 0.45, his: 0.5 };
+const SKY = { low: -25, high: 150, fill: 0.6, rim: 0.12 };
 // The street's light on the lowest storeys: shop fronts and lamps bleeding up the walls, in the palette's hot light,
 // as radiance on the stone at the foot (power), falling to a share 1/e every `fall` units up, strongest in the
 // canyons between buildings (canyon: how much more where the place is shut in), in clumps along a street (clump:
 // how long a clump is, in units, and how deep the dark between).
 const STREET = { power: 0.8, fall: 9, canyon: 1.6, clump: [9, 0.65] };
 // The city's own light on its walls: the lit windows across every street, as radiance on the stone, more where the
-// place is shut in, falling to a share 1/e every `fall` units up.
-// Every building but his takes less of it, and only low down (city, cityFall): its walls are lit by the night and
-// the moon from a shaded foot to a lit top (SHADE), and their glow is the street's and their own windows'.
-const GLOW = { power: 0.16, shut: 1.5, fall: 90, city: 0.05, cityFall: 30 };
+// place is shut in, falling to a share 1/e every `fall` units up: little, and low down, since the walls are lit by
+// the night and the moon from a shaded foot to a lit top (SHADE), and their glow is the street's and their own
+// windows'.
+const GLOW = { power: 0.05, shut: 1.5, fall: 30 };
 // The city's own light on its walls, as real light with a direction: the streets and the lit windows of the open
 // ground before the city spill a warm light up its faces, from in front and the visitor's right (FRONT.toward in
 // ./windows.ts, which the make bakes how much of it a place sees by). A face takes it by its cosine, wrapped by
 // `wrap`, in the palette's hot light eased `pale` toward its pale; it is brightest low and falls to `floor` of that by
-// `fall` units up (his tower takes it only on its lowest floors, falling by his[0], at his[1], the power he approved
-// it under: every other building takes less, so its front is darker than its face to the moon); a place shut
+// `fall` units up, so a front is darker than its face to the moon. His stepped tower's travertine takes his[0] of
+// it, falling only to his[1], in a light his[2] of the way to the palette's pale, so its front reads a cream stone
+// from foot to crown and not a tan one; a place shut
 // from the front by a nearer building (the bake's `frontward`) keeps `shut` of it, and a place shut in keeps `open`.
 // It is laid on as radiance, as the street's is, so the foot to top shade of the moon's light does not dim it.
-const CITY = { pale: 0.15, power: 0.6, wrap: 0.1, fall: 26, floor: 0.25, his: [8, 1], shut: 0.3, open: 0.6 };
+const CITY = { pale: 0.15, power: 0.6, wrap: 0.1, fall: 26, floor: 0.25, his: [1.35, 0.6, 0.8], shut: 0.3, open: 0.6 };
 // The far rows fall back: the walls of the back of the city keep `far` of their light and its windows `lights`, by
 // how far back a place is (tBack, eased by `curve`), and they go toward the dark warm air between, `haze` of the way,
 // so the front row is lit and crisp and the last rows are near silhouettes against the glow behind the world. The air
-// is a dark warm grey, less red than the walls, so the far rows cool as they fall back. His tower keeps the share of
-// its walls' light and its windows' (his) that it had where it stands when he approved it.
-const DEPTH = { far: 0.5, lights: 0.5, curve: 0.6, haze: 0.5, air: [0.032, 0.022, 0.015], his: [0.7097, 0.8259] };
-// A lit face of every building but his: the light from without held under a soft shoulder from `knee` (the
+// is a dark warm grey, less red than the walls, so the far rows cool as they fall back.
+const DEPTH = { far: 0.5, lights: 0.5, curve: 0.6, haze: 0.5, air: [0.032, 0.022, 0.015] };
+// A lit face: the light from without held under a soft shoulder from `knee` (the
 // brightest channel, linear) over `soft`, and going toward the palette's pale only from pale[0] to pale[1].
 const LIT_FACE = { knee: 0.5, soft: 0.3, pale: [0.75, 1.2] };
 const HOT = new THREE.Color(hex('hot'));
 // The city's light: the palette's hot light eased toward its pale (CITY.pale), as a lamp lit street seen from afar is.
 const CITY_LIGHT = HOT.clone().lerp(new THREE.Color(hex('pale')), CITY.pale);
+// His stepped tower's share of it (CITY.his).
+const HIS_LIGHT = HOT.clone().lerp(new THREE.Color(hex('pale')), CITY.his[2]);
 // The pale stone, which every stone of the towers is a tone of: the palette's text-2, a little lighter (PALE_STONE in
 // ./windows.ts, which the baker lights it by too).
 const PALE = new THREE.Color(hex('text-2')).lerp(new THREE.Color(hex('copper-light')), WARM).multiplyScalar(PALE_STONE);
@@ -172,6 +175,12 @@ const GOLD = { sheen: [0.6, 0.3], rough: 0.17, moon: [0.1, 0.8], lit: 9, dark: 0
 // the pyramid's own deep gold (body) toward the world's gold only over grade[0] to grade[1], held a little brighter
 // toward one edge of each face (across), and its streak is laid on after the shoulder, reaching `hold` at most and
 // going toward pale only over grade[2] to grade[3]: graded as the rest of the gold, its whole lit face went to cream.
+// His lantern's light on the gold about it (his crown's top tier, its cap and the point): how strong, as radiance
+// the gold mirrors, how far it reaches (half as strong at `reach` units), how much of it a face turned away still
+// takes, how far toward pale it is from the palette's hot, and how bright its room is seen through its slots.
+const LANTERN = { power: 2.2, reach: 2.6, wrap: 0, pale: 0.6, glow: 2.6 };
+const LANTERN_POS = [HX, ground(HX, HZ) + (LANTERN_AT[0] + LANTERN_AT[1]) / 2, HZ];
+const LANTERN_LIGHT = HOT.clone().lerp(new THREE.Color(hex('pale')), LANTERN.pale);
 const MARK = {
   his: { lit: 2.9, shoulder: [1.2, 1.1] },
   obelisk: { lit: 3.4, streak: 9, tight: 220, bend: -0.3, foot: 0.45, dark: 0.75, wave: 0.3, shoulder: [1.2, 1.2], gain: 0.6, grade: [0.15, 14, 1.2, 3.0], body: [1, 0.4, 0.07], across: 0.25, hold: 2.5 },
@@ -189,9 +198,6 @@ const near = (i: number, k: number): string => {
 };
 
 const COMMON = `
-#ifndef HIS
-#define HIS 0.0
-#endif
 float tHash( vec2 p ) {
 	uvec2 q = uvec2( ivec2( floor( p ) ) + 65536 );
 	uint h = q.x * 1597334677u ^ q.y * 3812015801u;
@@ -259,51 +265,51 @@ float tRim( vec3 n, vec3 v, vec3 l ) {
 	float lies = smoothstep( 0.5, 0.85, abs( dot( n, upV ) ) ), upp = max( length( fwidth( vWPos ) ), 1e-5 ) / ${f(SCALE)};
 	float thin = mix( smoothstep( ${f(RIM.thin[0])}, ${f(RIM.thin[1])}, 1.0 / upp ), 1.0, lies );
 	// A ledge's top seen edge on (a cornice, a belt, a sill) is drawn a sliver of a pixel tall: its line comes in only
-	// as a unit is drawn at RIM.top pixels and more, so far off it is no speckle of pale ticks. His tower keeps its own.
-	return ${f(RIM.power)} * nl * thin * ( pow( clamp( dot( n, h ), 0.0, 1.0 ), ${f(RIM.cut)} ) + lies * mix( smoothstep( ${f(RIM.top[0])}, ${f(RIM.top[1])}, 1.0 / upp ), 1.0, HIS ) * pow( 1.0 - nv, ${f(RIM.edge)} ) );
+	// as a unit is drawn at RIM.top pixels and more, so far off it is no speckle of pale ticks.
+	return ${f(RIM.power)} * nl * thin * ( pow( clamp( dot( n, h ), 0.0, 1.0 ), ${f(RIM.cut)} ) + lies * smoothstep( ${f(RIM.top[0])}, ${f(RIM.top[1])}, 1.0 / upp ) * pow( 1.0 - nv, ${f(RIM.edge)} ) );
 }
 // A bright stone goes to the palette's pale gold as it nears the brightest, never to white: the moon full on pale
-// limestone, with its line, came out (243, 223, 201). His tower keeps the light he approved it in; every other
-// building's light from without (h 0) is first held under a soft shoulder (LIT_FACE), so a lit face keeps its own
-// stone's color and its texture and never sits flat at the cap, and only what passes the shoulder goes pale.
-vec3 tKnee( vec3 c, float h ) {
+// limestone, with its line, came out (243, 223, 201). A building's light from without is first held under a soft
+// shoulder (LIT_FACE), so a lit face keeps its own stone's color and its texture and never sits flat at the cap, and
+// only what passes the shoulder goes pale.
+vec3 tKnee( vec3 c ) {
 	float m = max( c.r, max( c.g, c.b ) ), k = m < ${f(LIT_FACE.knee)} ? m : ${f(LIT_FACE.knee)} + ${f(LIT_FACE.soft)} * ( 1.0 - exp( - ( m - ${f(LIT_FACE.knee)} ) / ${f(LIT_FACE.soft)} ) );
-	return mix( c * ( k / max( m, 1e-5 ) ), c, h );
+	return c * ( k / max( m, 1e-5 ) );
 }
-vec3 tPale( vec3 c, float h ) {
+vec3 tPale( vec3 c ) {
 	float m = max( c.r, max( c.g, c.b ) );
-	return mix( c, ${lin('pale')} * m, smoothstep( mix( ${f(LIT_FACE.pale[0])}, 0.5, h ), mix( ${f(LIT_FACE.pale[1])}, 1.0, h ), m ) );
+	return mix( c, ${lin('pale')} * m, smoothstep( ${f(LIT_FACE.pale[0])}, ${f(LIT_FACE.pale[1])}, m ) );
 }
 // How high a place stands in the city, 0 at its feet and 1 at its tallest tops.
 float tUp( float y ) { return smoothstep( ${f(SKY.low)}, ${f(SKY.high)}, y / ${f(SCALE)} ); }
-// Every building but his is lit from a shaded foot to a lit top (SHADE), by how far up itself a place is: the light
+// Every building is lit from a shaded foot to a lit top (SHADE), by how far up itself a place is: the light
 // that falls on it, and not its own windows or the street's.
-float tRise( float rise, float his ) { return mix( mix( ${f(SHADE.foot)}, 1.0, pow( clamp( rise, 0.0, 1.0 ), ${f(SHADE.curve)} ) ), 1.0, his ); }
+float tRise( float rise ) { return mix( ${f(SHADE.foot)}, 1.0, pow( clamp( rise, 0.0, 1.0 ), ${f(SHADE.curve)} ) ); }
 // How far back a place is in the city, 0 at its front rows and 1 at its back.
 float tBack( float z ) { return pow( clamp( ( z / ${f(SCALE)} - ${f(PLACE.depth[0])} ) / ${f(PLACE.depth[1] - PLACE.depth[0])}, 0.0, 1.0 ), ${f(DEPTH.curve)} ); }
-// His tower keeps the light he approved it in, and takes none of the air.
-vec3 tAir( vec3 c, float z, float his ) { return mix( c, ${v3(DEPTH.air)}, ${f(DEPTH.haze)} * tBack( z ) * ( 1.0 - his ) ); }
+// The far rows go toward the air between (DEPTH).
+vec3 tAir( vec3 c, float z ) { return mix( c, ${v3(DEPTH.air)}, ${f(DEPTH.haze)} * tBack( z ) ); }
 // The moon's line is laid on the direct light from the moon only, after the stage's own.
 const vec3 tMoonward = ${v3(new THREE.Vector3(...MOONWARD).normalize().toArray())};
 const vec3 tCityward = ${v3(new THREE.Vector3(...FRONT.toward).normalize().toArray())};
 float tCity( vec3 n, float h, float fore, float open, float his ) {
 	vec3 l = ( viewMatrix * vec4( tCityward, 0.0 ) ).xyz;
 	float c = clamp( ( dot( n, l ) + ${f(CITY.wrap)} ) / ${f(1 + CITY.wrap)}, 0.0, 1.0 );
-	float fall = his > 0.5 ? exp( - max( h, 0.0 ) / ${f(CITY.his[0])} ) : mix( ${f(CITY.floor)}, 1.0, exp( - max( h, 0.0 ) / ${f(CITY.fall)} ) );
-	return mix( ${f(CITY.power)}, ${f(CITY.his[1])}, his ) * c * fall * mix( ${f(CITY.shut)}, 1.0, fore ) * mix( ${f(CITY.open)}, 1.0, open );
+	float fall = mix( mix( ${f(CITY.floor)}, ${f(CITY.his[1])}, his ), 1.0, exp( - max( h, 0.0 ) / ${f(CITY.fall)} ) );
+	return mix( ${f(CITY.power)}, ${f(CITY.his[0])}, his ) * c * fall * mix( ${f(CITY.shut)}, 1.0, fore ) * mix( ${f(CITY.open)}, 1.0, open );
 }
-// Floodlights under each building's crown, every building's but his (FLOOD): its top storeys washed with warm light
+// Floodlights under each building's crown, every building's (FLOOD): its top storeys washed with warm light
 // from below, brightest just under its head and gone FLOOD.reach of its height down, on its upright faces only.
-float tFlood( vec3 n, float rise, float his ) {
+float tFlood( vec3 n, float rise ) {
 	vec3 upV = ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz;
 	float upright = 1.0 - smoothstep( 0.4, 0.8, abs( dot( n, upV ) ) );
-	return ( 1.0 - his ) * upright * ${f(FLOOD.power)} * smoothstep( 1.0 - ${f(FLOOD.reach)}, 1.0, clamp( rise, 0.0, 1.0 ) ) * smoothstep( 1.0, 0.97, rise );
+	return upright * ${f(FLOOD.power)} * smoothstep( 1.0 - ${f(FLOOD.reach)}, 1.0, clamp( rise, 0.0, 1.0 ) ) * smoothstep( 1.0, 0.97, rise );
 }
 float tStreet( float h, float up, float open, float along ) {
 	float side = 1.0 - smoothstep( 0.35, 0.85, abs( up ) );
 	float clump = mix( 1.0 - ${f(STREET.clump[1])}, 1.0, smoothstep( 0.35, 0.65, tNoise( vec2( along / ${f(STREET.clump[0])}, 3.7 ) ) ) );
 	float street = ${f(STREET.power)} * exp( - max( h, 0.0 ) / ${f(STREET.fall)} ) * clump * mix( 1.0, ${f(STREET.canyon)}, 1.0 - open );
-	return side * ( street + mix( ${f(GLOW.city)}, ${f(GLOW.power)}, HIS ) * mix( 1.0, ${f(GLOW.shut)}, 1.0 - open ) * exp( - max( h, 0.0 ) / mix( ${f(GLOW.cityFall)}, ${f(GLOW.fall)}, HIS ) ) );
+	return side * ( street + ${f(GLOW.power)} * mix( 1.0, ${f(GLOW.shut)}, 1.0 - open ) * exp( - max( h, 0.0 ) / ${f(GLOW.fall)} ) );
 }`;
 
 // The moon's line (tRim), laid on the stage's own light from the moon on a face of stone or of the bay, where the moon
@@ -322,7 +328,11 @@ void RE_Direct_Rim( const in IncidentLight directLight, const in vec3 geometryPo
 		reflectedLight.directSpecular = tS + ( reflectedLight.directSpecular - tS ) * edge;
 	}
 	vec3 mw = ( viewMatrix * vec4( tMoonward, 0.0 ) ).xyz;
-	if ( dot( directLight.direction, mw ) > 0.995 ) tRimLight += directLight.color * tRim( geometryNormal, geometryViewDir, directLight.direction ) * tRimOn * tRimFade * mix( ${lin('pale')} * 0.75, material.diffuseContribution, ${f(RIM.own)} );
+	float rimOwn = ${f(RIM.own)};
+	#ifdef OWN
+		rimOwn = mix( rimOwn, ${f(RIM.his)}, OWN );
+	#endif
+	if ( dot( directLight.direction, mw ) > 0.995 ) tRimLight += directLight.color * tRim( geometryNormal, geometryViewDir, directLight.direction ) * tRimOn * tRimFade * mix( ${lin('pale')} * 0.75, material.diffuseContribution, rimOwn );
 }
 #undef RE_Direct
 #define RE_Direct RE_Direct_Rim`;
@@ -332,24 +342,21 @@ void RE_Direct_Rim( const in IncidentLight directLight, const in vec3 geometryPo
 const SKY_LIGHT = `
 #if NUM_DIR_LIGHTS > 0
 {
-	// His stepped tower keeps the light he approved it in (HIS); every other building is lit from a shaded foot to a
-	// lit top (SHADE), by how far up itself a place is, and the night's light from the visitor's side is shut out
+	// Every building is lit from a shaded foot to a lit top (SHADE), by how far up itself a place is, and the night's light from the visitor's side is shut out
 	// where a nearer building stands before it (FRONT).
-	float up = tUp( vWPos.y ), his = HIS;
-	float seen = wLight.y * mix( 1.0, mix( ${f(SKY.feet)}, 1.0, up ), his );
+	float seen = wLight.y;
 	vec3 mw = ( viewMatrix * vec4( tMoonward, 0.0 ) ).xyz;
-	float turned = mix( ${f(SKY.wrap)}, 1.0, clamp( 0.5 + 0.5 * dot( normal, mw ), 0.0, 1.0 ) );
-	// Every building but his takes the sky about the moon by its own cosine, so the face turned to the moon is the lit
+	// Every building takes the sky about the moon by its own cosine, so the face turned to the moon is the lit
 	// one and the face turned from it takes only SHADE.wrap; a place shut in (a foot, under a ledge) keeps SHADE.shut.
 	float facing = pow( clamp( dot( normal, mw ), 0.0, 1.0 ), ${f(SHADE.lobe)} );
 	float shut = mix( ${f(SHADE.shut)}, 1.0, smoothstep( ${f(SHADE.open[0])}, ${f(SHADE.open[1])}, wLight.z ) );
-	turned = mix( ( ${f(SHADE.wrap)} + ${f(1 - SHADE.wrap)} * facing ) * shut, turned, his );
-	irradiance += directionalLights[ 0 ].color * ( mix( ${f(SHADE.power)}, ${f(SKY.power)}, his ) * seen * turned * SKY_KEEP * tSliver( normal, geometryViewDir ) );
-	iblIrradiance *= mix( 1.0 - ${f(SKY.fill)}, 1.0, seen ) * mix( mix( ${f(FRONT.keep)}, 1.0, wLight.x ) * ${f(SHADE.night)}, 1.0, his );
+	float turned = ( ${f(SHADE.wrap)} + ${f(1 - SHADE.wrap)} * facing ) * shut;
+	irradiance += directionalLights[ 0 ].color * ( ${f(SHADE.power)} * seen * turned * SKY_KEEP * tSliver( normal, geometryViewDir ) );
+	iblIrradiance *= mix( 1.0 - ${f(SKY.fill)}, 1.0, seen ) * mix( ${f(FRONT.keep)}, 1.0, wLight.x ) * ${f(SHADE.night)};
 	#ifdef WORLD_BAKED
-		// The stored bounce lies on every face alike: every building but his keeps SHADE.bounce of it, so its faces are
+		// The stored bounce lies on every face alike: every building keeps SHADE.bounce of it, so its faces are
 		// told apart by the light that has a direction (the city's, the moon's and the sky about it).
-		irradiance -= ( 1.0 - mix( ${f(SHADE.bounce)}, 1.0, his ) ) * wBounce / max( wLight.z, 1e-3 );
+		irradiance -= ${f(1 - SHADE.bounce)} * wBounce / max( wLight.z, 1e-3 );
 	#endif
 }
 #endif`;
@@ -360,13 +367,13 @@ function stone(): THREE.MeshStandardMaterial {
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute vec3 kind;\nvarying vec3 vKind;\nvarying vec3 vWPos;\nvarying vec3 vWNorm;\nvarying vec2 vFoot;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvKind = kind;\nvWPos = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;\nvWNorm = mat3( modelMatrix ) * objectNormal;\nvFoot = vec2( aLight.w, aBounce.w );');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>\nvarying vec3 vKind;\nvarying vec3 vWPos;\nvarying vec3 vWNorm;\nvarying vec2 vFoot;\nvec2 sFinish;\nfloat tRimOn;\nfloat tThin;\nfloat tPpu;\nfloat tRimFade;\nvec3 tRimLight;\n#define HIS ( vKind.y < ${f(0.5 / (STONES.length - 1))} ? 1.0 : 0.0 )${COMMON}`)
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>\nvarying vec3 vKind;\nvarying vec3 vWPos;\nvarying vec3 vWNorm;\nvarying vec2 vFoot;\nvec2 sFinish;\nfloat tRimOn;\nfloat tThin;\nfloat tPpu;\nfloat tRimFade;\nvec3 tRimLight;\n#define OWN ( vKind.y < ${f(0.5 / (STONES.length - 1))} ? 1.0 : 0.0 )${COMMON}`)
       .replace('#include <lights_physical_pars_fragment>', `#include <lights_physical_pars_fragment>${RIM_DIRECT}`)
       .replace('#include <color_fragment>', `#include <color_fragment>
 tRimOn = 1.0;
 tRimFade = tUp( vWPos.y );
 tRimFade = mix( ${f(SKY.rim)}, 1.0, tRimFade * tRimFade ) * mix( 0.35, 1.0, wLight.y );
-tThin = HIS > 0.5 ? 0.0 : vKind.z * ${f(SLIVER.most)};
+tThin = vKind.z * ${f(SLIVER.most)};
 tPpu = ${f(SCALE)} / max( length( fwidth( vWPos ) ), 1e-9 );
 tRimLight = vec3( 0.0 );
 {
@@ -378,9 +385,9 @@ tRimLight = vec3( 0.0 );
 	float lay = step( 0.5, vKind.x ), vary = clamp( ( vKind.x - 0.5 * lay ) / 0.49, 0.0, 1.0 );
 	float course = lay > 0.5 ? mix( ${f(STONE.channel[0])}, ${f(STONE.channel[1])}, vary ) : mix( ${f(STONE.course[0])}, ${f(STONE.course[1])}, vary );
 	float block = course * mix( ${f(STONE.block[0])}, ${f(STONE.block[1])}, fract( vary * 7.31 ) ), jw = mix( ${f(STONE.joint[0])}, ${f(STONE.joint[1])}, lay ), jk = 1.0, jo = 1.0;
-	// Every building but his lays its stone to its floors (LAID), one of three ways: ashlar of two courses a floor,
-	// panels a floor tall, or smooth stone jointed only every few floors.
-	if ( HIS < 0.5 && lay < 0.5 ) {
+	// Every building but his stepped tower (OWN, in fine ashlar) lays its stone to its floors (LAID), one of three
+	// ways: ashlar of two courses a floor, panels a floor tall, or smooth stone jointed only every few floors.
+	if ( OWN < 0.5 && lay < 0.5 ) {
 		float way = fract( vary * 3.71 ), size = mix( 0.9, 1.12, fract( vary * 11.3 ) );
 		course = way < ${f(LAID.ways[0])} ? ${f(LAID.storey * 0.5)} * size : ( way < ${f(LAID.ways[1])} ? ${f(LAID.storey)} * size : ${f(LAID.storey * LAID.smooth)} * size );
 		block = course * ( way < ${f(LAID.ways[0])} ? mix( 1.6, 2.6, fract( vary * 7.31 ) ) : mix( 1.2, 2.0, fract( vary * 7.31 ) ) );
@@ -399,22 +406,22 @@ tRimLight = vec3( 0.0 );
 	tone *= 1.0 + fine * 0.1 * ( 0.6 * tNoise( grain * 3.0 ) + 0.4 * tNoise( grain * 8.0 + 3.0 ) - 0.5 );
 	float streak = tNoise( vec2( grain.x * 1.7, grain.y * 0.045 ) ) * 0.6 + tNoise( vec2( grain.x * 4.3 + 9.0, grain.y * 0.11 ) ) * 0.4;
 	tone *= 1.0 + ${f(STONE.streak)} * ( streak - 0.5 );
-	// Every building but his: the stone changes up its face in broad bands, a lift or a darker stretch over a few
+	// The stone changes up its face in broad bands, a lift or a darker stretch over a few
 	// floors (STONE.band), and the dirt of the street darkens its lowest storeys, so no face is one even plane.
-	tone *= mix( ( 1.0 + ${f(STONE.band[0])} * ( tNoise( vec2( grain.x / ${f(STONE.band[1])} + vary * 31.0, grain.y / ${f(STONE.band[2])} ) ) - 0.5 ) ) * mix( ${f(STONE.grime)}, 1.0, smoothstep( 0.0, 1.0, vFoot.x ) ), 1.0, HIS );
+	tone *= ( 1.0 + ${f(STONE.band[0])} * ( tNoise( vec2( grain.x / ${f(STONE.band[1])} + vary * 31.0, grain.y / ${f(STONE.band[2])} ) ) - 0.5 ) ) * mix( ${f(STONE.grime)}, 1.0, smoothstep( 0.0, 1.0, vFoot.x ) );
 	// Each building's stone is its own, a little warmer or cooler than its kind.
 	vec3 hue = vec3( 1.0 ) + ${f(STONE.hue)} * ( fract( vary * 13.7 ) - 0.5 ) * vec3( 0.6, 0.0, -1.0 );
 	sFinish = tFinish( vKind.y );
-	diffuseColor.rgb *= tStone( vKind.y ) * hue * tone * ( 1.0 - ${f(STONE.dark)} * joint * ( 1.0 - 0.6 * sFinish.x ) ) * mix( mix( 1.0, ${f(DEPTH.far)}, tBack( vWPos.z ) ), ${f(DEPTH.his[0])}, HIS );
+	diffuseColor.rgb *= tStone( vKind.y ) * hue * tone * ( 1.0 - ${f(STONE.dark)} * joint * ( 1.0 - 0.6 * sFinish.x ) ) * mix( 1.0, ${f(DEPTH.far)}, tBack( vWPos.z ) );
 }`).replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = sFinish.y;')
       .replace('#include <metalnessmap_fragment>', '#include <metalnessmap_fragment>\nmetalnessFactor = sFinish.x;')
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
 {
 	vec3 upV = ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz;
-	totalEmissiveRadiance += diffuseColor.rgb * ( 1.0 - 0.7 * sFinish.x ) * ( ${lin3(CITY_LIGHT)} * tFlood( normal, vFoot.y, HIS ) + ${lin3(HOT)} * tStreet( vFoot.x * ${f(FOOT)}, dot( normal, upV ), wLight.z, vWPos.x / ${f(SCALE)} ) + ${lin3(CITY_LIGHT)} * tCity( normal, vFoot.x * ${f(FOOT)}, wLight.x, wLight.z, HIS ) );
-}`).replace('#include <lights_fragment_end>', `iblIrradiance *= ${f(STONE.night)};\n#define SKY_KEEP ( vKind.y < ${f(0.5 / (STONES.length - 1))} ? ${f(SKY.pale)} : 1.0 )${SKY_LIGHT}\n#include <lights_fragment_end>`).replace('#include <opaque_fragment>', `outgoingLight = tPale( tKnee( tCooled( ( outgoingLight - totalEmissiveRadiance ) * tRise( vFoot.y, HIS ), tCool( vKind.y ) ), HIS ) + totalEmissiveRadiance + tRimLight, HIS );
+	totalEmissiveRadiance += diffuseColor.rgb * ( 1.0 - 0.7 * sFinish.x ) * ( ${lin3(CITY_LIGHT)} * tFlood( normal, vFoot.y ) + ${lin3(HOT)} * tStreet( vFoot.x * ${f(FOOT)}, dot( normal, upV ), wLight.z, vWPos.x / ${f(SCALE)} ) + mix( ${lin3(CITY_LIGHT)}, ${lin3(HIS_LIGHT)}, OWN ) * tCity( normal, vFoot.x * ${f(FOOT)}, wLight.x, wLight.z, OWN ) );
+}`).replace('#include <lights_fragment_end>', `iblIrradiance *= ${f(STONE.night)};\n#define SKY_KEEP mix( 1.0, ${f(SHADE.his)}, OWN )${SKY_LIGHT}\n#include <lights_fragment_end>`).replace('#include <opaque_fragment>', `outgoingLight = tPale( tKnee( tCooled( ( outgoingLight - totalEmissiveRadiance ) * tRise( vFoot.y ), tCool( vKind.y ) ) ) + totalEmissiveRadiance + tRimLight );
 outgoingLight = max( mix( outgoingLight, tKeep( outgoingLight ), mix( ${f(STONE.keep[0])}, ${f(STONE.keep[1])}, sFinish.x ) ), 0.0 );
-outgoingLight = tAir( outgoingLight, vWPos.z, HIS );
+outgoingLight = tAir( outgoingLight, vWPos.z );
 #include <opaque_fragment>`);
   };
   return lit(m, { key: 'towers-stone', baked: true, core: false });
@@ -443,7 +450,6 @@ float tRimFade;
 float tThin;
 float tPpu;
 vec3 tRimLight;
-#define HIS ${HIS_AT}
 ${COMMON}
 vec3 tTint( float w ) {
 	float t = 2.0 * w;
@@ -593,8 +599,8 @@ vec3 bAcross = vec3( 1.0, 0.0, 0.0 );
 		diffuseColor.rgb *= ( 1.0 - ${f(SHEET.dark)} * seam ) * mix( 1.0, 1.0 - ${f(SHEET.weather)} + 2.0 * ${f(SHEET.weather)} * streak, wall );
 	}
 	tRimOn = 1.0 - max( bGlass, bSheet );
-	diffuseColor.rgb = mix( mix( diffuseColor.rgb, vec3( 0.0 ), bGlass ), ${lin3(CURTAIN_TINT)}, bSheet ) * mix( mix( 1.0, ${f(DEPTH.far)}, tBack( vWPos.z ) ), ${f(DEPTH.his[0])}, HIS );
-	bEmit = max( bEmit, vec3( 0.0 ) ) * mix( mix( 1.0, ${f(DEPTH.lights)}, tBack( vWPos.z ) ), ${f(DEPTH.his[1])}, HIS );
+	diffuseColor.rgb = mix( mix( diffuseColor.rgb, vec3( 0.0 ), bGlass ), ${lin3(CURTAIN_TINT)}, bSheet ) * mix( 1.0, ${f(DEPTH.far)}, tBack( vWPos.z ) );
+	bEmit = max( bEmit, vec3( 0.0 ) ) * mix( 1.0, ${f(DEPTH.lights)}, tBack( vWPos.z ) );
 }`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>\nroughnessFactor = mix( mix( mix( mix( roughnessFactor, ${f(STONE.rough)}, max( bStone, bFar ) ), mix( ${f(BAY.copper)}, ${f(CURTAIN.polish)}, bPolish ), bCopper ), ${f(BAY.glass)}, bGlass ), ${f(CURTAIN.rough)}, bSheet );`)
       .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>\nmetalnessFactor = mix( mix( mix( mix( metalnessFactor, 0.0, max( bStone, bFar ) ), 1.0, bCopper ), 0.0, bGlass ), ${f(CURTAIN.metal)}, bSheet );`)
@@ -630,15 +636,15 @@ if ( abs( bTilt.x ) + abs( bTilt.y ) > 0.0 ) {
 			totalEmissiveRadiance += bPolish * mix( ${lin3(METAL.copper)}, ${lin('pale')}, ${f(BAND.pale)} ) * glint;
 		}
 	}
-	totalEmissiveRadiance += diffuseColor.rgb * matte * ( 1.0 - max( bGlass, bSheet ) ) * ${lin3(CITY_LIGHT)} * tFlood( normal, vFoot.y, HIS );
-	totalEmissiveRadiance += bEmit + diffuseColor.rgb * ${lin3(HOT)} * ( ( 1.0 - max( bGlass, bSheet ) ) * bSpill + ${f(CURTAIN.city)} * bPolish ) + diffuseColor.rgb * matte * ( ${lin3(HOT)} * tStreet( vFoot.x * ${f(FOOT)}, dot( normal, upV ), wLight.z, vWPos.x / ${f(SCALE)} ) + ${lin3(CITY_LIGHT)} * tCity( normal, vFoot.x * ${f(FOOT)}, wLight.x, wLight.z, HIS ) );
+	totalEmissiveRadiance += diffuseColor.rgb * matte * ( 1.0 - max( bGlass, bSheet ) ) * ${lin3(CITY_LIGHT)} * tFlood( normal, vFoot.y );
+	totalEmissiveRadiance += bEmit + diffuseColor.rgb * ${lin3(HOT)} * ( ( 1.0 - max( bGlass, bSheet ) ) * bSpill + ${f(CURTAIN.city)} * bPolish ) + diffuseColor.rgb * matte * ( ${lin3(HOT)} * tStreet( vFoot.x * ${f(FOOT)}, dot( normal, upV ), wLight.z, vWPos.x / ${f(SCALE)} ) + ${lin3(CITY_LIGHT)} * tCity( normal, vFoot.x * ${f(FOOT)}, wLight.x, wLight.z, 0.0 ) );
 }`)
       .replace('#include <lights_fragment_end>', `iblIrradiance *= mix( 1.0, ${f(STONE.night)}, max( bStone, bFar ) * ( 1.0 - bSheet ) );\n#define SKY_KEEP 1.0${SKY_LIGHT}\n#include <lights_fragment_end>`)
       .replace('#include <opaque_fragment>', `{
-	outgoingLight = tPale( tKnee( tCooled( ( outgoingLight - totalEmissiveRadiance ) * tRise( vFoot.y, HIS ), bCool * max( bStone, bFar ) ), HIS ) + totalEmissiveRadiance + tRimLight, HIS );
+	outgoingLight = tPale( tKnee( tCooled( ( outgoingLight - totalEmissiveRadiance ) * tRise( vFoot.y ), bCool * max( bStone, bFar ) ) ) + totalEmissiveRadiance + tRimLight );
 	float lamp = clamp( dot( bEmit, vec3( 1.0 ) ) / max( dot( outgoingLight, vec3( 1.0 ) ), 1e-5 ), 0.0, 1.0 );
 	outgoingLight = max( mix( outgoingLight, tKeep( outgoingLight ), max( max( max( max( max( bGlass, bLit ), bCopper ), bKeep ), lamp ), bSheet ) ), 0.0 );
-	outgoingLight = tAir( outgoingLight, vWPos.z, HIS );
+	outgoingLight = tAir( outgoingLight, vWPos.z );
 }
 #include <opaque_fragment>`);
   };
@@ -717,7 +723,7 @@ if ( vFlute.y > 0.5 && vFlute.y < 1.5 ) {
 	// A sun disc's carving, far off, gives way to the coin's plain field, with the carving drawn over it as light and
 	// shade (FAR_DISC), so the disc reads as one deep gold coin, carved, and never glitters.
 	vec3 fw3 = fwidth( vViewPosition );
-	float disc = vFlute.y > 1.5 ? smoothstep( ${f(DISC.far[0])}, ${f(DISC.far[1])}, max( fw3.x, max( fw3.y, fw3.z ) ) / ${f(SCALE)} ) : 0.0;
+	float disc = vFlute.y > 1.5 && vFlute.y < 2.5 ? smoothstep( ${f(DISC.far[0])}, ${f(DISC.far[1])}, max( fw3.x, max( fw3.y, fw3.z ) ) / ${f(SCALE)} ) : 0.0;
 	float carve = 1.0;
 	if ( disc > 0.0 ) {
 		vec3 p = vWPos / ${f(SCALE)} - ${v3(DC)};
@@ -823,6 +829,12 @@ if ( vFlute.y > 0.5 && vFlute.y < 1.5 ) {
 			// His crown takes none: it washed his tiers to one pale cone.
 			seen += uGlint * ( ${f(GOLD.sheen[0])} * ( 1.0 - his ) * goldSpot( n, g / max( length( g ), 1e-5 ), v, ${f(GOLD.sheen[1])} ) ) * ( 1.0 - ${f(DISC.glint)} * disc );
 		#endif
+		if ( his > 0.5 ) {
+			// His lantern, lit from within, on the gold round it.
+			vec3 lp = ${v3(LANTERN_POS)} - vWPos / ${f(SCALE)}, nw = normalize( ( vec4( n, 0.0 ) * viewMatrix ).xyz );
+			float ld = length( lp );
+			seen += ${lin3(LANTERN_LIGHT)} * ( ${f(LANTERN.power)} * ( ${f(LANTERN.wrap)} + ${f(1 - LANTERN.wrap)} * clamp( dot( nw, lp / max( ld, 1e-4 ) ), 0.0, 1.0 ) ) / ( 1.0 + ld * ld / ${f(LANTERN.reach * LANTERN.reach)} ) );
+		}
 		float nv = clamp( dot( n, v ), 0.0, 1.0 );
 		sum += w * seen * ( F0 + ( 1.0 - F0 ) * pow( 1.0 - nv, 5.0 ) );
 	}
@@ -846,6 +858,8 @@ if ( vFlute.y > 0.5 && vFlute.y < 1.5 ) {
 		vec3 body = c * lv * ${f(MARK.obelisk.gain)};
 		outgoingLight = max( tKeep( body + mix( ${lin3(METAL.gold)}, ${lin('pale')}, smoothstep( og.z, og.w, ls ) ) * ls * ${f(MARK.obelisk.gain)} ), 0.0 );
 	} else outgoingLight = max( tKeep( c * lv ), 0.0 );
+	// His lantern's room, seen through its slots: a light of its own (LANTERN.glow), brightest at its middle.
+	if ( vFlute.y > 2.5 ) outgoingLight = ${lin3(LANTERN_LIGHT)} * ${f(LANTERN.glow)} * ( 0.75 + 0.25 * sin( 3.14159265 * clamp( vFlute.x, 0.0, 1.0 ) ) );
 }
 #include <opaque_fragment>`);
   };
