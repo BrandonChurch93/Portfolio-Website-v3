@@ -1,0 +1,114 @@
+// Makes the pyramid (src/pieces/world/parts/pyramid.ts) and writes public/world/pyramid.bin.
+//
+//   node scripts/world/parts/pyramid/make.mjs           the shipped file
+//   node scripts/world/parts/pyramid/make.mjs --draft   fast, with fewer samples in the bake
+//
+// Every piece is a convex solid, the intersection of half spaces (polytope.mjs): the body, which runs on under the
+// ground, with every arris rounded, the neck in the reveal, and the capstone. Each face is
+// cut into rows and filled, finer at the foot and the reveal, and how open each vertex is to the night is baked in
+// the world's own frame, with the land round it there to shut it in. The mesh is stored in the pyramid's own frame:
+// its foot on the ground, its axis straight out from the dome (FORM.fit, standing() in form.ts).
+import process from 'node:process';
+import { bake } from '../../lib/bake.mjs';
+import { pack } from '../../lib/pack.mjs';
+import { L, light, linear, storeBounce } from '../../lib/plan.mjs';
+import { FORM, standing } from '../../../../src/pieces/world/parts/pyramid/form.ts';
+import { polytope, fill, mend, plane, round } from './polytope.mjs';
+
+const draft = process.argv.includes('--draft');
+const OUT = 'public/world/pyramid.bin';
+const { base } = L.PYRAMID, { tall, turn } = FORM.fit, half = base / 2, from = FORM.cap.from, reveal = FORM.cap.reveal, R = FORM.round;
+
+// The four sides, outward, each by its horizontal direction.
+const SIDES = [[1, 0], [0, 1], [-1, 0], [0, -1]];
+const sideFaces = SIDES.map(([dx, dz]) => ({ ...plane([dx * tall, half, dz * tall], [0, tall, 0]), tag: 'face' }));
+const flat = (n, d, tag) => ({ n, d, tag });
+const arrises = sideFaces.flatMap((f, i) => round(f, sideFaces[(i + 1) % 4], R.arris, R.facets, 'round'));
+
+const UP = flat([0, 1, 0], from, 'top'), DOWN = flat([0, -1, 0], FORM.sink, 'foot');
+const body = polytope([...sideFaces, ...arrises, UP, DOWN], 'body');
+
+const neckHalf = half * (1 - from / tall) - FORM.cap.inset;
+const neck = polytope([
+  flat([1, 0, 0], neckHalf, 'neck'), flat([-1, 0, 0], neckHalf, 'neck'), flat([0, 0, 1], neckHalf, 'neck'), flat([0, 0, -1], neckHalf, 'neck'),
+  flat([0, 1, 0], from + reveal + 0.3, 'hidden'), flat([0, -1, 0], -(from - 0.3), 'hidden'),
+], 'neck');
+
+const CAPFOOT = flat([0, -1, 0], -(from + reveal), 'under');
+const cap = polytope([...sideFaces, ...arrises, CAPFOOT], 'cap');
+
+// How far apart vertices are along a row: fine at the foot, where it meets the ground, and coarse up the faces and
+// on the two faces never seen (the view never moves).
+const unseen = (n) => n[0] > 0.5 || n[2] < -0.5;
+function spacing(p, n, tag) {
+  let h = tag === 'face' || tag === 'round' ? Math.min(6, 1.1 + 0.07 * Math.max(0, p[1])) : 3;
+  if (unseen(n)) h *= 3;
+  return draft ? h * 1.6 : h;
+}
+// Upright rows: fine at the foot and at the reveal.
+const rows = [];
+for (let y = -FORM.sink; y < 0; y += 1) rows.push(y);
+for (let y = 0, s = 0.5; y < tall; y += s, s = Math.min(4, 0.5 + 0.06 * y)) rows.push(y);
+for (let y = from - 2; y < from + reveal + 2; y += 0.3) rows.push(y);
+rows.push(tall);
+
+// Which piece a vertex is of, stored for the shader (light.w): a face of the body, a round of the body, the neck in
+// the reveal, a round of the capstone, a face of the capstone.
+const KIND = { body: 0, neck: 0.5, cap: 1 };
+const kind = (name, tag) => (tag === 'round' ? (name === 'cap' ? 0.75 : 0.25) : KIND[name]);
+const gold = mend(fill([body, neck, cap], { rows, flatRows: [], spacing, skip: (tag) => tag === 'hidden' || tag === 'foot', kind }));
+
+// The pyramid's frame to the world's: its foot on the ground under its middle, its axes as standing() gives them.
+const foot = L.ground(L.PYRAMID.x, L.PYRAMID.z), ax = standing(L.PYRAMID.x, L.PYRAMID.z, L.WORLD.top, turn);
+const toWorld = (m) => {
+  const p = new Float32Array(m.positions.length), n = new Float32Array(m.normals.length);
+  const put = (out, i, a, b, c, at) => { for (let k = 0; k < 3; k++) out[i + k] = at[k] + a * ax.x[k] + b * ax.y[k] + c * ax.z[k]; };
+  for (let i = 0; i < p.length; i += 3) {
+    put(p, i, m.positions[i], m.positions[i + 1], m.positions[i + 2], [L.PYRAMID.x, foot, L.PYRAMID.z]);
+    put(n, i, m.normals[i], m.normals[i + 1], m.normals[i + 2], [0, 0, 0]);
+  }
+  return { positions: p, normals: n, indices: m.indices };
+};
+
+// The land round it, as the plan has it, to shut in its foot and give back light. It is not stored: the land is its
+// own part.
+function land() {
+  const S = 300, step = draft ? 8 : 5, n = Math.ceil((2 * S) / step), pos = [], nor = [], idx = [];
+  for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) {
+    const x = L.PYRAMID.x - S + i * step, z = L.PYRAMID.z - S + j * step, y = L.ground(x, z), e = 0.5;
+    const gx = (L.ground(x + e, z) - L.ground(x - e, z)) / (2 * e), gz = (L.ground(x, z + e) - L.ground(x, z - e)) / (2 * e), l = Math.hypot(gx, 1, gz);
+    pos.push(x, y, z); nor.push(-gx / l, 1 / l, -gz / l);
+  }
+  const keep = (i, j) => L.within(L.PYRAMID.x - S + i * step, L.PYRAMID.z - S + j * step) > -4;
+  for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+    if (!keep(i, j) || !keep(i + 1, j) || !keep(i, j + 1) || !keep(i + 1, j + 1)) continue;
+    const a = j * (n + 1) + i, b = a + 1, d = a + n + 1, e = d + 1;
+    idx.push(a, d, b, b, d, e);
+  }
+  return { positions: Float32Array.from(pos), normals: Float32Array.from(nor), indices: Uint32Array.from(idx) };
+}
+
+// What each thing gives back of the light on it, as a plain diffuse share. The gold's is its color at a little over
+// half: polished, much of what it returns goes one way and not all round.
+const ALBEDO = { gold: linear('hot').map((v) => v * 0.55), land: linear('text-3').map((v) => v * 0.12) };
+
+const L0 = light();
+const gw = toWorld(gold), lw = land();
+const t0 = performance.now();
+const out = await bake({
+  meshes: [
+    { name: 'gold', ...gw, albedo: ALBEDO.gold, receive: true },
+    { name: 'land', ...lw, albedo: ALBEDO.land, receive: false },
+  ],
+  moon: L0.moon,
+  core: null,
+  sky: L0.sky,
+}, { samples: draft ? { core: 1, moon: 8, hemi: 96 } : { core: 1, moon: 32, hemi: 640 }, bounces: 2, reach: 260, seed: 7 });
+console.log(`bake: ${((performance.now() - t0) / 1000).toFixed(1)} s`);
+
+const b = out.gold, n = gold.positions.length / 3, lightA = new Float32Array(n * 4), bounce = new Float32Array(n * 4);
+for (let i = 0; i < n; i++) {
+  lightA.set([b.core[i], b.moon[i], b.open[i], gold.kind[i]], i * 4);
+  bounce.set([storeBounce(b.bounce[i * 3]), storeBounce(b.bounce[i * 3 + 1]), storeBounce(b.bounce[i * 3 + 2]), 0], i * 4);
+}
+pack(OUT, [{ name: 'gold', positions: gold.positions, indices: gold.indices, attributes: { normal: { data: gold.normals, size: 3, as: 'i16' }, light: { data: lightA, size: 4, as: 'u8' }, bounce: { data: bounce, size: 4, as: 'u8' } } }], { draft, foot });

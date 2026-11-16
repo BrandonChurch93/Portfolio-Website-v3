@@ -15,6 +15,7 @@ export const pieceLoaders: Record<string, () => Promise<PieceFactory>> = {
   desk: () => import('./desk/index').then((m) => m.createDesk),
   pad: () => import('./pad/index').then((m) => m.createPad),
   skycity: () => import('./skycity/index').then((m) => m.createSkyCity),
+  world: () => import('./world/index').then((m) => m.createWorld),
 };
 
 export function loaderFor(name: string): (() => Promise<PieceFactory>) | undefined {

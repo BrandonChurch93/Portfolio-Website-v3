@@ -14,7 +14,9 @@
     "live": "node scripts/live.mjs",
     "perf": "node scripts/perf.mjs",
     "mem": "node scripts/mem.mjs",
-    "blockout": "node scripts/blockout.mjs"
+    "blockout": "node scripts/blockout.mjs",
+    "look": "node scripts/world/look.mjs",
+    "match": "node scripts/world/match.mjs"
   },
   "license": "UNLICENSED",
   "dependencies": {

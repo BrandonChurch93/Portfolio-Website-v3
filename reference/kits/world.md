@@ -23,6 +23,13 @@ He ruled this on Nov 15 at 21:38, after seeing the first output of the build: a 
 - Do not carry the study's meshes or shaders into the piece. The piece imports nothing from `src/hero-blockout/`, and the study is left as it is.
 - What the study got wrong, so it is not repeated: `LOG.md`, Nov 15.
 
+**The layout is the picture's exactly. The look is to be better than the picture's.** He made this plain later on Nov 15 (`BRIEF.md`, Settled, Hero, "The layout is picture 9's exactly, and the look is to be better than the picture's"): "I just wanted you to preserve the exact layout of the Google Gemini reference image. Building placements, how tall the buildings are, and the overall looking feel should be improved upon. be much higher quality."
+
+- Where each thing is, how big it is and how tall it is are the picture's, held by the overlay every round. That is not for a builder to improve.
+- The look is not a copy of the picture's rendering. The picture's look is the starting point and the least a part may be. Past it, judge by `QUALITY.md`: a thing that reads as a real object in 3D space, with light and shadow used to its advantage, with more to find close up than the picture has.
+- The order: first what we already know it should look like, which is the picture. Then what makes it better to look at.
+- The core ties in with the stream the site already has (`src/stream/`, and a still of it: open `/lab/stream`). It has to look seamless, as if the stream exists there and comes from the core.
+
 ## Match picture 9, every round
 
 Keep the picture open while you work. Before judging anything else in a round, lay your still over the picture and fix what does not line up.
