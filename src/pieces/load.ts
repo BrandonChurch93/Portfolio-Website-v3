@@ -13,6 +13,7 @@ export const pieceLoaders: Record<string, () => Promise<PieceFactory>> = {
   reflector: () => import('./reflector/index').then((m) => m.createReflector),
   'studio-light': () => import('./studio-light/index').then((m) => m.createStudioLight),
   palette: () => import('./palette/index').then((m) => m.createPalette),
+  screen: () => import('./screen/index').then((m) => m.createScreen),
   desk: () => import('./desk/index').then((m) => m.createDesk),
   pad: () => import('./pad/index').then((m) => m.createPad),
   skycity: () => import('./skycity/index').then((m) => m.createSkyCity),

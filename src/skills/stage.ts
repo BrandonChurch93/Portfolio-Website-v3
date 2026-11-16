@@ -24,7 +24,8 @@ export interface SkillsParts {
   board: HTMLElement;
   skills: HTMLElement;
   about: HTMLElement;
-  pieces: () => { cpu: StruckPiece | null; reflector: StruckPiece | null; light: StruckPiece | null; desk: DeskPiece | null };
+  // A row's thing is under its row's own number: the CPU in the first, and whatever the others have.
+  pieces: () => { things: (StruckPiece | null)[]; reflector: StruckPiece | null; light: StruckPiece | null; desk: DeskPiece | null };
   way: () => Way;
 }
 
@@ -116,14 +117,14 @@ export function mountSkills(parts: SkillsParts, host?: StreamHost): SkillsStage 
   const q = <T extends HTMLElement = HTMLElement>(part: string, within: Element = root) => within.querySelector<T>(`[data-part="${part}"]`)!;
   const all = (part: string) => [...root.querySelectorAll<HTMLElement>(`[data-part="${part}"]`)];
   const desk = q('desk');
-  const rows = all('row'), names = all('name'), lists = all('lists'), thing = q('thing') as HTMLElement | null;
+  const rows = all('row'), names = all('name'), lists = all('lists'), things = all('thing').map((el) => ({ el, row: Number(el.dataset.row ?? 0) }));
   const reflector = q('reflector'), light = q('light'), portrait = q('portrait'), cover = q('cover'), coverGlow = cover.firstElementChild as HTMLElement;
   const heading = q('about-title'), tabs = q('tabs'), panel = q('panel');
   const auras = all('aura'), beams = all('beam');
 
   let stream: StreamHandle | null = null, bench: DeskPiece | null = null, disposed = false, hush = 0, quietTo = 0, quietBack = 0;
-  let anchors: { cpu: Anchor; reflector: Anchor; strike: Anchor; lens: Anchor } = { cpu: [-0.36, 0], reflector: [0, 0], strike: [0.02, -0.14], lens: [-0.12, 0.16] };
-  let lives: Record<Way, number> = { shards: 1.3, band: 0.9, flash: 0.8 };
+  let anchors: { things: Anchor[]; reflector: Anchor; strike: Anchor; lens: Anchor } = { things: [[-0.36, 0], [-0.36, 0], [-0.36, 0]], reflector: [0, 0], strike: [0.02, -0.14], lens: [-0.12, 0.16] };
+  let lives: Record<Way, number>[] = [0, 1, 2].map(() => ({ shards: 1.3, band: 0.9, flash: 0.8 }));
   let rules: Rail[] = [], cues: Cue[] = [];
   // The run over the top of About, as the page has it: from the reflector to where the stream strikes the light.
   let run = { ax: 0, ay: 0, bx: 1, by: 0 };
@@ -149,8 +150,10 @@ export function mountSkills(parts: SkillsParts, host?: StreamHost): SkillsStage 
 
   const place = () => {
     const A = ABOUT, T = throwLine();
-    thing?.style.setProperty('--ax', String(anchors.cpu[0]));
-    thing?.style.setProperty('--ay', String(anchors.cpu[1]));
+    for (const { el, row } of things) {
+      el.style.setProperty('--ax', String(anchors.things[row][0]));
+      el.style.setProperty('--ay', String(anchors.things[row][1]));
+    }
     const put = (el: HTMLElement, x: number, y: number, host: number, a: Anchor) => { el.style.left = `calc(var(--u) * ${(x - a[0] * host - host / 2).toFixed(2)})`; el.style.top = `calc(var(--u) * ${(y - a[1] * host - host / 2).toFixed(2)})`; };
     put(reflector, A.reflector.x, A.reflector.y, A.reflector.host, anchors.reflector);
     put(light, T.lens[0], T.lens[1], A.light.host, anchors.lens);
@@ -227,7 +230,7 @@ export function mountSkills(parts: SkillsParts, host?: StreamHost): SkillsStage 
   const follow = (cues: Cue[]) => {
     way = parts.way();
     const over: Record<string, number> = {
-      title: LEAD, near: SHOW.room[1], lamp: SHOW.pc[1], row0: Math.max(SHOW.lists[1], lives[way] + 0.3), row1: SHOW.lists[1], row2: SHOW.lists[1],
+      title: LEAD, near: SHOW.room[1], lamp: SHOW.pc[1], row0: Math.max(SHOW.lists[1], lives[0][way] + 0.3), row1: Math.max(SHOW.lists[1], lives[1][way] + 0.3), row2: Math.max(SHOW.lists[1], lives[2][way] + 0.3),
       light: SHOW.portrait[1] + SHOW.panel[1], behind: SHOW.glow[1] + SHOW.panel[1],
     };
     for (const c of cues) if (over[c.name] !== undefined) { c.over = over[c.name]; stream?.follow(c.name, c.over); }
@@ -265,11 +268,14 @@ export function mountSkills(parts: SkillsParts, host?: StreamHost): SkillsStage 
       show(`name${i}`, names[i], ramp(age, SHOW.name));
       show(`lists${i}`, lists[i], ramp(age, SHOW.lists));
     });
-    const row0 = since('row0'), hit0 = stream.struck('row0');
-    if (thing) set('thing:o', thing, 'opacity', row0 > 0 ? '1' : '0');
+    const row0 = since('row0');
     if (again !== null && (t - again >= row0 || row0 <= 0)) again = null;
-    P.cpu?.setLife?.(parts.way(), whole ? 60 : again === null ? row0 : Math.max(0.001, t - again));
-    P.cpu?.setStream(whole ? 1 : hit0.on, whole ? 60 : t - hit0.at);
+    for (const { el, row } of things) {
+      const age = since(`row${row}`), hit = stream.struck(`row${row}`), piece = P.things[row];
+      set(`thing${row}:o`, el, 'opacity', age > 0 ? '1' : '0');
+      piece?.setLife?.(parts.way(), whole ? 60 : row > 0 || again === null ? age : Math.max(0.001, t - again));
+      piece?.setStream(whole ? 1 : hit.on, whole ? 60 : t - hit.at);
+    }
 
     // About: the reflector and the studio light are always there. The light's light and his portrait come on at the
     // light's strike, the glow as the stream goes in behind him, and the words only once all of that is whole.
@@ -338,10 +344,10 @@ export function mountSkills(parts: SkillsParts, host?: StreamHost): SkillsStage 
   lamp.bind();
   tiers.detect();
   place();
-  void registry.track(Promise.all([import('../pieces/cpu/index'), import('../pieces/reflector/index'), import('../pieces/studio-light/index')]).then(([cpu, refl, studio]) => {
+  void registry.track(Promise.all([import('../pieces/cpu/index'), import('../pieces/reflector/index'), import('../pieces/studio-light/index'), import('../pieces/screen/index'), import('../pieces/palette/index')]).then(([cpu, refl, studio, screen, palette]) => {
     if (disposed) return;
-    anchors = { cpu: cpu.CPU.strike, reflector: refl.REFLECTOR.strike, strike: studio.STUDIO.strike, lens: studio.STUDIO.lens };
-    lives = cpu.LIFE;
+    anchors = { things: [cpu.CPU.strike, screen.SCREEN.strike, palette.PALETTE.strike], reflector: refl.REFLECTOR.strike, strike: studio.STUDIO.strike, lens: studio.STUDIO.lens };
+    lives = [cpu.LIFE, screen.LIFE, palette.LIFE];
     place();
     stream = host ? host(plan) : mountStream(parts.page, { plan });
   }));
@@ -359,7 +365,7 @@ export function mountSkills(parts: SkillsParts, host?: StreamHost): SkillsStage 
       waiting.push({ at: clock.now() + PULSE.run * PULSE.swap, done });
     },
     again() {
-      if (!stream?.runs() || stream.since('row0') < lives[parts.way()]) return;
+      if (!stream?.runs() || stream.since('row0') < lives[0][parts.way()]) return;
       again = clock.now();
       stream.strike('row0', AGAIN);
     },

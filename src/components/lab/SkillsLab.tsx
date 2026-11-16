@@ -16,6 +16,8 @@ import styles from './SkillsLab.module.css';
 const WAY_NAMES: Record<Way, string> = { shards: 'Shards', band: 'Band', flash: 'Flash' };
 // The small pieces are mounted from this many screens away, so none is being built as the stream reaches it.
 const REACH = 5;
+// The thing at the left of each row of skills, top to bottom: his picks of Nov 14.
+const THINGS = ['cpu', 'screen', 'palette'] as const;
 const u = (n: number) => `calc(var(--u) * ${Number(n.toFixed(2))})`;
 const at = (x: number, y: number, w?: number, h?: number): CSSProperties => ({ left: u(x), top: u(y), width: w === undefined ? undefined : u(w), height: h === undefined ? undefined : u(h) });
 
@@ -49,7 +51,7 @@ function Glow() {
 // page as its leading end reaches it (src/skills/stage.ts).
 // The desk is the piece in src/pieces/desk, at whatever stage its parts have reached. The section's title is a word
 // lying on the desk's floor, drawn by the desk: the heading in the page is for a screen reader, and is the title on a
-// screen too narrow for the desk. The second and third rows keep an empty place for their thing. The words are placeholders and his to write.
+// screen too narrow for the desk. Each row has its thing: the CPU, the screen with its back off, the palette and brush. The words are placeholders and his to write.
 // ?way=band or flash opens it on that way of bringing the CPU to life, and ?ui=0 hides the label and the switch.
 // Pressing a way while the stream is on the first row strikes the row again, so the three can be compared in place.
 // On a page with more sections than this one (hub), it hands the hub its plan and the hub mounts the one stream.
@@ -57,7 +59,7 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
   const id = useId().replace(/:/g, '');
   const page = useRef<HTMLElement>(null), board = useRef<HTMLDivElement>(null), skills = useRef<HTMLElement>(null), about = useRef<HTMLElement>(null);
   const stage = useRef<SkillsStage | null>(null);
-  const pieces = useRef<{ cpu: StruckPiece | null; reflector: StruckPiece | null; light: StruckPiece | null; desk: DeskPiece | null }>({ cpu: null, reflector: null, light: null, desk: null });
+  const pieces = useRef<{ things: (StruckPiece | null)[]; reflector: StruckPiece | null; light: StruckPiece | null; desk: DeskPiece | null }>({ things: [null, null, null], reflector: null, light: null, desk: null });
   const [ui, setUi] = useState(!hub);
   const [way, setWay] = useState<Way>('shards');
   const [tab, setTab] = useState(0);
@@ -89,7 +91,8 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
     return () => { alive = false; stage.current = null; made?.dispose(); };
   }, [wide, hub]);
 
-  const hold = (name: 'cpu' | 'reflector' | 'light') => (p: Piece | null) => { pieces.current[name] = p as StruckPiece | null; };
+  const hold = (name: 'reflector' | 'light') => (p: Piece | null) => { pieces.current[name] = p as StruckPiece | null; };
+  const holdThing = (row: number) => (p: Piece | null) => { pieces.current.things[row] = p as StruckPiece | null; };
   const holdDesk = (p: Piece | null) => { pieces.current.desk = p as DeskPiece | null; };
   const pick = (i: number) => {
     if (i === tab) return;
@@ -115,7 +118,7 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
         <header className={styles.head}>
           <p className={styles.label}>Study 25 · Skills and About</p>
           <h1 className={styles.heading}>Scroll down</h1>
-          <p className={styles.note}>The desk's things are being made round by round. The second and third rows keep an empty place for their thing. The words are placeholders.</p>
+          <p className={styles.note}>The desk's things are being made round by round. The words are placeholders.</p>
         </header>
       )}
       <div ref={board} className={styles.board}>
@@ -130,9 +133,9 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
             {COMPETENCIES.map((c, i) => (
               <article key={c.name} className={styles.row} data-part="row">
                 <div className={styles.thing} aria-hidden="true">
-                  {i === 0 && wide && (
-                    <div className={styles.thingHost} data-part="thing">
-                      <PieceView name="cpu" reach={REACH} className={styles.piece} onPiece={hold('cpu')} />
+                  {THINGS[i] && wide && (
+                    <div className={styles.thingHost} data-part="thing" data-row={i} style={i ? ({ '--rise': 0 } as CSSProperties) : undefined}>
+                      <PieceView name={THINGS[i]} reach={REACH} className={styles.piece} onPiece={holdThing(i)} />
                     </div>
                   )}
                 </div>
