@@ -40,7 +40,7 @@ export interface Hub {
 // `has` is asked when the stream is mounted and not before: the hub is made while the page is still being written
 // on the server, where there is no screen to measure.
 export function createHub(page: () => HTMLElement | null, has: () => { hero: boolean } = () => ({ hero: false })): Hub {
-  let real: StreamHandle | null = null, gone = false;
+  let real: StreamHandle | null = null, gone = false, planned = false;
   let work: { title: HTMLElement; work: WorkParts } | null = null;
   const plans: { skills: Plan | null; contact: Plan | null; hero: Plan | null } = { skills: null, contact: null, hero: null };
   const tops: { skills: HTMLElement | null; contact: HTMLElement | null } = { skills: null, contact: null };
@@ -66,6 +66,7 @@ export function createHub(page: () => HTMLElement | null, has: () => { hero: boo
 
   const mount = () => {
     const host = page();
+    if (real && !wide() && !planned && plans.contact && !gone) { real.dispose(); real = null; }
     if (real || gone || !host || !work) return;
     // A screen too narrow for the sections under Work shows them as plain stand ins, and Work runs its stream alone.
     // With the hero's stand in above it, the stream begins under the hero and not at the top of the page.
@@ -78,7 +79,12 @@ export function createHub(page: () => HTMLElement | null, has: () => { hero: boo
       // Its two sides end at the foot of Work, beside the button. Run on to the foot of the page they crossed the
       // words of every section under it.
       const button = work.work.button;
-      real = mountStream(host, { title, work: work.work, begins, until: (box) => box(button).b + NARROW.past });
+      // Under Work nothing of it is seen until Contact, where it comes on beside the title, falls beside the plate
+      // and lands on the stone (src/contact/stage.ts). Contact hands its plan over after Work has: the stream is
+      // then mounted again with it.
+      const contact = plans.contact;
+      real = mountStream(host, { title, work: work.work, begins, until: (box) => box(button).b + NARROW.past, plan: contact ?? undefined });
+      planned = !!contact;
       return;
     }
     if (!plans.skills || !plans.contact || !tops.skills || !tops.contact || (has().hero && !plans.hero)) return;

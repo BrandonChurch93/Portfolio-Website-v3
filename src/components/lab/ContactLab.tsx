@@ -36,8 +36,10 @@ export function ContactLab({ hub }: { hub?: Hub }) {
   const page = useRef<HTMLElement>(null), board = useRef<HTMLDivElement>(null), section = useRef<HTMLElement>(null), form = useRef<HTMLFormElement>(null);
   const pad = useRef<PadPiece | null>(null);
   const [ui, setUi] = useState(!hub);
-  // Whether the screen is wide enough for the layout. Narrower, the page is a plain stand in with no stream and no pad.
+  // Whether the screen is wide enough for the layout. Narrower, the page is one column: the plate in plain paint,
+  // and the pad under it, live, with the stream falling beside the plate onto its stone.
   const [wide, setWide] = useState<boolean | null>(null);
+  const [live, setLive] = useState(false);
   const [copied, setCopied] = useState(false);
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
   // The fields the form was sent with empty or wrong. The plate says so itself, in place of the browser's bubble.
@@ -53,7 +55,7 @@ export function ContactLab({ hub }: { hub?: Hub }) {
   }, []);
 
   useEffect(() => {
-    if (!wide || !page.current || !board.current || !section.current) return;
+    if (wide === null || !page.current || !board.current || !section.current) return;
     let made: ContactStage | null = null, gone = false;
     void import('../../contact/stage').then(({ mountContact }) => {
       if (gone) return;
@@ -119,10 +121,10 @@ export function ContactLab({ hub }: { hub?: Hub }) {
           <p className={styles.note}>Scroll. The stream falls to the stone, the plate wakes, the stone lights from its rim in, and the rocket goes. The hero, the navigation and the footer&rsquo;s design are not here yet, and the words are stand ins.</p>
         </div>
       )}
-      <div ref={board} className={styles.board}>
+      <div ref={board} className={styles.board} data-live={live || undefined}>
         <section ref={section} id="contact" className={styles.contact} aria-labelledby={`${id}-title`} style={{ height: u(CONTACT.h) }}>
           <div className={styles.pad} data-part="pad" style={{ left: u(PAD.l), width: u(PAD.w), '--foot': PAD.b } as CSSProperties}>
-            {wide && <PieceView name="pad" reach={REACH} className={styles.piece} onPiece={(p: Piece | null) => { pad.current = p as PadPiece | null; }} />}
+            {wide !== null && <PieceView name="pad" reach={REACH} className={styles.piece} onPiece={(p: Piece | null) => { pad.current = p as PadPiece | null; setLive(!!p); }} />}
           </div>
           <h2 id={`${id}-title`} className={styles.title} data-part="title" style={{ left: u(CONTACT.title.l), top: u(CONTACT.title.t), fontSize: u(CONTACT.title.size) }}>{contact.title}</h2>
           <div className={styles.plate} data-part="plate" data-plate-area="" style={{ left: u(P.l), top: u(P.t), width: u(P.w), height: u(P.h) }}>
@@ -165,8 +167,8 @@ export function ContactLab({ hub }: { hub?: Hub }) {
               <p className={styles.based} data-failed={state === 'failed' || undefined} aria-hidden={state === 'failed' || undefined}>{state === 'failed' ? F.failed : contact.based}</p>
             </div>
           </div>
+          <Still name="pad" className={styles.still} />
         </section>
-        <Still name="pad" className={styles.still} />
         <footer className={styles.foot} style={{ height: u(CONTACT.foot) }}>
           <p>{contact.foot.line} · © {new Date().getFullYear()}</p>
           <ul>

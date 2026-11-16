@@ -66,6 +66,8 @@ export class StreamSim {
   readonly endAt = [-100, -100];
   metAt = -100;
   private next = 0;
+  // Says where along a side nothing is thrown: a stretch the stream runs unseen, where sparks would show it.
+  mute: ((side: number, s: number) => boolean) | null = null;
 
   constructor(private route: Route, private budget: StreamBudget, private seed: number, private sizes: [number, number]) {
     const landings = route.landings.length, emitters = Math.max(16, emitter(landings, 0));
@@ -170,11 +172,12 @@ export class StreamSim {
     const lit = (this.head[0] + Math.max(0, Math.min(this.head[1], this.route.join[1]) - this.route.split)) / (1000 * u);
     const one = this.own() ? 1 : 0;
     const out = new Array<number>(this.phase.length).fill(0);
-    out[0] = K.rest + K.fast * e0 ** 1.4;
-    out[1] = one * (K.rest + K.fast * e1 ** 1.4);
+    const seen = [this.mute?.(0, this.head[0]) ? 0 : 1, this.mute?.(1, this.head[1]) ? 0 : 1];
+    out[0] = seen[0] * (K.rest + K.fast * e0 ** 1.4);
+    out[1] = seen[1] * one * (K.rest + K.fast * e1 ** 1.4);
     out[2] = K.along * lit;
-    out[7] = S.arc.rate + S.arc.rateFast * e0;
-    out[8] = one * (S.arc.rate + S.arc.rateFast * e1);
+    out[7] = seen[0] * (S.arc.rate + S.arc.rateFast * e0);
+    out[8] = seen[1] * one * (S.arc.rate + S.arc.rateFast * e1);
     this.route.landings.forEach((L, i) => {
       const reached = this.head[L.side] >= L.s ? 1 : 0;
       out[emitter(i, SPARKS)] = reached * K.landing * L.glow;
@@ -350,7 +353,9 @@ export class StreamSim {
     const K = S.sparks, u = this.route.unit, r = (j: number) => this.rnd(2, k, j);
     const b = r(0) < 0.5 || this.head[1] <= this.route.split ? 0 : 1;
     const from = b === 1 ? this.route.split : 0, to = b === 1 ? Math.min(this.head[1], this.route.join[1]) : this.head[0];
-    at(this.route.branches[b], from + r(1) * Math.max(0, to - from), tmp);
+    const s = from + r(1) * Math.max(0, to - from);
+    if (this.mute?.(b, s)) return;
+    at(this.route.branches[b], s, tmp);
     const side = r(2) < 0.5 ? -1 : 1, a = Math.atan2(tmp[2] * side, -tmp[3] * side) + (r(3) - 0.5) * 1.3;
     const v = (K.speed[0] + (K.speed[1] - K.speed[0]) * 0.35 * r(4)) * u;
     this.spark(tmp[0], tmp[1], Math.cos(a) * v, Math.sin(a) * v, K.life[0] + (K.life[1] - K.life[0]) * 0.6 * r(5), 0.4 + 0.4 * r(6), 0);

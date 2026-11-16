@@ -54,7 +54,7 @@ export const STREAM = {
     bar: { lean: 12, least: 60, land: [36, 30] as [number, number], early: 4, past: 30, fall: 84 },
     // On a phone, where the stream does not land on the bar: how far outside the bar's end and the cards' sides
     // each side falls, the nearest it then comes to the screen's edge, and how round its two turns under the title are.
-    narrow: { clear: 22, edge: 24, turn: 26 },
+    narrow: { clear: 22, edge: 24, turn: 26, column: 20, down: 44, lead: 46, least: 8 },
     // The least the stream keeps between where it lands on a first row card's top and the card's end.
     card: { least: 56 },
     // The post: how far above its middle the stream meets it, as an angle. And the share of a strike's shards a
@@ -196,6 +196,10 @@ export const STREAM = {
     // It comes straight down onto the stone over this last stretch, turning into it by this much.
     over: 150,
     turn: 90,
+    // On a page of one column it comes on beside the title: over how long a stretch, and how far over the title's
+    // top and under the plate's foot its fall beside the plate begins and ends.
+    rise: 150,
+    lane: [30, 14] as [number, number],
     // The landing: how strong it is against a full strike, how many sparks and forks of arc it keeps while the
     // stream lies on it, and how many times longer than the test shot's it waits between the shards it throws.
     strike: [0.9, 1.1, 3, 2.4] as readonly [number, number, number, number],

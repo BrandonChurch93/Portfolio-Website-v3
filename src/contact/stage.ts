@@ -4,7 +4,7 @@ import { CARD } from '../metal/mask';
 import { plates } from '../metal/renderer';
 import { WAKE, advance, asleep, band, edge, veil, type Band, type Start } from '../metal/wake';
 import type { PadPiece } from '../pieces/pad/index';
-import { FILL, LAUNCH, ROCKET, TABLE, TOWER, burn, climbed } from '../pieces/pad/layout';
+import { FILL, HOST, LAUNCH, ROCKET, TABLE, TOWER, burn, climbed } from '../pieces/pad/layout';
 import { STREAM } from '../stream/config';
 import type { Box, Rail } from '../stream/route';
 import { routeThroughContact } from '../stream/route-contact';
@@ -78,9 +78,18 @@ export function mountContact(parts: ContactParts, host?: StreamHost): ContactSta
 
   const plan = (c: PlanContext): Planned => {
     const B = c.box(parts.board), top = c.box(parts.contact).t;
-    k = (B.r - B.l) / BOARD.w;
-    const at = ([x, y]: [number, number]) => ({ x: B.l + x * k, y: top + y * k });
-    const land = at(LANDS), from = c.from ?? { x: B.l + CONTACT.in * k, y: STREAM.route.start * c.unit };
+    // On a screen of one column the pad stands under the plate, as wide as its own host: everything of it is
+    // placed from where its host is. On a wide screen it is where the board has it.
+    const narrow = !matchMedia(`(min-width: ${BOARD.least}px)`).matches, H = c.box(q('pad'));
+    k = narrow ? (H.r - H.l) / HOST.wide : (B.r - B.l) / BOARD.w;
+    const mid = narrow ? { x: (H.l + H.r) / 2, y: H.b - HOST.up * k } : { x: B.l + CONTACT.pad.x * k, y: top + CONTACT.pad.y * k };
+    const at = ([x, y]: [number, number]) => ({ x: mid.x + (x - CONTACT.pad.x) * k, y: mid.y + (y - CONTACT.pad.y) * k });
+    const land = at(LANDS);
+    // There it falls beside the plate, as it falls beside Work's cards, and turns in to the stone under the plate.
+    const N = STREAM.work.narrow, L = STREAM.pad.lane, pb = c.box(plate);
+    const lane = Math.max(pb.r + N.least * c.unit, Math.min(c.width - N.edge * c.unit, pb.r + N.clear * c.unit));
+    const via = narrow ? [{ x: lane, y: c.box(title).t - L[0] * c.unit }, { x: lane, y: pb.b + L[1] * c.unit }] : undefined;
+    const from = c.from ?? (narrow ? { x: lane, y: STREAM.route.start * c.unit } : { x: B.l + CONTACT.in * k, y: STREAM.route.start * c.unit });
     const rests: Rail[] = RESTS.map(([x0, z0, x1, z1]) => { const a = at(onBoard(x0, 0, z0)), b = at(onBoard(x1, 0, z1)); return { ax: a.x, ay: a.y, bx: b.x, by: b.y, half: c.unit }; });
     // The table, the tower and the rocket, as one box from the tower's lamp down to the table's near legs.
     const a = at(onBoard(Math.min(TABLE.l, TOWER.l) - CLEAR, TOWER.lamp + CLEAR, 0)), b = at(onBoard(Math.max(TABLE.r, ROCKET.fin) + CLEAR, 0, TABLE.deep / 2 + CLEAR));
@@ -90,7 +99,7 @@ export function mountContact(parts: ContactParts, host?: StreamHost): ContactSta
     const pr = parts.page.getBoundingClientRect();
     origin = { x: pr.left + scrollX, y: pr.top + scrollY };
     return {
-      route: routeThroughContact({ width: c.width, unit: c.unit, view: c.view, board: k, from, joined: !!c.from, land, inward: -1, seat: top + (CONTACT.h + CONTACT.seat) * k, rests }),
+      route: routeThroughContact({ width: c.width, unit: c.unit, view: c.view, board: k, from, joined: !!c.from, via, hidden: narrow && !!c.from, land, inward: -1, seat: mid.y + (CONTACT.h - CONTACT.pad.y + CONTACT.seat) * k, rests }),
       after: frame,
       off: (x, y) => keepOff.some((o) => x >= o.l && x <= o.r && y >= o.t && y <= o.b),
     };

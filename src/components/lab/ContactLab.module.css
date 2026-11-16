@@ -379,8 +379,27 @@
     margin-inline: auto;
   }
 
+  /* The pad stands under the plate, live, over the room its picture keeps for it, and reaches up past the top of
+     the screen so the rocket climbs out of the screen and not out of its own picture. It is drawn as large as the
+     picture is: the picture is cut a little narrower than the pad's host. */
   .pad {
-    display: none;
+    left: 50% !important;
+    width: calc(min(26rem, 100%) * 1.143) !important;
+    margin-left: calc(min(26rem, 100%) * -0.5715);
+    bottom: 0;
+    height: 150vh;
+    height: 150lvh;
+    /* Over the plate and the title: the rocket climbs in front of them. Under the plate it went up behind it and
+       came out again over the title. */
+    z-index: 7;
+  }
+
+  .contact {
+    position: relative;
+  }
+
+  .board[data-live] .still {
+    visibility: hidden;
   }
 
   .title {

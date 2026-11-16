@@ -90,7 +90,7 @@ export interface Cue { name: string; s: number; over: number }
 // where that is not a few units.
 // source: the stream begins where this stretch ends. Its strands begin there, as they do at the top of a page, and
 // the page takes no light from it above there.
-export interface Dark { from: number; to: number; core: boolean; ease?: [number, number]; source?: boolean }
+export interface Dark { from: number; to: number; core: boolean; ease?: [number, number]; source?: boolean; quiet?: boolean }
 
 export interface Route extends Solids {
   // The rails' finials, as straight solids: what is thrown bounces off them and they throw shadows, but the route
@@ -455,7 +455,7 @@ export function routeThroughWork(P: WorkPlan): Route {
 
   // A side where the page has no stones and no rail: down past the end of the title, onto the bar, and off its end.
   const short = (way: number) => {
-    const hook = way < 0 ? T.left : T.right, K = W.bar;
+    const hook = way < 0 ? T.left : T.right, K = W.bar, N = W.narrow;
     const xh = beside(P.title, P.width, u, way);
     const corners: Corner[] = [start, part, [xh, top, hook[0] * u, hook[1] * u]];
     const marks: Mark[] = [];
@@ -473,12 +473,26 @@ export function routeThroughWork(P: WorkPlan): Route {
     } else if (P.cards.length) {
       // On a phone it does not land on the bar, and straight down from the title's end it ran along the cards' own
       // edges. Under the title it moves out to fall clear of the bar and the cards, as it does on a wide screen.
-      const N = W.narrow, sides = [end, ...P.cards.map((c) => (way < 0 ? c.l : c.r))];
+      const sides = [end, ...P.cards.map((c) => (way < 0 ? c.l : c.r))];
       const out = way < 0 ? Math.max(N.edge * u, Math.min(...sides) - N.clear * u) : Math.min(P.width - N.edge * u, Math.max(...sides) + N.clear * u);
       if ((xh - out) * -way > 2 * u) {
         lip = out;
         corners.push([xh, P.title.b, N.turn * u, N.turn * u], [lip, shelf, N.turn * u, N.turn * u]);
       }
+    }
+    // Falling beside the cards, a side turns in to strike each card that is its own, once, on the card's upright
+    // side a little under its top, and falls on. A card that stands to one side of the page is that side's. In one
+    // column the cards are the left's and the right's in turn down the page. (His words, Nov 16: "even if it just
+    // hits the cards on the way down".) A card's strike is what wakes it, as on a wide screen.
+    let under = shelf;
+    const own = P.cards.map((c, k) => ({ c, k })).filter(({ c, k }) => { const off = (c.l + c.r) / 2 - cx; return Math.abs(off) > N.column * u ? Math.sign(off) === way : (k % 2 === 0) === (way < 0); }).sort((p, q) => p.c.t - q.c.t);
+    for (const { c } of own) {
+      const edge = way < 0 ? c.l : c.r, y = c.t + Math.min(N.down * u, (c.b - c.t) * 0.25), lead = Math.min(N.lead * u, (y - under) * 0.45);
+      if ((lip - edge) * way < N.least * u || lead < N.least * u || (P.button && y + lead > P.button.t)) continue;
+      const touch: [number, number] = [edge + way * R.above * u, y];
+      corners.push([lip, y - lead, N.turn * u, N.turn * u], [touch[0], y, tight, tight], [lip, y + lead, N.turn * u, N.turn * u]);
+      marks.push(mark('side', edge, y, -way, way < 0 ? Math.PI : 0, C.card, touch));
+      under = y + lead;
     }
     // Where the route ends at Work's button, as on a narrow page with sections under Work, each side turns in under
     // the last card and strikes the button's end, so the two meet on it. Left to fall, they ended in the air

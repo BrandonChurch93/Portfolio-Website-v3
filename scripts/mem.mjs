@@ -2,7 +2,8 @@
 //
 //   npm run mem -- <route> [<route> ...] [options]
 //
-//   --vp ipad|desktop     an iPad held sideways, as a touch screen (default), or a desktop window
+//   --vp ipad|desktop|upright|phone   an iPad held sideways, as a touch screen (default), a desktop window, an
+//                         iPad held upright, or a phone. The last two get the page of one column
 //   --walk                open the index, go into each route by its link and come back, in one tab, as he does.
 //                         What matters is that a second visit costs what the first did, and that leaving gives it back
 //   --warn                with --walk, send WebKit the memory warning an iPad sends a page that is getting large
@@ -44,7 +45,8 @@ const srv = await server(flags);
 let b = await webkit.launch();
 const errors = new Set();
 try {
-  const screen = flags.vp === 'desktop' ? { viewport: { width: 1728, height: 1000 }, deviceScaleFactor: 2 } : { viewport: { width: 1194, height: 834 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true };
+  const held = { upright: [834, 1194, 2], phone: [390, 844, 3] }[flags.vp] ?? [1194, 834, 2];
+  const screen = flags.vp === 'desktop' ? { viewport: { width: 1728, height: 1000 }, deviceScaleFactor: 2 } : { viewport: { width: held[0], height: held[1] }, deviceScaleFactor: held[2], hasTouch: true, isMobile: true };
   let page;
   const fresh = async () => {
     // A browser of its own: WebKit's graphics process is one to a browser, and keeps some of what the last page held.

@@ -456,6 +456,8 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     riders = makeRiders(route, budget, look);
     if (probe) probe = new Float32Array(riders.n * PROBE);
     sim = new StreamSim(route, budget, S.seed, S.sizes[look]);
+    const hush = route.dark?.filter((d) => d.quiet) ?? [], whole = route.branches[0];
+    if (hush.length) sim.mute = (side, s) => route!.branches[side] === whole && hush.some((d) => s >= d.from && s < d.to);
     handed = -1;
     const most = riders.n + budget.loose;
     shards = new Float32Array(most * INSTANCE_FLOATS);
@@ -476,10 +478,10 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   // between the two is a band of light that crosses the card with the dial ahead of it and the card behind.
   // It sets out from where the stream strikes the card, and runs back the way it came when the stream draws
   // back above it. On a card the stream is not on, a pointer that is put on it or keyboard focus wakes it by the
-  // same band, from where the pointer came onto it. Only where the stream runs its whole route: with reduced
-  // motion or on a narrow screen no card sleeps.
+  // same band, from where the pointer came onto it. Only where the stream strikes the cards: with reduced motion
+  // no card sleeps, nor does one the stream has no room to strike.
   const stepBands = (showing: Card[]) => {
-    const can = !!sim && !still && !!sides[0] && !!sides[1];
+    const can = !!sim && !still && ((!!sides[0] && !!sides[1]) || cards.some((c) => c.landings.length > 0));
     if (!can || !table[0]) { sleeping = false; return; }
     if (bands.length !== table[0].length) { bands = table[0].map(() => asleep()); sleeping = false; }
     const frozen = clock.isFrozen();
@@ -837,6 +839,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     }
     for (let b = 0; b < 2; b++) {
       if (b === 1 && (sim.head[1] <= route.split || sim.head[1] >= route.join[1])) continue;
+      if (sim.mute?.(b, sim.head[b])) continue;
       at(route.branches[b], sim.head[b], tmp);
       // Where a front has just fused with it, it flashes.
       const e = sim.energy[b], beat = still ? 0 : 0.12 * Math.sin(t * 9.3 + b * 2.1) * Math.sin(t * 5.1 + b) + 2.4 * Math.exp(-Math.max(0, t - sim.endAt[b]) / 0.16);

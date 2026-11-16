@@ -1,5 +1,5 @@
 import { STREAM } from './config';
-import { UP, measure, rides, roam, trace, wander, type Branch, type Cue, type Dark, type Landing, type Rail, type Route, type Solids } from './route';
+import { UP, measure, rides, roam, trace, wander, type Branch, type Corner, type Cue, type Dark, type Landing, type Rail, type Route, type Solids } from './route';
 
 // The route through Contact, planned from where things are on the page. One stream. It comes in where it leaves
 // About, under the lower left of his portrait, falls swaying to the Sun stone under the rocket, and lands on the
@@ -24,6 +24,11 @@ export interface ContactPlan {
   // it does not sway, so the two meet.
   from: Pt;
   joined?: boolean;
+  // Places it passes on its way to the stone, in order, where the page is one column and it falls beside the
+  // plate. hidden says nothing of it is drawn before the first of them: it has come down the page unseen from the
+  // section it was last seen in, and comes on there.
+  via?: Pt[];
+  hidden?: boolean;
   land: Pt;
   // How far down the page the foot of the screen is when it lands.
   seat: number;
@@ -36,7 +41,8 @@ export interface ContactPlan {
 export function routeThroughContact(P: ContactPlan): Route {
   const K = STREAM.pad, u = P.unit, k = P.board;
   const S: Solids = { boxes: [], posts: [], rails: P.rests };
-  const drawn = trace([[P.from.x, P.from.y, 0, 0], [P.land.x, P.land.y - K.over * k, K.turn * k, K.turn * k], [P.land.x, P.land.y, 0, 0]]);
+  const via = (P.via ?? []).map((v): Corner => [v.x, v.y, K.turn * k * 0.5, K.turn * k * 0.5]);
+  const drawn = trace([[P.from.x, P.from.y, 0, 0], ...via, [P.land.x, P.land.y - K.over * k, K.turn * k, K.turn * k], [P.land.x, P.land.y, 0, 0]]);
   let total = 0;
   for (let i = 2; i < drawn.length; i += 2) total += Math.hypot(drawn[i] - drawn[i - 2], drawn[i + 1] - drawn[i - 1]);
   // No sway where it lands, so that it meets the stone where the page has it.
@@ -67,5 +73,10 @@ export function routeThroughContact(P: ContactPlan): Route {
 
   const cues: Cue[] = [{ name: 'land', s: end, over: K.follow }];
   const dark: Dark[] = [{ from: br.len - K.sink * u, to: br.len + 1, core: false }];
+  if (P.hidden && P.via?.length) {
+    let i = 0;
+    while (i < br.n - 1 && br.y[i] < P.via[0].y) i++;
+    dark.unshift({ from: -1, to: i * br.step, core: true, ease: [0, K.rise * u], quiet: true });
+  }
   return { branches, split: br.len + 1e6, join: [Infinity, Infinity], landings: [stone], ...S, fins: [], flows: [], fall: K.fall * k, unit: u, cues, dark, soft: K.soft };
 }
