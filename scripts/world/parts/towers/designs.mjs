@@ -331,7 +331,7 @@ function finTower(b, t) {
 function bandedDrum(b, x, r, tall, o = {}) {
   const n = 40, hb = 3, R = b.R, { cw, ch } = cell(b), at = (p) => [p[0] + x, p[1], p[2]];
   const pb = { ...b, kit: { patch: (l, a, c, e, f, q) => b.kit.patch(l, at(a), at(c), at(e), at(f), q), prism: (l, poly, y0, y1, q) => b.kit.prism(l, poly.map(([u, v]) => [u + x, v]), y0, y1, q), cap: (l, poly, y, up, tag) => b.kit.cap(l, poly.map(([u, v]) => [u + x, v]), y, up, tag), box: () => {} } };
-  const stone = { tone: b.tone, vary: b.vary, lay: 0 }, D = DRUM, top = tall - D.cap, low = top - D.stack * (o.stack ?? 1), k = D.bands + (R() < 0.5 ? 0 : -1), step = (top - low) / k;
+  const stone = { tone: b.tone, vary: b.vary, lay: 0 }, D = DRUM, top = tall - D.cap, low = top - D.stack * (o.stack ?? 1), k = o.bands ?? D.bands + (R() < 0.5 ? 0 : -1), step = (top - low) / k;
   const skip = (m) => m[2] < -0.4, rs = r + D.ring, rg = r - D.groove;
   revolve(pb, 'stone', [[r + 0.9, -b.sink], [r + 0.9, hb], [r + 0.3, hb + 0.6], [r, hb + 0.6]], n, { tag: { ...stone, lay: 1 }, skip });
   drum(pb, r, hb + 0.6, low - 0.8, n, { cw, ch, pier: 4, out: 0.3, pierWide: 0.9 });
@@ -395,8 +395,9 @@ function twin(b, t) {
   const { w, d, tall } = t, R = b.R;
   if (t.i === PAIR) {
     const r = w * 0.235;
-    bandedDrum(b, -w * 0.25, r, tall * 0.97, { stack: 0.9 });
-    bandedDrum(b, w * 0.25, r * 1.02, tall);
+    // Not twins: the left a lower head of four deep storeys, the right a taller one of six.
+    bandedDrum(b, -w * 0.25, r * 0.96, tall * 0.95, { stack: 0.8, bands: 4 });
+    bandedDrum(b, w * 0.25, r * 1.04, tall, { stack: 1.15, bands: 6 });
     return;
   }
   const hp = clamp(tall * 0.14, 5, 12);
@@ -632,7 +633,9 @@ function obelisk(b, t) {
   b.kit.prism('gold', turned(chamfered(gt, gt, gt * 0.08)), yc, ym, { top: false, edge: b.E, nv: 4, shrink: P.waist, tagOf: reeds(gt, P.waist, yc, ym, 0.9) });
   const gw = gt * P.waist;
   b.kit.prism('gold', turned(chamfered(gw + 0.6, gw + 0.6, gw * 0.14)), ym, ym + 0.3, { top: true, bottom: true, edge: b.E });
-  b.kit.prism('gold', turned(chamfered(gw, gw, gw * 0.08)), ym + 0.3, tall, { top: false, edge: b.E, shrink: 0.04 });
+  // The pyramidion's upper stage: four flat faces to a point, square to the shaft's broad faces, so each takes the
+  // light as a plane of its own.
+  b.kit.prism('gold', turned([[-gw / 2, gw / 2], [gw / 2, gw / 2], [gw / 2, -gw / 2], [-gw / 2, -gw / 2]]), ym + 0.3, tall, { top: false, edge: b.E, shrink: 0.02 });
   revolve(b, 'gold', Array.from({ length: 7 }, (_, i) => { const a = -Math.PI / 2 + (Math.PI * i) / 6; return [Math.max(0.01, P.ball * Math.cos(a)), tall + P.ball + P.ball * Math.sin(a)]; }), 10, { skip: (m) => m[2] < -0.6 });
   block(b, 'gold', 0.2, 0.2, tall + 2 * P.ball, tall + P.needle, { shrink: 0.1 });
 }

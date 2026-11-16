@@ -4,7 +4,7 @@ import { MOONWARD, SCALE, ground } from '../../layout';
 import { STEP, TOWERS } from '../../placed';
 import { METAL, WARM as KEPT, lit } from '../../light';
 import { FRONT, PALE_STONE, PLACE, SLIVER, STONES, WARM, WINDOW } from './windows';
-import { SUN, discAt, obeliskPoint } from './marks';
+import { OBELISK, SUN, discAt, obeliskPoint } from './marks';
 
 const FOOT = PLACE.foot;
 // Where his stepped tower stands, so the bay's material keeps it in the light he approved (HIS in SKY_LIGHT).
@@ -38,7 +38,9 @@ const BALANCE = 'vec3( 0.96, 1.21, 1.59 )';
 // of two courses a floor and in panels a floor tall (the rest smooth, jointed every `smooth` floors), and how dark a
 // panel's joint and a smooth stone's are against ashlar's.
 const LAID = { storey: 2.3, ways: [0.4, 0.75], smooth: 3, dark: [0.75, 0.55] };
-const STONE = { course: [0.8, 1.9], channel: [1.2, 1.6], block: [1.7, 3.0], joint: [0.05, 0.16], differ: 0.14, dark: 0.5, rough: 0.82, streak: 0.22, keep: [0, 1], night: 1.2, hue: 0.06 };
+const STONE = { course: [0.8, 1.9], channel: [1.2, 1.6], block: [1.7, 3.0], joint: [0.05, 0.16], differ: 0.14, dark: 0.5, rough: 0.82, streak: 0.22, keep: [0, 1], night: 1.2, hue: 0.06, band: [0.22, 40, 14], grime: 0.72 };
+// The floodlights under the crowns: how bright, as radiance on the stone, and over what share of a building's height.
+const FLOOD = { power: 1.5, reach: 0.25 };
 // The moon's line on the city: the moon is behind it, so each face turned toward the moon and seen near edge on (a
 // roof, a cornice's top, a face toward the moon) or cut toward it at a corner (an arris) carries a crisp pale line
 // of its light, as the spire's chamfers do, and each silhouette stands off the one behind it. How bright, as a share
@@ -56,10 +58,13 @@ const RIM = { power: 0.9, cut: 7, edge: 5, own: 0.45, thin: [2.5, 5], top: [2.5,
 // fades with height to `rim` at the feet.
 // His stepped tower's limestone takes `pale` of it, so its lit piers stay the pale near neutral he approved.
 // Every building but his: how much of its light the foot of a building keeps against its top, and the curve
-// between; the sky about the moon on it, and how much of it a face turned from the moon still takes (little: the face
-// turned to the moon is the lit one, the front a clear step darker); how much of the night's soft light it takes
-// against his, and how much of the stored bounce, which lies on every face alike.
-const SHADE = { foot: 0.35, curve: 1.1, power: 4, wrap: 0.05, night: 0.15, bounce: 0.45 };
+// between; the sky about the moon on it, taken by a face's own cosine to the moon (raised to `lobe`), and how much of it
+// a face turned from the moon still takes (wrap: little, the face turned to the moon is the lit one and the front a
+// clear step darker); how much of it a place shut in keeps (shut, by its stored openness from open[0] to open[1]: the
+// feet, under a ledge); how much of the night's soft light it takes against his, and how much of the stored bounce,
+// which lies on every face alike. The moon's own shadow map lies on nearly every face turned to it (it is low, and
+// the city is close set), so this, which no building's live shadow cuts, is what gives the city its two faces.
+const SHADE = { foot: 0.35, curve: 1.1, power: 8, wrap: 0.03, lobe: 0.8, shut: 0.35, open: [0.35, 0.9], night: 0.15, bounce: 0.45 };
 const SKY = { power: 0.75, wrap: 0.4, low: -25, high: 150, feet: 0.1, fill: 0.6, rim: 0.12, pale: 0.15 };
 // The street's light on the lowest storeys: shop fronts and lamps bleeding up the walls, in the palette's hot light,
 // as radiance on the stone at the foot (power), falling to a share 1/e every `fall` units up, strongest in the
@@ -75,16 +80,17 @@ const GLOW = { power: 0.16, shut: 1.5, fall: 90, city: 0.05, cityFall: 30 };
 // ground before the city spill a warm light up its faces, from in front and the visitor's right (FRONT.toward in
 // ./windows.ts, which the make bakes how much of it a place sees by). A face takes it by its cosine, wrapped by
 // `wrap`, in the palette's hot light eased `pale` toward its pale; it is brightest low and falls to `floor` of that by
-// `fall` units up (his tower takes it only on its lowest floors, falling by `his`); a place shut
+// `fall` units up (his tower takes it only on its lowest floors, falling by his[0], at his[1], the power he approved
+// it under: every other building takes less, so its front is darker than its face to the moon); a place shut
 // from the front by a nearer building (the bake's `frontward`) keeps `shut` of it, and a place shut in keeps `open`.
 // It is laid on as radiance, as the street's is, so the foot to top shade of the moon's light does not dim it.
-const CITY = { pale: 0.15, power: 1.0, wrap: 0.1, fall: 26, floor: 0.4, his: 8, shut: 0.3, open: 0.6 };
+const CITY = { pale: 0.15, power: 0.6, wrap: 0.1, fall: 26, floor: 0.25, his: [8, 1], shut: 0.3, open: 0.6 };
 // The far rows fall back: the walls of the back of the city keep `far` of their light and its windows `lights`, by
 // how far back a place is (tBack, eased by `curve`), and they go toward the dark warm air between, `haze` of the way,
 // so the front row is lit and crisp and the last rows are near silhouettes against the glow behind the world. The air
 // is a dark warm grey, less red than the walls, so the far rows cool as they fall back. His tower keeps the share of
 // its walls' light and its windows' (his) that it had where it stands when he approved it.
-const DEPTH = { far: 0.22, lights: 0.5, curve: 0.6, haze: 0.5, air: [0.032, 0.022, 0.015], his: [0.7097, 0.8259] };
+const DEPTH = { far: 0.5, lights: 0.5, curve: 0.6, haze: 0.5, air: [0.032, 0.022, 0.015], his: [0.7097, 0.8259] };
 // A lit face of every building but his: the light from without held under a soft shoulder from `knee` (the
 // brightest channel, linear) over `soft`, and going toward the palette's pale only from pale[0] to pale[1].
 const LIT_FACE = { knee: 0.5, soft: 0.3, pale: [0.75, 1.2] };
@@ -109,7 +115,10 @@ const ROOM = { far: 0.25, lamp: [-0.22, 0.32], spill: [0.9, 4] };
 // world. And the polished
 // copper of the ringed drums' bands (POLISHED): how rough, and how much of the lit city round about it mirrors, so
 // the bands read bright, as picture 9's do.
-const CURTAIN = { mullion: 0.08, through: 0.32, tint: 0.6, gild: 0.5, metal: 0.9, rough: 0.09, polish: 0.16, city: 0.45 };
+const CURTAIN = { mullion: 0.08, through: 0.32, tint: 0.6, gild: 0.5, metal: 0.9, rough: 0.09, polish: 0.16, city: 0.45, mirror: [0.4, 0.04, 0.7] };
+// The ringed drums' polished bands: how bright the moon's line on them is and the lit city's, how tight, and how far
+// toward the palette's pale the line is.
+const BAND = { moon: 2.4, city: 1.6, tight: 24, pale: 0.3 };
 const CURTAIN_TINT = METAL.bronze.clone().lerp(METAL.gold, CURTAIN.gild).multiplyScalar(CURTAIN.tint);
 const BAY = { bronze: 0.62, rough: 0.5, metal: 0.85, glass: 0.06, bevel: 0.07, copper: 0.4, stone: 0.9 };
 // A field of windows seen from far off, where a window is a few pixels or less: it is drawn as its own wall, a warm
@@ -159,15 +168,20 @@ const GOLD = { sheen: [0.6, 0.3], rough: 0.17, moon: [0.1, 0.8], lit: 9, dark: 0
 // the face turned away mirrors the night in front of the world at `dark` and is a deep gold, never brown. Its
 // polish wanders `wave` as far as the rest of the gold's (on its broad faces the wander read as blotches), its
 // shoulder is high, and it is drawn at `gain` of its light, so its lit face grades to pale gold below the cap and
-// keeps its gradient and its streak, where at full light the whole face sat flat at the cap.
+// keeps its gradient and its streak, where at full light the whole face sat flat at the cap. Its body is graded from
+// the pyramid's own deep gold (body) toward the world's gold only over grade[0] to grade[1], held a little brighter
+// toward one edge of each face (across), and its streak is laid on after the shoulder, reaching `hold` at most and
+// going toward pale only over grade[2] to grade[3]: graded as the rest of the gold, its whole lit face went to cream.
 const MARK = {
   his: { lit: 2.9, shoulder: [1.2, 1.1] },
-  obelisk: { lit: 3.4, streak: 9, tight: 160, bend: -0.3, foot: 0.45, dark: 1.1, wave: 0.3, shoulder: [1.4, 3.4], gain: 0.6 },
+  obelisk: { lit: 3.4, streak: 9, tight: 220, bend: -0.3, foot: 0.45, dark: 0.75, wave: 0.3, shoulder: [1.2, 1.2], gain: 0.6, grade: [0.15, 14, 1.2, 3.0], body: [1, 0.4, 0.07], across: 0.25, hold: 2.5 },
 };
 // The sun disc seen far off, where its carving gives way to a field: the field's light is held under `cap` by a soft
 // shoulder, whatever the moon and the cursor's sheen give it, and the carving is drawn over it as light and shade
 // (how much darker its grooves, how much brighter its rays, its plates and its boss), so it always reads.
-const FAR_DISC = { cap: 2.0, groove: 0.5, ray: 0.75, plate: 0.25, boss: 0.5 };
+const FAR_DISC = { cap: 1.15, groove: 0.62, ray: 0.9, plate: 0.3, boss: 0.6, relief: 2.2 };
+// The disc's rim far off: its gold's level, and how much brighter toward the moon's side and darker away from it.
+const RIM_DISC = { lv: 0.8, side: 0.45 };
 const OBI = TOWERS.findIndex((t) => t[6] === 'obelisk'), SDI = TOWERS.findIndex((t) => t[6] === 'disc');
 const near = (i: number, k: number): string => {
   const [x, z, w, d] = TOWERS[i];
@@ -275,8 +289,15 @@ const vec3 tCityward = ${v3(new THREE.Vector3(...FRONT.toward).normalize().toArr
 float tCity( vec3 n, float h, float fore, float open, float his ) {
 	vec3 l = ( viewMatrix * vec4( tCityward, 0.0 ) ).xyz;
 	float c = clamp( ( dot( n, l ) + ${f(CITY.wrap)} ) / ${f(1 + CITY.wrap)}, 0.0, 1.0 );
-	float fall = his > 0.5 ? exp( - max( h, 0.0 ) / ${f(CITY.his)} ) : mix( ${f(CITY.floor)}, 1.0, exp( - max( h, 0.0 ) / ${f(CITY.fall)} ) );
-	return ${f(CITY.power)} * c * fall * mix( ${f(CITY.shut)}, 1.0, fore ) * mix( ${f(CITY.open)}, 1.0, open );
+	float fall = his > 0.5 ? exp( - max( h, 0.0 ) / ${f(CITY.his[0])} ) : mix( ${f(CITY.floor)}, 1.0, exp( - max( h, 0.0 ) / ${f(CITY.fall)} ) );
+	return mix( ${f(CITY.power)}, ${f(CITY.his[1])}, his ) * c * fall * mix( ${f(CITY.shut)}, 1.0, fore ) * mix( ${f(CITY.open)}, 1.0, open );
+}
+// Floodlights under each building's crown, every building's but his (FLOOD): its top storeys washed with warm light
+// from below, brightest just under its head and gone FLOOD.reach of its height down, on its upright faces only.
+float tFlood( vec3 n, float rise, float his ) {
+	vec3 upV = ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz;
+	float upright = 1.0 - smoothstep( 0.4, 0.8, abs( dot( n, upV ) ) );
+	return ( 1.0 - his ) * upright * ${f(FLOOD.power)} * smoothstep( 1.0 - ${f(FLOOD.reach)}, 1.0, clamp( rise, 0.0, 1.0 ) ) * smoothstep( 1.0, 0.97, rise );
 }
 float tStreet( float h, float up, float open, float along ) {
 	float side = 1.0 - smoothstep( 0.35, 0.85, abs( up ) );
@@ -317,7 +338,12 @@ const SKY_LIGHT = `
 	float up = tUp( vWPos.y ), his = HIS;
 	float seen = wLight.y * mix( 1.0, mix( ${f(SKY.feet)}, 1.0, up ), his );
 	vec3 mw = ( viewMatrix * vec4( tMoonward, 0.0 ) ).xyz;
-	float turned = mix( mix( ${f(SHADE.wrap)}, ${f(SKY.wrap)}, his ), 1.0, clamp( 0.5 + 0.5 * dot( normal, mw ), 0.0, 1.0 ) );
+	float turned = mix( ${f(SKY.wrap)}, 1.0, clamp( 0.5 + 0.5 * dot( normal, mw ), 0.0, 1.0 ) );
+	// Every building but his takes the sky about the moon by its own cosine, so the face turned to the moon is the lit
+	// one and the face turned from it takes only SHADE.wrap; a place shut in (a foot, under a ledge) keeps SHADE.shut.
+	float facing = pow( clamp( dot( normal, mw ), 0.0, 1.0 ), ${f(SHADE.lobe)} );
+	float shut = mix( ${f(SHADE.shut)}, 1.0, smoothstep( ${f(SHADE.open[0])}, ${f(SHADE.open[1])}, wLight.z ) );
+	turned = mix( ( ${f(SHADE.wrap)} + ${f(1 - SHADE.wrap)} * facing ) * shut, turned, his );
 	irradiance += directionalLights[ 0 ].color * ( mix( ${f(SHADE.power)}, ${f(SKY.power)}, his ) * seen * turned * SKY_KEEP * tSliver( normal, geometryViewDir ) );
 	iblIrradiance *= mix( 1.0 - ${f(SKY.fill)}, 1.0, seen ) * mix( mix( ${f(FRONT.keep)}, 1.0, wLight.x ) * ${f(SHADE.night)}, 1.0, his );
 	#ifdef WORLD_BAKED
@@ -373,6 +399,9 @@ tRimLight = vec3( 0.0 );
 	tone *= 1.0 + fine * 0.1 * ( 0.6 * tNoise( grain * 3.0 ) + 0.4 * tNoise( grain * 8.0 + 3.0 ) - 0.5 );
 	float streak = tNoise( vec2( grain.x * 1.7, grain.y * 0.045 ) ) * 0.6 + tNoise( vec2( grain.x * 4.3 + 9.0, grain.y * 0.11 ) ) * 0.4;
 	tone *= 1.0 + ${f(STONE.streak)} * ( streak - 0.5 );
+	// Every building but his: the stone changes up its face in broad bands, a lift or a darker stretch over a few
+	// floors (STONE.band), and the dirt of the street darkens its lowest storeys, so no face is one even plane.
+	tone *= mix( ( 1.0 + ${f(STONE.band[0])} * ( tNoise( vec2( grain.x / ${f(STONE.band[1])} + vary * 31.0, grain.y / ${f(STONE.band[2])} ) ) - 0.5 ) ) * mix( ${f(STONE.grime)}, 1.0, smoothstep( 0.0, 1.0, vFoot.x ) ), 1.0, HIS );
 	// Each building's stone is its own, a little warmer or cooler than its kind.
 	vec3 hue = vec3( 1.0 ) + ${f(STONE.hue)} * ( fract( vary * 13.7 ) - 0.5 ) * vec3( 0.6, 0.0, -1.0 );
 	sFinish = tFinish( vKind.y );
@@ -382,7 +411,7 @@ tRimLight = vec3( 0.0 );
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
 {
 	vec3 upV = ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz;
-	totalEmissiveRadiance += diffuseColor.rgb * ( 1.0 - 0.7 * sFinish.x ) * ( ${lin3(HOT)} * tStreet( vFoot.x * ${f(FOOT)}, dot( normal, upV ), wLight.z, vWPos.x / ${f(SCALE)} ) + ${lin3(CITY_LIGHT)} * tCity( normal, vFoot.x * ${f(FOOT)}, wLight.x, wLight.z, HIS ) );
+	totalEmissiveRadiance += diffuseColor.rgb * ( 1.0 - 0.7 * sFinish.x ) * ( ${lin3(CITY_LIGHT)} * tFlood( normal, vFoot.y, HIS ) + ${lin3(HOT)} * tStreet( vFoot.x * ${f(FOOT)}, dot( normal, upV ), wLight.z, vWPos.x / ${f(SCALE)} ) + ${lin3(CITY_LIGHT)} * tCity( normal, vFoot.x * ${f(FOOT)}, wLight.x, wLight.z, HIS ) );
 }`).replace('#include <lights_fragment_end>', `iblIrradiance *= ${f(STONE.night)};\n#define SKY_KEEP ( vKind.y < ${f(0.5 / (STONES.length - 1))} ? ${f(SKY.pale)} : 1.0 )${SKY_LIGHT}\n#include <lights_fragment_end>`).replace('#include <opaque_fragment>', `outgoingLight = tPale( tKnee( tCooled( ( outgoingLight - totalEmissiveRadiance ) * tRise( vFoot.y, HIS ), tCool( vKind.y ) ), HIS ) + totalEmissiveRadiance + tRimLight, HIS );
 outgoingLight = max( mix( outgoingLight, tKeep( outgoingLight ), mix( ${f(STONE.keep[0])}, ${f(STONE.keep[1])}, sFinish.x ) ), 0.0 );
 outgoingLight = tAir( outgoingLight, vWPos.z, HIS );
@@ -584,6 +613,24 @@ if ( abs( bTilt.x ) + abs( bTilt.y ) > 0.0 ) {
 {
 	vec3 upV = ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz;
 	float matte = ( max( bStone, bFar ) + ( 1.0 - max( bStone, bFar ) ) * 0.25 * ( 1.0 - bGlass ) ) * ( 1.0 - 0.8 * bSheet );
+	{
+		// A curtain wall mirrors the lit city low on its face and the dark of the night higher up (CURTAIN.mirror): from
+		// mirror[0] at its foot to mirror[1] at its head, more as the glass is seen more edge on, and in the moon's sky
+		// on a face turned to it, so each face of glass is a gradient up the building and not one flat tone.
+		float nv = clamp( dot( normal, normalize( vViewPosition ) ), 0.0, 1.0 ), fres = mix( 0.35, 1.0, pow( 1.0 - nv, 2.0 ) );
+		float up = clamp( vFoot.y, 0.0, 1.0 ), low = mix( ${f(CURTAIN.mirror[0])}, ${f(CURTAIN.mirror[1])}, smoothstep( 0.0, ${f(CURTAIN.mirror[2])}, up ) );
+		totalEmissiveRadiance += bSheet * ${lin3(CURTAIN_TINT)} * ${lin3(CITY_LIGHT)} * low * fres * mix( 1.0, ${f(DEPTH.lights)}, tBack( vWPos.z ) );
+		// The polished copper of a ringed drum's bands mirrors the bright sky about the moon and the lit city before it,
+		// each a tight lobe of the reflection (BAND): round a drum these lie as a bright line down every band, at the
+		// same bearing on each, which rolls round them as the eye moves.
+		if ( bPolish > 0.0 ) {
+			vec3 rv = reflect( - normalize( vViewPosition ), normal ), rw = ( vec4( rv, 0.0 ) * viewMatrix ).xyz;
+			vec3 mo = tMoonward, ci = tCityward;
+			float glint = ${f(BAND.moon)} * pow( max( dot( rw, mo ), 0.0 ), ${f(BAND.tight)} ) * wLight.y + ${f(BAND.city)} * pow( max( dot( rw, ci ), 0.0 ), ${f(BAND.tight * 0.5)} ) * mix( 0.4, 1.0, wLight.x );
+			totalEmissiveRadiance += bPolish * mix( ${lin3(METAL.copper)}, ${lin('pale')}, ${f(BAND.pale)} ) * glint;
+		}
+	}
+	totalEmissiveRadiance += diffuseColor.rgb * matte * ( 1.0 - max( bGlass, bSheet ) ) * ${lin3(CITY_LIGHT)} * tFlood( normal, vFoot.y, HIS );
 	totalEmissiveRadiance += bEmit + diffuseColor.rgb * ${lin3(HOT)} * ( ( 1.0 - max( bGlass, bSheet ) ) * bSpill + ${f(CURTAIN.city)} * bPolish ) + diffuseColor.rgb * matte * ( ${lin3(HOT)} * tStreet( vFoot.x * ${f(FOOT)}, dot( normal, upV ), wLight.z, vWPos.x / ${f(SCALE)} ) + ${lin3(CITY_LIGHT)} * tCity( normal, vFoot.x * ${f(FOOT)}, wLight.x, wLight.z, HIS ) );
 }`)
       .replace('#include <lights_fragment_end>', `iblIrradiance *= mix( 1.0, ${f(STONE.night)}, max( bStone, bFar ) * ( 1.0 - bSheet ) );\n#define SKY_KEEP 1.0${SKY_LIGHT}\n#include <lights_fragment_end>`)
@@ -601,7 +648,7 @@ if ( abs( bTilt.x ) + abs( bTilt.y ) > 0.0 ) {
 // Where the marks stand in the world, for the gold's shader: the obelisk's point from its plinth to its head, the
 // sun disc's middle, the way across its face and its radius, the bearing of the moon, and the rings of the far
 // disc's carving (the two rounded rings, the outer band's foot, the beads, the rim).
-const OB_Y = (() => { const [x, z, , , tall] = TOWERS[OBI], g = ground(x, z), p = obeliskPoint(tall); return [g + p.foot, g + p.top]; })();
+const OB_Y = (() => { const [x, z, w, , tall] = TOWERS[OBI], g = ground(x, z), p = obeliskPoint(tall); return [g + p.foot, g + p.top, g + tall - w * OBELISK.width * OBELISK.cap]; })();
 const [DC, DT, DR] = (() => {
   const [x, z, w, , tall, turn] = TOWERS[SDI], { r, cy } = discAt(w, tall), t = (turn * Math.PI) / 180;
   return [[x, ground(x, z) + cy, z], [Math.cos(t), -Math.sin(t)], r] as const;
@@ -686,19 +733,41 @@ if ( vFlute.y > 0.5 && vFlute.y < 1.5 ) {
 		float glyph = step( ${f(C.glyphs[0])}, r ) * step( r, ${f(C.glyphs[1])} ) * ( 1.0 - ray ) * ( 0.6 + 0.4 * cos( ${f(SUN.glyphs)} * a ) * ( 1.0 - smoothstep( 0.15, 0.4, ${f(SUN.glyphs)} * fa ) ) );
 		float square = step( ${f(C.squares[0])}, r ) * step( r, ${f(C.squares[1])} ) * ( 1.0 - smoothstep( 0.32 - edge, 0.32 + edge, dg ) );
 		float boss = 1.0 - smoothstep( 0.0, ${f(C.boss)}, r );
-		carve = mix( 1.0, ( 1.0 - ${f(FAR_DISC.groove)} * groove ) * ( 0.82 + ${f(FAR_DISC.ray)} * ray + ${f(FAR_DISC.plate)} * ( band + glyph + square ) + ${f(FAR_DISC.boss)} * boss ), disc );
+		// The cursor's lamp lights the carving's relief from where it stands: each raised edge turned toward it is lit and
+		// each turned away is shaded (FAR_DISC.relief), so the carving catches the lamp as it moves round the coin.
+		float hc = ray + 0.6 * ( band + glyph + square ) + boss - groove;
+		vec2 gh = vec2( dFdx( hc ), dFdy( hc ) ), gl = ( uGlintAt - geometryPosition ).xy;
+		float relief = clamp( - dot( gh, gl / max( length( gl ), 1e-5 ) ), -0.6, 0.6 );
+		carve = mix( 1.0, ( 1.0 - ${f(FAR_DISC.groove)} * groove ) * ( 0.82 + ${f(FAR_DISC.ray)} * ray + ${f(FAR_DISC.plate)} * ( band + glyph + square ) + ${f(FAR_DISC.boss)} * boss ) * clamp( 1.0 + ${f(FAR_DISC.relief)} * relief, 0.5, 1.8 ), disc );
+	}
+	// The disc's rim, far off, is a band of polished gold whose highlights break into specks: there it is drawn as one
+	// smooth band of the world's gold, brightest toward the moon (RIM_DISC), never pale.
+	float rimF = 0.0, rimLv = 0.0;
+	{
+		vec3 p = vWPos / ${f(SCALE)} - ${v3(DC)};
+		float ac = dot( p.xz, ${`vec2( ${f(DT[0])}, ${f(DT[1])} )`} ), off = dot( p.xz, ${`vec2( ${f(-DT[1])}, ${f(DT[0])} )`} ), r = length( vec2( ac, p.y ) ) / ${f(DR)};
+		if ( vFlute.y < 0.5 && r > ${f(INNER - 0.06)} && r < 1.08 && abs( off ) < ${f(SUN.depth * 2.5)} ) {
+			rimF = smoothstep( ${f(DISC.far[0])}, ${f(DISC.far[1])}, max( fw3.x, max( fw3.y, fw3.z ) ) / ${f(SCALE)} );
+			vec2 d = vec2( ac, p.y ) / max( length( vec2( ac, p.y ) ), 1e-5 );
+			rimLv = ${f(RIM_DISC.lv)} * ( 1.0 + ${f(RIM_DISC.side)} * dot( d, normalize( vec2( 0.8, 0.6 ) ) ) );
+		}
 	}
 	vec3 axis = ( viewMatrix * vec4( 0.0, 0.0, 1.0, 0.0 ) ).xyz, nd = mix( base, axis, disc );
 	base = nd / max( length( nd ), 1e-5 );
 	{
 		vec3 wp = vWPos / ${f(SCALE)} / ${f(GOLD.wave[1])};
+		// On reeds the ripple runs across them only, the same all the way up each one: a ripple up a reed bent its
+		// reflection and the reeds read as kinked.
+		if ( vFlute.y > 0.5 && vFlute.y < 1.5 ) wp.y = 0.0;
 		vec3 wob = vec3( tNoise( wp.xy + wp.zz * 0.7 ), tNoise( wp.yz + 17.0 ), tNoise( wp.zx + 41.0 ) ) - 0.5;
+		if ( vFlute.y > 0.5 && vFlute.y < 1.5 ) wob.y = 0.0;
 		vec3 nw = base + ( viewMatrix * vec4( wob, 0.0 ) ).xyz * ( 2.0 * ${f(GOLD.wave[0])} * ( 1.0 - disc ) * mix( 1.0, ${f(MARK.obelisk.wave)}, ob ) );
 		base = nw / max( length( nw ), 1e-5 );
 	}
 	// The obelisk's broad faces, a little convex (MARK.obelisk.bend): where a place is across its face, from the
 	// point's own axis, turns its normal toward that edge.
-	if ( ob > 0.5 ) {
+	float obAcross = 0.0;
+	if ( ob > 0.5 && vWPos.y / ${f(SCALE)} < ${f(OB_Y[2])} ) {
 		vec3 nw = ( vec4( base, 0.0 ) * viewMatrix ).xyz;
 		vec2 hz = nw.xz;
 		float hl = length( hz );
@@ -706,6 +775,7 @@ if ( vFlute.y > 0.5 && vFlute.y < 1.5 ) {
 			hz /= hl;
 			vec2 T = vec2( hz.y, - hz.x ), p = vWPos.xz / ${f(SCALE)} - vec2( ${f(TOWERS[OBI][0])}, ${f(TOWERS[OBI][1])} );
 			float u = clamp( dot( p, T ) / max( dot( p, hz ), 1.0 ), -1.0, 1.0 );
+			obAcross = u;
 			nw.xz += T * ( u * ${f(MARK.obelisk.bend)} * hl );
 			nw /= max( length( nw ), 1e-5 );
 			base = ( viewMatrix * vec4( nw, 0.0 ) ).xyz;
@@ -722,6 +792,7 @@ if ( vFlute.y > 0.5 && vFlute.y < 1.5 ) {
 	float litBy = mix( mix( ${f(GOLD.lit)}, ${f(MARK.his.lit)}, his ), ${f(MARK.obelisk.lit)}, ob ), darkBy = mix( ${f(GOLD.dark)}, ${f(MARK.obelisk.dark)}, ob );
 	float risen = mix( 1.0, mix( ${f(MARK.obelisk.foot)}, 1.0, smoothstep( ${f(OB_Y[0])}, ${f(OB_Y[1])}, vWPos.y / ${f(SCALE)} ) ), ob );
 	vec3 F0 = ${lin3(METAL.gold)}, sum = vec3( 0.0 );
+	float obStreak = 0.0;
 	for ( int k = 0; k < 3; k ++ ) {
 		vec3 n = k == 0 ? n0 : ( k == 1 ? n1 : n2 );
 		float w = k == 0 ? share.x : ( k == 1 ? share.y : share.z ) * ${f(1 - GOLD.valley)};
@@ -735,7 +806,8 @@ if ( vFlute.y > 0.5 && vFlute.y < 1.5 ) {
 		float moonLight = litBy * toMoon * sqrt( toMoon );
 		// The moon's own reflection down the obelisk's lit face: a narrow lobe of the reflection's bearing.
 		vec2 rh = rw.xz / max( length( rw.xz ), 1e-5 );
-		moonLight += ob * ${f(MARK.obelisk.streak)} * pow( max( dot( rh, ${`vec2( ${f(MOONXZ[0])}, ${f(MOONXZ[1])} )`} ), 0.0 ), ${f(MARK.obelisk.tight)} ) * smoothstep( -0.1, 0.25, dot( rw, uMoonward ) );
+		float streak = ob * ${f(MARK.obelisk.streak)} * pow( max( dot( rh, ${`vec2( ${f(MOONXZ[0])}, ${f(MOONXZ[1])} )`} ), 0.0 ), ${f(MARK.obelisk.tight)} ) * smoothstep( -0.1, 0.25, dot( rw, uMoonward ) );
+		obStreak += w * streak * risen;
 		vec3 seen = ${lin('pale')} * ( moonLight * risen );
 		#ifdef USE_ENVMAP
 			seen += textureLod( envMap, envMapRotation * rw, roughnessToMip( rough ) ).rgb * ( envMapIntensity * darkBy * mix( 1.0, risen, 0.5 ) );
@@ -757,12 +829,23 @@ if ( vFlute.y > 0.5 && vFlute.y < 1.5 ) {
 	float lv = max( sum.r, 0.0 );
 	// The far disc's field is held under FAR_DISC.cap, so neither the moon nor the cursor's sheen washes its carving.
 	lv = mix( lv, ${f(FAR_DISC.cap)} * ( 1.0 - exp( - lv / ${f(FAR_DISC.cap)} ) ), disc ) * carve;
+	lv = mix( lv, rimLv, rimF );
 	// A soft shoulder over the mark's own (GOLD.shoulder elsewhere), so a blaze keeps a gradient and never sits flat
 	// at the hot light's cap.
 	float s0 = mix( mix( ${f(GOLD.shoulder[0])}, ${f(MARK.his.shoulder[0])}, his ), ${f(MARK.obelisk.shoulder[0])}, ob ), s1 = mix( mix( ${f(GOLD.shoulder[1])}, ${f(MARK.his.shoulder[1])}, his ), ${f(MARK.obelisk.shoulder[1])}, ob );
 	lv = lv < s0 ? lv : s0 + s1 * ( 1.0 - exp( - ( lv - s0 ) / s1 ) );
 	vec3 c = mix( mix( ${DEEP}, ${lin3(METAL.gold)}, smoothstep( ${f(GOLD.grade[0])}, ${f(GOLD.grade[1])}, lv ) ), ${lin('pale')}, smoothstep( ${f(GOLD.grade[1])}, ${f(GOLD.grade[2])}, lv ) );
-	outgoingLight = max( tKeep( c * lv * mix( 1.0, ${f(MARK.obelisk.gain)}, ob ) ), 0.0 );
+	if ( ob > 0.5 ) {
+		// The obelisk is held in the world's gold (MARK.obelisk.grade): deep where it mirrors the dark, gold where it
+		// mirrors the moon, a gradient across each face (across), and only its streak, laid on after the shoulder, goes
+		// toward pale. Graded as the rest of the gold, its whole lit face went to cream.
+		vec4 og = vec4( ${MARK.obelisk.grade.map(f).join(', ')} );
+		lv *= 1.0 + ${f(MARK.obelisk.across)} * obAcross;
+		float ls = ${f(MARK.obelisk.hold)} * ( 1.0 - exp( - obStreak / ${f(MARK.obelisk.hold)} ) );
+		c = mix( ${v3(MARK.obelisk.body)}, ${lin3(METAL.gold)}, smoothstep( og.x, og.y, lv ) );
+		vec3 body = c * lv * ${f(MARK.obelisk.gain)};
+		outgoingLight = max( tKeep( body + mix( ${lin3(METAL.gold)}, ${lin('pale')}, smoothstep( og.z, og.w, ls ) ) * ls * ${f(MARK.obelisk.gain)} ), 0.0 );
+	} else outgoingLight = max( tKeep( c * lv ), 0.0 );
 }
 #include <opaque_fragment>`);
   };

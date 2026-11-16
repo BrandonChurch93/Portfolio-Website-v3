@@ -55,8 +55,10 @@ export class Kit {
     const flip = o.want ? dot(n, o.want) < 0 : false;
     if (flip) n = mul(n, -1);
     const base = L.p.length / 3;
-    // How wide an upright face is across (its bottom edge, or its top's if wider), for its material (attr's wide).
-    const wide = Math.abs(n[1]) < 0.5 ? Math.max(Math.hypot(b[0] - a[0], b[2] - a[2]), Math.hypot(c[0] - d[0], c[2] - d[2])) : 0;
+    // How wide an upright face is across (its bottom edge, or its top's if wider), for its material (attr's wide). A
+    // face that lies in the plane of its facade (o.whole: a pier's front, a corner, a band) is never a sliver,
+    // however narrow: it is one piece of a lit plane, and fading it as one left a facade turned to the moon dark.
+    const wide = Math.abs(n[1]) < 0.5 && !o.whole ? Math.max(Math.hypot(b[0] - a[0], b[2] - a[2]), Math.hypot(c[0] - d[0], c[2] - d[2])) : 0;
     for (let j = 0; j <= nv; j++) for (let i = 0; i <= nu; i++) {
       const u = i / nu, v = j / nv, p = lerp(lerp(a, b, u), lerp(d, c, u), v);
       this.vertex(L, p, o.normal ? o.normal(u, v) : n, o.tag, wide);

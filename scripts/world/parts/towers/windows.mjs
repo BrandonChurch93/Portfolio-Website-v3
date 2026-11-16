@@ -27,6 +27,11 @@ const LIT = { room: [0.12, 0.38], run: { most: 4, wide: 0.12 }, stack: 0.3, floo
 // (how likely each is) and blocks of `block` floors dark together (how likely), keeping `darkKeep` of their tenants;
 // a lone lit room in a dark tenant; a lit core up some faces (how likely) and its level.
 const TENANT = { share: [0.25, 0.36], tall: [0.85, 0.97], wide: [2, 10], fill: 0.88, level: [0.55, 0.4], warm: [0.22, 0.32], bright: 0.06, floor: 0.2, block: 3, dark: 0.14, darkKeep: 0.08, stray: 0.03, core: [0.3], coreLevel: [0.14, 0.14] };
+// A curtain wall's tenants, and those behind a face cut by stone fins (floors.bars): each row of panes is its own
+// floor, a tenant takes one floor only and from wide[0] to wide[1] panes of it, and nearly every pane of a lit one is
+// lit, so its light lies in long bars along the floors with clear dark floors between, and never in patches that
+// cross the mullions or that fins every two windows cut into glyphs.
+const BARS = { share: 0.42, wide: [6, 18], fill: 0.97, dark: 0.22 };
 
 export class Windows {
   constructor(seed, size = WINDOW.map) {
@@ -108,7 +113,8 @@ export class Windows {
   // several windows, from a place of its own. A tenant is lit or dark as a whole, at its own level and warmth, so the
   // light comes in runs along the floors, with ragged ends.
   tenants(c0, r0, cols, rows, busy, floors) {
-    const T = TENANT, R = this.rand, b = floors.build, key = floors.face ?? 0, p = T.share[0] + T.share[1] * busy;
+    const glass = !!floors.bars, T = glass ? { ...TENANT, tall: [1, 1], wide: BARS.wide, fill: BARS.fill, dark: BARS.dark, core: [0] } : TENANT, R = this.rand, b = floors.build, key = floors.face ?? 0;
+    const p = glass ? BARS.share : T.share[0] + T.share[1] * busy;
     const h = (a, c) => hash2(Math.floor(b * 977) + 31 * key + a, c), hb = (a, c) => hash2(Math.floor(b * 977) + a, c);
     const band = (k) => {
       let j = 0;
@@ -131,7 +137,7 @@ export class Windows {
     const core = h(7001, 0) < T.core[0] ? { u: 3 + 24 * h(7003, 0), from: Math.floor(h(7005, 0) * 6), to: 18 + Math.floor(h(7007, 0) * 50) } : null;
     const [ls, ws] = WINDOW.steps;
     for (let r = 0; r < rows; r++) {
-      const k = Math.floor((floors.y0 + (r + 0.5) * floors.ch) / (floors.storey ?? LIT.storey));
+      const k = Math.floor((floors.y0 + (r + 0.5) * floors.ch) / (glass ? floors.ch : floors.storey ?? LIT.storey));
       // A block of floors dark together across the building, and a floor a little busier or quieter than the rest.
       const dark = hb(8009, Math.floor(k / T.block)) < T.dark || hb(8013, k) < T.floor ? T.darkKeep : 1, busier = 1 + LIT.floor * 0.5 * (2 * hb(8011, k) - 1);
       for (let c = 0; c < cols; c++) {
