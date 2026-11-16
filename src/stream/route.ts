@@ -470,6 +470,15 @@ export function routeThroughWork(P: WorkPlan): Route {
       lip = end + way * K.past * u;
       corners.push([x, shelf, K.land[0] * u, K.land[1] * u], [lip, shelf, (K.past + K.early) * u, K.fall * u]);
       marks.push(mark('land', x + way * K.land[1] * u * 0.2, P.bar.t, way, UP, C.bar, [x + way * K.land[1] * u * 0.4, shelf]));
+    } else if (P.cards.length) {
+      // On a phone it does not land on the bar, and straight down from the title's end it ran along the cards' own
+      // edges. Under the title it moves out to fall clear of the bar and the cards, as it does on a wide screen.
+      const N = W.narrow, sides = [end, ...P.cards.map((c) => (way < 0 ? c.l : c.r))];
+      const out = way < 0 ? Math.max(N.edge * u, Math.min(...sides) - N.clear * u) : Math.min(P.width - N.edge * u, Math.max(...sides) + N.clear * u);
+      if ((xh - out) * -way > 2 * u) {
+        lip = out;
+        corners.push([xh, P.title.b, N.turn * u, N.turn * u], [lip, shelf, N.turn * u, N.turn * u]);
+      }
     }
     // Where the route ends at Work's button, as on a narrow page with sections under Work, each side turns in under
     // the last card and strikes the button's end, so the two meet on it. Left to fall, they ended in the air

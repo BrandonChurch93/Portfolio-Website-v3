@@ -52,6 +52,9 @@ export const STREAM = {
     // how far short of the end it begins to leave the top, how far past the end it is thrown, and how far down the
     // fall that turn is still felt.
     bar: { lean: 12, least: 60, land: [36, 30] as [number, number], early: 4, past: 30, fall: 84 },
+    // On a phone, where the stream does not land on the bar: how far outside the bar's end and the cards' sides
+    // each side falls, the nearest it then comes to the screen's edge, and how round its two turns under the title are.
+    narrow: { clear: 22, edge: 24, turn: 26 },
     // The least the stream keeps between where it lands on a first row card's top and the card's end.
     card: { least: 56 },
     // The post: how far above its middle the stream meets it, as an angle. And the share of a strike's shards a

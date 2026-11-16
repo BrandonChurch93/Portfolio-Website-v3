@@ -205,17 +205,20 @@
    a card would be narrower than that. One column, no stones and no rail: a stand in until the route for a narrow
    screen is designed. */
 @media (max-width: 1099px) {
+  /* On a phone a card is as wide as the screen leaves it once each side of the stream has its room: the stream
+     falls about 22 px in from the screen's edge and clear of the bar and the cards (`narrow` in STREAM.work). At
+     9.2rem a card on a 390 px phone was 243 px, narrower than its own foot. */
   .section {
-    --grid: min(30rem, 100vw - 9.2rem);
+    --grid: min(30rem, 100vw - 6.25rem);
   }
 
   .bar {
     grid-template-columns: 1fr 1fr;
-    width: min(calc(var(--grid) + 2.4rem), 100vw - 6rem);
+    width: min(calc(var(--grid) + 2.4rem), 100vw - 5.25rem);
   }
 
   .layer {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: clamp(3.4rem, 6vw, 5.2rem);
   }
 
