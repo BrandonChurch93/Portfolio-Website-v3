@@ -125,8 +125,8 @@ export function PieceView({ name, entrance = false, once, making = false, classN
     let evicted = false;
     const id = `piece:${name}`;
     // On a handheld a piece is mounted from nearer and let go sooner, so fewer hold their memory at once.
-    const small = SMALL_PIECES.includes(name), held = handheld() && !small;
-    const from = held ? Math.min(reach ?? PIECE_MOUNT.near, HANDHELD.reach) : reach ?? PIECE_MOUNT.near;
+    const small = SMALL_PIECES.includes(name), held = handheld();
+    const from = held ? Math.min(reach ?? PIECE_MOUNT.near, small ? HANDHELD.small : HANDHELD.reach) : reach ?? PIECE_MOUNT.near;
     const gone = held ? from + 1 : Math.max(PIECE_MOUNT.far, (reach ?? 0) + 1.5);
     const check = () => {
       const dist = distanceOf(h), vh = innerHeight;

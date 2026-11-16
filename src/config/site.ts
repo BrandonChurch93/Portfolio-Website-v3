@@ -20,7 +20,7 @@ export const READING_LINE = 0.66;
 export const PIECE_MOUNT = { near: 1, far: 2.5, max: 6, fade: 260 } as const;
 // The small pieces: a canvas a few hundred pixels across, about 40 MB in Safari each where the desk is over 500.
 // They are not counted among the pieces that may hold a context at once, on any device, and a handheld mounts them
-// from as far as their page asks. Counted, an iPad showed three of Skills' five and left the other two as empty
+// from further off than a large piece (HANDHELD.small). Counted, an iPad showed three of Skills' five and left the other two as empty
 // places until one of the three was let go, seconds later or never (his iPad, Nov 16).
 export const SMALL_PIECES: readonly string[] = ['cpu', 'watch', 'palette', 'reflector', 'studio-light'];
 
@@ -44,6 +44,9 @@ export const HANDHELD = {
   // this many hold a WebGL context at once, the small pieces aside (SMALL_PIECES).
   reach: 1.5,
   pieces: 3,
+  // A small piece is mounted from this many screens away at the most: far enough to be made before it is reached,
+  // near enough that the five of them are not all alive from the top of the page (that held 600 MB more).
+  small: 2.5,
 } as const;
 
 export type Tier = 'high' | 'mid' | 'low' | 'static';
