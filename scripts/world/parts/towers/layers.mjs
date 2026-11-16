@@ -5,25 +5,28 @@
 //   kit.patch('stone', a, b, c, d, { tag: { lay: 1, tone: 0.5 } })
 //   kit.patch('bay', a, b, c, d, { tag: field })      // a field of windows (Windows.take), or PLAIN, or COPPER
 //   kit.patch('gold', a, b, c, d, { tag: { flute: 1.3, o, T } })
-import { FLUTE, WINDOW, styleOf } from '../../../../src/pieces/world/parts/towers/windows.ts';
+import { FLUTE, SLIVER, WINDOW, styleOf } from '../../../../src/pieces/world/parts/towers/windows.ts';
 import { Kit } from './kit.mjs';
 
-// A plain face of the bay's bronze, and one of polished copper.
+// A plain face of the bay's bronze, and one of copper.
 export const PLAIN = { plain: true, copper: 0 };
 export const COPPER = { plain: true, copper: 1 };
+// Polished bronze, as the ringed drums' bands are: the bay's shader reads the 2.
+export const POLISHED = { plain: true, copper: 2 };
 export const FIELD = 4096;
 
 export function layers() {
   return new Kit({
     // Where a joint of the stone falls: across the face, up it, how it is laid (under a half ashlar, over it the
     // base's channels) with the building's own coursing as the share of that half (tag.vary: how tall its courses
-    // and how long its blocks), and which stone it is (a tone, STONES in sixths).
+    // and how long its blocks), which stone it is (a tone, STONES in eighths), and how narrow an upright face is, as
+    // a share of SLIVER.most (0 for one wider, or not upright).
     stone: {
-      width: 4, attr: (p, n, tag) => {
-        const kind = 0.5 * (tag?.lay ?? 0) + 0.49 * (tag?.vary ?? 0.5);
-        if (Math.abs(n[1]) > 0.7) return [p[0], p[2], kind, tag?.tone ?? 0];
+      width: 5, attr: (p, n, tag, wide = 0) => {
+        const kind = 0.5 * (tag?.lay ?? 0) + 0.49 * (tag?.vary ?? 0.5), thin = wide > 0 && wide < SLIVER.most ? Math.max(1 / 255, wide / SLIVER.most) : 0;
+        if (Math.abs(n[1]) > 0.7) return [p[0], p[2], kind, tag?.tone ?? 0, 0];
         const tx = n[2], tz = -n[0], l = Math.hypot(tx, tz) || 1;
-        return [(p[0] * tx + p[2] * tz) / l, p[1], kind, tag?.tone ?? 0];
+        return [(p[0] * tx + p[2] * tz) / l, p[1], kind, tag?.tone ?? 0, thin];
       },
     },
     // Where a place is in its field of windows, in windows (the whole part is the window, as the map has it), and

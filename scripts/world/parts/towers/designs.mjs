@@ -6,8 +6,9 @@
 // The named ones make picture 9's skyline: the obelisk (TOWERS[0]), the sun disc (TOWERS[2]) and the gold caps
 // (TOWERS[3], [4], [5]). The stepped tower (TOWERS[STEP]) is ./step-form.mjs.
 import { chamfered, face } from './kit.mjs';
-import { COPPER, PLAIN } from './layers.mjs';
+import { COPPER, PLAIN, POLISHED } from './layers.mjs';
 import { block, cornice, drum, faces, fluted, parapet, revolve, rings, shaft, slab, reveal, windows } from './forms.mjs';
+import { OBELISK, SEAT, SUN, discAt, obeliskPoint } from '../../../../src/pieces/world/parts/towers/marks.ts';
 
 const clamp = (v, a, c) => Math.min(c, Math.max(a, v));
 
@@ -21,13 +22,18 @@ const cell = (b) => ({ cw: 1.1 + 0.6 * b.R(), ch: 1.5 + 0.5 * b.R() });
 //   punched: windows let into the stone with deep reveals, in pairs, a string course every few floors
 //   mullion: a bronze curtain behind stone mullions every second window, broad corner piers
 //   paired: bays of two windows between slender piers, a copper spandrel every floor
+//   curtain: one broad bay of coated glass between slim stone corners, its panes on slender mullions, which mirrors
+//            the night; dealt apart from the rest, to a share of the shafts wide enough (OWN.glass) and never two
+//            side by side
 const LOOKS = ['strip', 'ribbon', 'punched', 'mullion', 'paired'];
 // And each building's own: often a wider middle bay (middle: how much wider, and how likely), often an attic storey
 // of smaller windows over a string course (attic: how likely, how tall at least and how much more).
 // And mostly belts (belts: how likely, and the most storeys of a section, from belts[1] to belts[1] + belts[2]).
-const OWN = { middle: [0.6, 0.45, 0.7], attic: [0.6, 2.6, 1.8], belts: [0.75, 8, 8] };
+// And how likely a shaft at least glass[1] units wide is a curtain wall of glass.
+const OWN = { middle: [0.6, 0.45, 0.7], attic: [0.6, 2.6, 1.8], belts: [0.75, 8, 8], glass: [0.16, 12] };
 function look(b, w, asked) {
-  const kind = asked ?? apart(b, 'look', LOOKS, Math.floor(b.R() * LOOKS.length));
+  const glass = asked === undefined && w >= OWN.glass[1] && b.R() < OWN.glass[0] && !b.avoid?.look?.has('curtain');
+  const kind = asked ?? (glass ? apart(b, 'look', ['curtain'], 0) : apart(b, 'look', LOOKS, Math.floor(b.R() * LOOKS.length)));
   const R = b.R, st = cut(b, w, kind);
   return { ...st, middle: R() < OWN.middle[0] ? 1 + OWN.middle[1] + OWN.middle[2] * R() : 1, attic: R() < OWN.attic[0] ? OWN.attic[1] + OWN.attic[2] * R() : 0, belts: R() < OWN.belts[0] ? OWN.belts[1] + Math.floor(R() * OWN.belts[2]) : 0 };
 }
@@ -44,6 +50,9 @@ function cut(b, w, kind) {
   if (kind === 'punched') {
     const cw = 1.2 + 0.3 * R();
     return { kind, cw, ch: 1.9 + 0.4 * R(), pier: 1.4 + 0.5 * R(), corner: 2.2, bays: Math.max(1, Math.round((w - 4) / (2 * cw + 1.6))), back: 0.75, punched: true, band: 3 + Math.floor(R() * 3), bandTall: 0.5, bandBack: -0.3 };
+  }
+  if (kind === 'curtain') {
+    return { kind, cw: 1.3 + 0.4 * R(), ch: 2.3, pier: 0, corner: 1.0 + 0.5 * R(), bays: 1, back: 0.35, curtain: true };
   }
   if (kind === 'mullion') {
     return { kind, cw: 1.0 + 0.3 * R(), ch: 1.6 + 0.4 * R(), pier: 1.2, corner: 2.6 + R(), bays: w > 32 ? 2 : 1, back: 1.1, fin: 2, finLayer: 'stone', finWide: 0.22, finOut: 0.9 };
@@ -329,9 +338,9 @@ function bandedDrum(b, x, r, tall, o = {}) {
   revolve(pb, 'stone', [[r, low - 0.8], [r + 0.2, low - 0.5], [r + 0.2, low]], n, { tag: stone, skip });
   for (let i = 0; i < k; i++) {
     const y0 = low + i * step, slab = step * D.slab, g0 = y0 + slab, g1 = y0 + step;
-    // The floor: a stone slab standing out to rs, its edge a copper fascia with a chamfer over and under it.
+    // The floor: a stone slab standing out to rs, its edge a fascia of polished bronze with a chamfer over and under it.
     revolve(pb, 'stone', [[rg, y0], [rs - 0.25, y0], [rs - 0.25, y0 + slab * 0.25]], n, { tag: stone, skip, flat: true });
-    revolve(pb, 'bay', [[rs - 0.25, y0 + slab * 0.25], [rs, y0 + slab * 0.4], [rs, g0 - slab * 0.2], [rs - 0.25, g0]], n, { tag: COPPER, skip, flat: true });
+    revolve(pb, 'bay', [[rs - 0.25, y0 + slab * 0.25], [rs, y0 + slab * 0.4], [rs, g0 - slab * 0.2], [rs - 0.25, g0]], n, { tag: POLISHED, skip, flat: true });
     revolve(pb, 'stone', [[rs - 0.25, g0], [rg, g0]], n, { tag: stone, skip, flat: true });
     // The storey: a ribbon of glass set back behind the slab, lit, between bronze mullions.
     drum(pb, rg, g0, g1, n, { cw: Math.max(1.2, cw * 1.3), ch: g1 - g0, pier: 2, out: 0.15, pierWide: 0.22, every: 99 });
@@ -345,7 +354,7 @@ function bandedDrum(b, x, r, tall, o = {}) {
 // The ringed pair's heads: how tall the stack of storeys is, in units (the picture's runs 176 to 196 down), how many
 // storeys, the share of each that is its floor slab, how far a slab stands out of the shaft and how far its ribbon of
 // glass is set back into it, and the cap.
-const DRUM = { stack: 19, bands: 5, slab: 0.34, ring: 0.6, groove: 0.5, cap: 5 };
+const DRUM = { stack: 19, bands: 5, slab: 0.5, ring: 0.7, groove: 0.5, cap: 5 };
 
 // The tower left of the spire, as picture 9 has it at 643 to 662 across: a warm stone shaft whose roof slopes down
 // to the visitor's right. Strip windows between proud piers up its faces, a cornice, and on it an attic whose top
@@ -392,10 +401,10 @@ function twin(b, t) {
   }
   const hp = clamp(tall * 0.14, 5, 12);
   base(b, w, d, hp);
-  // The two shafts are not alike: the taller is broader, cut one way and stepped at its head, the lower narrower,
-  // cut another way, under a bronze mansard.
+  // The two shafts are not alike: the taller is broader, of stone, cut one way and stepped at its head, the lower
+  // narrower, a curtain wall of glass under a stepped bronze attic.
   const sws = [w * 0.42, w * 0.33], gap = w - sws[0] - sws[1] - 1, xs = [-(w / 2) + 0.5 + sws[0] / 2, w / 2 - 0.5 - sws[1] / 2], low = 0.8 + 0.08 * R();
-  const st0 = look(b, sws[0]), st1 = look(b, sws[1], LOOKS[(LOOKS.indexOf(st0.kind) + 2) % LOOKS.length]), ch = st0.ch;
+  const st0 = look(b, sws[0], LOOKS[Math.floor(R() * LOOKS.length)]), st1 = look(b, sws[1], 'curtain'), ch = st0.ch;
   xs.forEach((x, i) => {
     const h = i === 0 ? tall : tall * low, sw = sws[i], st = i === 0 ? st0 : st1;
     const kit = b.kit, at = (p) => [p[0] + x, p[1], p[2]];
@@ -403,7 +412,7 @@ function twin(b, t) {
     const y1 = h - Math.min(9, h * 0.1);
     shaft(sb, sw, d * 0.82, hp + 0.9, y1, { ...st, chamfer: 0.9 });
     cornice(sb, sw, d * 0.82, y1, 0.8, 0.3);
-    crown(sb, { ...t, top: i === 0 ? 'steps' : 'mansard' }, sw, d * 0.82, y1 + 0.8, h - y1 - 0.8);
+    crown(sb, i === 0 ? { ...t, roof: 'plain', top: 'steps' } : { ...t, roof: 'bronze' }, sw, d * 0.82, y1 + 0.8, h - y1 - 0.8);
   });
   // The bridges, each a box of windows between the shafts, with a stone floor and roof.
   for (const f of [0.45, 0.72]) {
@@ -587,16 +596,18 @@ function point(b, t) {
 // The obelisk tower: a slender dark shaft of windows on a base, and on it a tall point of gold, square with cut
 // corners, on a stepped plinth, under a band and a pyramidion.
 function obelisk(b, t) {
-  const { w, d, tall } = t, { cw, ch } = cell(b), gold = tall * 0.35, hb = 10;
+  const { w, d, tall } = t, hb = OBELISK.base, { shaft: y1, foot: yb } = obeliskPoint(tall);
+  // Its window size is drawn and not used, so the building's numbers after it, and so the city, stay as they were.
+  cell(b);
   base(b, w, d, hb);
-  const y1 = tall - gold - 3, mid = hb + 0.9 + (y1 - hb) * 0.55;
+  const mid = hb + 0.9 + (y1 - hb) * 0.55;
   const st = look(b, w - 2, 'strip');
   shaft(b, w - 2, d - 2, hb + 0.9, mid, { ...st, chamfer: 1.4 });
   cornice(b, w - 2, d - 2, mid, 1, 0.35, { chamfer: 1.4 });
   shaft(b, w - 6, d - 6, mid + 1, y1, { ...st, bays: Math.max(1, st.bays - 1), chamfer: 1.2 });
   cornice(b, w - 6, d - 6, y1, 1.2, 0.4, { chamfer: 1.2 });
   block(b, 'bay', w - 7, d - 7, y1 + 1.2, y1 + 2.4, { tag: COPPER, chamfer: 1 });
-  const g = w * 0.56, k = OBELISK.taper, yb = y1 + 4.2, yt = tall - g * OBELISK.cap;
+  const g = w * OBELISK.width, k = OBELISK.taper, yt = tall - g * OBELISK.cap;
   // The point is turned on its plinth (OBELISK.turn), so two of its broad faces are seen, as the picture's two are:
   // the one toward the moon carries its reflection, the other mirrors the dark.
   const c = Math.cos(OBELISK.turn * Math.PI / 180), sn = Math.sin(OBELISK.turn * Math.PI / 180), turned = (poly) => poly.map(([u, v]) => [u * c + v * sn, -u * sn + v * c]);
@@ -625,19 +636,14 @@ function obelisk(b, t) {
   revolve(b, 'gold', Array.from({ length: 7 }, (_, i) => { const a = -Math.PI / 2 + (Math.PI * i) / 6; return [Math.max(0.01, P.ball * Math.cos(a)), tall + P.ball + P.ball * Math.sin(a)]; }), 10, { skip: (m) => m[2] < -0.6 });
   block(b, 'gold', 0.2, 0.2, tall + 2 * P.ball, tall + P.needle, { shrink: 0.1 });
 }
-// The obelisk's point: how much narrower it is at its head than its foot, how tall its pyramidion is against its
-// width, how far it is turned on its plinth, in degrees, how wide a flute is at its foot, and how far a flute's
-// flanks are turned, gently, so the whole face toward the moon blazes and the other is dark.
-// head: how tall its collar is, the share of the pyramidion that is its lower, fluted stage, how much it narrows over
-// that stage, the ball's radius, and how far over the plan's height the needle reaches (to picture 9's tip at 70 down).
-const OBELISK = { taper: 0.62, cap: 0.9, turn: 30, reed: 1.5, flank: 24, head: { collar: 1.6, lower: 0.42, waist: 0.6, ball: 0.4, needle: 6 } };
 
 // The sun disc tower: a shaft that steps in, a collar and a neck, and on it a great disc of gold carved as the
 // site's Sun stones are: a rounded rim, a dished field, a ring of sixteen plates, rays at the quarters and between
 // them, raised rings and a boss. Every carved thing is sloped or rounded, so it takes the light on one side and
 // not the other.
 function disc(b, t) {
-  const { w, d, tall } = t, { cw, ch } = cell(b), r = w * 0.44, hb = 9;
+  const { w, d, tall } = t, { r, cy } = discAt(w, tall), hb = 9;
+  cell(b);
   base(b, w, d, hb);
   // The disc sits on its tower's top in a low gold cradle, with no stalk: SEAT.under units of stone and copper under
   // the cradle, and the cradle's own height, under the disc's foot.
@@ -652,12 +658,12 @@ function disc(b, t) {
   // The cradle: a round gold plinth that the disc's rim stands in.
   revolve(b, 'gold', [[w * 0.26, yc], [w * 0.26, yc + 0.5], [w * 0.22, yc + 0.8], [w * 0.16, foot + 0.6], [w * 0.2, foot + 1.4]], 32, { skip: (m) => m[2] < -0.6 });
   // The disc stands upright and faces the visitor: turned from a profile about its own axis, which is z.
-  const cy = tall - r, D = SUN.depth, place = (p) => [p[0], cy + p[2], p[1]], turn = (v) => [v[0], v[2], v[1]];
+  const D = SUN.depth, place = (p) => [p[0], cy + p[2], p[1]], turn = (v) => [v[0], v[2], v[1]];
   // One profile from the rim's outer side in to the boss, so no gap opens between one ring and the next: a half
   // round rim, the field falling a little toward the plates' ring, a rounded ring, the field rising to a second
   // rounded ring, and the boss.
   const arc = (rc, q, h, a0, a1, segs) => Array.from({ length: segs + 1 }, (_, i) => { const t = a0 + ((a1 - a0) * i) / segs; return [rc + q * Math.cos(t), h + q * Math.sin(t)]; });
-  const R = r, q1 = 0.45, q2 = 0.55, c1 = R * 0.66 - q1, c2 = R * 0.36 - q2, rb = R * 0.2, inner = R - SUN.rim;
+  const R = r, C = SUN.carve, q1 = 0.45, q2 = 0.55, c1 = R * C.rings[0] - q1, c2 = R * C.rings[1] - q2, rb = R * C.boss, inner = R - SUN.rim;
   const prof = [[R, -D], ...arc(R - 1.15, 1.15, 0.3 * D, 0, Math.PI, 8), [c1 + q1, 0.12 * D], ...arc(c1, q1, 0.12 * D, 0, Math.PI, 6), [c2 + q2, 0.32 * D], ...arc(c2, q2, 0.32 * D, 0, Math.PI, 6), [rb, 0.16 * D], ...arc(0, rb, 0.16 * D, 0, Math.PI / 2, 8).map(([x, y]) => [x, 0.16 * D + (y - 0.16 * D) * (1.9 * D / rb)])];
   prof[prof.length - 1][0] = 0.01;
   // The rim keeps its form far off; the field inside it, its rings and its boss give way to a plain field there.
@@ -674,31 +680,25 @@ function disc(b, t) {
   for (let k = 0; k < SUN.beads; k++) plate(b, cy, inner - 1.1, inner - 0.2, ((k + 0.15) / SUN.beads) * TAU, ((k + 0.85) / SUN.beads) * TAU, 0.12 * D, 0.12 * D + 0.6, 0.18, CARVED);
   for (let k = 0; k < n; k++) {
     const a0 = (k / n) * TAU, a1 = ((k + 1) / n) * TAU, am = (a0 + a1) / 2;
-    if (k % 2 === 0) plate(b, cy, R * 0.67, inner - 1.4, a0 + 0.035, a1 - 0.035, 0.15 * D, 0.7 * D, 0.45, CARVED);
-    else ray(b, cy, R * 0.67, inner - 1.3, am, (a1 - a0) * 0.42, 0.15 * D, 1.05 * D, CARVED);
+    if (k % 2 === 0) plate(b, cy, R * C.band, inner - 1.4, a0 + 0.035, a1 - 0.035, 0.15 * D, 0.7 * D, 0.45, CARVED);
+    else ray(b, cy, R * C.band, inner - 1.3, am, (a1 - a0) * 0.42, 0.15 * D, 1.05 * D, CARVED);
   }
   const great = (a) => Math.min(...[1, 3, 5, 7].map((q) => Math.abs(((a - (q * TAU) / 8 + TAU * 1.5) % TAU) - TAU / 2)));
   const lesser = (a) => Math.min(...[0, 2, 4, 6].map((q) => Math.abs(((a - (q * TAU) / 8 + TAU * 1.5) % TAU) - TAU / 2)));
   for (let k = 0; k < g; k++) {
     const a0 = ((k + 0.14) / g) * TAU, a1 = ((k + 0.86) / g) * TAU, am = (a0 + a1) / 2;
     if (great(am) < 0.3 || lesser(am) < 0.12) continue;
-    plate(b, cy, R * 0.405, R * 0.6, a0, a1, 0.3 * D, 0.72 * D, 0.28, CARVED);
+    plate(b, cy, R * C.glyphs[0], R * C.glyphs[1], a0, a1, 0.3 * D, 0.72 * D, 0.28, CARVED);
   }
   for (let q = 0; q < 8; q++) {
     const a = (q / 8) * TAU, big = q % 2 === 1;
-    ray(b, cy, R * 0.37, big ? R * 0.71 : R * 0.62, a, big ? 0.36 : 0.15, 0.3 * D, big ? 1.4 * D : 1.0 * D, CARVED);
+    ray(b, cy, R * C.rays[0], big ? R * C.rays[1] : R * C.rays[2], a, big ? 0.36 : 0.15, 0.3 * D, big ? 1.4 * D : 1.0 * D, CARVED);
   }
   for (let q = 0; q < 4; q++) {
     const a = ((q + 0.5) / 4) * TAU;
-    plate(b, cy, R * 0.215, R * 0.335, a - 0.32, a + 0.32, 0.35 * D, 0.95 * D, 0.2, CARVED);
+    plate(b, cy, R * C.squares[0], R * C.squares[1], a - 0.32, a + 0.32, 0.35 * D, 0.95 * D, 0.2, CARVED);
   }
 }
-// How deep the sun disc's carving is, in units, and how many beads round its rim, places in its outer band (a
-// plate and a point by turns) and glyph blocks.
-// How wide the rim is, in units, and how many sides the disc is turned in.
-const SUN = { depth: 1.5, beads: 40, outer: 16, glyphs: 24, rim: 2.3, round: 96 };
-// The disc's seat: how tall the stone and copper under its cradle are, and the cradle, in units.
-const SEAT = { under: 4, cradle: 2.2 };
 
 // Everything carved inside the disc's rim (its beads, plates, glyph blocks, rays, rings and boss) is tagged as such
 // (CARVED in disc), with the disc's middle: where the disc is small on the screen it gives way to a plain field of

@@ -36,10 +36,10 @@ export class Kit {
     this.layers = {};
     for (const [name, o] of Object.entries(layers)) this.layers[name] = { name, width: o.width, attr: o.attr ?? (() => []), p: [], n: [], a: [], i: [] };
   }
-  vertex(L, p, n, tag) {
+  vertex(L, p, n, tag, wide = 0) {
     L.p.push(p[0], p[1], p[2]);
     L.n.push(n[0], n[1], n[2]);
-    const a = L.attr(p, n, tag);
+    const a = L.attr(p, n, tag, wide);
     for (let k = 0; k < L.width; k++) L.a.push(a[k] ?? 0);
     return L.p.length / 3 - 1;
   }
@@ -55,9 +55,11 @@ export class Kit {
     const flip = o.want ? dot(n, o.want) < 0 : false;
     if (flip) n = mul(n, -1);
     const base = L.p.length / 3;
+    // How wide an upright face is across (its bottom edge, or its top's if wider), for its material (attr's wide).
+    const wide = Math.abs(n[1]) < 0.5 ? Math.max(Math.hypot(b[0] - a[0], b[2] - a[2]), Math.hypot(c[0] - d[0], c[2] - d[2])) : 0;
     for (let j = 0; j <= nv; j++) for (let i = 0; i <= nu; i++) {
       const u = i / nu, v = j / nv, p = lerp(lerp(a, b, u), lerp(d, c, u), v);
-      this.vertex(L, p, o.normal ? o.normal(u, v) : n, o.tag);
+      this.vertex(L, p, o.normal ? o.normal(u, v) : n, o.tag, wide);
     }
     const at = (i, j) => base + j * (nu + 1) + i;
     for (let j = 0; j < nv; j++) for (let i = 0; i < nu; i++) {

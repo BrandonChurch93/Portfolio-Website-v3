@@ -18,13 +18,15 @@ import { L, linear } from '../../lib/plan.mjs';
 //   level: how bright a lit room is at least, dim: how often a dark room shows a dim light, and how bright
 //   storey: how far apart a building's floors are told, in units
 const LIT = { room: [0.12, 0.38], run: { most: 4, wide: 0.12 }, stack: 0.3, floor: 0.6, level: 0.5, dim: [0.14, 0.16], storey: 2.3 };
-// A face lit by tenants (Windows.tenants): the share of tenants lit, share[0] and share[1] more for the busiest;
-// how tall a band of floors is (the odds, cumulative, of one, two, three and four storeys, else five); how full a
-// lit tenant's rooms are; its level, from level[0] and level[1] more, and its warmth, from flame toward hot (0 to
-// 0.5 is flame to hot, 1 is pale); how many tenants are bright and pale; the blocks of `block` floors dark together
-// (how likely, and the share of tenants they keep); a lone lit room in a dark tenant; a lit core up some faces (how
-// likely) and its level.
-const TENANT = { share: [0.24, 0.44], tall: [0.34, 0.58, 0.78, 0.91], fill: 0.9, level: [0.55, 0.4], warm: [0.22, 0.32], bright: 0.07, block: 3, dark: 0.2, darkKeep: 0.15, stray: 0.05, core: [0.3], coreLevel: [0.3, 0.25] };
+// A face lit by tenants (Windows.tenants), as an office tower's floors are lit at night: in runs along a floor and
+// not in squares. The share of tenants lit, share[0] and share[1] more for the busiest; how many storeys a tenant
+// takes (the odds, cumulative, of one and of two, else three); how many windows wide a tenant on one storey is, from
+// wide[0] to wide[1] (a taller one is half that), so a lit run ends where its tenant does and the next floor's ends
+// elsewhere; how full a lit tenant's rooms are; its level, from level[0] and level[1] more, and its warmth, from
+// flame toward hot (0 to 0.5 is flame to hot, 1 is pale); how many tenants are bright and pale; whole floors dark
+// (how likely each is) and blocks of `block` floors dark together (how likely), keeping `darkKeep` of their tenants;
+// a lone lit room in a dark tenant; a lit core up some faces (how likely) and its level.
+const TENANT = { share: [0.25, 0.36], tall: [0.85, 0.97], wide: [2, 10], fill: 0.88, level: [0.55, 0.4], warm: [0.22, 0.32], bright: 0.06, floor: 0.2, block: 3, dark: 0.14, darkKeep: 0.08, stray: 0.03, core: [0.3], coreLevel: [0.14, 0.14] };
 
 export class Windows {
   constructor(seed, size = WINDOW.map) {
@@ -101,25 +103,26 @@ export class Windows {
     }
   }
   // A face lit by its tenants (TENANT), the same across every field of it: each window is placed on its building's
-  // floors (floors.y0, floors.ch, from LIT.storey) and along its face (floors.u0, floors.cw, in units), and the
-  // building's floors are cut into bands of one to five storeys, each band along the face into tenants a few windows
-  // wide. A tenant is lit or dark as a whole, at its own level and warmth, so the light comes in clumps of rooms.
+  // floors (floors.y0, floors.ch, from floors.storey or LIT.storey) and along its face (floors.u0, floors.cw, in units), and the
+  // building's floors are cut into bands of mostly one storey, each band along the face into tenants of a few to
+  // several windows, from a place of its own. A tenant is lit or dark as a whole, at its own level and warmth, so the
+  // light comes in runs along the floors, with ragged ends.
   tenants(c0, r0, cols, rows, busy, floors) {
     const T = TENANT, R = this.rand, b = floors.build, key = floors.face ?? 0, p = T.share[0] + T.share[1] * busy;
     const h = (a, c) => hash2(Math.floor(b * 977) + 31 * key + a, c), hb = (a, c) => hash2(Math.floor(b * 977) + a, c);
     const band = (k) => {
       let j = 0;
       for (;;) {
-        const r = h(4001, j), tall = r < T.tall[0] ? 1 : r < T.tall[1] ? 2 : r < T.tall[2] ? 3 : r < T.tall[3] ? 4 : 5;
+        const r = h(4001, j), tall = r < T.tall[0] ? 1 : r < T.tall[1] ? 2 : 3;
         if (k < j + tall) return { j, tall };
         j += tall;
       }
     };
     const tenant = (k, u, cw) => {
-      const { j, tall } = band(k), most = tall >= 4 ? 2 : tall === 3 ? 3 : 4;
-      let s = -400, n = 0;
+      const { j, tall } = band(k);
+      let s = -400 - 8 * cw * h(5001, j), n = 0;
       for (;;) {
-        const wide = (1 + Math.floor(h(5003 + j, n) * most)) * cw;
+        const many = T.wide[0] + Math.floor(h(5003 + j, n) * (T.wide[1] - T.wide[0] + 1)), wide = Math.max(1, Math.round(many / tall)) * cw;
         if (u < s + wide) return { id: h(6007 + j, n), j, tall };
         s += wide; n++;
       }
@@ -128,9 +131,9 @@ export class Windows {
     const core = h(7001, 0) < T.core[0] ? { u: 3 + 24 * h(7003, 0), from: Math.floor(h(7005, 0) * 6), to: 18 + Math.floor(h(7007, 0) * 50) } : null;
     const [ls, ws] = WINDOW.steps;
     for (let r = 0; r < rows; r++) {
-      const k = Math.floor((floors.y0 + (r + 0.5) * floors.ch) / LIT.storey);
+      const k = Math.floor((floors.y0 + (r + 0.5) * floors.ch) / (floors.storey ?? LIT.storey));
       // A block of floors dark together across the building, and a floor a little busier or quieter than the rest.
-      const dark = hb(8009, Math.floor(k / T.block)) < T.dark ? T.darkKeep : 1, busier = 1 + LIT.floor * 0.5 * (2 * hb(8011, k) - 1);
+      const dark = hb(8009, Math.floor(k / T.block)) < T.dark || hb(8013, k) < T.floor ? T.darkKeep : 1, busier = 1 + LIT.floor * 0.5 * (2 * hb(8011, k) - 1);
       for (let c = 0; c < cols; c++) {
         const u = floors.u0 + (c + 0.5) * floors.cw, t = tenant(k, u, floors.cw);
         const on = h(9001, Math.floor(t.id * 1e6)) < p * dark * busier;

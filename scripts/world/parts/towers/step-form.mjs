@@ -91,7 +91,7 @@ export function stepTower(kit, win, draft) {
     ];
     const c = { ...S.cell, h: (s.y1 - s.y0 - S.cell.band) / S.cell.rows }, cols = Math.round((2 * b) / c.w), y0 = s.y0 + c.band, rows = c.rows;
     faces.forEach((f, i) => {
-      const at = win.take(cols, rows, i, S.busy, true, { build: S.build, y0, ch: c.h });
+      const at = win.take(cols, rows, i, S.busy, true, { build: S.build, y0, ch: c.h, u0: 0, cw: c.w, face: i, storey: c.h });
       kit.patch('bay', on(f, 0, s.y0), on(f, 2 * b, s.y0), on(f, 2 * b, y0), on(f, 0, y0), { nu: cols, nv: 1, want: f.N, tag: PLAIN });
       const g = S.grille, w0 = y0 + g.foot * c.h, w1 = y0 + (rows - g.head) * c.h, slot = (y, h) => ({ o: f.o, T: f.T, y0: y, door: g.slot, ch: h });
       kit.patch('bay', on(f, 0, y0), on(f, 2 * b, y0), on(f, 2 * b, w0), on(f, 0, w0), { nu: cols, nv: g.foot, want: f.N, tag: slot(y0, w0 - y0) });

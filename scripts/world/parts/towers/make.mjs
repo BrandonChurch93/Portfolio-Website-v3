@@ -20,7 +20,9 @@ const REACH = 1.5;
 // How shut in a place is, and the light that reaches it, averaged over this far in units, among places that face
 // within a few degrees the same way: the gold's flutes are finer than its vertices, and their shade is the
 // cornices', not each flute's; on the stone and the bay it takes out the baker's grain, which also packs badly.
-const SMOOTH = { stone: 1.6, bay: 2.4, gold: 1.6, alike: 0.92 };
+// What a place sees of the sky about the moon and of the city's light (skyward, frontward) is averaged over `seen`:
+// from one vertex to the next of a long thin face it streaked the lit faces from foot to head.
+const SMOOTH = { stone: 1.6, bay: 2.4, gold: 1.6, alike: 0.92, seen: 5 };
 // The view never moves: a face turned from it by more than `seen` (the cosine, so a face seen edge on is kept) is
 // never drawn, and unless it is turned from the moon (by more than `casts`) it casts no shadow either, since the
 // moon's shadow is drawn with the faces turned from it. Such faces are left out of the file. The light is baked
@@ -185,7 +187,7 @@ export async function finish({ made, win, around = [], file, draft, meta = {}, s
     emit.set(e.map((x) => Math.PI * x), i * 3);
   }
   const st = made.stone, ns = st.positions.length / 3, albedoStone = new Float32Array(ns * 3);
-  for (let i = 0; i < ns; i++) albedoStone.set(toned(pale, st.attr[i * 4 + 3]), i * 3);
+  for (let i = 0; i < ns; i++) albedoStone.set(toned(pale, st.attr[i * st.width + 3]), i * 3);
 
   const lights = light();
   const scene = {
@@ -206,10 +208,10 @@ export async function finish({ made, win, around = [], file, draft, meta = {}, s
     const l = { ...raw, open: smooth(m, raw.open, 1, SMOOTH[name]), bounce: smooth(m, raw.bounce, 3, SMOOTH[name]) };
     // The core never reaches the city, and the baker's share of the moon is not read (the moon's own shadow is drawn
     // live): in its place is how much of the sky about the moon a place sees past the other buildings (skyward).
-    const sky = boxes.length ? smooth(m, skyward(m.positions, m.normals, m.owner, boxes, draft), 1, SMOOTH[name]) : new Float32Array(n).fill(1);
+    const sky = boxes.length ? smooth(m, skyward(m.positions, m.normals, m.owner, boxes, draft), 1, Math.max(SMOOTH[name], SMOOTH.seen)) : new Float32Array(n).fill(1);
     // And in the core's place, which never reaches the city, how much of the night's light from the visitor's side
     // a place sees past the other buildings (frontward).
-    const fore = boxes.length ? smooth(m, frontward(m.positions, m.normals, m.owner, boxes, draft), 1, SMOOTH[name]) : new Float32Array(n).fill(1);
+    const fore = boxes.length ? smooth(m, frontward(m.positions, m.normals, m.owner, boxes, draft), 1, Math.max(SMOOTH[name], SMOOTH.seen)) : new Float32Array(n).fill(1);
     for (let i = 0; i < n; i++) {
       // How far up its own building a place is, as a share of the building's height: the material lights a
       // building from a shaded foot to a lit top by it. (How far back it is, which this held, the shader works out.)
@@ -219,12 +221,12 @@ export async function finish({ made, win, around = [], file, draft, meta = {}, s
     }
     // A wall's normal is near one of a few directions and is kept to a byte; the gold's curves keep two.
     const attributes = { normal: { data: m.normals, size: 3, as: name === 'gold' ? 'i16' : 'i8' }, light: { data: light4, size: 4, as: 'u8' }, bounce: { data: bounce4, size: 4, as: 'u8' } };
-    // The stone's joints are laid from where a place is in the world, in the shader: only how it is laid and which
-    // stone it is are stored.
+    // The stone's joints are laid from where a place is in the world, in the shader: only how it is laid, which
+    // stone it is and how narrow a face is are stored.
     if (name === 'stone') {
-      const kind = new Float32Array(n * 2);
-      for (let i = 0; i < n; i++) { kind[i * 2] = m.attr[i * 4 + 2]; kind[i * 2 + 1] = m.attr[i * 4 + 3]; }
-      attributes.kind = { data: kind, size: 2, as: 'u8' };
+      const kind = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) kind.set([m.attr[i * m.width + 2], m.attr[i * m.width + 3], m.attr[i * m.width + 4]], i * 3);
+      attributes.kind = { data: kind, size: 3, as: 'u8' };
     }
     // Where a place is in its field of windows, as shares of the map (two bytes each: a sixty fourth of a window),
     // and how large a window is, exactly.
