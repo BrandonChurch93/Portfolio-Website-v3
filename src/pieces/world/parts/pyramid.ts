@@ -4,6 +4,7 @@ import { GLINT, METAL, color, lit } from '../light';
 import { load, mesh } from '../files';
 import type { PartFactory } from '../part';
 import { standing } from './pyramid/form';
+import { mirrored } from './pyramid/mirror';
 import { shade } from './pyramid/shade';
 import * as S from './pyramid/shaders';
 
@@ -40,7 +41,7 @@ const LOOK = {
   sat: { deep: 0.56, deepTurn: -6, body: 0.6, bodyTurn: -3.5, mid: 0.78, midTurn: -3, warm: 0.72, warmTurn: -8, lit: 0.8, litTurn: -4, hot: 0.6, hotTurn: -1 },
   grade: [0.02, 0.09, 0.22, 0.75, 0.7, 3.0],
   // The face toward the moon: over what levels its rich gold turns to the glare's hot gold, and the hot gold to pale.
-  hot: [0.3, 1, 1, 3],
+  hot: [0.3, 1, 1.1, 4],
   // The highlights' cream: the palette's pale with its blue taken down so its hue is turned toward cream, inside the
   // palette's pale (its green and blue no higher than pale's).
   cream: 0.94,
@@ -82,7 +83,8 @@ function tuned(asked: string): S.Night {
 export const build: PartFactory = async (ctx) => {
   const asked = new Map((ctx.query.get('pyr') ?? '').split(',').filter(Boolean).map((kv) => kv.split('=') as [string, string]));
   const t = (name: string, v: number): number => (asked.has(name) ? Number(asked.get(name)) : v);
-  const F = S.frag(tuned(ctx.query.get('pyrn') ?? ''));
+  const seen = mirrored();
+  const F = S.frag(tuned(ctx.query.get('pyrn') ?? ''), { trees: seen.trees.length, boxes: seen.boxes.length, litTrees: seen.litTrees, litBoxes: seen.litBoxes, skyline: seen.skyline.length });
   const file = await load('pyramid.bin');
   const gold = file.meshes.get('gold');
   if (!gold) throw new Error('pyramid.bin holds no gold: make it again with scripts/world/parts/pyramid/make.mjs');
@@ -117,6 +119,10 @@ export const build: PartFactory = async (ctx) => {
       uContact: { value: t('contact', LOOK.contact) },
       uMoonSpec: { value: t('moon', LOOK.moon) },
       uToWorld: { value: new THREE.Matrix3().setFromMatrix4(basis) },
+      uOrigin: { value: at },
+      uTree: { value: (seen.trees.length ? seen.trees : [[0, -1e4, 0, 0]]).map((v) => new THREE.Vector4(v[0], v[1], v[2], v[3])) },
+      uBox: { value: (seen.boxes.length ? seen.boxes : [[0, -1e4, 0, 0, 0, 0, -1e4, 0]]).flatMap((v) => [new THREE.Vector4(v[0], v[1], v[2], v[3]), new THREE.Vector4(v[4], v[5], v[6], v[7])]) },
+      uSkyline: { value: seen.skyline },
     });
     sh.vertexShader = after(after(sh.vertexShader, 'common', S.VERT_PARS), 'begin_vertex', S.VERT);
     let fr = after(sh.fragmentShader, 'common', F.PARS);
