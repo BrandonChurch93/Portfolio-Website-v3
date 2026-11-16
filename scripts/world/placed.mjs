@@ -191,6 +191,15 @@ grove(700, 960, 9.5, [254, 247, 240, 235], [0.7, 1.4]);
 grove(960, 1050, 9, [252, 244, 237], [0.75, 1.35]);
 grove(252, 336, 8.5, [296, 288, 281], [0.9, 1.3]);
 for (let px = 1063; px <= 1174; px += 9.6) { const [x, z] = onGround(px + 2.5 * (r() - 0.5), 243 + 2 * (r() - 0.5)); trees.push([n(x), n(z), n(10.5 * (1.15 + 0.3 * r())), n(r(), 3), n(r() * Math.PI * 2, 3)]); }
+// The trees' fourth round, laid over the picture again:
+//   - left of the spire, 470 to 650 across, the picture's belt is ONE row of crowns hard against the city's feet,
+//     250 to 265 down, with bare pale rock before it out to the lip. Ours stood three and four rows deep on that
+//     rock. What stood further down the picture than 268 there is taken out, and the one row is planted;
+//   - the picture's crowns are a quarter larger than ours were and overlap into one mass: every crown is a
+//     quarter larger, where it stands.
+for (let i = trees.length - 1; i >= 0; i--) { const t = trees[i], [px, py] = W.pictured(t[0], W.ground(t[0], t[1]), t[1]); if (px > 470 && px < 650 && py > 268) trees.splice(i, 1); }
+grove(474, 646, 8.5, [263, 259], [0.85, 1.2]);
+for (const t of trees) t[2] = n(t[2] * 1.25);
 console.log(`for picture 9's edge: ${drawn} buildings drawn back from the bite, ${slid} more slid back, ${lost} left where the land is not, ${kept} of the study's trees kept, ${trees.length - kept} planted along the new edge`);
 const vents = P.vents().map((v) => [n(v.at[0]), n(v.at[1]), n(v.at[2]), v.long, v.wide, v.heat]);
 const rows = (list) => list.map((r) => `  ${JSON.stringify(r).replace(/"/g, "'")},`).join('\n');
