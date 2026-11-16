@@ -41,7 +41,7 @@ export const SOURCE = [CORE.at[0], CORE.at[1] - CORE.r, CORE.at[2]] as const;
 export const coreLevel = (t: number): number => 1 + 0.035 * Math.sin(t * 0.52) + 0.02 * Math.sin(t * 1.31 + 1.7);
 
 // The spire: the tallest thing by far, on the center line, with one thin ring near its top, tilted as Saturn's is.
-export const SPIRE = { tall: 250, foot: 38, ring: { r: 54, thick: 2.4, up: 0.74, tilt: [9, 17] as const } } as const;
+export const SPIRE = { tall: 260, foot: 38, ring: { r: 54, thick: 2.4, up: 0.708, tilt: [9, 17] as const } } as const;
 // The open court round the spire's foot.
 export const COURT = 56;
 // The pyramid: at the front left, in front of the towers, on a square court of its own. Polished gold. turn is how
@@ -99,9 +99,9 @@ export function seeded(seed: number): () => number {
 // ---------------------------------------------------------------------------------------------------------------
 // Picture 9, which the world is a recreation of: reference/concept/09-parts/09-the-whole-picture-at-1376.jpg, 1376
 // by 768. A place in the picture is tied to a place in the world by the planet and the spire: the planet's left
-// rim is at 95 across and its right at 1280, and the spire's tip is at 20 down. unit is how many of the world's
+// rim is at 95 across and its right at 1280, and the tip of the spire's needle is at 11 down. unit is how many of the world's
 // units one of the picture's pixels is.
-export const PICTURE = { file: 'reference/concept/09-parts/09-the-whole-picture-at-1376.jpg', wide: 1376, tall: 768, mid: 687.5, tip: 20, unit: 1.119 } as const;
+export const PICTURE = { file: 'reference/concept/09-parts/09-the-whole-picture-at-1376.jpg', wide: 1376, tall: 768, mid: 687.5, tip: 11, unit: 1.119 } as const;
 const TIP = drawn(0, SPIRE.tall, 0)[1];
 // Where a point of the world is in the picture, in the picture's pixels.
 export function pictured(x: number, y: number, z: number): [number, number] {

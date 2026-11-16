@@ -5,12 +5,12 @@ import type { PartFactory } from '../part';
 import { STEP, TOWERS } from '../placed';
 import { materials } from './towers/materials';
 
-// The towers. Each design is made ahead by its own script in scripts/world/parts/towers/ and shipped as a world
-// file, with a map of the state of its windows; every design shares the three materials in ./towers/materials.ts.
-// Built so far: the tower with the stepped gold crown (TOWERS[STEP]). Every other building is still a plain dark
-// shape of `rest`.
+// The towers: the city, made ahead by scripts/world/parts/towers/city.mjs and shipped as one world file, one mesh for
+// each of the three materials in ./towers/materials.ts, with a map of the state of every window. The file says which
+// buildings it holds (meta.stands); the rest stay plain dark shapes of `rest`. ?towers=step shows the stepped tower
+// alone, from its own make (step.mjs).
 
-const DESIGNS = [{ file: 'tower-step.bin', windows: 'tower-step-windows.png' }] as const;
+const FILES = { city: 'towers-city.bin', step: 'tower-step.bin' } as const;
 
 function windows(file: string): Promise<THREE.Texture> {
   return new THREE.TextureLoader().loadAsync(`/world/${file}`).then((t) => {
@@ -23,20 +23,22 @@ function windows(file: string): Promise<THREE.Texture> {
   });
 }
 
-export const build: PartFactory = async () => {
+export const build: PartFactory = async ({ query }) => {
   const group = new THREE.Group(), made: { dispose(): void }[] = [];
-  for (const d of DESIGNS) {
-    const [file, map] = await Promise.all([load(d.file), windows(d.windows)]);
-    const m = materials(map);
-    made.push(map, m);
-    for (const [name, l] of file.meshes) {
-      const part = mesh(l, m[name as 'stone' | 'bay' | 'gold']);
-      part.castShadow = true;
-      part.receiveShadow = name !== 'gold';
-      group.add(part);
-      made.push(l.geometry);
-    }
+  const which = query.get('towers') === 'step' ? 'step' : 'city';
+  const file = await load(FILES[which]), map = await windows(String(file.meta.windows));
+  const m = materials(map);
+  made.push(map, m);
+  for (const [name, l] of file.meshes) {
+    const part = mesh(l, m[name as 'stone' | 'bay' | 'gold']);
+    part.castShadow = true;
+    part.receiveShadow = name !== 'gold';
+    group.add(part);
+    made.push(l.geometry);
   }
-  const [x, z, , , tall] = TOWERS[STEP], foot = ground(x, z);
-  return { group, stands: [STEP], alone: { at: [x, foot + tall * 0.55, z], r: tall * 0.62 }, dispose() { for (const d of made) d.dispose(); } };
+  const stands = which === 'step' ? [STEP] : ((file.meta.stands as number[] | undefined) ?? []);
+  // ?only=towers frames the stepped tower, or the building ?tower=<its place in TOWERS>, or its top with &top=1.
+  const asked = Number(query.get('tower') ?? STEP), [x, z, , , tall] = TOWERS[asked] ?? TOWERS[STEP], foot = ground(x, z), top = query.get('top') === '1';
+  const alone = top ? { at: [x, foot + tall * 0.82, z] as [number, number, number], r: tall * 0.24 } : { at: [x, foot + tall * 0.55, z] as [number, number, number], r: tall * 0.62 };
+  return { group, stands, alone, dispose() { for (const d of made) d.dispose(); } };
 };

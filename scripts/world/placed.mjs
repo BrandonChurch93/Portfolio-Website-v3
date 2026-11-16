@@ -19,7 +19,10 @@ const n = (v, d = 2) => Number(v.toFixed(d));
 // tops the study had at the wrong height, by their place in the study's list, with the height that puts each top
 // where the picture has it (npm run match prints the check).
 const TALLER = { 2: 177, 4: 138 };
-const towers = P.towers().map((b, i) => [n(b.x), n(b.z), n(b.w), n(b.d), n(TALLER[i] ?? b.tall), n(b.turn / P.D2R), b.form, b.roof, n(b.seed, 5)]);
+// One building the study stood straight in front of the spire, hiding its lower half, where the picture shows the
+// spire clear down to the trees: it is a low hall there, not a tower.
+const LOW = { 78: [34, 'hall'] };
+const towers = P.towers().map((b, i) => [n(b.x), n(b.z), n(b.w), n(b.d), n(LOW[i]?.[0] ?? TALLER[i] ?? b.tall), n(b.turn / P.D2R), LOW[i]?.[1] ?? b.form, b.roof, n(b.seed, 5)]);
 // The land's front edge is picture 9's (LIP in the new world's plan), bitten far deeper than the study's. So what
 // the study stood near its own edge is put right for the picture's: a building too near the new edge to leave the
 // belt of trees its room is slid straight back along the line of sight, with its top kept exactly where the picture

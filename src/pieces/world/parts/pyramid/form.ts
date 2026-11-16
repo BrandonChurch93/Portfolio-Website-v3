@@ -1,13 +1,9 @@
-// The pyramid's form, in its own frame: units, its middle at its foot, x and z along its sides, y up the axis.
-// scripts/world/parts/pyramid/make.mjs builds it from these and the shader reads the same numbers, so it imports
-// nothing.
+// The pyramid's form, in its own frame: units, its middle at its foot, x and z along its sides, y up the axis. Its
+// place, size, turn and height are the plan's (PYRAMID in ../../layout.ts), laid over picture 9: these are what the
+// plan does not hold. scripts/world/parts/pyramid/make.mjs builds it from both and the shader reads the same numbers,
+// so this file imports nothing.
 
 export const FORM = {
-  // Laid over picture 9 with npm run match, layout.ts's PYRAMID (turn 40, tall 117) put the front corner 34 of the
-  // picture's pixels left of where the picture has it. Its x, z and base are kept, and these two are what the picture
-  // gives, with the pyramid standing straight out from the dome under it as everything on the world does: then its
-  // apex, its front corner and its right corner each sit within 4 pixels of the picture's.
-  fit: { turn: 56.3, tall: 113.5 },
   // How far the gold runs on under the ground, so no gap shows wherever the ground falls away.
   sink: 7,
   // Every arris, and the body's top edge under the reveal, is rounded at each pixel: the face is bent toward its
@@ -18,14 +14,15 @@ export const FORM = {
   // The capstone: the body stops at `from`, a dark reveal `reveal` tall, set back `inset`, and the capstone above.
   // Picture 9's reveal is a quarter of the way down from the apex.
   cap: { from: 85.4, reveal: 2.2, inset: 2.6 },
-  // The casing: level courses this tall (measured upright), plates about this long along a course, the hairline
-  // joint between plates, and how far each plate is tilted from its face at most, in radians.
-  casing: { course: 2.15, plate: 6.8, joint: 0.09, tilt: 0.0015 },
+  // The casing: level courses this tall (measured upright), plates about this long along a course (each a share
+  // `jag` longer or shorter, so their joints never line up as bricks do), the hairline joint between plates, and how
+  // far each plate is tilted from its face at most, in radians.
+  casing: { course: 2.15, plate: 11, jag: 0.4, joint: 0.11, tilt: 0.00055 },
 } as const;
 
 type V3 = [number, number, number];
 // The pyramid's own axes in the world: x and z along its sides, turned by `turn` degrees, and y straight out from a
-// dome of radius `top` at the place (x, z).
+// dome of radius `top` at the place (x, z). That is the slight lean that stands it straight out from the dome.
 export function standing(x: number, z: number, top: number, turn: number): { x: V3; y: V3; z: V3 } {
   const r = Math.sqrt(Math.max(1, top * top - x * x - z * z)), y: V3 = [x / top, r / top, z / top];
   const c = Math.cos((turn * Math.PI) / 180), s = Math.sin((turn * Math.PI) / 180), d = c * y[0] - s * y[2];

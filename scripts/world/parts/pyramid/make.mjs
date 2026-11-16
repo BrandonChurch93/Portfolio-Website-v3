@@ -7,7 +7,8 @@
 // ground, the neck in the reveal, and the capstone. Its edges are crisp: they are rounded in the shader. Each face is
 // cut into rows and filled, finer at the foot and the reveal, and how open each vertex is to the night is baked in
 // the world's own frame, with the land round it there to shut it in. The mesh is stored in the pyramid's own frame:
-// its foot on the ground, its axis straight out from the dome (FORM.fit, standing() in form.ts).
+// its foot on the ground, turned and as tall as the plan has it (L.PYRAMID), its axis straight out from the dome
+// (standing() in form.ts).
 import process from 'node:process';
 import { bake } from '../../lib/bake.mjs';
 import { pack } from '../../lib/pack.mjs';
@@ -17,7 +18,7 @@ import { polytope, fill, mend, plane } from './polytope.mjs';
 
 const draft = process.argv.includes('--draft');
 const OUT = 'public/world/pyramid.bin';
-const { base } = L.PYRAMID, { tall, turn } = FORM.fit, half = base / 2, from = FORM.cap.from, reveal = FORM.cap.reveal;
+const { base, tall, turn } = L.PYRAMID, half = base / 2, from = FORM.cap.from, reveal = FORM.cap.reveal;
 
 // The four sides, outward, each by its horizontal direction.
 const SIDES = [[1, 0], [0, 1], [-1, 0], [0, -1]];

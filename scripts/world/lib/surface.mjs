@@ -31,8 +31,7 @@ export const GAP = 1e-4;
 export const CLOSE = 1e-3;
 export const ROUNDS = 12;
 export const FLAT = 1e-9;
-export const HOLD = 6;
-export const STRICT = 0.5;
+export const HOLD = 8;
 export const SAMPLES = 12;
 export const SAME = Math.cos((2 * Math.PI) / 180);
 export const APART = Math.sin((5 * Math.PI) / 180);
@@ -248,17 +247,8 @@ function cutting(pos, verts, made, check, cell) {
   }
   const key = (i, j, k) => i + 65536 * (j + 65536 * k);
   const wanted = new Table(1024);
-  let grown = 1024, nw = 0;
-  const want = (kk) => {
-    if (wanted.get(kk) >= 0) return;
-    if (nw * 2 + 2 > grown) {
-      grown *= 4;
-      const bigger = new Table(grown);
-      for (let s = 0; s < wanted.keys.length; s++) if (wanted.keys[s] !== -1) bigger.set(wanted.keys[s], wanted.vals[s]);
-      wanted.mask = bigger.mask; wanted.keys = bigger.keys; wanted.vals = bigger.vals;
-    }
-    wanted.set(kk, nw++);
-  };
+  let nw = 0;
+  const want = (kk) => { if (wanted.get(kk) < 0) wanted.set(kk, nw++); };
   const span = new Int32Array(6);
   const spanOf = (t) => { bound(t); for (let k = 0; k < 6; k++) span[k] = Math.floor(box[k] / cell); };
   for (let t = 0; t < n; t++) {
@@ -536,7 +526,7 @@ export async function simplify(mesh, { error, target, attributes, weights, lock,
   const indices = mesh.indices instanceof Uint32Array ? mesh.indices : new Uint32Array(mesh.indices);
   const nv = positions.length / 3;
   const most = error ?? Infinity, sure = strict && Number.isFinite(most);
-  const aim = Number.isFinite(most) ? most * (sure ? STRICT : 1) : 1e30;
+  const aim = Number.isFinite(most) ? most : 1e30;
   const goal = Math.max(0, Math.min(indices.length, Math.floor(target ?? 0) * 3));
   const k = attributes ? attributes.length / nv : 0;
   const attr = attributes ?? new Float32Array(0);
@@ -551,6 +541,7 @@ export async function simplify(mesh, { error, target, attributes, weights, lock,
     holes = opened(out, place, nv, rim, positions, held);
     stray = check ? check.find(out, held) : 0;
     if ((!stray && !holes) || rounds === HOLD) break;
+    for (let i = 0; i < out.length; i++) held[out[i]] = 1;
     rounds++;
   }
   const map = new Int32Array(nv).fill(-1);
@@ -569,7 +560,7 @@ export async function simplify(mesh, { error, target, attributes, weights, lock,
     for (let i = 0; i < src.length; i++) for (let j = 0; j < k; j++) attrOut[i * k + j] = attributes[src[i] * k + j];
   }
   const thin = uncap({ positions: pos, indices: out });
-  return { positions: pos, indices: out, attributes: attrOut, source: src, thin, stray: check ? stray : null, holes, rounds };
+  return { positions: pos, indices: out, attributes: attrOut, source: src, thin, stray: check ? stray : null, furthest: check && stray ? check.worst : 0, holes, rounds };
 }
 
 // For each vertex, the first vertex at the very same place, so a mesh split at its creases is read as one surface.
@@ -679,15 +670,20 @@ function strays(mesh, error, place) {
     return false;
   };
   const short = error * Math.sqrt(3);
+  let worst = 0;
   return {
+    get worst() { return worst; },
     find(out, held) {
       let count = 0;
+      worst = 0;
       const kept = new Uint8Array(nv);
       for (let i = 0; i < out.length; i++) kept[place[out[i]]] = 1;
       const back = closest({ positions: p, indices: out }, size);
       for (let v = 0; v < nv; v++) {
         if (place[v] !== v || kept[v]) continue;
-        if (back(p[v * 3], p[v * 3 + 1], p[v * 3 + 2], error) <= error) continue;
+        const d = back(p[v * 3], p[v * 3 + 1], p[v * 3 + 2], error);
+        if (d <= error) continue;
+        worst = Math.max(worst, d);
         held[v] = 1;
         count++;
       }
@@ -698,18 +694,19 @@ function strays(mesh, error, place) {
           Math.hypot(p[b * 3] - p[c * 3], p[b * 3 + 1] - p[c * 3 + 1], p[b * 3 + 2] - p[c * 3 + 2]),
           Math.hypot(p[c * 3] - p[a * 3], p[c * 3 + 1] - p[a * 3 + 1], p[c * 3 + 2] - p[a * 3 + 2]));
         if (L <= short || made(a, b, c)) continue;
-        const steps = Math.min(SAMPLES, Math.max(2, Math.ceil(L / Math.max(error, edge))));
+        const steps = Math.min(SAMPLES, Math.max(2, Math.ceil(L / Math.max(error, edge / 2))));
         let far = false;
-        for (let i = 0; i <= steps && !far; i++) for (let j = 0; i + j <= steps && !far; j++) {
+        for (let i = 0; i <= steps; i++) for (let j = 0; i + j <= steps; j++) {
           const u = i / steps, w = j / steps, o = 1 - u - w;
           if (u === 1 || w === 1 || o === 1) continue;
           const x = p[a * 3] * o + p[b * 3] * u + p[c * 3] * w, y = p[a * 3 + 1] * o + p[b * 3 + 1] * u + p[c * 3 + 1] * w, z = p[a * 3 + 2] * o + p[b * 3 + 2] * u + p[c * 3 + 2] * w;
-          if (gap(x, y, z, error) > error) far = true;
+          const d = gap(x, y, z, error);
+          if (d <= error) continue;
+          far = true;
+          worst = Math.max(worst, d);
+          near(x, y, z, Math.min(Math.max(2 * Math.min(d, size), 2 * edge), L), (v) => { if (toTriangle(p, a, b, c, p[v * 3], p[v * 3 + 1], p[v * 3 + 2]) > error * 0.5) held[v] = 1; });
         }
-        if (!far) continue;
-        count++;
-        const mx = (p[a * 3] + p[b * 3] + p[c * 3]) / 3, my = (p[a * 3 + 1] + p[b * 3 + 1] + p[c * 3 + 1]) / 3, mz = (p[a * 3 + 2] + p[b * 3 + 2] + p[c * 3 + 2]) / 3;
-        near(mx, my, mz, L + error, (v) => { if (toTriangle(p, a, b, c, p[v * 3], p[v * 3 + 1], p[v * 3 + 2]) > error * 0.5) held[v] = 1; });
+        if (far) count++;
       }
       return count;
     },

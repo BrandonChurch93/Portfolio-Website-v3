@@ -51,6 +51,7 @@ export class Kit {
     const nv = o.nv ?? Math.max(1, Math.ceil(Math.max(Math.hypot(...sub(d, a)), Math.hypot(...sub(c, b))) / edge - 1e-6));
     let n = unit(cross(sub(b, a), sub(d, a)));
     if (!(Math.hypot(...cross(sub(b, a), sub(d, a))) > 1e-9)) n = unit(cross(sub(c, b), sub(c, d)));
+    if (!(Math.hypot(...n) > 0.5)) n = unit(o.want ?? [0, 1, 0]);
     const flip = o.want ? dot(n, o.want) < 0 : false;
     if (flip) n = mul(n, -1);
     const base = L.p.length / 3;

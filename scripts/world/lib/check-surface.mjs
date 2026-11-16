@@ -8,7 +8,7 @@
 import { isMainThread } from 'node:worker_threads';
 import { fileURLToPath } from 'node:url';
 import { availableParallelism } from 'node:os';
-import { surface, simplify } from './surface.mjs';
+import { surface, simplify, SHIFT } from './surface.mjs';
 import { creased, curvature, closed, area, weld, bounds, merge, transform } from './mesh.mjs';
 
 export const lip = 1;
@@ -183,6 +183,85 @@ export function pieces({ count, seed, fill, size, span }) {
   return { list, value, near };
 }
 
+// A cube turned at random, from a seed: its three axes, its middle and half its size.
+function turned(seed, h) {
+  const r = random(seed), a = dir(r);
+  let b = dir(r);
+  const d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  b = [b[0] - d * a[0], b[1] - d * a[1], b[2] - d * a[2]];
+  const bl = Math.hypot(...b);
+  b = b.map((v) => v / bl);
+  const c = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const axes = [a, b, c], at = [r() * 3, r() * 3, r() * 3];
+  const field = (x, y, z) => {
+    let m = -Infinity;
+    for (const ax of axes) m = Math.max(m, Math.abs(ax[0] * (x - at[0]) + ax[1] * (y - at[1]) + ax[2] * (z - at[2])) - h);
+    return m;
+  };
+  const corners = [];
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) corners.push([0, 1, 2].map((k) => at[k] + h * (sx * a[k] + sy * b[k] + sz * c[k])));
+  return { field, axes, at, corners, normals: axes.flatMap((ax) => [ax, ax.map((v) => -v)]) };
+}
+
+// A thousand small cubes, each turned at random, CHIPS.side across and well apart.
+const CHIPS = { seed: 4, side: 4, count: 1000, spacing: 12 };
+function chips() {
+  const r = random(CHIPS.seed), n = Math.ceil(Math.cbrt(CHIPS.count)), list = [];
+  for (let i = 0; i < CHIPS.count; i++) {
+    const g = [i % n, Math.floor(i / n) % n, Math.floor(i / (n * n))];
+    const c = g.map((v) => (v - n / 2) * CHIPS.spacing + (r() - 0.5) * CHIPS.spacing * 0.3);
+    const a = dir(r);
+    let b = dir(r);
+    const d = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+    b = [b[0] - d * a[0], b[1] - d * a[1], b[2] - d * a[2]];
+    const bl = Math.hypot(...b);
+    b = b.map((v) => v / bl);
+    list.push({ c, axes: [a, b, [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]] });
+  }
+  const h = CHIPS.side / 2, S = CHIPS.spacing;
+  const field = (x, y, z) => {
+    const i = Math.round(x / S + n / 2), j = Math.round(y / S + n / 2), k = Math.round(z / S + n / 2);
+    let best = S * 0.5;
+    for (let dk = -1; dk <= 1; dk++) for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+      const ii = i + di, jj = j + dj, kk = k + dk;
+      if (ii < 0 || jj < 0 || kk < 0 || ii >= n || jj >= n || kk >= n || ii + n * (jj + n * kk) >= CHIPS.count) continue;
+      const p = list[ii + n * (jj + n * kk)];
+      let m = -Infinity;
+      for (const ax of p.axes) m = Math.max(m, Math.abs(ax[0] * (x - p.c[0]) + ax[1] * (y - p.c[1]) + ax[2] * (z - p.c[2])) - h);
+      best = Math.min(best, m);
+    }
+    return best;
+  };
+  return { field, list };
+}
+
+// A turned block with pieces added to it and pits cut from it: concave creases everywhere.
+function carved() {
+  const r = random(3), turn3 = turn(0.7, 0.4, 1.1), half = [52.3, 31.7, 44.1], at = [3.17, -2.71, 1.93];
+  const block = [];
+  for (let a = 0; a < 3; a++) for (const sg of [1, -1]) {
+    const n = [turn3[0][a] * sg, turn3[1][a] * sg, turn3[2][a] * sg];
+    block.push({ n, d: half[a] + n[0] * at[0] + n[1] * at[1] + n[2] * at[2] });
+  }
+  const piece = (c, radius) => {
+    const k = 7 + Math.floor(r() * 6), planes = [];
+    for (let i = 0; i < k; i++) { const n = dir(r); planes.push({ n, d: radius * (0.6 + 0.4 * r()) + n[0] * c[0] + n[1] * c[1] + n[2] * c[2] }); }
+    for (const a of [0, 1, 2]) for (const sg of [1, -1]) { const n = [0, 0, 0]; n[a] = sg; planes.push({ n, d: radius * 1.6 + sg * c[a] }); }
+    return planesField(planes);
+  };
+  const adds = [], cuts = [];
+  for (let i = 0; i < 30; i++) adds.push(piece([(r() - 0.5) * 130, (r() - 0.5) * 90, (r() - 0.5) * 110], 6 + r() * 14));
+  for (let i = 0; i < 40; i++) cuts.push(piece([(r() - 0.5) * 110, (r() - 0.5) * 70, (r() - 0.5) * 90], 4 + r() * 12));
+  const b = planesField(block);
+  return (x, y, z) => {
+    let v = b(x, y, z);
+    for (const f of adds) v = Math.min(v, f(x, y, z));
+    for (const f of cuts) v = Math.max(v, -f(x, y, z));
+    return v;
+  };
+}
+const CARVED = [[-110.3, -100.1, -105.7], [109.9, 101.3, 104.2]];
+
 const HUNDRED = {
   count: 100, seed: 7, size: [10, 30],
   fill: (r) => [(r() - 0.5) * 160, (r() - 0.5) * 160, (r() - 0.5) * 160],
@@ -200,8 +279,12 @@ const SHEET = { c: [0.37, 0.21, -0.13], h: [30, 1, 30] };
 const SLOT = { c: [0.29, 0.43, 0.11], h: [24, 24, 24], gap: 1 };
 const LBOX = [[[0.13, 0.27, 0.19], [20, 6, 10]], [[-13.87, 14.27, 0.19], [6, 20, 10]]];
 
-export async function setup({ scene }) {
+export async function setup({ scene, seed, h, c }) {
   if (scene === 'cube') impl = planesField(cubePlanes());
+  else if (scene === 'turned') impl = turned(seed, h).field;
+  else if (scene === 'box') impl = (x, y, z) => Math.max(Math.abs(x - c[0]) - h[0], Math.abs(y - c[1]) - h[1], Math.abs(z - c[2]) - h[2]);
+  else if (scene === 'chips') impl = chips().field;
+  else if (scene === 'carved') impl = carved();
   else if (scene === 'sphere') impl = (x, y, z) => Math.hypot(x - 0.21, y + 0.13, z - 0.07) - 37.3;
   else if (scene === 'hundred') impl = pieces(HUNDRED).value;
   else if (scene === 'shell') impl = pieces(SHELL).value;
@@ -234,9 +317,19 @@ function degenerate(m, cell) {
   for (let t = 0; t < m.indices.length / 3; t++) if (!(triNormal(m, t).area > 1e-6 * cell * cell)) bad++;
   return bad;
 }
+// Vertices with the same stored position as another vertex.
+function twins(m) {
+  const seen = new Set();
+  let n = 0;
+  for (let v = 0; v < m.positions.length / 3; v++) {
+    const k = `${m.positions[v * 3]},${m.positions[v * 3 + 1]},${m.positions[v * 3 + 2]}`;
+    if (seen.has(k)) n++; else seen.add(k);
+  }
+  return n;
+}
 const tight = (m, cell, name) => {
-  const c = closed(m), d = degenerate(m, cell), edges = (m.indices.length / 3) * 1.5;
-  report(`${name}: closed and wound one way, triangles with no area (a known limit) under 1 in 100,000`, c.open === 0 && c.flipped === 0 && d <= m.indices.length / 3 / 1e5, `open ${c.open}, flipped ${c.flipped}, ${d} with no area`);
+  const c = closed(m), d = degenerate(m, cell), edges = (m.indices.length / 3) * 1.5, t = twins(m);
+  report(`${name}: closed and wound one way, no triangle without area, no two vertices in one place`, c.open === 0 && c.flipped === 0 && d === 0 && t === 0, `open ${c.open}, flipped ${c.flipped}, ${d} with no area, ${t} vertices on another`);
   report(`${name}: edges with four faces (a known limit) under 1 in 5,000`, c.bad <= edges / 5000, `${c.bad} of ${Math.round(edges)} edges`);
 };
 // A triangle points into the rock when, at every one of four points inside it, its normal is against the field's slope.

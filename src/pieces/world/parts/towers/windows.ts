@@ -13,13 +13,26 @@ export const WINDOW = {
   mean: 0.6,
   // How far a blind dims what is behind it.
   blind: 0.5,
+  // Close up: how deep the glass is set behind its frame, how far apart a blind's slats are, how tall the sill the
+  // room lights is, in units, and how bright a room is drawn against its average, so that close and far agree.
+  reveal: 0.16,
+  slat: 0.11,
+  sill: 0.1,
+  near: 1,
   // The colors a room is lit in, from the warmest to the palest, as names in the palette.
   colors: ['flame', 'hot', 'pale'] as const,
   // A room's level is stored as level ** (1 / curve), and lights by level.
   curve: 1.6,
   // The map of every window's state: this many texels square, one a window.
   map: 128,
+  // Windows let into stone carry the stone's tone as a style: their width is stored with this many times
+  // (1 + 4 tone) added, the tone in quarters.
+  style: 100,
 } as const;
+
+// The towers' stones, as what each multiplies the pale stone's color by in linear light: the pale stone, a warm
+// sandstone and a dark granite, at 0, 0.5 and 1 of a face's tone. Here so the baker lights each as it is drawn.
+export const TONES = [[1, 1, 1], [0.74, 0.6, 0.45], [0.3, 0.26, 0.23]] as const;
 
 // What one window shows on average across its cell, as a share of WINDOW.gain in its own color: how lit it is
 // (0 to 1, as stored), and how far a blind is down (0 to 1).

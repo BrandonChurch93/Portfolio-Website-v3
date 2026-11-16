@@ -6,6 +6,7 @@
 //
 // A matrix is sixteen numbers, column major, as three's Matrix4.elements.
 
+// A hash table from keys (whole numbers from 0 to 2^53) to whole numbers, which grows as keys are added.
 export class Table {
   constructor(count) {
     let size = 1;
@@ -13,6 +14,14 @@ export class Table {
     this.mask = size - 1;
     this.keys = new Float64Array(size).fill(-1);
     this.vals = new Int32Array(size);
+    this.n = 0;
+  }
+  grow() {
+    const keys = this.keys, vals = this.vals;
+    this.mask = keys.length * 2 - 1;
+    this.keys = new Float64Array(keys.length * 2).fill(-1);
+    this.vals = new Int32Array(keys.length * 2);
+    for (let s = 0; s < keys.length; s++) if (keys[s] !== -1) { const t = this.slot(keys[s]); this.keys[t] = keys[s]; this.vals[t] = vals[s]; }
   }
   slot(key) {
     const lo = key >>> 0, hi = (key / 4294967296) >>> 0;
@@ -24,7 +33,14 @@ export class Table {
     while (this.keys[s] !== -1 && this.keys[s] !== key) s = (s + 1) & this.mask;
     return s;
   }
-  set(key, v) { const s = this.slot(key); this.keys[s] = key; this.vals[s] = v; }
+  set(key, v) {
+    let s = this.slot(key);
+    if (this.keys[s] !== key) {
+      if (++this.n * 2 > this.keys.length) { this.grow(); s = this.slot(key); }
+      this.keys[s] = key;
+    }
+    this.vals[s] = v;
+  }
   get(key) { const s = this.slot(key); return this.keys[s] === key ? this.vals[s] : -1; }
 }
 
@@ -430,9 +446,31 @@ export function closest(mesh, size) {
   };
   const table = new Table(nt * 2);
   const counts = [];
+  // A triangle goes in the buckets its plane passes through within its bounds, not every bucket of its bounds,
+  // which for a large slanted triangle would be a great many.
+  const g = [0, 0, 0], r = [[0, 0], [0, 0], [0, 0]];
   const each = (t, fn) => {
-    const [i0, i1] = span(t, 0), [j0, j1] = span(t, 1), [k0, k1] = span(t, 2);
-    for (let k = k0; k <= k1; k++) for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) fn(keyOf(i, j, k));
+    const a = ix[t * 3] * 3, b = ix[t * 3 + 1] * 3, c = ix[t * 3 + 2] * 3;
+    for (let k = 0; k < 3; k++) r[k] = span(t, k);
+    const ux = p[b] - p[a], uy = p[b + 1] - p[a + 1], uz = p[b + 2] - p[a + 2], vx = p[c] - p[a], vy = p[c + 1] - p[a + 1], vz = p[c + 2] - p[a + 2];
+    const n = [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx];
+    const d = Math.abs(n[0]) >= Math.abs(n[1]) && Math.abs(n[0]) >= Math.abs(n[2]) ? 0 : Math.abs(n[1]) >= Math.abs(n[2]) ? 1 : 2;
+    const e = (d + 1) % 3, f = (d + 2) % 3;
+    if (!(Math.abs(n[d]) > 0) || r[d][1] - r[d][0] < 2) {
+      for (let k = r[2][0]; k <= r[2][1]; k++) for (let j = r[1][0]; j <= r[1][1]; j++) for (let i = r[0][0]; i <= r[0][1]; i++) fn(keyOf(i, j, k));
+      return;
+    }
+    const off = n[0] * p[a] + n[1] * p[a + 1] + n[2] * p[a + 2];
+    for (let i = r[e][0]; i <= r[e][1]; i++) for (let j = r[f][0]; j <= r[f][1]; j++) {
+      let lo2 = Infinity, hi2 = -Infinity;
+      for (const ce of [i - 1, i]) for (const cf of [j - 1, j]) {
+        const xe = lo[e] + ce * size, xf = lo[f] + cf * size;
+        const xd = (off - n[e] * xe - n[f] * xf) / n[d];
+        lo2 = Math.min(lo2, xd); hi2 = Math.max(hi2, xd);
+      }
+      const k0 = Math.max(r[d][0], cellOf(lo2, d) - 1), k1 = Math.min(r[d][1], cellOf(hi2, d) + 1);
+      for (let k = k0; k <= k1; k++) { g[d] = k; g[e] = i; g[f] = j; fn(keyOf(g[0], g[1], g[2])); }
+    }
   };
   for (let t = 0; t < nt; t++) each(t, (key) => { let b = table.get(key); if (b < 0) { b = counts.length; counts.push(0); table.set(key, b); } counts[b]++; });
   const start = new Uint32Array(counts.length + 1);

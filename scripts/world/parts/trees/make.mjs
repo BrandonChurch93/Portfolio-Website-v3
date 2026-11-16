@@ -1,0 +1,46 @@
+// The trees, made ahead and shipped (src/pieces/world/parts/trees.ts reads them):
+//   public/world/trees.bin          the four models of a tree, each with its stored light
+//   public/world/trees-leaves.png   the atlas of leaves, bark and the shadow under a tree, with its chain of levels
+//
+//   node scripts/world/parts/trees/make.mjs [--draft]
+//
+// --draft casts fewer rays for each vertex's openness. Everything else is the same, and both are deterministic.
+import { pack } from '../../lib/pack.mjs';
+import { png } from '../../lib/png.mjs';
+import { storeBounce } from '../../lib/plan.mjs';
+import { FILES, MODELS } from '../../../../src/pieces/world/parts/trees/design.ts';
+import { paint } from './leaves.mjs';
+import { tree } from './model.mjs';
+
+const draft = process.argv.includes('--draft'), from = Date.now();
+
+const atlas = paint({ seed: 7 });
+png(`public/world/${FILES.leaves}`, atlas.width, atlas.height, atlas.data, 4);
+
+const meshes = [];
+for (let m = 0; m < MODELS; m++) {
+  const t = tree(m, { rays: draft ? 24 : 160 }), n = t.positions.length / 3, bounce = new Float32Array(n * 4);
+  for (let i = 0; i < n; i++) { for (let k = 0; k < 3; k++) bounce[i * 4 + k] = storeBounce(t.bounce[i * 4 + k]); bounce[i * 4 + 3] = t.bounce[i * 4 + 3]; }
+  // The balls are stored as the positions are (lib/pack.mjs): shares of the mesh's own cube, so one transform
+  // carries both.
+  const lo = [0, 1, 2].map((k) => Math.min(...t.positions.filter((_, i) => i % 3 === k))), hi = [0, 1, 2].map((k) => Math.max(...t.positions.filter((_, i) => i % 3 === k)));
+  const size = Math.max(hi[0] - lo[0], hi[1] - lo[1], hi[2] - lo[2]), share = (ball) => ball.map((v, i) => (i % 4 === 3 ? v / size : (v - lo[i % 4]) / size));
+  meshes.push({
+    name: `tree-${m}`,
+    positions: t.positions,
+    indices: t.indices,
+    attributes: {
+      normal: { data: t.normals, size: 3, as: 'i16' },
+      uv: { data: t.uvs, size: 2, as: 'u16' },
+      sway: { data: t.sway, size: 2, as: 'u8' },
+      light: { data: t.light, size: 4, as: 'u8' },
+      bounce: { data: bounce, size: 4, as: 'u8' },
+      clump: { data: share(t.clump), size: 4, as: 'u16' },
+      crown: { data: share(t.crown), size: 4, as: 'u16' },
+    },
+    info: t.info,
+  });
+  console.log(`tree-${m}: ${t.info.triangles} triangles, ${t.info.clumps} clumps, top ${t.info.top.toFixed(2)}`);
+}
+pack(`public/world/${FILES.mesh}`, meshes, { atlas: { coverage: atlas.coverage } });
+console.log(`trees: made in ${((Date.now() - from) / 1000).toFixed(1)} s${draft ? ' (draft)' : ''}`);

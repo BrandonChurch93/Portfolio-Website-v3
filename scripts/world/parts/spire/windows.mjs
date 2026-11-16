@@ -7,7 +7,7 @@ import { WINDOW, shown } from '../../../../src/pieces/world/parts/spire/windows.
 import { L, linear } from '../../lib/plan.mjs';
 
 // How many rooms are lit at least, and how many more where a clump is busy; how many are the warmest.
-const LIT = { least: 0.34, busy: 0.58, warm: 0.22 };
+const LIT = { least: 0.2, busy: 0.72, warm: 0.22, glow: 0.25 };
 
 export class Windows {
   constructor(seed) {
@@ -41,7 +41,7 @@ export class Windows {
         let seg;
         if (below.length && R() < 0.4) seg = below.find((b) => b.from <= c && c < b.from + b.long) ?? null;
         if (!seg) {
-          const busy = L.noise(c / 4 + mood * 3.1, r / 5 + mood * 1.7, mood, 73);
+          const busy = L.noise(c / 5 + mood * 3.1, r / 7 + mood * 1.7, mood, 73) ** 1.5;
           const lit = R() < LIT.least + LIT.busy * busy;
           const tone = R();
           seg = { from: c, long, lit, level: 0.35 + 0.65 * R() ** 1.2, warm: tone < LIT.warm ? 0.06 + 0.14 * R() : tone > 0.82 ? 0.82 + 0.16 * R() : 0.38 + 0.42 * R(), blind: R() < 0.28 ? 0.2 + 0.6 * R() : 0 };
@@ -50,7 +50,7 @@ export class Windows {
         for (let k = 0; k < long && c < cols; k++, c++) {
           let level, blind = seg.blind > 0 ? Math.min(1, Math.max(0, seg.blind + (R() - 0.5) * 0.4)) : R() < 0.1 ? 0.5 * R() : 0;
           if (seg.lit && R() > 0.08) level = R() < 0.08 ? 1 : seg.level * (0.72 + 0.4 * R());
-          else level = R() < 0.45 ? 0.1 + 0.16 * R() : 0;
+          else level = R() < LIT.glow ? 0.08 + 0.14 * R() : 0;
           if (level === 0) blind = 0;
           const warm = Math.min(1, Math.max(0, seg.warm + (R() - 0.5) * 0.16));
           const i = ((r0 + r) * this.size + c0 + c) * 3;
