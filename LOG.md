@@ -2,6 +2,16 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · The world rebuilt to picture 9 (Fable, web chat)
+
+- **What he said (20:15).** Yes: the four changes are the only ones from picture 9.
+- **What was done.** `plan.ts` re-planned to picture 9: a nearly flat top (`WORLD.top` 5200), seen from 6 degrees, the core at (0, -278, 150), a spire 250 tall, the pyramid at the front left turned 40 degrees, `towers()` (118 buildings: 15 placed by hand in `MARKS`, a low row and a taller row behind the trees, the rest by chance where there is room), `front(x)` and a belt of trees, the desert at the right end with seven dunes, the hollow wider with a thicker roof, craters and cracks placed from picture 9, two great boulders in the open bottom, the moon moved to the right and a little in front (`MOONWARD`), as picture 9 is lit. `scene.ts`: plain paving, three more building forms (`obelisk`, `hall`, `dome`), a thicker stream with a neck, gold made darker so the tone curve does not wash it pale. Two stills taken and judged against picture 9.
+- **The shader that did not compile** in the stopped round was the ground's: one bracket too many in the avenue's line of light. The avenue is gone.
+- **A tool.** `npm run blockout -- front` draws the whole world as flat shapes where the page draws them, in a second. It is how the skyline was composed against picture 9 before any still.
+- **Measured from picture 9, for whoever builds on:** planet 1185 px wide in a picture 1376 wide, so one of its pixels is 1.114 units. Lip top at 268 px down, core centre 437, core radius 90, floor top about 550, lowest rock about 700. Pyramid 255 to 475 px across, apex at 185. Spire tip at 20.
+- **Not done.** `npm run mem` is macOS only and could not be run here: run it on his Mac before this page is called safe on his iPad. No close view was rendered alone: the close crops are cut from the full still.
+- **What is next.** His verdict on the stills. Then either changes, or the agreement for the new world and the prompt for Claude Code.
+
 ## 2026-11-15 · The fourth round stopped: it was built to picture 4's top, and he wants picture 9 exactly (Fable, web chat)
 
 - **What was done.** On his go of 18:50 Fable rewrote `src/hero-blockout/plan.ts` and `scene.ts` for the fourth round and took three full stills, fixing between each. By the third still the underside read close to picture 9: a lit hollow with deep shadow, dark side masses, cracks lit from inside on the left, a cratered moonlit skin on the right, a clear grained core. The top was picture 4's layout: 43 towers on rings, a park of about 350 trees with an avenue, the pyramid set back, seven large crescent dunes.

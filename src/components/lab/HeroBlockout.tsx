@@ -11,11 +11,11 @@ import { tiers } from '../../world/tier';
 import { MetalButton } from '../MetalButton';
 import styles from './HeroBlockout.module.css';
 
-// Study 32: the hero's new world, under his words as the hero lays them out, in its third round: in color. For
-// the look of the top and of the torn rock, which he signs off before anything goes to Claude Code. ?el=16 opens
-// it from that many degrees above, ?close=city, land or rock opens it close on that part, and ?ui=0 hides the
-// switches.
-const CLOSES: readonly [Close, string][] = [['whole', 'The whole'], ['city', 'The city'], ['land', 'The land'], ['rock', 'The rock']];
+// Study 32: the hero's new world, under his words as the hero lays them out, in its fourth round: the high detail
+// prototype, built to the pictures he picked, for the look. He signs that off before the finished world is built
+// in Claude Code. ?el=16 opens it from that many degrees above, ?close=city, land, rock, left, right or debris
+// opens it close on that part, and ?ui=0 hides the switches.
+const CLOSES: readonly [Close, string][] = [['whole', 'The whole'], ['city', 'The city'], ['land', 'The land'], ['rock', 'The hollow'], ['left', 'The cracks'], ['right', 'The craters'], ['debris', 'What broke away']];
 export function HeroBlockout() {
   const host = useRef<HTMLDivElement>(null), scene = useRef<Blockout | null>(null);
   const [ready, setReady] = useState(false);
@@ -57,7 +57,7 @@ export function HeroBlockout() {
   return (
     <main className={styles.page}>
       <div className={styles.head}>
-        <p className={styles.label}>Study 32 · The hero’s world, in color</p>
+        <p className={styles.label}>Study 32 · The hero’s world, the prototype</p>
       </div>
       <div className={styles.board} style={vars}>
         <div className={styles.glow} aria-hidden="true" />
@@ -76,11 +76,12 @@ export function HeroBlockout() {
       <section className={styles.notes}>
         <h2 className={styles.notesHead}>What this is</h2>
         <ul>
-          <li>The third round: your six changes to the top, and the same model in color. For the look, which you sign off before anything goes to Claude Code.</li>
-          <li>Three steps on the scroll. At rest, the city. Then the land. Then what happened to the planet.</li>
-          <li>The switch at the foot of the screen looks closely at the city, the land or the rock. Scroll to the top of the picture after pressing it.</li>
-          <li>Lit by one low moon from the upper right with real shadows, and by the core’s own light in the hollow.</li>
-          <li>Nothing moves. Not here: the night sky, the real stream, the real core.</li>
+          <li>The fourth round: the prototype, built to the pictures you picked. For the look, which you sign off before the finished world is built in Claude Code.</li>
+          <li>Built to picture 9: the dense skyline with its gold roofs, the gold pyramid at the front left, the belt of trees, the dunes at the right, and under the land the hollow, the core, cracks lit from inside on the left, craters on the right and the smaller streams.</li>
+          <li>Three steps on the scroll. At rest, the skyline. Then the land. Then what happened to the planet.</li>
+          <li>The switch at the foot of the screen looks closely at one part. Scroll to the top of the picture after pressing it.</li>
+          <li>One fixed light: the moon, from behind the world at the upper right, with real shadows. The core lights the hollow. The cursor is a glint on polished metal and nothing more.</li>
+          <li>Nothing moves. Not here: the night sky, the real stream, anything in motion.</li>
         </ul>
       </section>
       {ui && (

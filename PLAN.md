@@ -159,6 +159,7 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **His answers (Nov 15, 18:48):** as many gold roofs as picture 9. The debris made new for this world, low and caught in gravity, not picture 6's. The light left to Fable: the hero's own moon, fixed, with the cursor as a glint. He asked how far to build in the web chat: Fable recommends a high detail prototype in stills for the look, then Claude Code for the finished world and everything that moves. **No code until he says go**
 - **Go (Nov 15, 18:50):** Fable is building the fourth round of Study 32 at `/lab/hero-blockout`: the high detail prototype in stills, to pictures 9 and 4. He struck "no two pieces move alike": the debris is one scene. His test for it is a premium film or a AAA game
 - **Stopped and corrected (Nov 15, 20:10):** he found the fourth round's layout different from picture 9. Picture 9 is the target for the whole world, top and underside, with only the agreed changes (`BRIEF.md`, Hero, "Picture 9 is the target, whole"). The fourth round's code is kept on `kept/hero-round-4-before-picture-9` and is not on `main`. His yes to the list of changes came at 20:15. Fable is re-planning the top, the planet's proportions and the view to picture 9, then stills, then his sign off.
+- **Rebuilt to picture 9 (Nov 15, 20:55):** the fourth round is at `/lab/hero-blockout`, with stills in `reference/studies/65-*`. Waiting on his verdict (`BRIEF.md`, Hero, "The fourth round as rebuilt to picture 9").
 
 
 ## Phase 0 · Foundation

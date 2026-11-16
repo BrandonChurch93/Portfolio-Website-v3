@@ -1,17 +1,18 @@
-// Study 32: the hero's world, started again from nothing, as a grey blockout. He set the built world and both
-// worlds of Study 31 aside and asked for a new model of the same idea: a planet torn open, its core showing, the
-// stream falling from the core, what broke away round it. Five pictures he had made (reference/concept/) set the
-// look. This settles what a picture cannot: the planet's real shape and depth, the camera, the sizes of what stands
-// on it, where the core hangs, and how all of it sits under his words. Nothing here is from the old plan.
+// Study 32: the hero's world, started again from nothing. He set the built world and both worlds of Study 31 aside
+// and asked for a new model of the same idea: a planet torn open, its core showing, the stream falling from the
+// core, what broke away round it. Pictures he had made (reference/concept/) set the look. This is the world as
+// numbers and descriptions: its shape and depth, the camera, the sizes of what stands on it, where the core hangs,
+// and how all of it sits under his words.
 //
-// Its second round, after his look at the first. The planet is ripped apart and not cut into. The hero is seen in
-// three steps on the scroll: the city alone at rest, then the land with its desert and its trees, then the
-// catastrophe. So the far half of the top is city and the near half, which is under the foot of the screen at rest,
-// is where the open land lies.
+// Its fourth round, built to the pictures he picked on Nov 15. The top is picture 4's: about forty large towers
+// standing apart, the pyramid at the front left, trees in rows between the towers and the land's front edge, an
+// avenue to that edge, and crescent dunes at the front right. Everything under the land is picture 9's: a deep
+// hollow under an overhanging roof with the core hanging free in it, a ledge under the core, the planet's outer
+// surface kept at the left and the right, with craters on the right, which the moon lights, and cracks lit from
+// inside on the left, which it does not. Smaller streams leave the torn rock. What broke away is made new: it
+// hangs low, under and round the bottom of the planet, as one scene.
 //
-// Its third round made his six changes to the top (city and its works down both sides of the avenue, a smaller
-// desert that is whole and has no trees round it, no bare ground, kinds of plant) and took the model into color,
-// which is scene.ts's part.
+// The hero is seen in three steps on the scroll: the skyline at rest, then the land, then the catastrophe.
 //
 // Units, one a CSS pixel on a screen 1460 wide. The origin is the top of the planet, at the spire's foot. x to the
 // visitor's right, y up, z toward the visitor.
@@ -19,40 +20,53 @@
 export const D2R = Math.PI / 180;
 
 // The planet. As wide as before, which he called perfect. Its top is a gentle dome, the top of a far larger
-// sphere, so the land curves and is not a table: he found a rounder top too round. Under the rim its body was a
-// deep bowl, half a small planet, and what is left of that bowl is what rock() describes.
-export const WORLD = { half: 660, top: 1900, deep: 560 } as const;
+// sphere, so the land curves and is not a table. Under the rim its body is a deep bowl that is fuller than a half
+// sphere toward its foot (full is how square its outline is: 2 is an ellipse), as the picture's is.
+export const WORLD = { half: 660, top: 5200, deep: 540, full: 2.6 } as const;
 export const RIM = WORLD.top - Math.sqrt(WORLD.top ** 2 - WORLD.half ** 2);
 export const dome = (x: number, z: number): number => Math.sqrt(Math.max(1, WORLD.top ** 2 - x * x - z * z)) - WORLD.top;
+// How far out of the planet's body a place is: 1 on its outer surface, under 1 inside it.
+export function shell(x: number, y: number, z: number): number {
+  const r = Math.hypot(x, z) / WORLD.half, d = Math.max(0, -(y + RIM)) / WORLD.deep;
+  return (r ** WORLD.full + d ** WORLD.full) ** (1 / WORLD.full);
+}
+// A place on the planet's outer surface: so far round from straight toward the visitor (to the visitor's right is
+// over 0), and so far down from the rim, 0 to 1.
+export function skinAt(th: number, t: number): [number, number, number] {
+  const r = WORLD.half * (1 - t ** WORLD.full) ** (1 / WORLD.full);
+  return [r * Math.sin(th), -RIM - WORLD.deep * t, r * Math.cos(th)];
+}
 
-// The core: a ball of the stream's light hanging low in the torn hollow, well under the city, on the hero's
-// center line. He found it wrong directly under the ground.
-export const CORE = { at: [0, -436, 60] as const, r: 84 } as const;
+// The core: a ball of the stream's light hanging free in the hollow, on the hero's center line. Forward of the
+// planet's middle, so the roof of the hollow does not hide it from above.
+export const CORE = { at: [0, -278, 150] as const, r: 100 } as const;
 
 // The spire: the tallest thing by far, on the center line, with one thin ring near its top, tilted as Saturn's is.
-export const SPIRE = { tall: 330, foot: 48, ring: { r: 66, thick: 2.6, up: 0.79, tilt: [9, 17] as const } } as const;
-// Nothing else stands taller than this.
-export const TALLEST = 216;
+export const SPIRE = { tall: 250, foot: 38, ring: { r: 54, thick: 2.4, up: 0.74, tilt: [9, 17] as const } } as const;
 // The open court round the spire's foot.
-export const COURT = 88;
-// The pyramid: in the city, among the buildings, to the left of the spire.
-export const PYRAMID = { x: -268, z: 78, base: 190, tall: 122, court: 134 } as const;
-// The avenue from the spire's court toward the visitor, which ends in the air where the ground is torn away.
-export const AVENUE = { half: 28, from: 60 } as const;
-// A boulevard's half width and a street's.
-export const BOULEVARD = 11;
-export const STREET = 4.5;
+export const COURT = 56;
+// The pyramid: at the front left, in front of the towers, on a square court of its own. Polished gold.
+export const PYRAMID = { x: -360, z: 392, base: 178, tall: 128, court: 98, turn: 40 } as const;
+// A place on the map, as the pyramid has it: across and along its own sides, from its middle.
+export function pyramidal(x: number, z: number): [number, number] {
+  const c = Math.cos(PYRAMID.turn * D2R), k = Math.sin(PYRAMID.turn * D2R), rx = x - PYRAMID.x, rz = z - PYRAMID.z;
+  return [rx * c - rz * k, rx * k + rz * c];
+}
 
-// How it is looked at: from straight in front and from above, by so many degrees, from far off. The built world was
-// seen from 4.5, which shows a skyline and none of the land. The pictures are seen from about 10 to 15.
-export const VIEW = { el: [8, 12, 16] as const, rest: 12, back: 9000 } as const;
-// Its host on the page: this wide whatever the screen, this tall, with its top this far over the spire's tip.
-export const HOST = { wide: 1460, tall: 1480, over: 80 } as const;
+// How it is looked at: from straight in front and from above, by so many degrees, from far off.
+export const VIEW = { el: [4, 6, 9] as const, rest: 6, back: 9000 } as const;
+// Its host on the page: this wide whatever the screen, this tall, with its top this far over the spire's tip. It
+// is tall enough to hold what broke away under the planet.
+export const HOST = { wide: 1460, tall: 1520, over: 80 } as const;
 // His words, as the hero page sets them (src/hero/board.ts).
 export const WORDS = { w: 960, tall: 330, least: 90, third: 0.33, rise: 146, gap: 20 } as const;
 
-// The moon, from the visitor's upper right, as it is in the page's sky: the one light, whose shadows make the world.
-export const MOONWARD = [0.8, 0.46, 0.08] as const;
+// The moon: the one light that shapes the world, and it does not follow the cursor. It is the moon in the page's
+// own sky, at the visitor's upper right, and it lights the world as picture 9's does: from the right and a little
+// from in front. So the planet's cratered right side is lit and every crater on it has a shadow, the hollow faces
+// of the dunes, which look to the visitor's left, are in shadow, the planet's left side is dark for its cracks to
+// glow on, and the hollow is left to the core's light.
+export const MOONWARD = [0.84, 0.46, 0.2] as const;
 
 // Where a point is drawn in the host: how far to the right of its center line, and how far down from its top.
 export function drawn(x: number, y: number, z: number, el: number = VIEW.rest): [number, number] {
@@ -87,45 +101,69 @@ export function seeded(seed: number): () => number {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// The planet, ripped apart.
+// The planet, torn open.
 //
 // Rock breaks into pieces, and a piece is either still there or gone. So the planet is divided into great pieces,
 // each the part of space nearest one point, and each is kept whole or taken whole: every face of what is left is a
-// face where two pieces parted, flat and large, and every edge is sharp. That is what a cut cannot look like. A
-// smooth description of what survives (whole) only chooses which pieces stay.
+// face where two pieces parted, flat and large, and every edge is sharp. A plain description of what survives
+// (whole) only chooses which pieces stay.
 
-// How much of the planet survives at a place: over 0 where it does.
+// What is taken out of the planet's front, as picture 9 has it.
 const TEAR = {
-  // How deep the rock still hangs: at its deepest on the visitor's right, which the moon lights, and its shallowest
-  // on the left.
-  under: -540, lean: -110, wave: 44, rough: 76,
-  // The hollow round the core: a chamber, a mouth that opens it to the visitor under a roof of crust (where its
-  // middle is, how high its roof is, how far it reaches across and back), and a shaft that opens it below.
-  chamber: [0, -430, 130, 300, 300, 300] as const,
-  mouth: [0, -168, 420, 340, 330] as const,
-  shaft: [110, 240, -400] as const,
-  // Where the land ends, measured out from the middle: it is bitten back unevenly all the way round, and most at
-  // the front over the hollow.
-  rim: 648, bite: 300, front: 96,
+  // The hollow: how far back it goes, where its mouth is, how far it reaches each side of the center line at its
+  // back and at its mouth, and how far its middle is off the center line.
+  back: -230, mouth: 560, wide: [270, 410] as const, lean: 6,
+  // It narrows as it goes down, by this share at the planet's foot: the planet's sides are whole.
+  narrow: 0.4,
+  // Its roof, which is the land's own front edge left overhanging: how thick at its lip, and how much more at the
+  // hollow's back.
+  roof: [78, 20] as const,
+  // The ledge under the core, at the hollow's back: its top, its foot, and how far forward it comes.
+  ledge: { top: -402, foot: -470, front: 70 },
+  // Under the ledge the planet's bottom is gone.
+  pit: { half: 255, back: -470 },
+  // The hanging mass at the visitor's right is the shorter one: snapped off.
+  snap: { from: 520, under: -560 },
+  // Where the land ends, measured out from the middle. It is whole all the way round, and bitten back at the
+  // front, over the hollow.
+  rim: 652, bite: 118, biteAt: -0.05, biteWide: 0.42, nick: 12,
 } as const;
-// How far inside the land's bitten edge a place is.
+// How much a place round the rim is part of the broken front: 1 over the hollow, 0 where the rim is whole. The
+// desert is whole: nothing is bitten out of it and no crack crosses it.
+export function frontal(x: number, z: number): number {
+  const th = Math.atan2(x, z);
+  return ramp(0.03, 0.4, Math.exp(-(((th - TEAR.biteAt) / (1.15 * TEAR.biteWide)) ** 2))) * (1 - ramp(-0.2, 0.05, sands(x, z)));
+}
+// How far inside the land's edge a place is.
 function within(x: number, z: number): number {
   const th = Math.atan2(x, z);
-  // The desert is whole: nothing is bitten out of it and no crack crosses it. He found broken ground across its
-  // largest dune.
-  return TEAR.rim + TEAR.bite * (noise(2.3 * Math.sin(th) + 5, 2.3 * Math.cos(th) + 5, 0, 37) - 0.5) - TEAR.front * Math.exp(-((th / 0.42) ** 2)) - Math.hypot(x, z) + 230 * ramp(-0.22, 0.12, sands(x, z));
+  const front = TEAR.bite * Math.exp(-(((th - TEAR.biteAt) / TEAR.biteWide) ** 2)) * (0.55 + 0.9 * noise(3.1 * Math.sin(th) + 5, 3.1 * Math.cos(th) + 5, 0, 37));
+  const nick = Math.max(0, TEAR.nick * 2 * (noise(7 * Math.sin(th) + 9, 7 * Math.cos(th) + 9, 0, 39) - 0.5));
+  return TEAR.rim - (front + nick) * frontal(x, z) - Math.hypot(x, z);
 }
+// How far each side of its middle the hollow reaches at a place, and where its ceiling is.
+function reach(x: number, y: number, z: number): number {
+  const open = TEAR.wide[0] + (TEAR.wide[1] - TEAR.wide[0]) * Math.min(1.2, Math.max(0, (z - TEAR.back) / (TEAR.mouth - TEAR.back)));
+  return open * (1 - TEAR.narrow * ramp(-150, -600, y)) + 30 * (noise(y / 140 + 3, z / 140, x > TEAR.lean ? 7 : 1, 31) - 0.5);
+}
+const ceiling = (x: number, z: number): number => dome(x, z) - TEAR.roof[0] - TEAR.roof[1] * ramp(440, -80, z) - 26 * (noise(x / 130 + 4, 2, z / 130, 33) - 0.5);
+// The roof's own underside, as a surface: over 0 in the roof. Its great pieces would leave the lip a row of lumps.
+function under(x: number, y: number, z: number): number {
+  if (y > -40 || y < -260) return 48;
+  const ax = Math.abs(x - TEAR.lean), inside = Math.min(reach(x, y, z) - 34 - ax, z - TEAR.back - 40);
+  return inside < 0 ? 48 : Math.max(y - ceiling(x, z) + 9 * (noise(x / 30, y / 30, z / 30, 77) - 0.5), 14 - inside);
+}
+// How much of the planet survives at a place: over 0 where it does.
 function whole(x: number, y: number, z: number): number {
-  const th = Math.atan2(x, z), sn = Math.sin(th), cs = Math.cos(th);
-  let t = y - (TEAR.under + TEAR.lean * sn + TEAR.wave * Math.cos(2 * th + 0.9) + TEAR.rough * (noise(x / 240 + 7, 0, z / 240, 31) - 0.5));
-  const c = TEAR.chamber, m = TEAR.mouth;
-  t = Math.min(t, (Math.hypot((x - c[0]) / c[3], (y - c[1]) / c[4], (z - c[2]) / c[5]) - 1) * c[3]);
-  t = Math.min(t, Math.max((Math.hypot((x - m[0]) / m[3], (z - m[2]) / m[4]) - 1) * m[3], y - m[1]));
-  t = Math.min(t, Math.max(Math.hypot(x, z - TEAR.shaft[0]) - TEAR.shaft[1], y - TEAR.shaft[2]));
-  if (y > -260) t = Math.min(t, within(x, z));
-  // The bowl's skin is stripped in patches, more of it the further down.
-  const k = Math.hypot(x / WORLD.half, (y + RIM) / WORLD.deep, z / WORLD.half);
-  return Math.min(t, (0.93 + 0.18 * noise(2 * sn + 3, y / 150, 2 * cs + 3, 43) + 0.06 * ramp(-420, -150, y) - k) * WORLD.deep);
+  const ax = Math.abs(x - TEAR.lean), hw = reach(x, y, z), ceil = ceiling(x, z);
+  const back = TEAR.back + 60 * (x / 280) ** 2;
+  const cave = Math.max(ax - hw, y - ceil, back - z, Math.min(TEAR.ledge.top - y, TEAR.ledge.front - z));
+  const pit = Math.max(ax - TEAR.pit.half - 0.1 * (z - TEAR.pit.back), y - TEAR.ledge.foot, TEAR.pit.back - z);
+  const snap = Math.max(TEAR.snap.from - x, y - TEAR.snap.under - 44 * (noise(x / 90, 5, z / 90, 35) - 0.5), -120 - z);
+  let t = Math.min(cave, pit, snap, Math.hypot(x - CORE.at[0], y - CORE.at[1], z - CORE.at[2]) - CORE.r - 34);
+  // Round the rest of the rim the planet ends at its own outer surface, which is whole.
+  if (y > -230 && frontal(x, z) > 0) t = Math.min(t, within(x, z));
+  return t;
 }
 
 interface Lattice { sx: number; sy: number; sz: number; ox: number; oy: number; oz: number; nx: number; ny: number; nz: number; p: Float32Array; h: Float32Array }
@@ -166,11 +204,11 @@ const apart = (L: Lattice, a: number, b: number): number => Math.hypot(L.p[a * 3
 // the planet, 1 at the tear), and how far it has shifted.
 // A piece opens and shifts only where it is next to the break. Under the land it does so only at the land's edge:
 // the city's ground is whole, and cracked where it ends.
-const SLAB = { size: [186, 150, 186] as const, loose: 56, gap: 6, shift: 13, far: [18, 130] as const, top: -86, edge: [14, 104] as const } as const;
+const SLAB = { size: [112, 82, 112] as const, loose: 30, gap: 10, shift: 11, far: [6, 44] as const, top: -64, edge: [14, 104] as const } as const;
 // Smaller pieces along the break: some knocked out of a slab's face, some still clinging to it.
-const CHIP = { size: [50, 40, 50] as const, out: [-22, -2, 0.2] as const, on: [2, 20, 0.12] as const } as const;
-// Long pieces left hanging from the torn underside, each tapering to a point.
-const HANG = { size: [84, 300, 84] as const, share: 0.4, clear: 170, blunt: 4, taper: 24, least: 17 } as const;
+const CHIP = { size: [56, 44, 56] as const, out: [-24, -2, 0.26] as const, on: [2, 22, 0.2] as const } as const;
+// Long pieces left hanging from the torn undersides, each tapering to a blunt end.
+const HANG = { size: [70, 190, 70] as const, share: 0.3, clear: 190, blunt: 4, taper: 22, least: 15 } as const;
 let BIG: Lattice | null = null, KEPT: Uint8Array, OPEN: Float32Array, MOVE: Float32Array, SOLID: Uint8Array;
 let SMALL: Lattice, CUT: Uint8Array, CLING: Uint8Array, LONG: Lattice, HUNG: Uint8Array, NEARHUNG: Uint8Array;
 // The slabs alone: under 0 inside one that is still there. It leaves which slab it found in IN.
@@ -182,9 +220,9 @@ function slabs(x: number, y: number, z: number): number {
   if (IN2 >= 0) {
     let gap = SLAB.gap * Math.max(OPEN[IN], OPEN[IN2]);
     // No crack comes up through the city's ground, but at the land's edge.
-    if (gap > 0.4 && y > SLAB.top - 40) gap *= Math.max(ramp(-18, -90, y - dome(x, z)), 1 - ramp(SLAB.edge[0], SLAB.edge[1], within(x, z)));
+    if (gap > 0.4 && y > SLAB.top - 40) gap *= Math.max(ramp(-18, -90, y - dome(x, z)), frontal(x, z) * (1 - ramp(SLAB.edge[0], SLAB.edge[1], within(x, z))));
     // A crack opens and closes along its length.
-    if (gap > 0.4) f = Math.max(f, gap * (0.25 + 1.5 * noise(x / 70, y / 70, z / 70, 67)) - (DIN2 - DIN) / (2 * apart(L, IN, IN2)));
+    if (gap > 0.4) f = Math.max(f, gap * (0.3 + 1.4 * noise(x / 70, y / 70, z / 70, 67)) - (DIN2 - DIN) / (2 * apart(L, IN, IN2)));
   }
   return f;
 }
@@ -195,7 +233,7 @@ function broken(): void {
     const t = whole(L.p[a * 3], L.p[a * 3 + 1], L.p[a * 3 + 2]) + SLAB.loose * (L.h[a] - 0.5);
     if (t <= 0) continue;
     KEPT[a] = 1;
-    OPEN[a] = L.p[a * 3 + 1] > SLAB.top ? 1 - ramp(SLAB.edge[0], SLAB.edge[1], within(L.p[a * 3], L.p[a * 3 + 2])) : 1 - ramp(SLAB.far[0], SLAB.far[1], t);
+    OPEN[a] = L.p[a * 3 + 1] > SLAB.top ? frontal(L.p[a * 3], L.p[a * 3 + 2]) * (1 - ramp(SLAB.edge[0], SLAB.edge[1], within(L.p[a * 3], L.p[a * 3 + 2]))) : 1 - ramp(SLAB.far[0], SLAB.far[1], t);
     for (let q = 0; q < 3; q++) MOVE[a * 3 + q] = (hash(a, q, 7, 131) - 0.5) * 2 * SLAB.shift * OPEN[a];
   }
   for (let k = 1; k < L.nz - 1; k++) for (let j = 1; j < L.ny - 1; j++) for (let i = 1; i < L.nx - 1; i++) {
@@ -218,7 +256,7 @@ function broken(): void {
     if (H.h[a] > HANG.share || slabs(x, y + 0.42 * HANG.size[1], z) >= -4 || slabs(x, y - 0.2 * HANG.size[1], z) <= 4) continue;
     // None hangs into the core, or between the core and the visitor.
     if (Math.hypot(x - CORE.at[0], z - CORE.at[2]) < HANG.clear && y - 0.5 * HANG.size[1] < CORE.at[1] + CORE.r + 50) continue;
-    if (z > CORE.at[2] && Math.abs(x - CORE.at[0]) < CORE.r + 50) continue;
+    if (z > CORE.at[2] && Math.abs(x - CORE.at[0]) < CORE.r + 60) continue;
     HUNG[a] = 1;
   }
   for (let k = 1; k < H.nz - 1; k++) for (let j = 1; j < H.ny - 1; j++) for (let i = 1; i < H.nx - 1; i++) {
@@ -230,17 +268,46 @@ function broken(): void {
 const cell = (L: Lattice, x: number, y: number, z: number): number =>
   Math.min(L.nx - 2, Math.max(1, Math.floor(x / L.sx) - L.ox)) + L.nx * (Math.min(L.ny - 2, Math.max(1, Math.floor(y / L.sy) - L.oy)) + L.ny * Math.min(L.nz - 2, Math.max(1, Math.floor(z / L.sz) - L.oz)));
 
+// The craters on the planet's outer surface, at the visitor's right, where the moon rakes across it: a bowl with
+// a flat floor and a raised rim. The largest are placed (how far round in degrees, how far down, how large), one
+// of them where the tear cuts through it, which shows they are older than the break. The rest are scattered.
+export interface Crater { at: readonly [number, number, number]; r: number; deep: number }
+const BOWLS: readonly (readonly [number, number, number])[] = [
+  [59, 0.4, 60], [70, 0.79, 48], [70, 0.6, 24], [46, 0.26, 17], [74, 0.17, 14], [86, 0.26, 12], [84, 0.5, 20], [50, 0.7, 14], [92, 0.66, 16],
+];
+let PITS: Crater[] | null = null;
+export function craters(): Crater[] {
+  if (PITS) return PITS;
+  const r = seeded(2207), out: Crater[] = BOWLS.map(([th, t, R]) => ({ at: skinAt(th * D2R, t), r: R, deep: 0.4 * R }));
+  for (let tries = 0; out.length < BOWLS.length + 12 && tries < 500; tries++) {
+    const at = skinAt((38 + 72 * r()) * D2R, 0.08 + 0.84 * r()), R = 10 + 8 * r();
+    if (out.every((c) => Math.hypot(c.at[0] - at[0], c.at[1] - at[1], c.at[2] - at[2]) > (c.r + R) * 1.7)) out.push({ at, r: R, deep: 0.36 * R });
+  }
+  return PITS = out;
+}
+// How far the outer surface is moved by them at a place: under 0 into the planet, over 0 at a rim.
+function pitted(x: number, y: number, z: number): number {
+  let p = 0;
+  for (const c of craters()) {
+    const d = Math.hypot(x - c.at[0], y - c.at[1], z - c.at[2]) / c.r;
+    if (d < 1.5) p += -c.deep * (1 - ramp(0.5, 1, d)) + 0.2 * c.deep * Math.exp(-(((d - 1.04) / 0.13) ** 2));
+  }
+  return p;
+}
+
 // The planet's body under its land: under 0 inside the rock.
-const WARP = 16, FINE = 4.5;
+const WARP = 9, FINE = 3;
 export function rock(x: number, y: number, z: number): number {
   if (!BIG) broken();
   // Its top lies just under the land, dunes and all, so the land's sheet never stands clear of it.
-  const bare = dome(x, z), k = Math.hypot(x / WORLD.half, (y + RIM) / WORLD.deep, z / WORLD.half);
-  if ((k - 1) * WORLD.deep > 48 || y - bare > 104) return 48;
+  const bare = dome(x, z), k = shell(x, y, z), out = (k - 1) * WORLD.deep;
+  if (out > 48 || y - bare > 104) return 48;
   const top = y - (bare - 3 + (y > bare - 14 ? land(x, z) : 0));
   if (top > 48) return 48;
-  const skin = (noise(x / 170, y / 170, z / 170, 3) - 0.5) * 30;
-  if (SOLID[cell(BIG as Lattice, x, y, z)]) return Math.max(-48, (k - 1) * WORLD.deep + skin, top);
+  const skin = (noise(x / 170, y / 170, z / 170, 3) - 0.5) * 16 - (x > 60 && out > -70 && y < -RIM + 30 ? pitted(x, y, z) : 0);
+  // The core touches nothing.
+  const clear = CORE.r + 16 - Math.hypot(x - CORE.at[0], y - CORE.at[1], z - CORE.at[2]);
+  if (SOLID[cell(BIG as Lattice, x, y, z)]) return Math.max(-48, out + skin, top, clear);
   // The pieces' faces are not dead flat.
   const fine = FINE * 2 * (noise(x / 46, y / 46, z / 46, 59) - 0.5);
   const wx = x + WARP * 2 * (noise(x / 210, y / 210, z / 210, 41) - 0.5) + fine, wy = y + WARP * 2 * (noise(x / 210 + 9, y / 210, z / 210, 47) - 0.5) - fine, wz = z + WARP * 2 * (noise(x / 210, y / 210 + 9, z / 210, 53) - 0.5) + fine;
@@ -261,47 +328,57 @@ export function rock(x: number, y: number, z: number): number {
       f = Math.min(f, Math.min(HANG.least, HANG.blunt + HANG.taper * (0.7 + 0.9 * LONG.h[IN] / HANG.share) * u ** 1.4) - edge);
     }
   }
+  // The land's broken front edge follows the line it broke along, and not the outline of whichever great piece is
+  // under it.
+  if (y > -230) { const fr = frontal(x, z); if (fr > 0) f = Math.max(f, 12 * (noise(x / 34, y / 34, z / 34, 73) - 0.5) - within(x, z) - 60 * (1 - fr)); }
+  f = Math.max(f, -under(x, y, z));
   // A piece that has opened has also shifted, so the skin it carries no longer lines up with its neighbour's. The
   // top does not move: the land lies on it.
-  let b = (k - 1) * WORLD.deep + skin;
-  if (mine >= 0 && OPEN[mine] > 0) b = (Math.hypot((x - MOVE[mine * 3]) / WORLD.half, (y - MOVE[mine * 3 + 1] + RIM) / WORLD.deep, (z - MOVE[mine * 3 + 2]) / WORLD.half) - 1) * WORLD.deep + skin;
-  return Math.max(-48, Math.min(48, Math.max(f, b, top)));
+  let b = out + skin;
+  if (mine >= 0 && OPEN[mine] > 0) b = (shell(x - MOVE[mine * 3], y - MOVE[mine * 3 + 1], z - MOVE[mine * 3 + 2]) - 1) * WORLD.deep + skin;
+  return Math.max(-48, Math.min(48, Math.max(f, b, top, clear)));
 }
 
 // ---------------------------------------------------------------------------------------------------------------
 // The land.
 
-// The desert: how much of it a place on the map is, 0 to 1. At the front right, on the near half of the top, so it
-// is under the foot of the screen at rest and comes up on the first scroll. Twice made smaller: it was a third of
-// the land, and then reached the avenue. Now its left edge stands off the avenue, as he drew it, and the sand runs
-// straight up to the city with no trees between. Where it lies, how far it reaches along and across, and how far
-// it is turned.
-export const DESERT = { at: [384, 414] as const, r: [262, 212] as const, turn: -20 } as const;
+// The desert: how much of it a place on the map is, 0 to 1. Picture 9's: the right end of the top only, from the
+// land's front edge round to the planet's right rim, with trees and a few buildings behind it.
+export const DESERT = { at: [530, 240] as const, r: [285, 440] as const } as const;
 function sands(x: number, z: number): number {
-  const c = Math.cos(DESERT.turn * D2R), s = Math.sin(DESERT.turn * D2R), rx = x - DESERT.at[0], rz = z - DESERT.at[1];
-  return 1 - Math.hypot((rx * c + rz * s) / DESERT.r[0], (-rx * s + rz * c) / DESERT.r[1]) + 0.14 * (noise(x / 110, 0, z / 110, 7) - 0.5);
+  return 1 - Math.hypot((x - DESERT.at[0]) / DESERT.r[0], (z - DESERT.at[1]) / DESERT.r[1]) + 0.12 * (noise(x / 110, 0, z / 110, 7) - 0.5);
 }
-export const desert = (x: number, z: number): number => ramp(0, 0.1, sands(x, z));
-// The dunes: each a crescent with a long back to the wind and a steep face away from it, which the moon leaves in
-// shadow. Where it is, how long its back is, how wide it is and how tall. The largest stands whole in the middle,
-// and the ones nearest the city are the low ones, so no crest stands into the first screen.
-const WIND = [-0.83, 0.56] as const, SLIP = 0.62;
-const DUNES: readonly (readonly [number, number, number, number, number])[] = [
-  [398, 432, 150, 118, 46], [300, 484, 110, 88, 30], [486, 364, 120, 94, 36], [330, 352, 96, 76, 20], [474, 504, 100, 80, 28],
-  [244, 424, 80, 62, 15], [546, 300, 84, 66, 18], [384, 562, 96, 76, 24], [424, 282, 80, 60, 13],
+export const desert = (x: number, z: number): number => ramp(0, 0.08, sands(x, z));
+// The dunes: picture 9's place and size, and as good as picture 4's, which is the one change he asked for. Each
+// has a low wide back to the wind, a sharp crest, and a steep hollow face away from the wind that falls into a
+// hollow lower than the sand round it. The wind blows from the moon's side toward the visitor's left and a little
+// toward the visitor, so every hollow face is turned to the visitor and lies in the moon's shadow: that shadow is
+// what makes a dune. Where each is, how far it reaches across the wind, how long its back is, how tall it is, and
+// how far its wind is turned, in degrees, since no two lie quite the same way.
+const WIND = [-0.862, 0.507] as const, SLIP = 0.66, DIP = 0.42;
+const DUNES: readonly (readonly [number, number, number, number, number, number])[] = [
+  [380, 440, 92, 130, 30, 6], [468, 300, 100, 140, 34, -8], [545, 190, 86, 120, 28, 4], [588, 70, 74, 110, 24, -6], [425, 160, 70, 100, 22, 10], [335, 310, 64, 96, 20, -4], [520, -40, 66, 100, 20, 8],
 ];
 export function dunes(x: number, z: number): number {
-  let h = 0;
-  for (const [cx, cz, len, wid, tall] of DUNES) {
-    const rx = x - cx, rz = z - cz, u = rx * WIND[0] + rz * WIND[1], v = -rx * WIND[1] + rz * WIND[0], side = v / wid;
+  let up = 0, down = 0;
+  for (const [cx, cz, wid, len, tall, turn] of DUNES) {
+    const ca = Math.cos(turn * D2R), sa = Math.sin(turn * D2R), wx = WIND[0] * ca - WIND[1] * sa, wz = WIND[0] * sa + WIND[1] * ca;
+    const rx = x - cx, rz = z - cz, u = rx * wx + rz * wz, v = -rx * wz + rz * wx, side = v / wid;
     if (Math.abs(side) >= 1) continue;
-    const top = tall * (1 - side * side), s = u - 0.42 * len * side * side;
-    h = Math.max(h, s <= 0 ? top * ease(Math.max(0, 1 + s / len)) ** 1.15 : Math.max(0, top - SLIP * s));
+    const env = (1 - side * side) ** 0.9, s = u - 0.62 * wid * side * side, top = tall * env;
+    if (s <= 0) { const t = -s / (len * (0.45 + 0.55 * env)); if (t < 1) up = Math.max(up, top * (1 - t * t) ** 2); continue; }
+    const foot = (top * (1 + DIP)) / SLIP;
+    if (s < foot) { const h = top - SLIP * s; if (h > 0) up = Math.max(up, h); else down = Math.min(down, h); }
+    else { const t = (s - foot) / (0.9 * wid * env + 1); if (t < 1) down = Math.min(down, -DIP * top * (1 - t) ** 2); }
   }
-  return h + 5 * noise(x / 90, 1, z / 90, 9);
+  return up + down + 5 * noise(x / 130, 1, z / 130, 9) - 2;
 }
 export const land = (x: number, z: number): number => desert(x, z) * dunes(x, z);
 export const ground = (x: number, z: number): number => dome(x, z) + land(x, z);
+// Where the city's front is at a place across the top. Between it and the land's edge is a belt of trees on
+// grass: picture 9 has no park and no avenue.
+export const front = (x: number): number => 322 - 0.00042 * x * x;
+export const park = (x: number, z: number): number => ramp(-10, 10, z - front(x)) * (1 - desert(x, z));
 
 // Where the land ends: land stands only where there is rock under it. Measured once, on a grid, and read between
 // its points. edge is over 0 on the land and under 0 off it, and crosses 0 where the land ends, which is what the
@@ -333,272 +410,236 @@ export const standing = (x: number, z: number, pad = 0): boolean => inland(x, z)
 // ---------------------------------------------------------------------------------------------------------------
 // The city.
 //
-// Not one grid. It grew as a real city does, in districts, each with its own street angle, so from the page's view
-// no two line up. The boulevards are where two districts meet. Its skyline falls from the spire to each side,
-// unevenly, with a second and lower peak at the right. It is tall on the far side of the planet, so tops stand
-// behind tops, and low on the near side, so the land is seen laid out once the page is scrolled.
-export interface District { name: string; x: number; z: number; turn: number; pitch: number }
-export const DISTRICTS: readonly District[] = [
-  { name: 'crown', x: 12, z: -34, turn: 14, pitch: 76 },
-  { name: 'temple', x: -292, z: 98, turn: -24, pitch: 62 },
-  { name: 'west', x: -456, z: -196, turn: 33, pitch: 64 },
-  { name: 'north', x: -128, z: -404, turn: -8, pitch: 70 },
-  { name: 'heights', x: 276, z: -302, turn: 24, pitch: 72 },
-  { name: 'east', x: 506, z: -36, turn: -36, pitch: 62 },
-  { name: 'gardens', x: -366, z: 404, turn: 47, pitch: 58 },
-  { name: 'mall', x: -112, z: 318, turn: -11, pitch: 58 },
-  { name: 'shore', x: 300, z: 196, turn: 19, pitch: 58 },
+// Picture 9's: dense, tall and low packed together, across the left four fifths of the top, seen nearly level, so
+// it reads as a skyline. The ones that make that skyline are placed by hand where picture 9 has them: the tall
+// tower with a gold point left of the spire, the stepped gold crown and the gold sun disc right of it, gold caps
+// further right, and one behind the dunes. Where each stands, how wide and deep it is, how tall, what form it is,
+// what its roof is made of, and how far it is turned, in degrees. The rest fill the city's ground: a row of low
+// ones behind the trees along its front, a taller row behind those, and the others wherever there is room, tallest
+// round the spire and lower toward each end. Six roofs are polished gold, as many as picture 9 has.
+export type Form = 'deco' | 'slab' | 'point' | 'step' | 'disc' | 'twin' | 'fin' | 'obelisk' | 'hall' | 'dome';
+export type Roof = 'gold' | 'bronze' | 'plain';
+export interface Building { x: number; z: number; w: number; d: number; tall: number; turn: number; form: Form; roof: Roof; seed: number }
+const MARKS: readonly (readonly [number, number, number, number, number, Form, Roof, number])[] = [
+  [-237, 60, 30, 30, 196, 'obelisk', 'gold', 6], [84, 70, 38, 36, 170, 'step', 'gold', -4], [240, 40, 36, 34, 150, 'disc', 'gold', 5], [314, -30, 30, 30, 158, 'point', 'gold', -6],
+  [404, -70, 28, 28, 128, 'point', 'gold', 4], [545, -250, 28, 28, 84, 'point', 'gold', 6], [-345, 30, 40, 36, 142, 'deco', 'bronze', 3], [-112, 110, 36, 34, 132, 'deco', 'bronze', -5],
+  [-190, -40, 38, 36, 128, 'slab', 'plain', 8], [150, -60, 40, 36, 136, 'twin', 'bronze', 0], [-60, -120, 36, 34, 150, 'fin', 'bronze', 10], [46, 168, 30, 28, 92, 'dome', 'bronze', 0],
+  [-470, 80, 36, 34, 104, 'slab', 'plain', -6], [-420, -90, 34, 32, 118, 'point', 'bronze', 4], [470, -180, 30, 30, 96, 'deco', 'plain', -8],
 ];
-export function districtAt(x: number, z: number): number {
-  let best = 0, bd = 1e18;
-  for (let i = 0; i < DISTRICTS.length; i++) { const d = (x - DISTRICTS[i].x) ** 2 + (z - DISTRICTS[i].z) ** 2; if (d < bd) { bd = d; best = i; } }
-  return best;
-}
-// The boulevards: the lines where two districts meet, each from one end to the other.
-export type Line = readonly [number, number, number, number];
-let LINES: Line[] | null = null;
-export function boulevards(): Line[] {
-  if (LINES) return LINES;
-  const out: Line[] = [], D = DISTRICTS;
-  for (let i = 0; i < D.length; i++) for (let j = i + 1; j < D.length; j++) {
-    const mx = (D[i].x + D[j].x) / 2, mz = (D[i].z + D[j].z) / 2, ex = D[j].x - D[i].x, ez = D[j].z - D[i].z, len = Math.hypot(ex, ez), dx = -ez / len, dz = ex / len;
-    let lo = -2000, hi = 2000;
-    for (let k = 0; k < D.length && lo < hi; k++) {
-      if (k === i || k === j) continue;
-      // Nearer both of these two than the third.
-      const a = 2 * (dx * (D[i].x - D[k].x) + dz * (D[i].z - D[k].z)), b = 2 * (mx * (D[i].x - D[k].x) + mz * (D[i].z - D[k].z)) + D[k].x ** 2 + D[k].z ** 2 - D[i].x ** 2 - D[i].z ** 2;
-      if (Math.abs(a) < 1e-9) { if (b < 0) lo = hi; continue; }
-      if (a > 0) lo = Math.max(lo, -b / a); else hi = Math.min(hi, -b / a);
-    }
-    // And on the land.
-    const along = mx * dx + mz * dz, q = along * along - (mx * mx + mz * mz - 646 ** 2);
-    if (q <= 0) continue;
-    lo = Math.max(lo, -along - Math.sqrt(q)); hi = Math.min(hi, -along + Math.sqrt(q));
-    if (hi - lo > 40) out.push([mx + dx * lo, mz + dz * lo, mx + dx * hi, mz + dz * hi]);
-  }
-  return LINES = out;
-}
-const toLine = (x: number, z: number, l: Line): number => {
-  const ex = l[2] - l[0], ez = l[3] - l[1], t = Math.min(1, Math.max(0, ((x - l[0]) * ex + (z - l[1]) * ez) / (ex * ex + ez * ez)));
-  return Math.hypot(x - l[0] - ex * t, z - l[1] - ez * t);
-};
-// How far a place is from the middle of the nearest boulevard, and from the middle of the avenue.
-export function boulevard(x: number, z: number): number {
-  let d = 1e9;
-  for (const l of boulevards()) d = Math.min(d, toLine(x, z, l));
-  return d;
-}
-export const avenue = (x: number, z: number): number => (z < AVENUE.from ? Math.hypot(x, z - AVENUE.from) : Math.abs(x));
-// How far a place is from the middle of the nearest street of its district.
-export function street(x: number, z: number): number {
-  const d = DISTRICTS[districtAt(x, z)], c = Math.cos(d.turn * D2R), s = Math.sin(d.turn * D2R), u = ((x - d.x) * c + (z - d.z) * s) / d.pitch, v = (-(x - d.x) * s + (z - d.z) * c) / d.pitch;
-  return Math.min(Math.abs(u - Math.round(u)), Math.abs(v - Math.round(v))) * d.pitch;
-}
-
-// The parks: real ones, each a stretch of trees and open ground and not one empty block. Where each lies, how far
-// it reaches along and across, and how far it is turned. None lies along the avenue: he wants city there.
-export interface Park { name: string; x: number; z: number; a: number; b: number; turn: number }
-export const PARKS: readonly Park[] = [
-  { name: 'great', x: -322, z: 372, a: 128, b: 84, turn: 34 },
-  { name: 'west', x: -486, z: 150, a: 74, b: 50, turn: 62 },
-  { name: 'east', x: 452, z: 96, a: 84, b: 58, turn: -30 },
-];
-export function park(x: number, z: number): number {
-  let best = -1;
-  for (const p of PARKS) {
-    const c = Math.cos(p.turn * D2R), s = Math.sin(p.turn * D2R), rx = x - p.x, rz = z - p.z;
-    best = Math.max(best, 1 - Math.hypot((rx * c + rz * s) / p.a, (-rx * s + rz * c) / p.b) + 0.16 * (noise(x / 60, 3, z / 60, 23) - 0.5));
-  }
-  return best;
-}
-
-// How tall the city stands at a place, before each building's own share of it.
-export function tallAt(x: number, z: number): number {
-  const crown = 190 * Math.exp(-((Math.hypot(x, 0.7 * z) / 214) ** 2));
-  const second = 58 * Math.exp(-(((x - 312) / 128) ** 2 + ((z + 158) / 168) ** 2));
-  const shoulder = 74 * Math.exp(-(((x + 408) / 150) ** 2 + ((z + 150) / 190) ** 2));
-  const behind = 56 * ramp(-70, -380, z) * (1 - (x / 660) ** 2);
-  return (44 + crown + second + shoulder + behind) * (1 - 0.64 * ramp(110, 400, z));
-}
-
-// What a building is as a form, and what it is clad in. The last four forms are the works along the avenue and
-// the low city's own: a hall with a colonnade, an obelisk, a tall gate post, and a building under a dome.
-export type Form = 'step' | 'taper' | 'drum' | 'blade' | 'twin' | 'needles' | 'box' | 'tier' | 'hall' | 'obelisk' | 'pylon' | 'dome';
-export type Skin = 'stone' | 'bronze' | 'glass' | 'copper';
-export interface Building { x: number; z: number; w: number; d: number; tall: number; turn: number; form: Form; skin: Skin; seed: number; lean: number }
-// The kinds of thing that grow: a broad crown, a tall slim one, a dark cone, a palm, a low bush, and a pale tree
-// in flower. He found one kind everywhere.
-export type Plant = 'broad' | 'poplar' | 'conifer' | 'palm' | 'shrub' | 'bloom';
-export interface Tree { x: number; z: number; size: number; kind: Plant; hue: number }
-export interface City { buildings: Building[]; trees: Tree[] }
-
-// How far each side of the avenue's middle is kept for the works that line it.
-const WAY = AVENUE.half + 46;
-// Whether a building may stand with its middle at a place and reach so far each way.
-function free(x: number, z: number, half: number, turn: number, off = 5, way = WAY): boolean {
-  const c = Math.cos(turn), s = Math.sin(turn);
-  for (const [a, b] of [[0, 0], [-1, -1], [1, -1], [1, 1], [-1, 1]]) {
-    const px = x + (a * c - b * s) * half, pz = z + (a * s + b * c) * half;
-    if (!standing(px, pz, 9) || desert(px, pz) > 0.3 || boulevard(px, pz) < BOULEVARD + off || avenue(px, pz) < way || Math.hypot(px, pz) < COURT + 6) return false;
-    if (Math.hypot(px - PYRAMID.x, pz - PYRAMID.z) < PYRAMID.court + 4 || park(px, pz) > -0.02) return false;
-  }
-  return true;
-}
-// About how far across one small building's lot is.
-const LOT = 16.5;
-const TOWERS: readonly Form[] = ['step', 'taper', 'drum', 'blade', 'twin', 'needles', 'step', 'taper'];
-// Which ground has something built on it, on the grid the land was measured on.
-let COVER: Uint8Array | null = null;
-let CITY: City | null = null;
-export function city(): City {
-  if (CITY) return CITY;
-  const r = seeded(7741), buildings: Building[] = [], trees: Tree[] = [];
-  const plant = (x: number, z: number, size: number, kind: Plant, sand = 0.12) => { if (standing(x, z, 5) && desert(x, z) < sand && Math.hypot(x, z) > SPIRE.foot + 10) trees.push({ x, z, size, kind, hue: hash(Math.round(x * 3), 7, Math.round(z * 3), 19) }); };
-  const clad = (di: number, tower: boolean, k: number): Skin => {
-    const name = DISTRICTS[di].name;
-    if (tower) return name === 'crown' ? (k < 0.5 ? 'glass' : k < 0.86 ? 'bronze' : 'stone') : k < 0.4 ? 'bronze' : k < 0.72 ? 'stone' : 'glass';
-    if (name === 'temple') return k < 0.86 ? 'stone' : 'copper';
-    return k < 0.42 ? 'stone' : k < 0.82 ? 'copper' : 'bronze';
+const COUNT = 118;
+let TOWERS: Building[] | null = null;
+export function towers(): Building[] {
+  if (TOWERS) return TOWERS;
+  const r = seeded(5113), out: Building[] = [];
+  const free = (x: number, z: number, w: number, d: number, gap: number): boolean => {
+    const size = Math.max(w, d);
+    if (!standing(x, z, 18) || desert(x, z) > 0.02 || z > front(x) - 0.5 * size - 6 || Math.hypot(x, z) < COURT + 0.6 * size + 6) return false;
+    const [qx, qz] = pyramidal(x, z);
+    if (Math.max(Math.abs(qx), Math.abs(qz)) < PYRAMID.court + 0.6 * size + 4) return false;
+    return out.every((b) => Math.hypot(b.x - x, b.z - z) > 0.5 * (Math.max(b.w, b.d) + size) + gap);
   };
-  DISTRICTS.forEach((d, di) => {
-    const turn = d.turn * D2R, c = Math.cos(turn), s = Math.sin(turn), reach = Math.ceil(760 / d.pitch);
-    for (let iu = -reach; iu <= reach; iu++) for (let iv = -reach; iv <= reach; iv++) {
-      const u = (iu + 0.5) * d.pitch, v = (iv + 0.5) * d.pitch, x = d.x + u * c - v * s, z = d.z + u * s + v * c;
-      const roll = r(), kind = r(), size = r(), share = r();
-      if (Math.hypot(x, z) > 660 || districtAt(x, z) !== di) continue;
-      const inside = d.pitch / 2 - STREET, tall = tallAt(x, z);
-      const at = (a: number, b: number): [number, number] => [x + a * c - b * s, z + a * s + b * c];
-      if (park(x, z) > 0) continue;
-      // A tall block is one tower, standing on the whole of it.
-      if (tall > 92) {
-        const w = inside * (0.62 + 0.3 * size), near = Math.exp(-((Math.hypot(x, z) / 240) ** 2)), h = Math.min(TALLEST, tall * (0.66 + 0.16 * near + (0.5 - 0.1 * near) * share));
-        if (free(x, z, w, turn)) { buildings.push({ x, z, w: 2 * w, d: 2 * w * (0.74 + 0.26 * r()), tall: h, turn, form: TOWERS[Math.floor(kind * TOWERS.length)], skin: clad(di, true, r()), seed: r(), lean: 0 }); continue; }
-      }
-      // A lower one is small buildings round a courtyard with trees in it, so the city between its towers is a
-      // fabric of streets and yards and not open paving.
-      const n = Math.round((2 * inside) / LOT), lot = (2 * inside) / n, lo = 1, hi = n - 2;
-      let stood = 0;
-      for (let a = 0; a < n; a++) for (let b = 0; b < n; b++) {
-        const one = r(), two = r(), three = r(), deep = r(), skin = r(), seed = r();
-        if (a >= lo && a <= hi && b >= lo && b <= hi) continue;
-        if (one < 0.04) continue;
-        const [px, pz] = at(-inside + (a + 0.5) * lot, -inside + (b + 0.5) * lot), w = lot * (0.42 + 0.05 * two);
-        if (!free(px, pz, w, turn, 3)) continue;
-        // One height to a block, give or take, and well under the towers: they are what the skyline is made of.
-        const h = Math.max(8, Math.min(58, 13 + 0.34 * tall) * (0.6 + 0.5 * roll) * (0.84 + 0.32 * three) * (deep < 0.07 ? 1.6 : 1));
-        buildings.push({ x: px, z: pz, w: 2 * w, d: 2 * w * (0.9 + 0.2 * deep), tall: h, turn, form: one > 0.955 ? 'dome' : h > 40 && two > 0.5 ? 'tier' : 'box', skin: clad(di, false, skin), seed, lean: 0 });
-        stood++;
-      }
-      if (stood > n) for (let q = 0; q < (n === 3 ? 1 : 3); q++) { const [px, pz] = at((r() - 0.5) * lot * (n - 2.4), (r() - 0.5) * lot * (n - 2.4)); plant(px, pz, 4.4 + 1.8 * r(), q ? 'broad' : 'bloom'); }
-      // And a tree at each corner of the block, on the near half of the top, where the streets are seen.
-      if (stood > 1 && z > -40) for (const [a, b] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { const [px, pz] = at(a * (inside + 1.5), b * (inside + 1.5)); if (r() < 0.8 && boulevard(px, pz) > BOULEVARD + 4 && avenue(px, pz) > WAY && park(px, pz) < -0.05) plant(px, pz, 3.6 + 1.2 * r(), di % 2 ? 'poplar' : 'broad'); }
-    }
-  });
-  // The avenue: a hall on each side, one after another, from the spire's court to where the land breaks off, with
-  // a pair of obelisks between each two and a pair of gate posts where it ends in the air. He asked for city, or
-  // the works of a civilization, down both sides of it, and for the road to be seen the whole way: so no tree
-  // stands on it.
-  let end = 0;
-  for (let z = COURT + 34; z < 640; z += 46) {
-    const low = ramp(150, 520, z);
-    for (const side of [-1, 1]) {
-      const x = side * (AVENUE.half + 24);
-      if (free(x, z, 17, 0, 3, AVENUE.half + 3)) { buildings.push({ x, z, w: 31, d: 35, tall: 44 - 16 * low + 5 * r(), turn: 0, form: 'hall', skin: 'stone', seed: r(), lean: 0 }); end = Math.max(end, z); }
-      if (standing(side * (AVENUE.half + 6), z - 23, 8) && z - 23 > COURT + 14) buildings.push({ x: side * (AVENUE.half + 6), z: z - 23, w: 5.4, d: 5.4, tall: 37 - 9 * low, turn: 0, form: 'obelisk', skin: 'stone', seed: r(), lean: 0 });
-    }
+  const add = (x: number, z: number, w: number, d: number, tall: number, form: Form, roof: Roof, turn: number): void => { out.push({ x, z, w, d, tall, turn: turn * D2R, form, roof, seed: r() }); };
+  for (const [x, z, w, d, tall, form, roof, turn] of MARKS) add(x, z, w, d, tall, form, roof, turn);
+  // How tall the city stands at a place: tallest round the spire, lower toward each end and toward its front.
+  const high = (x: number, z: number): number => (38 + 78 * Math.exp(-(((x + 30) / 340) ** 2) - ((z - 10) / 280) ** 2)) * (1 - 0.45 * ramp(120, 320, z));
+  const make = (x: number, z: number, k: number): void => {
+    const w = 26 + 16 * r(), d = w * (0.8 + 0.4 * r()), tall = Math.min(150, high(x, z) * k * (0.55 + 0.9 * r() ** 1.5)), pick = r(), roof: Roof = r() < 0.3 ? 'bronze' : 'plain', turn = 16 * (r() - 0.5);
+    if (!free(x, z, w, d, 9)) return;
+    const form: Form = tall < 44 ? (pick < 0.1 ? 'dome' : pick < 0.75 ? 'hall' : 'slab') : tall < 88 ? (['slab', 'deco', 'twin', 'fin', 'slab'] as const)[Math.floor(pick * 5)] : (['deco', 'point', 'step', 'slab', 'fin', 'deco'] as const)[Math.floor(pick * 6)];
+    add(x, z, w, d, tall, form, roof, turn);
+  };
+  for (let x = -612; x < 300; x += 42 + 10 * r()) make(x, front(x) - 34 - 18 * r(), 0.8);
+  for (let x = -590; x < 330; x += 50 + 12 * r()) make(x + 20, front(x) - 96 - 22 * r(), 1.1);
+  for (let tries = 0; out.length < COUNT && tries < 6000; tries++) {
+    const a = r() * Math.PI * 2, far = 640 * Math.sqrt(r());
+    make(far * Math.sin(a), far * Math.cos(a), 1);
   }
-  for (const side of [-1, 1]) for (let z = end + 44; z > end; z -= 4) if (standing(side * (AVENUE.half + 9), z, 10)) { buildings.push({ x: side * (AVENUE.half + 9), z, w: 11, d: 9, tall: 52, turn: 0, form: 'pylon', skin: 'stone', seed: r(), lean: 0 }); break; }
-  // What stands at the land's broken edge leans toward the break.
-  for (const b of buildings) { const e = inland(b.x, b.z); if (e < 26) b.lean = (1 - e / 26) * (4 + 7 * hash(Math.round(b.x), 1, Math.round(b.z), 5)) * D2R; }
-  // Which ground is built on.
-  const cover = COVER = new Uint8Array(ACROSS * ACROSS);
-  for (const b of buildings) {
-    const reach = Math.hypot(b.w, b.d) / 2 + 7, c = Math.cos(b.turn), s = Math.sin(b.turn);
-    for (let j = Math.max(0, Math.floor((b.z - reach + SURVEY.half) / SURVEY.step)); j <= Math.min(ACROSS - 1, Math.ceil((b.z + reach + SURVEY.half) / SURVEY.step)); j++) for (let i = Math.max(0, Math.floor((b.x - reach + SURVEY.half) / SURVEY.step)); i <= Math.min(ACROSS - 1, Math.ceil((b.x + reach + SURVEY.half) / SURVEY.step)); i++) {
-      const rx = -SURVEY.half + i * SURVEY.step - b.x, rz = -SURVEY.half + j * SURVEY.step - b.z;
-      if (Math.abs(rx * c + rz * s) < b.w / 2 + 6 && Math.abs(-rx * s + rz * c) < b.d / 2 + 6) cover[i + ACROSS * j] = 1;
-    }
-  }
-  // Trees. One row down each side of every boulevard, of one kind to a boulevard.
-  boulevards().forEach((l, n) => {
-    const len = Math.hypot(l[2] - l[0], l[3] - l[1]), nx = -(l[3] - l[1]) / len, nz = (l[2] - l[0]) / len, kind: Plant = n % 3 === 0 ? 'poplar' : n % 3 === 1 ? 'broad' : 'bloom';
-    for (let t = 8; t < len; t += kind === 'poplar' ? 10 : 14) for (const side of [-1, 1]) {
-      const x = l[0] + ((l[2] - l[0]) * t) / len + side * (BOULEVARD - 2.5) * nx, z = l[1] + ((l[3] - l[1]) * t) / len + side * (BOULEVARD - 2.5) * nz;
-      if (Math.hypot(x, z) > COURT + 8 && avenue(x, z) > AVENUE.half + 12 && Math.hypot(x - PYRAMID.x, z - PYRAMID.z) > PYRAMID.base * 0.74) plant(x, z, kind === 'poplar' ? 5 : 6.2, kind);
-    }
-  });
-  // Palms round the pyramid's court, and clipped cones round the spire's.
-  for (let i = 0; i < 38; i++) { const a = (i / 38) * Math.PI * 2; plant(PYRAMID.x + Math.sin(a) * (PYRAMID.court - 8), PYRAMID.z + Math.cos(a) * (PYRAMID.court - 8), 7.6, 'palm'); }
-  for (let i = 0; i < 44; i++) { const a = (i / 44) * Math.PI * 2; if (Math.abs(Math.sin(a)) * COURT > AVENUE.half + 6 || Math.cos(a) < 0) plant(Math.sin(a) * (COURT - 7), Math.cos(a) * (COURT - 7), 5.2, 'conifer'); }
-  for (let z = -660; z < 660; z += 9) for (let x = -660; x < 660; x += 9) {
-    const jx = x + 8 * (r() - 0.5), jz = z + 8 * (r() - 0.5), p = park(jx, jz), pick = r(), size = r(), which = r();
-    // The parks: stands of trees of several kinds, with open ground and low bushes between them.
-    if (p > 0.04) {
-      const stand = noise(jx / 34, 5, jz / 34, 61), sort = noise(jx / 70, 9, jz / 70, 83);
-      if (stand > 0.42 && pick < 0.86) plant(jx, jz, 6 + 5.5 * size, sort < 0.36 ? 'conifer' : which < 0.2 ? 'bloom' : which < 0.3 ? 'poplar' : 'broad');
-      else if (pick < 0.3) plant(jx, jz, 2.6 + 1.6 * size, 'shrub');
-      continue;
-    }
-    // Ground in the city with nothing built on it is a planted square: bushes, and a tree here and there. Near the
-    // desert some of those are palms. Nothing is left bare without a reason.
-    if (garden(jx, jz) > 0.7 && pick < 0.62 && inland(jx, jz) > 16) plant(jx, jz, which < 0.3 ? 4.6 + 2.6 * size : 2.2 + 1.5 * size, which < 0.3 ? (desert(jx + 60, jz + 40) > 0.2 && size < 0.5 ? 'palm' : size < 0.3 ? 'bloom' : 'broad') : 'shrub', 0.04);
-  }
-  return CITY = { buildings, trees };
+  return TOWERS = out;
 }
-// How much of a place is the city's open ground: not built on, not a road, a court, a park or sand. A planted
-// square.
-export function garden(x: number, z: number): number {
-  if (!COVER) return 0;
-  if (street(x, z) < STREET + 2 || boulevard(x, z) < BOULEVARD + 2 || avenue(x, z) < AVENUE.half + 3 || Math.hypot(x, z) < COURT + 3 || Math.hypot(x - PYRAMID.x, z - PYRAMID.z) < PYRAMID.court + 3) return 0;
-  return (1 - read(COVER as unknown as Float32Array, x, z)) * (1 - desert(x, z)) * (1 - ramp(-0.08, 0.02, park(x, z)));
+
+// The trees: one kind, a full round crown on a short trunk. Picture 9's: a belt of them along the city's front, in
+// rows that follow it, between the buildings and the land's edge, on both sides of the pyramid. A band where the
+// city meets the sand, and a few among the buildings. size is about half its crown's width.
+export interface Tree { x: number; z: number; size: number; tone: number; turn: number }
+const nearTower = (x: number, z: number, pad: number): boolean => towers().some((b) => Math.hypot(x - b.x, z - b.z) < Math.max(b.w, b.d) * 0.62 + pad);
+let TREES: Tree[] | null = null;
+export function trees(): Tree[] {
+  if (TREES) return TREES;
+  const r = seeded(7741), out: Tree[] = [];
+  const plant = (x: number, z: number, size: number): void => {
+    const tone = r(), turn = r() * Math.PI * 2;
+    if (!standing(x, z, 9) || desert(x, z) > 0.02 || Math.hypot(x, z) < COURT + 4 || nearTower(x, z, size * 0.7 + 2)) return;
+    const [qx, qz] = pyramidal(x, z);
+    if (Math.max(Math.abs(qx), Math.abs(qz)) < PYRAMID.base / 2 + 10) return;
+    if (out.some((t) => Math.hypot(t.x - x, t.z - z) < (t.size + size) * 0.72)) return;
+    out.push({ x, z, size, tone, turn });
+  };
+  for (let row = 0; row < 6; row++) for (let x = -640; x < 345; x += 17.5) {
+    const jx = x + 5 * (r() - 0.5) + (row % 2) * 8, z = front(jx) + 12 + row * 17 + 5 * (r() - 0.5), size = 7.6 + 2.2 * r(), pick = r();
+    if (noise(jx / 70, 6, z / 70, 61) > 0.34 || pick < 0.3) plant(jx, z, size);
+  }
+  for (let z = -330; z < 430; z += 19) for (let x = 180; x < 640; x += 19) {
+    const jx = x + 8 * (r() - 0.5), jz = z + 8 * (r() - 0.5), pick = r(), size = 7.4 + 2 * r(), k = sands(jx, jz);
+    if (k > -0.16 && k < -0.03 && pick < 0.6) plant(jx, jz, size);
+  }
+  for (let i = 0; i < 260; i++) {
+    const a = r() * Math.PI * 2, far = 600 * Math.sqrt(r()), x = far * Math.sin(a), z = far * Math.cos(a), size = 6.4 + 2 * r(), pick = r();
+    if (z < front(x) - 20 && pick < 0.5) plant(x, z, size);
+  }
+  return TREES = out;
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// What broke away. A great deal of it, of four kinds. None of it moves in the blockout: how each kind moves is
-// here so the build knows.
-//   slab: a great piece that still carries a piece of the land, hanging off the break it came from.
-//   locked: holds its place and keeps one face to the core, its long way pointing at it.
-//   orbit: goes slowly round the planet in a belt, in front of the tear and behind the planet.
-//   tumble: small, turning over as it falls away under the core, along the stream.
-export type Drift = 'slab' | 'locked' | 'orbit' | 'tumble';
-export interface Piece { at: [number, number, number]; r: number; kind: Drift; long: number; land?: 'city' | 'sand' }
-const SLABS: readonly Piece[] = [
-  { at: [-596, -236, 356], r: 80, kind: 'slab', long: 1, land: 'city' }, { at: [622, -300, 300], r: 70, kind: 'slab', long: 1, land: 'sand' },
-  { at: [-470, -590, 420], r: 62, kind: 'slab', long: 1, land: 'city' }, { at: [372, -560, 470], r: 56, kind: 'slab', long: 1, land: 'city' },
-  { at: [-250, -820, 300], r: 48, kind: 'slab', long: 1, land: 'city' }, { at: [540, -760, 200], r: 44, kind: 'slab', long: 1, land: 'sand' },
-  { at: [160, -930, 260], r: 36, kind: 'slab', long: 1, land: 'city' },
+// What broke away. Made new for this world, and not picture 6's ring: a great deal of it, low, under and round the
+// bottom of the planet, hanging there as if caught in the planet's gravity. It is one scene: the pieces of a
+// family share one motion, with differences inside it. None of it moves in the prototype. How each family moves
+// is here so the build knows.
+//   plate: a great piece, some still carrying a piece of the land. It holds its place under the edge it broke
+//     from, rises and falls slowly, and keeps one face to the core.
+//   whirl: two arms of middling pieces that go slowly round the stream, sinking as they go, each turning over.
+//   drift: a wide low cloud of small pieces that slides from side to side as one.
+//   tumble: chips falling away along the stream.
+export type Drift = 'plate' | 'whirl' | 'drift' | 'tumble';
+export interface Piece { at: [number, number, number]; r: number; kind: Drift; long: number; flat: number; family: number; land?: 'city' | 'sand' }
+const PLATES: readonly Piece[] = [
+  { at: [-420, -690, 330], r: 84, kind: 'plate', long: 1, flat: 1, family: 0, land: 'city' }, { at: [455, -720, 300], r: 74, kind: 'plate', long: 1.2, flat: 0.6, family: 1 },
+  { at: [-215, -840, 420], r: 58, kind: 'plate', long: 1, flat: 1, family: 2, land: 'city' }, { at: [-580, -640, 60], r: 62, kind: 'plate', long: 1.5, flat: 0.55, family: 3 },
+  { at: [600, -660, 20], r: 56, kind: 'plate', long: 1.4, flat: 0.5, family: 4 }, { at: [250, -860, 390], r: 62, kind: 'plate', long: 1.3, flat: 0.6, family: 5 },
+  { at: [-90, -940, -160], r: 70, kind: 'plate', long: 1.4, flat: 0.6, family: 6 }, { at: [330, -990, 120], r: 50, kind: 'plate', long: 1.5, flat: 0.5, family: 7 },
+  { at: [-380, -1030, 200], r: 46, kind: 'plate', long: 1.3, flat: 0.6, family: 8 },
+  // Picture 9's two great boulders, hanging in the planet's open bottom each side of the stream.
+  { at: [-215, -562, 240], r: 54, kind: 'plate', long: 1.2, flat: 0.3, family: 9 }, { at: [228, -568, 215], r: 60, kind: 'plate', long: 1.25, flat: 0.35, family: 10 },
 ];
-// The belts: how far out, how high, how far the belt is tipped toward the visitor, and how many are in it.
-const BELTS: readonly (readonly [number, number, number, number, number, number])[] = [[700, 960, -330, 9, 70, 30], [360, 660, -770, 5, 64, 22]];
 // How far down the host the first screen ends on the tallest desktop screen: nothing that broke away is over it.
-const REST = 570;
+const REST = 590;
 let PIECES: Piece[] | null = null;
 export function debris(): Piece[] {
   if (PIECES) return PIECES;
-  const r = seeded(4409), out: Piece[] = [...SLABS], core = drawn(CORE.at[0], CORE.at[1], CORE.at[2]);
+  const r = seeded(4409), out: Piece[] = [], core = drawn(CORE.at[0], CORE.at[1], CORE.at[2]);
+  const bell = (): number => (r() + r() + r() - 1.5) / 1.5;
   const fits = (p: Piece): boolean => {
     const [sx, sy] = drawn(p.at[0], p.at[1], p.at[2]);
-    if (Math.abs(sx) + p.r > HOST.wide / 2 - 6 || sy + p.r > HOST.tall - 8) return false;
-    // Nothing of it shows at rest, nothing hides the core, and nothing is inside the rock.
+    if (Math.abs(sx) + p.r > HOST.wide / 2 - 6 || sy + p.r > HOST.tall - 10) return false;
+    // Nothing of it shows at rest, nothing hides the core, a large piece does not lie across the stream, and
+    // nothing is inside the rock.
     if (sy - p.r < REST) return false;
     if (p.at[2] > CORE.at[2] && Math.hypot(sx - core[0], sy - core[1]) < CORE.r + p.r * p.long + 34) return false;
+    if (p.r > 9 && Math.abs(sx - core[0]) < p.r * 0.9 + 7) return false;
     const reach = p.r * p.long * 0.8;
     if (rock(p.at[0], p.at[1], p.at[2]) < Math.min(46, reach + 8)) return false;
     for (const [a, b, c] of [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]]) if (rock(p.at[0] + a * reach, p.at[1] + b * reach, p.at[2] + c * reach) < 8) return false;
-    return out.every((o) => Math.hypot(o.at[0] - p.at[0], o.at[1] - p.at[1], o.at[2] - p.at[2]) > (o.r + p.r) * 1.15);
+    return out.every((o) => Math.hypot(o.at[0] - p.at[0], o.at[1] - p.at[1], o.at[2] - p.at[2]) > (o.r + p.r) * 1.08);
   };
-  const tryFor = (count: number, make: () => Piece) => { for (let made = 0, tries = 0; made < count && tries < count * 40; tries++) { const p = make(); if (fits(p)) { out.push(p); made++; } } };
-  tryFor(52, () => {
-    const a = (r() - 0.5) * 2 * 150 * D2R, up = (-78 + 100 * r()) * D2R, far = 300 + 420 * r() ** 0.8;
-    return { at: [CORE.at[0] + far * Math.cos(up) * Math.sin(a), CORE.at[1] + far * Math.sin(up), CORE.at[2] + far * Math.cos(up) * Math.cos(a)], r: 9 + 44 * r() ** 2.4, kind: 'locked', long: 1.5 + 0.9 * r() };
-  });
-  for (const [near, farOut, high, tip, count, big] of BELTS) tryFor(count, () => {
-    const a = r() * Math.PI * 2, far = near + (farOut - near) * r(), x = far * Math.sin(a), z = far * Math.cos(a);
-    return { at: [x, high + 70 * (r() - 0.5) - z * Math.tan(tip * D2R), z], r: 5 + big * r() ** 2.2, kind: 'orbit', long: 1.1 + 0.5 * r() };
-  });
-  tryFor(84, () => {
-    const down = r() ** 0.7, y = CORE.at[1] - CORE.r - 60 - 620 * down, a = r() * Math.PI * 2, far = (40 + 300 * r()) * (0.5 + 0.8 * down);
-    return { at: [CORE.at[0] + far * Math.sin(a), y, CORE.at[2] + 60 + far * Math.cos(a) * 0.7], r: 2.6 + 12 * r() ** 2 * (1 - 0.5 * down), kind: 'tumble', long: 1.3 + 1.1 * r() };
-  });
+  const put = (p: Piece): void => { if (fits(p)) out.push(p); };
+  for (const p of PLATES) put(p);
+  const plates = out.length;
+  // Each great piece keeps a ring of small ones about it, which go where it goes.
+  for (let i = 0; i < plates; i++) {
+    const g = out[i], tilt = 0.5 * bell(), lean = 0.5 * bell();
+    for (let k = 0; k < 16; k++) {
+      const a = r() * Math.PI * 2, far = g.r * (1.2 + 1.3 * r() ** 1.6), across = far * Math.cos(a), along = far * Math.sin(a), size = (1.4 + 7 * r() ** 3) * (0.6 + g.r / 90);
+      put({ at: [g.at[0] + across, g.at[1] + across * tilt + along * lean + 0.1 * far * bell(), g.at[2] + along], r: size, kind: 'drift', long: 1.2 + r(), flat: r(), family: 20 + g.family });
+    }
+  }
+  // Three arms round the stream, close under the break, sinking and thinning as they go out: the largest pieces
+  // nearest the planet they came from.
+  for (const [arm, from] of [[1, 0.5], [2, 2.6], [3, 4.7]] as const) for (let i = 0; i < 60; i++) {
+    const s = (i + r()) / 60, a = from + s * 4.6, far = 170 + 420 * s ** 0.9 + 22 * bell(), size = (4.5 + 21 * (1 - s) ** 1.7) * (0.6 + 0.8 * r()), fore = Math.cos(a);
+    put({ at: [CORE.at[0] + far * Math.sin(a), -696 - 170 * s - 0.2 * far * fore + 14 * bell(), CORE.at[2] + 0.92 * far * fore], r: size, kind: 'whirl', long: 1.2 + 0.9 * r(), flat: r(), family: 40 + arm });
+  }
+  // Lower down they hang in clumps, each clump one family, fewer and smaller the further down.
+  for (let c = 0; c < 12; c++) {
+    const a = r() * Math.PI * 2, far = 120 + 520 * Math.sqrt(r()), down = r() ** 1.35, mid: [number, number, number] = [far * Math.sin(a), -824 - 380 * down, 90 + far * Math.cos(a)];
+    const spread = 46 + 70 * r(), count = Math.round((16 + 30 * r()) * (1 - 0.55 * down)), lead = 12 + 16 * r() * (1 - 0.5 * down);
+    for (let k = 0; k < count; k++) {
+      const size = k ? 2 + lead * 0.7 * r() ** 3.2 : lead, off = k ? 1 : 0;
+      put({ at: [mid[0] + off * spread * bell() * 1.5, mid[1] + off * spread * 0.55 * bell(), mid[2] + off * spread * bell() * 1.5], r: size, kind: 'drift', long: 1.1 + r(), flat: r(), family: 50 + c });
+    }
+  }
+  // Chips falling away along the stream, and dust everywhere, thickest under the break.
+  for (let i = 0; i < 260; i++) {
+    const down = r() ** 0.8, a = r() * Math.PI * 2, far = (10 + 70 * r()) * (0.4 + down), size = 1.2 + 4.2 * r() ** 2.4;
+    put({ at: [CORE.at[0] + far * Math.sin(a), CORE.at[1] - CORE.r - 60 - 700 * down, CORE.at[2] + far * Math.cos(a)], r: size, kind: 'tumble', long: 1.3 + 1.1 * r(), flat: r(), family: 80 });
+  }
+  for (let i = 0; i < 700; i++) {
+    const a = r() * Math.PI * 2, far = 60 + 640 * Math.sqrt(r()), down = r() ** 1.7, size = 0.8 + 1.9 * r() ** 2;
+    put({ at: [far * Math.sin(a), -624 - 600 * down - 0.1 * far * Math.cos(a), 80 + far * Math.cos(a)], r: size, kind: 'tumble', long: 1.2 + r(), flat: r(), family: 81 + (i % 4) });
+  }
   return PIECES = out;
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// The cracks on the planet's outer surface at the visitor's left, lit from inside. That side is turned from the
+// moon, so a crack with no light in it would not be seen there. They run out from the tear and branch as they go,
+// widest and hottest at the tear. Each is a line of places on the surface, with how wide it is and how hot at
+// each. They set out from a few knots, each joined to the tear.
+export interface Crack { pts: number[]; wide: number[]; heat: number[] }
+// Which way is straight out of the planet at a place.
+export function outward(x: number, y: number, z: number): [number, number, number] {
+  const e = 2, gx = shell(x + e, y, z) - shell(x - e, y, z), gy = shell(x, y + e, z) - shell(x, y - e, z), gz = shell(x, y, z + e) - shell(x, y, z - e), l = Math.hypot(gx, gy, gz) || 1;
+  return [gx / l, gy / l, gz / l];
+}
+// The place on the rock's real surface nearest a place on the planet's outline, or nothing where the surface is
+// torn away.
+function onSkin(p: readonly [number, number, number]): [number, number, number] | null {
+  const n = outward(p[0], p[1], p[2]), at = (s: number): number => rock(p[0] + n[0] * s, p[1] + n[1] * s, p[2] + n[2] * s);
+  let a = 30, b = 30;
+  if (at(a) < 0) return null;
+  while (b > -30 && at(b) >= 0) { a = b; b -= 3; }
+  if (b <= -30) return null;
+  for (let i = 0; i < 9; i++) { const m = (a + b) / 2; if (at(m) < 0) b = m; else a = m; }
+  const s = (a + b) / 2 + 1.5;
+  return [p[0] + n[0] * s, p[1] + n[1] * s, p[2] + n[2] * s];
+}
+// Where each knot is (degrees round, how far down), how wide and how hot the cracks are there, and which ways its
+// arms set out with how long each is: 0 is toward the tear, 180 away from it, 90 down.
+const KNOTS: readonly { th: number; t: number; wide: number; heat: number; arms: readonly (readonly [number, number])[] }[] = [
+  { th: -55, t: 0.5, wide: 11, heat: 1, arms: [[0, 70], [92, 210], [128, 150], [182, 150], [236, 220], [268, 200]] },
+  { th: -62, t: 0.27, wide: 6, heat: 0.7, arms: [[20, 80], [120, 120], [200, 110]] },
+];
+const STEP = 7;
+let CRACKS: Crack[] | null = null;
+export function fractures(): Crack[] {
+  if (CRACKS) return CRACKS;
+  const r = seeded(6151), out: Crack[] = [], n = WORLD.full;
+  const arm = (th: number, t: number, dir: number, len: number, w0: number, h0: number, depth: number): void => {
+    const pts: number[] = [], wide: number[] = [], heat: number[] = [];
+    let a = dir, done = 0, next = 14 + 22 * r();
+    while (done < len && t > 0.04 && t < 0.97) {
+      const p = onSkin(skinAt(th, t)), k = done / len, w = w0 * (1 - 0.8 * k), h = h0 * (1 - 0.62 * k);
+      if (!p) break;
+      pts.push(p[0], p[1], p[2]); wide.push(w); heat.push(h);
+      th += (Math.cos(a) * STEP) / (WORLD.half * Math.max(0.35, (1 - t ** n) ** (1 / n)));
+      t += (Math.sin(a) * STEP) / (WORLD.deep * 1.15);
+      done += STEP; next -= STEP;
+      if (next > 0) continue;
+      // It runs straight, then turns sharply, as a break in rock does.
+      const turn = (r() - 0.5) * 1.2, fork = r(), split = r(), share = 0.42 + 0.3 * r();
+      next = 14 + 26 * r();
+      if (depth < 2 && fork < 0.46 && len - done > 46) arm(th, t, a + (split < 0.5 ? 1 : -1) * (0.55 + 0.5 * r()), (len - done) * share, w * 0.62, h * 0.82, depth + 1);
+      a += turn;
+      // And never turns back on itself.
+      a = dir + Math.max(-1.1, Math.min(1.1, a - dir));
+    }
+    if (wide.length > 2) out.push({ pts, wide, heat });
+  };
+  for (const k of KNOTS) for (const [dir, len] of k.arms) arm(k.th * D2R, k.t, dir * D2R, len, k.wide * (dir === k.arms[0][0] ? 1 : 0.8), k.heat, dir === k.arms[0][0] ? 2 : 0);
+  return CRACKS = out;
+}
+
+// The smaller streams: the core's light leaking out of the torn rock at a few places and falling. Fewer than the
+// world Claude Code built had, thin, each its own length and brightness, some nearer and some further back, all
+// far fainter than the stream from the core, and none of them goes on down the page. Six equal ones read as legs
+// the world stood on. Where each leaves (across and toward the visitor: it falls from the rock's underside
+// there), how long it is, how wide and how bright.
+export interface Vent { at: [number, number, number]; long: number; wide: number; heat: number }
+const LEAKS: readonly (readonly [number, number, number, number, number])[] = [
+  [-337, 232, 150, 1.5, 0.8], [-209, 60, 145, 1.2, 0.6], [-75, 40, 200, 1.4, 0.75], [67, 50, 190, 1.2, 0.65], [139, 30, 245, 1.5, 0.85], [359, 250, 125, 1.3, 0.7],
+];
+let VENTS: Vent[] | null = null;
+export function vents(): Vent[] {
+  if (VENTS) return VENTS;
+  const out: Vent[] = [];
+  for (const [x, z, long, wide, heat] of LEAKS) for (let y = -640; y < -380; y += 3) if (rock(x, y, z) < 0) { out.push({ at: [x, y + 4, z], long, wide, heat }); break; }
+  return VENTS = out;
 }
