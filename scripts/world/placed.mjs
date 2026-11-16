@@ -34,6 +34,27 @@ const clear = (x, z, r, pad) => {
   const [qx, qz] = W.pyramidal(x, z);
   return Math.max(Math.abs(qx), Math.abs(qz)) > W.PYRAMID.base / 2 + r + 6;
 };
+// First the whole city draws back from the bite. The study's city front stood a belt's depth behind the study's
+// edge. Where picture 9's edge is further back than that, every building there retreats, the front rows by the
+// whole difference and the ones behind them by less, each straight along the line of sight with its top kept where
+// the picture has it. Then any two that have come to overlap are eased apart the same way.
+const edgeAt = (x) => Math.min(W.lip(x), Math.sqrt(Math.max(0, W.LAND.rim ** 2 - x * x)));
+const along = (t, back) => {
+  const [px, py] = W.pictured(t[0], W.ground(t[0], t[1]) + t[4], t[1]), [x, y, z] = W.fromPicture(px, py, t[1] - back);
+  t[0] = n(x); t[1] = n(z); t[4] = n(Math.max(18, y - W.ground(x, z)));
+};
+let drawn = 0;
+towers.forEach((t) => {
+  const retreat = P.front(t[0]) + 12 - (edgeAt(t[0]) - BELT - 12);
+  if (retreat <= 0) return;
+  along(t, retreat * Math.max(0.35, 1 - (P.front(t[0]) - t[1]) / 420));
+  drawn++;
+});
+for (let pass = 0; pass < 60; pass++) for (let i = 0; i < towers.length; i++) for (let j = 0; j < i; j++) {
+  const a = towers[i], b = towers[j];
+  if (Math.hypot(a[0] - b[0], a[1] - b[1]) < 0.5 * (size(a) + size(b)) + 2) along(a[1] < b[1] ? a : b, 2);
+}
+for (const t of towers) for (let k = 0; k < 40 && Math.hypot(t[0], t[1]) < W.COURT + 0.5 * size(t) + 4; k++) along(t, -3);
 let slid = 0, lost = 0;
 towers.forEach((t, i) => {
   const r = 0.5 * size(t), room = (x, z) => clear(x, z, r, r + BELT) && towers.every((o, j) => j === i || Math.hypot(o[0] - x, o[1] - z) > 0.5 * (size(o) + size(t)) + 3);
@@ -46,19 +67,33 @@ towers.forEach((t, i) => {
   }
   lost++;
 });
-const r = P.seeded(31007), trees = P.trees().map((t) => [n(t.x), n(t.z), n(t.size), n(t.tone, 3), n(t.turn, 3)]).filter((t) => W.within(t[0], t[1]) > t[2] + 2);
+// The trees. Laid over picture 9, the study's belt was one thin row of small crowns with ground between them, and
+// it ran across the pyramid's front, where the picture has none. The picture's belt is two to four crowns deep,
+// its crowns are about a third larger, they stand in overlapping groups with uneven gaps, they are thickest right
+// of the spire among the towers' feet, and a row stands behind the dunes. So: the study's trees that still have
+// ground are kept, a third larger, and the belt is planted to the picture along the land's real edge.
+const GROW = 1.35, r = P.seeded(31007);
+const before = (x, z) => { const [qx, qz] = W.pyramidal(x, z); return Math.abs(x - W.PYRAMID.x) < 0.5 * W.PYRAMID.base + 30 && z > W.PYRAMID.z - 20 && Math.max(Math.abs(qx), Math.abs(qz)) < W.PYRAMID.base / 2 + 70; };
+const trees = P.trees().map((t) => [n(t.x), n(t.z), n(t.size * GROW), n(t.tone, 3), n(t.turn, 3)]).filter((t) => W.within(t[0], t[1]) > t[2] && !before(t[0], t[1]));
 const kept = trees.length;
 const plant = (x, z, sz) => {
-  if (!clear(x, z, sz, sz + 3)) return;
-  if (towers.some((b) => Math.hypot(b[0] - x, b[1] - z) < 0.62 * size(b) + 0.7 * sz + 2)) return;
-  if (trees.some((o) => Math.hypot(o[0] - x, o[1] - z) < 0.72 * (o[2] + sz))) return;
+  if (!clear(x, z, 0.6 * sz, 0.8 * sz) || before(x, z)) return;
+  if (towers.some((b) => Math.hypot(b[0] - x, b[1] - z) < 0.55 * size(b) + 0.45 * sz)) return;
+  if (trees.some((o) => Math.hypot(o[0] - x, o[1] - z) < 0.5 * (o[2] + sz))) return;
   trees.push([n(x), n(z), n(sz), n(r(), 3), n(r() * Math.PI * 2, 3)]);
 };
-for (let row = 0; row < 4; row++) for (let x = -640; x < 420; x += 15.5) {
-  const jx = x + 5 * (r() - 0.5) + (row % 2) * 7, edge = Math.min(W.lip(jx), Math.sqrt(Math.max(0, W.LAND.rim ** 2 - jx * jx)));
-  plant(jx, edge - 9 - row * 13 - 4 * r(), 7.6 + 2.2 * r());
+for (let row = 0; row < 7; row++) for (let x = -645; x < 560; x += 12.5) {
+  const jx = x + 7 * (r() - 0.5) + (row % 2) * 6, deep = row < 4 || (jx > 40 && jx < 560), gap = W.noise(jx / 55 + row * 3.1, 4, row, 71) < 0.3 && r() < 0.7;
+  const z = edgeAt(jx) - 9 - row * 11 - 5 * r(), sz = 10.5 * (0.7 + 0.6 * r()) * (row > 3 ? 0.9 : 1);
+  if (deep && !gap) plant(jx, z, sz);
 }
-console.log(`for picture 9's edge: ${slid} buildings slid back, ${lost} left where the land is not, ${kept} of the study's trees kept, ${trees.length - kept} planted along the new edge`);
+// Behind the dunes: a row along the desert's far side.
+for (let x = 330; x < 600; x += 12) for (let row = 0; row < 2; row++) {
+  let z = edgeAt(x) - 20;
+  while (z > -420 && W.desert(x, z) > 0.02) z -= 6;
+  plant(x + 6 * (r() - 0.5), z - 10 - row * 12 - 4 * r(), 10.5 * (0.7 + 0.6 * r()));
+}
+console.log(`for picture 9's edge: ${drawn} buildings drawn back from the bite, ${slid} more slid back, ${lost} left where the land is not, ${kept} of the study's trees kept, ${trees.length - kept} planted along the new edge`);
 const vents = P.vents().map((v) => [n(v.at[0]), n(v.at[1]), n(v.at[2]), v.long, v.wide, v.heat]);
 const rows = (list) => list.map((r) => `  ${JSON.stringify(r).replace(/"/g, "'")},`).join('\n');
 
