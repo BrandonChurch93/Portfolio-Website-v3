@@ -75,7 +75,7 @@ export function balance(stage: Stage): void {
 // CSS mask on the canvas the fade cost the compositor a layer of its own. A piece asks for it in place of balance(),
 // after trueDarks(), and again after it sets a tier.
 const FINISH = 'finish';
-const finishFragment = (rim: number) => `precision highp float;
+const finishFragment = (rim: number, bal: number) => `precision highp float;
 uniform sampler2D tDiffuse;
 #include <tonemapping_pars_fragment>
 #include <colorspace_pars_fragment>
@@ -85,7 +85,7 @@ void main() {
 	vec4 c = texture2D( tDiffuse, vUv );
 	float peak = max( c.r, max( c.g, c.b ) );
 	float k = 1.0 - smoothstep( 0.3, 0.85, peak );
-	vec3 o = c.rgb * mix( vec3( 1.0 ), vec3( 0.96, 1.21, 1.59 ), k );
+	vec3 o = c.rgb * mix( vec3( 1.0 ), vec3( 0.96, 1.21, 1.59 ), k * ${bal.toFixed(3)} );
 	o.g = min( o.g, o.r );
 	o.b = min( o.b, o.g );
 	vec4 s = sRGBTransferOETF( vec4( CustomToneMapping( o ), c.a ) );
@@ -98,14 +98,16 @@ void main() {
 	gl_FragColor = s * ( e.x * e.y );
 }`;
 
-export function finish(stage: Stage, rim: number): void {
+// bal is how much of the white balance is kept: all of it for a thing seen in a warm room, which is what it was
+// made for, and little for the hero's world, a night scene whose darks are warm and are meant to stay so.
+export function finish(stage: Stage, rim: number, bal = 1): void {
   const c = stage.composer, named = (p: unknown, name: string) => p instanceof ShaderPass && p.material.name === name;
   for (const p of [...c.passes]) if (p instanceof OutputPass || named(p, BALANCE.name) || named(p, DITHER) || named(p, FINISH)) c.removePass(p);
   const material = new THREE.RawShaderMaterial({
     name: FINISH,
     uniforms: { tDiffuse: { value: null }, toneMappingExposure: { value: 1 } },
     vertexShader: 'precision highp float; uniform mat4 modelViewMatrix; uniform mat4 projectionMatrix; attribute vec3 position; attribute vec2 uv; varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 ); }',
-    fragmentShader: finishFragment(rim),
+    fragmentShader: finishFragment(rim, bal),
   });
   const pass = new ShaderPass(material), draw = pass.render.bind(pass);
   pass.render = (...a: Parameters<typeof draw>) => { material.uniforms.toneMappingExposure.value = stage.renderer.toneMappingExposure; draw(...a); };

@@ -75,8 +75,11 @@ function grid(side) {
     const a = k * (cols + 1) + j, b = a + 1, c = a + cols + 1, d = c + 1;
     // Each square is split along the diagonal whose corners are nearer in height, which keeps a wall's foot and
     // crest on the lines of the grid.
-    if (Math.abs(h[a] - h[d]) <= Math.abs(h[b] - h[c])) idx.push(a, d, b, a, c, d);
-    else idx.push(a, c, b, b, c, d);
+    const tris = Math.abs(h[a] - h[d]) <= Math.abs(h[b] - h[c]) ? [a, d, b, a, c, d] : [a, c, b, b, c, d];
+    // The columns run round the planet from the outer bound to the torn line, which is the other way round on the
+    // pale side: its triangles are turned so that every face looks out.
+    if (SIDES[side].sign > 0) for (let i = 0; i < 6; i += 3) [tris[i + 1], tris[i + 2]] = [tris[i + 2], tris[i + 1]];
+    idx.push(...tris);
   }
   say(`${side}: ${rows.length} rings of ${cols + 1}, ${(idx.length / 3).toLocaleString('en-US')} triangles`);
   return { positions: pos, indices: Uint32Array.from(idx), lock };

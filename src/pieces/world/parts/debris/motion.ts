@@ -12,6 +12,8 @@ export const MOTION = {
   // A great piece holds its place under the edge it broke from, rises and falls, slides a little from side to
   // side, and keeps one face to the core, rocking a little about the line to it.
   plate: { rise: 5, riseT: 47, slide: 7, slideT: 73, rock: 0.06, rockT: 61 },
+  // Picture 9's two boulders hang close under the rock, and move less: their families, and how much less.
+  calm: { families: [9, 10] as const, share: 0.3 },
   // The small pieces round a great one go where it goes, and swing slowly round it.
   ring: { swing: 0.12, swingT: 83 },
   // A clump slides from side to side as one, and rises and falls.

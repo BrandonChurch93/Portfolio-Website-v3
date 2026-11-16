@@ -61,7 +61,9 @@ export function carve(G) {
     if (sh) z = Math.min(z, sh.near - 0.8);
     z = Math.max(z, -260);
     const back = clearOf(px, py, z);
-    if (back > 0) { if (inDisc(px, py)) z -= back + 0.5; else push[G.pieces[f].slab] = Math.max(push[G.pieces[f].slab], back + 1); }
+    const sl = G.pieces[f].slab;
+    // A slab the core hides is only kept clear of it, place by place; one that is seen is moved back whole.
+    if (back > 0) { if (inDisc(px, py) || G.slabs[sl].shown < 0.3) z -= back + 0.5; else push[sl] = Math.max(push[sl], back + 1); }
     if (Math.abs(px - CORE_PX[0]) < STREAM.half && py > STREAM.below) z = Math.min(z, STREAM.z);
     return z;
   };

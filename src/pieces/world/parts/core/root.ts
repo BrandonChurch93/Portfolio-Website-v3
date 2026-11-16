@@ -102,7 +102,7 @@ float rootAmount( float x, float d ) {
 	float xs = x * uRootScale.x, s = d * uRootScale.y, t = uTime, on = uRootState.x;
 	float open = rootOpen( d ), l = rootLimb( - d ) * uRootScale.x / ROOT_BEAM * ROOT_HUG;
 	// Over the foot the fibres fan up along the inside of the ball's band.
-	float F = sqrt( open * open + l * l ), Fh = 1.0 + ROOT_HEART_OPEN * ( open - 1.0 );
+	float F = sqrt( open * open + l * l ), Fh = 1.0 + ROOT_HEART_OPEN * ( open - 1.0 ) + ROOT_HEART_HUG * l;
 	float gx = xs / ( ROOT_GLOW_W * Fh ), glow = ROOT_GLOW * exp( - gx * gx );
 	float a = 0.0;
 	// Before the stream has set off: a short gathering under the foot, whole, its end rounded, quieter.
@@ -141,11 +141,13 @@ vec3 rootUntone( vec3 T ) {
 	return c * ( P / q );
 }
 // An amount of the stream's light as the page shows it, given to the world: the light, worked back, and how much of
-// what is behind it it covers, which on the page is as much as it is bright.
+// what is behind it it covers. On the page that is as much as it is bright, which over the lit rock laid the faint
+// edge of the ribbon on it as a brown shadow: here a faint light covers less.
 vec4 rootColor( float a ) {
 	vec3 e = pow( min( rootRamp( a ), uPale ), vec3( 1.0 / 2.2 ) );
 	vec3 T = mix( e / 12.92, pow( ( e + 0.055 ) / 1.055, vec3( 2.4 ) ), step( 0.04045, e ) );
-	return vec4( rootUntone( T ), max( e.r, max( e.g, e.b ) ) );
+	float m = max( e.r, max( e.g, e.b ) );
+	return vec4( rootUntone( T ), m * m );
 }
 `;
 

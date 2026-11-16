@@ -18,11 +18,11 @@ const PLAN = 'scripts/world/debris-plan.json';
 export const CLASSES = { L: 12, M: 5, S: 2, D: 0 };
 export const classOf = (r) => (r >= CLASSES.L ? 'L' : r >= CLASSES.M ? 'M' : r >= CLASSES.S ? 'S' : 'D');
 
-// Picture 9's two great boulders, read off the picture (its pixels, the middle of each), with their sizes. The left
-// is a chunky dark lump, the right a taller one.
+// Picture 9's two great boulders, read off the picture (its pixels, the middle of each), with their half extents,
+// across, up and through. The left is a chunky dark lump whose top meets the rock, the right a taller one.
 const BOULDERS = [
-  { px: [436, 632], z: 260, r: 74, long: 1.02, flat: 0.05, family: 9, turn: 0.55 },
-  { px: [905, 638], z: 250, r: 76, long: 1.12, flat: 0.12, family: 10, turn: -0.2 },
+  { px: [436, 640], z: 230, size: [64, 40, 58], family: 9, turn: 0.55 },
+  { px: [905, 634], z: 250, size: [60, 60, 55], family: 10, turn: -0.2 },
 ];
 // The smaller pieces picture 9 has under the hollow, among the small streams: where each is in the picture's pixels
 // and about how wide, and how far toward the visitor.
@@ -76,7 +76,9 @@ export function rotate(q, v) {
 const conj = (q) => [-q[0], -q[1], -q[2], q[3]];
 
 // A piece's half extents before it is cut, from the plan's size, length and flatness.
-export const extents = (p) => [p.r * p.long * 0.85, p.r * (1 - 0.5 * p.flat) * 0.78, p.r * 0.82];
+export const extents = (p) => p.size ?? [p.r * p.long * 0.85, p.r * (1 - 0.5 * p.flat) * 0.78, p.r * 0.82];
+// How much of its family's motion a piece has.
+export const calm = (p) => (MOTION.calm.families.includes(p.family) || MOTION.calm.families.includes(p.family - 20) ? MOTION.calm.share : 1);
 
 export function place(bvh) {
   const plan = JSON.parse(fs.readFileSync(PLAN, 'utf8')).pieces, r = L.seeded(9173), said = { plan: plan.length, moved: 0, out: 0, why: {} };
@@ -90,7 +92,7 @@ export function place(bvh) {
   };
   const near = (x, y, z, reach) => inside(x, y, z) || gap(bvh, x, y, z, reach + EDGE.rock, 0) < reach + EDGE.rock;
   // How far a piece moves from where it rests, other than going round the stream.
-  const swayOf = (p) => (p.kind === 'dust' ? SWAY.dust + Math.hypot(p.at[0], p.at[2] - cz) * MOTION.dust.turn : SWAY[p.kind]);
+  const swayOf = (p) => (p.kind === 'dust' ? SWAY.dust + Math.hypot(p.at[0], p.at[2] - cz) * MOTION.dust.turn : SWAY[p.kind] * (p.kind === 'plate' || p.kind === 'ring' ? calm(p) : 1));
   // Where a piece is in the stream's lane, if it is: in front of it, or in its way.
   const lane = (q, reach, sway) => {
     const [sx] = L.drawn(q[0], q[1], q[2]), off = Math.abs(sx - core[0]);
@@ -175,7 +177,7 @@ export function place(bvh) {
     const to = hang(d.at[1]), p = add({ ...d, at: [d.at[0], to, d.at[2]] }, 'plate', { land: d.land });
     if (p) moved.set(d.family, [p.at[0] - d.at[0], p.at[1] - d.at[1], p.at[2] - d.at[2]]);
   }
-  for (const b of BOULDERS) add({ at: L.fromPicture(b.px[0], b.px[1], b.z), r: b.r, long: b.long, flat: b.flat, family: b.family }, 'plate', { turn: b.turn, pictured: true });
+  for (const b of BOULDERS) add({ at: L.fromPicture(b.px[0], b.px[1], b.z), r: Math.max(...b.size) / 0.85, long: 1, flat: 0, family: b.family }, 'plate', { turn: b.turn, pictured: true, size: b.size });
   for (const b of BOULDERS) {
     const g = pieces.find((p) => p.family === b.family);
     if (!g) continue;
@@ -241,7 +243,9 @@ export function place(bvh) {
     p.cls = p.kind === 'plate' ? 'G' : classOf(p.r);
     p.phase = r();
     if (p.kind === 'plate') {
-      const up = unit(L.CORE.at.map((v, i) => v - p.at[i])), side0 = unit(cross(up, [0, 0, 1])), fwd0 = cross(side0, up);
+      // A boulder of the picture's stands as the picture has it, leaning only a little toward the core.
+      const core = unit(L.CORE.at.map((v, i) => v - p.at[i])), up = p.size ? unit([core[0] * 0.3, 1, core[2] * 0.3]) : core;
+      const side0 = unit(cross(up, [0, 0, 1])), fwd0 = cross(side0, up);
       const t = p.turn ?? (r() - 0.5) * 1.6, side = side0.map((v, i) => v * Math.cos(t) + fwd0[i] * Math.sin(t)), fwd = cross(side, up);
       p.quat = quatOf(side, up, fwd);
       p.spin = [...up, 0];

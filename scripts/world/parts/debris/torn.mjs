@@ -74,7 +74,7 @@ export function shape({ seed, size, layer = [0, 1, 0], blocks = 7, drop = 1, ski
   const lobes = [lobe(1, [0, 0, 0], 0, 0)];
   for (let i = 0, n = 1 + Math.floor(r() * 2); i < n; i++) {
     const side = r() < 0.5 ? -1 : 1, k = 0.45 + 0.25 * r();
-    lobes.push(lobe(k, [side * a * (0.55 + 0.25 * r()), b * 0.35 * (r() - 0.5), c * 0.5 * (r() - 0.5)], 0.9 * (r() - 0.5), 0.5 * (r() - 0.5)));
+    lobes.push(lobe(k, [side * a * (1.05 - k) * (0.8 + 0.2 * r()), b * 0.3 * (r() - 0.5), c * (1 - k) * (r() - 0.5)], 0.9 * (r() - 0.5), 0.5 * (r() - 0.5)));
   }
   const inHull = (p) => {
     let best = Infinity;
@@ -86,7 +86,7 @@ export function shape({ seed, size, layer = [0, 1, 0], blocks = 7, drop = 1, ski
   const Ln = unit(layer), squash = (p) => { const s = dot(p, Ln) * (T.flat - 1); return [p[0] + Ln[0] * s, p[1] + Ln[1] * s, p[2] + Ln[2] * s]; };
   const seeds = [];
   for (let tries = 0; seeds.length < blocks && tries < 4000; tries++) {
-    const p = [a * (r() * 2 - 1) * 1.3, b * (r() * 2 - 1) * 0.9, c * (r() * 2 - 1) * 0.9];
+    const p = [a * (r() * 2 - 1) * 0.95, b * (r() * 2 - 1) * 0.9, c * (r() * 2 - 1) * 0.9];
     if (inHull(p) > -big * 0.08) continue;
     if (seeds.some((q) => Math.hypot(...squash([p[0] - q[0], p[1] - q[1], p[2] - q[2]])) < big * 0.42)) continue;
     seeds.push(p);

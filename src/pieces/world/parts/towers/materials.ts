@@ -152,7 +152,8 @@ vec3 bAcross = vec3( 1.0, 0.0, 0.0 );
 	}
 	if ( cs.x > 0.0 ) {
 		vec2 c = vCell.xy, fw = max( fwidth( c ), vec2( 1e-5 ) ), id = floor( c ), p = ( c - id ) * cs;
-		vec2 a = vec2( ${f(fr.side)}, ${f(fr.sill)} ) / cs, b = vec2( 1.0 ) - vec2( ${f(fr.side)}, ${f(fr.head)} ) / cs;
+		float fSide = min( ${f(fr.side)}, ${f(WINDOW.most.side)} * cs.x ), fSill = min( ${f(fr.sill)}, ${f(WINDOW.most.sill)} * cs.y ), fHead = min( ${f(fr.head)}, ${f(WINDOW.most.head)} * cs.y );
+		vec2 a = vec2( fSide, fSill ) / cs, b = vec2( 1.0 ) - vec2( fSide, fHead ) / cs;
 		float cellPx = min( 1.0 / fw.x, 1.0 / fw.y );
 		bFar = 1.0 - smoothstep( ${f(FAR.far[0])}, ${f(FAR.far[1])}, cellPx );
 		vec3 farEmit = vec3( 0.0 );
@@ -188,15 +189,15 @@ vec3 bAcross = vec3( 1.0, 0.0, 0.0 );
 			vec3 h = vec3( p, 0.0 ) + rl * t;
 			float s1 = tHash( id + 7.3 ), s2 = tHash( id + 19.1 ), s3 = tHash( id + 3.1 );
 			vec3 lamp = vec3( cs.x * ( 0.2 + 0.6 * s1 ), cs.y * 0.94, deep * ( 0.3 + 0.45 * s3 ) );
-			float lr = length( h - lamp ), glow = 0.2 + 1.2 / ( 1.0 + 3.0 * lr * lr ), up = clamp( h.y / cs.y, 0.0, 1.0 );
-			float surf = t == tz ? ( 0.55 + 0.4 * s2 ) * ( 0.18 + 1.25 * up * up ) : ( t == ty ? ( rl.y < 0.0 ? 0.12 : 1.4 ) : 0.55 * ( 0.2 + 1.1 * up * up ) );
+			float lr = length( h - lamp ), glow = 0.45 + 1.0 / ( 1.0 + 3.0 * lr * lr ), up = clamp( h.y / cs.y, 0.0, 1.0 );
+			float surf = t == tz ? ( 0.6 + 0.4 * s2 ) * ( 0.5 + 0.9 * up ) : ( t == ty ? ( rl.y < 0.0 ? 0.35 : 1.4 ) : 0.6 * ( 0.45 + 0.8 * up ) );
 			vec3 near = vec3( surf * glow );
 			if ( s1 > 0.7 && p.x < cs.x * ( 0.18 + 0.15 * s3 ) ) near *= 0.4;
 			float zf = deep * ( 0.3 + 0.35 * s2 ), tf = zf / rl.z;
 			vec3 hf = vec3( p, 0.0 ) + rl * tf;
 			float fx0 = cs.x * ( 0.05 + 0.5 * tHash( id + 5.7 ) ), fx1 = fx0 + cs.x * ( 0.25 + 0.4 * tHash( id + 9.9 ) ), fy1 = cs.y * ( 0.22 + 0.28 * tHash( id + 2.6 ) );
 			if ( tf < t && tHash( id + 2.2 ) < 0.65 && hf.x > fx0 && hf.x < fx1 && hf.y < fy1 ) near = vec3( 0.06 + 0.45 * smoothstep( fy1 - 0.1, fy1, hf.y ) * glow );
-			float top = cs.y - ${f(fr.head)}, low = top - blind * ( cs.y - ${f(fr.sill + fr.head)} );
+			float top = cs.y - fHead, low = top - blind * ( cs.y - fSill - fHead );
 			// The glass is set back in its frame, so the head's shadow lies across the top of the room seen.
 			near *= 1.0 - 0.6 * smoothstep( top - ${f(WINDOW.reveal)}, top, p.y );
 			if ( blind > 0.02 && p.y > low ) {
@@ -205,7 +206,7 @@ vec3 bAcross = vec3( 1.0, 0.0, 0.0 );
 			}
 			near *= ${f(WINDOW.near)};
 			room = mix( room, near, detail );
-			vec2 lo = vec2( ${f(fr.side)}, ${f(fr.sill)} ), hi = cs - vec2( ${f(fr.side)}, ${f(fr.head)} );
+			vec2 lo = vec2( fSide, fSill ), hi = cs - vec2( fSide, fHead );
 			float bev = ${f(BAY.bevel)};
 			float inY = step( lo.y - bev, p.y ) * step( p.y, hi.y + bev ), inX = step( lo.x - bev, p.x ) * step( p.x, hi.x + bev );
 			bTilt.x = detail * inY * 0.7 * ( step( lo.x - bev, p.x ) * step( p.x, lo.x ) - step( hi.x, p.x ) * step( p.x, hi.x + bev ) );

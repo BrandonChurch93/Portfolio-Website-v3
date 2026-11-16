@@ -28,6 +28,9 @@ const TOL = { slab: 3.4, piece: 1.7, outline: 1.8, crevice: 0.9 };
 const CREVICE = { near: 3, dark: 0.012, share: 0.3, round: 7, least: 10, most: 3000, lit: 0.035 };
 // What is left of a piece a crevice cut, under this many pixels, goes to the piece beside it it shares most with.
 const CRUMB = 30;
+// Strata: a slab at least this long and wide is cut, the lines turned from its length by up to `turn` radians, and a
+// layer under `least` pixels goes back.
+const STRATA = { long: 70, wide: 22, turn: 0.09, least: 60 };
 const OUT = new URL('./measured/slabs.json', import.meta.url).pathname;
 
 export async function slabs() {
@@ -178,7 +181,7 @@ export async function slabs() {
     for (let c = 0; c < 3; c++) col[p * 3 + c] += rgb[i * 3 + c];
     if (shown) { shownY[s * 2] += Y; shownY[s * 2 + 1] += 1; }
   }
-  const pieces = [];
+  let pieces = [];
   for (let p = 0; p < P; p++) {
     const o = p * 9, A = ps[o];
     pieces.push({ id: p, slab: slabOfPiece[p], area: A, shown: +(ps[o + 1] / A).toFixed(3), at: [+(ps[o + 3] / A).toFixed(2), +(ps[o + 4] / A).toFixed(2)], Y: +(ps[o + 2] / A).toFixed(5), rgb: [0, 1, 2].map((c) => +(col[p * 3 + c] / A).toFixed(5)) });
@@ -192,6 +195,62 @@ export async function slabs() {
   classify(slabsOut, plab, slabOfPiece, W, H);
   for (const s of slabsOut) if (crevice.has(s.id)) { s.role = 'gap'; s.crevice = true; }
 
+  // Strata: a great slab that takes the light is cut along its own length by one to three lines, a little turned
+  // from it, and each band it is cut into is a layer that stands a little lower than the one before.
+  {
+    const lines = new Map();
+    for (const sl of slabsOut) {
+      if ((sl.role !== 'lit' && sl.role !== 'shade') || sl.long < STRATA.long || sl.wide < STRATA.wide || sl.shown < 0.5) continue;
+      const cuts = sl.long >= 150 ? 3 : sl.long >= 100 ? 2 : 1, list = [];
+      for (let c = 0; c < cuts; c++) {
+        const h = (q) => { const v = Math.sin((sl.id * 7 + c) * 91.17 + q * 12.31) * 24634.6345; return v - Math.floor(v); };
+        const turn = (h(1) - 0.5) * 2 * STRATA.turn, th = Math.atan2(sl.axis[1], sl.axis[0]) + turn, across = (((c + 1) / (cuts + 1) - 0.5) * 0.9 + (h(2) - 0.5) * 0.12) * sl.wide;
+        list.push([sl.at[0] - sl.axis[1] * across, sl.at[1] + sl.axis[0] * across, Math.cos(th), Math.sin(th)]);
+      }
+      lines.set(sl.id, list);
+    }
+    const count = new Map(), keyOf = (p, k) => p * 8 + k, layer = new Int32Array(n).fill(-1);
+    for (let i = 0; i < n; i++) {
+      const p = plab[i];
+      if (p < 0) continue;
+      const list = lines.get(slabOfPiece[p]);
+      if (!list) continue;
+      const x = (i % W) + 0.5, y = ((i / W) | 0) + 0.5;
+      let k = 0;
+      for (const [ox, oy, dx, dy] of list) if ((x - ox) * dy - (y - oy) * dx < 0) k++;
+      layer[i] = k;
+      count.set(keyOf(p, k), (count.get(keyOf(p, k)) ?? 0) + 1);
+    }
+    // A layer too small to be one goes to the largest layer of its piece.
+    const most = new Map();
+    for (const [key, c] of count) { const p = Math.floor(key / 8); if (!most.has(p) || c > count.get(keyOf(p, most.get(p)))) most.set(p, key % 8); }
+    // Each layer of a piece but its largest gets a label of its own; the largest keeps the piece's.
+    const label = new Map(), stratumOf = [], slabOfNew = new Map();
+    let next = P;
+    for (let i = 0; i < n; i++) {
+      if (layer[i] < 0) continue;
+      const p = plab[i];
+      let k = layer[i];
+      if (count.get(keyOf(p, k)) < STRATA.least) k = most.get(p);
+      if (k === most.get(p)) { stratumOf[p] = k; continue; }
+      const key = keyOf(p, k);
+      if (!label.has(key)) { label.set(key, next); stratumOf[next] = k; slabOfNew.set(next, slabOfPiece[p]); next++; }
+      plab[i] = label.get(key);
+    }
+    const mid = plab.slice(), P2 = connected(W, H, plab), slab2 = new Int32Array(P2).fill(-1), strat2 = new Int32Array(P2).fill(-1);
+    for (let i = 0; i < n; i++) {
+      const q = plab[i];
+      if (q < 0 || slab2[q] >= 0) continue;
+      const m = mid[i];
+      slab2[q] = m < P ? slabOfPiece[m] : slabOfNew.get(m);
+      strat2[q] = stratumOf[m] ?? -1;
+    }
+    P = P2; slabOfPiece = slab2;
+    pieces = pieceList(W, H, plab, P, slabOfPiece, Yp, kind, rgb);
+    pieces.forEach((pc, q) => { if (strat2[q] >= 0) pc.stratum = strat2[q]; });
+    for (const sl of slabsOut) sl.pieces = pieces.filter((q) => q.slab === sl.id).map((q) => q.id);
+  }
+
   const kindOf = (a, b) => (a < 0 || b < 0 || slabOfPiece[a] !== slabOfPiece[b] ? 'slab' : 'piece');
   const tolOf = (a, b) => {
     if ((a >= 0 && crevice.has(slabOfPiece[a])) || (b >= 0 && crevice.has(slabOfPiece[b]))) return TOL.crevice;
@@ -201,6 +260,23 @@ export async function slabs() {
   const chains = outline(W, H, plab, kind, rgb, { tol: tolOf, wobble: (a, b) => (kindOf(a, b) === 'slab' ? 0.4 : 0.2) });
   for (const ch of chains) ch.kind = kindOf(ch.L, ch.R);
   return { W, H, pieces, slabs: slabsOut, chains, plab, slabOfPiece, kind };
+}
+
+// What each piece is in the picture: its size, how much of it the picture shows, its middle, its brightness and color.
+function pieceList(W, H, plab, P, slabOfPiece, Yp, kind, rgb) {
+  const n = W * H, ps = new Float64Array(P * 5), col = new Float64Array(P * 3);
+  for (let i = 0; i < n; i++) {
+    const p = plab[i];
+    if (p < 0) continue;
+    ps[p * 5] += 1; ps[p * 5 + 1] += kind[i] === 1 ? 1 : 0; ps[p * 5 + 2] += Yp[i]; ps[p * 5 + 3] += (i % W) + 0.5; ps[p * 5 + 4] += ((i / W) | 0) + 0.5;
+    for (let c = 0; c < 3; c++) col[p * 3 + c] += rgb[i * 3 + c];
+  }
+  const out = [];
+  for (let p = 0; p < P; p++) {
+    const o = p * 5, A = ps[o];
+    out.push({ id: p, slab: slabOfPiece[p], area: A, shown: +(ps[o + 1] / A).toFixed(3), at: [+(ps[o + 3] / A).toFixed(2), +(ps[o + 4] / A).toFixed(2)], Y: +(ps[o + 2] / A).toFixed(5), rgb: [0, 1, 2].map((c) => +(col[p * 3 + c] / A).toFixed(5)) });
+  }
+  return out;
 }
 
 // Finds the crevices and gives each a label of its own, from `first` on. Returns how many.

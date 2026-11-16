@@ -44,6 +44,10 @@ const MOON = { reach: 980, mid: -330, far: 4.5, map: { high: 4096, mid: 2048, lo
 export const GLINT = { back: 2.2, range: 1.3, power: 1.4 };
 // The glow: how strong, how far it spreads, and how bright a thing has to be to have one (pale is about 1).
 const GLOW = { strength: 0.14, radius: 0.08, threshold: 1.7 };
+// How much of the stage's white balance the world keeps. The balance was made for things seen in a warm room, to
+// let a grey thing read grey. Here it took the warmth out of every dark: sand in shadow, rock out of the core's
+// light and the shade of the trees all came out grey, where the picture's darks are a deep warm brown.
+const WARM = 0.25;
 // The canvas fades to nothing over this share of its rim, so nothing can end at its edge.
 const RIM = 0.02;
 
@@ -174,7 +178,7 @@ export function createWorld(): WorldPiece {
       stage = new Stage(h, canvas, { tier: opts.tier, fov: ALONE.fov, near: 0.3, far: 40, bloom: GLOW, bloomScale: 0.5, envIntensity: LIGHT.night, env: night, lampAngle: 0.9 });
       trueDarks(stage.renderer);
       lean();
-      finish(stage, RIM);
+      finish(stage, RIM, WARM);
       stage.lamp.intensity = 0;
       stage.lamp.castShadow = false;
       const s = stage.scene, root = new THREE.Group();
@@ -251,7 +255,7 @@ export function createWorld(): WorldPiece {
       if (!stage) return;
       stage.setTier(tier);
       lean();
-      finish(stage, RIM);
+      finish(stage, RIM, WARM);
       if (moon) { moon.shadow.mapSize.setScalar(MOON.map[tier]); moon.shadow.map?.dispose(); moon.shadow.map = null as unknown as THREE.WebGLRenderTarget; }
       cast = 3;
       stale = true;

@@ -57,7 +57,8 @@ const TURN = { axis: new THREE.Vector3(0.28, 1, 0.34).normalize(), rate: 0.0075 
 // The root of the beam, in units of the world down from the ball's foot unless they say otherwise.
 //   flare0, fall0, flare1, fall1: how far the ribbon is opened at the foot, as two flares gone over those depths, as
 //     picture 9's neck flares into the ball
-//   heart: how much more than the fibres the heart opens with it, which is the bright gathering at the foot
+//   heart: how much more than the fibres the heart opens with it, which is the bright gathering at the foot, and
+//     heartHug: how far it spreads along the band inside the ball
 //   beam: half the ribbon's width, in stream units, and hug: how close to the ball's limb its fibres fan up inside it
 //   in: over which shares of the radius the fan comes on inside the ball, and up: how far over the foot it reaches
 //   above: how fast it is gone over the foot outside the ball
@@ -68,7 +69,7 @@ const TURN = { axis: new THREE.Vector3(0.28, 1, 0.34).normalize(), rate: 0.0075 
 //   surge: as it sets off, the light that runs down it: how much, how fast in units a second, how long
 //   long: how far down the plane it is drawn on reaches
 const ROOT = {
-  flare0: 0.45, fall0: 7, flare1: 0.4, fall1: 26, heart: 2.2, beam: 15, hug: 0.92, in: [0.8, 0.93], up: 34, above: 3.5,
+  flare0: 0.45, fall0: 7, flare1: 0.4, fall1: 26, heart: 2.2, heartHug: 0.35, beam: 15, hug: 0.92, in: [0.8, 0.93], up: 16, above: 3.5,
   glow: [0.16, 4.5], quiet: 7, over: [0.12, 0.9], hush: 0.72, hand: PAGE.hero.hand, surge: [0.7, 210, 18], long: 130, energy: 1,
 } as const;
 
@@ -133,7 +134,7 @@ export const build: PartFactory = (ctx) => {
   const f = (n: number) => n.toFixed(4);
   const rootDefines = {
     ROOT_STRANDS: strands, ROOT_ENERGY: f(ROOT.energy), ROOT_BEAM: f(ROOT.beam), ROOT_HUG: f(ROOT.hug),
-    ROOT_FLARE0: f(ROOT.flare0), ROOT_FALL0: f(ROOT.fall0), ROOT_FLARE1: f(ROOT.flare1), ROOT_FALL1: f(ROOT.fall1), ROOT_HEART_OPEN: f(ROOT.heart),
+    ROOT_FLARE0: f(ROOT.flare0), ROOT_FALL0: f(ROOT.fall0), ROOT_FLARE1: f(ROOT.flare1), ROOT_FALL1: f(ROOT.fall1), ROOT_HEART_OPEN: f(ROOT.heart), ROOT_HEART_HUG: f(ROOT.heartHug),
     ROOT_GLOW: f(ROOT.glow[0]), ROOT_GLOW_W: f(ROOT.glow[1]), ROOT_QUIET: f(ROOT.quiet), ROOT_HUSH: f(ROOT.hush),
     ROOT_HOST: f(host.host), ROOT_HAND0: f(ROOT.hand[0]), ROOT_HAND1: f(ROOT.hand[1]),
     ROOT_SURGE: f(ROOT.surge[0]), ROOT_SURGE_V: f(ROOT.surge[1]), ROOT_SURGE_W: f(ROOT.surge[2]), ROOT_ABOVE: f(ROOT.above),

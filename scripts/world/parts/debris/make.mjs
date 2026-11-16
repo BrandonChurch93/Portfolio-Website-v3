@@ -20,7 +20,7 @@ import { L, light, linear, storeBounce } from '../../lib/plan.mjs';
 import { KIND, SWAY } from '../../../../src/pieces/world/parts/debris/motion.ts';
 import { detail } from './detail.mjs';
 import { makeModels } from './models.mjs';
-import { extents, place, rotate } from './place.mjs';
+import { calm, extents, place, rotate } from './place.mjs';
 import { read } from './rockfile.mjs';
 
 const draft = process.argv.includes('--draft');
@@ -66,10 +66,10 @@ const laid = (p) => {
 const clear = (pos) => { let least = Infinity; for (let i = 0; i < pos.length / 3; i += 5) least = Math.min(least, gap(bvh, pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2], 40, 0)); return least; };
 for (const p of great) {
   let { pos, nor } = laid(p);
-  const need = SWAY.plate + 1, from = [...p.at], [px, py] = L.pictured(...from);
+  const need = SWAY.plate * calm(p) + 1, from = [...p.at], [px, py] = L.pictured(...from);
   const tries = [...Array.from({ length: 12 }, (_, k) => L.fromPicture(px, py, from[2] + (k % 2 ? -1 : 1) * 12 * (1 + (k >> 1)))), ...Array.from({ length: 12 }, (_, k) => [from[0], from[1] - 4 * (k + 1), from[2]])];
   for (let k = 0; clear(pos) < need && k < tries.length; k++) { p.at = tries[k]; ({ pos, nor } = laid(p)); }
-  if (p.at !== from) said(`G${p.family} kept clear of the rock: moved ${p.at.map((v, i) => (v - from[i]).toFixed(0)).join(', ')}, ${clear(pos).toFixed(1)} from it`);
+  if (p.at.some((v, i) => v !== from[i])) said(`G${p.family} kept clear of the rock: moved ${p.at.map((v, i) => (v - from[i]).toFixed(0)).join(', ')}, ${clear(pos).toFixed(1)} from it`);
   meshes.push({ name: models[p.model].name, positions: pos, indices: models[p.model].indices, normals: nor, albedo: ALBEDO, receive: true });
 }
 const lit = await bake({ meshes, ...light() }, { samples: draft ? { core: 24, moon: 8, hemi: 64 } : { core: 64, moon: 16, hemi: 224 }, bounces: 1 });

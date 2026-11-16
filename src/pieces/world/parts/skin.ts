@@ -65,6 +65,9 @@ export const build: PartFactory = async ({ query, renderer }) => {
     fr = after(fr, 'color_fragment', S.COLOR);
     fr = after(fr, 'normal_fragment_maps', S.NORMAL);
     fr = after(fr, 'emissivemap_fragment', S.EMIT);
+    // ?skindebug=<a color in GLSL> draws that in place of the skin, for finding what a fault comes from.
+    const debug = query.get('skindebug');
+    if (debug) fr = after(fr, 'opaque_fragment', `gl_FragColor = vec4( ${debug}, 1.0 );`);
     sh.fragmentShader = fr;
   };
   lit(m, { key: 'skin', baked: true });
