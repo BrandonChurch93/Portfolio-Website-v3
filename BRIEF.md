@@ -1094,6 +1094,8 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     - **Fable's additions, each said to him as his to turn down:** the torn edge cuts through one of the large craters, which shows the craters are older than the break. The smaller streams at the left leave from the ends of the lit cracks, so the cracks and the streams are one idea.
     - **His craters assume a fixed light.** Asked of him again: whether that is his yes to the fixed moon of 18:09.
     - A fourth prompt for Gemini asks for the three as additions to the combined picture. It is in `LOG.md`, Nov 15, "Craters, lit cracks and the smaller streams".
+- **Yes to the lit cracks and the smaller streams, and one prompt for all of it (Nov 15, 18:39).** "Love this idea! Could you actually just output everything I need to send right now, the single prompt and the two images, so everything is at one place."
+    - In exact terms: the left side of the planet's outer surface gets cracks lit from inside, and three or four smaller streams leave the torn rock, as Fable put them at 18:35. Both are his now. The combine prompt and the additions were given to him as one prompt, with pictures 6 and 7 (`LOG.md`, Nov 15, "One prompt for the combined picture").
 - An idea to revisit with the hero, not decided: his first thought was the city breaking apart into the stream as the visitor scrolls. Fable's twist, which he asked to have noted: building, not breaking. The city assembles out of the stream's facets in the opening, and the stream carries the same pieces on down the page. (Nov 12)
 
 **The hero, the city at rest: the agreement (Nov 14)**

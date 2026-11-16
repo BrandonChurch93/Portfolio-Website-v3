@@ -2,6 +2,12 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · One prompt for the combined picture (Fable, web chat)
+
+- He said "Love this idea!" to the lit cracks and the smaller streams, and asked for one prompt and the two pictures in one place.
+- The combine prompt and the additions were merged into one and given to him with pictures 6 and 7. It is the prompts of the two entries below, joined: start from picture 6, take picture 7's underside, then seven changes (gold pyramid, three gold tops, bronze accents, a warmer core, craters on the right, lit cracks on the left, three or four small streams).
+- It is longer than the lesson of the sixth picture would like. If the underside does not come across, go back to two messages: the combine first, the additions second.
+
 ## 2026-11-15 · Craters, lit cracks and the smaller streams (Fable, web chat)
 
 **What Brandon said**
