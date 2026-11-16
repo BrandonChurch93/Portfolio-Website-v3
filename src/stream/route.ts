@@ -471,7 +471,14 @@ export function routeThroughWork(P: WorkPlan): Route {
       corners.push([x, shelf, K.land[0] * u, K.land[1] * u], [lip, shelf, (K.past + K.early) * u, K.fall * u]);
       marks.push(mark('land', x + way * K.land[1] * u * 0.2, P.bar.t, way, UP, C.bar, [x + way * K.land[1] * u * 0.4, shelf]));
     }
-    corners.push([lip, P.bottom, 0, 0]);
+    // Where the route ends at Work's button, as on a narrow page with sections under Work, each side turns in under
+    // the last card and strikes the button's end, so the two meet on it. Left to fall, they ended in the air
+    // beside it: "the 2 streams do not re-intersect" (his words on the phone, Nov 13).
+    const B = P.button, mid = B ? (B.t + B.b) / 2 : 0, to = B ? (way < 0 ? B.l : B.r) : 0, reach = Math.abs(lip - to);
+    if (B && P.bottom > B.t && P.bottom - B.b < 60 * u && reach > 20 * u) {
+      corners.push([lip, mid, Math.min(K.fall * u, 60 * u), Math.min(40 * u, reach * 0.7)], [to + way * 2 * u, mid, 0, 0]);
+      marks.push(mark('side', to, mid, 0, way < 0 ? Math.PI : 0, C.side, [to + way * 2 * u, mid]));
+    } else corners.push([lip, P.bottom, 0, 0]);
     return { line: trace(corners), marks };
   };
 
