@@ -55,9 +55,10 @@ const RIM = { power: 0.9, cut: 7, edge: 5, own: 0.45, thin: [2.5, 5] };
 // fades with height to `rim` at the feet.
 // His stepped tower's limestone takes `pale` of it, so its lit piers stay the pale near neutral he approved.
 // Every building but his: how much of its light the foot of a building keeps against its top, and the curve
-// between; the sky about the moon on it, and how much of it a face turned from the moon still takes; how much more
-// of the night's soft light it takes than his.
-const SHADE = { foot: 0.15, curve: 1.1, power: 2.0, wrap: 0.55, night: 1.6 };
+// between; the sky about the moon on it, and how much of it a face turned from the moon still takes (little: the face
+// turned to the moon is the lit one, the front a clear step darker); how much of the night's soft light it takes
+// against his, and how much of the stored bounce, which lies on every face alike.
+const SHADE = { foot: 0.35, curve: 1.1, power: 4, wrap: 0.05, night: 0.15, bounce: 0.45 };
 const SKY = { power: 0.75, wrap: 0.4, low: -25, high: 150, feet: 0.1, fill: 0.6, rim: 0.12, pale: 0.15 };
 // The street's light on the lowest storeys: shop fronts and lamps bleeding up the walls, in the palette's hot light,
 // as radiance on the stone at the foot (power), falling to a share 1/e every `fall` units up, strongest in the
@@ -69,9 +70,21 @@ const STREET = { power: 0.8, fall: 9, canyon: 1.6, clump: [9, 0.65] };
 // Every building but his takes less of it, and only low down (city, cityFall): its walls are lit by the night and
 // the moon from a shaded foot to a lit top (SHADE), and their glow is the street's and their own windows'.
 const GLOW = { power: 0.16, shut: 1.5, fall: 90, city: 0.05, cityFall: 30 };
-// The far rows fall darker: the walls of the back of the city keep this share of their light, its windows `lights`.
-const DEPTH = { far: 0.45, lights: 0.7 };
+// The city's own light on its walls, as real light with a direction: the streets and the lit windows of the open
+// ground before the city spill a warm light up its faces, from in front and the visitor's right (FRONT.toward in
+// ./windows.ts, which the make bakes how much of it a place sees by). A face takes it by its cosine, wrapped by
+// `wrap`, in the palette's hot light eased `pale` toward its pale; it is brightest low and falls to `floor` of that by
+// `fall` units up (his tower takes it only on its lowest floors, falling by `his`); a place shut
+// from the front by a nearer building (the bake's `frontward`) keeps `shut` of it, and a place shut in keeps `open`.
+// It is laid on as radiance, as the street's is, so the foot to top shade of the moon's light does not dim it.
+const CITY = { pale: 0.15, power: 1.0, wrap: 0.1, fall: 26, floor: 0.4, his: 8, shut: 0.3, open: 0.6 };
+// The far rows fall back: the walls of the back of the city keep `far` of their light and its windows `lights`, by
+// how far back a place is (tBack, eased by `curve`), and they go toward the dark warm air between, `haze` of the way,
+// so the front row is lit and crisp and the last rows are near silhouettes against the glow behind the world.
+const DEPTH = { far: 0.25, lights: 0.55, curve: 0.7, haze: 0.45, air: [0.045, 0.022, 0.009] };
 const HOT = new THREE.Color(hex('hot'));
+// The city's light: the palette's hot light eased toward its pale (CITY.pale), as a lamp lit street seen from afar is.
+const CITY_LIGHT = HOT.clone().lerp(new THREE.Color(hex('pale')), CITY.pale);
 // The pale stone, which every stone of the towers is a tone of: the palette's text-2, a little lighter (PALE_STONE in
 // ./windows.ts, which the baker lights it by too).
 const PALE = new THREE.Color(hex('text-2')).lerp(new THREE.Color(hex('copper-light')), WARM).multiplyScalar(PALE_STONE);
@@ -82,7 +95,7 @@ const SHEET = { seam: 1.3, dark: 0.45, weather: 0.22 };
 // A lit room seen far off is this warm (0 flame, 0.5 hot, 1 pale); close up its color runs from its own warmth less
 // lamp[0] at its back toward pale by lamp[1] for each step of the lamp's glow. The rooms round a place, read over
 // spill[1] windows each way, light the wall between them by spill[0] of their level, so a lit clump has a glow.
-const ROOM = { far: 0.42, lamp: [-0.22, 0.32], spill: [0.9, 4] };
+const ROOM = { far: 0.25, lamp: [-0.22, 0.32], spill: [0.9, 4] };
 const BAY = { bronze: 0.62, rough: 0.5, metal: 0.85, glass: 0.06, bevel: 0.07, copper: 0.4, stone: 0.9 };
 // A field of windows seen from far off, where a window is a few pixels or less: it is drawn as its own wall, a warm
 // stone of this tone, with only its brightest rooms lit, each a small crisp light, one at most in each block of
@@ -101,7 +114,7 @@ const BAY = { bronze: 0.62, rough: 0.5, metal: 0.85, glass: 0.06, bevel: 0.07, c
 // its frame come in between `detail` pixels a window, where none of them can crawl.
 // Where windows are filtered to their average, a clump of lit rooms gives `boost` times its average light, so it
 // still reads as a lit clump and not as a warmer wall (a lit room's glass spills past its frame, seen from far off).
-const FAR = { far: [2.4, 4.4], tint: [1.2, 2.2], detail: [5, 9], bay: 2, wall: 0.8, grid: 0.22, boost: 2.2 };
+const FAR = { far: [2.4, 4.4], tint: [1.2, 2.2], detail: [5, 9], bay: 2, wall: 0.8, grid: 0.22, boost: 6, patch: 1.8, cap: 4 };
 // The gold mirrors the night as the pyramid's does, so the world's gold is one gold: a deep gold where it mirrors
 // little, the world's gold, METAL.gold, as it mirrors more, and pale gold only where it blazes (grade: the levels at
 // which each begins). What it mirrors is where its reflection points: the moon is behind the city and to the right,
@@ -113,7 +126,10 @@ const FAR = { far: [2.4, 4.4], tint: [1.2, 2.2], detail: [5, 9], bay: 2, wall: 0
 // deep gold that mirrors `field` as much, and a darker carved ring at `ring` of its radius (how far out, how wide, how much darker); the cursor's glint and the
 // moon's own on that field are cut by `glint`, which on a flat coin far off was one round spot of light.
 const DISC = { far: [0.25, 0.5], field: 7, ring: [0.66, 0.07, 0.55], glint: 0.85 };
-const GOLD = { rough: 0.17, moon: [0.1, 0.8], lit: 2.6, dark: 0.14, city: 0.1, fillet: 0.18, valley: 0.2, grade: [0.1, 2.4, 5.5], wave: [0.014, 11], shoulder: [1.2, 1.1] };
+const GOLD = { sheen: [0.6, 0.3], rough: 0.17, moon: [0.1, 0.8], lit: 9, dark: 0.14, city: 0.04, fillet: 0.18, valley: 0.2, grade: [0.1, 2.4, 5.5], wave: [0.05, 3], shoulder: [1.2, 2.5], shade: 0.4, rise: [100, 200] };
+// sheen: a broad lobe of the cursor's glint (how strong, how rough), so polished gold shows a soft band that slides
+// with the cursor. shade and rise: the sky about the moon is mirrored only `shade` as strongly below rise[0] units up
+// as above rise[1], since the city's skyline cuts it off low down: a gold point blazes at its head.
 // No polished panel is perfectly flat: each face's normal wanders by up to wave[0] over wave[1] units of the world, so
 // the reflection changes across a face as on real gilding.
 // The gold also mirrors what the bake found reaching it from round about (the city's windows, the street, the
@@ -198,9 +214,18 @@ float tUp( float y ) { return smoothstep( ${f(SKY.low)}, ${f(SKY.high)}, y / ${f
 // that falls on it, and not its own windows or the street's.
 float tRise( float rise, float his ) { return mix( mix( ${f(SHADE.foot)}, 1.0, pow( clamp( rise, 0.0, 1.0 ), ${f(SHADE.curve)} ) ), 1.0, his ); }
 // How far back a place is in the city, 0 at its front rows and 1 at its back.
-float tBack( float z ) { return clamp( ( z / ${f(SCALE)} - ${f(PLACE.depth[0])} ) / ${f(PLACE.depth[1] - PLACE.depth[0])}, 0.0, 1.0 ); }
+float tBack( float z ) { return pow( clamp( ( z / ${f(SCALE)} - ${f(PLACE.depth[0])} ) / ${f(PLACE.depth[1] - PLACE.depth[0])}, 0.0, 1.0 ), ${f(DEPTH.curve)} ); }
+// His tower keeps the light he approved it in, and takes none of the air.
+vec3 tAir( vec3 c, float z, float his ) { return mix( c, ${v3(DEPTH.air)}, ${f(DEPTH.haze)} * tBack( z ) * ( 1.0 - his ) ); }
 // The moon's line is laid on the direct light from the moon only, after the stage's own.
 const vec3 tMoonward = ${v3(new THREE.Vector3(...MOONWARD).normalize().toArray())};
+const vec3 tCityward = ${v3(new THREE.Vector3(...FRONT.toward).normalize().toArray())};
+float tCity( vec3 n, float h, float fore, float open, float his ) {
+	vec3 l = ( viewMatrix * vec4( tCityward, 0.0 ) ).xyz;
+	float c = clamp( ( dot( n, l ) + ${f(CITY.wrap)} ) / ${f(1 + CITY.wrap)}, 0.0, 1.0 );
+	float fall = his > 0.5 ? exp( - max( h, 0.0 ) / ${f(CITY.his)} ) : mix( ${f(CITY.floor)}, 1.0, exp( - max( h, 0.0 ) / ${f(CITY.fall)} ) );
+	return ${f(CITY.power)} * c * fall * mix( ${f(CITY.shut)}, 1.0, fore ) * mix( ${f(CITY.open)}, 1.0, open );
+}
 float tStreet( float h, float up, float open, float along ) {
 	float side = 1.0 - smoothstep( 0.35, 0.85, abs( up ) );
 	float clump = mix( 1.0 - ${f(STREET.clump[1])}, 1.0, smoothstep( 0.35, 0.65, tNoise( vec2( along / ${f(STREET.clump[0])}, 3.7 ) ) ) );
@@ -243,6 +268,11 @@ const SKY_LIGHT = `
 	float turned = mix( mix( ${f(SHADE.wrap)}, ${f(SKY.wrap)}, his ), 1.0, clamp( 0.5 + 0.5 * dot( normal, mw ), 0.0, 1.0 ) );
 	irradiance += directionalLights[ 0 ].color * ( mix( ${f(SHADE.power)}, ${f(SKY.power)}, his ) * seen * turned * SKY_KEEP );
 	iblIrradiance *= mix( 1.0 - ${f(SKY.fill)}, 1.0, seen ) * mix( mix( ${f(FRONT.keep)}, 1.0, wLight.x ) * ${f(SHADE.night)}, 1.0, his );
+	#ifdef WORLD_BAKED
+		// The stored bounce lies on every face alike: every building but his keeps SHADE.bounce of it, so its faces are
+		// told apart by the light that has a direction (the city's, the moon's and the sky about it).
+		irradiance -= ( 1.0 - mix( ${f(SHADE.bounce)}, 1.0, his ) ) * wBounce / max( wLight.z, 1e-3 );
+	#endif
 }
 #endif`;
 
@@ -298,9 +328,10 @@ tRimLight = vec3( 0.0 );
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
 {
 	vec3 upV = ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz;
-	totalEmissiveRadiance += diffuseColor.rgb * ( 1.0 - 0.7 * sFinish.x ) * ${lin3(HOT)} * tStreet( vFoot.x * ${f(FOOT)}, dot( normal, upV ), wLight.z, vWPos.x / ${f(SCALE)} );
+	totalEmissiveRadiance += diffuseColor.rgb * ( 1.0 - 0.7 * sFinish.x ) * ( ${lin3(HOT)} * tStreet( vFoot.x * ${f(FOOT)}, dot( normal, upV ), wLight.z, vWPos.x / ${f(SCALE)} ) + ${lin3(CITY_LIGHT)} * tCity( normal, vFoot.x * ${f(FOOT)}, wLight.x, wLight.z, HIS ) );
 }`).replace('#include <lights_fragment_end>', `iblIrradiance *= ${f(STONE.night)};\n#define SKY_KEEP ( vKind.y < ${f(0.5 / (STONES.length - 1))} ? ${f(SKY.pale)} : 1.0 )${SKY_LIGHT}\n#include <lights_fragment_end>`).replace('#include <opaque_fragment>', `outgoingLight = tPale( tCooled( ( outgoingLight - totalEmissiveRadiance ) * tRise( vFoot.y, HIS ), tCool( vKind.y ) ) + totalEmissiveRadiance + tRimLight );
 outgoingLight = max( mix( outgoingLight, tKeep( outgoingLight ), mix( ${f(STONE.keep[0])}, ${f(STONE.keep[1])}, sFinish.x ) ), 0.0 );
+outgoingLight = tAir( outgoingLight, vWPos.z, HIS );
 #include <opaque_fragment>`);
   };
   return lit(m, { key: 'towers-stone', baked: true, core: false });
@@ -373,7 +404,10 @@ vec3 bAcross = vec3( 1.0, 0.0, 0.0 );
 		// The glass's share of the pixel, exact at any size, and the room's level and color: the window's own where it
 		// is large, the map's smaller copies (its average over the pixel) where it is small.
 		bGlass = tPulse( c.x, a.x, b.x, fw.x ) * tPulse( c.y, a.y, b.y, fw.y );
-		vec3 d = textureGrad( uWin, ( id + 0.5 ) / uWinSize, dFdx( c ) / uWinSize, dFdy( c ) / uWinSize ).rgb;
+		// Far off a room is read over a wider footprint of the map (FAR.patch windows), so a lit clump is one soft patch
+		// a few pixels across and never a sparkle of single pixel specks.
+		float spread = mix( 1.0, ${f(FAR.patch)}, bFar );
+		vec3 d = textureGrad( uWin, ( id + 0.5 ) / uWinSize, spread * dFdx( c ) / uWinSize, spread * dFdy( c ) / uWinSize ).rgb;
 		float own = smoothstep( ${f(FAR.tint[0])}, ${f(FAR.tint[1])}, px );
 		float level = pow( d.r, ${f(WINDOW.curve)} );
 		float blind = own * step( 0.003, d.r ) * ( tHash( id + vec2( 41.0, 23.0 ) ) < ${f(WINDOW.blinds)} ? 0.2 + 0.6 * tHash( id + vec2( 7.0, 91.0 ) ) : 0.0 );
@@ -424,7 +458,11 @@ vec3 bAcross = vec3( 1.0, 0.0, 0.0 );
 			bLit = ( 1.0 - bGlass ) * detail * smoothstep( 1.5, 3.0, ${f(WINDOW.sill)} / max( length( fwidth( vWPos ) ) / ${f(SCALE)}, 1e-5 ) ) * inX * step( lo.y - ${f(WINDOW.sill)}, p.y ) * step( p.y, lo.y );
 			bEmit += bLit * 0.4 * tint * level * ${f(WINDOW.gain)};
 		}
-		bEmit += bGlass * ${f(WINDOW.gain)} * level * tint * room * mix( 1.0, ${f(FAR.boost)}, bFar );
+		{
+			// Far off, a patch's light is held under the hot light by a soft shoulder (FAR.cap), so it stays amber.
+			float e = ${f(WINDOW.gain)} * level * room.r * mix( 1.0, ${f(FAR.boost)}, bFar ), cap = mix( 1e3, ${f(FAR.cap)}, bFar );
+			bEmit += bGlass * tint * ( e / ( 1.0 + e / cap ) ) * ( room / max( room.r, 1e-4 ) );
+		}
 		vec3 wall = bStone > 0.5 ? diffuseColor.rgb : farWall;
 		diffuseColor.rgb = mix( diffuseColor.rgb, wall * ( 1.0 - ${f(FAR.grid)} * bGlass ), bFar );
 		bGlass *= 1.0 - bFar;
@@ -469,13 +507,14 @@ if ( abs( bTilt.x ) + abs( bTilt.y ) > 0.0 ) {
 {
 	vec3 upV = ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz;
 	float matte = max( bStone, bFar ) + ( 1.0 - max( bStone, bFar ) ) * 0.25 * ( 1.0 - bGlass );
-	totalEmissiveRadiance += bEmit + diffuseColor.rgb * ( 1.0 - bGlass ) * ${lin3(HOT)} * bSpill + diffuseColor.rgb * matte * ${lin3(HOT)} * tStreet( vFoot.x * ${f(FOOT)}, dot( normal, upV ), wLight.z, vWPos.x / ${f(SCALE)} );
+	totalEmissiveRadiance += bEmit + diffuseColor.rgb * ( 1.0 - bGlass ) * ${lin3(HOT)} * bSpill + diffuseColor.rgb * matte * ( ${lin3(HOT)} * tStreet( vFoot.x * ${f(FOOT)}, dot( normal, upV ), wLight.z, vWPos.x / ${f(SCALE)} ) + ${lin3(CITY_LIGHT)} * tCity( normal, vFoot.x * ${f(FOOT)}, wLight.x, wLight.z, HIS ) );
 }`)
       .replace('#include <lights_fragment_end>', `iblIrradiance *= mix( 1.0, ${f(STONE.night)}, max( bStone, bFar ) );\n#define SKY_KEEP 1.0${SKY_LIGHT}\n#include <lights_fragment_end>`)
       .replace('#include <opaque_fragment>', `{
 	outgoingLight = tPale( tCooled( ( outgoingLight - totalEmissiveRadiance ) * tRise( vFoot.y, HIS ), bCool * max( bStone, bFar ) ) + totalEmissiveRadiance + tRimLight );
 	float lamp = clamp( dot( bEmit, vec3( 1.0 ) ) / max( dot( outgoingLight, vec3( 1.0 ) ), 1e-5 ), 0.0, 1.0 );
 	outgoingLight = max( mix( outgoingLight, tKeep( outgoingLight ), max( max( max( max( bGlass, bLit ), bCopper ), bKeep ), lamp ) ), 0.0 );
+	outgoingLight = tAir( outgoingLight, vWPos.z, HIS );
 }
 #include <opaque_fragment>`);
   };
@@ -565,6 +604,9 @@ if ( vFlute.y > 0.5 && vFlute.y < 1.5 ) {
 		vec3 r = reflect( - v, n );
 		vec3 rw = normalize( ( vec4( r, 0.0 ) * viewMatrix ).xyz );
 		float toMoon = smoothstep( ${f(GOLD.moon[0])}, ${f(GOLD.moon[1])}, dot( rw, uMoonward ) );
+		// The sky about the moon is low and behind the city: seen in gold, it is cut off below by the city's own skyline,
+		// so a tall gold point blazes at its head and is a deeper gold toward its foot (from rise[0] to rise[1] units up).
+		toMoon *= mix( ${f(GOLD.shade)}, 1.0, smoothstep( ${f(GOLD.rise[0])}, ${f(GOLD.rise[1])}, vWPos.y / ${f(SCALE)} ) );
 		vec3 seen = ${lin('pale')} * ( ${f(GOLD.lit)} * toMoon * sqrt( toMoon ) );
 		#ifdef USE_ENVMAP
 			seen += textureLod( envMap, envMapRotation * rw, roughnessToMip( rough ) ).rgb * ( envMapIntensity * ${f(GOLD.dark)} );
@@ -576,6 +618,8 @@ if ( vFlute.y > 0.5 && vFlute.y < 1.5 ) {
 		#ifdef WORLD_GLINT
 			vec3 g = uGlintAt - geometryPosition;
 			seen += uGlint * goldSpot( n, g / max( length( g ), 1e-5 ), v, rough ) * ( 1.0 - ${f(DISC.glint)} * disc );
+			// A broad sheen of the same light, so polished gold shows a soft bright band that slides over it with the cursor.
+			seen += uGlint * ( ${f(GOLD.sheen[0])} * goldSpot( n, g / max( length( g ), 1e-5 ), v, ${f(GOLD.sheen[1])} ) ) * ( 1.0 - ${f(DISC.glint)} * disc );
 		#endif
 		float nv = clamp( dot( n, v ), 0.0, 1.0 );
 		sum += w * seen * ( F0 + ( 1.0 - F0 ) * pow( 1.0 - nv, 5.0 ) );

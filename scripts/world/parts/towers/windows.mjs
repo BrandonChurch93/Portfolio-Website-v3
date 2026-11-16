@@ -24,7 +24,7 @@ const LIT = { room: [0.12, 0.38], run: { most: 4, wide: 0.12 }, stack: 0.3, floo
 // 0.5 is flame to hot, 1 is pale); how many tenants are bright and pale; the blocks of `block` floors dark together
 // (how likely, and the share of tenants they keep); a lone lit room in a dark tenant; a lit core up some faces (how
 // likely) and its level.
-const TENANT = { share: [0.16, 0.4], tall: [0.34, 0.58, 0.78, 0.91], fill: 0.9, level: [0.42, 0.42], warm: [0.22, 0.32], bright: 0.07, block: 3, dark: 0.2, darkKeep: 0.15, stray: 0.05, core: [0.3], coreLevel: [0.3, 0.25] };
+const TENANT = { share: [0.24, 0.44], tall: [0.34, 0.58, 0.78, 0.91], fill: 0.9, level: [0.55, 0.4], warm: [0.22, 0.32], bright: 0.07, block: 3, dark: 0.2, darkKeep: 0.15, stray: 0.05, core: [0.3], coreLevel: [0.3, 0.25] };
 
 export class Windows {
   constructor(seed, size = WINDOW.map) {

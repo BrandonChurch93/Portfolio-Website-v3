@@ -28,6 +28,22 @@ const TONE = { 0: 3, 2: 2, 3: 3, 4: 1, 5: 4, 9: 1, 10: 2, 11: 3 };
 // comes in clumps, whole buildings blazing beside quiet ones (dark: how likely a quiet one is). The low buildings
 // at the front are all busy: the picture's lit mass.
 const BUSY = { dark: 0.24, quiet: [0.04, 0.16], lively: [0.55, 0.45], low: 45 };
+// How a building is seen. The view is all but square on (9000 units back), so a building turned only the plan's few
+// degrees showed one face and read as a flat: each is turned further, its front toward the visitor's left, so its
+// right face shows, as picture 9's buildings show theirs, and the moon to the right lights it while the front stays
+// in the city's own light. turn: the plan's turn and `add` degrees, give or take `jitter`, kept between `range`; its
+// footprint is made smaller so it is drawn exactly as wide as the plan has it. Round buildings, his stepped tower,
+// the obelisk and the sun disc stand as the plan has them. --square builds the city as the plan turns it.
+const SEEN = { add: -22, jitter: 5, range: [-34, -12], keep: [0, 2] };
+const square = process.argv.includes('--square');
+const round = (i) => { const [, , w, , tall, , form, roof, seed] = P.TOWERS[i]; return i === 9 || (form === 'dome' && tall > 60) || (form === 'deco' && roof === 'bronze' && seed > 0.55 && w < 34); };
+function seenAs(i) {
+  const [, , w, d, , turn] = P.TOWERS[i];
+  if (square || i === P.STEP || SEEN.keep.includes(i) || round(i)) return { w, d, turn };
+  const t = Math.min(SEEN.range[1], Math.max(SEEN.range[0], turn + SEEN.add + SEEN.jitter * (2 * L.seeded(i * 7741 + 13)() - 1)));
+  const wide = (a) => w * Math.abs(Math.cos(a * L.D2R)) + d * Math.abs(Math.sin(a * L.D2R)), k = wide(turn) / wide(t);
+  return { w: w * k, d: d * k, turn: t };
+}
 // The street's light on the ground about each building, as radiance at its brightest, how far out from a wall it is
 // brightest and how wide that band is, in units. The ground's own color.
 const STREET = { power: 1.1, at: 4, wide: 7 }, GROUND = 0.05;
@@ -40,11 +56,11 @@ const win = new Windows(CITY.seed, CITY.map), made = [], ids = [], chosen = new 
 const NEAR = { across: 16, back: 90 };
 const near = (i) => [...chosen.keys()].filter((j) => Math.abs(P.TOWERS[i][0] - P.TOWERS[j][0]) < (P.TOWERS[i][2] + P.TOWERS[j][2]) / 2 + NEAR.across && Math.abs(P.TOWERS[i][1] - P.TOWERS[j][1]) < NEAR.back);
 for (const i of on) {
-  const [x, z, w, d, tall, turn, form, roof, seed] = P.TOWERS[i];
+  const [x, z, , , tall, , form, roof, seed] = P.TOWERS[i], { w, d, turn } = seenAs(i);
   const R = L.seeded(Math.round(seed * 1e6) + i * 7919), kit = layers();
   if (i === P.STEP) stepTower(kit, win, draft);
   else {
-    const make = design({ form, roof, seed, w });
+    const make = design({ form, roof, seed, w: P.TOWERS[i][2] });
     if (!make) continue;
     const c = Math.cos(turn * L.D2R), s = Math.sin(turn * L.D2R), g0 = L.ground(x, z);
     let low = g0;
@@ -67,7 +83,7 @@ for (const i of on) {
 // spire and the pyramid as plain solids.
 function around() {
   const step = draft ? 10 : 5, half = 680, n = Math.round((2 * half) / step) + 1, pos = [], nor = [], emit = [], idx = [], at = new Int32Array(n * n).fill(-1);
-  const hot = linear('hot'), feet = P.TOWERS.filter((t, i) => on.includes(i));
+  const hot = linear('hot'), feet = on.map((i) => { const s = seenAs(i); return [P.TOWERS[i][0], P.TOWERS[i][1], s.w, s.d, 0, s.turn]; });
   for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
     const x = -half + i * step, z = -half + j * step;
     if (L.within(x, z) < -step * 2) continue;
@@ -102,5 +118,5 @@ function around() {
 const stands = on.filter((i) => i === P.STEP || design({ ...{ form: P.TOWERS[i][6], roof: P.TOWERS[i][7], seed: P.TOWERS[i][8], w: P.TOWERS[i][2] } }));
 console.log(`city: ${made.length} buildings (of each stone ${tones.join(', ')}), windows map ${win.used} of ${win.tall} rows used`);
 // What shades the faces of the city from the sky about the moon: every building that stands, and the spire.
-const boxes = boxesOf([...on.map((i) => { const [x, z, w, d, tall, turn] = P.TOWERS[i]; return [x, z, w, d, tall, turn, L.ground(x, z), i]; }), [0, 0, L.SPIRE.foot, L.SPIRE.foot, L.SPIRE.tall * 0.8, 0, L.ground(0, 0), -2]]);
+const boxes = boxesOf([...on.map((i) => { const [x, z, , , tall] = P.TOWERS[i], { w, d, turn } = seenAs(i); return [x, z, w, d, tall, turn, L.ground(x, z), i]; }), [0, 0, L.SPIRE.foot, L.SPIRE.foot, L.SPIRE.tall * 0.8, 0, L.ground(0, 0), -2]]);
 await finish({ made: gather(made, ids), win, around: around(), file: 'towers-city', draft, meta: { design: 'city', stands }, boxes });

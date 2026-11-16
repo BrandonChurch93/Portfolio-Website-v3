@@ -37,11 +37,12 @@ export const WINDOW = {
   style: 100,
 } as const;
 
-// The night's soft light from the visitor's side (NIGHT.front in ../../night.ts, which this file cannot import),
-// taken lower than it lies there, since most of what reaches a wall comes from near the horizon, and how much of it a place sees past the other buildings, baked (`open` in scripts/world/parts/towers/make.mjs)
-// over a cone `cone` degrees wide in `rays` rays: so the feet of the back rows, the canyons between buildings and
-// the lower floors behind a nearer building fall dark, keeping `keep` of it, while the tops stand in it.
-export const FRONT = { toward: [-0.1, 0.22, 1], cone: 28, rays: 14, keep: 0.3 } as const;
+// The city's own light (CITY in ./materials.ts): the way to it, low over the open ground before the city and to the
+// visitor's right, and how much of it a place sees past the other buildings, baked (`frontward` in
+// scripts/world/parts/towers/make.mjs) over a cone `cone` degrees wide in `rays` rays: so the foot of a building in
+// its neighbour's shade, the canyons and the back rows fall dark, while the faces toward the open ground stand in
+// it. The night's soft light from the visitor's side is shut out by the same share, keeping `keep` of it.
+export const FRONT = { toward: [0.75, 0.06, 0.7], cone: 28, rays: 14, keep: 0.3 } as const;
 
 // The towers' stones, a building's tone (0 to 1) picking one in sevenths: what each multiplies the pale stone's
 // color by in linear light, how metallic and how rough it is, and how much of the stage's white balance the light it
@@ -63,7 +64,7 @@ export const STONES = [
 // What the make stores with each place for the material: how high over its building's foot it is, as a share of
 // `foot` units (the street's light is on the lowest storeys), and how far back it is in z from the city's front
 // rows to its back (`depth`, z at each), where the far rows fall darker.
-export const PLACE = { foot: 48, depth: [260, -170] } as const;
+export const PLACE = { foot: 48, depth: [240, -560] } as const;
 export const stoneOf = (tone: number): number => Math.min(STONES.length - 1, Math.max(0, Math.round(tone * (STONES.length - 1))));
 // A field of windows carries its building's stone, as a style stored in the window's width (WINDOW.style times
 // it): 0 none, 1 + the stone's place for windows let into that stone, 1 + STONES.length + it for windows in bronze

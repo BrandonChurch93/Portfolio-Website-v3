@@ -117,7 +117,24 @@ export function facade(b, f, len, y0, y1, st) {
 const ARRIS = 0.5;
 // A tall shaft may end in an attic (st.attic, how tall): over a string course its top storey is let into the stone
 // in smaller windows, two to each bay below, so its head reads apart from its body.
+// A tall shaft is broken into sections by belts (st.belts, how many storeys each section is at most): a stone belt
+// course round the shaft between each two, and every other section's windows a different size (BELT.wide times as
+// wide, its bays fewer), so no face is one even lattice from foot to head.
+const BELT = { tall: 1.1, out: 0.25, wide: 1.45, least: 5 };
 export function shaft(b, w, d, y0, y1, st) {
+  if (st.belts && !st.belted) {
+    const floors = (y1 - y0) / Math.max(1, st.ch), n = Math.floor(floors / st.belts);
+    if (n >= 1 && floors / (n + 1) >= BELT.least) {
+      const h = (y1 - y0 - n * BELT.tall) / (n + 1);
+      for (let k = 0; k <= n; k++) {
+        const a = y0 + k * (h + BELT.tall), odd = k % 2 === 1;
+        const own = odd ? { ...st, cw: st.cw * BELT.wide, bays: Math.max(1, Math.round(st.bays * 0.75)), fin: 0 } : st;
+        shaft(b, w, d, a, a + h, { ...own, belted: true, attic: k === n ? st.attic : 0, roof: k === n ? st.roof : false });
+        if (k < n) cornice(b, w, d, a + h, BELT.tall, BELT.out, { chamfer: Math.max(st.chamfer ?? 0, 0.5) });
+      }
+      return;
+    }
+  }
   const c = Math.max(st.chamfer ?? 0, Math.min(ARRIS, w * 0.05)), all = faces(w, d), attic = st.attic && y1 - y0 > 4 * st.attic ? st.attic : 0, ya = y1 - attic;
   const top = { ...st, punched: true, band: 0, fin: 0, out: 0, cw: st.cw * 0.62, ch: attic - 0.7, bays: Math.max(1, st.bays) * 2, middle: 1, busy: Math.min(1, (st.busy ?? b.busy) + 0.2) };
   all.forEach((s, i) => {

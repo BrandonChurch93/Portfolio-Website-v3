@@ -24,11 +24,12 @@ const cell = (b) => ({ cw: 1.1 + 0.6 * b.R(), ch: 1.5 + 0.5 * b.R() });
 const LOOKS = ['strip', 'ribbon', 'punched', 'mullion', 'paired'];
 // And each building's own: often a wider middle bay (middle: how much wider, and how likely), often an attic storey
 // of smaller windows over a string course (attic: how likely, how tall at least and how much more).
-const OWN = { middle: [0.6, 0.45, 0.7], attic: [0.6, 2.6, 1.8] };
+// And mostly belts (belts: how likely, and the most storeys of a section, from belts[1] to belts[1] + belts[2]).
+const OWN = { middle: [0.6, 0.45, 0.7], attic: [0.6, 2.6, 1.8], belts: [0.75, 8, 8] };
 function look(b, w, asked) {
   const kind = asked ?? apart(b, 'look', LOOKS, Math.floor(b.R() * LOOKS.length));
   const R = b.R, st = cut(b, w, kind);
-  return { ...st, middle: R() < OWN.middle[0] ? 1 + OWN.middle[1] + OWN.middle[2] * R() : 1, attic: R() < OWN.attic[0] ? OWN.attic[1] + OWN.attic[2] * R() : 0 };
+  return { ...st, middle: R() < OWN.middle[0] ? 1 + OWN.middle[1] + OWN.middle[2] * R() : 1, attic: R() < OWN.attic[0] ? OWN.attic[1] + OWN.attic[2] * R() : 0, belts: R() < OWN.belts[0] ? OWN.belts[1] + Math.floor(R() * OWN.belts[2]) : 0 };
 }
 function cut(b, w, kind) {
   const R = b.R;
