@@ -1,0 +1,24 @@
+# Your part: the skin. Round 4
+
+## What you own
+scripts/world/parts/skin/, public/world/skin.bin and skin-map.bin, src/pieces/world/parts/skin.ts, src/pieces/world/parts/skin/. Stills in shots/world/skin/ with the prefix s4-. Report: shots/world/skin/r4-report.md. Read first: briefs/skin-r3.md (which still holds), shots/world/skin/r3-report.md and its two reviews, and the END of briefs/common.md (all of it: the moon is lower and stronger, so every crater's shadow is longer, and the darks changed).
+
+## Where it stands
+Round 3 scored 5 and 5. Kept: the placement (both craters, the right limb, the knot and every crack arm on picture 9's almost stroke for stroke). The large crater's form at the page's size (a flat floor with a central bump, a crescent, a lit lip). The pale side's fall of light and its color at the points measured. No sawtooth on your own torn lines, no white spike, no ghost arch. Nothing crawls. 3.89 MB.
+
+## Ruled by Fable
+The hue turn you tried on the stone (5 degrees on the pale, 8 on the dark) is NOT kept: one planet, one stone (stone() in light.ts), and what differs is weathering and light. The dark side's redness was mostly the frame's and is changed there (the stored bounce is half as colored now, the fill nearly neutral): measure again before you touch a color.
+The rock's sculptor is tracing both torn lines again this round without the sawtooth, and his file will change: make the skin against it at the end and say which file. One reviewer measured your pale side's torn edge, at picture rows 300 to 420, 35 to 45 pixels LEFT of the picture's: check it on a ruled grid (node scripts/world/grid.mjs 960,280,200,160 --by 6 --every 10 --out shots/world/skin/s4-grid-edge.jpg) and say in your report where the picture has it, so the sculptor's line and yours can be put right together.
+The band of sand that rolls over your top under the dunes ("a grey band of vertical streaks whose lower edge is a regular row of scallops") is the land's, and its builder is told: your side is to carry a crisp lit lip of crust right under it, so the join is stone under sand and not a seam.
+
+## What must change, most important first
+1. THE KNOT is the brightest thing on the dark side and it is nearly dark: your median is 13 to 15 in the box at picture (215, 455, 40, 30) where the picture's is 54 to 57, and what light there is lands as "a ragged fringe of flame like tongues", "a blotchy cloudy fringe", which reads as fire and as a glow with an edge. The junction is a white gold hot point. Its light lies on the rock round it as ONE smooth warm pool that falls off evenly over 15 to 25 picture pixels, lumpy only as the relief is lumpy. No tongues, no cloud, no edge.
+2. THE CRUST IS NOT CRUST. Pale side: "a lumpy grey lip with tiny regular saw teeth at six times", with no lit top. Dark side: it ends on a near vertical red brown strip with hair like diagonal streaks, where the picture has a large PALE slab of crust over the hollow. Both edges: thick slabs, pale topped (the weathered surface, green over red about 0.77 in the picture), with a darker broken section under the top, a few of them, of very different sizes, breaking off and stepping down. The top of each catches the moon.
+3. PUMICE. The pale side has small pits at one density everywhere, star shaped pits and triangular noise tents: "uniform pumice". Pits are dense only by the break and toward the lower limb. Between a few clean craters toward the lit limb the ground is smooth dust. Take out the faceted creases.
+4. THE CRATERS are cookie cutter holes: no raised outer rim, and the large one's shadow is soft edged and brown with pit dots and a smear inside it. A raised rim all round that catches the moon on its far side, and a crisp near black crescent. The moon is lower now: the crescent is longer. Bring the large crater's floor down about 24 levels.
+5. THE DARK FACE is flatter and darker than the picture's (median 6 and 95th percentile 9, against 15 and 71 in the box at picture (150, 500, 60, 80)) and reads as clay. Unlit hairline cracks, faint strata, and a dim sliver of rim light so the dome keeps its form and its outline against the night.
+6. THE THIN CRACK ARMS are even width peach lines (green over red 0.74 against the picture's pale gold 0.86) that break into dotted dashes near their ends. A pale gold core, a width that varies, ends that taper to hairlines, and a faint spill on the rock right beside them.
+7. THE PALE SIDE'S LEFT HALF is grey beige and dull beside the picture's luminous cream: warm it and lift it.
+
+## How to look
+Every draft: npm run match -- --at 990,250,300,460 --out shots/world/skin/s4-match-right and --at 90,250,300,460 --out shots/world/skin/s4-match-left, then close:right and close:left, then the page: npm run shot -- "/lab/hero?ui=0" --scroll 700 --t 6 --wait 12000.
