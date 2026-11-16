@@ -1,9 +1,9 @@
 import { GRAIN } from './grain';
 import { ROOT_LIGHT } from './root';
 
-// The core's shader: the ball. It gives light of its own and is lit by nothing. It writes linear light: the stage's
-// last pass applies the tone curve, which takes what is too bright to pale gold, so every color here was worked back
-// through that curve from picture 9's.
+// The core's shader: the ball. It gives light of its own and is lit by nothing, the cursor included. It writes linear
+// light: the stage's last pass applies the tone curve, which takes what is too bright to pale gold, so every color
+// here was worked back through that curve from picture 9's.
 
 // The ball is drawn on a shell a little larger than itself, and each pixel finds the true ball by its own ray, so
 // its edge is exact and smoothed at any size, and nothing is drawn outside it.
@@ -19,7 +19,6 @@ precision highp float;
 precision highp int;
 uniform vec3 uEye;
 uniform float uTime;
-uniform vec2 uLamp;
 varying vec3 vLocal;
 ${GRAIN}
 ${ROOT_LIGHT}
@@ -37,9 +36,10 @@ float coreBead() {
 void main() {
 	vec3 ro = uEye, rd = coreDir( vLocal - uEye );
 	float b = dot( ro, rd ), c = dot( ro, ro ) - b * b;
-	// How far out from the ball's middle the ray passes, as a share of its radius: 1 at its edge.
+	// How far out from the ball's middle the ray passes, as a share of its radius: 1 at its edge. Read in the ray's
+	// own terms and not from the shell's derivatives, so the edge is as smooth where the shell's triangles meet.
 	float rr = sqrt( max( c, 0.0 ) ) / uR;
-	float px = max( fwidth( rr ), 1e-5 ), cover = clamp( ( 1.0 - rr ) / px + 0.5, 0.0, 1.0 );
+	float px = max( length( vec2( dFdx( rr ), dFdy( rr ) ) ), 1e-5 ), cover = clamp( ( 1.0 - rr ) / ( 1.3 * px ) + 0.5, 0.0, 1.0 );
 	// The band is read over at least the width a pixel has at the page's size on a plain screen, so a sharper screen
 	// shows it as the picture has it and no darker.
 	float bandPx = max( px, BAND_PX / uR );
@@ -50,47 +50,53 @@ void main() {
 	vec3 Q = ro + rd * ( - ro.z / ( abs( rd.z ) > 1e-4 ? rd.z : - 1e-4 ) );
 	float d = - uR - Q.y;
 
-	// The grain lies on the ball and turns with it, slowly, as something enormous turns. It churns in place as it goes.
+	// The grain lies on the ball and turns with it, slowly, as something enormous turns.
 	vec3 q = uTurn * vec3( P.xy, P.z * ( 1.0 - GRAIN_FLAT ) );
 	float fp = max( max( length( dFdx( q ) ), length( dFdy( q ) ) ), 1e-4 );
-	// The cursor's light, as a lamp a little in front of the ball: the way to it from here, and halfway to the eye, in the
-	// frame the grain turns in, so the facets it picks out stay put on the ball as it turns.
-	vec3 Lw = coreDir( vec3( uLamp - P.xy / uR, FACET_LAMP ) + FACET_KEY );
-	vec3 L = uTurn * Lw, H = uTurn * coreDir( Lw + vec3( 0.0, 0.0, 1.0 ) );
-	vec2 g = coreSalt( q, fp, uTime, H, L );
-	float drift = uTime * GRAIN_DRIFT;
-	float v = g.x + MOTTLE * ( 0.65 * coreNoise( q / MOTTLE_WAVE + vec3( drift, 0.0, - drift ), 73u ) + 0.35 * coreNoise( q / ( 0.45 * MOTTLE_WAVE ) - vec3( 0.0, drift, 0.0 ), 79u ) );
-	float w = g.y;
+	// The body under the surface wells up and sinks, and the grains crowd where it wells up.
+	float conv = coreConvect( q, uTime );
+	vec2 g = coreSalt( q, fp, uTime, 1.0 + CONV_DENSE * conv );
 	// Quieter across the band, which picture 9 has smooth.
 	float quiet = 1.0 - GRAIN_BAND * smoothstep( 0.92, 0.965, rr );
-	v = clamp( GRAIN_GAIN * v * quiet, - 3.0, 3.0 );
-	w = clamp( GRAIN_WARM * w * quiet, - 3.0, 3.0 );
+	// Drawn about a unit to a pixel, as on the page, the grain is turned up to make up for the fine sizes a pixel cannot hold.
+	float v = clamp( GRAIN_GAIN * ( 1.0 + GRAIN_FAR * smoothstep( 0.4, 1.0, fp ) ) * g.x * quiet, - 3.0, 3.0 ), w = clamp( GRAIN_WARM * g.y * quiet, - 3.0, 3.0 );
 	vec3 col = coreBand( rr, bandPx ) * coreTint( v, w );
 	col *= 1.0 + BAND_LIFT * ( 1.0 - smoothstep( 0.6, 0.95, px * uR ) ) * smoothstep( BAND_AT.x, BAND_AT.y, rr ) * ( 1.0 - smoothstep( BAND_AT.z, BAND_AT.w, rr ) );
-	// A sphere and not a disc: its light falls smoothly from a hot region a little up and to the left, toward the eye's
-	// side of it, out to the limb over the outer third, and there gives way to the band.
+
+	// Depth: the hotter body is seen through the cooler surface, through more of it the further out a ray meets the
+	// ball, so the middle is the body's, paler and stirring, and toward the rim the surface's deeper gold. Measured
+	// against the middle, so the ball's light there is the picture's.
+	float mu = sqrt( max( 1.0 - rr * rr, 0.0 ) ), T = exp( - DEPTH_TAU / max( mu, 0.05 ) ), T0 = exp( - DEPTH_TAU );
+	vec3 body = DEPTH_BODY * ( 1.0 + CONV_LIGHT * conv * vec3( 0.9, 1.0, 1.15 ) );
+	vec3 depth = mix( DEPTH_SKIN, body, T ) / mix( DEPTH_SKIN, DEPTH_BODY, T0 );
+	col *= mix( depth, vec3( 1.0 ), smoothstep( LIMB_TO.x, LIMB_TO.y, rr ) );
 	vec2 hp = P.xy / uR - HOT_AT;
 	col *= coreFall( rr ) * mix( 1.0 + HOT * exp( - dot( hp, hp ) / ( HOT_R * HOT_R ) ), 1.0, smoothstep( LIMB_TO.x, LIMB_TO.y, rr ) );
 
-	// Before the stream sets off, light gathers inside the face over the foot: a bead that swells and draws down
-	// slowly, inside the band, which runs on unbroken under it.
+	// Before the stream sets off, the grain over the foot runs hot and draws down to it in a narrowing seam, swelling
+	// and easing on two slow waves. Only the grains change, so it is the face's own matter gathering and never a spot.
+	// The band runs on unbroken under it.
 	float on = uRootState.x, bead = coreBead();
-	// It narrows toward the foot, where it is drawn to, and keeps the face's grain, so it is the face's own light
-	// gathering and never a spot.
-	float lift = Q.y + uR, mid = uR * ( 1.0 - mix( BEAD_AT.x, BEAD_AT.y, bead ) );
-	float span = BEAD_SIZE.x * mix( 0.75, 1.0, bead ) * clamp( lift / ( mid + BEAD_SIZE.y ), 0.3, 1.0 );
-	vec2 bp = vec2( Q.x / span, ( lift - mid ) / ( BEAD_SIZE.y * mix( 0.75, 1.0, bead ) ) );
-	float gathered = ( 1.0 - on ) * BEAD_LIGHT * mix( 0.35, 1.0, bead ) * exp( - dot( bp, bp ) ) * ( 1.0 - smoothstep( 0.86, 0.93, rr ) );
-	col = mix( col, uPale * BEAD_PALE * coreTint( 0.6 * v, w ), clamp( gathered, 0.0, 1.0 ) );
-	// Nothing brighter than pale gold once the stage's curve has had it, the glints above all.
+	float lift = Q.y + uR, tall = BEAD_SIZE.y * mix( 0.7, 1.0, bead );
+	float span = 0.5 + BEAD_SIZE.x * pow( clamp( lift / tall, 0.0, 1.0 ), 1.3 );
+	float seam = ( 1.0 - on ) * ( 1.0 - smoothstep( 0.45, 1.0, abs( Q.x ) / span ) ) * ( 1.0 - smoothstep( 0.4, 1.0, lift / tall ) ) * ( 1.0 - smoothstep( 0.975, 0.995, rr ) );
+	if ( seam > 0.001 ) {
+		// The seam's own grains, flowing down toward the foot.
+		float wv, wv2;
+		vec3 sg = coreSpeck( vec3( Q.x, lift + uTime * BEAD_FLOW, 0.37 * Q.x ) / BEAD_CELL, fp / BEAD_CELL, 211u, 1.15, wv );
+		vec3 sg2 = coreSpeck( vec3( Q.x, lift + uTime * BEAD_FLOW * 1.6, 3.1 ) / ( 0.5 * BEAD_CELL ), fp / ( 0.5 * BEAD_CELL ), 223u, 1.1, wv2 );
+		float hot = max( sg.y * ( 0.35 + sg.x ), 0.8 * sg2.y * ( 0.3 + sg2.x ) );
+		float k = seam * BEAD_LIGHT * mix( 1.0, 0.35, clamp( lift / tall, 0.0, 1.0 ) ) * mix( 0.45, 1.0, bead ) * mix( 1.0, 0.6, smoothstep( 0.1, 0.6, fp / BEAD_CELL ) );
+		col = mix( col, BEAD_HOT * ( 0.8 + 0.5 * hot ), clamp( k * hot, 0.0, 1.0 ) );
+	}
 	col *= uLevel;
-	col *= min( 1.0, min( CAP.y / max( col.g, 1e-4 ), CAP.z / max( col.b, 1e-4 ) ) );
-	// Once it runs, the beam's light rises a little way into the ball over the foot, and where it is brighter than the
-	// face and the band it takes their place, so the band fades away under its shoulders.
+	// Nothing brighter than pale gold once the stage's curve has had it, the brightest grains above all.
+	col *= min( 1.0, min( CAP.x / max( col.r, 1e-4 ), min( CAP.y / max( col.g, 1e-4 ), CAP.z / max( col.b, 1e-4 ) ) ) );
+	// Once it runs, under the beam's shoulders the band gives way to the face's own light, so the beam leaves the ball
+	// in one shape. The beam itself begins at the outline.
 	if ( on > 0.001 && d > - NECK_UP ) {
-		// Under its shoulders the band gives way to the face's own light, and the beam's pale heart rises into it.
 		float up = smoothstep( - NECK_UP, 0.0, d ), u = neckAcross( Q.x, d, neckReach(), on );
-		vec3 face = min( coreRim( LIMB_TO.x ) * coreFall( LIMB_TO.x ) * coreTint( v, w ) * uLevel, CAP );
+		vec3 face = min( coreRim( LIMB_TO.x ) * coreFall( LIMB_TO.x ) * depth * coreTint( v, w ) * uLevel, CAP );
 		col = mix( col, face, exp( - NECK_K * u * u ) * up * on );
 		float a = rootAmount( Q.x, d ) * up;
 		col = mix( col, rootColor( a ).rgb * uLevel, smoothstep( NECK_OVER.x, NECK_OVER.y, a ) );

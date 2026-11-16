@@ -47,22 +47,16 @@ vec2 rootStream( float x, float s, float t, float lead, float heart, float hw ) 
 	float k = run * ( 1.0 + ROOT_ENERGY * head * head ) * smoothstep( 0.0, 5.0, lead ) * smoothstep( ${CORE_HALF.toFixed(1)}, ${CORE_HALF.toFixed(1)} - 12.0, abs( x ) );
 	return vec2( core * k, k );
 }
-// Value noise along a line, 0 to 1.
-float rootLine( float p ) {
-	float i = floor( p ), f = p - i;
-	return mix( rootHash( i ), rootHash( i + 1.0 ), f * f * ( 3.0 - 2.0 * f ) );
-}
-// The streaks that run down the beam: a few fine lanes across it, u as a share of its half width, each with long
-// bright dashes that run down it at the stream's own pace. ws is a lane's least width as a share of the half width.
-float rootStreaks( float u, float s, float t, float ws ) {
-	float sum = 0.0;
-	for ( int j = 0; j < NECK_LANES; j ++ ) {
-		float f = float( j ), a = rootHash( f + 2.3 ), b = rootHash( f + 5.9 ), c = rootHash( f + 11.7 );
-		float lane = ( ( f + 0.5 ) / float( NECK_LANES ) * 2.0 - 1.0 ) * NECK_SPREAD + ( a - 0.5 ) * 0.14;
-		float w = max( mix( NECK_LANE.x, NECK_LANE.y, b ), ws ), dx = ( u - lane ) / w;
-		float p = ( s - t * NECK_PACE * mix( 0.8, 1.25, c ) ) / mix( NECK_DASH.x, NECK_DASH.y, a ) + c * 37.0;
-		float dash = smoothstep( NECK_DASH.z, 1.0, rootLine( p ) );
-		sum += mix( 0.45, 1.0, b ) * dash * exp( - dx * dx ) * ( 1.0 - 0.45 * abs( lane ) );
+// The pulses that run down the beam at the stream's own pace: a few broad beats of light, sharp ahead and long behind,
+// spaced unevenly and each of its own strength, so no train of them is ever seen to repeat. s is along it in stream
+// units. Each slot of the train holds one pulse or none.
+float rootPulse( float s, float t ) {
+	float p = ( s - t * NECK_PACE ) / NECK_GAP, i = floor( p ), sum = 0.0;
+	for ( int k = - 1; k <= 1; k ++ ) {
+		float j = i + float( k ), a = rootHash( j * 1.37 + 4.1 ), b = rootHash( j * 2.71 + 9.3 );
+		float e = ( p - j - 0.15 - 0.7 * b ) * NECK_GAP;
+		float reach = e > 0.0 ? NECK_PULSE.z : NECK_PULSE.w;
+		sum += step( NECK_PULSE.y, a ) * mix( 0.6, 1.0, b ) * exp( - e * e / ( reach * reach ) );
 	}
 	return sum;
 }
@@ -121,30 +115,33 @@ float neckAcross( float x, float d, vec2 R, float on ) {
 }
 // The neck's light here, as an amount of the stream's light.
 float rootAmount( float x, float d ) {
-	float on = uRootState.x, since = uRootState.w, t = uTime, fx = max( fwidth( x ), 1e-3 );
+	float on = uRootState.x, since = uRootState.w, t = uTime;
 	vec2 R = neckReach();
 	if ( on < 0.001 || d >= R.x ) return 0.0;
 	float s = max( d, 0.0 ) * uRootScale.y, xs = x * uRootScale.x;
 	float lead = ( R.x - d ) * uRootScale.y;
-	float w = neckWidth( d, R, on ), u = neckAcross( x, d, R, on );
+	float u = neckAcross( x, d, R, on );
+	// Past the cut it gives way to the page's own stream, whose heart comes on over the same stretch: the two cross.
+	float give = 1.0 - uRootState.z * smoothstep( NECK_CUT + NECK_GIVE.x, NECK_CUT + NECK_GIVE.y, d );
+	// The pulses running down it. Each is a beat of light as wide as the heart, and it lights the beam's edges as it
+	// passes, so it is seen at the page's size as light running down it and not as a bead.
+	float pulse = rootPulse( s, t ) * smoothstep( 0.0, NECK_PULSE_IN, d ) * smoothstep( 0.0, 30.0, lead );
 	// The beam's body: brightest down its heart and falling away to its edge as a bell, so it has no plateau and no
-	// outline, and its color falls with it from pale through hot to a deep amber. It gives way to the page's heart by
-	// the last stretch, where it has drawn itself as thin.
-	float B = NECK_A * ( 1.0 + NECK_LEAVE.x * exp( - max( d, 0.0 ) / NECK_LEAVE.y ) ) * ( 1.0 - smoothstep( NECK_BODY.x, NECK_BODY.y, d ) );
-	float body = B * exp( - NECK_K * u * u );
-	// Streaks running down it, fine and bright, as wide as a pixel at the least, gone where it has thinned to its heart.
-	float streak = NECK_STREAK * ( 1.0 - smoothstep( NECK_BODY.x, NECK_BODY.y, d ) ) * rootStreaks( sign( x ) * u, s, t, 1.2 * fx / max( w, 1e-3 ) ) * smoothstep( 1.1, 0.7, u );
-	// The page's own heart down its middle, the page's width, brightness and breath. Past the cut it gives way to the
-	// page's own, which comes on over the first few units of it.
-	float page = uRootState.z;
+	// outline, and its color falls with it from hot through flame to a deep amber. It is held as wide and as bright
+	// all the way to the cut.
+	float B = NECK_A * ( 1.0 + NECK_LEAVE.x * exp( - max( d, 0.0 ) / NECK_LEAVE.y ) );
+	float body = B * ( 1.0 + NECK_EDGE * pulse ) * exp( - NECK_K * u * u );
+	// The beat itself is no wider than the beam is where it has drawn in, so where the beam leaves the ball it is a
+	// hot thread through the flare and never a wide soft blob.
+	float pw = min( neckWidth( d, R, on ), NECK_PULSE_W ) * ( 1.0 + NECK_SPREAD * pulse ), px = x / max( pw, 1e-3 );
+	body += B * NECK_PULSE.x * pulse * exp( - NECK_K * px * px );
+	// The page's own heart down its middle, the page's width, brightness and breath: held under the cap where the beam
+	// leaves the ball, so its form is carried by hot to amber there, and the page's whole by the cut.
 	vec2 hk = rootStream( xs, s, t, lead, uRootScale.z, 1.0 );
-	float give = 1.0 - page * smoothstep( NECK_CUT + NECK_GIVE.x, NECK_CUT + NECK_GIVE.y, d );
-	float heart = hk.x * give * smoothstep( - NECK_UP, 0.0, d );
-	// A faint amber at its edges, where the page's own glow is beginning further down.
-	float halo = NECK_HALO.x * exp( - pow( x / ( NECK_HALO.y * w + NECK_HALO.z ), 2.0 ) ) * give;
+	float heart = hk.x * mix( NECK_HEART.x, 1.0, smoothstep( NECK_HEART.y, NECK_HEART.z, d ) ) * smoothstep( 0.0, NECK_UP, d );
 	// As it sets off, a surge of light runs down it from the foot.
 	float surge = ROOT_SURGE * exp( - pow( ( d - since * ROOT_SURGE_V ) / ROOT_SURGE_W, 2.0 ) ) * ( 1.0 - smoothstep( 0.5, 1.2, since ) );
-	float a = ( ( body + streak ) * hk.y + heart + halo * hk.y ) * ( 1.0 + surge ) * on;
+	float a = ( body * hk.y + heart ) * give * ( 1.0 + surge ) * on;
 	return max( a - ROOT_FLOOR, 0.0 );
 }
 vec3 rootRamp( float a ) {
