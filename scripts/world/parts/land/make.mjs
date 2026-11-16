@@ -25,7 +25,7 @@ const began = performance.now(), say = (s) => console.log(`land: ${s} · ${((per
 
 // How fine everything is: the height field's spacing and how far the reduced mesh may stray from it, in units, and
 // the maps' sizes in texels.
-const FINE = draft ? { grid: 1.6, error: 0.12, map: 512, lots: 256, light: 192, hemi: 32, bounces: 1 } : { grid: 0.7, error: 0.05, map: 1024, lots: 512, light: 640, hemi: 160, bounces: 2 };
+const FINE = draft ? { grid: 1.6, error: 0.12, map: 512, lots: 256, light: 192, hemi: 32, bounces: 1 } : { grid: 0.7, error: 0.1, map: 1024, lots: 512, light: 768, hemi: 256, bounces: 2 };
 // How far the paving and the grass stand over the dome, the kerb between them, how far down the turned edge goes.
 const LIFT = { paving: 0.45, grass: 0.1, skirt: 4 };
 // The belt of grass along the city's front: how far in front of front() its kerb is, and the soft, uneven edge it

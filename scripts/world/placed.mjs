@@ -29,6 +29,12 @@ const towers = P.towers().map((b, i) => [n(b.x), n(b.z), n(b.w), n(b.d), n(LOW[i
 // has it, and the belt of trees is planted again along the new edge.
 const W = await import(pathToFileURL(join(process.cwd(), 'src/pieces/world/layout.ts')).href);
 const BELT = 46, size = (t) => Math.max(t[2], t[3]);
+// Three buildings at the right that the picture has otherwise: two stood where the picture has only dunes, and
+// are put where the picture has two towers the study left out (each by where its top is in the picture, and how
+// far toward the visitor it stands), and one the study gave a gold flame is a plain stepped tower in the picture.
+const PUT = { 5: [930, 183, -60], 14: [1012, 172, -90] }, PLAIN = { 4: 'deco' };
+for (const [i, [px, py, z]] of Object.entries(PUT)) { const t = towers[i], [x, y] = W.fromPicture(px, py, z); t[0] = n(x); t[1] = n(z); t[4] = n(y - W.ground(x, z)); t[7] = 'plain'; }
+for (const [i, form] of Object.entries(PLAIN)) { towers[i][6] = form; towers[i][7] = 'plain'; }
 const clear = (x, z, r, pad) => {
   if (W.within(x, z) < pad || W.desert(x, z) > 0.02 || Math.hypot(x, z) < W.COURT + r + 4) return false;
   const [qx, qz] = W.pyramidal(x, z);

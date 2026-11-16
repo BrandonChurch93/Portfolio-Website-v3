@@ -4,7 +4,9 @@
 //   const wear = curvature(mesh, 3)        // per vertex, 1 / units: over 0 on convex edges, under 0 in creases
 //   merge([a, b]), transform(mesh, m4), bounds(mesh), area(mesh), weld(mesh, 1e-4), closed(mesh)
 //
-// A matrix is sixteen numbers, column major, as three's Matrix4.elements.
+// A matrix is sixteen numbers, column major, as three's Matrix4.elements; one that mirrors turns every triangle
+// round so its faces still point out. merge refuses meshes of which only some have normals. A triangle all but flat
+// (THIN) has no normal anyone can trust, and creased and curvature leave it out.
 
 // A hash table from keys (whole numbers from 0 to 2^53) to whole numbers, which grows as keys are added.
 export class Table {

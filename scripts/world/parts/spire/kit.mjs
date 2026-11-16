@@ -194,6 +194,48 @@ export class Kit {
       }
     }
   }
+  // A solid through rings of plans, each { y, poly, tag? }, every plan with the same number of points. round[i] says
+  // point i is on a curve, so the faces either side of it share its normal; elsewhere the plan turns sharply. A ring
+  // with crease: true is a sharp turn up the solid; elsewhere the faces above and below share their normals. edge(n)
+  // is how long a face's edges may be, by its normal (fine where it is seen, coarse where it is not). The band from
+  // ring j to ring j + 1 is tagged with ring j's tag. o.top and o.bottom close its ends.
+  loft(layer, rings, o = {}) {
+    const n = rings[0].poly.length, round = o.round ?? [];
+    const area = rings[0].poly.reduce((s, [x, z], i) => { const [x2, z2] = rings[0].poly[(i + 1) % n]; return s + x * z2 - x2 * z; }, 0);
+    const R = area > 0 ? rings.map((r) => ({ ...r, poly: [...r.poly].reverse() })) : rings;
+    const rd = area > 0 ? [...Array(n)].map((_, i) => round[n - 1 - i]) : round;
+    const P = (j, i) => { const [x, z] = R[j].poly[(i + n) % n]; return [x, R[j].y, z]; };
+    const F = [];
+    for (let j = 0; j + 1 < R.length; j++) {
+      F.push([]);
+      for (let i = 0; i < n; i++) {
+        const a = P(j, i), b = P(j, i + 1), c = P(j + 1, i + 1), d = P(j + 1, i);
+        let g = cross(sub(add(b, c), add(a, d)), sub(add(d, c), add(a, b)));
+        if (!(Math.hypot(...g) > 1e-9)) g = [-(b[2] - a[2]), 0, b[0] - a[0]];
+        F[j].push(unit(g));
+      }
+    }
+    const N = (j, i, at, up) => {
+      // The normal of band j's face i at its corner: the point (i + at) of ring (j + up).
+      let s = F[j][i];
+      const k = (i + at + n) % n;
+      const side = at === 0 ? (i - 1 + n) % n : (i + 1) % n;
+      if (rd[k]) s = add(s, F[j][side]);
+      const jj = up ? j + 1 : j - 1;
+      if (jj >= 0 && jj < F.length && !R[up ? j + 1 : j].crease) { s = add(s, F[jj][i]); if (rd[k]) s = add(s, F[jj][side]); }
+      return unit(s);
+    };
+    for (let j = 0; j < F.length; j++) for (let i = 0; i < n; i++) {
+      const a = P(j, i), b = P(j, i + 1), c = P(j + 1, i + 1), d = P(j + 1, i);
+      if (Math.hypot(...sub(b, a)) + Math.hypot(...sub(c, d)) < 1e-6) continue;
+      if (o.skip?.(j, i, F[j][i])) continue;
+      const n00 = N(j, i, 0, false), n10 = N(j, i, 1, false), n11 = N(j, i, 1, true), n01 = N(j, i, 0, true);
+      const normal = (u, v) => unit(lerp(lerp(n00, n10, u), lerp(n01, n11, u), v));
+      this.patch(layer, a, b, c, d, { edge: o.edge ? o.edge(F[j][i]) : undefined, want: F[j][i], tag: R[j].tag ?? o.tag, normal });
+    }
+    if (o.top) this.cap(layer, R[R.length - 1].poly, R[R.length - 1].y, true, o.topTag ?? R[R.length - 1].tag ?? o.tag);
+    if (o.bottom) this.cap(layer, R[0].poly, R[0].y, false, R[0].tag ?? o.tag);
+  }
   // Each layer as a mesh, moved by a matrix (sixteen numbers, column major) into the world.
   meshes(matrix) {
     const m = new THREE.Matrix4().fromArray(matrix), nm = new THREE.Matrix3().getNormalMatrix(m), v = new THREE.Vector3();

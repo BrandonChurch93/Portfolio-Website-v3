@@ -4,11 +4,14 @@
 //   const mesh = await surface({ module: '/abs/rock-field.mjs', args, box: [[x0, y0, z0], [x1, y1, z1]], cell: 2 })
 //   const small = await simplify(mesh, { error: 0.05 })
 //
-// The field's module exports field(x, y, z), and may export async setup(args), awaited once in each worker, and lip,
-// the most the field changes per unit (1.5 if not given). Under 0 is inside, and 0 itself counts as outside.
+// The field's module exports field(x, y, z), and may export async setup(args), awaited once in each worker and, if a
+// quad needs the true slope to be split, once in the calling thread too, and lip, the most the field changes per unit
+// (1.5 if not given). Under 0 is inside, and 0 itself counts as outside.
 // It is dual contouring on a uniform grid with a vertex for each sheet of surface in a cell, worked out in slabs
-// across worker threads. A vertex goes where the planes through its cell's crossings meet, up to margin cells outside
-// its cell (half a cell unless given): that is what keeps a corner whose point lies just over a cell wall sharp.
+// across worker threads. The grid starts SHIFT of a cell before the box, so faces at round numbers do not lie on its
+// planes, and every vertex is cut to the box. A vertex goes where the planes through its cell's crossings meet, up to
+// margin cells outside its cell (one unless given): that is what keeps a corner whose point lies over a cell wall
+// sharp. Such a vertex goes back inside its cell where it would fold a quad, cut through a triangle or sit on another.
 // Returns { positions, indices, stats }, stats counting how each vertex and quad was made. check-surface.mjs proves it.
 import { Worker } from 'node:worker_threads';
 import { availableParallelism } from 'node:os';
@@ -544,12 +547,18 @@ export async function simplify(mesh, { error, target, attributes, weights, lock,
   const place = places(positions);
   const rim = edgesOf(indices, place, nv).open;
   const check = sure ? strays({ positions, indices }, most, place) : null;
-  let out, stray = 0, holes = 0, rounds = 0;
+  let out, stray = 0, holes = 0, rounds = 0, last = Infinity, zone = null;
   for (;;) {
     out = MeshoptSimplifier.simplifyWithAttributes(indices, positions, 3, attr, k, wts, held, goal, aim, ['ErrorAbsolute'])[0];
     holes = opened(out, place, nv, rim, positions, held);
-    stray = check ? check.find(out, held) : 0;
-    if ((!stray && !holes) || rounds === HOLD) break;
+    stray = check ? check.find(out, held, zone) : 0;
+    const stalled = rounds >= 2 && stray > last * 0.75;
+    if ((!stray && !holes) || rounds === HOLD || stalled) {
+      if (zone) stray = check.find(out, new Uint8Array(nv), null);
+      break;
+    }
+    last = stray;
+    zone = check ? check.zone : null;
     for (let i = 0; i < out.length; i++) held[out[i]] = 1;
     rounds++;
   }
@@ -679,17 +688,29 @@ function strays(mesh, error, place) {
     return false;
   };
   const short = error * Math.sqrt(3);
-  let worst = 0;
+  const lo = bounds(mesh)[0], block = size * 8, blockOf = (x, y, z) => Math.floor((x - lo[0]) / block) + 4096 * (Math.floor((y - lo[1]) / block) + 4096 * Math.floor((z - lo[2]) / block));
+  let worst = 0, zone = null;
+  // Each round after the first holds still every vertex the round before kept, so the result changes only near the
+  // vertices just held: zone is the blocks round them, and only there is the next result measured. A last measure
+  // of the whole is made before the count is reported.
+  const mark = (v) => {
+    const x = Math.floor((p[v * 3] - lo[0]) / block), y = Math.floor((p[v * 3 + 1] - lo[1]) / block), z = Math.floor((p[v * 3 + 2] - lo[2]) / block);
+    for (let c = -1; c <= 1; c++) for (let b = -1; b <= 1; b++) for (let a = -1; a <= 1; a++) zone.add(x + a + 4096 * (y + b + 4096 * (z + c)));
+  };
   return {
     get worst() { return worst; },
-    find(out, held) {
+    get zone() { return zone; },
+    find(out, hold, where) {
       let count = 0;
       worst = 0;
+      zone = new Set();
+      const held = new Proxy(hold, { set(t, i, v) { if (!t[i]) mark(+i); t[i] = v; return true; } });
+      const inside = (x, y, z) => !where || where.has(blockOf(x, y, z));
       const kept = new Uint8Array(nv);
       for (let i = 0; i < out.length; i++) kept[place[out[i]]] = 1;
       const back = closest({ positions: p, indices: out }, size);
       for (let v = 0; v < nv; v++) {
-        if (place[v] !== v || kept[v]) continue;
+        if (place[v] !== v || kept[v] || !inside(p[v * 3], p[v * 3 + 1], p[v * 3 + 2])) continue;
         const d = back(p[v * 3], p[v * 3 + 1], p[v * 3 + 2], error);
         if (d <= error) continue;
         worst = Math.max(worst, d);
@@ -702,7 +723,7 @@ function strays(mesh, error, place) {
           Math.hypot(p[a * 3] - p[b * 3], p[a * 3 + 1] - p[b * 3 + 1], p[a * 3 + 2] - p[b * 3 + 2]),
           Math.hypot(p[b * 3] - p[c * 3], p[b * 3 + 1] - p[c * 3 + 1], p[b * 3 + 2] - p[c * 3 + 2]),
           Math.hypot(p[c * 3] - p[a * 3], p[c * 3 + 1] - p[a * 3 + 1], p[c * 3 + 2] - p[a * 3 + 2]));
-        if (L <= short || made(a, b, c)) continue;
+        if (L <= short || !inside((p[a * 3] + p[b * 3] + p[c * 3]) / 3, (p[a * 3 + 1] + p[b * 3 + 1] + p[c * 3 + 1]) / 3, (p[a * 3 + 2] + p[b * 3 + 2] + p[c * 3 + 2]) / 3) || made(a, b, c)) continue;
         const steps = Math.min(SAMPLES, Math.max(2, Math.ceil(L / Math.max(error, edge / 2))));
         let far = false;
         for (let i = 0; i <= steps; i++) for (let j = 0; i + j <= steps; j++) {
