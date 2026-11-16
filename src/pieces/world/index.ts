@@ -3,6 +3,7 @@ import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import type { Tier } from '../../config/site';
 import { clock } from '../../world/clock';
+import { loading } from '../../world/loading';
 import { handheld } from '../../world/device';
 import type { Piece, PieceOptions } from '../../world/piece';
 import { Stage } from '../../world/stage';
@@ -10,7 +11,7 @@ import { finish, trueDarks } from '../../world/tone';
 import { CORE, D2R, HOST, LIGHT, MOONWARD, PYRAMID, SCALE, SPIRE, VIEW, coreLevel, drawn, ground } from './layout';
 import { GLINT, STREAM_LONG, WARM, color, world } from './light';
 import { night } from './night';
-import { PARTS, type PartFactory, type PartName, type PartState, type WorldPart } from './part';
+import { LOADING, PARTS, type PartFactory, type PartName, type PartState, type WorldPart } from './part';
 import { STEP, TOWERS } from './placed';
 
 // The hero's world, built to picture 9 (reference/kits/world.md): the top of a small planet torn open, with a city
@@ -205,12 +206,34 @@ export function createWorld(): WorldPiece {
       const names = only ? [only] : [...PARTS];
       parts = [];
       const made = new Set<PartName>(), stands = new Set<number>();
+      // The parts are made side by side, so their files come down together and not one after another: made in turn,
+      // the world took as long to load as all its files end to end. Only `rest` waits for the others, since it
+      // stands in for whatever they did not build. A part that fails (a file missing, or half written while its
+      // builder works) is left out and said so: one broken part must not take the whole world off the page.
+      const renderer = stage.renderer, got = new Map<PartName, WorldPart>();
+      let ready = 0;
+      const make = async (name: PartName): Promise<void> => {
+        const from = performance.now();
+        try {
+          got.set(name, await (await loaders[name]())({ tier: opts.tier, renderer, handheld: handheld(), query: q, built: made, stands }));
+        } catch (e) {
+          console.warn(`world: ${name} could not be made and is left out. ${String(e)}`);
+          got.set(name, { group: new THREE.Group() });
+        }
+        built[name] = Math.round(performance.now() - from);
+        loading.progress(LOADING, ++ready / (names.length + 1));
+      };
+      await Promise.all(names.filter((n) => n !== 'rest').map(make));
       for (const name of names) {
-        const make = await loaders[name](), from = performance.now();
-        const part = await make({ tier: opts.tier, renderer: stage.renderer, handheld: handheld(), query: q, built: made, stands });
+        const part = got.get(name);
+        if (!part) continue;
         if (part.group.children.length) made.add(name);
         for (const i of part.stands ?? []) stands.add(i);
-        built[name] = Math.round(performance.now() - from);
+      }
+      if (names.includes('rest')) await make('rest');
+      if (!stage) return;
+      for (const name of names) {
+        const part = got.get(name)!;
         root.add(part.group);
         root.updateMatrixWorld(true);
         parts.push({ name, part, span: spanOf(part), on: true });
@@ -232,6 +255,7 @@ export function createWorld(): WorldPiece {
       off = clock.onFrame(frame);
       stale = true;
       frame();
+      loading.end(LOADING);
       opts.onReady?.();
     },
     setLamp(x: number, y: number) {
@@ -270,6 +294,7 @@ export function createWorld(): WorldPiece {
     freeze(t: number | null) { hold = t; stale = true; frame(); },
     view() {},
     dispose() {
+      loading.end(LOADING);
       off?.();
       watch?.disconnect();
       near?.disconnect();

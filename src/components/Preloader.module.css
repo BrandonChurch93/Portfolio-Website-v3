@@ -1,0 +1,81 @@
+/* The preloader: the page's own ground over everything, his name, one line that fills, and the word and the count
+   under it. Nothing in it glows: it is type and a hairline, as the labels of the site are. */
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  background: var(--bg);
+  opacity: 1;
+  transition: opacity 0.7s var(--ease-settle);
+}
+
+.loader[data-lifting] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.block {
+  width: clamp(13rem, 24vw, 22rem);
+  /* It sits where his name will be when it lifts, a little over the middle of the screen. */
+  translate: 0 -6vh;
+  transition: translate 0.7s var(--ease-settle), opacity 0.4s linear;
+}
+
+.loader[data-lifting] .block {
+  translate: 0 -8vh;
+  opacity: 0;
+}
+
+.name {
+  margin: 0 0 var(--space-5);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: 0.28em;
+  /* The tracking after the last letter would push the name off the line's middle. */
+  margin-right: -0.28em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--text-2);
+}
+
+.track {
+  display: block;
+  height: 1px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  /* Deep at its start and pale at its leading end, as the site's light runs from ember to pale gold. */
+  background: linear-gradient(90deg, var(--copper) 0%, var(--hot) 72%, var(--pale) 100%);
+  will-change: transform;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  margin: var(--space-3) 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.count {
+  font-variant-numeric: tabular-nums;
+  color: var(--copper-light);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loader,
+  .block {
+    transition: none;
+  }
+}

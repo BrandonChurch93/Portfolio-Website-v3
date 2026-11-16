@@ -5,13 +5,17 @@ import { hero } from '../../content/hero';
 import { BOARD, CITY, CX, SKY, WORDS, WORK, WORLD } from '../../hero/board';
 import type { HeroStage } from '../../hero/stage';
 import { HOST } from '../../pieces/world/layout';
+import { LOADING } from '../../pieces/world/part';
+import { loading } from '../../world/loading';
 import { MetalButton } from '../MetalButton';
 import { PieceView } from '../PieceView';
+import { Preloader } from '../Preloader';
 import type { Hub } from '../../whole/hub';
 import { Shell } from './Shell';
 import styles from './HeroLab.module.css';
 
 const u = (n: number) => `calc(var(--u) * ${Number(n.toFixed(2))})`;
+
 
 // The hero, built for real (BRIEF.md, Settled, "The hero, the city at rest"). The page only lays things out: his
 // words a third of the way down the screen, and under them the world on the center line: at rest the spire and
@@ -35,8 +39,12 @@ export function HeroLab({ hub }: { hub?: Hub }) {
     setUi(new URLSearchParams(location.search).get('ui') !== '0' && !hub);
     const fits = matchMedia(`(min-width: ${BOARD.least}px)`), read = () => setWide(fits.matches);
     read();
+    // The first screen waits for the world, where there is one and the page has been opened at its top: the
+    // preloader is told so before the world has begun to load (src/world/loading.ts). The world is by far the most
+    // of the wait.
+    if (fits.matches && WORLD.shown && scrollY < innerHeight * 1.5) loading.begin(LOADING, 9);
     fits.addEventListener('change', read);
-    return () => fits.removeEventListener('change', read);
+    return () => { fits.removeEventListener('change', read); loading.clear(); };
   }, []);
 
   useEffect(() => {
@@ -82,6 +90,7 @@ export function HeroLab({ hub }: { hub?: Hub }) {
 
   return (
     <Shell ref={page} className={styles.page} data-embed={hub ? '' : undefined}>
+      <Preloader name={hero.name} word={hero.loading} />
       {ui && (
         <div className={styles.head}>
           <p className={styles.label}>Study 30 · The hero</p>

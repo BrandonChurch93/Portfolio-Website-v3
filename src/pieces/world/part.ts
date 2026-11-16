@@ -11,6 +11,10 @@ import type { Tier } from '../../config/site';
 export const PARTS = ['rock', 'skin', 'core', 'land', 'pyramid', 'spire', 'towers', 'trees', 'debris', 'rest'] as const;
 export type PartName = (typeof PARTS)[number];
 
+// What the page's preloader knows the world's loading by (src/world/loading.ts). A page that waits for the world
+// begins it under this name, and the world says how far along it is and when its first frame is drawn.
+export const LOADING = 'world';
+
 export interface PartState {
   // The clock, in seconds.
   t: number;

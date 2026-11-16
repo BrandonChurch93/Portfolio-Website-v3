@@ -1,5 +1,5 @@
-// What the hero says. The line, his name and the paragraph are his own, as he sent them. The buttons' words are
-// stand ins.
+// What the hero says. The line, his name and the paragraph are his own, as he sent them. The buttons' words and
+// the preloader's word are stand ins.
 export const hero = {
   role: 'Product Engineer · Designer',
   name: 'Brandon Church',
@@ -7,4 +7,6 @@ export const hero = {
   work: { label: 'See the work', href: '#work' },
   contact: { label: 'Get in touch', href: '#contact' },
   cue: 'Scroll',
+  // What the preloader says while the first screen is made ready. A stand in: his to rewrite.
+  loading: 'Loading',
 } as const;
