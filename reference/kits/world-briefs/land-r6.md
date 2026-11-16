@@ -1,0 +1,24 @@
+# Your part: the land. Round 6: round 4's dunes, in round 5's desert
+
+## What you own
+scripts/world/parts/land/, public/world/land*.bin and land*.png, src/pieces/world/parts/land.ts, src/pieces/world/parts/land/. Stills in shots/world/land/ with the prefix r6-. Report: shots/world/land/r6-report.md. Read first: shots/world/land/r5-report.md and its two reviews, briefs/land-r5.md and briefs/land-r4.md (his two sentences are in it), and the END of briefs/common.md.
+
+## Fable's verdict on round 5
+Round 5 gained the plan and lost the dunes. Open shots/world/land/r4-28-close-dunes.png beside shots/world/land/r5-24-close-dunes.png, and r5-0-page-desert.png beside r5-24-page-desert.png.
+- In round 4 every dune is a knife crest between a bright flank and a deep dark flank. At a glance it is tall dunes in low moonlight. That picture is what answered his words: "the shadows aren't hitting it right to make it look realistic and they need to be a lot taller."
+- In round 5 the same sand is smooth caramel mounds. The flanks are nearly one tone, the crests are rolled, the great dune is a lump over the skyline, the row of trees stands on a terrace. Whatever your numbers say of the slip faces, the picture has lost its darks: at the page's size almost nothing on the desert is darker than mid tan.
+Round 5 is NOT committed. What is live is round 4's dunes.
+
+## Kept from round 5
+The plan's ideas: dunes of plainly different sizes, a pass with the row of trees seen through it (all twelve drawn), the rim as sand rolled over the planet's shoulder, no zebra in shade, the lit sand's three colors, the crest search with no band of grain, the handheld path, the cost.
+
+## What must change, most important first
+1. ROUND 4'S LIGHT, BY MEASUREMENT. Measure r4-28-close-dunes.png: for each of its dunes the mean of its lit flank and of its dark flank, and how sharp the line between them is. Every dune of yours that the visitor sees must match: its dark flank at least four times darker than its lit flank (round 4's deepest shade was his value, about (48, 22, 9)), the crest one crisp line between them with its thin bright edge, at three times AND at the page's own size. Print the table for round 4, round 5 and yours. Find what round 5 changed (the fills in shade, the sheen taken to nothing, the height taken as the most any point of the crest makes, the turns) and put back whatever cost the contrast.
+2. THE VISITOR MUST SEE THE DARK FACES. The moon is at the visitor's right and behind the world (MOONWARD). A dune shows its dark face when that face is turned toward the visitor's left and front. Round 5 turned the great dune's lit back to the visitor, so the largest thing on the desert has no dark side at all. Of everything on the desert, at least six dunes show the visitor a dark face that is a third to a half of what is seen of that dune, as all of round 4's did.
+3. THE GREAT DUNE IS A LUMP. "A big smooth lump of sand", rising over the picture's skyline in front of the city's last towers. A great dune is not a bigger mound: it is a long sinuous knife crest climbing to a peak, one whole flank lit and one whole flank in deep shade, with two or three smaller dunes riding its lit back, each with its own small dark face. Its peak stands right of 1060 across in the picture (the last tower is at 1048), and where it crosses in front of a building it is lower than that building's lit floors. If it cannot be made to read as a dune, make it two tall dunes of round 4's kind and keep the hierarchy by size.
+4. THE ROW STANDS ON A TERRACE: a flat shelf with a straight front edge, which the brief said it must never be. The twelve trees stand on the BACK SLOPE of a low dune: a rippled swell that rises to them and goes on rising behind them into the pale dune, with no flat and no straight line anywhere. They are still seen whole (their feet at 244 down, nothing in front higher than 246, 1055 to 1182 across).
+5. CAST SHADOWS READ AT THE PAGE'S SIZE. The floor is seen nearly edge on, so a shadow on it is a thin band: make sure every tall dune's shadow climbs the back of the next dune as a long dark shape with a hard curved edge, as dark as the face that throws it.
+6. THE FRONT. Round 5's lit floor between the dunes is good: keep a third of the desert open. The grey slabs and dark blocks at the lip are the rock's top and not yours, but no straight seam between sand and stone is.
+
+## How to look
+Every draft, in this order: THE REAL PAGE AT ITS OWN SIZE (npm run shot -- "/lab/hero?ui=0" --t 6 --wait 9000 --scale 1, cut to the desert and enlarged 2.5 times) beside r5-0-page-desert.png (round 4 on the page): is yours as strong in light and dark? Then close:dunes at three times beside r4-28-close-dunes.png and shots/world/ref/dunes-he-likes.png. Then the overlay (npm run match -- --at 880,160,420,170 --out shots/world/land/r6-match-dunes).
