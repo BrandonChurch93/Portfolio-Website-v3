@@ -8,6 +8,7 @@ import { Stage } from '../../world/stage';
 import { trueDarks } from '../../world/tone';
 import type { Anchor, StruckPiece } from '../../world/struck';
 import { placeGlint } from '../../world/glint';
+import { lamp } from '../../lamp/lamp';
 import { FRAME_H, RF, buildReflector, dishAxis, type ReflectorModel } from './model';
 
 // The copper reflector on its arm, fixed to the page's ground as to a wall. The stream falls onto the middle of its
@@ -24,10 +25,13 @@ const DIST = FRAME_H / 2 / Math.tan((FOV / 2) * (Math.PI / 180));
 // the light would sit by the bowl's centre of curvature and light the whole face at once; out here its highlight is a
 // place on the face that travels with the cursor.
 const LAMP = { reach: 2000, x: 50, y: 26, ease: [0.32, 0.5] as const, power: 0.62 };
-// Where the glint on the tube and the knuckle takes the lamp to be: the same sphere, swung further and sooner, so the
-// line runs the whole length of the tube across the part of the screen the pointer is in. Only the glint reads it: the
-// dish, the wall and the arm are lit by the lamp itself.
-const GLINT_LAMP = { x: 54, y: 36, ease: [0.3, 0.42] as const };
+// The tube's line. Where it is along the tube follows the cursor along the tube's line on the screen, and where it is
+// round the tube follows the cursor across it, each counted against the room there is on that side of the tube, at
+// least `least` of the screen's smaller side, and eased: the cursor at the screen's edge puts the line at `ends` of
+// the tube's length from its middle, and `most` degrees round from the face the visitor sees. The glint's lamp is set
+// where that place mirrors it to the eye, `near` metres out, so only a stretch of the tube faces it. A lamp on a sphere
+// round the dish lay behind the tube for the left and upper half of the screen, and lit the whole tube at once low right.
+const TUBE = { ends: 0.32, most: 55, ease: 0.75, least: 0.22, near: 0.07 };
 // How far the brightest of the cursor's light on the wall leans toward the cursor, and how far it may go.
 const WALL_LEAN = 0.3, WALL_REACH = 110;
 // How far the face's normals are turned toward the visitor for the direct lights, and how much its curve is deepened
@@ -120,6 +124,52 @@ export function createReflector(): StruckPiece {
     cam.updateProjectionMatrix();
   };
 
+  const g = { a: new THREE.Vector3(), b: new THREE.Vector3(), ax: new THREE.Vector3(), q: new THREE.Vector3(), v: new THREE.Vector3(), e1: new THREE.Vector3(), e2: new THREE.Vector3(), s: new THREE.Vector3(), n: new THREE.Vector3() };
+  // Where a point of the model, in the world, is drawn on the canvas, in CSS pixels.
+  const onCanvas = (p: THREE.Vector3) => { const v = g.s.copy(p).project(stage!.camera); return [((v.x + 1) / 2) * stage!.width, ((1 - v.y) / 2) * stage!.height] as const; };
+  // How far a point of the screen, in CSS pixels, may go along a direction before it leaves the screen.
+  const toEdge = (x: number, y: number, ux: number, uy: number, w: number, h: number) => {
+    let t = Infinity;
+    if (ux > 1e-6) t = Math.min(t, (w - x) / ux); else if (ux < -1e-6) t = Math.min(t, -x / ux);
+    if (uy > 1e-6) t = Math.min(t, (h - y) / uy); else if (uy < -1e-6) t = Math.min(t, -y / uy);
+    return Math.max(0, t);
+  };
+  // How far the cursor is from a point of the canvas along a direction on it, eased to -1 to 1 against the room there
+  // is on that side of the point on the screen.
+  const leanOf = (x0: number, y0: number, ux: number, uy: number) => {
+    const W = stage!.width, H = stage!.height;
+    const lean = (lampUV.x * W - x0) * ux + (lampUV.y * H - y0) * uy;
+    const L = lamp.get();
+    const vw = Math.max(1, clock.view.w), vh = Math.max(1, clock.view.h);
+    const side = lean < 0 ? -1 : 1;
+    const room = Math.max(TUBE.least * Math.min(vw, vh), toEdge(L.px - lampUV.x * W + x0, L.py - lampUV.y * H + y0, ux * side, uy * side, vw, vh));
+    return side * Math.tanh(Math.abs(lean) / room / TUBE.ease) / Math.tanh(1 / TUBE.ease);
+  };
+  const placeTubeLamp = () => {
+    if (!stage || !model) return;
+    const cam = stage.camera;
+    cam.updateMatrixWorld(true);
+    const a = model.root.localToWorld(g.a.copy(model.tube.a)), b = model.root.localToWorld(g.b.copy(model.tube.b));
+    const [ax, ay] = onCanvas(a), [bx, by] = onCanvas(b);
+    let ux = bx - ax, uy = by - ay;
+    const ul = Math.hypot(ux, uy) || 1;
+    ux /= ul; uy /= ul;
+    const t = 0.5 + TUBE.ends * leanOf((ax + bx) / 2, (ay + by) / 2, ux, uy);
+    const q = g.q.copy(a).lerp(b, t);
+    const A = g.ax.copy(b).sub(a).normalize();
+    const v = g.v.copy(cam.position).sub(q).normalize();
+    const e1 = g.e1.copy(v).addScaledVector(A, -v.dot(A)).normalize();
+    const e2 = g.e2.crossVectors(A, e1).normalize();
+    const [qx, qy] = onCanvas(q);
+    const [rx, ry] = onCanvas(g.n.copy(q).addScaledVector(e2, 0.02));
+    let px = rx - qx, py = ry - qy;
+    const pl = Math.hypot(px, py) || 1;
+    px /= pl; py /= pl;
+    const th = TUBE.most * (Math.PI / 180) * leanOf(qx, qy, px, py);
+    const n = g.n.copy(e1).multiplyScalar(Math.cos(th)).addScaledVector(e2, Math.sin(th));
+    placeGlint(model.glint, n.multiplyScalar(2 * n.dot(v)).sub(v).multiplyScalar(TUBE.near).add(q), cam);
+  };
+
   const placeLamp = () => {
     if (!stage || !model) return;
     const dx = ((lampUV.x - 0.5) * stage.width) / Math.max(1, clock.view.w);
@@ -131,7 +181,7 @@ export function createReflector(): StruckPiece {
     };
     const p = on(LAMP);
     stage.lamp.position.copy(p).multiplyScalar(RF.SCALE);
-    placeGlint(model.glint, on(GLINT_LAMP).multiplyScalar(RF.SCALE), stage.camera);
+    placeTubeLamp();
     const w = model.wall.position;
     model.face.uLampD.value.copy(p).applyMatrix4(new THREE.Matrix4().copy(model.dish.matrix).invert()).normalize();
     model.wallC.value.set(clamp((p.x - w.x) * WALL_LEAN, -WALL_REACH, WALL_REACH), clamp((p.y - w.y) * WALL_LEAN, -WALL_REACH, WALL_REACH));

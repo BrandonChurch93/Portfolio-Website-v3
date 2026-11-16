@@ -8,6 +8,7 @@ import { Stage } from '../../world/stage';
 import { trueDarks } from '../../world/tone';
 import type { Anchor, StruckPiece } from '../../world/struck';
 import { placeGlint } from '../../world/glint';
+import { lamp } from '../../lamp/lamp';
 import { SL, buildStudioLight, type StudioModel } from './model';
 
 // The studio light in About: a Fresnel on a yoke, hung from the wall over his portrait. The stream strikes its flank,
@@ -25,14 +26,14 @@ const HEAD_SHARE = 0.45;
 const STRIKE = { z: 18, round: 24 };
 // The cursor's light: the plane it moves in, in front of the wall, how far it may stand from the light, its power.
 const LAMP = { z: 0.8, reach: 0.95, spread: 1.7, power: 1.6 };
-// Where the glint on the drum and the yoke takes the lamp to be. Only the glint reads it: the light is lit by the lamp
-// itself. It stands on a sphere round the light, out in front, at an angle from straight ahead that grows with how far
-// the cursor is from the light on the screen, and eases toward its largest as the cursor nears the screen's edge. The
-// lamp, held in a plane in front of the wall, stays near the eye's own line, and its glint never reached the drum.
-// Across, the distance is counted against the room there is on that side of the light, at least `room` of the screen:
-// the light stands near the screen's right edge on the page, and counted in screen widths the whole of the left of the
-// screen swung the glint to its largest angle and held it there.
-const GLINT_LAMP = { dist: 0.62, az: 78, el: 64, ease: [0.84, 0.45] as const, room: 0.3 };
+// The drum's line. Its place round the drum is chosen from where the cursor is across the drum's axis on the screen,
+// counted against the room there is on that side of the drum, at least `least` of the screen's smaller side, and eased:
+// the cursor at the screen's edge puts it `most` degrees round from the middle of the face the visitor sees, and
+// fewer on the side the yoke's arm and its knob stand on, where a line further round lay behind them. The
+// glint's lamp is then set where that place mirrors it to the eye, `far` metres out, so the line runs the drum's whole
+// length. A lamp that followed the cursor came to lie near the drum's axis with the cursor low and left, where a turned
+// part shows no line at all. `mid` is the middle of the drum along its axis, in millimetres.
+const DRUM = { mid: 7, most: [8, 60] as const, ease: 0.75, least: 0.22, far: 4 };
 // The stream's own light at a strike, and the lamp's light thrown on the barn doors, as point lights.
 const FLASH_LIGHT = 0.012;
 // A room light from above and behind, toward the wall, that catches the top edges and parts the dark metal from the
@@ -196,25 +197,46 @@ export function createStudioLight(): StruckPiece {
   };
 
   const glintAt = new THREE.Vector3();
-  // Where the canvas's middle is across the screen, read again only when the screen's or the canvas's width changes: a
-  // scroll does not move it, and reading it on every frame the pointer moves made the page lay itself out in that frame.
-  const across = { key: '', cx: 0.5 };
+  const d = { c: new THREE.Vector3(), a: new THREE.Vector3(), v: new THREE.Vector3(), e1: new THREE.Vector3(), e2: new THREE.Vector3(), s: new THREE.Vector3(), n: new THREE.Vector3() };
+  // How far a point of the screen, in CSS pixels, may go along a direction before it leaves the screen.
+  const toEdge = (x: number, y: number, ux: number, uy: number, w: number, h: number) => {
+    let t = Infinity;
+    if (ux > 1e-6) t = Math.min(t, (w - x) / ux); else if (ux < -1e-6) t = Math.min(t, -x / ux);
+    if (uy > 1e-6) t = Math.min(t, (h - y) / uy); else if (uy < -1e-6) t = Math.min(t, -y / uy);
+    return Math.max(0, t);
+  };
+  const placeDrumLamp = () => {
+    if (!stage || !model) return;
+    const cam = stage.camera;
+    const W = stage.width, H = stage.height;
+    const c = model.inner.localToWorld(d.c.set(0, 0, DRUM.mid));
+    const a = d.a.set(0, 0, 1).transformDirection(model.inner.matrixWorld);
+    const v = d.v.copy(cam.position).sub(c).normalize();
+    const e1 = d.e1.copy(v).addScaledVector(a, -v.dot(a)).normalize();
+    const e2 = d.e2.crossVectors(a, e1).normalize();
+    const p0 = d.s.copy(c).project(cam);
+    const x0 = ((p0.x + 1) / 2) * W, y0 = ((1 - p0.y) / 2) * H;
+    const p1 = d.s.copy(c).addScaledVector(e2, 0.05).project(cam);
+    let ux = ((p1.x + 1) / 2) * W - x0, uy = ((1 - p1.y) / 2) * H - y0;
+    const ul = Math.hypot(ux, uy) || 1;
+    ux /= ul; uy /= ul;
+    const lean = (lampUV.x * W - x0) * ux + (lampUV.y * H - y0) * uy;
+    const L = lamp.get();
+    const vw = Math.max(1, clock.view.w), vh = Math.max(1, clock.view.h);
+    const sx = L.px - lampUV.x * W + x0, sy = L.py - lampUV.y * H + y0;
+    const side = lean < 0 ? -1 : 1;
+    const room = Math.max(DRUM.least * Math.min(vw, vh), toEdge(sx, sy, ux * side, uy * side, vw, vh));
+    const th = side * DRUM.most[side < 0 ? 0 : 1] * D2R * Math.tanh(Math.abs(lean) / room / DRUM.ease) / Math.tanh(1 / DRUM.ease);
+    const n = d.n.copy(e1).multiplyScalar(Math.cos(th)).addScaledVector(e2, Math.sin(th));
+    glintAt.copy(n).multiplyScalar(2 * n.dot(v)).sub(v).multiplyScalar(DRUM.far).add(c);
+    placeGlint(model.glint, glintAt, cam);
+  };
+
   const placeGlintLamp = () => {
     if (!stage || !model) return;
-    const vw = Math.max(1, clock.view.w);
-    const dx = ((lampUV.x - 0.5) * stage.width) / vw;
-    const dy = ((0.5 - lampUV.y) * stage.height) / Math.max(1, clock.view.h);
-    if (across.key !== `${vw}|${stage.width}` && canvas) {
-      const box = canvas.getBoundingClientRect();
-      across.key = `${vw}|${stage.width}`;
-      across.cx = (box.left + box.width / 2) / vw;
-    }
-    const cx = across.cx;
-    const ux = dx / Math.max(GLINT_LAMP.room, dx < 0 ? cx : 1 - cx);
-    const az = Math.tanh(ux / GLINT_LAMP.ease[0]) * GLINT_LAMP.az * D2R, el = Math.tanh(dy / GLINT_LAMP.ease[1]) * GLINT_LAMP.el * D2R;
-    glintAt.copy(rest.centre).multiplyScalar(SL.SCALE).add(new THREE.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), Math.cos(az) * Math.cos(el)).multiplyScalar(GLINT_LAMP.dist));
     stage.camera.updateMatrixWorld(true);
-    placeGlint(model.glint, glintAt, stage.camera);
+    model.root.updateMatrixWorld(true);
+    placeDrumLamp();
   };
 
   const apply = () => {
