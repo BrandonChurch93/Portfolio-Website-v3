@@ -8,6 +8,7 @@ import type { SkillsStage } from '../../skills/stage';
 import type { Piece } from '../../world/piece';
 import { WAYS, type StruckPiece, type Way } from '../../world/struck';
 import { PieceView } from '../PieceView';
+import { Still } from '../Still';
 import type { Hub } from '../../whole/hub';
 import { Shell } from './Shell';
 import styles from './SkillsLab.module.css';
@@ -120,6 +121,8 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
       <div ref={board} className={styles.board}>
         <section ref={skills} className={styles.skills} aria-labelledby={`${id}-skills`}>
           <h2 id={`${id}-skills`} className={`${styles.title} ${styles.heading2}`}>Skills</h2>
+          {/* The desk as one picture, with the section's title on its floor, on a screen too narrow for the live desk. */}
+          <Still name="desk" className={styles.still} />
           <div className={styles.desk} data-part="desk" aria-hidden="true" style={at(SKILLS.desk.x, SKILLS.desk.y, SKILLS.desk.w, SKILLS.desk.h)}>
             {wide && <PieceView name="desk" reach={REACH} className={styles.piece} onPiece={holdDesk} />}
           </div>
