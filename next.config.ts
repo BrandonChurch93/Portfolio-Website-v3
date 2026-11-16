@@ -32,6 +32,13 @@ const nextConfig: NextConfig = {
         has: [{ type: 'query', key: 'v' }],
         headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
       },
+      {
+        // Pictures and portraits: kept for an hour without asking, then shown at once while a fresh copy is fetched
+        // behind. Served with no keeping at all, a visitor who came back asked again for every one before the page
+        // could draw. Not longer than an hour: the narrow screens' pictures of the 3D pieces are taken again often.
+        source: '/media/:file*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=3600, stale-while-revalidate=604800' }],
+      },
     ];
   },
 };
