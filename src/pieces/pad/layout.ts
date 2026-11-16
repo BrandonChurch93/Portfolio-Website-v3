@@ -40,6 +40,16 @@ export const climbed = (age: number) => (age <= LAUNCH.lift ? 0 : LAUNCH.climb *
 // How hard the engine burns so many seconds into the launch, 0 to 1: it lights at once, low, and is at full thrust
 // as the rocket leaves the table.
 export const burn = (age: number) => (age <= 0 ? 0 : Math.min(1, 0.35 + 0.65 * Math.min(1, age / LAUNCH.lift) ** 2));
+// The fire's tail under the engine's mouth. It shortens near the end so it leaves the tallest screen with the rocket.
+export const TAIL = { first: 60, full: 230, long: 400, from: 450, last: 170 } as const;
+export const tail = (b: number, climb: number) => {
+  if (b <= 0) return 0;
+  const k = Math.min(1, Math.max(0, (climb - TAIL.from) / (climbed(LAUNCH.end) - TAIL.from)));
+  return Math.min(TAIL.first + (TAIL.full - TAIL.first) * b ** 1.6 + climb, TAIL.long - (TAIL.long - TAIL.last) * k * k * (3 - 2 * k));
+};
+// The flash as the engine lights. Over in two frames, it read as a glitch.
+export const FLASH = { rise: 0.03, hold: 0.15, fall: 0.1 } as const;
+export const flash = (age: number) => (age <= 0 ? 0 : age < FLASH.rise ? age / FLASH.rise : age < FLASH.hold ? 1 : Math.exp(-(age - FLASH.hold) / FLASH.fall));
 
 // How it is looked at: from straight in front and a little above, in degrees, from this far away, in units. The
 // stone is seen about a sixth as deep as it is wide.

@@ -27,6 +27,13 @@ export const U = {
   uSince: { value: 60 },
   uLive: { value: 0 },
   uTime: { value: 0 },
+  uHeat: { value: 0 },
+  uSteady: { value: 0 },
+  uSpread: { value: 0 },
+  uFront: { value: 0 },
+  // How much of the engine's heat is left on the stone as the rocket climbs away. It is taken off what the heat
+  // added, after the caps: inside them the stone held its full heat long after the lift.
+  uLeave: { value: 1 },
   // For looking at one thing alone: 0 the stone, 1 the light in its cuts, 2 how shut in each place is, 3 how cut.
   uShow: { value: 0 },
   uEmber: { value: col('ember') },
@@ -65,13 +72,29 @@ export const LOOK = {
   warm: 0.7,
   // How much of the cursor's light the stone takes, tarnished and rubbed bright.
   lamp: [0.6, 4.5],
+  // Lit by the room alone the unlit stone stayed a bright copper and the landing barely read.
+  dark: 0.05,
+  flare: [0.75, 4.0],
+  heat: [0.65, 80, 0.9],
+  // Pale all over, the cuts under the table ran together into one sunburst.
+  heatTop: [1.25, 0.72, 60],
+  fire: [1.0, 2.4],
+  // The fire lies on the stone, so it lights what faces it and hardly the flat tops.
+  low: [6, 1.6, 1.6],
+  hold: [150, 190],
+  // Past the table's edges the heat is in the cuts alone: on the tops there it was a soft orange wash.
+  glowTop: [3.4, 1.0, 150, 3.7],
+  // Lit as they were, the tops and the cuts under the table were one peach wash.
+  shade: 0.85,
+  engine: 0.22,
+  tops: 0.07,
 };
 
 const HEAD = /* glsl */ `
 varying vec3 vLocal;
 uniform sampler2D uT0, uT1;
 uniform vec3 uCam, uLamp;
-uniform float uFill, uOn, uSince, uLive, uTime, uShow;
+uniform float uFill, uOn, uSince, uLive, uTime, uShow, uHeat, uSteady, uSpread, uFront, uLeave;
 uniform vec3 uEmber, uFlame, uHot, uPale, uCopper, uCopperLight;
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
@@ -107,22 +130,26 @@ vec3 sRamp(float a){
 // from its outer edge over the first part of that share and then holds, so the rings come on one after another. The
 // rim's light runs round from where the stream lands, both ways.
 const float S_RINGS[6] = float[6](${RINGS.map(f).join(', ')});
-float sLit(float rho, float th, out float edge){
+float sFlare(float q){ return ${f(LOOK.flare[0])} * smoothstep(0.55, 1.0, q) * exp(-max(q - 1.0, 0.0) * ${f(LOOK.flare[1])}); }
+float sLit(float rho, float th, out float edge, out float flare){
+  flare = 0.0;
   if (uFill <= 0.0){ edge = 0.0; return 0.0; }
   float n = 5.0, k = uFill * n;
   edge = 0.0;
   if (rho >= S_RINGS[1]){
-    float p = clamp(k / 0.75, 0.0, 1.0);
+    float q = k / 0.75, p = clamp(q, 0.0, 1.0);
     float a = abs(mod(th - ${f(LANDS.angle)} + 3.14159265, S_TAU) - 3.14159265) / 3.14159265;
     float run = p * 1.08 - a;
     edge = exp(-run * run / 0.002) * step(0.0, run) * (1.0 - p * p);
+    flare = sFlare(q);
     return smoothstep(0.0, 0.05, run);
   }
   float lit = 0.0;
   for (int i = 1; i < 5; i++){
     float hi = S_RINGS[i], lo = S_RINGS[i + 1];
     if (rho < lo) continue;
-    float p = clamp((k - float(i)) / 0.7, 0.0, 1.0);
+    float q = (k - float(i)) / 0.7, p = clamp(q, 0.0, 1.0);
+    flare = sFlare(q) * (1.0 - smoothstep(0.985, 1.0, uFill));
     p = 1.0 - (1.0 - p) * (1.0 - p);
     float front = mix(hi + 2.5 * ${f(LOOK.front)}, lo, p);
     float w = ${f(LOOK.front)};
@@ -202,8 +229,13 @@ const MAIN = /* glsl */ `
 
   // The stream's light, in what is cut: the floors of the channels and of the cut marks, hottest where they are
   // deepest and against the walls, and up each wall only a little way, cooling to ember.
-  float sTh = atan(sP.z, sP.x), sEdge;
-  float sL = sLit(sRho, sTh, sEdge);
+  float sTh = atan(sP.z, sP.x), sEdge, sFl_;
+  float sL = sLit(sRho, sTh, sEdge, sFl_);
+  float sBoost = 1.0 + sFl_;
+  float sRc = length(sP.xz);
+  float sIn = smoothstep(uSpread + 7.0, uSpread - 7.0, sRc);
+  float sBurn = uHeat * sIn * (mix(${f(LOOK.heat[0])}, 1.0, exp(-sRc / ${f(LOOK.heat[1])})) + 0.8 * uFront * exp(-pow((sRc - uSpread + 10.0) / 16.0, 2.0)));
+  float sCap = mix(${f(LOOK.heatTop[1])}, mix(${f(LOOK.heatTop[1])}, ${f(LOOK.heatTop[0])}, smoothstep(1.2, 2.6, uHeat)), exp(-sRc / ${f(LOOK.heatTop[2])}));
   float sSunk = textureLod(uT0, sUV, 4.5).b * S_TALL - sH;
   // Outside the face what is cut is what lies at the carving's ground or under it, and inside the face, what is sunk
   // under what is round it.
@@ -230,17 +262,35 @@ const MAIN = /* glsl */ `
     float n = sNoise(vec2(sRho * 22.0 + uTime * 0.55, sTh * 7.0 + 0.15 * uTime)) * 0.6 + sNoise(vec2(sRho * 51.0 + uTime * 0.9, sTh * 19.0 - 0.1 * uTime)) * 0.4;
     sMove = mix(1.0, 0.72 + 0.56 * n, uLive);
   }
-  float sA_ = min((sL * sVar * sMove * (0.32 + 0.9 * sHeat) + sEdge * 0.5 + sSpot) * sCut * ${f(LOOK.glow)}, ${f(LOOK.most)});
+  float sA0 = ((sL * sVar * sMove * (0.32 + 0.9 * sHeat) + sEdge * 0.5) * sBoost + sSpot) * sCut * ${f(LOOK.glow)};
+  float sAE = sBurn * ${f(LOOK.heat[2])} * (0.5 + 0.7 * sHeat) * sVar * sCut * ${f(LOOK.glow)};
+  // Further out the engine brings a cut up only as far as hot, so the stream's pale there is not added to.
+  float sHold = smoothstep(0.0, 0.5, uHeat) * sIn * smoothstep(${f(LOOK.hold[1])}, ${f(LOOK.hold[0])}, sRc);
+  float sA_ = min(mix(min(sA0 + sAE, max(sA0, sCap)), min(min(sA0, sCap) + sAE, sCap), sHold), ${f(LOOK.most)});
+  sA_ = mix(min(sA0, ${f(LOOK.most)}), sA_, uLeave);
   vec3 sEmit = sRamp(sA_);
+  float sFlick = 0.6 + 0.8 * sNoise(vec2(sRc * 0.04 - uTime * 2.5, sTh * 9.0));
+  sEmit += uHot * min(sAE * sFlick, 1.0) * ${f(LOOK.fire[0])} * min(1.0, uHeat / ${f(LOOK.fire[1])}) * sHold * uLeave;
+  vec3 sToF = normalize(vec3(0.0, ${f(LOOK.low[0])}, 0.0) - sP);
+  float sLow = pow(clamp(dot(sNl, sToF), 0.0, 1.0), ${f(LOOK.low[1])}) * (1.0 - sCut) * sAo;
+  sEmit += sRamp(min(sBurn * sLow * ${f(LOOK.low[2])}, sCap)) * (0.6 + 0.4 * sFlick) * uLeave;
+  float sRays = 0.4 + 0.8 * smoothstep(0.3, 0.8, sNoise(vec2(sTh * 13.0, sRc * 0.035 - uTime * 3.0)));
+  vec3 sGlow = mix(uFlame, uHot, exp(-sRc / 70.0) * smoothstep(0.8, 2.6, uHeat));
+  float sTable = smoothstep(${f(LOOK.glowTop[2])}, ${f(LOOK.glowTop[2] - 25)}, sRc);
+  // Held to hot where it is strongest: over that, the middle went to one pale spot.
+  float sGlowK = sBurn * (uSteady + 0.4 * (uHeat - uSteady)) / max(uHeat, 1e-3)
+    * ${f(LOOK.glowTop[0])} * mix(${f(LOOK.glowTop[1])}, 1.0, exp(-sRc / 70.0));
+  sEmit += sGlow * min(sGlowK, ${f(LOOK.glowTop[3])}) * sRays * sTable * (1.0 - sCut) * sAo * uLeave;
   // Once the stream's light is in the cuts it lands on the tops beside them too, warm, as the stream's light lands on
   // the Work stones: most on what stands proud, and never so much that the light in the cuts is not the brighter.
   float sTake = (1.0 - 0.85 * sGrime) * sAo * sAo * (1.0 - sCut * sL);
-  sEmit += sF0 * sRoom * sTake;
-  sEmit += sF0 * sRamp(0.42) * sRoom * sL * sMove * sTake * ${f(LOOK.warm)} * (0.4 + 0.6 * sWear);
+  float sRoomK = mix(${f(LOOK.dark)}, 1.0, sL) * (1.0 - ${f(LOOK.shade)} * clamp(sBurn, 0.0, 1.0) * (1.0 - sCut) * sTable);
+  sEmit += sF0 * sRoom * sTake * sRoomK;
+  sEmit += sF0 * sRamp(0.42) * sRoom * sL * sMove * sTake * ${f(LOOK.warm)} * (0.4 + 0.6 * sWear) * sBoost;
   sEmit += (0.35 + sF0) * sRamp(sSpotTop) * (1.0 - sCut) * 0.6;
   // The eyes and the mouth go through, to a hollow the light lies deep in.
   sOpen = max(sOpen, smoothstep(0.35, 0.65, textureLod(uT1, sUV, 0.0).b));
-  sEmit = mix(sEmit, sRamp(sL * (0.25 + 0.6 * sNear)), sOpen);
+  sEmit = mix(sEmit, sRamp(max(sL * (0.25 + 0.6 * sNear), min(sBurn * (0.25 + 0.6 * sNear), sCap) * uLeave)), sOpen);
   sF0 = mix(sF0, vec3(0.02, 0.016, 0.012), sOpen);
   sRough = mix(sRough, 1.0, sOpen);
   if (uShow > 0.5){ sF0 = vec3(0.0); sEmit = uShow < 1.5 ? sEmit : vec3(uShow < 2.5 ? sAo : sCut); }
@@ -257,6 +307,12 @@ function glint(chunk: string): string {
   return chunk.slice(0, at + DIRECT.length) + add + chunk.slice(at + DIRECT.length);
 }
 
+const SPOT = 'getSpotLightInfo( spotLight, geometryPosition, directLight );';
+const POINT = 'getPointLightInfo( pointLight, geometryPosition, directLight );';
+const END = '#include <lights_fragment_end>';
+const SPEC = 'reflectedLight.directSpecular', ROOM = 'reflectedLight.indirectSpecular';
+const most = (v: string) => `max(1e-4, max(${v}.r, max(${v}.g, ${v}.b)))`;
+
 export function stoneMaterial(c: Carving): THREE.MeshStandardMaterial {
   U.uT0.value = c.t0;
   U.uT1.value = c.t1;
@@ -271,7 +327,8 @@ export function stoneMaterial(c: Carving): THREE.MeshStandardMaterial {
       .replace('vec3 geometryPosition = - vViewPosition;', 'vec3 geometryPosition = sView;')
       .replace('normalize( vViewPosition )', 'normalize( - sView )')
       .replace('spotLightShadow.shadowRadius, vSpotLightCoord[ i ] )', 'spotLightShadow.shadowRadius, spotLightMatrix[ i ] * ( sWorld + vec4( 0.0, spotLightShadow.shadowNormalBias, 0.0, 0.0 ) ) )')
-      .replace('getSpotLightInfo( spotLight, geometryPosition, directLight );', `getSpotLightInfo( spotLight, geometryPosition, directLight );\n\t\tdirectLight.color *= sSelf * ( 0.45 + 0.55 * sAo ) * mix( ${f(LOOK.lamp[0])}, ${f(LOOK.lamp[1])}, sWear );`);
+      .replace(SPOT, `${SPOT}\n\t\tdirectLight.color *= sSelf * ( 0.45 + 0.55 * sAo ) * mix( ${f(LOOK.lamp[0])}, ${f(LOOK.lamp[1])}, sWear );`)
+      .replace(POINT, `${POINT}\n\t\tdirectLight.color *= ${f(LOOK.engine)} * ( 0.4 + 0.6 * sAo ) * mix( ${f(LOOK.tops)}, 1.0, sCut );`);
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>\n${HEAD}`)
       .replace('void main() {', `void main() {\n${MAIN}`)
@@ -280,7 +337,9 @@ export function stoneMaterial(c: Carving): THREE.MeshStandardMaterial {
       .replace('#include <normal_fragment_maps>', '#include <normal_fragment_maps>\n\tnormal = sN;')
       .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n\ttotalEmissiveRadiance = sEmit;')
       .replace('#include <lights_fragment_begin>', lights)
-      .replace('#include <lights_fragment_end>', `#include <lights_fragment_end>\n\treflectedLight.directSpecular *= min(1.0, ${f(LOOK.glint)} / max(1e-4, max(reflectedLight.directSpecular.r, max(reflectedLight.directSpecular.g, reflectedLight.directSpecular.b))));\n\treflectedLight.indirectSpecular *= (0.2 + 0.8 * sAo) * mix(${f(LOOK.room[0])}, ${f(LOOK.room[1])}, sWear);\n\treflectedLight.indirectSpecular *= min(1.0, ${f(LOOK.sheen)} / max(1e-4, max(reflectedLight.indirectSpecular.r, max(reflectedLight.indirectSpecular.g, reflectedLight.indirectSpecular.b))));\n\treflectedLight.indirectDiffuse *= sAo;`);
+      .replace(END, `${END}\n\t${SPEC} *= min(1.0, ${f(LOOK.glint)} / ${most(SPEC)});`
+        + `\n\t${ROOM} *= (0.2 + 0.8 * sAo) * mix(${f(LOOK.room[0])}, ${f(LOOK.room[1])}, sWear) * sRoomK;`
+        + `\n\t${ROOM} *= min(1.0, ${f(LOOK.sheen)} / ${most(ROOM)});\n\treflectedLight.indirectDiffuse *= sAo;`);
   };
   m.customProgramCacheKey = () => 'pad-stone';
   return m;

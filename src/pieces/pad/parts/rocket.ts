@@ -32,6 +32,7 @@ export const build: PartFactory = async () => {
     update(s) {
       U.uLevel.value = level(s.fill);
       U.uBurn.value = s.burn;
+      U.uFlash.value = s.flash;
       U.uTime.value = s.still ? STILL_T : s.t;
       U.uKeyAz.value = Math.atan2(s.cursor.x, s.cursor.z);
       fire.set(s);

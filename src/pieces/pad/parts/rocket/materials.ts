@@ -13,6 +13,7 @@ export const U = {
   // How high up the rocket its lights have come, in units from the mouth, and how hard the engine burns.
   uLevel: { value: -100 },
   uBurn: { value: 0 },
+  uFlash: { value: 0 },
   uTime: { value: 0 },
   // Which way the cursor's light is from the rocket's axis, round it from straight toward the visitor, in radians.
   uKeyAz: { value: 0.3 },
@@ -69,6 +70,10 @@ export const STRIPS = {
   top: { az: Math.PI, span: 0.8, lo: 0.38, hi: 0.5, power: 3 },
 } as const;
 
+// The rims and bands light whole, in steps a visitor can count: lit as fine seams they read as a drawing on the body.
+const READY = { rim: 1.1, flare: 2.6, settle: 22, steel: [0.18, 0.7] };
+const FIRELIT = { at: -10, reach: 34, dark: 0.35, bright: 2.2 };
+
 // Light the room and the cursor's light reflect off it is held under this, so a highlight never blooms into a ball.
 const HOLD = { knee: 1.1, top: 1.7 };
 
@@ -77,7 +82,7 @@ const ks = NAMES.map((n) => KIND[n] as Kind);
 
 const HEAD = /* glsl */ `
 varying vec4 vCell;
-uniform float uLevel, uBurn, uTime, uKeyAz;
+uniform float uLevel, uBurn, uFlash, uTime, uKeyAz;
 uniform sampler2D uCode;
 const vec3 KC[${ks.length}] = ${arr('vec3', ks, (x) => col(x.color))};
 const float KR[${ks.length}] = ${arr('float', ks, (x) => f(x.rough))};
@@ -266,9 +271,9 @@ export function hullMaterial(): THREE.MeshStandardMaterial {
     int which = int(vCell.z + 0.5);
     vec3 e = vec3(0.0);
     if (which == ${LIGHT.line}) {
-      e = rkRamp(0.55 + 0.5 * front) * (0.75 + 1.5 * front) * on;
+      e = rkRamp(0.6 + 0.5 * front) * (1.1 + 1.8 * front) * on;
     } else if (which == ${LIGHT.slit}) {
-      e = rkRamp(0.42 + 0.5 * front) * (0.6 + 1.3 * front) * on;
+      e = rkRamp(0.5 + 0.5 * front) * (1.0 + 1.8 * front) * on;
     } else if (which == ${LIGHT.vent}) {
       e = rkRamp(0.3 + 0.5 * front) * (0.5 + 1.0 * front) * on;
     } else if (which == ${LIGHT.port}) {
@@ -276,12 +281,26 @@ export function hullMaterial(): THREE.MeshStandardMaterial {
     } else if (which == ${LIGHT.beacon}) {
       e = rkRamp(1.0) * (1.6 + 1.6 * front) * on;
     }
+    if (rk == ${K.copper} && which == ${LIGHT.none}) {
+      float fl = exp(-max(past, 0.0) / ${f(READY.settle)}) * on;
+      e += rkRamp(0.55 + 0.45 * fl) * (${f(READY.rim)} + ${f(READY.flare)} * fl) * on;
+    }
+    if (rk == ${K.steel} && which == ${LIGHT.none}) {
+      float fl = exp(-max(past, 0.0) / ${f(READY.settle)}) * on;
+      e += rkRamp(0.35 + 0.4 * fl) * (${f(READY.steel[0])} + ${f(READY.steel[1])} * fl) * on;
+    }
+    {
+      vec3 toF = vec3(0.0, ${f(FIRELIT.at)}, 0.0) - vObj;
+      float dF = length(toF), face = 0.3 + 0.7 * clamp(dot(normalize(vObjN), toF / max(dF, 1e-3)), 0.0, 1.0);
+      float lum = dot(diffuseColor.rgb, vec3(0.3, 0.5, 0.2));
+      e += rkRamp(0.5 + 0.3 * uFlash) * (uBurn + 2.0 * uFlash) * exp(-dF / ${f(FIRELIT.reach)}) * face * (${f(FIRELIT.dark)} + ${f(FIRELIT.bright)} * lum);
+    }
     if (rk == ${K.bell}) {
       // The engine: inside the bell it burns from its throat, outside the bell's heat comes up near the throat.
       bool inner = dot(vObjN.xz, vObj.xz) < 0.0;
       float up = smoothstep(0.0, ${f(H.throat)}, y);
       float flick = 0.85 + 0.15 * wNoise(vec3(ra * 3.0, y * 0.4 - uTime * 14.0, 1.0));
-      if (inner) e += rkRamp(0.55 + 0.6 * up) * (0.4 + 2.2 * up * up) * uBurn * flick;
+      if (inner) e += rkRamp(0.55 + 0.6 * up + 0.4 * uFlash) * min(0.4 + 2.2 * up * up + 3.0 * uFlash, 2.4) * uBurn * flick;
       else e += rkRamp(0.2 + 0.3 * up) * 0.22 * up * uBurn;
     }
     totalEmissiveRadiance += e;

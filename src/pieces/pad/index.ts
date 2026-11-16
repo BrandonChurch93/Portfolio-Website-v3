@@ -8,7 +8,7 @@ import { Stage } from '../../world/stage';
 import type { Anchor, Struck } from '../../world/struck';
 import { finish, trueDarks } from '../../world/tone';
 import { SIDE, myTurn } from '../../world/turn';
-import { HOST, ROCKET, SCALE, STONE, VIEW, burn, climbed } from './layout';
+import { HOST, ROCKET, SCALE, STONE, VIEW, burn, climbed, flash, tail } from './layout';
 import { PARTS, type PadPart, type PartFactory, type PartName, type PartState } from './part';
 
 // The launch pad in Contact, as one piece: the Sun stone laid flat, the table on it, the tower and the rocket. Each
@@ -48,10 +48,9 @@ const ROOM = {
 // carving: a light close over a surface burns a white spot into it. How wide the cone is, in degrees, how far it
 // reaches, in metres, and how strong it is with the stone full.
 const GLOW = { cone: 72, reach: 1.8, power: 2.2 };
-// The engine's light: how far over the engine's mouth it stands, in units, and how strong it is at full thrust. It
-// stands clear of the stone: any nearer, it burned a white spot into the stone's middle that the bloom spread into
-// a dome over the whole pad.
-const FIRE = { over: 30, power: 0.3 };
+// The engine's light stands inside the bell, so it falls on the deck steeply enough to light it, and reaches short of
+// the stone's rim, whose polished edge took it as a glare.
+const FIRE = { under: [-9, 26] as [number, number], power: 0.75, flash: 0.9, reach: 0.5 };
 
 function room(): THREE.Scene {
   const s = studioScene();
@@ -102,7 +101,8 @@ export function createPad(): PadPiece {
   let parts: { name: PartName; part: PadPart }[] = [];
   let off: (() => void) | null = null, watch: ResizeObserver | null = null, near: IntersectionObserver | null = null;
   let seen = true, stale = true, moving = false, urgent = false, cast = true, hold: number | null = null, only: PartName | null = null;
-  let lampUV = { x: 0.62, y: 0.3 }, fill = 0, launch = 0;
+  // Under peak the launch's age is running back, and the flash must not play again.
+  let lampUV = { x: 0.62, y: 0.3 }, fill = 0, launch = 0, peak = 0;
   let glow: THREE.SpotLight | null = null, fire: THREE.PointLight | null = null;
   const built: Record<string, number> = {};
   let first = 0;
@@ -152,16 +152,19 @@ export function createPad(): PadPiece {
     urgent = false;
     stale = false;
     place();
-    const now = hold ?? clock.now(), b = burn(launch), climb = climbed(launch);
-    const s: PartState = { t: now, fill, launch, burn: b, climb, stream, cursor, still: reduced || frozen || stage.tier === 'static' };
+    const now = hold ?? clock.now(), b = burn(launch), climb = climbed(launch), fl = launch < peak ? 0 : flash(launch);
+    const s: PartState = { t: now, fill, launch, burn: b, climb, flash: fl, stream, cursor, still: reduced || frozen || stage.tier === 'static' };
     if (glow) glow.intensity = GLOW.power * fill;
-    if (fire) { fire.intensity = FIRE.power * b; fire.position.y = (ROCKET.mouth + FIRE.over + climb) * M; }
+    if (fire) {
+      fire.intensity = FIRE.power * (b + FIRE.flash * fl);
+      fire.position.y = (ROCKET.mouth + climb - FIRE.under[0] - (FIRE.under[1] - FIRE.under[0]) * Math.min(1, climb / 40)) * M;
+    }
     moving = false;
     for (const { name, part } of parts) {
       if (name === 'rocket') {
         part.group.position.y = climb;
-        // Once it is over the top of what the host shows, with its fire, it is not drawn.
-        part.group.visible = only !== null || climb < shows + 260;
+        // Hidden any sooner than the foot of its fire, the last of the fire went in one frame.
+        part.group.visible = only !== null || ROCKET.mouth + climb - tail(b, climb) < shows;
       }
       if (part.update?.(s) && !s.still) moving = true;
     }
@@ -179,7 +182,7 @@ export function createPad(): PadPiece {
       const q = new URLSearchParams(location.search), asked = q.get('only') as PartName | null;
       only = asked && PARTS.includes(asked) ? asked : null;
       if (q.get('fill')) fill = Math.min(1, Math.max(0, Number(q.get('fill'))));
-      if (q.get('launch')) { launch = Number(q.get('launch')); fill = 1; }
+      if (q.get('launch')) { launch = peak = Number(q.get('launch')); fill = 1; }
       stage = new Stage(h, canvas, { tier: opts.tier, fov: ALONE.fov, near: 0.3, far: 40, bloom: { strength: 0.22, threshold: 2.2, radius: 0.3 }, ao: 0.02, aoIntensity: 1, aoSamples: 8, aoScale: 0.5, bloomScale: 0.5, envIntensity: ROOM.env, env: room, lampAngle: 0.9 });
       trueDarks(stage.renderer);
       finish(stage, RIM);
@@ -209,8 +212,8 @@ export function createPad(): PadPiece {
       glow = new THREE.SpotLight(hex('flame'), 0, GLOW.reach, GLOW.cone * D2R, 0.7, 2);
       glow.position.set(0, 0, 0);
       glow.target.position.set(0, 1, 0);
-      fire = new THREE.PointLight(hex('hot'), 0, 0, 2);
-      fire.position.set(0, (ROCKET.mouth + FIRE.over) * M, 0);
+      fire = new THREE.PointLight(hex('hot'), 0, FIRE.reach, 2);
+      fire.position.set(0, (ROCKET.mouth - FIRE.under[0]) * M, 0);
       const hemi = new THREE.HemisphereLight(0x3d3731, 0x100e0c, 0.55);
       s.add(glow, glow.target, fire, hemi);
       stage.lamp.intensity = LAMP.power;
@@ -255,6 +258,7 @@ export function createPad(): PadPiece {
       // The engine lights in the frame the page asks for it, and does not wait for the pad's turn.
       if (age > 0 !== launch > 0) urgent = true;
       launch = age;
+      peak = age <= 0 ? 0 : Math.max(peak, age);
       cast = true;
       stale = true;
     },

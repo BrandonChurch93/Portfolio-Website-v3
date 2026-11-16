@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { registry } from '../../../hooks/registry';
 import { pause } from '../../../world/build';
 import type { PartFactory } from '../part';
+import { ROLL } from './rocket/fire';
 import { bake } from './stone/bake';
 import { EDGE, LIP, R, TOP } from './stone/form';
 import { U, edgeMaterial, stoneMaterial } from './stone/material';
@@ -15,6 +16,20 @@ import { U, edgeMaterial, stoneMaterial } from './stone/material';
 // the stone is full.
 const FLASH = 1.5;
 const LIVE = { from: 0.97, pace: 1 };
+const FLASH_HEAT = 0.9;
+const BUILD = [1.2, 2.8];
+// The heat spreads a ring at a time: spread all at once, nothing changed on the stone from the flash to the lift.
+const SPREAD = { at: [0, 0.22, 0.42, 0.62, 0.82, 1.02], r: [44, 78, 112, 146, 168, 214], rise: 0.09, flare: 0.2 };
+const spread = (age: number) => {
+  let r = 0, front = 0;
+  SPREAD.at.forEach((at, i) => {
+    if (age <= at) return;
+    const k = Math.min(1, (age - at) / SPREAD.rise);
+    r = (i ? SPREAD.r[i - 1] : 0) + (SPREAD.r[i] - (i ? SPREAD.r[i - 1] : 0)) * k * (2 - k);
+    front = Math.exp(-(age - at) / SPREAD.flare);
+  });
+  return { r, front };
+};
 
 export const build: PartFactory = async ({ renderer }) => {
   const plain = typeof location !== 'undefined' && new URLSearchParams(location.search).get('boss') === 'plain';
@@ -49,6 +64,15 @@ export const build: PartFactory = async ({ renderer }) => {
       U.uFill.value = s.fill;
       U.uOn.value = s.stream.on;
       U.uSince.value = s.stream.since;
+      const rise = BUILD[0] + (BUILD[1] - BUILD[0]) * Math.max(0, (s.burn - 0.35) / 0.65);
+      const leave = Math.exp(-s.climb / ROLL.fade) * Math.max(0, 1 - s.climb / ROLL.gone);
+      const steady = rise * s.burn * leave;
+      U.uHeat.value = steady + FLASH_HEAT * s.flash;
+      U.uSteady.value = steady;
+      U.uLeave.value = leave;
+      const sp = spread(s.launch);
+      U.uSpread.value = sp.r;
+      U.uFront.value = sp.front;
       const live = s.still ? 0 : Math.min(1, Math.max(0, (s.fill - LIVE.from) / (1 - LIVE.from))) * s.stream.on;
       U.uLive.value = live;
       U.uTime.value = s.still ? 0 : s.t * LIVE.pace;

@@ -20,6 +20,8 @@ export interface PartState {
   // pad moves the rocket's group up by the climb itself.
   burn: number;
   climb: number;
+  // Only while the launch's age is rising: an engine that lights as the rocket settles back is wrong.
+  flash: number;
   // What the stream is doing to the stone where it lands: how much it is on it, and the seconds since it struck.
   stream: { on: number; since: number };
   // Where the cursor's light is, in units.
