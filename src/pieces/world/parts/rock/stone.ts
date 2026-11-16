@@ -193,6 +193,7 @@ varying vec3 vStoneN;
 #ifdef STONE_SLAB
 	flat varying float vStoneSlab;
 	uniform vec4 uStoneBeds[ ${BEDS_MAX} ];
+	uniform float uStoneTan[ ${BEDS_MAX} ];
 #endif
 uniform sampler2D uStoneGrain;
 uniform vec2 uStoneStream;
@@ -354,7 +355,8 @@ const STONE_FRAG = /* glsl */ `
 			float d = ( fract( u ) - o ) * P / max( bTl, 0.18 );
 			float hk = stoneHash1( k * 3.71 + seed + 0.5 );
 			float runs = s == 0 ? ${f(STONE.bed.run[0])} : ${f(STONE.bed.run[1])};
-			float there = smoothstep( hk, hk + 0.14, stoneNoise3( p / runs + vec3( k * 0.73, seed, 0.0 ) ) * ( s == 0 ? bed.w : 0.3 + 0.4 * bed.w ) );
+			// A block that is not bedded has no partings at all (round 8): the finer ones ran parallel on every block.
+			float there = smoothstep( hk, hk + 0.14, stoneNoise3( p / runs + vec3( k * 0.73, seed, 0.0 ) ) * ( s == 0 ? bed.w : 0.3 + 0.4 * bed.w ) ) * step( 0.05, bed.w );
 			float wR = mix( s == 0 ? ${f(STONE.bed.riser[0])} : ${f(STONE.bed.riser[2])}, s == 0 ? ${f(STONE.bed.riser[1])} : ${f(STONE.bed.riser[3])}, stoneHash1( k * 5.3 + seed ) );
 			// Seen at least a pixel and a half wide, or faded to the tone it averages to.
 			float seenR = smoothstep( 1.0, 2.2, wR / pix ) * there * across * edgeOn;
@@ -441,6 +443,10 @@ const STONE_FRAG = /* glsl */ `
 	// Hue rolls with the light: cream only where a face squarely meets the core near it and is open to it, a deep
 	// orange in every recess and where the light only grazes, so that a face is never one hue from edge to edge.
 	full *= mix( ${f(STONE.recess)}, 1.0, smoothstep( 0.12, 0.42, open ) );
+	// A block whose stone is paler and drier takes the tan wherever the core's light is on it at all.
+	#ifdef STONE_SLAB
+		full = max( full, uStoneTan[ int( clamp( vStoneSlab + 0.5, 0.0, ${f(BEDS_MAX - 1)} ) ) ] * lit );
+	#endif
 	c *= mix( ${v3(STONE.shadeTint)}, ${v3(STONE.litTint)}, full );
 	float hotK = ${f(STONE.hot.most)} * seen * smoothstep( 0.05, 0.45, cf ) * ( 1.0 - smoothstep( ${f(STONE.hot.full)}, ${f(STONE.hot.from)}, dC ) );
 	c = mix( c, ${v3(STONE.hot.color)}, hotK );
@@ -526,9 +532,12 @@ const after = (src: string, chunk: string, add: string): string => {
 // Lays the stone into a standard shader's fragment stage, and the vertex stage too unless the part sets vStoneP and
 // vStoneN itself (own: true). grainOnly leaves out the partings, the crust and the edges: the stone's
 // body, its grain, its stains, its knapped relief and its wear, for what broke away.
-export function stoneShader(sh: Shader, maps: StoneMaps, own = false, grainOnly = false, beds?: readonly (readonly number[])[]): void {
+export function stoneShader(sh: Shader, maps: StoneMaps, own = false, grainOnly = false, beds?: readonly (readonly number[])[], tans?: readonly number[]): void {
   Object.assign(sh.uniforms, { uStoneGrain: { value: maps.grain }, uStoneStreamPower: { value: 1 }, uStoneStream: world.uniforms.uStream });
-  if (beds) sh.uniforms.uStoneBeds = { value: Array.from({ length: BEDS_MAX }, (_, i) => new THREE.Vector4(...(beds[i] ?? [0, 1, 0, 0]))) };
+  if (beds) {
+    sh.uniforms.uStoneBeds = { value: Array.from({ length: BEDS_MAX }, (_, i) => new THREE.Vector4(...(beds[i] ?? [0, 1, 0, 0]))) };
+    sh.uniforms.uStoneTan = { value: Array.from({ length: BEDS_MAX }, (_, i) => tans?.[i] ?? 0) };
+  }
   if (!own) sh.vertexShader = after(after(sh.vertexShader, 'common', STONE_VERT_PARS), 'begin_vertex', VERT);
   let fr = after(sh.fragmentShader, 'common', `${grainOnly ? '#define STONE_GRAIN\n' : ''}${FRAG_PARS}`);
   fr = after(fr, 'color_fragment', STONE_FRAG);
@@ -549,6 +558,8 @@ export interface StoneOptions {
   spare?: 'slab';
   // Each block number's bedding: the plane its layers lie in, and how strongly bedded it is (0: clean).
   beds?: readonly (readonly number[])[];
+  // Each block number's tan: how far its stone is the paler, drier tan wherever the core's light is on it (0 to 1).
+  tans?: readonly number[];
   // Where each vertex's distance to its face's outline is stored, under 0 toward a concave crease, as a GLSL expression of the vertex stage (such as
   // 'aBounce.w * 8.0'), in units: the chipped band along an edge and the shade toward a crease are then real widths.
   edge?: string;
@@ -570,6 +581,6 @@ export function stoneMaterial(maps: StoneMaps, o: StoneOptions): THREE.MeshStand
     ...(o.edge ? { STONE_EDGE: '', STONE_EDGE_FROM: o.edge } : {}),
     ...(o.debug ? { STONE_DEBUG: String(Math.round(o.debug)) } : {}),
   };
-  m.onBeforeCompile = (sh) => stoneShader(sh, maps, false, o.grainOnly, o.spare === 'slab' ? o.beds ?? [] : undefined);
+  m.onBeforeCompile = (sh) => stoneShader(sh, maps, false, o.grainOnly, o.spare === 'slab' ? o.beds ?? [] : undefined, o.tans);
   return lit(m, { key: `stone-${o.key}${o.spare ? '-slab' : ''}${o.edge ? '-edge' : ''}${o.grainOnly ? '-grain' : ''}${o.debug ? `-debug${o.debug}` : ''}`, baked: o.baked });
 }

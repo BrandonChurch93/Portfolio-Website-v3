@@ -200,6 +200,6 @@ for (let i = 0; i < n; i++) {
   lightOf.set([l.core[i], l.moon[i], l.open[i], slabOf[i] / 255], i * 4);
   bounceOf.set([storeBounce(l.bounce[i * 3]), storeBounce(l.bounce[i * 3 + 1]), storeBounce(l.bounce[i * 3 + 2]), 0.5 + 0.5 * edgeOf[i]], i * 4);
 }
-pack('public/world/rock-r.bin', [{ name: 'break', positions: brk.positions, indices: brk.indices, attributes: { normal: { data: brk.normals, size: 3, as: 'i16' }, light: { data: lightOf, size: 4, as: 'u8' }, bounce: { data: bounceOf, size: 4, as: 'u8' } } }], { draft, round: 6, blocks: args.blocks.length, stones: args.stones.length, edge: 'bounce.w', edgeSigned: true, edgeUnits: EDGE, spare: 'slab', beds: H6.beds(args) });
+pack('public/world/rock-r.bin', [{ name: 'break', positions: brk.positions, indices: brk.indices, attributes: { normal: { data: brk.normals, size: 3, as: 'i16' }, light: { data: lightOf, size: 4, as: 'u8' }, bounce: { data: bounceOf, size: 4, as: 'u8' } } }], { draft, round: 8, blocks: args.blocks.length, stones: args.stones.length, edge: 'bounce.w', edgeSigned: true, edgeUnits: EDGE, spare: 'slab', beds: H6.beds(args), tans: H6.tans(args) });
 fs.writeFileSync(new URL('./measured/blocks.json', import.meta.url), JSON.stringify(args.blocks.map((b) => ({ name: b.name, kind: b.kind, at: b.at.map((v) => +v.toFixed(1)), z: +b.z.toFixed(1), n: b.n.map((v) => +v.toFixed(4)), thick: b.thick }))));
 said('done');

@@ -1,7 +1,7 @@
 // Sculpt R, round 5: the hollow as a field for the surface maker (scripts/world/lib/surface.mjs), under 0 inside the
 // rock. Three things, as picture 9 has them:
-//   a cave round the core: a smooth concave bowl a little wider than the ball, lit as one soft gradient, where the
-//     great slabs begin at its lip (BOWL);
+//   round the core, a rim of four thick slabs leaning in with black gaps between them (RIM, round 8: it was a
+//     smooth bowl with a clean circular rim);
 //   a few great slabs: each block's face is a fan of large cells round the core, each ONE plane leaning in to the
 //     core with fine laminations running its length, the cells stepping down outward like shingles so every step
 //     between them faces away from the core and is dark (FAN, LAMINAE), knapped only at their edges, in
@@ -32,12 +32,14 @@ export const BEDS = { thick: [5, 34], step: 1.4, lean: 0.08, warp: 9 };
 // in shade or lit by which way it faces. A step pinches out along its length over about `pinch` units, so the
 // partings are of very different lengths. `share` of the blocks of a kind are bedded at all: the rest are clean. The
 // riser's slope, rise over run, is `steep`.
+// Round 8: no block is bedded. Its partings ran parallel across every face, as tree rings round the ball and as sliced
+// timber on the tall slabs at the right.
 export const BEDDING = {
-  plate: { share: 0.75, thick: [7, 30], deep: [0.8, 3.6], tilt: [0.25, 0.7], pinch: 70, steep: 1.6 },
-  floor: { share: 1, thick: [6, 18], deep: [1.5, 4.5], tilt: [0.5, 0.9], pinch: 90, steep: 1.6 },
-  roof: { share: 1, thick: [7, 20], deep: [2.5, 7], tilt: [0, 0], pinch: 80, steep: 1.6, level: true },
-  frame: { share: 0.6, thick: [9, 34], deep: [1, 4], tilt: [0.3, 0.8], pinch: 70, steep: 1.6 },
-  belly: { share: 1, thick: [6, 16], deep: [1.5, 4], tilt: [0.4, 0.9], pinch: 60, steep: 1.6 },
+  plate: { share: 0, thick: [7, 30], deep: [0.8, 3.6], tilt: [0.25, 0.7], pinch: 70, steep: 1.6 },
+  floor: { share: 0, thick: [6, 18], deep: [1.5, 4.5], tilt: [0.5, 0.9], pinch: 90, steep: 1.6 },
+  roof: { share: 0, thick: [7, 20], deep: [2.5, 7], tilt: [0, 0], pinch: 80, steep: 1.6, level: true },
+  frame: { share: 0, thick: [9, 34], deep: [1, 4], tilt: [0.3, 0.8], pinch: 70, steep: 1.6 },
+  belly: { share: 0, thick: [6, 16], deep: [1.5, 4], tilt: [0.4, 0.9], pinch: 60, steep: 1.6 },
 };
 // The fan of cells a block's face is broken into, round the core: how wide a wedge is (radians), how far apart its
 // breaks across are (pixels), how far each cell leans in toward the core and twists (degrees), where the first cell
@@ -53,6 +55,12 @@ export const FAN = {
   belly: { wedge: [0.2, 0.36], ring: [40, 90], lean: [-4, 6], twist: 10, drop: [4, 10] },
   shade: { drop: [4, 10] },
 };
+// Round 8: every cell of a face is broken again, lightly, by a few long fractures that cross at angles of their own
+// (round 7's, at a share `k` of round 7's strength, and with no piece missing): `lines` of them, least and most, each
+// passing within `spread` units of the cell's middle; `least` of them stop part way; each wanders `warp` units over
+// `warpOver`. Each piece is tilted `tilt` degrees its own way and stands `step` proud or sunk, and the arris between two
+// is worn round over `round` units, its face `steep`. `k` is the strength for a block that does not set its own.
+export const SUB = { lines: [2, 4], spread: 26, least: 0.5, warp: 2.5, warpOver: 21, tilt: [1.5, 5.5], step: 2.2, round: 1.8, steep: 1.5, k: 0.35 };
 // The laminations on a slab's face: grooves running its length, how far apart (units, each its
 // own), how wide and deep, the share left out, and how far one lamina stands from the next.
 export const LAMINAE = { apart: 13, jitter: 0.9, half: 1.7, deep: [0.4, 1.1], gone: 0.45, offset: 0.25, pinch: 40 };
@@ -69,18 +77,29 @@ export const FACETS = { tilt: [0, 0], steep: [0, 0], jitter: 0, lift: 0, dish: [
 export const SWELL = { deep: 1.1, over: 85 };
 // The backing: how far behind the core's middle it is straight behind the core, and how much further back it goes
 // for each pixel out from the core, and the furthest back it goes (inside the space the hollow is made in).
-export const BACKING = { at: -95, back: 0.32, from: 100, thick: 70, least: -205 };
+export const BACKING = { at: -95, back: 0.32, from: 100, thick: 70, least: -205, deep: -268 };
 // The core's clearance: nothing nearer its middle than this, in units, give or take a ragged few, and nothing in
 // front of it inside its outline.
 export const CLEAR = { r: 116, rag: 12, disc: 101, open: 0.3 };
-// The cave round the core: a bowl opening toward the visitor, as deep behind the core's middle as `deep`, curving
-// forward by its radius `curve`, out to a lip `lip` core radii from the core's middle in the picture (a ragged line,
-// widest where the picture's bowl is widest: `wide` at the given bearings, in degrees down from across to the
-// right), ragged at three sizes, with a shell `thick` units behind it and a slow ripple so its light falls softly. It is
-// shallow (a large curve): a deep one round the light at its focus is lit evenly, and read as a flat disc, and one
-// that falls back toward its lip read as a dark halo.
-export const BOWL = { deep: 122, curve: 400, lip: 1.15, wide: [[0, 0.1], [40, 0.02], [90, -0.14], [140, 0.0], [180, 0.12], [230, 0.04], [270, -0.12], [320, 0.06]], rag: [0.1, 0.06, 0.03], thick: 46, ripple: 6, rippleOver: 55,
-  terraces: [{ at: 1.02, fall: 6, wide: 5, rag: 9 }, { at: 1.1, fall: 7, wide: 5, rag: 8 }] };
+// Round 8: the bowl is no longer one dish with a clean circular rim. It is four thick slabs leaning in, each one plane
+// whose face is turned to the core and broken by fractures (`pieces`, their strength), standing proud of the rock
+// beyond its outer edge, with a dark side there, and cut by gaps whose floor falls away from the core, so they are
+// black to the ball (one gap falls inside the lowest slab, so there are five pieces). Each slab: the bearings it
+// spans in the picture (degrees, from across to the right, turning down), how far behind the core's middle its face is
+// at the ball's edge (units), how steeply it rises toward the visitor going out (its lean in to the core), how far out
+// it reaches (core radii), and a twist across it. A gap: its middle bearing and its width at the ball (degrees), and
+// how it wanders. The side: how far out a slab's outline moves for each unit behind its face, so its outer side is
+// seen and faces from the core. The gap's floor: how far behind the core's middle at the ball and how fast it falls.
+export const RIM = {
+  slabs: [
+    { from: 35, to: 140, back: 100, rise: 0.55, reach: 1.24, twist: 0.3 },
+    { from: 140, to: 222, back: 64, rise: 1.1, reach: 1.3, twist: -0.3 },
+    { from: 222, to: 275, back: 92, rise: 0.7, reach: 1.22, twist: 0.38 },
+    { from: 275, to: 395, back: 82, rise: 0.95, reach: 1.28, twist: -0.22 },
+  ],
+  gaps: [{ at: 35, wide: 17 }, { at: 98, wide: 14 }, { at: 140, wide: 21 }, { at: 222, wide: 23 }, { at: 275, wide: 19 }],
+  rag: 4, side: 0.4, thick: 46, pieces: 2, floor: { back: 82, fall: 1.6 },
+};
 // Right of `from` (units across), rock standing in front of the land's edge falls away forward by `fall` under it,
 // and so does every block tucked under the land (the roof's lid and teeth) wherever it is.
 export const BEVEL = { from: 200, fall: 2.5 };
@@ -145,7 +164,9 @@ function prepare(b) {
   const P0 = L.fromPicture(b.at[0], b.at[1], b.z);
   const t1 = norm(cross(b.n, Math.abs(b.n[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0])), t2 = cross(b.n, t1);
   b.P0 = P0; b.t1 = t1; b.t2 = t2;
-  b.beds = b.kind === 'plate' || b.kind === 'floor';
+  // Round 8: no courses stepped into a block's broken sides: each jump from one course to the next was a break in the
+  // field, which the surface maker drew as a column of square teeth on a side seen edge on.
+  b.beds = false;
   b.tuck = b.tuck ?? (b.kind === 'roof' && b.back > 0);
   b.laminae = b.kind === 'plate' || b.kind === 'floor' || b.kind === 'roof';
   // The laminations run along the block's own length (its outline's long axis), on its face.
@@ -247,6 +268,8 @@ function fanAt(b, px, py) {
   }
   return { own: [k, j], other, d: Math.min(da, dr) * UNIT };
 }
+// The one cell of a block that is one great slab: its face's own plane.
+const ONE = { Q: [0, 0], g: [0, 0], o: 0, dish: 0 };
 const cellAt = (b, k, j) => { const l = b.cells[k]; return l[Math.min(j, l.length - 1)]; };
 
 // The laminations of a cell at a place on its face: grooves along the block's length, each its own width apart, some left
@@ -307,6 +330,34 @@ function dents(b, u, v, e) {
   return out;
 }
 
+// A break's edge worn round: 0 well inside a piece, the distance out of it well outside, eased between over `r`.
+const worn = (e, r) => (e <= -r ? 0 : e >= r ? e : ((e + r) * (e + r)) / (4 * r));
+
+// The pieces of a cell (seed, round its middle cu, cv) at a place on the face: the height of the piece the place is in
+// and of the one across the nearest fracture, each with how far out of it the place is. From round 7.
+export function piecesAt(seed, cu, cv, u, v, k) {
+  const hc = (q) => hash(seed * 0.731 + 19.3, q);
+  const n = SUB.lines[0] + Math.floor((SUB.lines[1] - SUB.lines[0] + 1) * hc(1) * 0.999);
+  const wu = u + SUB.warp * (L.noise(u / SUB.warpOver, v / SUB.warpOver, (seed * 0.013) % 97, 37) - 0.5) * 2;
+  const wv = v + SUB.warp * (L.noise(u / SUB.warpOver + 5.3, v / SUB.warpOver, (seed * 0.013) % 97, 39) - 0.5) * 2;
+  let code = 0, near = Infinity, flip = 0;
+  const a0 = hc(2) * Math.PI;
+  for (let i = 0; i < n; i++) {
+    const a = a0 + (i + 0.3 * (hc(10 + i) - 0.5)) * (Math.PI / n), nu = Math.cos(a), nv = Math.sin(a);
+    const o = SUB.spread * (hc(20 + i) - 0.5) * 2, d = (wu - cu) * nu + (wv - cv) * nv - o;
+    const along = -(wu - cu) * nv + (wv - cv) * nu, side = hc(40 + i) < 0.5 ? -1 : 1;
+    if (hc(30 + i) < SUB.least && along * side > SUB.spread * (hc(50 + i) - 0.3)) continue;
+    if (d > 0) code |= 1 << i;
+    if (Math.abs(d) < near) { near = Math.abs(d); flip = 1 << i; }
+  }
+  const at = (c) => {
+    const h = (q) => hash(seed * 1.37 + c * 13.7 + 3.1, q), ang = h(3) * TAU, g = Math.tan(((SUB.tilt[0] + (SUB.tilt[1] - SUB.tilt[0]) * h(4)) * k * Math.PI) / 180);
+    return (h(2) - 0.5) * 2 * SUB.step * k + g * (Math.cos(ang) * (wu - cu) + Math.sin(ang) * (wv - cv));
+  };
+  if (!flip) return [[at(code), -1e3]];
+  return [[at(code), -near], [at(code ^ flip), near]];
+}
+
 const boxGap = (p, lo, hi) => Math.hypot(Math.max(0, lo[0] - p[0], p[0] - hi[0]), Math.max(0, lo[1] - p[1], p[1] - hi[1]), Math.max(0, lo[2] - p[2], p[2] - hi[2]));
 
 // How far a place is outside a block: its own field.
@@ -331,14 +382,16 @@ export function block(b, x, y, z) {
   // lower in a steep face turned from the core. Near every edge the face is knapped.
   const sw = SWELL.deep * (L.noise(x / SWELL.over, y / SWELL.over, z / SWELL.over, (b.seed + 3) & 1023) - 0.5) * 2;
   const rel = [q[0] - b.P0[0], q[1] - b.P0[1], q[2] - b.P0[2]], fu = dot(rel, b.t1), fv = dot(rel, b.t2);
-  const fan = fanAt(b, qx, qy);
+  const fan = b.fan.one ? { own: [0, 0], other: [0, 0], d: 1e3 } : fanAt(b, qx, qy);
   const scar = dents(b, fu, fv, Math.max(0, Math.min(fan.d, -outline))) * (b.fan.scars ?? 1);
+  const kp = b.fan.pieces ?? SUB.k;
   const T = b.fan.steep, bed = b.bedded ? bedding(b, x, y, z) : 0;
   let face = Infinity;
   for (const [[k, j], e] of [[fan.own, -fan.d], [fan.other, fan.d]]) {
-    const c = cellAt(b, k, j);
+    const c = b.fan.one ? ONE : cellAt(b, k, j);
     const H = c.o + c.g[0] * (fu - c.Q[0]) + c.g[1] * (fv - c.Q[1]) - c.dish * ((fu - c.Q[0]) ** 2 + (fv - c.Q[1]) ** 2) + (b.bedded ? bed : 0);
-    face = Math.min(face, Math.max(s - H + sw + scar + T * Math.max(0, e), e - 24));
+    if (kp <= 0) { face = Math.min(face, Math.max(s - H + sw + scar + T * Math.max(0, e), e - 24)); continue; }
+    for (const [h, ep] of piecesAt(b.seed * 97 + k * 31 + j, c.Q[0], c.Q[1], fu, fv, kp)) face = Math.min(face, Math.max(s - H - h + sw + scar + T * Math.max(0, e) + SUB.steep * worn(ep, SUB.round), e - 24, ep - 12));
   }
   let f = Math.max(face, -s - b.thick, side);
   // A block tucked under the land falls away forward under its edge, so no flat top of it shows in front of the land.
@@ -352,42 +405,54 @@ export function block(b, x, y, z) {
 // The backing: the inner shell of the cave far behind everything, falling back as it goes out from the core.
 function backing(x, y, z, px, py) {
   const rho = Math.hypot(px - A.corePx[0], py - A.corePx[1]);
-  const z0 = Math.max(BACKING.least, BACKING.at - BACKING.back * Math.max(0, rho - BACKING.from));
+  let z0 = Math.max(BACKING.least, BACKING.at - BACKING.back * Math.max(0, rho - BACKING.from));
+  // Behind a void the backing is far back, so the core's light that comes in at the void's slant lands out of sight.
+  if (A.voids) { const k = Math.min(1, Math.max(0, 0.5 - sample(A.voids, px, py) / 16)); z0 += (BACKING.deep - z0) * k * k * (3 - 2 * k); }
   const zb = z0 + 6 * (L.noise(x / 50, y / 50, 3.3, 77) - 0.5);
   return Math.max(z - zb, z0 - BACKING.thick - z);
 }
 
-// The bowl's lip at a bearing, in picture pixels from the core's middle.
-function bowlLip(th) {
-  const deg = ((th * 180 / Math.PI) % 360 + 360) % 360, W = BOWL.wide;
-  let w = W[W.length - 1][1];
-  for (let i = 0; i < W.length; i++) {
-    const [a0, w0] = W[i], [a1, w1] = W[(i + 1) % W.length], span = ((a1 - a0) + 360) % 360 || 360, t = ((deg - a0) + 360) % 360;
-    if (t <= span) { const f = t / span, sm = f * f * (3 - 2 * f); w = w0 + (w1 - w0) * sm; break; }
+// The rim round the core (RIM): four thick slabs leaning in and the black gaps between them. Gives what it clears of
+// the blocks in front of it (`hollow`, over 0 where cleared), the rock it is (`rock`, under 0 inside) and which of its
+// slabs a place is of (`slab`, 4 for a gap's floor).
+export function rim(x, y, z, px, py) {
+  const C = A.core.at, R = A.core.r;
+  for (const S of RIM.slabs) if (!S.at) { const m = (((S.from + S.to) / 2) * Math.PI) / 180; S.at = [C[0] + 1.15 * R * Math.cos(m), C[1] - 1.15 * R * Math.sin(m)]; }
+  const dx = px - A.corePx[0], dy = py - A.corePx[1], rU = Math.hypot(dx, dy) * UNIT;
+  const deg = ((Math.atan2(dy, dx) * 180) / Math.PI + 360) % 360;
+  let si = RIM.slabs.length - 1;
+  for (let i = 0; i < RIM.slabs.length; i++) { const S = RIM.slabs[i]; if ((((deg - S.from) % 360) + 360) % 360 < S.to - S.from) { si = i; break; } }
+  const S = RIM.slabs[si], mid = (((S.from + S.to) / 2) * Math.PI) / 180, ux = Math.cos(mid), uy = -Math.sin(mid);
+  const wx = x - C[0], wy = y - C[1], par = 0.5 * (wx * ux + wy * uy) + 0.5 * rU, across = -wx * uy + wy * ux;
+  const surf = C[2] - S.back + S.rise * (par - R) + S.twist * across + 2.5 * (L.noise(x / 37, y / 37, 4.1, 67) - 0.5) * 2;
+  const lip = S.reach * R + 14 * (L.noise(deg / 13, 3.1, 7.7 + si, 91) - 0.5) * 2 + 5 * (L.noise(deg / 3.7, 1.7, 2.9 + si, 93) - 0.5) * 2;
+  const plane = (z - surf) / Math.sqrt(1 + S.rise * S.rise), behind = Math.max(0, surf - z);
+  // Its face broken by the same fractures as a block's, harder: smooth, lit evenly by the ball, it read as a pale card.
+  let inFront = Infinity;
+  for (const [h, e] of piecesAt(911 + si * 131, S.at[0], S.at[1], x, y, RIM.pieces)) inFront = Math.min(inFront, Math.max(plane - h + SUB.steep * worn(e, SUB.round), e - 12));
+  // The slab: rock behind its face, as thick as RIM.thick, its outline moving out as it goes back so its outer side is
+  // seen. In front of its face nothing stands inside its outline, which draws in toward the visitor: what it cuts of
+  // the blocks in front is an undercut hidden under their edges, not a wall along the line of sight.
+  let rock = Math.max(inFront, -inFront - RIM.thick, rU - lip - RIM.side * behind);
+  let hollow = Math.min(inFront, lip - rU - 0.3 * Math.max(0, z - surf));
+  let slab = si;
+  // The gaps: a slot between two slabs, wandering and of uneven width, widening as it goes back so its walls are the
+  // slabs' sides, with a floor that falls away from the core.
+  for (const g of RIM.gaps) {
+    let dd = ((deg - g.at + 540) % 360) - 180;
+    dd -= RIM.rag * (L.noise(rU / 14, g.at * 0.1, 5.5, 95) - 0.5) * 2;
+    const hw = (g.wide / 2) * (0.75 + 0.5 * L.noise(rU / 9, g.at * 0.1, 6.5, 97));
+    const inGap = ((hw - Math.abs(dd)) * Math.PI * Math.max(rU, 60)) / 180 + 0.3 * behind;
+    if (inGap < -40) continue;
+    const floor = C[2] - RIM.floor.back - RIM.floor.fall * Math.max(0, rU - R);
+    const aboveFloor = (z - floor) / Math.sqrt(1 + RIM.floor.fall * RIM.floor.fall);
+    const cut = Math.min(inGap, aboveFloor, lip - rU);
+    const floorRock = Math.max(aboveFloor, -aboveFloor - RIM.thick, rU - lip, -inGap - 4);
+    if (floorRock < rock && inGap > 0) slab = RIM.slabs.length;
+    rock = Math.max(Math.min(rock, floorRock), cut);
+    hollow = Math.max(hollow, cut);
   }
-  let rag = 0;
-  for (let i = 0; i < BOWL.rag.length; i++) { const f = [2.4, 7, 19][i]; rag += BOWL.rag[i] * (L.noise(Math.cos(th) * f + 5, Math.sin(th) * f, 1.5 + i, 61 + i) - 0.5) * 2; }
-  return (BOWL.lip + w + rag) * A.core.r / UNIT;
-}
-// The cave round the core: under 0 inside its hollow (in front of the bowl and inside the lip), and the bowl's shell.
-function bowl(x, y, z, px, py) {
-  const C = A.core.at, rho = Math.hypot(x - C[0], y - C[1]);
-  const th = Math.atan2(py - A.corePx[1], px - A.corePx[0]), lipPx = bowlLip(th), rpx = Math.hypot(px - A.corePx[0], py - A.corePx[1]);
-  const ripple = BOWL.ripple * (L.noise(x / BOWL.rippleOver, y / BOWL.rippleOver, 2.5, 67) - 0.5) * 2;
-  // Soft terraces inside the lip, each falling back outward, so a crescent of it faces away from the core and is dark.
-  let ter = 0;
-  const lipU = lipPx * UNIT;
-  for (const T of BOWL.terraces) {
-    const at = lipU * T.at + T.rag * (L.noise(Math.cos(th) * 5 + T.at * 9, Math.sin(th) * 5, 4.5, 71) - 0.5) * 2;
-    const here = Math.min(1, Math.max(0, (L.noise(Math.cos(th) * 3.4 + T.at * 4, Math.sin(th) * 3.4, 6.5, 73) - 0.48) * 4));
-    const t = Math.min(1, Math.max(0, (rho - at) / T.wide + 0.5));
-    ter -= T.fall * here * t * t * (3 - 2 * t);
-  }
-  const surf = C[2] - BOWL.deep + (rho * rho) / (2 * BOWL.curve) + ripple + ter;
-  // Distance in front of the bowl's face, near enough: along z, eased by its slope.
-  const slope = rho / BOWL.curve, inFront = (z - surf) / Math.sqrt(1 + slope * slope);
-  const inLip = (lipPx - rpx) * UNIT;
-  return { hollow: Math.min(inFront, inLip), shell: Math.max(-inFront, inFront + BOWL.thick, -inLip) };
+  return { hollow, rock, slab };
 }
 
 // A stone of rubble: the inside of a few planes round its middle.
@@ -404,10 +469,13 @@ function stone(st, x, y, z) {
 export function bare(x, y, z) {
   const [px, py] = L.pictured(x, y, z);
   let d = backing(x, y, z, px, py);
-  for (const b of A.blocks) { const v = block(b, x, y, z); if (v < d) d = v; }
-  // The cave round the core: nothing in its hollow, and its smooth bowl behind.
-  const bw = bowl(x, y, z, px, py);
-  d = Math.min(Math.max(d, bw.hollow), bw.shell);
+  // A void: the blocks of the kinds it is cut from are taken away inside it, widening a little as it goes back so its
+  // walls face the visitor: straight back along the line of sight, a wall seen edge on came out as a stack of ledges.
+  const cut = A.voids ? -sample(A.voids, px, py) * UNIT + 5 * (L.noise(px / 9, py / 9, 3.7, 83) - 0.5) * 2 + 0.15 * Math.max(0, 220 - z) : -Infinity;
+  for (const b of A.blocks) { let v = block(b, x, y, z); if (cut > -30 && A.voided.includes(b.kind)) v = Math.max(v, cut); if (v < d) d = v; }
+  // The rim round the core: nothing in front of its slabs, and its slabs and gaps.
+  const rm = rim(x, y, z, px, py);
+  d = Math.min(Math.max(d, rm.hollow), rm.rock);
   // Inside the picture's rock, inside the planet, under the land.
   d = Math.max(d, sample(A.rock, px, py) * UNIT);
   d = Math.max(d, (L.shell(x, y, z) - 1) * L.WORLD.deep + 2);
@@ -438,25 +506,32 @@ export function bare(x, y, z) {
   return d;
 }
 
-// Which block a place on the surface is of, as the stone is told it: a block's number plus one, the cave's bowl
-// (OWN.bowl), a stone of rubble (OWN.stone), the backing (OWN.backing). A face cut by something that is not a block
+// Which block a place on the surface is of, as the stone is told it: a block's number plus one, a slab of the rim or a
+// gap's floor (OWN.rim and on), a stone of rubble (OWN.stone), the backing (OWN.backing). A face cut by something that is not a block
 // (the land, the planet, the core's clearance, the stream's lane) is of the block it cuts.
-export const OWN = { bowl: 40, stone: 41, backing: 42, count: 48 };
+export const OWN = { rim: 36, stone: 41, backing: 42, count: 48 };
 export function owner(x, y, z) {
   const [px, py] = L.pictured(x, y, z);
   let best = OWN.backing, bv = Math.abs(backing(x, y, z, px, py)), inside = 0, iv = Infinity;
   A.blocks.forEach((b, k) => { const v = block(b, x, y, z); if (Math.abs(v) < bv) { bv = Math.abs(v); best = k + 1; } if (v < iv) { iv = v; inside = k + 1; } });
-  const bw = Math.abs(bowl(x, y, z, px, py).shell);
-  if (bw < bv) { bv = bw; best = OWN.bowl; }
+  const rm = rim(x, y, z, px, py), bw = Math.abs(rm.rock);
+  if (bw < bv) { bv = bw; best = OWN.rim + rm.slab; }
   if (A.stones) for (const st of A.stones) { const v = Math.abs(stone(st, x, y, z)); if (v < bv) { bv = v; best = OWN.stone; } }
   if (bv > 2 && iv < 0) best = inside;
   return best;
+}
+// Each number's tan, for the stone: how far its stone is the paler, drier tan where the core's light is on it at all.
+export function tans(args) {
+  setup(args);
+  const out = new Array(OWN.count).fill(0);
+  A.blocks.forEach((b, k) => { out[k + 1] = b.tan ?? 0; });
+  return out;
 }
 // Each number's bedding, for the stone: the plane its layers lie in, and how strongly bedded it is (0: clean).
 export function beds(args) {
   setup(args);
   const out = Array.from({ length: OWN.count }, () => [0, 1, 0, 0]);
-  A.blocks.forEach((b, k) => { if (b.bedN) out[k + 1] = [...b.bedN.map((v) => +v.toFixed(4)), b.bedded ? +(0.55 + 0.45 * hash(b.seed, 51)).toFixed(3) : 0.12]; });
+  A.blocks.forEach((b, k) => { if (b.bedN) out[k + 1] = [...b.bedN.map((v) => +v.toFixed(4)), b.bedded ? +(0.55 + 0.45 * hash(b.seed, 51)).toFixed(3) : 0]; });
   return out;
 }
 

@@ -33,7 +33,11 @@ export const BLOCKS = [
   { name: 'right-1', kind: 'plate', slabs: [43, 86, 87], z: 105, lean: 0.6, thick: 62, fan: GREAT },
   { name: 'right-2', kind: 'plate', slabs: [37, 28, 23], z: 170, lean: 1.0, thick: 48, fan: GREAT },
   { name: 'left-2', kind: 'plate', slabs: [26], z: 75, lean: 1.0, thick: 52, fan: GREAT },
-  { name: 'left-1', kind: 'plate', slabs: [60, 49, 54, 46, 75, 83, 85], z: 160, lean: 1.1, thick: 66, fan: GREAT },
+  // Round 8: ONE great leaning slab, its broad face turned hard to the core, crossed by a few fine fractures, with its
+  // black side at the left: as a fan of tiers it read as a stack of boards.
+  // Its stone is the paler, drier tan of picture 9's slab there (`tan`, what the stone is told): at its distance from
+  // the core the light alone left it a saturated rust.
+  { name: 'left-1', kind: 'plate', slabs: [60, 49, 54, 46, 75, 83, 85], z: 160, lean: 1.7, thick: 66, fan: { one: true, pieces: 0.7 }, tan: 1 },
   { name: 'left-low', kind: 'plate', slabs: [88, 95, 97, 99], z: 215, lean: 0.95, thick: 58, fan: GREAT },
   // Recesses turned from the core, lit only by what bounces.
   { name: 'shade-left', kind: 'shade', slabs: [47], z: 0, out: 0.9, thick: 40 },
@@ -50,13 +54,19 @@ export const BLOCKS = [
   // front of the core, set far back so the lip overhangs a black band, with its lower edge brought forward as teeth
   // that catch the core; and lit pieces hanging behind, turned to the core. z is how far behind the land's front edge
   // the face is.
-  { name: 'lip', kind: 'roof', slabs: [0, 2, 4, 7, 20, 10, 19, 31, 24], back: -22, up: 1.2, turn: [1.9, 0, 0], thick: 60 },
+  // Round 8: broken harder, so its top is chunks whose upper faces catch the moon.
+  { name: 'lip', kind: 'roof', slabs: [0, 2, 4, 7, 20, 10, 19, 31, 24], back: -22, up: 1.2, turn: [1.9, 0, 0], thick: 60, fan: { pieces: 1.4 } },
   { name: 'lid-left', kind: 'roof', slabs: [21, 30, 14, 29], cut: 'stratL', band: { foot: 24, keep: false }, back: 85, down: 0.2, out: 0.5, thick: 110 },
   { name: 'lid-mid', kind: 'roof', slabs: [8, 5, 15], band: { foot: 26, keep: false }, back: 80, down: 0.15, out: 0.5, thick: 120 },
   { name: 'lid-right', kind: 'roof', slabs: [3], band: { foot: 26, keep: false }, back: 80, down: 0.15, out: 0.5, thick: 120 },
-  { name: 'teeth-left', kind: 'roof', slabs: [21, 30, 14, 29], cut: 'stratL', band: { foot: 24, keep: true }, back: 28, down: 0.55, lean: 0.35, thick: 90 },
-  { name: 'teeth-mid', kind: 'roof', slabs: [8, 5, 15], band: { foot: 26, keep: true }, back: 14, down: 0.55, lean: 0.35, thick: 90 },
-  { name: 'teeth-right', kind: 'roof', slabs: [3], band: { foot: 26, keep: true }, back: 14, down: 0.5, lean: 0.35, thick: 90 },
+  // Round 8: the teeth turned out from the core, so the roof's lower edge is black against the lit ring.
+  { name: 'teeth-left', kind: 'roof', slabs: [21, 30, 14, 29], cut: 'stratL', band: { foot: 24, keep: true }, back: 28, down: 0.55, out: 0.35, thick: 90 },
+  { name: 'teeth-mid', kind: 'roof', slabs: [8, 5, 15], band: { foot: 26, keep: true }, back: 14, down: 0.55, out: 0.35, thick: 90 },
+  { name: 'teeth-right', kind: 'roof', slabs: [3], band: { foot: 26, keep: true }, back: 14, down: 0.5, out: 0.35, thick: 90 },
+  // Round 8: the roof's two hanging lobes, to about 400 down, each a thick slab hanging from the crust with its face
+  // turned down and in to the core. They take every pixel of their shapes, over whatever slab is there.
+  { name: 'lobe-left', kind: 'roof', slabs: [], add: 'lobeL', over: true, back: 40, down: 0.35, lean: 0.8, thick: 70, fan: { one: true, pieces: 0.6 } },
+  { name: 'lobe-right', kind: 'roof', slabs: [], add: 'lobeR', over: true, back: 40, down: 0.35, lean: 0.8, thick: 70, fan: { one: true, pieces: 0.6 } },
   { name: 'hang-right', kind: 'plate', slabs: [6, 12, 18], back: 70, lean: 1.4, thick: 44, tuck: true },
   // The frame: heavy masses standing forward at each side, near black, with voids between them.
   { name: 'frame-left-top', kind: 'frame', slabs: [42, 50, 44], cut: 'stratL', z: 0, out: 0.4, down: 0.6, thick: 130 },
@@ -65,7 +75,9 @@ export const BLOCKS = [
   { name: 'frame-left-edge', kind: 'frame', slabs: [64, 63, 74, 79, 62, 82], z: 0, out: 0.5, down: 0.55, thick: 130 },
   // The cavity behind the left masses: a wall turned out and down from the core, black, which keeps the core's light
   // off the masses' inner sides.
-  { name: 'frame-left-mid', kind: 'frame', slabs: [66], z: 300, out: 1.2, down: 0.5, thick: 120 },
+  // Round 8: its sides run back along the line of sight: square to its face, its broken side, lit and stepped, stood
+  // over the great left slab and was most of what showed in the slab's place.
+  { name: 'frame-left-mid', kind: 'frame', slabs: [66], z: 360, out: 1.2, down: 0.5, thick: 220, sides: 0.9 },
   { name: 'frame-left-low', kind: 'frame', slabs: [89, 91, 92, 101, 100, 102, 103, 104, 105, 94], z: 0, out: 0.38, down: 0.45, thick: 130 },
   { name: 'frame-right-edge', kind: 'frame', slabs: [39, 71, 17, 16], add: 'tornR', z: 0, out: -0.25, down: 0.18, thick: 130 },
   { name: 'frame-right-mid', kind: 'frame', slabs: [33, 76], z: 330, lean: 0.85, down: 0.05, thick: 120 },
@@ -76,13 +88,22 @@ export const BLOCKS = [
 const SHAPES = {
   stratL: [[240, 262], [478, 262], [474, 329], [458, 334], [446, 331], [433, 339], [414, 336], [399, 343], [384, 339], [370, 346], [352, 341], [337, 349], [319, 343], [301, 348], [287, 339], [270, 344], [255, 338], [240, 340]],
   // Where the pale side's torn line moved right: the strip the frame's edge block is carried out over.
-  tornR: [[1028, 300], [1080, 300], [1080, 456], [1028, 456]],
+  // Round 8: its outer side ragged, not a dead straight seam.
+  tornR: [[1028, 300], [1074, 300], [1066, 318], [1078, 334], [1061, 352], [1072, 371], [1056, 387], [1069, 404], [1052, 421], [1066, 438], [1058, 456], [1028, 456]],
+  lobeL: [[440, 312], [532, 312], [527, 333], [520, 351], [511, 368], [504, 384], [496, 401], [488, 392], [484, 377], [471, 369], [466, 352], [452, 344], [446, 327]],
+  lobeR: [[822, 312], [906, 312], [901, 331], [897, 352], [888, 366], [881, 383], [873, 399], [866, 389], [861, 374], [851, 362], [846, 346], [834, 338], [828, 324]],
   // Between the cave's bowl and the floor's ledge, a dark recess: no floor there, so the backing shows.
   recess: [[566, 528], [590, 536], [612, 534], [640, 542], [668, 546], [708, 547], [736, 541], [764, 544], [790, 536], [812, 530], [818, 541], [792, 549], [762, 553], [730, 551], [700, 556], [668, 555], [636, 552], [606, 545], [584, 546], [560, 538]],
   // Under the floor's ledge: its belly, below a ragged line under the ledge's lit top.
   belly: [[430, 572], [470, 566], [508, 576], [546, 569], [580, 579], [622, 574], [660, 582], [700, 578], [742, 586], [786, 579], [830, 588], [880, 582], [930, 590], [930, 720], [430, 720]],
   lane: [[646, 510], [659, 521], [653, 533], [662, 547], [656, 558], [666, 571], [661, 584], [669, 596], [681, 594], [690, 603], [701, 597], [713, 599], [716, 586], [710, 574], [721, 561], [714, 549], [724, 537], [717, 524], [730, 510]],
 };
+// Round 8: a black void where picture 9 has one and no slab is: left of the ball, between the great left slab and the
+// ring. The blocks of the kinds in VOIDED are taken away inside it, and the backing far behind it is pushed back.
+export const VOIDS = [
+  [[527, 396], [538, 401], [549, 414], [557, 433], [561, 452], [563, 476], [557, 503], [547, 494], [541, 476], [531, 461], [526, 437]],
+];
+export const VOIDED = ['plate', 'shade'];
 // What of the picture is not the rock though it looked it: the stream's own light under the shelf. Its top carries on
 // the shelf's own underside from either side of the stream, so nothing hangs lower there than beside it.
 const NOT_ROCK = [[[646, 640], [648, 571], [657, 568], [666, 570], [674, 574], [683, 578], [692, 582], [702, 584], [713, 582], [722, 583], [731, 586], [733, 640]]];
@@ -183,6 +204,9 @@ export async function plan({ draft = false } = {}) {
   for (let i = 0; i < rockMask.length; i++) rockMask[i] = S.kind[i] === 1 || S.kind[i] === 2 ? 1 : 0;
   for (const poly of NOT_ROCK) for (let y = 0; y < S.H; y++) for (let x = 0; x < S.W; x++) if (inside(poly, x + 0.5, y + 0.5)) rockMask[x + y * S.W] = 0;
   const rock = { x0: 0, y0: 0, w: S.W, h: S.H, by: 1, sd: signed(rockMask, S.W, S.H, 1) };
+  const voidMask = new Uint8Array(S.W * S.H);
+  for (const poly of VOIDS) for (let y = 0; y < S.H; y++) for (let x = 0; x < S.W; x++) if (inside(poly, x + 0.5, y + 0.5)) voidMask[x + y * S.W] = 1;
+  const voids = { x0: 0, y0: 0, w: S.W, h: S.H, by: 1, sd: signed(voidMask, S.W, S.H, 1) };
   const shapes = (v) => (v ? (Array.isArray(v) ? v : [v]).map((q) => SHAPES[q]) : []);
   const blocks = BLOCKS.map((b, k) => {
     const cuts = shapes(b.cut), onlys = shapes(b.only), adds = shapes(b.add);
@@ -193,7 +217,7 @@ export async function plan({ draft = false } = {}) {
     for (let i = 0; i < W * H; i++) {
       const s = m.slab[i], x = i % W, y = (i / W) | 0, px = (x + 0.5) / BY, py = (y + 0.5) / BY;
       let take = s >= 0 && b.slabs.includes(s);
-      if (!take && adds.length && (s < 0 || b.slabs.includes(s)) && adds.some((q) => inside(q, px, py))) take = true;
+      if (!take && adds.length && (b.over || s < 0 || b.slabs.includes(s)) && adds.some((q) => inside(q, px, py))) take = true;
       if (!take) continue;
       if (cuts.some((q) => inside(q, px, py))) continue;
       if (onlys.length && !onlys.some((q) => inside(q, px, py))) continue;
@@ -251,5 +275,5 @@ export async function plan({ draft = false } = {}) {
     const P = L.fromPicture(...b.at, z), n = faceNormal(b, b.at, P);
     b.z = z; b.n = n; b.h = dot(n, P); b.seed = 17 + b.id * 31;
   }
-  return { blocks, rock, draft, core: { at: [...C], r: L.CORE.r } };
+  return { blocks, rock, voids, voided: VOIDED, draft, core: { at: [...C], r: L.CORE.r } };
 }

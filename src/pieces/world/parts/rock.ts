@@ -36,7 +36,7 @@ export const build: PartFactory = async ({ query, renderer }) => {
   try {
     const [file, maps] = await Promise.all([load(`rock-${which}.bin`), plain ? null : stoneMaps(renderer)]);
     if (maps) release = () => maps.release();
-    const meta = file.meta as { spare?: string; edge?: string; edgeUnits?: number; edgeSigned?: boolean; beds?: number[][] };
+    const meta = file.meta as { spare?: string; edge?: string; edgeUnits?: number; edgeSigned?: boolean; beds?: number[][]; tans?: number[] };
     const edgeAt = meta.edge === 'light.w' ? 'aLight.w' : meta.edge === 'bounce.w' ? 'aBounce.w' : '';
     const units = (meta.edgeUnits ?? 8).toFixed(3);
     // A signed distance is stored as half of it over a half: under 0 toward a concave crease.
@@ -46,7 +46,7 @@ export const build: PartFactory = async ({ query, renderer }) => {
       // plain shell lay exactly where they are and fought them for every pixel. ?shell=1 draws it again.
       if (name === 'skin' && query.get('shell') !== '1') continue;
       const m = name === 'break' && maps
-        ? stoneMaterial(maps, { key: 'rock', baked: true, spare: blocks(l.geometry, meta) ? 'slab' : undefined, beds: meta.beds, edge, debug: Number(query.get('stonedebug')) || undefined })
+        ? stoneMaterial(maps, { key: 'rock', baked: true, spare: blocks(l.geometry, meta) ? 'slab' : undefined, beds: meta.beds, tans: meta.tans, edge, debug: Number(query.get('stonedebug')) || undefined })
         : lit(new THREE.MeshStandardMaterial({ color: name === 'skin' ? DARK : CLAY, roughness: 0.92, metalness: 0 }), { key: `rock-plain-${name}`, baked: true });
       const part = mesh(l, m);
       part.castShadow = part.receiveShadow = true;
