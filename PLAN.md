@@ -161,6 +161,7 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **Stopped and corrected (Nov 15, 20:10):** he found the fourth round's layout different from picture 9. Picture 9 is the target for the whole world, top and underside, with only the agreed changes (`BRIEF.md`, Hero, "Picture 9 is the target, whole"). The fourth round's code is kept on `kept/hero-round-4-before-picture-9` and is not on `main`. His yes to the list of changes came at 20:15. Fable is re-planning the top, the planet's proportions and the view to picture 9, then stills, then his sign off.
 - **Rebuilt to picture 9 (Nov 15, 20:55):** the fourth round is at `/lab/hero-blockout`, with stills in `reference/studies/65-*`. Waiting on his verdict (`BRIEF.md`, Hero, "The fourth round as rebuilt to picture 9").
 - **His verdict (Nov 15, 20:47):** a good starting point, a far cry from picture 9's quality, and the build must look tremendously better and not be this study with minor updates. Next: his yes to the layout, then Fable writes the world's kit and its tests so the quality level is in the repo, and Claude Code proves it on one slice before building the rest.
+- **Handed over (Nov 15, 20:52):** he approved the layout only. Next, in Claude Code on his Mac: the slice in `reference/kits/world.md` (the hollow with the core, the pyramid, the stepped gold crown), judged against `QUALITY.md`, "The hero's world, built to picture 9", then his verdict on it before anything else is built.
 
 
 ## Phase 0 · Foundation

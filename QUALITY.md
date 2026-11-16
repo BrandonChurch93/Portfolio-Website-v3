@@ -576,6 +576,28 @@ What the build taught:
 19. **The craft.** Each one can be known for a craft at the page's size, or there are none. No specks.
 20. **Nothing that was right has gone back:** stills of the torn underside, the core, the debris and the sky from before and after agree.
 
+## The hero's world, built to picture 9
+
+`BRIEF.md`, Settled, Hero, "The hero's world, the build" is the agreement, and `reference/kits/world.md` is the kit. This is the bar for the new world. The section above still holds for his words, how the first screen is laid out, and the sky. Where the two differ about the world itself, this one stands.
+
+The target is picture 9, `reference/concept/09-*`, and each part's own picture in `reference/concept/09-parts/`. His words: "It needs to look tremendously better" than the study at `/lab/hero-blockout`, which is the layout and not the look. It passes when all of these are true, judged from stills taken on his Mac:
+
+1. **Side by side, whole.** The world at the page's size beside picture 9: the same light, the same depth, the same richness. A person has to look twice to say which is the picture.
+2. **Side by side, close.** Each part at three times zoom beside its picture: detail of the same kind and the same fineness. Nothing goes smooth, flat or repeating where the picture is rich.
+3. **Not the study.** Beside the study's still (`reference/studies/65-*`) the difference is plain at a glance to someone who has not been told what changed. The piece imports nothing from `src/hero-blockout/`.
+4. **Rock.** Broken faces have breaks of every size, edges are chipped, rubble lies on ledges. No face reads as clay, as wood grain, as a net of cracks, or as a faceted solid.
+5. **Light.** The hollow has light that has bounced: a face turned from the core beside a lit one is not black. Where rocks meet there is soft shadow. The moon's shadows are deep and exact. The core is clear and never white.
+6. **The city.** Lit and warm. No building is a box with windows on a grid: windows have depth behind the glass and differ, and each named building has detail a person can describe.
+7. **Gold.** At the palette's hue, shiny, not a mirror. The faces of a thing differ. Never yellow and never washed pale.
+8. **The dunes.** A sharp crest and a hollow face in full shadow, with ripples close up.
+9. **The skin.** Cracks cut into the rock and lit from inside, with their light on the rock beside them. Craters with a rim, a floor and a shadow.
+10. **What broke away.** One scene. His test: a high end film, or a AAA game. In a filmstrip its motion has weight, and pieces of a family move together.
+11. **The layout holds.** Nothing has moved or changed size from the study's plan, and the view is the same.
+12. **Colors.** The site's only.
+13. **Cost.** Inside the kit's budgets, measured with `npm run mem` and `npm run perf`.
+
+Fail on sight: rock that is faceted or smooth as clay, a window that is a flat picture, yellow gold, anything white, haze round the core, a pattern that can be seen to repeat, a part that is the study's with small changes.
+
 ## The whole page so far
 
 `BRIEF.md`, Settled, "The whole page so far", is the agreement. It passes when all of these are true:

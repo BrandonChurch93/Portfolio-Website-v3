@@ -1143,6 +1143,14 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     - Whatever is handed to Claude Code has to state that quality level so it cannot be missed.
     - He has not yet said yes to the layout in so many words. Fable has asked for that yes.
     - Still standing: item 12 of the target above, made in code and not in Blender.
+- **The hero's world, the build (agreed Nov 15, 20:52).** His answer to Fable's proposal: "Sounds great to me. Go ahead and update the documentation however you need to and give me the prompt to hand over to Claude code." What he agreed to:
+    1. **The layout is approved, and only the layout:** where everything is, how big it is and how it is seen, as the study at `/lab/hero-blockout` has it. Changing any of that is asked of him first.
+    2. **The look is not approved.** The quality to reach is picture 9's. The build does not carry the study's meshes or shaders over with small changes.
+    3. **The bar is in the repo:** `QUALITY.md`, "The hero's world, built to picture 9", and the kit, `reference/kits/world.md`, with a picture for each part in `reference/concept/09-parts/`.
+    4. **How it is built:** in code, not in Blender. Each part by its own Opus builder with Fable judging side by side, as the desk was.
+    5. **A slice first:** the hollow with the core, the pyramid, and one tower (the stepped gold crown), each to full finish, shown to him beside picture 9 before anything else is built. If it is not tremendously better than the study, the method changes.
+    6. Not ruled, and kept out of the slice: the two loose pieces that carry a piece of the city, and the line of light under gold and bronze crowns, which are Fable's and not in picture 9.
+    7. Still open from before: whether the first screen ends at the same place of the world on every screen, the hero's opening, and when the new world goes onto `/lab/hero`.
 - An idea to revisit with the hero, not decided: his first thought was the city breaking apart into the stream as the visitor scrolls. Fable's twist, which he asked to have noted: building, not breaking. The city assembles out of the stream's facets in the opening, and the stream carries the same pieces on down the page. (Nov 12)
 
 **The hero, the city at rest: the agreement (Nov 14)**

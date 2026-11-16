@@ -2,6 +2,13 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · The handoff: the world's kit, its tests, and a slice first (Fable, web chat)
+
+- **What he said.** 20:47: the study is "a good starting point" but "a far cry from the quality that Gemini gave us", and Claude Code must not rebuild it "as is with minor updates. It needs to look tremendously better." 20:52: yes to the layout only, to a kit and tests, and to one slice built first.
+- **What was done.** `reference/kits/world.md` written. `QUALITY.md` has a new section, "The hero's world, built to picture 9". Eight pictures cut from picture 9, one for each part, are in `reference/concept/09-parts/`. `BRIEF.md` has the agreement, "The hero's world, the build".
+- **Nothing is built yet.** `src/pieces/world/` does not exist. The first job on his Mac is the slice in the kit: the hollow with the core, the pyramid, the stepped gold crown.
+- **For whoever builds:** the study's stills are in `reference/studies/65-*`, and they are what the slice has to beat by a wide margin. The budgets in the kit are Fable's guesses and have not been measured. `npm run mem` has never been run on the study.
+
 ## 2026-11-15 · The world rebuilt to picture 9 (Fable, web chat)
 
 - **What he said (20:15).** Yes: the four changes are the only ones from picture 9.
