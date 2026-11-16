@@ -8,7 +8,7 @@ import type { Piece, PieceOptions } from '../../world/piece';
 import { Stage } from '../../world/stage';
 import { finish, trueDarks } from '../../world/tone';
 import { CORE, D2R, HOST, LIGHT, MOONWARD, PYRAMID, SCALE, SPIRE, VIEW, coreLevel, drawn, ground } from './layout';
-import { STREAM_LONG, color, world } from './light';
+import { GLINT, STREAM_LONG, color, world } from './light';
 import { night } from './night';
 import { PARTS, type PartFactory, type PartName, type PartState, type WorldPart } from './part';
 import { STEP, TOWERS } from './placed';
@@ -41,7 +41,7 @@ const CLOSE: Record<string, readonly [number, number, number]> = {
 const MOON = { reach: 980, mid: -330, far: 4.5, map: { high: 4096, mid: 2048, low: 1024, static: 4096 } as Record<Tier, number>, bias: -0.00025, normalBias: 0.0012, radius: 1.6 };
 // The cursor's glint: how far in front of the world it stands, in metres, how far it ranges as a share of what the
 // host shows, and how strong it is.
-export const GLINT = { back: 2.2, range: 1.3, power: 1.4 };
+export { GLINT };
 // The glow: how strong, how far it spreads, and how bright a thing has to be to have one (pale is about 1).
 const GLOW = { strength: 0.14, radius: 0.08, threshold: 1.7 };
 // How much of the stage's white balance the world keeps. The balance was made for things seen in a warm room, to

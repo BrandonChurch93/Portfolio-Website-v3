@@ -38,6 +38,11 @@ const tried = (name: string, usual: number): number => (asked.has(name) && Numbe
 const POWER = tried('corepower', LIGHT.core.power), FILL = tried('fill', LIGHT.fill);
 const TINT = asked.has('filltint') ? String(asked.get('filltint')).split(',').map(Number) : LIGHT.warm;
 
+// The cursor's glint on polished metal: how far in front of the world the light stands, in scene units, how far it
+// moves for the cursor crossing the host, as a share of the host's height, and its strength. A part reads it here
+// (the stage, which sets it, also hands it on under the same name).
+export const GLINT = { back: 2.2, range: 1.3, power: 1.4 };
+
 // As far as the stream is ever taken to have run: past the lowest of what broke away.
 export const STREAM_LONG = 4000;
 
