@@ -91,6 +91,9 @@ void main() {
 	vec4 s = sRGBTransferOETF( vec4( CustomToneMapping( o ), c.a ) );
 	float n = h( gl_FragCoord.xy ) + h( gl_FragCoord.xy + 17.0 ) - 1.0;
 	s.rgb += n / 255.0 * smoothstep( 0.0005, 0.004, max( s.a, max( s.r, max( s.g, s.b ) ) ) );
+	// Never under nothing: the dither took a channel that was nearly nothing below it, and the edge smoothing after
+	// this pass raises what it reads to a power, which made of that a pure red or yellow pixel on a thin gold rim.
+	s.rgb = max( s.rgb, 0.0 );
 	// Light on a clear ground has color and no cover. WebKit throws away color brighter than its cover, which drew
 	// a hard edge round every glow: so light covers as much as it is bright.
 	s.a = max( s.a, max( s.r, max( s.g, s.b ) ) );

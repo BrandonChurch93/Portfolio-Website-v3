@@ -36,14 +36,19 @@ const STONE = {
 // joints (how long a stretch may be chipped, at least and at most, the share of stretches that are, how deep a chip
 // bites into the face, in units, and how dark it is); and the grime in its reveals, where the stone is shut in (the
 // openness at which it begins and at which it is whole, and how dark).
-const GRAIN = { figure: 0.16, scales: [0.35, 0.9, 2.6], fleck: 0.22, crystals: 1.7, chip: { long: [0.5, 1.4], share: 0.4, deep: 0.3, dark: 0.5 }, grime: [0.93, 0.72, 0.4] } as const;
+const GRAIN = { figure: 0.16, scales: [0.35, 0.9, 2.6], fleck: 0.09, crystals: 1.7, chip: { long: [0.5, 1.4], share: 0.4, deep: 0.3, dark: 0.5 }, grime: [0.95, 0.7, 0.5] } as const;
+// Where the weather has worked: a face is chipped and stained most just under a ledge, where the water runs off it,
+// and least out in the open; it falls off over `under` units down from the ledge, to `open` of it. A face turned to the
+// moon and the weather, at the tower's right, is washed cleaner: its chips, stains and soot keep `washed` of what a
+// face in shade has.
+const WORN = { under: 9, open: 0.2, washed: 0.45 } as const;
 const WEATHER = { soot: 0.4, sootTall: 1.4, foot: 0.6, footTall: 7 } as const;
 // And the stains the rain leaves: it runs off a ledge at a few places along it (a drip, a joint in the coping, the
 // foot of a finial) and each leaves one dark stripe under it, crisp at its sides under the ledge, wider, softer and
 // fainter as it runs down. Not a noise of lanes: lanes over the courses read as plaid. A place may stain in each
 // stretch so long along the ledge (every), with this chance (share); each stain's width at its source and its length
 // (at least and at most, in units), how much wider it has grown where it has run its length, and how dark at most.
-const STAIN = { every: 3.4, share: 0.42, wide: [0.35, 1.4], long: [4, 24], spread: 0.7, dark: 0.5 } as const;
+const STAIN = { every: 3.4, share: 0.55, wide: [0.35, 1.4], long: [5, 30], spread: 0.7, dark: 0.55 } as const;
 // The night's light falls up each stage of the tower: the foot of a stage, low between the stages round it, takes
 // `foot` of it and the head of the stage, out in the open under its ledge, `head` (the make script stores how far up
 // its stage each place is).
@@ -92,20 +97,37 @@ const INSIDE = { side: 0.42, head: 0.55, headIn: 0.32, jamb: 0.35, jambIn: 0.16,
 // deep is how much richer the gold is where it mirrors little: a gold face turned from the light shows the gold's
 // own color, deeper than where it is bright. The frieze's reeds: how dark the groove between two is, and how much of
 // a reed it takes, wide enough that it is a crisp regular line at three times and not a barcode of single pixels.
-const GOLD = { rough: 0.16, sheen: [1.4, 9, 0.86], shade: 0.75, neutral: 1, deep: 1.4, city: 0.6, flank: 50, valley: 0.6, groove: 0.22 };
+const GOLD = { rough: 0.16, sheen: [1.4, 9, 0.86], shade: 0.75, neutral: 1, deep: 1.4, city: 0.6, flank: 34, valley: 0.6, groove: 0.22 };
+// The mast: thin and round, it is mostly the edges of a cylinder turned to the moon, and with all of the moon's rim and
+// sheen it was a sliver of cream: it keeps this much of them.
+const MAST = { rim: 0.35 } as const;
 // The ring is the most polished gold in the world: smoother than the rest (rough), and it mirrors the night, the
 // city and the tower. Its highlight is filtered: the moon's sheen on it spreads over as much as a pixel covers and is
 // lowered to keep its light, so a highlight finer than a pixel comes to its average and never beads (peak: how much of
-// the gold's sheen it takes at its heart, and direct: how much of the moon's own highlight). Its roughness also grows
+// the gold's sheen it takes at its heart, low, since a strong one broke into a row of bright dots along the lobes at the
+// page's size; and direct: how much of the moon's own highlight). It mirrors the night no sharper than the roughness
+// `night`: the night's small lights came back from its curved faces as rows of points. Its roughness also grows
 // with how far its normal turns across a pixel (aa). The half of the band beyond the tower is seen against the night,
-// turned from the visitor: it keeps `far` of its light. Its edges keep `side` of the light of its top and its
-// underside `under`. Its outline is drawn with its color weighed by its cover to the power `gamma` (see below). The
-// band is found in its hull by stepping along each pixel's ray (`steps` at most, then `search` steps of a search for
+// turned from the visitor: it keeps `far` of its light. Its inner face, which looks at the dark tower, keeps `side` of
+// the light of its top, its outer face, which mirrors the glow low over the horizon, `outer`, and its underside
+// `under`. Its outline is drawn with its color weighed by its cover (see below). The band is found in its hull by stepping along each pixel's ray (`steps` at most, then `search` steps of a search for
 // its nearest, or deepest, within `deep` units of where it goes in), and its bead is drawn where it is
 // `bead` pixels tall or more and comes to its mean below that. Its body, all but its catch line, keeps `body` of its
 // light. One material at every size: nothing here depends on how large the band is drawn, so the page, a wider
 // screen and a close view see the same gold, each pixel the mean of what its footprint mirrors.
-const RING = { rough: 0.1, shade: 1.5, peak: 0.3, direct: 0.5, far: 0.6, aa: 0.5, side: 0.3, under: 0.12, gamma: 1.8, steps: 40, search: 14, deep: 12, bead: 4, body: 1.0 };
+// pale: the level at which the ring's gold has gone the whole way to pale, which is higher than the rest of the
+// gold's, so its body keeps the crown's gold and only its catch line and its spark are pale.
+// Its cover: the share of a pixel the band covers, eased over `ramp` pixels as a tent filter is and not cut to one,
+// which drew its long shallow edges in stairs. Where the band lies over the night, the page lays the canvas over its
+// sky after the canvas is encoded, so its color is weighed by its cover as the screen encodes it (gToScreen); where it
+// lies over the tower, which is blended in linear light, as it is. Weighed by a power of its cover, as it was, a pixel
+// half covered over the sky was brighter or darker than half, and the band had a dark line round it on the page. The
+// tower behind it is found exactly (gBehind). The trace takes `steps` at most: a ray that grazes the band's top face
+// closes on it slowly, and with fewer its outline came out ragged. Its gold is never darker than `least`: it always
+// mirrors some of the city's glow, and a darker pixel beside a lit one was drawn black by the page's edge smoothing.
+// Seen edge on it keeps `rim` of the light of its top whichever face it is, and is never darker than `behind`: there it
+// mirrors what is straight behind it, the glow of the page's sky, and its outline was otherwise a dark line round it.
+const RING = { pale: 7.5, rough: 0.1, shade: 1.5, peak: 0.1, direct: 0.5, night: 0.45, far: 0.6, aa: 0.5, side: 0.25, outer: 0.7, under: 0.1, ramp: 2.0, least: 0.03, behind: 0.2, rim: 0.8, steps: 90, search: 14, deep: 12, bead: 4, body: 0.72 };
 // The ring's catch light: one hard line along the edge of the band that is uppermost on the screen, where its top
 // arris turns to the glow of the sky and the moon. It lies on whatever of the band is within `wide` units under that
 // edge, and never on less than `px` pixels of it, so it reads as one continuous line however small the band is drawn.
@@ -114,27 +136,51 @@ const RING = { rough: 0.1, shade: 1.5, peak: 0.3, direct: 0.5, far: 0.6, aa: 0.5
 // has as much light as one on one pixel and never breaks into dashes as it crosses the pixel rows. Which way on the screen is
 // up for it (toward the moon, a little to the right), how much of it is left on the side away from the moon, and on
 // the half beyond the tower.
-const CATCH = { power: 0.6, light: 0.3, px: 1.3, wide: 0.55, dir: [0.4, 0.92], shade: 0.4, far: 0.75 } as const;
+const CATCH = { power: 0.6, light: 0.14, px: 1.3, wide: 0.55, dir: [0.4, 0.92], shade: 0.4, far: 0.75 } as const;
 // What the ring mirrors besides the night: the haze of the city's light low over the horizon (how bright, how high
 // its middle is and how tall, as the height of a direction), and the lit city under it, below the horizon (how bright,
 // how far down it reaches, and its streets and lit floors as so many to a turn round and to a unit of height). Where
 // the shaft stands between the ring and the moon (the baked share of the moon seen), the ring keeps `shadow` of the
 // moon's sheen. And the tower itself, where the ring's mirror looks back at it: how far it looks, in units, the
 // stone's brightness, how much brighter its moonlit side is, how tall a floor is and how bright a lit room.
-const MIRROR = { haze: 0.8, hazeAt: 0.07, hazeTall: 0.045, city: 0.2, cityTo: -0.55, streets: 90, floors: 26, shadow: 0.2, reach: 140, stone: 0.55, moonlit: 3, floor: 2.1, rooms: 1.1 } as const;
+const MIRROR = { haze: 0.8, hazeAt: 0.07, hazeTall: 0.045, city: 0.2, cityTo: -0.55, streets: 24, floors: 12, shadow: 0.2, reach: 140, stone: 0.55, moonlit: 3, floor: 2.1, rooms: 2.2 } as const;
 // The glow of the page's sky over the world, which the band's top mirrors: how bright, and from what height of a
 // direction to what height it fades out. Low, so the band's body is a deep mirror and its light is its catch line.
 const SKY = { power: 0.16, from: 0.12, to: 0.75 } as const;
 // The pointer's spark on the ring: how bright, how far round the pointer it reaches on the screen, in units, how narrow it is (as one less the cosine of its half width), the widest it is let spread to
 // where it is finer than a pixel, losing some of its light as it does, and how bright its pale is at its heart.
-const SPARK = { power: 2.2, reach: 3.5, wide: 0.16, most: 0.3, peak: 1.6 } as const;
+const SPARK = { power: 3.0, reach: 9, wide: 0.16, most: 0.3, peak: 1.6 } as const;
 // The ring's light on the tower: its gold mirrors the city's glow round the shaft and throws it, warm, back onto the
 // stone it circles. The ring is all round the shaft at one distance, so what tells where it falls is how far a place
 // is above or below the ring's own plane: it lies as a warm band across the shaft and fins, tilted as the ring is
 // (how strong in the plane, and how far off it has fallen to half, in units), on faces turned to the band.
-const RING_LIGHT = { power: 5, half: 9 } as const;
-// The ring's axis, tilted about x and then about z, as the make script turns the ring into place.
-const AXIS = new THREE.Vector3(0, 1, 0).applyMatrix4(new THREE.Matrix4().makeRotationZ(SPIRE.ring.tilt[1] * THREE.MathUtils.DEG2RAD).multiply(new THREE.Matrix4().makeRotationX(SPIRE.ring.tilt[0] * THREE.MathUtils.DEG2RAD))).normalize();
+const RING_LIGHT = { power: 1.1, half: 7 } as const;
+// The ring's shade on the tower: the night's soft light from the visitor's side comes from in front and a little
+// above, so the front arc, which hangs 45 units in front of the shaft, stands in it and lays a soft shade on the
+// stone just under where it crosses. Which way the light it takes away comes from, how much of it the shade takes, and
+// how soft its edge is (in units, at least, and more for each unit the arc stands off the stone).
+const RING_SHADE = { from: [-0.08, 0.17, 1], dark: 0.62, soft: [0.6, 0.07] } as const;
+const RING_SHADE_AT = new THREE.Vector3(...RING_SHADE.from).normalize();
+// The ring's axis, tilted about x and then about z, as the make script turns the ring into place, and the two ways
+// across its plane that how far round a place is is measured by.
+const TURN = new THREE.Matrix4().makeRotationZ(SPIRE.ring.tilt[1] * THREE.MathUtils.DEG2RAD).multiply(new THREE.Matrix4().makeRotationX(SPIRE.ring.tilt[0] * THREE.MathUtils.DEG2RAD));
+const AXIS = new THREE.Vector3(0, 1, 0).applyMatrix4(TURN).normalize();
+const ACROSS = [new THREE.Vector3(1, 0, 0).applyMatrix4(TURN).normalize(), new THREE.Vector3(0, 0, 1).applyMatrix4(TURN).normalize()];
+// The ring as a jeweller would make it, its relief worked into its normals inside the band the material finds (the
+// outline is the plain section's, so it stays on picture 9's lines). Its top face is two terraces: the inner one
+// dished (dish: how far its normal turns at its edges), with a line of darker inlay let into it (from, to, as offsets
+// across the section from its middle, and how dark), then a riser (from, to, how steep, as a slope) up to the outer
+// terrace, which is reeded (each reed so wide, its normal turning so far each way). Round its length it is made of
+// so many segments, each faced a little out of true (along it and across it, as slopes), with a joint between each
+// two (how wide, how dark). The outer face's rounded arrises are cut into facets of so many degrees, as a stepped
+// moulding is. The relief comes to its mean, and the band to a slightly rougher gold, where a pixel holds more than
+// `fade` of a reed or a facet (from, to, as shares of it).
+// The segments are cast in uneven lengths, as a founder casts what his moulds hold: how far round a place is, in
+// segments, is its angle bent by two slow waves (how many to a turn, how far each bends it, and where it starts), so
+// a segment is between about 0.6 and 2.5 of their mean and the joints along the front arc are no rhythm. At each
+// joint the band is cut by a V groove all round its section (how wide either side of the joint, how deep), so a joint
+// notches the outline as well as darkening the face.
+const RELIEF = { dish: 0.3, inlay: [-2.85, -2.35, 0.42], riser: [0.25, 0.75, 1.0], reeds: [0.75, 3.8], reed: 0.68, reedTurn: 0.42, segs: 18, wave: [3, 0.11, 0.7, 7, 0.04, 2.1], facet: [0.09, 0.05], joint: [0.25, 0.55], notch: [0.55, 0.32], round: 0.6, step: 45, fade: [0.3, 0.6], rough: 0.08 } as const;
 // The light the ring throws onto a face at vWorld turned to the world normal nW, as irradiance.
 const ringLight = (b: Band): string => `
 {
@@ -145,6 +191,18 @@ const ringLight = (b: Band): string => `
 	vec3 rN = inverseTransformDirection( geometryNormal, viewMatrix );
 	float rK = saturate( dot( rN, rTo / max( rD, 1e-4 ) ) ) / ( 1.0 + rH * rH / ${f(RING_LIGHT.half * RING_LIGHT.half)} );
 	reflectedLight.indirectDiffuse += ${lin3(METAL.gold)} * ${f(RING_LIGHT.power)} * rK * BRDF_Lambert( material.diffuseColor );
+}`;
+
+const ringShade = (b: Band): string => `
+{
+	vec3 rMid = vec3( 0.0, ${f(SPIRE.tall * SPIRE.ring.up)}, 0.0 ), rAx = vec3( ${f(AXIS.x)}, ${f(AXIS.y)}, ${f(AXIS.z)} ), rF = vec3( ${f(RING_SHADE_AT.x)}, ${f(RING_SHADE_AT.y)}, ${f(RING_SHADE_AT.z)} );
+	float rDen = dot( rF, rAx ), rT = abs( rDen ) > 1e-4 ? dot( rMid - vWorld, rAx ) / rDen : -1.0;
+	if ( rT > 0.0 ) {
+		vec3 rH = vWorld + rF * rT - rMid;
+		float rR = length( rH - rAx * dot( rH, rAx ) ), rE = max( ${f(SPIRE.ring.r + b.in)} - rR, rR - ${f(SPIRE.ring.r + b.out)} );
+		float rP = ${f(RING_SHADE.soft[0])} + ${f(RING_SHADE.soft[1])} * rT;
+		iblIrradiance *= 1.0 - ${f(RING_SHADE.dark)} * ( 1.0 - smoothstep( - rP, rP, rE ) ) * saturate( 4.0 * dot( inverseTransformDirection( geometryNormal, viewMatrix ), rF ) );
+	}
 }`;
 
 // The fluting on the stone's front faces, drawn and not built: how much of each flute is the groove (the rest is
@@ -233,7 +291,7 @@ function stone(ledges: number[], band: Band, court: Court, ringLit: boolean): TH
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute vec4 grain;\nvarying vec4 vGrain;\nvarying vec3 vWorld;')
       .replace('#include <begin_vertex>', `#include <begin_vertex>\nvGrain = grain;\nvWorld = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz / ${f(SCALE)};`);
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>\nuniform vec3 uMoonward;\nvarying vec4 vGrain;\nvarying vec3 vWorld;\nvec3 sEmit;\nfloat sRough = ${f(g.rough)}, sTilt = 0.0, sLift = 0.0, sShut = 1.0;\nconst float sLedges[ ${ledges.length} ] = float[]( ${ledges.map(f).join(', ')} );${COMMON}`).replace('#include <lights_fragment_end>', `iblIrradiance *= ${f(NIGHT)};\nradiance *= ${f(SHEEN)};\n#ifdef WORLD_BAKED\niblIrradiance *= mix( 1.0, wLight.z * wLight.z, ${f(OCCLUDE)} );\n#endif\nreflectedLight.directDiffuse *= ${f(MOONLIT)};\n#include <lights_fragment_end>\nreflectedLight.indirectDiffuse *= mix( ${f(SIDE[0])}, ${f(SIDE[1])}, smoothstep( -0.8, 0.8, inverseTransformDirection( geometryNormal, viewMatrix ).x ) );\n#ifdef WORLD_BAKED\nreflectedLight.indirectDiffuse *= mix( ${f(FALL.foot)}, ${f(FALL.head)}, pow( wLight.w, ${f(FALL.curve)} ) );\n#endif${rim(RIM.stone, false, RIM.stoneTight, true)}${ringLit ? ringLight(band) : ''}`).replace('#include <opaque_fragment>', `outgoingLight = mix( outgoingLight, tKeep( outgoingLight ), ${f(KEEP.stone)} );\n#include <opaque_fragment>`).replace('#include <color_fragment>', `#include <color_fragment>
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>\nuniform vec3 uMoonward;\nvarying vec4 vGrain;\nvarying vec3 vWorld;\nvec3 sEmit;\nfloat sRough = ${f(g.rough)}, sTilt = 0.0, sLift = 0.0, sShut = 1.0;\nconst float sLedges[ ${ledges.length} ] = float[]( ${ledges.map(f).join(', ')} );${COMMON}`).replace('#include <lights_fragment_end>', `iblIrradiance *= ${f(NIGHT)};\nradiance *= ${f(SHEEN)};\n${ringLit ? ringShade(band) : ''}\n#ifdef WORLD_BAKED\niblIrradiance *= mix( 1.0, wLight.z * wLight.z, ${f(OCCLUDE)} );\n#endif\nreflectedLight.directDiffuse *= ${f(MOONLIT)};\n#include <lights_fragment_end>\nreflectedLight.indirectDiffuse *= mix( ${f(SIDE[0])}, ${f(SIDE[1])}, smoothstep( -0.8, 0.8, inverseTransformDirection( geometryNormal, viewMatrix ).x ) );\n#ifdef WORLD_BAKED\nreflectedLight.indirectDiffuse *= mix( ${f(FALL.foot)}, ${f(FALL.head)}, pow( wLight.w, ${f(FALL.curve)} ) );\n#endif${rim(RIM.stone, false, RIM.stoneTight, true)}${ringLit ? ringLight(band) : ''}`).replace('#include <opaque_fragment>', `outgoingLight = mix( outgoingLight, tKeep( outgoingLight ), ${f(KEEP.stone)} );\n#include <opaque_fragment>`).replace('#include <color_fragment>', `#include <color_fragment>
 {
 	int lay = int( vGrain.z + 0.5 );
 	vec3 sWorldN = inverseTransformDirection( normalize( vNormal ), viewMatrix );
@@ -272,6 +330,7 @@ function stone(ledges: number[], band: Band, court: Court, ringLit: boolean): TH
 		}
 	} else {
 		bool rust = lay == 1, pale = lay == 3;
+		float sUnder = 1e4, sWashed = mix( 1.0, ${f(WORN.washed)}, smoothstep( 0.15, 0.75, sWorldN.x ) );
 		float course = rust ? ${f(r.course)} : ( pale ? ${f(t.course)} : ${f(g.course)} ), block = pale ? ${f(t.block)} : ${f(g.block)};
 		float jw = rust ? ${f(r.joint)} : ( pale ? ${f(t.joint)} : ${f(g.joint)} );
 		// Laid as a mason lays it, not ruled: the courses differ in height (a slow warp of the height, which never
@@ -306,8 +365,9 @@ function stone(ledges: number[], band: Band, court: Court, ringLit: boolean): TH
 			float y = vGrain.y, d = 1e4;
 			for ( int i = 0; i < ${ledges.length}; i ++ ) { float l = sLedges[ i ] - y; if ( l > -0.02 && l < d ) d = max( l, 0.0 ); }
 			if ( vGrain.w >= 0.0 ) d = min( d, ${f(FLUTES.belt)} * ceil( y / ${f(FLUTES.belt)} ) - y );
+			sUnder = d;
 			float soot = exp( - d / ${f(WEATHER.sootTall)} ) * step( d, 1e3 );
-			tone *= 1.0 - ${f(WEATHER.soot)} * soot;
+			tone *= 1.0 - ${f(WEATHER.soot)} * soot * sWashed;
 			if ( d < 1e3 ) {
 				float fx = max( fwidth( vGrain.x ), 1e-4 ), lid = floor( ( y + d ) * 4.0 + 0.5 ), c0 = floor( vGrain.x / ${f(STAIN.every)} ), run = 0.0;
 				for ( int k = -1; k <= 1; k ++ ) {
@@ -318,7 +378,7 @@ function stone(ledges: number[], band: Band, court: Court, ringLit: boolean): TH
 					float st = tBox( vGrain.x, at - 0.5 * w, at + 0.5 * w, fx + 0.06 + 0.3 * age * w );
 					run = max( run, st * exp( - 2.2 * d / sLen ) * ( 0.7 + 0.3 * h1 / ${f(STAIN.share)} ) );
 				}
-				tone *= 1.0 - ${f(STAIN.dark)} * run * ( 0.85 + 0.15 * tNoise( vec2( vGrain.x * 2.3, y * 0.7 ) ) );
+				tone *= 1.0 - ${f(STAIN.dark)} * run * sWashed * ( 0.85 + 0.15 * tNoise( vec2( vGrain.x * 2.3, y * 0.7 ) ) );
 			}
 			tone *= 1.0 - ${f(WEATHER.foot)} * ( 1.0 - smoothstep( 0.4, ${f(WEATHER.footTall)} * ( 0.7 + 0.6 * tNoise( vec2( vGrain.x * 0.4, 1.0 ) ) ), y ) );
 		}
@@ -343,9 +403,9 @@ function stone(ledges: number[], band: Band, court: Court, ringLit: boolean): TH
 			float ch = tHash( vec2( ci, row + 0.5 * step( 0.5, fract( up ) ) ) + 53.0 );
 			float bite = ${f(GRAIN.chip.deep)} * ( 0.4 + 0.6 * ch / ${f(GRAIN.chip.share)} ) * sin( 3.14159 * fract( cs ) );
 			float chip = step( ch, ${f(GRAIN.chip.share)} ) * ( 1.0 - smoothstep( bite - fy, bite + fy, dj ) ) * ( 1.0 - smoothstep( 0.25, 0.6, fx ) );
-			tone *= 1.0 - ${f(GRAIN.chip.dark)} * chip;
+			tone *= 1.0 - ${f(GRAIN.chip.dark)} * chip * sWashed * mix( ${f(WORN.open)}, 1.0, exp( - sUnder / ${f(WORN.under)} ) );
 			#ifdef WORLD_BAKED
-				tone *= 1.0 - ${f(GRAIN.grime[2])} * smoothstep( ${f(GRAIN.grime[0])}, ${f(GRAIN.grime[1])}, wLight.z );
+				tone *= 1.0 - ${f(GRAIN.grime[2])} * sWashed * smoothstep( ${f(GRAIN.grime[0])}, ${f(GRAIN.grime[1])}, wLight.z );
 			#endif
 		}
 	}
@@ -552,12 +612,12 @@ varying vec3 vGild;
 varying vec3 vSpire;
 ${COMMON}
 vec3 gLeft, gRight, gNear;
-float gOn, gValley, gDetail, gRing, gMoonW, gSpread, gCover, gTone, gSparkW, gSpark, gCatch;
+float gOn, gValley, gDetail, gRing, gMoonW, gSpread, gCover, gTone, gSparkW, gSpark, gCatch, gOver;
 vec3 gNormal;
 #ifdef SPIRE_RING
 uniform mat4 projectionMatrix;
 vec3 gN4[ 4 ];
-float gMean, gPix, gAngle;
+float gMean, gPix, gAngle, gInlay;
 const vec3 gProfile[ ${profile.length} ] = vec3[]( ${profile.map(([y, r, h]) => `vec3( ${f(y)}, ${f(r)}, ${f(h)} )`).join(', ')} );
 const vec3 gAxis = vec3( ${f(axis.x)}, ${f(axis.y)}, ${f(axis.z)} );
 const vec3 gMiddle = vec3( 0.0, ${f(SPIRE.tall * SPIRE.ring.up)}, 0.0 );
@@ -577,16 +637,61 @@ vec2 gQ( vec3 p, out vec3 rad ) {
 }
 // How far a place is from the band, exactly: the section's rounded box turned round the axis.
 float gBand( vec2 q ) { vec2 w = abs( q ) - gB + gA; return length( max( w, 0.0 ) ) + min( max( w.x, w.y ), 0.0 ) - gA; }
-float gSdf( vec3 p ) { vec3 rad; return gBand( gQ( p, rad ) ); }
-// The band's normal in its section at q: a face, or the round of an arris; the top and underside crowned, and the
-// bead round the outer face where on says it is drawn (its mean, flat, where it is not).
-vec2 gFace( vec2 q, float on ) {
-	float hw = gB.x - gA;
-	vec2 w = abs( q ) - gB + gA, sq = vec2( q.x < 0.0 ? -1.0 : 1.0, q.y < 0.0 ? -1.0 : 1.0 );
-	if ( w.x > 0.0 && w.y > 0.0 ) return normalize( w ) * sq;
-	if ( w.y > w.x ) return normalize( vec2( ${f(2 * b.crown)} * ( q.y > 0.0 ? 1.0 : 0.5 ) * q.x / ( hw * hw ), sq.y ) );
-	float t = clamp( q.y / ${f(b.bead[0])}, -1.0, 1.0 );
-	return normalize( mix( vec2( sq.x, 0.0 ), vec2( sqrt( 1.0 - t * t ), t ), on * step( 0.0, q.x ) * step( abs( q.y ), ${f(b.bead[0])} ) ) );
+const vec3 gE1 = vec3( ${f(ACROSS[0].x)}, ${f(ACROSS[0].y)}, ${f(ACROSS[0].z)} ), gE2 = vec3( ${f(ACROSS[1].x)}, ${f(ACROSS[1].y)}, ${f(ACROSS[1].z)} );
+// How far round the band a place is, in segments, from its angle: and how many segments to a unit along the band
+// there. The two waves have whole numbers to a turn, so the count is seamless where the angle wraps.
+float gU( float th ) { return ${f(RELIEF.segs / (2 * Math.PI))} * ( th + ${f(RELIEF.wave[1])} * sin( ${f(RELIEF.wave[0])} * th + ${f(RELIEF.wave[2])} ) + ${f(RELIEF.wave[4])} * sin( ${f(RELIEF.wave[3])} * th + ${f(RELIEF.wave[5])} ) ); }
+float gDu( float th ) { return ${f(RELIEF.segs / (2 * Math.PI))} * ( 1.0 + ${f(RELIEF.wave[0] * RELIEF.wave[1])} * cos( ${f(RELIEF.wave[0])} * th + ${f(RELIEF.wave[2])} ) + ${f(RELIEF.wave[3] * RELIEF.wave[4])} * cos( ${f(RELIEF.wave[3])} * th + ${f(RELIEF.wave[5])} ) ) / gR; }
+// How far a place is from the nearest joint, along the band, in units, and which side of it.
+float gJoint( float th, out float side ) { float u = fract( gU( th ) + 0.5 ) - 0.5; side = u < 0.0 ? -1.0 : 1.0; return abs( u ) / max( gDu( th ), 1e-4 ); }
+float gSdf( vec3 p ) {
+	vec3 rad;
+	vec2 q = gQ( p, rad );
+	float d = gBand( q );
+	if ( d > 1.5 ) return d;
+	float side, dj = gJoint( atan( dot( rad, gE2 ), dot( rad, gE1 ) ), side );
+	return d + ${f(RELIEF.notch[1])} * max( 0.0, 1.0 - dj / ${f(RELIEF.notch[0])} );
+}
+// How much of the relief across the section and of the outer face's facets is drawn (1 where a pixel holds a small
+// share of one, 0 where it holds several), and how wide a pixel is across the section, in units.
+float gRelX, gRelO, gFq, gRelJ, gAe, gNdv;
+// The band's normal at q in its section and s along its length, as (out, up, along), and how dark it is there: a
+// face, or the round of an arris, worked as RELIEF says; the underside crowned; the bead round the outer face where
+// on says it is drawn (its mean, flat, where it is not).
+vec4 gFace( vec2 q, float s, float on ) {
+	float hw = gB.x - gAe, tone = 1.0, th = s / gR, id = floor( gU( th ) ), side, dj = gJoint( th, side );
+	vec2 tilt = vec2( ${f(RELIEF.facet[1])}, ${f(RELIEF.facet[0])} ) * ( vec2( tHash( vec2( id, 3.0 ) ), tHash( vec2( id, 9.0 ) ) ) * 2.0 - 1.0 );
+	// The walls of the groove at a joint, each turned along the band toward its own segment.
+	tilt.y += side * ${f(RELIEF.notch[1] / RELIEF.notch[0])} * step( dj, ${f(RELIEF.notch[0])} ) * gRelJ;
+	vec2 w = abs( q ) - gB + gAe, sq = vec2( q.x < 0.0 ? -1.0 : 1.0, q.y < 0.0 ? -1.0 : 1.0 );
+	vec2 n;
+	if ( w.y > w.x && !( w.x > 0.0 && w.y > 0.0 ) && q.y > 0.0 ) {
+		float x = q.x, slope = ${f(2 * b.crown)} * x / ( hw * hw ) * 0.5;
+		float mid = 0.5 * ( - hw + ${f(RELIEF.riser[0])} ), half_ = 0.5 * ( hw + ${f(RELIEF.riser[0])} );
+		if ( x < ${f(RELIEF.riser[0])} ) {
+			slope -= ${f(RELIEF.dish)} * ( x - mid ) / half_;
+			tone = 1.0 - ${f(1 - RELIEF.inlay[2])} * tBox( x, ${f(RELIEF.inlay[0])}, ${f(RELIEF.inlay[1])}, gFq );
+		} else if ( x < ${f(RELIEF.riser[1])} ) slope -= ${f(RELIEF.riser[2])} * gRelX;
+		else if ( x < ${f(RELIEF.reeds[1])} ) {
+			float r = ( x - ${f(RELIEF.reeds[0])} ) / ${f(RELIEF.reed)};
+			slope += ${f(RELIEF.reedTurn)} * ( 2.0 * fract( r ) - 1.0 ) * gRelX;
+		}
+		n = normalize( vec2( slope, 1.0 ) );
+		return vec4( normalize( vec3( n, 0.0 ) + vec3( tilt.x, 0.0, tilt.y ) ), tone );
+	}
+	if ( w.x > 0.0 && w.y > 0.0 ) n = normalize( w ) * sq;
+	else if ( w.y > w.x ) n = normalize( vec2( ${f(b.crown)} * q.x / ( hw * hw ), sq.y ) );
+	else {
+		float t = clamp( q.y / ${f(b.bead[0])}, -1.0, 1.0 );
+		n = normalize( mix( vec2( sq.x, 0.0 ), vec2( sqrt( 1.0 - t * t ), t ), on * step( 0.0, q.x ) * step( abs( q.y ), ${f(b.bead[0])} ) ) );
+	}
+	if ( q.x > 0.0 && !( w.y > w.x && !( w.x > 0.0 && w.y > 0.0 ) ) ) {
+		float a = atan( n.y, n.x ), st = ${f(RELIEF.step * THREE.MathUtils.DEG2RAD)};
+		a = mix( a, st * floor( a / st + 0.5 ), gRelO );
+		n = vec2( cos( a ), sin( a ) );
+		return vec4( normalize( vec3( n, 0.0 ) + vec3( 0.0, 0.0, tilt.y ) ), tone );
+	}
+	return vec4( n, 0.0, tone );
 }
 // Along a ray from ro, from t on: the nearest it comes to the band (under 0 where it goes in), and how deep it goes
 // where it does, and the place it is nearest at, or goes in at. The band's distance along a ray is convex where the
@@ -677,14 +782,40 @@ vec4 gSeeTower( vec3 from, vec3 d, float spread ) {
 	}
 	return vec4( col, cover );
 }
+// The share of a pixel, whose ray goes on from the band at from along d, that the tower stands behind: worked out as
+// gSeeTower finds the tower, from the nearest the ray comes to the shaft, against how wide a pixel is there.
+float gBehind( vec3 from, vec3 d, float pix ) {
+	float c[ 5 ];
+	c[ 0 ] = 0.0;
+	c[ 1 ] = abs( d.x ) > 1e-5 ? - from.x / d.x : 0.0;
+	c[ 2 ] = abs( d.z ) > 1e-5 ? - from.z / d.z : 0.0;
+	c[ 3 ] = abs( d.x - d.z ) > 1e-5 ? ( from.z - from.x ) / ( d.x - d.z ) : 0.0;
+	c[ 4 ] = abs( d.x + d.z ) > 1e-5 ? - ( from.z + from.x ) / ( d.x + d.z ) : 0.0;
+	float best = 1e5, tb = 0.0;
+	for ( int i = 0; i < 5; i ++ ) {
+		float t = clamp( c[ i ], 0.0, 400.0 );
+		vec3 p = from + d * t;
+		float g = max( abs( p.x ), abs( p.z ) );
+		if ( g < best ) { best = g; tb = t; }
+	}
+	vec2 w = gTower( from.y + d.y * tb );
+	return w.x > 0.0 ? clamp( 0.5 - ( best - w.x ) / max( pix, 1e-4 ), 0.0, 1.0 ) : 0.0;
+}
+// The screen's encoding and its inverse, channel by channel: a pixel of the band over the night is weighed by its
+// cover as the page will see it, after it is encoded, and so is neither brighter nor darker at its edge than the mean
+// of the band and the sky.
+vec3 gToScreen( vec3 c ) { return mix( 1.055 * pow( max( c, vec3( 0.0031308 ) ), vec3( 1.0 / 2.4 ) ) - 0.055, 12.92 * c, vec3( lessThan( c, vec3( 0.0031308 ) ) ) ); }
+vec3 gToLinear( vec3 c ) { return mix( pow( ( max( c, vec3( 0.04045 ) ) + 0.055 ) / 1.055, vec3( 2.4 ) ), c / 12.92, vec3( lessThan( c, vec3( 0.04045 ) ) ) ); }
+// The share of a pixel a band covers whose nearest is m from the pixel's ray, where a pixel is pix wide.
+float gRamp( float m, float pix ) { return smoothstep( 0.0, 1.0, 0.5 - m / ( max( pix, 1e-4 ) * ${f(RING.ramp)} ) ); }
 #endif
 `).replace('#include <color_fragment>', `#include <color_fragment>
 gLeft = vec3( 0.0, 0.0, 1.0 ); gRight = gLeft; gNear = gLeft;
 #ifdef SPIRE_RING
 gN4[ 0 ] = vec3( 0.0, 0.0, 1.0 ); gN4[ 1 ] = gN4[ 0 ]; gN4[ 2 ] = gN4[ 0 ]; gN4[ 3 ] = gN4[ 0 ];
-gMean = 1.0; gPix = 1.0; gAngle = 0.0;
+gMean = 1.0; gPix = 1.0; gAngle = 0.0; gInlay = 1.0; gNdv = 1.0;
 #endif
-gOn = 0.0; gValley = 0.0; gDetail = 0.0; gRing = 0.0; gMoonW = 0.0; gSpread = 0.0; gCover = 1.0; gTone = 1.0; gSparkW = 0.0; gSpark = 0.0; gCatch = 0.0; gNormal = vec3( 0.0, 0.0, 1.0 );
+gOn = 0.0; gValley = 0.0; gDetail = 0.0; gRing = 0.0; gMoonW = 0.0; gSpread = 0.0; gCover = 1.0; gTone = 1.0; gSparkW = 0.0; gSpark = 0.0; gCatch = 0.0; gOver = 1.0; gNormal = vec3( 0.0, 0.0, 1.0 );
 #ifdef SPIRE_RING
 {
 	// The band itself, found along this pixel's ray from the hull: the share of the pixel it covers, from how near
@@ -695,36 +826,62 @@ gOn = 0.0; gValley = 0.0; gDetail = 0.0; gRing = 0.0; gMoonW = 0.0; gSpread = 0.
 	vec2 ndc = vClip.xy / vClip.w, pn = max( vec2( abs( dFdx( ndc.x ) ), abs( dFdy( ndc.y ) ) ), vec2( 1e-7 ) );
 	float pix = max( pn.x * vViewPosition.z / projectionMatrix[ 0 ][ 0 ] / ${f(SCALE)}, 1e-4 );
 	float m = gTrace( cam, rd, tf - 0.1, pix, at );
-	gCover = saturate( 0.5 - m / pix );
+	gCover = gRamp( m, pix );
+	gOver = gBehind( at, rd, pix );
 	// The catch line: lit where the band is covered here and not a little further toward the moon's side of up.
 	vec2 n2 = ndc + vec2( ${f(CATCH.dir[0])}, ${f(CATCH.dir[1])} ) * max( ${f(CATCH.px)}, ${f(CATCH.wide)} / pix ) * pn;
 	vec3 rd2 = inverseTransformDirection( vec3( ( n2.x + projectionMatrix[ 2 ][ 0 ] ) / projectionMatrix[ 0 ][ 0 ], ( n2.y + projectionMatrix[ 2 ][ 1 ] ) / projectionMatrix[ 1 ][ 1 ], -1.0 ), viewMatrix );
 	float m2 = gTrace( cam, rd2, tf - 3.0, pix, at2 );
 	vec2 q = gQ( at, rad );
-	gCatch = gCover * ( 1.0 - saturate( 0.5 - m2 / pix ) ) * mix( ${f(CATCH.shade)}, 1.0, smoothstep( -0.6, 0.8, rad.x ) ) * mix( 1.0, ${f(CATCH.far)}, smoothstep( -0.2, 0.5, - rad.z ) );
+	gCatch = ( 1.0 - gRamp( m2, pix ) ) * mix( ${f(CATCH.shade)}, 1.0, smoothstep( -0.6, 0.8, rad.x ) ) * mix( 1.0, ${f(CATCH.far)}, smoothstep( -0.2, 0.5, - rad.z ) );
 	// Its normal, from the section (gFace), with the bead drawn where it is tall enough on the screen.
 	// Taken as the mean of four places across the pixel's footprint in the section, so an arris or the bead finer
 	// than a pixel comes to its mean and does not alias into ticks along the band.
-	float on = smoothstep( ${f(RING.bead)}, ${f(RING.bead * 1.5)}, ${f(2 * b.bead[0])} / max( fwidth( q.y ), 1e-5 ) );
+	// Every measure of how much of the band a pixel holds is at least the pixel itself: one taken from how the place
+	// found in the section changes from pixel to pixel alone fell to nothing here and there along an edge, where that
+	// place jumps, and drew the bead and the relief there as a row of bright dots.
+	float on = smoothstep( ${f(RING.bead)}, ${f(RING.bead * 1.5)}, ${f(2 * b.bead[0])} / max( fwidth( q.y ), pix ) );
 	vec2 qx = dFdx( q ), qy = dFdy( q );
 	qx *= min( 1.0, 3.0 / max( length( qx ), 1e-5 ) );
 	qy *= min( 1.0, 3.0 / max( length( qy ), 1e-5 ) );
-	vec2 f0 = gFace( q + 0.375 * qx + 0.125 * qy, on ), f1 = gFace( q - 0.125 * qx + 0.375 * qy, on ), f2 = gFace( q - 0.375 * qx - 0.125 * qy, on ), f3 = gFace( q + 0.125 * qx - 0.375 * qy, on );
-	vec2 ns = f0 + f1 + f2 + f3;
+	// How far along the band, in units, and how far that changes across the pixel, with the turn where it wraps.
+	float s = atan( dot( rad, gE2 ), dot( rad, gE1 ) ) * gR, sx = dFdx( s ), sy = dFdy( s );
+	sx -= ${f(2 * Math.PI)} * gR * floor( sx / ( ${f(2 * Math.PI)} * gR ) + 0.5 );
+	sy -= ${f(2 * Math.PI)} * gR * floor( sy / ( ${f(2 * Math.PI)} * gR ) + 0.5 );
+	gFq = max( max( length( qx ), length( qy ) ), pix );
+	// Where a pixel holds more of the section than its arrises, the band is shaded as its section is seen through the
+	// pixel: rounder, its arrises as wide as the footprint. With its true arrises, a long shallow edge seen nearly edge
+	// on turned from top face to side face from one row of pixels to the next and was drawn in stairs.
+	gAe = clamp( ${f(RELIEF.round)} * gFq, gA, min( gB.x, gB.y ) - 0.01 );
+	gRelX = 1.0 - smoothstep( ${f(RELIEF.fade[0])}, ${f(RELIEF.fade[1])}, gFq / ${f(RELIEF.reed)} );
+	gRelJ = 1.0 - smoothstep( ${f(RELIEF.fade[0])}, ${f(RELIEF.fade[1])}, max( abs( sx ) + abs( sy ), pix ) / ${f(2 * RELIEF.notch[0])} );
+	gRelO = 1.0 - smoothstep( ${f(RELIEF.fade[0])}, ${f(RELIEF.fade[1])}, gFq / ${f(b.arris * RELIEF.step * THREE.MathUtils.DEG2RAD)} );
+	vec4 f0 = gFace( q + 0.375 * qx + 0.125 * qy, s + 0.375 * sx + 0.125 * sy, on ), f1 = gFace( q - 0.125 * qx + 0.375 * qy, s - 0.125 * sx + 0.375 * sy, on );
+	vec4 f2 = gFace( q - 0.375 * qx - 0.125 * qy, s - 0.375 * sx - 0.125 * sy, on ), f3 = gFace( q + 0.125 * qx - 0.375 * qy, s + 0.125 * sx - 0.375 * sy, on );
+	// The joints between its segments, as the share of the pixel a joint covers.
+	float du = gDu( s / gR ), fs = max( abs( sx ) + abs( sy ), pix ) * du, jw = ${f(RELIEF.joint[0])} * du;
+	gInlay = 0.25 * ( f0.w + f1.w + f2.w + f3.w ) * ( 1.0 - ${f(RELIEF.joint[1])} * tPulse( gU( s / gR ) + 0.5 * jw, 0.0, jw, fs ) * step( -0.3, q.y ) );
+	vec3 tang = cross( rad, gAxis ), ns = f0.xyz + f1.xyz + f2.xyz + f3.xyz;
 	gMean = length( ns ) * 0.25;
-	ns = normalize( ns + vec2( 1e-5, 0.0 ) );
-	gNormal = normalize( ( viewMatrix * vec4( ns.x * rad + ns.y * gAxis, 0.0 ) ).xyz );
+	ns = normalize( ns + vec3( 1e-5, 0.0, 0.0 ) );
+	gNormal = normalize( ( viewMatrix * vec4( ns.x * rad + ns.y * gAxis + ns.z * tang, 0.0 ) ).xyz );
 	// And each of the four, which what the band mirrors is averaged over, so a pixel shows the mean of what its
 	// footprint mirrors and not what its mean normal mirrors: that drew the top face in steps and the arrises in dots.
-	gN4[ 0 ] = normalize( ( viewMatrix * vec4( f0.x * rad + f0.y * gAxis, 0.0 ) ).xyz );
-	gN4[ 1 ] = normalize( ( viewMatrix * vec4( f1.x * rad + f1.y * gAxis, 0.0 ) ).xyz );
-	gN4[ 2 ] = normalize( ( viewMatrix * vec4( f2.x * rad + f2.y * gAxis, 0.0 ) ).xyz );
-	gN4[ 3 ] = normalize( ( viewMatrix * vec4( f3.x * rad + f3.y * gAxis, 0.0 ) ).xyz );
+	gN4[ 0 ] = normalize( ( viewMatrix * vec4( f0.x * rad + f0.y * gAxis + f0.z * tang, 0.0 ) ).xyz );
+	gN4[ 1 ] = normalize( ( viewMatrix * vec4( f1.x * rad + f1.y * gAxis + f1.z * tang, 0.0 ) ).xyz );
+	gN4[ 2 ] = normalize( ( viewMatrix * vec4( f2.x * rad + f2.y * gAxis + f2.z * tang, 0.0 ) ).xyz );
+	gN4[ 3 ] = normalize( ( viewMatrix * vec4( f3.x * rad + f3.y * gAxis + f3.z * tang, 0.0 ) ).xyz );
 	gPix = pix;
 	gAngle = pix / max( tf, 1.0 );
 	// A blade in three tones: its top, which takes the night's light, its edges, turned from it, and its underside,
 	// turned down to the dark ground.
-	gTone = mix( mix( ${f(RING.under)}, ${f(RING.side)}, smoothstep( -0.6, 0.0, ns.y ) ), 1.0, smoothstep( 0.25, 0.65, ns.y ) );
+	gTone = mix( mix( ${f(RING.under)}, mix( ${f(RING.side)}, ${f(RING.outer)}, smoothstep( -0.3, 0.3, ns.x ) ), smoothstep( -0.6, 0.0, ns.y ) ), 1.0, smoothstep( 0.25, 0.65, ns.y ) );
+	// Seen edge on, polished gold mirrors what is behind it, the glow of the night, whichever face it is: so its outline
+	// is lit and never a dark line drawn round it on the page's sky.
+	// How nearly edge on the band's faces are seen here: from how far round the band this is, which is smooth from pixel
+	// to pixel where the place found in its section is not.
+	gNdv = abs( dot( rad, rd ) );
+	gTone = mix( gTone, 1.0, ${f(RING.rim)} * ( 1.0 - smoothstep( 0.05, 0.5, gNdv ) ) );
 	gRing = 1.0;
 }
 #endif`).replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
@@ -737,7 +894,7 @@ if ( vGild.y > 0.5 && vGild.y < 1.5 ) {
 	across /= max( length( across ), 1e-5 );
 	float fw = max( fwidth( vGild.x ), 1e-5 ), turn = ( fract( vGild.x ) - 0.5 ) * ${f(2 * GOLD.flank * THREE.MathUtils.DEG2RAD)};
 	gOn = 1.0;
-	gDetail = 1.0 - smoothstep( 0.18, 0.34, fw );
+	gDetail = 1.0 - smoothstep( 0.12, 0.22, fw );
 	gValley = tPulse( vGild.x + ${f(GOLD.groove / 2)}, 0.0, ${f(GOLD.groove)}, fw );
 	gLeft = normal * ${f(ca2)} - across * ${f(sa2)};
 	gRight = normal * ${f(ca2)} + across * ${f(sa2)};
@@ -770,12 +927,13 @@ if ( vGild.y > 0.5 && vGild.y < 1.5 ) {
 		for ( int i = 0; i < 4; i ++ ) sp = max( sp, length( r4[ i ] - rm ) );
 		gSpread = max( 2.0 * sp, 2.0 * gAngle );
 		gMoonW = max( hi - lo, 2.0 * gAngle );
-		roughnessFactor = sqrt( roughnessFactor * roughnessFactor + min( ${f(RING.aa)} * ( 1.0 - gMean ) / max( gMean, 0.2 ), 0.2 ) );
+		roughnessFactor = sqrt( roughnessFactor * roughnessFactor + min( ${f(RING.aa)} * ( 1.0 - gMean ) / max( gMean, 0.2 ), 0.2 ) ) + ${f(RELIEF.rough)} * ( 1.0 - gRelX );
 		vec3 sg = normalize( uGlintAt + vViewPosition ), sv = normalize( vViewPosition );
 		gSparkW = fwidth( dot( normal, normalize( sg + sv ) ) );
 	#endif
 }`).replace('#include <lights_fragment_maps>', THREE.ShaderChunk.lights_fragment_maps.replace('getIBLRadiance( geometryViewDir, geometryNormal, material.roughness )', 'goldFluted( geometryViewDir, geometryNormal, material.roughness )')).replace('#include <lights_fragment_end>', `#include <lights_fragment_end>
 reflectedLight.directSpecular *= mix( 1.0, ${f(RING.direct)}, gRing );${ring ? '' : rim(RIM.gold, true)}
+reflectedLight.directSpecular *= mix( 1.0, ${f(MAST.rim)}, step( 0.5, vGild.z ) * ( 1.0 - gRing ) );
 #ifdef SPIRE_RING
 {
 	// The pointer's spark: the line from the eye through the pointer, worked out from the projection, so it is right
@@ -809,7 +967,7 @@ vec3 goldIBL( const in vec3 viewDir, const in vec3 n, const in float rough ) {
 	#endif
 	float gain = mix( mix( ${f(GOLD.shade)}, ${f(RING.shade)}, gRing ), mix( ${f(GOLD.sheen[0])}, ${f(GOLD.sheen[1])} * mix( 1.0, ${f(RING.peak)}, gRing ), peak * peak ), toward );
 	vec3 tint = pow( vec3( 1.0, 0.86, 0.7 ), vec3( - ${f(GOLD.neutral)} * toward + ${f(GOLD.deep)} * ( 1.0 - toward ) ) );
-	vec3 night = textureLod( envMap, envMapRotation * rw, roughnessToMip( rough ) ).rgb * envMapIntensity * gain * tint;
+	vec3 night = textureLod( envMap, envMapRotation * rw, roughnessToMip( max( rough, ${f(RING.night)} * gRing ) ) ).rgb * envMapIntensity * gain * tint;
 	#ifdef WORLD_BAKED
 		night += wBounce * ${f(GOLD.city)} * RECIPROCAL_PI;
 	#endif
@@ -823,9 +981,10 @@ vec3 goldIBL( const in vec3 viewDir, const in vec3 n, const in float rough ) {
 		float rows = el * ${f(MIRROR.floors)}, lights = tPulse( az, 0.25, 0.7, fa ) * tPulse( rows, 0.15, 0.6, fe * ${f(MIRROR.floors)} );
 		float under = smoothstep( 0.02, -0.04, el ) * smoothstep( ${f(MIRROR.cityTo)}, ${f(MIRROR.cityTo * 0.4)}, el );
 		float sky = smoothstep( 0.0, ${f(SKY.from)}, el ) * ( 1.0 - smoothstep( ${f(SKY.from)}, ${f(SKY.to)}, el ) );
-		night += ${lin('hot')} * ( ${f(MIRROR.haze)} * haze + ${f(MIRROR.city)} * under * ( 0.55 + 0.9 * lights ) + ${f(SKY.power)} * sky ) * envMapIntensity;
+		night += ${lin('hot')} * ( ${f(MIRROR.haze)} * haze + ${f(MIRROR.city)} * under * ( 0.7 + 0.5 * lights ) + ${f(SKY.power)} * sky ) * envMapIntensity;
 		vec4 tower = gSeeTower( vSpire, rw, fe );
-		night = mix( night, tower.rgb * envMapIntensity * ${f(RING.shade)}, tower.w ) * gTone;
+		// What it mirrors of the tower is not turned down by which way the face looks: it is what that face shows.
+		night = mix( night * gTone, tower.rgb * envMapIntensity * ${f(RING.shade)}, tower.w );
 	#endif
 	return night;
 }
@@ -843,24 +1002,27 @@ void main() {`).replace('#include <opaque_fragment>', `{
 	float lv = max( outgoingLight.r, 0.0 );
 	#ifdef SPIRE_RING
 		// The half beyond the tower, seen against the night, and the catch line.
-		lv *= ${f(RING.body)} * mix( 1.0, ${f(RING.far)}, smoothstep( -0.2, 0.5, sin( 6.28318 * vGild.z ) ) );
-		lv += ${f(CATCH.power)} * gCatch;
+		lv *= gInlay * ${f(RING.body)} * mix( 1.0, ${f(RING.far)}, smoothstep( -0.2, 0.5, sin( 6.28318 * vGild.z ) ) );
+		lv = max( lv, ${f(RING.least)} + ${f(RING.behind)} * ( 1.0 - smoothstep( 0.05, 0.5, gNdv ) ) ) + ${f(CATCH.power)} * gCatch;
 		float caught = gCatch;
 		diffuseColor.a = gCover;
 	#endif
-	vec3 c = mix( mix( vec3( ${GRADE.deep.map(f).join(', ')} ), ${lin3(METAL.gold)}, smoothstep( ${f(GRADE.at[0])}, ${f(GRADE.at[1])}, lv ) ), ${lin('pale')}, smoothstep( ${f(GRADE.at[1])}, ${f(GRADE.at[2])}, lv ) );
+	vec3 c = mix( mix( vec3( ${GRADE.deep.map(f).join(', ')} ), ${lin3(METAL.gold)}, smoothstep( ${f(GRADE.at[0])}, ${f(GRADE.at[1])}, lv ) ), ${lin('pale')}, smoothstep( ${f(GRADE.at[1])}, ${ring ? f(RING.pale) : f(GRADE.at[2])}, lv ) );
 	float most = ${f(GRADE.most[0])}, room = ${f(GRADE.most[1] - GRADE.most[0])};
 	if ( vGild.y < 2.5 ) outgoingLight = tKeep( c * ( lv < most ? lv : most + room * ( 1.0 - exp( - ( lv - most ) / room ) ) ) );
 	#ifdef SPIRE_RING
 		// The spark is laid on after the gold's grade, which eases every bright toward pale and would leave it no
 		// brighter than the band's own sheen: it is the cursor's light itself, pale, on the gold.
 		outgoingLight = mix( outgoingLight, ${lin('pale', SPARK.peak)}, clamp( gSpark, 0.0, 1.0 ) );
-		// Drawn with its color already weighed by its cover, and more than its share: the page lays the canvas over
-		// its sky after the canvas is encoded, so a pixel half covered weighed by half in linear light came out far
-		// brighter than half, and the outline did not soften.
-		outgoingLight *= pow( gCover, ${f(RING.gamma)} );
-		// The catch line already carries its cover once, as light laid on a pixel does.
+		// The catch line is the light of the covered part of a pixel on the band's upper edge, so it is laid on before
+		// the pixel is weighed by its cover, as the rest is: laid on after, it lit a half covered pixel as a whole one.
 		outgoingLight += ${lin('pale', CATCH.light)} * caught;
+		// Weighed by its cover (as the screen encodes it over the night, and as it is over the tower), and never more
+		// than its cover in any channel, nor under nothing: a pixel with more light than cover is not a color the page
+		// can lay over its sky.
+		outgoingLight = max( outgoingLight, vec3( 0.0 ) );
+		outgoingLight /= max( 1.0, max( outgoingLight.r, max( outgoingLight.g, outgoingLight.b ) ) );
+		outgoingLight = mix( gToLinear( gCover * gToScreen( outgoingLight ) ), gCover * outgoingLight, gOver );
 		if ( gCover < 0.002 ) discard;
 	#endif
 }
