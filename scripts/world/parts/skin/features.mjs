@@ -78,9 +78,24 @@ function hull(side) {
   });
   return (LINES[side] = { y0, n, at: soft.map((v) => -s * v) });
 }
-export function lineAt(side, py) {
+export function hullAt(side, py) {
   const h = hull(side), f = Math.min(h.n - 1, Math.max(0, (py - h.y0) / HULL.step)), i = Math.min(h.n - 2, Math.floor(f));
   return h.at[i] + (h.at[i + 1] - h.at[i]) * (f - i);
+}
+// At the top of the dark side the crust did not break where the rock below it did: a great pale slab of it runs on
+// out over the hollow under the land's lip, broken off in a step, with a smaller block under it. Its outline in
+// picture 9, across at each place down: the skin runs out to it, past the rock's torn line.
+export const SLAB = [[312, 344], [318, 347], [326, 346], [334, 342], [341, 336], [346, 327], [349, 316], [352, 311], [362, 309], [374, 307], [386, 306], [395, 302], [401, 294], [406, 286], [411, 279]];
+export function slabAt(py) {
+  if (py < SLAB[0][0] || py > SLAB[SLAB.length - 1][0]) return -Infinity;
+  let i = 1;
+  while (i < SLAB.length - 1 && SLAB[i][0] < py) i++;
+  const [y0, x0] = SLAB[i - 1], [y1, x1] = SLAB[i];
+  return x0 + ((x1 - x0) * (py - y0)) / (y1 - y0);
+}
+export function lineAt(side, py) {
+  const at = hullAt(side, py);
+  return side === 'left' ? Math.max(at, slabAt(py)) : at;
 }
 
 // Where a side's torn line crosses a ring of the surface so far down (t): the angle round, in radians, or null where
@@ -130,7 +145,8 @@ export function rng(seed) {
 
 // The scatter of smaller craters made as geometry, on the pale side: so many between each pair of radii, in units,
 // many small and few large, as a power law has them.
-const SCATTER = [[3, 4.5, 150], [4.5, 7, 64], [7, 11, 20], [11, 18, 6]];
+// The smallest are left to the map's pits: made as geometry and reduced, they came out as star shaped dents.
+const SCATTER = [[4.5, 7, 48], [7, 11, 18], [11, 18, 6]];
 // And old worn ones on the dark side, so it is the same planet: shallow and soft, the oldest nearly gone.
 const WORN = [[5, 10, 34], [10, 20, 14], [20, 34, 5], [34, 52, 2]];
 
@@ -145,7 +161,7 @@ function crater(c, r, kind, seed, worn = 0, deep = 1) {
   return {
     c, n, e1, e2, r, seed,
     depth: (complex ? 0.19 : 0.44) * deep * r * (0.88 + 0.24 * R()) * (1 - 0.72 * worn),
-    rim: (complex ? 0.085 : 0.11) * r * (0.85 + 0.3 * R()) * (1 - 0.7 * worn),
+    rim: (complex ? 0.12 : 0.13) * r * (0.85 + 0.3 * R()) * (1 - 0.7 * worn),
     floor: complex ? 0.56 + 0.1 * R() : 0,
     bump: complex ? 0.1 + 0.08 * R() : 0,
     lumpy: 0.04 + 0.05 * R(),
@@ -157,7 +173,7 @@ function crater(c, r, kind, seed, worn = 0, deep = 1) {
 const areaAt = (t) => { const r = Math.sqrt(1 - t * t), dr = (C.half * t) / r; return r * Math.hypot(dr, C.deep); };
 const AREA_MOST = Math.max(...Array.from({ length: 87 }, (_, i) => areaAt(i / 100)));
 // Craters are gathered toward the torn line and down toward the lower limb, with broad smooth bands between.
-function scatterOn(side, R, even = 0.32) {
+function scatterOn(side, R, even = 0.14) {
   for (;;) {
     const t = R() * 0.9, th = SIDES[side].sign * (20 + 75 * R()) * L.D2R;
     if (R() * AREA_MOST > areaAt(t)) continue;
@@ -223,11 +239,11 @@ export const KNOT = [225, 478];
 const WIDEN = 1.55;
 export const TRACED = [
   // to the tear: the widest and hottest
-  [[225, 478, 2.4, 1], [236, 474, 2.2, 1], [246, 472, 2.1, 1], [252, 470, 2.3, 1], [259, 469, 2.5, 1], [268, 468, 2.3, 0.96]],
+  [[225, 478, 3.4, 1], [236, 474, 2.8, 1], [246, 472, 2.4, 1], [252, 470, 2.4, 1], [259, 469, 2.5, 1], [268, 468, 2.3, 0.96]],
   // down and to the left, then along
-  [[225, 478, 2.2, 1], [221, 492, 1.9, 0.95], [217, 503, 1.6, 0.9], [205, 506, 1.2, 0.8], [192, 505, 1.0, 0.72], [181, 506, 0.85, 0.62], [172, 499, 0.7, 0.55], [163, 491, 0.55, 0.45], [151, 484, 0.4, 0.36], [144, 481, 0.2, 0.25]],
+  [[225, 478, 3, 1], [221, 492, 2.1, 0.95], [217, 503, 1.6, 0.9], [205, 506, 1.2, 0.8], [192, 505, 1.0, 0.72], [181, 506, 0.85, 0.62], [172, 499, 0.7, 0.55], [163, 491, 0.55, 0.45], [151, 484, 0.4, 0.36], [144, 481, 0.2, 0.25]],
   // up and to the left
-  [[225, 478, 2, 1], [217, 473, 1.6, 0.92], [208, 463, 1.25, 0.82], [199, 454, 1.05, 0.75], [191, 446, 0.9, 0.7], [181, 437, 0.8, 0.62], [172, 427, 0.7, 0.55], [163, 418, 0.6, 0.48], [154, 410, 0.5, 0.42], [147, 404, 0.35, 0.34], [141, 401, 0.18, 0.25]],
+  [[225, 478, 2.8, 1], [217, 473, 1.8, 0.92], [208, 463, 1.25, 0.82], [199, 454, 1.05, 0.75], [191, 446, 0.9, 0.7], [181, 437, 0.8, 0.62], [172, 427, 0.7, 0.55], [163, 418, 0.6, 0.48], [154, 410, 0.5, 0.42], [147, 404, 0.35, 0.34], [141, 401, 0.18, 0.25]],
   // down and to the right, and on toward the foot
   [[222, 497, 1.7, 0.92], [229, 512, 1.4, 0.82], [234, 527, 1.15, 0.74], [238, 544, 1.0, 0.68], [240, 560, 0.95, 0.66], [242, 574, 1.0, 0.7], [243, 584, 1.05, 0.74], [247, 593, 0.8, 0.6], [252, 602, 0.6, 0.5], [258, 612, 0.4, 0.4]],
   // from the turn at the foot, to the left
@@ -249,12 +265,33 @@ export const TRACED = [
   [[118, 420, 0.35, 0], [128, 444, 0.3, 0], [140, 468, 0.25, 0]],
 ];
 
+// Hairline fissures over the rest of the dark side, unlit, each a few straight lengths that turn sharply and thin to
+// nothing: the picture's dark face has them, and without them it read as clay.
+function hairlines() {
+  const R = rng(5150), out = [];
+  for (let n = 0; out.length < 22 && n < 400; n++) {
+    let px = 110 + 150 * R(), py = 320 + 360 * R();
+    if (px > hullAt('left', py) - 10 || Math.hypot(px - KNOT[0], py - KNOT[1]) < 34 || !sight(px, py)) continue;
+    let a = (R() < 0.7 ? Math.PI / 2 : 0) + (R() - 0.5) * 1.6, w = 0.32 + 0.16 * R();
+    const legs = 3 + Math.floor(4 * R()), run = [[px, py, w, 0]];
+    for (let k = 0; k < legs; k++) {
+      const len = 5 + 10 * R();
+      px += Math.cos(a) * len; py += Math.sin(a) * len; w *= 0.8;
+      if (px > hullAt('left', py) - 6 || px < 100 || !sight(px, py)) break;
+      run.push([px, py, k === legs - 1 ? 0.12 : w, 0]);
+      a += (R() - 0.5) * 1.3;
+    }
+    if (run.length > 2) out.push(run);
+  }
+  return out;
+}
+
 // The cracks as runs of segments on the surface, with every run broken into straight lengths that turn sharply,
 // and short branches off them that taper to nothing.
 export function cracks() {
   const R = rng(777), runs = [];
   const lift = (px, py) => onShell(px, py);
-  for (const tr of TRACED) {
+  for (const tr of [...TRACED, ...hairlines()]) {
     const pts = [];
     for (let i = 0; i < tr.length; i++) {
       const [px, py, w, heat] = tr[i];

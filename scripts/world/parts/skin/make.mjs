@@ -21,8 +21,8 @@ import { pack } from '../../lib/pack.mjs';
 import { simplify } from '../../lib/surface.mjs';
 import { L, light, linear, storeBounce } from '../../lib/plan.mjs';
 import { MAP, STONE } from '../../../../src/pieces/world/parts/skin/look.ts';
-import { KNOT, SIDES, craters, cracks, edges, edgeAngle, onShell, shellNormal } from './features.mjs';
-import { setup, coarse, perlin } from './field.mjs';
+import { KNOT, SIDES, craters, cracks, edges, edgeAngle, hullAt, onShell, shellNormal, toShell } from './features.mjs';
+import { CRUST, setup, coarse, edgeDistance, perlin } from './field.mjs';
 
 const draft = process.argv.includes('--draft');
 const began = performance.now(), say = (s) => console.log(`skin: ${s} · ${((performance.now() - began) / 1000).toFixed(1)} s`);
@@ -42,7 +42,8 @@ const AGREE = Math.cos((24 * Math.PI) / 180), CREASE = Math.cos((32 * Math.PI) /
 // How much the stored light is eased toward its neighbours', on the open ground and on a broken face, and how often.
 const EASE = { flat: 0.25, steep: 0.85, passes: 3 };
 
-const features = { craters: craters(), segs: cracks(), edges: edges(), knot: onShell(...KNOT) };
+const SLAB_LINE = { from: 300, to: 420, step: 0.5 };
+const features = { craters: craters(), segs: cracks(), edges: edges(), knot: onShell(...KNOT), slab: { ...SLAB_LINE, at: Array.from({ length: (SLAB_LINE.to - SLAB_LINE.from) / SLAB_LINE.step + 1 }, (_, i) => hullAt('left', SLAB_LINE.from + i * SLAB_LINE.step)) } };
 setup(features);
 say(`features: ${features.craters.length} craters, ${features.segs.length} lengths of crack, ${features.edges.left.length + features.edges.right.length} points of torn line`);
 
@@ -275,16 +276,27 @@ head.writeUInt32LE(MW, 4); head.writeUInt32LE(MH, 8); head.writeUInt32LE(rects[0
 fs.writeFileSync('public/world/skin-map.bin', Buffer.concat([head, deflateRawSync(Buffer.from(rgba.buffer), { level: 9 })]));
 say(`map written: ${(fs.statSync('public/world/skin-map.bin').size / 1e6).toFixed(2)} MB`);
 
+// The knot's light, which the shader lays on the rock round it as from one source: a short line from the junction
+// along the hot arm, held a little off the surface (in units), so the light rakes the relief round it.
+const lifted = (px, py, by) => { const p = onShell(px, py), nn = shellNormal(...p); return p.map((v, i) => +(v + nn[i] * by).toFixed(2)); };
+const KNOT_LIGHT = [...lifted(KNOT[0] + 3, KNOT[1] - 1, 3.5), ...lifted(262, 469, 2.5)];
+// The dark side's line where the rock tore, across at each second row of picture 9 from TORN_FROM: past it, at the
+// top, is the crust's slab that runs on out over the hollow, which the shader draws as the pale crust.
+const TORN_FROM = 300, TORN_LINE = [TORN_FROM, ...Array.from({ length: 66 }, (_, i) => +hullAt('left', TORN_FROM + 2 * i).toFixed(2))];
+
 // ---------------------------------------------------------------------------------------------------------------
 // The file: where each vertex lies in the map, its light and its bounce.
 const map = new Float32Array(n * 2), lightOf = new Float32Array(n * 4), bounceOf = new Float32Array(n * 4);
+// The fourth number of the stored light: how much a place is the broken crust by the torn line, whose slabs the moon
+// lights by their own tilt and not by the outer surface's.
+const crustOf = (x, y, z) => { const e = edgeDistance(...toShell(x, y, z)), t = Math.min(1, Math.max(0, (e - CRUST.reach * 0.5) / (CRUST.reach * 0.48))); return 1 - t * t * (3 - 2 * t); };
 for (let i = 0; i < n; i++) {
   const x = lit.positions[i * 3], y = lit.positions[i * 3 + 1], z = lit.positions[i * 3 + 2], r = rects[x > 0 ? 1 : 0];
   const [px, py] = L.pictured(x, y, z);
   map[i * 2] = Math.min(1, Math.max(0, (r.ox + Math.min(r.w - 0.5, Math.max(0.5, (px - r.x0) * k))) / MW));
   map[i * 2 + 1] = Math.min(1, Math.max(0, (r.oy + Math.min(r.h - 0.5, Math.max(0.5, (py - r.y0) * k))) / MH));
-  lightOf.set([baked.skin.core[i], baked.skin.moon[i], baked.skin.open[i], 0], i * 4);
+  lightOf.set([baked.skin.core[i], baked.skin.moon[i], baked.skin.open[i], crustOf(x, y, z)], i * 4);
   bounceOf.set([storeBounce(baked.skin.bounce[i * 3]), storeBounce(baked.skin.bounce[i * 3 + 1]), storeBounce(baked.skin.bounce[i * 3 + 2]), 0], i * 4);
 }
-pack('public/world/skin.bin', [{ name: 'skin', positions: lit.positions, indices: lit.indices, attributes: { normal: { data: lit.normals, size: 3, as: 'i16' }, light: { data: lightOf, size: 4, as: 'u8' }, bounce: { data: bounceOf, size: 4, as: 'u8' }, atlas: { data: map, size: 2, as: 'u16' } }, info: { map: [MW, MH, rects[0].w, k] } }], { draft });
+pack('public/world/skin.bin', [{ name: 'skin', positions: lit.positions, indices: lit.indices, attributes: { normal: { data: lit.normals, size: 3, as: 'i16' }, light: { data: lightOf, size: 4, as: 'u8' }, bounce: { data: bounceOf, size: 4, as: 'u8' }, atlas: { data: map, size: 2, as: 'u16' } }, info: { map: [MW, MH, rects[0].w, k], dark: [rects[0].x0, rects[0].y0], knot: KNOT_LIGHT, torn: TORN_LINE } }], { draft });
 say(`written: ${(fs.statSync('public/world/skin.bin').size / 1e6).toFixed(2)} MB, ${(lit.indices.length / 3).toLocaleString('en-US')} triangles`);

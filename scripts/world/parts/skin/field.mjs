@@ -84,31 +84,39 @@ class Grid {
 }
 const EMPTY = [];
 
-let CR = null, SG = null, ED = null, FAR = null, KNOT = [0, 0, 0];
-// How a crack's light is measured: its spill runs this many of its half widths past its lip, plus this far; and round
-// the hottest lengths it pools on the rock out to `pool` units, from lengths at least `hot` hot.
-// An even halo along every arm read as neon, and a pool 24 units round the knot as an airbrushed blob: the light is
-// held to the cleft's own lips and, round the hottest lengths, to faces close by.
-const SPILL = { per: 0.1, base: 0.2, reach: 4, pool: 8, hot: 0.8, strength: 0.25 };
+let CR = null, SG = null, ED = null, FAR = null, KNOT = [0, 0, 0], SL = null;
+// How a crack's light is measured: its spill runs this many of its half widths past its lip, plus this far, as a
+// faint even light on the rock right beside it. The knot's pool is not here: the shader lights the rock round the
+// knot as from one source (skin.ts), since a pool worked out in the map from the faces turned to the cleft landed on
+// the lumps as ragged tongues, which read as flame.
+const SPILL = { per: 0.12, base: 0.6, reach: 3, strength: 0.16 };
+// A lit crack is never drawn narrower than this half width, in units (a little under a texel of the map each side):
+// narrower, it fell between the map's texels and broke into dashes. A crack thinner than this is drawn this wide and
+// dimmer by its share of it, so its ends taper in light to a hairline.
+const MINW = 0.5;
 // The torn edge's broken crust: chunks of very different lengths along the line (len, units, most of them short),
 // each running `depth` in from it. A chunk's broken face stands back from the line by `ofs`; some are let down by
 // `drop` and lean toward the hollow by `lean`; between them the crust is split by a crack `gap` wide at the face and
 // `cut` deep. A seam laid on a pattern of cells drew a net of straight tiles, and slabs of one size a row of equal
-// steps. `band` is how far in from the line any of it reaches, `layer` how thick the pale top is in section, `chips`
+// steps. `band` is how far in from the line any of it reaches, `reach` how far the line is looked for (the broken
+// ground in the crust's shadow runs further than the chunks), `layer` how thick the pale top is in section, `chips`
 // how far in the small chips that show the red brown under it run, `dark` how much less the dark side is broken,
 // and `knot` how far round the cracks' knot the rock is whole.
-export const CRUST = { len: [6, 72], band: 44, layer: 2.6, chips: 30, dark: { ofs: 0.2, drop: 0.4 }, knot: 62 };
+export const CRUST = { len: [9, 95], band: 48, reach: 80, layer: 3.2, chips: 30, dark: { ofs: 0.35, drop: 0.55 }, knot: 62 };
 const rngOf = (seed) => { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
 function chunked(total, seed) {
   const R = rngOf(seed), out = [];
   for (let s = -30; s < total + 30;) {
-    const len = CRUST.len[0] * (CRUST.len[1] / CRUST.len[0]) ** (R() ** 1.7), v = R();
-    const drop = v < 0.58 ? 0 : v < 0.86 ? 0.6 + 1.8 * R() : 3 + 4 * R();
+    const len = CRUST.len[0] * (CRUST.len[1] / CRUST.len[0]) ** (R() ** 1.5), v = R();
+    // Thick slabs that broke off and stepped down: a few barely moved, most a step, a few a long way.
+    const drop = v < 0.3 ? 0.4 * R() : v < 0.72 ? 2.5 + 4 * R() : 7 + 9 * R();
     out.push({
       from: s, to: s + len, len,
-      ofs: R() < 0.62 ? 2.4 * R() : 3 + 9 * R(),
-      drop, lean: drop ? 0.03 + 0.08 * R() : 0.02 * R(),
-      depth: Math.min(36, Math.max(7, len * (0.4 + 0.55 * R()))),
+      ofs: R() < 0.55 ? 2.4 * R() : 3 + 9 * R(),
+      // A slab let down tips: most toward the hollow, some up at their broken edge, which is what turns their tops
+      // to the moon.
+      drop, lean: drop > 1 ? (R() < 0.6 ? -1 : 1) * (0.04 + 0.1 * R()) : 0.02 * R(),
+      depth: Math.min(40, Math.max(9, len * (0.4 + 0.55 * R()))),
       twist: (R() - 0.5) * 0.09,
       open: R() < 0.82, gap: 1 + 2.4 * R(), cut: 4 + 7 * R(),
       phase: R() * 50,
@@ -123,13 +131,14 @@ const GEO = [0.45, 0.9];
 // How far from the torn line the pits are gathered toward it, in units.
 const GATHER = 110;
 
-export function setup({ craters, segs, edges, knot }) {
+export function setup({ craters, segs, edges, knot, slab }) {
   if (knot) KNOT = knot;
+  SL = slab ?? null;
   CR = new Grid();
   for (const c of craters) { const e = c.r * 2.7; CR.add([c.c[0] - e, c.c[1] - e, c.c[2] - e], [c.c[0] + e, c.c[1] + e, c.c[2] + e], c); }
   SG = new Grid();
   for (const s of segs) {
-    const e = Math.max(s.wa, s.wb) * (1 + SPILL.per * SPILL.reach) + SPILL.base * SPILL.reach + (Math.max(s.ha, s.hb) >= SPILL.hot ? SPILL.pool * 1.25 : 0) + 1.5;
+    const e = Math.max(MINW, s.wa, s.wb) * (1.4 + SPILL.per * SPILL.reach) + SPILL.base * SPILL.reach + 1.5;
     s.d = [s.b[0] - s.a[0], s.b[1] - s.a[1], s.b[2] - s.a[2]];
     s.l2 = s.d[0] ** 2 + s.d[1] ** 2 + s.d[2] ** 2 || 1e-9;
     SG.add([Math.min(s.a[0], s.b[0]) - e, Math.min(s.a[1], s.b[1]) - e, Math.min(s.a[2], s.b[2]) - e], [Math.max(s.a[0], s.b[0]) + e, Math.max(s.a[1], s.b[1]) + e, Math.max(s.a[2], s.b[2]) + e], s);
@@ -137,7 +146,7 @@ export function setup({ craters, segs, edges, knot }) {
   ED = new Grid();
   FAR = new Grid();
   for (const side of ['left', 'right']) edges[side].forEach((p, i) => {
-    if (i % 2 === 0) ED.add([p[0] - CRUST.band, p[1] - CRUST.band, p[2] - CRUST.band], [p[0] + CRUST.band, p[1] + CRUST.band, p[2] + CRUST.band], p);
+    if (i % 2 === 0) ED.add([p[0] - CRUST.reach, p[1] - CRUST.reach, p[2] - CRUST.reach], [p[0] + CRUST.reach, p[1] + CRUST.reach, p[2] + CRUST.reach], p);
     if (i % 16 === 0) FAR.add([p[0] - GATHER, p[1] - GATHER, p[2] - GATHER], [p[0] + GATHER, p[1] + GATHER, p[2] + GATHER], p);
   });
   CH = { left: chunked(edges.left[edges.left.length - 1][3], 9101), right: chunked(edges.right[edges.right.length - 1][3], 4507) };
@@ -147,7 +156,7 @@ export function setup({ craters, segs, edges, knot }) {
 // point of the line (NEAREST).
 export const NEAREST = [0, 0, 0, 0];
 export function edgeDistance(x, y, z) {
-  let best = CRUST.band * CRUST.band;
+  let best = CRUST.reach * CRUST.reach;
   for (const p of ED.at(x, y, z)) { const d = (p[0] - x) ** 2 + (p[1] - y) ** 2 + (p[2] - z) ** 2; if (d < best) { best = d; NEAREST[0] = p[0]; NEAREST[1] = p[1]; NEAREST[2] = p[2]; NEAREST[3] = p[3]; } }
   return Math.sqrt(best);
 }
@@ -157,6 +166,18 @@ export function farEdge(x, y, z) {
   return Math.sqrt(best);
 }
 const rimDistance = (y) => -RIM - y;
+// How far past the rock's torn line a place on the dark side is, in picture 9's pixels, where the crust's great slab
+// runs on out over the hollow at the top (features.mjs, SLAB); null where there is no slab.
+export function slabbed(x, y, z) {
+  if (!SL || x >= 0) return null;
+  const [px, py] = L.pictured(x, y, z);
+  if (py < SL.from || py > SL.to) return null;
+  const f = Math.min(SL.at.length - 1.001, (py - SL.from) / SL.step), i = Math.floor(f);
+  return px - (SL.at[i] + (SL.at[i + 1] - SL.at[i]) * (f - i)) - slabWander(py);
+}
+// The slab's break from the dark skin wanders across the rock's smoothed torn line, so it is not ruler straight. The
+// shader draws the same line (skin/shaders.ts, skinTornAt), so the two must stay alike.
+export const slabWander = (py) => 2.2 * Math.sin(py * 0.37 + 1.3) + 1.3 * Math.sin(py * 0.83 + 0.4) + 0.7 * Math.sin(py * 2.1 + 2.2);
 // How far down the planet a place is, 0 at the rim and 1 at its foot.
 const downOf = (y) => Math.min(1, Math.max(0, (-RIM - y) / L.WORLD.deep));
 
@@ -181,7 +202,8 @@ function craterHeight(k, x, y, z) {
     } else h = -k.depth + (k.depth + k.rim) * x1 ** 2;
   } else {
     const o = x1 - 1;
-    h = k.rim * Math.exp(-o * 3.8) * (1 - smooth(1.7, 2.6, x1));
+    // The rim stands up from the ground round it on a broad outer flank, so the crater reads raised and not cut.
+    h = k.rim * Math.exp(-o * 2.3) * (1 - smooth(1.6, 2.6, x1));
     // Ejecta: a hummocky blanket round the rim of a large crater.
     if (k.r > 9) h += k.rim * 0.35 * Math.exp(-o * 1.6) * (1 - smooth(1.5, 2.6, x1)) * perlin(x * 0.16 + k.seed, y * 0.16, z * 0.16);
   }
@@ -195,10 +217,10 @@ function craterHeight(k, x, y, z) {
 // `side` which wall it is on (the unit vector from the place toward the cleft's middle line, along the surface:
 // the map's worker lights the wall that faces the visitor). Beside a lit cleft its light lies on the rock: `spill`
 // close to the lip, and `pool` round the hottest lengths, each with the point of the cleft it comes from (`from`).
-const CK = { geo: 0, fine: 0, in: 0, heat: 0, side: [0, 0, 0], spill: 0, pool: 0, from: [0, 0, 0], fromW: 0 };
+const CK = { geo: 0, fine: 0, in: 0, heat: 0, dim: 1, side: [0, 0, 0], spill: 0, pool: 0, from: [0, 0, 0], fromW: 0 };
 function crackAt(x, y, z) {
-  CK.geo = 0; CK.fine = 0; CK.in = 0; CK.heat = 0; CK.spill = 0; CK.pool = 0;
-  let wet = 1, pooled = 1, best = 0;
+  CK.geo = 0; CK.fine = 0; CK.in = 0; CK.heat = 0; CK.dim = 1; CK.spill = 0; CK.pool = 0;
+  let wet = 1, best = 0;
   // The lips are broken: the width wanders slowly, and at a finer grain by small bites.
   const jag = perlin(x * 0.42, y * 0.42, z * 0.42), bite = perlin(x * 2.1 + 5, y * 2.1, z * 2.1);
   // The light is not even along a crack: it runs hotter where the cleft is deep and dims where it nearly closes.
@@ -208,9 +230,10 @@ function crackAt(x, y, z) {
     const t = Math.min(1, Math.max(0, (px * s.d[0] + py * s.d[1] + pz * s.d[2]) / s.l2));
     const cx = s.d[0] * t - px, cy = s.d[1] * t - py, cz = s.d[2] * t - pz, d = Math.hypot(cx, cy, cz);
     const w0 = s.wa + (s.wb - s.wa) * t, h0 = s.ha + (s.hb - s.ha) * t, heat = h0 >= 0.95 ? h0 : Math.min(1, h0 * flare);
-    const w = Math.max(0.02, w0 * (0.8 + 0.3 * jag + 0.1 * Math.max(-0.3, bite)));
-    const pool = heat >= SPILL.hot ? SPILL.pool * (heat - SPILL.hot) / (1 - SPILL.hot) : 0;
-    const reach = w * (1 + SPILL.per * SPILL.reach) + SPILL.base * SPILL.reach + pool * 1.25;
+    // The lips are bitten only where the cleft is wide enough for a bite to show: on a thin one it cut it into dashes.
+    const wd = w0 * (0.84 + 0.26 * jag + 0.1 * Math.max(-0.3, bite) * smooth(0.6, 1.4, w0));
+    const w = h0 > 0 ? Math.max(MINW, wd) : Math.max(0.3, wd), dim = h0 > 0 ? Math.min(1, wd / MINW) ** 0.85 : 1;
+    const reach = w * (1 + SPILL.per * SPILL.reach) + SPILL.base * SPILL.reach;
     if (d > reach) continue;
     if (d < w) {
       const v = -(2.4 * w + 0.3) * (1 - d / w) ** 0.8, g = smooth(GEO[0], GEO[1], w0), inn = 1 - d / w;
@@ -219,23 +242,18 @@ function crackAt(x, y, z) {
       if (inn > CK.in) {
         CK.in = inn;
         CK.heat = heat;
+        CK.dim = dim;
         if (d > 1e-4) { CK.side[0] = cx / d; CK.side[1] = cy / d; CK.side[2] = cz / d; } else CK.side[0] = CK.side[1] = CK.side[2] = 0;
       }
     }
     if (heat > 0) {
-      const out = Math.max(0, d - w), sp = heat * SPILL.strength * Math.exp(-out / (SPILL.base + SPILL.per * w));
+      const out = Math.max(0, d - w), sp = heat * dim * SPILL.strength * Math.exp(-out / (SPILL.base + SPILL.per * w));
       wet *= 1 - Math.min(0.999, sp);
-      let k = 0;
-      if (pool > 0) {
-        k = heat * heat * Math.exp(-((out / (pool * 0.42)) ** 1.5));
-        pooled *= 1 - Math.min(0.999, 0.42 * k);
-      }
       // The light here comes from the nearest lit cleft that gives the most.
-      if (Math.max(k, sp) > best) { best = Math.max(k, sp); CK.from[0] = x + cx; CK.from[1] = y + cy; CK.from[2] = z + cz; CK.fromW = w; }
+      if (sp > best) { best = sp; CK.from[0] = x + cx; CK.from[1] = y + cy; CK.from[2] = z + cz; CK.fromW = w; }
     }
   }
   CK.spill = 1 - wet;
-  CK.pool = 1 - pooled;
   return CK;
 }
 export const crackOf = (x, y, z) => crackAt(x, y, z);
@@ -262,7 +280,7 @@ export function crust(x, y, z) {
   // The broken face: back from the line by the chunk's own inset, wandering along it and crumbling.
   const face = ko * c.ofs + (0.6 + 1.8 * ko) * (0.5 + 0.5 * perlin(s0 / 9.5, c.phase, sd)) + 0.7 * Math.abs(perlin(s0 / 2.4, e / 2.4, 5 + sd));
   const drop = kd * c.drop, lean = kd * c.lean;
-  const top = drop + lean * Math.max(0, c.depth - e) + kk * c.twist * (s - mid) * Math.min(1, c.len / 20) * 0.4;
+  const top = Math.max(-1.2, drop + lean * Math.max(0, c.depth - e) + kk * c.twist * (s - mid) * Math.min(1, c.len / 20) * 0.4);
   let h = -top;
   if (e < face) {
     // Over the lip and down the broken face: rounded where it breaks, then steep, lumpy all the way.
@@ -299,12 +317,13 @@ const C3 = {};
 
 // The ground's own relief, larger than the pits: long low swells, and the lumps between that the moon rakes across,
 // which the dark side, the oldest ground, has worn nearly smooth.
-const swell = (x, y, z) => 2.6 * fbm(x / 70, y / 70, z / 70, 3) + 1.5 * fbm(x / 26 + 3, y / 26, z / 26, 3) + (x > 0 ? 1.3 : 0.4) * Math.abs(fbm(x / 11 + 9, y / 11, z / 11, 2));
+// The ridges of an absolute noise drew small creased tents over the open ground: the lumps are rounded.
+const swell = (x, y, z) => 2.6 * fbm(x / 70, y / 70, z / 70, 3) + 1.5 * fbm(x / 26 + 3, y / 26, z / 26, 3) + (x > 0 ? 0.9 * fbm(x / 13 + 9, y / 13, z / 13, 2) : 0.4 * Math.abs(fbm(x / 11 + 9, y / 11, z / 11, 2)));
 
 // The top of the skin, under the land's edge: a rounded, crumbly shoulder that turns in under it (how far down from
 // the rim it rounds, and how far in it is at the rim), with the ground's lumps kept down for `under` units, where the
 // land's sand lies over it, so nothing of it stands above the land.
-export const SHOULDER = { round: 16, in: 11, under: 52 };
+export const SHOULDER = { round: 16, in: 11, under: 52, lip: { at: 37, wander: 3.5, step: 1.8, out: 0.7 } };
 export function coarse(x, y, z) {
   let h = swell(x, y, z) * (1 - 0.8 * floored(x, y, z));
   for (const k of CR.at(x, y, z)) h += craterHeight(k, x, y, z);
@@ -315,10 +334,23 @@ export function coarse(x, y, z) {
   // turned to it and not on an even dark: spread evenly it read as a smudge of airbrush.
   if (ck.pool > 0.01) h += Math.min(1, ck.pool * 3) * (1.6 * fbm(x * 0.17 + 3, y * 0.17, z * 0.17, 2) + 0.5 * Math.abs(fbm(x * 0.45, y * 0.45 + 5, z * 0.45, 2)));
   h -= crust(x, y, z).drop;
+  // The slab stands a little proud of the dark skin it broke from, its weathered top lumpy, with the break between
+  // them a dark crack along the rock's torn line.
+  const sd = slabbed(x, y, z);
+  if (sd !== null) {
+    h += smooth(-0.4, 2.2, sd) * (1.8 + 1.1 * perlin(x / 7.3, y / 7.3, z / 7.3) + 0.5 * Math.abs(perlin(x / 2.2, y / 2.2, z / 2.2)));
+    h -= 4.5 * Math.max(0, 1 - Math.abs(sd - 0.8 + 0.5 * perlin(y / 3.1, z / 3.1, 2.7)) / 1.2);
+  }
   const rd = rimDistance(y);
   h = h > 0 ? h * smooth(SHOULDER.under * 0.72, SHOULDER.under, rd) : h * (0.45 + 0.55 * smooth(6, SHOULDER.under * 0.9, rd));
   // and a little under the sand's drape, all the way down it, so no lump of the skin shows through the sand.
   h -= 0.9 * (1 - smooth(SHOULDER.under * 0.6, SHOULDER.under * 0.78, rd));
+  // The crust's lip, right under the sand's scalloped edge: above it the skin is set back under the sand, and its
+  // top, a crisp ledge, catches the moon, so the sand lies on stone and the join is not a seam.
+  {
+    const P = SHOULDER.lip, at = P.at + P.wander * perlin(x / 23 + 1.7, z / 23, 3.3) + 0.8 * perlin(x / 5.1, z / 5.1, 8.1);
+    if (x > 0) h += rd < at ? -P.step * (1 - smooth(at - 1.4, at, rd)) : P.out * Math.exp(-(rd - at) / 2.2);
+  }
   if (rd < SHOULDER.round) {
     const f = 1 - rd / SHOULDER.round;
     h -= SHOULDER.in * f * f * (1 + 0.22 * perlin(x / 6, y / 6, z / 6)) + 1.4 * Math.abs(perlin(x / 2.6, y / 2.6, z / 2.6)) * f;
@@ -333,7 +365,7 @@ export function floored(x, y, z) {
     if (k.r < 4) continue;
     const dx = x - k.c[0], dy = y - k.c[1], dz = z - k.c[2], dn = dx * k.n[0] + dy * k.n[1] + dz * k.n[2];
     const d = Math.hypot(dx - dn * k.n[0], dy - dn * k.n[1], dz - dn * k.n[2]);
-    f = Math.max(f, 1 - smooth(0.6, 1.02, d / k.r));
+    f = Math.max(f, 1 - smooth(0.8, 1.12, d / k.r));
   }
   return f;
 }
@@ -345,7 +377,8 @@ export function gathered(x, y, z, side) {
   const knot = side > 0 ? 1 : 0.5 + 0.5 * smooth(25, 75, Math.hypot(x - KNOT[0], y - KNOT[1], z - KNOT[2]));
   // On the crust's chunks by the line fewer: their tops are its old weathered top, broken and chipped, not pitted.
   const crustTop = 0.3 + 0.7 * smooth(8, 36, edgeDistance(x, y, z));
-  return (side > 0 ? 1 : 0.35) * knot * crustTop * (0.38 + 1.15 * toward ** 1.2) * (0.22 + 0.78 * bands) * (1 - 0.88 * floored(x, y, z));
+  // Dense only by the break and toward the lower limb: between, smooth dust with few pits.
+  return (side > 0 ? 1 : 0.35) * knot * crustTop * (0.05 + 1.35 * toward ** 1.6) * (0.15 + 0.85 * bands) * (1 - floored(x, y, z));
 }
 
 // Pits too small for the geometry, in three sizes whose radii follow a power law within each, as craters do.
@@ -382,7 +415,12 @@ export function fine(x, y, z, side) {
   h += (0.16 * fbm(x * 0.9, y * 0.9, z * 0.9, 3) + 0.04 * perlin(x * 3.1, y * 3.1, z * 3.1)) * (1 - 0.6 * floor);
   // Lumps a few units across, the ground's own roughness between the pits, fewer on crater floors.
   if (side > 0) h += 0.3 * fbm(x * 0.24 + 2, y * 0.24, z * 0.24, 2) * (1 - 0.7 * floor);
-  if (side < 0) {
+  const sd = side < 0 ? slabbed(x, y, z) : null;
+  if (sd !== null && sd > -1) {
+    // The slab's weathered top is the pale crust's own ground: pitted and lumpy.
+    const k = smooth(-1, 2, sd);
+    h += k * (pits(x, y, z, 1, nx, ny, nz, 1.1) + 0.45 * fbm(x * 0.3 + 2, y * 0.3, z * 0.3, 2) + 0.25 * Math.abs(fbm(x * 0.9, y * 0.9 + 3, z * 0.9, 2)));
+  } else if (side < 0) {
     // The dark side is the oldest surface: weathered in long streaks down it, and roughened.
     const ex = nz, ez = -nx, el = Math.hypot(ex, ez) || 1, a = (x * ex + z * ez) / el;
     h += 0.3 * fbm(a * 0.5, y * 0.05, 7.7, 3) + 0.12 * Math.abs(fbm(a * 1.6, y * 0.12, 3.1, 2)) + 0.08 * fbm(x * 1.7, y * 1.7, z * 1.7, 2);
@@ -395,6 +433,7 @@ export function fine(x, y, z, side) {
 // How deep in a pit a place is, 0 to 1, for darkening the dust there.
 export function pitted(x, y, z, side) {
   const [nx, ny, nz] = normalOf(x, y, z);
+  if (side < 0 && (slabbed(x, y, z) ?? -9) > -1) return Math.min(1, Math.max(0, -pits(x, y, z, 1, nx, ny, nz, 1.1) / 0.6));
   return Math.min(1, Math.max(0, -pits(x, y, z, side, nx, ny, nz, gathered(x, y, z, side)) / 0.6));
 }
 export { downOf };

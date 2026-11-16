@@ -3,7 +3,7 @@ import { hex, type PaletteName } from '../../../config/palette';
 import { load, mesh } from '../files';
 import { lit, stone as planetStone } from '../light';
 import type { PartFactory } from '../part';
-import { DARK_TURN, GLOW, PALE_TURN, SAND, STONE, UNDER } from './skin/look';
+import { DARK_LIGHT, GLOW, KNOT_POOL, SAND, STONE, UNDER } from './skin/look';
 import * as S from './skin/shaders';
 
 // The skin: what survives of the planet's own outer surface at each side of the tear. At the visitor's left, turned
@@ -12,7 +12,8 @@ import * as S from './skin/shaders';
 // (public/world/skin.bin and skin-map.bin): the craters, the wide part of the cracks and the broken crust at the torn
 // edges are geometry, and the map, laid over picture 9's own pixels, holds the relief finer than that, the stone's
 // color and the cracks' light. ?skinat=x,y,z,r frames the skin alone on any place of it. While its light is being
-// set, ?skinpale=k,power tries another pale stone and ?skinrock= another strength for the cracks' light on the rock.
+// set, ?skinpale=k,power tries another pale stone, ?skinrock= another strength for the cracks' light on the rock,
+// ?skinknot=power,reach,hot,hotR another light round the knot and ?skindark=fill,rim,slab another night on the dark side.
 
 type Shader = THREE.WebGLProgramParametersWithUniforms;
 const after = (src: string, chunk: string, add: string): string => {
@@ -53,13 +54,19 @@ export const build: PartFactory = async ({ query, renderer }) => {
   const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.93, metalness: 0 });
   // Where the mesh's own cube is, so the shader knows each place in the world's units.
   const place = new THREE.Vector4();
-  const pale = tried(query, 'skinpale'), rock = tried(query, 'skinrock'), turn = tried(query, 'skinturn')?.[0] ?? PALE_TURN;
+  const pale = tried(query, 'skinpale'), rock = tried(query, 'skinrock'), knot = tried(query, 'skinknot'), dark = tried(query, 'skindark');
+  const info = skin.info as { map: number[]; dark: [number, number]; knot: number[]; torn: number[] };
+  if (!info.knot || !info.torn || info.torn.length !== 67) throw new Error('skin.bin is older than its shader: make it again with scripts/world/parts/skin/make.mjs');
+  const K = [KNOT_POOL.power, KNOT_POOL.reach, KNOT_POOL.hot, KNOT_POOL.hotR].map((v, i) => knot?.[i] ?? v);
   m.onBeforeCompile = (sh: Shader) => {
     Object.assign(sh.uniforms, {
       uSkinMap: { value: map },
       uSkinMapSize: { value: new THREE.Vector3(map.image.width, map.image.height, map.userData.split as number) },
-      uPale: { value: stone(pale ? { ...STONE.pale, k: pale[0], power: pale[1] ?? STONE.pale.power } : STONE.pale).offsetHSL(turn / 360, 0, 0) }, uDust: { value: stone(STONE.dust).offsetHSL(turn / 360, 0, 0) }, uDark: { value: stone(STONE.dark).offsetHSL(DARK_TURN / 360, 0, 0) },
+      uPale: { value: stone(pale ? { ...STONE.pale, k: pale[0], power: pale[1] ?? STONE.pale.power } : STONE.pale) }, uDust: { value: stone(STONE.dust) }, uDark: { value: stone(STONE.dark) },
       uUnder: { value: planetStone().multiplyScalar(UNDER) }, uSand: { value: linear(SAND.of[0]).lerp(linear(SAND.of[1]), SAND.ease).multiplyScalar(SAND.power) }, uSkinPlace: { value: place }, uGlowRock: { value: rock ? rock[0] : GLOW.rock },
+      uKnotA: { value: new THREE.Vector3(...info.knot.slice(0, 3)) }, uKnotB: { value: new THREE.Vector3(...info.knot.slice(3, 6)) }, uKnot: { value: new THREE.Vector4(...K) },
+      uDarkLight: { value: new THREE.Vector3(dark?.[0] ?? DARK_LIGHT.fill, dark?.[1] ?? DARK_LIGHT.rim, dark?.[2] ?? DARK_LIGHT.slab) }, uDarkFrom: { value: new THREE.Vector3(...DARK_LIGHT.from) },
+      uDarkAt: { value: new THREE.Vector2(...info.dark) }, uTorn: { value: info.torn },
       uGlowPale: { value: linear(GLOW.ramp[0][0]) }, uGlowHot: { value: linear(GLOW.ramp[1][0]) }, uGlowFlame: { value: linear(GLOW.ramp[2][0]) }, uGlowEmber: { value: linear(GLOW.ramp[3][0]) },
     });
     sh.vertexShader = after(after(sh.vertexShader, 'common', S.VERT_PARS), 'begin_vertex', S.VERT);

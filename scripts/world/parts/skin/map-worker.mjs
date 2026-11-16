@@ -6,7 +6,7 @@
 import { parentPort, workerData } from 'node:worker_threads';
 import { closest } from '../../lib/bvh.mjs';
 import { L } from '../../lib/plan.mjs';
-import { CRUST, SHOULDER, setup, fine, coarse, crust, chips, crackOf, edgeDistance, pitted, floored, farEdge, fbm, downOf } from './field.mjs';
+import { CRUST, SHOULDER, setup, fine, coarse, crust, chips, crackOf, edgeDistance, pitted, floored, farEdge, fbm, downOf, slabbed } from './field.mjs';
 import { frame, shellNormal, toShell } from './features.mjs';
 
 const { features, bvh, positions, normals, indices, texels, rects, perPixel, rows, moon } = workerData;
@@ -82,10 +82,11 @@ for (let row = rows[0]; row < rows[1]; row++) {
       // dust is thinner down toward the lower limb, and on the oldest ground.
       m *= 0.94 + 0.12 * smooth(0.7, 0.97, up);
       m *= 0.93 + 0.2 * tone + 0.12 * mid + 0.07 * mottle;
-      m *= 1 - 0.42 * smooth(0.35, 0.9, down);
+      m *= 1 - 0.14 * smooth(0.35, 0.9, down);
       // Near the torn line the ground is shattered and its dust shaken off: darker, as the picture's is.
       m *= 1 - 0.2 * (1 - smooth(10, 60, farEdge(q[0], q[1], q[2])));
-      m *= 1 + 0.07 * floor;
+      // A crater's floor sits back in its bowl: it glared when it was the palest dust of the side.
+      m *= 1 - 0.2 * floor;
       m *= 1 - (isFace ? 0 : 0.62 * pitted(q[0], q[1], q[2], side));
       // The fine relief's own shadows from the moon.
       const md = moon, dn = dot(md, bent);
@@ -104,7 +105,7 @@ for (let row = rows[0]; row < rows[1]; row++) {
       }
       m *= 0.18 + 0.82 * vis;
       // What the moon falls on squarely is the dust at its palest: the shader eases it toward the dust's cream.
-      m *= 1 + 0.26 * smooth(0.3, 0.8, dot(md, bent)) * vis;
+      m *= 1 + 0.26 * smooth(0.3, 0.8, dot(md, bent)) * vis * (1 - 0.85 * floor);
       m *= 1 + 0.12 * layer;
       // Sand from the land's drape lies in the hollows of the shoulder under it: where the place is lower than the
       // ground round it, thinning out down the side.
@@ -124,7 +125,7 @@ for (let row = rows[0]; row < rows[1]; row++) {
       m *= 0.62 + 0.75 * (0.5 + 0.5 * Math.max(-1, Math.min(1, 1.4 * tone)));
       m *= 0.7 + 0.6 * (0.5 + 0.5 * Math.max(-1, Math.min(1, 1.6 * streak))) + 0.16 * fineStreak;
       m *= 0.92 + 0.1 * mottle;
-      m *= 1 - (isFace ? 0 : 0.32 * pitted(q[0], q[1], q[2], side));
+      m *= 1 - (isFace ? 0 : (slabbed(q[0], q[1], q[2]) ?? -9) > 0 ? 0.9 * pitted(q[0], q[1], q[2], side) : 0.32 * pitted(q[0], q[1], q[2], side));
       const ck = crackOf(q[0], q[1], q[2]);
       m *= 1 - (ck.heat > 0 ? 0.2 : 0.5) * ck.in;
       if (ck.in > 0 && ck.heat > 0 && isFace && toLine < 4) {
@@ -137,15 +138,13 @@ for (let row = rows[0]; row < rows[1]; row++) {
         const toEye = unit([o[0] - p[0], o[1] - p[1], o[2] - p[2]]), en = dot(toEye, sn), et = [toEye[0] - en * sn[0], toEye[1] - en * sn[1], toEye[2] - en * sn[2]];
         const far = dot(ck.side, et) > 0, d = ck.in;
         const lit = far ? 0.45 + 0.55 * d ** 0.8 : 0.06 + 0.94 * d ** 3;
-        g = 0.5 + 0.5 * Math.min(1, (0.7 + 0.3 * ck.heat) * lit);
-      } else if ((ck.spill > 0 || ck.pool > 0) && !(isFace && toLine < 4)) {
-        // Beside one, the light that lands on the rock: most on faces turned to the cleft, so it is lumpy with the
-        // relief. It comes from the cleft's mouth.
+        g = 0.5 + 0.5 * Math.min(1, (0.15 + 0.85 * ck.heat ** 1.5) * lit * ck.dim);
+      } else if (ck.spill > 0 && !(isFace && toLine < 4)) {
+        // Beside one, the light that lands on the rock right by its lip, a little more on faces turned to it.
         const from = [ck.from[0] + sn[0] * 0.8 - p[0], ck.from[1] + sn[1] * 0.8 - p[1], ck.from[2] + sn[2] * 0.8 - p[2]], dl = Math.hypot(...from) || 1;
         const soft = unit([n[0] + 0.15 * (bent[0] - n[0]), n[1] + 0.15 * (bent[1] - n[1]), n[2] + 0.15 * (bent[2] - n[2])]);
-        // Only what faces the cleft takes its light: the rock between the arms stays dark, as the picture's does.
-        const facing = Math.min(1.8, Math.max(0, 3.2 * dot(soft, from.map((x) => x / dl)) - 0.15));
-        g = 0.5 * Math.min(0.98, ck.spill * (0.25 + 0.75 * Math.min(1, facing)) + ck.pool * facing);
+        const facing = Math.min(1, Math.max(0, 0.5 + 2 * dot(soft, from.map((x) => x / dl))));
+        g = 0.5 * Math.min(0.98, ck.spill * (0.55 + 0.45 * facing));
       }
       m *= 1 + 0.15 * layer;
     }
