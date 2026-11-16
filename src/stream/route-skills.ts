@@ -122,6 +122,11 @@ export function routeThroughSkills(P: SkillsPlan): Route {
       while (from > 0 && b.floor[at] - b.floor[from - 1] < K.snap * u) from--;
       for (let i = from; i <= at; i++) b.floor[i] = b.floor[from];
     }
+    // Thrown from the lens it goes on in behind him. A height on the page that would leave it part way, with its
+    // end sparking on his ear and jaw while the glow is still down and the words held back, gives the place behind
+    // him: once it is out of the lens it does not rest until it is hidden.
+    const i0 = Math.floor(lens / b.step), i1 = Math.min(b.n - 1, Math.ceil(enter / b.step) + 1);
+    for (let i = i0 + 1; i <= i1; i++) b.floor[i] = b.floor[i0];
   }
 
   const O = K.over;
