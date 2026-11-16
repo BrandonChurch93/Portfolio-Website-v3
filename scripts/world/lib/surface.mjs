@@ -31,7 +31,7 @@ export const GAP = 1e-4;
 export const CLOSE = 1e-3;
 export const ROUNDS = 12;
 export const FLAT = 1e-9;
-export const HOLD = 4;
+export const HOLD = 6;
 export const STRICT = 0.5;
 export const SAMPLES = 12;
 export const SAME = Math.cos((2 * Math.PI) / 180);
@@ -523,31 +523,36 @@ function tidy({ positions, indices }) {
   return { positions: pos, indices: keep.slice(0, k), removed };
 }
 
-// Reduces a mesh with meshoptimizer, which never moves a vertex, only drops them. Its error is an estimate: with
-// strict, it aims at half the error and then holds still what strays beyond the error and tries again.
-export async function simplify(mesh, { error = 0, target, attributes, weights, lock, strict = false } = {}) {
+// Reduces a mesh with meshoptimizer, which never moves a vertex, only drops them. Its own error is an estimate that
+// a triangle can stray well past (a pit or a bump whose faces pass through the vertex it is folded into costs it
+// nothing), so unless strict is false the result is measured against the mesh it came from: every vertex of that
+// mesh must lie within error of the result and every point sampled on the result within error of that mesh. Where
+// either fails, or where the result is open where the mesh was not, the vertices there are held still and it is
+// made again. Positions are compared as places, so a mesh split at its creases (creased) is reduced as one surface.
+export async function simplify(mesh, { error, target, attributes, weights, lock, strict = true } = {}) {
+  if (error === undefined && target === undefined) throw new Error('simplify: give an error, a target or both');
   await MeshoptSimplifier.ready;
   const positions = mesh.positions instanceof Float32Array ? mesh.positions : new Float32Array(mesh.positions);
   const indices = mesh.indices instanceof Uint32Array ? mesh.indices : new Uint32Array(mesh.indices);
   const nv = positions.length / 3;
-  const scale = MeshoptSimplifier.getScale(positions, 3);
-  const rel = scale > 0 ? (error * (strict ? STRICT : 1)) / scale : 0;
+  const most = error ?? Infinity, sure = strict && Number.isFinite(most);
+  const aim = Number.isFinite(most) ? most * (sure ? STRICT : 1) : 1e30;
   const goal = Math.max(0, Math.min(indices.length, Math.floor(target ?? 0) * 3));
   const k = attributes ? attributes.length / nv : 0;
   const attr = attributes ?? new Float32Array(0);
   const wts = k ? Array.from(weights ?? new Array(k).fill(1)) : [];
   const held = lock ? Uint8Array.from(lock) : new Uint8Array(nv);
-  const check = strict && error > 0 ? strays({ positions, indices }, error) : null;
-  let out, stray = 0, rounds = 0;
+  const place = places(positions);
+  const rim = edgesOf(indices, place, nv).open;
+  const check = sure ? strays({ positions, indices }, most, place) : null;
+  let out, stray = 0, holes = 0, rounds = 0;
   for (;;) {
-    out = MeshoptSimplifier.simplifyWithAttributes(indices, positions, 3, attr, k, wts, held, goal, rel, [])[0];
-    if (!check || rounds === HOLD) break;
-    stray = check.find(out, held);
-    if (!stray) break;
+    out = MeshoptSimplifier.simplifyWithAttributes(indices, positions, 3, attr, k, wts, held, goal, aim, ['ErrorAbsolute'])[0];
+    holes = opened(out, place, nv, rim, positions, held);
+    stray = check ? check.find(out, held) : 0;
+    if ((!stray && !holes) || rounds === HOLD) break;
     rounds++;
   }
-  if (check && rounds === HOLD) stray = check.find(out, new Uint8Array(nv));
-  if (!check) stray = null;
   const map = new Int32Array(nv).fill(-1);
   const source = [];
   for (let i = 0; i < out.length; i++) {
@@ -564,13 +569,95 @@ export async function simplify(mesh, { error = 0, target, attributes, weights, l
     for (let i = 0; i < src.length; i++) for (let j = 0; j < k; j++) attrOut[i * k + j] = attributes[src[i] * k + j];
   }
   const thin = uncap({ positions: pos, indices: out });
-  return { positions: pos, indices: out, attributes: attrOut, source: src, thin, stray, rounds };
+  return { positions: pos, indices: out, attributes: attrOut, source: src, thin, stray: check ? stray : null, holes, rounds };
 }
 
-// The simplifier's error is an estimate, and now and then a triangle strays further than it from the mesh it was
-// made from. find(out, held) counts the reduced triangles that stray, and holds still the vertices under each that
-// are off it, so the next try keeps them.
-function strays(mesh, error) {
+// For each vertex, the first vertex at the very same place, so a mesh split at its creases is read as one surface.
+function places(p) {
+  const bits = new Uint32Array(p.buffer, p.byteOffset, p.length), n = p.length / 3;
+  let size = 1;
+  while (size < n * 2) size *= 2;
+  const slot = new Int32Array(size).fill(-1), place = new Int32Array(n);
+  for (let v = 0; v < n; v++) {
+    const x = bits[v * 3], y = bits[v * 3 + 1], z = bits[v * 3 + 2];
+    let s = (Math.imul(x, 0x9e3779b1) ^ Math.imul(y, 0x85ebca6b) ^ Math.imul(z, 0xc2b2ae35)) & (size - 1);
+    for (;;) {
+      const u = slot[s];
+      if (u < 0) { slot[s] = v; place[v] = v; break; }
+      if (bits[u * 3] === x && bits[u * 3 + 1] === y && bits[u * 3 + 2] === z) { place[v] = u; break; }
+      s = (s + 1) & (size - 1);
+    }
+  }
+  return place;
+}
+
+// The edges of a mesh by place, with how many triangles use each; open lists the places on an edge used once.
+function edgesOf(ix, place, nv) {
+  const table = new Table(ix.length), uses = new Int32Array(ix.length);
+  let n = 0;
+  for (let t = 0; t < ix.length; t += 3) for (let k = 0; k < 3; k++) {
+    const a = place[ix[t + k]], b = place[ix[t + (k + 1) % 3]];
+    const key = Math.min(a, b) * nv + Math.max(a, b);
+    let e = table.get(key);
+    if (e < 0) { e = n++; table.set(key, e); }
+    uses[e]++;
+  }
+  const open = new Uint8Array(nv);
+  for (let s = 0; s < table.keys.length; s++) {
+    const key = table.keys[s];
+    if (key === -1 || uses[table.vals[s]] !== 1) continue;
+    open[key % nv] = 1; open[Math.floor(key / nv)] = 1;
+  }
+  return { table, uses, open };
+}
+
+// Counts the edges of the result used by one triangle that are not on an open edge of the mesh it came from, and
+// holds still every vertex of the mesh within the longest such edge of either end, so the next try keeps them.
+function opened(out, place, nv, rim, p, held) {
+  const { table, uses } = edgesOf(out, place, nv);
+  const ends = [];
+  for (let s = 0; s < table.keys.length; s++) {
+    const key = table.keys[s];
+    if (key === -1 || uses[table.vals[s]] !== 1) continue;
+    const a = key % nv, b = Math.floor(key / nv);
+    if (rim[a] && rim[b]) continue;
+    ends.push([a, b]);
+  }
+  if (!ends.length) return 0;
+  const near = vertexGrid(p, Math.max(...ends.map(([a, b]) => Math.hypot(p[a * 3] - p[b * 3], p[a * 3 + 1] - p[b * 3 + 1], p[a * 3 + 2] - p[b * 3 + 2]))) || 1);
+  for (const [a, b] of ends) {
+    const r = Math.hypot(p[a * 3] - p[b * 3], p[a * 3 + 1] - p[b * 3 + 1], p[a * 3 + 2] - p[b * 3 + 2]);
+    for (const e of [a, b]) near(p[e * 3], p[e * 3 + 1], p[e * 3 + 2], r, (v) => { held[v] = 1; });
+  }
+  return ends.length;
+}
+
+// The vertices of a mesh in buckets size across: near(x, y, z, r, fn) calls fn(v) for every vertex within r.
+function vertexGrid(p, size) {
+  const n = p.length / 3, lo = [Infinity, Infinity, Infinity];
+  for (let v = 0; v < n; v++) for (let a = 0; a < 3; a++) lo[a] = Math.min(lo[a], p[v * 3 + a]);
+  const key = (i, j, k) => i + 65536 * (j + 65536 * k), at = (x, a) => Math.floor((x - lo[a]) / size);
+  const table = new Table(n), head = [], next = new Int32Array(n);
+  for (let v = 0; v < n; v++) {
+    const kk = key(at(p[v * 3], 0), at(p[v * 3 + 1], 1), at(p[v * 3 + 2], 2));
+    let b = table.get(kk);
+    if (b < 0) { b = head.length; head.push(-1); table.set(kk, b); }
+    next[v] = head[b];
+    head[b] = v;
+  }
+  return (x, y, z, r, fn) => {
+    for (let k = at(z - r, 2); k <= at(z + r, 2); k++) for (let j = at(y - r, 1); j <= at(y + r, 1); j++) for (let i = at(x - r, 0); i <= at(x + r, 0); i++) {
+      const b = table.get(key(i, j, k));
+      if (b < 0) continue;
+      for (let v = head[b]; v >= 0; v = next[v]) if ((p[v * 3] - x) ** 2 + (p[v * 3 + 1] - y) ** 2 + (p[v * 3 + 2] - z) ** 2 <= r * r) fn(v);
+    }
+  };
+}
+
+// The result measured against the mesh it was made from, both ways. find(out, held) counts the vertices of the mesh
+// further than error from the result, and the reduced triangles with a point further than error from the mesh, and
+// holds still the vertices of the mesh there, so the next try keeps them.
+function strays(mesh, error, place) {
   const p = mesh.positions, ix = mesh.indices, nv = p.length / 3;
   let sum = 0, n = 0;
   for (let t = 0; t < ix.length; t += 3 * Math.max(1, Math.floor(ix.length / 3 / 5000))) {
@@ -578,21 +665,11 @@ function strays(mesh, error) {
     sum += Math.hypot(p[a * 3] - p[b * 3], p[a * 3 + 1] - p[b * 3 + 1], p[a * 3 + 2] - p[b * 3 + 2]);
     n++;
   }
-  const size = Math.max(error * 2, n ? (sum / n) * 1.5 : error * 2);
+  const edge = n ? sum / n : error;
+  const size = Math.max(error * 2, edge * 1.5);
   const gap = closest(mesh, size);
+  const near = vertexGrid(p, size);
   const { start, tris } = incident(mesh);
-  const [lo] = bounds(mesh);
-  const vb = new Table(nv);
-  const key = (i, j, k) => i + 65536 * (j + 65536 * k);
-  const at = (x, a) => Math.floor((x - lo[a]) / size);
-  const head = [], next = new Int32Array(nv);
-  for (let v = 0; v < nv; v++) {
-    const kk = key(at(p[v * 3], 0), at(p[v * 3 + 1], 1), at(p[v * 3 + 2], 2));
-    let b = vb.get(kk);
-    if (b < 0) { b = head.length; head.push(-1); vb.set(kk, b); }
-    next[v] = head[b];
-    head[b] = v;
-  }
   const made = (a, b, c) => {
     for (let s = start[a]; s < start[a + 1]; s++) {
       const t = tris[s];
@@ -601,36 +678,38 @@ function strays(mesh, error) {
     }
     return false;
   };
-  const sure = error * Math.sqrt(3);
+  const short = error * Math.sqrt(3);
   return {
     find(out, held) {
       let count = 0;
+      const kept = new Uint8Array(nv);
+      for (let i = 0; i < out.length; i++) kept[place[out[i]]] = 1;
+      const back = closest({ positions: p, indices: out }, size);
+      for (let v = 0; v < nv; v++) {
+        if (place[v] !== v || kept[v]) continue;
+        if (back(p[v * 3], p[v * 3 + 1], p[v * 3 + 2], error) <= error) continue;
+        held[v] = 1;
+        count++;
+      }
       for (let t = 0; t < out.length; t += 3) {
         const a = out[t], b = out[t + 1], c = out[t + 2];
         const L = Math.max(
           Math.hypot(p[a * 3] - p[b * 3], p[a * 3 + 1] - p[b * 3 + 1], p[a * 3 + 2] - p[b * 3 + 2]),
           Math.hypot(p[b * 3] - p[c * 3], p[b * 3 + 1] - p[c * 3 + 1], p[b * 3 + 2] - p[c * 3 + 2]),
           Math.hypot(p[c * 3] - p[a * 3], p[c * 3 + 1] - p[a * 3 + 1], p[c * 3 + 2] - p[a * 3 + 2]));
-        if (L <= sure || made(a, b, c)) continue;
-        const steps = Math.min(SAMPLES, Math.max(2, Math.ceil(L / error)));
+        if (L <= short || made(a, b, c)) continue;
+        const steps = Math.min(SAMPLES, Math.max(2, Math.ceil(L / Math.max(error, edge))));
         let far = false;
         for (let i = 0; i <= steps && !far; i++) for (let j = 0; i + j <= steps && !far; j++) {
-          const u = i / steps, v = j / steps, w = 1 - u - v;
-          if (u === 1 || v === 1 || w === 1) continue;
-          const x = p[a * 3] * w + p[b * 3] * u + p[c * 3] * v, y = p[a * 3 + 1] * w + p[b * 3 + 1] * u + p[c * 3 + 1] * v, z = p[a * 3 + 2] * w + p[b * 3 + 2] * u + p[c * 3 + 2] * v;
+          const u = i / steps, w = j / steps, o = 1 - u - w;
+          if (u === 1 || w === 1 || o === 1) continue;
+          const x = p[a * 3] * o + p[b * 3] * u + p[c * 3] * w, y = p[a * 3 + 1] * o + p[b * 3 + 1] * u + p[c * 3 + 1] * w, z = p[a * 3 + 2] * o + p[b * 3 + 2] * u + p[c * 3 + 2] * w;
           if (gap(x, y, z, error) > error) far = true;
         }
         if (!far) continue;
         count++;
-        const box = [0, 1, 2].map((d) => [Math.min(p[a * 3 + d], p[b * 3 + d], p[c * 3 + d]) - error, Math.max(p[a * 3 + d], p[b * 3 + d], p[c * 3 + d]) + error]);
-        for (let k = at(box[2][0], 2); k <= at(box[2][1], 2); k++) for (let j = at(box[1][0], 1); j <= at(box[1][1], 1); j++) for (let i = at(box[0][0], 0); i <= at(box[0][1], 0); i++) {
-          const bk = vb.get(key(i, j, k));
-          if (bk < 0) continue;
-          for (let v = head[bk]; v >= 0; v = next[v]) {
-            if (p[v * 3] < box[0][0] || p[v * 3] > box[0][1] || p[v * 3 + 1] < box[1][0] || p[v * 3 + 1] > box[1][1] || p[v * 3 + 2] < box[2][0] || p[v * 3 + 2] > box[2][1]) continue;
-            if (toTriangle(p, a, b, c, p[v * 3], p[v * 3 + 1], p[v * 3 + 2]) > error * 0.5) held[v] = 1;
-          }
-        }
+        const mx = (p[a * 3] + p[b * 3] + p[c * 3]) / 3, my = (p[a * 3 + 1] + p[b * 3 + 1] + p[c * 3 + 1]) / 3, mz = (p[a * 3 + 2] + p[b * 3 + 2] + p[c * 3 + 2]) / 3;
+        near(mx, my, mz, L + error, (v) => { if (toTriangle(p, a, b, c, p[v * 3], p[v * 3 + 1], p[v * 3 + 2]) > error * 0.5) held[v] = 1; });
       }
       return count;
     },
