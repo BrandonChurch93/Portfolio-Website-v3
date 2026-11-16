@@ -2,6 +2,13 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · The ninth picture: the whole world in one picture (Fable, web chat)
+
+- "It looks really good." His one complaint is the dunes, which were better in picture 4. He asked whether the prototype can be built from both. Yes.
+- Kept as `reference/concept/09-*`. The underside held, which is what editing picture 8 was for. The top is a blend: the pyramid and the dunes are where picture 4 has them, the towers are mostly picture 7's with gold tops and a sun disc added, and the ring of debris is nearly gone.
+- The references are listed in `BRIEF.md`, Settled, Hero, "The ninth picture". No more is asked of Gemini.
+- Next is the fourth round of Study 32, on his go: the top to picture 4's plan, the underside to pictures 8 and 9, the debris to picture 6, a fixed moon behind and to the right.
+
 ## 2026-11-15 · The eighth picture: the underside he loves, the wrong city, and a prompt for the top (Fable, web chat)
 
 - "Wow, the bottom on this one looks awesome! But it looks like [it] got confused and [used] the wrong city."

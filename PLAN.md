@@ -155,6 +155,7 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **His three additions (Nov 15, 18:35):** craters on the right side of the planet's outer surface, which is ruled. Something for the left, where Fable recommends cracks lit from inside. And the smaller streams from the torn rock, which the brief already has and Fable had left out of the prompts. `BRIEF.md`, Settled, Hero. A fourth prompt asks Gemini to add the three to the combined picture (`LOG.md`, top entry). Waiting on the combined picture, his word on the left side and the smaller streams, and his yes or no on the fixed moon
 - **His yes (Nov 15, 18:39):** lit cracks on the left and the smaller streams, as Fable put them. One prompt for the combined picture with every change in it was given to him with pictures 6 and 7. Waiting on what comes back, and on his word on the fixed moon
 - **The eighth picture (Nov 15, 18:41):** its underside "looks awesome" and is now the reference for everything under the land. Gemini put the wrong city on it. Fable gave him a prompt that edits picture 8 and takes only the top from picture 6 (`LOG.md`, top entry). Waiting on what comes back
+- **The ninth picture (Nov 15, 18:43):** the whole world in one picture, "it looks really good". The dunes are to be picture 4's. `BRIEF.md`, Settled, Hero, says what each picture is the reference for. Asked of him: go on the prototype at `/lab/hero-blockout` built to these, with picture 4's number and spacing of towers and a fixed moon. Nothing is built before his go
 
 
 ## Phase 0 · Foundation
