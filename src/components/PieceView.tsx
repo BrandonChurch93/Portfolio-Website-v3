@@ -130,7 +130,11 @@ export function PieceView({ name, entrance = false, once, making = false, classN
     const gone = held ? from + 1 : Math.max(PIECE_MOUNT.far, (reach ?? 0) + 1.5);
     const check = () => {
       const dist = distanceOf(h), vh = innerHeight;
-      if (dist < vh * from) {
+      // A small piece on a handheld is let go a screen and a half after it has gone off the top, and made again a
+      // screen before it comes back: held as long behind the visitor as ahead, the five of them and the pad were
+      // all alive at the foot of the page, 500 MB over what the page held before.
+      const behind = held && small && h.getBoundingClientRect().bottom < 0;
+      if (dist < vh * (behind ? PIECE_MOUNT.near : from)) {
         near = true;
         // A piece that gave its place up asks again once any of it is on the screen.
         if (evicted && dist === 0) evicted = false;
@@ -138,7 +142,7 @@ export function PieceView({ name, entrance = false, once, making = false, classN
           if (small || budget.claim(id, { distance: () => distanceOf(h), keepsStill: false, release: () => { evicted = true; stop(); } })) loading = registry.track(start());
           else evicted = true;
         }
-      } else if (dist > vh * gone) {
+      } else if (dist > vh * (behind ? PIECE_MOUNT.near + 0.5 : gone)) {
         near = false;
         evicted = false;
         stop();
