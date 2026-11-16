@@ -1,13 +1,14 @@
 // The trees' design, which the make script (scripts/world/parts/trees/) and the part read alike. It imports nothing,
 // so node can read it as it is.
 //
-// One kind of tree, made as MODELS models in a crown's own units: the crown is 1 to each side of the trunk, so a
-// tree is drawn at TREES' size (about half its crown's width). Each crown is clumps of leaf: three discs of leaves
+// One kind of tree, made as several models in a crown's own units: the crown is about 1 to each side of the trunk,
+// so a tree is drawn at TREES' size (about half its crown's width). Each crown is clumps of leaf: discs of leaves
 // crossed at each clump's heart, and sprays of leaves round them on cards, every leaf drawn by the script into one
-// atlas.
+// atlas. The last model is the cheap one, for trees most of which another tree in front hides.
 
 export const FILES = { mesh: 'trees.bin', leaves: 'trees-leaves.png' } as const;
-export const MODELS = 4;
+export const MODELS = ['round', 'tall', 'twin', 'far'] as const;
+export const FAR = MODELS.indexOf('far');
 
 // The atlas: tiles of TILE pixels, COLS across and ROWS down. Which tile holds what. Its channels are numbers, not
 // colors: red, how light a leaf is there; green, how far its hue leans from the tree's own; blue, how much it faces
@@ -32,3 +33,8 @@ export function tileAt(tile: number): { u: number; v: number; du: number; dv: nu
 // The crown, in its own units: how high its middle stands over the ground. Picture 9's crowns sit nearly on the
 // ground, so little of a trunk shows.
 export const CROWN = { high: 0.98 } as const;
+
+// The shade a tree lays on the ground: a soft card from under the crown out along the ground away from the moon,
+// so the belt sits dark at its foot. How far it starts behind the trunk and how far it reaches past it, and how
+// wide it is to each side, in crown units. Each tree's card is cut short where the land ends.
+export const SHADE = { back: 1.1, reach: 3.2, wide: 1.25, up: 0.04 } as const;

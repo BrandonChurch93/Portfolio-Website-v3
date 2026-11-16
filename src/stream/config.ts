@@ -159,6 +159,9 @@ export const STREAM = {
     fall: 150,
     // How far the leading end has fallen from the core when the page is told it has set off.
     off: 30,
+    // Where the stream leaves the core it is the core's own to draw (the neck, in src/pieces/world/parts/core): the
+    // stream's core is not drawn for the first of these, and is taken up over the stretch to the second.
+    hand: [40, 100] as readonly [number, number],
   },
 
   // The route through Contact (routeThroughContact in route-contact.ts): one stream that falls onto the Sun stone

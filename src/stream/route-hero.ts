@@ -35,5 +35,5 @@ export function routeThroughHero(P: HeroPlan): Route {
   rides(branches, S, u);
   const br = branches[0], C = K.strike;
   const bar: Landing = { kind: 'land', name: 'bar', side: 0, s: br.len - br.step, x: P.bar.x, y: P.bar.y, out: 0, face: UP, force: C[0], glow: C[1], arc: C[2], every: C[3], fall: K.fall * k };
-  return { branches, split: br.len + 1e6, join: [Infinity, Infinity], landings: P.joined ? [] : [bar], ...S, fins: [], flows: [], fall: K.fall * k, unit: u, cues: [{ name: 'off', s: Math.min(br.len, K.off * k), over: 1 }], dark: [] };
+  return { branches, split: br.len + 1e6, join: [Infinity, Infinity], landings: P.joined ? [] : [bar], ...S, fins: [], flows: [], fall: K.fall * k, unit: u, cues: [{ name: 'off', s: Math.min(br.len, K.off * k), over: 1 }], dark: [{ from: 0, to: K.hand[0] * k, core: true, ease: [0, (K.hand[1] - K.hand[0]) * k] }] };
 }

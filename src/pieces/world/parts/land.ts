@@ -21,7 +21,7 @@ const LOOK = {
   sand: mix(color('pale'), color('hot'), 0.55).multiplyScalar(0.8),
   sandDeep: mix(color('copper'), color('ember'), 0.35).multiplyScalar(0.7),
   pave: mix(color('text-3'), color('bg-3'), 0.62),
-  pavePale: mix(color('text-3'), color('copper-light'), 0.22).multiplyScalar(0.62),
+  pavePale: mix(color('text-3'), color('copper-light'), 0.4).multiplyScalar(0.5),
   court: mix(color('text-3'), color('copper-light'), 0.18).multiplyScalar(0.62),
   grass: mix(color('bronze'), color('copper'), 0.35).multiplyScalar(0.55),
   grassDry: mix(color('copper-light'), color('text-3'), 0.4).multiplyScalar(0.55),

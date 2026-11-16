@@ -17,6 +17,9 @@ export interface PartState {
   // How bright the core burns, about 1 (coreLevel in ./layout.ts). The shared light already follows it: a part
   // reads it only for what it lights itself.
   core: number;
+  // The page's stream, which leaves the core's foot: how much of it is there (0 before it has set off, 1 once it
+  // has), and the seconds since it set off. In the lab, where a plain line stands in for it, on is 0.
+  stream: { on: number; since: number };
   // Nothing loops and nothing drifts: reduced motion, the static tier, or a held frame.
   still: boolean;
 }

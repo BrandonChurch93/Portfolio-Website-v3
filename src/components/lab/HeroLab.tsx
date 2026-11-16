@@ -26,6 +26,7 @@ const u = (n: number) => `calc(var(--u) * ${Number(n.toFixed(2))})`;
 export function HeroLab({ hub }: { hub?: Hub }) {
   const page = useRef<HTMLElement>(null), board = useRef<HTMLDivElement>(null), city = useRef<HTMLDivElement>(null), bar = useRef<HTMLDivElement>(null), cue = useRef<HTMLParagraphElement>(null);
   const sky = useRef<HTMLDivElement>(null), words = useRef<HTMLElement>(null);
+  const world = useRef<{ setStream(on: number, since: number): void } | null>(null);
   const [ui, setUi] = useState(true);
   // Whether the screen is wide enough for the layout. Narrower, the page is a plain stand in with no stream and no city.
   const [wide, setWide] = useState<boolean | null>(null);
@@ -43,7 +44,7 @@ export function HeroLab({ hub }: { hub?: Hub }) {
     let made: HeroStage | null = null, gone = false;
     void import('../../hero/stage').then(({ mountHero }) => {
       if (gone) return;
-      made = mountHero({ page: hub?.page() ?? page.current!, board: board.current!, city: city.current!, bar: () => (hub ? hub.workTop() : bar.current), cue: cue.current }, hub?.hero());
+      made = mountHero({ page: hub?.page() ?? page.current!, board: board.current!, city: city.current!, bar: () => (hub ? hub.workTop() : bar.current), cue: cue.current, world: () => world.current }, hub?.hero());
     });
     return () => { gone = true; made?.dispose(); };
   }, [wide, hub]);
@@ -89,7 +90,7 @@ export function HeroLab({ hub }: { hub?: Hub }) {
       <div ref={board} className={styles.board} style={vars}>
         <div ref={sky} className={styles.sky} aria-hidden="true" />
         <div ref={city} className={styles.city} style={{ width: u(HOST.wide) }}>
-          {wide && WORLD.shown && <PieceView name={WORLD.piece} className={styles.piece} />}
+          {wide && WORLD.shown && <PieceView name={WORLD.piece} className={styles.piece} onPiece={(p) => { world.current = p as unknown as { setStream(on: number, since: number): void } | null; }} />}
         </div>
         <header ref={words} className={styles.words} style={{ width: u(WORDS.w) }}>
           <p className={styles.role}>{hero.role}</p>

@@ -63,6 +63,9 @@ const loaders: Record<PartName, () => Promise<PartFactory>> = {
 export interface WorldExtras {
   // Where a point of the world is drawn in its host: across and down from the host's middle, in host heights.
   where(x: number, y: number, z: number): [number, number];
+  // What the page's stream is doing where it leaves the core: how much of it is there, 0 to 1, and the seconds
+  // since it set off.
+  setStream(on: number, since: number): void;
   // What it costs: the milliseconds each part took to make ready, what the first frame took, what the last frame
   // drew, how many shader programs it has had compiled, and what the graphics card holds for it.
   stats(): { built: Record<string, number>; first: number; calls: number; triangles: number; programs: number; geometries: number; textures: number; passes: string[] };
@@ -75,6 +78,7 @@ export function createWorld(): WorldPiece {
   let off: (() => void) | null = null, watch: ResizeObserver | null = null, near: IntersectionObserver | null = null, moon: THREE.DirectionalLight | null = null;
   let seen = true, stale = true, moving = false, cast = 3, hold: number | null = null, only: PartName | null = null, close: readonly [number, number, number] | null = null, zoom = 3;
   let lampUV = { x: 0.6, y: 0.3 }, reach = 1, first = 0;
+  const stream = { on: 0, since: 60 };
   const built: Record<string, number> = {};
   const aim = new THREE.Vector3(), right = new THREE.Vector3(), up = new THREE.Vector3(), back = new THREE.Vector3(), glint = new THREE.Vector3();
   const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -142,7 +146,7 @@ export function createWorld(): WorldPiece {
     place();
     const now = hold ?? clock.now(), still = reduced || frozen || stage.tier === 'static', level = still && hold === null && !clock.isFrozen() ? 1 : coreLevel(now);
     world.setCore(level);
-    const s: PartState = { t: now, core: level, still };
+    const s: PartState = { t: now, core: level, stream, still };
     moving = false;
     // The moon's shadows are drawn once, with every part there to cast them. After that a part none of which is on
     // the screen is not drawn and not told the time.
@@ -224,6 +228,12 @@ export function createWorld(): WorldPiece {
     setLamp(x: number, y: number) {
       if (Math.abs(x - lampUV.x) + Math.abs(y - lampUV.y) < 0.003) return;
       lampUV = { x, y };
+      stale = true;
+    },
+    setStream(on: number, since: number) {
+      if (Math.abs(on - stream.on) < 0.002 && (since > 4 || Math.abs(since - stream.since) < 0.01)) return;
+      stream.on = on;
+      stream.since = since;
       stale = true;
     },
     where(x: number, y: number, z: number): [number, number] {

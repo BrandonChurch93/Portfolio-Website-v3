@@ -19,12 +19,16 @@ export interface HeroParts {
   city: HTMLElement;
   bar: () => HTMLElement | null;
   cue: HTMLElement | null;
+  // The world, once it is mounted: it is told when the stream has set off from its core.
+  world?: () => { setStream(on: number, since: number): void } | null;
 }
 
 export interface HeroStage { dispose(): void }
 
 // How far the page has to be scrolled for the cue to have gone, in pixels.
 const CUE = 120;
+// How long the stream takes to come up to its whole strength once it has set off from the core, in seconds.
+const RISE = 0.5;
 // The small streams that leave the torn rock, which are the stream's own light: the share of the stream's width
 // they have. Where each leaves and how long it is are the world's (SMALL in its layout). The one that leaves the
 // core is the stream's own route.
@@ -51,7 +55,10 @@ export function mountHero(parts: HeroParts, host?: StreamHost): HeroStage {
   };
 
   const frame = () => {
-    if (disposed || !parts.cue) return;
+    if (disposed) return;
+    const since = stream ? stream.since('off') : -1;
+    parts.world?.()?.setStream(since > 0 ? Math.min(1, since / RISE) : 0, since > 0 ? since : 60);
+    if (!parts.cue) return;
     const k = Math.max(0, 1 - clock.view.y / CUE).toFixed(2);
     if (k !== shown) { shown = k; parts.cue.style.opacity = k; }
   };

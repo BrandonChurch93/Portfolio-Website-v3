@@ -166,7 +166,7 @@ void landSurface() {
 	city *= mix(1.0, 0.25, joint);
 	// Dust blown over the paving from the desert and up from the break.
 	float dn = landNoise(p / 7.0) * 0.6 + landNoise(p / 2.3) * 0.4;
-	city = mix(city, mix(uPavePale, uSand * 0.8, 0.5), clamp(dust * (0.55 + 0.6 * dn), 0.0, 0.85));
+	city = mix(city, mix(uPavePale, uSand * 0.7, 0.5), clamp(dust * (0.4 + 0.6 * dn), 0.0, 0.7));
 
 	// The belt: dry grass, uneven, darker in its clumps, paler where it is dry, with flat stones set in it.
 	vec3 turf = vec3(0.0);
@@ -215,6 +215,9 @@ void landSurface() {
 		float grain = landNoise(p / 0.35) - 0.5, fwp = max(fwidth(p.x), fwidth(p.y));
 		dune = mix(uSandDeep, uSand, 0.35 + 0.65 * hi) * (1.0 + 0.12 * grain * landKeep(0.7, fwp)) * (0.93 + 0.14 * landNoise(p / 31.0));
 		dune *= 1.0 + 0.05 * sin(6.2832 * q) * back * k1;
+		// The brink: the last of the back before the slip face, where the finest, palest sand lies.
+		float brink = smoothstep(0.35, 1.3, relief - landRelief(p + WIND * 1.2)) * (1.0 - smoothstep(0.22, 0.42, steep));
+		dune = mix(dune, uSand * 1.15, brink * 0.55);
 		// A slip face is coarser, darker, redder sand than a back, which the wind keeps fine.
 		dune = mix(dune, uSandDeep * (0.9 + 0.2 * landNoise(p / 9.0)), smoothstep(0.32, 0.6, steep) * 0.65);
 	}
