@@ -12,6 +12,7 @@ import { finish, trueDarks } from '../../world/tone';
 import { CORE, D2R, HOST, LIGHT, MOONWARD, PYRAMID, SCALE, SPIRE, VIEW, coreLevel, drawn, ground } from './layout';
 import { GLINT, STREAM_LONG, WARM, color, world } from './light';
 import { night } from './night';
+import { keep, type Kept } from './kept';
 import { ABOVE, LOADING, PARTS, type PartFactory, type PartName, type PartState, type WorldPart } from './part';
 import { STEP, TOWERS } from './placed';
 
@@ -33,6 +34,8 @@ const M = SCALE;
 // A part seen alone: how much of the host's height it fills, and the field of view it is seen with.
 const ALONE = { fill: 0.8, fov: 9 };
 // The places looked at closely, each a point of the world, in units.
+// How much of a screen's height is drawn above and below what the screen shows of the world.
+const MARGIN = 0.3;
 const CLOSE: Record<string, readonly [number, number, number]> = {
   hollow: [CORE.at[0], CORE.at[1] - 10, CORE.at[2]],
   pyramid: [PYRAMID.x, ground(PYRAMID.x, PYRAMID.z) + PYRAMID.tall * 0.45, PYRAMID.z],
@@ -86,6 +89,8 @@ export interface WorldExtras {
   whole(): boolean;
   // What it costs: the milliseconds each part took to make ready, what the first frame took, what the last frame
   // drew, how many shader programs it has had compiled, and what the graphics card holds for it.
+  // For timing a frame: the world drawn without these parts.
+  without(names: string[]): void;
   stats(): { built: Record<string, number>; first: number; calls: number; triangles: number; programs: number; geometries: number; textures: number; passes: string[] };
 }
 export type WorldPiece = Piece & WorldExtras;
@@ -95,6 +100,9 @@ export function createWorld(): WorldPiece {
   let parts: { name: PartName; part: WorldPart; span: [number, number]; on: boolean }[] = [];
   let off: (() => void) | null = null, watch: ResizeObserver | null = null, near: IntersectionObserver | null = null, moon: THREE.DirectionalLight | null = null;
   let later: Tier | null = null;
+  let view: [number, number] | null = null, drew: [number, number] = [0, 0], left = new Set<string>();
+  // The land as one kept picture (./kept.ts), and whether that picture is of the land as it is lit now.
+  let kept: Kept | null = null, taken = false, keeps = true;
   let seen = true, stale = true, moving = false, warming = false, cast = 3, hold: number | null = null, only: PartName | null = null, close: readonly [number, number, number] | null = null, zoom = 3;
   let lampUV = { x: 0.6, y: 0.3 }, reach = 1, first = 0;
   const stream = { on: 0, since: 60, long: 0 };
@@ -145,6 +153,11 @@ export function createWorld(): WorldPiece {
     if (!stage || !host) return false;
     if (only || close) { for (const p of parts) p.on = true; return false; }
     const r = host.getBoundingClientRect(), px = stage.width / HOST.wide, from = -r.top / px, to = (innerHeight - r.top) / px;
+    // Only what is on the screen is drawn, and a share of a screen each side of it for a scroll to run into. A
+    // frame is owed whenever the screen has come to show something the last frame did not draw.
+    view = [-r.top - innerHeight * MARGIN, innerHeight - r.top + innerHeight * MARGIN];
+    const top = Math.max(0, -r.top), foot = Math.min(stage.height, innerHeight - r.top);
+    if (foot > top && (top < drew[0] || foot > drew[1])) stale = true;
     let changed = false;
     for (const p of parts) { const on = p.span[1] >= from && p.span[0] <= to; if (on !== p.on) { p.on = on; changed = true; } }
     return changed;
@@ -181,11 +194,25 @@ export function createWorld(): WorldPiece {
     // The moon's shadows are drawn once, with every part there to cast them. After that a part none of which is on
     // the screen is not drawn and not told the time.
     const casting = cast > 0 || frozen;
+    // The land is laid in from its picture, taken once the moon's shadows are drawn and again whenever they are
+    // drawn again or the canvas changes size. Not while they are being drawn, when the land has to cast its own.
+    const land = parts.find((p) => p.name === 'land');
+    const laid = keeps && !!kept && !!land && !casting && only === null && close === null && !left.has('land');
+    if (casting) taken = false;
+    if (laid && (!taken || !kept!.fresh())) {
+      for (const p of parts) p.part.group.visible = p === land;
+      kept!.take();
+      taken = true;
+    }
+    kept?.show(laid && land!.on);
     for (const p of parts) {
-      p.part.group.visible = casting || p.on;
+      p.part.group.visible = (casting || p.on) && !left.has(p.name) && !(laid && p === land);
       if (p.on && p.part.update?.(s) && !still) moving = true;
     }
     if (moon && casting) { moon.shadow.needsUpdate = true; if (cast > 0) { cast--; stale = true; } }
+    const all = casting || only !== null || close !== null || !view;
+    stage.setWindow(all ? null : view![0], all ? 0 : view![1]);
+    drew = all ? [-Infinity, Infinity] : [Math.max(0, view![0]), Math.min(stage.height, view![1])];
     stage.render();
   };
 
@@ -201,10 +228,12 @@ export function createWorld(): WorldPiece {
       close = CLOSE[q.get('close') ?? ''] ?? null;
       if (Number(q.get('zoom')) > 0) zoom = Number(q.get('zoom'));
       glow = q.get('glow') === '1';
+      keeps = q.get('keep') !== '0';
       stage = new Stage(h, canvas, { tier: opts.tier, fov: ALONE.fov, near: 0.3, far: 40, bloom: GLOW, bloomScale: 0.5, envIntensity: LIGHT.night, env: night, lampAngle: 0.9, pixels: HANDHELD.world });
       trueDarks(stage.renderer);
       lean();
       finish(stage, RIM, WARM);
+      kept = keep(stage);
       stage.lamp.intensity = 0;
       stage.lamp.castShadow = false;
       const s = stage.scene, root = new THREE.Group();
@@ -288,7 +317,7 @@ export function createWorld(): WorldPiece {
       const from = performance.now();
       await stage.warm();
       if (!stage) return;
-      watch = new ResizeObserver(() => { stage?.resize(); stale = true; frame(); });
+      watch = new ResizeObserver(() => { stage?.resize(); drew = [0, 0]; stale = true; frame(); });
       watch.observe(h);
       near = new IntersectionObserver((es) => { seen = es.some((e) => e.isIntersecting); if (seen) { stale = true; frame(); } });
       near.observe(h);
@@ -344,6 +373,8 @@ export function createWorld(): WorldPiece {
     setProgress() {},
     setWaterLight() {},
     setMaking(on: boolean) { if (stage) { stage.setMaking(on, stage.scene); stale = true; } },
+    // For timing a frame: the world drawn without these parts (npm run perf, scripts that call piece('world')).
+    without(names: string[]) { left = new Set(names); stale = true; },
     setTier(tier: Tier) {
       // The page tells every piece its tier as it mounts. Told the tier it already has, the world used to throw its
       // moon's shadow map away and make it again, with a color texture nobody reads: over 100 MB in Safari.
@@ -353,6 +384,7 @@ export function createWorld(): WorldPiece {
       retier(tier);
     },
     freeze(t: number | null) { hold = t; stale = true; frame(); },
+
     view() {},
     dispose() {
       loading.end(LOADING);
@@ -361,6 +393,8 @@ export function createWorld(): WorldPiece {
       near?.disconnect();
       for (const { part } of parts) part.dispose?.();
       parts = [];
+      kept?.dispose();
+      kept = null;
       stage?.dispose();
       stage = null;
       moon = null;

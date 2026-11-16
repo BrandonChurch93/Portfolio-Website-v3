@@ -98,6 +98,8 @@ export class Stage {
   private ao: GTAOPass | null = null;
   bloom: UnrealBloomPass;
   private smaa: SMAAPass | null = null;
+  private win: [number, number] | null = null;
+  private wasCut = false;
   private envRT: THREE.WebGLRenderTarget;
   private making = false;
   private exposureBefore = 1;
@@ -504,11 +506,32 @@ export class Stage {
     this.host.dataset.making = on ? 'on' : 'off';
   }
 
+  // Only this much of the canvas is drawn from now on, from this far down it to this far, in CSS pixels: the part
+  // of a tall canvas that is on the screen. What lies outside keeps the last frame that drew it. With nothing, all
+  // of it. A canvas much taller than the screen spent most of each frame's passes on pixels nobody could see.
+  setWindow(top: number | null, bottom = 0): void {
+    this.win = top === null ? null : [Math.max(0, Math.min(this.height, top)), Math.max(0, Math.min(this.height, bottom))];
+  }
+
+  private cut(): void {
+    const on = !!this.win && this.win[1] > this.win[0], H = this.height;
+    const y = on ? H - this.win![1] : 0, h = on ? this.win![1] - this.win![0] : H;
+    this.renderer.setScissor(0, y, this.width, h);
+    this.renderer.setScissorTest(on);
+    const smaa = this.smaa as unknown as { _edgesRT?: THREE.WebGLRenderTarget; _weightsRT?: THREE.WebGLRenderTarget } | null;
+    for (const rt of [this.composer.renderTarget1, this.composer.renderTarget2, smaa?._edgesRT, smaa?._weightsRT]) {
+      if (!rt) continue;
+      rt.scissorTest = on;
+      rt.scissor.set(0, Math.floor((y / H) * rt.height), rt.width, Math.ceil((h / H) * rt.height));
+    }
+  }
+
   render(): void {
     const t0 = performance.now();
     if (!this.lean) this.leanShadows();
     this.renderer.info.reset();
     this.renderer.info.autoReset = false;
+    if (this.win || this.wasCut) { this.cut(); this.wasCut = !!this.win; }
     this.composer.render();
     this.frameMs = performance.now() - t0;
     if (this.making) {

@@ -13,6 +13,7 @@
     "strip": "node scripts/strip.mjs",
     "live": "node scripts/live.mjs",
     "perf": "node scripts/perf.mjs",
+    "cost": "node scripts/cost.mjs",
     "mem": "node scripts/mem.mjs",
     "blockout": "node scripts/blockout.mjs",
     "look": "node scripts/world/look.mjs",
