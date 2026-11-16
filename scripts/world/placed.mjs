@@ -199,6 +199,9 @@ for (let px = 1063; px <= 1174; px += 9.6) { const [x, z] = onGround(px + 2.5 * 
 //     quarter larger, where it stands.
 for (let i = trees.length - 1; i >= 0; i--) { const t = trees[i], [px, py] = W.pictured(t[0], W.ground(t[0], t[1]), t[1]); if (px > 470 && px < 650 && py > 268) trees.splice(i, 1); }
 grove(474, 646, 8.5, [263, 259], [0.85, 1.2]);
+// Before the spire's portal the picture has open paving, 668 to 708 across: crowns stood there and cut the podium
+// off at its doors.
+for (let i = trees.length - 1; i >= 0; i--) { const t = trees[i], [px] = W.pictured(t[0], W.ground(t[0], t[1]), t[1]); if (px > 668 && px < 708 && t[1] > 30) trees.splice(i, 1); }
 for (const t of trees) t[2] = n(t[2] * 1.25);
 console.log(`for picture 9's edge: ${drawn} buildings drawn back from the bite, ${slid} more slid back, ${lost} left where the land is not, ${kept} of the study's trees kept, ${trees.length - kept} planted along the new edge`);
 const vents = P.vents().map((v) => [n(v.at[0]), n(v.at[1]), n(v.at[2]), v.long, v.wide, v.heat]);
