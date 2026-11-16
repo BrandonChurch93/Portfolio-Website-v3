@@ -284,8 +284,9 @@ float coreLine( out vec3 B ) {
 float coreTip() { return pow( smoothstep( 0.68, 1.0, length( vObj ) ), 3.0 ); }
 `;
 
-// A solid shard: dark copper, a mirror a little rough, as the stream's are. A face turned from the core mirrors the
-// dimly lit hollow and is dark, so a shard in front of the bright face shows dark against it. A face that mirrors the
+// A solid shard: dark copper, a mirror a little rough, as the stream's are. A face turned to the eye mirrors the
+// night and is dark, so a shard in front of the bright face shows dark against it, and a face turned aside mirrors
+// the hollow's lit walls. A face that mirrors the
 // ball flashes. Its edges catch the core where their bevels look toward it, as a thin lit line, and so do its
 // points. All of it is an amount of light given the copper's color once, which keeps its hue as it brightens and
 // only lets the heart of a flash go to the ball's own pale gold, as the stream's shards do.
@@ -300,7 +301,10 @@ void main() {
 	vec3 L = - vP / d;
 	float line = coreLine( B );
 	float seen = coreSeen( N, V, L, s, SHARD_ROUGH ), graze = pow( 1.0 - max( dot( N, V ), 0.0 ), 3.0 );
-	float light = SHARD_ROOM * ( 1.0 - seen ) * ( 0.7 + graze ) + SHARD_FLASH * seen + SHARD_DIFFUSE * coreOn( N, L, s );
+	// What a face mirrors that is not the ball: the hollow's walls, lit by the core, or, for a face turned to the eye,
+	// the night outside the hollow.
+	float room = mix( SHARD_WALL, SHARD_ROOM, smoothstep( 0.2, 0.85, reflect( - V, N ).z ) );
+	float light = room * ( 1.0 - seen ) * ( 0.7 + graze ) + SHARD_FLASH * seen + SHARD_DIFFUSE * coreOn( N, L, s );
 	float rim = coreOn( B, L, s ) * line + coreTip() * coreOn( normalize( vObj ), L, s ) * 0.6;
 	light = max( light, SHARD_EDGE * rim );
 	// Drawn into the neck, it takes the stream's light and goes into it.

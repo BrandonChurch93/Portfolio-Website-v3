@@ -7,9 +7,11 @@ import { BALL_FRAG, BALL_VERT, GLASS_FRAG, NECK_FRAG, NECK_VERT, SHARD_VERT, SOL
 import { frameOf, shardGeometry, type Moon } from './core/shards';
 
 // The core: a ball of the stream's light hanging free in the hollow, as picture 9 has it. Pale gold over its face
-// with a fine, even, luminous grain, warming to deep orange in a band just inside its hard edge and a thin brighter
-// line of orange gold at the edge itself, and a neck at its foot, a column of light brightest down its middle, that
-// narrows into the stream. It gives light of its own, casts no shadow and takes none, and draws nothing outside itself.
+// with a fine, even, luminous grain, which close up is countless tiny facets, warming to deep orange in a band just
+// inside its hard edge and a thin brighter line of orange gold at the edge itself, and a neck at its foot, a column
+// of light brightest down its middle, where the page's stream begins. A few of the stream's own shards turn slowly
+// round it, and now and then one is drawn down into the neck. It gives light of its own, casts no shadow and takes
+// none, and draws no haze or glow outside itself.
 
 type Ink = readonly [number, number, number];
 type Stops = readonly (readonly [number, Ink])[];
@@ -68,7 +70,7 @@ const TURN = { axis: new THREE.Vector3(0.28, 1, 0.34).normalize(), rate: 0.0075 
 // Alone it is a drop about to fall: over `thin` it narrows to a thread, `thread` of its width, and over `fade` it
 // fades out, with nothing cut off. Once the page's stream has set off from it, it keeps its width and fades over
 // HANDOVER, where the stream grows in: there the neck is the stream's beginning.
-const NECK = { flare0: 2.8, fall0: 8, flare1: 9, fall1: 42, flat: 102, fillet: 9, into: 14, thin: [70, 150], thread: 0.13, fade: [92, 150], long: 150 } as const;
+const NECK = { flare0: 2.8, fall0: 8, flare1: 9, fall1: 42, flat: 102, fillet: 9, into: 14, thin: [48, 108], thread: 0.13, fade: [72, 108], long: 108 } as const;
 // Where the neck hands over to the page's stream, in units down from the ball's foot: the stream is not drawn above
 // `from`, and is whole by `to`, over which the neck fades out. How long the neck takes, in seconds, to fill out from
 // a thread to its full width when the stream sets off, and to draw back when it goes.
@@ -80,7 +82,7 @@ export const HANDOVER = { from: 40, to: 100, fills: 0.45 } as const;
 // Of those, how many are drawn into the neck now and then, after how many turns round, how long the fall takes, how
 // long one takes to gather again, how far down the neck it goes, and how near the ball it comes at the foot.
 const MOONS = {
-  count: 11, glass: 3, out: [1.07, 1.17], lean: [18, 72], round: [70, 125], turns: [0.12, 0.42], long: [4, 9],
+  count: 11, glass: 3, out: [1.07, 1.17], lean: [18, 72], round: [70, 125], turns: [0.12, 0.42], long: [4.5, 9],
   fall: { count: 4, after: [2, 3], takes: 17, gather: 9, sink: 60, foot: 1.06 },
   seed: 61,
 } as const;
@@ -110,11 +112,11 @@ function moons(): Moon[] {
 // The rings of the ball's shell at each level of cost.
 const RINGS = { full: 48, lean: 40 } as const;
 
-// How a shard takes the core's light, as amounts of light: what a face that mirrors the hollow shows and what one
-// that mirrors the ball does, how rough its faces are, how much light a face takes from the ball and how much its
-// edges and points do, and how bright one is once it is drawn into the neck. And for glass: how much light it holds, how strongly it mirrors the ball and lights its
-// edges, and how much it dims what is behind it.
-const SHARD = { room: 0.14, heat: 2.6, flash: 1.6, rough: 0.05, diffuse: 0.25, edge: 2.2, held: 0.05, glint: 0.35, glassEdge: 0.45, dim: 0.22 } as const;
+// How a shard takes the core's light, as amounts of light: what a face shows that mirrors the night outside the
+// hollow, the hollow's lit walls, or the ball, how rough its faces are, how much light a face takes from the ball and
+// how much its edges and points do, and how bright one is once it is drawn into the neck. And for glass: how much
+// light it holds, how strongly it mirrors the ball and lights its edges, and how much it dims what is behind it.
+const SHARD = { room: 0.1, wall: 0.55, heat: 2.6, flash: 1.6, rough: 0.05, diffuse: 0.25, edge: 2.2, held: 0.05, glint: 0.35, glassEdge: 0.45, dim: 0.22 } as const;
 
 const vec = (c: readonly number[]): THREE.Vector3 => new THREE.Vector3(c[0], c[1], c[2]);
 
@@ -258,7 +260,7 @@ export const build: PartFactory = (ctx) => {
   const shardDefines = {
     SHARD_GATHER: MOONS.fall.gather.toFixed(2), SHARD_FALL: MOONS.fall.takes.toFixed(2), SHARD_SINK: MOONS.fall.sink.toFixed(2), SHARD_FOOT: MOONS.fall.foot.toFixed(3),
     SHARD_NECK: (STREAM / 2).toFixed(2), SHARD_FLARE: NECK.flare1.toFixed(2), SHARD_FALLS: NECK.fall1.toFixed(2),
-    SHARD_ROOM: SHARD.room.toFixed(3), SHARD_HEAT: SHARD.heat.toFixed(3), SHARD_FLASH: SHARD.flash.toFixed(3), SHARD_ROUGH: SHARD.rough.toFixed(3), SHARD_DIFFUSE: SHARD.diffuse.toFixed(3), SHARD_EDGE: SHARD.edge.toFixed(3),
+    SHARD_ROOM: SHARD.room.toFixed(3), SHARD_WALL: SHARD.wall.toFixed(3), SHARD_HEAT: SHARD.heat.toFixed(3), SHARD_FLASH: SHARD.flash.toFixed(3), SHARD_ROUGH: SHARD.rough.toFixed(3), SHARD_DIFFUSE: SHARD.diffuse.toFixed(3), SHARD_EDGE: SHARD.edge.toFixed(3),
     GLASS_HELD: SHARD.held.toFixed(3), GLASS_GLINT: SHARD.glint.toFixed(3), GLASS_EDGE: SHARD.glassEdge.toFixed(3), GLASS_DIM: SHARD.dim.toFixed(3),
   };
   const all = moons();

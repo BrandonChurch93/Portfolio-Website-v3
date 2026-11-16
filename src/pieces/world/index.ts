@@ -42,6 +42,8 @@ const MOON = { reach: 980, mid: -330, far: 4.5, map: { high: 4096, mid: 2048, lo
 // The cursor's glint: how far in front of the world it stands, in metres, how far it ranges as a share of what the
 // host shows, and how strong it is.
 const GLINT = { back: 2.2, range: 1.3, power: 1.4 };
+// The glow: how strong, how far it spreads, and how bright a thing has to be to have one (pale is about 1).
+const GLOW = { strength: 0.14, radius: 0.08, threshold: 1.7 };
 // The canvas fades to nothing over this share of its rim, so nothing can end at its edge.
 const RIM = 0.02;
 
@@ -77,9 +79,12 @@ export function createWorld(): WorldPiece {
   const aim = new THREE.Vector3(), right = new THREE.Vector3(), up = new THREE.Vector3(), back = new THREE.Vector3(), glint = new THREE.Vector3();
   const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // No occlusion pass and no bloom: how shut in a place is was worked out ahead and is stored with the meshes, and
-  // the core is clear, with no haze round it.
-  const lean = () => { if (stage) for (const p of [...stage.composer.passes]) if (p instanceof GTAOPass || p instanceof UnrealBloomPass) stage.composer.removePass(p); };
+  // No occlusion pass: how shut in a place is was worked out ahead and is stored with the meshes. And no bloom
+  // ("Nothing blooms at rest"). Under his standing permission of Nov 15 a tight glow was tried on what is far
+  // brighter than pale, and judged on the hero: every gold point swelled into a soft ball of light, which is on the
+  // list of things that fail on sight. So the rule stands. ?glow=1 shows the glow that was tried.
+  let glow = false;
+  const lean = () => { if (stage) for (const p of [...stage.composer.passes]) if (p instanceof GTAOPass || (!glow && p instanceof UnrealBloomPass)) stage.composer.removePass(p); };
 
   const place = () => {
     if (!stage) return;
@@ -161,7 +166,8 @@ export function createWorld(): WorldPiece {
       only = asked && PARTS.includes(asked) ? asked : null;
       close = CLOSE[q.get('close') ?? ''] ?? null;
       if (Number(q.get('zoom')) > 0) zoom = Number(q.get('zoom'));
-      stage = new Stage(h, canvas, { tier: opts.tier, fov: ALONE.fov, near: 0.3, far: 40, bloom: { strength: 0, threshold: 9, radius: 0.1 }, envIntensity: LIGHT.night, env: night, lampAngle: 0.9 });
+      glow = q.get('glow') === '1';
+      stage = new Stage(h, canvas, { tier: opts.tier, fov: ALONE.fov, near: 0.3, far: 40, bloom: GLOW, bloomScale: 0.5, envIntensity: LIGHT.night, env: night, lampAngle: 0.9 });
       trueDarks(stage.renderer);
       lean();
       finish(stage, RIM);

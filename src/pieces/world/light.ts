@@ -19,8 +19,15 @@ export const color = (name: PaletteName, power = 1): THREE.Color => new THREE.Co
 // The world's metals, so that every gold in it is one gold, at the palette's hue and never yellow, and every
 // bronze one bronze. Each is the color of a polished face of it.
 // Gold is the palette's hot light eased toward its pale: lighter and less saturated than copper, which is what
-// lets it read as gold and not as copper at the palette's own hue. Yellow gold is not allowed on this site.
-export const METAL = { gold: color('hot').lerp(color('pale'), 0.45), bronze: color('bronze'), copper: color('copper') } as const;
+// lets it read as gold and not as copper. By the rule ("Gold is at the palette's hue, never yellow") that is where
+// it stops, and there every reviewer read it as copper or peach. Under his standing permission of Nov 15 the
+// world's gold is turned GOLD.turn degrees toward true gold, well short of yellow. ?gold=spec puts it back at the
+// palette's hue, so he can choose.
+export const GOLD = { ease: 0.45, turn: 6 } as const;
+const spec = typeof location !== 'undefined' && new URLSearchParams(location.search).get('gold') === 'spec';
+const gold = color('hot').lerp(color('pale'), GOLD.ease);
+if (!spec) gold.offsetHSL(GOLD.turn / 360, 0, 0);
+export const METAL = { gold, bronze: color('bronze'), copper: color('copper') } as const;
 
 const shared = {
   uCoreAt: { value: new THREE.Vector3(...CORE.at).multiplyScalar(SCALE) },

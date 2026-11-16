@@ -27,7 +27,7 @@ const LOOK = {
   detail: [38, 11, 0.38, 1.4 * SCALE] as const,
   // The stream's light: its color, and for the stream and the small streams, how bright and over how many units it
   // falls to half.
-  stream: { color: color('hot').lerp(color('flame'), 0.3), main: [6, 90] as const, small: [1.6, 40] as const, foot: 420 },
+  stream: { color: color('hot').lerp(color('flame'), 0.3), main: [26, 120] as const, small: [4, 45] as const, foot: 420 },
 };
 // How each row of the table is laid into the texture: the columns of the file's table.
 const COLUMNS = 'model x y z qx qy qz qw sx sy sz kind family phase ax ay az spin core br bg bb extra'.split(' ');

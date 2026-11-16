@@ -20,7 +20,7 @@ export const SHARED = {
   D: { count: 4, size: [[12, 8, 10], [14, 6, 9], [10, 9, 10], [13, 7, 8]], beds: [1, 1, 1, 1], sides: [4, 5, 5, 4], corners: [2, 3, 2, 3], chips: [0, 0, 0, 0], steps: [0, 0, 0, 0], cell: 0.8, keep: 30 },
 };
 // A great piece: the cell it is made with, how many triangles it keeps, and which carry the planet's outer surface.
-export const GREAT = { cell: 0.75, keep: 12500, skin: { 1: { R: 5, pits: 3 }, 3: { R: 5.5, pits: 1 } } };
+export const GREAT = { cell: 0.75, keep: 12500, skin: { 1: { R: 5, pits: 1 }, 3: { R: 5.5, pits: 0 } } };
 // How far round an edge is looked at for how bent it is, as a share of the model's size, and how bent is the most
 // that is stored.
 const BEND = { reach: 0.05, most: 3 };

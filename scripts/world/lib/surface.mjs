@@ -181,7 +181,16 @@ export async function surface({ module, args, box, cell, threads, onProgress, ma
   for (let i = verts * 3; i < all.length; i++) all[i] = Math.min(box[1][i % 3], Math.max(box[0][i % 3], all[i]));
   const raw = { positions: all, indices: tri.subarray(0, nt) };
   const clean = tidy(raw);
+  const edge = box.map((corner, side) => corner.map((x) => {
+    let f = Math.fround(x);
+    if (side === 0 && f < x) f = Math.fround(f + Math.max(Math.abs(f), 1) * 2 ** -23);
+    if (side === 1 && f > x) f = Math.fround(f - Math.max(Math.abs(f), 1) * 2 ** -23);
+    return f;
+  }));
+  const inBox = () => { for (let i = 0; i < clean.positions.length; i++) clean.positions[i] = Math.min(edge[1][i % 3], Math.max(edge[0][i % 3], clean.positions[i])); };
+  inBox();
   const shifted = apart(clean, cell);
+  inBox();
   const thin = uncap(clean);
   const t2 = performance.now();
   return {
@@ -339,7 +348,7 @@ function joiner(pos, verts, quads, herm, along, nq, cell) {
     centres.delete(q);
     ring.length = 0;
     for (let s = 0; s < 4; s++) if (v[s] !== v[(s + 3) % 4]) ring.push(v[s]);
-    if (ring.length < 3 || new Set(ring).size !== ring.length) { kind[q] = KIND.dropped; return; }
+    if (ring.length < 3 || (ring.length === 4 ? ring[0] === ring[2] || ring[1] === ring[3] : ring[0] === ring[2])) { kind[q] = KIND.dropped; return; }
     if (ring.length === 3) { slots[o] = ring[0]; slots[o + 1] = ring[1]; slots[o + 2] = ring[2]; kind[q] = KIND.three; return; }
     const way = split(pos, v, h, along[q], least, judge, cell);
     if (way === 3) {

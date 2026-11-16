@@ -97,7 +97,7 @@ export function shape({ seed, size, beds = 1, layer = [0, 1, 0], sides = 6, corn
     }
     if (!dir) continue;
     // A few large scars, and many small nicks along the edges.
-    const large = i < chips / 4, R = big * (large ? 0.18 + 0.32 * r() ** 1.3 : 0.025 + 0.06 * r()), out = R * (large ? 0.82 + 0.1 * r() : 0.72 + 0.16 * r());
+    const large = i < chips / 4, R = big * (large ? 0.3 + 0.4 * r() : 0.025 + 0.06 * r()), out = R * (large ? 0.9 + 0.06 * r() : 0.8 + 0.12 * r());
     holes.push({ at: [at[0] + dir[0] * out, at[1] + dir[1] * out, at[2] + dir[2] * out], R });
   }
   // Steps across a face: a broken face that drops a little part of the way across it.

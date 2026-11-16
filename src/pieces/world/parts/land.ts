@@ -18,8 +18,8 @@ import * as S from './land/shaders';
 // shows, the flat stones in the grass, and the bronze laid in the spire's court.
 const mix = (a: THREE.Color, b: THREE.Color, k: number): THREE.Color => a.clone().lerp(b, k);
 const LOOK = {
-  sand: mix(color('copper-light'), color('text-2'), 0.42).multiplyScalar(0.78),
-  sandDeep: mix(color('copper'), color('bronze'), 0.45).multiplyScalar(0.62),
+  sand: mix(color('text-2'), color('copper-light'), 0.38).multiplyScalar(0.72),
+  sandDeep: mix(color('copper'), color('bronze'), 0.5).multiplyScalar(0.6),
   pave: mix(color('text-3'), color('bg-3'), 0.62),
   pavePale: mix(color('text-3'), color('text-2'), 0.3).multiplyScalar(0.72),
   court: mix(color('text-3'), color('copper-light'), 0.18).multiplyScalar(0.62),
@@ -68,7 +68,7 @@ export const build: PartFactory = async () => {
     towers.set([w, d, tall, 0], i * 8 + 4);
   });
   const lots3 = floats(towers, 2, TOWERS.length);
-  const counts = { map: a.image.width as number, lots: lots.image.width as number };
+  const counts = { map: (a.image as HTMLImageElement).width, lots: (lots.image as HTMLImageElement).width };
 
   const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85, metalness: 0 });
   m.onBeforeCompile = (sh: Shader) => {

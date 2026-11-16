@@ -28,9 +28,10 @@ const BAY = { bronze: 0.62, rough: 0.5, metal: 0.85, glass: 0.06, bevel: 0.07, c
 // bright where that light is widest, at its heart, and how near the moon its heart begins, as a cosine), and a
 // deep gold elsewhere. Its color is then given by how much it mirrors, as the pyramid's is (grade: the levels at
 // which deep gold becomes the world's gold, METAL.gold, and that becomes pale gold), and the stage's white balance
-// is undone on it, so every gold pixel stays gold.
+// is undone on it, so every gold pixel stays gold. Its brightness eases to a most (from most[0] to most[1]), under
+// what the stage's glow takes for a light, so gold mirrors the moon as pale gold and never burns or glows.
 const REED_TAPS = 6;
-const GOLD = { rough: 0.17, sheen: [1.4, 9, 0.86], shade: 0.75, city: 0.6, flank: 42, fillet: 0.16, valley: 0.28, grade: [0.15, 1.5, 4.5] };
+const GOLD = { rough: 0.17, sheen: [1.4, 9, 0.86], shade: 0.75, city: 0.6, flank: 42, fillet: 0.16, valley: 0.28, grade: [0.15, 1.5, 4.5], most: [0.9, 1.3] };
 // The gold also mirrors what the bake found reaching it from round about (the city's windows, the street, the
 // stone), which the night has none of, as an even light of that strength over the half of the world it faces: so
 // a face turned from the moon is a deep gold and not a hole.
@@ -199,7 +200,11 @@ if ( abs( bTilt.x ) + abs( bTilt.y ) > 0.0 ) {
 	normal = tilted / max( length( tilted ), 1e-5 );
 }`)
       .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += bEmit;')
-      .replace('#include <opaque_fragment>', 'outgoingLight = mix( outgoingLight, tKeep( outgoingLight ), max( max( max( bGlass, bLit ), bCopper ), bKeep ) );\n#include <opaque_fragment>');
+      .replace('#include <opaque_fragment>', `{
+	float lamp = clamp( dot( bEmit, vec3( 1.0 ) ) / max( dot( outgoingLight, vec3( 1.0 ) ), 1e-5 ), 0.0, 1.0 );
+	outgoingLight = mix( outgoingLight, tKeep( outgoingLight ), max( max( max( max( bGlass, bLit ), bCopper ), bKeep ), lamp ) );
+}
+#include <opaque_fragment>`);
   };
   return lit(m, { key: 'towers-bay', baked: true, core: false });
 }
@@ -300,7 +305,8 @@ vec3 goldMoon( const in vec3 viewDir, const in PhysicalMaterial mat, const in ve
 void main() {`).replace('#include <opaque_fragment>', `{
 	float lv = max( outgoingLight.r, 0.0 );
 	vec3 c = mix( mix( ${DEEP}, ${lin3(METAL.gold)}, smoothstep( ${f(GOLD.grade[0])}, ${f(GOLD.grade[1])}, lv ) ), ${lin('pale')}, smoothstep( ${f(GOLD.grade[1])}, ${f(GOLD.grade[2])}, lv ) );
-	outgoingLight = tKeep( c * lv );
+	float top = ${f(GOLD.most[0])}, room = ${f(GOLD.most[1] - GOLD.most[0])};
+	outgoingLight = tKeep( c * ( lv < top ? lv : top + room * ( 1.0 - exp( - ( lv - top ) / room ) ) ) );
 }
 #include <opaque_fragment>`);
   };

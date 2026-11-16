@@ -261,7 +261,7 @@ export function buildBreak(R, { steiner = STEINER } = {}) {
 }
 
 // The planet's own surface: its outer shell, but where it is torn open in front, and its top inside the land.
-export function buildSkin({ around = 540, down = 180, spokes = 720, rings = 64 } = {}) {
+export function buildSkin({ around = 400, down = 120, spokes = 400, rings = 44 } = {}) {
   const P = [], I = [], NN = [];
   const shellNormal = (p) => {
     const e = 0.5, g = [0, 1, 2].map((k) => { const a = [...p], b = [...p]; a[k] += e; b[k] -= e; return L.shell(...a) - L.shell(...b); });
@@ -297,7 +297,7 @@ export function buildSkin({ around = 540, down = 180, spokes = 720, rings = 64 }
     moved.add(v);
     const p = posOf(v), [px, py] = L.pictured(...p), side = px < L.PICTURE.mid ? 'left' : 'right';
     const edge = tornAt(side, py) + (side === 'left' ? 0.4 : -0.4), s = shellAlong(edge, py);
-    if (!s || Math.abs(edge - px) > 12) continue;
+    if (!s || Math.abs(edge - px) > 16) continue;
     const q = L.fromPicture(edge, py, s.near);
     P[v * 3] = q[0]; P[v * 3 + 1] = q[1]; P[v * 3 + 2] = q[2];
     NN.splice(v * 3, 3, ...shellNormal(q));

@@ -18,7 +18,7 @@ export const WINDOW = {
   reveal: 0.16,
   slat: 0.11,
   sill: 0.1,
-  near: 1,
+  near: 1.45,
   // The colors a room is lit in, from the warmest to the palest, as names in the palette.
   colors: ['flame', 'hot', 'pale'] as const,
   // A room's level is stored as level ** (1 / curve), and lights by level.

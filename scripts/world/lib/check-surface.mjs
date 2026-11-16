@@ -527,16 +527,16 @@ async function checkSimplify({ m, scene }) {
     return { worst, share: over / samples };
   };
   const still = (r) => r.source.every((u, i) => r.positions[i * 3] === m.positions[u * 3] && r.positions[i * 3 + 1] === m.positions[u * 3 + 1] && r.positions[i * 3 + 2] === m.positions[u * 3 + 2]);
-  const s = await simplify(m, { error: err });
+  const s = await simplify(m, { error: err, strict: false });
   const before = m.indices.length / 3, after = s.indices.length / 3;
-  report('simplify: the hundred pieces fall at least five times at 0.05', before / after >= 5, `${before} to ${after} triangles, ${(before / after).toFixed(1)} times`);
+  const sure = await simplify(m, { error: err });
+  report('simplify: the hundred pieces fall at least five times at 0.05, measured or not', before / after >= 5 && before / (sure.indices.length / 3) >= 5, `${before} to ${after} triangles unmeasured (strict false), to ${sure.indices.length / 3} measured`);
   const a = away(s);
-  report('simplify: no vertex moves, and 98 percent of the reduced surface is within the error of the made one (the simplifier only estimates its error)', still(s) && a.share < 0.02, `${(a.share * 100).toFixed(3)} percent of points on its triangles further than ${err}, the furthest ${a.worst.toFixed(3)}`);
-  const sure = await simplify(m, { error: err, strict: true });
+  report('simplify, strict false: no vertex moves, and 98 percent of the reduced surface is within the error (the simplifier alone only estimates it)', still(s) && a.share < 0.02, `${(a.share * 100).toFixed(3)} percent of points on its triangles further than ${err}, the furthest ${a.worst.toFixed(3)}`);
   const b = away(sure);
-  report('simplify, strict: 99.9 percent within the error, nothing further than three times it', still(sure) && b.share < 1e-3 && b.worst <= 3 * err, `${sure.indices.length / 3} triangles, ${(b.share * 100).toFixed(4)} percent further than ${err}, the furthest ${b.worst.toFixed(3)}, ${sure.stray} triangles still stray after ${sure.rounds} tries`);
-  const c = closed(s), d = degenerate(s, 2);
-  report('simplified: closed and wound one way', c.open === 0 && c.flipped === 0, `open ${c.open}, flipped ${c.flipped}, ${c.bad} edges with four faces`);
+  report('simplify, measured (the default): 99.9 percent within the error, nothing further than three times it', still(sure) && b.share < 1e-3 && b.worst <= 3 * err, `${sure.indices.length / 3} triangles, ${(b.share * 100).toFixed(4)} percent further than ${err}, the furthest ${b.worst.toFixed(3)}, ${sure.stray} still stray after ${sure.rounds} tries (furthest ${sure.furthest.toFixed(3)})`);
+  const c = closed(s), d = degenerate(s, 2), c2 = closed(sure);
+  report('simplified, either way: closed and wound one way', c.open === 0 && c.flipped === 0 && c2.open === 0 && c2.flipped === 0, `open ${c.open} and ${c2.open}, flipped ${c.flipped} and ${c2.flipped}, ${c.bad} and ${c2.bad} edges with four faces`);
   report('simplified: triangles with no area (a known limit) under 1 in 5,000', d <= after / 5000, `${d} of ${after}`);
 
   const box = await make('sheet', [[-36, -8, -36], [36, 8, 36]], 1);
@@ -624,6 +624,171 @@ function checkHelpers(cube) {
   report('weld, merge, transform and bounds agree with each other', ok, `${w.positions.length / 3} vertices after welding two copies of ${cube.positions.length / 3}`);
 }
 
+// A cube turned every which way, at three sizes of cell: nothing at its edges or corners is rounded off.
+async function checkTurned() {
+  for (const [cell, h] of [[1.5, 20], [1, 9.3], [2.5, 6]]) {
+    let failing = 0, worstTri = 0, worstCorner = 0, worstVertex = 0, worstNormal = 0, broken = 0;
+    for (let seed = 101; seed < 131; seed++) {
+      const cube = turned(seed, h), R = h * 1.8 + 4;
+      const m = await surface({ module: SELF, args: { scene: 'turned', seed, h }, box: [[-R, -R, -R], [R + 3, R + 3, R + 3]], cell });
+      const p = m.positions, n = p.length / 3;
+      let vw = 0, cw = 0, tw = 0, nw = 0;
+      for (let v = 0; v < n; v++) vw = Math.max(vw, Math.abs(cube.field(p[v * 3], p[v * 3 + 1], p[v * 3 + 2])));
+      for (const c of cube.corners) {
+        let b = Infinity;
+        for (let v = 0; v < n; v++) b = Math.min(b, Math.hypot(p[v * 3] - c[0], p[v * 3 + 1] - c[1], p[v * 3 + 2] - c[2]));
+        cw = Math.max(cw, b);
+      }
+      for (let t = 0; t < m.indices.length / 3; t++) {
+        const { n: tn } = triNormal(m, t);
+        tw = Math.max(tw, deg(Math.max(...cube.normals.map((q) => q[0] * tn[0] + q[1] * tn[1] + q[2] * tn[2]))));
+      }
+      const lit = creased(m, 30);
+      for (let v = 0; v < lit.normals.length / 3; v++) {
+        const q = lit.normals.subarray(v * 3, v * 3 + 3);
+        nw = Math.max(nw, deg(Math.max(...cube.normals.map((a) => a[0] * q[0] + a[1] * q[1] + a[2] * q[2]))));
+      }
+      const c = closed(m);
+      if (c.open || c.bad || c.flipped || twins(m) || degenerate(m, cell)) broken++;
+      if (vw > cell / 50 || cw > cell / 20 || tw > 0.5 || nw > 0.5) failing++;
+      worstTri = Math.max(worstTri, tw); worstCorner = Math.max(worstCorner, cw / cell); worstVertex = Math.max(worstVertex, vw / cell); worstNormal = Math.max(worstNormal, nw);
+    }
+    report(`turned cubes, cell ${cell}, half size ${h}, 30 poses: every vertex on a face within cell / 50, every corner within cell / 20, every triangle and every creased(30) normal within half a degree of a face, closed`, !failing && !broken,
+      `${failing} poses fail, ${broken} not closed; worst triangle ${worstTri.toFixed(3)} degrees, worst normal ${worstNormal.toFixed(3)} degrees, worst corner ${worstCorner.toExponential(1)} cells, worst vertex ${worstVertex.toExponential(1)} cells`);
+  }
+}
+
+// A box with faces a hair from the grid's own planes, or on them.
+async function checkNearGrid() {
+  const cell = 1, low = -20, plane = (k) => low - SHIFT * cell + k * cell;
+  let bad = [];
+  for (const e of [0, 1e-12, 1e-9, 1e-7, 1e-5, 1e-3, 3e-3, 6e-3, -1e-3, -1e-7]) {
+    const c = [plane(30) - 10 + e * cell, 0.5, plane(25) - 5 + e * cell];
+    const m = await surface({ module: SELF, args: { scene: 'box', c, h: [10, 7, 5] }, box: [[low, low, low], [20, 20, 20]], cell });
+    let tw = 0, nw = 0;
+    for (let t = 0; t < m.indices.length / 3; t++) tw = Math.max(tw, deg(Math.max(...triNormal(m, t).n.map(Math.abs))));
+    const lit = creased(m, 30);
+    for (let v = 0; v < lit.normals.length / 3; v++) nw = Math.max(nw, deg(Math.max(Math.abs(lit.normals[v * 3]), Math.abs(lit.normals[v * 3 + 1]), Math.abs(lit.normals[v * 3 + 2]))));
+    const cl = closed(m), area0 = 2 * (20 * 14 + 20 * 10 + 14 * 10);
+    if (tw > 0.5 || nw > 0.5 || cl.open || cl.bad || twins(m) || degenerate(m, cell) || Math.abs(area(m) / area0 - 1) > 1e-4) bad.push(`${e}: triangle ${tw.toFixed(2)}, normal ${nw.toFixed(2)} degrees`);
+  }
+  report('a box with faces 0 to 0.006 cells from the grid planes: every triangle and creased(30) normal square to an axis, closed, the area right', !bad.length, bad.join('; ') || 'ten offsets');
+}
+
+function components(m) {
+  const n = m.positions.length / 3, ix = m.indices, root = new Int32Array(n).map((_, i) => i);
+  const find = (i) => { while (root[i] !== i) i = root[i] = root[root[i]]; return i; };
+  for (let t = 0; t < ix.length; t += 3) for (let k = 1; k < 3; k++) { const a = find(ix[t]), b = find(ix[t + k]); if (a !== b) root[Math.max(a, b)] = Math.min(a, b); }
+  const set = new Set();
+  for (let i = 0; i < n; i++) set.add(find(i));
+  return set.size;
+}
+
+// A thousand chips, each a cube four units across turned at random: each comes out as one closed shell.
+async function checkChips() {
+  const m = await make('chips', [[-70.13, -70.29, -70.41], [70.37, 70.11, 70.23]], 2.5);
+  const k = components(m);
+  report('chips four units across at a cell of 2.5: each one shell, none lost, none split', k === CHIPS.count, `${k} shells for ${CHIPS.count} chips, ${(area(m) / (6 * CHIPS.side ** 2 * CHIPS.count) * 100).toFixed(1)} percent of their area`);
+  tight(m, 2.5, 'chips');
+}
+
+// Edges that pass through a triangle, by how far the shorter end of the edge is past the triangle's plane.
+function crossings(m, deep) {
+  const p = m.positions, ix = m.indices, nt = ix.length / 3, size = 4;
+  const buckets = new Map(), key = (i, j, k) => `${i},${j},${k}`;
+  for (let t = 0; t < nt; t++) {
+    const lo = [0, 1, 2].map((a) => Math.floor(Math.min(p[ix[t * 3] * 3 + a], p[ix[t * 3 + 1] * 3 + a], p[ix[t * 3 + 2] * 3 + a]) / size));
+    const hi = [0, 1, 2].map((a) => Math.floor(Math.max(p[ix[t * 3] * 3 + a], p[ix[t * 3 + 1] * 3 + a], p[ix[t * 3 + 2] * 3 + a]) / size));
+    for (let i = lo[0]; i <= hi[0]; i++) for (let j = lo[1]; j <= hi[1]; j++) for (let k = lo[2]; k <= hi[2]; k++) { const kk = key(i, j, k); if (!buckets.has(kk)) buckets.set(kk, []); buckets.get(kk).push(t); }
+  }
+  const P = (v) => [p[v * 3], p[v * 3 + 1], p[v * 3 + 2]];
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]], dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  let all = 0, deeper = 0;
+  for (const list of buckets.values()) for (const t of list) for (let e = 0; e < 3; e++) {
+    const a = ix[t * 3 + e], b = ix[t * 3 + (e + 1) % 3];
+    if (a > b) continue;
+    for (const u of list) {
+      const W = [ix[u * 3], ix[u * 3 + 1], ix[u * 3 + 2]];
+      if (W.includes(a) || W.includes(b)) continue;
+      const A = P(W[0]), e1 = sub(P(W[1]), A), e2 = sub(P(W[2]), A), s0 = P(a), d = sub(P(b), s0);
+      const h = cross(d, e2), det = dot(e1, h);
+      if (Math.abs(det) < 1e-12) continue;
+      const f = 1 / det, sv = sub(s0, A), uu = f * dot(sv, h);
+      if (uu <= 1e-6 || uu >= 1 - 1e-6) continue;
+      const q = cross(sv, e1), vv = f * dot(d, q);
+      if (vv <= 1e-6 || uu + vv >= 1 - 1e-6) continue;
+      const tt = f * dot(e2, q);
+      if (!(tt > 1e-6 && tt < 1 - 1e-6)) continue;
+      const nn = cross(e1, e2), l = Math.hypot(...nn);
+      const depth = Math.min(Math.abs(dot(sv, nn)), Math.abs(dot(sub(P(b), A), nn))) / l;
+      const lo = [0, 1, 2].map((k) => Math.floor(Math.min(...[A, P(W[1]), P(W[2]), s0, P(b)].map((x) => x[k])) / size));
+      if (key(...lo) !== key(...[0, 1, 2].map((k) => Math.floor(Math.max(Math.min(A[k], P(W[1])[k], P(W[2])[k]), Math.min(s0[k], P(b)[k])) / size)))) continue;
+      all++;
+      if (depth > deep) deeper++;
+    }
+  }
+  return { all, deeper };
+}
+
+// A turned block with pieces added and pits cut: concave creases, sheets that cross, and holes in reduction.
+async function checkCarved() {
+  const cell = 1.7, m = await make('carved', CARVED, cell), f = carved();
+  tight(m, cell, 'carved block');
+  outward(m, f, cell, 'carved block', 5e-4);
+  const x = crossings(m, cell / 10), nt = m.indices.length / 3;
+  report('carved block: triangles that cut through each other deeper than a tenth of a cell (a known limit) under 1 in 2,000', x.deeper <= nt / 2000, `${x.deeper} such, ${x.all} edges through a triangle at all, of ${nt} triangles`);
+  const h = crossings((await checkHundredMesh()), 0.2);
+  report('hundred pieces: triangles that cut through each other deeper than a tenth of a cell (a known limit) under 1 in 10,000', h.deeper <= 241000 / 10000, `${h.deeper} such, ${h.all} edges through a triangle at all`);
+  const opened = [];
+  for (const error of [0.05, 0.2, 0.5]) for (const strict of [false, true]) {
+    const s = await simplify(m, { error, strict });
+    const c = closed(s);
+    if (c.open || c.flipped) opened.push(`${error}${strict ? ' measured' : ''}: open ${c.open}, flipped ${c.flipped}`);
+  }
+  report('carved block, simplified at 0.05, 0.2 and 0.5, measured or not: no hole opens', !opened.length, opened.join('; ') || 'six reductions closed');
+  const gap = nearest(m, 4);
+  let worst = 0;
+  const s = await simplify(m, { error: 0.5 });
+  for (let t = 0; t < s.indices.length / 3; t++) for (const w of [[1 / 3, 1 / 3, 1 / 3], [0.5, 0.5, 0], [0, 0.5, 0.5], [0.5, 0, 0.5]]) {
+    worst = Math.max(worst, Math.min(99, gap([0, 1, 2].map((k) => s.positions[s.indices[t * 3] * 3 + k] * w[0] + s.positions[s.indices[t * 3 + 1] * 3 + k] * w[1] + s.positions[s.indices[t * 3 + 2] * 3 + k] * w[2]))));
+  }
+  report('carved block, simplified at 0.5 (measured): no point of the result further than twice the error from the mesh', worst <= 1, `${nt} to ${s.indices.length / 3} triangles, the furthest ${worst.toFixed(3)}, ${s.stray} still stray`);
+}
+let hundredMesh = null;
+const checkHundredMesh = async () => (hundredMesh ??= await make('hundred', HUNDRED.span.box, 2));
+
+// The ways to call the tools wrongly that were found by hand.
+async function checkTraps(cube) {
+  const hundred = await checkHundredMesh();
+  const t = await simplify(hundred, { target: 5000 });
+  let threw = false;
+  try { await simplify(hundred, {}); } catch { threw = true; }
+  report('simplify: a target alone is reached, and no error and no target is an error', t.indices.length / 3 <= 5000 * 1.02 && threw, `${t.indices.length / 3} triangles for a target of 5000`);
+  const box = [[-40.3, -30.1, -35.7], [39.9, 31.3, 34.2]], cut = await make('carved', box, 1.7);
+  let outside = 0;
+  for (let i = 0; i < cut.positions.length; i++) if (cut.positions[i] < box[0][i % 3] || cut.positions[i] > box[1][i % 3]) outside++;
+  report('a mesh cut by its box lies inside the box', outside === 0 && cut.indices.length > 0, `${outside} coordinates outside`);
+  const slab = await surface({ module: SELF, args: { scene: 'box', c: [0, 0.5, 0], h: [10, 0.5, 10] }, box: [[-20, -20, -20], [20, 20, 20]], cell: 1 });
+  report('a slab one cell thick with its faces on whole numbers survives', Math.abs(area(slab) / (2 * (400 + 20 + 20)) - 1) < 1e-4, `${slab.indices.length / 3} triangles, area ${(area(slab) / 880 * 100).toFixed(3)} percent`);
+  threw = false;
+  try { merge([creased(cube, 30), cube]); } catch { threw = true; }
+  report('merge refuses meshes of which only some have normals', threw);
+  const cap = { positions: new Float32Array([0, 0, 0, 1, 0, 0, 0.5, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0]), indices: new Uint32Array([0, 2, 3, 2, 1, 5, 2, 5, 3, 0, 4, 1, 4, 6, 1, 0, 1, 2]) };
+  const lit = creased(cap, 30);
+  let off = 0;
+  for (let v = 0; v < lit.normals.length / 3; v++) { const q = lit.normals.subarray(v * 3, v * 3 + 3); if (Math.max(Math.abs(q[0]), Math.abs(q[1]), Math.abs(q[2])) < 1 - 1e-6) off++; }
+  report('creased: a triangle with no area between two faces at a right angle does not join them', off === 0, `${off} normals between the faces`);
+  const volume = (m) => { let v = 0; const p = m.positions, ix = m.indices; for (let i = 0; i < ix.length; i += 3) { const a = ix[i] * 3, b = ix[i + 1] * 3, c = ix[i + 2] * 3; v += p[a] * (p[b + 1] * p[c + 2] - p[b + 2] * p[c + 1]) - p[a + 1] * (p[b] * p[c + 2] - p[b + 2] * p[c]) + p[a + 2] * (p[b] * p[c + 1] - p[b + 1] * p[c]); } return v / 6; };
+  const mirror = [-1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1];
+  const flipped = transform(creased(cube, 30), mirror);
+  let against = 0;
+  for (let t = 0; t < flipped.indices.length / 3; t++) {
+    const { n } = triNormal(flipped, t), a = flipped.indices[t * 3] * 3;
+    if (n[0] * flipped.normals[a] + n[1] * flipped.normals[a + 1] + n[2] * flipped.normals[a + 2] < 0.99) against++;
+  }
+  report('transform by a mirror keeps the faces out and the normals with them', volume(transform(cube, mirror)) > 0 && against === 0, `volume ${volume(transform(cube, mirror)).toFixed(0)} (was ${volume(cube).toFixed(0)}), ${against} triangles against their normals`);
+}
+
 async function timing() {
   const threads = availableParallelism();
   const before = process.memoryUsage().rss;
@@ -638,9 +803,13 @@ async function timing() {
   console.log(`      ${((t1 - t0) / 1000).toFixed(1)} s on ${threads} threads (grid ${m.stats.seconds.grid.toFixed(1)} s, joining ${m.stats.seconds.join.toFixed(1)} s), ${m.stats.evals.toLocaleString()} field calls`);
   console.log(`      process memory (all threads) ${(peak / 2 ** 20).toFixed(0)} MB at most, the mesh ${((m.positions.byteLength + m.indices.byteLength) / 2 ** 20).toFixed(0)} MB, ${m.stats.held} vertices held inside their cell`);
   tight(m, 2.5, 'shell');
-  const t2 = performance.now();
-  const s = await simplify(m, { error: 0.05 });
-  console.log(`TIME  simplify at 0.05: ${(m.indices.length / 3).toLocaleString()} to ${(s.indices.length / 3).toLocaleString()} triangles in ${((performance.now() - t2) / 1000).toFixed(1)} s`);
+  for (const strict of [false, true]) {
+    const t2 = performance.now();
+    const s = await simplify(m, { error: 0.2, strict });
+    const c = closed(s);
+    console.log(`TIME  simplify at 0.2${strict ? ', measured' : ', unmeasured'}: ${(m.indices.length / 3).toLocaleString()} to ${(s.indices.length / 3).toLocaleString()} triangles in ${((performance.now() - t2) / 1000).toFixed(1)} s${strict ? `, ${s.stray} still stray after ${s.rounds} tries` : ''}`);
+    report(`shell simplified at 0.2${strict ? ', measured' : ''}: closed`, c.open === 0 && c.flipped === 0, `open ${c.open}, flipped ${c.flipped}, ${c.bad} edges with four faces`);
+  }
 }
 
 async function main() {
@@ -653,6 +822,11 @@ async function main() {
   await checkSimplify(hundred);
   await checkCrease(cube);
   checkHelpers(cube);
+  await checkTurned();
+  await checkNearGrid();
+  await checkChips();
+  await checkCarved();
+  await checkTraps(cube);
   if (!quick) await timing();
   console.log(failed ? `${failed} FAILED` : 'ALL PASS');
   process.exit(failed ? 1 : 0);
