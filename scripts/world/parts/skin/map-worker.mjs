@@ -9,9 +9,9 @@ import { L } from '../../lib/plan.mjs';
 import { CRUST, SHOULDER, setup, fine, coarse, crust, chips, crackOf, edgeDistance, pitted, floored, farEdge, fbm, downOf, slabbed } from './field.mjs';
 import { frame, shellNormal, toShell } from './features.mjs';
 
-const { features, bvh, positions, normals, indices, texels, rects, perPixel, rows, moon } = workerData;
+const { features, bvh, positions, normals, indices, code, texels, rects, perPixel, rows, moon } = workerData;
 setup(features);
-const P = new Float32Array(positions), N = new Float32Array(normals), I = new Uint32Array(indices);
+const P = new Float32Array(positions), N = new Float32Array(normals), I = new Uint32Array(indices), CODE = new Float32Array(code);
 const out = {
   H: new Float32Array(texels.H), G: new Float32Array(texels.G), B: new Float32Array(texels.B), at: new Float32Array(texels.at), side: new Int8Array(texels.side),
 };
@@ -41,6 +41,16 @@ for (let row = rows[0]; row < rows[1]; row++) {
     const side = rect.side, q = toShell(...p);
     out.side[i] = side;
     out.at.set(p, i * 3);
+    // A block of the crust has its own faces, which the shader lights from the mesh: here only a fine grain and a
+    // change of tone, and nothing of the outer surface's pits, sand or cracks.
+    if (CODE[a] > 0.25) {
+      // On its weathered top the crust's own old ground shows: pitted and lumpy, as the outer surface is.
+      const top = Math.min(1, Math.max(0, (CODE[a] * w + CODE[b] * u + CODE[c] * v - 0.5) * 2)), pit = top > 0.5 ? pitted(q[0], q[1], q[2], 1) : 0;
+      out.H[i] = 0.18 * fbm(p[0] / 1.3, p[1] / 1.3, p[2] / 1.3, 2) + (top > 0.5 ? (fine(q[0], q[1], q[2], 1) - 0.1) * smooth(0.5, 0.9, top) : 0);
+      out.B[i] = (0.92 + 0.16 * fbm(p[0] * 0.08, p[1] * 0.08, p[2] * 0.08, 2) + 0.08 * fbm(p[0] * 0.5, p[1] * 0.5, p[2] * 0.5, 2)) * (1 - 0.5 * pit);
+      out.G[i] = side > 0 ? 0.5 : 0;
+      continue;
+    }
     const sn = shellNormal(...q), [e1, e2] = frame(sn), D = 0.3, up = dot(n, sn);
     // On the crust's broken faces the outer surface's own fine relief is not there to be seen: taken from the place on
     // the outer surface over each point, it was drawn down the face in streaks. They take a relief of their own.

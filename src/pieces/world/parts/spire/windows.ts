@@ -14,7 +14,7 @@ export const WINDOW = {
   mean: 0.62,
   // The least a room is lit: a room with its lights off still shows the city's glow on its far wall, so the strip
   // of glass is never a black hole in the stone.
-  dark: 0.045,
+  dark: 0.07,
   // How far a blind dims what is behind it.
   blind: 0.5,
   // The colors a room is lit in, from the warmest to the palest, as names in the palette.
@@ -26,7 +26,7 @@ export const WINDOW = {
   dim: [0.12, 0.75] as const,
   // How far a far window's state is blurred with its neighbours', so a strip of windows smaller than a few pixels
   // comes to its own average and never stipples.
-  blur: 1.8,
+  blur: 2.8,
   // The map of every window's state: this many texels square, one a window.
   map: 128,
 } as const;

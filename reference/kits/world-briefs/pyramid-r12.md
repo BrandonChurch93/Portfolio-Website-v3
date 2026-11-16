@@ -1,0 +1,20 @@
+# Your part: the pyramid. Round 12: the glare of a polished face, not a hotspot
+
+## What you own
+scripts/world/parts/pyramid/, public/world/pyramid.bin, src/pieces/world/parts/pyramid.ts, src/pieces/world/parts/pyramid/. Stills in shots/world/pyramid/ with the prefix r12-. Report: shots/world/pyramid/r12-report.md. Read first: shots/world/pyramid/r11-report.md and its two reviews, and the END of briefs/common.md.
+
+## Where it stands
+Round 11 scored 5.5 and 5.5, under round 10's 6.5 and 6, and the fault is Fable's brief: it asked for "one broad lobe, soft edged", and a soft elliptical hotspot on a caramel face is what came back. At the page's size round 10's face was brighter and better (shots/world/pyramid/r11-before-after-page.jpg: round 10 left, round 11 right). ROUND 11 IS NOT COMMITTED: what is live is round 10.
+
+Kept from round 11, and not to be lost: the real reflected ray (sky up most of the lit face, land only in a strip at its foot). The deep face as a long dark satin gold gradient at the picture's value and hue (about (63, 44, 23), hue 32) with the specks gone. The cap's narrow rounds, its dark reveal and hot tip. The place and the mesh, byte identical. The palette.
+
+## What must change, most important first
+1. POLISHED METAL MIRRORS THE MOON AS A SHARP EDGED SHAPE. Take the soft ellipse out. The lit face carries the moon's glare as a LARGE bright field with a crisp edge: it covers about two thirds of the face (the lower right two thirds, as picture 9's whole face blazes), near pale gold across its heart with saturation held over 0.5 and nothing clipped flat, and it ends on a hard line. That line is not straight: every sheet shifts it a little by its own tilt, so along its edge the glare breaks into offset crisp edged pieces, sheet by sheet. Outside it the face mirrors dark sky and is a deep rich gold (value 0.35 to 0.5). So from across the room the face BLAZES, as round 10's did and the picture's does, and close up it is plainly a mirror. It must be the brightest and most precious metal on the first screen.
+2. NO PATCHWORK. Round the blaze the sheets stepped in tone by up to 25 levels in whole rectangles. A sheet's tilt shows as a SHIFT of what it mirrors (the glare's edge, the horizon), never as a step in the brightness of the whole sheet: neighbours differ by under 8 levels where they mirror the same thing.
+3. SOMETHING SHARP IN THE MIRROR. Nothing crisp is mirrored anywhere, so it reads as satin paint. On the deep face: a faint sharp line where its reflected ray meets the horizon of the city's glow, a few crisp small lights where it meets the low city's lit windows (few, and only where the ray really goes), a pale hairline on the upper lip of each course, slow change of value down the slope. The trees at its foot as sharp dark silhouettes, uneven, or not at all (they read as soot stains). On the lit face's foot: the land strip as a crisp mirrored horizon, or not at all (it reads as a tide mark).
+4. THE SEAMS. Evenly ruled horizontal lines read as lined paper on both faces: offset vertical joints from course to course, courses that taper in height toward the apex.
+5. THE THIN LINES. The front arris's pale line breaks into single specks at the page's size and the lit foot line stair steps: at least a pixel and a half wide where seen, or faded by fwidth (common.md on thin lit edges).
+6. THE CURSOR'S LIGHT at the page's size is two dead straight pale lines pinned beside the front arris that barely move: a reflection with a bright core and a soft fall along the slope that plainly follows the pointer across each face, and no echo left behind in a still.
+
+## How to look
+Every draft: THE REAL PAGE AT ITS OWN SIZE first (npm run shot -- "/lab/hero?ui=0" --t 6 --wait 9000 --scale 1, cut to the pyramid and enlarged three times) with round 10 and picture 9 beside it: does it blaze at least as much as round 10? Then npm run match -- --at 250,150,330,190 --out shots/world/pyramid/r12-match, then close:pyramid at three times, then real frames with the cursor crossing it.

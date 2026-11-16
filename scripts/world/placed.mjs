@@ -211,7 +211,7 @@ grove(960, 1050, 9, [252, 244, 237], [0.75, 1.35]);
 grove(252, 336, 8.5, [296, 288, 281], [0.9, 1.3]);
 // The row behind the dunes stands where the plan's ROW says. Found on bare ground it stood off the land's rim and
 // was never drawn.
-for (let px = W.ROW.from; px <= W.ROW.to; px += 9.6) { const [x] = W.fromPicture(px + 2.5 * (r() - 0.5), W.ROW.foot + 2 * (r() - 0.5), W.ROW.z), z = W.ROW.z; trees.push([n(x), n(z), n(10.5 * (1.15 + 0.3 * r())), n(r(), 3), n(r() * Math.PI * 2, 3)]); }
+for (let px = W.ROW.from; px <= W.ROW.to; px += 7.5 + 5 * r()) { const [x] = W.fromPicture(px, W.ROW.foot + 3 * (r() - 0.5), W.ROW.z), z = W.ROW.z; trees.push([n(x), n(z), n(10.5 * (0.95 + 0.75 * r() ** 1.5)), n(r(), 3), n(r() * Math.PI * 2, 3)]); }
 // The trees' fourth round, laid over the picture again:
 //   - left of the spire, 470 to 650 across, the picture's belt is ONE row of crowns hard against the city's feet,
 //     250 to 265 down, with bare pale rock before it out to the lip. Ours stood three and four rows deep on that
@@ -242,6 +242,12 @@ const fill = (from, to, top, foot, step) => {
 };
 fill(108, 336, 256, 300, 7.4);
 fill(712, 1052, 224, 262, 7.4);
+// Right of the spire the picture's belt is a carpet four or five crowns deep, from the buildings' feet down to the
+// land's lip, with no ground showing and crowns half as large again as the belt's elsewhere (ruled on a grid, Nov
+// 16: 705 to 965 across, 222 to 282 down). Ours was two ranks on bare paving. The carpet is filled down to the
+// lip, and every crown in it is larger.
+fill(705, 965, 258, 290, 6);
+for (const t of trees) { const [px, py] = W.pictured(t[0], W.ground(t[0], t[1]), t[1]); if (px > 705 && px < 965 && py > 236 && t[1] !== W.ROW.z) t[2] = n(t[2] * 1.3); }
 // On the sand the picture has one tight row and nothing else (ROW in the plan): every other tree that stands on
 // sand, or right of the last tower where the picture is dunes, is taken out. They read as an orchard on a terrace.
 for (let i = trees.length - 1; i >= 0; i--) { const t = trees[i], [px] = W.pictured(t[0], W.ground(t[0], t[1]), t[1]); if (t[1] !== W.ROW.z && (W.desert(t[0], t[1]) > 0 || px > 1056)) trees.splice(i, 1); }

@@ -1,5 +1,5 @@
-// The trees' atlas of leaves, painted in code: four lumps of leaf, each a rounded mass with a notched outline of its
-// own, made of small clusters of small leaves over a dark mat; two more for the cards inside a lump; bark; and the
+// The trees' atlas of leaves, painted in code: four lumps of leaf, each a few clusters of leaves over a dark mat with
+// an outline of leaves of its own; two more for the card at a mass's heart, with more and smaller leaves; bark; and the
 // shade under a tree. Each leaf is an almond with a fold along its midrib, its own lightness and hue,
 // and it shades the leaves it lies on. Then the chain of smaller levels, each made from the one above and kept
 // holding as much leaf as the first (so a crown does not thin out when it is drawn small), all in one PNG (level()
@@ -10,35 +10,36 @@ import { ATLAS, CARD, LEAF as LEAF_SIZE, SHADE as GROUND_SHADE, TILES, level } f
 import { noise, seeded } from '../../../../src/pieces/world/layout.ts';
 
 const T = ATLAS.tile, W = T * ATLAS.cols, H = T * ATLAS.rows;
-// A lump of the usual size (in a crown's units), whose card the leaves of a lump tile are sized for, and the sprays'.
-const LUMP = 0.55;
+// How long a leaf is in a tile's pixels, for a card of this full width (in a crown's units).
 const px = (card) => (LEAF_SIZE / card) * T;
+// Each kind of tile: how long its leaves are (from the card it is painted for, CARD in design.ts), how far its
+// outline reaches at most and the disc at its middle, as shares of the tile. A small lump is a sprig of a few
+// clusters, so its leaves are large in its tile; the card at a mass's heart holds many.
+const KIND = {
+  lump: { size: px(2 * CARD.lump * CARD.painted.lump), reach: 0.36, middle: 0.24 },
+  core: { size: px(2 * CARD.core * CARD.painted.core), reach: 0.42, middle: 0.29 },
+};
 // A leaf: how long against the size a tile's leaf should be, how wide against its length, how long its stalk.
 // How far it bends to one side at most (a leaf bent further read as a curl of paper), and how dark the unlit half
 // of its fold is against the lit one.
 const LEAF = { long: [0.85, 1.15], wide: [0.42, 0.55], stalk: [0.1, 0.2], bend: 0.7, fold: 0.62 };
 // How dark a leaf is where another lies over it, and how far that shadow falls and how soft it is, in leaf lengths.
 const SHADE = { dark: 0.55, off: [0.05, 0.2], soft: 0.26 };
-// Each lump tile, and the two inner ones: how many lobes its outline has. Its outline reaches this share of the tile
-// at most, its middle is a disc this share of it, and its lobes stand out from that disc by `bulge` of it at most:
-// a lump is a rounded mass with a notched outline, never a spray of sprigs.
-const LUMPS = [{ lobes: 5 }, { lobes: 6 }, { lobes: 7 }, { lobes: 8 }, { lobes: 5 }, { lobes: 6 }];
-const OUTLINE = { reach: 0.44, middle: 0.3, sharp: 2.4, bulge: 0.35 };
-// The small clusters a lump is made of: how wide one is in leaf lengths, how many leaves each holds, and how many
-// clusters for each share of the lump's area. Each is a small mound lit from above: its leaves this much lighter
-// at its top and darker at its foot, and facing up at its top, so a lump at three times is sprigs of leaves with
-// shade between them and not an even stipple. The lump is NOT lit as a whole here: every lump wore the same baked
-// bright top and dark foot, and the crown read as pom poms. The shader lights a lump by where it is on its crown;
-// here only its lower part is a little darker (lump), and each cluster is a lightness of its own (differ), some
-// sunk and dark, some standing out, so no two parts of a lump are the same tone.
-// (Up and down only: the shader turns a lump's card a little and mirrors it, never further.)
-const CLUSTER = { r: [1.3, 2.2], leaves: [10, 16], per: 4.0, top: 1.18, foot: 0.5, lump: [1.0, 0.86], differ: [0.6, 1.15], inside: 0.1 };
-// Gaps among a lump's leaves, where no leaf lies and its dark mat shows, so a lump at three times has deep shade
-// between its sprigs: how many, how wide in leaves, and how far out from the lump's middle, as a share of its
-// outline. Nothing is seen through a lump: a hole through it showed a lit window behind as a pale speck. And how deep
-// the notches in the outline are, in leaves, at two scales.
-const HOLES = { count: [1, 2], r: [0.6, 1.1], out: [0.15, 0.6] };
-const NOTCH = [0.55, 0.3];
+// Each tile of leaves is a few rosettes of leaves (clusters) over a dark mat that joins them: how many rosettes
+// round its middle (with one at the middle), how far out they stand and how wide each is, as shares of the tile's
+// middle disc, and how many leaves each holds. Each rosette's leaves point out of it and out of the tile, and those
+// at the rim stand out of the mat by up to OUT.tip of a leaf, foot inside: so a lump's outline is leaves and never
+// a smooth arc, and no leaf stands clear of it. Rosettes are laid from the rim inward, as a ball is seen.
+const ROSETTES = { lump: { round: [3, 4], out: 0.62, r: 0.62, leaves: [10, 13], across: 0.35 }, core: { round: [5, 7], out: 0.72, r: 0.48, leaves: [17, 22], across: 0.35 } };
+// How far a leaf at the rim may stand out of the mat, in leaves, with its foot inside it.
+const OUT = { tip: 0.75 };
+// Each rosette is a small mound lit from above: its leaves this much lighter at its top and darker at its foot,
+// and facing up at its top. Each rosette is a lightness of its own (differ), some sunk and dark, some standing out.
+// The lump is NOT lit as a whole here (the shader lights it by where it is on its mass and crown): only its lower
+// part is a little darker (lump). (Up and down only: the shader turns a lump's card a little and mirrors it.)
+const CLUSTER = { top: 1.15, foot: 0.55, lump: [1.0, 0.88], differ: [0.62, 1.12] };
+// The notches in the mat's outline, in leaves, at two scales.
+const NOTCH = [0.4, 0.2];
 // The dark mat under a lump's leaves, drawn a little inside its outline: how light (and in a gap), and how far
 // inside, in leaves. Every leaf at the rim has the mat behind it, so no cluster stands clear of the lump.
 const MAT = { light: 0.06, gap: 0.015, inside: 0.6 };
@@ -122,71 +123,49 @@ function paintLeaf(cv, tile, rnd, bx, by, th, size, tone, up = 0.5) {
   });
 }
 
-// A lump: a mass of small clusters of leaves inside an outline of lobes, over a dark mat. The clusters at its rim
-// are laid first and those at its middle last, as a ball is seen, and the rim's leaves point out of it, so its
-// outline is small leaves.
-function lump(cv, tile, rnd, lobes) {
-  const c = T / 2, size = px(CARD.lump * LUMP * 2), mid = OUTLINE.middle * T, ph = rnd() * Math.PI * 2;
-  const balls = [[c, c, mid]], holes = [];
-  for (let i = 0, n = HOLES.count[0] + Math.floor(rnd() * (HOLES.count[1] - HOLES.count[0] + 1)); i < n; i++) {
-    const a = rnd() * Math.PI * 2, d = OUTLINE.reach * T * (HOLES.out[0] + (HOLES.out[1] - HOLES.out[0]) * rnd());
-    holes.push([c + Math.cos(a) * d, c + Math.sin(a) * d, size * (HOLES.r[0] + (HOLES.r[1] - HOLES.r[0]) * rnd())]);
+// A lump: rosettes of leaves over a dark mat that joins them.
+function lump(cv, tile, rnd, kind) {
+  const K = KIND[kind], R = ROSETTES[kind], c = T / 2, size = K.size, mid = K.middle * T, edge = K.reach * T;
+  const n = R.round[0] + Math.floor(rnd() * (R.round[1] - R.round[0] + 1)), ph = rnd() * Math.PI * 2, balls = [[c, c - mid * 0.08, mid * R.r]];
+  for (let i = 0; i < n; i++) {
+    const a = ph + (i / n) * Math.PI * 2 + (rnd() - 0.5) * (2 / n), d = mid * R.out * (0.8 + 0.4 * rnd()), r = mid * R.r * (0.8 + 0.35 * rnd());
+    balls.push([c + Math.cos(a) * d, c + Math.sin(a) * d, Math.min(r, edge - d - size * 0.3)]);
   }
-  for (let i = 0; i < lobes; i++) {
-    const a = ph + (i / lobes) * Math.PI * 2 + (rnd() - 0.5) * (2.4 / lobes), r = mid * (0.45 + 0.2 * rnd());
-    const d = Math.min(OUTLINE.reach * T - r - size, mid * (1 + OUTLINE.bulge * rnd()) - r);
-    balls.push([c + Math.cos(a) * d, c + Math.sin(a) * d, r]);
-  }
-  // The outline: the lobes joined smoothly, and a little noise along it.
   const shape = (x, y) => {
     let k = 0;
-    for (const [bx, by, r] of balls) k += Math.exp(-((Math.hypot(x - bx, y - by) / r) ** 2) * OUTLINE.sharp);
-    const n = noise(x / (size * 3.2), y / (size * 3.2), 0, tile * 13) - 0.5, n2 = noise(x / (size * 1.2), y / (size * 1.2), 0, tile * 17) - 0.5;
-    return (Math.exp(-OUTLINE.sharp) - k) * mid * 1.6 + n * size * 2 * NOTCH[0] + n2 * size * 2 * NOTCH[1];
+    for (const [bx, by, r] of balls) k += Math.exp(-((Math.hypot(x - bx, y - by) / r) ** 2) * 2.4);
+    const n1 = noise(x / (size * 1.6), y / (size * 1.6), 0, tile * 13) - 0.5, n2 = noise(x / (size * 0.7), y / (size * 0.7), 0, tile * 17) - 0.5;
+    return (Math.exp(-2.4) - k) * mid * 1.6 + n1 * size * 2 * NOTCH[0] + n2 * size * 2 * NOTCH[1];
   };
-  const gap = (x, y) => {
-    let d = Infinity;
-    for (const [hx, hy, hr] of holes) d = Math.min(d, Math.hypot(x - hx, y - hy) - hr + (noise(x / size, y / size, 1, tile * 7) - 0.5) * size * 1.2);
-    return d;
-  };
-  const edge = OUTLINE.reach * T;
-  cv.lay(tile, [c - edge, c - edge, c + edge, c + edge], (x, y) => shape(x, y) + MAT.inside * size, (x, y) => [gap(x, y) < 0 ? MAT.gap : MAT.light * (0.7 + 0.6 * noise(x / size, y / size, 0, 5)), 0.5, 0.3]);
-
-  // Where clusters go: inside the outline and out of the gaps, as many as its area holds.
-  let area = 0;
-  for (let y = 0; y < T; y += 4) for (let x = 0; x < T; x += 4) if (shape(x, y) < 0) area += 16;
-  const clusters = [], want = Math.round((area / (Math.PI * (size * 1.45) ** 2)) * CLUSTER.per);
-  for (let tries = 0; clusters.length < want && tries < want * 40; tries++) {
-    const x = c + (rnd() * 2 - 1) * edge, y = c + (rnd() * 2 - 1) * edge;
-    if (shape(x, y) > -size * CLUSTER.inside || gap(x, y) < size * 0.6 || Math.hypot(x - c, y - c) > mid * (1 + OUTLINE.bulge * 0.5)) continue;
-    clusters.push([x, y, Math.hypot(x - c, y - c) / edge]);
-  }
-  clusters.sort((p, q) => q[2] - p[2] + (rnd() - 0.5) * 0.25);
-  for (const [x, y, out] of clusters) {
-    const cr = size * (CLUSTER.r[0] + rnd() * (CLUSTER.r[1] - CLUSTER.r[0])), n = CLUSTER.leaves[0] + Math.floor(rnd() * (CLUSTER.leaves[1] - CLUSTER.leaves[0] + 1));
+  cv.lay(tile, [c - edge, c - edge, c + edge, c + edge], (x, y) => shape(x, y) + MAT.inside * size, (x, y) => [MAT.light * (0.7 + 0.6 * noise(x / size, y / size, 0, 5)), 0.5, 0.3]);
+  const order = balls.map((b, i) => [b, i === 0 ? -1 : Math.hypot(b[0] - c, b[1] - c) + (rnd() - 0.5) * mid * 0.2]).sort((p, q) => q[1] - p[1]);
+  for (const [[x, y, cr]] of order) {
+    const m = R.leaves[0] + Math.floor(rnd() * (R.leaves[1] - R.leaves[0] + 1));
     const down = clamp(((y - c) / edge + 0.6) / 1.4), tone = (CLUSTER.lump[0] + (CLUSTER.lump[1] - CLUSTER.lump[0]) * down) * (CLUSTER.differ[0] + (CLUSTER.differ[1] - CLUSTER.differ[0]) * rnd());
-    const away = Math.atan2(x - c, c - y), spin = rnd() * Math.PI * 2;
-    // Leaves from the cluster's heart outward, its middle filled: those at the lump's rim lean out of it.
+    const away = Math.atan2(x - c, c - y), spin = rnd() * Math.PI * 2, outer = Math.hypot(x - c, y - c) > mid * 0.2;
     const leaves = [];
-    for (let k = 0; k < n; k++) {
-      const a = spin + (k / n) * Math.PI * 2 + (rnd() - 0.5) * 0.9, rr = cr * 0.6 * Math.sqrt(rnd());
-      let th = a + (rnd() - 0.5) * 1.2;
-      if (out > 0.62) { let dlt = ((th - away + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI; th = away + dlt * 0.55; }
-      const lx = x + Math.sin(a) * rr * 0.75, ly = y - Math.cos(a) * rr * 0.75, tx = lx + Math.sin(th) * size * 1.3, ty = ly - Math.cos(th) * size * 1.3;
-      // A leaf whose tip would stand clear of the lump's outline is turned back into it.
-      if (shape(tx, ty) > size * 0.15 || gap(tx, ty) < 0) th = Math.atan2(c - lx, ly - c) + (rnd() - 0.5) * 0.8;
-      if (shape(lx, ly) > -size * 0.2 || shape(lx + Math.sin(th) * size * 1.3, ly - Math.cos(th) * size * 1.3) > size * 0.3) continue;
-      leaves.push([lx, ly, th, rr]);
+    for (let k = 0; k < m; k++) {
+      const a = spin + (k / m) * Math.PI * 2 + (rnd() - 0.5) * 0.8, rr = cr * 0.55 * Math.sqrt(rnd());
+      let th = a + (rnd() - 0.5) * 0.9;
+      if (outer) { const dl = ((th - away + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI; th = away + dl * 0.7; }
+      let long = size * (0.85 + 0.3 * rnd());
+      // The middle rosette's leaves, and some of every other's, lie every way across its middle, so no rosette has a
+      // bare heart.
+      const across = !outer || rnd() < R.across;
+      if (across) th = rnd() * Math.PI * 2;
+      const back = across ? long * 0.6 : 0, lx = x + Math.sin(a) * rr - Math.sin(th) * back, ly = y - Math.cos(a) * rr + Math.cos(th) * back;
+      if (shape(lx, ly) > -size * 0.15) continue;
+      for (let t = 0; t < 4 && shape(lx + Math.sin(th) * long * 1.2, ly - Math.cos(th) * long * 1.2) > size * OUT.tip; t++) long *= 0.8;
+      const reach = long * 1.35, tx = lx + Math.sin(th) * reach, ty = ly - Math.cos(th) * reach;
+      if (Math.min(lx, ly, tx, ty) < 3 || Math.max(lx, ly, tx, ty) > T - 3) continue;
+      leaves.push([lx, ly, th, rr, long]);
     }
-    // Its lower leaves first, so the upper lie over them and shade them: the cluster reads as a small mound of
-    // leaves lit from above.
-    const at = (l) => l[1] - Math.cos(l[2]) * size * 0.75;
+    // Its lower leaves first, so the upper lie over them and shade them.
+    const at = (l) => l[1] - Math.cos(l[2]) * l[4] * 0.6;
     leaves.sort((p, q) => at(q) - at(p));
     for (const l of leaves) {
-      const [lx, ly, th, rr] = l, v = clamp((at(l) - y) / cr * 1.4 + 0.5);
-      const reach = size * 1.5, tx = lx + Math.sin(th) * reach, ty = ly - Math.cos(th) * reach, m = 3;
-      if (Math.min(lx, ly, tx, ty) < m || Math.max(lx, ly, tx, ty) > T - m) continue;
-      paintLeaf(cv, tile, rnd, lx, ly, th, size * (0.85 + 0.3 * rnd()), tone * (CLUSTER.top + (CLUSTER.foot - CLUSTER.top) * v) * (0.88 + 0.12 * (1 - rr / cr)), 1 - v);
+      const [lx, ly, th, rr, long] = l, v = clamp((at(l) - y) / cr * 1.4 + 0.5);
+      paintLeaf(cv, tile, rnd, lx, ly, th, long, tone * (CLUSTER.top + (CLUSTER.foot - CLUSTER.top) * v) * (0.88 + 0.12 * (1 - rr / cr)), 1 - v);
     }
   }
 }
@@ -244,14 +223,14 @@ function spread(cv) {
 
 export function paint({ seed = 7 } = {}) {
   const rnd = seeded(seed), cv = new Canvas();
-  [...TILES.lumps, ...TILES.inner].forEach((t, i) => lump(cv, t, rnd, LUMPS[i].lobes));
+  [...TILES.lumps, ...TILES.core].forEach((t, i) => lump(cv, t, rnd, i < TILES.lumps.length ? 'lump' : 'core'));
   bark(cv, TILES.bark);
   blob(cv, TILES.blob);
   spread(cv);
 
   // The chain: each level the mean of four pixels of the one above, colors weighted by how much leaf they hold,
   // then in each tile of leaves every coverage scaled so as much of it is over a half as in the first level.
-  const leafy = [...TILES.lumps, ...TILES.inner];
+  const leafy = [...TILES.lumps, ...TILES.core];
   const levels = [{ k: 0, w: W, h: H, L: cv.L, G: cv.G, B: cv.B, A: cv.A }];
   const covered = (lv, tile, k) => {
     const t = T >> lv.k, ox = (tile % ATLAS.cols) * t, oy = Math.floor(tile / ATLAS.cols) * t;

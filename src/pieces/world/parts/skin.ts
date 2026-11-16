@@ -3,7 +3,7 @@ import { hex, type PaletteName } from '../../../config/palette';
 import { load, mesh } from '../files';
 import { lit, stone as planetStone } from '../light';
 import type { PartFactory } from '../part';
-import { DARK_LIGHT, GLOW, KNOT_POOL, SAND, STONE, UNDER } from './skin/look';
+import { CRACK_CELL, DARK_LIGHT, GLOW, KNOT_POOL, SAND, STONE, UNDER } from './skin/look';
 import * as S from './skin/shaders';
 
 // The skin: what survives of the planet's own outer surface at each side of the tear. At the visitor's left, turned
@@ -45,6 +45,46 @@ async function readMap(file: string): Promise<THREE.DataTexture> {
   return t;
 }
 
+// The cracks as the shader cuts them (scripts/world/parts/skin/features.mjs, crackLines): short straight lengths in
+// picture 9's pixels, eight numbers each (the two ends, the half width and the heat at each). The shader asks each
+// pixel only about the lengths near it: a grid over the dark side holds, for each cell, the nearest CRACK_CELL.most.
+function crackTextures(lines: number[]): { seg: THREE.DataTexture; cell: THREE.DataTexture; grid: THREE.Vector4; size: THREE.Vector2 } {
+  const n = lines.length / 8, seg = new Float32Array(n * 8);
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  const reach = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const [ax, ay, bx, by, wa, wb, ha, hb] = lines.slice(i * 8, i * 8 + 8);
+    seg.set([ax, ay, bx, by], i * 4);
+    seg.set([wa, wb, ha, hb], (n + i) * 4);
+    reach[i] = CRACK_CELL.reach(Math.max(wa, wb), Math.max(ha, hb));
+    x0 = Math.min(x0, ax - reach[i], bx - reach[i]); y0 = Math.min(y0, ay - reach[i], by - reach[i]);
+    x1 = Math.max(x1, ax + reach[i], bx + reach[i]); y1 = Math.max(y1, ay + reach[i], by + reach[i]);
+  }
+  const C = CRACK_CELL.size, nx = Math.ceil((x1 - x0) / C), ny = Math.ceil((y1 - y0) / C), K = CRACK_CELL.most;
+  const cells = new Float32Array(nx * ny * K).fill(-1);
+  const near: { i: number; d: number }[] = [];
+  for (let cy = 0; cy < ny; cy++) for (let cx = 0; cx < nx; cx++) {
+    near.length = 0;
+    const px = x0 + (cx + 0.5) * C, py = y0 + (cy + 0.5) * C, half = C * Math.SQRT1_2;
+    for (let i = 0; i < n; i++) {
+      const ax = seg[i * 4], ay = seg[i * 4 + 1], dx = seg[i * 4 + 2] - ax, dy = seg[i * 4 + 3] - ay;
+      const t = Math.min(1, Math.max(0, ((px - ax) * dx + (py - ay) * dy) / Math.max(1e-9, dx * dx + dy * dy)));
+      const d = Math.hypot(px - ax - dx * t, py - ay - dy * t);
+      if (d - half < reach[i]) near.push({ i, d: d - Math.max(seg[(n + i) * 4], seg[(n + i) * 4 + 1]) * 2 });
+    }
+    near.sort((a, b) => a.d - b.d);
+    for (let k = 0; k < Math.min(K, near.length); k++) cells[((cy * nx + cx) * K) + k] = near[k].i;
+  }
+  const tex = (data: Float32Array, w: number, h: number): THREE.DataTexture => {
+    const t = new THREE.DataTexture(data, w, h, THREE.RGBAFormat, THREE.FloatType);
+    t.magFilter = t.minFilter = THREE.NearestFilter;
+    t.generateMipmaps = false;
+    t.needsUpdate = true;
+    return t;
+  };
+  return { seg: tex(seg, n, 2), cell: tex(cells, nx * (K / 4), ny), grid: new THREE.Vector4(x0, y0, C, nx), size: new THREE.Vector2(nx, ny) };
+}
+
 export const build: PartFactory = async ({ query, renderer }) => {
   const [file, map] = await Promise.all([load('skin.bin'), readMap('skin-map.bin')]);
   const skin = file.meshes.get('skin');
@@ -55,18 +95,20 @@ export const build: PartFactory = async ({ query, renderer }) => {
   // Where the mesh's own cube is, so the shader knows each place in the world's units.
   const place = new THREE.Vector4();
   const pale = tried(query, 'skinpale'), rock = tried(query, 'skinrock'), knot = tried(query, 'skinknot'), dark = tried(query, 'skindark');
-  const info = skin.info as { map: number[]; dark: [number, number]; knot: number[]; torn: number[] };
-  if (!info.knot || !info.torn || info.torn.length !== 67) throw new Error('skin.bin is older than its shader: make it again with scripts/world/parts/skin/make.mjs');
+  const info = skin.info as { map: number[]; dark: [number, number]; knot: number[]; torn: number[]; cracks: number[] };
+  if (!info.knot || !info.torn || info.torn.length !== 67 || !info.cracks) throw new Error('skin.bin is older than its shader: make it again with scripts/world/parts/skin/make.mjs');
+  const ck = crackTextures(info.cracks);
   const K = [KNOT_POOL.power, KNOT_POOL.reach, KNOT_POOL.hot, KNOT_POOL.hotR].map((v, i) => knot?.[i] ?? v);
   m.onBeforeCompile = (sh: Shader) => {
     Object.assign(sh.uniforms, {
       uSkinMap: { value: map },
-      uSkinMapSize: { value: new THREE.Vector3(map.image.width, map.image.height, map.userData.split as number) },
+      uSkinMapSize: { value: new THREE.Vector4(map.image.width, map.image.height, map.userData.split as number, info.map[3]) },
       uPale: { value: stone(pale ? { ...STONE.pale, k: pale[0], power: pale[1] ?? STONE.pale.power } : STONE.pale) }, uDust: { value: stone(STONE.dust) }, uDark: { value: stone(STONE.dark) },
       uUnder: { value: planetStone().multiplyScalar(UNDER) }, uSand: { value: linear(SAND.of[0]).lerp(linear(SAND.of[1]), SAND.ease).multiplyScalar(SAND.power) }, uSkinPlace: { value: place }, uGlowRock: { value: rock ? rock[0] : GLOW.rock },
       uKnotA: { value: new THREE.Vector3(...info.knot.slice(0, 3)) }, uKnotB: { value: new THREE.Vector3(...info.knot.slice(3, 6)) }, uKnot: { value: new THREE.Vector4(...K) },
       uDarkLight: { value: new THREE.Vector3(dark?.[0] ?? DARK_LIGHT.fill, dark?.[1] ?? DARK_LIGHT.rim, dark?.[2] ?? DARK_LIGHT.slab) }, uDarkFrom: { value: new THREE.Vector3(...DARK_LIGHT.from) },
       uDarkAt: { value: new THREE.Vector2(...info.dark) }, uTorn: { value: info.torn },
+      uCkSeg: { value: ck.seg }, uCkCell: { value: ck.cell }, uCkGrid: { value: ck.grid }, uCkSize: { value: ck.size },
       uGlowPale: { value: linear(GLOW.ramp[0][0]) }, uGlowHot: { value: linear(GLOW.ramp[1][0]) }, uGlowFlame: { value: linear(GLOW.ramp[2][0]) }, uGlowEmber: { value: linear(GLOW.ramp[3][0]) },
     });
     sh.vertexShader = after(after(sh.vertexShader, 'common', S.VERT_PARS), 'begin_vertex', S.VERT);
@@ -91,6 +133,6 @@ export const build: PartFactory = async ({ query, renderer }) => {
   return {
     group,
     alone: at && at.length === 4 && at.every(Number.isFinite) ? { at: [at[0], at[1], at[2]], r: at[3] } : ALONE,
-    dispose() { skin.geometry.dispose(); m.dispose(); map.dispose(); },
+    dispose() { skin.geometry.dispose(); m.dispose(); map.dispose(); ck.seg.dispose(); ck.cell.dispose(); },
   };
 };

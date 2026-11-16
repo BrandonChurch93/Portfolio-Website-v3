@@ -135,7 +135,7 @@ export function setup({ craters, segs, edges, knot, slab }) {
   if (knot) KNOT = knot;
   SL = slab ?? null;
   CR = new Grid();
-  for (const c of craters) { const e = c.r * 2.7; CR.add([c.c[0] - e, c.c[1] - e, c.c[2] - e], [c.c[0] + e, c.c[1] + e, c.c[2] + e], c); }
+  for (const c of craters) { const e = c.r * 3.5 * (c.stretch ?? 1); CR.add([c.c[0] - e, c.c[1] - e, c.c[2] - e], [c.c[0] + e, c.c[1] + e, c.c[2] + e], c); }
   SG = new Grid();
   for (const s of segs) {
     const e = Math.max(MINW, s.wa, s.wb) * (1.4 + SPILL.per * SPILL.reach) + SPILL.base * SPILL.reach + 1.5;
@@ -185,27 +185,43 @@ const downOf = (y) => Math.min(1, Math.max(0, (-RIM - y) / L.WORLD.deep));
 // A crater's height at a place.
 function craterHeight(k, x, y, z) {
   const dx = x - k.c[0], dy = y - k.c[1], dz = z - k.c[2], dn = dx * k.n[0] + dy * k.n[1] + dz * k.n[2];
-  const tx = dx - dn * k.n[0], ty = dy - dn * k.n[1], tz = dz - dn * k.n[2], d = Math.hypot(tx, ty, tz);
-  if (d > k.r * 2.6) return 0;
-  const phi = Math.atan2(tx * k.e2[0] + ty * k.e2[1] + tz * k.e2[2], tx * k.e1[0] + ty * k.e1[1] + tz * k.e1[2]);
+  const tx = dx - dn * k.n[0], ty = dy - dn * k.n[1], tz = dz - dn * k.n[2];
+  // A crater may be drawn out round the planet (stretch), where the planet turns from the visitor and would otherwise
+  // draw it narrower than picture 9 has it.
+  const cu = (tx * k.e1[0] + ty * k.e1[1] + tz * k.e1[2]) / (k.stretch ?? 1), cv = tx * k.e2[0] + ty * k.e2[1] + tz * k.e2[2], d = Math.hypot(cu, cv);
+  const reach = k.flank < 2 ? 3.4 : 2.6;
+  if (d > k.r * reach) return 0;
+  const phi = Math.atan2(cv, cu);
   const rr = k.r * (1 + k.lumpy * (0.55 * Math.sin(3 * phi + k.phase) + 0.3 * Math.sin(5 * phi + 2.1 * k.phase) + 0.15 * Math.sin(11 * phi + 0.7 * k.phase)));
   const x1 = d / rr;
   let h;
   if (x1 < 1) {
     if (k.floor > 0) {
-      if (x1 < k.floor) h = -k.depth * (1 - k.bump * Math.exp(-((x1 / 0.13) ** 2))) + k.depth * 0.025 * perlin(x * 0.07 + k.seed, y * 0.07, z * 0.07);
-      else {
-        // The wall rises smoothly from the floor and steepest under the crest, so the lip is sharp.
-        const w = ((x1 - k.floor) / (1 - k.floor)) ** 1.85;
+      if (x1 < k.floor) {
+        // The floor: low hummocks over it, and at its middle a small cluster of hills.
+        const hill = k.bump * (Math.exp(-((x1 / 0.13) ** 2)) + 0.55 * Math.exp(-(((x1 - 0.12) / 0.07) ** 2)) * (0.5 + 0.5 * Math.sin(3 * phi + k.phase)));
+        h = -k.depth * (1 - hill) + k.depth * k.hummock * (fbm(x * 0.09 + k.seed, y * 0.09, z * 0.09, 3) + 0.4 * perlin(x * 0.3, y * 0.3 + k.seed, z * 0.3)) * smooth(0, 0.25, k.floor - x1 + 0.05);
+      } else {
+        // The wall rises smoothly from the floor and steepest under the crest, so the lip is sharp. A large crater's
+        // wall has slumped in terraces: broken ledges whose edges wander and fade round it, never whole rings.
+        const u = (x1 - k.floor) / (1 - k.floor);
+        let w = u ** 1.85;
+        if (k.terraces) {
+          const wander = 0.07 * perlin(phi * 1.7 + k.seed, x1 * 3, 1.3), keep = smooth(-0.15, 0.35, perlin(phi * 2.3 + 4.1, k.seed, 0.7)) * k.slump;
+          const N = k.terraces + 1, v = Math.min(1, Math.max(0, u + wander)) * N, f = v - Math.floor(v);
+          const stair = (Math.floor(v) + smooth(0.55, 1, f)) / N;
+          w = w + (stair ** 1.85 - w) * keep;
+        }
         h = -k.depth + (k.depth + k.rim) * w + k.rim * 0.12 * perlin(x * 0.11 + k.seed, y * 0.11, z * 0.11) * Math.sin(Math.PI * w);
       }
     } else h = -k.depth + (k.depth + k.rim) * x1 ** 2;
   } else {
     const o = x1 - 1;
     // The rim stands up from the ground round it on a broad outer flank, so the crater reads raised and not cut.
-    h = k.rim * Math.exp(-o * 2.3) * (1 - smooth(1.6, 2.6, x1));
+    h = k.rim * Math.exp(-o * k.flank) * (1 - smooth(reach - 1, reach, x1));
     // Ejecta: a hummocky blanket round the rim of a large crater.
-    if (k.r > 9) h += k.rim * 0.35 * Math.exp(-o * 1.6) * (1 - smooth(1.5, 2.6, x1)) * perlin(x * 0.16 + k.seed, y * 0.16, z * 0.16);
+    // On the large named ones it is broad and low: steep hummocks there came out as faceted tents.
+    if (k.r > 9) h += k.rim * (k.terraces ? 0.12 : 0.35) * Math.exp(-o * 1.6) * (1 - smooth(1.5, 2.6, x1)) * perlin(x * (k.terraces ? 0.07 : 0.16) + k.seed, y * (k.terraces ? 0.07 : 0.16), z * (k.terraces ? 0.07 : 0.16));
   }
   if (k.worn) h *= 0.85 + 0.15 * perlin(x * 0.2, y * 0.2, z * 0.2);
   return h;
@@ -333,7 +349,6 @@ export function coarse(x, y, z) {
   // Round the hot lengths the rock is broken into lumps by the heat, so the light from the cleft lands on their faces
   // turned to it and not on an even dark: spread evenly it read as a smudge of airbrush.
   if (ck.pool > 0.01) h += Math.min(1, ck.pool * 3) * (1.6 * fbm(x * 0.17 + 3, y * 0.17, z * 0.17, 2) + 0.5 * Math.abs(fbm(x * 0.45, y * 0.45 + 5, z * 0.45, 2)));
-  h -= crust(x, y, z).drop;
   // The slab stands a little proud of the dark skin it broke from, its weathered top lumpy, with the break between
   // them a dark crack along the rock's torn line.
   const sd = slabbed(x, y, z);
@@ -364,7 +379,8 @@ export function floored(x, y, z) {
   for (const k of CR.at(x, y, z)) {
     if (k.r < 4) continue;
     const dx = x - k.c[0], dy = y - k.c[1], dz = z - k.c[2], dn = dx * k.n[0] + dy * k.n[1] + dz * k.n[2];
-    const d = Math.hypot(dx - dn * k.n[0], dy - dn * k.n[1], dz - dn * k.n[2]);
+    const tx = dx - dn * k.n[0], ty = dy - dn * k.n[1], tz = dz - dn * k.n[2];
+    const d = Math.hypot((tx * k.e1[0] + ty * k.e1[1] + tz * k.e1[2]) / (k.stretch ?? 1), tx * k.e2[0] + ty * k.e2[1] + tz * k.e2[2]);
     f = Math.max(f, 1 - smooth(0.8, 1.12, d / k.r));
   }
   return f;
@@ -378,11 +394,11 @@ export function gathered(x, y, z, side) {
   // On the crust's chunks by the line fewer: their tops are its old weathered top, broken and chipped, not pitted.
   const crustTop = 0.3 + 0.7 * smooth(8, 36, edgeDistance(x, y, z));
   // Dense only by the break and toward the lower limb: between, smooth dust with few pits.
-  return (side > 0 ? 1 : 0.35) * knot * crustTop * (0.05 + 1.35 * toward ** 1.6) * (0.15 + 0.85 * bands) * (1 - floored(x, y, z));
+  return (side > 0 ? 1 : 0.35) * knot * crustTop * (0.05 + 0.8 * toward ** 1.6) * (0.15 + 0.85 * bands) * (1 - floored(x, y, z));
 }
 
 // Pits too small for the geometry, in three sizes whose radii follow a power law within each, as craters do.
-const PITS = [{ size: 15, seed: 11, r: [2.4, 8], keep: 0.46 }, { size: 6.5, seed: 23, r: [0.9, 3], keep: 0.4 }, { size: 2.6, seed: 37, r: [0.3, 0.95], keep: 0.42 }];
+const PITS = [{ size: 15, seed: 11, r: [2.4, 8], keep: 0.3 }, { size: 6.5, seed: 23, r: [0.9, 3], keep: 0.4 }, { size: 2.6, seed: 37, r: [0.3, 0.95], keep: 0.42 }];
 function pits(x, y, z, side, nx, ny, nz, density) {
   let h = 0;
   for (let l = 0; l < PITS.length; l++) {

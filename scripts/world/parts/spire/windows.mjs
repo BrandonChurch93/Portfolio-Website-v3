@@ -1,22 +1,28 @@
 // The map of every window of the spire, after the towers' (scripts/world/parts/towers/windows.mjs): one texel a
 // window, its red how lit the room is, its green how pale its light is (ember to pale gold), its blue how far its
 // blind is down. Windows are given out in fields, one for each strip, and lit as a building is lit: a floor at a
-// time. A floor is lit right across, or a run of it from one end, half of it or more, or it is dark with now and then one room lit, and a lit floor
-// is often the next one's too, so the strip reads as warm bands a floor or two tall. Each floor is one tenant, in
-// its own warmth. Never by a noise held up to a level, whose blobs read as letters at the page's size. What is not
-// given out is filled the same way, so the map's smaller copies hold the same average.
+// time, by bays. A floor is lit right across and dimmer, or in a clump or two of bays, or it is dark with now and then
+// one bay lit, and a floor is often lit as the one under it is. Each floor is one tenant, in its own warmth. What is
+// not given out is filled the same way, so the map's smaller copies hold the same average.
 import { WINDOW, paleness, shown } from '../../../../src/pieces/world/parts/spire/windows.ts';
 import { L, linear } from '../../lib/plan.mjs';
 
-// How a floor is lit: the chance it is lit right across, the chance it is a run, and how much likelier the floor
-// over a lit floor is lit right across too, and how often a run keeps to the side the last run was on (runs that
-// change sides floor to floor drew an S or a Z at the page's size); in a dark floor the chance of one room lit; in a lit floor the chance
-// a room of it is off; how many floors are the warmest tenants, how many the palest; how many dark rooms show a glow
-// from further in; and how much less often a strip one window wide is lit, so it is not one long line of light.
-const FLOOR = { whole: 0.33, run: 0.1, keep: 0.85, after: 0.25, single: 0.3, off: 0.08, warm: 0.3, pale: 0.12, glow: 0.18, narrow: 0.6 };
+// How a floor is lit: the chance it is lit right across, the chance it is lit in clumps (a few bays together, here
+// and there along it), and how much likelier the floor over a lit floor is lit the same way; in a dark floor the
+// chance of one bay lit; in a lit floor the chance a room of it is off; how many floors are the warmest tenants, how
+// many the palest; how many dark rooms show a glow from further in; how much less often a strip one window wide is
+// lit, so it is not one long line of light; and how much dimmer a floor lit right across is than a clump, so a whole
+// floor is a calm band and not a bar. Lit by bays, the panes between two mullions together, so what is lit reads at
+// the page's size as clumps of windows parted by bronze and never as a ladder of bars. Never by a noise held up to a
+// level, whose blobs read as letters at the page's size.
+const FLOOR = { whole: 0.12, clumps: 0.4, after: 0.12, single: 0.4, off: 0.18, warm: 0.3, pale: 0.12, glow: 0.4, narrow: 0.6, calm: 0.72 };
+// A clump: how many bays at least and at most, and how many clumps to a floor at most.
+// A clump: how many bays at least and at most, how many clumps to a floor at most, and how often a clump starts where
+// the one on the floor under it did (clumps that moved from floor to floor drew an S, a Z or a 5 at the page's size).
+// A strip of two bays or fewer is lit a floor at a time, as one clump: one bay lit by itself there was a zigzag.
+const CLUMP = { bays: [1, 3], most: 2, keep: 0.85 };
 // How much busier the floors are where the building is busy: a slow swell up the strip.
 const BUSY = { every: 11, by: 0.35 };
-
 export class Windows {
   constructor(seed) {
     this.size = WINDOW.map;
@@ -27,15 +33,15 @@ export class Windows {
     this.colors = WINDOW.colors.map((n) => linear(n));
     this.fill(0, 0, this.size, this.size, 99);
   }
-  // A field of cols by rows windows: where it begins in the map.
-  take(cols, rows, mood = 0) {
+  // A field of cols by rows windows, lit by bays of `pair` windows: where it begins in the map.
+  take(cols, rows, mood = 0, pair = 1) {
     const s = this.shelf;
     if (s.x + cols > this.size) { s.x = 0; s.y += s.tall; s.tall = 0; }
     if (s.y + rows > this.size) throw new Error(`windows: no room for ${cols} by ${rows}`);
     const at = { c0: s.x, r0: s.y, cols, rows };
     s.x += cols;
     s.tall = Math.max(s.tall, rows);
-    this.fill(at.c0, at.r0, cols, rows, mood);
+    this.fill(at.c0, at.r0, cols, rows, mood, pair);
     this.fields.push(at);
     return at;
   }
@@ -46,29 +52,32 @@ export class Windows {
     this.data[i + 2] = Math.round(Math.min(1, Math.max(0, level > 0 ? blind : 0)) * 255);
   }
   // Floor by floor, from the foot of the strip.
-  fill(c0, r0, cols, rows, mood) {
-    const R = this.rand;
-    let before = false, side = R() < 0.5;
+  fill(c0, r0, cols, rows, mood, pair = 1) {
+    const R = this.rand, bays = Math.max(1, Math.round(cols / pair));
+    let before = '', from = -1;
     for (let r = 0; r < rows; r++) {
       const busy = (1 + BUSY.by * (2 * L.noise(r / BUSY.every + mood * 1.7, mood * 3.1, mood, 73) - 1)) * (cols < 2 ? FLOOR.narrow : 1);
-      const t = R(), tone = R(), whole = before ? FLOOR.whole + FLOOR.after : FLOOR.whole;
-      const kind = t < whole * busy ? 'whole' : t < (whole + FLOOR.run) * busy ? 'run' : 'dark';
+      const t = R(), tone = R(), lift = (k) => (before === k ? FLOOR.after : 0);
+      const whole = (FLOOR.whole + lift('whole')) * busy, clumps = (FLOOR.clumps + lift('clumps')) * busy;
+      const kind = t < whole ? 'whole' : t < whole + clumps ? 'clumps' : 'dark';
       const warm = tone < FLOOR.warm ? 0.04 + 0.14 * R() : tone > 1 - FLOOR.pale ? 0.6 + 0.16 * R() : 0.26 + 0.32 * R();
-      const level = 0.66 + 0.34 * R() ** 1.3, blinds = R() < 0.25 ? 0.2 + 0.5 * R() : 0;
-      let a = 0, b = cols;
-      if (kind === 'run') {
-        const half = Math.ceil(cols / 2), long = cols < 2 ? 1 : half + Math.floor(R() * (cols - half));
-        if (R() > FLOOR.keep) side = !side;
-        a = side ? 0 : cols - long;
-        b = a + long;
-      }
-      const single = kind === 'dark' && R() < FLOOR.single ? Math.floor(R() * cols) : -1;
+      const level = (0.66 + 0.34 * R() ** 1.3) * (kind === 'whole' ? FLOOR.calm : 1), blinds = R() < 0.25 ? 0.2 + 0.5 * R() : 0;
+      const lit = new Array(bays).fill(kind === 'whole');
+      if (kind === 'clumps') {
+        const n = bays <= 2 ? 1 : 1 + Math.floor(R() * CLUMP.most);
+        for (let k = 0; k < n; k++) {
+          const long = bays <= 2 ? bays : Math.min(bays, CLUMP.bays[0] + Math.floor(R() * (CLUMP.bays[1] - CLUMP.bays[0] + 1)));
+          const a = k === 0 && from >= 0 && R() < CLUMP.keep ? Math.min(from, bays - long) : Math.floor(R() * (bays - long + 1));
+          if (k === 0) from = a;
+          for (let b = a; b < a + long; b++) lit[b] = true;
+        }
+      } else if (kind === 'dark' && bays > 2 && R() < FLOOR.single) lit[from >= 0 ? from : Math.floor(R() * bays)] = true;
       for (let c = 0; c < cols; c++) {
-        const on = kind !== 'dark' ? c >= a && c < b && R() > FLOOR.off : c === single;
-        const lv = on ? level * (0.85 + 0.2 * R()) : R() < FLOOR.glow ? 0.1 + 0.12 * R() : 0;
+        const on = lit[Math.min(bays - 1, Math.floor(c / pair))] && R() > (kind === 'whole' ? FLOOR.off : FLOOR.off * 0.4);
+        const lv = on ? level * (0.85 + 0.2 * R()) : R() < FLOOR.glow ? 0.1 + 0.14 * R() : 0;
         this.set(c0 + c, r0 + r, lv, warm + (R() - 0.5) * 0.08, blinds > 0 && R() < 0.7 ? blinds + (R() - 0.5) * 0.2 : 0);
       }
-      before = kind === 'whole';
+      before = kind;
     }
   }
   // Every window of a field lit, at about this level and this paleness, with no blind: the flèche's slits and the

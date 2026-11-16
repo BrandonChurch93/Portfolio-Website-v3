@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { hex, type PaletteName } from '../../../config/palette';
-import { D2R, MOONWARD, PYRAMID, ground, noise, pyramidal, seeded, within } from '../layout';
+import { D2R, MOONWARD, PYRAMID, drawn, ground, noise, pyramidal, seeded, within } from '../layout';
 import { load } from '../files';
 import type { PartFactory } from '../part';
 import { TOWERS, TREES } from '../placed';
@@ -10,25 +10,26 @@ import { AIR, JITTER, treeDepth, treeMaterial, treeUniforms } from './trees/mate
 
 // The trees: the belt along the city's front and the few among the buildings, each where TREES has it (./placed.ts)
 // and as wide. Models of one kind of tree, made ahead by scripts/world/parts/trees/ with their stored light, each
-// drawn for many trees at once with a place, a turn, a size, a height, a shade and a number of its own. A tree most
-// of which a tree in front of it hides is drawn with the cheap model. A tree whose ground the tear took is left out.
+// drawn for many trees at once with a place, a turn, a size, a height, a shade and a number of its own. A crown the
+// fixed view cannot see past nearer crowns and buildings is left out, and one behind the first two ranks is drawn
+// with the cheap model (VIEWED). A tree whose ground the tear took is left out.
 // Each stands on the land as it is drawn (the make script stores where, from the land's own field): a tree on a
 // dune stands on the dune, and one whose crown a crest in front of it mostly hides is left out, since a tuft over a
 // crest reads as cut off.
 
-// The autumn, from the deepest brown to a pale cream, as picture 9's belt has it: one crown pale, its neighbour deep
-// brown, the next amber. Each shade a mix of two of the palette's colors, how bright a leaf of it is, and how many
+// The autumn, from the deepest red brown to a pale amber cream, as picture 9's belt has it: one crown pale, its
+// neighbour deep brown, the next copper. Every shade leans to the picture's orange copper: a cream mixed toward the
+// palette's pale read grey pink beside it, and the browns read as pebbles. Each shade a mix of two of the palette's colors, how bright a leaf of it is, and how many
 // of the trees wear it, in order: a tree's own number (TREES' tone) picks its place along the list, so about one
 // crown in five is deep and one in five pale, and neighbours differ as their numbers do.
 const AUTUMN: readonly { mix: readonly [PaletteName, PaletteName, number]; power: number; share: number }[] = [
-  { mix: ['bronze-deep', 'bronze', 0.3], power: 1.2, share: 0.2 },
-  { mix: ['bronze', 'bronze-deep', 0.45], power: 1.25, share: 0.15 },
-  { mix: ['bronze', 'ember', 0.2], power: 1.05, share: 0.15 },
-  { mix: ['copper', 'bronze', 0.35], power: 0.95, share: 0.15 },
-  { mix: ['copper', 'copper-light', 0.4], power: 0.9, share: 0.15 },
-  { mix: ['copper-light', 'pale', 0.15], power: 0.95, share: 0.2 },
-];
-// How much one tree differs from the next of its shade in brightness, in size and in height against its width, and
+  { mix: ['bronze-deep', 'ember', 0.2], power: 1.4, share: 0.18 },
+  { mix: ['bronze', 'ember', 0.2], power: 1.2, share: 0.17 },
+  { mix: ['bronze', 'copper', 0.35], power: 1.0, share: 0.17 },
+  { mix: ['copper', 'bronze', 0.2], power: 0.95, share: 0.16 },
+  { mix: ['copper', 'copper-light', 0.4], power: 0.92, share: 0.16 },
+  { mix: ['copper-light', 'hot', 0.3], power: 0.92, share: 0.16 },
+];// How much one tree differs from the next of its shade in brightness, in size and in height against its width, and
 // how far it leans (the shear of its height to one side).
 const DIFFER = { light: 0.12, size: 0.08, tall: [0.9, 1.1], lean: 0.06 } as const;
 // The tall model is already taller than it is wide: it is stretched no further than this.
@@ -41,9 +42,13 @@ const KIND = { big: [MODELS.indexOf('tall'), MODELS.indexOf('round')], small: [M
 const PLACE = 90;
 // How much taller a crown stands, against its width, for each share it is larger than its neighbours.
 const STANDS = 0.5;
-// A tree is hidden, and takes the cheap model, when one at least as big stands this far in front of it (in its own
-// sizes) and this close to its line across.
-const HIDDEN = { front: 0.35, across: 0.55, big: 0.85 };
+// What the fixed view sees of each crown, worked out once from where things are drawn (drawn() in layout.ts): a
+// crown is a disc on the screen, this high over its foot and this wide (in its model's units), looked at in these
+// places (shares of its radius, round its middle). A crown of which every place is behind nearer crowns (each
+// taken as `cover` of its disc) or a nearer building is not drawn. One whose middle is behind `ranks` nearer crowns
+// or more is in the back ranks and takes the cheap model. ?treecull=0 draws every crown, to check that none of
+// those left out shows.
+const VIEWED = { up: 0.95, wide: 0.92, at: [[0, 0], [0.6, 0], [-0.6, 0], [0, 0.6], [0, -0.55], [0.42, 0.42], [-0.42, 0.42], [0.42, -0.4], [-0.42, -0.4], [0.85, 0], [-0.85, 0], [0, 0.85], [0.6, 0.6], [-0.6, 0.6], [0.6, -0.5], [-0.6, -0.5]], cover: 0.75, ranks: 2 } as const;
 // The city behind a tree: how far behind it and to each side a building is counted, and how tall the buildings
 // behind have to be together for its outline to be lit in full.
 const BEHIND = { deep: 260, side: 26, full: 260 };
@@ -95,29 +100,64 @@ function blocked(px: number, py: number, pz: number): boolean {
   return false;
 }
 
+// Which crowns the fixed view sees, and which of those are in the back ranks (VIEWED).
+type Placed = readonly [number, number, number, number, number];
+function viewed(trees: readonly Placed[], seat: (x: number, z: number) => { y: number }): { kept: Placed[]; back: boolean[] } {
+  const discs = trees.map(([x, z, s]) => {
+    const g = seat(x, z).y, [cx, cy] = drawn(x, g + VIEWED.up * s, z), [ex] = drawn(x + VIEWED.wide * s, g + VIEWED.up * s, z);
+    return { cx, cy, r: Math.abs(ex - cx), z };
+  });
+  const walls = TOWERS.map(([bx, bz, w, d, tall, turn]) => {
+    const c = Math.cos(turn * D2R), sn = Math.sin(turn * D2R), base = ground(bx, bz);
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, near = -Infinity, far = Infinity;
+    for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) for (const h of [0, tall]) {
+      const x = bx + (a * w * c + b * d * sn) / 2, z = bz + (-a * w * sn + b * d * c) / 2, [px, py] = drawn(x, base + h, z);
+      x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py); near = Math.max(near, z); far = Math.min(far, z);
+    }
+    return { x0: x0 + 1, x1: x1 - 1, y0: y0 + 1, y1: y1 - 1, far };
+  });
+  const kept: Placed[] = [], back: boolean[] = [];
+  discs.forEach((t, i) => {
+    let seen = false, rank = 0;
+    for (const [u, v] of VIEWED.at) {
+      const px = t.cx + u * t.r, py = t.cy - v * t.r;
+      let over = 0;
+      for (const o of discs) if (o.z > t.z && Math.hypot(px - o.cx, py - o.cy) < VIEWED.cover * o.r) over++;
+      if (u === 0 && v === 0) rank = over;
+      if (!over && !walls.some((w) => w.far > t.z && px > w.x0 && px < w.x1 && py > w.y0 && py < w.y1)) seen = true;
+    }
+    if (!seen) return;
+    kept.push(trees[i]);
+    back.push(rank >= VIEWED.ranks);
+  });
+  return { kept, back };
+}
+
 const shadeOf = (k: number): THREE.Color => {
   let a = 0, s = AUTUMN[AUTUMN.length - 1];
   for (const x of AUTUMN) { a += x.share; if (k <= a) { s = x; break; } }
   return new THREE.Color(hex(s.mix[0])).lerp(new THREE.Color(hex(s.mix[1])), s.mix[2]).multiplyScalar(s.power);
 };
-// ?trees=off builds no trees, so a page's cost can be measured with and without them.
+// ?trees=off builds no trees, so a page's cost can be measured with and without them. It still counts as built (an
+// empty thing in its group), or the frame draws its stand ins in their place.
 const OFF = 'off';
 
 export const build: PartFactory = async ({ query }) => {
-  if (query.get('trees') === OFF) return { group: new THREE.Group() };
+  if (query.get('trees') === OFF) return { group: new THREE.Group().add(new THREE.Object3D()) };
   const [file, map] = await Promise.all([load(FILES.mesh), leaves()]);
   const group = new THREE.Group(), made: { dispose(): void }[] = [];
   const seats = new Map(((file.meta.seats ?? []) as number[][]).map(([x, z, y, sand, seen]) => [`${x},${z}`, { y, sand, seen }]));
   const seat = (x: number, z: number) => seats.get(`${x},${z}`) ?? { y: ground(x, z), sand: 0, seen: 1 };
   // Every size below is the model's: half the drawn width (DRAWN).
-  const kept = TREES.filter(([x, z, size]) => within(x, z) >= size * DRAWN && seat(x, z).seen >= SEEN).map(([x, z, size, tone, turn]) => [x, z, size * DRAWN, tone, turn] as const);
+  const placed = TREES.filter(([x, z, size]) => within(x, z) >= size * DRAWN && seat(x, z).seen >= SEEN).map(([x, z, size, tone, turn]) => [x, z, size * DRAWN, tone, turn] as const);
+  const { kept, back } = query.get('treecull') === '0' ? { kept: placed, back: placed.map(() => false) } : viewed(placed, seat);
   const rnd = seeded(4049);
   // The way a tree's shade lies on the ground: away from the moon.
   const away = new THREE.Vector2(-MOONWARD[0], -MOONWARD[2]).normalize();
 
   // Which model each tree is: the cheap one where a tree in front hides it, and otherwise not the model of the
   // nearest tree already given one.
-  const hidden = kept.map(([x, z, s]) => kept.some(([ox, oz, os]) => os >= s * HIDDEN.big && oz - z > HIDDEN.front * s && Math.abs(ox - x) < HIDDEN.across * (s + os)));
+  const hidden = back;
   const order = kept.map((_, i) => i).sort((a, b) => kept[a][0] - kept[b][0]), modelOf = new Array<number>(kept.length).fill(-1);
   const rel = kept.map(([x, z, s]) => {
     let n = 0, sum = 0;
@@ -178,31 +218,40 @@ export const build: PartFactory = async ({ query }) => {
     const l = file.meshes.get(`tree-${k}`), trees = byModel[k];
     if (!l || !trees.length) continue;
     cube = l.size;
-    // The second pass draws only what has soft edges, which the make script put last: the same vertices, fewer
-    // triangles.
-    const g = l.geometry, soft = new THREE.BufferGeometry(), from = Number(l.info.soft ?? 0), n = trees.length, own = new THREE.Matrix4().compose(l.at, new THREE.Quaternion(), new THREE.Vector3().setScalar(l.size));
+    // The first pass draws the leaves and the bark, the second only what has soft edges (which the make script put
+    // after the bark), and the shade on the ground (put last) is drawn before either, by the second pass's material:
+    // drawn after the trunk, the shade, which stands nearer the viewer than the ground it lies on, darkened the
+    // trunk's foot and left a black band between the crown and the ground.
+    const g = l.geometry, from = Number(l.info.soft ?? 0), shade = Number(l.info.shade ?? 0) * 3, n = trees.length, own = new THREE.Matrix4().compose(l.at, new THREE.Quaternion(), new THREE.Vector3().setScalar(l.size));
     const at = new THREE.InstancedBufferAttribute(new Float32Array(n * 16), 16), tone = new Float32Array(n * 3), tree = new Float32Array(n * 4), reach = new Float32Array(n * 4), m = new THREE.Matrix4();
     trees.forEach((t, i) => { m.multiplyMatrices(t.m, own).toArray(at.array, i * 16); tone.set([t.tone.r, t.tone.g, t.tone.b], i * 3); tree.set(t.tree, i * 4); reach.set(t.reach, i * 4); });
     g.setAttribute('aTone', new THREE.InstancedBufferAttribute(tone, 3));
     g.setAttribute('aTree', new THREE.InstancedBufferAttribute(tree, 4));
     g.setAttribute('aReach', new THREE.InstancedBufferAttribute(reach, 4));
-    for (const [name, a] of Object.entries(g.attributes)) soft.setAttribute(name, a);
     const index = g.getIndex();
-    if (index) soft.setIndex(new THREE.BufferAttribute(index.array.subarray(from), 1));
-    soft.boundingBox = g.boundingBox;
-    soft.boundingSphere = g.boundingSphere;
-    made.push(g, soft);
-    passes.forEach((p, i) => {
-      const mesh = new THREE.InstancedMesh(i === 0 ? g : soft, p, n);
+    if (!index) continue;
+    const end = index.count - shade;
+    const part = (a: number, b: number): THREE.BufferGeometry => {
+      const p = new THREE.BufferGeometry();
+      for (const [name, x] of Object.entries(g.attributes)) p.setAttribute(name, x);
+      p.setIndex(new THREE.BufferAttribute(index.array.subarray(a, b), 1));
+      p.boundingBox = g.boundingBox;
+      p.boundingSphere = g.boundingSphere;
+      made.push(p);
+      return p;
+    };
+    made.push(g);
+    for (const [geometry, material, order] of [[part(0, end), passes[0], 0], [part(from, end), passes[1], 1], [part(end, index.count), passes[1], -1]] as const) {
+      const mesh = new THREE.InstancedMesh(geometry, material, n);
       mesh.instanceMatrix = at;
-      mesh.castShadow = i === 0;
+      mesh.castShadow = order === 0;
       mesh.receiveShadow = false;
       mesh.customDepthMaterial = depth;
-      mesh.renderOrder = i;
+      mesh.renderOrder = order;
       mesh.matrixAutoUpdate = false;
       mesh.computeBoundingSphere();
       group.add(mesh);
-    });
+    }
   }
   // How far the leaves move and the clumps are moved, in the shares of its own cube a model's positions are in: the
   // same for every model, whose cube the shade on the ground sets.

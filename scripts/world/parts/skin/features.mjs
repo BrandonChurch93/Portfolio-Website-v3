@@ -93,15 +93,16 @@ export function slabAt(py) {
   const [y0, x0] = SLAB[i - 1], [y1, x1] = SLAB[i];
   return x0 + ((x1 - x0) * (py - y0)) / (y1 - y0);
 }
+// The line each side is torn along. The great slab at the top of the dark side is one of the crust's blocks now
+// (blocks.mjs), and the skin is not run out past this line to make it.
 export function lineAt(side, py) {
-  const at = hullAt(side, py);
-  return side === 'left' ? Math.max(at, slabAt(py)) : at;
+  return hullAt(side, py);
 }
 
 // Where a side's torn line crosses a ring of the surface so far down (t): the angle round, in radians, or null where
 // the ring has nothing of that side in front of the line.
-export function edgeAngle(side, t) {
-  const s = SIDES[side].sign, f = (th) => { const [px, py] = L.pictured(...L.skinAt(th, t)); return s * (lineAt(side, py) - px); };
+export function edgeAngle(side, t, line = lineAt) {
+  const s = SIDES[side].sign, f = (th) => { const [px, py] = L.pictured(...L.skinAt(th, t)); return s * (line(side, py) - px); };
   let a = s * 5 * L.D2R, b = s * 90 * L.D2R;
   if (f(a) * f(b) > 0) return null;
   for (let i = 0; i < 50; i++) { const m = (a + b) / 2; if (f(m) * f(a) > 0) a = m; else b = m; }
@@ -155,7 +156,7 @@ const WORN = [[5, 10, 34], [10, 20, 14], [20, 34, 5], [34, 52, 2]];
 // bump at its middle inside smooth walls: shallow enough that the moon, low over this side, leaves a crescent of
 // shadow on the wall toward it and lights the floor. Terraces drew rings like contour lines, and gullies combed the
 // shadow's edge into streaks.
-function crater(c, r, kind, seed, worn = 0, deep = 1) {
+function crater(c, r, kind, seed, worn = 0, deep = 1, own = {}) {
   const n = shellNormal(...c), [e1, e2] = frame(n), R = rng(seed * 7919 + 13);
   const complex = kind === 'complex';
   return {
@@ -166,9 +167,21 @@ function crater(c, r, kind, seed, worn = 0, deep = 1) {
     bump: complex ? 0.1 + 0.08 * R() : 0,
     lumpy: 0.04 + 0.05 * R(),
     phase: R() * 100,
+    // How fast the rim falls away outside (its outer flank), the slumped terraces of its inner wall (how many, and
+    // how strongly), and the hummocks on its floor, as a share of its depth.
+    flank: 2.3, terraces: 0, slump: 0, hummock: 0.025,
     worn,
+    ...own,
   };
 }
+// The two large craters picture 9 has, as it has them. The large one: a broad rampart whose outer flank, turned from
+// the moon on the side away from it, lies in shadow (the picture's dark band left of it); a wall slumped in two
+// broken terraces; a broad floor with low hummocks and a small cluster of hills at its middle. The low one: a deep
+// bowl with a small floor, so its far wall catches the light and its floor lies in its shade, as the picture's does.
+const OWN = {
+  1: { rim: 0.23, flank: 1.7, floor: 0.74, terraces: 2, slump: 0.55, hummock: 0.06, bump: 0.16, stretch: 1.28, deepen: 0.8 },
+  2: { rim: 0.15, flank: 1.6, floor: 0.32, terraces: 1, slump: 0.4, hummock: 0.05, bump: 0.1, deepen: 1.25 },
+};
 
 const areaAt = (t) => { const r = Math.sqrt(1 - t * t), dr = (C.half * t) / r; return r * Math.hypot(dr, C.deep); };
 const AREA_MOST = Math.max(...Array.from({ length: 87 }, (_, i) => areaAt(i / 100)));
@@ -207,7 +220,11 @@ export function placed(px, py) {
 
 export function craters() {
   // The named craters are the picture's: deep, so their crescents of shadow read from across the room.
-  const out = NAMED.map((k) => crater(placed(k.at[0], k.at[1]), k.r * L.PICTURE.unit, k.kind, k.seed, 0, k.r > 50 ? 1.2 : k.r > 40 ? 1.45 : k.r > 12 ? 1.15 : 1.1));
+  const out = NAMED.map((k) => {
+    const own = OWN[k.seed] ?? {}, r = k.r * L.PICTURE.unit, made = crater(placed(k.at[0], k.at[1]), r, k.kind, k.seed, 0, (k.r > 50 ? 1.2 : k.r > 40 ? 1.45 : k.r > 12 ? 1.15 : 1.1) * (own.deepen ?? 1), {});
+    // A named crater's own shape: its rim and bump as shares of its radius, the rest as they are.
+    return { ...made, ...own, rim: own.rim ? own.rim * r : made.rim, bump: own.bump ?? made.bump, floor: own.floor ?? made.floor };
+  });
   const R = rng(4242);
   let seed = 100;
   // None on the floors of the two the kit names: those are broad and smooth.
@@ -269,7 +286,7 @@ export const TRACED = [
 // nothing: the picture's dark face has them, and without them it read as clay.
 function hairlines() {
   const R = rng(5150), out = [];
-  for (let n = 0; out.length < 22 && n < 400; n++) {
+  for (let n = 0; out.length < 12 && n < 400; n++) {
     let px = 110 + 150 * R(), py = 320 + 360 * R();
     if (px > hullAt('left', py) - 10 || Math.hypot(px - KNOT[0], py - KNOT[1]) < 34 || !sight(px, py)) continue;
     let a = (R() < 0.7 ? Math.PI / 2 : 0) + (R() - 0.5) * 1.6, w = 0.32 + 0.16 * R();
@@ -284,6 +301,101 @@ function hairlines() {
     if (run.length > 2) out.push(run);
   }
   return out;
+}
+
+// The cracks as the shader cuts them: runs of short straight lengths in picture 9's own pixels, each end with its
+// half width in pixels and its heat. The view never moves, so a cleft worked out per pixel from these lines keeps a
+// crisp, chipped lip at any zoom, where one stored in a map came out as a staircase of texels. Every arm swells and
+// pinches along its length (SWELL), its light dies before its width does (DIES: the share of a lit run past which
+// its heat falls to nothing), and past its last traced point it runs on as an unlit fissure (RUN_ON, in pixels)
+// that thins to a hairline.
+const SWELL = { step: 2.2, every: 8.5, low: 0.55, high: 1.45 }, DIES = [0.72, 0.95], RUN_ON = [7, 18];
+const sm1 = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+function wobble(s, seed) {
+  const i = Math.floor(s), f = s - i, h = (k) => rng(seed * 1009 + k * 7)();
+  return h(i) + (h(i + 1) - h(i)) * f * f * (3 - 2 * f);
+}
+export function crackLines() {
+  const R = rng(777), runs = [];
+  const px = 1 / L.PICTURE.unit;
+  TRACED.forEach((tr, ri) => {
+    const pts = [];
+    for (let i = 0; i < tr.length; i++) {
+      const [x, y, w, heat] = tr[i];
+      pts.push([x, y, w * WIDEN * px, heat]);
+      if (i === tr.length - 1) break;
+      const [qx, qy, qw, qh] = tr[i + 1], dx = qx - x, dy = qy - y, len = Math.hypot(dx, dy), nx = -dy / len, ny = dx / len;
+      const kinks = len > 9 ? 2 : len > 5 ? 1 : 0;
+      for (let k = 1; k <= kinks; k++) {
+        const f = (k / (kinks + 1)) + (R() - 0.5) * 0.18, off = (R() - 0.5) * Math.min(3.2, len * 0.22);
+        pts.push([x + dx * f + nx * off, y + dy * f + ny * off, (w + (qw - w) * f) * WIDEN * px, heat + (qh - heat) * f]);
+      }
+    }
+    runs.push({ pts, open: ri === 0, lit: pts[0][3] > 0 });
+  });
+  for (const tr of hairlines()) runs.push({ pts: tr.map(([x, y, w]) => [x, y, w * px * 0.8, 0]), open: false, lit: false });
+  // The hot arm runs on to the line the skin ends along, and is open to the break there.
+  {
+    const run = runs[0].pts, last = run[run.length - 1], py = TRACED[0][TRACED[0].length - 1][1];
+    run.push([lineAt('left', py) + 2, py + 0.5, last[2] * 1.05, last[3]]);
+  }
+  // Branches off the lit runs: short, at an angle, thinning to nothing and dying as they go.
+  const branches = [];
+  for (const run of runs.slice(1, 10)) for (let i = 1; i < run.pts.length - 1; i++) {
+    const a = run.pts[i], b = run.pts[i + 1];
+    if (a[3] <= 0 || a[3] > 0.8 || R() > 0.11) continue;
+    const dl = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (dl < 1e-6) continue;
+    let ang = Math.atan2(b[1] - a[1], b[0] - a[0]) + (R() < 0.5 ? -1 : 1) * (0.5 + 0.7 * R()), p = [a[0], a[1]], w = a[2] * (0.4 + 0.2 * R()), heat = a[3] * (0.55 + 0.2 * R());
+    const pts = [[p[0], p[1], w, heat]], legs = 2 + Math.floor(R() * 2), long = (9 + 16 * R()) * (0.6 + a[2] * 0.6);
+    for (let k = 0; k < legs; k++) {
+      const len = (long / legs) * (0.6 + 0.8 * R());
+      p = [p[0] + Math.cos(ang) * len, p[1] + Math.sin(ang) * len];
+      w *= 0.6; heat *= 0.7;
+      pts.push([p[0], p[1], k === legs - 1 ? 0.05 : w, k === legs - 1 ? 0 : heat]);
+      ang += (R() - 0.5) * 1.2;
+    }
+    branches.push({ pts, open: false, lit: true, branch: true });
+  }
+  const segs = [];
+  [...runs, ...branches].forEach((run, ri) => {
+    let pts = run.pts;
+    // Every lit arm but the hot one runs on past its last traced point as an unlit fissure, in two or three straight
+    // lengths that turn and thin to a hairline.
+    if (!run.open && !run.branch && pts.length > 1) {
+      const last = pts[pts.length - 1], prev = pts[pts.length - 2];
+      let ang = Math.atan2(last[1] - prev[1], last[0] - prev[0]), p = [last[0], last[1]], w = Math.max(last[2], 0.22);
+      const total = RUN_ON[0] + (RUN_ON[1] - RUN_ON[0]) * R(), legs = 2 + Math.floor(R() * 2);
+      pts = [...pts.slice(0, -1), [last[0], last[1], w, last[3]]];
+      for (let k = 0; k < legs; k++) {
+        ang += (R() - 0.5) * 1.1;
+        const len = (total / legs) * (0.7 + 0.6 * R());
+        p = [p[0] + Math.cos(ang) * len, p[1] + Math.sin(ang) * len];
+        w *= k === legs - 1 ? 0.25 : 0.62;
+        if (p[0] > lineAt('left', p[1]) - 3) break;
+        pts.push([p[0], p[1], w, 0]);
+      }
+    }
+    // Cut into lengths of about SWELL.step, each end's width swelling and pinching, and the light dying before the
+    // run's end (the hot arm's does not: it is open to the break).
+    const along = [0];
+    for (let i = 1; i < pts.length; i++) along.push(along[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+    const total = along[along.length - 1], tracedEnd = run.lit && !run.open ? along[Math.max(0, run.pts.length - 1)] : total;
+    const out = [];
+    for (let i = 0; i + 1 < pts.length; i++) {
+      const n = Math.max(1, Math.round((along[i + 1] - along[i]) / SWELL.step));
+      for (let k = 0; k < n; k++) out.push([...pts[i].slice(0, 2).map((v, c) => v + ((pts[i + 1][c] - v) * k) / n), pts[i][2] + ((pts[i + 1][2] - pts[i][2]) * k) / n, pts[i][3] + ((pts[i + 1][3] - pts[i][3]) * k) / n, along[i] + ((along[i + 1] - along[i]) * k) / n]);
+    }
+    out.push([...pts[pts.length - 1], total]);
+    for (const o of out) {
+      const s = o[4], sw = SWELL.low + (SWELL.high - SWELL.low) * wobble(s / SWELL.every, ri + 31);
+      // The swelling is less at the very ends, so a tip still thins to its hairline.
+      o[2] *= 1 + (sw - 1) * sm1(0, 6, s) * sm1(0, 6, total - s) * sm1(0.35, 1.1, o[2]);
+      if (run.lit && !run.open) o[3] *= 1 - sm1(DIES[0] * tracedEnd, DIES[1] * tracedEnd, s);
+    }
+    for (let i = 0; i + 1 < out.length; i++) segs.push([out[i][0], out[i][1], out[i + 1][0], out[i + 1][1], out[i][2], out[i + 1][2], out[i][3], out[i + 1][3]]);
+  });
+  return segs;
 }
 
 // The cracks as runs of segments on the surface, with every run broken into straight lengths that turn sharply,
