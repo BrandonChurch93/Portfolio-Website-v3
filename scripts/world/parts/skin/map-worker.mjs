@@ -1,10 +1,9 @@
 // One of the workers that fill the skin's map (make.mjs): for each texel it casts the line of sight through that
 // pixel of picture 9 onto the skin's mesh and works out, where it lands, the fine relief, how the stone's color
-// changes there, and its fourth number: on the dark side the cracks' light (over half: inside a cleft, the light
-// itself; under half: the light that lies on the rock beside one), on the pale side how much of the place is the
-// darker rock under the crust, seen in section at a torn edge.
+// changes there, and its fourth number: on the pale side how much of the moon is seen there (moonSeen, marched over
+// the whole relief), on the dark side nothing the shader reads (the cracks are cut by the shader from their lines).
 import { parentPort, workerData } from 'node:worker_threads';
-import { closest } from '../../lib/bvh.mjs';
+import { any, closest } from '../../lib/bvh.mjs';
 import { L } from '../../lib/plan.mjs';
 import { CRUST, SHOULDER, setup, fine, coarse, crust, chips, crackOf, edgeDistance, pitted, floored, farEdge, fbm, downOf, slabbed } from './field.mjs';
 import { frame, shellNormal, toShell } from './features.mjs';
@@ -20,10 +19,72 @@ const W = texels.wide, hit = new Float64Array(4);
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const unit = (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] / l, a[1] / l, a[2] / l]; };
-// How the fine relief shades itself from the moon: places along the way to the moon, in units.
-const STEPS = [0.3, 0.65, 1.1, 1.7, 2.5, 3.6];
+// How the pale side is shaded from the moon: places along the way to it, in units, from the first to past the
+// longest shadow a crater's rim throws, each a share further than the last, and how soft the shadow's edge is (the
+// moon's own width as a share of the distance, and a little more for the texel).
+const SHADE = { first: 0.25, grow: 1.12, far: 160, soft: 0.016, texel: 0.12 };
+const STEPS = [];
+for (let s = SHADE.first; s < SHADE.far; s *= SHADE.grow) STEPS.push(s);
 // Where the top of a broken face is looked for round a place: so far off, in so many directions.
 const AROUND = [0.7, 1.5, 2.6, 3.8], WAYS = 8;
+
+// The share of the moon seen from a place on the pale side (q on the outer surface, sn its normal, h0 the fine relief
+// there): a ray toward the moon is marched over the relief, and where it passes under a height the moon is hidden. The
+// fine relief can throw only short shadows, so it is asked about only near the place. Over the land's rim the land
+// throws its own, which the shader takes from the shadow map.
+const FINE_REACH = 7;
+function moonSeen(q, sn, h0, side, md) {
+  const h = coarse(q[0], q[1], q[2]) + h0, o = [q[0] + sn[0] * h, q[1] + sn[1] * h, q[2] + sn[2] * h];
+  let vis = 1;
+  for (const s of STEPS) {
+    const P = [o[0] + md[0] * s, o[1] + md[1] * s, o[2] + md[2] * s];
+    if (P[1] > -L.RIM - 2) break;
+    const r = toShell(P[0], P[1], P[2]), above = (L.shell(P[0], P[1], P[2]) >= 1 ? 1 : -1) * Math.hypot(P[0] - r[0], P[1] - r[1], P[2] - r[2]);
+    if (above > 45) break;
+    const ground = coarse(r[0], r[1], r[2]) + (s < FINE_REACH ? fine(r[0], r[1], r[2], side) * (1 - smooth(FINE_REACH * 0.6, FINE_REACH, s)) : 0);
+    const w = SHADE.soft * s + SHADE.texel;
+    vis = Math.min(vis, smooth(-w, w, above - ground));
+    if (vis < 0.002) return 0;
+  }
+  return vis;
+}
+
+// A block's faces broken into planes of many sizes: in each cell of two grains of a pattern of cells the face is a
+// plane of its own, tipped its own way, so they meet in crisp steps; the cracks between them are dark, and each plane
+// is a little lighter or darker than the next (FRACTURE: each grain's size, how far its planes tip, in units of
+// height to a unit across, and how wide its cracks are). A face carved only by large facets and soft dents read as
+// crumpled foil.
+const FRACTURE = [{ size: 8, tip: 0.5, crack: 0.3, dark: 0.5, seed: 3 }, { size: 3.4, tip: 0.22, crack: 0.14, dark: 0.12, seed: 9 }];
+const hashOf = (i, j, k, s) => { let n = Math.imul(i, 374761393) ^ Math.imul(j, 668265263) ^ Math.imul(k, 1440662683) ^ Math.imul(s, 1274126177); n = Math.imul(n ^ (n >>> 13), 1274126177); return ((n ^ (n >>> 16)) >>> 0) / 4294967296; };
+const FR = { h: 0, tone: 1 };
+function fractured(p) {
+  FR.h = 0; FR.tone = 1;
+  for (const g of FRACTURE) {
+    const fx = p[0] / g.size, fy = p[1] / g.size, fz = p[2] / g.size, X = Math.floor(fx), Y = Math.floor(fy), Z = Math.floor(fz);
+    let d1 = Infinity, d2 = Infinity, b = null;
+    for (let i = X - 1; i <= X + 1; i++) for (let j = Y - 1; j <= Y + 1; j++) for (let k = Z - 1; k <= Z + 1; k++) {
+      const sx = i + hashOf(i, j, k, g.seed), sy = j + hashOf(i, j, k, g.seed + 1), sz = k + hashOf(i, j, k, g.seed + 2);
+      const d = Math.hypot(sx - fx, sy - fy, sz - fz);
+      if (d < d1) { d2 = d1; d1 = d; b = [i, j, k, sx, sy, sz]; } else if (d < d2) d2 = d;
+    }
+    const [i, j, k, sx, sy, sz] = b, t = unit([hashOf(i, j, k, g.seed + 3) - 0.5, hashOf(i, j, k, g.seed + 4) - 0.5, hashOf(i, j, k, g.seed + 5) - 0.5]);
+    FR.h += g.tip * g.size * ((fx - sx) * t[0] + (fy - sy) * t[1] + (fz - sz) * t[2]) - g.crack * 2.2 * (1 - smooth(0, g.crack / g.size * 2.5, (d2 - d1) / 2));
+    FR.tone *= (0.88 + 0.24 * hashOf(i, j, k, g.seed + 6)) * (1 - g.dark * (1 - smooth(0, g.crack / g.size * 2, (d2 - d1) / 2)));
+  }
+  return FR;
+}
+
+// The same for a block of the pale side's crust, by rays cast over the mesh, a few across the moon's disc.
+const DISC = [[0, 0], [1, 0], [-0.5, 0.87], [-0.5, -0.87]].map(([a, b]) => [a * SHADE.soft, b * SHADE.soft]);
+function blockSeen(p, n, md) {
+  const [e1, e2] = frame(md);
+  let seen = 0;
+  for (const [a, b] of DISC) {
+    const d = unit([md[0] + e1[0] * a + e2[0] * b, md[1] + e1[1] * a + e2[1] * b, md[2] + e1[2] * a + e2[2] * b]);
+    if (!any(bvh, p[0] + n[0] * 0.25, p[1] + n[1] * 0.25, p[2] + n[2] * 0.25, d[0], d[1], d[2], 400)) seen++;
+  }
+  return seen / DISC.length;
+}
 
 for (let row = rows[0]; row < rows[1]; row++) {
   for (let col = 0; col < W; col++) {
@@ -47,9 +108,10 @@ for (let row = rows[0]; row < rows[1]; row++) {
     if (CODE[a] > 0.25) {
       // On its weathered top the crust's own old ground shows: pitted and lumpy, as the outer surface is.
       const top = blockTop(CODE[a] * w + CODE[b] * u + CODE[c] * v), pit = top > 0.5 ? pitted(q[0], q[1], q[2], 1) : 0;
-      out.H[i] = 0.18 * fbm(p[0] / 1.3, p[1] / 1.3, p[2] / 1.3, 2) + (top > 0.5 ? (fine(q[0], q[1], q[2], 1) - 0.1) * smooth(0.5, 0.9, top) : 0);
-      out.B[i] = (0.92 + 0.16 * fbm(p[0] * 0.08, p[1] * 0.08, p[2] * 0.08, 2) + 0.08 * fbm(p[0] * 0.5, p[1] * 0.5, p[2] * 0.5, 2)) * (1 - 0.5 * pit);
-      out.G[i] = side > 0 ? 0.5 : 0;
+      const fr = fractured(p);
+      out.H[i] = fr.h + 0.1 * fbm(p[0] / 1.3, p[1] / 1.3, p[2] / 1.3, 2) + (top > 0.5 ? (fine(q[0], q[1], q[2], 1) - 0.1) * smooth(0.5, 0.9, top) * 0.6 : 0);
+      out.B[i] = (0.9 + 0.14 * fbm(p[0] * 0.08, p[1] * 0.08, p[2] * 0.08, 2)) * fr.tone * (1 - 0.6 * pit);
+      out.G[i] = side > 0 ? blockSeen(p, n, moon) : 0;
       continue;
     }
     const sn = shellNormal(...q), [e1, e2] = frame(sn), D = 0.3, up = dot(n, sn);
@@ -98,36 +160,18 @@ for (let row = rows[0]; row < rows[1]; row++) {
       // Near the torn line the ground is shattered and its dust shaken off: a little darker, as the picture's is.
       m *= 1 - 0.08 * (1 - smooth(10, 60, farEdge(q[0], q[1], q[2])));
       // A crater's floor sits back in its bowl: it glared when it was the palest dust of the side.
-      m *= 1 - 0.2 * floor;
+      m *= 1 - 0.06 * floor;
       // A pit is darker only a little: its shadow is its own (vis), and its wall turned to the moon is lit.
       m *= 1 - (isFace ? 0 : 0.28 * pitted(q[0], q[1], q[2], side));
-      // The fine relief's own shadows from the moon.
-      const md = moon, dn = dot(md, bent);
-      let vis = 1;
-      if (isFace) vis = 1;
-      else if (dn <= 0.02) vis = smooth(-0.08, 0.02, dn);
-      else {
-        let tx = md[0] - dn * sn[0], ty = md[1] - dn * sn[1], tz = md[2] - dn * sn[2];
-        const tl = Math.hypot(tx, ty, tz) || 1;
-        tx /= tl; ty /= tl; tz /= tl;
-        const ds = dot(md, sn), rise = ds / Math.sqrt(Math.max(1e-4, 1 - ds * ds));
-        for (const s of STEPS) {
-          const r = toShell(q[0] + tx * s, q[1] + ty * s, q[2] + tz * s), hs = fine(r[0], r[1], r[2], side);
-          vis = Math.min(vis, smooth(-0.06, 0.04, rise - (hs - h0) / s));
-        }
-      }
-      // A pit's own shadow is crisp and dark; the shade the ground's broad lumps threw on each other was a soft smear.
-      m *= 0.25 + 0.75 * vis;
-      // Under the sand's lip the crust lies in its shade, but for what stands out of it.
-      if (rd < SHOULDER.shade[1]) m *= 0.45 + 0.55 * smooth(SHOULDER.shade[0], SHOULDER.shade[1], rd + 6 * Math.max(0, dot(md, bent) - 0.2));
-      // What the moon falls on squarely is the dust at its palest: the shader eases it toward the dust's cream.
-      m *= 1 + 0.26 * smooth(0.3, 0.8, dot(md, bent)) * vis * (1 - 0.85 * floor);
+      // What of the moon reaches the place: a march toward it over the whole relief, the craters and the pits, so every
+      // shadow is the shape of what throws it, round where a rim is round, and its edge is as soft as the moon is wide.
+      // Taken from the bake's share at each vertex it was the shape of the triangles: black polygons, needles, stripes.
+      const md = moon, vis = isFace ? 1 : moonSeen(q, sn, h0, side, md);
+      // Where the moon falls squarely the dust is at its palest: the shader eases it toward the dust's cream.
+      m *= 1 + 0.2 * smooth(0.3, 0.8, dot(md, bent)) * vis * (1 - 0.85 * floor);
       m *= 1 + 0.12 * layer;
-      // The land's sand lies only at the very top, under its own lip: laid in the hollows further down the shoulder it
-      // drew a band with a dripping edge, like icing.
-      const sand = (1 - smooth(2, 7, rd)) * (1 - under);
-      // The fourth number: under half, how much is the red brown under the crust; over half, how much is sand.
-      g = 0.5 - 0.5 * under + 0.5 * sand;
+      // The fourth number on the pale side: how much of the moon is seen.
+      g = vis;
     } else {
       // The oldest surface: broad changes of tone, and long weathering streaks down it.
       const ex = sn[2], ez = -sn[0], el = Math.hypot(ex, ez) || 1, across = (q[0] * ex + q[2] * ez) / el;

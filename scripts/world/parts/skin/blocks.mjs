@@ -68,7 +68,9 @@ const DISH = { per: 1 / 34, r: [1.8, 7.5], deep: [0.18, 0.42] }, PIT = { per: 1 
 // How the skin's edge wanders along the blocks' backs: how far, in pixels, at what grain of rows, and over how many rows
 // it changes from one block's back to the next (a jump between two rows tilted the skin's grid there, which drew a
 // line right across the side).
-const CUT = { wander: 2.6, every: 9, ease: 5 };
+// It wanders only away from the hollow, over the blocks' backs, at a coarse grain and a fine one: wandering both ways
+// at one grain of 2.6 pixels, the pale side's edge read as a clean straight cut.
+const CUT = { wander: 5.5, every: 14, fine: [1.6, 3.4], ease: 5 };
 
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const add = (a, b, k = 1) => [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k];
@@ -238,7 +240,8 @@ export function cutAt(side, py) {
   let a = 0;
   for (let i = -4; i <= 4; i++) a += insetAt(side, py + (i * CUT.ease) / 4);
   const inset = a / 9;
-  return line - s * (inset > 0.5 ? inset + CUT.wander * fbm(py / CUT.every, side === 'left' ? 3.1 : 7.7, 0.5, 2) : inset);
+  const wander = Math.max(0, CUT.wander * (0.55 + fbm(py / CUT.every, side === 'left' ? 3.1 : 7.7, 0.5, 2)) + CUT.fine[0] * fbm(py / CUT.fine[1], 5.3, side === 'left' ? 1.1 : 2.9, 1));
+  return line - s * (inset > 0.5 ? inset + wander : inset);
 }
 
 // One mesh of every block of one side, with each vertex's side and how near its block's weathered top it is (1 on
@@ -259,12 +262,12 @@ export async function makeBlocks(plan, { cell, error }) {
 // How near a block's weathered top a place is (1 on it, 0 from `layer` units under it), and whether that block is one
 // that faces the visitor.
 export function topness(blocks, x, y, z, layer) {
-  let best = 0, near = Infinity, facing = false;
+  let best = 0, near = Infinity, facing = false, hang = false;
   for (const k of blocks) {
     if (x < k.lo[0] || y < k.lo[1] || z < k.lo[2] || x > k.hi[0] || y > k.hi[1] || z > k.hi[2]) continue;
     const d = [x - k.o[0], y - k.o[1], z - k.o[2]], la = dot(d, k.a), lb = dot(d, k.b), ln = dot(d, k.n);
     const top = -(la * la + lb * lb) / (2 * k.R), under = top - ln;
-    if (Math.abs(under) < near) { near = Math.abs(under); best = 1 - Math.min(1, Math.max(0, (under - layer * 0.4) / (layer * 0.6))); facing = !!k.facing; }
+    if (Math.abs(under) < near) { near = Math.abs(under); best = 1 - Math.min(1, Math.max(0, (under - layer * 0.4) / (layer * 0.6))); facing = !!k.facing; hang = !!k.hang; }
   }
-  return { top: best, facing };
+  return { top: best, facing, hang };
 }

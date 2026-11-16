@@ -3,7 +3,7 @@ import { hex, type PaletteName } from '../../../config/palette';
 import { load, mesh } from '../files';
 import { lit, stone as planetStone } from '../light';
 import type { PartFactory } from '../part';
-import { CRACK_CELL, DARK_LIGHT, GLOW, KNOT_POOL, SAND, STONE, UNDER } from './skin/look';
+import { CRACK_CELL, DARK_LIGHT, GLOW, KNOT_POOL, STONE, UNDER } from './skin/look';
 import * as S from './skin/shaders';
 
 // The skin: what survives of the planet's own outer surface at each side of the tear. At the visitor's left, turned
@@ -95,8 +95,8 @@ export const build: PartFactory = async ({ query, renderer }) => {
   // Where the mesh's own cube is, so the shader knows each place in the world's units.
   const place = new THREE.Vector4();
   const pale = tried(query, 'skinpale'), rock = tried(query, 'skinrock'), knot = tried(query, 'skinknot'), dark = tried(query, 'skindark');
-  const info = skin.info as { map: number[]; dark: [number, number]; knot: number[]; torn: number[]; cracks: number[]; crisp: number[] };
-  if (!info.knot || !info.torn || info.torn.length !== 67 || !info.cracks || !info.crisp) throw new Error('skin.bin is older than its shader: make it again with scripts/world/parts/skin/make.mjs');
+  const info = skin.info as { map: number[]; dark: [number, number]; knot: number[]; torn: number[]; cracks: number[] };
+  if (!info.knot || !info.torn || info.torn.length !== 67 || !info.cracks) throw new Error('skin.bin is older than its shader: make it again with scripts/world/parts/skin/make.mjs');
   const ck = crackTextures(info.cracks);
   const K = [KNOT_POOL.power, KNOT_POOL.reach, KNOT_POOL.hot, KNOT_POOL.hotR].map((v, i) => knot?.[i] ?? v);
   m.onBeforeCompile = (sh: Shader) => {
@@ -104,10 +104,10 @@ export const build: PartFactory = async ({ query, renderer }) => {
       uSkinMap: { value: map },
       uSkinMapSize: { value: new THREE.Vector4(map.image.width, map.image.height, map.userData.split as number, info.map[3]) },
       uPale: { value: stone(pale ? { ...STONE.pale, k: pale[0], power: pale[1] ?? STONE.pale.power } : STONE.pale) }, uDust: { value: stone(STONE.dust) }, uDark: { value: stone(STONE.dark) },
-      uUnder: { value: planetStone().multiplyScalar(UNDER) }, uStone: { value: planetStone() }, uSand: { value: linear(SAND.of[0]).lerp(linear(SAND.of[1]), SAND.ease).multiplyScalar(SAND.power) }, uSkinPlace: { value: place }, uGlowRock: { value: rock ? rock[0] : GLOW.rock },
+      uUnder: { value: planetStone().multiplyScalar(UNDER) }, uStone: { value: planetStone() }, uSkinPlace: { value: place }, uGlowRock: { value: rock ? rock[0] : GLOW.rock },
       uKnotA: { value: new THREE.Vector3(...info.knot.slice(0, 3)) }, uKnotB: { value: new THREE.Vector3(...info.knot.slice(3, 6)) }, uKnot: { value: new THREE.Vector4(...K) },
       uDarkLight: { value: new THREE.Vector3(dark?.[0] ?? DARK_LIGHT.fill, dark?.[1] ?? DARK_LIGHT.rim, dark?.[2] ?? DARK_LIGHT.slab) }, uDarkFrom: { value: new THREE.Vector3(...DARK_LIGHT.from) },
-      uDarkAt: { value: new THREE.Vector2(...info.dark) }, uCrisp: { value: new THREE.Vector4(...info.crisp) }, uTorn: { value: info.torn },
+      uDarkAt: { value: new THREE.Vector2(...info.dark) }, uTorn: { value: info.torn },
       uCkSeg: { value: ck.seg }, uCkCell: { value: ck.cell }, uCkGrid: { value: ck.grid }, uCkSize: { value: ck.size },
       uGlowPale: { value: linear(GLOW.ramp[0]) }, uGlowHot: { value: linear(GLOW.ramp[1]) }, uGlowFlame: { value: linear(GLOW.ramp[2]) }, uGlowEmber: { value: linear(GLOW.ramp[3]) },
     });

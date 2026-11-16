@@ -132,6 +132,9 @@ export const NAMED = [
   { at: [1078, 660], r: 9, kind: 'simple', seed: 15 },
   { at: [1208, 330], r: 5, kind: 'simple', seed: 16 },
   { at: [1088, 410], r: 7, kind: 'simple', seed: 17 },
+  // Two small ones on the large crater's floor, younger than it.
+  { at: [1158, 436], r: 3.4, kind: 'simple', seed: 18, exact: true },
+  { at: [1183, 409], r: 2.6, kind: 'simple', seed: 19, exact: true },
 ];
 
 export function rng(seed) {
@@ -148,7 +151,7 @@ export function rng(seed) {
 // The scatter of smaller craters made as geometry, on the pale side: so many between each pair of radii, in units,
 // many small and few large, as a power law has them.
 // The smallest are left to the map's pits: made as geometry and reduced, they came out as star shaped dents.
-const SCATTER = [[3.6, 6, 95], [6, 10, 34], [10, 16, 9]];
+const SCATTER = [[3.6, 6, 120], [6, 10, 52], [10, 16, 13]];
 // And old worn ones on the dark side, so it is the same planet: shallow and soft, the oldest nearly gone.
 const WORN = [[5, 10, 34], [10, 20, 14], [20, 34, 5], [34, 52, 2]];
 
@@ -163,7 +166,7 @@ function crater(c, r, kind, seed, worn = 0, deep = 1, own = {}) {
   return {
     c, n, e1, e2, r, seed,
     depth: (complex ? 0.19 : 0.44) * deep * r * (0.88 + 0.24 * R()) * (1 - 0.72 * worn),
-    rim: (complex ? 0.12 : 0.13) * r * (0.85 + 0.3 * R()) * (1 - 0.7 * worn),
+    rim: (complex ? 0.12 : 0.19) * r * (0.85 + 0.3 * R()) * (1 - 0.7 * worn),
     floor: complex ? 0.56 + 0.1 * R() : 0,
     bump: complex ? 0.1 + 0.08 * R() : 0,
     lumpy: 0.04 + 0.05 * R(),
@@ -183,7 +186,7 @@ function crater(c, r, kind, seed, worn = 0, deep = 1, own = {}) {
 // left and lower side, and it is no deeper than leaves a narrow crescent of shadow. It is not drawn out round the
 // planet: drawn out by 1.28 it came out a fifth wider than the picture's.
 const OWN = {
-  1: { rim: 0.2, flank: 3.6, crest: 0.14, floor: 0.62, terraces: 1, slump: 0.3, hummock: 0.04, bump: 0.12, deepen: 0.88 },
+  1: { rim: 0.2, flank: 3.6, crest: 0.14, floor: 0.62, terraces: 1, slump: 0.6, hummock: 0.04, bump: 0.07, deepen: 0.88, moat: [0.12, 0.42, 0.26] },
   2: { rim: 0.14, flank: 1.6, crest: 0.1, floor: 0.26, terraces: 1, slump: 0.3, hummock: 0.04, bump: 0.08, deepen: 0.95 },
   6: { deepen: 1.5 },
   7: { deepen: 1.35 },
@@ -264,9 +267,9 @@ export const KNOT = [225, 478];
 const WIDEN = 1.55;
 export const TRACED = [
   // to the tear: the widest and hottest
-  [[225, 478, 3.4, 1], [236, 474, 2.8, 1], [246, 472, 2.4, 1], [252, 470, 2.4, 1], [259, 469, 2.5, 1], [268, 468, 2.3, 0.96]],
+  [[225, 478, 4.6, 1], [236, 474, 3.9, 1], [246, 472, 3.4, 1], [252, 470, 3.3, 1], [259, 469, 3.3, 1], [268, 468, 3, 0.96]],
   // down and to the left, then along: thick and hot as far as the turn up at its far end
-  [[225, 478, 3, 1], [222, 492, 2.6, 0.97], [218, 503, 2.4, 0.93], [205, 507, 2.0, 0.88], [192, 505, 1.7, 0.84], [181, 508, 1.3, 0.78], [172, 499, 0.7, 0.6], [163, 491, 0.55, 0.5], [151, 484, 0.4, 0.4], [144, 481, 0.2, 0.28]],
+  [[225, 478, 4, 1], [222, 492, 3.3, 0.97], [218, 503, 2.9, 0.93], [205, 507, 2.3, 0.88], [192, 505, 1.7, 0.84], [181, 508, 1.3, 0.78], [172, 499, 0.7, 0.6], [163, 491, 0.55, 0.5], [151, 484, 0.4, 0.4], [144, 481, 0.2, 0.28]],
   // up and to the left
   [[225, 478, 2.8, 1], [217, 471, 1.8, 0.9], [208, 463, 1.25, 0.8], [199, 454, 1.05, 0.72], [191, 446, 0.9, 0.66], [181, 437, 0.8, 0.6], [172, 427, 0.7, 0.55], [163, 418, 0.6, 0.48], [154, 410, 0.5, 0.42], [147, 404, 0.35, 0.34], [141, 401, 0.18, 0.25]],
   // down and to the right, thin, then thick and hot again toward the second knot at the foot
@@ -323,7 +326,7 @@ function hairlines() {
 // arm runs on as an unlit fissure (RUN_ON, in pixels) that thins to a hairline. Random side branches read as sprays
 // of whiskers and are gone.
 const STEP = 1.3, BEND = { amp: [1.25, 0.45], every: [9, 3.1], jitter: 0.32 }, SWELL = { low: 0.5, high: 1.5, every: 13 };
-const DIES = [0.72, 0.95], RUN_ON = [7, 18], SHUT = { first: 16, every: [34, 70], long: [1.2, 2.6], left: 0.35, dark: 0.55 };
+const DIES = [0.8, 1], RUN_ON = [7, 18], SHUT = { first: 16, every: [34, 70], long: [1.2, 2.6], left: 0.35, dark: 0.55 };
 const sm1 = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 function wobble(s, seed) {
   const i = Math.floor(s), f = s - i, h = (k) => rng(seed * 1009 + k * 7)();

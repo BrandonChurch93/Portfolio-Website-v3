@@ -84,6 +84,18 @@ class Grid {
 }
 const EMPTY = [];
 
+let CUT_LINE = null;
+// The pale side's edge at the tear is rounded down into the break, as thick crust is when it breaks: over how many of
+// picture 9's pixels in from where the skin stops, and how far down, in units.
+const BEVEL = { reach: 9, drop: 7 };
+function bevel(x, y, z) {
+  if (!CUT_LINE || x <= 0) return 0;
+  const [px, py] = L.pictured(x, y, z), f = Math.min(CUT_LINE.at.length - 1.001, Math.max(0, (py - CUT_LINE.from) / CUT_LINE.step)), i = Math.floor(f);
+  const d = px - (CUT_LINE.at[i] + (CUT_LINE.at[i + 1] - CUT_LINE.at[i]) * (f - i));
+  if (d >= BEVEL.reach) return 0;
+  const k = 1 - Math.max(0, d) / BEVEL.reach;
+  return BEVEL.drop * k * k;
+}
 let CR = null, SG = null, ED = null, FAR = null, KNOT = [0, 0, 0], SL = null;
 // How a crack's light is measured: its spill runs this many of its half widths past its lip, plus this far, as a
 // faint even light on the rock right beside it. The knot's pool is not here: the shader lights the rock round the
@@ -131,8 +143,9 @@ const GEO = [0.45, 0.9];
 // How far from the torn line the pits are gathered toward it, in units.
 const GATHER = 110;
 
-export function setup({ craters, segs, edges, knot, slab }) {
+export function setup({ craters, segs, edges, knot, slab, cut }) {
   if (knot) KNOT = knot;
+  CUT_LINE = cut ?? null;
   SL = slab ?? null;
   CR = new Grid();
   for (const c of craters) { const e = c.r * 3.5 * (c.stretch ?? 1); CR.add([c.c[0] - e, c.c[1] - e, c.c[2] - e], [c.c[0] + e, c.c[1] + e, c.c[2] + e], c); }
@@ -213,6 +226,9 @@ function profile(k, x1, phi, x, y, z, reach) {
     const o = x1 - 1;
     // The rim stands up from the ground round it on a broad outer flank, so the crater reads raised and not cut.
     h = k.rim * Math.exp(-o * k.flank) * (1 - smooth(reach - 1, reach, x1));
+    // A broad trough round the rampart's foot, which the rampart throws its shadow into on the side from the moon:
+    // picture 9's large crater stands in a dark moat.
+    if (k.moat) h -= k.moat[0] * k.r * Math.exp(-(((o - k.moat[1]) / k.moat[2]) ** 2));
     // Ejecta: a hummocky blanket round the rim of a large crater.
     // On the large named ones it is broad and low: steep hummocks there came out as faceted tents.
     if (k.r > 9) h += k.rim * (k.terraces ? 0.12 : 0.35) * Math.exp(-o * 1.6) * (1 - smooth(1.5, 2.6, x1)) * perlin(x * (k.terraces ? 0.07 : 0.16) + k.seed, y * (k.terraces ? 0.07 : 0.16), z * (k.terraces ? 0.07 : 0.16));
@@ -358,11 +374,17 @@ const swell = (x, y, z) => 2.6 * fbm(x / 70, y / 70, z / 70, 3) + 1.5 * fbm(x / 
 // land's sand lies over it, so nothing of it stands above the land. A ledge laid along it at one depth drew a ridge
 // right round the planet like a seam on a pot, and is gone. `shade` is how far under the rim the sand's lip shades it.
 export const SHOULDER = { round: 16, in: 11, under: 52, shade: [10, 30] };
+// On the pale side the top is a thick rounded lip of the crust that stands out over the foot of the land's sand drape,
+// so the two meet along the lip's own smooth crest and not along the drape's ragged foot: how far out it stands (and
+// how much that wanders round the rim), how far under the rim its crest is, how far down it runs on the open side and
+// how much further by the tear, where picture 9's lip is thickest and waves down, and how far it is tucked under the
+// land at the rim.
+export const LIP = { out: 3.4, wander: 0.4, crest: 6, down: 40, tear: 26, tuck: 2.5 };
 // Bites knocked out of the dark side where it turns from the visitor, so its outline is broken and not a lathe's arc:
 // two grains of them (the spacing of their cells, how many of the cells hold one, their radii and depths, in units),
 // each a scoop with a flat floor and a steep wall, and how near edge on the surface must be for them to be cut (the
 // planet's normal toward the visitor, from and to).
-const BITES = { grains: [{ size: 34, keep: 0.5, r: [9, 17], deep: [2.5, 6.5], seed: 71 }, { size: 13, keep: 0.3, r: [3.5, 7], deep: [0.8, 1.8], seed: 83 }], edgeOn: [0.12, 0.36] };
+const BITES = { on: false, grains: [{ size: 34, keep: 0.5, r: [9, 17], deep: [2.5, 6.5], seed: 71 }, { size: 13, keep: 0.3, r: [3.5, 7], deep: [0.8, 1.8], seed: 83 }], edgeOn: [0.12, 0.36] };
 function bites(x, y, z) {
   const n = normalOf(x, y, z), on = 1 - smooth(BITES.edgeOn[0], BITES.edgeOn[1], n[2]);
   if (on <= 0) return 0;
@@ -378,7 +400,8 @@ function bites(x, y, z) {
 }
 export function coarse(x, y, z) {
   let h = swell(x, y, z) * (1 - 0.8 * floored(x, y, z));
-  if (x < 0) h -= bites(x, y, z);
+  // The dark side's outline is left whole: bitten, its edges caught the rim light as a dotted line of scaly flakes.
+  if (x < 0 && BITES.on) h -= bites(x, y, z);
   for (const k of CR.at(x, y, z)) h += craterHeight(k, x, y, z);
   // A cleft shallows out as it reaches the line, so it is not cut on down the crust's broken face.
   const ck = crackAt(x, y, z);
@@ -395,6 +418,13 @@ export function coarse(x, y, z) {
   }
   const rd = rimDistance(y);
   h = h > 0 ? h * smooth(SHOULDER.under * 0.72, SHOULDER.under, rd) : h * (0.45 + 0.55 * smooth(6, SHOULDER.under * 0.9, rd));
+  if (x > 0) {
+    h -= bevel(x, y, z);
+    const near = 1 - smooth(15, 110, farEdge(x, y, z)), down = LIP.down + LIP.tear * near;
+    const out = LIP.out * (1 + LIP.wander * fbm(x / 47 + 2, y / 31, z / 47, 2) * 2);
+    h += out * smooth(-1, LIP.crest, rd) * (1 - smooth(down * 0.4, down, rd)) - LIP.tuck * (1 - smooth(0, 2.5, rd));
+    return h;
+  }
   // and a little under the sand's drape, all the way down it, so no lump of the skin shows through the sand.
   h -= 0.9 * (1 - smooth(SHOULDER.under * 0.6, SHOULDER.under * 0.78, rd));
   if (rd < SHOULDER.round) {
@@ -447,8 +477,9 @@ function pits(x, y, z, side, nx, ny, nz, density) {
       const lop = 1 + 0.16 * Math.sin(3 * Math.atan2(ey, ex + ez) + 6.28 * hash(i, j, k, P.seed + 5));
       const xr = Math.hypot(ex, ey, ez) / (r * lop);
       if (xr > 1.9) continue;
-      const deep = (l ? 0.42 : 0.55) + 0.32 * hash(i, j, k, P.seed + 6);
-      h += xr < 1 ? -deep * r + (deep + 0.1) * r * xr * xr : 0.1 * r * Math.exp(-(xr - 1) * 4.5);
+      // Shallow enough that the wall turned to the moon is lit as a crescent, with a raised lip round it.
+      const deep = 0.3 + 0.22 * hash(i, j, k, P.seed + 6), lip = 0.16;
+      h += xr < 1 ? -deep * r + (deep + lip) * r * xr ** 2.4 : lip * r * Math.exp(-(xr - 1) * 4.5);
     }
   }
   return h;
