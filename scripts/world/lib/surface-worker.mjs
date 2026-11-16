@@ -3,7 +3,7 @@
 // with its grid in workerData. It is sent { slab } and answers with that slab's arrays.
 import { parentPort, workerData } from 'node:worker_threads';
 
-const { module, args, origin, cell, nc, B, slabWidth, cut, margin, root, exact, step, agree, beside, snug: SNUG, same: SAME, apart: APART } = workerData;
+const { module, args, origin, cell, nc, B, slabWidth, cut, margin, gap, root, exact, step, agree, beside, snug: SNUG, same: SAME, apart: APART } = workerData;
 const mod = await import(module);
 if (mod.setup) await mod.setup(args);
 if (typeof mod.field !== 'function') throw new Error(`surface: ${module} does not export field(x, y, z)`);
@@ -382,7 +382,7 @@ function leaf(bx, by, bz, o) {
   if (!neg || !pos) return;
   stamp++;
   const cv = new Float64Array(8);
-  const lo = [0, 0, 0], hi = [0, 0, 0];
+  const lo = [0, 0, 0], hi = [0, 0, 0], li = [0, 0, 0], hj = [0, 0, 0];
   for (let k = 0; k < pz - 1; k++) {
     for (let j = 0; j < py - 1; j++) {
       for (let i = 0; i < px - 1; i++) {
@@ -429,6 +429,7 @@ function leaf(bx, by, bz, o) {
         for (let e = 0; e < 12; e++) if (comp[e] > 0) packed |= comp[e] << (2 * e);
         lo[0] = at(0, gi); lo[1] = at(1, gj); lo[2] = at(2, gk);
         hi[0] = at(0, gi + 1); hi[1] = at(1, gj + 1); hi[2] = at(2, gk + 1);
+        for (let a = 0; a < 3; a++) { li[a] = lo[a] + gap; hj[a] = hi[a] - gap; }
         o.cells.push(gi + ncx * (gj + ncy * gk));
         o.first.push(o.vcount);
         o.packed.push(packed);
@@ -447,12 +448,12 @@ function leaf(bx, by, bz, o) {
           mx /= cnt; my /= cnt; mz /= cnt;
           if (solve(cnt, mx, my, mz, lo, hi)) o.solved++;
           else if (feature(cnt, mx, my, mz, lo, hi, margin)) o.featured++;
-          else { boxed(cnt, mx, my, mz, lo, hi); o.held++; }
+          else { boxed(cnt, mx, my, mz, li, hj); o.held++; }
           if (settle(lo, hi, margin)) o.settled++;
           const px = out3[0], py = out3[1], pz = out3[2];
           if (px < lo[0] || px > hi[0] || py < lo[1] || py > hi[1] || pz < lo[2] || pz > hi[2]) {
-            const good = feature(cnt, mx, my, mz, lo, hi, 0);
-            if (!good) { boxed(cnt, mx, my, mz, lo, hi); settle(lo, hi, 0); }
+            const good = feature(cnt, mx, my, mz, lo, hi, -gap);
+            if (!good) { boxed(cnt, mx, my, mz, li, hj); settle(lo, hi, -gap); }
             o.alt.push(o.vcount); o.alt.push(out3[0]); o.alt.push(out3[1]); o.alt.push(out3[2]); o.alt.push(good ? 1 : 0);
           }
           o.pos.push(px); o.pos.push(py); o.pos.push(pz);

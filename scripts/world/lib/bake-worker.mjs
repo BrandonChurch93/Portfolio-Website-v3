@@ -66,7 +66,8 @@ function origins(v) {
   }
   const px = pos[v * 3], py = pos[v * 3 + 1], pz = pos[v * 3 + 2];
   const nx = nor[v * 3], ny = nor[v * 3 + 1], nz = nor[v * 3 + 2];
-  const touch = Math.max(TOUCH * bias, Math.max(Math.abs(px), Math.abs(py), Math.abs(pz)) * 2 ** -20);
+  const span = Math.max(Math.abs(px), Math.abs(py), Math.abs(pz));
+  const touch = Math.max(TOUCH * bias, span * 2 ** -20);
   const half = gap(bvh, px, py, pz, REACH, touch) / 2;
   let k = 0;
   for (let a = a0; a < a1; a++) {
@@ -78,7 +79,7 @@ function origins(v) {
     const l = Math.hypot(cx, cy, cz);
     const s = l > 0 ? Math.min(NUDGE, NUDGE_MOST * bias / l, half / l) : 0;
     const qx = px + cx * s, qy = py + cy * s, qz = pz + cz * s;
-    const h = Math.min(half, lift(qx, qy, qz, fx, fy, fz, OWN * l + 1e-9 * (1 + touch)));
+    const h = Math.min(half, lift(qx, qy, qz, fx, fy, fz, OWN * l + 2 ** -40 * (1 + span)));
     OX[k] = qx + fx * h; OY[k] = qy + fy * h; OZ[k] = qz + fz * h;
     FX[k] = fx; FY[k] = fy; FZ[k] = fz;
     k++;
@@ -111,6 +112,9 @@ function frame(nx, ny, nz) {
   B2[0] = b; B2[1] = s + ny * ny * a; B2[2] = -ny;
 }
 
+// A vertex's k starts take the samples in k runs of consecutive ones, and every run of a Sobol sequence covers the
+// disc or the hemisphere evenly. Taken in turns, sample j going to start j % k, the low bit of j halved the disc
+// between the starts and left each vertex an error that more samples did not shrink.
 function cone(v, k, salt, ax, ay, az, cosA, count, nx, ny, nz, cx, cy, cz, r) {
   frame(ax, ay, az);
   const h = hash(v, seed, salt), sx = mix(h ^ 0x51), sy = mix(h ^ 0xa3), rot = k > 1 ? mix(h ^ 0x7c) % k : 0;

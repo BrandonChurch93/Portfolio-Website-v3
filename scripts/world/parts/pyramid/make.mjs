@@ -4,7 +4,7 @@
 //   node scripts/world/parts/pyramid/make.mjs --draft   fast, with fewer samples in the bake
 //
 // Every piece is a convex solid, the intersection of half spaces (polytope.mjs): the body, which runs on under the
-// ground, with every arris rounded, the neck in the reveal, and the capstone. Each face is
+// ground, the neck in the reveal, and the capstone. Its edges are crisp: they are rounded in the shader. Each face is
 // cut into rows and filled, finer at the foot and the reveal, and how open each vertex is to the night is baked in
 // the world's own frame, with the land round it there to shut it in. The mesh is stored in the pyramid's own frame:
 // its foot on the ground, its axis straight out from the dome (FORM.fit, standing() in form.ts).
@@ -13,20 +13,19 @@ import { bake } from '../../lib/bake.mjs';
 import { pack } from '../../lib/pack.mjs';
 import { L, light, linear, storeBounce } from '../../lib/plan.mjs';
 import { FORM, standing } from '../../../../src/pieces/world/parts/pyramid/form.ts';
-import { polytope, fill, mend, plane, round } from './polytope.mjs';
+import { polytope, fill, mend, plane } from './polytope.mjs';
 
 const draft = process.argv.includes('--draft');
 const OUT = 'public/world/pyramid.bin';
-const { base } = L.PYRAMID, { tall, turn } = FORM.fit, half = base / 2, from = FORM.cap.from, reveal = FORM.cap.reveal, R = FORM.round;
+const { base } = L.PYRAMID, { tall, turn } = FORM.fit, half = base / 2, from = FORM.cap.from, reveal = FORM.cap.reveal;
 
 // The four sides, outward, each by its horizontal direction.
 const SIDES = [[1, 0], [0, 1], [-1, 0], [0, -1]];
 const sideFaces = SIDES.map(([dx, dz]) => ({ ...plane([dx * tall, half, dz * tall], [0, tall, 0]), tag: 'face' }));
 const flat = (n, d, tag) => ({ n, d, tag });
-const arrises = sideFaces.flatMap((f, i) => round(f, sideFaces[(i + 1) % 4], R.arris, R.facets, 'round'));
 
 const UP = flat([0, 1, 0], from, 'top'), DOWN = flat([0, -1, 0], FORM.sink, 'foot');
-const body = polytope([...sideFaces, ...arrises, UP, DOWN], 'body');
+const body = polytope([...sideFaces, UP, DOWN], 'body');
 
 const neckHalf = half * (1 - from / tall) - FORM.cap.inset;
 const neck = polytope([
@@ -35,13 +34,13 @@ const neck = polytope([
 ], 'neck');
 
 const CAPFOOT = flat([0, -1, 0], -(from + reveal), 'under');
-const cap = polytope([...sideFaces, ...arrises, CAPFOOT], 'cap');
+const cap = polytope([...sideFaces, CAPFOOT], 'cap');
 
 // How far apart vertices are along a row: fine at the foot, where it meets the ground, and coarse up the faces and
 // on the two faces never seen (the view never moves).
 const unseen = (n) => n[0] > 0.5 || n[2] < -0.5;
 function spacing(p, n, tag) {
-  let h = tag === 'face' || tag === 'round' ? Math.min(6, 1.1 + 0.07 * Math.max(0, p[1])) : 3;
+  let h = tag === 'face' ? Math.min(6, 1.1 + 0.07 * Math.max(0, p[1])) : 3;
   if (unseen(n)) h *= 3;
   return draft ? h * 1.6 : h;
 }
@@ -52,10 +51,9 @@ for (let y = 0, s = 0.5; y < tall; y += s, s = Math.min(4, 0.5 + 0.06 * y)) rows
 for (let y = from - 2; y < from + reveal + 2; y += 0.3) rows.push(y);
 rows.push(tall);
 
-// Which piece a vertex is of, stored for the shader (light.w): a face of the body, a round of the body, the neck in
-// the reveal, a round of the capstone, a face of the capstone.
+// Which piece a vertex is of, stored for the shader (light.w): the body, the neck in the reveal, the capstone.
 const KIND = { body: 0, neck: 0.5, cap: 1 };
-const kind = (name, tag) => (tag === 'round' ? (name === 'cap' ? 0.75 : 0.25) : KIND[name]);
+const kind = (name) => KIND[name];
 const gold = mend(fill([body, neck, cap], { rows, flatRows: [], spacing, skip: (tag) => tag === 'hidden' || tag === 'foot', kind }));
 
 // The pyramid's frame to the world's: its foot on the ground under its middle, its axes as standing() gives them.

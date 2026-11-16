@@ -79,32 +79,30 @@ float pyrLine( float d, float w, float f ) {
 	return max( 0.0, min( 0.5 * w, d + 0.5 * f ) - max( - 0.5 * w, d - 0.5 * f ) ) / f;
 }
 // A broad soft light of the night, standing so far off: what a ray from p toward r sees of it. Its hot heart, and
-// its broad light with a soft edge. spread is how far r turns across the pixel, in radians: what the pixel sees is
-// the light's edge widened by that much, so a light seen in a round finer than a pixel is its pixel's average and
-// not a line of steps.
-float pyrSoft( vec3 p, vec3 r, float spread, vec3 at, vec3 u, vec3 v, vec4 radii, vec3 power ) {
+// its broad light with a soft edge. It is broad and soft, so it is never a line finer than a pixel and needs none of
+// the widening the narrow lights below are given.
+float pyrSoft( vec3 p, vec3 r, vec3 at, vec3 u, vec3 v, vec4 radii, vec3 power ) {
 	vec3 q = at - p;
 	float along = dot( q, r );
 	vec3 off = q - along * r;
 	vec2 o = vec2( dot( off, u ), dot( off, v ) );
-	float blur = spread * max( along, 0.0 );
-	vec2 rh = sqrt( radii.xy * radii.xy + blur * blur ), oh = o / max( rh, vec2( 1e-3 ) );
-	float rb = length( o / max( radii.zw, vec2( 1e-3 ) ) ), e = power.z + blur / max( min( radii.z, radii.w ), 1e-3 );
-	// Spread wider, a light is as much dimmer: what the pixel sees is its average, never more of it. A pixel's
-	// mirrored direction sweeps one way, across the round, so a light is spread along that one way only.
-	float keep = sqrt( radii.x * radii.y / max( rh.x * rh.y, 1e-3 ) ), keepB = 1.0 / ( 1.0 + e - power.z );
-	return step( 0.0, along ) * ( power.x * keep * exp( - dot( oh, oh ) ) + power.y * keepB * ( 1.0 - smoothstep( 1.0 - e, 1.0 + e, rb ) ) );
+	vec2 oh = o / max( radii.xy, vec2( 1e-3 ) );
+	float rb = length( o / max( radii.zw, vec2( 1e-3 ) ) );
+	return step( 0.0, along ) * ( power.x * exp( - dot( oh, oh ) ) + power.y * ( 1.0 - smoothstep( 1.0 - power.z, 1.0 + power.z, rb ) ) );
 }
 // A band of the night between two heights, as the sine of the angle over the horizon, with its edges e soft.
 float pyrBand( float y, float lo, float hi, float e ) {
 	return smoothstep( lo - e, lo + e, y ) * ( 1.0 - smoothstep( hi - e, hi + e, y ) );
 }
-// What the gold mirrors from p (in units) toward r: how bright, as a level.
+// What the gold mirrors from p (in units) toward r: how bright, as a level. spread is how far r turns across the
+// pixel, in radians: the narrow lights' edges are widened by that much, and they are as much dimmer, so a line of
+// them seen in a round finer than a pixel is its pixel's average and not a line of steps. A pixel's mirrored
+// direction sweeps one way, across the round, so a light is spread along that one way only.
 float pyrNight( vec3 p, vec3 r, float spread ) {
 	float level = mix( uSky.y, uSky.x, smoothstep( 0.0, 1.0, r.y ) ) * smoothstep( - 0.06, 0.02, r.y ) + uSky.z;
-	level += pyrSoft( p, r, spread, uSoftAt[ 0 ], uSoftU[ 0 ], uSoftV[ 0 ], uSoftR[ 0 ], uSoftI[ 0 ] );
-	level += pyrSoft( p, r, spread, uSoftAt[ 1 ], uSoftU[ 1 ], uSoftV[ 1 ], uSoftR[ 1 ], uSoftI[ 1 ] );
-	level += pyrSoft( p, r, spread, uSoftAt[ 2 ], uSoftU[ 2 ], uSoftV[ 2 ], uSoftR[ 2 ], uSoftI[ 2 ] );
+	level += pyrSoft( p, r, uSoftAt[ 0 ], uSoftU[ 0 ], uSoftV[ 0 ], uSoftR[ 0 ], uSoftI[ 0 ] );
+	level += pyrSoft( p, r, uSoftAt[ 1 ], uSoftU[ 1 ], uSoftV[ 1 ], uSoftR[ 1 ], uSoftI[ 1 ] );
+	level += pyrSoft( p, r, uSoftAt[ 2 ], uSoftU[ 2 ], uSoftV[ 2 ], uSoftR[ 2 ], uSoftI[ 2 ] );
 	float a = acos( clamp( dot( r, uZen.xyz ), - 1.0, 1.0 ) ), a0 = acos( clamp( uZenW.x, - 1.0, 1.0 ) ), a1 = acos( clamp( uZenW.y, - 1.0, 1.0 ) );
 	float am = 0.5 * ( a0 + a1 ), aw = min( am + spread, 3.1 );
 	level += uZen.w * am / aw * ( 1.0 - smoothstep( a1 - spread, a0 + spread, a ) );
@@ -134,7 +132,9 @@ float pRough = 0.0, pJoint = 0.0, pPlate = 0.0;
 		// Seen from far off a plate is under a pixel: its differences and its joints fade out before they can alias.
 		float big = smoothstep( 3.0, 12.0, C / max( fy, 1e-5 ) );
 		float dy = abs( fract( y / C + 0.5 ) - 0.5 ) * C, ds = abs( fract( ( s + off ) / P + 0.5 ) - 0.5 ) * P;
-		pJoint = max( pyrLine( dy, J * ${f(Math.sin(SLOPE))}, fy ), 0.6 * pyrLine( ds, J, fs ) ) * smoothstep( 4.0, 11.0, C / max( fy, 1e-5 ) );
+		// The joints come in only well inside three times the page's size, where a course is thirty pixels tall: at
+		// three times they are a faint sheen of level lines and no grid of tiles.
+		pJoint = max( pyrLine( dy, J * ${f(Math.sin(SLOPE))}, fy ), 0.4 * pyrLine( ds, J, fs ) ) * smoothstep( 8.0, 30.0, C / max( fy, 1e-5 ) );
 		pTilt = ( vec2( h1, h2 ) - 0.5 ) * 2.0 * ${f(FORM.casing.tilt)} * big;
 		pRough = ( h3 - 0.5 ) * uRough.z * big;
 		pPlate = ( h1 - 0.5 ) * big;
@@ -161,7 +161,9 @@ float pBent = 0.0, pSpread = 0.0;
 			pBend = normalize( mix( n, vec3( 0.0, 1.0, 0.0 ), top ) );
 			pSpread = ${f(SLOPE)} / ${f(FORM.round.seen.lip)} * pix * min( 1.0, top * 10.0 );
 			pBent = 1.0;
-		} else if ( w > 0.0 ) {
+		} else if ( w > 0.0 && ( n.x + nb.x > 0.0 || n.z + nb.z > 0.0 ) ) {
+			// Not at the left hand outline, where the face turned from the moon meets the face behind it: picture 9
+			// has no line there.
 			pBend = normalize( mix( n, nb, w ) );
 			pSpread = ${f(TURN)} / ${f(FORM.round.seen.arris)} * pix * min( 1.0, w * 10.0 );
 			pBent = 1.0;
@@ -170,11 +172,6 @@ float pBent = 0.0, pSpread = 0.0;
 	// A pixel on the real round of an arris is shaded as the bent faces are where they meet it, by the line halfway
 	// between the two faces, so the round and the bends either side of it are one: shaded by its own normals, which
 	// turn the whole way from face to face, the round broke the line into dots wherever it was under a pixel.
-	if ( abs( vKind - 0.25 ) < 0.125 || abs( vKind - 0.75 ) < 0.125 ) {
-		pBend = normalize( vec3( sign( vQ.x ) * ${f(FORM.fit.tall)}, ${f(PYRAMID.base)}, sign( vQ.z ) * ${f(FORM.fit.tall)} ) );
-		pSpread = ${f(TURN)} / ${f(FORM.round.seen.arris)} * length( fwidth( vQ ) );
-		pBent = 1.0;
-	}
 }`;
 
 export const ROUGH = `

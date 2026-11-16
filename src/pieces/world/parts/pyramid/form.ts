@@ -10,12 +10,11 @@ export const FORM = {
   fit: { turn: 56.3, tall: 113.5 },
   // How far the gold runs on under the ground, so no gap shows wherever the ground falls away.
   sink: 7,
-  // Every arris is rounded twice over. The real round in the mesh is small and keeps the edge crisp: its radius, and
-  // how many facets it is made of. And the face is bent toward its neighbour as a round this wide would bend it,
-  // worked out at each pixel (`seen`), as the body's face is toward its top edge under the reveal: a round fine
-  // enough to be a crisp edge is under a pixel at the page's size, and the line of the night it mirrors broke into
-  // dashes there. The edges at the reveal have no real round for that reason: they are crisp creases.
-  round: { arris: 0.35, facets: 5, seen: { arris: 2, lip: 2 } },
+  // Every arris, and the body's top edge under the reveal, is rounded at each pixel: the face is bent toward its
+  // neighbour as a round this wide would bend it, so the line of the night it mirrors is smooth at any size. The
+  // mesh's own edges are crisp creases. A real round fine enough to keep an edge crisp is under a pixel at the page's
+  // size, and it broke that line into dots there.
+  round: { seen: { arris: 2, lip: 2 } },
   // The capstone: the body stops at `from`, a dark reveal `reveal` tall, set back `inset`, and the capstone above.
   // Picture 9's reveal is a quarter of the way down from the apex.
   cap: { from: 85.4, reveal: 2.2, inset: 2.6 },

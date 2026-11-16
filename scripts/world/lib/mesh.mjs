@@ -42,9 +42,13 @@ export function incident(mesh) {
   return { start, tris };
 }
 
+// Each triangle's unit normal and area, and whether its normal can be trusted: a triangle all but flat (three points
+// near a line, its height under THIN of its longest edge) has a normal made of rounding, and it is left out of every
+// normal and every join between faces.
+export const THIN = 1e-4;
 function faceNormals(mesh) {
   const p = mesh.positions, ix = mesh.indices, nt = ix.length / 3;
-  const fn = new Float64Array(nt * 3), ar = new Float64Array(nt);
+  const fn = new Float64Array(nt * 3), ar = new Float64Array(nt), sure = new Uint8Array(nt);
   for (let t = 0; t < nt; t++) {
     const a = ix[t * 3] * 3, b = ix[t * 3 + 1] * 3, c = ix[t * 3 + 2] * 3;
     const ux = p[b] - p[a], uy = p[b + 1] - p[a + 1], uz = p[b + 2] - p[a + 2];
@@ -53,8 +57,11 @@ function faceNormals(mesh) {
     const l = Math.hypot(x, y, z);
     ar[t] = l / 2;
     if (l > 0) { fn[t * 3] = x / l; fn[t * 3 + 1] = y / l; fn[t * 3 + 2] = z / l; }
+    const w = (p[c] - p[b]) ** 2 + (p[c + 1] - p[b + 1]) ** 2 + (p[c + 2] - p[b + 2]) ** 2;
+    const longest = Math.max(ux * ux + uy * uy + uz * uz, vx * vx + vy * vy + vz * vz, w);
+    sure[t] = l > THIN * longest ? 1 : 0;
   }
-  return { fn, ar };
+  return { fn, ar, sure };
 }
 
 function cornerAngle(p, a, b, c) {
@@ -66,37 +73,44 @@ function cornerAngle(p, a, b, c) {
 
 export function creased(mesh, degrees) {
   const p = mesh.positions, ix = mesh.indices, n = count(mesh);
-  const { fn } = faceNormals(mesh);
+  const { fn, sure } = faceNormals(mesh);
   const { start, tris } = incident(mesh);
   const limit = Math.cos((degrees * Math.PI) / 180);
   const corner = new Int32Array(ix.length);
   const pos = [], nor = [], src = [];
-  const root = [];
+  const root = [], by = [];
   const find = (i) => { while (root[i] !== i) i = root[i] = root[root[i]]; return i; };
+  const shares = (ti, tj, v) => {
+    for (let a = 0; a < 3; a++) {
+      const w = ix[ti * 3 + a];
+      if (w === v) continue;
+      for (let b = 0; b < 3; b++) if (ix[tj * 3 + b] === w) return true;
+    }
+    return false;
+  };
   for (let v = 0; v < n; v++) {
     const s = start[v], e = start[v + 1], m = e - s;
     if (!m) continue;
     root.length = m;
-    for (let i = 0; i < m; i++) root[i] = i;
+    by.length = m;
+    for (let i = 0; i < m; i++) { root[i] = i; by[i] = -1; }
     for (let i = 0; i < m; i++) {
       const ti = tris[s + i];
+      if (!sure[ti]) continue;
       for (let j = i + 1; j < m; j++) {
         const tj = tris[s + j];
-        let shared = false;
-        for (let a = 0; a < 3 && !shared; a++) {
-          const w = ix[ti * 3 + a];
-          if (w === v) continue;
-          for (let b = 0; b < 3; b++) if (ix[tj * 3 + b] === w) { shared = true; break; }
-        }
-        if (!shared) continue;
+        if (!sure[tj] || !shares(ti, tj, v)) continue;
         const d = fn[ti * 3] * fn[tj * 3] + fn[ti * 3 + 1] * fn[tj * 3 + 1] + fn[ti * 3 + 2] * fn[tj * 3 + 2];
-        const flat = (fn[ti * 3] === 0 && fn[ti * 3 + 1] === 0 && fn[ti * 3 + 2] === 0) || (fn[tj * 3] === 0 && fn[tj * 3 + 1] === 0 && fn[tj * 3 + 2] === 0);
-        if (flat || d >= limit) { const a = find(i), b = find(j); if (a !== b) root[Math.max(a, b)] = Math.min(a, b); }
+        if (d >= limit) { const a = find(i), b = find(j); if (a !== b) root[Math.max(a, b)] = Math.min(a, b); }
       }
+    }
+    for (let i = 0; i < m; i++) {
+      if (sure[tris[s + i]]) continue;
+      for (let j = 0; j < m && by[i] < 0; j++) if (j !== i && sure[tris[s + j]] && shares(tris[s + i], tris[s + j], v)) by[i] = j;
     }
     const made = new Map();
     for (let i = 0; i < m; i++) {
-      const r = find(i);
+      const r = find(by[i] >= 0 ? by[i] : i);
       let id = made.get(r);
       if (id === undefined) {
         id = src.length;
@@ -107,15 +121,26 @@ export function creased(mesh, degrees) {
       }
       const t = tris[s + i];
       const k = ix[t * 3] === v ? 0 : ix[t * 3 + 1] === v ? 1 : 2;
-      const ang = cornerAngle(p, v, ix[t * 3 + (k + 1) % 3], ix[t * 3 + (k + 2) % 3]);
-      nor[id * 3] += fn[t * 3] * ang; nor[id * 3 + 1] += fn[t * 3 + 1] * ang; nor[id * 3 + 2] += fn[t * 3 + 2] * ang;
+      if (sure[t]) {
+        const ang = cornerAngle(p, v, ix[t * 3 + (k + 1) % 3], ix[t * 3 + (k + 2) % 3]);
+        nor[id * 3] += fn[t * 3] * ang; nor[id * 3 + 1] += fn[t * 3 + 1] * ang; nor[id * 3 + 2] += fn[t * 3 + 2] * ang;
+      }
       corner[t * 3 + k] = id;
+    }
+    for (const id of made.values()) {
+      if (nor[id * 3] || nor[id * 3 + 1] || nor[id * 3 + 2]) continue;
+      for (let i = 0; i < m; i++) {
+        const t = tris[s + i];
+        const k = ix[t * 3] === v ? 0 : ix[t * 3 + 1] === v ? 1 : 2;
+        const ang = sure[t] ? cornerAngle(p, v, ix[t * 3 + (k + 1) % 3], ix[t * 3 + (k + 2) % 3]) : 0;
+        nor[id * 3] += fn[t * 3] * (ang || 1e-9); nor[id * 3 + 1] += fn[t * 3 + 1] * (ang || 1e-9); nor[id * 3 + 2] += fn[t * 3 + 2] * (ang || 1e-9);
+      }
     }
   }
   const normals = new Float32Array(nor.length);
   for (let i = 0; i < nor.length; i += 3) {
-    const l = Math.hypot(nor[i], nor[i + 1], nor[i + 2]) || 1;
-    normals[i] = nor[i] / l; normals[i + 1] = nor[i + 1] / l; normals[i + 2] = nor[i + 2] / l;
+    const l = Math.hypot(nor[i], nor[i + 1], nor[i + 2]);
+    if (l > 0) { normals[i] = nor[i] / l; normals[i + 1] = nor[i + 1] / l; normals[i + 2] = nor[i + 2] / l; } else normals[i + 2] = 1;
   }
   return { positions: new Float32Array(pos), normals, indices: Uint32Array.from(corner), source: Uint32Array.from(src) };
 }
@@ -152,7 +177,7 @@ function buckets(p, size) {
 
 export function curvature(mesh, radius) {
   const p = mesh.positions, ix = mesh.indices, n = count(mesh), nt = ix.length / 3;
-  const { fn, ar } = faceNormals(mesh);
+  const { fn, ar, sure } = faceNormals(mesh);
   const { start, tris } = incident(mesh);
   const bend = new Float64Array(n), share = new Float64Array(n);
   for (let t = 0; t < nt; t++) for (let k = 0; k < 3; k++) share[ix[t * 3 + k]] += ar[t] / 3;
@@ -168,7 +193,7 @@ export function curvature(mesh, radius) {
           if (g === t) continue;
           if (ix[g * 3] === b || ix[g * 3 + 1] === b || ix[g * 3 + 2] === b) { other = g; many++; }
         }
-        if (many !== 1 || other < t) continue;
+        if (many !== 1 || other < t || !sure[t] || !sure[other]) continue;
         const opp = ix[other * 3] !== a && ix[other * 3] !== b ? ix[other * 3] : ix[other * 3 + 1] !== a && ix[other * 3 + 1] !== b ? ix[other * 3 + 1] : ix[other * 3 + 2];
         const cx = fn[t * 3 + 1] * fn[other * 3 + 2] - fn[t * 3 + 2] * fn[other * 3 + 1];
         const cy = fn[t * 3 + 2] * fn[other * 3] - fn[t * 3] * fn[other * 3 + 2];
@@ -252,6 +277,7 @@ export function merge(meshes) {
   let nv = 0, ni = 0;
   for (const m of meshes) { nv += count(m); ni += m.indices.length; }
   const withNormals = meshes.length > 0 && meshes.every((m) => m.normals);
+  if (!withNormals && meshes.some((m) => m.normals)) throw new Error('merge: some meshes have normals and some do not');
   const positions = new Float32Array(nv * 3), indices = new Uint32Array(ni);
   const normals = withNormals ? new Float32Array(nv * 3) : null;
   let v = 0, i = 0;
@@ -276,10 +302,15 @@ export function transform(mesh, e) {
     positions[v * 3 + 2] = (e[2] * x + e[6] * y + e[10] * z + e[14]) / w;
   }
   const out = { ...mesh, positions };
+  const a = e[0], b = e[4], c = e[8], d = e[1], f = e[5], g = e[9], h = e[2], i = e[6], j = e[10];
+  const inv = [f * j - g * i, c * i - b * j, b * g - c * f, g * h - d * j, a * j - c * h, c * d - a * g, d * i - f * h, b * h - a * i, a * f - b * d];
+  const det = a * inv[0] + b * inv[3] + c * inv[6];
+  if (det < 0) {
+    const ix = Uint32Array.from(mesh.indices);
+    for (let t = 0; t < ix.length; t += 3) { const k = ix[t + 1]; ix[t + 1] = ix[t + 2]; ix[t + 2] = k; }
+    out.indices = ix;
+  }
   if (mesh.normals) {
-    const a = e[0], b = e[4], c = e[8], d = e[1], f = e[5], g = e[9], h = e[2], i = e[6], j = e[10];
-    const inv = [f * j - g * i, c * i - b * j, b * g - c * f, g * h - d * j, a * j - c * h, c * d - a * g, d * i - f * h, b * h - a * i, a * f - b * d];
-    const det = a * inv[0] + b * inv[3] + c * inv[6];
     const s = det < 0 ? -1 : 1;
     const normals = new Float32Array(mesh.normals.length);
     for (let v = 0; v < n; v++) {

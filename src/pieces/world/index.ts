@@ -47,9 +47,14 @@ const RIM = 0.02;
 
 const loaders: Record<PartName, () => Promise<PartFactory>> = {
   rock: () => import('./parts/rock').then((m) => m.build),
+  skin: () => import('./parts/skin').then((m) => m.build),
   core: () => import('./parts/core').then((m) => m.build),
+  land: () => import('./parts/land').then((m) => m.build),
   pyramid: () => import('./parts/pyramid').then((m) => m.build),
+  spire: () => import('./parts/spire').then((m) => m.build),
   towers: () => import('./parts/towers').then((m) => m.build),
+  trees: () => import('./parts/trees').then((m) => m.build),
+  debris: () => import('./parts/debris').then((m) => m.build),
   rest: () => import('./parts/rest').then((m) => m.build),
 };
 
@@ -180,9 +185,12 @@ export function createWorld(): WorldPiece {
 
       const names = only ? [only] : [...PARTS];
       parts = [];
+      const made = new Set<PartName>(), stands = new Set<number>();
       for (const name of names) {
         const make = await loaders[name](), from = performance.now();
-        const part = await make({ tier: opts.tier, renderer: stage.renderer, handheld: handheld(), query: q });
+        const part = await make({ tier: opts.tier, renderer: stage.renderer, handheld: handheld(), query: q, built: made, stands });
+        if (part.group.children.length) made.add(name);
+        for (const i of part.stands ?? []) stands.add(i);
         built[name] = Math.round(performance.now() - from);
         root.add(part.group);
         root.updateMatrixWorld(true);

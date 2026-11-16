@@ -35,15 +35,16 @@ const RIM: Stops = [
   [1, [1.359, 0.622, 0.103]],
 ];
 // The neck across its width, 0 down its middle and 1 at its sides. Picture 9's spine is paler than the palette
-// allows, so it is the palette's pale, the most there is, and its sides fall off from it as the picture's do.
+// allows, so it is the palette's pale, the most there is. Its sides fall off from it as the picture's do, keeping
+// their green and losing blue, so they go to gold and orange gold and not to peach.
 const NECK_INK: Stops = [
   [0, [5.095, 3.911, 2.711]], // (254, 226, 193)
-  [0.35, [5.095, 3.848, 2.558]], // (254, 225, 190)
-  [0.55, [5.095, 3.539, 1.933]], // (254, 220, 177)
-  [0.72, [5.095, 3.179, 1.406]], // (254, 214, 165)
-  [0.86, [2.854, 1.707, 0.729]], // (253, 207, 152)
-  [0.95, [1.509, 0.847, 0.332]], // (250, 196, 133)
-  [1, [1.11, 0.584, 0.207]], // (246, 186, 118)
+  [0.35, [5.095, 3.911, 2.458]], // (254, 226, 188)
+  [0.55, [5.095, 3.786, 1.979]], // (254, 224, 178)
+  [0.72, [5.095, 3.6, 1.406]], // (254, 221, 165)
+  [0.86, [2.854, 1.888, 0.647]], // (253, 214, 147)
+  [0.95, [1.509, 0.925, 0.282]], // (250, 203, 125)
+  [1, [1.11, 0.629, 0.176]], // (246, 192, 110)
 ];
 // The grain, as shares of the light where it is, for one step of each kind. Picture 9's grain is light on light: a
 // brighter grain is as much brighter in red, green and blue, so it is a little paler, and a dimmer one a little more
@@ -60,10 +61,10 @@ const GRAIN = {
 const TURN = { axis: new THREE.Vector3(0.28, 1, 0.34).normalize(), rate: 0.0075 };
 
 // The neck, measured on picture 9 down from the ball's foot, in units: half as wide as the stream's line, plus a
-// narrow flare gone in about `fall0` and a broad one gone in about `fall1`, which ends exactly at `long`, where the
-// neck is as wide as the line. It is joined to the ball by a smooth union of `fillet`, starts `into` inside the
-// ball, and takes the line's own light, flat across, between `plain`.
-const NECK = { flare0: 3.3, fall0: 8, flare1: 8.5, fall1: 35, long: 118, fillet: 5, into: 14, plain: [62, 112] } as const;
+// narrow flare gone in about `fall0` and a broad one gone in about `fall1`, both ending exactly `held` above the
+// neck's end, from where it is as wide as the line. It is joined to the ball by a smooth union of `fillet`, starts
+// `into` inside the ball, and takes the line's own light, flat across, between `plain`.
+const NECK = { flare0: 2.8, fall0: 8, flare1: 9, fall1: 42, long: 118, held: 16, fillet: 9, into: 14, plain: [62, 112] } as const;
 
 // The rings of the ball's shell at each level of cost.
 const RINGS = { full: 48, lean: 40 } as const;
@@ -73,11 +74,11 @@ const vec = (c: readonly number[]): THREE.Vector3 => new THREE.Vector3(c[0], c[1
 export const build: PartFactory = (ctx) => {
   const group = new THREE.Group(), rings = ctx.handheld || ctx.tier === 'low' ? RINGS.lean : RINGS.full;
   const at = new THREE.Vector3(...CORE.at), R = CORE.r, half = STREAM / 2;
-  const end = Math.exp(-NECK.long / NECK.fall1);
+  const flat = NECK.long - NECK.held, ends = [Math.exp(-flat / NECK.fall0), Math.exp(-flat / NECK.fall1)];
   // The neck's half width at a depth under the ball's foot.
   const neckAt = (dy: number): number => {
-    const d = Math.min(Math.max(dy, 0), NECK.long);
-    return half + NECK.flare0 * Math.exp(-d / NECK.fall0) + (NECK.flare1 * (Math.exp(-d / NECK.fall1) - end)) / (1 - end);
+    const d = Math.min(Math.max(dy, 0), flat);
+    return half + (NECK.flare0 * (Math.exp(-d / NECK.fall0) - ends[0])) / (1 - ends[0]) + (NECK.flare1 * (Math.exp(-d / NECK.fall1) - ends[1])) / (1 - ends[1]);
   };
   // Drawn over everything, for laying the ball on picture 9 while the rock round it is still a stand in.
   const over = ctx.query.get('core') === 'over';
@@ -107,6 +108,8 @@ export const build: PartFactory = (ctx) => {
     depthTest: !over,
     defines: {
       RIM_N: RIM.length,
+      // How far the neck's light flares out along the rim as it rises into the ball, measured on picture 9.
+      FOOT_FLARE: '1660.0',
       NECK_N: NECK_INK.length,
       // The finest grain's wavelength in units, how much shorter each finer one is and how much weaker, and how far
       // the sizes kept may be turned up to stand in for those let go.
@@ -126,6 +129,17 @@ export const build: PartFactory = (ctx) => {
       // How fast the grain churns in place and the broad drift moves, in wavelengths a second.
       GRAIN_CHURN: '0.03',
       GRAIN_DRIFT: '0.012',
+      // The grain close up: how much of it there is, its cell in units, each grain's size and how far it strays in
+      // cells, how fast each twinkles in turns a second, its strength, and how much of the noise is kept under it.
+      SALT: '1.0',
+      SALT_CELL: '1.1',
+      SALT_SIZE: '0.31',
+      SALT_JITTER: '0.5',
+      SALT_TWINKLE: '0.04',
+      SALT_GAIN: '0.85',
+      SALT_UNDER: '0.35',
+      // How much warmer a dimmer grain is close up, as the enlarged picture's are.
+      SALT_WARMS: '0.4',
     },
   });
   const ballG = new THREE.SphereGeometry(R * 1.03, rings * 2, rings);
@@ -136,9 +150,9 @@ export const build: PartFactory = (ctx) => {
   // The neck, as a lathe in the ball's own frame. It starts inside the ball, so the two have no seam.
   const profile: THREE.Vector2[] = [], steps = 160, top = -R + NECK.into, bottom = -R - NECK.long;
   for (let i = 0; i <= steps; i++) {
-    // Closer together near the ball, where the fillet turns.
+    // Closer together near the ball, where the fillet turns. Under the ball there is nothing to join.
     const y = top + (bottom - top) * (i / steps) ** 1.8;
-    const n = neckAt(-R - y), b = Math.sqrt(Math.max(0, R * R - y * y)), k = NECK.fillet;
+    const n = neckAt(-R - y), b = y > -R ? Math.sqrt(R * R - y * y) : -Infinity, k = NECK.fillet;
     const h = Math.max(k - Math.abs(n - b), 0) / k;
     profile.push(new THREE.Vector2(Math.max(n, b) + (h * h * k) / 4, y));
   }

@@ -1,16 +1,12 @@
 // Convex solids as the intersection of half spaces, and their faces cut into rows and filled with triangles.
 //
 //   plane(normal, point)                 the plane through point, with an outward normal (not yet of length 1)
-//   round(a, b, r, k, tag)               k planes that round the edge where planes a and b meet, to radius r. Each
-//                                        carries its round's axis, so its vertices get the round's smooth normal
-//   polytope(planes, name)               { name, polys: [{ n, tag, verts, axis? }] }: each face that is left, its
-//                                        corners in order round its outward normal. A plane is { n, d, tag, axis? }:
-//                                        inside is n·p <= d
+//   polytope(planes, name)               { name, polys: [{ n, tag, verts }] }: each face that is left, its corners in
+//                                        order round its outward normal. A plane is { n, d, tag }: inside is n·p <= d
 //   fill(solids, { rows, flatRows, spacing(p, n, tag), skip(tag), kind(name, tag) })
 //                                        one mesh of every face: a sloping or upright face is cut by the upright
 //                                        heights in rows, a level one by the places across in flatRows, and each row is
-//                                        filled with points spacing() apart. Flat normals, faces outward, but on a
-//                                        round, where each normal points straight out from the round's axis.
+//                                        filled with points spacing() apart. Flat normals, faces outward.
 //   mend(mesh)                           the same mesh with no crack: each polygon is filled alone, so where one's
 //                                        vertex lies on the edge of a triangle of the next, that triangle is split
 //                                        there, at a vertex of its own with its own normal
@@ -35,20 +31,6 @@ const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const norm = (a) => { const l = Math.hypot(...a); return l > 0 ? a.map((v) => v / l) : a; };
 
-export function round(a, b, r, k, tag) {
-  const na = norm(a.n), nb = norm(b.n), th = Math.acos(Math.max(-1, Math.min(1, dot(na, nb))));
-  const line = norm(cross(na, nb));
-  const at = solve({ n: na, d: a.d - r }, { n: nb, d: b.d - r }, { n: line, d: 0 });
-  const out = [];
-  for (let i = 0; i < k; i++) {
-    const t = (i + 0.5) / k, al = Math.sin((1 - t) * th) / Math.sin(th), be = Math.sin(t * th) / Math.sin(th);
-    const n = [al * na[0] + be * nb[0], al * na[1] + be * nb[1], al * na[2] + be * nb[2]];
-    // A facet just touches the circle at its middle, so every facet's corners stand a hair outside the round.
-    out.push({ n, d: al * (a.d - r) + be * (b.d - r) + r, tag, axis: { at, line, na, nb } });
-  }
-  return out;
-}
-
 export function polytope(planes, name) {
   const ps = planes.map((p) => ({ ...p, n: norm(p.n) }));
   const verts = [];
@@ -65,7 +47,7 @@ export function polytope(planes, name) {
     const e1 = norm(sub(on[0], mid)), e2 = cross(p.n, e1);
     on.sort((a, b) => Math.atan2(dot(sub(a, mid), e2), dot(sub(a, mid), e1)) - Math.atan2(dot(sub(b, mid), e2), dot(sub(b, mid), e1)));
     const area = on.reduce((s, v, i) => { const w = on[(i + 1) % on.length]; return s + dot(cross(sub(v, mid), sub(w, mid)), p.n); }, 0);
-    if (area > 1e-6) polys.push({ n: p.n, tag: p.tag, verts: on, axis: p.axis });
+    if (area > 1e-6) polys.push({ n: p.n, tag: p.tag, verts: on });
   }
   return { name, polys };
 }
@@ -84,16 +66,6 @@ function section(verts, axis, r, across) {
   const out = [lo.slice(), hi.slice()];
   out[0][axis] = out[1][axis] = r;
   return out;
-}
-
-// The normal of a round at p: straight out from its axis, held between the two faces it joins.
-function smooth(p, { at, line, na, nb }) {
-  const o = sub(p, at), along = dot(o, line);
-  const n = norm([o[0] - along * line[0], o[1] - along * line[1], o[2] - along * line[2]]);
-  const c = dot(na, nb), th = Math.acos(Math.max(-1, Math.min(1, c))), across = norm([nb[0] - c * na[0], nb[1] - c * na[1], nb[2] - c * na[2]]);
-  const t = Math.max(0, Math.min(1, Math.atan2(dot(n, across), dot(n, na)) / Math.max(th, 1e-6)));
-  const al = Math.sin((1 - t) * th) / Math.sin(th), be = Math.sin(t * th) / Math.sin(th);
-  return norm([al * na[0] + be * nb[0], al * na[1] + be * nb[1], al * na[2] + be * nb[2]]);
 }
 
 export function fill(solids, { rows, flatRows, spacing, skip = () => false, kind = () => 0 }) {
@@ -122,7 +94,7 @@ export function fill(solids, { rows, flatRows, spacing, skip = () => false, kind
         const id = P.length / 3;
         const p = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
         P.push(...p);
-        N.push(...(poly.axis ? smooth(p, poly.axis) : poly.n));
+        N.push(...poly.n);
         K.push(kind(solid.name, poly.tag));
         return { id, t };
       });

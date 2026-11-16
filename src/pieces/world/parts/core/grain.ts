@@ -38,6 +38,25 @@ float coreNoise( vec3 p, uint seed ) {
 // hold is kept: held back further, the face went smooth at the page's size.
 float coreKeep( float wave, float fp ) { return 1.0 - smoothstep( wave / 2.0, wave / 1.25, fp ); }
 
+// The grain as it is seen close up: separate soft grains, one in each cell of a lattice, each of its own brightness
+// and warmth, which twinkle slowly, as picture 9's enlarged face is: an even speckle with nothing joined into
+// patches, which gradient noise does whatever its size. The plane slices each grain somewhere off its middle, so
+// they differ in size and strength. Returns brightness and warmth, each about -1 to 1.
+vec2 coreSalt( vec3 p, float t, uint seed ) {
+	vec3 base = floor( p - 0.5 );
+	vec2 s = vec2( 0.0 );
+	for ( int i = 0; i < 8; i ++ ) {
+		ivec3 c = ivec3( base ) + ivec3( i & 1, ( i >> 1 ) & 1, ( i >> 2 ) & 1 );
+		uvec3 hh = corePcg( uvec3( c + 4096 ) + uvec3( seed, seed * 7u + 3u, seed * 13u + 5u ) );
+		vec3 r = vec3( hh & 0xffffu ) / 65535.0, r2 = vec3( hh >> 16u ) / 65535.0;
+		vec3 d = p - ( vec3( c ) + 0.5 + ( r - 0.5 ) * SALT_JITTER );
+		float k = exp( - dot( d, d ) / ( 2.0 * SALT_SIZE * SALT_SIZE ) );
+		float lit = sin( 6.2832 * ( r2.x + t * ( 0.5 + r2.z ) ) );
+		s += k * vec2( lit, r2.y * 2.0 - 1.0 );
+	}
+	return s;
+}
+
 // The stage's chain balances darks and mid tones for a warm light (tone.ts, finish) after everything is drawn, so a
 // pixel at the ball's edge, the band's orange at part cover over the dark, came out khaki. This is that balance
 // undone on the light the ball adds to a pixel, so the band's own orange is what fades out at its edge.

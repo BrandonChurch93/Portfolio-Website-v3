@@ -27,6 +27,7 @@ export const AGREE = 1e-3;
 export const BESIDE = 4;
 export const SHIFT = 0.3090169943749474;
 export const SNUG = 1e-3;
+export const GAP = 1e-4;
 export const CLOSE = 1e-3;
 export const ROUNDS = 12;
 export const FLAT = 1e-9;
@@ -48,7 +49,7 @@ export async function surface({ module, args, box, cell, threads, onProgress, ma
   const count = Math.max(1, Math.min(threads ?? availableParallelism(), slabs));
   const data = {
     module: asURL(module), args, origin, cell, nc, B: BLOCK, slabWidth,
-    cut: CUT, margin: margin * cell, root: ROOT, exact: EXACT * cell, step: STEP * cell, agree: AGREE, beside: BESIDE * STEP * cell,
+    cut: CUT, margin: margin * cell, gap: GAP * cell + 2e-7 * Math.max(...box.flat().map(Math.abs)), root: ROOT, exact: EXACT * cell, step: STEP * cell, agree: AGREE, beside: BESIDE * STEP * cell,
     snug: SNUG, same: SAME, apart: APART,
   };
   const t0 = performance.now();
@@ -131,14 +132,17 @@ export async function surface({ module, args, box, cell, threads, onProgress, ma
   const keep = (arr) => { for (let i = 0; i < verts * 3; i++) if (!Number.isNaN(arr[i])) arr[i] = Math.min(box[1][i % 3], Math.max(box[0][i % 3], arr[i])); };
   keep(pos);
   keep(alt);
-  let made, moved = 0, crossed = 0, judge = null;
-  const dirty = new Uint8Array(verts);
+  let made, moved = 0, crossed = 0, judge = null, stirred = null, again = false;
+  const dirty = new Uint8Array(verts), join = joiner(pos, verts, quads, herm, along, nq, cell);
   for (let round = 0; ; round++) {
-    made = join(pos, verts, quads, herm, along, nq, cell, judge);
+    made = join(judge, stirred, again);
+    again = false;
     if (made.wrong.length && !judge) {
       const mod = await import(asURL(module));
       if (mod.setup) await mod.setup(args);
       judge = mod.field;
+      stirred = new Uint8Array(verts);
+      again = true;
       round--;
       continue;
     }
@@ -166,7 +170,8 @@ export async function surface({ module, args, box, cell, threads, onProgress, ma
       for (const u of g) busy.add(u);
       if (pick >= 0) picks.add(pick);
     }
-    for (const u of picks) { pos.set(alt.subarray(u * 3, u * 3 + 3), u * 3); alt[u * 3] = NaN; }
+    stirred = new Uint8Array(verts);
+    for (const u of picks) { pos.set(alt.subarray(u * 3, u * 3 + 3), u * 3); alt[u * 3] = NaN; stirred[u] = 1; }
     moved += picks.size;
     if (!picks.size) break;
   }
@@ -177,6 +182,7 @@ export async function surface({ module, args, box, cell, threads, onProgress, ma
   for (let i = verts * 3; i < all.length; i++) all[i] = Math.min(box[1][i % 3], Math.max(box[0][i % 3], all[i]));
   const raw = { positions: all, indices: tri.subarray(0, nt) };
   const clean = tidy(raw);
+  const shifted = apart(clean, cell);
   const thin = uncap(clean);
   const t2 = performance.now();
   return {
@@ -184,7 +190,7 @@ export async function surface({ module, args, box, cell, threads, onProgress, ma
     indices: clean.indices,
     stats: {
       grid: nc, cells, vertices: clean.positions.length / 3, triangles: clean.indices.length / 3,
-      evals, solved, featured, held, settled, yielded, moved, crossed, crossing: cutting(clean.positions, clean.positions.length / 3, { tri: clean.indices, nt: clean.indices.length, extra: [] }, null, cell).length, missing, collapsed, dropped, fans, forced, removed: clean.removed, thin, lip, threads: count,
+      evals, solved, featured, held, settled, yielded, moved, crossed, missing, collapsed, dropped, fans, forced, removed: clean.removed, shifted, thin, lip, threads: count,
       seconds: { grid: (t1 - t0) / 1000, join: (t2 - t1) / 1000 },
     },
   };
@@ -214,41 +220,77 @@ function outside(pos, alt, home, table, first, origin, cell, nc) {
 }
 
 // Pairs of triangles that cut through each other, each as the six vertices that could be moved to part them. Only
-// pairs with a triangle marked in check are looked for (every pair when check is null).
+// pairs with a triangle marked in check are looked for (every pair when check is null). Triangles are put in buckets
+// a cell across, and only those in coarse blocks near a checked triangle are put in at all.
 function cutting(pos, verts, made, check, cell) {
   const { tri, nt, extra } = made;
   const at = (v, k) => (v < verts ? pos[v * 3 + k] : extra[(v - verts) * 3 + k]);
   const n = nt / 3;
+  const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
   let any = 0;
-  for (let t = 0; t < n && !any; t++) if (!check || check[t]) any = 1;
+  for (let t = 0; t < n; t++) if (!check || check[t]) { any = 1; break; }
   if (!any) return [];
-  const lo = [Infinity, Infinity, Infinity];
-  for (let i = 0; i < nt; i++) for (let k = 0; k < 3; k++) lo[k] = Math.min(lo[k], at(tri[i], k));
-  const span = new Int32Array(n * 6);
-  for (let t = 0; t < n; t++) for (let k = 0; k < 3; k++) {
-    const a = at(tri[t * 3], k), b = at(tri[t * 3 + 1], k), c = at(tri[t * 3 + 2], k);
-    span[t * 6 + k] = Math.floor((Math.min(a, b, c) - lo[k]) / cell);
-    span[t * 6 + 3 + k] = Math.floor((Math.max(a, b, c) - lo[k]) / cell);
-  }
-  const key = (i, j, k) => i + 8192 * (j + 8192 * k);
-  const each = (t, fn) => {
-    for (let k = span[t * 6 + 2]; k <= span[t * 6 + 5]; k++) for (let j = span[t * 6 + 1]; j <= span[t * 6 + 4]; j++) for (let i = span[t * 6]; i <= span[t * 6 + 3]; i++) fn(key(i, j, k));
+  for (let i = 0; i < nt; i++) for (let k = 0; k < 3; k++) { const x = at(tri[i], k); if (x < lo[k]) lo[k] = x; if (x > hi[k]) hi[k] = x; }
+  const C = 8 * cell, nb = [0, 1, 2].map((k) => Math.floor((hi[k] - lo[k]) / C) + 1);
+  const near = new Uint8Array(nb[0] * nb[1] * nb[2]);
+  const box = new Float64Array(6);
+  const bound = (t) => {
+    for (let k = 0; k < 3; k++) {
+      const a = at(tri[t * 3], k), b = at(tri[t * 3 + 1], k), c = at(tri[t * 3 + 2], k);
+      box[k] = Math.min(a, b, c) - lo[k]; box[k + 3] = Math.max(a, b, c) - lo[k];
+    }
   };
-  const wanted = new Table(n);
-  let nb = 0;
-  for (let t = 0; t < n; t++) if (!check || check[t]) each(t, (kk) => { if (wanted.get(kk) < 0) wanted.set(kk, nb++); });
-  const count = new Int32Array(nb + 1);
-  for (let t = 0; t < n; t++) each(t, (kk) => { const b = wanted.get(kk); if (b >= 0) count[b + 1]++; });
-  for (let b = 0; b < nb; b++) count[b + 1] += count[b];
-  const fill = count.slice(0, nb), list = new Int32Array(count[nb]);
-  for (let t = 0; t < n; t++) each(t, (kk) => { const b = wanted.get(kk); if (b >= 0) list[fill[b]++] = t; });
+  for (let t = 0; t < n; t++) {
+    if (check && !check[t]) continue;
+    bound(t);
+    const b0 = [0, 1, 2].map((k) => Math.max(0, Math.floor((box[k] - cell) / C))), b1 = [0, 1, 2].map((k) => Math.min(nb[k] - 1, Math.floor((box[k + 3] + cell) / C)));
+    for (let z = b0[2]; z <= b1[2]; z++) for (let y = b0[1]; y <= b1[1]; y++) for (let x = b0[0]; x <= b1[0]; x++) near[x + nb[0] * (y + nb[1] * z)] = 1;
+  }
+  const key = (i, j, k) => i + 65536 * (j + 65536 * k);
+  const wanted = new Table(1024);
+  let grown = 1024, nw = 0;
+  const want = (kk) => {
+    if (wanted.get(kk) >= 0) return;
+    if (nw * 2 + 2 > grown) {
+      grown *= 4;
+      const bigger = new Table(grown);
+      for (let s = 0; s < wanted.keys.length; s++) if (wanted.keys[s] !== -1) bigger.set(wanted.keys[s], wanted.vals[s]);
+      wanted.mask = bigger.mask; wanted.keys = bigger.keys; wanted.vals = bigger.vals;
+    }
+    wanted.set(kk, nw++);
+  };
+  const span = new Int32Array(6);
+  const spanOf = (t) => { bound(t); for (let k = 0; k < 6; k++) span[k] = Math.floor(box[k] / cell); };
+  for (let t = 0; t < n; t++) {
+    if (check && !check[t]) continue;
+    spanOf(t);
+    for (let z = span[2]; z <= span[5]; z++) for (let y = span[1]; y <= span[4]; y++) for (let x = span[0]; x <= span[3]; x++) want(key(x, y, z));
+  }
+  const pairT = [], pairB = [];
+  for (let t = 0; t < n; t++) {
+    const v = tri[t * 3];
+    const bx = Math.floor((at(v, 0) - lo[0]) / C), by = Math.floor((at(v, 1) - lo[1]) / C), bz = Math.floor((at(v, 2) - lo[2]) / C);
+    if (!near[Math.min(bx, nb[0] - 1) + nb[0] * (Math.min(by, nb[1] - 1) + nb[1] * Math.min(bz, nb[2] - 1))]) continue;
+    spanOf(t);
+    for (let z = span[2]; z <= span[5]; z++) for (let y = span[1]; y <= span[4]; y++) for (let x = span[0]; x <= span[3]; x++) {
+      const b = wanted.get(key(x, y, z));
+      if (b >= 0) { pairT.push(t); pairB.push(b); }
+    }
+  }
+  const count = new Int32Array(nw + 1);
+  for (const b of pairB) count[b + 1]++;
+  for (let b = 0; b < nw; b++) count[b + 1] += count[b];
+  const fill = count.slice(0, nw), list = new Int32Array(pairT.length);
+  for (let i = 0; i < pairT.length; i++) list[fill[pairB[i]]++] = pairT[i];
   const P = new Float64Array(18), stamp = new Int32Array(n).fill(-1);
   const load = (t, o) => { for (let c = 0; c < 3; c++) for (let k = 0; k < 3; k++) P[o + c * 3 + k] = at(tri[t * 3 + c], k); };
   const out = [];
   for (let t = 0; t < n; t++) {
     if (check && !check[t]) continue;
-    each(t, (kk) => {
-      const b = wanted.get(kk);
+    spanOf(t);
+    const s0 = span.slice();
+    for (let z = s0[2]; z <= s0[5]; z++) for (let y = s0[1]; y <= s0[4]; y++) for (let x = s0[0]; x <= s0[3]; x++) {
+      const b = wanted.get(key(x, y, z));
       for (let s = count[b]; s < count[b + 1]; s++) {
         const u = list[s];
         if (u === t || stamp[u] === t || ((!check || check[u]) && u < t)) continue;
@@ -258,7 +300,7 @@ function cutting(pos, verts, made, check, cell) {
         if (!pierce(P, tri, t, u) && !pierce(P, tri, u, t, true)) continue;
         out.push([tri[t * 3], tri[t * 3 + 1], tri[t * 3 + 2], tri[u * 3], tri[u * 3 + 1], tri[u * 3 + 2]]);
       }
-    });
+    }
   }
   return out;
 }
@@ -292,49 +334,72 @@ function pierce(P, tri, a, b, swapped = false) {
   return false;
 }
 
-// Makes the quads into triangles: vertices closer than CLOSE of a cell are made one, and each quad is split, fanned
-// or, failing both, split facing wrong (listed in wrong, so its vertices can be moved and it can be tried again).
-function join(pos, verts, quads, herm, along, nq, cell, judge) {
-  const root = new Int32Array(verts);
-  for (let v = 0; v < verts; v++) root[v] = v;
+// Makes the quads into triangles, and again after vertices move, redoing only the quads they touch. Vertices closer
+// than CLOSE of a cell in one quad are made one, and each quad is split, fanned or, failing both, split with a
+// triangle wrong way out (listed in wrong, so a vertex can be moved and it can be tried again).
+function joiner(pos, verts, quads, herm, along, nq, cell) {
+  const slots = new Uint32Array(nq * 12), kind = new Uint8Array(nq), root = new Int32Array(verts), was = new Int32Array(verts).fill(-1);
+  const centres = new Map(), near = (CLOSE * cell) ** 2, least = 1e-6 * cell * cell;
   const find = (v) => { while (root[v] !== v) v = root[v] = root[root[v]]; return v; };
-  const near = (CLOSE * cell) ** 2;
-  let collapsed = 0;
-  for (let q = 0; q < nq; q++) {
-    for (let s = 0; s < 4; s++) for (let t = s + 1; t < 4; t++) {
-      const u = quads[q * 4 + s], v = quads[q * 4 + t];
-      const d = (pos[u * 3] - pos[v * 3]) ** 2 + (pos[u * 3 + 1] - pos[v * 3 + 1]) ** 2 + (pos[u * 3 + 2] - pos[v * 3 + 2]) ** 2;
-      if (d > near) continue;
-      const ru = find(u), rv = find(v);
-      if (ru !== rv) { root[Math.max(ru, rv)] = Math.min(ru, rv); collapsed++; }
-    }
-  }
-  const tri = new Uint32Array(nq * 12);
-  const extra = [], wrong = [];
-  const least = 1e-6 * cell * cell;
-  let nt = 0, fans = 0, dropped = 0;
   const v = new Int32Array(4), ring = [];
-  for (let q = 0; q < nq; q++) {
-    for (let s = 0; s < 4; s++) v[s] = find(quads[q * 4 + s]);
-    const h = herm.subarray(q * 6, q * 6 + 6);
+  let collapsed = 0;
+  const one = (q, judge) => {
+    for (let s = 0; s < 4; s++) v[s] = root[quads[q * 4 + s]];
+    const h = herm.subarray(q * 6, q * 6 + 6), o = q * 12;
+    centres.delete(q);
     ring.length = 0;
     for (let s = 0; s < 4; s++) if (v[s] !== v[(s + 3) % 4]) ring.push(v[s]);
-    if (ring.length < 3 || new Set(ring).size !== ring.length) { dropped++; continue; }
-    if (ring.length === 3) { tri[nt++] = ring[0]; tri[nt++] = ring[1]; tri[nt++] = ring[2]; continue; }
+    if (ring.length < 3 || new Set(ring).size !== ring.length) { kind[q] = KIND.dropped; return; }
+    if (ring.length === 3) { slots[o] = ring[0]; slots[o + 1] = ring[1]; slots[o + 2] = ring[2]; kind[q] = KIND.three; return; }
     const way = split(pos, v, h, along[q], least, judge, cell);
     if (way === 3) {
-      const centre = verts + extra.length / 3;
-      extra.push(h[0], h[1], h[2]);
-      for (let s = 0; s < 4; s++) { tri[nt++] = centre; tri[nt++] = v[s]; tri[nt++] = v[(s + 1) % 4]; }
-      fans++;
-      continue;
+      centres.set(q, [h[0], h[1], h[2]]);
+      for (let s = 0; s < 4; s++) { slots[o + s * 3] = FAN; slots[o + s * 3 + 1] = v[s]; slots[o + s * 3 + 2] = v[(s + 1) % 4]; }
+      kind[q] = KIND.fan;
+      return;
     }
-    if (way > 3) wrong.push(q);
-    if (way === 1 || way === 4) { tri[nt++] = v[0]; tri[nt++] = v[1]; tri[nt++] = v[2]; tri[nt++] = v[0]; tri[nt++] = v[2]; tri[nt++] = v[3]; }
-    else { tri[nt++] = v[0]; tri[nt++] = v[1]; tri[nt++] = v[3]; tri[nt++] = v[1]; tri[nt++] = v[2]; tri[nt++] = v[3]; }
-  }
-  return { tri, nt, extra, wrong, collapsed, dropped, fans, forced: wrong.length };
+    if (way === 1 || way === 4) { slots[o] = v[0]; slots[o + 1] = v[1]; slots[o + 2] = v[2]; slots[o + 3] = v[0]; slots[o + 4] = v[2]; slots[o + 5] = v[3]; }
+    else { slots[o] = v[0]; slots[o + 1] = v[1]; slots[o + 2] = v[3]; slots[o + 3] = v[1]; slots[o + 4] = v[2]; slots[o + 5] = v[3]; }
+    kind[q] = way > 3 ? KIND.wrong : KIND.two;
+  };
+  return (judge, moved, again) => {
+    for (let u = 0; u < verts; u++) root[u] = u;
+    collapsed = 0;
+    for (let q = 0; q < nq; q++) {
+      for (let s = 0; s < 4; s++) for (let t = s + 1; t < 4; t++) {
+        const a = quads[q * 4 + s], b = quads[q * 4 + t];
+        if ((pos[a * 3] - pos[b * 3]) ** 2 + (pos[a * 3 + 1] - pos[b * 3 + 1]) ** 2 + (pos[a * 3 + 2] - pos[b * 3 + 2]) ** 2 > near) continue;
+        const ra = find(a), rb = find(b);
+        if (ra !== rb) { root[Math.max(ra, rb)] = Math.min(ra, rb); collapsed++; }
+      }
+    }
+    for (let u = 0; u < verts; u++) root[u] = find(u);
+    for (let q = 0; q < nq; q++) {
+      let redo = !moved || (again && kind[q] === KIND.wrong);
+      for (let s = 0; s < 4 && !redo; s++) { const u = quads[q * 4 + s]; redo = moved[u] === 1 || root[u] !== was[u]; }
+      if (redo) one(q, judge);
+    }
+    was.set(root);
+    let nt = 0, fans = 0, dropped = 0;
+    const wrong = [], extra = [];
+    for (let q = 0; q < nq; q++) nt += SIZE[kind[q]];
+    const tri = new Uint32Array(nt);
+    nt = 0;
+    for (let q = 0; q < nq; q++) {
+      const k = kind[q], o = q * 12;
+      if (k === KIND.dropped) { dropped++; continue; }
+      if (k === KIND.wrong) wrong.push(q);
+      let c = 0;
+      if (k === KIND.fan) { c = verts + extra.length / 3; extra.push(...centres.get(q)); fans++; }
+      for (let i = 0; i < SIZE[k]; i++) tri[nt++] = slots[o + i] === FAN ? c : slots[o + i];
+    }
+    return { tri, nt, extra, wrong, collapsed, dropped, fans, forced: wrong.length };
+  };
 }
+
+const KIND = { two: 0, three: 1, fan: 2, wrong: 3, dropped: 4 };
+const SIZE = [6, 3, 12, 6, 0];
+const FAN = 0xffffffff;
 
 const nrm = new Float64Array(24), corner = new Int32Array(24);
 // How a triangle faces against the field's slope at three points inside it: the best of the three, 1 when it faces
@@ -394,6 +459,50 @@ function split(pos, v, h, way, least, judge, cell) {
   for (let k = 0; k < 4 && fan; k++) fan = face(pos, c, v[k], v[(k + 1) % 4], 12, least) && facing(12) > 0;
   if (fan || (!hasA && !hasB)) return 3;
   return fA >= fB ? 4 : 5;
+}
+
+// No two vertices share a place: where two would in the stored positions, the later is moved a hair toward the
+// middle of its neighbours, which keeps it on its own sheet. Returns how many were moved.
+function apart(mesh, cell) {
+  const p = mesh.positions, bits = new Uint32Array(p.buffer, p.byteOffset, p.length), n = p.length / 3;
+  let size = 1;
+  while (size < n * 2) size *= 2;
+  const slot = new Int32Array(size);
+  let moved = 0, around = null;
+  for (let pass = 0; pass < 8; pass++) {
+    slot.fill(-1);
+    const twins = [];
+    for (let v = 0; v < n; v++) {
+      const x = bits[v * 3], y = bits[v * 3 + 1], z = bits[v * 3 + 2];
+      let s = (Math.imul(x, 0x9e3779b1) ^ Math.imul(y, 0x85ebca6b) ^ Math.imul(z, 0xc2b2ae35)) & (size - 1);
+      while (slot[s] >= 0) {
+        const u = slot[s];
+        if (bits[u * 3] === x && bits[u * 3 + 1] === y && bits[u * 3 + 2] === z) { twins.push(v); break; }
+        s = (s + 1) & (size - 1);
+      }
+      if (slot[s] < 0) slot[s] = v;
+    }
+    if (!twins.length) break;
+    around ??= incident(mesh);
+    for (const v of twins) {
+      let cx = 0, cy = 0, cz = 0, k = 0;
+      for (let i = around.start[v]; i < around.start[v + 1]; i++) {
+        const t = around.tris[i];
+        for (let c = 0; c < 3; c++) {
+          const u = mesh.indices[t * 3 + c];
+          if (u === v) continue;
+          cx += p[u * 3]; cy += p[u * 3 + 1]; cz += p[u * 3 + 2]; k++;
+        }
+      }
+      const dx = cx / k - p[v * 3], dy = cy / k - p[v * 3 + 1], dz = cz / k - p[v * 3 + 2], l = Math.hypot(dx, dy, dz);
+      if (!(l > 0)) continue;
+      const ulp = Math.max(Math.abs(p[v * 3]), Math.abs(p[v * 3 + 1]), Math.abs(p[v * 3 + 2]), 1) * 2 ** -20;
+      const step = Math.min(0.25 * l, Math.max(GAP * cell, ulp) * (pass + 1));
+      p[v * 3] += (dx / l) * step; p[v * 3 + 1] += (dy / l) * step; p[v * 3 + 2] += (dz / l) * step;
+      moved++;
+    }
+  }
+  return moved;
 }
 
 function tidy({ positions, indices }) {

@@ -23,8 +23,8 @@ const LOOK = {
   // The face toward the moon mirrors a wide glow, and inside it a brighter light whose edge crosses the face, and a
   // hot heart low and to the right. The face turned from it mirrors the city's glow, low by the front arris.
   soft: [
-    { face: 'lit', across: 0, up: 30, far: 400, heart: [170, 150], broad: [122, 96], power: [0.6, 0.8], edge: 0.1 },
-    { face: 'lit', across: -4, up: 18, far: 400, heart: [56, 44], broad: [1, 1], power: [1.8, 0], edge: 0.1 },
+    { face: 'lit', across: 0, up: 30, far: 400, heart: [170, 150], broad: [122, 96], power: [0.75, 1.0], edge: 0.1 },
+    { face: 'lit', across: -4, up: 18, far: 400, heart: [56, 44], broad: [1, 1], power: [2.2, 0], edge: 0.1 },
     { face: 'dark', across: 60, up: -20, far: 300, heart: [40, 30], broad: [95, 45], power: [0.1, 0.16], edge: 0.9 },
   ],
   // The night: how bright overhead, at the horizon, and beneath.

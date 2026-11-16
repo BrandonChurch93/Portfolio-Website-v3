@@ -4,7 +4,7 @@ import { hex } from '../../../config/palette';
 import { COURT, D2R, HOST, LAND, SOURCE, SPIRE, drawn, fromPicture, ground, within } from '../layout';
 import { lit } from '../light';
 import type { PartFactory } from '../part';
-import { STEP, TOWERS, TREES } from '../placed';
+import { TOWERS, TREES } from '../placed';
 
 // Everything of the world that is not built yet, as plain dark shapes in its place, so that what is built is seen
 // where it belongs: the land with its dunes, every building but the one that is built, the spire, the trees, and
@@ -20,7 +20,7 @@ export const STREAM_LIGHT = new THREE.Color(hex('pale')).multiplyScalar(1.25);
 // how far toward the visitor that is, and how long it is in units.
 const SMALL: readonly (readonly [number, number, number, number])[] = [[385, 640, 330, 110], [500, 570, 300, 190], [620, 580, 230, 170], [748, 550, 210, 180], [812, 508, 250, 210], [1010, 640, 330, 110]];
 
-export const build: PartFactory = () => {
+export const build: PartFactory = ({ built, stands }) => {
   const group = new THREE.Group(), plain = lit(new THREE.MeshStandardMaterial({ color: DARK, roughness: 1, metalness: 0 }), { key: 'rest', core: false });
 
   // The land: a sheet over the top, in rings out from the middle, each spoke ending exactly where the land ends.
@@ -45,14 +45,17 @@ export const build: PartFactory = () => {
   const solids: THREE.BufferGeometry[] = [];
   TOWERS.forEach(([x, z, w, d, tall, turn], i) => {
     // Nothing stands where picture 9 has no land: the study's front rows stood on ground the tear took.
-    if (i === STEP || within(x, z) < 0.6 * Math.max(w, d)) return;
+    if (stands.has(i) || within(x, z) < 0.6 * Math.max(w, d)) return;
     solids.push(new THREE.BoxGeometry(w, tall, d).rotateY(turn * D2R).translate(x, ground(x, z) + tall / 2, z));
   });
-  solids.push(new THREE.CylinderGeometry(1.2, SPIRE.foot / 2, SPIRE.tall, 4, 1).rotateY(Math.PI / 4).translate(0, SPIRE.tall / 2, 0));
-  solids.push(new THREE.TorusGeometry(SPIRE.ring.r, SPIRE.ring.thick, 6, 48).rotateX(Math.PI / 2 + SPIRE.ring.tilt[0] * D2R).rotateZ(SPIRE.ring.tilt[1] * D2R).translate(0, SPIRE.tall * SPIRE.ring.up, 0));
-  solids.push(new THREE.CylinderGeometry(COURT, COURT, 1, 40).translate(0, 0.4, 0));
-  for (const [x, z, size] of TREES) if (within(x, z) > size) solids.push(new THREE.IcosahedronGeometry(size, 1).scale(1, 0.85, 1).translate(x, ground(x, z) + size * 1.15, z));
-  const stand = mergeGeometries([sheet.toNonIndexed(), ...solids.map((g) => g.toNonIndexed())].map((g) => { g.deleteAttribute('uv'); return g; }), false);
+  if (!built.has('spire')) {
+    solids.push(new THREE.CylinderGeometry(1.2, SPIRE.foot / 2, SPIRE.tall, 4, 1).rotateY(Math.PI / 4).translate(0, SPIRE.tall / 2, 0));
+    solids.push(new THREE.TorusGeometry(SPIRE.ring.r, SPIRE.ring.thick, 6, 48).rotateX(Math.PI / 2 + SPIRE.ring.tilt[0] * D2R).rotateZ(SPIRE.ring.tilt[1] * D2R).translate(0, SPIRE.tall * SPIRE.ring.up, 0));
+    solids.push(new THREE.CylinderGeometry(COURT, COURT, 1, 40).translate(0, 0.4, 0));
+  }
+  if (!built.has('trees')) for (const [x, z, size] of TREES) if (within(x, z) > size) solids.push(new THREE.IcosahedronGeometry(size, 1).scale(1, 0.85, 1).translate(x, ground(x, z) + size * 1.15, z));
+  const shapesOf = [...(built.has('land') ? [] : [sheet.toNonIndexed()]), ...solids.map((g) => g.toNonIndexed())].map((g) => { g.deleteAttribute('uv'); return g; });
+  const stand = shapesOf.length ? mergeGeometries(shapesOf, false) : new THREE.BufferGeometry();
   for (const g of [sheet, ...solids]) g.dispose();
   const shapes = new THREE.Mesh(stand, plain);
   shapes.castShadow = shapes.receiveShadow = true;

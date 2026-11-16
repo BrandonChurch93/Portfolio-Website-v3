@@ -93,6 +93,13 @@ void main() {
 	v += MOTTLE * ( 1.0 - 0.6 * near ) * ( 0.65 * coreNoise( q / MOTTLE_WAVE + vec3( drift, 0.0, - drift ), 73u ) + 0.35 * coreNoise( q / ( 0.45 * MOTTLE_WAVE ) - vec3( 0.0, drift, 0.0 ), 79u ) );
 	// Each grain's own warmth, apart from its brightness: some a little paler, some a little more gold.
 	float w = coreNoise( q / GRAIN_WAVE + vec3( 0.0, - churn, 0.0 ), 101u ) * coreKeep( GRAIN_WAVE, fp );
+	// Close up the grain is separate soft grains, once a grain spans a few pixels.
+	float salty = smoothstep( 0.9, 0.45, fp ) * SALT;
+	if ( salty > 0.0 ) {
+		vec2 g = coreSalt( q / SALT_CELL, uTime * SALT_TWINKLE, 211u );
+		v = mix( v, SALT_GAIN * g.x + SALT_UNDER * v, salty );
+		w = mix( w, SALT_GAIN * ( g.y - SALT_WARMS * g.x ), salty );
+	}
 
 	// Quieter across the band, which picture 9 has smooth.
 	float quiet = 1.0 - GRAIN_BAND * smoothstep( 0.84, 0.935, rr );
@@ -102,9 +109,11 @@ void main() {
 	vec3 col = coreBand( rr, px ) * max( tint, vec3( 0.0 ) );
 
 	// Where the neck leaves the ball's foot its light takes the place of the band's outer line, pale down its middle
-	// and gold at its sides, so the column runs into the ball. The band's dip runs on across its top, as picture 9's.
-	float across = abs( P.x ) / uNeckR;
-	float foot = ( 1.0 - smoothstep( 0.7, 1.15, across ) ) * smoothstep( - 0.9 * uR, - 0.97 * uR, P.y ) * smoothstep( 0.962, 0.985, rr );
+	// and gold at its sides, rising into the ball from a little inside its edge with its sides flared out along the
+	// rim, as a fillet is, so the column runs into the ball. The band's dip runs on across its top, fainter, as
+	// picture 9's does.
+	float xb = uNeckR + FOOT_FLARE * pow( max( 0.99 - rr, 0.0 ), 1.5 ), across = abs( P.x ) / xb;
+	float foot = ( 1.0 - smoothstep( 0.85, 1.1, across ) ) * smoothstep( - 0.86 * uR, - 0.95 * uR, P.y ) * smoothstep( 0.935, 0.985, rr );
 	col = mix( col, coreNeck( min( across, 1.0 ) ), foot );
 
 	gl_FragColor = vec4( coreUnbalance( col * uLevel * cover ) / max( cover, 1e-3 ), cover );

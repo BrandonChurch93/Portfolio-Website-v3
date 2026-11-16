@@ -2,6 +2,25 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 to 16 · The night: the whole world, and where it stands (Fable, Claude Code)
+
+**In progress, being worked through the night. This entry is kept true as it goes: read it first after any loss of memory.**
+
+- **What he said before sleeping** (all in `BRIEF.md`, Settled, Hero, the last four entries): the layout is picture 9's exactly, and the look is to be much better than the picture's, by `QUALITY.md` and Fable's own eye. The core must tie in with the site's real stream. Keep working until the world is fully finished and the page scrolls from the hero to Contact. And, with a screenshot: our first stepped tower "looks way better" than the picture's, and Fable was wrong to send it back to be made plainer.
+- **The rule this gives every builder:** the picture gives a thing its place, its size and its height, held by `npm run match`. It never sets the level of detail. Nothing is made plainer to match it.
+- **Light, corrected by Fable (layout.ts, light.ts, night.ts):** the moon is behind the world and to the right (`MOONWARD` z -0.28: in front it lit the whole hollow grey). The core's light is `power` 24, `fall` 1.45. The night's light on a matte face is a tenth of what metal mirrors (`LIGHT.fill`) for what the core reaches, and whole (`LIGHT.top`) for what stands on top, which also gets a soft light from the visitor's side (`NIGHT.front`). The world's gold is the palette's hot eased toward pale (`METAL.gold`).
+- **How builders are run now:** one workflow script, `world-round` (this session's `workflows/scripts/world-round-wf_89d73840-644.js`), given `{ key, round, brief, review, report }`. The briefs and the notes for judging are files in this session's scratchpad, `briefs/` (`common.md` is what every builder is told). Each builder writes its full report to `shots/world/<part>/r<N>-report.md` and each of two fresh reviewers to `...-review-1.md` and `-2.md`. Fable judges each round side by side and writes the next brief.
+- **Every round is committed locally before the next starts.** The stepped tower he likes existed only as uncommitted files when a second round began changing it, and had to be recovered from that builder's transcript.
+- **The parts, tonight:**
+    - `rock`: two sculptors traced the picture by hand as flat polygons and both failed (3 out of 10: "cut cardboard", no depth, straight torn edges). Their files are `scripts/world/parts/rock-a/` and `rock-b/`. **Fable changed the method:** since the view never moves, the rock is built as a relief in the camera's own space, measured from the picture by a script (facets found along the picture's edges, each given the depth and tilt that makes the world's own light show it as bright as the picture has it, gaps set back as real holes), then made better than the picture close up. That is sculpt R (`rock-r`), running. The page shows a sculpt with `?rock=r`.
+    - `core`: round 2 scored 7 out of 10. Round 3 is running (a hot spine in the neck, a smoother band, finer grain close up). Round 4 is to make its neck the true start of the site's stream, and bring back the grain as the stream's own facets.
+    - `pyramid`: round 1 failed (peach paint, flat faces). Round 2 is running: the picture's place and size, no plinth, the lighter gold, a larger capstone, faces that grade.
+    - `towers`: round 1's stepped tower is kept. Round 2 is running: its four real faults only, then the whole city in its language, all buildings lit together in one make.
+    - `land`, `spire`, `trees`: round 1 running.
+    - Not started: `skin` (the cracked left side and the cratered right side, after the rock), `debris` (what broke away, with its motion), the real stream joined at the core, and the world put into `/lab/hero` and `/lab/whole`.
+- **The frame now has every part's place** (`PARTS` in `part.ts`), each an empty place holder until built, and `parts/rest.ts` leaves out the stand in for whatever a part has built (`ctx.built`, `ctx.stands`).
+- **Still to do before he wakes:** the hero joined to the new world so the page scrolls to Contact, `npm run mem` and `npm run perf`, a production build, the push, the overlays and side by sides kept in `reference/studies/`, and a plain account of what is at the bar and what is not.
+
 ## 2026-11-15 · The frame corrected to picture 9, and the rock traced from the picture (Fable, Claude Code)
 
 **In progress.** His message to Claude Code after the kit changed: "What you showed me looks like our study, not picture 9: a smooth cut planet with a box for a hollow. I want picture 9 recreated as exactly as a live scene can be, not our version of it. Where the study and picture 9 differ in shape, size or place, picture 9 wins. Do not ask me first." Rebuild the hollow from the picture itself, lay every round over the picture first, and show him the overlay and the side by side every time.

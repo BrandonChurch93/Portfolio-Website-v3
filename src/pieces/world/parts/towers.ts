@@ -38,5 +38,5 @@ export const build: PartFactory = async () => {
     }
   }
   const [x, z, , , tall] = TOWERS[STEP], foot = ground(x, z);
-  return { group, alone: { at: [x, foot + tall * 0.55, z], r: tall * 0.62 }, dispose() { for (const d of made) d.dispose(); } };
+  return { group, stands: [STEP], alone: { at: [x, foot + tall * 0.55, z], r: tall * 0.62 }, dispose() { for (const d of made) d.dispose(); } };
 };
