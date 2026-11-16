@@ -34,6 +34,8 @@ export interface StreamHandle {
   follow(cue: string, seconds: number): void;
   struck(landing: string): { on: number; at: number; hard: number };
   reached(cue: string): number;
+  // How far along the route the leading end is now, in pixels of the page.
+  head(): number;
   nearest(x: number, y: number, from?: number): number;
   pulse(from: number, to: number, seconds: number): void;
   // Strikes a landing the stream is already on again, as hard as a share of a leading end at full pace.
@@ -1262,6 +1264,7 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       return { on: still ? (sim.head[0] >= route!.landings[i].s ? 1 : 0) : sim.on[i], at: sim.hitAt[i], hard: sim.hit[i] };
     },
     reached(name) { const i = cueAt(name); return i < 0 ? 0 : route!.cues![i].s; },
+    head() { return sim && !still ? sim.head[0] : route?.branches[0].len ?? 0; },
     nearest(x, y, from = 0) {
       const br = route?.branches[0];
       if (!br) return 0;

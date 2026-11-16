@@ -18,8 +18,10 @@ export interface PartState {
   // reads it only for what it lights itself.
   core: number;
   // The page's stream, which leaves the core's foot: how much of it is there (0 before it has set off, 1 once it
-  // has), and the seconds since it set off. In the lab, where a plain line stands in for it, on is 0.
-  stream: { on: number; since: number };
+  // has), the seconds since it set off, and how far under the core's foot its leading end has run, in units. In the
+  // lab, where a plain line stands in for it, on is 0. What it lights is told the same through the shared light
+  // (uStream in ./light.ts), which in the lab is the whole line, lit.
+  stream: { on: number; since: number; long: number };
   // Nothing loops and nothing drifts: reduced motion, the static tier, or a held frame.
   still: boolean;
 }

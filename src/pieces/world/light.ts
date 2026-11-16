@@ -38,6 +38,9 @@ const tried = (name: string, usual: number): number => (asked.has(name) && Numbe
 const POWER = tried('corepower', LIGHT.core.power), FILL = tried('fill', LIGHT.fill);
 const TINT = asked.has('filltint') ? String(asked.get('filltint')).split(',').map(Number) : LIGHT.warm;
 
+// As far as the stream is ever taken to have run: past the lowest of what broke away.
+export const STREAM_LONG = 4000;
+
 const shared = {
   uCoreAt: { value: new THREE.Vector3(...CORE.at).multiplyScalar(SCALE) },
   uCoreR: { value: CORE.r * SCALE },
@@ -48,11 +51,15 @@ const shared = {
   // The cursor's glint: where it stands, in the camera's own space, and its color and strength.
   uGlintAt: { value: new THREE.Vector3(0, 0, 1) },
   uGlint: { value: color('pale', 0) },
+  // The page's stream as a light on what is near it: how much of it is there, 0 to 1, and how far under the core's
+  // foot its leading end has run, in units. Until a page says otherwise it is all there: the lab's plain line.
+  uStream: { value: new THREE.Vector2(1, STREAM_LONG) },
 };
 // What the stage sets each frame: how bright the core burns, and where the cursor's glint is.
 export const world = {
   setCore(level: number): void { shared.uCoreLevel.value = level; },
   setGlint(at: THREE.Vector3, power: number): void { shared.uGlintAt.value.copy(at); shared.uGlint.value.copy(color('pale', power)); },
+  setStream(on: number, long: number): void { shared.uStream.value.set(on, long); },
   uniforms: shared,
 };
 

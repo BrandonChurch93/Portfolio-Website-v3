@@ -43,6 +43,7 @@ export function createHub(page: () => HTMLElement | null, has: { hero: boolean }
     follow: (c, s) => real?.follow(c, s),
     struck: (n) => real?.struck(n) ?? { on: 0, at: -1e9, hard: 0 },
     reached: (c) => real?.reached(c) ?? 0,
+    head: () => real?.head() ?? 0,
     nearest: (x, y, from) => real?.nearest(x, y, from) ?? 0,
     pulse: (from, to, seconds) => real?.pulse(from, to, seconds),
     strike: (n, hard) => real?.strike(n, hard),

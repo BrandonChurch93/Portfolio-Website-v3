@@ -20,7 +20,7 @@ export interface HeroParts {
   bar: () => HTMLElement | null;
   cue: HTMLElement | null;
   // The world, once it is mounted: it is told when the stream has set off from its core.
-  world?: () => { setStream(on: number, since: number): void } | null;
+  world?: () => { setStream(on: number, since: number, long: number): void } | null;
 }
 
 export interface HeroStage { dispose(): void }
@@ -37,10 +37,10 @@ const FALL = { wide: 0.5 };
 const SEAM = 170;
 
 export function mountHero(parts: HeroParts, host?: StreamHost): HeroStage {
-  let stream: StreamHandle | null = null, disposed = false, shown = '';
+  let stream: StreamHandle | null = null, disposed = false, shown = '', unit = 1;
 
   const plan = (c: PlanContext): Planned => {
-    const B = c.box(parts.board), k = (B.r - B.l) / BOARD.w, C = c.box(parts.city), to = parts.bar(), bar = to ? c.box(to) : { l: B.l, r: B.r, t: C.b, b: C.b };
+    const B = c.box(parts.board), k = unit = (B.r - B.l) / BOARD.w, C = c.box(parts.city), to = parts.bar(), bar = to ? c.box(to) : { l: B.l, r: B.r, t: C.b, b: C.b };
     // Where a point of the world is drawn on the page.
     const x = B.l + CX * k, at = (p: readonly [number, number, number]) => { const d = drawn(p[0], p[1], p[2]); return { x: x + d[0] * k, y: C.t + d[1] * k }; };
     const falls: Fall[] = small().map((v, i) => {
@@ -57,7 +57,7 @@ export function mountHero(parts: HeroParts, host?: StreamHost): HeroStage {
   const frame = () => {
     if (disposed) return;
     const since = stream ? stream.since('off') : -1;
-    parts.world?.()?.setStream(since > 0 ? Math.min(1, since / RISE) : 0, since > 0 ? since : 60);
+    parts.world?.()?.setStream(since > 0 ? Math.min(1, since / RISE) : 0, since > 0 ? since : 60, stream ? stream.head() / unit : 0);
     if (!parts.cue) return;
     const k = Math.max(0, 1 - clock.view.y / CUE).toFixed(2);
     if (k !== shown) { shown = k; parts.cue.style.opacity = k; }

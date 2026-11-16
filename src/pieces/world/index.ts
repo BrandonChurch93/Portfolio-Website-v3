@@ -8,7 +8,7 @@ import type { Piece, PieceOptions } from '../../world/piece';
 import { Stage } from '../../world/stage';
 import { finish, trueDarks } from '../../world/tone';
 import { CORE, D2R, HOST, LIGHT, MOONWARD, PYRAMID, SCALE, SPIRE, VIEW, coreLevel, drawn, ground } from './layout';
-import { color, world } from './light';
+import { STREAM_LONG, color, world } from './light';
 import { night } from './night';
 import { PARTS, type PartFactory, type PartName, type PartState, type WorldPart } from './part';
 import { STEP, TOWERS } from './placed';
@@ -69,7 +69,7 @@ export interface WorldExtras {
   where(x: number, y: number, z: number): [number, number];
   // What the page's stream is doing where it leaves the core: how much of it is there, 0 to 1, and the seconds
   // since it set off.
-  setStream(on: number, since: number): void;
+  setStream(on: number, since: number, long?: number): void;
   // What it costs: the milliseconds each part took to make ready, what the first frame took, what the last frame
   // drew, how many shader programs it has had compiled, and what the graphics card holds for it.
   stats(): { built: Record<string, number>; first: number; calls: number; triangles: number; programs: number; geometries: number; textures: number; passes: string[] };
@@ -82,7 +82,7 @@ export function createWorld(): WorldPiece {
   let off: (() => void) | null = null, watch: ResizeObserver | null = null, near: IntersectionObserver | null = null, moon: THREE.DirectionalLight | null = null;
   let seen = true, stale = true, moving = false, cast = 3, hold: number | null = null, only: PartName | null = null, close: readonly [number, number, number] | null = null, zoom = 3;
   let lampUV = { x: 0.6, y: 0.3 }, reach = 1, first = 0;
-  const stream = { on: 0, since: 60 };
+  const stream = { on: 0, since: 60, long: 0 };
   const built: Record<string, number> = {};
   const aim = new THREE.Vector3(), right = new THREE.Vector3(), up = new THREE.Vector3(), back = new THREE.Vector3(), glint = new THREE.Vector3();
   const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -234,10 +234,12 @@ export function createWorld(): WorldPiece {
       lampUV = { x, y };
       stale = true;
     },
-    setStream(on: number, since: number) {
-      if (Math.abs(on - stream.on) < 0.002 && (since > 4 || Math.abs(since - stream.since) < 0.01)) return;
+    setStream(on: number, since: number, long = STREAM_LONG) {
+      if (Math.abs(on - stream.on) < 0.002 && Math.abs(long - stream.long) < 0.5 && (since > 4 || Math.abs(since - stream.since) < 0.01)) return;
       stream.on = on;
       stream.since = since;
+      stream.long = long;
+      world.setStream(on, long);
       stale = true;
     },
     where(x: number, y: number, z: number): [number, number] {
