@@ -160,8 +160,12 @@ export const STREAM = {
     // How far the leading end has fallen from the core when the page is told it has set off.
     off: 30,
     // Where the stream leaves the core it is the core's own to draw (the neck, in src/pieces/world/parts/core): the
-    // stream's core is not drawn for the first of these, and is taken up over the stretch to the second.
-    hand: [40, 100] as readonly [number, number],
+    // stream's core is not drawn for the first of these, and is taken up over the stretch to the second, both
+    // inside the neck, which is wider and brighter than the stream there and so hides its taking up.
+    hand: [20, 90] as readonly [number, number],
+    // It falls dead straight this far from the core before it begins to sway: the neck is the core's, drawn
+    // straight down, and the stream's own line has to lie exactly along it.
+    straight: 280,
   },
 
   // The route through Contact (routeThroughContact in route-contact.ts): one stream that falls onto the Sun stone

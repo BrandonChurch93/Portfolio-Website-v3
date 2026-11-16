@@ -82,6 +82,10 @@ try {
   await p.goto(url.href, { waitUntil: 'load', timeout: 180000 });
   await p.waitForFunction(() => Boolean(window.__site), null, { timeout: 180000 });
   await settle(p);
+  // The world is ready once its piece has drawn its first frame. On a busy machine that is long after the page has
+  // loaded, and a still taken before it is black.
+  await p.waitForFunction(() => { try { return window.__site.piece('world').stats().first > 0; } catch { return false; } }, null, { timeout: 150000 }).catch(() => console.log('look: the world never said it was ready (a part failed to load, or a file was mid write)'));
+  await settle(p);
   const r = await renderer(p);
   console.log(`renderer: ${r.name} · ${r.hardware ? 'hardware' : 'software'}`);
   await apply(p, { ...flags, t: flags.t ?? 4 });

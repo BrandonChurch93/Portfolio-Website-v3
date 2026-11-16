@@ -212,8 +212,9 @@ function even(p: number[], step: number): number[] {
 
 // Evenly spaced points along a line through pts, each pushed sideways by the sway where the page around it is open.
 // still lists distances along the line where there is to be no sway at all, so two lines can be joined there.
-// until is how far along the line the sway goes at all: past it the line is left as it was drawn.
-export function wander(pts: number[], S: Solids, unit: number, phase: number, splitAt: number, narrow: number, still: number[] = [], until = Infinity): number[] {
+// until is how far along the line the sway goes at all: past it the line is left as it was drawn. after is how far
+// along it the sway begins: before it the line is left straight, and the sway is taken up over a little way.
+export function wander(pts: number[], S: Solids, unit: number, phase: number, splitAt: number, narrow: number, still: number[] = [], until = Infinity, after = 0): number[] {
   const R = STREAM.route, step = R.sample * unit;
   const base = even(pts, step);
   const swayed: number[] = [];
@@ -228,6 +229,7 @@ export function wander(pts: number[], S: Solids, unit: number, phase: number, sp
     for (const rail of S.rails) open = Math.min(open, clear(off(rail, base[i], base[i + 1])));
     for (const at of still) open = Math.min(open, ease(0, 170 * unit, Math.abs(s - at)));
     if (s >= until) open = 0;
+    if (after > 0) open = Math.min(open, ease(after, after + 170 * unit, s));
     const own = phase * ease(splitAt, splitAt + 240 * unit, s);
     const sway = R.sway * unit * narrow * open * (Math.sin((Math.PI * 2 * s) / (R.swayLong * unit) + 0.6 + own) + 0.45 * Math.sin((Math.PI * 2 * s) / (R.swayShort * unit) + 2.1 + own * 1.7));
     swayed.push(base[i] + (-dy / len) * sway, base[i + 1] + (dx / len) * sway);

@@ -46,7 +46,7 @@ export const SPIRE = { tall: 260, foot: 38, ring: { r: 54, thick: 2.4, up: 0.68,
 export const COURT = 56;
 // The pyramid: at the front left, in front of the towers, on a square court of its own. Polished gold. turn is how
 // far it is turned, in degrees, so that a corner is toward the visitor.
-export const PYRAMID = { x: -346, z: 392, base: 168, tall: 113.5, court: 93, turn: 56.3 } as const;
+export const PYRAMID = { x: -343.5, z: 392, base: 168, tall: 113.5, court: 93, turn: 56.3 } as const;
 // A place on the map, as the pyramid has it: across and along its own sides, from its middle.
 export function pyramidal(x: number, z: number): [number, number] {
   const c = Math.cos(PYRAMID.turn * D2R), k = Math.sin(PYRAMID.turn * D2R), rx = x - PYRAMID.x, rz = z - PYRAMID.z;

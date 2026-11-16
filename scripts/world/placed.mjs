@@ -146,7 +146,7 @@ const onGround = (px, py) => {
 // that the picture's crowns overlap the pyramid's foot, and so do these.
 const before = (x, z) => {
   const [qx, qz] = W.pyramidal(x, z), px = W.pictured(x, W.ground(x, z), z)[0];
-  return px > 338 && px < 480 && z > W.PYRAMID.z - 20 && Math.max(Math.abs(qx), Math.abs(qz)) < W.PYRAMID.base / 2 + 70;
+  return px > 338 && px < 494 && z > W.PYRAMID.z - 20 && Math.max(Math.abs(qx), Math.abs(qz)) < W.PYRAMID.base / 2 + 70;
 };
 const trees = P.trees().map((t) => [n(t.x), n(t.z), n(t.size * GROW), n(t.tone, 3), n(t.turn, 3)]).filter((t) => W.within(t[0], t[1]) > t[2] && !before(t[0], t[1]) && !towers.some((b) => Math.hypot(b[0] - t[0], b[1] - t[1]) < 0.5 * size(b) + 0.3 * t[2]));
 const kept = trees.length;

@@ -29,7 +29,7 @@ export function routeThroughHero(P: HeroPlan): Route {
   const free = trace([[P.source.x, P.source.y, 0, 0], [P.bar.x, P.bar.y - K.over * k, K.turn * k, K.turn * k], [P.bar.x, P.bar.y, 0, 0]]);
   let total = 0;
   for (let i = 2; i < free.length; i += 2) total += Math.hypot(free[i] - free[i - 2], free[i + 1] - free[i - 1]);
-  const line = wander(free, S, u, 0, 0, roam(P.width), [0, total]);
+  const line = wander(free, S, u, 0, 0, roam(P.width), [0, total], Infinity, K.straight * k);
   const branches = [measure(line, S, u), measure(line, S, u)] as [Branch, Branch];
   for (const b of branches) b.apart.fill(0);
   rides(branches, S, u);
