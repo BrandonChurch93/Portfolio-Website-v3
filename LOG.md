@@ -2,6 +2,12 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · The build followed the study, and he wants picture 9 recreated (Fable, web chat)
+
+- **What he saw (21:38).** The first output in Claude Code: a smooth half planet cut clean, a hollow that is a box with flat walls and a flat ledge, the core and its stream, grey stand ins on top. He would rather recreate picture 9 perfectly than our version.
+- **Why it happened.** The kit said the study's layout was approved and not to be changed without asking. The study describes the hollow as a smooth cave with a ledge and adds the broken pieces to it, so a builder following its numbers builds a box. That was the kit's fault, not the builder's.
+- **What was changed.** `reference/kits/world.md`: picture 9 is the shape as well as the look, the study is a rough guide, and a new section, "Match picture 9, every round", with where things are in the picture and an overlay to be made each round. `QUALITY.md`: test 11 is now the match to picture 9, and a smooth cut planet fails on sight. `BRIEF.md` has his ruling. The picture at its full size is `reference/concept/09-parts/09-the-whole-picture-at-1376.jpg`.
+- **Nothing from Claude Code had been pushed** when this was written. He has a short prompt to paste into the same session.
 ## 2026-11-15 · The new world's frame, its tools, and the slice begun (Fable, Claude Code)
 
 **In progress. Nothing here has been shown to him yet.** His prompt (Nov 15, late): build only the slice in the kit (the hollow with the core, the pyramid, the tower with the stepped gold crown), each to full finish in `src/pieces/world/`, each part by its own Opus builder with Fable judging every round side by side, then stop and show him each one at the page's size and close beside its picture. Do not port the study. Leave `src/hero-blockout/` and `src/pieces/skycity/` exactly as they are.
