@@ -233,8 +233,9 @@ export class Kit {
       const normal = (u, v) => unit(lerp(lerp(n00, n10, u), lerp(n01, n11, u), v));
       this.patch(layer, a, b, c, d, { edge: o.edge ? o.edge(F[j][i]) : undefined, want: F[j][i], tag: R[j].tag ?? o.tag, normal });
     }
-    if (o.top) this.cap(layer, R[R.length - 1].poly, R[R.length - 1].y, true, o.topTag ?? R[R.length - 1].tag ?? o.tag);
-    if (o.bottom) this.cap(layer, R[0].poly, R[0].y, false, R[0].tag ?? o.tag);
+    const once = (poly) => poly.filter((p, i) => { const q = poly[(i + 1) % poly.length]; return Math.hypot(p[0] - q[0], p[1] - q[1]) > 1e-5; });
+    if (o.top) this.cap(layer, once(R[R.length - 1].poly), R[R.length - 1].y, true, o.topTag ?? R[R.length - 1].tag ?? o.tag);
+    if (o.bottom) this.cap(layer, once(R[0].poly), R[0].y, false, R[0].tag ?? o.tag);
   }
   // Each layer as a mesh, moved by a matrix (sixteen numbers, column major) into the world.
   meshes(matrix) {

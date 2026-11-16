@@ -4,6 +4,8 @@ import { CORE, DEBRIS, SCALE, SMALL, SOURCE, fromPicture } from '../layout';
 import { color, lit } from '../light';
 import { load } from '../files';
 import type { PartFactory } from '../part';
+import { STREAM } from '../../../stream/config';
+import { FACET_KINDS, VERTEX_FLOATS, buildShards, facetKind } from '../../../stream/shards';
 import { KIND } from './debris/motion';
 import * as S from './debris/shaders';
 
@@ -18,10 +20,22 @@ import * as S from './debris/shaders';
 const LOOK = {
   // The rock's own color, its rusty beds, and the planet's outer surface where a piece shows it: pale on the side
   // the moon lights, dark on the other.
-  rock: color('bg-3').lerp(color('text-3'), 0.3),
+  rock: color('bg-3').lerp(color('text-3'), 0.3).lerp(color('bronze'), 0.18),
   rust: color('bronze-deep').lerp(color('bronze'), 0.25),
   skin: { pale: color('text-3').lerp(color('text-2'), 0.35), dark: color('bg-3').lerp(color('text-3'), 0.2) },
-  rough: 0.86,
+  rough: 0.82,
+  // A carried chip's metal: the stream's own shards are dark copper.
+  shard: color('copper').lerp(color('bronze-deep'), 0.35),
+  // The moon's edge on what it lights, as a share of its light, and how tight to the outline it keeps.
+  rim: [0.7, 3] as const,
+  // How much of the light the rock bounces reaches a piece: picture 9's pieces are near black where the core's
+  // light does not fall on them.
+  bounce: 0.45,
+  // What nothing reaches: a warm brown black, never grey.
+  floor: color('ember', 0.05),
+  // The night's light on rock, warmed, and how much of the night the rock mirrors.
+  night: color('ember').lerp(color('hot'), 0.35).multiplyScalar(1.6),
+  mirror: 0.15,
   // The detail map: how many units each of its two sizes covers, how much an edge is worn bright, and how deep its
   // breaks are, in the stage's own measure.
   detail: [38, 11, 0.38, 1.0 * SCALE] as const,
@@ -30,7 +44,7 @@ const LOOK = {
   stream: { color: color('hot').lerp(color('flame'), 0.3), main: [26, 120] as const, small: [4, 45] as const, foot: 420 },
 };
 // How each row of the table is laid into the texture: the columns of the file's table.
-const COLUMNS = 'model x y z qx qy qz qw sx sy sz kind family phase ax ay az spin core br bg bb extra'.split(' ');
+const COLUMNS = 'model x y z qx qy qz qw sx sy sz kind family phase ax ay az spin core br bg bb extra shut'.split(' ');
 const ROWS = 6;
 
 export const build: PartFactory = async ({ query }) => {
@@ -72,21 +86,43 @@ export const build: PartFactory = async ({ query }) => {
   detail.colorSpace = THREE.NoColorSpace;
   detail.anisotropy = 4;
 
-  // Every piece laid into one mesh from its model, each vertex knowing its piece.
+  // Every piece laid into one mesh from its model, each vertex knowing its piece. A chip the stream carries wears one
+  // of the stream's own shards, so nobody can say where what broke away ends and the stream's shards begin.
+  const shards = buildShards(STREAM.seed), facetOf = (i: number, p: number[]) => shards.kinds[facetKind(Math.min(1, p[col.sx] / 8), ((i * 0.618034) % 1 + 1) % 1) % FACET_KINDS];
   let verts = 0, tris = 0;
-  for (const p of table) { const g = models[p[col.model]].geometry; verts += g.attributes.position.count; tris += (g.index?.count ?? 0) / 3; }
+  table.forEach((p, i) => {
+    if (p[col.kind] === KIND.fall) { const f = facetOf(i, p); verts += f.count; tris += f.count / 3; return; }
+    const g = models[p[col.model]].geometry;
+    verts += g.attributes.position.count;
+    tris += (g.index?.count ?? 0) / 3;
+  });
   const pos = new Float32Array(verts * 3), nor = new Int16Array(verts * 4), light = new Uint8Array(verts * 4), bounce = new Uint8Array(verts * 4), id = new Uint16Array(verts), idx = new Uint32Array(tris * 3);
   let v = 0, t = 0;
   for (let i = 0; i < n; i++) {
-    const p = table[i], m = models[p[col.model]], g = m.geometry, k = g.attributes.position.count, q = g.attributes.position.array as Uint16Array;
+    const p = table[i], core = Math.round(p[col.core] * 255), b = [p[col.br], p[col.bg], p[col.bb]].map((x) => Math.round(x * 255)), open = 1 - (p[col.shut] ?? 0);
+    if (p[col.kind] === KIND.fall) {
+      const f = facetOf(i, p);
+      for (let j = 0; j < f.count; j++) {
+        const o = (f.first + j) * VERTEX_FLOATS;
+        for (let a = 0; a < 3; a++) { pos[(v + j) * 3 + a] = shards.data[o + a]; nor[(v + j) * 4 + a] = Math.round(shards.data[o + 3 + a] * 32767); }
+        light.set([core, 255, Math.round(255 * open), 0], (v + j) * 4);
+        bounce.set([b[0], b[1], b[2], 0], (v + j) * 4);
+        id[v + j] = i;
+        idx[t + j] = v + j;
+      }
+      v += f.count;
+      t += f.count;
+      continue;
+    }
+    const m = models[p[col.model]], g = m.geometry, k = g.attributes.position.count, q = g.attributes.position.array as Uint16Array;
     const nn = (g.attributes.normal as THREE.InterleavedBufferAttribute).data.array as Int16Array, ll = g.attributes.aLight.array as Uint8Array, bb = g.attributes.aBounce.array as Uint8Array;
-    const shared = Boolean(m.info.shared), core = Math.round(p[col.core] * 255), b = [p[col.br], p[col.bg], p[col.bb]].map((x) => Math.round(x * 255));
+    const shared = Boolean(m.info.shared);
     for (let j = 0; j < k; j++) {
       for (let a = 0; a < 3; a++) pos[(v + j) * 3 + a] = m.at.getComponent(a) + (q[j * 3 + a] / 65535) * m.size;
       nor.set(nn.subarray(j * 4, j * 4 + 4), (v + j) * 4);
       light.set(ll.subarray(j * 4, j * 4 + 4), (v + j) * 4);
       bounce.set(bb.subarray(j * 4, j * 4 + 4), (v + j) * 4);
-      if (shared) { light[(v + j) * 4] = core; bounce[(v + j) * 4] = b[0]; bounce[(v + j) * 4 + 1] = b[1]; bounce[(v + j) * 4 + 2] = b[2]; }
+      if (shared) { light[(v + j) * 4] = core; light[(v + j) * 4 + 2] = Math.round(light[(v + j) * 4 + 2] * open); bounce[(v + j) * 4] = b[0]; bounce[(v + j) * 4 + 1] = b[1]; bounce[(v + j) * 4 + 2] = b[2]; }
       id[v + j] = i;
     }
     const ix = g.index!.array;
@@ -111,11 +147,11 @@ export const build: PartFactory = async ({ query }) => {
   const at = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z).multiplyScalar(SCALE);
   const lines = [{ a: at(...SOURCE), b: at(SOURCE[0], DEBRIS.low - LOOK.stream.foot, SOURCE[2]), i: LOOK.stream.main }, ...SMALL.map(([px, py, z, long]) => { const [x, y] = fromPicture(px, py, z); return { a: at(x, y, z), b: at(x, y - long, z), i: LOOK.stream.small }; })];
   const uniforms = {
-    uPieces: { value: pieces }, uTime: { value: 0 }, uCoreAt: { value: new THREE.Vector3(...CORE.at) }, uDetail: { value: detail },
+    uPieces: { value: pieces }, uTime: { value: 0 }, uBounceK: { value: LOOK.bounce }, uCoreAt: { value: new THREE.Vector3(...CORE.at) }, uDetail: { value: detail },
     uRock: { value: LOOK.rock }, uRust: { value: LOOK.rust }, uSkinPale: { value: LOOK.skin.pale }, uSkinDark: { value: LOOK.skin.dark },
     uLook: { value: new THREE.Vector4(...LOOK.detail) },
     uStreamA: { value: lines.map((l) => l.a) }, uStreamB: { value: lines.map((l) => l.b) }, uStreamI: { value: lines.map((l) => new THREE.Vector2(l.i[0], l.i[1] * SCALE)) },
-    uStreamColor: { value: LOOK.stream.color },
+    uStreamColor: { value: LOOK.stream.color }, uShard: { value: LOOK.shard }, uFloor: { value: LOOK.floor }, uRim: { value: new THREE.Vector2(...LOOK.rim) }, uNight: { value: LOOK.night }, uRockMirror: { value: LOOK.mirror },
   };
   const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: LOOK.rough, metalness: 0 });
   material.onBeforeCompile = (sh) => {
@@ -123,12 +159,14 @@ export const build: PartFactory = async ({ query }) => {
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>\n${S.VERT_PARS}`)
       .replace('#include <beginnormal_vertex>', `${S.VERT_MOTION}\nvec3 objectNormal = dNor;`)
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\ntransformed = dPos;\nvWorldP = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;');
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\ntransformed = dPos;\nwBounce *= uBounceK;\nvWorldP = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;');
     sh.fragmentShader = sh.fragmentShader
       .replace('#include <common>', `#include <common>\n${S.FRAG_PARS}`)
       .replace('#include <color_fragment>', `#include <color_fragment>\n${S.COLOR}`)
+      .replace('#include <metalnessmap_fragment>', `#include <metalnessmap_fragment>\n${S.FINISH}`)
       .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>\n${S.NORMAL}`)
-      .replace('#include <lights_fragment_begin>', `#include <lights_fragment_begin>\n${S.STREAM}`);
+      .replace('#include <lights_fragment_begin>', `#include <lights_fragment_begin>\n${S.STREAM}`)
+      .replace('#include <lights_fragment_maps>', `#include <lights_fragment_maps>\n${S.NIGHT}`);
   };
   lit(material, { key: 'debris', baked: true });
 

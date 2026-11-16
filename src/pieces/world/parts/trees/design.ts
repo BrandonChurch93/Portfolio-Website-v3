@@ -32,9 +32,9 @@ export function tileAt(tile: number): { u: number; v: number; du: number; dv: nu
 
 // The crown, in its own units: how high its middle stands over the ground. Picture 9's crowns sit nearly on the
 // ground, so little of a trunk shows.
-export const CROWN = { high: 0.98 } as const;
+export const CROWN = { high: 0.86 } as const;
 
 // The shade a tree lays on the ground: a soft card from under the crown out along the ground away from the moon,
 // so the belt sits dark at its foot. How far it starts behind the trunk and how far it reaches past it, and how
 // wide it is to each side, in crown units. Each tree's card is cut short where the land ends.
-export const SHADE = { back: 1.1, reach: 3.2, wide: 1.25, up: 0.04 } as const;
+export const SHADE = { back: 0.45, reach: 3.2, wide: 1.6, up: 0.04 } as const;

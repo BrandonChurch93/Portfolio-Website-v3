@@ -1,17 +1,19 @@
 import * as THREE from 'three';
-import { hex } from '../../../config/palette';
-import { CORE, seeded } from '../layout';
-import type { PartFactory, PartState } from '../part';
-import { STREAM } from './rest';
-import { BALL_FRAG, BALL_VERT, GLASS_FRAG, NECK_FRAG, NECK_VERT, SHARD_VERT, SOLID_FRAG } from './core/shaders';
-import { frameOf, shardGeometry, type Moon } from './core/shards';
+import { hex, type PaletteName } from '../../../config/palette';
+import { STREAM as PAGE } from '../../../stream/config';
+import { CORE, SOURCE, seeded } from '../layout';
+import type { PartFactory } from '../part';
+import { BALL_FRAG, BALL_VERT, GLASS_FRAG, SHARD_VERT, SOLID_FRAG } from './core/shaders';
+import { ROOT_FRAG, ROOT_VERT, reachOnPage, rootScale, strandsFor } from './core/root';
+import { shardGeometry, type Moon } from './core/shards';
 
-// The core: a ball of the stream's light hanging free in the hollow, as picture 9 has it. Pale gold over its face
-// with a fine, even, luminous grain, which close up is countless tiny facets, warming to deep orange in a band just
-// inside its hard edge and a thin brighter line of orange gold at the edge itself, and a neck at its foot, a column
-// of light brightest down its middle, where the page's stream begins. A few of the stream's own shards turn slowly
-// round it, and now and then one is drawn down into the neck. It gives light of its own, casts no shadow and takes
-// none, and draws no haze or glow outside itself.
+// The core: the planet's core and the source of the site's stream at once. A ball of the stream's light hanging free
+// in the hollow, as picture 9 has it: pale gold over its face with a fine, even, luminous grain, which close up is
+// countless tiny facets, warming to deep orange in a band just inside its hard edge and a thin brighter line of
+// orange gold at the edge itself. At its foot is the root of the beam it shoots out, which is the page's stream: the
+// same braided ribbon of light, its fibres fanning up into the ball's band. A few pieces of the planet are drawn in
+// round its lower half and carried down the beam. It gives light of its own, casts no shadow and takes none, and
+// draws no haze or glow outside itself.
 
 type Ink = readonly [number, number, number];
 type Stops = readonly (readonly [number, Ink])[];
@@ -38,18 +40,6 @@ const RIM: Stops = [
   [0.986, [1.359, 0.622, 0.103]], // (249, 179, 88)
   [1, [1.359, 0.622, 0.103]],
 ];
-// The neck across its width, 0 down its middle and 1 at its sides. Picture 9's spine is paler than the palette
-// allows, so it is the palette's pale, the most there is. Its sides fall off from it as the picture's do, keeping
-// their green and losing blue, so they go to gold and orange gold and not to peach.
-const NECK_INK: Stops = [
-  [0, [5.095, 3.911, 2.711]], // (254, 226, 193)
-  [0.35, [5.095, 3.911, 2.458]], // (254, 226, 188)
-  [0.55, [5.095, 3.786, 1.979]], // (254, 224, 178)
-  [0.72, [5.095, 3.6, 1.406]], // (254, 221, 165)
-  [0.86, [2.854, 1.888, 0.647]], // (253, 214, 147)
-  [0.95, [1.509, 0.925, 0.282]], // (250, 203, 125)
-  [1, [1.11, 0.629, 0.176]], // (246, 192, 110)
-];
 // The grain, as shares of the light where it is, for one step of each kind. Picture 9's grain is light on light: a
 // brighter grain is as much brighter in red, green and blue, so it is a little paler, and a dimmer one a little more
 // gold. Each grain also has its own warmth apart from its brightness. The curve squeezes the bright end, so a bright
@@ -62,49 +52,43 @@ const GRAIN = {
 } as const;
 
 // How the face turns: about which axis, and how fast, in radians a second. Slow, as something enormous.
-const TURN = { axis: new THREE.Vector3(0.28, 1, 0.34).normalize(), rate: 0.0075 };
+const TURN = { axis: new THREE.Vector3(0.28, 1, 0.34).normalize(), rate: 0.0075 } as const;
 
-// The neck, measured on picture 9 down from the ball's foot, in units: half as wide as the stream's line, plus a
-// narrow flare gone in about `fall0` and a broad one gone in about `fall1`, both ending exactly at `flat`. It is
-// joined to the ball by a smooth union of `fillet` and starts `into` inside the ball, and reaches `long` down.
-// Alone it is a drop about to fall: over `thin` it narrows to a thread, `thread` of its width, and over `fade` it
-// fades out, with nothing cut off. Once the page's stream has set off from it, it keeps its width and fades over
-// HANDOVER, where the stream grows in: there the neck is the stream's beginning.
-const NECK = { flare0: 2.8, fall0: 8, flare1: 9, fall1: 42, flat: 102, fillet: 9, into: 14, thin: [48, 108], thread: 0.13, fade: [72, 108], long: 108 } as const;
-// Where the neck hands over to the page's stream, in units down from the ball's foot: the stream is not drawn above
-// `from`, and is whole by `to`, over which the neck fades out. How long the neck takes, in seconds, to fill out from
-// a thread to its full width when the stream sets off, and to draw back when it goes.
-export const HANDOVER = { from: 40, to: 100, fills: 0.45 } as const;
+// The root of the beam, in units of the world down from the ball's foot unless they say otherwise.
+//   flare0, fall0, flare1, fall1: how far the ribbon is opened at the foot, as two flares gone over those depths, as
+//     picture 9's neck flares into the ball
+//   heart: how much more than the fibres the heart opens with it, which is the bright gathering at the foot
+//   beam: half the ribbon's width, in stream units, and hug: how close to the ball's limb its fibres fan up inside it
+//   in: over which shares of the radius the fan comes on inside the ball, and up: how far over the foot it reaches
+//   above: how fast it is gone over the foot outside the ball
+//   glow: the light that hugs the ribbon on the page, its amount and its width in stream units
+//   quiet: before the stream has set off, over how far the gathering fades and how bright it is, against the beam
+//   over: from which amount to which the root's light takes the place of the band's inside the ball
+//   hand: where the page's stream takes over, in the board's units (STREAM.hero.hand)
+//   surge: as it sets off, the light that runs down it: how much, how fast in units a second, how long
+//   long: how far down the plane it is drawn on reaches
+const ROOT = {
+  flare0: 0.45, fall0: 7, flare1: 0.4, fall1: 26, heart: 2.2, beam: 15, hug: 0.92, in: [0.8, 0.93], up: 34, above: 3.5,
+  glow: [0.16, 4.5], quiet: 7, over: [0.12, 0.9], hush: 0.72, hand: PAGE.hero.hand, surge: [0.7, 210, 18], long: 130, energy: 1,
+} as const;
 
-// The shards that turn round the ball: how many, how many of those are glass, how far out from the ball's middle
-// their paths are and how far their planes lean from level, as shares of the radius and in degrees, how long one
-// takes to go round, in seconds, how fast they turn over, in radians a second, and how long they are, in units.
-// Of those, how many are drawn into the neck now and then, after how many turns round, how long the fall takes, how
-// long one takes to gather again, how far down the neck it goes, and how near the ball it comes at the foot.
+// The pieces of the planet the beam draws in: how many, how many of those are glass, how long a coming of each
+// takes, in seconds, how long of that it is growing in out of the dark, how long the beam takes to carry it down and
+// how far, how long it rests unseen. Where each comes from: how far round from straight down, in degrees, how far
+// out from the ball's middle and how far toward the eye, as shares of the radius. Where it is taken by the beam: how
+// far round, how far out and toward the eye. How long they are, in units, and how fast they turn over.
 const MOONS = {
-  count: 11, glass: 3, out: [1.07, 1.17], lean: [18, 72], round: [70, 125], turns: [0.12, 0.42], long: [4.5, 9],
-  fall: { count: 4, after: [2, 3], takes: 17, gather: 9, sink: 60, foot: 1.06 },
+  count: 6, glass: 1, period: [44, 78], gather: 4, drop: 2.6, sink: 95, rest: 6,
+  from: [26, 74], out: [1.3, 1.75], toward: [0.05, 0.6], foot: [7, 1.09, 0.2],
+  long: [11, 17], turn: [0.08, 0.22],
   seed: 61,
 } as const;
 
 function moons(): Moon[] {
   const r = seeded(MOONS.seed), span = (a: readonly number[]) => a[0] + (a[1] - a[0]) * r(), out: Moon[] = [];
   for (let i = 0; i < MOONS.count; i++) {
-    // One that falls goes round on a plane that leans to the side, so its path comes round in front of the ball.
-    const falls = i < MOONS.fall.count, lean = span(MOONS.lean) * (Math.PI / 180), pick = r(), turn = falls ? (pick < 0.5 ? 0 : Math.PI) + (pick * 4 - Math.floor(pick * 4) - 0.5) * 0.7 : pick * Math.PI * 2;
-    const plane: [number, number, number] = [Math.sin(lean) * Math.cos(turn), Math.cos(lean), Math.sin(lean) * Math.sin(turn)];
-    const T = span(MOONS.round), rate = ((r() < 0.5 ? -1 : 1) * 2 * Math.PI) / T, at = r() * Math.PI * 2;
-    const spin: [number, number, number] = [r() - 0.5, r() - 0.5, r() - 0.5];
-    const m: Moon = { plane, out: span(MOONS.out) * CORE.r, rate, at, spin, spun: r() * 6.28, turns: span(MOONS.turns) * (r() < 0.5 ? -1 : 1), size: span(MOONS.long) / 2, every: 0, from: 0, hidden: 0, glass: i >= MOONS.count - MOONS.glass };
-    // One that falls leaves its path where it is in front of the ball and low, and gathers again behind it.
-    if (falls) {
-      const [u, v] = frameOf(plane), F = MOONS.fall, along = (w: number[]) => Math.atan2(v[0] * w[0] + v[1] * w[1] + v[2] * w[2], u[0] * w[0] + u[1] * w[1] + u[2] * w[2]);
-      const front = along([0, -0.6, 1]), back = along([0, 0, -1]), gone = front + rate * F.takes, wrap = (x: number) => ((x % T) + T) % T;
-      m.every = T * (F.after[0] + (i % (F.after[1] - F.after[0] + 1)));
-      m.from = -(gone - at) / rate;
-      m.hidden = wrap((back - gone) / rate);
-    }
-    out.push(m);
+    const period = span(MOONS.period);
+    out.push({ period, start: period * ((i + 0.37 * r()) / MOONS.count), size: span(MOONS.long) / 2, seed: r() * 100, axis: [r() - 0.5, r() - 0.5, r() - 0.5], rate: span(MOONS.turn) * (r() < 0.5 ? -1 : 1), glass: i >= MOONS.count - MOONS.glass });
   }
   return out;
 }
@@ -113,30 +97,52 @@ function moons(): Moon[] {
 const RINGS = { full: 48, lean: 40 } as const;
 
 // How a shard takes the core's light, as amounts of light: what a face shows that mirrors the night outside the
-// hollow, the hollow's lit walls, or the ball, how rough its faces are, how much light a face takes from the ball and
-// how much its edges and points do, and how bright one is once it is drawn into the neck. And for glass: how much
-// light it holds, how strongly it mirrors the ball and lights its edges, and how much it dims what is behind it.
-const SHARD = { room: 0.1, wall: 0.55, heat: 2.6, flash: 1.6, rough: 0.05, diffuse: 0.25, edge: 2.2, held: 0.05, glint: 0.35, glassEdge: 0.45, dim: 0.22 } as const;
+// hollow, the hollow's lit walls, or the ball, how rough its faces are, how much light a face turned to the ball
+// takes when close, how bright its edges are, and how much light the beam gives one on it and how far that reaches.
+// And for glass: how much light it holds, how strongly it mirrors the ball and lights its edges, and how much it
+// dims what is behind it.
+const SHARD = { room: 0.1, wall: 0.5, flash: 2.4, rough: 0.05, diffuse: 3.2, edge: 2.6, beam: 2.2, beamW: 10, held: 0.12, glint: 0.5, glassEdge: 0.9, dim: 0.22 } as const;
 
 const vec = (c: readonly number[]): THREE.Vector3 => new THREE.Vector3(c[0], c[1], c[2]);
+// A color of the palette as the page's stream holds it: each channel to the power 2.2 (src/stream/renderer.ts, lin).
+const lin = (name: PaletteName): THREE.Vector3 => { const v = hex(name); return new THREE.Vector3(...[(v >> 16) & 255, (v >> 8) & 255, v & 255].map((c) => (c / 255) ** 2.2)); };
 
 export const build: PartFactory = (ctx) => {
   const group = new THREE.Group(), rings = ctx.handheld || ctx.tier === 'low' ? RINGS.lean : RINGS.full;
-  const at = new THREE.Vector3(...CORE.at), R = CORE.r, half = STREAM / 2;
-  const flat = NECK.flat, ends = [Math.exp(-flat / NECK.fall0), Math.exp(-flat / NECK.fall1)];
-  // The neck's half width at a depth under the ball's foot.
-  const neckAt = (dy: number): number => {
-    const d = Math.min(Math.max(dy, 0), flat);
-    return half + (NECK.flare0 * (Math.exp(-d / NECK.fall0) - ends[0])) / (1 - ends[0]) + (NECK.flare1 * (Math.exp(-d / NECK.fall1) - ends[1])) / (1 - ends[1]);
-  };
-  // Drawn over everything, for laying the ball on picture 9 while the rock round it is still a stand in.
+  const at = new THREE.Vector3(...CORE.at), R = CORE.r;
+  // Drawn over everything, for laying the ball on picture 9 while the rock round it is still a stand in, and for
+  // judging the root on the page while the rock's floor still stands in front of it.
   const over = ctx.query.get('core') === 'over';
-  const neckStops = { uNeckAt: { value: NECK_INK.map(([s]) => s) }, uNeck: { value: NECK_INK.map(([, c]) => vec(c)) } };
+  // Seen alone or close, the world is not laid out as the page lays it, and no page stream takes over below.
+  const lab = ctx.query.has('only') || ctx.query.has('close') || !ctx.renderer.domElement.isConnected;
+  // ?neck=stream holds the beam on as if the page's stream had set off, which in the lab it never does.
+  const held = ctx.query.get('neck') === 'stream';
+  const strands = strandsFor(ctx.tier);
+  const host = rootScale(SOURCE, strands);
 
-  const ballU = {
-    uEye: { value: new THREE.Vector3() },
+  const rootU = {
     uR: { value: R },
     uTime: { value: 0 },
+    uRootScale: { value: new THREE.Vector3(host.across, host.along, host.heart) },
+    uRootState: { value: new THREE.Vector4(0, 0, lab || held ? 0 : 1, 60) },
+    uEmber: { value: lin('ember') },
+    uFlame: { value: lin('flame') },
+    uHot: { value: lin('hot') },
+    uPale: { value: lin('pale') },
+  };
+  const f = (n: number) => n.toFixed(4);
+  const rootDefines = {
+    ROOT_STRANDS: strands, ROOT_ENERGY: f(ROOT.energy), ROOT_BEAM: f(ROOT.beam), ROOT_HUG: f(ROOT.hug),
+    ROOT_FLARE0: f(ROOT.flare0), ROOT_FALL0: f(ROOT.fall0), ROOT_FLARE1: f(ROOT.flare1), ROOT_FALL1: f(ROOT.fall1), ROOT_HEART_OPEN: f(ROOT.heart),
+    ROOT_GLOW: f(ROOT.glow[0]), ROOT_GLOW_W: f(ROOT.glow[1]), ROOT_QUIET: f(ROOT.quiet), ROOT_HUSH: f(ROOT.hush),
+    ROOT_HOST: f(host.host), ROOT_HAND0: f(ROOT.hand[0]), ROOT_HAND1: f(ROOT.hand[1]),
+    ROOT_SURGE: f(ROOT.surge[0]), ROOT_SURGE_V: f(ROOT.surge[1]), ROOT_SURGE_W: f(ROOT.surge[2]), ROOT_ABOVE: f(ROOT.above),
+    ROOT_IN: `vec2( ${f(ROOT.in[0])}, ${f(ROOT.in[1])} )`, ROOT_UP: f(ROOT.up), ROOT_OVER: `vec2( ${f(ROOT.over[0])}, ${f(ROOT.over[1])} )`, ROOT_EDGE: f(ROOT.beam * 4),
+  };
+
+  const ballU = {
+    ...rootU,
+    uEye: { value: new THREE.Vector3() },
     uLevel: { value: 1 },
     uTurn: { value: new THREE.Matrix3() },
     uRimAt: { value: RIM.map(([r]) => r) },
@@ -144,9 +150,7 @@ export const build: PartFactory = (ctx) => {
     uBright: { value: vec(GRAIN.bright) },
     uDim: { value: vec(GRAIN.dim) },
     uWarm: { value: vec(GRAIN.warm) },
-    uPale: { value: vec(GRAIN.pale) },
-    ...neckStops,
-    uNeckR: { value: neckAt(0) },
+    uGrainPale: { value: vec(GRAIN.pale) },
   };
   const ballM = new THREE.ShaderMaterial({
     name: 'world-core',
@@ -156,10 +160,8 @@ export const build: PartFactory = (ctx) => {
     transparent: true,
     depthTest: !over,
     defines: {
+      ...rootDefines,
       RIM_N: RIM.length,
-      // How far the neck's light flares out along the rim as it rises into the ball, measured on picture 9.
-      FOOT_FLARE: '1660.0',
-      NECK_N: NECK_INK.length,
       // The finest grain's wavelength in units, how much shorter each finer one is and how much weaker, and how far
       // the sizes kept may be turned up to stand in for those let go.
       GRAIN_WAVE: '2.4',
@@ -205,47 +207,25 @@ export const build: PartFactory = (ctx) => {
   ball.position.copy(at);
   ball.renderOrder = over ? 20 : 1;
 
-  // The neck, as a lathe in the ball's own frame. It starts inside the ball, so the two have no seam.
-  const profile: THREE.Vector2[] = [], steps = 160, top = -R + NECK.into, bottom = -R - NECK.long;
-  for (let i = 0; i <= steps; i++) {
-    // Closer together near the ball, where the fillet turns. Under the ball there is nothing to join.
-    const y = top + (bottom - top) * (i / steps) ** 1.8;
-    const n = neckAt(-R - y), b = y > -R ? Math.sqrt(R * R - y * y) : -Infinity, k = NECK.fillet;
-    const h = Math.max(k - Math.abs(n - b), 0) / k;
-    profile.push(new THREE.Vector2(Math.max(n, b) + (h * h * k) / 4, y));
-  }
-  const neckG = new THREE.LatheGeometry(profile, 64);
-  const neckU = {
-    ...neckStops,
-    uLevel: ballU.uLevel,
-    uTime: ballU.uTime,
-    uEye: ballU.uEye,
-    uFoot: { value: -R },
-    uRun: { value: 0 },
-    uThin: { value: new THREE.Vector3(NECK.thin[0], NECK.thin[1], NECK.thread) },
-    uFade: { value: new THREE.Vector4(NECK.fade[0], NECK.fade[1], HANDOVER.from, HANDOVER.to) },
-    uEmber: { value: new THREE.Color(hex('ember')) },
-    uFlame: { value: new THREE.Color(hex('flame')) },
-    uHot: { value: new THREE.Color(hex('hot')) },
-    uPale: { value: new THREE.Color(hex('pale')) },
-  };
-  const neckM = new THREE.ShaderMaterial({
-    name: 'world-core-neck',
-    uniforms: neckU,
-    // How far down the stream's ramp the neck's fade runs from, how bright that light is, and how far into the fade
-    // the neck keeps its own light.
-    defines: { NECK_N: NECK_INK.length, NECK_RAMP: '1.7', NECK_GLOW: '1.6', NECK_KEEP: '0.55' },
-    vertexShader: NECK_VERT,
-    fragmentShader: NECK_FRAG,
+  // The root under the ball, on the plane through its middle that faces the eye. Its top is well inside the ball,
+  // which draws over it there.
+  const rootG = new THREE.PlaneGeometry(2 * ROOT.beam * 4, ROOT.long + ROOT.up, 1, 1).translate(0, -R - (ROOT.long - ROOT.up) / 2, 0);
+  const rootM = new THREE.ShaderMaterial({
+    name: 'world-core-root',
+    uniforms: rootU,
+    defines: rootDefines,
+    vertexShader: ROOT_VERT,
+    fragmentShader: ROOT_FRAG,
     transparent: true,
+    depthWrite: false,
+    depthTest: !over,
     blending: THREE.CustomBlending,
     blendSrc: THREE.OneFactor,
     blendDst: THREE.OneMinusSrcAlphaFactor,
-    depthTest: !over,
   });
-  const neck = new THREE.Mesh(neckG, neckM);
-  neck.position.copy(at);
-  neck.renderOrder = over ? 19 : 0;
+  const root = new THREE.Mesh(rootG, rootM);
+  root.position.copy(at);
+  root.renderOrder = over ? 19 : 0;
 
   // What glass dims what is behind it toward: the ball's own color, twice over, so it takes most from the blue.
   const tint = vec(RIM[0][1]).divideScalar(RIM[0][1][0]);
@@ -258,10 +238,12 @@ export const build: PartFactory = (ctx) => {
     uTint: { value: tint.clone().multiply(tint) },
   };
   const shardDefines = {
-    SHARD_GATHER: MOONS.fall.gather.toFixed(2), SHARD_FALL: MOONS.fall.takes.toFixed(2), SHARD_SINK: MOONS.fall.sink.toFixed(2), SHARD_FOOT: MOONS.fall.foot.toFixed(3),
-    SHARD_NECK: (STREAM / 2).toFixed(2), SHARD_FLARE: NECK.flare1.toFixed(2), SHARD_FALLS: NECK.fall1.toFixed(2),
-    SHARD_ROOM: SHARD.room.toFixed(3), SHARD_WALL: SHARD.wall.toFixed(3), SHARD_HEAT: SHARD.heat.toFixed(3), SHARD_FLASH: SHARD.flash.toFixed(3), SHARD_ROUGH: SHARD.rough.toFixed(3), SHARD_DIFFUSE: SHARD.diffuse.toFixed(3), SHARD_EDGE: SHARD.edge.toFixed(3),
-    GLASS_HELD: SHARD.held.toFixed(3), GLASS_GLINT: SHARD.glint.toFixed(3), GLASS_EDGE: SHARD.glassEdge.toFixed(3), GLASS_DIM: SHARD.dim.toFixed(3),
+    SHARD_GATHER: f(MOONS.gather), SHARD_DROP: f(MOONS.drop), SHARD_SINK: f(MOONS.sink), SHARD_REST: f(MOONS.rest),
+    SHARD_FROM: `vec2( ${f(MOONS.from[0])}, ${f(MOONS.from[1])} )`, SHARD_OUT: `vec2( ${f(MOONS.out[0])}, ${f(MOONS.out[1])} )`, SHARD_TOWARD: `vec2( ${f(MOONS.toward[0])}, ${f(MOONS.toward[1])} )`,
+    SHARD_FOOT: `vec3( ${f(MOONS.foot[0])}, ${f(MOONS.foot[1])}, ${f(MOONS.foot[2])} )`,
+    SHARD_ROOM: f(SHARD.room), SHARD_WALL: f(SHARD.wall), SHARD_FLASH: f(SHARD.flash), SHARD_ROUGH: f(SHARD.rough), SHARD_DIFFUSE: f(SHARD.diffuse), SHARD_EDGE: f(SHARD.edge),
+    SHARD_BEAM: f(SHARD.beam), SHARD_BEAM_W: f(SHARD.beamW),
+    GLASS_HELD: f(SHARD.held), GLASS_GLINT: f(SHARD.glint), GLASS_EDGE: f(SHARD.glassEdge), GLASS_DIM: f(SHARD.dim),
   };
   const all = moons();
   const solidG = shardGeometry(all.filter((m) => !m.glass), MOONS.seed), glassG = shardGeometry(all.filter((m) => m.glass), MOONS.seed + 1);
@@ -278,27 +260,32 @@ export const build: PartFactory = (ctx) => {
   take.renderOrder = 2;
   give.renderOrder = 3;
 
-  for (const m of [ball, neck, solid, take, give]) { m.castShadow = m.receiveShadow = false; m.frustumCulled = false; }
+  for (const m of [ball, root, solid, take, give]) { m.castShadow = m.receiveShadow = false; m.frustumCulled = false; }
   const eye = new THREE.Vector3();
-  neck.onBeforeRender = ball.onBeforeRender = (_r, _s, camera) => { ballU.uEye.value.copy(ball.worldToLocal(eye.copy(camera.position))); };
-  group.add(neck, ball, solid, take, give);
+  ball.onBeforeRender = (_r, _s, camera) => { ballU.uEye.value.copy(ball.worldToLocal(eye.copy(camera.position))); };
+  group.add(root, ball, solid, take, give);
 
   const q = new THREE.Quaternion(), m4 = new THREE.Matrix4();
-  // Whether the page's stream has set off from the neck: the seconds since it did, which the page hands the world
-  // (src/hero/stage.ts), and which run back when the stream draws back up. ?neck=stream holds it set off.
-  const held = ctx.query.get('neck') === 'stream';
+  let wide = -1;
 
   return {
     group,
-    alone: { at: [CORE.at[0], CORE.at[1] - NECK.long / 2, CORE.at[2]], r: R + NECK.long / 2 + 6 },
+    alone: { at: [CORE.at[0], CORE.at[1] - ROOT.long / 3, CORE.at[2]], r: R + ROOT.long / 3 + 6 },
     update(s) {
-      ballU.uTime.value = s.t;
+      rootU.uTime.value = s.t;
       ballU.uLevel.value = s.core;
-      const since = (s as PartState & { stream?: number }).stream ?? -1, k = Math.min(Math.max(since / HANDOVER.fills, 0), 1);
-      neckU.uRun.value = held ? 1 : k * k * (3 - 2 * k);
+      // The page's stream and its units follow the screen's width.
+      if (innerWidth !== wide) {
+        wide = innerWidth;
+        const k = rootScale(SOURCE, strands);
+        rootU.uRootScale.value.set(k.across, k.along, k.heart);
+      }
+      const state = rootU.uRootState.value, on = held ? 1 : s.stream.on;
+      const reach = held || lab ? ROOT.long : reachOnPage(ctx.renderer.domElement, SOURCE);
+      state.set(on, Math.max(0, reach), lab || held ? 0 : 1, held ? 60 : s.stream.since);
       ballU.uTurn.value.setFromMatrix4(m4.makeRotationFromQuaternion(q.setFromAxisAngle(TURN.axis, (s.t * TURN.rate) % (2 * Math.PI))));
       return true;
     },
-    dispose() { for (const d of [ballG, ballM, neckG, neckM, solidG, solidM, glassG, takeM, giveM]) d.dispose(); },
+    dispose() { for (const d of [ballG, ballM, rootG, rootM, solidG, solidM, glassG, takeM, giveM]) d.dispose(); },
   };
 };

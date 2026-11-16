@@ -22,7 +22,8 @@ const S = {
   cell: { w: 1.2, rows: 68, band: 0.5 },
   // How many storeys of the bay are a bronze grille at its foot and its head, and how wide a slot of it is.
   grille: { foot: 1, head: 2, slot: 0.6 },
-  fin: { every: 6, wide: 0.34, out: 0.5 },
+  // A bronze fin every so many windows: none, since the one down the middle of a bay read as a seam.
+  fin: { every: 0, wide: 0.34, out: 0.5 },
   cornice: [[124.6, 125.25, 0.35], [125.25, 126.0, 0.7]],
   parapet: { y1: 127.3, inset: 0.15, c: 2.0 },
   urn: { at: 1.9 },
@@ -91,7 +92,7 @@ export function stepTower(kit, win, draft) {
       kit.patch('bay', on(f, 0, y0), on(f, 2 * b, y0), on(f, 2 * b, w0), on(f, 0, w0), { nu: cols, nv: g.foot, want: f.N, tag: slot(y0, w0 - y0) });
       kit.patch('bay', on(f, 0, w0), on(f, 2 * b, w0), on(f, 2 * b, w1), on(f, 0, w1), { nu: cols, nv: draft ? Math.ceil(rows / 3) : rows - g.foot - g.head, want: f.N, tag: { o: f.o, T: f.T, y0, c0: at.c0, r0: at.r0, cw: c.w, ch: c.h } });
       kit.patch('bay', on(f, 0, w1), on(f, 2 * b, w1), on(f, 2 * b, s.y1), on(f, 0, s.y1), { nu: cols, nv: g.head, want: f.N, tag: slot(w1, s.y1 - w1) });
-      for (let k = S.fin.every; k < cols; k += S.fin.every) {
+      for (let k = S.fin.every; S.fin.every > 0 && k < cols; k += S.fin.every) {
         const m = k * c.w, h = S.fin.wide / 2, P2 = (sv, out) => { const q = on(f, sv, 0); return [q[0] + f.N[0] * out, q[2] + f.N[2] * out]; };
         const flat = ([x, z]) => Math.abs((x - f.o[0]) * f.N[0] + (z - f.o[2]) * f.N[2]) < 1e-6;
         kit.prism('bay', [P2(m - h, 0), P2(m - h, S.fin.out), P2(m + h, S.fin.out), P2(m + h, 0)], s.y0, s.y1, { edge: E, tag: PLAIN, skip: (a, cc) => flat(a) && flat(cc) });

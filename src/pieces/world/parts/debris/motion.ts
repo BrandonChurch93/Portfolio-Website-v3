@@ -16,12 +16,14 @@ export const MOTION = {
   ring: { swing: 0.12, swingT: 83 },
   // A clump slides from side to side as one, and rises and falls.
   clump: { slide: 12, slideT: 67, deep: 5, rise: 3.5, riseT: 43 },
-  // The arms go round the stream, the near ones faster, on a tilted path that sinks as it comes round to the front.
-  // period is a turn at 300 units out.
-  whirl: { period: 300, at: 300, tilt: 0.16 },
-  // Chips fall away along the stream, from under the break to the foot, each at its own pace, and are only
-  // there between the two.
-  fall: { from: -405, to: -1172, fade: 36, fast: [5, 9] as const },
+  // The arms swing round the stream and back, each on its own side of it, as one, on a tilted path that sinks as it
+  // comes round toward the front: how far round each piece swings is its own (the make script keeps it clear of the
+  // stream's lane), and a swing takes between these many seconds, by arm.
+  whirl: { swingT: [240, 330] as const, tilt: 0.16 },
+  // Chips are caught by the stream and carried down it, from under the break to the foot, gathering pace as they
+  // go: their mean pace, and how much of the way in to the stream they are drawn by the foot, to a line just
+  // behind it. They are only there between the two ends.
+  fall: { from: -405, to: -1172, fade: 36, fast: [5, 9] as const, gather: 1.6, pull: 0.62, behind: 14 },
   // The dust turns a little about the stream, and rises and falls.
   dust: { turn: 0.045, turnT: 97, rise: 3, riseT: 53 },
   // The stones off the planet's sides drift a little.
@@ -36,7 +38,7 @@ export const SWAY: Record<Kind, number> = {
   plate: Math.hypot(MOTION.plate.rise, MOTION.plate.slide) + 2,
   ring: Math.hypot(MOTION.plate.rise, MOTION.plate.slide) + 6,
   clump: Math.hypot(MOTION.clump.slide, MOTION.clump.deep, MOTION.clump.rise),
-  whirl: 6,
+  whirl: 4,
   fall: 0,
   dust: 6,
   scatter: Math.hypot(MOTION.scatter.slide, MOTION.scatter.rise),

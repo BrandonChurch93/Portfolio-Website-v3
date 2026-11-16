@@ -5,12 +5,13 @@
 //   node scripts/world/parts/spire/outline.mjs [--at 560,0,260,300] [--out shots/world/spire/outline.jpg]
 import fs from 'node:fs';
 import process from 'node:process';
+import { inflateRawSync } from 'node:zlib';
 import { browser, parseArgs, save } from '../../../lib.mjs';
 import { L } from '../../lib/plan.mjs';
 
 const { flags } = parseArgs(process.argv.slice(2));
 const cut = String(flags.at ?? '560,0,260,300').split(',').map(Number), out = String(flags.out ?? 'shots/world/spire/outline.jpg'), by = 1600 / cut[3];
-const buf = fs.readFileSync('public/world/spire.bin'), long = buf.readUInt32LE(8), head = JSON.parse(buf.subarray(12, 12 + long).toString()), base = 12 + long;
+const raw = fs.readFileSync('public/world/spire.bin'), buf = raw.readUInt32LE(0) === 0x5a4c5257 ? inflateRawSync(raw.subarray(8)) : raw, long = buf.readUInt32LE(8), head = JSON.parse(buf.subarray(12, 12 + long).toString()), base = 12 + long;
 const tris = [];
 for (const m of head.meshes) {
   const n = m.vertices, q = new Uint16Array(buf.buffer.slice(buf.byteOffset + base + m.position.offset, buf.byteOffset + base + m.position.offset + n * 6));

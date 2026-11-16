@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import { seeded } from '../../layout';
 
-// The stream's own shards, a few of them, turning slowly round the core as moons do. Each is a facet as the stream
-// makes them (src/stream/shards.ts, made again here): a small body with three or four needle points pulled far out
-// of it, flattened but never to a sheet, sometimes with a second lobe grown out of it at a slant, which notches its
-// outline. Every vertex keeps how far it is from each edge of its face and which way the bevel of each of those
-// edges looks, so the edges can catch the light without anything drawn round them.
-// Where each shard is comes from what is stored with it and the time alone, worked out in its shader: nothing is
-// written again once it is made, and a held frame is always the same picture.
+// Pieces of the planet, a few of them, being drawn in round the core's lower half to its beam. They are the stream's
+// own shards: each is a facet as the stream makes them (src/stream/shards.ts, made again here), a small body with
+// three or four needle points pulled far out of it, flattened but never to a sheet, sometimes with a second lobe
+// grown out of it at a slant, which notches its outline. Every vertex keeps how far it is from each edge of its face
+// and which way the bevel of each of those edges looks, so the edges can catch the light without anything drawn
+// round them. Where each is comes from what is stored with it and the time alone, worked out in its shader: nothing
+// is written again once it is made, and a held frame is always the same picture.
 
 type V3 = [number, number, number];
 const sub = (a: V3, b: V3): V3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -79,25 +79,16 @@ function facet(r: () => number, big: number): number[] {
 }
 
 // What each shard is given to move by, four numbers to each:
-//   plane: the way its path's plane faces, and how far out from the core's middle its path is, in units
-//   move:  how fast it goes round, in radians a second (its sign is which way), where it is at the start, how fast it
-//          turns over, and its size (half its length, in units)
-//   spin:  the axis it turns over about, and how far it is turned at the start
-//   life:  for one that is drawn into the neck now and then, how long it is between and where in that it starts
-//          (0 for one that never is), whether it is glass, and how long it stays gone
-export interface Moon { plane: V3; out: number; rate: number; at: number; spin: V3; spun: number; turns: number; size: number; every: number; from: number; hidden: number; glass: boolean }
-
-// The same frame round a path's plane that the shader makes, so a place on the path can be chosen here.
-export function frameOf(n: V3): [V3, V3] {
-  const k = unit(n), up: V3 = Math.abs(k[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0], u = unit(cross(k, up));
-  return [u, cross(k, u)];
-}
+//   move: how long one of its comings takes, in seconds, where in that it starts, half its length, in units, and
+//         its own seed
+//   spin: the axis it turns about, and how fast, in radians a second
+export interface Moon { period: number; start: number; size: number; seed: number; axis: V3; rate: number; glass: boolean }
 
 export function shardGeometry(moons: readonly Moon[], seed: number): THREE.BufferGeometry {
-  const r = seeded(seed), cols = { position: 3, normal: 3, aEdge: 3, aB0: 3, aB1: 3, aB2: 3, aPlane: 4, aMove: 4, aSpin: 4, aLife: 4 } as const;
-  const data: Record<keyof typeof cols, number[]> = { position: [], normal: [], aEdge: [], aB0: [], aB1: [], aB2: [], aPlane: [], aMove: [], aSpin: [], aLife: [] };
+  const r = seeded(seed), cols = { position: 3, normal: 3, aEdge: 3, aB0: 3, aB1: 3, aB2: 3, aMove: 4, aSpin: 4 } as const;
+  const data: Record<keyof typeof cols, number[]> = { position: [], normal: [], aEdge: [], aB0: [], aB1: [], aB2: [], aMove: [], aSpin: [] };
   moons.forEach((m, i) => {
-    const mesh = facet(r, Math.min(1, (m.size - 1.5) / 3) * 0.6 + 0.2 * (i % 2));
+    const mesh = facet(r, 0.35 + 0.5 * (i % 2));
     for (let v = 0; v < mesh.length; v += FLOATS) {
       data.position.push(mesh[v], mesh[v + 1], mesh[v + 2]);
       data.normal.push(mesh[v + 3], mesh[v + 4], mesh[v + 5]);
@@ -105,10 +96,8 @@ export function shardGeometry(moons: readonly Moon[], seed: number): THREE.Buffe
       data.aB0.push(mesh[v + 9], mesh[v + 10], mesh[v + 11]);
       data.aB1.push(mesh[v + 12], mesh[v + 13], mesh[v + 14]);
       data.aB2.push(mesh[v + 15], mesh[v + 16], mesh[v + 17]);
-      data.aPlane.push(...unit(m.plane), m.out);
-      data.aMove.push(m.rate, m.at, m.turns, m.size);
-      data.aSpin.push(...unit(m.spin), m.spun);
-      data.aLife.push(m.every, m.from, m.glass ? 1 : 0, m.hidden);
+      data.aMove.push(m.period, m.start, m.size, m.seed);
+      data.aSpin.push(...unit(m.axis), m.rate);
     }
   });
   const g = new THREE.BufferGeometry();

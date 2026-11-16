@@ -35,6 +35,8 @@ const BELT = 46, size = (t) => Math.max(t[2], t[3]);
 const PUT = { 5: [930, 183, -60], 14: [1012, 172, -90] }, PLAIN = { 4: 'deco' };
 for (const [i, [px, py, z]] of Object.entries(PUT)) { const t = towers[i], [x, y] = W.fromPicture(px, py, z); t[0] = n(x); t[1] = n(z); t[4] = n(y - W.ground(x, z)); t[7] = 'plain'; }
 for (const [i, form] of Object.entries(PLAIN)) { towers[i][6] = form; towers[i][7] = 'plain'; }
+// The low hall that stood before the spire's portal stands behind the spire, so the portal is seen as the picture has it.
+towers[78][1] = -128;
 const clear = (x, z, r, pad) => {
   if (W.within(x, z) < pad || W.desert(x, z) > 0.02 || Math.hypot(x, z) < W.COURT + r + 4) return false;
   const [qx, qz] = W.pyramidal(x, z);

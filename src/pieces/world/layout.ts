@@ -41,7 +41,7 @@ export const SOURCE = [CORE.at[0], CORE.at[1] - CORE.r, CORE.at[2]] as const;
 export const coreLevel = (t: number): number => 1 + 0.035 * Math.sin(t * 0.52) + 0.02 * Math.sin(t * 1.31 + 1.7);
 
 // The spire: the tallest thing by far, on the center line, with one thin ring near its top, tilted as Saturn's is.
-export const SPIRE = { tall: 260, foot: 38, ring: { r: 54, thick: 2.4, up: 0.708, tilt: [9, 17] as const } } as const;
+export const SPIRE = { tall: 260, foot: 38, ring: { r: 54, thick: 2.4, up: 0.68, tilt: [9, 17] as const } } as const;
 // The open court round the spire's foot.
 export const COURT = 56;
 // The pyramid: at the front left, in front of the towers, on a square court of its own. Polished gold. turn is how

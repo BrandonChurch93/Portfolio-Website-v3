@@ -25,7 +25,7 @@ const hash = (a, b) => { const h = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
 // Bowyer and Watson's Delaunay triangulation of the points in flat (x, y pairs), the first nb of which are the
 // outline's loops in turn (their lengths in sizes). Triangles whose middle is outside are dropped. Returns null
 // when an edge of the outline is not among the triangles' edges.
-function delaunayInside(flat, nb, sizes, inside) {
+export function delaunayInside(flat, nb, sizes, inside) {
   const n = flat.length / 2, X = new Float64Array(n + 3), Y = new Float64Array(n + 3);
   let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
   for (let i = 0; i < n; i++) { X[i] = flat[i * 2] + (hash(i, 1) - 0.5) * 1e-6; Y[i] = flat[i * 2 + 1] + (hash(i, 2) - 0.5) * 1e-6; x0 = Math.min(x0, X[i]); y0 = Math.min(y0, Y[i]); x1 = Math.max(x1, X[i]); y1 = Math.max(y1, Y[i]); }

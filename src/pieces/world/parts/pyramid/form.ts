@@ -10,14 +10,20 @@ export const FORM = {
   // neighbour as a round this wide would bend it, so the line of the night it mirrors is smooth at any size. The
   // mesh's own edges are crisp creases. A real round fine enough to keep an edge crisp is under a pixel at the page's
   // size, and it broke that line into dots there.
-  round: { seen: { arris: 2, lip: 2 } },
-  // The capstone: the body stops at `from`, a dark reveal `reveal` tall, set back `inset`, and the capstone above.
-  // Picture 9's reveal is a quarter of the way down from the apex.
-  cap: { from: 85.4, reveal: 2.2, inset: 2.6 },
-  // The casing: level courses this tall (measured upright), plates about this long along a course (each a share
-  // `jag` longer or shorter, so their joints never line up as bricks do), the hairline joint between plates, and how
-  // far each plate is tilted from its face at most, in radians.
-  casing: { course: 2.15, plate: 11, jag: 0.4, joint: 0.11, tilt: 0.00055 },
+  round: { seen: { arris: 2, lip: 1.4 } },
+  // The capstone: the body stops at `from`, a reveal `reveal` tall, set back `inset`, and the capstone above. Picture
+  // 9's reveal is a dark line from 214 to 216 down where it meets the front arris, its apex at 185.
+  cap: { from: 83, reveal: 0.9, inset: 1.1 },
+  // The foot course: a band `tall` high round the foot, standing `proud` out from the faces, its top edge bevelled
+  // `bevel` deep.
+  foot: { tall: 3.4, proud: 0.75, bevel: 0.45 },
+  // The casing. Courses are laid in units `unit` tall (measured upright) and a band of `band` units ends at a deeper
+  // joint, so the height reads in bands. In each band one course is three units tall and another two. Plates
+  // are `plate` long plus `plateTall` for each unit of their course's height, each a share `jag` longer or shorter,
+  // and each is tilted from its face up to `tilt` radians, so a sharp reflection's edge steps a hair at each plate.
+  // The joints: a hairline `line` tall, and the deeper joint `deep` tall, with the lit edge of the course below it
+  // `lip` tall.
+  casing: { unit: 1.5, band: 9, plate: 5.5, plateTall: 2.2, jag: 0.35, tilt: 0.0013, line: 0.1, deep: 0.3, lip: 0.14 },
 } as const;
 
 type V3 = [number, number, number];

@@ -18,10 +18,10 @@ import * as S from './land/shaders';
 // shows, the flat stones in the grass, and the bronze laid in the spire's court.
 const mix = (a: THREE.Color, b: THREE.Color, k: number): THREE.Color => a.clone().lerp(b, k);
 const LOOK = {
-  sand: mix(color('pale'), color('hot'), 0.55).multiplyScalar(0.8),
-  sandDeep: mix(color('copper'), color('ember'), 0.35).multiplyScalar(0.7),
-  pave: mix(color('text-3'), color('bg-3'), 0.62),
-  pavePale: mix(color('text-3'), color('copper-light'), 0.4).multiplyScalar(0.5),
+  sand: mix(color('pale'), color('hot'), 0.6),
+  sandDeep: mix(color('copper'), color('ember'), 0.75).multiplyScalar(0.9),
+  pave: mix(mix(color('text-3'), color('bronze-deep'), 0.5), color('bg-3'), 0.74),
+  pavePale: mix(color('text-3'), color('copper-light'), 0.65).multiplyScalar(0.42),
   court: mix(color('text-3'), color('copper-light'), 0.18).multiplyScalar(0.62),
   grass: mix(color('bronze'), color('copper'), 0.35).multiplyScalar(0.55),
   grassDry: mix(color('copper-light'), color('text-3'), 0.4).multiplyScalar(0.55),
@@ -30,6 +30,9 @@ const LOOK = {
   stone: mix(color('text-3'), color('text-2'), 0.4).multiplyScalar(0.6),
   bronze: color('bronze'),
 };
+
+// How much of a dielectric's usual reflection the land keeps.
+const SHEEN = 0.35;
 
 type Shader = THREE.WebGLProgramParametersWithUniforms;
 const after = (src: string, chunk: string, add: string): string => {
@@ -57,6 +60,7 @@ function floats(data: Float32Array, wide: number, tall: number): THREE.DataTextu
 }
 
 export const build: PartFactory = async ({ query }) => {
+  if (query.get('landdebug') === 'off') return { group: new THREE.Group() };
   const [file, a, b, lots, light] = await Promise.all([load('land.bin'), picture('land-a.png', false), picture('land-b.png', false), picture('land-lots.png', true), picture('land-light.png', false)]);
   const ground = file.meshes.get('ground');
   if (!ground) throw new Error('land.bin holds no ground: make it again with scripts/world/parts/land/make.mjs');
@@ -70,7 +74,11 @@ export const build: PartFactory = async ({ query }) => {
   const lots3 = floats(towers, 2, TOWERS.length);
   const counts = { map: (a.image as HTMLImageElement).width, lots: (lots.image as HTMLImageElement).width };
 
-  const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.85, metalness: 0 });
+  // Stone, sand and grass reflect little: seen nearly edge on, a full reflection turned the dark paving a pale grey.
+  // Drawn from both sides: the reduced mesh turns a few of its steepest triangles, at a kerb, a slab's step or a
+  // crest, a little past upright, and seen from the back they were holes. The shader takes its normal from the
+  // mesh's vertices and the land's own shape, so a turned triangle is lit as the ground round it.
+  const m = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.85, metalness: 0, specularIntensity: SHEEN, side: THREE.DoubleSide });
   m.onBeforeCompile = (sh: Shader) => {
     Object.assign(sh.uniforms, {
       uAt: { value: ground.at }, uSize: { value: ground.size },
@@ -98,7 +106,8 @@ export const build: PartFactory = async ({ query }) => {
   group.add(o);
   return {
     group,
-    alone: { at: [420, 0, 120], r: 300 },
+    // ?landat=x,y,z,r frames the land alone on any place of it, for judging one place close.
+    alone: (() => { const [x, y, z, r] = (query.get('landat') ?? '0,0,120,560').split(',').map(Number); return { at: [x, y, z] as [number, number, number], r }; })(),
     dispose() { ground.geometry.dispose(); m.dispose(); for (const t of [a, b, lots, light, crest, lots3]) t.dispose(); },
   };
 };

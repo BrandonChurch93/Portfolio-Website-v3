@@ -18,6 +18,12 @@ export const WINDOW = {
   colors: ['flame', 'hot', 'pale'] as const,
   // A room's level is stored as level ** (1 / curve), and lights by level.
   curve: 1.6,
+  // A dim room is lit warmer: its light goes to the warmest color as its level falls from dim[1] to dim[0], so no
+  // lit pane is ever a pale grey.
+  dim: [0.12, 0.75] as const,
+  // How far a far window's state is blurred with its neighbours', so a strip of windows smaller than a few pixels
+  // comes to its own average and never stipples.
+  blur: 1.8,
   // The map of every window's state: this many texels square, one a window.
   map: 128,
   // The small lamps in the lantern, as radiance in the palette's hot light.
@@ -26,6 +32,12 @@ export const WINDOW = {
 
 // What one window shows on average across its cell, as a share of WINDOW.gain in its own color: how lit it is
 // (0 to 1, as stored), and how far a blind is down (0 to 1).
+// How pale a room's light is, 0 to 1, from its stored paleness and its level.
+export function paleness(warm: number, level: number): number {
+  const t = Math.min(1, Math.max(0, (level - WINDOW.dim[0]) / (WINDOW.dim[1] - WINDOW.dim[0])));
+  return warm * t * t * (3 - 2 * t);
+}
+
 export function shown(level: number, blind: number, cw: number, ch: number): number {
   const f = WINDOW.frame, glass = Math.max(0, cw - 2 * f.side) * Math.max(0, ch - f.sill - f.head) / Math.max(1e-6, cw * ch);
   return glass * WINDOW.mean * level ** WINDOW.curve * (1 - WINDOW.blind * blind);

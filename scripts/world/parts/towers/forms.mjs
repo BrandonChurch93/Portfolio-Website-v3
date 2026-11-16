@@ -53,8 +53,10 @@ export function reveal(b, f, s0, s1, t0, t1, a, c, o = {}) {
 }
 
 // A face of a shaft: corners and piers of stone at the face, bays of windows recessed between them, from y0 to y1.
-//   style = { corner, pier, bays, back, cw, ch, fin: every so many windows a bronze fin, band: every so many
-//             storeys a band of stone across the bay, out: how far the piers stand proud, busy, punched: the
+//   style = { corner, pier, bays, back, cw, ch, fin: every so many windows a bronze fin (finLayer 'stone' makes it a
+//             stone mullion finWide each side of its line, standing finOut out of the glass), band: every so many
+//             storeys a band across the bay, bandTall high and bandBack behind the face, of stone or of bandLayer
+//             (a spandrel of bronze or copper, bandTag), out: how far the piers stand proud, busy, punched: the
 //             windows let into the stone of the wall and not into bronze }
 export function facade(b, f, len, y0, y1, st) {
   const corner = Math.min(st.corner, len * 0.3), pier = st.pier, n = Math.max(1, st.bays);
@@ -80,9 +82,12 @@ export function facade(b, f, len, y0, y1, st) {
         const top = Math.min(y1, y0 + (fl + st.band) * h), glassTop = top - (top < y1 - 1e-6 ? bh : 0);
         windows(b, f, s0, s1, t, glassTop, st.back, st.cw, h, { busy: st.busy, stone: st.punched ? b.tone : undefined });
         if (glassTop < top) {
-          slab(b, f, s0, s1, glassTop, top, st.bandBack ?? 0);
-          b.kit.patch('stone', on(f, s0, glassTop, st.bandBack ?? 0), on(f, s1, glassTop, st.bandBack ?? 0), on(f, s1, glassTop, st.back), on(f, s0, glassTop, st.back), { edge: b.E, want: [0, -1, 0], tag: stone(b) });
-          b.kit.patch('stone', on(f, s0, top, st.back), on(f, s1, top, st.back), on(f, s1, top, st.bandBack ?? 0), on(f, s0, top, st.bandBack ?? 0), { edge: b.E, want: [0, 1, 0], tag: stone(b) });
+          const layer = st.bandLayer ?? 'stone', tag = layer === 'stone' ? stone(b) : (st.bandTag ?? PLAIN), bb = st.bandBack ?? 0;
+          slab(b, f, s0, s1, glassTop, top, bb, layer, tag);
+          if (Math.abs(st.back - bb) > 0.3) {
+            b.kit.patch(layer, on(f, s0, glassTop, bb), on(f, s1, glassTop, bb), on(f, s1, glassTop, st.back), on(f, s0, glassTop, st.back), { edge: b.E, want: [0, -1, 0], tag });
+            b.kit.patch(layer, on(f, s0, top, st.back), on(f, s1, top, st.back), on(f, s1, top, bb), on(f, s0, top, bb), { edge: b.E, want: [0, 1, 0], tag });
+          }
         }
         t = top;
       }
@@ -91,7 +96,8 @@ export function facade(b, f, len, y0, y1, st) {
       const cols = Math.max(1, Math.round(bay / st.cw)), cw = bay / cols;
       for (let k = st.fin; k < cols; k += st.fin) {
         const m = s0 + k * cw, h = 0.17, q = (sv, o) => { const p = on(f, sv, 0, st.back); return [p[0] + f.N[0] * o, p[2] + f.N[2] * o]; };
-        b.kit.prism('bay', [q(m - h, 0), q(m - h, st.back * 0.6), q(m + h, st.back * 0.6), q(m + h, 0)], y0, y1, { edge: b.E, tag: st.finTag ?? PLAIN });
+        const fl = st.finLayer ?? 'bay', fh = fl === 'stone' ? (st.finWide ?? 0.3) : h, fo = st.finOut ?? st.back * 0.6;
+        b.kit.prism(fl, [q(m - fh, 0), q(m - fh, fo), q(m + fh, fo), q(m + fh, 0)], y0, y1, { edge: b.E, tag: fl === 'stone' ? stone(b) : (st.finTag ?? PLAIN) });
       }
     }
   }

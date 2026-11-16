@@ -5,7 +5,7 @@
 // one PNG (level() in src/pieces/world/parts/trees/design.ts says where).
 //
 //   import { paint } from './leaves.mjs'; const { data, width, height } = paint({ seed, draft })
-import { ATLAS, TILES, level } from '../../../../src/pieces/world/parts/trees/design.ts';
+import { ATLAS, SHADE as GROUND_SHADE, TILES, level } from '../../../../src/pieces/world/parts/trees/design.ts';
 import { noise, seeded } from '../../../../src/pieces/world/layout.ts';
 
 const T = ATLAS.tile, W = T * ATLAS.cols, H = T * ATLAS.rows;
@@ -13,11 +13,13 @@ const T = ATLAS.tile, W = T * ATLAS.cols, H = T * ATLAS.rows;
 const LEAF = { long: [26, 40], wide: [0.42, 0.56], stalk: [3, 6] };
 // How dark a leaf is where another lies over it, and how far that shadow falls, down and to the right.
 const SHADE = { dark: 0.42, off: [1.6, 2.6], soft: 3.2 };
+// The shade a tree lays on the ground, down the tile from behind its trunk to its far end (SHADE in design.ts): how
+// dark it is at most (the first pass and the moon's shadow pass leave it out, whatever it holds), how it falls off
+// across, and how far past the trunk it is still whole, in crown units.
+const BLOB = { dark: 0.8, across: 1.3, whole: 0.8 };
 // The heart of a clump: how many leaves are tried on it, how far out they reach and how far its dark mat does, as
-// shares of the tile, and how light the mat is under them.
-// The shadow under a tree: how dark at its middle (under a half, so only the soft pass lays it) and how it falls off.
-const BLOB = { dark: 0.49, fall: 1.4 };
-const DISC = { leaves: 150, reach: 0.4, mat: 0.3, under: 0.2 };
+// shares of the tile, how light the mat is under them, and from how far out the leaves point outward.
+const DISC = { leaves: 260, reach: 0.4, mat: 0.33, under: 0.2, rim: 0.82 };
 
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const hash2 = (x, y, s) => {
@@ -156,7 +158,8 @@ function disc(cv, tile, rnd) {
   for (let k = 0; k < DISC.leaves; k++) {
     // Most leaves toward the middle, a few out at the edge, each pointing out from the middle.
     const r = reach * Math.sqrt(rnd()) * 0.92, a = rnd() * Math.PI * 2, x = c + Math.cos(a) * r, y = c + Math.sin(a) * r;
-    const th = Math.atan2(x - c, c - y) + (rnd() - 0.5) * 1.6, sc = 0.9 + 0.2 * rnd(), long = (LEAF.long[1] + LEAF.stalk[1]) * sc + 4;
+    // At the rim a leaf points out, so the outline is leaves; inside they lie every way, so no rosette shows.
+    const rim = r / reach, th = Math.atan2(x - c, c - y) + (rnd() - 0.5) * (rim > DISC.rim ? 1.5 : 5.5), sc = 0.75 + 0.4 * rnd(), long = (LEAF.long[1] + LEAF.stalk[1]) * sc + 4;
     const tx = x + Math.sin(th) * long, ty = y - Math.cos(th) * long, m = 6;
     if (Math.min(x, y, tx, ty) < m || Math.max(x, y, tx, ty) > T - m) continue;
     paintLeaf(cv, tile, rnd, x, y, th, sc, false);
@@ -175,12 +178,13 @@ function bark(cv, tile) {
   }
 }
 
-// The soft shadow on the ground under a tree. Never half leaf, so it is only ever laid softly over the ground.
+// The shade on the ground: darkest under the crown, soft at its sides, thinning out to nothing at its far end.
 function blob(cv, tile) {
-  const ox = (tile % ATLAS.cols) * T, oy = Math.floor(tile / ATLAS.cols) * T;
+  const ox = (tile % ATLAS.cols) * T, oy = Math.floor(tile / ATLAS.cols) * T, G = GROUND_SHADE, long = G.back + G.reach;
   for (let y = 0; y < T; y++) for (let x = 0; x < T; x++) {
-    const i = (oy + y) * W + ox + x, r = Math.hypot(x + 0.5 - T / 2, y + 0.5 - T / 2) / (T / 2);
-    cv.L[i] = 0; cv.A[i] = BLOB.dark * clamp(1 - r * r) ** BLOB.fall;
+    const i = (oy + y) * W + ox + x, u = Math.abs((x + 0.5) / T * 2 - 1), along = -G.back + ((y + 0.5) / T) * long;
+    const side = clamp(1 - u * u) ** BLOB.across, start = clamp((along + G.back) / (0.8 * G.back)), end = clamp(1 - (along - BLOB.whole) / (G.reach - BLOB.whole));
+    cv.L[i] = 0; cv.A[i] = BLOB.dark * side * start * start * (3 - 2 * start) * end ** 1.6;
   }
 }
 

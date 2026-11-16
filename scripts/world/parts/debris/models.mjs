@@ -8,8 +8,9 @@ import { surface, simplify } from '../../lib/surface.mjs';
 import { creased, curvature } from '../../lib/mesh.mjs';
 import { extents } from './place.mjs';
 import { shape } from './field.mjs';
+import { shape as tornShape } from './torn.mjs';
 
-const FIELD = fileURLToPath(new URL('./field.mjs', import.meta.url));
+const FIELD = fileURLToPath(new URL('./field.mjs', import.meta.url)), TORN = fileURLToPath(new URL('./torn.mjs', import.meta.url));
 
 // The shared models: the class, how many, the size they are made at (half extents, before they are cut), how many
 // beds, corners broken off and chips taken out, the cell they are made with, and how many triangles each keeps.
@@ -27,19 +28,22 @@ const BEND = { reach: 0.05, most: 3 };
 
 const hash = (n) => { let x = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b); x ^= x >>> 13; x = Math.imul(x, 0xc2b2ae35); return ((x ^ (x >>> 16)) >>> 0) / 4294967296; };
 
-async function one(args, cell, keep, draft) {
-  const s = shape(args), big = Math.max(...args.size);
-  const raw = await surface({ module: FIELD, args, box: s.box, cell: draft ? cell * 1.8 : cell });
-  const small = await simplify(raw, { target: draft ? Math.round(keep * 0.6) : keep, error: big * 0.02, strict: false });
+async function one(args, cell, keep, draft, torn = false) {
+  const s = torn ? tornShape(args) : shape(args), big = Math.max(...args.size), step = draft ? cell * 1.8 : cell;
+  const raw = await surface({ module: torn ? TORN : FIELD, args, box: s.box, cell: step });
+  const small = await simplify(raw, { target: draft ? Math.round(keep * 0.6) : keep, error: big * (torn ? 0.008 : 0.02), strict: false });
   const welded = { positions: small.positions, indices: small.indices };
   const bend = curvature(welded, big * BEND.reach);
-  const m = creased(welded, 32), n = m.positions.length / 3;
+  const m = creased(welded, torn ? 28 : 32), n = m.positions.length / 3;
   const curv = new Float32Array(n), bed = new Float32Array(n), skin = new Float32Array(n);
   for (let i = 0; i < n; i++) {
     const [x, y, z] = [m.positions[i * 3], m.positions[i * 3 + 1], m.positions[i * 3 + 2]];
     curv[i] = 0.5 + 0.5 * Math.max(-1, Math.min(1, (bend[m.source[i]] * big) / BEND.most));
-    bed[i] = hash(s.bed(x, y, z) * 7919 + args.seed);
-    skin[i] = s.onSkin(x, y, z) < (draft ? cell * 1.8 : cell) * 0.9 ? 1 : 0;
+    // A bed's tone, and on a torn piece each block a little of its own, and the rubble caught on it fresher.
+    bed[i] = torn
+      ? Math.min(1, 0.62 * hash(s.bedOf(x, y, z) * 7919 + args.seed) + 0.38 * hash(s.blockOf(x, y, z) * 4513 + args.seed + 11) + (s.isRubble(x, y, z) ? 0.25 : 0))
+      : hash(s.bed(x, y, z) * 7919 + args.seed);
+    skin[i] = s.onSkin(x, y, z) < step * 0.9 ? 1 : 0;
   }
   return { positions: m.positions, normals: m.normals, indices: m.indices, curv, bed, skin, triangles: m.indices.length / 3 };
 }
@@ -63,12 +67,13 @@ export async function makeModels(pieces, draft, said) {
     said(`model ${cls}${i}: ${m.triangles.toLocaleString('en-US')} triangles`);
   }
   for (const p of pieces.filter((q) => q.cls === 'G')) {
-    const skin = GREAT.skin[p.family];
+    const skin = GREAT.skin[p.family], h = (k) => hash(p.family * 977 + k);
     const args = {
-      seed: 50000 + p.family * 131, size: extents(p), beds: p.land ? 3 : 2 + (p.family % 3), layer: [0.12 * Math.sin(p.family), 1, 0.1 * Math.cos(p.family)],
-      sides: 6 + (p.family % 3), corners: 5 + (p.family % 3), chips: 26 + 3 * (p.family % 4), steps: 2 + (p.family % 2), skin: skin ? { dir: p.outer, R: skin.R, pits: skin.pits } : null, top: Boolean(p.land),
+      seed: 50000 + p.family * 131, size: extents(p), layer: [0.3 * (h(1) - 0.5), 1, 0.3 * (h(2) - 0.5)],
+      blocks: 6 + Math.floor(h(3) * 4), drop: 1 + Math.floor(h(4) * 2), rubble: 10 + Math.floor(h(5) * 8), scars: 9 + Math.floor(h(6) * 6),
+      skin: skin ? { dir: p.outer, R: skin.R, pits: skin.pits } : null, top: Boolean(p.land),
     };
-    const m = await one(args, GREAT.cell * Math.max(0.7, p.r / 60), GREAT.keep, draft);
+    const m = await one(args, GREAT.cell * Math.max(0.7, p.r / 60), GREAT.keep, draft, true);
     out.push({ name: `G${p.family}`, cls: 'G', shared: false, family: p.family, ...m });
     said(`model G${p.family}: ${m.triangles.toLocaleString('en-US')} triangles`);
   }

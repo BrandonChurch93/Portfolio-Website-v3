@@ -1,17 +1,20 @@
 import * as THREE from 'three';
 import { HOST, PYRAMID, SCALE, WORLD, ground } from '../layout';
-import { METAL, lit } from '../light';
+import { METAL, color, lit } from '../light';
 import { load, mesh } from '../files';
+import { GLINT } from '../index';
 import type { PartFactory } from '../part';
 import { standing } from './pyramid/form';
 import * as S from './pyramid/shaders';
 
 // The pyramid: polished gold, at the front left edge of the land, a corner toward the visitor, standing straight out
-// from the dome on the ground itself. Its body is cased in fine level courses of plates, each a hair different in
-// tilt and polish, with a capstone in one piece over a dark reveal, and every arris rounded. Its mesh and the light
+// from the dome on the ground itself. Its body is cased in courses of plates of differing heights, in bands that end
+// at a deeper joint, each plate a hair different in tilt and polish; a bevelled foot course stands proud round its
+// foot, and a capstone with a raised border sits over a fine reveal. Every arris is rounded. Its mesh and the light
 // that reaches it are made ahead by scripts/world/parts/pyramid/make.mjs (public/world/pyramid.bin), in the
 // pyramid's own frame. What each face mirrors is ./pyramid/shaders.ts.
-// While it is being judged, ?pyr=zen=6,rim=5 sets any number of LOOK by its short name (see t() below).
+// While it is being judged, ?pyr=zen=6,rim=5 sets any number of LOOK by its short name (see t() below), and
+// ?pyrn=lit.field.wide=20,dark.way.power=0.08 any number of NIGHT by its path.
 
 const LOOK = {
   // The body's roughness, the capstone's, and how much each plate's polish differs, as a share of how soft what it
@@ -25,30 +28,50 @@ const LOOK = {
   // all of its round that is seen: how bright, and from what height to what height, as the sine of the angle over
   // the horizon. It stops short of what the face toward the moon mirrors.
   rim: [5, 0, 0.45],
-  // The color given to how much a place mirrors: green and blue against red through the middle levels, less
-  // saturated than copper so it reads as gold, and over what levels it pales toward pale gold; and green and blue
-  // against red in the deepest places, which are richer.
-  grade: [0.48, 0.14, 1.6, 4.5],
-  deep: [0.43, 0.095],
+  // The gold's colors, each at the world's gold's hue (METAL.gold) turned so many degrees, at full value: its
+  // saturation where it mirrors least, through the middle, and in the warm glow at the dark face's foot. Then over
+  // what levels the deep turns to the middle, and the middle pales toward pale gold.
+  sat: { deep: 0.78, deepTurn: -2, mid: 0.58, warm: 0.85, warmTurn: -8 },
+  grade: [0.03, 0.5, 1.4, 4.5],
   // How much of the world's contact shadow a mirror keeps where it is shut in.
   contact: 0.3,
   // How much of the moon's own light the faces take as a light: none, for they mirror the moon where their night has
   // it, and as a light it laid one even sheen over each face.
   moon: 0,
-  // The frame's cursor glint (GLINT in ../index.ts, which it does not export): how far its light ranges as a share of
-  // the cursor's offset, and how far in front of the world it stands, in metres. From these the cursor's own ray is
-  // found again, so the glint is under the cursor. The frame ranges it across by the host's height, and the host is
-  // narrower than that (HOST).
-  glint: { range: 1.3, back: 2.2 },
 };
 
 type Shader = THREE.WebGLProgramParametersWithUniforms;
 const after = (src: string, chunk: string, add: string): string => src.replace(`#include <${chunk}>`, `#include <${chunk}>\n${add}`);
 const v3 = (a: readonly number[]): THREE.Vector3 => new THREE.Vector3(a[0], a[1], a[2]);
 
+// A color at the world's gold's hue (turned by `turn` degrees) and this saturation, at full value, in linear light
+// with its red at 1.
+function tint(sat: number, turn = 0): THREE.Vector3 {
+  const hsl = { h: 0, s: 0, l: 0 };
+  METAL.gold.getHSL(hsl, THREE.SRGBColorSpace);
+  const h = Math.min(60, Math.max(0, hsl.h * 360 + turn)), b = 1 - sat, g = b + ((1 - b) * h) / 60;
+  const c = new THREE.Color().setRGB(1, g, b, THREE.SRGBColorSpace);
+  return new THREE.Vector3(1, c.g / c.r, c.b / c.r);
+}
+
+// Sets NIGHT's numbers by path from ?pyrn=, for judging.
+function tuned(asked: string): S.Night {
+  const N = structuredClone(S.NIGHT) as S.Night;
+  for (const kv of asked.split(',').filter(Boolean)) {
+    const [path, value] = kv.split('='), keys = path.split('.'), last = keys.pop() as string;
+    let o: Record<string, unknown> = N as unknown as Record<string, unknown>;
+    for (const k of keys) o = o[k] as Record<string, unknown>;
+    const at = /^(.*)\[(\d)\]$/.exec(last);
+    if (at) (o[at[1]] as number[])[Number(at[2])] = Number(value);
+    else o[last] = Number(value);
+  }
+  return N;
+}
+
 export const build: PartFactory = async (ctx) => {
   const asked = new Map((ctx.query.get('pyr') ?? '').split(',').filter(Boolean).map((kv) => kv.split('=') as [string, string]));
   const t = (name: string, v: number): number => (asked.has(name) ? Number(asked.get(name)) : v);
+  const F = S.frag(tuned(ctx.query.get('pyrn') ?? ''));
   const file = await load('pyramid.bin');
   const gold = file.meshes.get('gold');
   if (!gold) throw new Error('pyramid.bin holds no gold: make it again with scripts/world/parts/pyramid/make.mjs');
@@ -57,29 +80,35 @@ export const build: PartFactory = async (ctx) => {
   const ax = standing(PYRAMID.x, PYRAMID.z, WORLD.top, PYRAMID.turn);
   const basis = new THREE.Matrix4().makeBasis(v3(ax.x), v3(ax.y), v3(ax.z));
   const at = new THREE.Vector3(PYRAMID.x, foot, PYRAMID.z);
+  const pale = color('pale');
 
   const goldM = new THREE.MeshPhysicalMaterial({ color: METAL.gold, metalness: 1, roughness: LOOK.rough.body });
   goldM.onBeforeCompile = (sh: Shader) => {
     Object.assign(sh.uniforms, {
       uAt: { value: gold.at }, uSize: { value: gold.size }, uUnit: { value: SCALE },
+      // The frame's glint stands out from the middle of the view by the cursor's offset in the host, measured in
+      // host heights, times GLINT.range.
+      uCursor: { value: HOST.tall * SCALE * GLINT.range },
       uZen: { value: new THREE.Vector4(...v3(LOOK.zenith.dir).normalize().toArray(), t('zen', LOOK.zenith.power)) },
       uZenW: { value: new THREE.Vector2(t('z0', LOOK.zenith.edge[0]), t('z1', LOOK.zenith.edge[1])) },
       uRim: { value: new THREE.Vector3(t('rim', LOOK.rim[0]), t('rimlo', LOOK.rim[1]), t('rimhi', LOOK.rim[2])) },
-      uGrade: { value: new THREE.Vector4(t('gg', LOOK.grade[0]), t('gb', LOOK.grade[1]), t('g0', LOOK.grade[2]), t('g1', LOOK.grade[3])) },
+      uDeepC: { value: tint(t('sd', LOOK.sat.deep), t('dt', LOOK.sat.deepTurn)) },
+      uMidC: { value: tint(t('sm', LOOK.sat.mid)) },
+      uWarmC: { value: tint(t('sw', LOOK.sat.warm), t('wt', LOOK.sat.warmTurn)) },
+      uPaleC: { value: new THREE.Vector3(1, pale.g / pale.r, pale.b / pale.r) },
+      uGradeAt: { value: new THREE.Vector4(t('g0', LOOK.grade[0]), t('g1', LOOK.grade[1]), t('g2', LOOK.grade[2]), t('g3', LOOK.grade[3])) },
       uRough: { value: new THREE.Vector3(t('rough', LOOK.rough.body), t('cap', LOOK.rough.cap), t('vary', LOOK.rough.vary)) },
-      uDeep: { value: new THREE.Vector2(t('dg', LOOK.deep[0]), t('db', LOOK.deep[1])) },
       uContact: { value: t('contact', LOOK.contact) },
       uMoonSpec: { value: t('moon', LOOK.moon) },
-      uGlintFrame: { value: new THREE.Vector3(LOOK.glint.range, LOOK.glint.back, HOST.wide / HOST.tall) },
       uToWorld: { value: new THREE.Matrix3().setFromMatrix4(basis) },
     });
     sh.vertexShader = after(after(sh.vertexShader, 'common', S.VERT_PARS), 'begin_vertex', S.VERT);
-    let fr = after(sh.fragmentShader, 'common', S.FRAG_PARS);
-    fr = after(fr, 'color_fragment', S.COLOR);
-    fr = after(fr, 'roughnessmap_fragment', S.ROUGH);
-    fr = after(fr, 'normal_fragment_maps', S.NORMAL);
-    fr = fr.replace('#include <lights_fragment_end>', `${S.ENV}\n#include <lights_fragment_end>`);
-    fr = fr.replace('#include <opaque_fragment>', `${S.GRADE}\n#include <opaque_fragment>`);
+    let fr = after(sh.fragmentShader, 'common', F.PARS);
+    fr = after(fr, 'color_fragment', F.COLOR);
+    fr = after(fr, 'roughnessmap_fragment', F.ROUGH);
+    fr = after(fr, 'normal_fragment_maps', F.NORMAL);
+    fr = fr.replace('#include <lights_fragment_end>', `${F.ENV}\n#include <lights_fragment_end>`);
+    fr = fr.replace('#include <opaque_fragment>', `${F.GRADE}\n#include <opaque_fragment>`);
     sh.fragmentShader = fr;
   };
   lit(goldM, { key: 'pyramid-gold', baked: true, core: false, glint: true });

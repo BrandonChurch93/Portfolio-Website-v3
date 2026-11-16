@@ -1,13 +1,14 @@
 // The map of every window of the spire, after the towers' (scripts/world/parts/towers/windows.mjs): one texel a
 // window, its red how lit the room is, its green how pale its light is (ember to pale gold), its blue how far its
-// blind is down. Windows are given out in fields, one for each bay, and lit as a city's are: in clumps, a tenant's
-// run of rooms along a floor lit together, a few floors mostly dark. The spire is lit more and warmer than its
+// blind is down. Windows are given out in fields, one for each strip, and lit in upright clumps, a tenant's
+// run of floors lit together up a column, a few floors dark right across. The spire is lit more and warmer than its
 // neighbours. What is not given out is filled the same way, so the map's smaller copies hold the same average.
-import { WINDOW, shown } from '../../../../src/pieces/world/parts/spire/windows.ts';
+import { WINDOW, paleness, shown } from '../../../../src/pieces/world/parts/spire/windows.ts';
 import { L, linear } from '../../lib/plan.mjs';
 
-// How many rooms are lit at least, and how many more where a clump is busy; how many are the warmest.
-const LIT = { least: 0.2, busy: 0.72, warm: 0.22, glow: 0.25 };
+// How many rooms are lit at least, how many more where a clump is busy, how many are the warmest, how many dark rooms
+// show a glow from further in, and how many floors are dark right across.
+const LIT = { least: 0.36, busy: 0.7, warm: 0.25, glow: 0.3, floor: 0.06 };
 
 export class Windows {
   constructor(seed) {
@@ -31,36 +32,29 @@ export class Windows {
     this.fields.push(at);
     return at;
   }
+  // Lit as the spire's strips are: up each column a tenant's run of floors lit together, so a strip reads as
+  // upright clumps of light, more lit where the neighbourhood is busy, with now and then a floor dark right across.
   fill(c0, r0, cols, rows, mood) {
-    const R = this.rand, below = [];
-    for (let r = 0; r < rows; r++) {
-      const row = [];
-      let c = 0;
-      while (c < cols) {
-        const long = 2 + Math.floor(R() * 4);
-        let seg;
-        if (below.length && R() < 0.4) seg = below.find((b) => b.from <= c && c < b.from + b.long) ?? null;
-        if (!seg) {
-          const busy = L.noise(c / 5 + mood * 3.1, r / 7 + mood * 1.7, mood, 73) ** 1.5;
-          const lit = R() < LIT.least + LIT.busy * busy;
-          const tone = R();
-          seg = { from: c, long, lit, level: 0.35 + 0.65 * R() ** 1.2, warm: tone < LIT.warm ? 0.06 + 0.14 * R() : tone > 0.82 ? 0.82 + 0.16 * R() : 0.38 + 0.42 * R(), blind: R() < 0.28 ? 0.2 + 0.6 * R() : 0 };
-        }
-        row.push({ ...seg, from: c, long });
-        for (let k = 0; k < long && c < cols; k++, c++) {
-          let level, blind = seg.blind > 0 ? Math.min(1, Math.max(0, seg.blind + (R() - 0.5) * 0.4)) : R() < 0.1 ? 0.5 * R() : 0;
-          if (seg.lit && R() > 0.08) level = R() < 0.08 ? 1 : seg.level * (0.72 + 0.4 * R());
-          else level = R() < LIT.glow ? 0.08 + 0.14 * R() : 0;
+    const R = this.rand, dark = new Set();
+    for (let r = 0; r < rows; r++) if (R() < LIT.floor) dark.add(r);
+    for (let c = 0; c < cols; c++) {
+      let r = 0;
+      while (r < rows) {
+        const long = 2 + Math.floor(R() * 7), busy = L.noise(c / 3 + mood * 3.1, r / 9 + mood * 1.7, mood, 73) ** 1.3;
+        const lit = R() < LIT.least + LIT.busy * busy, tone = R();
+        const seg = { lit, level: 0.45 + 0.55 * R() ** 1.4, warm: tone < LIT.warm ? 0.05 + 0.15 * R() : tone > 0.85 ? 0.8 + 0.18 * R() : 0.35 + 0.4 * R(), blind: R() < 0.2 ? 0.25 + 0.5 * R() : 0 };
+        for (let k = 0; k < long && r < rows; k++, r++) {
+          let level, blind = seg.blind > 0 ? Math.min(1, Math.max(0, seg.blind + (R() - 0.5) * 0.3)) : 0;
+          if (seg.lit && !dark.has(r) && R() > 0.06) level = R() < 0.06 ? 1 : seg.level * (0.82 + 0.25 * R());
+          else level = R() < LIT.glow ? 0.1 + 0.15 * R() : 0;
           if (level === 0) blind = 0;
-          const warm = Math.min(1, Math.max(0, seg.warm + (R() - 0.5) * 0.16));
+          const warm = Math.min(1, Math.max(0, seg.warm + (R() - 0.5) * 0.1));
           const i = ((r0 + r) * this.size + c0 + c) * 3;
           this.data[i] = Math.round(Math.min(1, level) * 255);
           this.data[i + 1] = Math.round(warm * 255);
           this.data[i + 2] = Math.round(blind * 255);
         }
       }
-      below.length = 0;
-      below.push(...row);
     }
   }
   read(c, r) {
@@ -75,7 +69,7 @@ export class Windows {
   // The radiance a window's cell gives off on average, linear light.
   radiance(c, r, cw, ch) {
     const w = this.read(c, r), k = WINDOW.gain * shown(w.level, w.blind, cw, ch);
-    return this.tint(w.warm).map((v) => v * k);
+    return this.tint(paleness(w.warm, w.level ** WINDOW.curve)).map((v) => v * k);
   }
   // Which field holds a place in the map, in windows.
   field(u, v) {

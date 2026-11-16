@@ -130,11 +130,12 @@ export async function surface({ module, args, box, cell, threads, onProgress, ma
     for (let i = 0; i < r.alt.length; i += 5) { alt.set(r.alt.subarray(i + 1, i + 4), (r.alt[i] + vv) * 3); good[r.alt[i] + vv] = r.alt[i + 4]; }
     vv += r.pos.length / 3;
   }
+  const tq = performance.now();
   const yielded = outside(pos, alt, home, table, first, origin, cell, nc);
   const keep = (arr) => { for (let i = 0; i < verts * 3; i++) if (!Number.isNaN(arr[i])) arr[i] = Math.min(box[1][i % 3], Math.max(box[0][i % 3], arr[i])); };
   keep(pos);
   keep(alt);
-  let made, moved = 0, crossed = 0, judge = null, stirred = null, again = false;
+  let made, moved = 0, crossed = 0, judge = null, stirred = null, again = false, before = Infinity;
   const dirty = new Uint8Array(verts), join = joiner(pos, verts, quads, herm, along, nq, cell);
   for (let round = 0; ; round++) {
     made = join(judge, stirred, again);
@@ -159,7 +160,8 @@ export async function surface({ module, args, box, cell, threads, onProgress, ma
     for (const g of [...groups, ...cuts]) for (const u of g) if (u < verts) dirty[u] = 1;
     if (round === 0) crossed = cuts.length;
     for (const pair of cuts) groups.push(pair);
-    if (!groups.length || round === ROUNDS) break;
+    if (!groups.length || round === ROUNDS || groups.length > 0.9 * before) break;
+    before = groups.length;
     const picks = new Set(), busy = new Set();
     for (const g of groups) {
       if (g.some((u) => busy.has(u))) continue;
@@ -182,6 +184,7 @@ export async function surface({ module, args, box, cell, threads, onProgress, ma
   all.set(pos.subarray(0, verts * 3));
   all.set(extra, verts * 3);
   for (let i = verts * 3; i < all.length; i++) all[i] = Math.min(box[1][i % 3], Math.max(box[0][i % 3], all[i]));
+  const tm = performance.now();
   const raw = { positions: all, indices: tri.subarray(0, nt) };
   const clean = tidy(raw);
   const edge = box.map((corner, side) => corner.map((x) => {
@@ -202,7 +205,7 @@ export async function surface({ module, args, box, cell, threads, onProgress, ma
     stats: {
       grid: nc, cells, vertices: clean.positions.length / 3, triangles: clean.indices.length / 3,
       evals, solved, featured, held, settled, yielded, moved, crossed, missing, collapsed, dropped, fans, forced, removed: clean.removed, shifted, thin, lip, threads: count,
-      seconds: { grid: (t1 - t0) / 1000, join: (t2 - t1) / 1000 },
+      seconds: { grid: (t1 - t0) / 1000, join: (t2 - t1) / 1000, quads: (tq - t1) / 1000, mend: (tm - tq) / 1000, tidy: (t2 - tm) / 1000 },
     },
   };
 }
@@ -237,67 +240,67 @@ function cutting(pos, verts, made, check, cell) {
   const { tri, nt, extra } = made;
   const at = (v, k) => (v < verts ? pos[v * 3 + k] : extra[(v - verts) * 3 + k]);
   const n = nt / 3;
-  const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
   let any = 0;
   for (let t = 0; t < n; t++) if (!check || check[t]) { any = 1; break; }
   if (!any) return [];
-  for (let i = 0; i < nt; i++) for (let k = 0; k < 3; k++) { const x = at(tri[i], k); if (x < lo[k]) lo[k] = x; if (x > hi[k]) hi[k] = x; }
+  const bb = new Float64Array(n * 6), lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+  for (let t = 0; t < n; t++) for (let k = 0; k < 3; k++) {
+    const a = at(tri[t * 3], k), b = at(tri[t * 3 + 1], k), c = at(tri[t * 3 + 2], k);
+    const l = a < b ? (a < c ? a : c) : (b < c ? b : c), h = a > b ? (a > c ? a : c) : (b > c ? b : c);
+    bb[t * 6 + k] = l; bb[t * 6 + 3 + k] = h;
+    if (l < lo[k]) lo[k] = l;
+    if (h > hi[k]) hi[k] = h;
+  }
   const C = 8 * cell, nb = [0, 1, 2].map((k) => Math.floor((hi[k] - lo[k]) / C) + 1);
   const near = new Uint8Array(nb[0] * nb[1] * nb[2]);
-  const box = new Float64Array(6);
-  const bound = (t) => {
-    for (let k = 0; k < 3; k++) {
-      const a = at(tri[t * 3], k), b = at(tri[t * 3 + 1], k), c = at(tri[t * 3 + 2], k);
-      box[k] = Math.min(a, b, c) - lo[k]; box[k + 3] = Math.max(a, b, c) - lo[k];
-    }
-  };
   for (let t = 0; t < n; t++) {
     if (check && !check[t]) continue;
-    bound(t);
-    const b0 = [0, 1, 2].map((k) => Math.max(0, Math.floor((box[k] - cell) / C))), b1 = [0, 1, 2].map((k) => Math.min(nb[k] - 1, Math.floor((box[k + 3] + cell) / C)));
+    const b0 = [0, 1, 2].map((k) => Math.max(0, Math.floor((bb[t * 6 + k] - lo[k] - cell) / C))), b1 = [0, 1, 2].map((k) => Math.min(nb[k] - 1, Math.floor((bb[t * 6 + 3 + k] - lo[k] + cell) / C)));
     for (let z = b0[2]; z <= b1[2]; z++) for (let y = b0[1]; y <= b1[1]; y++) for (let x = b0[0]; x <= b1[0]; x++) near[x + nb[0] * (y + nb[1] * z)] = 1;
   }
   const key = (i, j, k) => i + 65536 * (j + 65536 * k);
   const wanted = new Table(1024);
   let nw = 0;
-  const want = (kk) => { if (wanted.get(kk) < 0) wanted.set(kk, nw++); };
   const span = new Int32Array(6);
-  const spanOf = (t) => { bound(t); for (let k = 0; k < 6; k++) span[k] = Math.floor(box[k] / cell); };
+  const spanOf = (t) => { for (let k = 0; k < 3; k++) { span[k] = Math.floor((bb[t * 6 + k] - lo[k]) / cell); span[k + 3] = Math.floor((bb[t * 6 + 3 + k] - lo[k]) / cell); } };
   for (let t = 0; t < n; t++) {
     if (check && !check[t]) continue;
     spanOf(t);
-    for (let z = span[2]; z <= span[5]; z++) for (let y = span[1]; y <= span[4]; y++) for (let x = span[0]; x <= span[3]; x++) want(key(x, y, z));
+    for (let z = span[2]; z <= span[5]; z++) for (let y = span[1]; y <= span[4]; y++) for (let x = span[0]; x <= span[3]; x++) { const kk = key(x, y, z); if (wanted.get(kk) < 0) wanted.set(kk, nw++); }
   }
-  const pairT = [], pairB = [];
+  let pairT = new Int32Array(1 << 16), pairB = new Int32Array(1 << 16), np = 0;
   for (let t = 0; t < n; t++) {
-    const v = tri[t * 3];
-    const bx = Math.floor((at(v, 0) - lo[0]) / C), by = Math.floor((at(v, 1) - lo[1]) / C), bz = Math.floor((at(v, 2) - lo[2]) / C);
-    if (!near[Math.min(bx, nb[0] - 1) + nb[0] * (Math.min(by, nb[1] - 1) + nb[1] * Math.min(bz, nb[2] - 1))]) continue;
+    const bx = Math.floor((bb[t * 6] - lo[0]) / C), by = Math.floor((bb[t * 6 + 1] - lo[1]) / C), bz = Math.floor((bb[t * 6 + 2] - lo[2]) / C);
+    if (!near[bx + nb[0] * (by + nb[1] * bz)]) continue;
     spanOf(t);
     for (let z = span[2]; z <= span[5]; z++) for (let y = span[1]; y <= span[4]; y++) for (let x = span[0]; x <= span[3]; x++) {
       const b = wanted.get(key(x, y, z));
-      if (b >= 0) { pairT.push(t); pairB.push(b); }
+      if (b < 0) continue;
+      if (np === pairT.length) { const a = new Int32Array(np * 2); a.set(pairT); pairT = a; const c = new Int32Array(np * 2); c.set(pairB); pairB = c; }
+      pairT[np] = t; pairB[np++] = b;
     }
   }
   const count = new Int32Array(nw + 1);
-  for (const b of pairB) count[b + 1]++;
+  for (let i = 0; i < np; i++) count[pairB[i] + 1]++;
   for (let b = 0; b < nw; b++) count[b + 1] += count[b];
-  const fill = count.slice(0, nw), list = new Int32Array(pairT.length);
-  for (let i = 0; i < pairT.length; i++) list[fill[pairB[i]]++] = pairT[i];
+  const fill = count.slice(0, nw), list = new Int32Array(np);
+  for (let i = 0; i < np; i++) list[fill[pairB[i]]++] = pairT[i];
   const P = new Float64Array(18), stamp = new Int32Array(n).fill(-1);
   const load = (t, o) => { for (let c = 0; c < 3; c++) for (let k = 0; k < 3; k++) P[o + c * 3 + k] = at(tri[t * 3 + c], k); };
   const out = [];
   for (let t = 0; t < n; t++) {
     if (check && !check[t]) continue;
     spanOf(t);
-    const s0 = span.slice();
-    for (let z = s0[2]; z <= s0[5]; z++) for (let y = s0[1]; y <= s0[4]; y++) for (let x = s0[0]; x <= s0[3]; x++) {
+    const x0 = span[0], y0 = span[1], z0 = span[2], x1 = span[3], y1 = span[4], z1 = span[5];
+    let loaded = false;
+    for (let z = z0; z <= z1; z++) for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
       const b = wanted.get(key(x, y, z));
       for (let s = count[b]; s < count[b + 1]; s++) {
         const u = list[s];
         if (u === t || stamp[u] === t || ((!check || check[u]) && u < t)) continue;
         stamp[u] = t;
-        load(t, 0);
+        if (bb[u * 6] > bb[t * 6 + 3] || bb[u * 6 + 3] < bb[t * 6] || bb[u * 6 + 1] > bb[t * 6 + 4] || bb[u * 6 + 4] < bb[t * 6 + 1] || bb[u * 6 + 2] > bb[t * 6 + 5] || bb[u * 6 + 5] < bb[t * 6 + 2]) continue;
+        if (!loaded) { load(t, 0); loaded = true; }
         load(u, 9);
         if (!pierce(P, tri, t, u) && !pierce(P, tri, u, t, true)) continue;
         out.push([tri[t * 3], tri[t * 3 + 1], tri[t * 3 + 2], tri[u * 3], tri[u * 3 + 1], tri[u * 3 + 2]]);

@@ -1,5 +1,5 @@
 // The trees, made ahead and shipped (src/pieces/world/parts/trees.ts reads them):
-//   public/world/trees.bin          the four models of a tree, each with its stored light
+//   public/world/trees.bin          the models of a tree (MODELS in design.ts), each with its stored light
 //   public/world/trees-leaves.png   the atlas of leaves, bark and the shadow under a tree, with its chain of levels
 //
 //   node scripts/world/parts/trees/make.mjs [--draft]
@@ -18,8 +18,8 @@ const atlas = paint({ seed: 7 });
 png(`public/world/${FILES.leaves}`, atlas.width, atlas.height, atlas.data, 4);
 
 const meshes = [];
-for (let m = 0; m < MODELS; m++) {
-  const t = tree(m, { rays: draft ? 24 : 160 }), n = t.positions.length / 3, bounce = new Float32Array(n * 4);
+for (let m = 0; m < MODELS.length; m++) {
+  const t = tree(MODELS[m], { rays: draft ? 24 : 160 }), n = t.positions.length / 3, bounce = new Float32Array(n * 4);
   for (let i = 0; i < n; i++) { for (let k = 0; k < 3; k++) bounce[i * 4 + k] = storeBounce(t.bounce[i * 4 + k]); bounce[i * 4 + 3] = t.bounce[i * 4 + 3]; }
   // The balls are stored as the positions are (lib/pack.mjs): shares of the mesh's own cube, so one transform
   // carries both.
@@ -37,10 +37,11 @@ for (let m = 0; m < MODELS; m++) {
       bounce: { data: bounce, size: 4, as: 'u8' },
       clump: { data: share(t.clump), size: 4, as: 'u16' },
       crown: { data: share(t.crown), size: 4, as: 'u16' },
+      view: { data: t.view, size: 1, as: 'u8' },
     },
     info: t.info,
   });
-  console.log(`tree-${m}: ${t.info.triangles} triangles, ${t.info.clumps} clumps, top ${t.info.top.toFixed(2)}`);
+  console.log(`tree-${m} (${MODELS[m]}): ${t.info.triangles} triangles (${t.info.leaf} with soft edges), ${t.info.clumps} clumps, top ${t.info.top.toFixed(2)}`);
 }
 pack(`public/world/${FILES.mesh}`, meshes, { atlas: { coverage: atlas.coverage } });
 console.log(`trees: made in ${((Date.now() - from) / 1000).toFixed(1)} s${draft ? ' (draft)' : ''}`);

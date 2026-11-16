@@ -19,6 +19,7 @@ import { png } from '../../lib/png.mjs';
 import { simplify } from '../../lib/surface.mjs';
 import { L, P, light, linear, storeBounce } from '../../lib/plan.mjs';
 import * as F from '../../../../src/pieces/world/parts/land/field.ts';
+import { T, desert, footprint, towardEdge } from './shape.mjs';
 
 const draft = process.argv.includes('--draft');
 const began = performance.now(), say = (s) => console.log(`land: ${s} · ${((performance.now() - began) / 1000).toFixed(1)} s`);
@@ -31,27 +32,8 @@ const LIFT = { paving: 0.45, grass: 0.1, skirt: 4 };
 // The belt of grass along the city's front: how far in front of front() its kerb is, and the soft, uneven edge it
 // fades out over toward the land's edge (from, to, and how much that wanders).
 const BELT = { kerb: 3, from: 3, to: 12, wander: 9 };
-// The dunes give way round a building that stands in the desert, from this far from its walls to this far.
-const CLEAR = [8, 42];
 // The city's own light on its walls, as radiance, for what it throws on the ground.
 const CITY = 0.12;
-
-const T = P.TOWERS.map(([x, z, w, d, tall, turn], i) => ({ i, x, z, w, d, tall, c: Math.cos(turn * L.D2R), s: Math.sin(turn * L.D2R) })).filter((t) => L.within(t.x, t.z) >= 0.6 * Math.max(t.w, t.d));
-const footprint = (t, x, z) => {
-  const dx = x - t.x, dz = z - t.z, u = dx * t.c - dz * t.s, v = dx * t.s + dz * t.c;
-  return Math.hypot(Math.max(0, Math.abs(u) - t.w / 2), Math.max(0, Math.abs(v) - t.d / 2));
-};
-const sandy = T.filter((t) => L.desert(t.x, t.z) > 0.001);
-function desert(x, z) {
-  let k = L.desert(x, z);
-  if (k <= 0) return 0;
-  for (const t of sandy) { const f = footprint(t, x, z); if (f < CLEAR[1]) k *= L.ramp(CLEAR[0], CLEAR[1], f); }
-  return k;
-}
-const towardEdge = (x, z) => {
-  const e = 0.25, gx = (L.within(x + e, z) - L.within(x - e, z)) / (2 * e), gz = (L.within(x, z + e) - L.within(x, z - e)) / (2 * e), l = Math.hypot(gx, gz) || 1;
-  return [-gx / l, -gz / l];
-};
 
 // ---------------------------------------------------------------------------------------------------------------
 // What lies where, on the map's grid.
@@ -168,10 +150,32 @@ for (let t = 0; t < idx.length; t += 3) {
   if (uz * vx - ux * vz > 1e-4) kept.push(a, b, c);
 }
 say(`height field: ${(P0.length / 3).toLocaleString('en-US')} vertices, ${(kept.length / 3).toLocaleString('en-US')} triangles`);
-const lock = Uint8Array.from(edge);
+// Held in place: the land's edge, and every crest and every foot of a slip face, where the sand turns sharply, so
+// the reduced mesh keeps the dunes' outline as fine as the height field's and no crest is cut short.
+const lock = Uint8Array.from(edge), CREST = { step: 0.7, turn: 0.22 };
+for (let v = 0; v < lock.length; v++) {
+  const x = P0[v * 3], z = P0[v * 3 + 2];
+  if (desert(x, z) <= 0.05) continue;
+  const e = CREST.step, wx = F.WIND[0] * e, wz = F.WIND[1] * e, h = F.relief(x, z);
+  if (Math.abs(F.relief(x + wx, z + wz) + F.relief(x - wx, z - wz) - 2 * h) > CREST.turn) lock[v] = 1;
+}
 const small = await simplify({ positions: P0, indices: Uint32Array.from(kept) }, { error: FINE.error, lock, strict: false });
+{
+  let flipped = 0;
+  for (let t = 0; t < small.indices.length; t += 3) {
+    const [a, b, c] = [small.indices[t], small.indices[t + 1], small.indices[t + 2]].map((i) => small.positions.subarray(i * 3, i * 3 + 3));
+    if ((b[2] - a[2]) * (c[0] - a[0]) - (b[0] - a[0]) * (c[2] - a[2]) <= 0) flipped++;
+  }
+  if (flipped) console.log(`land: ${flipped} triangles of the reduced mesh face down`);
+}
 say(`reduced: ${(small.indices.length / 3).toLocaleString('en-US')} triangles (${small.rounds} rounds, ${small.holes} holes)`);
 const top = creased({ positions: small.positions, indices: small.indices }, 32);
+// A vertex that only thin triangles use has no normal of its own: it takes straight up, as the ground round it is.
+{
+  let none = 0;
+  for (let v = 0; v < top.normals.length / 3; v++) if (!(Math.hypot(top.normals[v * 3], top.normals[v * 3 + 1], top.normals[v * 3 + 2]) > 0.5)) { top.normals.set([0, 1, 0], v * 3); none++; }
+  if (none) console.log(`land: ${none} vertices had no normal`);
+}
 
 // The turned down edge: a strip from every open edge of the top straight down.
 const open = new Map();

@@ -9,7 +9,7 @@ export const WINDOW = {
   deep: 2.4,
   // The radiance of the brightest room, and the share of that its glass shows on average, for the far view and the
   // baker.
-  gain: 2.6,
+  gain: 4,
   mean: 0.6,
   // How far a blind dims what is behind it.
   blind: 0.5,
@@ -33,6 +33,9 @@ export const WINDOW = {
 // The towers' stones, as what each multiplies the pale stone's color by in linear light: the pale stone, a warm
 // sandstone and a dark granite, at 0, 0.5 and 1 of a face's tone. Here so the baker lights each as it is drawn.
 export const TONES = [[1, 1, 1], [0.74, 0.6, 0.45], [0.3, 0.26, 0.23]] as const;
+// How far the pale stone is drawn from the palette's text-2 toward its copper-light, in linear light: a warm
+// limestone, so the city's walls are warm in the night's light and not greige.
+export const WARM = 0.42;
 
 // What one window shows on average across its cell, as a share of WINDOW.gain in its own color: how lit it is
 // (0 to 1, as stored), and how far a blind is down (0 to 1).

@@ -8,7 +8,7 @@ import { pack } from '../../lib/pack.mjs';
 import { png } from '../../lib/png.mjs';
 import { bake } from '../../lib/bake.mjs';
 import { light, linear, storeBounce } from '../../lib/plan.mjs';
-import { TONES, WINDOW } from '../../../../src/pieces/world/parts/towers/windows.ts';
+import { TONES, WARM, WINDOW } from '../../../../src/pieces/world/parts/towers/windows.ts';
 import { FIELD } from './layers.mjs';
 
 const NAMES = ['stone', 'bay', 'gold'];
@@ -72,7 +72,7 @@ function smooth(m, values, width, r) {
 
 export async function finish({ made, win, around = [], file, draft, meta = {}, samples }) {
   const began = performance.now();
-  const pale = linear('text-2').map((v) => v * ALBEDO.stone), bronze = linear('bronze').map((v) => v * ALBEDO.bronze), copper = linear('copper').map((v) => v * ALBEDO.copper);
+  const cl = linear('copper-light'), pale = linear('text-2').map((v, k) => (v + (cl[k] - v) * WARM) * ALBEDO.stone), bronze = linear('bronze').map((v) => v * ALBEDO.bronze), copper = linear('copper').map((v) => v * ALBEDO.copper);
   const bay = made.bay, nb = bay.positions.length / 3, emit = new Float32Array(nb * 3), albedoBay = new Float32Array(nb * 3);
   for (let i = 0; i < nb; i++) {
     const [u, v, raw, ch, at] = bay.attr.subarray(i * 5, i * 5 + 5);

@@ -5,7 +5,7 @@
 //   design(t)(b, t)
 // The named ones make picture 9's skyline: the obelisk (TOWERS[0]), the sun disc (TOWERS[2]) and the gold caps
 // (TOWERS[3], [4], [5]). The stepped tower (TOWERS[STEP]) is ./step-form.mjs.
-import { chamfered } from './kit.mjs';
+import { chamfered, face } from './kit.mjs';
 import { COPPER, PLAIN } from './layers.mjs';
 import { block, cornice, drum, faces, fluted, parapet, revolve, rings, shaft, slab, reveal, windows } from './forms.mjs';
 
@@ -14,6 +14,34 @@ const clamp = (v, a, c) => Math.min(c, Math.max(a, v));
 // A window's size in units, across and up, for a building: the stepped tower's is 1.2 by 1.6.
 const cell = (b) => ({ cw: 1.1 + 0.6 * b.R(), ch: 1.5 + 0.5 * b.R() });
 
+// How a building's walls are cut, so no two read alike: each a way of setting windows into a face, worked out at
+// the size of the face, with its own window, pier and spandrel. Picked by the building's own numbers.
+//   strip: proud stone piers running the full height, narrow bays of tall windows, a bronze spandrel at each floor
+//   ribbon: bands of stone across each floor standing out of the glass, wide windows, few piers
+//   punched: windows let into the stone with deep reveals, in pairs, a string course every few floors
+//   mullion: a bronze curtain behind stone mullions every second window, broad corner piers
+//   paired: bays of two windows between slender piers, a copper spandrel every floor
+const LOOKS = ['strip', 'ribbon', 'punched', 'mullion', 'paired'];
+function look(b, w, kind = LOOKS[Math.floor(b.R() * LOOKS.length)]) {
+  const R = b.R;
+  if (kind === 'strip') {
+    const cw = 0.9 + 0.3 * R(), ch = 2.1 + 0.5 * R(), per = 2 + Math.floor(R() * 2), pier = 1.1 + 0.6 * R();
+    return { kind, cw, ch, pier, corner: 1.8 + R(), out: 0.55 + 0.4 * R(), bays: Math.max(1, Math.round((w - 3) / (per * cw + pier))), back: 1.0, band: 1, bandTall: 0.55 + 0.2 * R(), bandBack: 0.75, bandLayer: 'bay' };
+  }
+  if (kind === 'ribbon') {
+    const ch = 2.0 + 0.4 * R();
+    return { kind, cw: 2.2 + 0.6 * R(), ch, pier: 1.4, corner: 2.4 + R(), bays: w > 30 ? 2 : 1, back: 0.6, band: 1, bandTall: 0.7 + 0.25 * R(), bandBack: -0.25 - 0.2 * R() };
+  }
+  if (kind === 'punched') {
+    const cw = 1.2 + 0.3 * R();
+    return { kind, cw, ch: 1.9 + 0.4 * R(), pier: 1.4 + 0.5 * R(), corner: 2.2, bays: Math.max(1, Math.round((w - 4) / (2 * cw + 1.6))), back: 0.75, punched: true, band: 3 + Math.floor(R() * 3), bandTall: 0.5, bandBack: -0.3 };
+  }
+  if (kind === 'mullion') {
+    return { kind, cw: 1.0 + 0.3 * R(), ch: 1.6 + 0.4 * R(), pier: 1.2, corner: 2.6 + R(), bays: w > 32 ? 2 : 1, back: 1.1, fin: 2, finLayer: 'stone', finWide: 0.22, finOut: 0.9 };
+  }
+  const cw = 1.1 + 0.3 * R(), pier = 0.9 + 0.4 * R();
+  return { kind, cw, ch: 1.9 + 0.4 * R(), pier, corner: 1.6 + 0.6 * R(), bays: Math.max(1, Math.round((w - 3) / (2 * cw + pier))), back: 0.9, band: 1, bandTall: 0.45, bandBack: 0.55, bandLayer: 'bay', bandTag: COPPER, out: 0.3 };
+}
 // The base every building stands on: a storey or two of channelled stone, let into by shop fronts, under a course.
 function base(b, w, d, h) {
   const lay = b.lay;
@@ -30,9 +58,11 @@ function mast(b, y, tall, wide = 0.5) {
   block(b, 'bay', wide * 1.8, wide * 1.8, y + tall * 0.3, y + tall * 0.3 + 0.6, { tag: COPPER });
 }
 
-// What a roof of each kind carries, on a top w by d at y, at most `room` high.
+// What a roof of each kind carries, on a top w by d at y, at most `room` high. A plain roof is crowned one of five
+// ways (t.top, or the building's own numbers): stepped stone tiers, an open loggia, corner turrets, a bronze
+// mansard with dormers, or a parapet and a plant room.
 function crown(b, t, w, d, y, room) {
-  const R = b.R;
+  const R = b.R, stone = { tone: b.tone, lay: 0 };
   if (t.roof === 'gold') {
     // Small fluted gold tiers and a point.
     let ww = w * 0.8, dd = d * 0.8, yy = y;
@@ -53,73 +83,154 @@ function crown(b, t, w, d, y, room) {
     if (room - (yy - y) > 3) mast(b, yy, room - (yy - y), 0.45);
     return;
   }
+  const kind = t.top ?? ['steps', 'loggia', 'turrets', 'mansard', 'plant'][Math.floor(R() * 5)];
+  if (kind === 'steps' && room > 6) {
+    // Stepped stone tiers, each smaller, each under its own cornice and let into by tall windows, under a small
+    // pyramid and sometimes a finial.
+    let ww = w * 0.9, dd = d * 0.9, yy = y;
+    const n = room > 18 ? 4 : room > 10 ? 3 : 2, h = (room * 0.72) / n;
+    for (let k = 0; k < n; k++) {
+      shaft(b, ww, dd, yy, yy + h - 0.5, { corner: Math.max(0.9, ww * 0.16), pier: 0.8, bays: ww > 14 ? 2 : 1, back: 0.6, cw: 1.0, ch: h - 0.5, punched: true, busy: 0.6 });
+      cornice(b, ww, dd, yy + h - 0.5, 0.5, 0.25);
+      yy += h; ww *= 0.76; dd *= 0.76;
+    }
+    const cap = Math.min(y + room, yy + ww * 0.7);
+    b.kit.prism('stone', chamfered(ww, dd, ww * 0.12), yy, cap, { edge: b.E, tag: stone, shrink: 0.08 });
+    if (y + room - cap > 1.5) mast(b, cap - 0.3, y + room - cap + 0.3, 0.3);
+    return;
+  }
+  if (kind === 'loggia' && room > 5) {
+    // An open top storey: piers round its edge under an entablature, a lit room within, and a low copper roof.
+    const h = Math.min(room * 0.55, 7), pw = 0.7;
+    block(b, 'stone', w - 0.2, d - 0.2, y, y + 0.5, { chamfer: 0.3 });
+    shaft(b, w - 3.2, d - 3.2, y + 0.5, y + h, { corner: 0.4, pier: 0.4, bays: Math.max(1, Math.round(w / 6)), back: 0.3, cw: 1.6, ch: h - 0.5, busy: 0.9, roof: false });
+    const n = Math.max(3, Math.round(w / 3.2)), m = Math.max(3, Math.round(d / 3.2));
+    const rows = [[w, n, (u) => [u, d / 2 - 0.6]], [d, m, (u) => [w / 2 - 0.6, u]], [d, m, (u) => [-(w / 2 - 0.6), u]]];
+    for (const [len, cnt, at] of rows) for (let k = 0; k < cnt; k++) {
+      const [px, pz] = at(-len / 2 + 0.6 + ((len - 1.2) * k) / (cnt - 1));
+      b.kit.prism('stone', chamfered(pw, pw, 0.1).map(([u, v]) => [u + px, v + pz]), y + 0.5, y + h, { edge: b.E, tag: stone });
+    }
+    cornice(b, w - 0.2, d - 0.2, y + h, 0.9, 0.3);
+    b.kit.prism('bay', chamfered(w - 0.4, d - 0.4, 0.4), y + h + 0.9, Math.min(y + room, y + h + 0.9 + w * 0.22), { top: true, edge: b.E, tag: COPPER, shrink: [0.3, 0.12] });
+    return;
+  }
+  if (kind === 'turrets' && room > 4) {
+    // A parapet with a turret at each corner, each a chamfered shaft under a stone cap and a copper point, and a
+    // lit lantern between them.
+    parapet(b, w, d, y, 1.3);
+    const tw = Math.max(2, w * 0.13), th = Math.min(room * 0.6, 3.5 + tw * 1.2);
+    for (const [sx, sz] of [[1, 1], [-1, 1], [1, -1], [-1, -1]]) {
+      const ux = sx * (w / 2 - tw / 2), uz = sz * (d / 2 - tw / 2), sq = (q) => chamfered(q, q, q * 0.25).map(([u, v]) => [u + ux, v + uz]);
+      b.kit.prism('stone', sq(tw), y, y + th, { edge: b.E, tag: stone });
+      b.kit.prism('stone', sq(tw + 0.5), y + th, y + th + 0.4, { top: true, bottom: true, edge: b.E, tag: stone });
+      b.kit.prism('bay', sq(tw * 0.7), y + th + 0.4, y + th + 0.4 + tw * 0.9, { edge: b.E, tag: COPPER, shrink: 0.05 });
+    }
+    const lh = Math.min(room * 0.45, 4.5);
+    shaft(b, w * 0.34, d * 0.34, y, y + lh, { corner: 0.6, pier: 0.5, bays: 1, back: 0.3, cw: 0.9, ch: lh, busy: 0.7, punched: true });
+    return;
+  }
+  if (kind === 'mansard' && room > 4) {
+    // A steep bronze mansard on the cornice, a copper ridge, and dormers of lit windows standing out of its front.
+    const h = Math.min(room * 0.7, w * 0.45), k = 0.45, n = Math.max(2, Math.round(w / 6)), dw = Math.min(2.4, (w * 0.8) / n - 0.8), dh = Math.min(2.6, h * 0.5);
+    b.kit.prism('bay', chamfered(w + 0.4, d + 0.4, 0.6), y, y + h, { top: true, edge: b.E, tag: PLAIN, shrink: [1 - k, 1 - k] });
+    b.kit.prism('bay', chamfered((w + 0.4) * (1 - k) * 0.9, (d + 0.4) * (1 - k) * 0.9, 0.3), y + h, y + h + 0.5, { top: true, edge: b.E, tag: COPPER });
+    const zf = ((d + 0.4) / 2) * (1 - (k * 0.35 * dh) / h);
+    for (let i = 0; i < n; i++) {
+      const x = -w * 0.4 + ((i + 0.5) * w * 0.8) / n;
+      b.kit.box('stone', x - dw / 2 - 0.3, x + dw / 2 + 0.3, y + 0.2, y + 0.2 + dh, zf - 2.5, zf, { edge: b.E, tag: stone });
+      b.kit.prism('bay', [[x - dw / 2 - 0.5, zf + 0.2], [x + dw / 2 + 0.5, zf + 0.2], [x + dw / 2 + 0.5, zf - 2.6], [x - dw / 2 - 0.5, zf - 2.6]], y + 0.2 + dh, y + 0.2 + dh + 0.9, { top: true, edge: b.E, tag: COPPER, shrink: [1, 0.3] });
+      windows(b, face([x - dw / 2, 0, zf], [1, 0, 0], [0, 0, 1]), 0, dw, y + 0.5, y + dh - 0.1, -0.01, dw, dh - 0.6, { busy: 0.9, every: 99 });
+    }
+    return;
+  }
   // A parapet, a plant room set back on the roof, and sometimes a mast.
   parapet(b, w, d, y, 1.1);
   const pw = w * (0.35 + 0.25 * R()), pd = d * (0.35 + 0.25 * R()), px = (R() - 0.5) * (w - pw) * 0.6;
-  b.kit.prism('stone', chamfered(pw, pd, 0.3).map(([x, z]) => [x + px, z]), y, y + Math.min(room * 0.5, 2.6 + 2 * R()), { top: true, edge: b.E, tag: { tone: b.tone, lay: 0 } });
+  b.kit.prism('stone', chamfered(pw, pd, 0.3).map(([x, z]) => [x + px, z]), y, y + Math.min(room * 0.5, 2.6 + 2 * R()), { top: true, edge: b.E, tag: stone });
   if (room > 5 && R() < 0.65) mast(b, y, room * (0.7 + 0.3 * R()), 0.35);
 }
 
-// The setback tower: a base, a shaft that steps in once or twice under a cornice each time, piers and bays.
+// The setback tower: a base, a shaft that steps in under a cornice each time, its walls cut one of the LOOKS ways.
+// How it steps differs: evenly, once high up as a slender tower on a broad body, or as a wedding cake of many
+// shallow terraces near the top. The crown is the roof's.
 function deco(b, t) {
-  const { w, d, tall } = t, R = b.R, { cw, ch } = cell(b);
-  const hb = clamp(tall * 0.07, 4.5, 11), room = t.roof === 'plain' ? Math.min(8, tall * 0.07) : Math.min(16, tall * 0.13);
+  const { w, d, tall } = t, R = b.R;
+  const hb = clamp(tall * 0.07, 4.5, 11), room = t.roof === 'plain' ? Math.min(14, tall * 0.11) : Math.min(16, tall * 0.13);
   base(b, w, d, hb);
-  const k = tall > 100 ? 3 : tall > 50 ? 2 : 1, tops = k === 3 ? [0.58, 0.82, 1] : k === 2 ? [0.7, 1] : [1];
-  const span = tall - room - hb - 0.9;
+  const shape = R(), k = tall > 100 ? 3 : tall > 50 ? 2 : 1;
+  const tops = k === 1 ? [1] : shape < 0.34 ? (k === 3 ? [0.58, 0.82, 1] : [0.7, 1]) : shape < 0.67 ? (k === 3 ? [0.45, 0.9, 1] : [0.4, 1]) : (k === 3 ? [0.72, 0.84, 0.93, 1] : [0.78, 0.9, 1]);
+  const pull = shape < 0.34 ? 0.8 : shape < 0.67 ? 0.66 : 0.86;
+  const span = tall - room - hb - 0.9, st = look(b, w - 2), chamfer = R() < 0.4 ? 1.4 : 0;
   let y = hb + 0.9, ww = w - 2, dd = d - 2;
-  const chamfer = R() < 0.4 ? 1.4 : 0, fin = t.roof === 'bronze' ? 3 : 0, punched = R() < 0.5;
   tops.forEach((f, i) => {
     const y1 = hb + 0.9 + span * f - 1;
-    const bays = ww > 26 ? 3 : ww > 15 ? 2 : 1;
-    shaft(b, ww, dd, y, y1, { corner: Math.max(1.3, ww * 0.12), pier: 1.0, bays, back: punched ? 0.5 : 1.5, cw, ch, fin: punched ? 0 : fin, chamfer: Math.min(chamfer, ww * 0.1), punched });
-    cornice(b, ww, dd, y1, 1, 0.35);
-    y = y1 + 1;
-    if (i + 1 < tops.length) { ww = Math.max(8, ww * 0.8); dd = Math.max(8, dd * 0.8); }
+    const s2 = { ...st, bays: Math.max(1, Math.round((st.bays * ww) / (w - 2))), chamfer: Math.min(chamfer, ww * 0.1) };
+    shaft(b, ww, dd, y, y1, s2);
+    cornice(b, ww, dd, y1, i + 1 < tops.length ? 1.2 : 1, i + 1 < tops.length ? 0.45 : 0.35);
+    y = y1 + (i + 1 < tops.length ? 1.2 : 1);
+    if (i + 1 < tops.length) {
+      // The terrace each setback leaves: a low stone balustrade along its edge.
+      parapet(b, ww - 0.4, dd - 0.4, y, 0.7);
+      ww = Math.max(8, ww * pull); dd = Math.max(8, dd * pull);
+    }
   });
   crown(b, t, ww, dd, y, tall - y);
 }
 
-// A round tower banded in copper, as picture 9's copper ringed towers are: a drum of windows with stone piers, rings
-// of copper near its head, and a shallow cap.
-function ringed(b, t, x = 0, w = t.w, tall = t.tall) {
+// A round tower banded in copper, as picture 9's copper ringed pair is: a drum of windows between stone piers, broad
+// copper rings round it part way up (`at`, a share of its height), a stone drum over them, and a shallow cap.
+function ringed(b, t, x = 0, w = t.w, tall = t.tall, at = 0.5) {
   const r = w * 0.46, hb = clamp(tall * 0.06, 3, 8), { cw, ch } = cell(b), n = 20;
-  const at = (p) => [p[0] + x, p[1], p[2]];
-  const pb = { ...b, kit: { patch: (l, a, c, e, f, o) => b.kit.patch(l, at(a), at(c), at(e), at(f), o), prism: (l, poly, y0, y1, o) => b.kit.prism(l, poly.map(([u, v]) => [u + x, v]), y0, y1, o), cap: (l, poly, y, up, tag) => b.kit.cap(l, poly.map(([u, v]) => [u + x, v]), y, up, tag), box: () => {} } };
+  const sh = (p) => [p[0] + x, p[1], p[2]];
+  const pb = { ...b, kit: { patch: (l, a, c, e, f, o) => b.kit.patch(l, sh(a), sh(c), sh(e), sh(f), o), prism: (l, poly, y0, y1, o) => b.kit.prism(l, poly.map(([u, v]) => [u + x, v]), y0, y1, o), cap: (l, poly, y, up, tag) => b.kit.cap(l, poly.map(([u, v]) => [u + x, v]), y, up, tag), box: () => {} } };
   revolve(pb, 'stone', [[r + 0.8, -b.sink], [r + 0.8, hb], [r + 1.2, hb + 0.3], [r + 1.2, hb + 1], [r, hb + 1]], n, { tag: { tone: b.tone, lay: 1 }, skip: (m) => m[2] < -0.4 });
-  const top = tall - 5;
-  drum(pb, r, hb + 1, top, n, { cw, ch, pier: 2, out: 0.4 });
-  const band = Math.min(14, (top - hb) * 0.3), step = band / 4;
-  rings(pb, r + 0.4, [0, 1, 2, 3].map((k) => top - band + k * step), step * 0.55, 0.7, n);
-  revolve(pb, 'bay', [[r + 1.1, top], [r + 1.1, top + 0.8], [r * 0.7, top + 2.6], [r * 0.25, top + 4], [0.01, top + 4.4]], n, { tag: t.roof === 'plain' ? PLAIN : COPPER, skip: (m) => m[2] < -0.6 && m[1] < 0.5 });
-  if (tall - top > 4.4 && b.R() < 0.6) block(pb, 'bay', 0.5, 0.5, top + 4.4, tall, { tag: PLAIN, shrink: 0.3 });
+  const top = tall - 5, mid = hb + 1 + (top - hb - 1) * at, band = Math.min(16, (top - hb) * 0.26), step = band / 4;
+  drum(pb, r, hb + 1, mid - band / 2, n, { cw, ch, pier: 2, out: 0.4 });
+  drum(pb, r - 0.3, mid - band / 2, mid + band / 2, n, { cw, ch: step, pier: 0, out: 0 });
+  rings(pb, r - 0.3, [0, 1, 2, 3].map((k) => mid - band / 2 + k * step), step * 0.62, 1.5, n);
+  drum(pb, r, mid + band / 2, top, n, { cw, ch, pier: 2, out: 0.4 });
+  revolve(pb, 'stone', [[r + 0.9, top], [r + 0.9, top + 0.8], [r + 0.4, top + 1]], n, { tag: { tone: b.tone, lay: 0 }, skip: (m) => m[2] < -0.6 && m[1] < 0.5 });
+  revolve(pb, 'bay', [[r + 0.4, top + 1], [r * 0.7, top + 2.6], [r * 0.25, top + 4], [0.01, top + 4.4]], n, { tag: COPPER, skip: (m) => m[2] < -0.6 && m[1] < 0.5 });
+  if (tall - top > 4.4) block(pb, 'bay', 0.5, 0.5, top + 4.4, tall, { tag: PLAIN, shrink: 0.3 });
 }
 
-// The slab: a broad block, either a grid of narrow bays between slender pilasters, or ribbons of windows between
-// bands of stone, under a parapet.
+// The slab: a broad block, its walls cut one of the LOOKS ways, sometimes a taller wing to one side, under a crown.
 function slabTower(b, t) {
-  const { w, d, tall } = t, R = b.R, { cw, ch } = cell(b);
-  const hb = clamp(tall * 0.12, 3.5, 8), room = Math.min(7, 2 + tall * 0.06);
+  const { w, d, tall } = t, R = b.R;
+  const hb = clamp(tall * 0.12, 3.5, 8), room = Math.min(9, 2 + tall * 0.08);
   base(b, w, d, hb);
-  const y0 = hb + 0.9, y1 = tall - room;
-  if (R() < 0.5) shaft(b, w - 1.2, d - 1.2, y0, y1, { corner: 1.6, pier: 0.55, bays: Math.max(2, Math.round(w / 4.2)), back: 0.5, cw, ch, out: 0.25, punched: R() < 0.6 });
-  else shaft(b, w - 1.2, d - 1.2, y0, y1, { corner: 2.0, pier: 1.2, bays: w > 30 ? 2 : 1, back: 0.9, cw, ch, band: 1 + Math.floor(R() * 2), bandTall: 0.6, bandBack: -0.2, punched: R() < 0.3 });
+  const y0 = hb + 0.9, y1 = tall - room, st = look(b, w - 1.2);
+  if (tall > 45 && R() < 0.5) {
+    // A wing: the slab's body is lower, and a narrower tower rises from its back half to the full height.
+    const low = y0 + (y1 - y0) * (0.45 + 0.2 * R()), tw = w * (0.5 + 0.15 * R()), side = R() < 0.5 ? -1 : 1, tx = side * (w - tw) / 2 * 0.9;
+    shaft(b, w - 1.2, d - 1.2, y0, low, st);
+    cornice(b, w - 1.2, d - 1.2, low, 0.9, 0.35);
+    const sh = (p) => [p[0] + tx, p[1], p[2] - d * 0.12];
+    const wb = { ...b, kit: { patch: (l, a, c, e, f, o) => b.kit.patch(l, sh(a), sh(c), sh(e), sh(f), o), prism: (l, poly, ya, yb, o) => b.kit.prism(l, poly.map(([u, v]) => [u + tx, v - d * 0.12]), ya, yb, o), cap: (l, poly, y, up, tag) => b.kit.cap(l, poly.map(([u, v]) => [u + tx, v - d * 0.12]), y, up, tag), box: (l, xa, xb, ya, yb, za, zb, o) => b.kit.box(l, xa + tx, xb + tx, ya, yb, za - d * 0.12, zb - d * 0.12, o) } };
+    const st2 = look(wb, tw - 1);
+    shaft(wb, tw - 1, d * 0.7, low + 0.9, y1, st2);
+    cornice(wb, tw - 1, d * 0.7, y1, 0.9, 0.35);
+    crown(wb, t, tw - 1, d * 0.7, y1 + 0.9, tall - y1 - 0.9);
+    return;
+  }
+  shaft(b, w - 1.2, d - 1.2, y0, y1, st);
+  cornice(b, w - 1.2, d - 1.2, y1, 0.9, 0.35);
   if (t.roof === 'bronze') {
-    block(b, 'bay', w - 0.6, d - 0.6, y1, y1 + 1.6, { tag: COPPER, chamfer: 0.4 });
-    crown(b, { ...t, roof: 'plain' }, w - 1.2, d - 1.2, y1 + 1.6, tall - y1 - 1.6);
-  } else crown(b, t, w - 1.2, d - 1.2, y1, tall - y1);
+    block(b, 'bay', w - 0.6, d - 0.6, y1 + 0.9, y1 + 2.0, { tag: COPPER, chamfer: 0.4 });
+    crown(b, { ...t, roof: 'plain' }, w - 1.2, d - 1.2, y1 + 2.0, tall - y1 - 2.0);
+  } else crown(b, t, w - 1.2, d - 1.2, y1 + 0.9, tall - y1 - 0.9);
 }
 
-// The fin tower: deep stone fins stand out of every face, close set, and rise past the roof in steps.
+// The fin tower: deep stone fins stand out of every face, close set, and rise past the roof in steps, the middle
+// ones highest, with bronze spandrels between them at every floor.
 function finTower(b, t) {
-  const { w, d, tall } = t, R = b.R, { cw, ch } = cell(b);
+  const { w, d, tall } = t, R = b.R, { cw } = cell(b), ch = 2.0 + 0.5 * R();
   const hb = clamp(tall * 0.08, 4, 9);
   base(b, w, d, hb);
   const y0 = hb + 0.9, y1 = tall - Math.min(9, tall * 0.08), ww = w - 1.6, dd = d - 1.6, out = 1.1 + 0.6 * R();
   const bays = Math.max(3, Math.round(ww / (2 * cw + 0.7)));
-  shaft(b, ww, dd, y0, y1, { corner: 1.2, pier: 0.7, bays, back: 0.5, cw, ch, out });
+  shaft(b, ww, dd, y0, y1, { corner: 1.2, pier: 0.7, bays, back: 0.5, cw, ch, out, band: 1, bandTall: 0.5, bandBack: 0.3, bandLayer: 'bay', bandTag: R() < 0.5 ? COPPER : PLAIN });
   cornice(b, ww, dd, y1, 0.6, 0.1);
-  // The fins of the front and the sides go on up past the roof, the middle ones highest.
   for (const s of faces(ww, dd)) {
     if (s.side === 'back') continue;
     const bay = (s.len - 2.4 - (bays - 1) * 0.7) / bays;
@@ -134,28 +245,31 @@ function finTower(b, t) {
   else block(b, 'stone', ww - 2, dd - 2, y1 + 0.6, y1 + 2, { chamfer: 0.3 });
 }
 
-// Twin shafts on one podium, joined by bridges of glass. Bronze roofed twins are round and ringed in copper.
+// Twin shafts on one podium, joined by bridges of glass. The picture's copper ringed pair (PAIR) are two round
+// towers banded in copper half way up; other bronze twins are square shafts under stepped bronze attics.
+const PAIR = 9;
 function twin(b, t) {
-  const { w, d, tall } = t, R = b.R, { cw, ch } = cell(b);
+  const { w, d, tall } = t, R = b.R;
   const hp = clamp(tall * 0.14, 5, 12);
   base(b, w, d, hp);
   const sw = w * 0.4, gap = w - 2 * sw - 1, xs = [-(sw + gap) / 2, (sw + gap) / 2], low = 0.86 + 0.08 * R();
+  const st = look(b, sw), ch = st.ch;
   xs.forEach((x, i) => {
     const h = i === 0 ? tall : tall * low;
-    if (t.roof === 'bronze') { ringed(b, t, x, sw * 0.98, h); return; }
+    if (t.i === PAIR) { ringed(b, t, x, sw * 0.98, h, i === 0 ? 0.5 : 0.56); return; }
     const kit = b.kit, at = (p) => [p[0] + x, p[1], p[2]];
     const sb = { ...b, kit: { patch: (l, a, c, e, f, o) => kit.patch(l, at(a), at(c), at(e), at(f), o), prism: (l, poly, y0, y1, o) => kit.prism(l, poly.map(([u, v]) => [u + x, v]), y0, y1, o), cap: (l, poly, y, up, tag) => kit.cap(l, poly.map(([u, v]) => [u + x, v]), y, up, tag), box: (l, x0, x1, y0, y1, z0, z1, o) => kit.box(l, x0 + x, x1 + x, y0, y1, z0, z1, o) } };
-    const y1 = h - Math.min(6, h * 0.07);
-    shaft(sb, sw, d * 0.82, hp + 0.9, y1, { corner: 1.2, pier: 0.8, bays: sw > 16 ? 2 : 1, back: 1.2, cw, ch, chamfer: 0.9 });
+    const y1 = h - Math.min(9, h * 0.1);
+    shaft(sb, sw, d * 0.82, hp + 0.9, y1, { ...st, chamfer: 0.9 });
     cornice(sb, sw, d * 0.82, y1, 0.8, 0.3);
-    crown(sb, t, sw, d * 0.82, y1 + 0.8, h - y1 - 0.8);
+    crown(sb, { ...t, top: i === 0 ? 'steps' : 'turrets' }, sw, d * 0.82, y1 + 0.8, h - y1 - 0.8);
   });
   // The bridges, each a box of windows between the shafts, with a stone floor and roof.
   for (const f of [0.45, 0.72]) {
     const y = hp + (tall * low - hp) * f, hh = Math.max(2.4, ch * 2), z = d * 0.12, half = gap / 2 + 0.6;
     block(b, 'stone', 2 * half, d * 0.3, y - 0.6, y, { chamfer: 0.001 });
     const front = faces(2 * half, d * 0.3)[0];
-    windows(b, { ...front.f, o: [front.f.o[0], 0, front.f.o[2] + z] }, 0, 2 * half, y, y + hh, 0, cw, hh / 2, { every: 2 });
+    windows(b, { ...front.f, o: [front.f.o[0], 0, front.f.o[2] + z] }, 0, 2 * half, y, y + hh, 0, 1.4, hh / 2, { every: 2 });
     b.kit.cap('stone', chamfered(2 * half, d * 0.3, 0.001).map(([u, v]) => [u, v + z]), y + hh, true, { tone: b.tone, lay: 0 });
   }
 }
@@ -334,7 +448,7 @@ export function design(t) {
     case 'obelisk': return obelisk;
     case 'disc': return disc;
     case 'point': return point;
-    case 'deco': return t.roof === 'bronze' && t.seed > 0.55 && t.w < 34 ? (b, tt) => ringed(b, tt) : deco;
+    case 'deco': return t.roof === 'bronze' && t.seed > 0.55 && t.w < 34 ? (b, tt) => ringed(b, tt, 0, tt.w, tt.tall, 0.3) : deco;
     case 'slab': return slabTower;
     case 'fin': return finTower;
     case 'twin': return twin;

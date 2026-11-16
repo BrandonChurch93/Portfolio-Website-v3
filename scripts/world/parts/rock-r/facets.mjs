@@ -36,7 +36,9 @@ class Sets {
   join(a, b, w) { if (this.size[a] < this.size[b]) [a, b] = [b, a]; this.p[b] = a; this.size[a] += this.size[b]; this.int[a] = Math.max(this.int[a], this.int[b], w); return a; }
 }
 
-export async function facets({ k = 25, min = 5, target = 3200, most = 1800 } = {}) {
+// The picture's rock divided into faces, before the second generation of breaks: lab holds each pixel's face, or
+// TOP, SKIN or AIR.
+export async function segment({ k = 25, min = 5, target = 3200, most = 1800 } = {}) {
   const s = await see(), { W, H, kind, rgb, top } = s, n = W * H;
   const isRock = (i) => kind[i] === 1 || kind[i] === 2;
   // The picture as the eye sees it: lightness 0 to 255, and two of warmth, smoothed a little inside the rock.
@@ -187,6 +189,27 @@ export async function facets({ k = 25, min = 5, target = 3200, most = 1800 } = {
     if (!joined) break;
   }
   count = relabel();
+  return { W, H, kind, rgb, top, lab, count, s };
+}
+
+// Each label's pixels as one connected piece: a label in two pieces becomes two labels. Returns the count.
+export function connected(W, H, lab) {
+  const n = W * H, seen = new Int32Array(n).fill(-1), out = lab.slice();
+  let next = 0;
+  for (let i = 0; i < n; i++) {
+    if (lab[i] < 0 || seen[i] >= 0) continue;
+    const id = next++, q = [i];
+    seen[i] = id;
+    while (q.length) { const a = q.pop(); out[a] = id; for (const j of [a - 1, a + 1, a - W, a + W]) if (j >= 0 && j < n && lab[j] === lab[i] && seen[j] < 0) { seen[j] = id; q.push(j); } }
+  }
+  lab.set(out);
+  return next;
+}
+
+export async function facets(o = {}) {
+  let { W, H, kind, rgb, lab, count } = await segment(o);
+  const n = W * H;
+  const relabel = () => connected(W, H, lab);
 
   // A second generation of breaks, by rule: a large face is cut by one to four straight-ish lines across its long
   // way into pieces that stay nearly one plane (relief.mjs keeps them so), as a broken slab is. What each piece
@@ -262,7 +285,15 @@ export async function facets({ k = 25, min = 5, target = 3200, most = 1800 } = {
     faces.push({ id: a, parent: parent[a], area: c, at: [sum[o + 1] / c, sum[o + 2] / c], shown: v / c, rgb: v > 0 ? col : ac });
   }
 
-  // The outlines, along the cracks between pixels.
+  const chains = outline(W, H, lab, kind, rgb);
+  return { W, H, faces, chains, lab };
+}
+
+// The outlines of a labelled picture, along the cracks between pixels, as runs between the places where three
+// labels meet. tol(L, R) is how far a run may stray from straight before it keeps a corner, in pixels (1.5 if not
+// given), and wobble(L, R) how far a long straight run wanders (0.28).
+export function outline(W, H, lab, kind, rgb, { tol = () => 1.5, wobble = () => 0.28 } = {}) {
+  const n = W * H;
   const C = W + 1, labAt = (x, y) => (x < 0 || y < 0 || x >= W || y >= H ? AIR : lab[x + y * W]);
   // Each corner's cracks: east (x to x+1 along y), south (y to y+1 along x). A crack is live when it parts two
   // labels, at least one of them rock.
@@ -340,7 +371,7 @@ export async function facets({ k = 25, min = 5, target = 3200, most = 1800 } = {
     const keep = new Uint8Array(q.length);
     keep[0] = keep[q.length - 1] = 1;
     const dp = (a, b) => {
-      let best = -1, bd = 1.5;
+      let best = -1, bd = tol(ch.L, ch.R);
       const [ax, ay] = q[a], [bx, by] = q[b], lx = bx - ax, ly = by - ay, ll = Math.hypot(lx, ly) || 1;
       for (let i = a + 1; i < b; i++) { const d = Math.abs((q[i][0] - ax) * ly - (q[i][1] - ay) * lx) / ll; if (d > bd) { bd = d; best = i; } }
       if (best >= 0) { keep[best] = 1; dp(a, best); dp(best, b); }
@@ -354,7 +385,7 @@ export async function facets({ k = 25, min = 5, target = 3200, most = 1800 } = {
       const [ax, ay] = s[i - 1], [bx, by] = s[i], len = Math.hypot(bx - ax, by - ay), k2 = Math.max(1, Math.ceil(len / SEG));
       const nx = -(by - ay) / (len || 1), ny = (bx - ax) / (len || 1);
       for (let j = 1; j <= k2; j++) {
-        const t = j / k2, wob = j < k2 && len > 5 ? 0.28 * Math.sin(Math.PI * t) * (hash(ax + j, ay) + 0.6 * hash(ay, bx + j)) : 0;
+        const t = j / k2, wob = j < k2 && len > 5 ? wobble(ch.L, ch.R) * Math.sin(Math.PI * t) * (hash(ax + j, ay) + 0.6 * hash(ay, bx + j)) : 0;
         out.push([ax + (bx - ax) * t + nx * wob, ay + (by - ay) * t + ny * wob]);
       }
     }
@@ -369,7 +400,7 @@ export async function facets({ k = 25, min = 5, target = 3200, most = 1800 } = {
     ch.edge = cnt ? dark / cnt : -1;
     delete ch.raw;
   }
-  return { W, H, faces, chains, lab };
+  return chains;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
