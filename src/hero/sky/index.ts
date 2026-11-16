@@ -34,7 +34,7 @@ export interface SkyPlan {
 export interface Sky { replan(): void; dispose(): void; meteor(): void }
 
 const MAX_DPR = 2;
-const TWINKLE = { hz: 12, amp: 0.07 } as const;
+const TWINKLE = { hz: 20, amp: 0.22 } as const;
 // Every bright star's spikes lie the same way, as one lens draws them, a little off square.
 const TILT = 0.21;
 // How bright anything in the sky may get: a share of pale gold.

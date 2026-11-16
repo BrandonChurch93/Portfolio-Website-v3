@@ -36,9 +36,10 @@ export const FIELD = { cell: 128, density: 0.026, faint: 0.0019, slope: 1.12, mo
 // The stars the band is resolved into, besides its own grain.
 export const BAND_STARS = { tries: 70000, faint: 0.0013, slope: 1.15, most: 140 } as const;
 // The bright few with four points.
-export const SPARKS = { count: 10, big: 3, apart: 135, flux: [5, 10], bigFlux: [16, 24], len: [9, 14], bigLen: [22, 30] } as const;
-// A meteor now and then: the first after so many seconds, then one every so many.
-export const METEORS = { count: 240, first: 7, every: [20, 40], dur: [0.38, 0.7], len: [120, 250], after: 0.32 } as const;
+export const SPARKS = { count: 18, big: 4, apart: 135, flux: [5, 10], bigFlux: [16, 24], len: [9, 14], bigLen: [22, 30] } as const;
+// A meteor often: the first after so many seconds, then one every so many. He found the hero too static (Nov 16:
+// "more stuff going on in the sky"): one every 20 to 40 seconds was a sky a visitor never saw move.
+export const METEORS = { count: 700, first: 2.5, every: [4, 11], dur: [0.38, 0.7], len: [80, 230], after: 0.32 } as const;
 
 const smooth = (a: number, b: number, x: number) => {
   const k = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -181,7 +182,10 @@ export function meteors(p: SkyPlan, avoid: { x: number; y: number }[]): Meteor[]
       for (let k = 0; k <= 12 && good; k++) good = ok(x0 + (dx * k) / 12, y0 + (dy * k) / 12);
       if (good) made = { at: t, dur: METEORS.dur[0] + (METEORS.dur[1] - METEORS.dur[0]) * r(), x0, y0, x1: x0 + dx, y1: y0 + dy, bright: 0.6 + 0.4 * r() };
     }
-    if (made) out.push(made);
+    // A meteor that found no clear path keeps its time for the next try: left to pass, most times went by with no
+    // meteor at all, and the first came after twenty seconds.
+    if (!made) continue;
+    out.push(made);
     t += METEORS.every[0] + (METEORS.every[1] - METEORS.every[0]) * r();
   }
   return out;
