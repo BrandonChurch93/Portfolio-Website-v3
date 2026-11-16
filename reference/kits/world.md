@@ -13,15 +13,37 @@ The top of a small planet torn open, with a city on it, in the hero under his wo
 - For what broke away: "Does this look like something a high-end premium movie made? Does this look like something that would be in a AAA video game? If not then it's not a good enough scene." (Nov 15, 18:50)
 - The tests are in `QUALITY.md`, "The hero's world, built to picture 9". Every one is judged from stills taken on his Mac, side by side with picture 9.
 
-## What the study is, and what it is not
+## Picture 9 is recreated. The study is a rough guide and nothing more
 
-`/lab/hero-blockout` (`src/hero-blockout/`) is the layout he said yes to on Nov 15 at 20:52, and nothing more.
+He ruled this on Nov 15 at 21:38, after seeing the first output of the build: a smooth cut planet with a box for a hollow. "It looks much more like our design versus what Gemini provided. I think what Gemini provided looks better, and I'd rather try to recreate that perfectly than our inferior version."
 
-- **It is the plan.** Where everything is, how big it is, and how it is seen: the view, the planet's outline, what is torn away, where the core hangs, every building's place and size, the pyramid, the belt of trees, the desert, the craters, the cracks, the small streams, the families of what broke away. These are numbers in `src/hero-blockout/plan.ts`.
-- **It is not the look.** Do not carry its meshes or its shaders into the piece with small changes. A world that looks like the study with more polish has failed.
-- Copy the numbers you need into the piece's own `layout.ts`. The piece imports nothing from `src/hero-blockout/`, and the study is left as it is.
-- You may change how a thing is made as much as you like. You may not move it, resize it or change the view without asking him: that is the part he approved.
-- What the study got wrong, so it is not repeated: `LOG.md`, Nov 15, "The fourth round stopped" and "The world rebuilt to picture 9".
+- **Picture 9 is the shape as well as the look.** Its outline, its proportions, where each thing is and how big, how the rock is broken. Recreate it as exactly as a live scene can.
+- **Where the study and picture 9 differ, picture 9 wins.** Do not ask him first. The study (`/lab/hero-blockout`, `src/hero-blockout/plan.ts`) only tells you the units, where the page puts the world, the names of things, and roughly how big they are.
+- **Do not build the study's description of the tear.** In the study the hollow is described as a smooth cave with a flat ledge and the broken pieces are added to it. Built literally that is a box. Picture 9's hollow has no flat wall, no straight edge and no box anywhere: its roof hangs in great angular slabs with a jagged lower edge, its walls are stacked broken slabs that lean in toward the core, its floor is a ragged shelf, and dark broken masses hang below each side.
+- Do not carry the study's meshes or shaders into the piece. The piece imports nothing from `src/hero-blockout/`, and the study is left as it is.
+- What the study got wrong, so it is not repeated: `LOG.md`, Nov 15.
+
+## Match picture 9, every round
+
+Keep the picture open while you work. Before judging anything else in a round, lay your still over the picture and fix what does not line up.
+
+- Use `reference/concept/09-parts/09-the-whole-picture-at-1376.jpg`, which is 1376 by 768. The part pictures were cut from it.
+- Write a small script, `npm run match`, that takes a still of the world and writes two images: the still beside the picture at the same size, and the still laid over the picture half and half. Line them up by the planet: its left rim, its right rim and the top of its lip.
+- Where things are in that picture, in its own pixels, measured by eye. Check each against the picture, which wins:
+    - The planet: left rim at 95 across, right rim at 1280. That width, 1185, is 1320 of the page's units.
+    - The top of the land's front lip: 268 down at the middle.
+    - The core: centre at 688 across and 437 down, radius 90.
+    - The hollow: from 330 to 1050 across. Its roof's underside about 335 down, its floor's top about 550, its floor's underside 575 to 600.
+    - The lowest rock: about 700 down, under the left mass at 330 across. The right side comes down to a point near 1040 across and 690 down.
+    - The pyramid: from 255 to 475 across, its apex at 362 across and 185 down, its base about 300 down.
+    - Tops of the skyline: the spire 685 across and 20 down, the gold pointed tower 475 and 70, the stepped gold crown 762 and 100, the sun disc 902 and 95, a gold cap 968 and 108, a tower 1048 and 135.
+    - The dunes: from 930 to 1270 across.
+    - The large crater: centre 1175 and 405, radius 55. The low crater: 1100 and 600, radius 45.
+    - The knot of the cracks: 235 across and 470 down.
+    - The small streams: at 385, 500, 620, 748, 812 and 1010 across.
+- It matches when the planet's outline, the lip, the hollow's outline, the core, the pyramid and each named tower sit where the picture has them to within about a hundredth of the planet's width.
+- A live scene will not match the picture grain for grain. Outline, place, proportion, light and color can match, and must.
+- Show him the side by side and the overlay every time you show him anything.
 
 ## The four changes from picture 9, and no others
 
@@ -95,11 +117,11 @@ Before anything else is built, three things are built to full finish, as proof t
 
 Everything else is shown as plain dark shapes in its place, so the slice is seen where it belongs.
 
-Then stop. Show him, for each of the three, a still at the page's size and one close, each beside its picture from `reference/concept/09-parts/` in one image, kept in `reference/studies/`. Say what is at the bar and what is not. Build nothing more until he answers. If the slice is not tremendously better than the study, say so and propose a change of method: do not go on.
+Then stop. Show him the overlay on picture 9 first. Then, for each of the three, a still at the page's size and one close, each beside its picture from `reference/concept/09-parts/` in one image, kept in `reference/studies/`. Say what is at the bar and what is not. Build nothing more until he answers. If the slice is not tremendously better than the study, say so and propose a change of method: do not go on.
 
 ## How to look at it
 
 - On his Mac the scripts draw with his graphics card. Take stills as often as you like, and open every one.
 - Put the still and its picture side by side at the same size before judging. Judge at the page's size and again at three times zoom.
 - Send a shot's output to a file and search it for ERROR: a shader that does not compile leaves a still with parts missing.
-- `npm run blockout -- front` draws the study's plan as flat shapes. Use it to check nothing has moved.
+- `npm run match` is the first look of every round: see "Match picture 9, every round".

@@ -592,11 +592,11 @@ The target is picture 9, `reference/concept/09-*`, and each part's own picture i
 8. **The dunes.** A sharp crest and a hollow face in full shadow, with ripples close up.
 9. **The skin.** Cracks cut into the rock and lit from inside, with their light on the rock beside them. Craters with a rim, a floor and a shadow.
 10. **What broke away.** One scene. His test: a high end film, or a AAA game. In a filmstrip its motion has weight, and pieces of a family move together.
-11. **The layout holds.** Nothing has moved or changed size from the study's plan, and the view is the same.
+11. **It matches picture 9.** Laid over picture 9 at the same size, the planet's outline, the lip, the hollow's outline, the core, the pyramid and each named tower sit where the picture has them, to within about a hundredth of the planet's width. Where the study and the picture differ, the picture wins (he ruled it, Nov 15, 21:38).
 12. **Colors.** The site's only.
 13. **Cost.** Inside the kit's budgets, measured with `npm run mem` and `npm run perf`.
 
-Fail on sight: rock that is faceted or smooth as clay, a window that is a flat picture, yellow gold, anything white, haze round the core, a pattern that can be seen to repeat, a part that is the study's with small changes.
+Fail on sight: a smooth cut planet or a hollow with a flat wall or a straight edge, rock that is faceted or smooth as clay, a window that is a flat picture, yellow gold, anything white, haze round the core, a pattern that can be seen to repeat, a part that is the study's with small changes.
 
 ## The whole page so far
 

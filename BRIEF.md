@@ -1151,6 +1151,12 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     5. **A slice first:** the hollow with the core, the pyramid, and one tower (the stepped gold crown), each to full finish, shown to him beside picture 9 before anything else is built. If it is not tremendously better than the study, the method changes.
     6. Not ruled, and kept out of the slice: the two loose pieces that carry a piece of the city, and the line of light under gold and bronze crowns, which are Fable's and not in picture 9.
     7. Still open from before: whether the first screen ends at the same place of the world on every screen, the hero's opening, and when the new world goes onto `/lab/hero`.
+- **Picture 9 is recreated, not our version of it (Nov 15, 21:38).** He saw the first output of the build in Claude Code: a smooth cut planet with a box for a hollow, grey stand ins on top. His words: "It looks much more like our design versus what Gemini provided. I think what Gemini provided looks better, and I'd rather try to recreate that perfectly than our inferior version. Maybe what makes sense is to have him keep referencing the image to make sure everything matches perfectly." In exact terms:
+    - Picture 9 is the shape as well as the look: its outline, its proportions, where each thing is and how big, and how the rock is broken.
+    - Where the study at `/lab/hero-blockout` and picture 9 differ, picture 9 wins, without asking him. The study is a rough guide to units, names and rough sizes.
+    - **This replaces item 1 of "The hero's world, the build" above (20:52), which approved the study's layout and had any change to it asked of him first.** Fable wrote that rule, and it is why the build followed the study's smooth description of the hollow.
+    - Every round of the build is laid over picture 9 and checked before anything else is judged (`reference/kits/world.md`, "Match picture 9, every round", and test 11 in `QUALITY.md`).
+    - Unchanged: the four changes from picture 9 he agreed at 20:15, made in code and not in Blender, and the slice first.
 - An idea to revisit with the hero, not decided: his first thought was the city breaking apart into the stream as the visitor scrolls. Fable's twist, which he asked to have noted: building, not breaking. The city assembles out of the stream's facets in the opening, and the stream carries the same pieces on down the page. (Nov 12)
 
 **The hero, the city at rest: the agreement (Nov 14)**
