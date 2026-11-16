@@ -15,13 +15,13 @@ import { L, linear } from '../../lib/plan.mjs';
 // floor is a calm band and not a bar. Lit by bays, the panes between two mullions together, so what is lit reads at
 // the page's size as clumps of windows parted by bronze and never as a ladder of bars. Never by a noise held up to a
 // level, whose blobs read as letters at the page's size.
-const FLOOR = { whole: 0.14, clumps: 0.4, after: 0.4, single: 0.4, off: 0.12, warm: 0.3, pale: 0.12, glow: 0.4, narrow: 0.6, calm: 0.9 };
+const FLOOR = { whole: 0.14, clumps: 0.42, after: 0.2, single: 0.4, off: 0.12, warm: 0.3, pale: 0.12, glow: 0.4, narrow: 0.6, calm: 0.9 };
 // A clump: how many bays at least and at most, and how many clumps to a floor at most.
 // A clump: how many bays at least and at most, how many clumps to a floor at most, and how often a clump starts where
 // the one on the floor under it did (clumps that moved from floor to floor drew an S, a Z or a 5 at the page's size).
 // A strip of `whole` bays or fewer is lit a floor at a time, as one clump: a bay or two lit by itself there drew a
 // zigzag, and in the tiers over the ring an E.
-const CLUMP = { bays: [2, 4], most: 2, keep: 0.85, whole: 4 };
+const CLUMP = { bays: [2, 4], most: 2, keep: 0, whole: 4 };
 // A strip one bay wide: how many floors a lit run is, and a dark one, at least and at most.
 const RUN = { lit: [2, 6], dark: [1, 5] };
 // How much busier the floors are where the building is busy: a slow swell up the strip.

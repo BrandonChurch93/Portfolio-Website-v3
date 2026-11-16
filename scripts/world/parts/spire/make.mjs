@@ -39,7 +39,10 @@ const ALBEDO = Object.fromEntries(Object.entries(STONES).map(([k, v]) => [k, mix
 // The design, in units, y up from the ground under the spire. Where each ring of fins ends, and how far out it
 // stands, were read off picture 9 (fromPicture in the layout).
 const S = {
-  court: { r: L.COURT, top: 1.4, steps: [[L.COURT, 0.5], [L.COURT - 1.8, 0.95], [L.COURT - 3.6, 1.4]], under: -1.8 },
+  // The court's edge: a nosing (where it stands in, and how tall its riser is, which holds the lit kerb), then a
+  // sloped plinth down to its foot (how far out, how high). Steps were drawn here, but seen so nearly edge on each
+  // tread was a sliver under a pixel and the flight came out as a dashed line.
+  court: { r: L.COURT, top: 1.8, nose: [L.COURT - 3.6, 0.25], foot: [L.COURT, 0.9], under: -1.8 },
   podium: { w: 54, c: 5, y0: -1, y1: 40.5, portals: { main: 4.4, side: [10.6, 16.0] }, cornice: [[40.5, 41.4, 0.8], [41.4, 42.4, 1.5]], parapet: [42.4, 44.6], frieze: [37.6, 39.8] },
   buttress: { at: 25.5, tiers: [[8, -1, 20.5], [6.6, 21.8, 32.2], [5.4, 33.4, 44.2]], finial: 1.05 },
   // Where every fin and the shaft rise from, inside the podium.
@@ -91,7 +94,9 @@ const S = {
   // a hull round it, the section grown by `hull` on every side: the ring's material finds the band itself inside the
   // hull for each pixel, so its outline gets the true share of every pixel it covers, the pixels just outside it too,
   // and its curves, crown and bead are exact and never facets. The section goes to the material with the file.
-  ring: { out: 3.1, in: -9.8, half: 1.25, arris: 0.9, crown: 0.25, bead: [0.32, 0.22], hull: 0.9, segs: draft ? 96 : 160 },
+  // A blade and not a tube: the band is about as heavy as picture 9's, about five units through its front arc as
+  // seen, so it is thinned from inside and its ends stay on the picture's lines.
+  ring: { out: 3.1, in: -6.0, half: 0.9, arris: 0.6, crown: 0.35, bead: [0.24, 0.16], hull: 0.9, segs: draft ? 96 : 160 },
 };
 const RINGS = [{ R: S.shaft.R, e: 0, top: S.shaft.to }, ...S.rings];
 // Where a ring's shoulder begins: it climbs in by its facets from upright at R, ending just inside the faces of the
@@ -229,14 +234,11 @@ function sweep(k) {
 }
 
 // ---------------------------------------------------------------------------------------------------------------
-// The court: a round plaza of finer paving, with a low stepped edge, a little proud of the ground.
+// The court: a round plaza of finer paving, with a low sloped edge under a nosing, a little proud of the ground.
 {
   const C = S.court, prof = [];
-  for (let r = 26; r < C.steps[2][0] - 0.01; r += draft ? 6 : 2.5) prof.push([r, C.top]);
-  for (let k = C.steps.length - 1; k >= 0; k--) {
-    const [r, y] = C.steps[k], below = k > 0 ? C.steps[k - 1][1] : C.under;
-    prof.push([r, y, true], [r, below, true]);
-  }
+  for (let r = 26; r < C.nose[0] - 0.01; r += draft ? 6 : 2.5) prof.push([r, C.top]);
+  prof.push([C.nose[0], C.top, true], [C.nose[0], C.top - C.nose[1], true], [C.foot[0], C.foot[1], true], [C.foot[0], C.under, true]);
   prof.reverse();
   kit.lathe('stone', prof.map(([r, y, s]) => [r, y, s]), draft ? 64 : 160, { tag: { lay: LAY.court } });
 }
@@ -550,7 +552,7 @@ console.log(`bake: ${stats.vertices} vertices, ${stats.triangles} triangles, ${s
 // is, how narrow its beam (a power of its cosine), how far in from straight up it leans, in degrees, how far apart
 // the lamps are, how far out from a face, the most it lays on one place, and how far its light is eased from the
 // palette's hot toward flame, so the foot of the tower is warm from below.
-const FLOOD = { power: 60, beam: 5, lean: 22, every: 1.4, off: 2.4, most: 4, warm: 0.4 };
+const FLOOD = { power: 30, beam: 5, lean: 22, every: 1.4, off: 2.4, most: 4, warm: 0.4 };
 const floodAt = (() => {
   const lamps = [], row = (X, y, power, off = FLOOD.off) => {
     const r = X + off, n = Math.max(2, Math.round((2 * r) / FLOOD.every)), c = Math.cos(FLOOD.lean * L.D2R), k = Math.sin(FLOOD.lean * L.D2R);
@@ -676,7 +678,7 @@ const { segs, ...section } = S.ring;
 // The court as the stone's material lights it: its top, the podium's front, the radius of each step's riser, and
 // each portal's doors (the middle across, half their width, how bright their lobby is), which light the paving
 // before them.
-const COURT = { top: S.court.top, front: S.podium.w / 2, steps: S.court.steps.slice(1).map(([r]) => r), doors: (({ main, side: [a, b] }) => [[0, main, 1], [(a + b) / 2, (b - a) / 2, 0.6], [-(a + b) / 2, (b - a) / 2, 0.6]])(S.podium.portals) };
+const COURT = { top: S.court.top, front: S.podium.w / 2, steps: [S.court.nose[0]], doors: (({ main, side: [a, b] }) => [[0, main, 1], [(a + b) / 2, (b - a) / 2, 0.6], [-(a + b) / 2, (b - a) / 2, 0.6]])(S.podium.portals) };
 pack('public/world/spire.bin', meshes, { windows: 'spire-windows.png', triangles, draft, ledges: LEDGES, profile: PROFILE, ring: section, court: COURT });
 png('public/world/spire-windows.png', win.size, win.size, win.data, 3);
 console.log(`spire: ${triangles} triangles (${meshes.map((m) => `${m.name} ${m.indices.length / 3}`).join(', ')}), windows lit ${(100 * win.lit()).toFixed(0)}%, ${((performance.now() - began) / 1000).toFixed(1)} s`);

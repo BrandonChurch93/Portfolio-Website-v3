@@ -24,9 +24,6 @@ export const WINDOW = {
   // A dim room is lit warmer: its light goes to the warmest color as its level falls from dim[1] to dim[0], so no
   // lit pane is ever a pale grey.
   dim: [0.12, 0.75] as const,
-  // How far a far window's state is blurred with its neighbours', so a strip of windows smaller than a few pixels
-  // comes to its own average and never stipples.
-  blur: 1.6,
   // The map of every window's state: this many texels square, one a window.
   map: 128,
 } as const;

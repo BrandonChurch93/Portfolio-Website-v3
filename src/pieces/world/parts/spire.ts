@@ -8,11 +8,12 @@ import { materials, type Band, type Court } from './spire/materials';
 // its court. Made ahead by scripts/world/parts/spire/make.mjs and shipped as public/world/spire.bin, with a map of
 // the state of its windows (spire-windows.png). Nothing of it moves, so all of it casts the moon's shadow: the ring's
 // falls on the shaft. The ring is its own mesh, drawn after everything solid: the file holds a hull round it, and its material finds the band itself in each
-// pixel, so its outline is given the share of each pixel it covers.
+// pixel, so its outline is given the share of each pixel it covers. ?spirering=0 leaves the ring out and
+// ?spireringlight=0 its light on the tower, to see each against its absence.
 
 const FILE = 'spire.bin', WINDOWS = 'spire-windows.png';
 
-export const build: PartFactory = async () => {
+export const build: PartFactory = async (ctx) => {
   const group = new THREE.Group();
   const [file, map] = await Promise.all([
     load(FILE),
@@ -25,13 +26,14 @@ export const build: PartFactory = async () => {
       return t;
     }),
   ]);
-  const m = materials(map, (file.meta.ledges as number[] | undefined) ?? [0], (file.meta.profile as number[][] | undefined) ?? [[0, 0, 0], [1, 0, 0]], file.meta.ring as Band, file.meta.court as Court), made: { dispose(): void }[] = [map, m];
+  const m = materials(map, (file.meta.ledges as number[] | undefined) ?? [0], (file.meta.profile as number[][] | undefined) ?? [[0, 0, 0], [1, 0, 0]], file.meta.ring as Band, file.meta.court as Court, ctx.query.get('spireringlight') !== '0'), made: { dispose(): void }[] = [map, m];
   for (const [name, l] of file.meshes) {
+    made.push(l.geometry);
+    if (name === 'ring' && ctx.query.get('spirering') === '0') continue;
     const part = mesh(l, m[name as 'stone' | 'bay' | 'gold' | 'ring']);
     part.castShadow = true;
     part.receiveShadow = true;
     group.add(part);
-    made.push(l.geometry);
   }
   return { group, alone: { at: [0, SPIRE.tall * 0.5, 0], r: SPIRE.tall * 0.56 }, dispose() { for (const d of made) d.dispose(); } };
 };
