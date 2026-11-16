@@ -211,7 +211,7 @@ grove(960, 1050, 9, [252, 244, 237], [0.75, 1.35]);
 grove(252, 336, 8.5, [296, 288, 281], [0.9, 1.3]);
 // The row behind the dunes stands where the plan's ROW says. Found on bare ground it stood off the land's rim and
 // was never drawn.
-for (let px = W.ROW.from; px <= W.ROW.to; px += 7.5 + 5 * r()) { const [x] = W.fromPicture(px, W.ROW.foot + 3 * (r() - 0.5), W.ROW.z), z = W.ROW.z; trees.push([n(x), n(z), n(10.5 * (0.95 + 0.75 * r() ** 1.5)), n(r(), 3), n(r() * Math.PI * 2, 3)]); }
+for (let px = W.ROW.from; px <= W.ROW.to; px += 6.5 + 4 * r()) { const [x] = W.fromPicture(px, W.ROW.foot + 3 * (r() - 0.5), W.ROW.z), z = W.ROW.z; trees.push([n(x), n(z), n(10.5 * (0.78 + 0.34 * r() ** 1.5)), n(r(), 3), n(r() * Math.PI * 2, 3)]); }
 // The trees' fourth round, laid over the picture again:
 //   - left of the spire, 470 to 650 across, the picture's belt is ONE row of crowns hard against the city's feet,
 //     250 to 265 down, with bare pale rock before it out to the lip. Ours stood three and four rows deep on that
@@ -248,6 +248,11 @@ fill(712, 1052, 224, 262, 7.4);
 // lip, and every crown in it is larger.
 fill(705, 965, 258, 290, 6);
 for (const t of trees) { const [px, py] = W.pictured(t[0], W.ground(t[0], t[1]), t[1]); if (px > 705 && px < 965 && py > 236 && t[1] !== W.ROW.z) t[2] = n(t[2] * 1.3); }
+// Between the pyramid and the spire the picture's bank is two crowns deep in crowns half as large again as ours
+// were (about 18 of its pixels where ours were 12), reaching toward the lip: three rounds of reviewers measured
+// it. A second rank is planted before the first and every crown there is larger.
+fill(474, 648, 262, 276, 7);
+for (const t of trees) { const [px, py] = W.pictured(t[0], W.ground(t[0], t[1]), t[1]); if (px > 470 && px < 650 && py > 250 && t[1] !== W.ROW.z) t[2] = n(t[2] * 1.45); }
 // On the sand the picture has one tight row and nothing else (ROW in the plan): every other tree that stands on
 // sand, or right of the last tower where the picture is dunes, is taken out. They read as an orchard on a terrace.
 for (let i = trees.length - 1; i >= 0; i--) { const t = trees[i], [px] = W.pictured(t[0], W.ground(t[0], t[1]), t[1]); if (t[1] !== W.ROW.z && (W.desert(t[0], t[1]) > 0 || px > 1056)) trees.splice(i, 1); }

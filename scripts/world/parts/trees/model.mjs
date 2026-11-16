@@ -27,17 +27,17 @@ const MASSES = {
   far: [[0.1, 0.26, 0, 0.62], [-0.48, -0.06, 0.1, 0.5], [0.48, -0.12, 0.1, 0.46]],
 };
 const KINDS = {
-  round: { crowns: [{ at: [0, 0, 0], rx: 1, ry: 0.74, masses: MASSES.round }], trunk: { foot: 0.15, sides: 6, limbs: 2 } },
-  tall: { crowns: [{ at: [0, 0, 0], rx: 0.86, ry: 0.5, masses: MASSES.tall }], trunk: { foot: 0.14, sides: 6, limbs: 2 } },
+  round: { crowns: [{ at: [0, 0, 0], rx: 1, ry: 0.74, masses: MASSES.round }], trunk: { foot: 0.085, sides: 6, limbs: 2 } },
+  tall: { crowns: [{ at: [0, 0, 0], rx: 0.86, ry: 0.5, masses: MASSES.tall }], trunk: { foot: 0.08, sides: 6, limbs: 2 } },
   twin: {
     crowns: [
       { at: [-0.4, -0.06, 0.06], rx: 0.7, ry: 0.6, masses: MASSES.twinA },
       { at: [0.4, 0.06, -0.06], rx: 0.68, ry: 0.62, masses: MASSES.twinB },
     ],
-    trunk: { foot: 0.12, sides: 6, limbs: 1 },
+    trunk: { foot: 0.07, sides: 6, limbs: 1 },
   },
-  broad: { crowns: [{ at: [0, -0.04, 0], rx: 1.08, ry: 0.8, masses: MASSES.broad }], trunk: { foot: 0.16, sides: 6, limbs: 2 } },
-  far: { crowns: [{ at: [0, 0, 0], rx: 1, ry: 0.74, masses: MASSES.far }], far: true, trunk: { foot: 0.15, sides: 5, limbs: 0 } },
+  broad: { crowns: [{ at: [0, -0.04, 0], rx: 1.08, ry: 0.8, masses: MASSES.broad }], trunk: { foot: 0.09, sides: 6, limbs: 2 } },
+  far: { crowns: [{ at: [0, 0, 0], rx: 1, ry: 0.74, masses: MASSES.far }], far: true, trunk: { foot: 0.08, sides: 5, limbs: 0 } },
 };
 // How each mass is filled: how many lumps for its size (`base` and `per` lumps for a mass of radius 0.5, by its
 // area), how large a lump is against its mass, how far its middle is sunk inside the mass's surface (against its own
@@ -47,13 +47,13 @@ const FILL = { base: 1.6, per: 3.6, far: 0.5, size: [0.44, 0.58], sink: 0.78, fl
 // The trunk: how much wider it flares at its foot and over what height, how much thinner it is at the fork, how far
 // it is sunk, the fork's height under its crown's middle against the crown's half height, and the limbs it forks
 // into: how thick each is where it leaves the fork against the trunk there, and at its end against the trunk's foot,
-// how far along the way to its mass it reaches, and how far out from the trunk's line it bows. Its foot is wide
-// enough to be a unit and a half across where a visitor sees it, and it is joined to the crown: the fork is under
-// the lowest masses and the limbs run up into them.
-const TRUNK = { flare: 0.35, rise: 0.05, taper: 0.4, sunk: 0.2, at: 0.6, limb: { from: 0.72, end: 0.2, reach: 0.8, bow: 0.16 } };
+// how far along the way to its mass it reaches, and how far out from the trunk's line it bows. It is thin, with an
+// eased flare, and mostly hidden under the lowest masses (thick and flared, the trunks read as tar stumps and
+// mushrooms), and it is joined to the crown: the fork is under the lowest masses and the limbs run up into them.
+const TRUNK = { flare: 0.22, rise: 0.09, taper: 0.4, sunk: 0.2, at: 0.6, limb: { from: 0.72, end: 0.2, reach: 0.8, bow: 0.16 } };
 // The roots: the foot of the trunk spreads in lobes that run out and down into the ground: how many lobes, how far
 // each stands out at the ground against the trunk's foot, and how fast it goes up the trunk.
-const ROOTS = { lobes: [3, 5], out: 0.45, rise: 0.035 };
+const ROOTS = { lobes: [3, 5], out: 0.18, rise: 0.05 };
 // How the trunk leans and bows: how far its fork stands off its foot to one side, at most, and how far its middle
 // bows out of the straight line, against the fork's height.
 const BOLE = { lean: 0.08, bow: 0.05 };

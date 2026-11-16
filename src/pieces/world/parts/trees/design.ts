@@ -5,7 +5,7 @@
 // A crown is three to five masses of very different sizes with dark between them, each mass filled with small lumps
 // of leaf, each lump a card of leaves the shader keeps facing the viewer, and each mass a card of its own leaves at
 // its heart and one crossed through it. Every leaf is drawn by the script into one atlas. The last model is the
-// cheap one, for every tree behind the first two ranks of crowns.
+// cheap one, for every tree mostly hidden behind nearer crowns.
 
 export const FILES = { mesh: 'trees.bin', leaves: 'trees-leaves.png' } as const;
 export const MODELS = ['round', 'tall', 'twin', 'broad', 'far'] as const;
@@ -17,9 +17,9 @@ export const FAR = MODELS.indexOf('far');
 // lump of one tree another lump's outline by moving along the row.
 export const ATLAS = { tile: 384, cols: 4, rows: 2, levels: 8 } as const;
 export const TILES = { lumps: [0, 1, 2, 3], core: [4, 5], bark: 6, blob: 7 } as const;
-// A tree of TREES' size s is drawn s wide (laid over picture 9, the picture's crowns are as wide as the plan's sizes):
-// the models are 2 wide, so they are drawn at this share of s.
-export const DRAWN = 0.5;
+// A tree of TREES' size s is drawn a little wider than s, so the crowns of a rank overlap by about a third and no
+// ground shows between two of them, as picture 9's do: the models are 2 wide, so they are drawn at this share of s.
+export const DRAWN = 0.56;
 // Where each level of the atlas's chain is in its file: the first at the left, every smaller one stacked in a
 // column at its right. The file is one and a half times as wide as the atlas.
 export function level(k: number): { x: number; y: number; w: number; h: number } {
@@ -38,19 +38,20 @@ export function tileAt(tile: number): { u: number; v: number; du: number; dv: nu
 // A leaf, in a crown's own units: how long it is. Every tile is painted so its leaves come out this size on the
 // card it is drawn on: about a twentieth of the crown's width, so at three times the page's size a leaf is two or
 // three pixels and a crown is sprigs of leaves, never a stipple and never shingles.
-export const LEAF = 0.1;
+export const LEAF = 0.055;
 // How wide a lump's card is against its lump, and the card at a mass's heart against the ball it fills. And the
 // size of each that its tiles are painted for (a lump's radius and a heart's, in a crown's units): smaller or larger
 // lumps wear smaller or larger leaves.
 export const CARD = { lump: 1.16, core: 1.08, painted: { lump: 0.21, core: 0.36 } } as const;
 
 // The crown, in its own units: how far over the ground its lowest leaves are, on the full models and on the cheap
-// one, so a short dark trunk shows under the front ranks, joined to the crown.
-export const CROWN = { clear: 0.3, far: 0.24 } as const;
+// one: low, so only a little of each thin trunk shows under the front ranks and no paving shows between the
+// crowns of a rank (raised higher, the belt read as a row of trees on stalks with ground between them).
+export const CROWN = { clear: 0.09, far: 0.07 } as const;
 
-// The shade a tree lays on the ground: a soft card from under the crown out along the ground away from the moon,
-// so the belt sits dark at its foot, and darkest round the trunk's foot. How far it starts behind the trunk and how
-// far it reaches past it, and how wide it is to each side, in crown units. Each tree's card is cut short where the
-// land ends. The moon stands about 22 degrees up, so a crown's shade lies about two and a half times as far as it
-// is tall: a crown about 1.9 tall lays its shade about 4.6 out.
-export const SHADE = { back: 1.6, reach: 4.6, wide: 1.6, up: 0.04 } as const;
+// The shade a tree lays on the ground: a card under the tree out along the ground away from the moon, which holds
+// the crown's own outline thrown there (BLOB in scripts/world/parts/trees/leaves.mjs). How far it starts behind the
+// trunk and how far it reaches past it, and how wide it is to each side, in crown units. Each tree's card is cut
+// short where the land ends. The moon stands about 22 degrees up, so a crown's shade lies about two and a half
+// times as far as it is high: a crown up to about 1.75 lays its shade about 4.4 out.
+export const SHADE = { back: 0.6, reach: 4.8, wide: 1.0, up: 0.04 } as const;

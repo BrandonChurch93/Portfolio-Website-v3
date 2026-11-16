@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { hex, type PaletteName } from '../../../config/palette';
-import { D2R, MOONWARD, PYRAMID, drawn, ground, noise, pyramidal, seeded, within } from '../layout';
+import { D2R, MOONWARD, PYRAMID, ROW, drawn, ground, noise, pyramidal, seeded, within } from '../layout';
 import { load } from '../files';
 import type { PartFactory } from '../part';
 import { TOWERS, TREES } from '../placed';
@@ -11,8 +11,8 @@ import { AIR, JITTER, treeDepth, treeMaterial, treeUniforms } from './trees/mate
 // The trees: the belt along the city's front and the few among the buildings, each where TREES has it (./placed.ts)
 // and as wide. Models of one kind of tree, made ahead by scripts/world/parts/trees/ with their stored light, each
 // drawn for many trees at once with a place, a turn, a size, a height, a shade and a number of its own. A crown the
-// fixed view cannot see past nearer crowns and buildings is left out, and one behind the first two ranks is drawn
-// with the cheap model (VIEWED). A tree whose ground the tear took is left out.
+// fixed view cannot see past nearer crowns and buildings is left out, and one mostly hidden is drawn with the cheap
+// model (VIEWED). A tree whose ground the tear took is left out.
 // Each stands on the land as it is drawn (the make script stores where, from the land's own field): a tree on a
 // dune stands on the dune, and one whose crown a crest in front of it mostly hides is left out, since a tuft over a
 // crest reads as cut off.
@@ -31,7 +31,7 @@ const AUTUMN: readonly { mix: readonly [PaletteName, PaletteName, number]; power
   { mix: ['copper-light', 'hot', 0.3], power: 0.92, share: 0.16 },
 ];// How much one tree differs from the next of its shade in brightness, in size and in height against its width, and
 // how far it leans (the shear of its height to one side).
-const DIFFER = { light: 0.12, size: 0.08, tall: [0.9, 1.1], lean: 0.06 } as const;
+const DIFFER = { light: 0.12, size: 0.14, tall: [0.85, 1.16], lean: 0.06 } as const;
 // The tall model is already taller than it is wide: it is stretched no further than this.
 const SLENDER = 1.0;
 // Which of the full models a tree in front is: a tree larger than those round it is tall or round and stands over
@@ -42,13 +42,14 @@ const KIND = { big: [MODELS.indexOf('tall'), MODELS.indexOf('round')], small: [M
 const PLACE = 90;
 // How much taller a crown stands, against its width, for each share it is larger than its neighbours.
 const STANDS = 0.5;
-// What the fixed view sees of each crown, worked out once from where things are drawn (drawn() in layout.ts): a
-// crown is a disc on the screen, this high over its foot and this wide (in its model's units), looked at in these
-// places (shares of its radius, round its middle). A crown of which every place is behind nearer crowns (each
-// taken as `cover` of its disc) or a nearer building is not drawn. One whose middle is behind `ranks` nearer crowns
-// or more is in the back ranks and takes the cheap model. ?treecull=0 draws every crown, to check that none of
-// those left out shows.
-const VIEWED = { up: 0.95, wide: 0.92, at: [[0, 0], [0.6, 0], [-0.6, 0], [0, 0.6], [0, -0.55], [0.42, 0.42], [-0.42, 0.42], [0.42, -0.4], [-0.42, -0.4], [0.85, 0], [-0.85, 0], [0, 0.85], [0.6, 0.6], [-0.6, 0.6], [0.6, -0.5], [-0.6, -0.5]], cover: 0.75, ranks: 2 } as const;
+// What the fixed view sees of each crown, worked out once from where things are drawn (drawn() in layout.ts), on a
+// grid of the host's units: a crown is an ellipse on the screen, its middle this high over its foot and this wide
+// and tall (in its model's units, as the models are drawn), and the crowns nearer the viewer and the buildings
+// wholly nearer cover it. A crown hides what is behind it only inside `solid` of its ellipse, since its outline is
+// ragged and lets the next through. A crown of which under `least` is seen is not drawn (well under the tenth
+// the brief allows, since an ellipse is not quite the crown), and one of which under
+// `back` is seen takes the cheap model. ?treecull=0 draws every crown, to check that none of those left out shows.
+const VIEWED = { up: 0.9, wide: 0.95, tall: 0.8, solid: 0.82, least: 0.04, back: 0.25 } as const;
 // The city behind a tree: how far behind it and to each side a building is counted, and how tall the buildings
 // behind have to be together for its outline to be lit in full.
 const BEHIND = { deep: 260, side: 26, full: 260 };
@@ -58,7 +59,7 @@ const BEHIND = { deep: 260, side: 26, full: 260 };
 // of them reaches on it, as a share of its height, and never past `most` of it: a crown lets the moon through its
 // gaps, and picture 9 has the top of every crown in the belt lit. The trees take no shade of the moon's from its
 // shadow map: the towers behind would cover the whole belt.
-const SHADED = { far: 3, side: 0.7, drop: 0.52, top: 2, most: 0.55 };
+const SHADED = { far: 3, side: 0.7, drop: 0.52, top: 2, most: 0.4 };
 // The shade on the ground is cut where it would pass this far inside the land's edge, in the tree's sizes.
 const EDGE = 0.4;
 // A tree is drawn only if at least this share of its crown is seen over the land in front of it.
@@ -70,7 +71,7 @@ const SEEN = 0.65;
 // the moon's shadow map (above), so this is how they agree with the paving at their feet.
 // Never past `most` of a crown: picture 9 has the tops of the belt left of the pyramid lit as the rest are, though
 // the pyramid stands between them and the moon.
-const STREET = { heights: 7, far: 700, step: 3, top: 2.1, most: 0.6 };
+const STREET = { heights: 7, far: 700, step: 3, top: 2.1, most: 0.15 };
 
 // Whether a ray from p toward the moon is stopped by a building, or by the pyramid.
 const moon = new THREE.Vector3(...MOONWARD).normalize();
@@ -100,37 +101,76 @@ function blocked(px: number, py: number, pz: number): boolean {
   return false;
 }
 
-// Which crowns the fixed view sees, and which of those are in the back ranks (VIEWED).
+// Which crowns the fixed view sees, and which of those are mostly hidden (VIEWED).
 type Placed = readonly [number, number, number, number, number];
-function viewed(trees: readonly Placed[], seat: (x: number, z: number) => { y: number }): { kept: Placed[]; back: boolean[] } {
-  const discs = trees.map(([x, z, s]) => {
-    const g = seat(x, z).y, [cx, cy] = drawn(x, g + VIEWED.up * s, z), [ex] = drawn(x + VIEWED.wide * s, g + VIEWED.up * s, z);
-    return { cx, cy, r: Math.abs(ex - cx), z };
+function viewed(trees: readonly Placed[], tall: readonly number[], seat: (x: number, z: number) => { y: number }): { kept: number[]; back: boolean[] } {
+  const discs = trees.map(([x, z, s], i) => {
+    const g = seat(x, z).y, h = s * tall[i], [cx, cy] = drawn(x, g + VIEWED.up * h, z), [ex] = drawn(x + VIEWED.wide * s, g + VIEWED.up * h, z), [, ty] = drawn(x, g + (VIEWED.up + VIEWED.tall) * h, z);
+    return { cx, cy, rx: Math.abs(ex - cx), ry: Math.abs(cy - ty), z };
   });
-  const walls = TOWERS.map(([bx, bz, w, d, tall, turn]) => {
-    const c = Math.cos(turn * D2R), sn = Math.sin(turn * D2R), base = ground(bx, bz);
-    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity, near = -Infinity, far = Infinity;
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const d of discs) { x0 = Math.min(x0, d.cx - d.rx); x1 = Math.max(x1, d.cx + d.rx); y0 = Math.min(y0, d.cy - d.ry); y1 = Math.max(y1, d.cy + d.ry); }
+  x0 = Math.floor(x0) - 1; y0 = Math.floor(y0) - 1;
+  const W = Math.max(1, Math.ceil(x1) - x0 + 2), H = Math.max(1, Math.ceil(y1) - y0 + 2);
+  // The nearest building wholly in front of each place of the grid, by its far side, and whether a nearer crown
+  // already covers it.
+  const wall = new Float32Array(W * H).fill(-Infinity), held = new Uint8Array(W * H);
+  for (const [bx, bz, w, d, tall, turn] of TOWERS) {
+    const c = Math.cos(turn * D2R), sn = Math.sin(turn * D2R), base = ground(bx, bz), pts: [number, number][] = [];
+    let far = Infinity;
     for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) for (const h of [0, tall]) {
-      const x = bx + (a * w * c + b * d * sn) / 2, z = bz + (-a * w * sn + b * d * c) / 2, [px, py] = drawn(x, base + h, z);
-      x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py); near = Math.max(near, z); far = Math.min(far, z);
+      const x = bx + (a * w * c + b * d * sn) / 2, z = bz + (-a * w * sn + b * d * c) / 2;
+      pts.push(drawn(x, base + h, z)); far = Math.min(far, z);
     }
-    return { x0: x0 + 1, x1: x1 - 1, y0: y0 + 1, y1: y1 - 1, far };
-  });
-  const kept: Placed[] = [], back: boolean[] = [];
-  discs.forEach((t, i) => {
-    let seen = false, rank = 0;
-    for (const [u, v] of VIEWED.at) {
-      const px = t.cx + u * t.r, py = t.cy - v * t.r;
-      let over = 0;
-      for (const o of discs) if (o.z > t.z && Math.hypot(px - o.cx, py - o.cy) < VIEWED.cover * o.r) over++;
-      if (u === 0 && v === 0) rank = over;
-      if (!over && !walls.some((w) => w.far > t.z && px > w.x0 && px < w.x1 && py > w.y0 && py < w.y1)) seen = true;
+    const hull = convex(pts);
+    let a0 = Infinity, a1 = -Infinity, b0 = Infinity, b1 = -Infinity;
+    for (const [px, py] of hull) { a0 = Math.min(a0, px); a1 = Math.max(a1, px); b0 = Math.min(b0, py); b1 = Math.max(b1, py); }
+    for (let gy = Math.max(0, Math.floor(b0 - y0)); gy < Math.min(H, Math.ceil(b1 - y0)); gy++) for (let gx = Math.max(0, Math.floor(a0 - x0)); gx < Math.min(W, Math.ceil(a1 - x0)); gx++) {
+      if (!inside(hull, gx + x0 + 0.5, gy + y0 + 0.5)) continue;
+      const i = gy * W + gx;
+      wall[i] = Math.max(wall[i], far);
     }
-    if (!seen) return;
-    kept.push(trees[i]);
-    back.push(rank >= VIEWED.ranks);
+  }
+  const order = discs.map((_, i) => i).sort((a, b) => discs[b].z - discs[a].z), share = new Float32Array(discs.length);
+  for (const i of order) {
+    const t = discs[i];
+    let all = 0, seen = 0;
+    const box = [Math.max(0, Math.floor(t.cx - t.rx - x0)), Math.min(W, Math.ceil(t.cx + t.rx - x0)), Math.max(0, Math.floor(t.cy - t.ry - y0)), Math.min(H, Math.ceil(t.cy + t.ry - y0))];
+    for (let gy = box[2]; gy < box[3]; gy++) for (let gx = box[0]; gx < box[1]; gx++) {
+      const u = (gx + x0 + 0.5 - t.cx) / t.rx, v = (gy + y0 + 0.5 - t.cy) / t.ry, e = u * u + v * v;
+      if (e > 1) continue;
+      const k = gy * W + gx;
+      all++;
+      if (!held[k] && wall[k] <= t.z) seen++;
+    }
+    share[i] = all ? seen / all : 0;
+    for (let gy = box[2]; gy < box[3]; gy++) for (let gx = box[0]; gx < box[1]; gx++) {
+      const u = (gx + x0 + 0.5 - t.cx) / t.rx, v = (gy + y0 + 0.5 - t.cy) / t.ry;
+      if (u * u + v * v <= VIEWED.solid * VIEWED.solid) held[gy * W + gx] = 1;
+    }
+  }
+  const kept: number[] = [], back: boolean[] = [];
+  trees.forEach((_, i) => {
+    if (share[i] < VIEWED.least) return;
+    kept.push(i);
+    back.push(share[i] < VIEWED.back);
   });
   return { kept, back };
+}
+// The convex outline of points on the screen, and whether a place is inside it.
+function convex(p: [number, number][]): [number, number][] {
+  const s = [...p].sort((a, b) => a[0] - b[0] || a[1] - b[1]), turn = (o: number[], a: number[], b: number[]) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lo: [number, number][] = [], hi: [number, number][] = [];
+  for (const q of s) { while (lo.length > 1 && turn(lo[lo.length - 2], lo[lo.length - 1], q) <= 0) lo.pop(); lo.push(q); }
+  for (const q of [...s].reverse()) { while (hi.length > 1 && turn(hi[hi.length - 2], hi[hi.length - 1], q) <= 0) hi.pop(); hi.push(q); }
+  return lo.slice(0, -1).concat(hi.slice(0, -1));
+}
+function inside(h: [number, number][], x: number, y: number): boolean {
+  for (let i = 0; i < h.length; i++) {
+    const a = h[i], b = h[(i + 1) % h.length];
+    if ((b[0] - a[0]) * (y - a[1]) - (b[1] - a[1]) * (x - a[0]) < 0) return false;
+  }
+  return h.length > 2;
 }
 
 const shadeOf = (k: number): THREE.Color => {
@@ -149,9 +189,24 @@ export const build: PartFactory = async ({ query }) => {
   const seats = new Map(((file.meta.seats ?? []) as number[][]).map(([x, z, y, sand, seen]) => [`${x},${z}`, { y, sand, seen }]));
   const seat = (x: number, z: number) => seats.get(`${x},${z}`) ?? { y: ground(x, z), sand: 0, seen: 1 };
   // Every size below is the model's: half the drawn width (DRAWN).
-  const placed = TREES.filter(([x, z, size]) => within(x, z) >= size * DRAWN && seat(x, z).seen >= SEEN).map(([x, z, size, tone, turn]) => [x, z, size * DRAWN, tone, turn] as const);
-  const { kept, back } = query.get('treecull') === '0' ? { kept: placed, back: placed.map(() => false) } : viewed(placed, seat);
-  const rnd = seeded(4049);
+  const ground0 = TREES.filter(([x, z, size]) => within(x, z) >= size * DRAWN && seat(x, z).seen >= SEEN).map(([x, z, size, tone, turn]) => [x, z, size * DRAWN, tone, turn] as const);
+  // Each tree's own size, height and the rest are its own (a seed of its own numbers), and are worked out before
+  // the view is, so what is left out is judged at the size it would be drawn and does not change with the list.
+  const rel = ground0.map(([x, z, s]) => {
+    let n = 0, sum = 0;
+    for (const [ox, oz, os] of ground0) if (Math.hypot(ox - x, oz - z) < KIND.round * s) { n++; sum += os; }
+    return n ? s / (sum / n) : 1;
+  });
+  const own = ground0.map(([, , size, tone, turn], i) => {
+    const r = seeded((Math.round(tone * 1e6) * 7919) ^ Math.round(turn * 1e5));
+    const light = 1 + DIFFER.light * (2 * r() - 1), s = size * (1 + DIFFER.size * (2 * r() - 1));
+    const stand = Math.min(DIFFER.tall[1], Math.max(DIFFER.tall[0], 1 + STANDS * (rel[i] - 1) + 0.24 * (r() - 0.5)));
+    return { light, s, stand, rel: rel[i], la: r() * Math.PI * 2, lean: DIFFER.lean * r(), id: r() };
+  });
+  const sized = ground0.map(([x, z, , tone, turn], i) => [x, z, own[i].s, tone, turn] as const);
+  const look = query.get('treecull') === '0' ? { kept: sized.map((_, i) => i), back: sized.map(() => false) } : viewed(sized, own.map((o) => o.stand), seat);
+  const kept = look.kept.map((i) => sized[i]), mine = look.kept.map((i) => own[i]), back = look.back;
+  if (query.get('treecount')) console.error(`trees: ${TREES.length} planned, ${ground0.length} with ground, ${kept.length} drawn, ${back.filter(Boolean).length} far, ${kept.filter((t) => t[1] === ROW.z).length} of the ${TREES.filter((t) => t[1] === ROW.z).length} behind the dunes`);
   // The way a tree's shade lies on the ground: away from the moon.
   const away = new THREE.Vector2(-MOONWARD[0], -MOONWARD[2]).normalize();
 
@@ -159,17 +214,13 @@ export const build: PartFactory = async ({ query }) => {
   // nearest tree already given one.
   const hidden = back;
   const order = kept.map((_, i) => i).sort((a, b) => kept[a][0] - kept[b][0]), modelOf = new Array<number>(kept.length).fill(-1);
-  const rel = kept.map(([x, z, s]) => {
-    let n = 0, sum = 0;
-    for (const [ox, oz, os] of kept) if (Math.hypot(ox - x, oz - z) < KIND.round * s) { n++; sum += os; }
-    return n ? s / (sum / n) : 1;
-  });
+  const relOf = mine.map((o) => o.rel);
   for (const i of order) {
     if (hidden[i]) { modelOf[i] = FAR; continue; }
     const [x, z] = kept[i];
     let nearest = -1, best = Infinity;
     for (let j = 0; j < kept.length; j++) if (j !== i && modelOf[j] >= 0 && modelOf[j] !== FAR) { const d = Math.hypot(kept[j][0] - x, kept[j][1] - z); if (d < best) { best = d; nearest = j; } }
-    const list = rel[i] > KIND.over ? KIND.big : rel[i] < KIND.under ? KIND.small : KIND.all;
+    const list = relOf[i] > KIND.over ? KIND.big : relOf[i] < KIND.under ? KIND.small : KIND.all;
     const k = Math.min(list.length - 1, Math.floor(Math.min(0.999, Math.max(0, (noise(x / PLACE, z / PLACE, 0, 31) - 0.25) * 2)) * list.length));
     let m = list[k];
     if (nearest >= 0 && modelOf[nearest] === m) m = list[(k + 1) % list.length];
@@ -177,7 +228,7 @@ export const build: PartFactory = async ({ query }) => {
   }
 
   const byModel: { m: THREE.Matrix4; tone: THREE.Color; tree: [number, number, number, number]; reach: number[] }[][] = MODELS.map(() => []);
-  kept.forEach(([x, z, size, own, turn], i) => {
+  kept.forEach(([x, z, size, tone, turn], i) => {
     let behind = 0, cover = 0;
     for (const [bx, bz, w, , tall] of TOWERS) if (bz < z - 4 && z - bz < BEHIND.deep && Math.abs(bx - x) < w / 2 + BEHIND.side) behind += tall * (1 - (z - bz) / BEHIND.deep);
     for (const [ox, oz, os] of kept) {
@@ -186,8 +237,7 @@ export const build: PartFactory = async ({ query }) => {
       cover = Math.max(cover, (SHADED.top * os - SHADED.drop * along) / (SHADED.top * size) * (1 - off / (SHADED.side * (size + os))) ** 0.5);
     }
     cover = Math.min(cover, SHADED.most);
-    const shade = shadeOf(own).multiplyScalar(1 + DIFFER.light * (2 * rnd() - 1));
-    const s = size * (1 + DIFFER.size * (2 * rnd() - 1)), stand = Math.min(DIFFER.tall[1], Math.max(DIFFER.tall[0], 1 + STANDS * (rel[i] - 1) + 0.24 * (rnd() - 0.5)));
+    const shade = shadeOf(tone).multiplyScalar(mine[i].light), s = size, stand = mine[i].stand;
     const tall = modelOf[i] === MODELS.indexOf('tall') ? Math.min(stand, SLENDER) : stand;
     const { y: g, sand } = seat(x, z);
     for (let k = STREET.heights - 1; k >= 0; k--) {
@@ -203,10 +253,10 @@ export const build: PartFactory = async ({ query }) => {
       return most + 1;
     });
     reach.push(sand);
-    const la = rnd() * Math.PI * 2, lean = DIFFER.lean * rnd();
+    const { la, lean } = mine[i];
     const m = new THREE.Matrix4().makeTranslation(x, g, z).multiply(new THREE.Matrix4().set(1, Math.cos(la) * lean, 0, 0, 0, 1, 0, 0, 0, Math.sin(la) * lean, 1, 0, 0, 0, 0, 1))
       .multiply(new THREE.Matrix4().compose(new THREE.Vector3(), new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), turn), new THREE.Vector3(s, s * tall, s)));
-    byModel[modelOf[i]].push({ m, tone: shade, tree: [rnd(), Math.min(1, behind / BEHIND.full), Math.min(1.2, Math.max(0, cover)), room], reach });
+    byModel[modelOf[i]].push({ m, tone: shade, tree: [mine[i].id, Math.min(1, behind / BEHIND.full), Math.min(1.2, Math.max(0, cover)), room], reach });
   });
 
   const uniforms = treeUniforms();
