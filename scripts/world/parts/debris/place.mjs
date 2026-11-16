@@ -23,15 +23,20 @@ export const classOf = (r) => (r >= CLASSES.L ? 'L' : r >= CLASSES.M ? 'M' : r >
 // frame, so it is not turned. The left one stands in front of the shelf of rock over it, so that it has the
 // picture's height without entering the rock.
 const BOULDERS = [
-  { px: [438, 633], z: 570, size: [70, 62, 48], family: 9 },
-  { px: [892, 642], z: 250, size: [88, 45, 40], family: 10 },
+  { px: [438, 633], z: 570, size: [82, 62, 48], family: 9 },
+  { px: [903, 632], z: 250, size: [74, 67, 44], family: 10 },
 ];
 // The great pieces are huge where they hang close under the planet and smaller further down: how much larger than
-// the plan has them at the top and at the foot of where they hang, and the share of flatness they keep at most.
-const GROW = { top: -455, foot: -940, at: [2.2, 1.05], flat: 0.75 };
+// the plan has them at the top and at the foot of where they hang, the share of flatness they keep at most, and how
+// much longer than wide they are at most: longer and flatter, one read as a blade or a plank.
+const GROW = { top: -455, foot: -940, at: [2.2, 1.05], flat: 0.3, long: 1.25 };
+// A great piece of the plan is broken into a lead mass and one or two smaller ones beside it, which hang with it as
+// one family: the lead's share of the size the plan and the growth give, how many beside it (two where the lead is
+// at least `two` units), each one's share of the lead's size, and how far apart they hang, in units, past touching.
+const SPLIT = { lead: 0.88, two: 100, beside: [0.42, 0.62], gap: [6, 26] };
 // The field thins toward the foot on purpose, ending in dust: from this height down the pieces are smaller, to
 // this share of their size by the foot, and smaller still the further they are from the stream.
-const THIN = { from: -720, to: -1150, least: 0.32 };
+const THIN = { from: -760, to: -1150, least: 0.62 };
 // The smaller pieces picture 9 has under the hollow, among the small streams: where each is in the picture's pixels
 // and about how wide, and how far toward the visitor.
 const UNDER = [
@@ -47,7 +52,7 @@ const SCATTER = [
 // The field hangs from the planet: the plan's field, which began some way under it, is drawn up close under the
 // rock, densest at the top and thinning toward the foot. Its top and foot as the plan has them, where they go, and
 // how much more it gathers at the top (a power of the share of the way down).
-const HANG = { from: [-560, -1196], to: [-455, -1180], gather: 1.35 };
+const HANG = { from: [-560, -1196], to: [-455, -1180], gather: 1.1 };
 // Great pieces moved from where the plan and the hang put them, by family: the one at the lower left stood in the
 // picture's band beside the left boulder and outshone it, so it hangs lower and further out.
 const SHIFT = { 0: [-30, -95, -40] };
@@ -63,21 +68,39 @@ export const LANE = { front: 60, lane: 20, small: 8, deep: 90 };
 // The field is lopsided, as the picture's is: the left arm is long and full, the two on the right shorter, one high
 // and one low, with the right boulder's dark space kept clear over the first. share is each arm's part of the pieces.
 export const ARMS = [
-  { family: 41, side: 1, y: [-560, -720], R: [150, 280], turn: [2.5, 0.7], swing: 0.3, clumps: 4, share: 0.26 },
-  { family: 42, side: -1, y: [-500, -860], R: [110, 340], turn: [2.7, 0.55], swing: 0.35, clumps: 6, share: 0.48 },
-  { family: 43, side: 1, y: [-810, -990], R: [170, 320], turn: [2.4, 0.8], swing: 0.25, clumps: 3, share: 0.26 },
+  { family: 41, side: 1, y: [-560, -700], R: [140, 300], turn: [2.5, 0.72], swing: 0.3, clumps: 4, share: 0.24 },
+  { family: 42, side: -1, y: [-480, -920], R: [100, 360], turn: [2.75, 0.62], swing: 0.35, clumps: 6, share: 0.5 },
+  { family: 43, side: 1, y: [-830, -1020], R: [190, 300], turn: [2.3, 0.85], swing: 0.25, clumps: 3, share: 0.26 },
 ];
 // The column behind the stream: pieces at several depths behind it, which the stream is seen over. Their family,
 // how many, how far each side of the stream's line they are (on the screen), how far behind it, how high, and the
 // largest.
-const DEEP = { family: 62, count: 64, across: 120, behind: [70, 420], y: [-470, -1120], most: 26 };
+const DEEP = { family: 62, count: 64, across: 120, behind: [70, 420], y: [-470, -1120], most: 19 };
+// A clump of the plan drawn in round its lead, across, up and toward the visitor (a share of how far each piece was
+// from it), and how much larger its lead is made.
+const GATHER = { toward: [0.5, 1.25, 0.7], lead: 1.4 };
 // The dust trails the families and the stream, and lies nowhere else: the share of it that trails the stream, and
 // how far out from a piece it trails, as a share of the piece's size.
 const DUST = { lane: 0.22, trail: [1.1, 3.4], most: 170 };
-// Near the stream the small pieces of stone are the stream's own shapes: how near, on the screen, and the largest.
-export const FACETED = { near: 150, most: 6 };
-// How large a carried shard is, from its middle to its farthest point: the stream's own riding shards on the page.
-const CARRIED = [2.4, 17];
+// Under the field it dissolves into dust and does not stop: so many grains, from how high to how low, how far each
+// side of the stream at the top and at the foot, and how large.
+const LOW = { count: 190, y: [-820, -1170], across: [260, 560], size: [0.9, 2.8] };
+// What the stream carries: pieces of the planet caught by it, long thin flakes of its stone. How large one is, from
+// its middle to its farthest point, and the share of the plan's carried chips that are kept: fewer, each a stone.
+const CARRIED = [3, 14], CARRIED_KEPT = 0.5;
+// The arms are seen as curves on the screen by clumps of smaller pieces strung along each, every clump led by one
+// larger piece with the rest trailing it along the curve: how many clumps on each arm, how large the lead, how many
+// trail it and how large, how far they trail along the arm (a share of its length) and how far they stray from it
+// (a share of its reach).
+const LINE = { clumps: 6, lead: [7, 12], count: 7, size: [1.6, 4.2], trail: 0.07, stray: 0.03 };
+// The field does not end on a line: under it a tail of clumps thins out and sinks, more of it to the left, each clump
+// a few smaller pieces round a larger one. How many clumps, from how high to how low, how far out from the stream at
+// the top and the foot, the share on the left, how large a clump's lead is at the top and the foot, and how many
+// follow it.
+const TAIL = { clumps: 16, y: [-860, -1150], across: [140, 330], left: 0.62, lead: [9, 3.5], follow: [3, 7] };
+// Two pieces never pass through each other: a smaller one is moved out of a larger one's way, to this share of the
+// sum of their sizes apart.
+const APART = 0.92;
 // How far a carried shard is from the stream's line on the screen: most within near units of it, the rest out to far.
 const CARRY = { near: 60, far: 120, out: 0.14 };
 // How near the host's sides and foot a piece may come, and how near the torn rock, in units.
@@ -104,7 +127,9 @@ export function rotate(q, v) {
 const conj = (q) => [-q[0], -q[1], -q[2], q[3]];
 
 // A piece's half extents before it is cut, from the plan's size, length and flatness.
-export const extents = (p) => p.size ?? [p.r * p.long * 0.85, p.r * (1 - 0.5 * p.flat) * 0.78, p.r * 0.82];
+// No piece is longer or flatter than SHAPE allows: stretched further, a chipped block read as a brick or a plank.
+const SHAPE = { long: 1.45, flat: 0.65 };
+export const extents = (p) => p.size ?? [p.r * Math.min(p.long, SHAPE.long) * 0.85, p.r * (1 - 0.5 * Math.min(p.flat, SHAPE.flat)) * 0.78, p.r * 0.82];
 // How much of its family's motion a piece has.
 export const calm = (p) => (MOTION.calm.families.includes(p.family) || MOTION.calm.families.includes(p.family - 20) ? MOTION.calm.share : 1);
 
@@ -211,11 +236,21 @@ export function place(bvh) {
     const s = SHIFT[d.family] ?? [0, 0, 0], to = hang(d.at[1]), at = [d.at[0] + s[0], to + s[1], d.at[2] + s[2]];
     const u = Math.min(1, Math.max(0, (at[1] - GROW.top) / (GROW.foot - GROW.top))), grow = GROW.at[0] + (GROW.at[1] - GROW.at[0]) * u;
     // As large as it may be and still be inside the host's sides, and never smaller than the plan has it.
-    const room = (L.HOST.wide / 2 - EDGE.side - SWAY.plate - 12 - Math.abs(L.drawn(...at)[0])) / (d.long * 0.85);
-    const r0 = Math.max(d.r, Math.min(d.r * grow, room)), p = add({ ...d, at, r: r0, flat: d.land ? d.flat : Math.min(d.flat, GROW.flat) }, 'plate', { land: d.land });
-    if (p) moved.set(d.family, { from: d.at, to: p.at, grow: r0 / d.r });
+    const room = (L.HOST.wide / 2 - EDGE.side - SWAY.plate - 12 - Math.abs(L.drawn(...at)[0])) / (Math.min(d.long, GROW.long) * 0.85);
+    const r0 = Math.max(d.r, Math.min(d.r * grow, room)) * SPLIT.lead, flat = Math.min(d.flat, GROW.flat), long = Math.min(d.long, GROW.long);
+    const p = add({ ...d, at, r: r0, long, flat }, 'plate', { part: 0 });
+    if (!p) continue;
+    moved.set(d.family, { from: d.at, to: p.at, grow: r0 / d.r });
+    // The ones beside it: out from the stream and down, each its own way, never in front of it.
+    const many = r0 >= SPLIT.two ? 2 : 1, out = Math.sign(p.at[0] || 1);
+    for (let k = 1; k <= many; k++) {
+      const rk = r0 * (SPLIT.beside[0] + (SPLIT.beside[1] - SPLIT.beside[0]) * r()), a = (k === 1 ? -0.35 : -1.35) + 0.6 * (r() - 0.5);
+      const dir = unit([out * Math.cos(a), Math.sin(a), 0.35 * (r() - 0.5)]);
+      const far = (Math.max(...extents({ r: r0, long, flat })) + Math.max(...extents({ r: rk, long: 1.1, flat: 0.2 }))) * GREAT_BALL * 1.15 + SPLIT.gap[0] + (SPLIT.gap[1] - SPLIT.gap[0]) * r();
+      add({ ...d, at: p.at.map((v, i) => v + dir[i] * far), r: rk, long: 1 + 0.25 * r(), flat: 0.3 * r() }, 'plate', { part: k });
+    }
   }
-  for (const b of BOULDERS) add({ at: L.fromPicture(b.px[0], b.px[1], b.z), r: Math.max(...b.size) / 0.85, long: 1, flat: 0, family: b.family }, 'plate', { pictured: true, form: true, size: b.size });
+  for (const b of BOULDERS) add({ at: L.fromPicture(b.px[0], b.px[1], b.z), r: Math.max(...b.size) / 0.85, long: 1, flat: 0, family: b.family }, 'plate', { pictured: true, form: true, size: b.size, part: 0 });
   for (const b of BOULDERS) {
     const g = pieces.find((p) => p.family === b.family);
     if (!g) continue;
@@ -225,8 +260,12 @@ export function place(bvh) {
       add({ at: [g.at[0] + across, g.at[1] + across * tilt + along * lean + 0.1 * far * bell(), g.at[2] + along], r: size, long: 1.2 + r(), flat: r(), family: 20 + b.family }, 'ring');
     }
   }
-  const clumps = new Map(), dusts = [];
-  for (const d of plan.filter((q) => kindOf(q) === 'clump')) { const c = clumps.get(d.family) ?? [0, 0]; clumps.set(d.family, [c[0] + d.at[1], c[1] + 1]); }
+  const clumps = new Map(), leads = new Map(), dusts = [];
+  for (const d of plan.filter((q) => kindOf(q) === 'clump')) {
+    const c = clumps.get(d.family) ?? [0, 0];
+    clumps.set(d.family, [c[0] + d.at[1], c[1] + 1]);
+    if (!leads.has(d.family) || d.r > leads.get(d.family).r) leads.set(d.family, d);
+  }
   for (const d of plan.filter((q) => q.kind !== 'plate' && q.kind !== 'whirl')) {
     const kind = kindOf(d);
     let at = d.at;
@@ -235,16 +274,22 @@ export function place(bvh) {
       const m = moved.get(d.family - 20);
       if (!m) { said.out++; continue; }
       at = at.map((v, i) => m.to[i] + (v - m.from[i]) * m.grow);
-    } else if (kind === 'clump') { const [sum, n] = clumps.get(d.family), mid = sum / n; at = [at[0], at[1] + hang(mid) - mid, at[2]]; }
+    } else if (kind === 'clump') {
+      // A clump gathers round its largest piece, which leads it: the plan laid some out as a level band.
+      const [sum, n] = clumps.get(d.family), mid = sum / n, lead = leads.get(d.family).at;
+      at = at.map((v, i) => lead[i] + (v - lead[i]) * GATHER.toward[i]);
+      at = [at[0], at[1] + hang(mid) - mid, at[2]];
+    }
     else if (kind === 'dust') { dusts.push(d); continue; }
     let size = d.r;
     if (kind === 'fall') {
-      // A chip the stream carries is one of its riding shards, as large on the page as they are or far smaller, and
-      // falls behind it, most of them close to its line.
+      // A chip the stream carries is a flake of the planet's stone, as large on the page as the stream's riding
+      // shards or far smaller, and falls behind it, most of them close to its line.
+      if (r() > CARRIED_KEPT) continue;
       size = (CARRIED[0] + (CARRIED[1] - CARRIED[0]) * r() ** 2.4) / 1.3;
       const off = r() < CARRY.out ? CARRY.near + (CARRY.far - CARRY.near) * r() : 6 + (CARRY.near - 6) * r() ** 1.5;
       at = [(r() < 0.5 ? -1 : 1) * off, at[1], Math.min(at[2], cz - 8 - size * 1.3 - 30 * r())];
-    } else size *= thin(at);
+    } else size *= thin(at) * (kind === 'clump' && leads.get(d.family) === d ? GATHER.lead : 1);
     add({ ...d, at, r: size }, kind);
   }
 
@@ -273,6 +318,21 @@ export function place(bvh) {
       const p = { at: [arm.side * R * Math.sin(th), y, cz + R * Math.cos(th)], r: size, long: d.long, flat: d.flat, family: arm.family, kind: 'whirl', swing: lo < hi ? arm.swing : Math.max(0, (aft - fore) / 2 - 0.01) };
       if (settle(p)) pieces.push(p);
     });
+  });
+
+  // Clumps of smaller pieces strung along each arm, each led by a larger one, so the arm is seen as a curve.
+  ARMS.forEach((arm) => {
+    const curve = (t) => ({ th: arm.turn[0] + (arm.turn[1] - arm.turn[0]) * t, R: arm.R[0] + (arm.R[1] - arm.R[0]) * t, y: arm.y[0] + (arm.y[1] - arm.y[0]) * t });
+    for (let k = 0; k < LINE.clumps * (LINE.count + 1); k++) {
+      const head = Math.floor(k / (LINE.count + 1)), lead = k % (LINE.count + 1) === 0, t0 = (head + 0.5 + 0.3 * bell()) / LINE.clumps;
+      const t = lead ? t0 : t0 - LINE.trail * r() ** 0.8, c = curve(Math.min(1, Math.max(0, t)));
+      const size = (lead ? LINE.lead[0] + (LINE.lead[1] - LINE.lead[0]) * r() : LINE.size[0] + (LINE.size[1] - LINE.size[0]) * r() ** 1.5) * thin([0, c.y, 0]);
+      const R = c.R * (1 + LINE.stray * bell()), y = c.y + LINE.stray * c.R * bell(), reach = size * 1.2, sway = SWAY.whirl;
+      const fore = R > LANE.front + reach + sway ? Math.asin((LANE.front + reach + sway) / R) : Math.acos(Math.max(-1, -(reach + sway) / R));
+      const aft = Math.PI - 0.05, lo = fore + arm.swing, hi = aft - arm.swing, th = lo < hi ? Math.min(hi, Math.max(lo, c.th + 0.02 * bell())) : (fore + aft) / 2;
+      const p = { at: [arm.side * R * Math.sin(th), y, cz + R * Math.cos(th)], r: size, long: 1.2 + 0.6 * r(), flat: r(), family: arm.family, kind: 'whirl', swing: lo < hi ? arm.swing : Math.max(0, (aft - fore) / 2 - 0.01) };
+      if (settle(p)) pieces.push(p);
+    }
   });
 
   // The column behind the stream, thinning downward, more of it to the left.
@@ -306,11 +366,43 @@ export function place(bvh) {
     if (settle(p)) pieces.push(p);
   }
 
+  // The tail of clumps under the field, thinning and smaller as it sinks.
+  for (let k = 0; k < TAIL.clumps; k++) {
+    const t = (k + r()) / TAIL.clumps, y = TAIL.y[0] + (TAIL.y[1] - TAIL.y[0]) * t ** 0.85, side = r() < TAIL.left ? -1 : 1;
+    const x = side * (30 + (TAIL.across[0] + (TAIL.across[1] - TAIL.across[0]) * t) * r() ** 0.7), z = cz - 30 - 160 * r();
+    const lead = (TAIL.lead[0] + (TAIL.lead[1] - TAIL.lead[0]) * t) * (0.7 + 0.6 * r()), family = 100 + k;
+    const head = add({ at: [x, y, z], r: lead, long: 1.2 + 0.5 * r(), flat: r(), family }, 'clump');
+    if (!head) continue;
+    const n = TAIL.follow[0] + Math.floor(r() * (TAIL.follow[1] - TAIL.follow[0] + 1));
+    for (let j = 0; j < n; j++) {
+      const far = lead * (1.6 + 2.4 * r()), a = r() * Math.PI * 2;
+      add({ at: [head.at[0] + far * Math.cos(a), head.at[1] + far * Math.sin(a) * 0.7 - lead * 0.6, head.at[2] + far * (r() - 0.5)], r: lead * (0.2 + 0.4 * r() ** 1.5), long: 1.1 + 0.6 * r(), flat: r(), family }, 'clump');
+    }
+  }
+
+  // The dust the field dissolves into, under it, spreading as it goes down.
+  for (let k = 0; k < LOW.count; k++) {
+    const t = r() ** 0.8, y = LOW.y[0] + (LOW.y[1] - LOW.y[0]) * t, w = LOW.across[0] + (LOW.across[1] - LOW.across[0]) * t;
+    const x = w * bell() * 1.2, z = cz - 40 + 260 * (r() - 0.5), size = (LOW.size[0] + (LOW.size[1] - LOW.size[0]) * r() ** 2) * (1 - 0.4 * t);
+    add({ at: [x, y, z], r: size, long: 1.1 + 0.6 * r(), flat: r(), family: 63 }, 'dust');
+  }
+
+  // Nothing passes through anything: each piece, from the largest down, moves the smaller ones near it out of its
+  // way, along the line between them, unless that puts them somewhere they may not be.
+  const solid = pieces.filter((p) => p.kind !== 'fall' && p.kind !== 'dust').map((p) => ({ p, s: Math.max(...extents(p)) * (p.kind === 'plate' ? GREAT_BALL : 0.8) })).sort((a, b) => b.s - a.s);
+  said.apart = 0;
+  for (let i = 0; i < solid.length; i++) for (let j = i + 1; j < solid.length; j++) {
+    const a = solid[i], b = solid[j], d = b.p.at.map((v, k) => v - a.p.at[k]), l = Math.hypot(...d), need = (a.s + b.s) * APART;
+    if (l >= need) continue;
+    const was = [...b.p.at], u = l > 1e-6 ? d.map((v) => v / l) : [0, -1, 0];
+    b.p.at = a.p.at.map((v, k) => v + u[k] * need);
+    if (fault(b.p)) b.p.at = was; else said.apart++;
+  }
+
   // How each is turned at rest and how it turns. A great piece keeps one face to the core: its thin axis points at
   // it. Every other piece is turned any way, and turns over about an axis of its own, slowly, the larger the slower.
   for (const p of pieces) {
-    p.cls = p.kind === 'plate' ? 'G' : classOf(p.r);
-    if (p.kind !== 'fall' && p.kind !== 'plate' && p.r <= FACETED.most && Math.abs(L.drawn(...p.at)[0] - core[0]) < FACETED.near) p.facet = true;
+    p.cls = p.kind === 'plate' ? 'G' : p.kind === 'fall' ? 'C' : classOf(p.r);
     p.phase = r();
     if (p.kind === 'plate') {
       // A boulder of the picture's stands as the picture has it, leaning only a little toward the core.
@@ -353,7 +445,7 @@ export function place(bvh) {
   }
   said.kept = pieces.length;
   said.kinds = Object.fromEntries(Object.keys(KIND).map((k) => [k, pieces.filter((p) => p.kind === k).length]));
-  said.classes = Object.fromEntries(['G', 'L', 'M', 'S', 'D'].map((k) => [k, pieces.filter((p) => p.cls === k).length]));
+  said.classes = Object.fromEntries(['G', 'L', 'M', 'S', 'D', 'C'].map((k) => [k, pieces.filter((p) => p.cls === k).length]));
   return { pieces, said };
 }
 

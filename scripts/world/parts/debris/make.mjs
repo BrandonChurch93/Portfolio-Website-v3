@@ -11,8 +11,8 @@
 // that wears it is given how much of the core it sees and the light bounced to it from where it rests. A great
 // piece is lit where it rests, with the torn rock and the other great pieces round it: the core, the moon and one
 // bounce. Light is stored as the world's other parts store it (scripts/world/lib/pack.mjs), with what the page
-// reads for itself in the spare places: light = core seen, how bent, how open, outer surface; bounce = r, g, b, the
-// bed's tone.
+// reads for itself in the spare places: light = core seen, how bent, how open, outer surface and the moon seen;
+// bounce = r, g, b, and the bed's tone with how fresh the break is.
 import process from 'node:process';
 import { bake } from '../../lib/bake.mjs';
 import { build, closest, gap } from '../../lib/bvh.mjs';
@@ -20,7 +20,7 @@ import { pack } from '../../lib/pack.mjs';
 import { L, light, stone, storeBounce } from '../../lib/plan.mjs';
 import { KIND, SWAY } from '../../../../src/pieces/world/parts/debris/motion.ts';
 import { COLUMNS, LOOK, MOON_SHARE } from '../../../../src/pieces/world/parts/debris/table.ts';
-import { SHARED, makeModels } from './models.mjs';
+import { SHARED, greatName, makeModels } from './models.mjs';
 import { calm, extents, place, rotate } from './place.mjs';
 import { read } from './rockfile.mjs';
 
@@ -42,7 +42,7 @@ said(`placed: ${JSON.stringify(placed)}`);
 const models = await makeModels(pieces, draft, said);
 const byName = new Map(models.map((m, i) => [m.name, i]));
 const hashOf = (n) => { let x = Math.imul(n ^ 0x27d4eb2d, 0x165667b1); x ^= x >>> 15; return (x >>> 0) / 4294967296; };
-pieces.forEach((p, i) => { p.model = p.cls === 'G' ? byName.get(`G${p.family}`) : byName.get(`${p.cls}${Math.floor(hashOf(i * 7 + 3) * SHARED[p.cls].count)}`); });
+pieces.forEach((p, i) => { p.model = p.cls === 'G' ? byName.get(greatName(p)) : byName.get(`${p.cls}${Math.floor(hashOf(i * 7 + 3) * SHARED[p.cls].count)}`); });
 
 // How shut in each place of a shared model is, alone.
 for (const m of models.filter((q) => q.shared)) {
@@ -150,27 +150,49 @@ for (const p of pieces) {
 }
 said('the pieces are lit by each other');
 
+// The light stored at a vertex is eased toward its neighbours on the same face, a few times over. Reduced, a flat
+// face is a fan of long thin triangles, and one dark vertex on its rim drew a dark spoke right across it.
+const SMOOTH = { times: 8, keep: 0.4 };
+function ease(m, fields) {
+  const n = m.positions.length / 3, near = Array.from({ length: n }, () => new Set());
+  for (let t = 0; t < m.indices.length; t += 3) for (let k = 0; k < 3; k++) { const a = m.indices[t + k], b = m.indices[t + (k + 1) % 3]; near[a].add(b); near[b].add(a); }
+  for (const [arr, w] of fields) for (let it = 0; it < SMOOTH.times; it++) {
+    const was = arr.slice();
+    for (let i = 0; i < n; i++) {
+      if (!near[i].size) continue;
+      for (let c = 0; c < w; c++) {
+        let sum = 0;
+        for (const j of near[i]) sum += was[j * w + c];
+        arr[i * w + c] = SMOOTH.keep * was[i * w + c] + (1 - SMOOTH.keep) * sum / near[i].size;
+      }
+    }
+  }
+}
+for (const m of models) ease(m, m.shared ? [[m.open, 1]] : [[m.open, 1], [m.core, 1], [m.moon, 1], [m.bounce, 3], [m.curv, 1]]);
+said('the stored light is eased across each face');
+
 // The models, and the table of pieces that wear them.
 const out = models.map((m) => {
   const n = m.positions.length / 3, lightOf = new Float32Array(n * 4), bounceOf = new Float32Array(n * 4);
   for (let i = 0; i < n; i++) {
     // The spare place holds whether this is the planet's outer surface (over a half) and how much of the moon reaches
-    // it past the planet (the rest): on a shared model the page fills that in for each piece.
+    // the place (the rest): on a shared model the page fills that in for each piece. The bed's place holds the bed's
+    // tone and how fresh the break is.
     lightOf.set([m.shared ? 1 : m.core[i], m.curv[i], m.open[i], 0.5 * m.skin[i] + MOON_SHARE * (m.shared ? 0 : m.moon[i])], i * 4);
     bounceOf.set([m.shared ? 0 : storeBounce(m.bounce[i * 3]), m.shared ? 0 : storeBounce(m.bounce[i * 3 + 1]), m.shared ? 0 : storeBounce(m.bounce[i * 3 + 2]), m.bed[i]], i * 4);
   }
   return { name: m.name, positions: m.positions, indices: m.indices, info: { shared: m.shared }, attributes: { normal: { data: m.normals, size: 3, as: 'i16' }, light: { data: lightOf, size: 4, as: 'u8' }, bounce: { data: bounceOf, size: 4, as: 'u8' } } };
 });
 const r3 = (v) => Math.round(v * 1000) / 1000;
-// A chip the stream carries is one of the stream's own shards (src/stream/shards.ts), which the page makes, as
-// large as the piece.
-const e = (p) => (p.cls === 'G' ? [1, 1, 1] : p.kind === 'fall' ? [p.r * 1.3, p.r * 1.3, p.r * 1.3] : p.facet ? Array(3).fill(Math.max(...extents(p)) * 1.25) : extents(p));
+// A flake the stream carries is long and thin: its half extents against its size.
+const CARRY = [1.3, 0.42, 0.72];
+const e = (p) => (p.cls === 'G' ? [1, 1, 1] : p.kind === 'fall' ? CARRY.map((k) => p.r * k) : extents(p));
 const table = pieces.map((p) => [
   p.model, ...p.at.map(r3), ...p.quat.map(r3), ...e(p).map(r3), KIND[p.kind], p.family, r3(p.phase), ...p.spin.map(r3), r3(p.core),
   ...(p.cls === 'G' ? [0, 0, 0] : p.bounce.map((v) => r3(storeBounce(v)))),
   r3(p.kind === 'fall' ? p.fast : p.kind === 'ring' ? p.family - 20 : p.kind === 'whirl' ? p.swing : 0), r3(p.shut ?? 0),
-  r3(p.moon), p.kind === 'fall' ? LOOK.shard : p.facet ? LOOK.stone : LOOK.rock, r3(Math.max(...extents(p))),
+  r3(p.moon), p.kind === 'fall' ? LOOK.carried : LOOK.rock, r3(p.kind === 'fall' ? p.r * CARRY[0] : Math.max(...extents(p))),
 ]);
-const tris = pieces.reduce((s, p) => s + (p.kind === 'fall' || p.facet ? 8 : models[p.model].indices.length / 3), 0);
+const tris = pieces.reduce((s, p) => s + models[p.model].indices.length / 3, 0);
 pack(OUT, out, { draft, columns: COLUMNS, pieces: table, placed, triangles: tris });
 said(`done: ${pieces.length} pieces, ${tris.toLocaleString('en-US')} triangles drawn`);

@@ -1,18 +1,19 @@
 // A piece of what broke away, as a field for the surface maker (scripts/world/lib/surface.mjs): under 0 inside.
 // Torn rock of the planet's kind, never a cut block: one mass split in place along its own fractures, each block the
 // part of the mass nearest one of a few points, measured flatter across the beds, its joins ragged and filled with
-// rubble. The break is in the geometry: every edge is chipped by flakes taken off it (a shallow scallop with a sharp
-// rim, spreading into one face), each block's faces step down part of the way across along a ragged riser, the beds
-// stand proud or sink on every broken side, a few large shallow scars have come off the faces, and the faces swell
-// and wander. Nothing is a ruled line or a flat polygon at three times.
+// rubble. The break is in the geometry: every edge is chipped by flakes taken off it (a flat facet with straight
+// sides, cut in from the edge), each block's faces step down part of the way across along a ragged riser, the beds
+// stand proud or sink on every broken side, and nothing
+// swells or wanders. Nothing is a ruled line or a flat polygon at three times.
 //
 //   args = { seed, size: [a, b, c], layer: [x, y, z], blocks, drop, skin: { dir, R, pits } | null, top, rubble,
-//            scars, flat, form, chips, steps, strata, ridge }
+//            flat, form, chips, steps, strata, ridge }
 //
 // size is the half extents of the mass before anything is broken off it, layer the way across its beds, blocks how
 // many blocks it splits into and drop how many of them are gone, flat how much flatter its blocks are across its
 // beds. form, when given, is the mass as planes of the piece's own frame ([nx, ny, nz, h] each: under h is inside),
-// in place of a mass grown at random: picture 9's two boulders have their own. chips is how many flakes come off its
+// in place of a mass grown at random, and lumps, when given, are craggy chunks grown into it or making it ([x, y, z,
+// a, b, c] each: a middle and half extents): picture 9's two boulders are laid out so, on the picture's own outline. chips is how many flakes come off its
 // edges, steps how many stepped breaks cross each block, strata how far a bed stands proud as a share of the size,
 // and ridge a way out of the piece along which its edges are broken harder (a jagged ridge). shape(args) gives the
 // same solid to the make script, with which block and which bed each place is in, where the planet's outer surface
@@ -28,6 +29,7 @@ export function field(x, y, z) { return solid.at(x, y, z); }
 const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const unit = (v) => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
+const smoothstepJs = (e0, e1, x) => { const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0))); return t * t * (3 - 2 * t); };
 const hash = (n) => { let x = Math.imul(n ^ 0x2c1b3c6d, 0x297a2d39); x ^= x >>> 15; x = Math.imul(x, 0x85ebca6b); return ((x ^ (x >>> 13)) >>> 0) / 4294967296; };
 
 // How the mass is broken, as shares of its largest half extent unless said.
@@ -43,64 +45,67 @@ export const TORN = {
   // A block's outer face broken at its own depth: how deep, at most.
   face: 0.05,
   // Corners broken off each block: how many, and how deep.
-  corners: 3, corner: [0.02, 0.07],
-  // The flakes off the edges: their radius (a share of the size, from the smallest, and how many times larger the
-  // largest is), how deep each bites into the face it spreads over and into the other face (shares of its radius),
-  // and how much longer it runs into its face than along the edge.
-  flake: [0.022, 5], bite: [0.1, 0.22], under: [0.05, 0.16], spread: [1.6, 2.6],
+  corners: 3, corner: [0.03, 0.1],
+  // The flakes off the edges: their length along the edge (a share of the size, from the smallest, and how many
+  // times larger the largest is), and how far under the edge each passes, as a share of its length.
+  flake: [0.03, 4], bite: [0.1, 0.25],
   // The stepped breaks across a block's faces: how far a step drops, how ragged its riser is, and over how far.
-  step: [0.02, 0.055], riser: 0.04, riserOver: 0.08,
+  step: [0.025, 0.07], riser: 0.015, riserOver: 0.08,
   // The beds: how thick (a share of the size), how much they wander, and how far one stands proud (strata, unless
   // given). None by default: a step finer than two cells of the mesh comes out as a comb of slivers, so the fine
   // strata are the shader's (../../../../src/pieces/world/parts/debris/shaders.ts) and only a boulder's are cut.
   bed: [0.07, 0.12], bedWander: 0.25, strata: 0,
-  // The large shallow scars where a broad flake left a face: how wide, and how deep against their width.
-  scar: [0.12, 0.3], scoop: [0.05, 0.1],
   // The rubble: how large each piece is, and how far it is sunk into the rock as a share of its size.
   stone: [0.02, 0.06], sunk: 0.35,
   // How much every face swells, ridges and wanders, and over how far: no grit, which reads as hammered metal.
-  swell: 0.005, swellOver: 0.4, ridge: 0, ridgeOver: 0.13, wander: 0.0015, wanderOver: 0.05,
+  swell: 0, swellOver: 0.4, ridge: 0, ridgeOver: 0.13, wander: 0, wanderOver: 0.05,
   // The secondary breaks across each block: how many, how far round from the way out they are turned (radians, at
   // most), and how deep under the surface each cuts. Each leaves a crisp facet, never a swell: a swell reads as cloth.
-  facets: 6, facetTurn: 0.55, facetCut: [0.006, 0.03],
+  facets: 12, facetTurn: 0.45, facetCut: [0.008, 0.035],
+  // A mass grown at random is a few craggy chunks grown into each other: how many breaks bound a chunk, the
+  // smaller chunks' size against the main one's, and how far out on the main one each sits. Where two meet their
+  // outline cuts back in, so no edge of the mass runs on.
+  chunk: [12, 18], chunks: [2, 4], small: [0.38, 0.62], out: [0.55, 0.85],
+  // The outline as it is seen (view, in the piece's own frame): every `every` units of it, as a share of the size,
+  // a notch is cut into it (a V, as deep as `notch`, its sides turned `open` from the surface, radians) or its
+  // corner is broken off (as deep as `bevel`). So no edge seen against the dark runs straight for long.
+  every: 0.22, notch: [0.035, 0.11], open: [0.75, 1.15], bevel: [0.025, 0.07], notched: 0.55,
+  // The broad planes a face breaks into: how many on each block, how far each is turned from the face (radians), and
+  // how deep under it it passes. Turned only a little, each takes a wide part of the face to a plane of its own, so a
+  // face is many planes meeting at low angles and never one flat polygon.
+  planes: 18, planeTurn: [0.07, 0.22], planeCut: [0.006, 0.025],
 };
 
-export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, skin = null, top = false, rubble = 10, scars = 4, flat = TORN.flat, form = null, chips = 80, steps = 2, strata = TORN.strata, ridge = null, facets = TORN.facets }) {
+export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, skin = null, top = false, rubble = 10, flat = TORN.flat, form = null, chips = 80, steps = 2, strata = TORN.strata, ridge = null, facets = TORN.facets, view = null, every = TORN.every, crest = 0, lumps = null }) {
   const r = seeded(seed), [a, b, c] = size, big = Math.max(a, b, c), T = TORN;
   const reach = (n) => Math.abs(n[0]) * a + Math.abs(n[1]) * b + Math.abs(n[2]) * c;
   const jitter = (v, k) => unit([v[0] + k * (r() - 0.5), v[1] + k * (r() - 0.5), v[2] + k * (r() - 0.5)]);
   const between = (lo, hi) => lo + (hi - lo) * r();
   const s0 = seed & 1023;
 
-  // The mass: the planes it is given, or a main lobe and one or two smaller ones grown into it at a slant, each a top,
-  // a bottom, breaks round it at uneven angles and corners off, so its outline cuts back in where they meet.
-  const lobe = (k, at, turn, lean) => {
-    const planes = [], ca = Math.cos(turn), sa = Math.sin(turn), rot = (v) => unit([v[0] * ca - v[2] * sa, v[1] + lean * v[0], v[0] * sa + v[2] * ca]);
-    const A = a * k, B = b * (0.75 + 0.25 * k), C = c * k, rch = (n) => Math.abs(n[0]) * A + Math.abs(n[1]) * B + Math.abs(n[2]) * C;
-    for (const sgn of [1, -1]) {
-      const level = top && sgn === 1, n = level ? [0, 1, 0] : jitter([0, sgn, 0], 0.7);
-      planes.push({ n, h: B * (level ? 1 : 0.78 + 0.22 * r()) });
+  // The mass: the planes it is given, or a main chunk and a few smaller ones grown into it.
+  // A craggy chunk: a solid bounded by many breaks turned every way, spread evenly round it so no one face is large,
+  // each cut at a depth of its own.
+  const chunk = (k, at, ext = [a, b, c]) => {
+    const A = ext[0] * k, B = ext[1] * k, C = ext[2] * k, rch = (n) => Math.abs(n[0]) * A + Math.abs(n[1]) * B + Math.abs(n[2]) * C;
+    const count = T.chunk[0] + Math.floor(r() * (T.chunk[1] - T.chunk[0] + 1)), turn = r() * Math.PI * 2, planes = [];
+    for (let i = 0; i < count; i++) {
+      const u = (i + 0.5) / count, th = Math.acos(1 - 2 * u), ph = i * 2.39996 + turn;
+      const m = jitter([Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)], 0.45), n = unit([m[0] / A, m[1] / B, m[2] / C]);
+      planes.push({ n, h: rch(n) * (0.7 + 0.26 * r()) + dot(n, at) });
     }
-    const sides = 7 + Math.floor(r() * 4), turn0 = r() * Math.PI * 2;
-    for (let i = 0; i < sides; i++) {
-      const th = turn0 + ((i + 0.8 * (r() - 0.5)) / sides) * Math.PI * 2, tilt = 1.1 * (r() - 0.5);
-      const n = unit([Math.cos(th) / A, tilt / B, Math.sin(th) / C]);
-      planes.push({ n, h: rch(n) * (0.66 + 0.34 * r()) });
-    }
-    for (let i = 0; i < 5; i++) {
-      let n = unit([r() * 2 - 1, (r() * 2 - 1) * 1.1, r() * 2 - 1]);
-      if (top && n[1] > 0.3) n = unit([n[0], -Math.abs(n[1]), n[2]]);
-      planes.push({ n, h: rch(n) * (0.52 + 0.33 * r()) });
-    }
-    return { planes: planes.map((q) => { const n = rot(q.n); return { n, h: q.h + dot(n, at) }; }) };
+    return { planes };
   };
   let lobes;
-  if (form) lobes = [{ planes: form.planes.map(([x, y, z, h]) => { const l = Math.hypot(x, y, z); return { n: [x / l, y / l, z / l], h }; }) }];
+  if (form || lumps) {
+    lobes = form ? [{ planes: form.planes.map(([x, y, z, h]) => { const l = Math.hypot(x, y, z); return { n: [x / l, y / l, z / l], h }; }) }] : [];
+    for (const [x, y, z, sx, sy, sz] of lumps ?? []) lobes.push(chunk(1, [x, y, z], [sx, sy, sz]));
+  }
   else {
-    lobes = [lobe(1, [0, 0, 0], 0, 0)];
-    for (let i = 0, n = 1 + Math.floor(r() * 2); i < n; i++) {
-      const side = r() < 0.5 ? -1 : 1, k = 0.45 + 0.25 * r();
-      lobes.push(lobe(k, [side * a * (1.05 - k) * (0.8 + 0.2 * r()), b * 0.3 * (r() - 0.5), c * (1 - k) * (r() - 0.5)], 0.9 * (r() - 0.5), 0.5 * (r() - 0.5)));
+    lobes = [chunk(0.92, [0, 0, 0])];
+    for (let i = 0, n = T.chunks[0] + Math.floor(r() * (T.chunks[1] - T.chunks[0] + 1)); i < n; i++) {
+      const k = between(T.small[0], T.small[1]), d = jitter([r() - 0.5, (r() - 0.5) * 0.8, (r() - 0.5) * 0.6], 0.2), o = between(T.out[0], T.out[1]);
+      lobes.push(chunk(k, [d[0] * a * o, d[1] * b * o, d[2] * c * o]));
     }
   }
   const inHull = (p) => {
@@ -158,7 +163,7 @@ export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, ski
     }
     if (r() < T.cracked) cl.gap = between(T.crack[0], T.crack[1]) / 2;
     // The block's own outer face, broken at its own depth and angle (a boulder's given faces are kept).
-    for (let i = 0; i < (form ? 0 : 1 + Math.floor(r() * 2)); i++) {
+    for (let i = 0; i < (form || lumps ? 0 : 1 + Math.floor(r() * 2)); i++) {
       let n = jitter(out, 1.4);
       if (top && n[1] > 0.3) n = unit([n[0], -Math.abs(n[1]), n[2]]);
       cl.own.push({ n, h: dot(n, cl.seed) + outTo(cl, n) - big * (0.008 + T.face * r()) });
@@ -168,14 +173,24 @@ export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, ski
     const n = unit([r() * 2 - 1, r() * 2 - 1, r() * 2 - 1]);
     if (top && n[1] > 0.3) continue;
     const { at, sn } = faceAt(cl, n), m = jitter(sn, 1.1);
+    if (inHull(at) < -big * 0.01) continue;
     cl.own.push({ n: m, h: dot(m, at) - big * between(T.corner[0], T.corner[1]) });
   }
   // The secondary breaks: each block's surface broken again by planes turned a little from it, at uneven depths.
+  // Only its outer surface: a break laid on the face it shares with the next block opened a gap through the piece.
   for (const cl of cells) for (let i = 0; i < facets; i++) {
     let n = unit([r() - 0.5, r() - 0.5, r() - 0.5]);
     if (top && n[1] > 0.3) continue;
     const { at, sn } = faceAt(cl, n), m = jitter(sn, T.facetTurn);
+    if (inHull(at) < -big * 0.01) continue;
     cl.own.push({ n: m, h: dot(m, at) - big * between(T.facetCut[0], T.facetCut[1]) });
+  }
+  for (const cl of cells) for (let i = 0; i < T.planes; i++) {
+    const { at, sn } = faceAt(cl, unit([r() - 0.5, r() - 0.5, r() - 0.5]));
+    if (inHull(at) < -big * 0.01) continue;
+    const t = jitter(unit(cross(sn, [r() - 0.5, r() - 0.5, r() - 0.5])), 0), k = between(T.planeTurn[0], T.planeTurn[1]);
+    const m = unit(sn.map((v, j) => v * Math.cos(k) + t[j] * Math.sin(k)));
+    cl.own.push({ n: m, h: dot(m, at) - big * between(T.planeCut[0], T.planeCut[1]) });
   }
   // The stepped breaks: a face that drops a little part of the way across it, along a ragged riser. Each is the
   // block's face at one of its outer ways, turned a little, lowered on one side of a plane across it.
@@ -183,6 +198,7 @@ export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, ski
     let n = jitter(unit([r() - 0.5, r() - 0.5, r() - 0.5]), 0.2);
     if (top && n[1] > 0.3) n = unit([n[0], -Math.abs(n[1]), n[2]]);
     const { at, sn } = faceAt(cl, n), n1 = jitter(sn, 0.12), across = unit(cross(n1, jitter([0, 1, 0], 2.4)));
+    if (inHull(at) < -big * 0.01) continue;
     cl.steps.push({ n1, h1: dot(n1, at) - big * between(T.step[0], T.step[1]), n2: across, h2: dot(across, at) + big * 0.25 * (r() - 0.5) });
   }
   const kept = cells.filter((cl) => !cl.gone);
@@ -206,11 +222,12 @@ export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, ski
     return d + cl.gap;
   };
   // The mass, and the nearest two blocks' values (for where a join is).
-  const two = [0, 0];
+  const two = [0, 0], notches = [];
   const massOf = (x, y, z) => {
     const p = [x, y, z], w = warp(x, y, z), rise = riseK * (noise(x / riseW, y / riseW, z / riseW, (seed + 4) & 1023) - 0.5) * 2;
     let d = Infinity, e = Infinity;
     for (const cl of kept) { const v = block(p, w, rise, cl); if (v < d) { e = d; d = v; } else if (v < e) e = v; }
+    for (const nt of notches) d = nt.m2 ? Math.max(d, Math.min(dot(nt.m1, p) - nt.h1, dot(nt.m2, p) - nt.h2)) : Math.max(d, dot(nt.m1, p) - nt.h1);
     two[0] = d; two[1] = e;
     if (sphere) d = Math.max(d, Math.hypot(x - sphere.at[0], y - sphere.at[1], z - sphere.at[2]) - sphere.R);
     return d;
@@ -234,6 +251,43 @@ export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, ski
   };
   const normalOf = (f, q, e) => unit([f(q[0] + e, q[1], q[2]) - f(q[0] - e, q[1], q[2]), f(q[0], q[1] + e, q[2]) - f(q[0], q[1] - e, q[2]), f(q[0], q[1], q[2] + e) - f(q[0], q[1], q[2] - e)]);
 
+  // The outline as it is seen, broken: places on the surface turned edge on to the visitor, taken a set way apart
+  // round it, each given a V notch or a broken corner. Along a crest (ridge, with crest over 0) they come closer
+  // together and cut deeper, so its line is a saw.
+  if (view) {
+    const vw = unit(view), rim = [];
+    for (let i = 0; i < 1800; i++) {
+      const u = (i + 0.5) / 1800, th = Math.acos(1 - 2 * u), ph = i * 2.39996, q = onto([Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)]);
+      const n0 = normalOf(mass, q, big * 0.002);
+      if (Math.abs(dot(n0, vw)) >= 0.3) continue;
+      // On the outline only if nothing of the piece lies in front of it or behind it, just outside it: a side face
+      // that stands inside the outline took a notch as a pocket in the middle of a face.
+      const o = [q[0] + n0[0] * big * 0.03, q[1] + n0[1] * big * 0.03, q[2] + n0[2] * big * 0.03];
+      let seen = true;
+      for (let j = 1; j <= 60 && seen; j++) for (const sg of [1, -1]) { const t = sg * j * big * 0.035; if (mass(o[0] + vw[0] * t, o[1] + vw[1] * t, o[2] + vw[2] * t) < 0) seen = false; }
+      if (seen) rim.push({ q, n: n0, k: r() });
+    }
+    rim.sort((x, y) => x.k - y.k);
+    const flatOf = (q) => { const s = dot(q, vw); return [q[0] - vw[0] * s, q[1] - vw[1] * s, q[2] - vw[2] * s]; };
+    const taken = [], rdg = ridge ? unit(ridge) : null;
+    for (const sp of rim) {
+      const onCrest = rdg && crest > 0 ? smoothstepJs(0.15, 0.5, dot(sp.n, rdg)) : 0, gap = big * every * (1 - 0.55 * onCrest), at = flatOf(sp.q);
+      if (taken.some((t) => Math.hypot(at[0] - t[0], at[1] - t[1], at[2] - t[2]) < gap * (0.75 + 0.5 * hash(taken.length * 31 + seed)))) continue;
+      taken.push(at);
+      const sn = unit(sp.n.map((v, k) => v - vw[k] * dot(sp.n, vw))), across = unit(cross(jitter(vw, 0.15), sn)), deep = 1 + crest * onCrest;
+      if (r() < T.notched + 0.3 * onCrest) {
+        const b1 = between(T.open[0], T.open[1]), b2 = between(T.open[0], T.open[1]), D = big * between(T.notch[0], T.notch[1]) * deep;
+        const c0 = [sp.q[0] - sn[0] * D, sp.q[1] - sn[1] * D, sp.q[2] - sn[2] * D];
+        const m1 = unit(sn.map((v, k) => v * Math.cos(b1) + across[k] * Math.sin(b1))), m2 = unit(sn.map((v, k) => v * Math.cos(b2) - across[k] * Math.sin(b2)));
+        if (Math.min(dot(m1, c0), dot(m2, c0)) > big * 0.15) notches.push({ m1, h1: dot(m1, c0), m2, h2: dot(m2, c0) });
+      } else {
+        // Turned from the face no further than keeps the cut to the edge: a plane turned far cut the piece in two.
+        const m1 = jitter(unit(sn.map((v, k) => v + across[k] * (r() - 0.5) * 0.8)), 0.15), h1 = dot(m1, sp.q) - big * between(T.bevel[0], T.bevel[1]) * deep;
+        if (h1 > big * 0.25) notches.push({ m1, h1 });
+      }
+    }
+  }
+
   // Places on the surface, and which are on an edge: where the surface's way turns sharply within a short step.
   const edges = [], joins = [], surf = [];
   const E = big * 0.018, look = Math.cos((32 * Math.PI) / 180);
@@ -256,9 +310,10 @@ export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, ski
     if (worst < look && nb && convex) edges.push({ q, nA: n0, nB: nb });
   }
 
-  // The flakes off the edges. Each is a ball standing off the edge so that it bites a shallow scallop into one face,
-  // spreading away from the edge, and only nicks the other: the rim it leaves is sharp. Many small, a few large, and
-  // along a ridge, if the piece has one, more and deeper: a jagged crest.
+  // The flakes off the edges. Each takes a flat chip out of an edge: a plane turned from the face it spreads over
+  // toward the edge, a little under the edge, bounded along the edge by two risers set at angles of their own, so
+  // its scar is a flat facet with straight sides and the edge it leaves is a run of short straight strokes, never a
+  // round dent. Many small, a few large, and along a ridge, if the piece has one, more and deeper: a jagged crest.
   const flakes = [];
   const rd = ridge ? unit(ridge) : null;
   for (let i = 0, tries = 0; i < chips && tries < chips * 6 && edges.length; tries++) {
@@ -268,27 +323,20 @@ export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, ski
     if (top && bis[1] > 0.5) continue;
     i++;
     const R = big * T.flake[0] * T.flake[1] ** (r() ** (2.2 - 1.2 * onRidge)), swap = r() < 0.5;
-    const nF = swap ? ed.nB : ed.nA, nO = swap ? ed.nA : ed.nB, cs = dot(nF, nO), det = Math.max(0.08, 1 - cs * cs);
-    const dF = R * between(T.bite[0], T.bite[1]) * (1 + 0.6 * onRidge), dO = R * between(T.under[0], T.under[1]) * (1 + 2.5 * onRidge);
-    const kF = ((R - dF) - cs * (R - dO)) / det, kO = ((R - dO) - cs * (R - dF)) / det;
-    const at = [ed.q[0] + nF[0] * kF + nO[0] * kO, ed.q[1] + nF[1] * kF + nO[1] * kO, ed.q[2] + nF[2] * kF + nO[2] * kO];
-    const along = unit(cross(nF, nO)), into = unit(cross(along, nF)), sgn = dot(into, nO) > 0 ? -1 : 1;
-    flakes.push({ at, R, u: [into[0] * sgn, into[1] * sgn, into[2] * sgn], s: between(T.spread[0], T.spread[1]) });
-  }
-  // The large shallow scars where a broad flake left a face, with a sharp rim: each the bite of a ball as large as
-  // the scar is wide and as shallow as it is deep, whose middle stands off the face, and nothing further from where
-  // it was struck than its width.
-  const broad = [];
-  for (let i = 0; i < scars && surf.length; i++) {
-    const sp = surf[Math.floor(r() * surf.length)];
-    if (top && sp.n[1] > 0.3) continue;
-    const R = big * between(T.scar[0], T.scar[1]), h = R * between(T.scoop[0], T.scoop[1]), far = (R * R + h * h) / (2 * h);
-    broad.push({ q: sp.q, R, at: [sp.q[0] + sp.n[0] * (far - h), sp.q[1] + sp.n[1] * (far - h), sp.q[2] + sp.n[2] * (far - h)], far });
+    const nF = swap ? ed.nB : ed.nA, nO = swap ? ed.nA : ed.nB;
+    // The chip's plane, turned from the face toward the edge, and how far under the edge it passes.
+    const lean = between(0.25, 0.6), n = unit([nF[0] + nO[0] * lean, nF[1] + nO[1] * lean, nF[2] + nO[2] * lean]);
+    const deep = R * between(T.bite[0], T.bite[1]) * (1 + 1.2 * onRidge), h = dot(n, ed.q) - deep;
+    // Its two ends along the edge, each turned its own way so the chip is never a neat rectangle.
+    const along = unit(cross(nF, nO)), into = unit(cross(along, nF)), sgn = dot(into, nO) > 0 ? -1 : 1, inw = into.map((v) => v * sgn);
+    const L1 = R * between(0.5, 1.4), L2 = R * between(0.5, 1.4), t1 = between(-0.6, 0.6), t2 = between(-0.6, 0.6);
+    const a1 = unit(along.map((v, k) => v + inw[k] * t1)), a2 = unit(along.map((v, k) => -v + inw[k] * t2));
+    flakes.push({ n, h, a1, b1: dot(a1, ed.q) + L1, a2, b2: dot(a2, ed.q) + L2, R: Math.max(L1, L2) + deep * 4, at: ed.q });
   }
   // The flakes in a grid of cells, so a place looks only at those near it.
-  const G = Math.max(big * 0.12, ...flakes.map((f) => f.R * Math.max(1, f.s) * 1.1)), grid = new Map(), key = (i, j, k) => `${i},${j},${k}`;
+  const G = Math.max(big * 0.12, ...flakes.map((f) => f.R * 1.1)), grid = new Map(), key = (i, j, k) => `${i},${j},${k}`;
   for (const [n, f] of flakes.entries()) {
-    const reachF = f.R * Math.max(1, f.s);
+    const reachF = f.R;
     for (let i = Math.floor((f.at[0] - reachF) / G); i <= Math.floor((f.at[0] + reachF) / G); i++)
       for (let j = Math.floor((f.at[1] - reachF) / G); j <= Math.floor((f.at[1] + reachF) / G); j++)
         for (let k = Math.floor((f.at[2] - reachF) / G); k <= Math.floor((f.at[2] + reachF) / G); k++) {
@@ -300,14 +348,10 @@ export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, ski
   const flaked = (x, y, z) => {
     const near = grid.get(key(Math.floor(x / G), Math.floor(y / G), Math.floor(z / G)));
     let d = -Infinity;
+    const p = [x, y, z];
     if (near) for (const n of near) {
-      const f = flakes[n], q = [x - f.at[0], y - f.at[1], z - f.at[2]], along = dot(q, f.u) * (1 / f.s - 1);
-      const l = Math.hypot(q[0] + f.u[0] * along, q[1] + f.u[1] * along, q[2] + f.u[2] * along);
-      d = Math.max(d, f.R - l);
-    }
-    for (const f of broad) {
-      if (Math.abs(x - f.q[0]) > f.R * 1.3 || Math.abs(y - f.q[1]) > f.R * 1.3 || Math.abs(z - f.q[2]) > f.R * 1.3) continue;
-      d = Math.max(d, f.far - Math.hypot(x - f.at[0], y - f.at[1], z - f.at[2]));
+      const f = flakes[n];
+      d = Math.max(d, Math.min(dot(f.n, p) - f.h, f.b1 - dot(f.a1, p), f.b2 - dot(f.a2, p)));
     }
     return d;
   };
@@ -344,6 +388,7 @@ export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, ski
     pits.push({ at: [q[0] + t[0] * up, q[1] + t[1] * up, q[2] + t[2] * up], r: rc });
   }
 
+
   const sw = big * T.swellOver, rg = big * T.ridgeOver, wa = big * T.wanderOver;
   const relief = (x, y, z) => big * T.swell * (noise(x / sw + 11, y / sw + 3, z / sw + 7, s0) - 0.5) * 2
     + big * T.ridge * (0.5 - 2 * Math.abs(noise(x / rg + 5, y / rg, z / rg, (seed + 3) & 1023) - 0.5))
@@ -370,6 +415,13 @@ export function shape({ seed, size, layer = [0, 1, 0], blocks = 4, drop = 1, ski
   for (let i = 0; i < 800; i++) {
     const u = (i + 0.5) / 800, th = Math.acos(1 - 2 * u), ph = i * 2.39996, q = onto([Math.sin(th) * Math.cos(ph), Math.cos(th), Math.sin(th) * Math.sin(ph)], (x, y, z) => Math.min(mass(x, y, z), rubbleOf(x, y, z)));
     for (let k = 0; k < 3; k++) { least[k] = Math.min(least[k], q[k]); most[k] = Math.max(most[k], q[k]); }
+  }
+  // A piece grown of several chunks is not seen whole from its middle: rays out from it missed what stood out, and
+  // the mesher's box cut it open, so its inside showed as a dark pocket. Every place inside, on a grid, widens it.
+  const G3 = 36, step = (4 * big) / G3;
+  for (let i = 0; i <= G3; i++) for (let j = 0; j <= G3; j++) for (let k = 0; k <= G3; k++) {
+    const q = [-2 * big + i * step, -2 * big + j * step, -2 * big + k * step];
+    if (Math.min(mass(q[0], q[1], q[2]), rubbleOf(q[0], q[1], q[2])) < 0) for (let m = 0; m < 3; m++) { least[m] = Math.min(least[m], q[m] - step); most[m] = Math.max(most[m], q[m] + step); }
   }
   const spare = big * 0.08;
   return { at, onSkin, blockOf, bedOf, isRubble, fresh, flakes: flakes.length, edges: edges.length, box: [least.map((v) => v - spare), most.map((v) => v + spare)] };
