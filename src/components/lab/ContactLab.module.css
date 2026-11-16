@@ -371,8 +371,12 @@
     padding: var(--space-9) var(--gut) 0;
   }
 
+  /* One column no wider than the plate, in the middle of the screen: on an upright iPad the plate stood at the left
+     with half the screen empty beside it and the pad's picture centred under nothing. */
   .contact {
     height: auto !important;
+    max-width: 34rem;
+    margin-inline: auto;
   }
 
   .pad {

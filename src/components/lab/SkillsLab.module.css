@@ -573,7 +573,10 @@
     display: flex;
     flex-direction: column;
     height: auto !important;
-    margin-top: var(--space-9);
+    /* A column a person can read, in the middle of the screen: across an upright iPad a line of About ran to over
+       a hundred characters. */
+    max-width: 40rem;
+    margin: var(--space-9) auto 0;
   }
 
   .words {
