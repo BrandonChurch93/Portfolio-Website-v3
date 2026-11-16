@@ -100,6 +100,10 @@ const AT = {
   // Two low blocks stood squarely before the spire's podium and hid its portal, where the picture shows the
   // spire's foot clear down to the trees. They stand behind it now.
   26: { px: 688, py: 236, z: -260 }, 40: { px: 702, py: 226, z: -330 },
+  // Between the pyramid and the obelisk the picture is a solid wall of towers topping near 158: a block at 430 to
+  // 450 across, a pale slab at 450 to 467, and a dark block before the obelisk's foot at 470 to 496. Ours stood 35
+  // to 50 pixels lower there, with sky between them.
+  87: { px: 440, py: 158, wide: 20 }, 56: { px: 458, py: 160, wide: 17, form: 'slab' }, 64: { px: 483, py: 163, wide: 26, z: 120 },
   101: { px: 126, py: 257, wide: 26 }, 95: { px: 133, py: 240, wide: 18 }, 17: { px: 151, py: 221, wide: 17 }, 107: { px: 164, py: 224, wide: 9, form: 'fin' },
   32: { px: 177, py: 213, wide: 20 }, 103: { px: 194, py: 240, wide: 13 }, 92: { px: 211, py: 205, wide: 16 }, 70: { px: 223, py: 222, wide: 14 },
   46: { px: 233, py: 228, wide: 11 }, 80: { px: 241, py: 192, wide: 17, form: 'deco' }, 97: { px: 254, py: 207, wide: 17 }, 12: { px: 272, py: 170, wide: 20, form: 'deco' },
