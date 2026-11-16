@@ -70,6 +70,9 @@ const FILL = 0.08;
 const FLASH_KEY = { power: 60, at: [-0.8, 0.26, -0.62] as const, soft: 2.5, fill: 0 };
 // The strike: a light just off the struck end, at the height the stream comes in at.
 const STRIKE_LIGHT = { base: 0.012, flash: 0.16, at: [26, 22] as const } as const;
+// The cursor's light as it is mirrored: a tube this long through the lamp, lying across the picture and tipped a
+// little, so the varnish, the wet paint and the metal show it as a long streak that slides with the cursor.
+const TUBE = { len: 0.16, tilt: -14, power: 1 } as const;
 const TURN = { yaw: 5, pitch: 3, omega: 6.5 } as const;
 const MASK = 'linear-gradient(to right, transparent 2%, #000 12%, #000 88%, transparent 98%), linear-gradient(to bottom, transparent 5%, #000 11%, #000 89%, transparent 95%)';
 const SHARDS_MOST = 48;
@@ -115,6 +118,7 @@ export function createPalette(): StruckPiece {
   const KEY_AT = new THREE.Vector3(...KEY.at), FLASH_AT = new THREE.Vector3(...FLASH_KEY.at);
   const ROOM = ROOM_LIGHT.clone(), HOT = ROOM_LIGHT.clone();
   const rimDir = new THREE.Vector3();
+  const tubeDir = new THREE.Vector3(), tubeAxis = new THREE.Vector3();
 
   const time = () => hold ?? clock.now();
   const still = () => clock.isFrozen() || hold !== null;
@@ -225,6 +229,17 @@ export function createPalette(): StruckPiece {
       if (m.instanceColor) m.instanceColor.needsUpdate = true;
     });
     placeLamp();
+    const cam = stage.camera;
+    tubeDir.setFromMatrixColumn(cam.matrixWorld, 0).applyAxisAngle(tubeAxis.setFromMatrixColumn(cam.matrixWorld, 2), TUBE.tilt * DEG);
+    u.uTubeA.value.copy(stage.lamp.position).addScaledVector(tubeDir, -TUBE.len / 2).applyMatrix4(cam.matrixWorldInverse);
+    u.uTubeB.value.copy(stage.lamp.position).addScaledVector(tubeDir, TUBE.len / 2).applyMatrix4(cam.matrixWorldInverse);
+    u.uTubeK.value = TUBE.power * room;
+    strips.forEach((st, i) => {
+      tubeDir.setFromMatrixColumn(st.matrixWorld, 0).multiplyScalar(STRIPS[i].w / 2);
+      u.uStripA.value[i].copy(st.position).sub(tubeDir).applyMatrix4(cam.matrixWorldInverse);
+      u.uStripB.value[i].copy(st.position).add(tubeDir).applyMatrix4(cam.matrixWorldInverse);
+    });
+    u.uStripK.value = Math.max(room, 1.2 * w);
   };
 
   let held = false, owed = 0, built = 0, first = 0;
@@ -318,6 +333,7 @@ export function createPalette(): StruckPiece {
         const l = new THREE.RectAreaLight(ROOM_LIGHT, st.power, st.w, st.h);
         l.position.copy(wetAt).addScaledVector(dir, st.along);
         l.lookAt(wetAt);
+        l.updateMatrixWorld();
         strips.push(l);
         s.add(l);
       }
