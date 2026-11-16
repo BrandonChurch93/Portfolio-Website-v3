@@ -18,16 +18,16 @@ import { fbm } from './field.mjs';
 // `hang` for one broken off and hanging, whose reach is wholly past the line (from, over).
 const PLAN = {
   left: [
-    { y0: 350, y1: 410, in: 12, over: 6, T: 22, sink: 2, tilt: 8 },
-    { y0: 410, y1: 442, in: 13, over: 8, T: 20, sink: 3, tilt: 10 },
-    { y0: 442, y1: 468, in: 10, over: 5, T: 16, sink: 1, tilt: 6 },
-    { y0: 469, y1: 505, in: 16, over: 10, T: 24, sink: 5, tilt: 14 },
-    { y0: 505, y1: 521, in: 9, over: 4, T: 13, sink: 2, tilt: 4 },
-    { y0: 521, y1: 566, in: 18, over: 12, T: 26, sink: 7, tilt: 18 },
+    { y0: 350, y1: 410, in: 12, over: 3, T: 22, sink: 2, tilt: 8 },
+    { y0: 410, y1: 442, in: 13, over: 2, T: 20, sink: 3, tilt: 10 },
+    { y0: 442, y1: 468, in: 10, over: 2.5, T: 16, sink: 1, tilt: 6 },
+    { y0: 469, y1: 505, in: 16, over: 5, T: 24, sink: 5, tilt: 14 },
+    { y0: 505, y1: 521, in: 9, over: 2, T: 13, sink: 2, tilt: 4 },
+    { y0: 521, y1: 566, in: 18, over: 6, T: 26, sink: 7, tilt: 18 },
     { y0: 568, y1: 598, from: 8, over: 22, T: 10, sink: 9, tilt: 38, hang: true },
-    { y0: 566, y1: 590, in: 11, over: 6, T: 18, sink: 3, tilt: 8 },
-    { y0: 590, y1: 628, in: 15, over: 10, T: 22, sink: 6, tilt: 15 },
-    { y0: 628, y1: 652, in: 9, over: 5, T: 14, sink: 3, tilt: 6 },
+    { y0: 566, y1: 590, in: 11, over: 3, T: 18, sink: 3, tilt: 8 },
+    { y0: 590, y1: 628, in: 15, over: 5, T: 22, sink: 6, tilt: 15 },
+    { y0: 628, y1: 652, in: 9, over: 2.5, T: 14, sink: 3, tilt: 6 },
   ],
   // The pale side's crust is not broken into blocks: it wraps the break as one thick rounded lip of the skin itself
   // (field.mjs, BEVEL). A column of blocks there read as a straight stacked seam.
@@ -40,9 +40,9 @@ const PLAN = {
 // `slant` turns its two ends (radians, start and end) so it narrows or leans as picture 9's shards do, and `scallop` and
 // `pits` are how many scallops and pits its face carries to a square unit (fewer and larger than a line block's).
 const FACING = [
-  { px: [277, 398], py: [315, 348], T: 34, ahead: 5, lean: 30, slab: true, slant: [0.12, -0.3], scallop: 1 / 260, pits: 1 / 210 },
-  { px: [282, 313], py: [349, 405], T: 14, ahead: 3, lean: -8, hang: true, slant: [-0.26, -0.07], scallop: 1 / 150, pits: 1 / 160 },
-  { px: [262, 287], py: [416, 454], T: 11, ahead: 2.5, lean: -12, hang: true, slant: [0.38, 0.2], scallop: 1 / 150, pits: 1 / 160 },
+  { px: [277, 398], py: [315, 348], T: 34, ahead: 5, lean: 30, slab: true, slant: [0.12, -0.3], scallop: 0, pits: 1 / 70 },
+  { px: [282, 313], py: [349, 405], T: 14, ahead: 3, lean: 12, hang: true, slant: [-0.26, -0.07], scallop: 0, pits: 1 / 60 },
+  { px: [262, 287], py: [416, 454], T: 11, ahead: 2.5, lean: 8, hang: true, slant: [0.38, 0.2], scallop: 0, pits: 1 / 60 },
 ];
 // The crack left between the skin and each block's back, in units; the planet's curve the tops follow; how worn the
 // tops are and how rough every face, in units.
@@ -55,8 +55,9 @@ const PALE_TIP = 12;
 // a plane with soft dents, which read as foam or stucco.
 const DISH = { per: 1 / 34, r: [1.8, 7.5], deep: [0.18, 0.42] }, PIT = { per: 1 / 30, r: [0.6, 2.2], deep: [0.55, 0.9] };
 // On the faces that face the visitor, few and large: a face carved by many small scallops and pits read as crumpled
-// paper. A few broad conchoidal breaks, and a few big pits in the crust's old top.
-const BIG_DISH = { r: [5, 13], deep: [0.12, 0.3] }, BIG_PIT = { r: [1.6, 4.6], deep: [0.5, 0.8] };
+// paper. And broad shallow dishes on them read as stains, like thumbprints: so no dishes, and crisp deep pits of many
+// sizes in the crust's old top.
+const BIG_DISH = { r: [5, 13], deep: [0.12, 0.3] }, BIG_PIT = { r: [0.9, 3.4], deep: [0.62, 0.95] };
 // How the skin's edge wanders along the blocks' backs: how far, in pixels, at what grain of rows, and over how many rows
 // it changes from one block's back to the next (a jump between two rows tilted the skin's grid there, which drew a
 // line right across the side).
@@ -66,6 +67,10 @@ const CUT = { wander: 5.5, every: 14, fine: [1.6, 3.4], ease: 5 };
 // Where no block stands (the whole pale side) the skin's broken edge wanders the same way at a broader grain and a
 // sharper fine one, so its outline against the hollow is notched and never the smooth line it is read from.
 const BARE = { wander: 7, every: 24, fine: [1.3, 7.5] };
+// Where the hot arm meets the dark side's tear (the row, in picture 9's pixels), over how many rows each side the skin
+// runs on to `inset` pixels short of the line, and over how many more it eases back: the arm stopped some 9 pixels
+// short of the tear, where picture 9's runs to it.
+const OPEN = { at: 467, half: 3, ease: 5, inset: 4 };
 
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const add = (a, b, k = 1) => [a[0] + b[0] * k, a[1] + b[1] * k, a[2] + b[2] * k];
@@ -234,8 +239,10 @@ export function cutAt(side, py) {
   const s = side === 'left' ? 1 : -1, line = lineAt(side, py);
   let a = 0;
   for (let i = -4; i <= 4; i++) a += insetAt(side, py + (i * CUT.ease) / 4);
-  const inset = a / 9;
-  const wander = Math.max(0, CUT.wander * (0.55 + fbm(py / CUT.every, side === 'left' ? 3.1 : 7.7, 0.5, 2)) + CUT.fine[0] * fbm(py / CUT.fine[1], 5.3, side === 'left' ? 1.1 : 2.9, 1));
+  // Where the hot arm of the cracks meets the tear the skin runs on nearly to the line, so the arm is open to the break.
+  const open = side === 'left' ? 1 - Math.min(1, Math.max(0, (Math.abs(py - OPEN.at) - OPEN.half) / OPEN.ease)) : 0;
+  const inset = (a / 9) * (1 - open) + OPEN.inset * open;
+  const wander = (1 - open) * Math.max(0, CUT.wander * (0.55 + fbm(py / CUT.every, side === 'left' ? 3.1 : 7.7, 0.5, 2)) + CUT.fine[0] * fbm(py / CUT.fine[1], 5.3, side === 'left' ? 1.1 : 2.9, 1));
   if (inset <= 0.5 && side === 'right') {
     const k = 8.8, bare = Math.max(0, BARE.wander * (0.5 + fbm(py / BARE.every, k, 0.5, 3)) + BARE.fine[0] * Math.abs(fbm(py / BARE.fine[1], 5.3 + k, 1.9, 2)) * 2);
     return line - s * (inset + bare);

@@ -5,15 +5,15 @@
 import { parentPort, workerData } from 'node:worker_threads';
 import { any, closest } from '../../lib/bvh.mjs';
 import { L } from '../../lib/plan.mjs';
-import { CRUST, SHOULDER, setup, fine, coarse, crust, chips, crackOf, edgeDistance, pitted, floored, farEdge, fbm, downOf, slabbed } from './field.mjs';
+import { CRUST, SHOULDER, setup, fine, coarse, crust, chips, crackOf, edgeDistance, pitted, floored, farEdge, fbm, downOf, slabbed, tornPale } from './field.mjs';
 import { frame, shellNormal, toShell } from './features.mjs';
-import { blockTop } from '../../../../src/pieces/world/parts/skin/look.ts';
+import { SECTION, blockTop } from '../../../../src/pieces/world/parts/skin/look.ts';
 
 const { features, bvh, positions, normals, indices, code, texels, rects, perPixel, rows, moon } = workerData;
 setup(features);
 const P = new Float32Array(positions), N = new Float32Array(normals), I = new Uint32Array(indices), CODE = new Float32Array(code);
 const out = {
-  H: new Float32Array(texels.H), G: new Float32Array(texels.G), B: new Float32Array(texels.B), at: new Float32Array(texels.at), side: new Int8Array(texels.side),
+  H: new Float32Array(texels.H), G: new Float32Array(texels.G), B: new Float32Array(texels.B), at: new Float32Array(texels.at), side: new Int8Array(texels.side), CELL: new Int32Array(texels.cell),
 };
 const W = texels.wide, hit = new Float64Array(4);
 const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
@@ -22,7 +22,7 @@ const unit = (a) => { const l = Math.hypot(a[0], a[1], a[2]) || 1; return [a[0] 
 // How the pale side is shaded from the moon: places along the way to it, in units, from the first to past the
 // longest shadow a crater's rim throws, each a share further than the last, and how soft the shadow's edge is (the
 // moon's own width as a share of the distance, and a little more for the texel).
-const SHADE = { first: 0.25, grow: 1.12, far: 160, soft: 0.016, texel: 0.12 };
+const SHADE = { first: 0.25, grow: 1.12, far: 160, soft: 0.01, texel: 0.1 };
 const STEPS = [];
 for (let s = SHADE.first; s < SHADE.far; s *= SHADE.grow) STEPS.push(s);
 // Where the top of a broken face is looked for round a place: so far off, in so many directions.
@@ -58,9 +58,9 @@ function moonSeen(q, sn, h0, side, md) {
 // cracks, and at one small grain all over as crumpled paper. A few large planes, and a finer grain of small ones.
 const FRACTURE = [{ size: 13, tip: 0.16, crack: 0, dark: 0, seed: 3 }, { size: 4.6, tip: 0.05, crack: 0, dark: 0, seed: 9 }];
 const hashOf = (i, j, k, s) => { let n = Math.imul(i, 374761393) ^ Math.imul(j, 668265263) ^ Math.imul(k, 1440662683) ^ Math.imul(s, 1274126177); n = Math.imul(n ^ (n >>> 13), 1274126177); return ((n ^ (n >>> 16)) >>> 0) / 4294967296; };
-const FR = { h: 0, tone: 1 };
+const FR = { h: 0, tone: 1, cell: 1 };
 function fractured(p) {
-  FR.h = 0; FR.tone = 1;
+  FR.h = 0; FR.tone = 1; FR.cell = 1;
   for (const g of FRACTURE) {
     const fx = p[0] / g.size, fy = p[1] / g.size, fz = p[2] / g.size, X = Math.floor(fx), Y = Math.floor(fy), Z = Math.floor(fz);
     let d1 = Infinity, d2 = Infinity, b = null;
@@ -71,7 +71,8 @@ function fractured(p) {
     }
     const [i, j, k, sx, sy, sz] = b, t = unit([hashOf(i, j, k, g.seed + 3) - 0.5, hashOf(i, j, k, g.seed + 4) - 0.5, hashOf(i, j, k, g.seed + 5) - 0.5]);
     FR.h += g.tip * g.size * ((fx - sx) * t[0] + (fy - sy) * t[1] + (fz - sz) * t[2]);
-    FR.tone *= 0.9 + 0.2 * hashOf(i, j, k, g.seed + 6);
+    FR.tone *= 0.84 + 0.32 * hashOf(i, j, k, g.seed + 6);
+    FR.cell = (Math.imul(FR.cell, 92821) ^ Math.imul(i, 73856093) ^ Math.imul(j, 19349663) ^ Math.imul(k, 83492791)) | 1;
   }
   return FR;
 }
@@ -111,8 +112,9 @@ for (let row = rows[0]; row < rows[1]; row++) {
       // On its weathered top the crust's own old ground shows: pitted and lumpy, as the outer surface is.
       const top = blockTop(CODE[a] * w + CODE[b] * u + CODE[c] * v), pit = top > 0.5 ? pitted(q[0], q[1], q[2], 1) : 0;
       const fr = fractured(p);
+      out.CELL[i] = fr.cell;
       out.H[i] = fr.h + 0.1 * fbm(p[0] / 1.3, p[1] / 1.3, p[2] / 1.3, 2) + (top > 0.5 ? (fine(q[0], q[1], q[2], 1) - 0.1) * smooth(0.5, 0.9, top) * 0.25 : 0);
-      out.B[i] = (0.9 + 0.14 * fbm(p[0] * 0.08, p[1] * 0.08, p[2] * 0.08, 2)) * fr.tone * (1 - 0.25 * pit);
+      out.B[i] = (0.9 + 0.14 * fbm(p[0] * 0.08, p[1] * 0.08, p[2] * 0.08, 2)) * fr.tone * (1 - 0.65 * pit);
       out.G[i] = side > 0 ? blockSeen(p, n, moon) : 0;
       continue;
     }
@@ -125,8 +127,20 @@ for (let row = rows[0]; row < rows[1]; row++) {
     // On the pale side's lip, where it rounds over into the break, the relief is the stone's own where it is and not
     // the outer surface's over it: taken from over it, its pits were drawn down the slope in streaks.
     // It is broken stone as well as pitted: a few large fracture planes and a grain, so it never reads as plaster.
-    const lip = side > 0 && up < 0.88 && toLine < 24, lfr = lip ? { ...fractured(p) } : null;
-    const h0 = lip ? fine(p[0], p[1], p[2], side) + 1.6 * lfr.h + 0.35 * fbm(p[0] / 1.1, p[1] / 1.1, p[2] / 1.1, 2) : isFace ? 0.3 * fbm(p[0] / 1.7, p[1] / 1.7, p[2] / 1.7, 2) : fine(q[0], q[1], q[2], side);
+    // At the pale tear, where the crust has fallen away (tornPale), the stone under it in section: broken planes and a
+    // grit of its own, and its tone stored under SECTION, where the shader takes it for the stone and not the dust.
+    const torn = side > 0 && tornPale(q[0], q[1], q[2]).kind === 2;
+    if (torn) {
+      const fr = fractured(p), hs = 1.4 * fr.h + 0.35 * fbm(p[0] / 1.1, p[1] / 1.1, p[2] / 1.1, 2) + 0.12 * fbm(p[0] / 0.45, p[1] / 0.45, p[2] / 0.45, 1);
+      out.H[i] = hs;
+      out.CELL[i] = fr.cell;
+      const tone = fr.tone * (0.8 + 0.4 * (0.5 + 0.5 * fbm(p[0] / 3.3, p[1] / 3.3, p[2] / 3.3, 2)));
+      out.B[i] = SECTION[0] + (SECTION[1] - SECTION[0]) * Math.min(1, Math.max(0, tone / 1.3));
+      out.G[i] = moonSeen(q, sn, hs, side, moon);
+      continue;
+    }
+    const lip = false, lfr = null;
+    const h0 = isFace ? 0.3 * fbm(p[0] / 1.7, p[1] / 1.7, p[2] / 1.7, 2) : fine(q[0], q[1], q[2], side);
     out.H[i] = h0;
     const r1 = toShell(q[0] + e1[0] * D, q[1] + e1[1] * D, q[2] + e1[2] * D), r2 = toShell(q[0] + e2[0] * D, q[1] + e2[1] * D, q[2] + e2[2] * D);
     const g1 = isFace ? 0 : (fine(r1[0], r1[1], r1[2], side) - h0) / D, g2 = isFace ? 0 : (fine(r2[0], r2[1], r2[2], side) - h0) / D;
@@ -176,8 +190,10 @@ for (let row = rows[0]; row < rows[1]; row++) {
       // Where the moon falls squarely the dust is at its palest: the shader eases it toward the dust's cream.
       m *= 1 + 0.2 * smooth(0.3, 0.8, dot(md, bent)) * vis * (1 - 0.85 * floor);
       m *= 1 + 0.12 * layer;
-      // The fourth number on the pale side: how much of the moon is seen.
+      // The fourth number on the pale side: how much of the moon is seen. The dust is never stored as dark as the
+      // stone in section (SECTION).
       g = vis;
+      m = Math.max(m, SECTION[1] + 0.12);
     } else {
       // The oldest surface: broad changes of tone, and long weathering streaks down it.
       const ex = sn[2], ez = -sn[0], el = Math.hypot(ex, ez) || 1, across = (q[0] * ex + q[2] * ez) / el;

@@ -84,6 +84,20 @@ class Grid {
 }
 const EMPTY = [];
 
+// The pale side's tear as picture 9 has it, read off a ruled enlargement: down each row (py), how far out toward the
+// hollow its broken chunks of crust reach (reach), and where the crust stands whole (edge), across, in its pixels.
+// The skin still runs on to the rock's torn line, some 20 to 40 pixels further toward the hollow at the top: between
+// that and `reach` the crust has fallen away and its broken section shows, dark, as the picture's does, and between
+// `reach` and `edge` it stands in separate chunks with dark gaps. From about row 500 down the band is the chunks alone,
+// along the rock's line: the broad lip that ran smooth down it read as a lit rope.
+export const PALE_TEAR = [[276, 1103, 1104], [300, 1102, 1103], [320, 1099, 1102], [334, 1088, 1099], [350, 1084, 1095], [366, 1081, 1090], [382, 1079, 1087], [400, 1076, 1089], [420, 1072, 1088], [440, 1066, 1084], [460, 1060, 1077], [476, 1053, 1066], [490, 1046, 1056], [510, 1041, 1050], [530, 1035, 1044], [550, 1036, 1045], [570, 1038, 1047], [590, 1035, 1044], [610, 1039, 1048], [630, 1044, 1053], [650, 1047, 1056], [670, 1047, 1055], [690, 1039, 1047], [710, 1035, 1042], [726, 1030, 1035]];
+export function paleTearAt(py) {
+  const T = PALE_TEAR;
+  if (py <= T[0][0]) return [T[0][1], T[0][2]];
+  for (let i = 1; i < T.length; i++) if (py <= T[i][0]) { const f = (py - T[i - 1][0]) / (T[i][0] - T[i - 1][0]); return [T[i - 1][1] + (T[i][1] - T[i - 1][1]) * f, T[i - 1][2] + (T[i][2] - T[i - 1][2]) * f]; }
+  return null;
+}
+
 let CUT_LINE = null;
 // The pale side's edge at the tear is rounded down into the break, as thick crust is when it breaks: over how many of
 // picture 9's pixels in from where the skin stops, and how far down, in units.
@@ -98,6 +112,79 @@ function bevel(x, y, z) {
   const k = 1 - Math.max(0, d) / BEVEL.reach;
   return BEVEL.drop * k ** 1.7 * (1 + 0.45 * perlin(x / 23, y / 23, z / 23) + 0.15 * perlin(x / 6, y / 6, z / 6));
 }
+// The pale tear (PALE_TEAR) as relief. Toward the hollow from `reach` the crust is gone and the stone under it shows in
+// section, `deep` units down and shallower toward the chunks, broken into ledges. Between `reach` and `edge` it stands
+// in chunks: the cells of a warped pattern laid over picture 9's pixels (cell, across and down), each its own chunk,
+// which stays or has fallen by how far out toward `reach` it lies (most stay by the edge, few by the reach), is let
+// down by up to `drop` units the further out it is and tipped its own way (tip, units to a pixel). Where a chunk meets
+// a fallen one its broken end goes down to the section over `cliff` pixels; where two that stay meet, some are split
+// by a V shaped gap (open: the share; gap: its half width in pixels, and how deep, in units). The whole crust's own
+// cells are split from each other here and there near its edge (crust: the share, and how far in, in pixels). Where
+// the band runs out at the foot the edge eases into the old bevel. TEAR says what the last place asked about is: 0 the
+// whole crust, 1 a chunk's top, 2 the stone in section, and how high the crust's top stands there (top, units).
+const TEAR = { cell: [9, 12], warp: 2.4, deep: [12, 20], drop: 5, tip: 0.3, cliff: [0.5, 1.3], open: 0.55, gap: [0.45, 1.0, 7], crust: [0.25, 5], layer: 1.6 };
+export const TORE = { kind: 0, top: 0 };
+const CELL2 = { i1: 0, j1: 0, i2: 0, j2: 0, d1: 0, d2: 0, sx: 0, sy: 0, tx: 0, ty: 0 };
+function cell2(px, py) {
+  const [W, H] = TEAR.cell, wx = px + TEAR.warp * perlin(px / 5.1, py / 5.1, 1.7), wy = py + TEAR.warp * perlin(px / 5.1 + 9, py / 5.1, 2.9);
+  const fx = wx / W, fy = wy / H, X = Math.floor(fx), Y = Math.floor(fy);
+  let d1 = Infinity, d2 = Infinity;
+  for (let i = X - 1; i <= X + 1; i++) for (let j = Y - 1; j <= Y + 1; j++) {
+    const sx = (i + 0.15 + 0.7 * hash(i, j, 0, 71)) * W, sy = (j + 0.15 + 0.7 * hash(i, j, 0, 72)) * H, d = Math.hypot(wx - sx, wy - sy);
+    if (d < d1) { d2 = d1; CELL2.i2 = CELL2.i1; CELL2.j2 = CELL2.j1; d1 = d; CELL2.i1 = i; CELL2.j1 = j; CELL2.sx = sx; CELL2.sy = sy; } else if (d < d2) { d2 = d; CELL2.i2 = i; CELL2.j2 = j; }
+  }
+  CELL2.d1 = d1; CELL2.d2 = d2; CELL2.tx = wx; CELL2.ty = wy;
+  return CELL2;
+}
+// Whether a chunk stays, and how far out it lies (0 at the crust's edge, 1 at the reach), from where its seed is.
+function stays(i, j) {
+  const [W, H] = TEAR.cell, sx = (i + 0.15 + 0.7 * hash(i, j, 0, 71)) * W, sy = (j + 0.15 + 0.7 * hash(i, j, 0, 72)) * H, at = paleTearAt(sy);
+  if (!at) return { keep: true, out: -1 };
+  const out = (at[1] - sx) / Math.max(1, at[1] - at[0]);
+  return { keep: out < 0 || (out < 1.05 && hash(i, j, 0, 73) < 1 - 0.8 * Math.max(0, out) ** 1.3), out };
+}
+function paleTear(x, y, z) {
+  TORE.kind = 0; TORE.top = 0;
+  const [px, py] = L.pictured(x, y, z), at = paleTearAt(py);
+  if (!at) return -bevel(x, y, z);
+  const [reach, edge] = at, foot = smooth(704, 726, py), w = 1 - foot, d = px - edge;
+  // By the foot, the old broad bevel of the whole crust's edge.
+  const old = d >= BEVEL.reach ? 0 : -BEVEL.drop * (1 - Math.max(0, d) / BEVEL.reach) ** 1.7;
+  if (d > 9) return old * foot;
+  const c = cell2(px, py), me = stays(c.i1, c.j1), next = stays(c.i2, c.j2), b = (c.d2 - c.d1) / 2;
+  // The section: deepest toward the rock, shallower toward the chunks, broken into ledges a few units apart.
+  const toward = smooth(reach - 18, reach + 2, px);
+  const ledge = 2.6 * Math.floor(1.8 * (0.5 + 0.5 * fbm(x / 9 + 2, y / 9, z / 9, 2)) + toward * 2) / 2;
+  const deep = TEAR.deep[1] - (TEAR.deep[1] - TEAR.deep[0]) * toward - ledge + 1.4 * fbm(x / 3.1, y / 3.1, z / 3.1, 2);
+  let h, top = 0;
+  if (!me.keep) h = -deep;
+  else {
+    const o = Math.max(0, me.out), i = c.i1, j = c.j1;
+    const ta = (hash(i, j, 0, 74) - 0.5) * 2 * TEAR.tip, tb = (hash(i, j, 0, 75) - 0.3) * 2 * TEAR.tip;
+    top = me.out < 0 ? 0 : -(0.3 + TEAR.drop * hash(i, j, 0, 76) ** 1.5 * smooth(0, 0.7, o)) + ta * (c.tx - c.sx) + tb * (c.ty - c.sy) * 0.6;
+    top = Math.min(top, me.out < 0 ? 0 : -0.15);
+    h = top;
+    const bites = 0.6 * Math.abs(perlin(x / 2.3, y / 2.3, z / 2.3));
+    if (!next.keep) {
+      // Its broken end, down to the section.
+      const cw = TEAR.cliff[0] + (TEAR.cliff[1] - TEAR.cliff[0]) * hash(i, j, 0, 77);
+      h = top - (top + deep) * (1 - smooth(0, cw, b - 0.25 * bites));
+    } else {
+      // A split from the chunk beside it, open or shut; in the whole crust only now and then, and near its edge.
+      const crust = me.out < 0 && next.out < 0, pair = hash(Math.min(i, c.i2) * 31 + Math.max(i, c.i2), Math.min(j, c.j2) * 37 + Math.max(j, c.j2), 1, 78);
+      const open = crust ? pair < TEAR.crust[0] && d > -TEAR.crust[1] : pair < TEAR.open;
+      const gw = TEAR.gap[0] + (TEAR.gap[1] - TEAR.gap[0]) * hash(i, j, 0, 79);
+      if (open && b < gw) h -= (crust ? TEAR.gap[2] * 0.6 : TEAR.gap[2]) * (1 - b / gw) ** 0.7;
+    }
+    h = Math.max(h, -deep);
+  }
+  // The whole crust rounds down a little at its very edge where it meets the break.
+  TORE.top = top * w;
+  h = h * w + old * foot;
+  TORE.kind = h < TORE.top - TEAR.layer ? 2 : me.out < 0 && me.keep ? 0 : 1;
+  return h;
+}
+export const tornPale = (x, y, z) => { paleTear(x, y, z); return TORE; };
 let CR = null, SG = null, ED = null, FAR = null, KNOT = [0, 0, 0], SL = null;
 // How a crack's light is measured: its spill runs this many of its half widths past its lip, plus this far, as a
 // faint even light on the rock right beside it. The knot's pool is not here: the shader lights the rock round the
@@ -216,12 +303,16 @@ function profile(k, x1, phi, x, y, z, reach) {
         const u = (x1 - k.floor) / (1 - k.floor);
         let w = u ** 1.85;
         if (k.terraces) {
-          const wander = 0.07 * perlin(phi * 1.7 + k.seed, x1 * 3, 1.3), keep = smooth(-0.15, 0.35, perlin(phi * 2.3 + 4.1, k.seed, 0.7)) * k.slump;
+          // Slumped most at its lower right, as picture 9's large crater is, and in broken stretches elsewhere.
+          const low = k.lowRight ? smooth(0.15, 0.85, Math.cos(phi + Math.PI / 4)) : 0;
+          const wander = 0.07 * perlin(phi * 1.7 + k.seed, x1 * 3, 1.3), keep = Math.max(smooth(-0.15, 0.35, perlin(phi * 2.3 + 4.1, k.seed, 0.7)) * 0.6, low) * k.slump;
           const N = k.terraces + 1, v = Math.min(1, Math.max(0, u + wander)) * N, f = v - Math.floor(v);
           const stair = (Math.floor(v) + smooth(0.55, 1, f)) / N;
           w = w + (stair ** 1.85 - w) * keep;
         }
         h = -k.depth + (k.depth + k.rim) * w + k.rim * 0.12 * perlin(x * 0.11 + k.seed, y * 0.11, z * 0.11) * Math.sin(Math.PI * w);
+        // Blocks slumped off the wall at its lower right: lumps on the wall's lower half there.
+        if (k.lowRight) h += k.depth * 0.09 * smooth(0.1, 0.8, Math.cos(phi + Math.PI / 4)) * Math.sin(Math.PI * Math.min(1, u * 1.4)) * (0.5 + fbm(x / 4.2 + k.seed, y / 4.2, z / 4.2, 2));
       }
     } else h = -k.depth + (k.depth + k.rim) * x1 ** BOWL;
   } else {
@@ -249,6 +340,8 @@ function craterHeight(k, x, y, z) {
   if (d > k.r * reach) return 0;
   const phi = Math.atan2(cv, cu);
   const rr = k.r * (1 + k.lumpy * (0.55 * Math.sin(3 * phi + k.phase) + 0.3 * Math.sin(5 * phi + 2.1 * k.phase) + 0.15 * Math.sin(11 * phi + 0.7 * k.phase)));
+  // A rim that stands higher and lower round the crater, so it is never turned on a lathe.
+  if (k.rimVary) k = { ...k, rim: k.rim * (1 + k.rimVary * (perlin(phi * 1.9 + k.seed, 0.3, 2.2) + 0.5 * perlin(phi * 5.3 + k.seed, 1.7, 0.4))) };
   const x1 = d / rr;
   // A large crater's crest is rounded over `crest` of its radius each side, so it reads as a raised rampart the moon
   // lights along, not as a cut edge with the floor stamped inside it.
@@ -424,7 +517,7 @@ export function coarse(x, y, z) {
   const rd = rimDistance(y);
   h = h > 0 ? h * smooth(SHOULDER.under * 0.72, SHOULDER.under, rd) : h * (0.45 + 0.55 * smooth(6, SHOULDER.under * 0.9, rd));
   if (x > 0) {
-    h -= bevel(x, y, z);
+    h += paleTear(x, y, z);
     const near = 1 - smooth(15, 110, farEdge(x, y, z)), down = LIP.down + LIP.tear * near;
     const c = cells(x + 3 * perlin(x / 11, y / 11, z / 11), y, z, LIP.chunk, 91, C3), hc = hash(c.i, c.j, c.k, 92), hd = hash(c.i, c.j, c.k, 93);
     const crest = Math.max(2, LIP.crest + LIP.dip * near + (hd - 0.5) * LIP.ragged);
@@ -462,8 +555,12 @@ export function gathered(x, y, z, side) {
   // On the crust's chunks by the line fewer: their tops are its old weathered top, broken and chipped, not pitted.
   // On the pale side the crust's own top wraps the break, pitted as the ground is right to its edge.
   const crustTop = side > 0 ? 1 : 0.3 + 0.7 * smooth(8, 36, edgeDistance(x, y, z));
-  // Pitted all over, densest by the break and toward the lower limb, as picture 9's pale side is.
-  return (side > 0 ? 1 : 0.35) * knot * crustTop * (0.42 + 0.75 * toward ** 1.3) * (0.5 + 0.5 * bands) * (1 - floored(x, y, z));
+  // Thrown out by the large craters: a field of small ones gathered round each, thickest a little past its rim.
+  let thrown = 0;
+  if (side > 0) for (const k of CR.at(x, y, z)) if (k.r > 30) { const d = Math.hypot(x - k.c[0], y - k.c[1], z - k.c[2]) / k.r; thrown = Math.max(thrown, Math.exp(-(((d - 1.9) / 0.75) ** 2)) * smooth(1.05, 1.35, d)); }
+  // Pitted all over, densest by the break, toward the lower limb and round the large craters, as picture 9's pale
+  // side is, with stretches of smooth dust between.
+  return (side > 0 ? 1 : 0.35) * knot * crustTop * ((0.3 + 0.75 * toward ** 1.3) * (0.45 + 0.55 * bands) + 0.9 * thrown) * (1 - floored(x, y, z));
 }
 
 // Pits too small for the geometry, in three sizes whose radii follow a power law within each, as craters do.
@@ -489,10 +586,15 @@ function pits(x, y, z, side, nx, ny, nz, density) {
       const u = hash(i, j, k, P.seed + 4), r = P.r[0] * (P.r[1] / P.r[0]) ** (u * u);
       const ex = sx - dn * nx, ey = sy - dn * ny, ez = sz - dn * nz;
       // Each pit a little out of round, and a little deeper on one side; low down some are drawn out into gouges.
-      const lop = 1 + 0.16 * Math.sin(3 * Math.atan2(ey, ex + ez) + 6.28 * hash(i, j, k, P.seed + 5));
+      // Each its own shape: drawn out its own way by its own share (most nearly round, some long), and out of round in
+      // two or three lobes. Low down some are drawn out down the slope into gouges.
       const long = 1 + (GOUGE.most - 1) * gouge * (hash(i, j, k, P.seed + 8) < GOUGE.share ? 1 : 0) * hash(i, j, k, P.seed + 9);
-      const c1 = ex * e1[0] + ey * e1[1] + ez * e1[2], c2 = ex * e2[0] + ey * e2[1] + ez * e2[2];
-      const xr = Math.hypot(c1, c2 / long) / (r * lop);
+      const a1 = ex * e1[0] + ey * e1[1] + ez * e1[2], a2 = ex * e2[0] + ey * e2[1] + ez * e2[2];
+      const turn = gouge > 0.3 && long > 1.3 ? 0 : 6.283 * hash(i, j, k, P.seed + 10), cs = Math.cos(turn), sn = Math.sin(turn);
+      const c1 = a1 * cs + a2 * sn, c2 = (a2 * cs - a1 * sn) / long, oval = 1 + 0.75 * hash(i, j, k, P.seed + 11) ** 2.2;
+      const ang = Math.atan2(c2, c1), lobes = hash(i, j, k, P.seed + 12) < 0.5 ? 2 : 3;
+      const lop = 1 + (0.06 + 0.16 * hash(i, j, k, P.seed + 13)) * Math.sin(lobes * ang + 6.28 * hash(i, j, k, P.seed + 5));
+      const xr = Math.hypot(c1 / oval, c2) / (r * lop);
       if (xr > 1.9) continue;
       // Shallow enough that the wall turned to the moon is lit as a crescent, with a raised lip round it; how deep and
       // how sharp by its age.
@@ -506,6 +608,19 @@ function pits(x, y, z, side, nx, ny, nz, density) {
 }
 const normalOf = (x, y, z) => { const n = [x / (L.WORLD.half ** 2), Math.min(0, y + RIM) / (L.WORLD.deep ** 2), z / (L.WORLD.half ** 2)], l = Math.hypot(...n) || 1; return [n[0] / l, n[1] / l, n[2] / l]; };
 
+// The relief round the knot: how far from it, in units, and how high its lumps, its grain and its small steps are.
+const KNOTTED = { reach: 26, lump: 1.6, grain: 0, step: 0.8 };
+// The dark face's broad fracture planes: plates some `size` units across, warped, each tipped its own way (tip, units
+// of height to a unit across) and standing a little up or down from the next (step, units), so their borders are
+// shallow steps that catch the night's light from the visitor's side, or lie in its shade. A hairline alone left the
+// face a flat color at three times.
+const PLATES = { size: 34, warp: 9, tip: 0.05, step: 0.9, seed: 61 };
+const PL = {};
+function plates(x, y, z) {
+  const w = PLATES.warp, c = cells(x + w * perlin(x / 41, y / 41, z / 41), y + w * perlin(x / 41 + 7, y / 41, z / 41), z, PLATES.size, PLATES.seed, PL);
+  const t = [hash(c.i, c.j, c.k, PLATES.seed + 4) - 0.5, hash(c.i, c.j, c.k, PLATES.seed + 5) - 0.5, hash(c.i, c.j, c.k, PLATES.seed + 6) - 0.5];
+  return PLATES.step * (hash(c.i, c.j, c.k, PLATES.seed + 3) - 0.5) * 2 + PLATES.tip * 2 * ((x - c.sx) * t[0] + (y - c.sy) * t[1] + (z - c.sz) * t[2]);
+}
 // Relief finer than the geometry.
 export function fine(x, y, z, side) {
   const [nx, ny, nz] = normalOf(x, y, z), floor = floored(x, y, z);
@@ -522,10 +637,15 @@ export function fine(x, y, z, side) {
     // The dark side is the oldest surface: weathered in long streaks down it, and roughened.
     const ex = nz, ez = -nx, el = Math.hypot(ex, ez) || 1, a = (x * ex + z * ez) / el;
     h += 0.3 * fbm(a * 0.5, y * 0.05, 7.7, 3) + 0.12 * Math.abs(fbm(a * 1.6, y * 0.12, 3.1, 2)) + 0.08 * fbm(x * 1.7, y * 1.7, z * 1.7, 2);
+    // Round the knot the heat has broken the rock into lumps and small steps, so the light from the junction lands on
+    // the faces turned to it and is lost behind them.
+    const kd = Math.hypot(x - KNOT[0], y - KNOT[1], z - KNOT[2]), near = 1 - smooth(KNOTTED.reach * 0.6, KNOTTED.reach, kd);
+    if (near > 0) h += near * (KNOTTED.lump * Math.abs(fbm(x / 4.5 + 4, y / 4.5, z / 4.5, 2)) + KNOTTED.grain * fbm(x / 1.1, y / 1.1 + 2, z / 1.1, 2) + KNOTTED.step * Math.floor(2.2 * (0.5 + 0.5 * fbm(x / 7.5, y / 7.5, z / 7.5 + 3, 2))));
+    h += plates(x, y, z);
   }
   const ck = crackAt(x, y, z);
   h += ck.fine;
-  h -= chips(x, y, z);
+  if (side < 0) h -= chips(x, y, z);
   return h;
 }
 // How deep in a pit a place is, 0 to 1, for darkening the dust there.

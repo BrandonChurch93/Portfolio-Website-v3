@@ -22,7 +22,7 @@ import { simplify } from '../../lib/surface.mjs';
 import { L, light, linear, stone as planetStone, storeBounce } from '../../lib/plan.mjs';
 import { BLOCK_CODE, CRUST, DARK_LIGHT, MAP, STONE, UNDER, blockTop } from '../../../../src/pieces/world/parts/skin/look.ts';
 const unitOf = (v) => { const l = Math.hypot(...v) || 1; return v.map((x) => x / l); };
-import { KNOT, SIDES, craters, crackLines, edges, edgeAngle, hullAt, lineAt, onShell, shellNormal } from './features.mjs';
+import { KNOT, SIDES, craters, crackLines, edges, edgeAngle, hullAt, lineAt, onShell, paleTearAt, shellNormal } from './features.mjs';
 import { setup, coarse, perlin } from './field.mjs';
 import { cutAt, makeBlocks, planBlocks, topness } from './blocks.mjs';
 import { read as readWorld } from './rockfile.mjs';
@@ -52,10 +52,13 @@ const AGREE = Math.cos((24 * Math.PI) / 180), CREASE = Math.cos((62 * Math.PI) /
 const EASE = { flat: 0.25, steep: 0.85, passes: 3 };
 // How steep a place must be (1 less the cosine to the outer surface) for the moon's share there to be eased too.
 const SHARP = 0.6;
+// How far the stored bounce on a large crater's floor is made even.
+const FLOOR_EVEN = 0.85;
 // How much of a weathered top the face of a chunk hanging under the slab is taken as.
-const HUNG = 0.6;
-// How far in from where the pale side stops its lip is lit as the crust wrapping the break, in picture 9's pixels.
-const LIP_LIT = [9, 17];
+const HUNG = 0.9;
+// How far in from the whole crust's edge at the pale tear its lip is lit as the crust wrapping the break, in picture
+// 9's pixels (the chunks before it are lit too), and how far in from where the skin stops that edge is under the tear.
+const LIP_LIT = [2, 8, 6];
 const smoothstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 
 // The cracks are cut by the shader from their own lines (crackLines), not into the mesh or the map.
@@ -210,7 +213,7 @@ const code = [];
     const toCut = (side === 'left' ? -1 : 1) * (px - cutAt(side, py)), under = (1 - L.shell(x, y, z)) * L.WORLD.half;
     if (side === 'left' && toCut < 1.6 && (under > 0.8 || toCut < 0.7)) edgeCode[i] = BLOCK_CODE.edge;
     // The pale side's thick lip where it wraps the break, which the night's light from the visitor's side finds.
-    else if (side === 'right') edgeCode[i] = BLOCK_CODE.lip * (1 - smoothstep(LIP_LIT[0], LIP_LIT[1], toCut));
+    else if (side === 'right') { const at = paleTearAt(py); edgeCode[i] = BLOCK_CODE.lip * (1 - smoothstep(LIP_LIT[0], LIP_LIT[1], at ? px - at[1] : toCut - LIP_LIT[2])); }
   }
   code.push(edgeCode);
   for (const { blocks, mesh } of made) {
@@ -287,6 +290,22 @@ say('the night\'s light baked');
   }
 }
 
+// On the floors of the two large craters the stored bounce is one even light: worked out at each vertex it left a dark
+// stain at the large one's upper left, which read as dirt.
+{
+  const B = baked.skin;
+  for (const k of features.craters.slice(0, 2)) {
+    const inside = [];
+    for (let i = 0; i < nSkin; i++) {
+      const dx = lit.positions[i * 3] - k.c[0], dy = lit.positions[i * 3 + 1] - k.c[1], dz = lit.positions[i * 3 + 2] - k.c[2], dn = dx * k.n[0] + dy * k.n[1] + dz * k.n[2];
+      const d = Math.hypot(dx - dn * k.n[0], dy - dn * k.n[1], dz - dn * k.n[2]) / k.r;
+      if (d < k.floor * 1.15) inside.push([i, 1 - smoothstep(k.floor * 0.85, k.floor * 1.15, d)]);
+    }
+    const mean = [0, 1, 2].map((c) => inside.reduce((a, [i]) => a + B.bounce[i * 3 + c], 0) / Math.max(1, inside.length));
+    for (const [i, w] of inside) for (let c = 0; c < 3; c++) B.bounce[i * 3 + c] += (mean[c] - B.bounce[i * 3 + c]) * w * FLOOR_EVEN;
+  }
+}
+
 // ---------------------------------------------------------------------------------------------------------------
 // The map. Each side's part is the box of picture 9 its front lies in.
 const k = FINE.perPixel, rects = [];
@@ -310,7 +329,7 @@ const k = FINE.perPixel, rects = [];
 const MW = rects.reduce((a, r) => a + r.w, 0), MH = Math.max(...rects.map((r) => r.h)), T = MW * MH;
 say(`map: ${MW} by ${MH}, ${rects.map((r) => `${r.side > 0 ? 'pale' : 'dark'} ${r.x0}..${r.x1} by ${r.y0}..${r.y1}`).join(', ')}`);
 const shared = (bytes) => new SharedArrayBuffer(bytes);
-const texels = { wide: MW, H: shared(T * 4), G: shared(T * 4), B: shared(T * 4), at: shared(T * 12), side: shared(T) };
+const texels = { wide: MW, H: shared(T * 4), G: shared(T * 4), B: shared(T * 4), at: shared(T * 12), side: shared(T), cell: shared(T * 4) };
 const sharedOf = (a) => { const s = new a.constructor(shared(a.byteLength)); s.set(a); return s.buffer; };
 const bvh = buildBvh(lit.positions, lit.indices);
 const moonDir = LT.moon.toward;
@@ -328,10 +347,12 @@ const moonDir = LT.moon.toward;
   await Promise.all(jobs);
 }
 say('map worked out');
-const H = new Float32Array(texels.H), G = new Float32Array(texels.G), B = new Float32Array(texels.B), AT = new Float32Array(texels.at), SIDE = new Int8Array(texels.side);
+const H = new Float32Array(texels.H), G = new Float32Array(texels.G), B = new Float32Array(texels.B), AT = new Float32Array(texels.at), SIDE = new Int8Array(texels.side), CELL = new Int32Array(texels.cell);
 const rgba = new Uint8Array(T * 4);
-// The slope of the fine relief across the picture, from the texels either side whose places are near this one's.
-const near = (i, j) => SIDE[j] !== 0 && Math.hypot(AT[i * 3] - AT[j * 3], AT[i * 3 + 1] - AT[j * 3 + 1], AT[i * 3 + 2] - AT[j * 3 + 2]) < 3;
+// The slope of the fine relief across the picture, from the texels either side whose places are near this one's and,
+// on broken stone, on the same plane of it: taken across two planes, the step between them was drawn as a dark
+// dashed seam, like stitching, where it is to be only the crease where two planes meet.
+const near = (i, j) => SIDE[j] !== 0 && CELL[i] === CELL[j] && Math.hypot(AT[i * 3] - AT[j * 3], AT[i * 3 + 1] - AT[j * 3 + 1], AT[i * 3 + 2] - AT[j * 3 + 2]) < 3;
 const slope = (i, a, b) => {
   const ga = a >= 0 && near(i, a), gb = b >= 0 && near(i, b);
   if (ga && gb) return (H[b] - H[a]) * k / 2;
@@ -365,7 +386,7 @@ say(`map written: ${(fs.statSync('public/world/skin-map.bin').size / 1e6).toFixe
 // The knot's light, which the shader lays on the rock round it as from one source: a short line from the junction
 // along the hot arm, held a little off the surface (in units), so the light rakes the relief round it.
 const lifted = (px, py, by) => { const p = onShell(px, py), nn = shellNormal(...p); return p.map((v, i) => +(v + nn[i] * by).toFixed(2)); };
-const KNOT_LIGHT = [...lifted(KNOT[0] + 3, KNOT[1] - 1, 3.5), ...lifted(262, 469, 2.5)];
+const KNOT_LIGHT = [...lifted(KNOT[0], KNOT[1] + 1, 3.5), ...lifted(262, 469, 2.5)];
 // The dark side's line where the rock tore, across at each second row of picture 9 from TORN_FROM: past it, at the
 // top, is the crust's slab that runs on out over the hollow, which the shader draws as the pale crust.
 const TORN_FROM = 300, TORN_LINE = [TORN_FROM, ...Array.from({ length: 66 }, (_, i) => +hullAt('left', TORN_FROM + 2 * i).toFixed(2))];

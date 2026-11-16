@@ -44,7 +44,7 @@ export const ROUGH = { at: 0.42, power: 1.3, most: 1.3 } as const;
 // are weathered less than the slab that faces the night (`line`, a share of its brightness).
 // The weathered top is eased toward the pale side's cream by `cream`: bleached alone it was a pinkish grey beside
 // picture 9's grey cream (green over red 0.74 against 0.80).
-export const CRUST = { bleach: 0.7, top: 2.1, shaken: 0.55, line: 0.24, cream: 0.4 } as const;
+export const CRUST = { bleach: 0.8, top: 2.0, shaken: 0.55, line: 0.24, cream: 0.55 } as const;
 // What the fourth number of the stored bounce says a vertex is: the skin (0), the skin's own broken edge before a block
 // (edge), how far into the pale side's lit lip where it wraps the break (lip, at the most), a block along a torn line (line: from its broken section to its weathered top), or one of the blocks that
 // face the visitor at the top of the dark side, the slab and the chunks hanging from it (facing: the same).
@@ -53,15 +53,20 @@ export const blockTop = (code: number): number => {
   const [a, b] = code >= BLOCK_CODE.facing[0] - 0.03 ? BLOCK_CODE.facing : BLOCK_CODE.line;
   return Math.min(1, Math.max(0, (code - a) / (b - a)));
 };
-// Where the cracks' three arms meet: a little light on the rock round it as from the notch (its strength, and the
-// distance in units over which it falls, as a bell), and how far round the junction the notch is cut deeper, in units.
-// A broad pool here, and a pale point at the junction, read as a soft blob of light.
-export const KNOT_POOL = { power: 2.2, reach: 7, notch: 6 } as const;
+// Where the cracks' three arms meet, the light on the rock round it, from the junction and a little of the hot arm
+// (along: how much of it), as from a source `lift` units out of the surface: its strength, the distance in units at
+// which it has fallen to half (reach), and by `out` times that it has faded away, with no edge. Only the relief turns a
+// face to it or from it. And how far round the junction the notch is cut deeper, in units. Picture 9 has a warm light
+// on the rock round the knot, deep orange (green over red 0.45), about 110 beside the cleft, half that 20 of its
+// pixels off and 30 at 40. Drawn as a spot over the rock it was a soft blob; taken from the whole hot arm it lay off to
+// the right of the knot; and lit by the planet's own curve it left the rock on the knot's outer side dark. On the dark
+// stone it came out tan, and it is deepened toward red (deepen: red, green, blue) to the picture's orange.
+export const KNOT_POOL = { power: 16, reach: 22, out: 3.5, lift: 6, along: 0.06, notch: 6, deepen: [1, 0.72, 0.5] } as const;
 // The dark side is turned from the moon and the core, and what shows its form is the night: a soft light from the
 // visitor's side and above at the left (fill, and its direction in the world), and a dim sliver along its outline
 // from the glow behind the world (rim). The crust's slab at the top faces up into that light, unshaded by the land
-// over it, and takes it fully (slab).
-export const DARK_LIGHT = { fill: 0.07, from: [-0.5, 0.55, 0.67], rim: 0.5, slab: 2.2 } as const;
+// over it, and takes it fully (slab), from higher up (slabFrom).
+export const DARK_LIGHT = { fill: 0.07, from: [-0.5, 0.55, 0.67], rim: 0.5, slab: 2.2, slabFrom: [-0.3, 0.85, 0.45] } as const;
 // A shadow the moon casts on the pale side takes this share of the night and the bounce in it, so a crater's crescent
 // is near black and crisp as picture 9's are.
 export const CRESCENT = 0.8;
@@ -71,6 +76,9 @@ export const PALE_LIP = 4.2;
 // top, from the shadow map, over the first of these units under the rim and fading by the second.
 export const SHADE_TOP = [30, 60] as const;
 
+// At the pale tear, where the crust has fallen away, the map's tone is stored between these two (a texel of the dust
+// is never under the second): there the shader draws the planet's stone in section, its tone the share between them.
+export const SECTION = [0.06, 0.4] as const;
 // The map: how many of its texels to a pixel of picture 9, and the steepest slope it holds (units of height to a
 // picture pixel across). Slopes are stored as the square root of their share of that, so gentle ones keep detail.
 export const MAP = { perPixel: 1.55, slope: 5 } as const;
@@ -88,7 +96,7 @@ export const CRACK_CELL = {
   join: 0,
   least: 0.85,
   hot: [0.15, 0.9],
-  fall: 0.7,
+  fall: 1.2,
   reach: (w: number, heat: number): number => w * 1.5 + 2.5 + (heat > 0.7 ? 2.5 : 0),
 } as const;
 // A cleft in section, as shares of its half width: its heart, where its light is seen (at no heat, and the more at full;
@@ -96,9 +104,9 @@ export const CRACK_CELL = {
 // from him, how deep it is cut (units of depth to units of half width), and the lip raised along an unlit one's edge
 // (height, and where). The light: the heart (pale gold, its strength), the walls (hot to flame, their strength), the
 // lit wall at its lip and the far wall at its foot (shares), the dark rim before the spill (a share of the half width),
-// how far a thin one's middle is eased toward pale (core), and the notch where the arms meet (how much brighter, how
+// how much brighter a cleft too thin to open is drawn (thin), how far a thin one's middle is eased toward pale (core), and the notch where the arms meet (how much brighter, how
 // much wider its heart).
-export const CLEFT = { floor: [0.16, 0.5], open: 0.55, shut: 0.45, deep: 1.5, lip: [0.1, 1.1, 0.22], heart: 3.2, wall: 1.3, lipLit: 0.35, far: 0.4, gap: 0.22, core: 0.7, notch: [0.35, 0.3] } as const;
+export const CLEFT = { floor: [0.1, 0.3], open: 1.1, shut: 0.8, deep: 1.5, lip: [0.1, 1.1, 0.22], heart: 1.15, thin: 1.5, wall: 0.75, lipLit: 0.55, far: 0.5, gap: 0.22, core: 0.7, notch: [0.35, 0.3] } as const;
 
 // The cracks' own light: the palette's colors it passes through as it cools (pale gold, the hot orange, flame and
 // ember), how far a warm arm's hot orange is eased toward pale (amber), the heats

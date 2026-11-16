@@ -6,6 +6,7 @@
 import { L } from '../../lib/plan.mjs';
 import { TORN } from '../rock-r/trace.mjs';
 import { fbm } from './field.mjs';
+export { PALE_TEAR, paleTearAt } from './field.mjs';
 
 const C = L.WORLD, RIM = L.RIM, A2 = C.half * C.half, C2 = C.deep * C.deep;
 export const CENTER = [0, -RIM, 0];
@@ -186,7 +187,7 @@ function crater(c, r, kind, seed, worn = 0, deep = 1, own = {}) {
 // left and lower side, and it is no deeper than leaves a narrow crescent of shadow. It is not drawn out round the
 // planet: drawn out by 1.28 it came out a fifth wider than the picture's.
 const OWN = {
-  1: { rim: 0.2, flank: 3.6, crest: 0.14, floor: 0.62, terraces: 1, slump: 0.6, hummock: 0.04, bump: 0.07, deepen: 0.88, moat: [0.12, 0.42, 0.26] },
+  1: { rim: 0.2, flank: 3.6, crest: 0.05, floor: 0.62, terraces: 2, slump: 0.85, lowRight: true, rimVary: 0.35, hummock: 0.025, bump: 0.07, deepen: 0.88, moat: [0.12, 0.42, 0.26] },
   2: { rim: 0.14, flank: 1.6, crest: 0.1, floor: 0.26, terraces: 1, slump: 0.3, hummock: 0.04, bump: 0.08, deepen: 0.95 },
   // The picture's middle scale: rimmed bowls whose lip stands up broad enough to catch the moon, and shallow enough
   // that the wall turned to it is lit as a crescent, never a black hole with nothing round it.
@@ -272,7 +273,9 @@ export function craters() {
 // straight and turn sharply. heat 0 is a dark fissure with no light in it.
 export const KNOT = [225, 478];
 // The traced widths are what the picture shows at its size; the clefts are cut this much wider so they read as clefts.
-const WIDEN = 1.55;
+const WIDEN = 1.3;
+// The hot arm to the tear is the widest and brightest of picture 9's: it is cut this much wider again.
+const HOT_ARM = 1.25;
 export const TRACED = [
   // to the tear: the widest and hottest
   [[225, 478, 4.6, 1], [236, 474, 3.9, 1], [246, 472, 3.4, 1], [252, 470, 3.3, 1], [259, 469, 3.3, 1], [268, 468, 3, 0.96]],
@@ -356,6 +359,7 @@ export function crackLines() {
         pts.push([x + dx * f + nx * off, y + dy * f + ny * off, (w + (qw - w) * f) * WIDEN * px, heat + (qh - heat) * f]);
       }
     }
+    if (ri === 0) for (const p of pts) p[2] *= HOT_ARM;
     runs.push({ pts, open: ri === 0, lit: pts[0][3] > 0 });
   });
   for (const tr of hairlines()) runs.push({ pts: tr.map(([x, y, w]) => [x, y, w * px * 0.8, 0]), open: false, lit: false });
