@@ -61,7 +61,8 @@ if (what === 'beside') {
 }
 
 const only = what.startsWith('only:') ? what.slice(5) : null, close = what.startsWith('close:') ? what.slice(6) : null;
-if (!only && what !== 'whole' && !CUT[close ?? what]) { console.error(`look: no such view '${what}'`); process.exit(1); }
+// A close view is any place the piece names (CLOSE in src/pieces/world/index.ts): the piece says so if it has none.
+if (!only && !close && what !== 'whole' && !CUT[what]) { console.error(`look: no such view '${what}'`); process.exit(1); }
 const page = { w: L.HOST.wide, h: L.HOST.tall };
 const win = close || only ? { w: Number(flags.w ?? 1500), h: Number(flags.h ?? 1000) } : page;
 const query = new URLSearchParams(`label=0&ui=0&size=${win.h}&wide=${win.w}`);
