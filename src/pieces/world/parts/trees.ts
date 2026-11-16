@@ -26,7 +26,7 @@ const AUTUMN: readonly { mix: readonly [PaletteName, PaletteName, number]; power
   { mix: ['bronze', 'text-3', 0.25], power: 1.0, share: 0.15 },
   { mix: ['bronze-deep', 'text-3', 0.25], power: 1.3, share: 0.13 },
   { mix: ['ember', 'bronze-deep', 0.4], power: 1.5, share: 0.12 },
-  { mix: ['hot', 'text-2', 0.45], power: 0.6, share: 0.11 },
+  { mix: ['hot', 'copper', 0.35], power: 0.6, share: 0.11 },
 ];
 // How much one tree differs from the next of its shade in brightness, in size and in height against its width, and
 // how far it leans (the shear of its height to one side).
@@ -57,13 +57,15 @@ const SHADED = { far: 3, side: 0.7, drop: 0.52, top: 2, most: 0.55 };
 // The shade on the ground is cut where it would pass this far inside the land's edge, in the tree's sizes.
 const EDGE = 0.4;
 // A tree is drawn only if at least this share of its crown is seen over the land in front of it.
-const SEEN = 0.4;
+const SEEN = 0.65;
 // The moon's shade from the buildings and the pyramid: how many places up a crown are looked from toward the moon,
 // how far a building is looked for, the step of the march over the pyramid, and how high a crown stands in its
 // own sizes. A crown is in that shade up to the highest of those places a building hides from the moon, as with
 // the trees': so a tree in the street's shade is not lit as if it stood in the open. The trees take no shade from
 // the moon's shadow map (above), so this is how they agree with the paving at their feet.
-const STREET = { heights: 7, far: 700, step: 3, top: 2.1 };
+// Never past `most` of a crown: picture 9 has the tops of the belt left of the pyramid lit as the rest are, though
+// the pyramid stands between them and the moon.
+const STREET = { heights: 7, far: 700, step: 3, top: 2.1, most: 0.6 };
 
 // Whether a ray from p toward the moon is stopped by a building, or by the pyramid.
 const moon = new THREE.Vector3(...MOONWARD).normalize();
@@ -146,7 +148,7 @@ export const build: PartFactory = async ({ query }) => {
     const { y: g, sand } = seat(x, z);
     for (let k = STREET.heights - 1; k >= 0; k--) {
       const share = k / (STREET.heights - 1), h = s * tall * (CROWN.clear + (STREET.top - CROWN.clear) * share);
-      if (blocked(x, g + h, z)) { cover = Math.max(cover, share + 0.2); break; }
+      if (blocked(x, g + h, z)) { cover = Math.max(cover, Math.min(STREET.most, share + 0.2)); break; }
     }
     // How much of its shade's reach stays on the land, and how far the land goes behind the trunk and to each side of
     // the shade's line (in crown units), where the shade is cut.

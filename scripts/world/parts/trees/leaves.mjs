@@ -33,15 +33,15 @@ const CLUSTER = { r: [1.4, 2.6], leaves: [14, 24], per: 1.7, top: 1.18, foot: 0.
 // Holes through a lump, where what is behind it shows (the crown's dark heart, a limb, the sky): how many, how wide
 // in leaves, and how far out from the lump's middle, as a share of its outline. And how deep the notches in the
 // outline are, in leaves, at two scales.
-const HOLES = { count: [2, 5], r: [1.4, 2.8], out: [0.2, 0.72] };
-const NOTCH = [1.5, 0.7];
+const HOLES = { count: [1, 3], r: [1.4, 2.6], out: [0.2, 0.7] };
+const NOTCH = [1.1, 0.55];
 // The dark mat under a lump's leaves, drawn a little inside its outline: how light, and how far inside, in leaves.
 const MAT = { light: 0.06, inside: 2.2 };
 // The shade a tree lays on the ground (SHADE in design.ts), down the tile from behind its trunk to its far end: the
 // cast, as wide as the crown and as long, away from the moon, how dark at most, how it falls off across, and how far
 // past the trunk it is still whole, in crown units; the pool under the crown, which the shades of neighbours join
 // into dark earth under the belt, its radius and how dark; and the round dark at the trunk's foot.
-const BLOB = { dark: 0.9, across: 0.9, whole: 1.3, pool: { r: 1.6, dark: 0.85 }, foot: 0.38, under: 0.95 };
+const BLOB = { dark: 0.85, across: 1.3, whole: 1.4, pool: { r: 1.6, dark: 0.85 }, foot: 0.38, under: 0.95 };
 
 const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const hash2 = (x, y, s) => {

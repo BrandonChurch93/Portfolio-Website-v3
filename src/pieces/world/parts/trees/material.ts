@@ -34,8 +34,10 @@ export const AIR = { reach: 0.01, rate: [0.55, 1.37, 0.83] } as const;
 // How far each lump of a tree is moved from where its model has it, in a crown's own units, so that no two trees
 // of one model have the same outline.
 export const JITTER = 0.09;
-// The bark's color, as a mix of the palette's darkest bronze and a warm grey, how bright, and how rough each thing is.
-const BARK = { color: 'bronze-deep', grey: 'text-3', mix: 0.08, power: 0.42 } as const;
+// The bark's color, as a mix of the palette's darkest bronze and a warm grey, how bright, how far its ridges and
+// cracks differ in lightness, and how much of its light the foot of the trunk keeps, in the crown's shade. And how
+// rough each thing is.
+const BARK = { color: 'bronze-deep', grey: 'text-3', mix: 0.08, power: 0.42, ridge: [0.35, 1.45], foot: 0.4 } as const;
 const ROUGH = { leaf: 0.72, bark: 0.95 };
 // Light through the leaves at a crown's outline from the lit city behind it, as a share of the palette's hot light,
 // and how tight to the outline it keeps.
@@ -44,43 +46,45 @@ const RIM = { color: 'hot', power: 0.4, tight: 2.0 } as const;
 // soft its edge is, how much of the night it also takes from the leaves in it, and how much moon the bark keeps in it.
 const COVER = { soft: 0.18, night: 0.4, bark: 0.15 };
 // Leaves and bark are matte: how much of the standard sheen they keep, head on and at a grazing angle.
-const SHEEN = { face: 0.5, graze: 0.12 };
+const SHEEN = { face: 0.12, graze: 0.03 };
 // How much a leaf turned toward the light catches more of it than one turned away.
 const FACE = 0.35;
 // How much of the normal a leaf is lit by is its lump's ball, and how much its crown's.
 const BALL = { clump: 0.45, crown: 1.0 };
 // The moon in a crown: how far its light wraps round the crown past the line where it would set, how much of it the
 // leaves let through for each radius of crown it crosses on its way in, and how bright.
-const MOON = { wrap: 0.3, crown: 1.15, power: 0.52 };
+const MOON = { wrap: 0.3, crown: 1.15, power: 0.33 };
 // A lump within its crown's one light: the share of the crown's light its foot keeps, against its top, and how far
 // toward straight up the side of a lump that is lit turns from the moon. So a lump has a lit top and a shaded foot,
 // and a lump on the crown's shaded side is dim all over: the lump only breaks up the crown's light, never caps it.
 const LUMP = { foot: 0.5, up: 0.6, edge: [-0.45, 0.75] } as const;
 // How the atlas's lightness (red) becomes how light a leaf is: what the darkest (the dark mat between sprigs) and
 // the lightest keep of the tree's own shade.
-const PAINT = [0.36, 1.4] as const;
+const PAINT = [0.38, 1.28] as const;
 // What the moon and the sky turn a leaf they light toward, and how far at most: a tan, never the leaf's own shade
 // made brighter. From how much of the moon a leaf takes it starts and is whole, and how far the night and the fill on
 // such a leaf are turned to the same hue (ambient), so a lit top reads tan and not salmon.
-const PALE = { color: 'copper-light', toward: 'text-2', mix: 0.5, power: 0.95, most: 0.75, from: 0.05, full: 0.6, top: 0.7, back: 1.0, ambient: 1.0 } as const;
+const PALE = { color: 'copper-light', toward: 'pale', mix: 0.4, power: 0.7, most: 0.85, from: 0.05, full: 0.6, top: 0.65, back: 1.0, ambient: 0.75 } as const;
 // The night's soft light on the leaves, against what it gives everything else on top of the world, and how much of
 // it reaches a leaf with no sky above it, against one under open sky.
-const NIGHT = { leaf: 1.8, bark: 0.7, covered: 0.45 };
+// It falls on a crown as on one ball: what of the crown faces away from it (its foot and underside) keeps `crown`
+// of it, so each crown reads round at the page's size, lit above and dark beneath, and not as an even mat of leaves.
+const NIGHT = { leaf: 1.45, bark: 0.7, covered: 0.45, crown: 0.35, turn: [-0.35, 0.75] } as const;
 // The light inside a crown has come through leaves, and takes their color: how much of the leaf's own color it
 // takes again, so a crown's shade is a deep red brown and not the leaf's shade made darker.
 const DEEP = 0.4;
 // The light of the sky over a crown, from above and about the moon: what makes a crown's top paler than its sides.
 // Its color as the palette's pale, how bright, and how tightly it keeps to what faces straight up.
-const TOP = { color: 'copper-light', toward: 'text-2', mix: 0.35, power: 2.3, tight: 1.0, covered: 0.4, lump: 0.55 } as const;
+const TOP = { color: 'copper-light', toward: 'pale', mix: 0.25, power: 1.4, tight: 1.0, covered: 0.4, lump: 0.55 } as const;
 // The light that has come through the leaves and lights the crown from inside, most where the crown is open and on
 // its side toward the moon: what keeps a crown's shade a rich red brown and not black, and still leaves the side
 // away from the moon darker. Its color, how bright, how much of it reaches the most shut in place and the side
 // turned straight away from the moon.
-const FILL = { color: 'copper', grey: 'text-2', mix: 0.5, power: 3.6, shut: 0.3, away: 0.25 } as const;
+const FILL = { color: 'copper', grey: 'text-2', mix: 0.5, power: 3.1, shut: 0.68, away: 0.36 } as const;
 // Leaves deep in the crown, behind the front of its ball, are shut in: how fast the night's light goes with depth
 // (in radii), and how much of the moon's, the sky's and the fill's goes with it, so what is seen through the gaps
 // between lumps is the crown's dark heart. A leaf turned down, under the crown, keeps this share of the night.
-const INSIDE = { crown: 1.6, rest: 1.8, front: 0.3, beneath: 0.22 };
+const INSIDE = { crown: 1.6, rest: 1.8, front: 0.3, beneath: 0.3 };
 // How far one lump's shade differs from the next in hue and in lightness.
 const CLUMPS = { hue: 0.4, light: 0.28 };
 // The most green a leaf may have against its red, and blue against its green, in linear light.
@@ -91,6 +95,11 @@ const GLANCE = [0.16, 0.42] as const;
 // The moon behind the crown, caught in the leaves of its outline on the moon's side: how bright, how close to the
 // outline it keeps (a share of the crown's radius seen from the viewer), and how sharply it turns to the moon.
 const BACKLIT = { power: 0.12, from: 0.55, turn: 1.5 } as const;
+// The lightest leaves, whatever light made them so, are turned toward a tan and held down a little, value and
+// saturation together, as picture 9's lit tops are tan and not a hotter orange: the tan (a mix of two of the
+// palette's colors), from what luminance (in linear light, before the stage's tone curve) the turn starts and where
+// it is whole, how far it goes there, and how much it darkens.
+const GRADE = { color: 'copper-light', toward: 'text-2', mix: 0.2, from: 0.06, full: 0.5, most: 0.75, dim: 0.2 } as const;
 // The shade on the ground is drawn this much nearer the viewer along the line of sight, in units, so the land's
 // own small rises do not cut it into strips. At the world's low view that lifts it off the ground by a tenth of it.
 const NEARER = 6;
@@ -101,8 +110,10 @@ const GROUNDED = 1.7;
 // each side of it.
 const KEEP = 0.35;
 // On sand the moon's own shadow of a tree lies on the dune from the shadow map, and the dark earth the shade stands
-// for is not there: this share of the shade goes on sand.
-const SAND = 0.8;
+// for is not there: this share of the shade goes where there is sand under it (aReach.w, the most anywhere on it),
+// all but the pool at the trunk's foot, from this far from the trunk to this (in crown units), so the shade never
+// lies on a dune as a dark wedge.
+const SAND = { most: 0.9, from: 0.4, full: 1.4 } as const;
 // Where a leaf is drawn in depth: drawn where its flat card lies, two cards crossing met in a ruler straight line, and
 // two lumps or two trees met as flat cards do. Each leaf is drawn this share of the way from its card to the front of
 // its lump's ball, so lumps meet one another as balls do, and stands nearer by as much as it is lighter in the atlas
@@ -184,8 +195,9 @@ export function treeMaterial(map: THREE.Texture, pass: 0 | 1, uniforms: TreeUnif
   const bark = new THREE.Color(hex(BARK.color)).lerp(new THREE.Color(hex(BARK.grey)), BARK.mix).multiplyScalar(BARK.power), rim = new THREE.Color(hex(RIM.color)).multiplyScalar(RIM.power);
   const top = new THREE.Color(hex(TOP.color)).lerp(new THREE.Color(hex(TOP.toward)), TOP.mix).multiplyScalar(TOP.power), fill = new THREE.Color(hex(FILL.color)).lerp(new THREE.Color(hex(FILL.grey)), FILL.mix).multiplyScalar(FILL.power);
   const pale = new THREE.Color(hex(PALE.color)).lerp(new THREE.Color(hex(PALE.toward)), PALE.mix).multiplyScalar(PALE.power);
+  const tan = new THREE.Color(hex(GRADE.color)).lerp(new THREE.Color(hex(GRADE.toward)), GRADE.mix);
   m.onBeforeCompile = (sh) => {
-    Object.assign(sh.uniforms, uniforms, { uLeaves: { value: map }, uPass: { value: pass }, uBark: { value: bark }, uRim: { value: rim }, uPale: { value: pale }, uTop: { value: top }, uFill: { value: fill }, uNearer: { value: NEARER * SCALE }, uLook: { value: LOOKS[look ?? ''] ?? 0 } });
+    Object.assign(sh.uniforms, uniforms, { uLeaves: { value: map }, uPass: { value: pass }, uBark: { value: bark }, uRim: { value: rim }, uPale: { value: pale }, uTan: { value: tan }, uTop: { value: top }, uFill: { value: fill }, uNearer: { value: NEARER * SCALE }, uLook: { value: LOOKS[look ?? ''] ?? 0 } });
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>${MOVE_PARS}
 attribute vec3 aTone;
@@ -233,6 +245,7 @@ uniform float uLook;
 uniform vec3 uBark;
 uniform vec3 uRim;
 uniform vec3 uPale;
+uniform vec3 uTan;
 uniform vec3 uTop;
 uniform vec3 uFill;
 varying vec2 vLeafUv;
@@ -326,7 +339,7 @@ if ( tBlob > 0.5 ) {
 	if ( uPass < 0.5 || tA < 0.004 ) discard;
 	// Cut where the land ends behind the trunk and to each side (vReach, in crown units), softly.
 	float tIn = ( 1.0 - smoothstep( vReach.x - ${f(KEEP)}, vReach.x, - vShadeAt.x ) ) * ( 1.0 - smoothstep( vReach.y - ${f(KEEP)}, vReach.y, - vShadeAt.y ) ) * ( 1.0 - smoothstep( vReach.z - ${f(KEEP)}, vReach.z, vShadeAt.y ) );
-	diffuseColor = vec4( 0.0, 0.0, 0.0, ( 1.0 - pow( 1.0 - min( tA, 0.999 ), ${f(GROUNDED)} ) ) * tIn * ( 1.0 - ${f(SAND)} * vReach.w ) );
+	diffuseColor = vec4( 0.0, 0.0, 0.0, ( 1.0 - pow( 1.0 - min( tA, 0.999 ), ${f(GROUNDED)} ) ) * tIn * ( 1.0 - ${f(SAND.most)} * vReach.w * smoothstep( ${f(SAND.from)}, ${f(SAND.full)}, length( vShadeAt ) ) ) );
 } else {
 	if ( uPass < 0.5 ) {
 		if ( tA < 0.5 ) discard;
@@ -342,7 +355,7 @@ if ( tBlob > 0.5 ) {
 	c.g = min( c.g, ${f(WARM.green)} * c.r );
 	c.b = min( c.b, ${f(WARM.blue)} * c.g );
 	tPaleOf = uPale * mix( 0.8, 1.08, tLeaf.r );
-	diffuseColor.rgb = mix( c, uBark * mix( 0.55, 1.3, tLeaf.r ), tBark );
+	diffuseColor.rgb = mix( c, uBark * mix( ${f(BARK.ridge[0])}, ${f(BARK.ridge[1])}, tLeaf.r ) * mix( 1.0, ${f(BARK.foot)}, vLow ), tBark );
 }`)
       .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
 roughnessFactor = mix( roughnessFactor, ${f(ROUGH.bark)}, tBark );
@@ -358,6 +371,11 @@ material.specularF90 = ${f(SHEEN.graze)};`)
 	gl_FragDepth = tLeafy > 0.5 ? 0.5 + 0.5 * clip.z / clip.w : gl_FragCoord.z;
 }
 outgoingLight *= 1.0 - tBlob;
+{
+	vec3 w = vec3( 0.2126, 0.7152, 0.0722 );
+	float Y = dot( outgoingLight, w ), k = ${f(GRADE.most)} * smoothstep( ${f(GRADE.from)}, ${f(GRADE.full)}, Y ) * tLeafy;
+	outgoingLight = mix( outgoingLight, uTan * Y / max( dot( uTan, w ), 1e-4 ), k ) * ( 1.0 - ${f(GRADE.dim)} * k );
+}
 outgoingLight += vec3( 2.0, 0.6, 0.0 ) * tBlob * step( 3.5, uLook ) * step( uLook, 4.5 );
 if ( uLook > 4.5 && uLook < 5.5 ) outgoingLight = vec3( 4.0, 0.0, 0.0 ) * ( 1.0 - tBlob );
 if ( uLook > 5.5 ) outgoingLight = vec3( uLook < 6.5 ? tLump( tUpV ) : tHeart ) * tLeafy;
@@ -390,7 +408,8 @@ if ( vCrown.w > 1e-5 && tLeafy > 0.5 ) {
 material.diffuseContribution = mix( material.diffuseContribution, tTan( material.diffuseContribution ), ${f(PALE.ambient)} * smoothstep( ${f(PALE.from)}, ${f(PALE.full)}, tSeen ) * tLeafy );
 {
 	vec3 tFrontV = normalize( ( viewMatrix * vec4( ${SKY.front.toward.map(f).join(', ')}, 0.0 ) ).xyz );
-	float night = mix( ${f(NIGHT.bark)}, ${f(NIGHT.leaf)} * tShut * tBelow * tLump( normalize( tFrontV + tUpV ) ) * mix( ${f(NIGHT.covered)}, 1.0, wLight.y ) * ( 1.0 - ${f(COVER.night)} * vTree.z * vLow ), tLeafy );
+	float tRound = mix( ${f(NIGHT.crown)}, 1.0, smoothstep( ${f(NIGHT.turn[0])}, ${f(NIGHT.turn[1])}, dot( tNK, normalize( tFrontV + tUpV ) ) ) );
+	float night = mix( ${f(NIGHT.bark)}, ${f(NIGHT.leaf)} * tRound * tShut * tBelow * tLump( normalize( tFrontV + tUpV ) ) * mix( ${f(NIGHT.covered)}, 1.0, wLight.y ) * ( 1.0 - ${f(COVER.night)} * vTree.z * vLow ), tLeafy );
 	vec3 deep = mix( vec3( 1.0 ), diffuseColor.rgb / max( diffuseColor.r, 1e-4 ), ${f(DEEP)} * tLeafy );
 	irradiance *= night * deep;
 	iblIrradiance *= night * deep;

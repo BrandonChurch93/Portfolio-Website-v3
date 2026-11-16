@@ -45,5 +45,6 @@ export const CROWN = { clear: 0.17 } as const;
 // The shade a tree lays on the ground: a soft card from under the crown out along the ground away from the moon,
 // so the belt sits dark at its foot, and darkest round the trunk's foot. How far it starts behind the trunk and how
 // far it reaches past it, and how wide it is to each side, in crown units. Each tree's card is cut short where the
-// land ends.
-export const SHADE = { back: 1.8, reach: 2.6, wide: 1.8, up: 0.04 } as const;
+// land ends. The moon stands about 22 degrees up, so a crown's shade lies about two and a half times as far as it
+// is tall.
+export const SHADE = { back: 1.8, reach: 3.4, wide: 1.8, up: 0.04 } as const;

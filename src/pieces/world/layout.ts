@@ -122,6 +122,12 @@ export function fromPicture(px: number, py: number, z: number): [number, number,
   return [across / k, dy + SPIRE.tall - (HOST.tall / 2 - HOST.over) / ce, z];
 }
 
+// The row of trees behind the dunes, as picture 9 has it: its crowns from so far across to so far, their feet so
+// far down, in the picture's pixels. On bare ground a place seen there is off the land's rim, so the row stands on
+// sand, this far toward the visitor, and the land raises a shelf under it and keeps a pass open before it: no sand
+// in front of the row is drawn further up the picture than `clear`.
+export const ROW = { from: 1063, to: 1174, foot: 244, z: -230, clear: 246 } as const;
+
 // The desert: how much of it a place on the map is, 0 to 1. The right end of the top only.
 export const DESERT = { at: [530, 240] as const, r: [285, 440] as const } as const;
 function sands(x: number, z: number): number {

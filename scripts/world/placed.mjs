@@ -203,7 +203,9 @@ const grove = (from, to, step, feet, sizes) => {
 grove(700, 960, 9.5, [254, 247, 240, 235], [0.7, 1.4]);
 grove(960, 1050, 9, [252, 244, 237], [0.75, 1.35]);
 grove(252, 336, 8.5, [296, 288, 281], [0.9, 1.3]);
-for (let px = 1063; px <= 1174; px += 9.6) { const [x, z] = onGround(px + 2.5 * (r() - 0.5), 243 + 2 * (r() - 0.5)); trees.push([n(x), n(z), n(10.5 * (1.15 + 0.3 * r())), n(r(), 3), n(r() * Math.PI * 2, 3)]); }
+// The row behind the dunes stands where the plan's ROW says. Found on bare ground it stood off the land's rim and
+// was never drawn.
+for (let px = W.ROW.from; px <= W.ROW.to; px += 9.6) { const [x] = W.fromPicture(px + 2.5 * (r() - 0.5), W.ROW.foot + 2 * (r() - 0.5), W.ROW.z), z = W.ROW.z; trees.push([n(x), n(z), n(10.5 * (1.15 + 0.3 * r())), n(r(), 3), n(r() * Math.PI * 2, 3)]); }
 // The trees' fourth round, laid over the picture again:
 //   - left of the spire, 470 to 650 across, the picture's belt is ONE row of crowns hard against the city's feet,
 //     250 to 265 down, with bare pale rock before it out to the lip. Ours stood three and four rows deep on that

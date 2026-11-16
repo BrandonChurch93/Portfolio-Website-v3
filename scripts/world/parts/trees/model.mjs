@@ -37,16 +37,16 @@ const KINDS = {
 // the crown's outline and breaks it), and how high the top one stands. A great lump has a second, smaller one grown
 // into it this often (merge: how often, how big against it, how far from its middle against its radius), so some
 // masses are two lumps run together. The crown's lumps are all moved to one side by up to `lop` of its width.
-const LUMP = { crest: [0.5, 0.6], great: [0.24, 0.58], small: [0.15, 0.25], out: [0.5, 0.74], rim: [0.8, 0.98], top: 0.5, heart: 0.44, merge: [0.45, 0.5, 0.75], lop: 0.12 };
+const LUMP = { crest: [0.5, 0.6], great: [0.24, 0.58], small: [0.15, 0.25], out: [0.5, 0.72], rim: [0.72, 0.9], top: 0.5, heart: 0.44, merge: [0.45, 0.5, 0.75], lop: 0.12 };
 // The trunk: how much wider it flares at its foot and over what height, how much thinner it is at the fork, how far
 // it is sunk, the fork's height under its crown's middle against the crown's half height, and the limbs it forks
 // into: how thick each is where it leaves the fork against the trunk there, and at its end against the trunk's foot,
 // how far along the way to its lump it reaches, and how far out from the trunk's line it bows. The fork is low, just
 // over the crown's lowest leaves, so the limbs are what is seen in the crown's gaps.
-const TRUNK = { flare: 0.5, rise: 0.05, taper: 0.45, sunk: 0.2, at: 0.62, limb: { from: 0.72, end: 0.16, reach: 0.85, bow: 0.18 } };
+const TRUNK = { flare: 0.22, rise: 0.04, taper: 0.45, sunk: 0.2, at: 0.62, limb: { from: 0.72, end: 0.16, reach: 0.85, bow: 0.18 } };
 // The roots: the foot of the trunk spreads in lobes that run out and down into the ground (no tubes of their own):
 // how many lobes, how far each stands out at the ground against the trunk's foot, and how fast it goes up the trunk.
-const ROOTS = { lobes: [3, 5], out: 0.9, rise: 0.035 };
+const ROOTS = { lobes: [3, 5], out: 0.6, rise: 0.03 };
 // How the trunk leans and bows: how far its fork stands off its foot to one side, at most, and how far its middle
 // bows out of the straight line, against the fork's height.
 const BOLE = { lean: 0.09, bow: 0.05 };
