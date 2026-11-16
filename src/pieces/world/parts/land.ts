@@ -3,7 +3,7 @@ import { color, lit, stone } from '../light';
 import { load, mesh } from '../files';
 import type { PartFactory } from '../part';
 import { TOWERS } from '../placed';
-import { DUNES, GLSL, HEIGHT, MAP, ROW, crestTexels } from './land/field';
+import { DUNES, GLSL, HEIGHT, MAP, RIDERS, ROW, crestTexels } from './land/field';
 import * as S from './land/shaders';
 
 // The land: the top of the planet that the city, the trees, the pyramid and the spire stand on, and the desert with
@@ -18,15 +18,15 @@ import * as S from './land/shaders';
 // shows, the flat stones in the grass, and the bronze laid in the spire's court.
 const mix = (a: THREE.Color, b: THREE.Color, k: number): THREE.Color => a.clone().lerp(b, k);
 const LOOK = {
-  sand: mix(color('hot'), color('copper'), 0.3).multiplyScalar(1.12),
+  sand: mix(mix(color('hot'), color('copper'), 0.3), color('text-2'), 0.2).multiplyScalar(1.1),
   sandHi: mix(color('pale'), color('hot'), 0.1),
   sandRim: mix(color('pale'), color('hot'), 0.3),
   bare: mix(color('text-3'), color('copper-light'), 0.46).multiplyScalar(0.62),
   sandDeep: mix(color('copper'), color('ember'), 0.75).multiplyScalar(0.9),
-  pave: mix(color('text-3'), color('copper-light'), 0.5).multiplyScalar(0.32),
-  pavePale: mix(color('text-3'), color('copper-light'), 0.62).multiplyScalar(0.85),
+  pave: mix(color('text-3'), color('copper-light'), 0.62).multiplyScalar(0.34),
+  pavePale: mix(color('text-3'), color('copper-light'), 0.74).multiplyScalar(0.8),
   rock: stone(),
-  court: mix(color('text-3'), color('copper-light'), 0.36).multiplyScalar(0.5),
+  court: mix(color('text-3'), color('copper-light'), 0.62).multiplyScalar(0.55),
   grass: mix(color('bronze'), color('copper'), 0.35).multiplyScalar(0.5),
   grassDry: mix(color('copper-light'), color('text-3'), 0.35).multiplyScalar(0.55),
   grassDeep: mix(color('bronze-deep'), color('ember'), 0.3).multiplyScalar(0.8),
@@ -91,7 +91,7 @@ export const build: PartFactory = async ({ query, renderer }) => {
   const [file, a, b, lots, light] = await Promise.all([load('land.bin'), picture('land-a.png', false), picture('land-b.png', false), picture('land-lots.png', true), picture('land-light.png', false)]);
   const ground = file.meshes.get('ground');
   if (!ground) throw new Error('land.bin holds no ground: make it again with scripts/world/parts/land/make.mjs');
-  const crest = floats(crestTexels(), ROW, DUNES.length);
+  const crest = floats(crestTexels(), ROW, DUNES.length + RIDERS.length);
   const high = heights(renderer, a, crest);
   const towers = new Float32Array(TOWERS.length * 8);
   TOWERS.forEach(([x, z, w, d, tall, turn], i) => {

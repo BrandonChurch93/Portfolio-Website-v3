@@ -26,7 +26,7 @@ const began = performance.now(), say = (s) => console.log(`land: ${s} · ${((per
 
 // How fine everything is: the height field's spacing and how far the reduced mesh may stray from it, in units, and
 // the maps' sizes in texels.
-const FINE = draft ? { grid: 1.6, error: 0.12, map: 512, lots: 256, light: 192, hemi: 32, bounces: 1 } : { grid: 0.7, error: 0.2, map: 1024, lots: 512, light: 768, hemi: 256, bounces: 2 };
+const FINE = draft ? { grid: 1.6, error: 0.12, map: 512, lots: 256, light: 192, hemi: 32, bounces: 1 } : { grid: 0.7, error: 0.225, map: 1024, lots: 512, light: 768, hemi: 256, bounces: 2 };
 // How far the paving and the grass stand over the dome, the kerb between them, how far down the turned edge goes.
 const LIFT = { paving: 0.45, grass: 0.1, skirt: 4 };
 // The sand's lip down the planet's side: how far down it reaches (least and most, ragged along the rim), how far
@@ -36,8 +36,8 @@ const DRAPE = { down: [22, 30], off: [0.3, 0.2], lump: 0.25, round: 0.8, shoulde
 // Where the desert meets the land's torn front edge (the lip), its sand spills over onto the stone below as a
 // talus, gently enough to catch the moon: how far out from the edge and how far down each row of it lies, and how
 // ragged its foot is. A straight strip down from the edge there, and then a steep talus, were a long black slot
-// seen against the stone.
-const SPILL = { out: [0, 3, 6.5, 10, 13], down: [0, 0.9, 1.9, 2.8, 3.6], ragged: 0.5 };
+// seen against the stone, and a long gentle one (13 out) read as a pale sheet laid over the wall.
+const SPILL = { out: [0, 1.6, 3.4, 5, 6.2], down: [0, 0.9, 2.1, 3.5, 4.8], ragged: 0.7 };
 // The belt of grass along the city's front: how far in front of front() its kerb is, and the soft, uneven edge it
 // fades out over toward the land's edge (from, to, and how much that wanders), leaving the pale strip of worn stone
 // along the edge that picture 9 has in front of its trees.
