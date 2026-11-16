@@ -104,6 +104,12 @@ const AT = {
   // 450 across, a pale slab at 450 to 467, and a dark block before the obelisk's foot at 470 to 496. Ours stood 35
   // to 50 pixels lower there, with sky between them.
   87: { px: 440, py: 158, wide: 20 }, 56: { px: 458, py: 160, wide: 17, form: 'slab' }, 64: { px: 483, py: 163, wide: 26, z: 120 },
+  // Measured column by column against the picture's own skyline (Nov 16), the plan stood lower than the picture in
+  // five stretches, with sky showing where the picture is a wall of buildings: a dark tower at 408 to 430 across
+  // topping at 152, one at 546 to 565 at 155, a slim one at 610 to 620 at 175 and a wide block at 620 to 645 at 182
+  // left of the spire, a low block at 820 to 828 at 196, and a block at 864 to 882 at 185.
+  99: { px: 419, py: 152, wide: 23 }, 55: { py: 155 }, 104: { px: 613, py: 175, wide: 14, form: 'fin' }, 62: { px: 632, py: 182, wide: 25 },
+  115: { py: 196 }, 91: { px: 873, py: 185, wide: 19 }, 96: { py: 188 },
   101: { px: 126, py: 257, wide: 26 }, 95: { px: 133, py: 240, wide: 18 }, 17: { px: 151, py: 221, wide: 17 }, 107: { px: 164, py: 224, wide: 9, form: 'fin' },
   32: { px: 177, py: 213, wide: 20 }, 103: { px: 194, py: 240, wide: 13 }, 92: { px: 211, py: 205, wide: 16 }, 70: { px: 223, py: 222, wide: 14 },
   46: { px: 233, py: 228, wide: 11 }, 80: { px: 241, py: 192, wide: 17, form: 'deco' }, 97: { px: 254, py: 207, wide: 17 }, 12: { px: 272, py: 170, wide: 20, form: 'deco' },

@@ -37,22 +37,22 @@ export const WINDOW = {
   style: 100,
 } as const;
 
-// The towers' stones, a building's tone (0 to 1) picking one in sixths: what each multiplies the pale stone's color
-// by in linear light, how metallic and how rough it is, and how much of the stage's white balance the light it
-// reflects is seen through (cool): the night it is seen by is a warm one, and his stepped tower's limestone, which he
-// approved, measured a pale near neutral (150, 138, 124) in the frame it was made in, where the whole stage was
-// balanced; the buff and brown stones keep more of the night's warmth. A pale limestone, a buff stone, a grey granite, a brownstone,
-// a dark granite, a cladding of bronze and a near black polished stone. Only metal and light are saturated in the
-// city: every stone is near neutral, so the gold reads as gold on stone and the city's warmth is its light. Here so
+// The towers' stones, a building's tone (0 to 1) picking one in sevenths: what each multiplies the pale stone's
+// color by in linear light, how metallic and how rough it is, and how much of the stage's white balance the light it
+// reflects is seen through (cool). The first is his stepped tower's limestone, which he approved as a pale near
+// neutral (150, 138, 124) and which no other building is built of, so it reads as the one pale building. Every other
+// stone is warm, as picture 9's city is one warm brown mass: tans and browns from a mid tan to a deep red brown,
+// a cladding of bronze, and a near black polished stone. Gold is told from them by its light, not its hue. Here so
 // the baker lights each as it is drawn.
 export const STONES = [
   { tint: [1, 1, 1], metal: 0, rough: 0.82, cool: 1.2 },
-  { tint: [0.56, 0.45, 0.33], metal: 0, rough: 0.85, cool: 0.45 },
-  { tint: [0.32, 0.31, 0.3], metal: 0, rough: 0.78, cool: 0.8 },
-  { tint: [0.33, 0.23, 0.155], metal: 0, rough: 0.84, cool: 0.3 },
-  { tint: [0.17, 0.165, 0.16], metal: 0, rough: 0.66, cool: 0.7 },
+  { tint: [0.738, 0.421, 0.212], metal: 0, rough: 0.86, cool: 0 },
+  { tint: [0.598, 0.293, 0.131], metal: 0, rough: 0.85, cool: 0 },
+  { tint: [0.406, 0.190, 0.096], metal: 0, rough: 0.84, cool: 0 },
+  { tint: [0.246, 0.109, 0.053], metal: 0, rough: 0.8, cool: 0 },
+  { tint: [0.159, 0.072, 0.038], metal: 0, rough: 0.76, cool: 0 },
   { tint: [0.46, 0.27, 0.12], metal: 0.85, rough: 0.42, cool: 0 },
-  { tint: [0.06, 0.056, 0.053], metal: 0.3, rough: 0.16, cool: 0.5 },
+  { tint: [0.06, 0.05, 0.042], metal: 0.3, rough: 0.16, cool: 0.2 },
 ] as const;
 // What the make stores with each place for the material: how high over its building's foot it is, as a share of
 // `foot` units (the street's light is on the lowest storeys), and how far back it is in z from the city's front

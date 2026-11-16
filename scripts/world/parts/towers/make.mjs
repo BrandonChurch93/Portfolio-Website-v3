@@ -31,16 +31,19 @@ const CULL = { seen: -0.3, casts: 0.02 };
 const STEP = 4;
 const step = (v) => Math.round((Math.min(1, Math.max(0, v)) * 255) / STEP) * STEP / 255;
 
-// The layers of many meshes (each what Kit.meshes gives) as one mesh a layer.
-export function gather(list) {
+// The layers of many meshes (each what Kit.meshes gives) as one mesh a layer. owners[k], if given, is which building
+// the k-th of them is, kept for each vertex (owner), so what a building does to the light of others can leave out
+// its own.
+export function gather(list, owners = null) {
   const out = {};
   for (const name of NAMES) {
-    const parts = list.map((m) => m[name]).filter((m) => m && m.indices.length);
+    const parts = list.map((m, k) => [m[name], owners ? owners[k] : -1]).filter(([m]) => m && m.indices.length);
     const width = list.find((m) => m[name])?.[name].width ?? 0;
-    const nv = parts.reduce((s, m) => s + m.positions.length / 3, 0), ni = parts.reduce((s, m) => s + m.indices.length, 0);
-    const positions = new Float32Array(nv * 3), normals = new Float32Array(nv * 3), attr = new Float32Array(nv * width), indices = new Uint32Array(ni), foot = new Float32Array(nv);
+    const nv = parts.reduce((s, [m]) => s + m.positions.length / 3, 0), ni = parts.reduce((s, [m]) => s + m.indices.length, 0);
+    const positions = new Float32Array(nv * 3), normals = new Float32Array(nv * 3), attr = new Float32Array(nv * width), indices = new Uint32Array(ni), foot = new Float32Array(nv), owner = new Int32Array(nv);
     let v = 0, i = 0;
-    for (const m of parts) {
+    for (const [m, who] of parts) {
+      owner.fill(who, v, v + m.positions.length / 3);
       for (let k = 0; k < m.positions.length / 3; k++) foot[v + k] = Math.max(0, m.local[k * 3 + 1]);
       positions.set(m.positions, v * 3);
       normals.set(m.normals, v * 3);
@@ -49,7 +52,58 @@ export function gather(list) {
       v += m.positions.length / 3;
       i += m.indices.length;
     }
-    out[name] = { positions, normals, indices, attr, width, foot };
+    out[name] = { positions, normals, indices, attr, width, foot, owner };
+  }
+  return out;
+}
+
+// How much of the bright sky about the moon a place sees past the other buildings: the moon is low and behind the
+// city, so a tall building lays a long shadow of it across the faces of lower ones before it, and the tops stand in
+// it while the feet are shut out. Each building is taken as two boxes, its whole footprint to SKY.body of its height
+// and SKY.top of its footprint above; rays go toward the moon over a cone SKY.cone degrees wide, so the shadows are
+// soft. Its own building never shades a place: it is the place's own wall, which the moon's live shadow draws.
+const SKY = { body: 0.62, top: 0.7, cone: 3.2, rays: 9 };
+export function boxesOf(list, extra = []) {
+  const out = [];
+  for (const [x, z, w, d, tall, turn, ground, id] of list) {
+    const c = Math.cos(turn * L.D2R), s = Math.sin(turn * L.D2R);
+    out.push({ id, x, z, c, s, hw: w / 2, hd: d / 2, y0: ground - 2, y1: ground + tall * SKY.body });
+    out.push({ id, x, z, c, s, hw: (w / 2) * SKY.top, hd: (d / 2) * SKY.top, y0: ground, y1: ground + tall });
+  }
+  return [...out, ...extra];
+}
+export function skyward(positions, normals, owner, boxes, draft) {
+  const M = light().moon.toward, n = positions.length / 3, out = new Float32Array(n), rays = [];
+  const up = [0, 1, 0], ax = [M[1] * up[2] - M[2] * up[1], M[2] * up[0] - M[0] * up[2], M[0] * up[1] - M[1] * up[0]], la = Math.hypot(...ax);
+  const a = ax.map((v) => v / la), b = [M[1] * a[2] - M[2] * a[1], M[2] * a[0] - M[0] * a[2], M[0] * a[1] - M[1] * a[0]];
+  const count = draft ? 3 : SKY.rays, cone = Math.tan(SKY.cone * L.D2R);
+  for (let k = 0; k < count; k++) {
+    const r = count === 1 ? 0 : cone * Math.sqrt((k + 0.5) / count), t = k * 2.39996;
+    const d = M.map((v, q) => v + r * (Math.cos(t) * a[q] + Math.sin(t) * b[q])), l = Math.hypot(...d);
+    rays.push(d.map((v) => v / l));
+  }
+  for (let i = 0; i < n; i++) {
+    const px = positions[i * 3] + normals[i * 3] * 0.4, py = positions[i * 3 + 1] + normals[i * 3 + 1] * 0.4, pz = positions[i * 3 + 2] + normals[i * 3 + 2] * 0.4;
+    let seen = 0;
+    for (const [dx, dy, dz] of rays) {
+      let hit = false;
+      for (const B of boxes) {
+        if (B.id === owner[i] || B.y1 < py) continue;
+        // Into the box's own frame, where it is upright and square to its axes.
+        const ox = px - B.x, oz = pz - B.z, lx = ox * B.c - oz * B.s, lz = ox * B.s + oz * B.c, vx = dx * B.c - dz * B.s, vz = dx * B.s + dz * B.c;
+        let t0 = 0, t1 = 1e5;
+        for (const [o, v, lo, hi] of [[lx, vx, -B.hw, B.hw], [lz, vz, -B.hd, B.hd], [py, dy, B.y0, B.y1]]) {
+          if (Math.abs(v) < 1e-9) { if (o < lo || o > hi) { t0 = 1; t1 = 0; break; } continue; }
+          let ta = (lo - o) / v, tb = (hi - o) / v;
+          if (ta > tb) [ta, tb] = [tb, ta];
+          t0 = Math.max(t0, ta); t1 = Math.min(t1, tb);
+          if (t0 > t1) break;
+        }
+        if (t0 <= t1) { hit = true; break; }
+      }
+      if (!hit) seen++;
+    }
+    out[i] = seen / rays.length;
   }
   return out;
 }
@@ -110,7 +164,7 @@ function cull(positions, indices, attributes) {
   return { positions: pick(positions, 3), indices: Uint32Array.from(keep, (i) => at[i]), attributes: out };
 }
 
-export async function finish({ made, win, around = [], file, draft, meta = {}, samples }) {
+export async function finish({ made, win, around = [], file, draft, meta = {}, samples, boxes = [] }) {
   const began = performance.now();
   const cl = linear('copper-light'), pale = linear('text-2').map((v, k) => (v + (cl[k] - v) * WARM) * PALE_STONE * ALBEDO.stone), bronze = linear('bronze').map((v) => v * ALBEDO.bronze), copper = linear('copper').map((v) => v * ALBEDO.copper);
   const bay = made.bay, nb = bay.positions.length / 3, emit = new Float32Array(nb * 3), albedoBay = new Float32Array(nb * 3);
@@ -142,11 +196,12 @@ export async function finish({ made, win, around = [], file, draft, meta = {}, s
   const meshes = NAMES.map((name) => {
     const m = made[name], raw = lit[name], n = m.positions.length / 3, light4 = new Float32Array(n * 4), bounce4 = new Float32Array(n * 4);
     const l = { ...raw, open: smooth(m, raw.open, 1, SMOOTH[name]), bounce: smooth(m, raw.bounce, 3, SMOOTH[name]) };
-    // The share of the moon seen is not read (the moon's shadow is drawn live) and the core never reaches the city:
-    // both are stored as nothing, which packs to nothing.
+    // The core never reaches the city, and the baker's share of the moon is not read (the moon's own shadow is drawn
+    // live): in its place is how much of the sky about the moon a place sees past the other buildings (skyward).
+    const sky = boxes.length ? smooth(m, skyward(m.positions, m.normals, m.owner, boxes, draft), 1, SMOOTH[name]) : new Float32Array(n).fill(1);
     for (let i = 0; i < n; i++) {
       const back = Math.min(1, Math.max(0, (m.positions[i * 3 + 2] - DEPTH[0]) / (DEPTH[1] - DEPTH[0])));
-      light4.set([0, 0, step(l.open[i]), Math.min(1, (m.foot?.[i] ?? 0) / FOOT)], i * 4);
+      light4.set([0, step(sky[i]), step(l.open[i]), Math.min(1, (m.foot?.[i] ?? 0) / FOOT)], i * 4);
       bounce4.set([step(storeBounce(l.bounce[i * 3])), step(storeBounce(l.bounce[i * 3 + 1])), step(storeBounce(l.bounce[i * 3 + 2])), back], i * 4);
     }
     const attributes = { normal: { data: m.normals, size: 3, as: 'i16' }, light: { data: light4, size: 4, as: 'u8' }, bounce: { data: bounce4, size: 4, as: 'u8' } };

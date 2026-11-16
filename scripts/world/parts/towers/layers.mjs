@@ -45,12 +45,13 @@ export function layers() {
     // its radius, in place of the flute), and what the first is over.
     // On a face that narrows as it rises (tag.taper: its width at its foot and its head, y0 and y1, and how many
     // flutes), the flutes narrow with it, from its middle line (tag.o): the place is stored over the width there,
-    // which the shader divides, since each is even across a face and their share is not.
+    // which the shader divides, since each is even across a face and their share is not. tag.flank turns a face's
+    // flanks by its own angle, in degrees.
     gold: {
       width: 3, attr: (p, n, tag) => {
         if (tag?.disc) return [Math.hypot(p[0] - tag.x, p[1] - tag.cy) / tag.R, 2, 1];
         if (!tag?.flute) return [0, 0, 1];
-        const s = (p[0] - tag.o[0]) * tag.T[0] + (p[2] - tag.o[2]) * tag.T[2], flank = 0.5 + FLUTE.flank / 90;
+        const s = (p[0] - tag.o[0]) * tag.T[0] + (p[2] - tag.o[2]) * tag.T[2], flank = 0.5 + (tag.flank ?? FLUTE.flank) / 90;
         if (!tag.taper) return [s / tag.flute, flank, 1];
         const [w0, w1, y0, y1] = tag.taper, wide = w0 + ((w1 - w0) * (p[1] - y0)) / (y1 - y0);
         return [tag.flute * (s + 0.5 * wide), flank, wide];

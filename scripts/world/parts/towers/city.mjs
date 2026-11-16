@@ -9,19 +9,21 @@ import { L, P, linear } from '../../lib/plan.mjs';
 import { Kit } from './kit.mjs';
 import { design } from './designs.mjs';
 import { layers } from './layers.mjs';
-import { finish, gather } from './make.mjs';
+import { boxesOf, finish, gather } from './make.mjs';
 import { placeOf } from './site.mjs';
 import { stepTower } from './step-form.mjs';
 import { Windows } from './windows.mjs';
+import { STONES } from '../../../../src/pieces/world/parts/towers/windows.ts';
 
 const draft = process.argv.includes('--draft');
 const onlyAt = process.argv.indexOf('--only'), only = onlyAt > 0 ? new Set(process.argv[onlyAt + 1].split(',').map(Number)) : null;
 // The map of the windows, in windows across and down; how finely faces are cut for their baked light, in units; the stones
-// a building may be built of, as tones (./windows.ts, TONES), and how likely each is.
-const CITY = { map: [1024, 128], edge: draft ? 10 : 6.6, tones: [[0, 0.1], [1, 0.26], [2, 0.14], [3, 0.2], [4, 0.12], [5, 0.08], [6, 0.1]], seed: 9151 };
-// The named buildings' stone, as a place in STONES: the obelisk's shaft is dark, as picture 9's is, the tower left
-// of the spire a buff stone and the ringed pair a pale one.
-const TONE = { 0: 4, 2: 1, 3: 2, 4: 1, 5: 3, 9: 0, 10: 1, 11: 2 };
+// a building may be built of, as places in STONES (./windows.ts), and how likely each is: never the first, his stepped
+// tower's limestone.
+const CITY = { map: [1024, 128], edge: draft ? 10 : 6.6, tones: [[1, 0.2], [2, 0.22], [3, 0.2], [4, 0.14], [5, 0.1], [6, 0.06], [7, 0.08]], seed: 9151 };
+// The named buildings' stone, as a place in STONES: the obelisk's shaft is a deep red brown, as picture 9's is
+// dark, and the ringed pair a mid tan.
+const TONE = { 0: 5, 2: 2, 3: 3, 4: 1, 5: 4, 9: 1, 10: 2, 11: 3 };
 // How busy a building is, how many of its rooms are lit: most are busy and some nearly dark, so the city's light
 // comes in clumps, whole buildings blazing beside quiet ones (dark: how likely a quiet one is). The low buildings
 // at the front are all busy: the picture's lit mass.
@@ -32,7 +34,7 @@ const STREET = { power: 1.1, at: 4, wide: 7 }, GROUND = 0.05;
 
 const on = [];
 P.TOWERS.forEach(([x, z, w, d], i) => { if (L.within(x, z) >= 0.6 * Math.max(w, d) && (!only || only.has(i))) on.push(i); });
-const win = new Windows(CITY.seed, CITY.map), made = [], chosen = new Map(), tones = new Array(7).fill(0);
+const win = new Windows(CITY.seed, CITY.map), made = [], ids = [], chosen = new Map(), tones = new Array(STONES.length).fill(0);
 // The buildings near enough to one already built to be seen beside it: across, so far apart beyond their half widths,
 // and back, within so far.
 const NEAR = { across: 16, back: 90 };
@@ -48,16 +50,17 @@ for (const i of on) {
     let low = g0;
     for (const [u, v] of [[-w / 2, -d / 2], [w / 2, -d / 2], [w / 2, d / 2], [-w / 2, d / 2]]) low = Math.min(low, L.ground(x + u * c + v * s, z - u * s + v * c));
     let stone = TONE[i];
-    if (stone === undefined) { let r = R(); stone = CITY.tones.find(([, p]) => (r -= p) < 0)?.[0] ?? 0; }
+    if (stone === undefined) { let r = R(); stone = CITY.tones.find(([, p]) => (r -= p) < 0)?.[0] ?? 1; }
     const quiet = tall > BUSY.low && R() < BUSY.dark, busy = quiet ? BUSY.quiet[0] + BUSY.quiet[1] * R() : BUSY.lively[0] + BUSY.lively[1] * R();
     const avoid = {};
     for (const j of near(i)) for (const [what, kinds] of Object.entries(chosen.get(j))) for (const k of kinds) (avoid[what] ??= new Set()).add(k);
-    const b = { kit, win, R, E: CITY.edge, draft, tone: stone / 6, vary: R(), lay: 0, busy, mood: i * 1.37, sink: g0 - low + 1.5, avoid, chosen: {} };
+    const b = { kit, win, R, E: CITY.edge, draft, tone: stone / (STONES.length - 1), vary: R(), lay: 0, busy, mood: i * 1.37, sink: g0 - low + 1.5, avoid, chosen: {} };
     make(b, { w, d, tall, roof, form, seed, i });
     chosen.set(i, b.chosen);
     tones[stone]++;
   }
   made.push(kit.meshes(placeOf(x, z, turn)));
+  ids.push(i);
 }
 
 // What stands round the city in the bake and is not kept: the ground, lit by the street about each building, the
@@ -98,4 +101,6 @@ function around() {
 
 const stands = on.filter((i) => i === P.STEP || design({ ...{ form: P.TOWERS[i][6], roof: P.TOWERS[i][7], seed: P.TOWERS[i][8], w: P.TOWERS[i][2] } }));
 console.log(`city: ${made.length} buildings (of each stone ${tones.join(', ')}), windows map ${win.used} of ${win.tall} rows used`);
-await finish({ made: gather(made), win, around: around(), file: 'towers-city', draft, meta: { design: 'city', stands } });
+// What shades the faces of the city from the sky about the moon: every building that stands, and the spire.
+const boxes = boxesOf([...on.map((i) => { const [x, z, w, d, tall, turn] = P.TOWERS[i]; return [x, z, w, d, tall, turn, L.ground(x, z), i]; }), [0, 0, L.SPIRE.foot, L.SPIRE.foot, L.SPIRE.tall * 0.8, 0, L.ground(0, 0), -2]]);
+await finish({ made: gather(made, ids), win, around: around(), file: 'towers-city', draft, meta: { design: 'city', stands }, boxes });

@@ -179,21 +179,25 @@ export function fluted(b, w, d, y0, y1, k, o = {}) {
 }
 
 // A round thing turned from a profile of [radius, height] points, round n sides (a0 the first side's angle), each
-// segment of the profile flat across and smooth round (or flat both ways: o.flat). place(p) and turn(n) move it in
-// the building's frame.
+// segment of the profile flat across and smooth round (or flat both ways: o.flat, or smooth both ways: o.smooth, its
+// normal at each point of the profile the mean of the two segments' there, so a fine profile shows no rings).
+// place(p) and turn(n) move it in the building's frame.
 export function revolve(b, layer, profile, n, o = {}) {
   const kit = b.kit, a0 = o.a0 ?? 0, span = o.span ?? Math.PI * 2, place = o.place ?? ((p) => p), turn = o.turn ?? ((v) => v);
+  const seg = (i) => { const [r0, h0] = profile[i], [r1, h1] = profile[i + 1], l = Math.hypot(r1 - r0, h1 - h0); return l > 1e-5 ? [(h1 - h0) / l, -(r1 - r0) / l] : null; };
+  const at = (i) => { const a = i > 0 ? seg(i - 1) : null, c = i + 1 < profile.length ? seg(i) : null, m = [(a?.[0] ?? 0) + (c?.[0] ?? 0), (a?.[1] ?? 0) + (c?.[1] ?? 0)], l = Math.hypot(...m) || 1; return [m[0] / l, m[1] / l]; };
   for (let i = 0; i + 1 < profile.length; i++) {
     const [r0, h0] = profile[i], [r1, h1] = profile[i + 1], dr = r1 - r0, dh = h1 - h0, l = Math.hypot(dr, dh);
     if (!(l > 1e-5)) continue;
-    const nr = dh / l, ny = -dr / l;
+    const nr = dh / l, ny = -dr / l, s0 = o.smooth ? at(i) : [nr, ny], s1 = o.smooth ? at(i + 1) : [nr, ny];
     for (let j = 0; j < n; j++) {
       const t0 = a0 + (span * j) / n, t1 = a0 + (span * (j + 1)) / n;
       const P = (r, h, t) => place([r * Math.sin(t), h, r * Math.cos(t)]);
-      const N = (t) => turn([nr * Math.sin(t), ny, nr * Math.cos(t)]);
+      const N = (t, q = [nr, ny]) => turn([q[0] * Math.sin(t), q[1], q[0] * Math.cos(t)]);
       const mid = N((t0 + t1) / 2);
       if (o.skip?.(mid)) continue;
-      kit.patch(layer, P(r0, h0, t0), P(r0, h0, t1), P(r1, h1, t1), P(r1, h1, t0), { nu: 1, nv: o.nv ?? 1, want: mid, tag: o.tag, normal: o.flat ? undefined : (u) => N(t0 + (t1 - t0) * u) });
+      const along = (v) => { const q = [s0[0] + (s1[0] - s0[0]) * v, s0[1] + (s1[1] - s0[1]) * v], k = Math.hypot(...q) || 1; return [q[0] / k, q[1] / k]; };
+      kit.patch(layer, P(r0, h0, t0), P(r0, h0, t1), P(r1, h1, t1), P(r1, h1, t0), { nu: 1, nv: o.nv ?? 1, want: mid, tag: o.tag, normal: o.flat ? undefined : (u, v) => N(t0 + (t1 - t0) * u, along(v)) });
     }
   }
 }

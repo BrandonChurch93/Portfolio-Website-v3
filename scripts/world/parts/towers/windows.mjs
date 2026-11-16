@@ -9,13 +9,15 @@
 import { WINDOW, blindOf, hash2, shown } from '../../../../src/pieces/world/parts/towers/windows.ts';
 import { L, linear } from '../../lib/plan.mjs';
 
-// How many rooms of a field are lit: a share of them, at least on[0] and on[1] more for the busiest; how bright a
-// lit room is at least, and how often an unlit one is dimly lit. Fewer rooms, more brightly: a city's windows seen
-// from far off are its brightest rooms, and the rest is its wall.
-// A floor is lit as a whole with a chance of floor[0] and floor[1] more for the busiest, and a lit floor lights its
-// rooms this many times as often (full), a dark one this share as often (empty).
-// A building's floors are told apart every `storey` units up, and a floor is lit with its neighbour `pair` of the time.
-const LIT = { on: [0.2, 0.6], level: 0.62, dim: 0.1, floor: [0.05, 0.9], full: 2.2, empty: 0.06, storey: 2.3, pair: 0.55 };
+// How a city's windows are lit at night: most of each face dark, lit rooms fine and scattered, here and there a
+// tenant's few rooms in a row, and never a lit patch wider than a few windows or taller than two floors.
+//   room: the share of rooms lit, room[0] and room[1] more for the busiest
+//   run: how many rooms a tenant's run is, mostly one or two (most: the longest, wide: how often a long one comes)
+//   stack: how often a lit room has a lit room over it, which no third floor ever continues
+//   floor: how much busier or quieter a whole floor of a building is than the rest, the same across its bays
+//   level: how bright a lit room is at least, dim: how often a dark room shows a dim light, and how bright
+//   storey: how far apart a building's floors are told, in units
+const LIT = { room: [0.12, 0.38], run: { most: 4, wide: 0.12 }, stack: 0.3, floor: 0.6, level: 0.5, dim: [0.14, 0.16], storey: 2.3 };
 
 export class Windows {
   constructor(seed, size = WINDOW.map) {
@@ -54,44 +56,40 @@ export class Windows {
     return at;
   }
   fill(c0, r0, cols, rows, mood, busy, clump = false, floors = null) {
-    const R = this.rand, below = [], on = LIT.on[0] + LIT.on[1] * busy, p = LIT.floor[0] + LIT.floor[1] * busy;
-    // A floor is lit or dark as a whole, mostly: a busy building has most of its floors lit end to end, a quiet one
-    // a floor or two. A floor keeps its state for a few floors running, as a tenant's would.
-    let floor = R() < p, held = 0;
+    const R = this.rand, p = LIT.room[0] + LIT.room[1] * busy;
+    // How many lit rooms stand under each column, so no lit patch is taller than two floors.
+    const tall = new Int8Array(cols);
+    // A floor of a building is a little busier or quieter than the rest, the same in every bay of it.
     const storey = (r) => {
-      const k = Math.floor((floors.y0 + (r + 0.5) * floors.ch) / LIT.storey), b = floors.build * 977;
-      return LIT.pair * hash2(b, Math.floor(k / 2) + 5000) + (1 - LIT.pair) * hash2(b + 31, k) < p;
+      if (!floors) return 1;
+      const k = Math.floor((floors.y0 + (r + 0.5) * floors.ch) / LIT.storey);
+      return 1 + LIT.floor * (2 * hash2(floors.build * 977 + 31, k) - 1);
     };
     for (let r = 0; r < rows; r++) {
-      if (clump && floors) floor = storey(r);
-      else if (clump && held-- <= 0) { floor = R() < p; held = Math.floor(R() * 3); }
-      const row = [], dark = clump ? (floor ? LIT.full : LIT.empty) : 1;
-      let c = 0;
+      const busier = storey(r), next = new Int8Array(cols);
+      let c = 0, was = false;
       while (c < cols) {
-        const long = 2 + Math.floor(R() * 4);
-        let seg;
-        if (below.length && R() < 0.35) seg = below.find((b) => b.from <= c && c < b.from + b.long) ?? null;
-        if (!seg) {
-          const near = clump ? L.noise(c / 3 + mood * 3.1, r / 9 + mood * 1.7, mood, 71) ** 1.6 * 1.5 : L.noise(c / 4.5 + mood * 3.1, r / 6 + mood * 1.7, mood, 71);
-          const lit = R() < (0.2 + 0.6 * near) * on / 0.5 * dark;
-          const tone = R();
-          seg = { from: c, long, lit, level: (clump ? LIT.level : 0.3) + (clump ? 1 - LIT.level : 0.7) * R() ** 1.3, warm: tone < 0.15 ? 0.12 + 0.18 * R() : tone > 0.82 ? 0.72 + 0.23 * R() : 0.32 + 0.3 * R(), blind: R() < 0.3 ? 0.2 + 0.6 * R() : 0 };
-        }
-        row.push({ ...seg, from: c, long });
+        const long = R() < LIT.run.wide ? 3 + Math.floor(R() * (LIT.run.most - 2)) : 1 + Math.floor(R() * R() * 2.2);
+        // A lit run is followed by a dark one, so runs never join into a patch, and over a column already lit two
+        // floors running a room is dark.
+        const under = Math.max(...Array.from({ length: Math.min(long, cols - c) }, (_, k) => tall[c + k]));
+        const odds = was ? 0 : under >= 2 ? 0 : under === 1 ? LIT.stack : p * busier / Math.max(0.2, 1 - p);
+        const lit = R() < Math.min(0.92, odds * (clump ? 1 : 0.8));
+        const tone = R(), level = LIT.level + (1 - LIT.level) * R() ** 1.4;
+        const warm = tone < 0.18 ? 0.1 + 0.2 * R() : tone > 0.85 ? 0.72 + 0.23 * R() : 0.3 + 0.32 * R();
         for (let k = 0; k < long && c < cols; k++, c++) {
-          let level, blind = seg.blind > 0 ? Math.min(1, Math.max(0, seg.blind + (R() - 0.5) * 0.4)) : R() < 0.12 ? 0.5 * R() : 0;
-          if (seg.lit && R() > 0.1) level = R() < 0.07 ? 1 : seg.level * (0.72 + 0.4 * R());
-          else level = R() < (clump ? LIT.dim : 0.4) ? 0.1 + 0.14 * R() : 0;
-          void blind;
-          const warm = Math.min(1, Math.max(0, seg.warm + (R() - 0.5) * 0.16));
-          const i = ((r0 + r) * this.size + c0 + c) * 3, [ls, ws] = WINDOW.steps, lq = Math.round(Math.min(1, level) * ls);
+          let lv = 0;
+          if (lit) { lv = R() < 0.08 ? 1 : level * (0.8 + 0.3 * R()); next[c] = tall[c] + 1; }
+          else if (R() < LIT.dim[0]) lv = 0.06 + LIT.dim[1] * R();
+          const wm = Math.min(1, Math.max(0, warm + (R() - 0.5) * 0.14));
+          const i = ((r0 + r) * this.size + c0 + c) * 3, [ls, ws] = WINDOW.steps, lq = Math.round(Math.min(1, lv) * ls);
           this.data[i] = Math.round((lq / ls) * 255);
-          this.data[i + 1] = lq ? Math.round((Math.round(warm * ws) / ws) * 255) : 0;
+          this.data[i + 1] = lq ? Math.round((Math.round(wm * ws) / ws) * 255) : 0;
           this.data[i + 2] = 0;
         }
+        was = lit;
       }
-      below.length = 0;
-      below.push(...row);
+      tall.set(next);
     }
   }
   read(c, r) {
