@@ -1,0 +1,22 @@
+# Your part: the pyramid. Round 4
+
+## What you own
+scripts/world/parts/pyramid/, public/world/pyramid.bin, src/pieces/world/parts/pyramid.ts, src/pieces/world/parts/pyramid/. Stills in shots/world/pyramid/ with the prefix r4-. Report: shots/world/pyramid/r4-report.md. Read first: shots/world/pyramid/r3-report.md and its two reviews (r3-report-review-1.md, r3-report-review-2.md), and take stills of it as it stands.
+
+## Where it stands
+Round 3 scored 6 and 5 out of 10, up from 4. Its place is right (apex within a pixel of picture 9). Keep: the place, the clean pale lines on the front arris and the right outline, the capstone over its reveal, the hue (the world's gold has since been turned six degrees toward true gold in light.ts: METAL.gold, use it as it is), no brick grid, no sparkle, no textures, the cost.
+
+It is still "satin, bronze, caramel" and "four calm fields with little to find". Fable agrees. The brief for this round is one sentence: make it POLISHED GOLD THAT IS A REAL OBJECT. In order:
+
+1. POLISH MEANS CONTRAST. Neither face has a near black and nearly half the lit face is one pale field. Polished gold under a night sky is mostly deep, dark, saturated gold, nearly black where it mirrors the open night, with a bright field that is narrow and has a sharp edge. Lit face: the bright field no more than a fifth of it, sharp edged, set in deep gold (value about 0.15 to 0.35 where it mirrors the night). Dark face: a true deep satin, median value about 0.25, with one long soft reflection up its height and a warm lift along its foot. The two faces must differ over their whole height: at the foot they are now the same value and read as one surface.
+2. NO ROUND SPOTS. QUALITY.md fails "soft round spots of light" on sight, and round 3 has three kinds: the moon as a flat pale disc, the cursor's glint as a blob, and stars as dots. A polished face that is not quite flat stretches a small light into a long thin streak along the slope, broken slightly at each plate. Make the moon that: one long thin sharp highlight. Make the cursor's glint a thin bright line that slides across the plates as the cursor moves. Drop the stars.
+3. THE SKYLINE WEDGE GOES. The dark shape low on the lit face was meant as the city mirrored, and reads as a shadow cast by the trees. That face is turned up and away from the city and would not mirror it. Take it out. What the lit face mirrors: the deep night high up, the moon's streak, and the broad light about the moon as the sharp edged bright field.
+4. A REAL OBJECT, WITH MORE TO FIND. Beside reference/bar/pc-builder-parts.jpg it is "four flat faces and a capstone, the weaker work". Give it the crisp form of a made thing, all of it small and exact so the outline does not change:
+   - Casing plates that read as plates at three times zoom: courses of varied height (a few tall bands among fine ones), upright joints that can be seen, and each reflection edge offset a hair at each plate. Today it is evenly ruled lines.
+   - A foot course: one stepped or bevelled band at the bottom, a little prouder, with its own crisp shadow line.
+   - Every so many courses a deeper joint, a fine dark line right round, so the height reads in bands.
+   - The capstone: the body's polish and one finer detail of its own (a thin raised border on each face, or a small stepped tip). Its reveal becomes a fine dark line with its lit lip, not a black slot, at 213 down in the picture (it is at about 209).
+5. THE GLINT. It does not move in the close view because you rebuild the cursor's ray from copied numbers. Do not rebuild it: the frame already hands every material where the glint is and how strong, as the uniforms uGlintAt (in the camera's space) and uGlint (world.uniforms in light.ts, joined by lit() with glint: true). Read those. GLINT is also exported from index.ts now. Check it at three cursor places on the hero and in the close view.
+
+## How to judge
+On the hero first (npm run shot -- "/lab/hero?ui=0" --t 6 --wait 3000 --out shots/world/pyramid/r4-hero.jpg): is it the most beautiful object in the first screen, and would a stranger say gold? Then three times zoom. Then the overlay (npm run match -- --at 200,140,340,210 --out shots/world/pyramid/r4-match). Measure: a near black on each face (value under 0.2), the bright field under a fifth of the lit face, the dark face's median about 0.25, saturation's median over 0.5, nothing whiter than pale.

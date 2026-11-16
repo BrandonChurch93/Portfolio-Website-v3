@@ -1,0 +1,24 @@
+# Your part: the skin, the planet's own outer surface
+
+## What you own
+scripts/world/parts/skin/, public/world/skin*.bin and skin*.png, src/pieces/world/parts/skin.ts (replace the place holder, keep `build`), src/pieces/world/parts/skin/. Stills in shots/world/skin/. Report: shots/world/skin/r1-report.md.
+
+## What it is
+What survives of the planet's outer surface: the dark side at the visitor's left with cracks lit from inside, and the pale cratered side at the right under the moon. Pictures: reference/concept/09-parts/09e-the-cracks-lit-from-inside.jpg, 09f-the-cratered-side.jpg, the whole picture (reference/concept/09-parts/09-the-whole-picture-at-1376.jpg). The kit: "Cracks are cut into the rock and their light lies on the rock beside them. Craters have a rim, a floor and a shadow, a few large and a few small, with smooth dusty ground between."
+
+## The layout (exact: check with npm run match)
+- The surface is the planet's outline: shell() and skinAt() in layout.ts (an ellipse in outline: rims at 95 and 1280 across in the picture, about 283 down. The left side passes 150 across at 500 down, the right 1245 at 500 down and comes to a point near 1040, 690).
+- It survives only at the sides. At the left from the rim in to a ragged torn edge near 290 to 300 across in the picture (from about 330 down to 540 down), then down the left mass to about 330 across, 700 down. At the right from the rim in to a ragged torn edge near 1000 to 1040 across. Nothing of the planet is lower than about 700 down. The torn rock between the two edges is another builder's (the rock, sculpt R): read its traced edges and lowest outline from scripts/world/parts/rock-r/ and use the same lines, so your surface ends exactly where its rock begins. At the top the surface meets the land at the rim.
+- In the picture (its pixels): the large crater's middle is at 1175, 405 with radius 55. The low crater's is at 1100, 600 with radius 45. Read the others off the picture with scripts/world/grid.mjs: a few middling ones and many small. The knot of the cracks is at 235 across, 470 down, with arms running out and branching, widest and hottest toward the tear.
+- A scatter of small loose stones floats just off the cratered side (about 1220 to 1300 across, 440 to 560 down): those are the debris builder's, not yours.
+
+## What Fable wants built
+1. THE CRATERED SIDE. The moon is behind the world and to the visitor's right (MOONWARD), raking across this side, so every crater has a bright far wall, a floor, and a crescent of deep exact shadow under its near rim. Large craters have a raised rim that catches light, a flat or slightly domed floor, terraced inner walls, and smaller craters inside and across their rims. Between them: smooth dusty ground with a fine pitting and low swells, never flat color and never noise. The pale stone here is the same rock as everywhere (the color the rock's light is worked out with is ALBEDO in scripts/world/lib/rock.mjs: a pale warm grey), dusted paler on top. Craters are real geometry down to about 6 units across and stored relief below that. One large crater is cut through by the torn edge, which shows the craters are older than the break.
+2. THE CRACKED SIDE. Turned from the moon, so it is dark: a deep warm near black with just enough of the night's light to show its roundness and a fine weathered surface. Across it run the cracks: real clefts cut into the rock, V shaped, with broken edges, running straight and then turning sharply as breaks in rock do, branching, tapering to hairlines. Deep in each is the core's light, pale gold in the widest parts near the knot and near the tear, falling to deep orange and ember in the thin arms. That light lies on the walls of the cleft and spills a little onto the rock's surface beside it, fading within a few units. No glow sprites and no halo: the light is shown by what it lands on. It breathes very slightly with the core (state.core).
+3. THE TORN EDGES. Where the surface ends it is a broken crust with thickness: ragged, stepped, chipped, with the pale dusty top layer seen in section over darker rock. Never a clean cut line.
+4. Light: stored for every vertex (the moon's share, how open, bounce), with the craters shading themselves. The stage's shadow map gives the moon's exact shadows (cast and receive). lit(m, { key, baked: true }). The core's own light does not reach the outer surface: store its share as it comes out (nearly none), and light the cracks by your own light in the material, which follows uCoreLevel.
+
+Budget: 250,000 triangles, 3 shader programs, 16 MB of textures.
+
+## First look, every round
+npm run match -- --at 60,250,330,470 --out shots/world/skin/match-left and npm run match -- --at 980,250,330,470 --out shots/world/skin/match-right: the outline, the torn edges, the two named craters and the cracks' knot sit where the picture has them. Then three times zoom: ?only=skin, and crops of npm run look -- whole.

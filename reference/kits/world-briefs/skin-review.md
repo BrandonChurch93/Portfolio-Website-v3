@@ -1,0 +1,7 @@
+# Judging the skin
+
+What is being judged: the planet's own outer surface where it survives: the dark cracked side at the visitor's left and the pale cratered side at the right. References: reference/concept/09-parts/09e-the-cracks-lit-from-inside.jpg, 09f-the-cratered-side.jpg, the whole picture. The kit: "Cracks are cut into the rock and their light lies on the rock beside them. Craters have a rim, a floor and a shadow, a few large and a few small, with smooth dusty ground between."
+
+Stills of your own: npm run match -- --at 60,250,330,470 --out shots/world/skin/review-match-left, npm run match -- --at 980,250,330,470 --out shots/world/skin/review-match-right, npm run look -- only:skin --w 1600 --h 1000 --out shots/world/skin/review-alone.jpg, npm run look -- whole --out shots/world/skin/review-whole.jpg.
+
+Judge: do the outline, the torn edges, the large crater (1175, 405, radius 55), the low crater (1100, 600, radius 45) and the cracks' knot (235, 470) sit where the picture has them? Are the craters real: a rim that catches light, a floor, terraces, a crescent of deep exact shadow, large and small, with smooth dusty ground between, or dimples, stickers, noise? Are the cracks cut into the rock, V shaped with broken edges, their light on the cleft's walls and spilling a little onto the rock beside them, or painted lines, neon, lightning? Are the torn edges a ragged crust with thickness, or a clean cut? Better than the picture at three times zoom? Anything white, blue, haloed, repeating?

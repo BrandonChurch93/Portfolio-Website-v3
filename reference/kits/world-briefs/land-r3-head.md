@@ -1,0 +1,13 @@
+# Your part: the land. Round 3
+
+## What you own
+scripts/world/parts/land/, public/world/land*.bin and land*.png, src/pieces/world/parts/land.ts, src/pieces/world/parts/land/. Stills in shots/world/land/ with the prefix r3-. Report: shots/world/land/r3-report.md. Read first: briefs/land-r2.md (which still holds), shots/world/land/r2-report.md and its two reviews, and the END of briefs/common.md ("Changed in the frame during the night", all of it).
+
+## A new ruling from Brandon, and it comes first
+He looked at the world on the page tonight and said: "I think the sand dunes should be taller."
+- Now: twelve crescent dunes whose crests stand 4 to 15 units over the sand (DUNES in src/pieces/world/parts/land/field.ts). A low building beside them is 20 to 30 tall and a tree about 15, so at the page's size they read as ripples on a flat.
+- To be: about twice that. The tallest crests about 30 units, most 16 to 24, the small ones between them 9 to 12. Taller means steeper too: do not let a dune's back grow so long that the desert becomes one ramp (PROFILE.back is 8.5 times the height: bring it down so the backs still fit between the dunes, and the dunes still stand apart with flat sand between). A tall barchan has a long curved knife crest, long horns, and a slip face that is a great dark crescent of shadow. That shadow is what he likes in shots/world/ref/dunes-he-likes.png: keep that picture open.
+- Their places, and the desert's outline, stay picture 9's. Lay it over the picture every draft: npm run match -- --at 880,180,420,150 --out shots/world/land/r3-match-dunes.
+- What stands on or beside the sand must still stand on it: the line of trees behind the dunes (placed.ts puts them on the plan's ground(), which is the layout's own older dunes(), not yours), and the buildings at the desert's edge. Check each, say in your report where the plan's ground and yours differ by more than 2 units, and seat the sand to them where you can.
+- The slip faces must read as real hollows in shadow, never as dark stickers: in a still of the page tonight (shots/world/wk-hero-700.jpg) each one read as a flat dark teardrop pasted on pale sand, with a hard outline all round. A slip face is shaded by form: darkest under the brink, lifting toward its toe where the sand beyond bounces light back in, its outline sharp only along the crest and soft at the toe and the horns.
+

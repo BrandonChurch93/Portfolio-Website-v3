@@ -1,0 +1,59 @@
+# What every builder of the hero's new world is told
+
+You are one of several builders of the hero's new world on Brandon Church's portfolio. Brandon calls this site the most important thing he has ever made, and the hero's world is the most important thing on it. Fable (the lead) judges every round of your work and sends it back until it passes. Quality is the entire point of this job: a result that is merely good is a failure.
+
+## Read first, whole, before you write anything
+1. reference/kits/world.md (the kit: the bar in Brandon's words, the rules that stand, the parts)
+2. QUALITY.md: the section "The hero's world, built to picture 9", "Six tests", "Fail on sight", and the last row of the table "What he has approved and what he has rejected"
+3. reference/kits/README.md, the sections "Colors" and "The look" (written for smaller pieces: where it differs from world.md, world.md wins)
+4. The pictures, with the Read tool: reference/concept/09-parts/09-the-whole-picture-at-1376.jpg (picture 9 at its full size, 1376 by 768), your own part's pictures named in your brief, and reference/bar/pc-builder-parts.jpg (what detailed means on this site)
+
+## The two rules of this world (Brandon, Nov 15)
+- THE LAYOUT IS PICTURE 9'S, EXACTLY: where each thing is, how big it is, how tall it is, the planet's outline. Lay your still over the picture as the first look of every round and fix what does not line up: npm run match -- --q "<your address, if any>" --at x,y,w,h --out shots/world/<part>/<name> writes <name>-beside.jpg (picture and still side by side at the same size), <name>-over.jpg (half and half) and <name>-lines.jpg (your still's edges drawn over the picture). --at is in the picture's pixels. Read places off the picture with node scripts/world/grid.mjs x,y,w,h --by 2 --every 25 --out <file> (an enlargement with a ruled, numbered grid). pictured(x, y, z) and fromPicture(px, py, z) in src/pieces/world/layout.ts tie the picture's pixels to the world. One of the picture's pixels is 1.119 units.
+- THE LOOK IS TO BE MUCH BETTER THAN THE PICTURE'S. The picture is small and soft: it gives a thing its place and size, not its level of detail. Brandon put our first tower (detailed stone, a fluted gold crown) beside the picture's small plain one and said ours "looks way better". Never make a part plainer, flatter or less detailed to look more like the picture. Past the picture, judge by QUALITY.md: a thing that reads as a real object in 3D space, with light and shadow used to its advantage, with more to find at three times zoom than the picture has. Would it pass in a premium film or a AAA game?
+
+## The frame (Fable's files: do not change them, say what you need in your report)
+- src/pieces/world/layout.ts: the plan (places, sizes, the view, the picture's mapping, LIGHT)
+- src/pieces/world/placed.ts: every building, tree and small stream as placed
+- src/pieces/world/part.ts: the contract. build(ctx) returns { group, alone?, update?(state), dispose?() }. The group is in the world's units (one unit is one CSS pixel on the page): origin at the top of the planet under the spire, x right, y up, z toward the viewer
+- src/pieces/world/index.ts: the stage. One fixed view. The moon is one directional light BEHIND the world and to the viewer's right (MOONWARD), with a shadow map drawn once: set castShadow and receiveShadow on your meshes. The night that metal mirrors is night.ts. No bloom and no occlusion pass. It calls a part's update only while the part is on screen
+- src/pieces/world/light.ts: lit(material, { key, baked, core, glint }) joins the world's light to a MeshStandardMaterial or MeshPhysicalMaterial (read its header, call it last). core: false is for what stands on top of the world, which also gets the night's soft light from the viewer's side. METAL holds the world's one gold and one bronze
+- src/pieces/world/files.ts: load(file) reads a world file from public/world/, mesh(loaded, material) puts one in place
+- The page: /lab/piece/world. ?only=<part> shows one part alone, ?close=hollow|pyramid|crown a place at three times the page's size
+
+## The offline tools (scripts/world/lib/: each file's header gives its API)
+- plan.mjs: import { L, P, light, linear, storeBounce }. L is layout.ts, P is placed.ts
+- mesh.mjs: creased, curvature, merge, transform, bounds, weld, closed. surface.mjs: surface({ module, args, box, cell }) and simplify. bake.mjs: bake(scene, opts) gives each vertex the share of the core seen, the share of the moon seen, how open it is, and the light that reaches it after bouncing (and from surfaces marked emit). pack.mjs: pack(file, meshes), storing light (4, 'u8': core, moon, open, spare) and bounce (4, 'u8': storeBounce of r, g, b, spare) and normal (3, 'i16'). png.mjs: png(file, w, h, data, channels). rock.mjs: makeRock, the whole pipeline for rock from a field
+- three works in Node for geometry. Never edit a tool: report what is wrong with it
+- A make script is run with node, is deterministic, has a fast --draft, and lives in scripts/world/parts/<part>/. Geometry and light are made ahead and shipped: the page loads them and never builds them
+
+## How to look (open every image you take with the Read tool)
+- npm run look -- whole | hollow | pyramid | crown (cut from the whole at the page's size) | close:hollow | close:pyramid | close:crown (three times: add --w and --h) | only:<part>, with --out <file>, --q "a=1&b=2", --t <seconds>, --png, --tier, --scale. It prints hardware, the stats, and every error the page logged: a shader that fails to compile leaves parts missing, so read what it prints
+- npm run look -- beside a.jpg b.jpg --out c.jpg puts two pictures in one
+- A dev server runs on port 5330 and is shared: never start or stop one, never run npm run build. Types: npx tsc --noEmit
+- Another builder's file may be broken for a moment. If a still fails on a file that is not yours, wait a minute and retry. Never touch a file that is not yours
+- What is not built yet is a plain dark stand in (parts/rest.ts). Judge your part, not them
+
+## Rules
+- You own only the files named in your brief. Use the scratchpad for throwaway files and shots/ for stills. Do not commit or push. Do not edit BRIEF.md, PLAN.md, LOG.md, QUALITY.md, CLAUDE.md or anything in reference/
+- Made in code. Do not copy from src/hero-blockout/ or src/pieces/skycity/. No model from another tool, no downloaded asset
+- Colors are the site's only (src/config/palette.ts): no blue, no green, no white, nothing bluer than it is red. Hot light goes to pale gold (255, 227, 194 at the most). Gold is the world's METAL.gold, never yellow
+- The light that falls from the core is the stream. Never water, lava or fire
+- TypeScript strict. Almost no code comments (only a reason someone could otherwise undo, and a short header per file). No em dashes. Each constant once
+- Animate with uniforms or textures, never by rewriting a geometry's buffers each frame (Safari keeps that memory). Guard every normalize and division in a shader
+- Assume your first verdict is too kind. Keep working rounds of build, still, compare until you would stake your name on it, or can say exactly what you cannot get past
+
+## Your report
+Write the full report to the file named in your task (plain words and lists: every still by path and what it shows, the overlay first; what is at the bar and what is not, told harshly; the cost in triangles, draw calls, programs, textures and file sizes; the exact command to make it again and how long it takes; what you needed from the frame or tools). Then your final message is SHORT, at most twelve lines: the three stills Fable should open first, one line of verdict, the three largest shortfalls, and the cost in one line.
+
+## Changed in the frame during the night (read this if your part was tuned before it)
+- The world keeps its warm darks now. The stage's last pass used to balance every dark toward grey (it was made for things seen in a warm room). For this world that is turned down to a quarter (WARM in src/pieces/world/index.ts), so sand in shadow, rock out of the light, the shade of trees and the dark side of gold come out a deep warm brown, as picture 9's are. Anything you tuned to fight the old greying (warming an albedo, adding saturation to darks) is now too much: measure again.
+- The moon is behind the world and to the viewer's right. What stands on top is also seen by a soft light from the viewer's side (night.ts, `front`).
+- The world's gold (METAL.gold) is six degrees truer than the palette's hue. There is no bloom.
+- World files are packed when written (pack.mjs) and unpacked by files.ts: nothing for you to do.
+- PartState has `stream` ({ on, since }): the page's stream, which leaves the core's foot.
+- placed.ts has been corrected to picture 9 several times (the city drawn back from the land's edge, 344 trees, three buildings at the right moved, the spire 260 tall with its ring at 0.68, the pyramid turned 56.3 degrees): always make your part again from the plan as it is now before judging.
+- (Later the same night) THE HOLLOW'S LIGHT AND THE STONE'S COLOR ARE CHANGED, to picture 9's: the core's light is 16 (was 24: every face near it came out pale peach). The night's fill on the torn rock is 0.35 and tinted warm (LIGHT.fill, LIGHT.warm: it was a tenth, untinted, and the masses round the hollow were a flat black). The planet's stone under white light is LIGHT.stone in layout.ts, a red brown (bronze eased 0.4 toward copper, at 0.85): light.ts exports it as stone() and scripts/world/lib/plan.mjs as stone(), and the baker's ALBEDO in scripts/world/lib/rock.mjs is that. Anything baked before this holds a bounce worked out under the old light: make your part again.
+- THE STREAM'S LIGHT IS THE FRAME'S. light.ts has the uniform uStream (world.uniforms.uStream): x is how much of the page's stream is there, 0 to 1, and y is how far under the core's foot (SOURCE) its leading end has run, in units. In the lab it is (1, 4000), the whole plain line. On the page it is 0 until the visitor scrolls and the stream sets off, then grows as the end falls. Whatever you light from the main stream must be multiplied by x and must not light anything further down the line than y. PartState.stream has the same as { on, since, long }. The six small streams are always there.
+- (About 00:45) The fill on the torn rock is 0.15 now (LIGHT.fill): at 0.35 the masses round the hollow were an even brown where picture 9's are black with a few lit edges. The rock no longer draws its own plain shell where the skin and the land are (?shell=1 draws it). The city's plan was corrected again to picture 9 (339 trees, 26 narrow buildings at the left end). CLOSE in index.ts has more places for npm run look -- close:<place>: debris, right, left, city, spire, dunes, trees. WARM and GLINT are exported from light.ts. The rock sculpt is being rebuilt as thick blocks (round 3): its file will change again.
+- If a still comes out black with no stats line, another builder's file was mid write: wait a moment and take it again. Do not restart or kill the dev server on 5330, and never run npm run build in the repo folder (it writes into the dev server's own folder and breaks it for everyone).

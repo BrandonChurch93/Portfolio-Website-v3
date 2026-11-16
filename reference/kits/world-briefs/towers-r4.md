@@ -1,0 +1,28 @@
+# Your part: the city. Round 4
+
+## What you own
+scripts/world/parts/towers/, public/world/towers-city*.{bin,png}, public/world/tower-step*.{bin,png}, src/pieces/world/parts/towers.ts, src/pieces/world/parts/towers/. Stills in shots/world/towers/ with the prefix r4-. Report: shots/world/towers/r4-report.md. Read first: briefs/towers-r3.md (which still holds), shots/world/towers/r3-report.md and its two reviews, and the END of briefs/common.md ("Changed in the frame during the night", both parts).
+
+## Where it stands
+Round 3 scored 5.5 and 5.5. Kept: THE STEPPED GOLD CROWN TOWER EXACTLY AS IT IS (he likes it: its form, its place, no seam, even reeds, never plainer). The named tops on the picture's places. The far field that took the mottle away at the page's size, and lit rooms that stay put when the page scrolls. The Sun disc's carving close up.
+
+## The plan changed under you: make the city again first
+Fable laid your round 3 over picture 9 building by building off a ruled grid and corrected placed.ts (scripts/world/placed.mjs, the table AT). The city has already been made again from it once (385,138 triangles). What changed:
+- THE LEFT END, 110 to 350 across. The picture packs sixteen narrow towers shoulder to shoulder, stepping up toward the pyramid, tops from 257 down at the far left to 162 by the pyramid, over a low lit mass of ten small buildings in front. The plan had six wide blocks with sky between them. Those 26 buildings are now 9 to 26 picture pixels wide and stand where the picture has them. This is the densest, most lit part of the picture's city (he flagged that ours looked less dense): it must read as a packed, glowing district.
+- TOWERS[10], left of the spire, stood 50 pixels over the skyline as a near black slab. It is now the tower at 643 to 662 across topping at 161, which in the picture has a roof that slopes to one side, in warm stone.
+- THE RINGED PAIR, TOWERS[9]: now at 776 to 808 across, top 174, in front of its neighbours. In the picture it is two short, fat drums side by side, each with four or five thick copper bands round its upper half (176 to 196 down) under a small stone cap, on a plain stone shaft. Not two tall glass silos.
+- TOWERS[77] is the pale tower behind the pair (790, 148). TOWERS[111] is a slim slab at 811, 163. TOWERS[66] is at 836, 174. TOWERS[69] is lowered.
+- TOWERS[11], a 'dome' at 716 to 743 across topping at 172, is the picture's saucer tower: a wide, shallow cap like a goblet's bowl, about 26 pixels across and 5 deep, on a stem that narrows to about 9 pixels at its waist and flares again at the foot. Build it as that. Look at reference/concept/09-parts and the picture at 712 to 740 across, 172 to 228 down (node scripts/world/grid.mjs 690,150,80,100 --by 8 --every 10 --out shots/world/towers/r4-grid-saucer.jpg rules a grid over it).
+- WARM is exported from src/pieces/world/light.ts now, for your tKeep.
+
+## What must change, most important first
+1. THE CITY DOES NOT GLOW. Picture 9's city is a warm lit mass: (107, 68, 39) on average against your (82, 50, 23). Not by raising everything: its walls are darker than yours and its light comes in clumps. Light rooms in whole floors and in clusters, whole buildings blazing beside buildings nearly dark. Put warm light from the street on the lowest storeys of the walls (shopfronts and lamps bleeding up the stone, strongest in the canyons between buildings). Let the far rows fall darker than the near. At the page's size a stranger should see a city at night with people in it, not tan blocks with dots.
+2. ONE TEXTURE. Every building shares one stone tone and one coursing, so the city reads as one tiled material. Give each building its own stone (five or six stones across the city from a pale warm limestone to a dark red brown, some with bronze or copper cladding, and the picture has a few near black glass ones), its own course height, and faces that differ: the face toward the moon, the face toward the visitor and the face in shade are three tones.
+3. BOXES WITH A GRID. Over half the ordinary buildings are a box with one window grid on every face. For each: a distinct base storey (taller, arcaded or with big shopfronts), a shaft whose bays vary (a wider middle bay, corner piers, a change of window at a setback), deep reveals with a lit side, and a real roof (tanks, lanterns, a pergola, a stepped attic). No two neighbours alike. TOWERS[10] first: its near black side face also moires at the page's size.
+4. GOLD READS AS TAN. The obelisk: gold over its top third (68 to 125 down) with one face blazing and the next dim. The gold cap at 969 across: a tall slim flame with its tip near 103, not a stubby onion. The crown's tiers: a lit side and a shaded side. Polished gold is contrast, a dark face beside a bright one: never one even tan.
+5. SPECKS. Single pixel yellow and red specks on shopfront glass edges, pixels like (252, 214, 0) with blue exactly 0: something goes negative. Find it and clamp.
+6. THE SUN DISC at the page's size is a 30 pixel glitter ball whose highlights jump from frame to frame. Give it a far form: under about 60 pixels across, fewer and larger carvings on a plain field. Prove it with real frames at the page's own size (npm run live).
+7. COST. The world is over its triangle budget. Hold the city to 400,000 triangles.
+
+## How to look
+First, every draft: npm run match -- --at 60,0,1260,330 --out shots/world/towers/r4-match. Then the page: npm run shot -- "/lab/hero?ui=0" --t 6 --wait 4000, and cut the city from it beside the picture as round 3 did. If a still comes out black with no stats line, another builder's file was mid write: wait and take it again.

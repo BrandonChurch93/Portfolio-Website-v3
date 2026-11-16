@@ -1,0 +1,7 @@
+# Judging the rock's material
+
+What is being judged: the STONE of the hero's planet as a material: its color under the world's lights, its surface, its edges. Not the shape of the rock, which another builder is still reshaping (it may look like a relief of small patches: ignore that). References: reference/concept/09-parts/09a-the-hollow-and-the-core.jpg and the enlargements shots/world/ref/hollow-large.jpg, hollow-left-large.jpg, hollow-right-large.jpg, hollow-floor-large.jpg.
+
+Stills of your own: npm run look -- hollow --out shots/world/rockmat/review-page.jpg, npm run look -- close:hollow --w 1800 --h 1200 --out shots/world/rockmat/review-close.jpg, npm run match -- --at 250,240,860,480 --out shots/world/rockmat/review-match, npm run shot -- "/lab/hero?ui=0" --scroll 620 --t 6 --wait 3000 --out shots/world/rockmat/review-hero.jpg.
+
+Judge: is it stone, one warm stone, whose color comes from the light: peach to deep orange tan where the core lights it, deep warm brown in bounced light, black where nothing reaches, pale grey tan under the moon? Or grey clay, orange paint, plastic? Are broad faces clean with a soft sheen, marked here and there by gouges, a few hairline cracks and pitting, never evenly, never as noise, a net of cracks, wood grain or a visible repeat? Are edges chipped and paler, catching light as a thin line, and creases darker? Dust on what faces up? At three times zoom is there the grain of real stone and more to find than the picture has? Does the beam's light lie on the rock near it? Anything white, blue, green, banded, tiled?

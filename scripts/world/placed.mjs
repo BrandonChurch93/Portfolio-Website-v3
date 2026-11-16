@@ -161,8 +161,25 @@ for (let row = 0; row < 11; row++) for (let x = -645; x < 560; x += 12.5) {
   const z = edgeAt(jx) - 9 - row * 11 - 5 * r(), sz = 10.5 * (0.7 + 0.6 * r()) * (row > 3 ? 0.9 : 1);
   if (deep && !gap) plant(jx, z, sz);
 }
-// Behind the dunes the picture has one even line of crowns, from 960 to 1175 across at about 236 down.
-for (let px = 960; px <= 1176; px += 8.5) { const [x, z] = onGround(px + 3 * (r() - 0.5), 240 + 3 * (r() - 0.5)); trees.push([n(x), n(z), n(10.5 * (0.85 + 0.3 * r())), n(r(), 3), n(r() * Math.PI * 2, 3)]); }
+// The trees' third round, laid over picture 9, was short of it in four places, each planted here by where the
+// picture has crowns (a tree's foot seen at a place in the picture, found with onGround):
+//   - right of the spire, 700 to 960 across, the picture's belt is two or three crowns deep and climbs between the
+//     towers' feet to about 222 down, its crowns of very different sizes. Ours stopped at 242 with paving showing;
+//   - the knot of trees between the towers at 960 to 1050 across, 218 to 250 down, was not there;
+//   - before the pyramid's left foot, 255 to 335 across, the picture's belt is two crowns deep and covers the foot
+//     of the gold. Ours was one row of small trees;
+//   - behind the dunes the picture has one even line of full crowns, 1063 to 1173 across and 227 to 242 down. Ours
+//     were half that size and hidden by the sand.
+const grove = (from, to, step, feet, sizes) => {
+  for (const py of feet) for (let px = from; px <= to; px += step) {
+    const [x, z] = onGround(px + 0.7 * step * (r() - 0.5), py + 3 * (r() - 0.5));
+    plant(x, z, 10.5 * (sizes[0] + (sizes[1] - sizes[0]) * r() ** 1.6));
+  }
+};
+grove(700, 960, 9.5, [254, 247, 240, 235], [0.7, 1.4]);
+grove(960, 1050, 9, [252, 244, 237], [0.75, 1.35]);
+grove(252, 336, 8.5, [296, 288, 281], [0.9, 1.3]);
+for (let px = 1063; px <= 1174; px += 9.6) { const [x, z] = onGround(px + 2.5 * (r() - 0.5), 243 + 2 * (r() - 0.5)); trees.push([n(x), n(z), n(10.5 * (1.15 + 0.3 * r())), n(r(), 3), n(r() * Math.PI * 2, 3)]); }
 console.log(`for picture 9's edge: ${drawn} buildings drawn back from the bite, ${slid} more slid back, ${lost} left where the land is not, ${kept} of the study's trees kept, ${trees.length - kept} planted along the new edge`);
 const vents = P.vents().map((v) => [n(v.at[0]), n(v.at[1]), n(v.at[2]), v.long, v.wide, v.heat]);
 const rows = (list) => list.map((r) => `  ${JSON.stringify(r).replace(/"/g, "'")},`).join('\n');

@@ -40,10 +40,30 @@ async function up(url) {
   }
 }
 
+// Whether anything is listening on the port at all, whatever it answers: a server that is busy compiling, or one
+// in error, is still a server. A second one started beside it fights it for the same folder and breaks both, which
+// is how the shared server went down for half an hour on the night of Nov 15.
+async function listening(url) {
+  try {
+    await fetch(url, { signal: AbortSignal.timeout(5000) });
+    return true;
+  } catch (e) {
+    return !/ECONNREFUSED/.test(String(e?.cause?.code ?? e?.cause ?? ''));
+  }
+}
+
 // Uses the dev server if one is running, else starts one and stops it at the end.
 export async function server(flags) {
   if (flags.url) return { base: flags.url.replace(/\/$/, ''), stop: async () => {} };
   if (await up(DEV)) return { base: DEV, stop: async () => {} };
+  if (await listening(DEV)) {
+    const wait = Date.now() + 180000;
+    while (Date.now() < wait) {
+      if (await up(DEV)) return { base: DEV, stop: async () => {} };
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+    throw new Error('the dev server on 5330 is running but has answered with an error or not at all for three minutes: a file it is compiling is broken, or it needs restarting');
+  }
   console.log('server: starting next dev on 5330');
   const child = spawn('npx', ['next', 'dev', '-p', '5330', '-H', '127.0.0.1'], { stdio: 'ignore', detached: true });
   const until = Date.now() + 90000;
