@@ -580,16 +580,24 @@
 
   .tabs {
     margin-top: var(--space-5);
+    gap: var(--space-5);
+  }
+
+  .tab {
+    padding: 0.5rem 0 0.7rem;
   }
 
   .panel {
     margin-top: var(--space-5);
   }
 
+  /* The light behind him, which on a wide screen the studio light throws when the stream strikes it. Here it is
+     simply there, in the photograph's own colors: without it he stood on bare black. */
   .portrait {
     display: block;
     width: 100% !important;
     margin-top: var(--space-6);
+    background: radial-gradient(ellipse 58% 52% at 52% 40%, var(--ember), color-mix(in srgb, var(--ember-deep) 80%, transparent) 55%, transparent 76%);
   }
 }
 
