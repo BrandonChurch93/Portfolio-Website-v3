@@ -200,11 +200,11 @@ export const LIGHT = {
   // power of fall. 2 is what a ball of light does in empty space. Lower carries its light further across the hollow.
   // At 24 every face near it came out a pale peach, where picture 9's hollow is a deep red brown: 16 keeps the
   // stone's own color in the light.
-  // A fall of 1.45 carried it so far that a face two radii out was as bright as one beside the ball, and the far
-  // walls stayed lit: picture 9's light hugs the core as a bright ring and is gone to near black within a few
-  // radii. So it falls a little faster than a ball of light does in empty space, and burns brighter at its surface
-  // to keep the ring.
-  core: { color: 'hot', power: 22, fall: 2.1 },
+  // Measured in picture 9 itself: a slab 2.7 radii from the core is 0.57 as bright as the ring of faces beside it,
+  // which is a fall of about 0.7 to 1, far gentler than a ball of light in empty space (2). Its light fills the
+  // hollow, and what is dark there is dark because it is turned away or hidden, not because it is far. At 2.1 the
+  // outer plates were a stop and a half too dark whatever way they were turned.
+  core: { color: 'hot', power: 15, fall: 1 },
   // What comes from every direction that escapes the world: almost nothing.
   sky: { color: 'ember', power: 0.05 },
   // The most irradiance a stored bounce can hold.
@@ -215,9 +215,12 @@ export const LIGHT = {
   night: 0.55,
   // On the torn rock that share is tinted warm (`warm`, red, green and blue): untinted it turned the masses round
   // the hollow grey. At 0.35 they were an even brown where picture 9's are black with a few lit edges, so the
-  // black is left to the rock's own shape and this only keeps a dark from going dead.
-  fill: 0.15,
-  warm: [1, 0.58, 0.36],
+  // black is left to the rock's own shape and this only keeps a dark from going dead: the masses beside the hollow
+  // measured 0.026 at 0.15 against the picture's 0.009.
+  fill: 0.08,
+  // Less red than it was (1, 0.58, 0.36): on a red brown stone that tint made every dark rust, where picture 9's
+  // darks are a nearly neutral brown.
+  warm: [1, 0.74, 0.55],
   // The planet's stone under white light: the first of these palette colors eased toward the second, and how bright.
   // The baker lights the rock with it and the stone's material wears it.
   stone: { of: ['bronze', 'copper'], ease: 0.4, power: 0.85 },
