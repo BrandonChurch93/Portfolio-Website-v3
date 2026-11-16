@@ -344,10 +344,11 @@ export function mountSkills(parts: SkillsParts, host?: StreamHost): SkillsStage 
   lamp.bind();
   tiers.detect();
   place();
-  void registry.track(Promise.all([import('../pieces/cpu/index'), import('../pieces/reflector/index'), import('../pieces/studio-light/index'), import('../pieces/screen/index'), import('../pieces/palette/index')]).then(([cpu, refl, studio, screen, palette]) => {
+  void registry.track(Promise.all([import('../pieces/cpu/index'), import('../pieces/reflector/index'), import('../pieces/studio-light/index'), import('../pieces/palette/index')]).then(([cpu, refl, studio, palette]) => {
     if (disposed) return;
-    anchors = { things: [cpu.CPU.strike, screen.SCREEN.strike, palette.PALETTE.strike], reflector: refl.REFLECTOR.strike, strike: studio.STUDIO.strike, lens: studio.STUDIO.lens };
-    lives = [cpu.LIFE, screen.LIFE, palette.LIFE];
+    // The second row has no thing yet: its place keeps the first's numbers until it has.
+    anchors = { things: [cpu.CPU.strike, cpu.CPU.strike, palette.PALETTE.strike], reflector: refl.REFLECTOR.strike, strike: studio.STUDIO.strike, lens: studio.STUDIO.lens };
+    lives = [cpu.LIFE, cpu.LIFE, palette.LIFE];
     place();
     stream = host ? host(plan) : mountStream(parts.page, { plan });
   }));

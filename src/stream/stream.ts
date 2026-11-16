@@ -317,7 +317,13 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
     unit = unitFor(innerWidth, parseFloat(getComputedStyle(document.documentElement).fontSize) || 16);
     presence = Math.max(0, Math.min(1, (innerWidth - S.presence[0]) / (S.presence[1] - S.presence[0])));
     const want = Math.min(devicePixelRatio || 1, sharp || budget.pixelRatio);
-    const dpr = Math.min(want, Math.sqrt((sharp ? 3.2e7 : budget.pixels) / (cssW * cssH)));
+    // The canvas is drawn at a whole number of its pixels to a CSS pixel, or at half of one, and never at a ratio
+    // between: stretched by the browser from, say, 1.34 to a screen's 2, the grain and the dither it draws on the
+    // page's ground beat against the screen's own pixels as faint regular stripes over the whole ground (he saw
+    // them from Work down, Nov 16, on a machine slow enough to be given the middle tier). The first step at or
+    // under what the budget allows, with a little grace so a canvas a few percent over its budget keeps its step.
+    const most = Math.min(want, Math.sqrt((sharp ? 3.2e7 : budget.pixels) / (cssW * cssH)));
+    const dpr = sharp ? most : most >= want ? want : [3, 2, 1, 0.5].find((step) => step <= most * 1.2 && step <= want) ?? most;
     const made = opts.title ? titleField(opts.title, hr, dpr) : null;
     const boxOf = (el: HTMLElement): Box => { const r = el.getBoundingClientRect(); return { l: r.left - hr.left, t: r.top - hr.top, r: r.right - hr.left, b: r.bottom - hr.top }; };
     const shapeOf = (el: HTMLElement): CardShape => { const b = boxOf(el); return { x: (b.l + b.r) / 2, y: (b.t + b.b) / 2, hw: (b.r - b.l) / 2, hh: (b.b - b.t) / 2, r: parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0 }; };
