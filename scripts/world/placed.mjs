@@ -217,6 +217,8 @@ grove(712, 960, 9, [231, 227], [0.8, 1.4]);
 // Before the spire's portal the picture has open paving, 668 to 708 across: crowns stood there and cut the podium
 // off at its doors.
 for (let i = trees.length - 1; i >= 0; i--) { const t = trees[i], [px] = W.pictured(t[0], W.ground(t[0], t[1]), t[1]); if (px > 668 && px < 708 && t[1] > 30) trees.splice(i, 1); }
+// No tree stands inside the pyramid, or with its trunk in its foot course.
+for (let i = trees.length - 1; i >= 0; i--) { const [qx, qz] = W.pyramidal(trees[i][0], trees[i][1]); if (Math.max(Math.abs(qx), Math.abs(qz)) < W.PYRAMID.base / 2 + 5) trees.splice(i, 1); }
 // A wood has a few great trees: about one crown in nine is half as large again, so the belt is not a row of beads.
 for (const t of trees) t[2] = n(t[2] * 1.25 * (r() < 0.11 ? 1.5 : 1));
 console.log(`for picture 9's edge: ${drawn} buildings drawn back from the bite, ${slid} more slid back, ${lost} left where the land is not, ${kept} of the study's trees kept, ${trees.length - kept} planted along the new edge`);
