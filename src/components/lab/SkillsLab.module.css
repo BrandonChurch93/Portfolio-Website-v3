@@ -567,19 +567,32 @@
     row-gap: var(--space-1);
   }
 
+  /* On a phone he stands under the title and the words come after him, the tabs over the foot of his portrait where
+     it fades. Under the words, as it was, his forearms ended in the air over a screen of empty ground. */
   .about {
+    display: flex;
+    flex-direction: column;
     height: auto !important;
     margin-top: var(--space-9);
   }
 
   .words {
-    position: static;
-    width: auto !important;
-    height: auto;
+    display: contents;
   }
 
   .tabs {
-    margin-top: var(--space-5);
+    order: 2;
+  }
+
+  .panel {
+    order: 3;
+  }
+
+  .tabs {
+    position: relative !important;
+    top: auto !important;
+    z-index: 6;
+    margin-top: 0;
     gap: var(--space-5);
   }
 
@@ -595,8 +608,11 @@
      simply there, in the photograph's own colors: without it he stood on bare black. */
   .portrait {
     display: block;
-    width: 100% !important;
-    margin-top: var(--space-6);
+    order: 1;
+    align-self: center;
+    width: min(100%, 26rem) !important;
+    margin-top: var(--space-4);
+    margin-bottom: -16%;
     background: radial-gradient(ellipse 58% 52% at 52% 40%, var(--ember), color-mix(in srgb, var(--ember-deep) 80%, transparent) 55%, transparent 76%);
   }
 }
