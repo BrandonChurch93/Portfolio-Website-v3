@@ -1,0 +1,21 @@
+# Your part: the core. Round 10: a beam with something running down it, and a ball with depth
+
+## What you own
+src/pieces/world/parts/core.ts and src/pieces/world/parts/core/. Stills in shots/world/core/ with the prefix r10-. Report: shots/world/core/r10-report.md. Read first: shots/world/core/r9-report.md and its two reviews, and the END of briefs/common.md (the last entry is what Fable changed on the page's side for the step at the join).
+
+## Where it stands
+Round 9 scored 6 and 5.5. Kept, and not to be lost: the ball's place, size, radial profile and hard narrow deep orange band on picture 9 (688, 437, r 89). The flare: the beam leaves the ball in one fillet with shoulders and the band fades under them, no keyhole. Before set off the band is unbroken and nothing hangs below the outline. No pop at set off. Nothing off the palette. 3 meshes, 3 programs, 9,186 triangles, uniforms only.
+
+## The join, from the page's side
+Both reviewers found a step about 221 units under the foot: your heart dimmed and narrowed, then within 4 units the page's stream began at the cap and wider. Fable has changed the page: its heart now comes on over 40 units from 221, across the stretch your neck fades over (shots/world/frame/join-1000-cut.jpg is that on the page: Fable can find no step in it). YOUR HALF: hold the neck's width and brightness all the way to 221 (it pinched to about 3 units between 130 and 215 where picture 9's is about 7), and fade it out evenly from 221 to about 262, so the two cross. Check it at scrolls 760, 900, 1000 and 1150 at three times and say what you find.
+
+## What must change, most important first
+1. SOMETHING TRAVELS DOWN THE BEAM, AT THE PAGE'S SIZE. For 230 units it is a dead straight, even, glowing tube, and the seven streak lanes are under a pixel on the page. A few broad bright pulses that run down it fast, each a few units long and as wide as the heart, brightening the amber edges as they pass, on the clock, at the stream's own pace: so that on the real page at scale 1 the beam is plainly moving light. And the top of the neck is clipped flat at the cap for about 75 units ("a cream cone"): keep the heart under the cap there and let hot to amber carry its form.
+2. A GLOW WITH AN EDGE. The amber halo beside the beam is an envelope with a visible edge either side of it, lens shaped at the join and a soft column below (it shows in join-1000-cut.jpg as a pale amber band each side of the beam): take it out. The beam's own amber edges are its glow.
+3. THE BALL IS A FLAT BEIGE DISC. Nearly one color from edge to edge, no depth inside the rim, nothing that moves in 42 seconds, and at three times a crazing of lines over a sponge mottle ("terrazzo", "crazed glaze"), softer than picture 9's crisp speckle (yours: spread 3 to 4.6, brightest (241, 222, 168). The picture's: 4.2 and (249, 227, 170)). Fine, sharp, high frequency grain whose brightest grains reach the cap, slow convection under it that can be seen to move within ten seconds, and depth: a hotter body seen through a cooler surface near the rim. Measure it against reference/concept/09-parts' close up of the core until both numbers are beaten.
+4. BEFORE SET OFF the gathering light is a soft round nearly white smudge low on the face (a soft round spot of light fails on sight): a narrowing seam of hotter grain that draws down toward the foot, or nothing.
+5. THE SEVEN SHARDS are 2 to 6 pixel specks lost in the debris, and close up clean low poly hulls. Either the page's own kind (jagged, hot edged, a few of them larger, against black and never against lit rock), or cut them.
+6. SMALL FAULTS. A pale pointed tip of the beam's heart rises a few units INTO the ball: the heart starts at the band. The ball's lower edge is stair stepped at three times.
+
+## How to look
+Every draft: the real page at scrolls 380, 620, 760, 1000 and 1150 (npm run shot -- "/lab/hero?ui=0" --scroll 1000 --t 8 --wait 12000 --scale 3 --png), cut to the beam from the ball's foot to 400 under it, and the same at scale 1. Real frames of a slow scroll through 500 to 1200 AND of the page at rest at scroll 1000 for four seconds (npm run live): can the light be seen to run down the beam? Then the overlay (npm run match -- --at 560,330,260,260 --out shots/world/core/r10-match) and close:hollow for the ball.

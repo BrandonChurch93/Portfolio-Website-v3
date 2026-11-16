@@ -488,7 +488,7 @@ export class StreamRenderer {
     gl.uniform4fv(P.core.u('uView'), f.view);
     gl.uniform1f(P.core.u('uTime'), f.time);
     gl.uniform1f(P.core.u('uHeart'), 1 + GLOW.more.heart * f.presence);
-    if (this.shapes.born) { gl.uniform1f(P.core.u('uBorn'), f.from ?? 0); gl.uniform1f(P.core.u('uRise'), STREAM.hero.rise); }
+    if (this.shapes.born) { gl.uniform1f(P.core.u('uBorn'), f.from ?? 0); gl.uniform1f(P.core.u('uRise'), STREAM.hero.rise); gl.uniform1f(P.core.u('uOpen'), STREAM.hero.open); }
     gl.bindVertexArray(this.bare);
     for (let b = 0; b < 2; b++) {
       if (f.coreRuns[b * 2 + 1] < 3) continue;

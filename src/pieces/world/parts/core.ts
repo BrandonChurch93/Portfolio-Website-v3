@@ -5,15 +5,16 @@ import { CORE, HOST, SOURCE, drawn } from '../layout';
 import type { PartFactory } from '../part';
 import { BALL_FRAG, BALL_VERT } from './core/shaders';
 import { ROOT_FRAG, ROOT_VERT, rootScale, strandsFor } from './core/root';
+import { shards } from './core/shards';
 
 // The core: the planet's core and the source of the site's stream at once. A ball of the stream's light hanging free
 // in the hollow, as picture 9 has it: pale gold over its face with a fine, even, luminous grain, which close up is
-// granules of several sizes told apart by their brightness alone, warming to deep orange in a band just inside its
-// hard edge and a thin brighter line of orange gold at the edge itself. Its light falls a little toward its limb and
-// is hottest up and to the left, so it is a ball. At its foot is the neck of the beam it shoots out: the ball and the
-// neck are one shape, its face pours down into it and its band turns down along its sides, and it draws itself thin,
-// cream and then the stream's pale, and over its last stretch the stream's own braid comes up inside it and is let
-// out to the page's own ribbon at the cut, where the page takes it up. It gives light of its own, casts no shadow and takes none, and draws no haze or glow outside itself.
+// facets with edges told apart by light, warming to deep orange in a band just inside its hard edge and a thin
+// brighter line of orange gold at the edge itself. Its light falls a little toward its limb and is hottest up and to
+// the left, so it is a ball. Before the stream sets off, light gathers inside its face over the foot. Once it runs,
+// the beam leaves the foot in one broad fillet, the band fading under its shoulders, brightest down its heart and
+// streaked, and draws itself thin to the page's own heart, which takes it up (./core/root.ts). A few pieces of the
+// planet hang near it (./core/shards.ts). The ball and the beam give light of their own and draw no haze outside.
 
 type Ink = readonly [number, number, number];
 type Stops = readonly (readonly [number, Ink])[];
@@ -55,48 +56,37 @@ const GRAIN = {
 // How the face turns: about which axis, and how fast, in radians a second. Slow, as something enormous.
 const TURN = { axis: new THREE.Vector3(0.18, 1, 0.22).normalize(), rate: 0.012 } as const;
 
-// The neck of the beam, in units of the world down from the ball's foot unless they say otherwise. Picture 9's
-// neck, as the root of a beam shot down out of the ball with force, drawing itself thin to the page's ribbon by the
-// cut, where the page's own stream takes it up (STREAM.hero.hand).
-//   foot: half its width where it leaves, under the fillet, which falls away over about fall units, as picture 9's
-//     does; fillet: how much wider it is at the foot where the band turns down into it, falling away over about the
-//     second; meet: how far over the foot the fillet goes on widening inside the ball; rib: the half width it comes down to, the
-//     heart of the page's ribbon, round which the ribbon's own fibres spread as they will; cream: over which depths its
-//     body turns from the ball's own cream to the stream's pale, paler: how much paler than the ball it is, and grain:
-//     how much its cream is gathered along the fibres; band: how much narrower the band is along the neck's sides
-//     than round the ball, and how round its turn is, in units; down: by which depth the band is that narrow, and by
-//     which the neck's own color has taken over from the ball's face and band; into: how far over the foot
-//     the beam's light begins inside the ball
-//   quiet: how wide it is before the stream sets off, against after; drop: how far it hangs then at the most; tip: how
-//     long its end is, at most, and round: how sharp its point is once it runs
-//   bead: before it sets off, how much brighter its end gathers, over how many units, and the shortest it draws back
-//     to, as a share of drop; beat: the two slow waves it swells by, in seconds; quietCream: how much of the ball's
-//     cream it has then, against after; hush: how bright its body is then, against after
-//   a: how bright its body is; rim: over how many units at its edge it goes from nothing to its body, and how that
-//     goes; streak: how much of the body is gathered along its fibres
-//   braid: over which depths the stream's own fibres come up inside it; body: over which depths its cream body gives
-//     way to them; sink: how far the body is turned down under them, so they show in it; heart: how wide the
-//     ribbon's heart is inside it against the page's, and over how many units before the cut it comes to the page's; hold: how much of the
-//     neck's width the braid fills; fibres: how many it has; thin: how wide each is, in stream units; pitch: how long
-//     a turn of it is, in stream units over 2 pi; pace: how fast its turns run down it, in stream units a second, as
-//     the page's ribbon's do; loose: how far out the braid loosens toward the cut, in stream units, from how many units
-//     before it to how many after
-//   fibre: how much of the fibres there is; run: the light that runs down it: how much, how long, how fast
-//   up: how far over the foot it reaches inside the ball; give: over which units past the cut its heart gives way to
-//     the page's, which comes on over the first few of them
+// The neck of the beam, in units of the world down from the ball's foot unless they say otherwise. Picture 9's neck,
+// as a beam shot down out of the ball with force, drawing itself thin to the page's heart by the cut, where the
+// page's own stream takes it up (STREAM.hero.hand). Its widths are picture 9's, measured: 39, 25, 19, 12 and 10
+// across at 0, 18, 43, 93 and 143 down.
+//   foot: half its width where it leaves, rib: the half width it comes down to, fall: over about how many units;
+//     fillet: the fillet that joins it to the ball's outline: how much wider it is at its top, over how many units
+//     that falls away, and how far over the foot its top is; quiet: how wide it is as it sets off,
+//     against after; tip: how long its end is, at most, and round: how sharp its point is
+//   a: how bright its heart is; k: how fast its light falls across it, as a bell; body: over which depths the body
+//     gives way to the page's heart; streak: how bright its streaks are; lanes: how many; spread: how far across it
+//     they lie, as a share of its half width; lane: how wide each is, as a share of it; pace: how fast they run, in
+//     stream units a second (the page's own light runs down it at 83 by 2.1); dash: how long a dash is, from and
+//     to, in stream units, and how much of its length is lit
+//   leave: how much brighter its heart is where it leaves the ball, falling away over how many units
+//   halo: the faint amber at its edges: how bright, how wide against its half width, and in units beside that
+//   up: how far over the foot its light rises into the ball; give: over which units past the cut its heart gives
+//     way to the page's, which comes on over the first few of them
 //   surge: the light that runs down it as it sets off: how much, how fast in units a second, how long
-//   floor: the faintest light it lets go; energy: how much the page's leading end brightens the ribbon near it
-//   over: from which amount to which the neck's light takes the place of the band's inside the ball
+//   floor: the faintest light it lets go; energy: how much the page's leading end brightens it near it
 //   plane: how far down the plane it is drawn on reaches, and wide: half its width; held: how far it runs held on
 const NECK = {
-  foot: 13, rib: 2.1, fall: 60, fillet: [4.5, 4], meet: 4, cream: [20, 120], paler: 1.14, grain: 0.08, band: [10, 2.5], down: [2, 14], into: 14,
-  quiet: 0.55, drop: 11, tip: 40, round: 0.5,
-  bead: [2.2, 3.2, 0.5], beat: [5.3, 8.9], quietCream: 0.25, hush: 0.5,
-  a: 1.9, rim: [1.6, 0.6], streak: 0.28,
-  braid: [70, 140], body: [100, 175], sink: 0.2, hold: 0.95, heart: [0.45, 50], fibres: 6, thin: [0.22, 0.55], pitch: 8, pace: 21, loose: [7, 40, 34],
-  fibre: 1.4, run: [0.06, 26, 2.4], up: 16, give: [7, 41],
-  surge: [0.5, 210, 18], floor: 0.008, energy: 1, over: [0.12, 0.9], plane: 300, wide: 64, held: 260,
+  foot: 17.5, rib: 4.5, fall: 50, fillet: [10, 8, 3], quiet: 0.55, tip: 40, round: 0.5,
+  a: 1.3, k: 2.56, body: [80, 140], streak: 1.4, lanes: 7, spread: 0.7, lane: [0.07, 0.12], pace: 174, dash: [16, 40, 0.5],
+  halo: [0.045, 1.2, 1.5], leave: [0.2, 18],
+  up: 6, give: [7, 41],
+  surge: [0.5, 210, 18], floor: 0.008, energy: 1, plane: 300, wide: 64, held: 260,
 } as const;
+// Before the stream sets off, the light that gathers inside the face over the foot: how bright, how much paler than
+// the face, how wide and tall in units, how far up it is as shares of the radius, small and swollen, and the two
+// slow waves it swells by, in seconds.
+const BEAD = { light: 1.1, pale: 1.0, size: [18, 11], at: [0.8, 0.88], beat: [5.3, 8.9] } as const;
 
 // The rings of the ball's shell at each level of cost.
 const RINGS = { full: 48, lean: 40 } as const;
@@ -139,40 +129,41 @@ export const build: PartFactory = (ctx) => {
   };
   const f = (n: number) => n.toFixed(4), v2 = (a: readonly number[]) => `vec2( ${f(a[0])}, ${f(a[1])} )`;
   const rootDefines = {
-    ROOT_STRANDS: strands, ROOT_ENERGY: f(NECK.energy), ROOT_HUSH: f(NECK.hush), ROOT_FLOOR: f(NECK.floor),
-    ROOT_SURGE: f(NECK.surge[0]), ROOT_SURGE_V: f(NECK.surge[1]), ROOT_SURGE_W: f(NECK.surge[2]), ROOT_OVER: v2(NECK.over),
-    NECK_FOOT: f(NECK.foot), NECK_CUT: f(PAGE.hero.hand[0] / host.host), NECK_FALL: f(NECK.fall), NECK_RIB: f(NECK.rib), NECK_CREAM: v2(NECK.cream), NECK_PALER: f(NECK.paler), NECK_GRAIN: f(NECK.grain),
-    NECK_FILLET: v2(NECK.fillet), NECK_MEET: f(NECK.meet), NECK_QUIET: f(NECK.quiet), NECK_ROUND: f(NECK.round), NECK_DROP: f(NECK.drop), NECK_TIP: f(NECK.tip),
-    NECK_BODY: v2(NECK.body), NECK_A: f(NECK.a), NECK_RIM: f(NECK.rim[0]), NECK_RIM_POW: f(NECK.rim[1]), NECK_STREAK: f(NECK.streak),
-    NECK_BRAID: v2(NECK.braid), NECK_SINK: f(NECK.sink), NECK_HOLD: f(NECK.hold), NECK_HEART: v2(NECK.heart), NECK_FIBRES: NECK.fibres, NECK_THIN: v2(NECK.thin), NECK_PITCH: f(NECK.pitch), NECK_PACE: f(NECK.pace), NECK_LOOSE: `vec3( ${f(NECK.loose[0])}, ${f(NECK.loose[1])}, ${f(NECK.loose[2])} )`,
-    NECK_BEAD: `vec3( ${f(NECK.bead[0])}, ${f(NECK.bead[1])}, ${f(NECK.bead[2])} )`, NECK_BEAT: v2(NECK.beat), NECK_QUIET_CREAM: f(NECK.quietCream),
+    ROOT_ENERGY: f(NECK.energy), ROOT_FLOOR: f(NECK.floor),
+    ROOT_SURGE: f(NECK.surge[0]), ROOT_SURGE_V: f(NECK.surge[1]), ROOT_SURGE_W: f(NECK.surge[2]),
+    NECK_FOOT: f(NECK.foot), NECK_RIB: f(NECK.rib), NECK_FALL: f(NECK.fall), NECK_FILLET: `vec3( ${f(NECK.fillet[0])}, ${f(NECK.fillet[1])}, ${f(NECK.fillet[2])} )`,
+    NECK_QUIET: f(NECK.quiet), NECK_TIP: f(NECK.tip), NECK_ROUND: f(NECK.round), NECK_CUT: f(PAGE.hero.hand[0] / host.host),
+    NECK_A: f(NECK.a), NECK_K: f(NECK.k), NECK_BODY: v2(NECK.body), NECK_STREAK: f(NECK.streak), NECK_LANES: NECK.lanes, NECK_SPREAD: f(NECK.spread),
+    NECK_LANE: v2(NECK.lane), NECK_PACE: f(NECK.pace), NECK_DASH: `vec3( ${f(NECK.dash[0])}, ${f(NECK.dash[1])}, ${f(NECK.dash[2])} )`,
+    NECK_LEAVE: v2(NECK.leave), NECK_HALO: `vec3( ${f(NECK.halo[0])}, ${f(NECK.halo[1])}, ${f(NECK.halo[2])} )`, NECK_UP: f(NECK.up), NECK_GIVE: v2(NECK.give),
     RIM_N: RIM.length,
     // The grain: the largest granule in units, how many sizes, each half the last, how much weaker each finer one is,
     // over how many of its own sizes a pixel has to be for it to show, and how far the sizes kept may be turned up to
     // stand in for those let go. How far each granule's point strays and wanders, and how fast the grain churns in
     // place, the granules wander and the broad drift moves.
-    GRAIN_CELL: '1.6',
-    GRAIN_SIZES: 4,
+    GRAIN_CELL: '4.0',
+    GRAIN_SIZES: 5,
     GRAIN_FALL: '0.8',
     GRAIN_SEEN: '1.4',
     GRAIN_BACK: '1.6',
     // How much the coarsest size gives way once the finest can be seen, and the next half as much.
-    GRAIN_COARSE: '0.5',
+    GRAIN_COARSE: '0.0',
+    // How much of the coarse sizes is kept where they are drawn only a few pixels across.
+    GRAIN_SMALL: '0.6',
     // How much the grain is read as on a disc facing the eye and not on the sphere.
-    GRAIN_FLAT: '0.8',
+    GRAIN_FLAT: '0.35',
     GRAIN_JITTER: '0.8',
     GRAIN_WANDER: '0.08',
     GRAIN_CHURN: '0.03',
     GRAIN_TURN: '0.05',
     GRAIN_DRIFT: '0.012',
     // A broad drift under the grain, and its size in units.
-    MOTTLE: '0.14',
+    MOTTLE: '0.1',
     MOTTLE_WAVE: '34.0',
     // From grain to steps of the grain's light, for brightness and for warmth, and how much of both the band loses.
-    GRAIN_GAIN: '1.95',
+    GRAIN_GAIN: '3.0',
     GRAIN_WARM: '1.2',
     GRAIN_BAND: '0.8',
-    NECK_BAND: f(NECK.band[0]), NECK_TURN: f(NECK.band[1]), NECK_DOWN: v2(NECK.down), NECK_INTO: f(NECK.into),
     // A sphere: how much its light falls toward the limb, from which share of the radius, how that goes, and over
     // which shares it gives way to the band, and how much the whole face is lifted to keep its mean.
     LIMB: '0.05',
@@ -180,7 +171,6 @@ export const build: PartFactory = (ctx) => {
     LIMB_POW: '1.4',
     LIMB_TO: 'vec2( 0.88, 0.95 )',
     FACE_GAIN: '0.985',
-    NECK_FIBRE: f(NECK.fibre), NECK_RUN: `vec3( ${f(NECK.run[0])}, ${f(NECK.run[1])}, ${f(NECK.run[2])} )`, NECK_UP: f(NECK.up), NECK_GIVE: v2(NECK.give),
   };
 
   const ballU = {
@@ -203,10 +193,12 @@ export const build: PartFactory = (ctx) => {
       BAND_PX: '1.0',
       BAND_LIFT: '0.07',
       BAND_AT: 'vec4( 0.9, 0.93, 0.975, 0.99 )',
-      // Over which shares of the radius the grain over the foot comes to be read on the neck's plane.
-      NECK_FOOT_UP: 'vec2( 0.8, 0.97 )',
-      // Over how many units over the foot the grain gives way where the neck takes over.
-      NECK_FOOT_FADE: '8.0',
+      // The light gathering over the foot before the stream sets off (BEAD).
+      BEAD_LIGHT: f(BEAD.light), BEAD_PALE: f(BEAD.pale), BEAD_SIZE: v2(BEAD.size), BEAD_AT: v2(BEAD.at), BEAD_BEAT: v2(BEAD.beat),
+      // Pale gold, the most the stage's curve lets through, as light before the curve: nothing of the ball is brighter.
+      CAP: 'vec3( 4.0, 0.762, 0.542 )',
+      // From which amount of the beam's light to which it takes the place of the face and the band over the foot.
+      NECK_OVER: 'vec2( 1.5, 2.6 )',
       // Its hottest part: how much hotter, where, as shares of the radius, and how wide.
       HOT: '0.05',
       HOT_AT: 'vec2( -0.28, 0.3 )',
@@ -215,12 +207,24 @@ export const build: PartFactory = (ctx) => {
       // light picks out and how much of their brightness is that, from which size on they mirror it in points, how
       // squarely they have to face it for that (two cosines) and how bright a point is, and how far in front of the
       // ball the cursor's light is, in radii.
-      FACET_TILT: '0.6',
-      FACET_FROM: 1,
+      FACET_TILT: '0.8',
+      FACET_FROM: 0,
+      // Over which sizes of a pixel, in cells, a facet goes from being told apart by its light to being a plain granule.
+      FACET_SEEN: 'vec2( 0.12, 0.3 )',
       FACET_SHARE: '0.85',
-      FACET_GLINT_FROM: 2,
+      FACET_GLINT_FROM: 3,
       FACET_GLINT: 'vec3( 0.995, 0.999, 2.9 )',
       FACET_LAMP: '3.0',
+      // A light of the ball's own that the facets are also turned to, from its hottest side, so they are told apart
+      // wherever the cursor is.
+      FACET_KEY: 'vec3( -0.9, 1.1, 0.0 )',
+      // The edges where facets meet: how much light they take, how steep their bevel is, how wide in cells, a lift
+      // so they are lines of light more often than creases, and over which sizes of a pixel in cells they are let go.
+      EDGE: '1.8',
+      EDGE_TILT: '1.2',
+      EDGE_WIDE: '0.07',
+      EDGE_BIAS: '0.25',
+      EDGE_SEEN: 'vec2( 0.12, 0.3 )',
     },
   });
   const ballG = new THREE.SphereGeometry(R * 1.03, rings * 2, rings);
@@ -251,7 +255,9 @@ export const build: PartFactory = (ctx) => {
   for (const m of [ball, root]) { m.castShadow = m.receiveShadow = false; m.frustumCulled = false; }
   const eye = new THREE.Vector3();
   ball.onBeforeRender = (_r, _s, camera) => { ballU.uEye.value.copy(ball.worldToLocal(eye.copy(camera.position))); };
-  group.add(root, ball);
+  let still = false;
+  const pieces = shards(() => still);
+  group.add(root, ball, pieces.mesh);
 
   const q = new THREE.Quaternion(), m4 = new THREE.Matrix4();
   // Where the ball is drawn in the host, and its radius there, to find the cursor against it.
@@ -263,6 +269,8 @@ export const build: PartFactory = (ctx) => {
     alone: { at: [CORE.at[0], CORE.at[1] - NECK.held / 2, CORE.at[2]], r: R + NECK.held / 2 + 20 },
     update(s) {
       rootU.uTime.value = s.t;
+      still = s.still;
+      pieces.update(s.t);
       rootU.uLevel.value = s.core;
       ballU.uLamp.value.set((s.pointer.x * HOST.wide - HOST.wide / 2 - mid[0]) / rim, -(s.pointer.y * HOST.tall - mid[1]) / rim);
       // The page's stream and its units follow the screen's width.
@@ -279,6 +287,6 @@ export const build: PartFactory = (ctx) => {
       rootU.uTurn.value.setFromMatrix4(m4.makeRotationFromQuaternion(q.setFromAxisAngle(TURN.axis, (s.t * TURN.rate) % (2 * Math.PI))));
     return true;
     },
-    dispose() { for (const d of [ballG, ballM, rootG, rootM]) d.dispose(); },
+    dispose() { for (const d of [ballG, ballM, rootG, rootM]) d.dispose(); pieces.dispose(); },
   };
 };

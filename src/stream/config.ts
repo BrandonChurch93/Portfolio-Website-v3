@@ -172,6 +172,10 @@ export const STREAM = {
     // on. Begun at its whole strength the stream met the neck in a flat streak with its strands fanned out beside
     // it, and opened from a point its ribbon was squeezed into a zigzag.
     hand: [221, 222] as readonly [number, number],
+    // Its heart comes to its whole light over this far from there, while the neck fades out over the same stretch
+    // (the core's part reads `hand`): the two cross. Brought on in 7 units it met the neck in a step: a dim notch,
+    // then the heart at once at its whole width and brightness.
+    open: 40,
     // From there the stream becomes itself by degrees, so that what leaves the neck is the neck's own narrow pale
     // line and not an orange braid with a halo, switched on at one line of the screen: its strands gather over
     // `rise` units, the shards that ride it over `gather`, and the page takes all of its light by `lit`.

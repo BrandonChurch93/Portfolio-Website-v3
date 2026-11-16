@@ -91,7 +91,8 @@ uniform vec3 uSwell[${SWELLS}];   // each front: where along the route it is, ho
 uniform vec2 uSwellSize;          // how far ahead of a front the swell reaches, and how far behind
 uniform float uHush;              // how far the core ahead of a front is turned down, 0 to 1` : ''}${born ? `
 uniform float uBorn;              // where along the route the stream begins
-uniform float uRise;              // and over how far its strands gather there` : ''}
+uniform float uRise;              // and over how far its strands gather there
+uniform float uOpen;              // and over how far its heart comes to its whole light` : ''}
 out vec4 frag;
 ${NOISE}
 void main(){
@@ -127,7 +128,7 @@ void main(){
   // falls away slowly through hot and flame to ember. A sharp even edge is what makes a tube.
   float gather = 1.0 - abs(face);
   float q = x / mix(0.8, 1.4, gather);
-  sum += mix(1.7, 3.0, gather * gather) * uHeart / pow(1.0 + q * q, 1.6)${born ? ' * smoothstep(uBorn - 1.0, uBorn + 7.0, vAlong.y)' : ''};
+  sum += mix(1.7, 3.0, gather * gather) * uHeart / pow(1.0 + q * q, 1.6)${born ? ' * smoothstep(uBorn, uBorn + uOpen, vAlong.y)' : ''};
   // Light runs down it, and it burns hotter toward its leading end.
   float run = 0.84 + 0.16 * sin(s / 83.0 - t * 2.1) * sin(s / 211.0 - t * 0.9 + 0.8);
   float head = 1.0 - smoothstep(0.0, 120.0, lead);

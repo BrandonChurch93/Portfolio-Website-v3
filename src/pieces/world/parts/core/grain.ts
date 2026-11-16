@@ -78,8 +78,17 @@ vec4 coreGranule( vec3 p, float t, float w, uint seed, vec3 H, vec3 L ) {
 		vec4 v = vec4( vec2( r2.x, r2.y ) * 2.0 - 1.0, lit, g );
 		if ( d < d0 ) { d1 = d0; v1 = v0; s1 = s0; d0 = d; v0 = v; s0 = s; } else if ( d < d1 ) { d1 = d; v1 = v; s1 = s; }
 	}
-	float side = ( d1 - d0 ) / max( 2.0 * length( s1 - s0 ), 1e-3 );
-	return mix( 0.5 * ( v0 + v1 ), v0, smoothstep( 0.0, max( w, 0.02 ), side ) );
+	vec3 across = s1 - s0;
+	float side = ( d1 - d0 ) / max( 2.0 * length( across ), 1e-3 );
+	vec4 v = mix( 0.5 * ( v0 + v1 ), v0, smoothstep( 0.0, max( w, 0.02 ), side ) );
+	// Where two facets meet, each is bevelled down to the edge, so the edge is a line of light on the side that faces
+	// the light and a crease on the other: the facets are told apart by their edges as well as by their faces. Let
+	// go as the facets grow too small for the edge to be more than a pixel.
+	vec3 Nb = coreDir( vec3( coreDir( across ).xy * EDGE_TILT, 1.0 ) );
+	float bevel = ( dot( Nb, L ) - L.z ) / EDGE_TILT;
+	float edge = ( 1.0 - smoothstep( 0.0, max( EDGE_WIDE, 0.75 * w ), side ) ) * ( 1.0 - smoothstep( EDGE_SEEN.x, EDGE_SEEN.y, w ) );
+	v.z += EDGE * edge * ( bevel + EDGE_BIAS );
+	return v;
 }
 // The grain at a place q, in units: granules of a few sizes, each finer one half the last, every size finer than
 // a pixel let go and its share given back to the sizes kept, so the face is as busy at any size. Brightness and
@@ -94,9 +103,13 @@ vec2 coreSalt( vec3 q, float fp, float t, vec3 H, vec3 L ) {
 		float cell = GRAIN_CELL * pow( 0.5, float( i ) ), a = pow( GRAIN_FALL, float( i ) ), k = coreKeep( cell * GRAIN_SEEN, fp );
 		all += a * a;
 		a *= 1.0 - GRAIN_COARSE * fine * max( 1.0 - float( i ) / 2.0, 0.0 );
+		// The coarse sizes are the facets, which are for close up: drawn only a few pixels across, they were blotches.
+		a *= mix( 1.0, GRAIN_SMALL, smoothstep( FACET_SEEN.x, FACET_SEEN.y, fp / cell ) * step( float( i ), 1.0 ) );
 		if ( k > 0.0 ) {
 			vec4 g = coreGranule( q / cell + vec3( 0.0, t * GRAIN_CHURN * ( 1.0 + 0.5 * float( i ) ), 0.0 ), t * GRAIN_TURN, fp / cell, 7u + uint( i ) * 31u, H, L );
-			float f = i >= FACET_FROM ? 1.0 : 0.0;
+			// A facet is told apart by the light it faces only once it is several pixels across: smaller, it is the
+			// picture's own grain of brighter and dimmer granules, which a pixel can show.
+			float f = ( i >= FACET_FROM ? 1.0 : 0.0 ) * ( 1.0 - smoothstep( FACET_SEEN.x, FACET_SEEN.y, fp / cell ) );
 			s += a * k * mix( g.xy, vec2( g.z, g.y ), f * FACET_SHARE );
 			glint = max( glint, k * g.w * ( i >= FACET_GLINT_FROM ? 1.0 : 0.0 ) );
 		}
