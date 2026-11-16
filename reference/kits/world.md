@@ -30,6 +30,14 @@ He ruled this on Nov 15 at 21:38, after seeing the first output of the build: a 
 - The order: first what we already know it should look like, which is the picture. Then what makes it better to look at.
 - The core ties in with the stream the site already has (`src/stream/`, and a still of it: open `/lab/stream`). It has to look seamless, as if the stream exists there and comes from the core.
 
+**One scene, one story** (his words, Nov 15, in `BRIEF.md`, Settled, Hero, "The core, the stream and what broke away are one scene"). Every builder of the core, the rock, the skin's cracks, the streams and what broke away builds to this:
+
+- The core is the planet's core and the source of the site's stream, at once.
+- The stream is a beam of energy shot out of the core. It leaves with force: not a drip, not a fall.
+- The stream's sharp jagged shards are pieces of the exploded planet. The smallest of what broke away and the shards the stream carries are the same stuff: pieces of the planet are caught by the beam and carried down the site.
+- The debris field, the wreckage under the planet, the core and the stream are one scene: the same rock, the same light, each lit by the others. The beam's light lies on the wreckage and on the pieces near it.
+- The debris field is "super important". It is never thinned or dropped to make something else easier.
+
 ## Match picture 9, every round
 
 Keep the picture open while you work. Before judging anything else in a round, lay your still over the picture and fix what does not line up.
