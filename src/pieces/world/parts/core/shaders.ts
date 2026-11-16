@@ -18,6 +18,7 @@ export const BALL_FRAG = /* glsl */ `
 precision highp float;
 precision highp int;
 uniform vec3 uEye;
+uniform mat3 uDeep;
 uniform float uTime;
 varying vec3 vLocal;
 ${GRAIN}
@@ -50,33 +51,48 @@ void main() {
 	vec3 Q = ro + rd * ( - ro.z / ( abs( rd.z ) > 1e-4 ? rd.z : - 1e-4 ) );
 	float d = - uR - Q.y;
 
+	// Once the stream runs, the ball and the neck are one shape: near the foot the band is read across that shape's
+	// edge, so it opens under the neck and runs on down its sides.
+	float on = uRootState.x, rrU = rr;
+	if ( on > 0.001 && d > - NECK_TOP ) rrU = mix( rr, min( neckRim( Q.x, d, on ), rr ), smoothstep( - NECK_TOP, - 0.5 * NECK_TOP, d ) );
+
 	// The grain lies on the ball and turns with it, slowly, as something enormous turns.
 	vec3 q = uTurn * vec3( P.xy, P.z * ( 1.0 - GRAIN_FLAT ) );
 	float fp = max( max( length( dFdx( q ) ), length( dFdy( q ) ) ), 1e-4 );
-	// The body under the surface wells up and sinks, and the grains crowd where it wells up.
-	float conv = coreConvect( q, uTime );
-	vec2 g = coreSalt( q, fp, uTime, 1.0 + CONV_DENSE * conv );
+	vec2 g = coreGrainSteps( q, fp );
 	// Quieter across the band, which picture 9 has smooth.
-	float quiet = 1.0 - GRAIN_BAND * smoothstep( 0.92, 0.965, rr );
-	// Drawn about a unit to a pixel, as on the page, the grain is turned up to make up for the fine sizes a pixel cannot hold.
-	float v = clamp( GRAIN_GAIN * ( 1.0 + GRAIN_FAR * smoothstep( 0.4, 1.0, fp ) ) * g.x * quiet, - 3.0, 3.0 ), w = clamp( GRAIN_WARM * g.y * quiet, - 3.0, 3.0 );
-	vec3 col = coreBand( rr, bandPx ) * coreTint( v, w );
-	col *= 1.0 + BAND_LIFT * ( 1.0 - smoothstep( 0.6, 0.95, px * uR ) ) * smoothstep( BAND_AT.x, BAND_AT.y, rr ) * ( 1.0 - smoothstep( BAND_AT.z, BAND_AT.w, rr ) );
+	float quiet = 1.0 - GRAIN_BAND * smoothstep( 0.92, 0.965, rrU );
+	float v = g.x * quiet, w = g.y * quiet;
+	vec3 col = coreBand( rrU, bandPx ) * coreTint( v, w );
+	col *= 1.0 + BAND_LIFT * ( 1.0 - smoothstep( 0.6, 0.95, px * uR ) ) * smoothstep( BAND_AT.x, BAND_AT.y, rrU ) * ( 1.0 - smoothstep( BAND_AT.z, BAND_AT.w, rrU ) );
 
 	// Depth: the hotter body is seen through the cooler surface, through more of it the further out a ray meets the
-	// ball, so the middle is the body's, paler and stirring, and toward the rim the surface's deeper gold. Measured
-	// against the middle, so the ball's light there is the picture's.
+	// ball, so the middle is the body's. Measured against the middle, so the ball's light there is
+	// the picture's.
 	float mu = sqrt( max( 1.0 - rr * rr, 0.0 ) ), T = exp( - DEPTH_TAU / max( mu, 0.05 ) ), T0 = exp( - DEPTH_TAU );
-	vec3 body = DEPTH_BODY * ( 1.0 + CONV_LIGHT * conv * vec3( 0.9, 1.0, 1.15 ) );
-	vec3 depth = mix( DEPTH_SKIN, body, T ) / mix( DEPTH_SKIN, DEPTH_BODY, T0 );
-	col *= mix( depth, vec3( 1.0 ), smoothstep( LIMB_TO.x, LIMB_TO.y, rr ) );
+	vec3 depth = mix( DEPTH_SKIN, DEPTH_BODY, T ) / mix( DEPTH_SKIN, DEPTH_BODY, T0 );
+	// Under the surface a deeper layer of hotter, larger grains, softened by what lies over it and turning its own way,
+	// so the two slide across each other: seen most in the middle. It only ever
+	// adds light, less its own mean: taken away, it laid grey stains on the face.
+	vec3 qd = uDeep * ( P * DEEP_AT );
+	vec2 gd = coreSalt( qd / DEEP_SCALE, max( fp / DEEP_SCALE, DEEP_SOFT ), uTime, 1.0 );
+	depth *= 1.0 + DEEP_LIGHT * ( max( gd.x * GRAIN_BACK, 0.0 ) - DEEP_MEAN ) * ( T / T0 ) * DEEP_TINT;
+	col *= mix( depth, vec3( 1.0 ), smoothstep( LIMB_TO.x, LIMB_TO.y, rrU ) );
 	vec2 hp = P.xy / uR - HOT_AT;
-	col *= coreFall( rr ) * mix( 1.0 + HOT * exp( - dot( hp, hp ) / ( HOT_R * HOT_R ) ), 1.0, smoothstep( LIMB_TO.x, LIMB_TO.y, rr ) );
+	col *= coreFall( rrU ) * mix( 1.0 + HOT * exp( - dot( hp, hp ) / ( HOT_R * HOT_R ) ), 1.0, smoothstep( LIMB_TO.x, LIMB_TO.y, rrU ) );
+
+	// The facets among the grains: a little deeper than the ground, lit across their faces, and flashing whole when
+	// a face turns to the light within.
+	vec3 fc = coreFacets( q, fp, uTime, P.xy / uR );
+	float fq = fc.x * quiet * ( 1.0 - smoothstep( 0.4, 1.0, fp / FACET_CELL ) );
+	vec3 flash = min( col * FACET_FLASH, CAP );
+	col *= mix( vec3( 1.0 ), FACET_REST * ( 1.0 + FACET_SIDE * fc.y ), fq );
+	col = mix( col, flash, fq * fc.z );
 
 	// Before the stream sets off, the grain over the foot runs hot and draws down to it in a narrowing seam, swelling
 	// and easing on two slow waves. Only the grains change, so it is the face's own matter gathering and never a spot.
 	// The band runs on unbroken under it.
-	float on = uRootState.x, bead = coreBead();
+	float bead = coreBead();
 	float lift = Q.y + uR, tall = BEAD_SIZE.y * mix( 0.7, 1.0, bead );
 	float span = 0.5 + BEAD_SIZE.x * pow( clamp( lift / tall, 0.0, 1.0 ), 1.3 );
 	float seam = ( 1.0 - on ) * ( 1.0 - smoothstep( 0.45, 1.0, abs( Q.x ) / span ) ) * ( 1.0 - smoothstep( 0.4, 1.0, lift / tall ) ) * ( 1.0 - smoothstep( 0.975, 0.995, rr ) );
@@ -92,14 +108,10 @@ void main() {
 	col *= uLevel;
 	// Nothing brighter than pale gold once the stage's curve has had it, the brightest grains above all.
 	col *= min( 1.0, min( CAP.x / max( col.r, 1e-4 ), min( CAP.y / max( col.g, 1e-4 ), CAP.z / max( col.b, 1e-4 ) ) ) );
-	// Once it runs, under the beam's shoulders the band gives way to the face's own light, so the beam leaves the ball
-	// in one shape. The beam itself begins at the outline.
-	if ( on > 0.001 && d > - NECK_UP ) {
-		float up = smoothstep( - NECK_UP, 0.0, d ), u = neckAcross( Q.x, d, neckReach(), on );
-		vec3 face = min( coreRim( LIMB_TO.x ) * coreFall( LIMB_TO.x ) * depth * coreTint( v, w ) * uLevel, CAP );
-		col = mix( col, face, exp( - NECK_K * u * u ) * up * on );
-		float a = rootAmount( Q.x, d ) * up;
-		col = mix( col, rootColor( a ).rgb * uLevel, smoothstep( NECK_OVER.x, NECK_OVER.y, a ) );
+	// Over the foot the neck's own matter takes over, flowing out, so the ball and the neck are one thing.
+	if ( on > 0.001 && d > - NECK_JOIN.x ) {
+		vec4 n = neckLight( Q.x, d, max( length( vec2( dFdx( Q.x ), dFdy( Q.x ) ) ), 1e-3 ) );
+		col = mix( col, n.rgb * uLevel + col * ( 1.0 - n.a ), smoothstep( - NECK_JOIN.x, - NECK_JOIN.y, d ) );
 	}
 	gl_FragColor = vec4( coreUnbalance( col * cover ) / max( cover, 1e-3 ), cover );
 }`;

@@ -10,11 +10,10 @@ vec3 coreUnbalance( vec3 c ) {
 `;
 
 // The core's grain, in GLSL, worked out per pixel from a place in three dimensions, so nothing in it has a seam, a
-// pole or an outline. Two layers. The surface is a fine, sharp speckle, as picture 9's is: small round grains of
-// differing brightness on a slightly dimmer ground, a few sizes, each let go as it grows finer than a pixel with what
-// is let go given back to the sizes kept. Under it, the hotter body: slow convection, broad cells that well up and
-// sink, seen through the surface, which gather the grains where they well up. The two are drawn apart by how much of
-// the surface a ray crosses, so the body shows most in the middle and the cooler surface toward the rim.
+// pole or an outline. The surface is a fine speckle of points of light, each hottest at its middle with a soft edge,
+// a few sizes, each let go as it grows finer than a pixel with what is let go given back to the sizes kept. Among
+// them, facets: small flat crystal faces, deeper gold, which rock slowly and flash whole when a face turns to the
+// light within. Under it all a deeper layer of hotter, larger, softer grains turning its own way (shaders.ts).
 
 export const GRAIN = /* glsl */ `
 uvec3 corePcg( uvec3 v ) {
@@ -26,25 +25,9 @@ uvec3 corePcg( uvec3 v ) {
 }
 // Cells are offset so that every index is positive before it is read as unsigned.
 uvec3 coreHash( ivec3 c, uint seed ) { return corePcg( uvec3( c + 4096 ) + uvec3( seed, seed * 7u + 3u, seed * 13u + 5u ) ); }
-vec3 coreGrad( ivec3 c, uint seed ) { return vec3( coreHash( c, seed ) ) / 2147483648.0 - 1.0; }
 vec3 coreUnit( uvec3 h ) { return vec3( h & 0xffffu ) / 65535.0; }
 vec3 coreHigh( uvec3 h ) { return vec3( h >> 16u ) / 65535.0; }
 vec3 coreDir( vec3 v ) { return v / max( length( v ), 1e-4 ); }
-
-// Gradient noise, about -1 to 1.
-float coreNoise( vec3 p, uint seed ) {
-	vec3 i = floor( p ), f = p - i, u = f * f * f * ( f * ( f * 6.0 - 15.0 ) + 10.0 );
-	ivec3 c = ivec3( i );
-	float a = dot( coreGrad( c, seed ), f );
-	float b = dot( coreGrad( c + ivec3( 1, 0, 0 ), seed ), f - vec3( 1.0, 0.0, 0.0 ) );
-	float d = dot( coreGrad( c + ivec3( 0, 1, 0 ), seed ), f - vec3( 0.0, 1.0, 0.0 ) );
-	float e = dot( coreGrad( c + ivec3( 1, 1, 0 ), seed ), f - vec3( 1.0, 1.0, 0.0 ) );
-	float g = dot( coreGrad( c + ivec3( 0, 0, 1 ), seed ), f - vec3( 0.0, 0.0, 1.0 ) );
-	float h = dot( coreGrad( c + ivec3( 1, 0, 1 ), seed ), f - vec3( 1.0, 0.0, 1.0 ) );
-	float k = dot( coreGrad( c + ivec3( 0, 1, 1 ), seed ), f - vec3( 0.0, 1.0, 1.0 ) );
-	float l = dot( coreGrad( c + ivec3( 1, 1, 1 ), seed ), f - vec3( 1.0, 1.0, 1.0 ) );
-	return mix( mix( mix( a, b, u.x ), mix( d, e, u.x ), u.y ), mix( mix( g, h, u.x ), mix( k, l, u.x ), u.y ), u.z );
-}
 
 // How much of a size of grain a pixel can show: all of it while a grain spans two pixels or more, none once it spans
 // fewer than one and a quarter.
@@ -55,18 +38,24 @@ float coreKeep( float wave, float fp ) { return 1.0 - smoothstep( wave / 2.0, wa
 // are against their cells. Each grain has its own size, so the speckle is never a grid and never a mosaic.
 vec3 coreSpeck( vec3 p, float w, uint seed, float dense, out float warm ) {
 	ivec3 base = ivec3( floor( p - 0.5 ) );
-	float best = 1e9, v = 0.0;
+	float best = 1e9, v = 0.0, rad = 1.0;
 	warm = 0.0;
 	for ( int i = 0; i < 8; i ++ ) {
 		ivec3 c = base + ivec3( i & 1, ( i >> 1 ) & 1, i >> 2 );
 		uvec3 h = coreHash( c, seed );
 		vec3 r = coreUnit( h ), r2 = coreHigh( h );
-		float k = length( p - ( vec3( c ) + 0.5 + ( r - 0.5 ) * SPECK_JITTER ) ) - mix( SPECK_SIZE.x, SPECK_SIZE.y, r2.x ) * dense;
-		if ( k < best ) { best = k; v = r2.y; warm = r2.z * 2.0 - 1.0; }
+		float size = mix( SPECK_SIZE.x, SPECK_SIZE.y, r2.x ) * dense;
+		float k = length( p - ( vec3( c ) + 0.5 + ( r - 0.5 ) * SPECK_JITTER ) ) - size;
+		if ( k < best ) { best = k; v = r2.y; warm = r2.z * 2.0 - 1.0; rad = size; }
 	}
-	float cover = 1.0 - smoothstep( - 0.5 * w, 0.5 * w, best );
+	// Its edge is soft, as light's is, over a share of its radius.
+	float cover = 1.0 - smoothstep( - SPECK_SOFT * rad - 0.5 * w, 0.5 * w, best );
+	// A grain is a point of light and not a dot of paint: hottest at its middle and dimmer toward its edge, by as
+	// much on average as it is brighter in the middle, so the face keeps its light. Let go as a pixel grows to it.
+	float at = clamp( ( best + rad ) / max( rad, 1e-3 ), 0.0, 1.0 );
+	float dome = 1.0 + SPECK_GLOW * ( 1.0 - smoothstep( 0.5, 1.5, w / max( rad, 1e-3 ) ) ) * ( 1.0 - 1.667 * at * at );
 	// Most grains a little brighter than the ground and a few much brighter: the sparkle.
-	return vec3( pow( v, SPECK_POW ), cover, 0.0 );
+	return vec3( pow( v, SPECK_POW ) * dome, cover, 0.0 );
 }
 
 // The speckle at a place q, in units, of a few sizes, each half the last. Brightness and warmth, about -1 to 1, with
@@ -89,13 +78,41 @@ vec2 coreSalt( vec3 q, float fp, float t, float dense ) {
 	return s * min( sqrt( all / max( kept, 1e-3 ) ), GRAIN_BACK );
 }
 
-// The body's convection, about -1 to 1: broad cells that well up and sink, slowly stirred, changing as they go.
-float coreConvect( vec3 q, float t ) {
-	vec3 p = q / CONV_WAVE;
-	vec3 stir = vec3( coreNoise( 0.55 * p + vec3( 0.0, 0.0, t * CONV_STIR ), 91u ), coreNoise( 0.55 * p + vec3( 5.2, 1.3, t * CONV_STIR ), 92u ), coreNoise( 0.55 * p + vec3( 2.7, 7.1, t * CONV_STIR ), 95u ) );
-	p += CONV_WARP * stir + vec3( 0.0, 0.0, t * CONV_RATE );
-	float c = 0.7 * coreNoise( p, 93u ) + 0.3 * coreNoise( 2.03 * p + vec3( 3.1, 0.0, t * CONV_RATE ), 94u );
-	return clamp( 1.8 * c, - 1.0, 1.0 );
+// The facets: a share of the grains are flat crystal faces, each a small polygon with its own tilt, which rocks
+// slowly. Each is a little deeper than the ground until its face turns to the light within, and then the whole face
+// flashes, as a solid shard of the stream does. At p in units, a pixel fp wide, a time t, and n the face's normal on
+// the ball as seen. Returns how much of the pixel is a facet, how far it is lit across its face (-1 to 1), and how
+// strongly it flashes (0 to 1).
+vec3 coreFacets( vec3 p, float fp, float t, vec2 n ) {
+	vec3 q = p / FACET_CELL;
+	float w = fp / FACET_CELL;
+	ivec3 base = ivec3( floor( q - 0.5 ) );
+	vec3 best = vec3( 0.0 );
+	for ( int i = 0; i < 8; i ++ ) {
+		ivec3 c = base + ivec3( i & 1, ( i >> 1 ) & 1, i >> 2 );
+		uvec3 h = coreHash( c, 401u ), h2 = coreHash( c, 409u );
+		vec3 r = coreUnit( h ), r2 = coreHigh( h ), r3 = coreUnit( h2 ), r4 = coreHigh( h2 );
+		if ( r3.z > FACET_SHARE ) continue;
+		vec3 o = q - ( vec3( c ) + 0.5 + ( r - 0.5 ) * 0.7 );
+		// Its outline: five edges at their own angles round it, so no two are the same polygon.
+		float a0 = r2.x * 6.2832, edge = - 1e3;
+		for ( int k = 0; k < 5; k ++ ) {
+			float a = a0 + float( k ) * 1.2566 + ( r4[ k % 3 ] - 0.5 ) * 0.5;
+			edge = max( edge, dot( o.xy, vec2( cos( a ), sin( a ) ) ) );
+		}
+		edge = max( edge, abs( o.z ) * 0.8 );
+		float size = mix( FACET_SIZE.x, FACET_SIZE.y, r2.y );
+		float cover = 1.0 - smoothstep( - 0.5 * w, 0.5 * w, edge - size );
+		if ( cover <= best.x ) continue;
+		// Its tilt, which rocks slowly on its own two beats, and how near the tilt and the ball's face as seen bring
+		// it to the light within.
+		vec2 tilt = FACET_TILT * ( r3.xy - 0.5 ) * 2.0 + FACET_ROCK * vec2( sin( t * mix( 0.25, 0.7, r4.x ) + 6.2832 * r4.y ), cos( t * mix( 0.2, 0.6, r4.z ) + 6.2832 * r2.z ) );
+		vec2 face = tilt + FACET_BALL * n - FACET_TO;
+		float flash = exp( - dot( face, face ) / ( FACET_SHARP * FACET_SHARP ) );
+		float across = clamp( dot( o.xy, normalize( tilt + 1e-4 ) ) / max( size, 1e-3 ), - 1.0, 1.0 ) * min( length( tilt ) / FACET_TILT, 1.0 );
+		best = vec3( cover, across, flash );
+	}
+	return best;
 }
 
 // The grain's light as shares of the light where it is, from its steps of brightness and of warmth.

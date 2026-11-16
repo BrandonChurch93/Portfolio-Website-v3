@@ -83,8 +83,9 @@ void main(){
 // Without either the shader is the test shot's, letter for letter.
 export const SWELLS = 4;
 // Where the stream begins part way down its route: the share of its heart's width it starts at, and over how many
-// units that thread comes to its whole light.
-const BORN = { thread: 0.3, lit: 6 };
+// units it comes to its whole light. It starts whole and at once: narrower than a pixel it was drawn dim, and a dim
+// heart is orange and covers the core's pale neck under it as far as it is bright, which was a waist again.
+const BORN = { thread: 1, lit: 2 };
 export const coreFrag = (strands: number, ends = false, swell = false, born = false) => `${HEAD}
 in vec3 vAlong;
 uniform float uTime, uEnergy, uHeart;
