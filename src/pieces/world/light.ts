@@ -116,6 +116,7 @@ const CORE_LIGHT = `
 const BOUNCE = `
 #ifdef WORLD_CORE
 	iblIrradiance *= ${LIGHT.fill.toFixed(3)};
+	radiance *= ${LIGHT.fill.toFixed(3)};
 #else
 	iblIrradiance *= ${LIGHT.top.toFixed(3)};
 #endif

@@ -18,10 +18,10 @@ import * as S from './land/shaders';
 // shows, the flat stones in the grass, and the bronze laid in the spire's court.
 const mix = (a: THREE.Color, b: THREE.Color, k: number): THREE.Color => a.clone().lerp(b, k);
 const LOOK = {
-  sand: mix(color('pale'), color('copper-light'), 0.55).multiplyScalar(0.62),
-  sandDeep: mix(color('copper'), color('bronze'), 0.55).multiplyScalar(0.55),
+  sand: mix(color('pale'), color('hot'), 0.55).multiplyScalar(0.8),
+  sandDeep: mix(color('copper'), color('ember'), 0.35).multiplyScalar(0.7),
   pave: mix(color('text-3'), color('bg-3'), 0.62),
-  pavePale: mix(color('text-3'), color('text-2'), 0.3).multiplyScalar(0.72),
+  pavePale: mix(color('text-3'), color('copper-light'), 0.22).multiplyScalar(0.62),
   court: mix(color('text-3'), color('copper-light'), 0.18).multiplyScalar(0.62),
   grass: mix(color('bronze'), color('copper'), 0.35).multiplyScalar(0.55),
   grassDry: mix(color('copper-light'), color('text-3'), 0.4).multiplyScalar(0.55),
@@ -56,7 +56,7 @@ function floats(data: Float32Array, wide: number, tall: number): THREE.DataTextu
   return t;
 }
 
-export const build: PartFactory = async () => {
+export const build: PartFactory = async ({ query }) => {
   const [file, a, b, lots, light] = await Promise.all([load('land.bin'), picture('land-a.png', false), picture('land-b.png', false), picture('land-lots.png', true), picture('land-light.png', false)]);
   const ground = file.meshes.get('ground');
   if (!ground) throw new Error('land.bin holds no ground: make it again with scripts/world/parts/land/make.mjs');
@@ -84,6 +84,8 @@ export const build: PartFactory = async () => {
     fr = after(fr, 'roughnessmap_fragment', S.ROUGH);
     fr = after(fr, 'metalnessmap_fragment', S.METAL);
     fr = after(fr, 'normal_fragment_maps', S.NORMAL);
+    fr = after(fr, 'lights_fragment_begin', S.DIRECT);
+    if (query.get('landdebug')) fr = fr.replace('#include <opaque_fragment>', `#include <opaque_fragment>\ngl_FragColor = vec4(${query.get('landdebug')}, 1.0);`);
     fr = fr.replace('#include <lights_fragment_end>', `${S.LIGHT_END}\n#include <lights_fragment_end>`);
     sh.fragmentShader = fr;
   };

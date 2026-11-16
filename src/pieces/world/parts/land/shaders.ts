@@ -1,4 +1,4 @@
-import { COURT, LIGHT, PYRAMID, WORLD, D2R } from '../../layout';
+import { COURT, LIGHT, MOONWARD, PYRAMID, WORLD, D2R } from '../../layout';
 import { BREAK, GLSL, MAP, WIND } from './field';
 
 // The land's shader, laid over the standard material: what each place is made of, worked out per pixel from the
@@ -38,6 +38,7 @@ const float LAND_BOUNCE = ${f(LIGHT.bounce)};
 // The share of the night's soft light the sand keeps: the night is lit from the visitor's side, and in full it
 // turned the dunes' slip faces, which face the visitor, a pale grey in place of a deep warm shadow.
 const float SAND_NIGHT = 0.22;
+const vec3 MOON_TO = normalize(vec3(${MOONWARD.map((v) => f(v)).join(', ')}));
 ${GLSL}
 vec3 landAlbedo;
 float landRough, landMetal;
@@ -214,6 +215,8 @@ void landSurface() {
 		float grain = landNoise(p / 0.35) - 0.5, fwp = max(fwidth(p.x), fwidth(p.y));
 		dune = mix(uSandDeep, uSand, 0.35 + 0.65 * hi) * (1.0 + 0.12 * grain * landKeep(0.7, fwp)) * (0.93 + 0.14 * landNoise(p / 31.0));
 		dune *= 1.0 + 0.05 * sin(6.2832 * q) * back * k1;
+		// A slip face is coarser, darker, redder sand than a back, which the wind keeps fine.
+		dune = mix(dune, uSandDeep * (0.9 + 0.2 * landNoise(p / 9.0)), smoothstep(0.32, 0.6, steep) * 0.65);
 	}
 
 	// The break: slabs cracked apart near the land's front edge.
@@ -256,6 +259,15 @@ export const METAL = /* glsl */ `
 metalnessFactor = landMetal;`;
 export const NORMAL = /* glsl */ `
 normal = normalize( mat3( viewMatrix ) * landN );`;
+// The moon's light eased to nothing over the last few degrees before a face turns from it, by the face's own slope
+// and not the mesh's: a slip face is then in full shadow, and the shadow map's grain never shows where the moon
+// only grazes a face.
+export const DIRECT = /* glsl */ `
+{
+	float landLee = smoothstep( 0.0, 0.14, dot( landN, MOON_TO ) );
+	reflectedLight.directDiffuse *= landLee;
+	reflectedLight.directSpecular *= landLee;
+}`;
 // The light that has bounced and how open the place is, from the maps, as the world's stored light is used.
 export const LIGHT_END = /* glsl */ `
 {

@@ -14,7 +14,7 @@ import type { PartFactory } from '../part';
 const CLAY = hex('text-3'), DARK = 0x16110d;
 
 export const build: PartFactory = async ({ query }) => {
-  const group = new THREE.Group(), which = query.get('rock') ?? 'a', made: { dispose(): void }[] = [];
+  const group = new THREE.Group(), which = query.get('rock') ?? 'r', made: { dispose(): void }[] = [];
   const add = (g: THREE.BufferGeometry, m: THREE.Material): void => { made.push(g, m); };
   try {
     const file = await load(`rock-${which}.bin`);

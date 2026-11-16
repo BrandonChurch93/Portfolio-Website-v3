@@ -24,7 +24,7 @@ const LOOK = {
   rough: 0.86,
   // The detail map: how many units each of its two sizes covers, how much an edge is worn bright, and how deep its
   // breaks are, in the stage's own measure.
-  detail: [38, 11, 0.38, 1.4 * SCALE] as const,
+  detail: [38, 11, 0.38, 1.0 * SCALE] as const,
   // The stream's light: its color, and for the stream and the small streams, how bright and over how many units it
   // falls to half.
   stream: { color: color('hot').lerp(color('flame'), 0.3), main: [26, 120] as const, small: [4, 45] as const, foot: 420 },

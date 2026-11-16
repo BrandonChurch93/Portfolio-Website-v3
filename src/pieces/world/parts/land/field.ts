@@ -20,69 +20,70 @@ export const PROFILE = { slip: 0.66, back: 0.2, round: 0.3, dip: 0.4, reach: 2.0
 // how far its height leans toward one horn (-1 to 1). Laid to picture 9's dark slip faces with npm run match.
 export type Dune = readonly [x: number, z: number, long: number, tall: number, bend: number, turn: number, lean: number];
 export const DUNES: readonly Dune[] = [
-  [366, 140, 90, 17, 0.45, 0, 0.2],
-  [455, 95, 85, 13, 0.5, 5, -0.2],
-  [480, 320, 150, 22, 0.35, -8, 0.4],
-  [495, -50, 80, 14, 0.45, 0, 0],
-  [570, -80, 80, 15, 0.45, 5, 0.2],
-  [625, -120, 60, 13, 0.4, 0, 0],
-  [560, 170, 120, 18, 0.4, -5, -0.3],
-  [320, 300, 70, 10, 0.5, 10, 0.3],
-  [410, 230, 70, 11, 0.5, -10, 0],
-  [600, 60, 90, 16, 0.45, 8, 0.2],
-  [430, -20, 60, 10, 0.5, 0, 0],
-  [350, 40, 60, 9, 0.5, 0, 0],
+  [510, -60, 130, 12, 0.18, 0, 0.3],
+  [600, -110, 110, 13, 0.22, 6, -0.2],
+  [370, 140, 130, 14, 0.2, -6, 0.3],
+  [470, 100, 120, 11, 0.25, 4, -0.3],
+  [585, 120, 150, 15, 0.2, -4, 0.2],
+  [440, 330, 190, 17, 0.15, -6, 0.35],
+  [330, 330, 90, 9, 0.25, 8, -0.2],
+  [590, 280, 100, 12, 0.25, 6, 0.1],
+  [420, 20, 90, 8, 0.3, 10, 0],
+  [540, 30, 80, 9, 0.25, -8, 0.2],
+  [300, 220, 60, 7, 0.3, 0, 0],
+  [520, 210, 90, 9, 0.3, 12, -0.2],
 ];
-// How many straight pieces each crest is drawn with.
-export const PIECES = 32;
+// How each crest wanders: two waves along it, as shares of its length, and how many times each crosses it.
+export const WANDER = { a: [0.06, 3.1], b: [0.025, 7.3] } as const;
+// How many places along a crest are tried before the nearest is found exactly.
+const SEEK = 16;
 
-// The crest of each dune as PIECES + 1 points, and the circle outside which the dune adds nothing.
-export interface Crest { points: [number, number][]; tall: number; lean: number; at: [number, number]; reach: number }
+// Each dune's crest is a smooth curve in the dune's own frame: across the wind (a, from its middle) and downwind of
+// its middle (d). Its horns trail downwind, and it wanders. A place's nearest point on the crest is found by
+// Newton's method, so the slip face is one smooth sheet at any size: a crest of straight pieces creased it at every
+// joint.
+export interface Crest { at: [number, number]; wind: [number, number]; long: number; tall: number; bend: number; lean: number; phase: [number, number]; reach: number }
 export function crests(): Crest[] {
   return DUNES.map(([x, z, long, tall, bend, turn, lean], i) => {
     const a = (turn * Math.PI) / 180, c = Math.cos(a), s = Math.sin(a);
-    const wx = WIND[0] * c - WIND[1] * s, wz = WIND[0] * s + WIND[1] * c, px = -wz, pz = wx;
-    const points: [number, number][] = [];
-    for (let k = 0; k <= PIECES; k++) {
-      const t = (k / PIECES) * 2 - 1, across = (t * long) / 2, down = bend * (long / 2) * (t * t - 1 / 3) + 0.04 * long * Math.sin(3.1 * t + i * 1.7);
-      points.push([x + px * across + wx * down, z + pz * across + wz * down]);
-    }
-    let r = 0;
-    for (const [qx, qz] of points) r = Math.max(r, Math.hypot(qx - x, qz - z));
     const lee = (tall * (1 + PROFILE.dip)) / PROFILE.slip + PROFILE.reach * tall;
-    return { points, tall, lean, at: [x, z], reach: r + Math.max(tall / PROFILE.back, lee) + 2 };
+    return { at: [x, z], wind: [WIND[0] * c - WIND[1] * s, WIND[0] * s + WIND[1] * c], long, tall, bend, lean, phase: [i * 1.7, i * 2.9], reach: long * (0.5 + bend + WANDER.a[0] + WANDER.b[0]) + Math.max(tall / PROFILE.back, lee) + 2 };
   });
+}
+// The crest's downwind offset at u (-1 to 1 along it), and its first and second rates of change with u.
+function line(cr: Crest, u: number): [number, number, number] {
+  const L = cr.long, h = cr.bend * L * 0.5, [pa, pb] = cr.phase, [ka, fa] = WANDER.a, [kb, fb] = WANDER.b;
+  const sa = Math.sin(fa * u + pa), ca = Math.cos(fa * u + pa), sb = Math.sin(fb * u + pb), cb = Math.cos(fb * u + pb);
+  return [h * (u * u - 1 / 3) + ka * L * sa + kb * L * sb, 2 * h * u + ka * L * fa * ca + kb * L * fb * cb, 2 * h - ka * L * fa * fa * sa - kb * L * fb * fb * sb];
 }
 
 // One dune's height at a place: its crest's height where the place is nearest it, its back on the side the wind
 // comes from, and on the other its slip face down into its hollow.
 function oneDune(cr: Crest, x: number, z: number): number {
-  const p = cr.points;
-  let best = Infinity, sd = 0, s = 0;
-  for (let k = 0; k < PIECES; k++) {
-    const [ax, az] = p[k], [bx, bz] = p[k + 1], ex = bx - ax, ez = bz - az, l2 = Math.max(ex * ex + ez * ez, 1e-6);
-    const t = Math.min(1, Math.max(0, ((x - ax) * ex + (z - az) * ez) / l2)), cx = ax + ex * t, cz = az + ez * t;
-    const d2 = (x - cx) ** 2 + (z - cz) ** 2;
-    if (d2 < best) {
-      best = d2;
-      let nx = -ez, nz = ex;
-      if (nx * WIND[0] + nz * WIND[1] < 0) { nx = -nx; nz = -nz; }
-      sd = ((x - cx) * nx + (z - cz) * nz >= 0 ? 1 : -1) * Math.sqrt(d2);
-      s = (k + t) / PIECES;
-    }
+  const rx = x - cr.at[0], rz = z - cr.at[1], [wx, wz] = cr.wind, A = -rx * wz + rz * wx, D = rx * wx + rz * wz, half = cr.long / 2;
+  let u = 0, best = Infinity;
+  for (let k = 0; k <= SEEK; k++) {
+    const v = (2 * k) / SEEK - 1, e = (A - v * half) ** 2 + (D - line(cr, v)[0]) ** 2;
+    if (e < best) { best = e; u = v; }
   }
-  const c = cr.tall * Math.max(0, 1 - (2 * s - 1) ** 2) ** 0.7 * (1 + cr.lean * (2 * s - 1));
+  for (let k = 0; k < 4; k++) {
+    const [d, d1, d2] = line(cr, u), g1 = d1 / half, g2 = d2 / (half * half), a = u * half;
+    const f = a - A + (d - D) * g1, fp = 1 + g1 * g1 + (d - D) * g2;
+    u = Math.min(1, Math.max(-1, u - Math.min(1 / SEEK, Math.max(-1 / SEEK, f / Math.max(fp, 0.2) / half))));
+  }
+  const [d, d1] = line(cr, u), g1 = d1 / half, sd = (-(A - u * half) * g1 + (D - d)) / Math.sqrt(1 + g1 * g1);
+  const c = cr.tall * Math.max(0, 1 - u * u) ** 0.7 * (1 + cr.lean * u);
   if (c < 1e-3) return 0;
   if (sd < 0) {
-    const u = (-sd * PROFILE.back) / c;
-    return u < 1 ? c * ((1 - PROFILE.round) * (1 - u) ** 2 * (1 + 2 * u) + PROFILE.round * (1 - u) ** 1.5) : 0;
+    const t = (-sd * PROFILE.back) / c;
+    return t < 1 ? c * ((1 - PROFILE.round) * (1 - t) ** 2 * (1 + 2 * t) + PROFILE.round * (1 - t) ** 1.5) : 0;
   }
   const deep = PROFILE.dip * c, foot = (c + deep) / PROFILE.slip, v = Math.min(1, Math.max(0, (sd - foot) / (PROFILE.reach * c)));
   return Math.max(c - PROFILE.slip * sd, -deep * (1 - v * v * (3 - 2 * v)));
 }
 
 // A slow swell under the dunes, so the sand between them is never level.
-export const swell = (x: number, z: number): number => 1.8 * Math.sin(x * 0.021 + z * 0.013 + 1.3) * Math.sin(z * 0.027 - x * 0.009 + 0.4);
+export const swell = (x: number, z: number): number => 2.4 * Math.sin(x * 0.021 + z * 0.013 + 1.3) * Math.sin(z * 0.027 - x * 0.009 + 0.4) + 1.1 * Math.sin(x * 0.052 - z * 0.031 + 2.1) * Math.sin(z * 0.061 + x * 0.017);
 
 let made: Crest[] | null = null;
 // The desert's relief over the dome at a place, before the desert's own mask is laid on it.
@@ -98,17 +99,12 @@ export function relief(x: number, z: number): number {
   return up + down + swell(x, z);
 }
 
-// The crests as a float texture for the shader: a row for each dune, PIECES + 1 points as (x, z) pairs packed two to
-// a texel, then (tall, lean, x, z) and (reach, 0, 0, 0).
-export const ROW = Math.ceil((PIECES + 1) / 2) + 2;
+// The crests as a float texture for the shader, a row for each dune: (x, z, wind), (long, tall, bend, lean),
+// (phase, reach, 0).
+export const ROW = 3;
 export function crestTexels(): Float32Array {
   const cs = crests(), data = new Float32Array(cs.length * ROW * 4);
-  cs.forEach((cr, d) => {
-    const row = d * ROW * 4;
-    cr.points.forEach(([x, z], k) => data.set([x, z], row + k * 2));
-    data.set([cr.tall, cr.lean, cr.at[0], cr.at[1]], row + (ROW - 2) * 4);
-    data.set([cr.reach, 0, 0, 0], row + (ROW - 1) * 4);
-  });
+  cs.forEach((cr, d) => data.set([...cr.at, ...cr.wind, cr.long, cr.tall, cr.bend, cr.lean, ...cr.phase, cr.reach, 0], d * ROW * 4));
   return data;
 }
 
@@ -153,36 +149,40 @@ export const broken = (inside: number): number => Math.max(0, 1 - inside / BREAK
 export const GLSL = /* glsl */ `
 uniform sampler2D uCrest;
 const vec2 WIND = vec2(${WIND[0].toFixed(4)}, ${WIND[1].toFixed(4)});
-float landDune(vec2 p, int d) {
-	vec4 m = texelFetch(uCrest, ivec2(${ROW - 2}, d), 0), r = texelFetch(uCrest, ivec2(${ROW - 1}, d), 0);
-	if (distance(p, m.zw) > r.x) return 0.0;
-	float best = 1e20, sd = 0.0, s = 0.0;
-	vec2 a = texelFetch(uCrest, ivec2(0, d), 0).xy;
-	for (int k = 0; k < ${PIECES}; k++) {
-		vec4 q = texelFetch(uCrest, ivec2((k + 1) / 2, d), 0);
-		vec2 b = ((k + 1) % 2 == 0) ? q.xy : q.zw, e = b - a;
-		float l2 = max(dot(e, e), 1e-6), t = clamp(dot(p - a, e) / l2, 0.0, 1.0);
-		vec2 c = a + e * t, w = p - c;
-		float d2 = dot(w, w);
-		if (d2 < best) {
-			best = d2;
-			vec2 n = vec2(-e.y, e.x);
-			if (dot(n, WIND) < 0.0) n = -n;
-			sd = (dot(w, n) >= 0.0 ? 1.0 : -1.0) * sqrt(d2);
-			s = (float(k) + t) / ${PIECES}.0;
-		}
-		a = b;
-	}
-	float x2 = 2.0 * s - 1.0, c = m.x * pow(max(0.0, 1.0 - x2 * x2), 0.7) * (1.0 + m.y * x2);
-	if (c < 1e-3) return 0.0;
-	if (sd < 0.0) {
-		float u = -sd * ${PROFILE.back.toFixed(4)} / c;
-		return u < 1.0 ? c * ((1.0 - ${PROFILE.round.toFixed(4)}) * (1.0 - u) * (1.0 - u) * (1.0 + 2.0 * u) + ${PROFILE.round.toFixed(4)} * pow(1.0 - u, 1.5)) : 0.0;
-	}
-	float deep = ${PROFILE.dip.toFixed(4)} * c, foot = (c + deep) / ${PROFILE.slip.toFixed(4)}, v = clamp((sd - foot) / (${PROFILE.reach.toFixed(4)} * c), 0.0, 1.0);
-	return max(c - ${PROFILE.slip.toFixed(4)} * sd, -deep * (1.0 - v * v * (3.0 - 2.0 * v)));
+vec3 landLine(vec4 b, vec4 c, float u) {
+	float L = b.x, h = b.z * L * 0.5;
+	float sa = sin(${WANDER.a[1].toFixed(4)} * u + c.x), ca = cos(${WANDER.a[1].toFixed(4)} * u + c.x), sb = sin(${WANDER.b[1].toFixed(4)} * u + c.y), cb = cos(${WANDER.b[1].toFixed(4)} * u + c.y);
+	const float KA = ${WANDER.a[0].toFixed(4)}, FA = ${WANDER.a[1].toFixed(4)}, KB = ${WANDER.b[0].toFixed(4)}, FB = ${WANDER.b[1].toFixed(4)};
+	return vec3(h * (u * u - 1.0 / 3.0) + KA * L * sa + KB * L * sb, 2.0 * h * u + KA * L * FA * ca + KB * L * FB * cb, 2.0 * h - KA * L * FA * FA * sa - KB * L * FB * FB * sb);
 }
-float landSwell(vec2 p) { return 1.8 * sin(p.x * 0.021 + p.y * 0.013 + 1.3) * sin(p.y * 0.027 - p.x * 0.009 + 0.4); }
+float landDune(vec2 p, int d) {
+	vec4 a = texelFetch(uCrest, ivec2(0, d), 0), b = texelFetch(uCrest, ivec2(1, d), 0), c = texelFetch(uCrest, ivec2(2, d), 0);
+	vec2 r = p - a.xy;
+	if (dot(r, r) > c.z * c.z) return 0.0;
+	float A = -r.x * a.w + r.y * a.z, D = r.x * a.z + r.y * a.w, hl = b.x * 0.5;
+	float u = 0.0, best = 1e20;
+	for (int k = 0; k <= ${SEEK}; k++) {
+		float v = 2.0 * float(k) / ${SEEK}.0 - 1.0, q = A - v * hl, e = D - landLine(b, c, v).x;
+		e = q * q + e * e;
+		if (e < best) { best = e; u = v; }
+	}
+	for (int k = 0; k < 4; k++) {
+		vec3 l = landLine(b, c, u);
+		float g1 = l.y / hl, g2 = l.z / (hl * hl), f = u * hl - A + (l.x - D) * g1, fp = 1.0 + g1 * g1 + (l.x - D) * g2;
+		u = clamp(u - clamp(f / max(fp, 0.2) / hl, -1.0 / ${SEEK}.0, 1.0 / ${SEEK}.0), -1.0, 1.0);
+	}
+	vec3 l = landLine(b, c, u);
+	float g1 = l.y / hl, sd = (-(A - u * hl) * g1 + (D - l.x)) / sqrt(1.0 + g1 * g1);
+	float h = b.y * pow(max(0.0, 1.0 - u * u), 0.7) * (1.0 + b.w * u);
+	if (h < 1e-3) return 0.0;
+	if (sd < 0.0) {
+		float t = -sd * ${PROFILE.back.toFixed(4)} / h;
+		return t < 1.0 ? h * ((1.0 - ${PROFILE.round.toFixed(4)}) * (1.0 - t) * (1.0 - t) * (1.0 + 2.0 * t) + ${PROFILE.round.toFixed(4)} * pow(1.0 - t, 1.5)) : 0.0;
+	}
+	float deep = ${PROFILE.dip.toFixed(4)} * h, foot = (h + deep) / ${PROFILE.slip.toFixed(4)}, v = clamp((sd - foot) / (${PROFILE.reach.toFixed(4)} * h), 0.0, 1.0);
+	return max(h - ${PROFILE.slip.toFixed(4)} * sd, -deep * (1.0 - v * v * (3.0 - 2.0 * v)));
+}
+float landSwell(vec2 p) { return 2.4 * sin(p.x * 0.021 + p.y * 0.013 + 1.3) * sin(p.y * 0.027 - p.x * 0.009 + 0.4) + 1.1 * sin(p.x * 0.052 - p.y * 0.031 + 2.1) * sin(p.y * 0.061 + p.x * 0.017); }
 float landRelief(vec2 p) {
 	float up = 0.0, down = 0.0;
 	for (int d = 0; d < ${DUNES.length}; d++) { float h = landDune(p, d); up = max(up, h); down = min(down, h); }
