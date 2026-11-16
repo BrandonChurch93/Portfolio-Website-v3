@@ -18,6 +18,9 @@ import styles from './ContactLab.module.css';
 const REACH = 5;
 const u = (n: number) => `calc(var(--u) * ${Number(n.toFixed(2))})`;
 const P = CONTACT.plate;
+const FIELDS = ['name', 'email', 'message'] as const;
+type Field = (typeof FIELDS)[number];
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Contact, built for real (BRIEF.md, Settled, "Contact, the first build"). The page only lays things out: the
 // title, the one plate that holds everything, the launch pad (src/pieces/pad) and a plain footer. The stream plans
@@ -36,6 +39,9 @@ export function ContactLab({ hub }: { hub?: Hub }) {
   const [wide, setWide] = useState<boolean | null>(null);
   const [copied, setCopied] = useState(false);
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
+  // The fields the form was sent with empty or wrong. The plate says so itself, in place of the browser's bubble.
+  const [wrong, setWrong] = useState<Partial<Record<Field, boolean>>>({});
+  const sentAt = useRef<HTMLDivElement>(null), was = useRef(state);
 
   useEffect(() => {
     setUi(new URLSearchParams(location.search).get('ui') !== '0' && !hub);
@@ -76,16 +82,34 @@ export function ContactLab({ hub }: { hub?: Hub }) {
     setCopied(true);
   };
 
+  // Focus goes with what replaced the thing it was on: to the confirmation when the form has gone, and back to the
+  // first field when the form is asked for again.
+  useEffect(() => {
+    if (state === 'sent') sentAt.current?.focus({ preventScroll: true });
+    else if (was.current === 'sent') form.current?.querySelector<HTMLElement>('[name="name"]')?.focus({ preventScroll: true });
+    was.current = state;
+  }, [state]);
+
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (state === 'sending') return;
+    const el = e.currentTarget, data = new FormData(el), said = (k: Field) => String(data.get(k) ?? '').trim();
+    const bad = { name: !said('name'), email: !EMAIL.test(said('email')), message: !said('message') };
+    setWrong(bad);
+    const first = FIELDS.find((k) => bad[k]);
+    if (first) { el.querySelector<HTMLElement>(`[name="${first}"]`)?.focus(); return; }
     setState('sending');
-    const ok = await send(e.currentTarget);
+    const ok = await send(el);
     if (ok) form.current?.reset();
     setState(ok ? 'sent' : 'failed');
   };
+  const typed = (e: FormEvent<HTMLFormElement>) => {
+    const k = (e.target as HTMLInputElement).name as Field;
+    if (wrong[k]) setWrong((w) => ({ ...w, [k]: false }));
+  };
 
   const F = contact.form;
+  const cap = (k: Field) => <span className={styles.cap}><span>{F[k]}</span><em>{wrong[k] ? F.wrong[k] : ''}</em></span>;
   return (
     <Shell ref={page} className={styles.page} data-wide={wide ?? undefined} data-embed={hub ? '' : undefined}>
       {ui && (
@@ -108,38 +132,36 @@ export function ContactLab({ hub }: { hub?: Hub }) {
                 <MetalButton label={copied ? contact.email.copied : contact.email.label} variant="accent" onClick={copy} className={styles.copy} />
                 <span className="visually-hidden" role="status">{copied ? 'Email address copied' : ''}</span>
               </div>
-              <p className={styles.rule}><span>{contact.rule}</span></p>
+              {state !== 'sent' && <p className={styles.rule}><span>{contact.rule}</span></p>}
               {state === 'sent' ? (
-                <div className={styles.sent} role="status">
+                <div ref={sentAt} tabIndex={-1} className={styles.sent} role="status">
                   <p className={styles.sentHead}>{F.sent[0]}</p>
                   <p className={styles.sentBody}>{F.sent[1]}</p>
                   <button type="button" className={styles.again} onClick={() => setState('idle')}>{F.again}</button>
                 </div>
               ) : (
-                <form ref={form} className={styles.form} onSubmit={submit} aria-busy={state === 'sending'}>
+                <form ref={form} className={styles.form} onSubmit={submit} onInput={typed} noValidate aria-busy={state === 'sending'}>
                   <input type="text" name="_honey" className={styles.honey} tabIndex={-1} autoComplete="off" aria-hidden="true" />
                   <div className={styles.pair}>
                     <label className={styles.field}>
-                      <span>{F.name}</span>
-                      <input name="name" type="text" required autoComplete="name" />
+                      {cap('name')}
+                      <input name="name" type="text" required autoComplete="name" aria-invalid={wrong.name || undefined} />
                     </label>
                     <label className={styles.field}>
-                      <span>{F.email}</span>
-                      <input name="email" type="email" required autoComplete="email" />
+                      {cap('email')}
+                      <input name="email" type="email" required autoComplete="email" aria-invalid={wrong.email || undefined} />
                     </label>
                   </div>
                   <label className={`${styles.field} ${styles.message}`}>
-                    <span>{F.message}</span>
-                    <textarea name="message" required rows={4} />
+                    {cap('message')}
+                    <textarea name="message" required rows={4} aria-invalid={wrong.message || undefined} />
                   </label>
-                  <button type="submit" className={styles.send} disabled={state === 'sending'}>
-                    <span>{state === 'sending' ? F.sending : F.send}</span>
-                    <span aria-hidden="true" className={styles.arrow}>{state === 'sending' ? '…' : '→'}</span>
-                  </button>
-                  <p className={styles.failed} role="alert">{state === 'failed' ? F.failed : ''}</p>
+                  <MetalButton label={state === 'sending' ? F.sending : F.send} variant="accent" submit disabled={state === 'sending'} className={styles.send} />
+                  <span className="visually-hidden" role="alert">{state === 'failed' ? F.failed : ''}</span>
                 </form>
               )}
-              <p className={styles.based}>{contact.based}</p>
+              {/* A message that did not send says so where his city stands, so nothing on the plate moves. */}
+              <p className={styles.based} data-failed={state === 'failed' || undefined} aria-hidden={state === 'failed' || undefined}>{state === 'failed' ? F.failed : contact.based}</p>
             </div>
           </div>
         </section>
