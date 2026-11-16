@@ -82,6 +82,8 @@ export interface WorldExtras {
   // What the page's stream is doing where it leaves the core: how much of it is there, 0 to 1, and the seconds
   // since it set off.
   setStream(on: number, since: number, long?: number): void;
+  // Whether every part is made and drawn: what is on the first screen is shown before what is under it.
+  whole(): boolean;
   // What it costs: the milliseconds each part took to make ready, what the first frame took, what the last frame
   // drew, how many shader programs it has had compiled, and what the graphics card holds for it.
   stats(): { built: Record<string, number>; first: number; calls: number; triangles: number; programs: number; geometries: number; textures: number; passes: string[] };
@@ -92,6 +94,7 @@ export function createWorld(): WorldPiece {
   let stage: Stage | null = null, canvas: HTMLCanvasElement | null = null, host: HTMLElement | null = null;
   let parts: { name: PartName; part: WorldPart; span: [number, number]; on: boolean }[] = [];
   let off: (() => void) | null = null, watch: ResizeObserver | null = null, near: IntersectionObserver | null = null, moon: THREE.DirectionalLight | null = null;
+  let later: Tier | null = null;
   let seen = true, stale = true, moving = false, warming = false, cast = 3, hold: number | null = null, only: PartName | null = null, close: readonly [number, number, number] | null = null, zoom = 3;
   let lampUV = { x: 0.6, y: 0.3 }, reach = 1, first = 0;
   const stream = { on: 0, since: 60, long: 0 };
@@ -152,6 +155,16 @@ export function createWorld(): WorldPiece {
     let lo = Infinity, hi = -Infinity;
     for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) { const [, down] = drawn(x / M, y / M, z / M); lo = Math.min(lo, down); hi = Math.max(hi, down); }
     return [lo - 8, hi + 8];
+  };
+
+  const retier = (tier: Tier): void => {
+    if (!stage || tier === stage.tier) return;
+    stage.setTier(tier);
+    lean();
+    finish(stage, RIM, WARM);
+    if (moon) { moon.shadow.mapSize.setScalar(MOON.map[tier]); moon.shadow.map?.dispose(); moon.shadow.map = null as unknown as THREE.WebGLRenderTarget; }
+    cast = 3;
+    stale = true;
   };
 
   const frame = () => {
@@ -299,17 +312,19 @@ export function createWorld(): WorldPiece {
         warming = true;
         try { await live.warm(slice); } finally { warming = false; }
         if (stage !== live) return;
+        if (later) { const tier = later; later = null; retier(tier); }
         cast = 3;
         stale = true;
         frame();
         first = Math.round(performance.now() - from);
-      })();
+      })().catch((e) => { if (stage === live) console.warn(`world: what is under the first screen could not be finished. ${String(e)}`); });
     },
     setLamp(x: number, y: number) {
       if (Math.abs(x - lampUV.x) + Math.abs(y - lampUV.y) < 0.003) return;
       lampUV = { x, y };
       stale = true;
     },
+    whole: () => first > 0,
     setStream(on: number, since: number, long = STREAM_LONG) {
       if (Math.abs(on - stream.on) < 0.002 && Math.abs(long - stream.long) < 0.5 && (since > 4 || Math.abs(since - stream.since) < 0.01)) return;
       stream.on = on;
@@ -333,12 +348,9 @@ export function createWorld(): WorldPiece {
       // The page tells every piece its tier as it mounts. Told the tier it already has, the world used to throw its
       // moon's shadow map away and make it again, with a color texture nobody reads: over 100 MB in Safari.
       if (!stage || tier === stage.tier) return;
-      stage.setTier(tier);
-      lean();
-      finish(stage, RIM, WARM);
-      if (moon) { moon.shadow.mapSize.setScalar(MOON.map[tier]); moon.shadow.map?.dispose(); moon.shadow.map = null as unknown as THREE.WebGLRenderTarget; }
-      cast = 3;
-      stale = true;
+      // Not while the second helping is being warmed: that work draws through the chain of passes this rebuilds.
+      if (warming) { later = tier; return; }
+      retier(tier);
     },
     freeze(t: number | null) { hold = t; stale = true; frame(); },
     view() {},

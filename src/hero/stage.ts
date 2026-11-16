@@ -20,7 +20,7 @@ export interface HeroParts {
   bar: () => HTMLElement | null;
   cue: HTMLElement | null;
   // The world, once it is mounted: it is told when the stream has set off from its core.
-  world?: () => { setStream(on: number, since: number, long: number): void } | null;
+  world?: () => { setStream(on: number, since: number, long: number): void; whole?(): boolean } | null;
 }
 
 export interface HeroStage { dispose(): void }
@@ -35,6 +35,12 @@ const RISE = 0.5;
 const FALL = { wide: 0.5 };
 // On a page with Work under the hero, how far over Work's title the hero's route hands the stream to Work's, in units.
 const SEAM = 170;
+// The stream leaves the world's core, which is under the first screen and made after it (the world's two helpings).
+// It is not mounted until the world is whole, or until this many seconds have passed, whichever is first: on a slow
+// connection it fell out of empty space while the core was still arriving, and a world that never comes must not
+// keep the stream off the page. A page opened well under the hero does not wait: its world is not made until the
+// hero is scrolled back to.
+const WAIT = 20;
 
 export function mountHero(parts: HeroParts, host?: StreamHost): HeroStage {
   let stream: StreamHandle | null = null, disposed = false, shown = '', unit = 1;
@@ -62,11 +68,14 @@ export function mountHero(parts: HeroParts, host?: StreamHost): HeroStage {
     const k = Math.max(0, 1 - clock.view.y / CUE).toFixed(2);
     if (k !== shown) { shown = k; parts.cue.style.opacity = k; }
   };
-  const idle = clock.onFrame(() => { if (!stream?.runs()) frame(); });
+  const from = performance.now(), waits = WORLD.shown && scrollY < innerHeight * 1.5;
+  const ready = () => !waits || parts.world?.()?.whole?.() === true || performance.now() - from > WAIT * 1000;
+  const begin = () => { if (!stream && !disposed && ready()) stream = host ? host(plan) : mountStream(parts.page, { plan }); };
+  const idle = clock.onFrame(() => { begin(); if (!stream?.runs()) frame(); });
 
   lamp.bind();
   tiers.detect();
-  stream = host ? host(plan) : mountStream(parts.page, { plan });
+  begin();
 
   return {
     dispose() {
