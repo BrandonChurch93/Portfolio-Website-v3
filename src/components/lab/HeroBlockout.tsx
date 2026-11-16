@@ -69,7 +69,7 @@ export function HeroBlockout() {
           <p className={styles.lead}>{hero.lead}</p>
           <div className={styles.buttons}>
             <MetalButton label={hero.work.label} href="#" className={styles.button} />
-            <MetalButton label={hero.contact.label} variant="accent" href="#" className={styles.button} />
+            <MetalButton label={hero.resume.label} variant="accent" href="#" className={styles.button} />
           </div>
         </header>
       </div>
