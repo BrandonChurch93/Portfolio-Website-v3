@@ -80,3 +80,7 @@ export const SETTLE = { frames: 3, timeoutMs: 60000, pictureMs: 15000 } as const
 
 // Sizes the screenshot scripts use. scripts/shot.mjs keeps its own copy because it runs outside the app.
 export type ViewportName = 'phone' | 'tablet' | 'desktop' | 'wide' | '4k';
+
+// The home page's address. It is the whole page's study until launch, when the whole page moves to the root
+// (PLAN.md, Ready to deploy) and this becomes '/'.
+export const HOME = '/lab/whole';
