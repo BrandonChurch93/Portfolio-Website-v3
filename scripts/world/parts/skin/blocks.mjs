@@ -51,13 +51,20 @@ const PLAN = {
 // chunks broken from it that hang under it. Each stands `ahead` units in front of whatever is there in the picture
 // (the dark face or the torn rock's blocks), is `T` thick into the planet, and its face looks up by `lean` degrees.
 const FACING = [
-  { px: [228, 346], py: [315, 347], T: 44, ahead: 5, lean: 14, slab: true },
-  { px: [272, 307], py: [348, 411], T: 16, ahead: 3, lean: -6, hang: true },
-  { px: [252, 287], py: [418, 470], T: 13, ahead: 2.5, lean: -10, hang: true },
+  { px: [270, 327], py: [317, 351], T: 40, ahead: 5, lean: 14, slab: true },
+  { px: [279, 313], py: [350, 413], T: 16, ahead: 3, lean: -6, hang: true },
+  { px: [261, 292], py: [415, 454], T: 12, ahead: 2.5, lean: -10, hang: true },
 ];
 // The crack left between the skin and each block's back, in units; the planet's curve the tops follow; how worn the
 // tops are and how rough every face, in units.
 const GAP = [0.7, 2.2], CURVE = 600, WEAR = 0.45, GRAIN = 0.12, LUMP = 0.45;
+// The pale side's blocks are tipped this many degrees more toward the hollow than read off the picture, so their tops
+// turn from the moon: picture 9's torn edge there is dark rock with a few lit edges, and ours was lit grey tops.
+const PALE_TIP = 12;
+// Conchoidal scallops broken out of a block's faces (DISH: how many to a square unit of face, their radii, and how deep
+// each is as a share of its radius), and deep pits in its weathered top (PIT: the same). Without them every face was
+// a plane with soft dents, which read as foam or stucco.
+const DISH = { per: 1 / 34, r: [1.8, 7.5], deep: [0.18, 0.42] }, PIT = { per: 1 / 30, r: [0.6, 2.2], deep: [0.55, 0.9] };
 // How the skin's edge wanders along the blocks' backs: how far, in pixels, at what grain of rows, and over how many rows
 // it changes from one block's back to the next (a jump between two rows tilted the skin's grid there, which drew a
 // line right across the side).
@@ -69,6 +76,21 @@ const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 const unit = (a) => { const l = Math.hypot(...a) || 1; return a.map((v) => v / l); };
 const turn = (u, v, t) => [u.map((x, i) => x * Math.cos(t) + v[i] * Math.sin(t)), v.map((x, i) => x * Math.cos(t) - u[i] * Math.sin(t))];
+
+// Hollows carved into a face, in the block's frame: each a ball of radius r whose middle stands r less its depth out
+// from the face (out is the face's outward axis and its sign, at the face's level), spread over the face's extent, and
+// drawn out along a way of its own across the face by up to STRETCH, so none is a round stamp.
+const STRETCH = 1.9;
+function hollows(R, n, kind, span, out, level) {
+  const list = [], ax = [0, 1, 2].filter((k) => k !== out[0]);
+  for (let i = 0; i < n; i++) {
+    const r = kind.r[0] * (kind.r[1] / kind.r[0]) ** (R() ** 1.4), deep = r * (kind.deep[0] + (kind.deep[1] - kind.deep[0]) * R());
+    const at = span.map((s) => (s ? s[0] + (s[1] - s[0]) * R() : 0)), turn = R() * Math.PI;
+    at[out[0]] = level + out[1] * (r - deep);
+    list.push({ at, r, ax, out: out[0], cs: Math.cos(turn), sn: Math.sin(turn), e: 1 + (STRETCH - 1) * R() });
+  }
+  return list;
+}
 
 // A face of a block as a few planes, each a little turned: c is a point of the face's nominal plane in the block's
 // frame, m its outward normal, and the planes spread over its extent (two ranges of the frame's other axes).
@@ -100,7 +122,7 @@ function facing(f, i, depthAt) {
   const slant = (m, u) => unit([m[0] * Math.cos(u), m[0] * Math.sin(u), m[2]]);
   const faces = {
     bottom: face(R, [0, 0, -1], [0, 0, -T], [[0, a1], [0, b1], null], 4, 0.4, T * 0.12),
-    front: face(R, [0, 1, 0], [0, b1, 0], [[0, a1], null, [-T, 0]], 8 + Math.floor((len * T) / 70), 0.6, 2.4 + 0.03 * len),
+    front: face(R, [0, 1, 0], [0, b1, 0], [[0, a1], null, [-T, 0]], 10 + Math.floor((len * T) / 50), 0.75, 2.8 + 0.04 * len),
     back: face(R, [0, -1, 0], [0, 0, 0], [[0, a1], null, [-T, 0]], f.slab ? 2 : 4, f.slab ? 0.12 : 0.5, f.slab ? 0.6 : 1.5),
     start: face(R, slant([-1, 0, 0], (R() - 0.5) * 0.9), [0, 0, 0], [null, [0, b1], [-T, 0]], 6, 0.6, 2.4),
     end: face(R, slant([1, 0, 0], (R() - 0.5) * 0.9), [a1, 0, 0], [null, [0, b1], [-T, 0]], 7, 0.65, 3),
@@ -111,12 +133,15 @@ function facing(f, i, depthAt) {
     const q = unit([R() - 0.5, R() - 0.5, R() - 0.5]), r1 = unit(cross(q, [0.3, 0.9, 0.2])), r2 = cross(q, r1);
     chips.push({ at, size: (e < 0.75 ? 1 + 3.5 * R() ** 1.4 : 0.8 + 1.6 * R()) * Math.min(1, T / 14), r: [...q, ...r1, ...r2] });
   }
+  // Its face toward the visitor is the crust's old top, pitted deep and broken in scallops; its foot is broken too.
+  const dish = [...hollows(R, Math.round(a1 * b1 * DISH.per), DISH, [[0, a1], [0, b1], null], [2, 1], 0), ...hollows(R, Math.round(a1 * T * DISH.per), DISH, [[0, a1], null, [-T, 0]], [1, 1], b1)];
+  const pit = hollows(R, Math.round(a1 * b1 * PIT.per * (f.slab ? 1.4 : 1)), PIT, [[0, a1], [0, b1], null], [2, 1], 0);
   const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
   for (const ca of [-4, a1 + 4]) for (const cb of [-4, b1 + 4]) for (const cn of [-T - 5, 4]) {
     const w = add(add(add(tl, a, ca), b, cb), n, cn);
     for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], w[k] - 3); hi[k] = Math.max(hi[k], w[k] + 3); }
   }
-  return [{ side: 'left', hang: !!f.hang, slab: !!f.slab, y0: f.py[0], y1: f.py[1], o: tl, a, b, n, R: 1e5, wear: f.slab ? 2.6 : 2, grain: GRAIN * 1.5, lump: LUMP * 2.2, seed: R() * 50, faces, chips, lo, hi, cut: null }];
+  return [{ side: 'left', facing: true, hang: !!f.hang, slab: !!f.slab, y0: f.py[0], y1: f.py[1], o: tl, a, b, n, R: 1e5, wear: f.slab ? 3.4 : 2.4, grain: GRAIN * 1.5, lump: LUMP * 3, seed: R() * 50, faces, chips, dish: [...dish, ...pit], lo, hi, cut: null }];
 }
 
 const HULL = {};
@@ -137,7 +162,7 @@ export function planBlocks(depthAt) {
     const b0 = p.hang ? p.from * perPx : -p.in * perPx, b1 = p.over * perPx, T = p.T;
     // Tipped about its back edge, so its far edge goes down into the hollow, then turned a little about its own
     // out, let down into the planet and slid a little down it.
-    const tilt = (p.tilt * Math.PI) / 180, twist = (R() - 0.5) * 0.4;
+    const tilt = ((p.tilt + (side === 'right' ? PALE_TIP : 0)) * Math.PI) / 180, twist = (R() - 0.5) * 0.4;
     const hinge = add(P, b, b0);
     const [nb, nn] = [b.map((v, k) => v * Math.cos(tilt) - n[k] * Math.sin(tilt)), n.map((v, k) => v * Math.cos(tilt) + b[k] * Math.sin(tilt))];
     const [ta, tb] = turn(a, nb, twist);
@@ -151,7 +176,7 @@ export function planBlocks(depthAt) {
     const slant = (m, t) => unit([m[0] * Math.cos(t), m[0] * Math.sin(t), m[2]]);
     const faces = {
       bottom: face(R, [0, 0, -1], [0, 0, -T], [[a0, a1], [b0, b1], null], 5 + Math.floor(R() * 4), 0.4, T * 0.12),
-      front: face(R, [0, 1, 0], [0, b1, 0], [[a0, a1], null, [-T, 0]], 5 + Math.floor((len * T) / 90), 0.42, 1.4 + 0.03 * len),
+      front: face(R, [0, 1, 0], [0, b1, 0], [[a0, a1], null, [-T, 0]], 7 + Math.floor((len * T) / 60), 0.6, 1.8 + 0.035 * len),
       back: face(R, [0, -1, 0], [0, b0, 0], [[a0, a1], null, [-T, 0]], 2, 0.16, 0.6),
       start: face(R, slant([-1, 0, 0], (R() - 0.5) * 1.1), [a0, 0, 0], [null, [b0, b1], [-T, 0]], 3 + Math.floor(R() * 2), 0.42, 1.2),
       end: face(R, slant([1, 0, 0], (R() - 0.5) * 1.1), [a1, 0, 0], [null, [b0, b1], [-T, 0]], 3 + Math.floor(R() * 2), 0.42, 1.2),
@@ -171,13 +196,19 @@ export function planBlocks(depthAt) {
       const q = unit([R() - 0.5, R() - 0.5, R() - 0.5]), r1 = unit(cross(q, [0.7, 0.2, 0.5])), r2 = cross(q, r1);
       chips.push({ at, size: Math.min(T * 0.45, 3 + 5 * R()), r: [...q, ...r1, ...r2] });
     }
+    // Scallops broken out of its front, its ends and its foot, and pits in its weathered top.
+    const dish = [
+      ...hollows(R, Math.round(len * T * DISH.per * 1.3), DISH, [[a0, a1], null, [-T, 0]], [1, 1], b1),
+      ...hollows(R, Math.round(len * deep * DISH.per * 0.5), DISH, [[a0, a1], [b0, b1], null], [2, -1], -T),
+      ...hollows(R, Math.round(len * deep * PIT.per * 0.6), PIT, [[a0, a1], [b0 + deep * 0.3, b1], null], [2, 1], 0),
+    ];
     // Its box in the world, for the field to pass it by.
     const lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
     for (const ca of [a0 - 3, a1 + 3]) for (const cb of [b0 - 3, b1 + (p.slab ? 30 : 16)]) for (const cn of [-T - 5, 3]) {
       const w = add(add(add(o, ta, ca), tb, cb), nn, cn);
       for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], w[k] - 3); hi[k] = Math.max(hi[k], w[k] + 3); }
     }
-    const k = { side, hang: !!p.hang, slab: !!p.slab, y0: p.y0, y1: p.y1, o, a: ta, b: tb, n: nn, R: CURVE, wear: WEAR * (p.slab ? 1.6 : 1), grain: GRAIN, lump: LUMP, seed: R() * 50, faces, chips, lo, hi, cut: p.hang ? null : { inPx: p.in, gapPx: (GAP[0] + (GAP[1] - GAP[0]) * R()) / perPx } };
+    const k = { side, hang: !!p.hang, slab: !!p.slab, y0: p.y0, y1: p.y1, o, a: ta, b: tb, n: nn, R: CURVE, wear: WEAR * (p.slab ? 1.6 : 1), grain: GRAIN, lump: LUMP * 1.6, seed: R() * 50, faces, chips, dish, lo, hi, cut: p.hang ? null : { inPx: p.in, gapPx: (GAP[0] + (GAP[1] - GAP[0]) * R()) / perPx } };
     out[side].push(k);
     // A thick block broke in two along its bedding: its lower part juts further toward the hollow as a ledge, a step
     // down from its top, its own front knapped its own way.
@@ -192,7 +223,7 @@ export function planBlocks(depthAt) {
         start: face(R, slant([-1, 0, 0], (R() - 0.5) * 1.2), [la0, 0, 0], [null, [b1 * 0.3, b1 + jut], [-t2, 0]], 2, 0.4, 1),
         end: face(R, slant([1, 0, 0], (R() - 0.5) * 1.2), [la1, 0, 0], [null, [b1 * 0.3, b1 + jut], [-t2, 0]], 2, 0.4, 1),
       };
-      out[side].push({ ...k, ledge: true, o: lo2, R: 1e5, wear: 0.6, faces: faces2, chips: chips.map((c) => ({ ...c, at: [c.at[0], c.at[1] + jut * 0.5, c.at[2]] })), cut: null, seed: R() * 50 });
+      out[side].push({ ...k, ledge: true, o: lo2, R: 1e5, wear: 0.6, faces: faces2, chips: chips.map((c) => ({ ...c, at: [c.at[0], c.at[1] + jut * 0.5, c.at[2]] })), dish: hollows(R, Math.round((la1 - la0) * t2 * DISH.per), DISH, [[la0, la1], null, [-t2, 0]], [1, 1], b1 + jut), cut: null, seed: R() * 50 });
     }
   });
   for (const side of ['left', 'right']) HULL[side] = out[side].filter((k) => k.cut);
@@ -225,14 +256,15 @@ export async function makeBlocks(plan, { cell, error }) {
   return parts;
 }
 
-// How near a block's weathered top a place is: 1 on it, 0 from `layer` units under it.
+// How near a block's weathered top a place is (1 on it, 0 from `layer` units under it), and whether that block is one
+// that faces the visitor.
 export function topness(blocks, x, y, z, layer) {
-  let best = 0, near = Infinity;
+  let best = 0, near = Infinity, facing = false;
   for (const k of blocks) {
     if (x < k.lo[0] || y < k.lo[1] || z < k.lo[2] || x > k.hi[0] || y > k.hi[1] || z > k.hi[2]) continue;
     const d = [x - k.o[0], y - k.o[1], z - k.o[2]], la = dot(d, k.a), lb = dot(d, k.b), ln = dot(d, k.n);
     const top = -(la * la + lb * lb) / (2 * k.R), under = top - ln;
-    if (Math.abs(under) < near) { near = Math.abs(under); best = 1 - Math.min(1, Math.max(0, (under - layer * 0.4) / (layer * 0.6))); }
+    if (Math.abs(under) < near) { near = Math.abs(under); best = 1 - Math.min(1, Math.max(0, (under - layer * 0.4) / (layer * 0.6))); facing = !!k.facing; }
   }
-  return best;
+  return { top: best, facing };
 }

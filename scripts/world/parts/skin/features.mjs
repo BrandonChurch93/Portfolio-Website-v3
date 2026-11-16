@@ -2,7 +2,7 @@
 // the pale side, the cracks of the dark side, and the line each side is torn along (the rock's own, sculpt R's
 // TORN, so the skin ends exactly where the rock begins). Everything here is made once, the same on every run.
 //
-//   import { SIDES, CRATERS, CRACKS, EDGES, onShell, shellNormal, toShell, frame } from './features.mjs'
+//   import { SIDES, NAMED, TRACED, craters, crackLines, edges, onShell, shellNormal, toShell, frame } from './features.mjs'
 import { L } from '../../lib/plan.mjs';
 import { TORN } from '../rock-r/trace.mjs';
 import { fbm } from './field.mjs';
@@ -112,15 +112,16 @@ export function edgeAngle(side, t, line = lineAt) {
 // ---------------------------------------------------------------------------------------------------------------
 // The craters, in the picture's pixels: where the middle is, the radius of the rim's crest, and what kind. The
 // two the kit names are first. kind: 'complex' has a flat floor and terraced walls, 'simple' is a bowl.
-// One large crater is cut through by the torn edge, which shows the craters are older than the break.
+// One large crater is cut through by the torn edge, which shows the craters are older than the break. `exact` puts a
+// crater at the picture's own place, not moved in proportion between the torn line and the outline.
 export const NAMED = [
-  { at: [1176, 412], r: 53, kind: 'complex', seed: 1 },
+  { at: [1173, 421], r: 49, kind: 'complex', seed: 1 },
   { at: [1097, 584], r: 43, kind: 'complex', seed: 2 },
   { at: [1104, 374], r: 15, kind: 'simple', seed: 3 },
   { at: [1222, 350], r: 9, kind: 'simple', seed: 4 },
   { at: [1250, 364], r: 12, kind: 'simple', seed: 5 },
-  { at: [1232, 482], r: 22, kind: 'complex', seed: 6 },
-  { at: [1161, 527], r: 14, kind: 'simple', seed: 7 },
+  { at: [1229, 470], r: 17, kind: 'simple', seed: 6, exact: true },
+  { at: [1165, 523], r: 14, kind: 'simple', seed: 7, exact: true },
   { at: [1100, 496], r: 9, kind: 'simple', seed: 8 },
   { at: [1124, 489], r: 6, kind: 'simple', seed: 9 },
   { at: [1137, 614], r: 8, kind: 'simple', seed: 10 },
@@ -147,7 +148,7 @@ export function rng(seed) {
 // The scatter of smaller craters made as geometry, on the pale side: so many between each pair of radii, in units,
 // many small and few large, as a power law has them.
 // The smallest are left to the map's pits: made as geometry and reduced, they came out as star shaped dents.
-const SCATTER = [[4.5, 7, 48], [7, 11, 18], [11, 18, 6]];
+const SCATTER = [[3.6, 6, 95], [6, 10, 34], [10, 16, 9]];
 // And old worn ones on the dark side, so it is the same planet: shallow and soft, the oldest nearly gone.
 const WORN = [[5, 10, 34], [10, 20, 14], [20, 34, 5], [34, 52, 2]];
 
@@ -178,9 +179,14 @@ function crater(c, r, kind, seed, worn = 0, deep = 1, own = {}) {
 // the moon on the side away from it, lies in shadow (the picture's dark band left of it); a wall slumped in two
 // broken terraces; a broad floor with low hummocks and a small cluster of hills at its middle. The low one: a deep
 // bowl with a small floor, so its far wall catches the light and its floor lies in its shade, as the picture's does.
+// The large one's rampart is raised and broad, its inner wall wide enough to show as a band the moon lights on its
+// left and lower side, and it is no deeper than leaves a narrow crescent of shadow. It is not drawn out round the
+// planet: drawn out by 1.28 it came out a fifth wider than the picture's.
 const OWN = {
-  1: { rim: 0.23, flank: 1.7, floor: 0.74, terraces: 2, slump: 0.55, hummock: 0.06, bump: 0.16, stretch: 1.28, deepen: 0.8 },
-  2: { rim: 0.15, flank: 1.6, floor: 0.32, terraces: 1, slump: 0.4, hummock: 0.05, bump: 0.1, deepen: 1.25 },
+  1: { rim: 0.2, flank: 3.6, crest: 0.14, floor: 0.62, terraces: 1, slump: 0.3, hummock: 0.04, bump: 0.12, deepen: 0.88 },
+  2: { rim: 0.14, flank: 1.6, crest: 0.1, floor: 0.26, terraces: 1, slump: 0.3, hummock: 0.04, bump: 0.08, deepen: 0.95 },
+  6: { deepen: 1.5 },
+  7: { deepen: 1.35 },
 };
 
 const areaAt = (t) => { const r = Math.sqrt(1 - t * t), dr = (C.half * t) / r; return r * Math.hypot(dr, C.deep); };
@@ -221,17 +227,19 @@ export function placed(px, py) {
 export function craters() {
   // The named craters are the picture's: deep, so their crescents of shadow read from across the room.
   const out = NAMED.map((k) => {
-    const own = OWN[k.seed] ?? {}, r = k.r * L.PICTURE.unit, made = crater(placed(k.at[0], k.at[1]), r, k.kind, k.seed, 0, (k.r > 50 ? 1.2 : k.r > 40 ? 1.45 : k.r > 12 ? 1.15 : 1.1) * (own.deepen ?? 1), {});
+    const own = OWN[k.seed] ?? {}, r = k.r * L.PICTURE.unit, made = crater((k.exact ? onShell : placed)(k.at[0], k.at[1]), r, k.kind, k.seed, 0, (k.r > 45 ? 1.2 : k.r > 40 ? 1.45 : k.r > 12 ? 1.15 : 1.1) * (own.deepen ?? 1), {});
     // A named crater's own shape: its rim and bump as shares of its radius, the rest as they are.
     return { ...made, ...own, rim: own.rim ? own.rim * r : made.rim, bump: own.bump ?? made.bump, floor: own.floor ?? made.floor };
   });
   const R = rng(4242);
   let seed = 100;
-  // None on the floors of the two the kit names: those are broad and smooth.
+  // None on the floors of the two the kit names, which are broad and smooth, nor on their steep outer flanks, where
+  // one stood up as a pale fin.
   const big = out.slice(0, 2);
   for (const [lo, hi, count] of SCATTER) for (let i = 0; i < count; i++) {
     let p, r;
-    do { p = scatterOn('right', R).p; r = lo * (hi / lo) ** R(); } while (big.some((k) => Math.hypot(p[0] - k.c[0], p[1] - k.c[1], p[2] - k.c[2]) < k.r * 1.08 + r));
+    // None in the shoulder under the land's lip, where its edge cut them in half in a row of dimples.
+    do { p = scatterOn('right', R).p; r = lo * (hi / lo) ** R(); } while (-L.RIM - p[1] < 30 + 1.5 * r || big.some((k) => Math.hypot(p[0] - k.c[0], p[1] - k.c[1], p[2] - k.c[2]) < k.r * 1.6 + r));
     out.push(crater(p, r, r > 9 ? 'complex' : 'simple', seed++));
   }
   // None round the knot of the cracks, whose light lies on smooth rock.
@@ -257,14 +265,14 @@ const WIDEN = 1.55;
 export const TRACED = [
   // to the tear: the widest and hottest
   [[225, 478, 3.4, 1], [236, 474, 2.8, 1], [246, 472, 2.4, 1], [252, 470, 2.4, 1], [259, 469, 2.5, 1], [268, 468, 2.3, 0.96]],
-  // down and to the left, then along
-  [[225, 478, 3, 1], [221, 492, 2.1, 0.95], [217, 503, 1.6, 0.9], [205, 506, 1.2, 0.8], [192, 505, 1.0, 0.72], [181, 506, 0.85, 0.62], [172, 499, 0.7, 0.55], [163, 491, 0.55, 0.45], [151, 484, 0.4, 0.36], [144, 481, 0.2, 0.25]],
+  // down and to the left, then along: thick and hot as far as the turn up at its far end
+  [[225, 478, 3, 1], [222, 492, 2.6, 0.97], [218, 503, 2.4, 0.93], [205, 507, 2.0, 0.88], [192, 505, 1.7, 0.84], [181, 508, 1.3, 0.78], [172, 499, 0.7, 0.6], [163, 491, 0.55, 0.5], [151, 484, 0.4, 0.4], [144, 481, 0.2, 0.28]],
   // up and to the left
-  [[225, 478, 2.8, 1], [217, 473, 1.8, 0.92], [208, 463, 1.25, 0.82], [199, 454, 1.05, 0.75], [191, 446, 0.9, 0.7], [181, 437, 0.8, 0.62], [172, 427, 0.7, 0.55], [163, 418, 0.6, 0.48], [154, 410, 0.5, 0.42], [147, 404, 0.35, 0.34], [141, 401, 0.18, 0.25]],
-  // down and to the right, and on toward the foot
-  [[222, 497, 1.7, 0.92], [229, 512, 1.4, 0.82], [234, 527, 1.15, 0.74], [238, 544, 1.0, 0.68], [240, 560, 0.95, 0.66], [242, 574, 1.0, 0.7], [243, 584, 1.05, 0.74], [247, 593, 0.8, 0.6], [252, 602, 0.6, 0.5], [258, 612, 0.4, 0.4]],
-  // from the turn at the foot, to the left
-  [[243, 584, 0.9, 0.7], [236, 583, 0.75, 0.6], [228, 585, 0.6, 0.52], [221, 585, 0.45, 0.45], [214, 580, 0.3, 0.35]],
+  [[225, 478, 2.8, 1], [217, 471, 1.8, 0.9], [208, 463, 1.25, 0.8], [199, 454, 1.05, 0.72], [191, 446, 0.9, 0.66], [181, 437, 0.8, 0.6], [172, 427, 0.7, 0.55], [163, 418, 0.6, 0.48], [154, 410, 0.5, 0.42], [147, 404, 0.35, 0.34], [141, 401, 0.18, 0.25]],
+  // down and to the right, thin, then thick and hot again toward the second knot at the foot
+  [[221, 500, 1.5, 0.85], [226, 514, 0.7, 0.62], [230, 528, 0.55, 0.56], [234, 543, 0.75, 0.6], [237, 557, 1.5, 0.78], [240, 571, 1.9, 0.86], [242, 584, 2.3, 0.92], [247, 594, 0.9, 0.64], [252, 603, 0.6, 0.5], [258, 612, 0.4, 0.4]],
+  // from the second knot, to the left
+  [[242, 585, 2.0, 0.9], [234, 584, 1.4, 0.8], [226, 585, 0.85, 0.64], [219, 584, 0.55, 0.52], [212, 581, 0.3, 0.4]],
   // the long arm up from above the knot
   [[178, 432, 0.7, 0.55], [184, 424, 0.65, 0.52], [190, 414, 0.62, 0.5], [199, 408, 0.6, 0.48], [208, 403, 0.62, 0.5], [212, 397, 0.6, 0.48], [214, 386, 0.55, 0.46], [212, 372, 0.5, 0.42], [208, 360, 0.42, 0.38], [205, 348, 0.32, 0.32], [203, 336, 0.18, 0.24]],
   // a thin arm down from that one
@@ -305,11 +313,17 @@ function hairlines() {
 
 // The cracks as the shader cuts them: runs of short straight lengths in picture 9's own pixels, each end with its
 // half width in pixels and its heat. The view never moves, so a cleft worked out per pixel from these lines keeps a
-// crisp, chipped lip at any zoom, where one stored in a map came out as a staircase of texels. Every arm swells and
-// pinches along its length (SWELL), its light dies before its width does (DIES: the share of a lit run past which
-// its heat falls to nothing), and past its last traced point it runs on as an unlit fissure (RUN_ON, in pixels)
-// that thins to a hairline.
-const SWELL = { step: 2.2, every: 8.5, low: 0.55, high: 1.45 }, DIES = [0.72, 0.95], RUN_ON = [7, 18];
+// crisp, chipped lip at any zoom, where one stored in a map came out as a staircase of texels.
+// Each arm is resampled every STEP pixels and bent off its traced line at two grains (BEND: how far, and over how
+// many pixels) and jittered at each point (so far), so no arm is a polyline and none is a smooth curve. Its width swells and pinches by three times over along it (SWELL: the
+// narrowest and widest share, over how many pixels), the light dies before the width does on every arm but the hot
+// one (DIES: the share of a lit run past which its heat falls to nothing), the rock closes over a lit arm in places
+// (SHUT: not before so far along it, how often, in pixels, how long, how much of the width is left there, and the share
+// of them where it closes over wholly; at the rest a dim glow is left), and past its last traced point an
+// arm runs on as an unlit fissure (RUN_ON, in pixels) that thins to a hairline. Random side branches read as sprays
+// of whiskers and are gone.
+const STEP = 1.3, BEND = { amp: [1.25, 0.45], every: [9, 3.1], jitter: 0.32 }, SWELL = { low: 0.5, high: 1.5, every: 13 };
+const DIES = [0.72, 0.95], RUN_ON = [7, 18], SHUT = { first: 16, every: [34, 70], long: [1.2, 2.6], left: 0.35, dark: 0.55 };
 const sm1 = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 function wobble(s, seed) {
   const i = Math.floor(s), f = s - i, h = (k) => rng(seed * 1009 + k * 7)();
@@ -339,36 +353,16 @@ export function crackLines() {
     const run = runs[0].pts, last = run[run.length - 1], py = TRACED[0][TRACED[0].length - 1][1];
     run.push([lineAt('left', py) + 2, py + 0.5, last[2] * 1.05, last[3]]);
   }
-  // Branches off the lit runs: short, at an angle, thinning to nothing and dying as they go.
-  const branches = [];
-  for (const run of runs.slice(1, 10)) for (let i = 1; i < run.pts.length - 1; i++) {
-    const a = run.pts[i], b = run.pts[i + 1];
-    if (a[3] <= 0 || a[3] > 0.8 || R() > 0.11) continue;
-    const dl = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    if (dl < 1e-6) continue;
-    let ang = Math.atan2(b[1] - a[1], b[0] - a[0]) + (R() < 0.5 ? -1 : 1) * (0.5 + 0.7 * R()), p = [a[0], a[1]], w = a[2] * (0.4 + 0.2 * R()), heat = a[3] * (0.55 + 0.2 * R());
-    const pts = [[p[0], p[1], w, heat]], legs = 2 + Math.floor(R() * 2), long = (9 + 16 * R()) * (0.6 + a[2] * 0.6);
-    for (let k = 0; k < legs; k++) {
-      const len = (long / legs) * (0.6 + 0.8 * R());
-      p = [p[0] + Math.cos(ang) * len, p[1] + Math.sin(ang) * len];
-      w *= 0.6; heat *= 0.7;
-      pts.push([p[0], p[1], k === legs - 1 ? 0.05 : w, k === legs - 1 ? 0 : heat]);
-      ang += (R() - 0.5) * 1.2;
-    }
-    branches.push({ pts, open: false, lit: true, branch: true });
-  }
   const segs = [];
-  [...runs, ...branches].forEach((run, ri) => {
+  runs.forEach((run, ri) => {
     let pts = run.pts;
-    // Every lit arm but the hot one runs on past its last traced point as an unlit fissure, in two or three straight
-    // lengths that turn and thin to a hairline.
-    if (!run.open && !run.branch && pts.length > 1) {
+    if (!run.open && pts.length > 1) {
       const last = pts[pts.length - 1], prev = pts[pts.length - 2];
       let ang = Math.atan2(last[1] - prev[1], last[0] - prev[0]), p = [last[0], last[1]], w = Math.max(last[2], 0.22);
       const total = RUN_ON[0] + (RUN_ON[1] - RUN_ON[0]) * R(), legs = 2 + Math.floor(R() * 2);
       pts = [...pts.slice(0, -1), [last[0], last[1], w, last[3]]];
       for (let k = 0; k < legs; k++) {
-        ang += (R() - 0.5) * 1.1;
+        ang += (R() - 0.5) * 0.8;
         const len = (total / legs) * (0.7 + 0.6 * R());
         p = [p[0] + Math.cos(ang) * len, p[1] + Math.sin(ang) * len];
         w *= k === legs - 1 ? 0.25 : 0.62;
@@ -376,90 +370,42 @@ export function crackLines() {
         pts.push([p[0], p[1], w, 0]);
       }
     }
-    // Cut into lengths of about SWELL.step, each end's width swelling and pinching, and the light dying before the
-    // run's end (the hot arm's does not: it is open to the break).
+    // Resampled along its length: place, half width, heat and how far along it is.
     const along = [0];
     for (let i = 1; i < pts.length; i++) along.push(along[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
     const total = along[along.length - 1], tracedEnd = run.lit && !run.open ? along[Math.max(0, run.pts.length - 1)] : total;
     const out = [];
     for (let i = 0; i + 1 < pts.length; i++) {
-      const n = Math.max(1, Math.round((along[i + 1] - along[i]) / SWELL.step));
-      for (let k = 0; k < n; k++) out.push([...pts[i].slice(0, 2).map((v, c) => v + ((pts[i + 1][c] - v) * k) / n), pts[i][2] + ((pts[i + 1][2] - pts[i][2]) * k) / n, pts[i][3] + ((pts[i + 1][3] - pts[i][3]) * k) / n, along[i] + ((along[i + 1] - along[i]) * k) / n]);
+      const n = Math.max(1, Math.round((along[i + 1] - along[i]) / STEP));
+      for (let k = 0; k < n; k++) out.push([...[0, 1, 2, 3].map((c) => pts[i][c] + ((pts[i + 1][c] - pts[i][c]) * k) / n), along[i] + ((along[i + 1] - along[i]) * k) / n]);
     }
     out.push([...pts[pts.length - 1], total]);
-    for (const o of out) {
-      const s = o[4], sw = SWELL.low + (SWELL.high - SWELL.low) * wobble(s / SWELL.every, ri + 31);
-      // The swelling is less at the very ends, so a tip still thins to its hairline.
-      o[2] *= 1 + (sw - 1) * sm1(0, 6, s) * sm1(0, 6, total - s) * sm1(0.35, 1.1, o[2]);
-      if (run.lit && !run.open) o[3] *= 1 - sm1(DIES[0] * tracedEnd, DIES[1] * tracedEnd, s);
+    // Where the rock closes over a lit arm: never near where it leaves another arm, nor on the hot arm.
+    const shut = [];
+    if (run.lit && !run.open) for (let s = SHUT.first + SHUT.every[0] * R(); s < tracedEnd * 0.85; s += SHUT.every[0] + (SHUT.every[1] - SHUT.every[0]) * R()) shut.push([s, SHUT.long[0] + (SHUT.long[1] - SHUT.long[0]) * R(), R() < SHUT.dark ? 1 : 0.75]);
+    const seed = ri + 31, bent = out.map((o, i) => {
+      const a = out[Math.max(0, i - 2)], b = out[Math.min(out.length - 1, i + 2)], tl = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1, nx = -(b[1] - a[1]) / tl, ny = (b[0] - a[0]) / tl;
+      const s = o[4], off = (BEND.amp[0] * (wobble(s / BEND.every[0], seed) - 0.5) * 2 + BEND.amp[1] * (wobble(s / BEND.every[1], seed + 400) - 0.5) * 2 + BEND.jitter * (R() - 0.5) * 2) * sm1(0, 5, s) * (run.open ? sm1(0, 4, total - s) : 1);
+      return [o[0] + nx * off, o[1] + ny * off];
+    });
+    for (let i = 0; i < out.length; i++) {
+      const o = out[i], s = o[4];
+      o[0] = bent[i][0]; o[1] = bent[i][1];
+      // Swelling and pinching by up to three times, less at the very ends, so a tip still thins to its hairline.
+      const sw = SWELL.low + (SWELL.high - SWELL.low) * wobble(s / SWELL.every, seed + 77) ** 1.3, ends = sm1(0, 5, s) * sm1(0, 5, total - s);
+      o[2] *= 1 + (sw * (run.open ? 0.6 : 1) + (run.open ? 0.4 : 0) - 1) * ends;
+      if (run.lit) {
+        // A wider stretch is hotter, a pinched one cooler; where the rock closes over, the light goes.
+        o[3] *= Math.min(1, 0.72 + 0.28 * sw);
+        let closed = 0;
+        for (const [c, l, k] of shut) closed = Math.max(closed, k * (1 - sm1(l * 0.5, l, Math.abs(s - c))));
+        o[3] *= 1 - closed;
+        o[2] *= 1 - (1 - SHUT.left) * closed;
+        if (!run.open) o[3] *= 1 - sm1(DIES[0] * tracedEnd, DIES[1] * tracedEnd, s);
+      }
     }
     for (let i = 0; i + 1 < out.length; i++) segs.push([out[i][0], out[i][1], out[i + 1][0], out[i + 1][1], out[i][2], out[i + 1][2], out[i][3], out[i + 1][3]]);
   });
-  return segs;
-}
-
-// The cracks as runs of segments on the surface, with every run broken into straight lengths that turn sharply,
-// and short branches off them that taper to nothing.
-export function cracks() {
-  const R = rng(777), runs = [];
-  const lift = (px, py) => onShell(px, py);
-  for (const tr of [...TRACED, ...hairlines()]) {
-    const pts = [];
-    for (let i = 0; i < tr.length; i++) {
-      const [px, py, w, heat] = tr[i];
-      pts.push({ p: lift(px, py), w: w * WIDEN, heat });
-      if (i === tr.length - 1) break;
-      // A kink or two between traced points: rock breaks in straight runs with sharp turns.
-      const [qx, qy, qw, qh] = tr[i + 1], dx = qx - px, dy = qy - py, len = Math.hypot(dx, dy), nx = -dy / len, ny = dx / len;
-      const kinks = len > 9 ? 2 : len > 5 ? 1 : 0;
-      for (let k = 1; k <= kinks; k++) {
-        const f = (k / (kinks + 1)) + (R() - 0.5) * 0.18, off = (R() - 0.5) * Math.min(3.2, len * 0.22);
-        pts.push({ p: lift(px + dx * f + nx * off, py + dy * f + ny * off), w: (w + (qw - w) * f) * WIDEN, heat: heat + (qh - heat) * f });
-      }
-    }
-    runs.push(pts);
-  }
-  // Branches: from lit runs only, off a point, at an angle, in two to four straight lengths, thinning to nothing.
-  const branches = [];
-  for (const run of runs.slice(0, 10)) for (let i = 1; i < run.length - 1; i++) {
-    const a = run[i];
-    if (a.heat <= 0 || R() > 0.11 || a.heat > 0.8) continue;
-    const b = run[i + 1], n = shellNormal(...a.p);
-    const dir = [b.p[0] - a.p[0], b.p[1] - a.p[1], b.p[2] - a.p[2]], dl = Math.hypot(...dir);
-    if (dl < 1e-6) continue;
-    const t1 = dir.map((v) => v / dl), side = [n[1] * t1[2] - n[2] * t1[1], n[2] * t1[0] - n[0] * t1[2], n[0] * t1[1] - n[1] * t1[0]];
-    const turn = (R() < 0.5 ? -1 : 1) * (0.5 + 0.7 * R());
-    let d = t1.map((v, k) => v * Math.cos(turn) + side[k] * Math.sin(turn)), p = a.p, w = a.w * (0.35 + 0.2 * R()), heat = a.heat * (0.55 + 0.2 * R());
-    const pts = [{ p, w, heat }], legs = 2 + Math.floor(R() * 2), long = (10 + 18 * R()) * (0.6 + a.w * 0.4);
-    for (let k = 0; k < legs; k++) {
-      const len = long / legs * (0.6 + 0.8 * R()), q = [p[0] + d[0] * len, p[1] + d[1] * len, p[2] + d[2] * len];
-      p = toShell(...q);
-      w *= 0.55; heat *= 0.8;
-      pts.push({ p, w: k === legs - 1 ? 0.04 : w, heat });
-      const bend = (R() - 0.5) * 1.2, nn = shellNormal(...p), sd = [nn[1] * d[2] - nn[2] * d[1], nn[2] * d[0] - nn[0] * d[2], nn[0] * d[1] - nn[1] * d[0]];
-      d = d.map((v, j) => v * Math.cos(bend) + sd[j] * Math.sin(bend));
-    }
-    branches.push(pts);
-  }
-  // Hairline tips: every lit run thins to nothing past its last traced point.
-  // The hot arm runs into the torn line and ends there: it is open to the break, not tipped.
-  for (const run of runs.slice(1)) {
-    const last = run[run.length - 1], prev = run[run.length - 2];
-    if (!prev || last.heat <= 0) continue;
-    const dir = last.p.map((v, k) => v - prev.p[k]), dl = Math.hypot(...dir) || 1, len = 4 + 5 * R();
-    last.w = Math.max(last.w, 0.12);
-    run.push({ p: toShell(...last.p.map((v, k) => v + (dir[k] / dl) * len)), w: 0.03, heat: last.heat * 0.6 });
-  }
-  // The hot arm runs on to the line the skin ends along, and is open to the break there.
-  {
-    const run = runs[0], last = run[run.length - 1], py = TRACED[0][TRACED[0].length - 1][1];
-    run.push({ p: onShell(lineAt('left', py) - 1.2, py), w: last.w * 0.85, heat: last.heat * 0.92 });
-  }
-  const segs = [];
-  for (const run of [...runs, ...branches]) for (let i = 0; i + 1 < run.length; i++) {
-    const a = run[i], b = run[i + 1];
-    segs.push({ a: a.p, b: b.p, wa: a.w, wb: b.w, ha: a.heat, hb: b.heat });
-  }
   return segs;
 }
 

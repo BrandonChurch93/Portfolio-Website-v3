@@ -182,25 +182,19 @@ export const slabWander = (py) => 2.2 * Math.sin(py * 0.37 + 1.3) + 1.3 * Math.s
 const downOf = (y) => Math.min(1, Math.max(0, (-RIM - y) / L.WORLD.deep));
 
 // ---------------------------------------------------------------------------------------------------------------
-// A crater's height at a place.
-function craterHeight(k, x, y, z) {
-  const dx = x - k.c[0], dy = y - k.c[1], dz = z - k.c[2], dn = dx * k.n[0] + dy * k.n[1] + dz * k.n[2];
-  const tx = dx - dn * k.n[0], ty = dy - dn * k.n[1], tz = dz - dn * k.n[2];
-  // A crater may be drawn out round the planet (stretch), where the planet turns from the visitor and would otherwise
-  // draw it narrower than picture 9 has it.
-  const cu = (tx * k.e1[0] + ty * k.e1[1] + tz * k.e1[2]) / (k.stretch ?? 1), cv = tx * k.e2[0] + ty * k.e2[1] + tz * k.e2[2], d = Math.hypot(cu, cv);
-  const reach = k.flank < 2 ? 3.4 : 2.6;
-  if (d > k.r * reach) return 0;
-  const phi = Math.atan2(cv, cu);
-  const rr = k.r * (1 + k.lumpy * (0.55 * Math.sin(3 * phi + k.phase) + 0.3 * Math.sin(5 * phi + 2.1 * k.phase) + 0.15 * Math.sin(11 * phi + 0.7 * k.phase)));
-  const x1 = d / rr;
+// A crater's height by how far out from its middle a place is (x1, in shares of its radius). A small one is a bowl
+// whose wall steepens toward its lip (BOWL, the power of its profile): a round bowl lit at a grazing angle drew its wall
+// turned to the moon as a pale tent, where picture 9's small craters are dark holes with a thin lit rim.
+const BOWL = 3.2;
+function profile(k, x1, phi, x, y, z, reach) {
   let h;
   if (x1 < 1) {
     if (k.floor > 0) {
       if (x1 < k.floor) {
         // The floor: low hummocks over it, and at its middle a small cluster of hills.
         const hill = k.bump * (Math.exp(-((x1 / 0.13) ** 2)) + 0.55 * Math.exp(-(((x1 - 0.12) / 0.07) ** 2)) * (0.5 + 0.5 * Math.sin(3 * phi + k.phase)));
-        h = -k.depth * (1 - hill) + k.depth * k.hummock * (fbm(x * 0.09 + k.seed, y * 0.09, z * 0.09, 3) + 0.4 * perlin(x * 0.3, y * 0.3 + k.seed, z * 0.3)) * smooth(0, 0.25, k.floor - x1 + 0.05);
+        // Only broad ones: finer hummocks than the mesh holds came out as crumpled foil.
+        h = -k.depth * (1 - hill) + k.depth * k.hummock * fbm(x * 0.07 + k.seed, y * 0.07, z * 0.07, 2) * smooth(0, 0.25, k.floor - x1 + 0.05);
       } else {
         // The wall rises smoothly from the floor and steepest under the crest, so the lip is sharp. A large crater's
         // wall has slumped in terraces: broken ledges whose edges wander and fade round it, never whole rings.
@@ -214,7 +208,7 @@ function craterHeight(k, x, y, z) {
         }
         h = -k.depth + (k.depth + k.rim) * w + k.rim * 0.12 * perlin(x * 0.11 + k.seed, y * 0.11, z * 0.11) * Math.sin(Math.PI * w);
       }
-    } else h = -k.depth + (k.depth + k.rim) * x1 ** 2;
+    } else h = -k.depth + (k.depth + k.rim) * x1 ** BOWL;
   } else {
     const o = x1 - 1;
     // The rim stands up from the ground round it on a broad outer flank, so the crater reads raised and not cut.
@@ -223,6 +217,29 @@ function craterHeight(k, x, y, z) {
     // On the large named ones it is broad and low: steep hummocks there came out as faceted tents.
     if (k.r > 9) h += k.rim * (k.terraces ? 0.12 : 0.35) * Math.exp(-o * 1.6) * (1 - smooth(1.5, 2.6, x1)) * perlin(x * (k.terraces ? 0.07 : 0.16) + k.seed, y * (k.terraces ? 0.07 : 0.16), z * (k.terraces ? 0.07 : 0.16));
   }
+  return h;
+}
+
+// A crater's height at a place.
+function craterHeight(k, x, y, z) {
+  const dx = x - k.c[0], dy = y - k.c[1], dz = z - k.c[2], dn = dx * k.n[0] + dy * k.n[1] + dz * k.n[2];
+  const tx = dx - dn * k.n[0], ty = dy - dn * k.n[1], tz = dz - dn * k.n[2];
+  // A crater may be drawn out round the planet (stretch), where the planet turns from the visitor and would otherwise
+  // draw it narrower than picture 9 has it.
+  const cu = (tx * k.e1[0] + ty * k.e1[1] + tz * k.e1[2]) / (k.stretch ?? 1), cv = tx * k.e2[0] + ty * k.e2[1] + tz * k.e2[2], d = Math.hypot(cu, cv);
+  const reach = k.flank < 2 ? 3.4 : 2.6;
+  if (d > k.r * reach) return 0;
+  const phi = Math.atan2(cv, cu);
+  const rr = k.r * (1 + k.lumpy * (0.55 * Math.sin(3 * phi + k.phase) + 0.3 * Math.sin(5 * phi + 2.1 * k.phase) + 0.15 * Math.sin(11 * phi + 0.7 * k.phase)));
+  const x1 = d / rr;
+  // A large crater's crest is rounded over `crest` of its radius each side, so it reads as a raised rampart the moon
+  // lights along, not as a cut edge with the floor stamped inside it.
+  const c = k.crest ?? 0;
+  let h;
+  if (c > 0 && Math.abs(x1 - 1) < c) {
+    const sAt = (x1 - (1 - c)) / (2 * c), h0 = profile(k, 1 - c, phi, x, y, z, reach), h2 = profile(k, 1 + c, phi, x, y, z, reach);
+    h = (1 - sAt) ** 2 * h0 + 2 * sAt * (1 - sAt) * k.rim + sAt ** 2 * h2;
+  } else h = profile(k, x1, phi, x, y, z, reach);
   if (k.worn) h *= 0.85 + 0.15 * perlin(x * 0.2, y * 0.2, z * 0.2);
   return h;
 }
@@ -338,10 +355,30 @@ const swell = (x, y, z) => 2.6 * fbm(x / 70, y / 70, z / 70, 3) + 1.5 * fbm(x / 
 
 // The top of the skin, under the land's edge: a rounded, crumbly shoulder that turns in under it (how far down from
 // the rim it rounds, and how far in it is at the rim), with the ground's lumps kept down for `under` units, where the
-// land's sand lies over it, so nothing of it stands above the land.
-export const SHOULDER = { round: 16, in: 11, under: 52, lip: { at: 37, wander: 3.5, step: 1.8, out: 0.7 } };
+// land's sand lies over it, so nothing of it stands above the land. A ledge laid along it at one depth drew a ridge
+// right round the planet like a seam on a pot, and is gone. `shade` is how far under the rim the sand's lip shades it.
+export const SHOULDER = { round: 16, in: 11, under: 52, shade: [10, 30] };
+// Bites knocked out of the dark side where it turns from the visitor, so its outline is broken and not a lathe's arc:
+// two grains of them (the spacing of their cells, how many of the cells hold one, their radii and depths, in units),
+// each a scoop with a flat floor and a steep wall, and how near edge on the surface must be for them to be cut (the
+// planet's normal toward the visitor, from and to).
+const BITES = { grains: [{ size: 34, keep: 0.5, r: [9, 17], deep: [2.5, 6.5], seed: 71 }, { size: 13, keep: 0.3, r: [3.5, 7], deep: [0.8, 1.8], seed: 83 }], edgeOn: [0.12, 0.36] };
+function bites(x, y, z) {
+  const n = normalOf(x, y, z), on = 1 - smooth(BITES.edgeOn[0], BITES.edgeOn[1], n[2]);
+  if (on <= 0) return 0;
+  let h = 0;
+  for (const g of BITES.grains) {
+    const c = cells(x, y, z, g.size, g.seed, C3);
+    if (hash(c.i, c.j, c.k, g.seed + 3) > g.keep) continue;
+    const u = hash(c.i, c.j, c.k, g.seed + 4), r = g.r[0] + (g.r[1] - g.r[0]) * u, deep = g.deep[0] + (g.deep[1] - g.deep[0]) * hash(c.i, c.j, c.k, g.seed + 5);
+    const d = c.d1 * (1 + 0.25 * perlin(x / 4.1, y / 4.1, z / 4.1));
+    h = Math.max(h, deep * (1 - smooth(r * 0.55, r, d)));
+  }
+  return h * on;
+}
 export function coarse(x, y, z) {
   let h = swell(x, y, z) * (1 - 0.8 * floored(x, y, z));
+  if (x < 0) h -= bites(x, y, z);
   for (const k of CR.at(x, y, z)) h += craterHeight(k, x, y, z);
   // A cleft shallows out as it reaches the line, so it is not cut on down the crust's broken face.
   const ck = crackAt(x, y, z);
@@ -360,12 +397,6 @@ export function coarse(x, y, z) {
   h = h > 0 ? h * smooth(SHOULDER.under * 0.72, SHOULDER.under, rd) : h * (0.45 + 0.55 * smooth(6, SHOULDER.under * 0.9, rd));
   // and a little under the sand's drape, all the way down it, so no lump of the skin shows through the sand.
   h -= 0.9 * (1 - smooth(SHOULDER.under * 0.6, SHOULDER.under * 0.78, rd));
-  // The crust's lip, right under the sand's scalloped edge: above it the skin is set back under the sand, and its
-  // top, a crisp ledge, catches the moon, so the sand lies on stone and the join is not a seam.
-  {
-    const P = SHOULDER.lip, at = P.at + P.wander * perlin(x / 23 + 1.7, z / 23, 3.3) + 0.8 * perlin(x / 5.1, z / 5.1, 8.1);
-    if (x > 0) h += rd < at ? -P.step * (1 - smooth(at - 1.4, at, rd)) : P.out * Math.exp(-(rd - at) / 2.2);
-  }
   if (rd < SHOULDER.round) {
     const f = 1 - rd / SHOULDER.round;
     h -= SHOULDER.in * f * f * (1 + 0.22 * perlin(x / 6, y / 6, z / 6)) + 1.4 * Math.abs(perlin(x / 2.6, y / 2.6, z / 2.6)) * f;
@@ -393,8 +424,8 @@ export function gathered(x, y, z, side) {
   const knot = side > 0 ? 1 : 0.5 + 0.5 * smooth(25, 75, Math.hypot(x - KNOT[0], y - KNOT[1], z - KNOT[2]));
   // On the crust's chunks by the line fewer: their tops are its old weathered top, broken and chipped, not pitted.
   const crustTop = 0.3 + 0.7 * smooth(8, 36, edgeDistance(x, y, z));
-  // Dense only by the break and toward the lower limb: between, smooth dust with few pits.
-  return (side > 0 ? 1 : 0.35) * knot * crustTop * (0.05 + 0.8 * toward ** 1.6) * (0.15 + 0.85 * bands) * (1 - floored(x, y, z));
+  // Pitted all over, densest by the break and toward the lower limb, as picture 9's pale side is.
+  return (side > 0 ? 1 : 0.35) * knot * crustTop * (0.42 + 0.75 * toward ** 1.3) * (0.5 + 0.5 * bands) * (1 - floored(x, y, z));
 }
 
 // Pits too small for the geometry, in three sizes whose radii follow a power law within each, as craters do.

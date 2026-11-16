@@ -47,6 +47,14 @@ function block(k, x, y, z) {
     const u = cx * c.r[0] + cy * c.r[1] + cz * c.r[2], v = cx * c.r[3] + cy * c.r[4] + cz * c.r[5], w = cx * c.r[6] + cy * c.r[7] + cz * c.r[8];
     f = Math.max(f, (c.size - (Math.abs(u) + Math.abs(v) * 1.3 + Math.abs(w) * 0.8)) * 0.55);
   }
+  // Scallops and pits: balls carved out of it, each drawn out its own way across the face.
+  P[0] = la; P[1] = lb; P[2] = ln;
+  for (const c of k.dish) {
+    const d0 = P[c.ax[0]] - c.at[c.ax[0]], d1 = P[c.ax[1]] - c.at[c.ax[1]], reach = c.r * c.e;
+    if (d0 > reach || d0 < -reach || d1 > reach || d1 < -reach) continue;
+    const u = (d0 * c.cs + d1 * c.sn) / c.e, v = d1 * c.cs - d0 * c.sn;
+    f = Math.max(f, c.r - Math.hypot(u, v, P[c.out] - c.at[c.out]));
+  }
   // Broad swells that keep its faces from being flat planes, and a fine grain on every face.
   return f + k.lump * fbm(x / 6.5 + k.seed, y / 6.5, z / 6.5, 2) + k.grain * (fbm(x / 1.9 + k.seed, y / 1.9, z / 1.9, 2) + 0.45 * perlin(x / 0.7, y / 0.7 + k.seed, z / 0.7));
 }

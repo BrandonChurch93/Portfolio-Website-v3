@@ -20,10 +20,10 @@ import { creased } from '../../lib/mesh.mjs';
 import { pack } from '../../lib/pack.mjs';
 import { simplify } from '../../lib/surface.mjs';
 import { L, light, linear, stone as planetStone, storeBounce } from '../../lib/plan.mjs';
-import { DARK_LIGHT, MAP, STONE, UNDER } from '../../../../src/pieces/world/parts/skin/look.ts';
+import { BLOCK_CODE, CRUST, DARK_LIGHT, MAP, STONE, UNDER, blockTop } from '../../../../src/pieces/world/parts/skin/look.ts';
 const unitOf = (v) => { const l = Math.hypot(...v) || 1; return v.map((x) => x / l); };
-import { KNOT, SIDES, craters, crackLines, edges, edgeAngle, hullAt, lineAt, onShell, shellNormal, toShell } from './features.mjs';
-import { CRUST, setup, coarse, edgeDistance, perlin } from './field.mjs';
+import { KNOT, SIDES, craters, crackLines, edges, edgeAngle, hullAt, lineAt, onShell, shellNormal } from './features.mjs';
+import { setup, coarse, perlin } from './field.mjs';
 import { cutAt, makeBlocks, planBlocks, topness } from './blocks.mjs';
 import { read as readWorld } from './rockfile.mjs';
 
@@ -33,7 +33,7 @@ const began = performance.now(), say = (s) => console.log(`skin: ${s} · ${((per
 // keep, the bake's rays, and the map's texels to a picture pixel.
 const FINE = draft
   ? { grid: 1.4, error: 0.2, most: 120000, samples: { core: 8, moon: 6, hemi: 24 }, bounces: 1, perPixel: 1.5 }
-  : { grid: 0.6, error: 0.42, most: 80000, samples: { core: 16, moon: 16, hemi: 160 }, bounces: 2, perPixel: MAP.perPixel };
+  : { grid: 0.6, error: 0.42, most: 96000, samples: { core: 16, moon: 16, hemi: 160 }, bounces: 2, perPixel: MAP.perPixel };
 // How far down the surface the grid is looked at (t, 0 at the rim), and the margin round each side's part of the map.
 const DOWN = 0.93, MARGIN = 4;
 // The skirt past each side's line: how far past it it runs as it goes down, how far down from the edge, in units, and
@@ -44,10 +44,14 @@ const DOWN = 0.93, MARGIN = 4;
 const SKIRT = { past: [-0.3, -1.2], down: { left: 9, right: 9 }, cols: 3 };
 // The blocks' surface: the cell it is made at and how far its reduction may stray, in units.
 const BLOCKS = draft ? { cell: 1.5, error: 0.3 } : { cell: 1, error: 0.45 };
-// How near (the cosine) the grid's normal must be to a crease's to be taken in its place.
-const AGREE = Math.cos((24 * Math.PI) / 180), CREASE = Math.cos((32 * Math.PI) / 180);
+// How near (the cosine) the grid's normal must be to a crease's to be taken in its place, and how sharply the
+// surface must turn at a point for it to be a crease. At 32 degrees a small crater's rim was a crease, and its walls
+// were drawn in flat facets.
+const AGREE = Math.cos((24 * Math.PI) / 180), CREASE = Math.cos((62 * Math.PI) / 180);
 // How much the stored light is eased toward its neighbours', on the open ground and on a broken face, and how often.
 const EASE = { flat: 0.25, steep: 0.85, passes: 3 };
+// How steep a place must be (1 less the cosine to the outer surface) for the moon's share there to be eased too.
+const SHARP = 0.6;
 
 // The cracks are cut by the shader from their own lines (crackLines), not into the mesh or the map.
 const lines = crackLines();
@@ -107,7 +111,7 @@ function grid(side) {
       if (k === 0 || k === rows.length - 1 || j === 0 || j >= span) lock[v] = 1;
       // In the two large craters every third point of the grid is kept, so the reduction leaves no long flat triangle
       // across a floor or a wall: one drew a straight line across the large crater's floor.
-      else if (side === 'right' && k % 3 === 0 && j % 3 === 0 && features.craters.slice(0, 2).some((c) => Math.hypot(q[0] - c.c[0], q[1] - c.c[1], q[2] - c.c[2]) < c.r * 1.25 * (c.stretch ?? 1))) lock[v] = 1;
+      else if (side === 'right' && k % 3 === 0 && j % 3 === 0 && features.craters.slice(0, 2).some((c) => Math.hypot(q[0] - c.c[0], q[1] - c.c[1], q[2] - c.c[2]) < c.r * 1.6 * (c.stretch ?? 1))) lock[v] = 1;
     }
   });
   // The normal at each point of the grid, from its neighbours: the reduced mesh keeps these where the surface is
@@ -195,12 +199,15 @@ const code = [];
   for (let i = 0; i < nSkin; i++) {
     const x = lit.positions[i * 3], y = lit.positions[i * 3 + 1], z = lit.positions[i * 3 + 2], [px, py] = L.pictured(x, y, z), side = x > 0 ? 'right' : 'left';
     const toCut = (side === 'left' ? -1 : 1) * (px - cutAt(side, py)), under = (1 - L.shell(x, y, z)) * L.WORLD.half;
-    if (toCut < 1.6 && (under > 0.8 || toCut < 0.7)) edgeCode[i] = 0.18;
+    if (toCut < 1.6 && (under > 0.8 || toCut < 0.7)) edgeCode[i] = BLOCK_CODE.edge;
   }
   code.push(edgeCode);
   for (const { blocks, mesh } of made) {
     const c = creased(mesh, 34), m = c.positions.length / 3, k = new Float32Array(m);
-    for (let i = 0; i < m; i++) k[i] = 0.5 + 0.5 * topness(blocks, c.positions[i * 3], c.positions[i * 3 + 1], c.positions[i * 3 + 2], 3.2);
+    for (let i = 0; i < m; i++) {
+      const t = topness(blocks, c.positions[i * 3], c.positions[i * 3 + 1], c.positions[i * 3 + 2], 3.2), [a, b] = t.facing ? BLOCK_CODE.facing : BLOCK_CODE.line;
+      k[i] = a + (b - a) * t.top;
+    }
     P.push(c.positions); N.push(c.normals); I.push(c.indices.map((v) => v + n)); code.push(k);
     n += m;
     say(`blocks: ${blocks.length}, ${(c.indices.length / 3).toLocaleString('en-US')} triangles`);
@@ -233,9 +240,11 @@ const nextTo = Array.from({ length: n }, () => []), steep = new Float32Array(n);
 }
 const stone = (s) => { const a = linear(s.from), b = linear(s.to); return a.map((v, i) => Math.min(1, (v + (b[i] - v) * s.k) * s.power)); };
 const PALE = stone(STONE.pale), DARK = stone(STONE.dark), UNDER_STONE = planetStone().map((v) => v * UNDER);
+const BLEACHED = (() => { const s = planetStone(), g = 0.2126 * s[0] + 0.7152 * s[1] + 0.0722 * s[2]; return s.map((v) => (g + (v - g) * (1 - CRUST.bleach)) * CRUST.top); })();
 const albedo = new Float32Array(n * 3);
 for (let i = 0; i < n; i++) {
-  const pale = lit.positions[i * 3] > 0, top = CODE[i] > 0.25 ? (CODE[i] - 0.5) * 2 : CODE[i] > 0.1 ? 0 : 1, own = pale ? PALE : DARK;
+  const pale = lit.positions[i * 3] > 0, block = CODE[i] > 0.25, top = block ? blockTop(CODE[i]) : CODE[i] > 0.1 ? 0 : 1;
+  const own = block ? (pale ? PALE.map((v, c) => v + (BLEACHED[c] - v) * CRUST.shaken) : BLEACHED) : pale ? PALE : DARK;
   albedo.set(own.map((v, c) => v * top + UNDER_STONE[c] * (1 - top)), i * 3);
 }
 // The torn rock round the skin blocks and bounces its light: what the blocks' broken faces see of the core, and the
@@ -259,7 +268,8 @@ say('the night\'s light baked');
       const ns = nextTo[i];
       if (!ns.length) continue;
       const w = i >= nSkin ? EASE.flat : EASE.flat + (EASE.steep - EASE.flat) * Math.min(1, steep[i] * 2);
-      for (const key of ['core', 'moon', 'open']) { let a = 0; for (const j of ns) a += was[key][j]; B[key][i] = was[key][i] * (1 - w) + (a / ns.length) * w; }
+      // The moon's share is eased only on the broken faces: eased on a crater's wall it softened the crescent's edge.
+      for (const key of ['core', 'moon', 'open']) { const k = key === 'moon' && steep[i] < SHARP ? 0 : w; let a = 0; for (const j of ns) a += was[key][j]; B[key][i] = was[key][i] * (1 - k) + (a / ns.length) * k; }
       for (let c = 0; c < 3; c++) { let a = 0; for (const j of ns) a += was.bounce[j * 3 + c]; B.bounce[i * 3 + c] = was.bounce[i * 3 + c] * (1 - w) + (a / ns.length) * w; }
     }
   }
@@ -361,5 +371,5 @@ for (let i = 0; i < n; i++) {
   lightOf.set([baked.skin.core[i], baked.skin.moon[i], baked.skin.open[i], fillSeen[i]], i * 4);
   bounceOf.set([storeBounce(baked.skin.bounce[i * 3]), storeBounce(baked.skin.bounce[i * 3 + 1]), storeBounce(baked.skin.bounce[i * 3 + 2]), CODE[i]], i * 4);
 }
-pack('public/world/skin.bin', [{ name: 'skin', positions: lit.positions, indices: lit.indices, attributes: { normal: { data: lit.normals, size: 3, as: 'i8' }, light: { data: lightOf, size: 4, as: 'u8' }, bounce: { data: bounceOf, size: 4, as: 'u8' }, atlas: { data: map, size: 2, as: 'u16' } }, info: { map: [MW, MH, rects[0].w, k], dark: [rects[0].x0, rects[0].y0], knot: KNOT_LIGHT, torn: TORN_LINE, cracks: lines.flat().map((v) => +v.toFixed(3)) } }], { draft });
+pack('public/world/skin.bin', [{ name: 'skin', positions: lit.positions, indices: lit.indices, attributes: { normal: { data: lit.normals, size: 3, as: 'i8' }, light: { data: lightOf, size: 4, as: 'u8' }, bounce: { data: bounceOf, size: 4, as: 'u8' }, atlas: { data: map, size: 2, as: 'u16' } }, info: { map: [MW, MH, rects[0].w, k], dark: [rects[0].x0, rects[0].y0], knot: KNOT_LIGHT, torn: TORN_LINE, crisp: [...features.craters[0].c.map((v) => +v.toFixed(2)), +features.craters[0].r.toFixed(2)], cracks: lines.flat().map((v) => +v.toFixed(3)) } }], { draft });
 say(`written: ${(fs.statSync('public/world/skin.bin').size / 1e6).toFixed(2)} MB, ${(lit.indices.length / 3).toLocaleString('en-US')} triangles`);

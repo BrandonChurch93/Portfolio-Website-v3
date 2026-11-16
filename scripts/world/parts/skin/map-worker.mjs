@@ -8,6 +8,7 @@ import { closest } from '../../lib/bvh.mjs';
 import { L } from '../../lib/plan.mjs';
 import { CRUST, SHOULDER, setup, fine, coarse, crust, chips, crackOf, edgeDistance, pitted, floored, farEdge, fbm, downOf, slabbed } from './field.mjs';
 import { frame, shellNormal, toShell } from './features.mjs';
+import { blockTop } from '../../../../src/pieces/world/parts/skin/look.ts';
 
 const { features, bvh, positions, normals, indices, code, texels, rects, perPixel, rows, moon } = workerData;
 setup(features);
@@ -45,7 +46,7 @@ for (let row = rows[0]; row < rows[1]; row++) {
     // change of tone, and nothing of the outer surface's pits, sand or cracks.
     if (CODE[a] > 0.25) {
       // On its weathered top the crust's own old ground shows: pitted and lumpy, as the outer surface is.
-      const top = Math.min(1, Math.max(0, (CODE[a] * w + CODE[b] * u + CODE[c] * v - 0.5) * 2)), pit = top > 0.5 ? pitted(q[0], q[1], q[2], 1) : 0;
+      const top = blockTop(CODE[a] * w + CODE[b] * u + CODE[c] * v), pit = top > 0.5 ? pitted(q[0], q[1], q[2], 1) : 0;
       out.H[i] = 0.18 * fbm(p[0] / 1.3, p[1] / 1.3, p[2] / 1.3, 2) + (top > 0.5 ? (fine(q[0], q[1], q[2], 1) - 0.1) * smooth(0.5, 0.9, top) : 0);
       out.B[i] = (0.92 + 0.16 * fbm(p[0] * 0.08, p[1] * 0.08, p[2] * 0.08, 2) + 0.08 * fbm(p[0] * 0.5, p[1] * 0.5, p[2] * 0.5, 2)) * (1 - 0.5 * pit);
       out.G[i] = side > 0 ? 0.5 : 0;
@@ -90,14 +91,16 @@ for (let row = rows[0]; row < rows[1]; row++) {
     if (side > 0) {
       // Dust lies on what faces out and settles in the floors; the steep walls and the crests show the rock. The
       // dust is thinner down toward the lower limb, and on the oldest ground.
+      // Only gentle changes of tone: broad ones read as dark stains painted between the craters.
       m *= 0.94 + 0.12 * smooth(0.7, 0.97, up);
-      m *= 0.93 + 0.2 * tone + 0.12 * mid + 0.07 * mottle;
-      m *= 1 - 0.14 * smooth(0.35, 0.9, down);
-      // Near the torn line the ground is shattered and its dust shaken off: darker, as the picture's is.
-      m *= 1 - 0.2 * (1 - smooth(10, 60, farEdge(q[0], q[1], q[2])));
+      m *= 0.97 + 0.07 * tone + 0.05 * mid + 0.06 * mottle;
+      m *= 1 - 0.1 * smooth(0.35, 0.9, down);
+      // Near the torn line the ground is shattered and its dust shaken off: a little darker, as the picture's is.
+      m *= 1 - 0.08 * (1 - smooth(10, 60, farEdge(q[0], q[1], q[2])));
       // A crater's floor sits back in its bowl: it glared when it was the palest dust of the side.
       m *= 1 - 0.2 * floor;
-      m *= 1 - (isFace ? 0 : 0.62 * pitted(q[0], q[1], q[2], side));
+      // A pit is darker only a little: its shadow is its own (vis), and its wall turned to the moon is lit.
+      m *= 1 - (isFace ? 0 : 0.28 * pitted(q[0], q[1], q[2], side));
       // The fine relief's own shadows from the moon.
       const md = moon, dn = dot(md, bent);
       let vis = 1;
@@ -113,19 +116,16 @@ for (let row = rows[0]; row < rows[1]; row++) {
           vis = Math.min(vis, smooth(-0.06, 0.04, rise - (hs - h0) / s));
         }
       }
-      m *= 0.18 + 0.82 * vis;
+      // A pit's own shadow is crisp and dark; the shade the ground's broad lumps threw on each other was a soft smear.
+      m *= 0.25 + 0.75 * vis;
+      // Under the sand's lip the crust lies in its shade, but for what stands out of it.
+      if (rd < SHOULDER.shade[1]) m *= 0.45 + 0.55 * smooth(SHOULDER.shade[0], SHOULDER.shade[1], rd + 6 * Math.max(0, dot(md, bent) - 0.2));
       // What the moon falls on squarely is the dust at its palest: the shader eases it toward the dust's cream.
       m *= 1 + 0.26 * smooth(0.3, 0.8, dot(md, bent)) * vis * (1 - 0.85 * floor);
       m *= 1 + 0.12 * layer;
-      // Sand from the land's drape lies in the hollows of the shoulder under it: where the place is lower than the
-      // ground round it, thinning out down the side.
-      let sand = 0;
-      if (rd < SHOULDER.under + 10) {
-        let around = 0;
-        for (let k = 0; k < 6; k++) { const ang = (k / 6) * 2 * Math.PI, r = toShell(q[0] + (e1[0] * Math.cos(ang) + e2[0] * Math.sin(ang)) * 4, q[1] + (e1[1] * Math.cos(ang) + e2[1] * Math.sin(ang)) * 4, q[2] + (e1[2] * Math.cos(ang) + e2[2] * Math.sin(ang)) * 4); around += coarse(r[0], r[1], r[2]) + fine(r[0], r[1], r[2], side); }
-        const low = around / 6 - (coarse(q[0], q[1], q[2]) + h0);
-        sand = Math.min(1, smooth(0.1, 0.9, low) * (1 - smooth(SHOULDER.under * 0.4, SHOULDER.under + 8, rd)) + 0.7 * (1 - smooth(3, 16, rd))) * (1 - under);
-      }
+      // The land's sand lies only at the very top, under its own lip: laid in the hollows further down the shoulder it
+      // drew a band with a dripping edge, like icing.
+      const sand = (1 - smooth(2, 7, rd)) * (1 - under);
       // The fourth number: under half, how much is the red brown under the crust; over half, how much is sand.
       g = 0.5 - 0.5 * under + 0.5 * sand;
     } else {

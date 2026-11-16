@@ -1,4 +1,4 @@
-import { CLEFT, CRACK_CELL, CRESCENT, CRUST_TOP, GLOW, MAP, NIGHT_SIDE, PALE_SHADE, PALE_WARM, TERMINATOR, WEATHER, DARK_FACE } from './look';
+import { BLOCK_CODE, CLEFT, CRACK_CELL, CRESCENT, CRUST, GLOW, KNOT_POOL, MAP, SHADE_TOP, NIGHT_SIDE, PALE_SHADE, PALE_WARM, TERMINATOR, WEATHER, DARK_FACE } from './look';
 import { MOONWARD, PICTURE, RIM, SCALE, WORLD } from '../../layout';
 
 // The skin's own changes to the standard shader. Its map is laid over picture 9's pixels, so a texel's slope is a
@@ -39,6 +39,7 @@ uniform vec3 uPale;
 uniform vec3 uDust;
 uniform vec3 uDark;
 uniform vec3 uUnder;
+uniform vec3 uStone;
 uniform vec3 uSand;
 varying vec3 vSkinP;
 varying vec3 vSkinN;
@@ -54,6 +55,7 @@ uniform vec4 uKnot;
 uniform vec3 uDarkLight;
 uniform vec3 uDarkFrom;
 uniform vec2 uDarkAt;
+uniform vec4 uCrisp;
 uniform float uTorn[ 67 ];
 uniform sampler2D uCkSeg;
 uniform sampler2D uCkCell;
@@ -67,18 +69,17 @@ float ckHeat;
 float ckBeside;
 float ckDim;
 float ckPx;
+float ckLine;
+float ckLineHeat;
+float ckFine;
 vec2 ckSide;
 vec3 ckDu;
 vec3 ckDv;
 float skinPale;
 float skinSlab;
+float skinFacing;
+float skinTop;
 vec3 skinShell;
-vec3 skinGlow( float l ) {
-	vec3 c = uGlowEmber;
-	c = mix( c, uGlowFlame, smoothstep( ${f(GLOW.ramp[3][1])}, ${f(GLOW.ramp[2][1])}, l ) );
-	c = mix( c, uGlowHot, smoothstep( ${f(GLOW.ramp[2][1])}, ${f(GLOW.ramp[1][1])}, l ) );
-	return mix( c, uGlowPale, smoothstep( ${f(GLOW.ramp[1][1])}, ${f(GLOW.ramp[0][1])}, l ) );
-}
 float ckHash( vec2 p ) { return fract( sin( dot( p, vec2( 127.1, 311.7 ) ) ) * 43758.5453 ); }
 float ckNoise( vec2 p ) {
 	vec2 i = floor( p ), f = fract( p );
@@ -87,16 +88,19 @@ float ckNoise( vec2 p ) {
 }
 // The cracks near a place of picture 9 (pic, in its pixels; px is how many of them a pixel of the screen covers):
 // how far into the nearest cleft it is (ckQ, 0 on its middle line, 1 at its lip), that cleft's half width, its heat
-// and which way its middle line lies (ckSide, from the line toward the place), and the light the lit clefts round it
-// lay on the rock here (ckBeside). The lip is chipped: its width wanders at two grains, and a wide cleft is bitten.
-// A cleft thinner than the screen can show is drawn as wide as that and dimmer by its share.
+// and which way its middle line lies (ckSide, from the line toward the place), the brightest of the clefts round it
+// drawn as one soft line (ckLine, and its heat), which is how a cleft the screen cannot open is drawn, and the light
+// the hot clefts lay on the rock right beside them (ckBeside). The lip is chipped only where it can be seen: its width
+// wanders at two grains, and a wide cleft is bitten. A cleft is never drawn narrower than CRACK_CELL.least pixels of
+// the screen each side: narrower, its light fell between the pixels and broke into dashes. It is drawn that wide and
+// dimmer by its share.
 void skinCracks( vec2 pic, float px ) {
-	ckQ = 9.0; ckW = 1.0; ckHeat = 0.0; ckBeside = 0.0; ckDim = 1.0; ckSide = vec2( 0.0 );
+	ckQ = 9.0; ckW = 1.0; ckHeat = 0.0; ckBeside = 0.0; ckDim = 1.0; ckSide = vec2( 0.0 ); ckLine = 0.0; ckLineHeat = 0.0;
 	vec2 c = ( pic - uCkGrid.xy ) / uCkGrid.z;
 	if ( c.x < 0.0 || c.y < 0.0 || c.x >= uCkSize.x || c.y >= uCkSize.y ) return;
 	ivec2 ci = ivec2( c );
-	float jag = 0.78 + 0.34 * ckNoise( pic * 0.42 ) + 0.1 * ckNoise( pic * 1.4 + 7.0 ), bite = ckNoise( pic * 1.9 + 3.0 ) - 0.5;
-	float lean = 1e-3;
+	float jag = 0.78 + 0.34 * ckNoise( pic * 0.42 ) + 0.1 * ckNoise( pic * 0.8 + 7.0 ), bite = ckNoise( pic * 0.95 + 3.0 ) - 0.5;
+	float best = 0.0;
 	for ( int k = 0; k < ${CRACK_CELL.most / 4}; k ++ ) {
 		vec4 ids = texelFetch( uCkCell, ivec2( ci.x * ${CRACK_CELL.most / 4} + k, ci.y ), 0 );
 		for ( int j = 0; j < 4; j ++ ) {
@@ -108,13 +112,22 @@ void skinCracks( vec2 pic, float px ) {
 			float t = clamp( dot( ap, ab ) / max( dot( ab, ab ), 1e-6 ), 0.0, 1.0 );
 			vec2 dv = ap - ab * t;
 			float d = length( dv ), w0 = mix( s1.x, s1.y, t ), heat = mix( s1.z, s1.w, t );
-			float w = w0 * mix( 1.0, jag + 0.5 * bite * smoothstep( 0.8, 2.0, w0 ), smoothstep( 0.2, 0.9, w0 ) );
-			float we = max( w, 0.75 * px ), dim = w / we, q = d / we;
-			if ( q < ckQ ) { ckQ = q; ckW = we; ckDim = dim; ckHeat = heat * pow( dim, 0.8 ); ckSide = d > 1e-4 ? dv / d : vec2( 0.0 ); }
-			float fall = ${f(CRACK_CELL.fall[0])} + ${f(CRACK_CELL.fall[1])} * w0;
-			ckBeside = max( ckBeside, heat * dim * exp( - max( 0.0, d - we ) / fall ) * smoothstep( -0.2, 0.25, q - 1.0 ) );
+			float seen = smoothstep( 1.5 * px, 3.0 * px, w0 );
+			float w = w0 * mix( 1.0, jag + 0.5 * bite * smoothstep( 0.8, 2.0, w0 ), seen );
+			float we = max( w, ${f(CRACK_CELL.least)} * px ), dim = w / we, q = d / we;
+			if ( q < ckQ ) { ckQ = q; ckW = we; ckDim = dim; ckHeat = heat; ckSide = d > 1e-4 ? dv / d : vec2( 0.0 ); }
+			float line = exp( - 2.0 * q * q ) * dim, lit = line * max( heat, 0.04 );
+			if ( lit > best ) { best = lit; ckLine = line; ckLineHeat = heat; }
+			float hot = smoothstep( ${f(CRACK_CELL.hot[0])}, ${f(CRACK_CELL.hot[1])}, heat );
+			ckBeside = max( ckBeside, hot * dim * exp( - max( 0.0, d - we ) / ${f(CRACK_CELL.fall)} ) * smoothstep( -0.2, 0.25, q - 1.0 ) );
 		}
 	}
+}
+// The color of the cracks' light at a heat: amber in a cool arm, the hot orange eased toward pale in a warm one, and
+// cream only in the hottest.
+vec3 skinHue( float heat ) {
+	vec3 c = mix( mix( uGlowFlame, uGlowHot, 0.55 ), mix( uGlowHot, uGlowPale, ${f(GLOW.amber)} ), smoothstep( 0.25, 0.7, heat ) );
+	return mix( c, uGlowPale, smoothstep( ${f(GLOW.cream[0])}, ${f(GLOW.cream[1])}, heat ) );
 }
 // The rock's torn line on the dark side, across, at a place down picture 9 (from uTorn[0] down, a value each two rows).
 float skinTornAt( float py ) {
@@ -125,6 +138,10 @@ float skinTornAt( float py ) {
 
 export const COLOR = `
 skinT = texture2D( uSkinMap, vAtlas );
+// What the vertex is (look.ts, BLOCK_CODE): a block that faces the visitor or one along a torn line, and how near its
+// weathered top.
+skinFacing = step( ${f(BLOCK_CODE.facing[0] - 0.03)}, vBlock );
+skinTop = skinFacing * clamp( ( vBlock - ${f(BLOCK_CODE.facing[0])} ) / ${f(BLOCK_CODE.facing[1] - BLOCK_CODE.facing[0])}, 0.0, 1.0 ) + step( 0.25, vBlock ) * ( 1.0 - skinFacing ) * clamp( ( vBlock - ${f(BLOCK_CODE.line[0])} ) / ${f(BLOCK_CODE.line[1] - BLOCK_CODE.line[0])}, 0.0, 1.0 );
 skinPale = step( uSkinMapSize.z, vAtlas.x * uSkinMapSize.x );
 skinPic = uDarkAt + vAtlas * uSkinMapSize.xy / uSkinMapSize.w;
 {
@@ -139,9 +156,11 @@ skinPic = uDarkAt + vAtlas * uSkinMapSize.xy / uSkinMapSize.w;
 	float px = length( fwidth( skinPic ) ) * 0.7;
 	ckPx = px;
 	if ( skinPale < 0.5 ) skinCracks( skinPic, px );
-	else { ckQ = 9.0; ckW = 1.0; ckHeat = 0.0; ckBeside = 0.0; ckDim = 1.0; ckSide = vec2( 0.0 ); }
+	else { ckQ = 9.0; ckW = 1.0; ckHeat = 0.0; ckBeside = 0.0; ckDim = 1.0; ckSide = vec2( 0.0 ); ckLine = 0.0; ckLineHeat = 0.0; }
 	// The cracks are cut in the skin, not in the crust's blocks, which only take the light that leaves them.
-	if ( vBlock > 0.25 ) ckQ = 9.0;
+	if ( vBlock > 0.25 ) { ckQ = 9.0; ckLine = 0.0; }
+	// How far a cleft is too narrow on the screen for its walls and lips to be seen: then it is one soft line.
+	ckFine = 1.0 - smoothstep( 1.4, 3.0, ckW / max( px, 1e-4 ) );
 }
 {
 	float b = skinT.b * 2.0;
@@ -161,17 +180,19 @@ skinPic = uDarkAt + vAtlas * uSkinMapSize.xy / uSkinMapSize.w;
 	float band = skinPic.y * 0.62 + 4.0 * ckNoise( skinPic * vec2( 0.02, 0.05 ) ) + 1.5 * ckNoise( skinPic * 0.11 );
 	float strata = 1.0 + ${f(DARK_FACE.strata)} * ( smoothstep( 0.2, 0.8, ckNoise( vec2( band, skinPic.x * 0.03 ) ) ) - 0.5 ) * ( 1.0 - skinPale );
 	vec3 dark = mix( uDark * b * strata, uUnder * ( 0.4 + 0.3 * b ), face );
-	// In a cleft the stone is its walls, which its own light lights, and an unlit fissure is a dark cut.
-	dark *= 1.0 - 0.65 * ( 1.0 - smoothstep( 0.9, 1.02, ckQ ) ) * ( ckHeat > 0.0 ? 1.0 : 0.25 + 0.75 * ckDim );
+	// In a cleft the stone is its walls, which its own light lights, and an unlit fissure is a dark cut. A lit cleft the
+	// screen cannot open has no dark edge: drawn with one it read as a neon tube.
+	float cut = mix( 1.0 - smoothstep( 0.9, 1.02, ckQ ), exp( - 2.0 * ckQ * ckQ ) * ckDim, ckFine );
+	dark *= 1.0 - mix( 0.65 * cut, 0.3 * cut * ( 1.0 - ckFine ), step( 0.02, ckHeat ) );
 	vec3 col = mix( dark, pale, skinPale );
-	// A block of the crust: its weathered top, the pale dust on the pale side and a pale grey crust on the dark, over
-	// its broken section of the planet's red brown stone.
-	skinSlab = step( 0.25, vBlock ) * ( 1.0 - skinPale );
+	// A block of the crust: the planet's one stone, its weathered top bleached on the dark side and dusted on the pale,
+	// over its broken section of the stone itself.
+	skinSlab = skinFacing * ( 1.0 - skinPale );
 	// The skin's own edge where it breaks before a block is the crust in section too.
-	float top = vBlock > 0.25 ? clamp( ( vBlock - 0.5 ) * 2.0, 0.0, 1.0 ) : 0.0;
-	vec3 grey = mix( vec3( dot( uPale, vec3( 0.2126, 0.7152, 0.0722 ) ) ), uPale, ${f(CRUST_TOP.tint)} ) * ${f(CRUST_TOP.pale)};
-	vec3 crustTop = mix( grey * ( 0.7 + 0.3 * b ), uPale * b, skinPale );
-	vec3 section = uUnder * ( 0.62 + 0.3 * b );
+	float top = skinTop;
+	vec3 bleached = mix( vec3( dot( uStone, vec3( 0.2126, 0.7152, 0.0722 ) ) ), uStone, ${f(1 - CRUST.bleach)} ) * ${f(CRUST.top)};
+	vec3 crustTop = mix( bleached * ( 0.7 + 0.4 * b ) * mix( ${f(CRUST.line)}, 1.0, skinFacing ), mix( uPale, bleached, ${f(CRUST.shaken)} ) * b, skinPale );
+	vec3 section = uUnder * ( 0.7 + 0.45 * b );
 	diffuseColor.rgb = mix( col, mix( section, crustTop, top ), step( 0.1, vBlock ) );
 }`;
 
@@ -186,7 +207,7 @@ export const NORMAL = `
 		float dq = q < 1.0 ? D * 1.3 * pow( max( 1.0 - q, 1e-3 ), 0.3 ) : 0.0;
 		float lu = ( q - ${f(CLEFT.lip[1])} ) / ${f(CLEFT.lip[2])};
 		dq -= ${f(CLEFT.lip[0])} * ckW * ${f(PICTURE.unit)} * 2.0 * lu * exp( - lu * lu ) / ${f(CLEFT.lip[2])};
-		s += ckSide * clamp( dq / max( ckW, 1e-3 ), -6.0, 6.0 ) * ${f(SCALE)} * ( ckHeat > 0.0 ? 1.0 : 0.3 + 0.4 * ckDim );
+		s += ckSide * clamp( dq / max( ckW, 1e-3 ), -6.0, 6.0 ) * ${f(SCALE)} * ( ckHeat > 0.0 ? 1.0 : 0.3 + 0.4 * ckDim ) * ( 1.0 - ckFine );
 	}
 	// And a fine grain on the dark side, finer than the map holds, in two sizes, which only a close look finds.
 	if ( skinPale < 0.5 && vBlock < 0.1 ) {
@@ -205,11 +226,11 @@ export const NORMAL = `
 	if ( abs( det ) > 1e-24 && bl > 1e-24 ) normal = bent / bl;
 }`;
 
-// The cracks' light: deep in a cleft it is the light itself, pale gold in every cleft and dimmer in a thin one, so a
-// thin arm is not orange; on the rock beside it, light that lands on the stone, so it takes the stone's own color.
-// Round the knot the rock is lit as from one source along the hot arm, a smooth pool that falls off with distance and
-// lands on each face by how it is turned to the source, so it is lumpy only as the relief is; and at the junction a
-// white gold point where the clefts open widest.
+// The cracks' light: deep in a cleft it is the light itself, cream only in the hottest and amber in the rest, its
+// heart molten where it is wide; a cleft the screen cannot open is one soft line of it. Beside the hot ones a little of
+// it lands on the lips. Round the knot the rock is lit as from one source along the hot arm: a broad smooth pool that
+// falls off with distance with no edge, lit by how the planet's surface is turned to it and not by the fine relief, so
+// it has no speckle; and at the junction a pale point where the clefts open widest.
 export const EMIT = `
 if ( skinPale < 0.5 ) {
 	// Which wall of a cleft faces the visitor: the planet turns away toward its outline, so the wall on the outline's
@@ -218,43 +239,44 @@ if ( skinPale < 0.5 ) {
 	float ob = length( np );
 	float fw = ob > 1e-4 ? dot( ckSide, np / ob ) * ob : 0.0;
 	float qv = ckQ / ( 1.0 + ${f(CLEFT.open)} * max( fw, 0.0 ) ) * ( 1.0 + ${f(CLEFT.shut)} * max( - fw, 0.0 ) );
-	float heat = ckHeat, hw = pow( heat, 1.4 );
+	float heat = ckHeat, hw = pow( heat, ${f(GLOW.curve)} );
 	float fl = mix( ${f(CLEFT.floor[0])}, ${f(CLEFT.floor[1])}, heat );
 	float heart = 1.0 - smoothstep( fl * 0.55, fl * 1.3, qv );
+	// A wide heart is molten: brighter and dimmer as it runs, never one even band.
+	heart *= 0.78 + 0.4 * ckNoise( skinPic * 0.55 + 21.0 ) * smoothstep( 0.6, 0.9, heat );
 	float wt = clamp( ( qv - fl ) / max( 1.0 - fl, 1e-3 ), 0.0, 1.0 );
 	// The walls take the heart's light, less the further up toward the lips; the wall turned to the visitor shows
 	// all of it, the other only near the floor. The lips catch it on their edge, more on the far lip, which looks
-	// down into the cleft, chipped as they are.
+	// down into the cleft, chipped as they are, and come and go.
 	float wall = ( 1.0 - smoothstep( 0.9, 1.02, qv ) ) * pow( 1.0 - wt, 2.1 ) * ( 1.0 - heart ) * mix( 0.55, 1.0, smoothstep( -0.3, 0.3, fw ) );
+	wall *= 0.55 + 0.6 * smoothstep( 0.3, 0.7, ckNoise( skinPic * 0.35 + 3.0 ) );
 	float lip = exp( - pow( ( qv - 1.0 ) / 0.1, 2.0 ) ) * ( 0.4 + 0.6 * ckNoise( skinPic * 0.9 + 11.0 ) ) * mix( 0.35, 1.0, smoothstep( 0.2, -0.3, fw ) ) * smoothstep( 0.7, 1.6, ckW );
-	// A cleft the screen draws only a pixel or two wide has no walls or lips to show: its light is one soft line, and
-	// drawn with them it broke into dashes as its lips fell between the pixels.
-	float fine = 1.0 - smoothstep( 1.4, 3.0, ckW / max( ckPx, 1e-4 ) );
-	heart = mix( heart, exp( - ckQ * ckQ * 4.5 ), fine );
-	wall *= 1.0 - fine;
-	lip *= 1.0 - fine;
-	vec3 cleft = uGlowPale * heart * ${f(CLEFT.heart)} * hw + mix( uGlowHot, uGlowFlame, wt ) * wall * ${f(CLEFT.wall)} * hw + mix( uGlowFlame, uGlowEmber, 0.4 ) * lip * ${f(CLEFT.rim)} * hw;
-	// Beside it, the light that leaves it lands on the rock by how each face is turned to it.
+	vec3 hue = skinHue( heat );
+	vec3 wide = hue * heart * ${f(CLEFT.heart)} * hw + mix( skinHue( heat * 0.7 ), uGlowFlame, wt ) * wall * ${f(CLEFT.wall)} * hw + mix( uGlowFlame, uGlowEmber, 0.4 ) * lip * ${f(CLEFT.rim)} * hw;
+	vec3 thin = skinHue( ckLineHeat ) * ckLine * ${f(CLEFT.heart)} * pow( ckLineHeat, ${f(GLOW.curve)} );
+	vec3 cleft = mix( wide, thin, ckFine );
+	// Beside a hot one, the light that leaves it lands on the rock right by its lips, by how each face is turned to it.
 	vec3 toward = - ( ckDu * ckSide.x + ckDv * ckSide.y ) + skinShell * 0.6;
 	vec3 tv = ( viewMatrix * vec4( toward, 0.0 ) ).xyz;
 	float tl = length( tv );
-	vec3 soft = normalize( mix( normal, nonPerturbedNormal, 0.3 ) );
-	float facing = tl > 1e-6 ? clamp( ( dot( soft, tv / tl ) + 0.15 ) / 1.15, 0.0, 1.0 ) : 0.5;
-	float patchy = 0.3 + 0.7 * smoothstep( 0.25, 0.75, ckNoise( skinPic * 0.32 + 5.0 ) );
-	vec3 onRock = mix( uGlowHot, uGlowPale, 0.3 ) * ckBeside * facing * patchy * uGlowRock * diffuseColor.rgb * ( 1.0 - smoothstep( 1.1, 0.9, ckQ ) ) * ( 1.0 - step( 0.1, vBlock ) );
-	// Round the knot the rock is lit as from one short source along the hot arm: a smooth pool that falls off with
-	// distance and lands on each face by how it is turned to it.
+	vec3 soft = nonPerturbedNormal;
+	float facing = tl > 1e-6 ? clamp( ( dot( soft, tv / tl ) + 0.3 ) / 1.3, 0.0, 1.0 ) : 0.5;
+	vec3 onRock = mix( uGlowFlame, uGlowHot, 0.5 ) * ckBeside * facing * uGlowRock * uDark * ( 1.0 - smoothstep( 1.1, 0.9, ckQ ) ) * ( 1.0 - step( 0.1, vBlock ) );
+	// Round the knot the rock is lit as from one short source along the hot arm.
 	vec3 ab = uKnotB - uKnotA, ka = vSkinP - uKnotA;
-	float t = clamp( dot( ka, ab ) / max( dot( ab, ab ), 1e-4 ), 0.0, 1.0 );
+	float t = clamp( dot( ka, ab ) / max( dot( ab, ab ), 1e-4 ), 0.0, 1.0 ) * ${f(KNOT_POOL.along)};
 	vec3 to = uKnotA + ab * t - vSkinP;
 	float d = length( to ), dj = length( vSkinP - uKnotA );
 	vec3 lv = ( viewMatrix * vec4( to / max( d, 1e-4 ), 0.0 ) ).xyz;
 	float ll = length( lv );
-	float wrap = ll > 1e-6 ? clamp( ( dot( normal, lv / ll ) + 0.25 ) / 1.25, 0.0, 1.0 ) : 0.0;
-	float pfall = exp( - pow( d / uKnot.y, 1.4 ) ) * mix( 1.0, 0.65, t );
-	vec3 pool = mix( uGlowFlame, uGlowHot, 0.6 ) * uKnot.x * pfall * wrap * diffuseColor.rgb * ( 1.0 - skinSlab );
+	vec3 sv = ( viewMatrix * vec4( skinShell, 0.0 ) ).xyz;
+	vec3 pn = normalize( mix( sv / max( length( sv ), 1e-4 ), nonPerturbedNormal, 0.5 ) );
+	float wrap = ll > 1e-6 ? clamp( ( dot( pn, lv / ll ) + 0.6 ) / 1.6, 0.0, 1.0 ) : 0.0;
+	float near = exp( - pow( d / uKnot.y, 2.0 ) );
+	float pfall = ( 0.7 * near + 0.3 * exp( - d / ( uKnot.y * ${f(KNOT_POOL.tail)} ) ) ) * mix( 1.0, 0.7, t );
+	vec3 pool = mix( mix( uGlowEmber, uGlowFlame, 0.45 ), uGlowFlame, near ) * uKnot.x * pfall * wrap * uDark * mix( 1.0, ${f(KNOT_POOL.onCrust)}, step( 0.1, vBlock ) ) * ( 1.0 - skinSlab );
 	float hot = exp( - pow( max( 0.0, dj - 2.0 ) / uKnot.w, 2.0 ) );
-	vec3 junction = uGlowPale * uKnot.z * hot * hot * heart;
+	vec3 junction = uGlowPale * uKnot.z * hot * hot * mix( heart, ckLine, ckFine );
 	totalEmissiveRadiance += ( cleft + onRock + pool + junction ) * uCoreLevel;
 }`;
 
@@ -279,13 +301,24 @@ export const NIGHT = `
 	// A broken face of the skin turned from the moon takes none of it: the shadow map, nearly edge on there, lit it
 	// in flickering teeth, one to a row of the mesh. A block's faces are lit as they are turned.
 	rake *= mix( smoothstep( -0.04, 0.22, fm ), 1.0, block );
+	// The skin's own broken edge before a block is the inside of a crack: lit, it stood up the tear in thin slivers.
+	rake *= 1.0 - 0.9 * block * step( vBlock, 0.25 );
+	// The skin does not take the moon's shadow as the stage lights it: it is laid here. On the pale side it is the one
+	// the bake worked out for every vertex (the share of the moon seen), which is smooth: the shadow map drawn crisp
+	// stepped in stairs across the low crater. In the large crater (uCrisp: its middle and radius) it is the shadow map
+	// drawn crisp, as picture 9's crescent is: there the bake's edge ran along long triangles and came out feathered.
+	// The shadow map adds what the bake does not know near the top: the land's.
 	float seen = 1.0;
 	#if defined( USE_SHADOWMAP ) && NUM_DIR_LIGHT_SHADOWS > 0
-		seen = receiveShadow ? getShadow( directionalShadowMap[ 0 ], directionalLightShadows[ 0 ].shadowMapSize, directionalLightShadows[ 0 ].shadowIntensity, directionalLightShadows[ 0 ].shadowBias, directionalLightShadows[ 0 ].shadowRadius, vDirectionalShadowCoord[ 0 ] ) : 1.0;
+		seen = getShadow( directionalShadowMap[ 0 ], directionalLightShadows[ 0 ].shadowMapSize, directionalLightShadows[ 0 ].shadowIntensity, directionalLightShadows[ 0 ].shadowBias, directionalLightShadows[ 0 ].shadowRadius, vDirectionalShadowCoord[ 0 ] );
 	#endif
-	// On the pale side the moon's shadow is drawn crisp, as picture 9's crescents are: the shadow map's soft edge is
-	// narrowed to a third of its width.
-	rake *= mix( 1.0, smoothstep( 0.33, 0.67, seen ) / max( seen, 0.05 ), skinPale );
+	#ifdef WORLD_BAKED
+		float nearTop = 1.0 - smoothstep( ${f(SHADE_TOP[0])}, ${f(SHADE_TOP[1])}, - ${f(RIM)} - vSkinP.y );
+		float crisp = 1.0 - smoothstep( 1.35, 1.6, length( vSkinP - uCrisp.xyz ) / uCrisp.w );
+		float sharp = smoothstep( 0.33, 0.67, seen );
+		seen = mix( seen, mix( smoothstep( 0.3, 0.7, wLight.y ) * mix( mix( 1.0, seen, nearTop ), seen, block ), sharp, crisp ), skinPale );
+	#endif
+	rake *= seen;
 	reflectedLight.directDiffuse *= rake;
 	reflectedLight.directSpecular *= rake;
 	// Where the moon's shadow falls on ground turned to it, the night and the bounce are held down too, so the
@@ -299,8 +332,11 @@ export const NIGHT = `
 	vec3 fv = ( viewMatrix * vec4( normalize( uDarkFrom ), 0.0 ) ).xyz;
 	float fill = saturate( dot( normal, normalize( fv ) ) ) * mix( 0.12, 1.0, fillSeen );
 	float rimK = smoothstep( 0.78, 0.97, 1.0 - saturate( dot( normal, geometryViewDir ) ) );
-	float topK = block * clamp( ( vBlock - 0.5 ) * 2.0, 0.0, 1.0 );
-	reflectedLight.directDiffuse += ( 1.0 - skinPale ) * BRDF_Lambert( material.diffuseContribution ) * mix( uGlowPale, vec3( 1.0 ), 0.35 ) * ( mix( uDarkLight.x * fill * fill, uDarkLight.z * fill * fill, max( topK, block * 0.35 ) ) + uDarkLight.y * rimK * ( 1.0 - block ) );
+	// The slab and its chunks face up into it unshaded and take it fully; the blocks along the torn line are seen by it
+	// as the dark face is, their tops a little more: lit as the slab, they stood down the tear as a column of pale foam.
+	float topK = skinFacing * max( skinTop, 0.35 );
+	float lineK = step( 0.25, vBlock ) * ( 1.0 - skinFacing ) * ( 1.0 + 2.0 * skinTop );
+	reflectedLight.directDiffuse += ( 1.0 - skinPale ) * BRDF_Lambert( material.diffuseContribution ) * mix( uGlowPale, vec3( 1.0 ), 0.35 ) * ( mix( uDarkLight.x * fill * fill * max( lineK, 1.0 ), uDarkLight.z * fill * fill, topK ) + uDarkLight.y * rimK * ( 1.0 - block ) );
 }
 // The dark side reflects little of the night: at its outline, seen edge on, it drew a thin lit line round the planet
 // that picture 9 does not have.
