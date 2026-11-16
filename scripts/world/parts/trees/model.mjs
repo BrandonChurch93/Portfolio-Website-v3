@@ -50,10 +50,10 @@ const FILL = { base: 1.6, per: 3.6, far: 0.5, size: [0.44, 0.58], sink: 0.78, fl
 // how far along the way to its mass it reaches, and how far out from the trunk's line it bows. It is thin, with an
 // eased flare, and mostly hidden under the lowest masses (thick and flared, the trunks read as tar stumps and
 // mushrooms), and it is joined to the crown: the fork is under the lowest masses and the limbs run up into them.
-const TRUNK = { flare: 0.22, rise: 0.09, taper: 0.4, sunk: 0.2, at: 0.6, limb: { from: 0.72, end: 0.2, reach: 0.8, bow: 0.16 } };
+const TRUNK = { flare: 0.22, rise: 0.09, taper: 0.4, sunk: 0.2, at: 0.4, limb: { from: 0.72, end: 0.2, reach: 0.8, bow: 0.16 } };
 // The roots: the foot of the trunk spreads in lobes that run out and down into the ground: how many lobes, how far
 // each stands out at the ground against the trunk's foot, and how fast it goes up the trunk.
-const ROOTS = { lobes: [3, 5], out: 0.18, rise: 0.05 };
+const ROOTS = { lobes: [3, 5], out: 0.07, rise: 0.04 };
 // How the trunk leans and bows: how far its fork stands off its foot to one side, at most, and how far its middle
 // bows out of the straight line, against the fork's height.
 const BOLE = { lean: 0.08, bow: 0.05 };
@@ -97,7 +97,7 @@ function card(B, foot, along, across, out, long, wide, tile, flip, clump, mass) 
 // A card the shader keeps facing the viewer, about a middle, so wide each way.
 function facing(B, at, w, tile, rnd, ci, mi) {
   B.facing = 1;
-  const f = [0, 0, 1], tilt = rnd() * Math.PI * 2, a2 = [Math.cos(tilt), Math.sin(tilt), 0], u2 = [-Math.sin(tilt), Math.cos(tilt), 0];
+  const f = [0, 0, 1], tilt = (rnd() - 0.5) * 0.5, a2 = [Math.cos(tilt), Math.sin(tilt), 0], u2 = [-Math.sin(tilt), Math.cos(tilt), 0];
   card(B, add(at, mul(u2, -w)), u2, a2, f, 2 * w, 2 * w, tile, rnd() < 0.5, ci, mi);
   B.facing = 0;
 }

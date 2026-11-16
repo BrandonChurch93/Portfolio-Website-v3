@@ -23,8 +23,8 @@ import { AIR, JITTER, treeDepth, treeMaterial, treeUniforms } from './trees/mate
 // of the trees wear it, in order: a tree's own number (TREES' tone) picks its place along the list, so about one
 // crown in five is deep and one in five pale, and neighbours differ as their numbers do.
 const AUTUMN: readonly { mix: readonly [PaletteName, PaletteName, number]; power: number; share: number }[] = [
-  { mix: ['bronze-deep', 'ember', 0.2], power: 1.4, share: 0.18 },
-  { mix: ['bronze', 'ember', 0.2], power: 1.2, share: 0.17 },
+  { mix: ['bronze-deep', 'ember', 0.2], power: 1.75, share: 0.18 },
+  { mix: ['bronze', 'ember', 0.2], power: 1.4, share: 0.17 },
   { mix: ['bronze', 'copper', 0.35], power: 1.0, share: 0.17 },
   { mix: ['copper', 'bronze', 0.2], power: 0.95, share: 0.16 },
   { mix: ['copper', 'copper-light', 0.4], power: 0.92, share: 0.16 },
@@ -64,6 +64,10 @@ const SHADED = { far: 3, side: 0.7, drop: 0.52, top: 2, most: 0.4 };
 const EDGE = 0.4;
 // A tree is drawn only if at least this share of its crown is seen over the land in front of it.
 const SEEN = 0.65;
+// The pyramid's court in front of it, to the right of its front corner (across from its middle and toward the viewer,
+// in units): picture 9 has bare broken ground there, and the few trees the plan stands on it read as lone puffs on
+// the apron, so they are let go.
+const APRON = { across: [0, 160], toward: 100 } as const;
 // The moon's shade from the buildings and the pyramid: how many places up a crown are looked from toward the moon,
 // how far a building is looked for, the step of the march over the pyramid, and how high a crown stands in its
 // own sizes. A crown is in that shade up to the highest of those places a building hides from the moon, as with
@@ -189,7 +193,8 @@ export const build: PartFactory = async ({ query }) => {
   const seats = new Map(((file.meta.seats ?? []) as number[][]).map(([x, z, y, sand, seen]) => [`${x},${z}`, { y, sand, seen }]));
   const seat = (x: number, z: number) => seats.get(`${x},${z}`) ?? { y: ground(x, z), sand: 0, seen: 1 };
   // Every size below is the model's: half the drawn width (DRAWN).
-  const ground0 = TREES.filter(([x, z, size]) => within(x, z) >= size * DRAWN && seat(x, z).seen >= SEEN).map(([x, z, size, tone, turn]) => [x, z, size * DRAWN, tone, turn] as const);
+  const apron = (x: number, z: number) => x - PYRAMID.x > APRON.across[0] && x - PYRAMID.x < APRON.across[1] && z - PYRAMID.z > APRON.toward;
+  const ground0 = TREES.filter(([x, z, size]) => within(x, z) >= size * DRAWN && seat(x, z).seen >= SEEN && !apron(x, z)).map(([x, z, size, tone, turn]) => [x, z, size * DRAWN, tone, turn] as const);
   // Each tree's own size, height and the rest are its own (a seed of its own numbers), and are worked out before
   // the view is, so what is left out is judged at the size it would be drawn and does not change with the list.
   const rel = ground0.map(([x, z, s]) => {

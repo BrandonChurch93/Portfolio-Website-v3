@@ -47,11 +47,11 @@ export const CARD = { lump: 1.16, core: 1.08, painted: { lump: 0.21, core: 0.36 
 // The crown, in its own units: how far over the ground its lowest leaves are, on the full models and on the cheap
 // one: low, so only a little of each thin trunk shows under the front ranks and no paving shows between the
 // crowns of a rank (raised higher, the belt read as a row of trees on stalks with ground between them).
-export const CROWN = { clear: 0.09, far: 0.07 } as const;
+export const CROWN = { clear: 0.06, far: 0.05 } as const;
 
 // The shade a tree lays on the ground: a card under the tree out along the ground away from the moon, which holds
 // the crown's own outline thrown there (BLOB in scripts/world/parts/trees/leaves.mjs). How far it starts behind the
 // trunk and how far it reaches past it, and how wide it is to each side, in crown units. Each tree's card is cut
-// short where the land ends. The moon stands about 22 degrees up, so a crown's shade lies about two and a half
-// times as far as it is high: a crown up to about 1.75 lays its shade about 4.4 out.
-export const SHADE = { back: 0.6, reach: 4.8, wide: 1.0, up: 0.04 } as const;
+// short where the land ends. The moon at 22 degrees would lay it about 4.4 out, and drawn that long every tree on
+// open paving threw a thin hard streak that read as a skid mark: it is drawn as a ragged pool under half as long.
+export const SHADE = { back: 0.5, reach: 2.6, wide: 1.0, up: 0.04 } as const;
