@@ -245,14 +245,14 @@ fill(712, 1052, 224, 262, 7.4);
 // Right of the spire the picture's belt is a carpet four or five crowns deep, from the buildings' feet down to the
 // land's lip, with no ground showing and crowns half as large again as the belt's elsewhere (ruled on a grid, Nov
 // 16: 705 to 965 across, 222 to 282 down). Ours was two ranks on bare paving. The carpet is filled down to the
-// lip, and every crown in it is larger.
+// lip, and every crown in it is a little larger (a tenth: at three tenths the heads measured 1.3 to 1.6 times the
+// picture's).
 fill(705, 965, 258, 290, 6);
-for (const t of trees) { const [px, py] = W.pictured(t[0], W.ground(t[0], t[1]), t[1]); if (px > 705 && px < 965 && py > 236 && t[1] !== W.ROW.z) t[2] = n(t[2] * 1.3); }
-// Between the pyramid and the spire the picture's bank is two crowns deep in crowns half as large again as ours
-// were (about 18 of its pixels where ours were 12), reaching toward the lip: three rounds of reviewers measured
-// it. A second rank is planted before the first and every crown there is larger.
-fill(474, 648, 262, 276, 7);
-for (const t of trees) { const [px, py] = W.pictured(t[0], W.ground(t[0], t[1]), t[1]); if (px > 470 && px < 650 && py > 250 && t[1] !== W.ROW.z) t[2] = n(t[2] * 1.45); }
+for (const t of trees) { const [px, py] = W.pictured(t[0], W.ground(t[0], t[1]), t[1]); if (px > 705 && px < 965 && py > 236 && t[1] !== W.ROW.z) t[2] = n(t[2] * 1.1); }
+// Between the pyramid and the spire the picture's bank is ONE low row of small crowns, 12 to 15 of its pixels
+// across, their tops about 248 down, with the buildings standing clear above it (laid beside the picture at three
+// times, Nov 16: shots/world/frame/belt-left-beside.jpg). A second rank and crowns half as large again were
+// planted there on three rounds of reviewers' word, and stood 20 units too tall: both are taken out again.
 // On the sand the picture has one tight row and nothing else (ROW in the plan): every other tree that stands on
 // sand, or right of the last tower where the picture is dunes, is taken out. They read as an orchard on a terrace.
 for (let i = trees.length - 1; i >= 0; i--) { const t = trees[i], [px] = W.pictured(t[0], W.ground(t[0], t[1]), t[1]); if (t[1] !== W.ROW.z && (W.desert(t[0], t[1]) > 0 || px > 1056)) trees.splice(i, 1); }
