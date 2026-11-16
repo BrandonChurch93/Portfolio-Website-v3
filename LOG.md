@@ -2,6 +2,96 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · A prompt for Gemini for the underside, and his thought on a fixed light (Fable, web chat)
+
+**What Brandon said**
+
+- The reading of his marks was right. His sketch was "a super rough draft" and is not to be taken literally.
+- He wants to go back to Gemini for the underside: explain the whole thing, and see whether it can make a bottom that matches the top, in the site's colors. He asked for "an ultra detailed prompt".
+- A thought, not a ruling: on the hero the light is fixed, as the moon is in the picture, and the cursor's light is toned back. His words and Fable's recommendation are in `BRIEF.md`, Settled, Hero.
+
+**What was done**
+
+- Nothing built. Nothing in `src/` was changed.
+- The prompt below was written and given to him with picture 4 to attach (`reference/concept/04-gemini-the-top-he-likes-with-a-ring-and-large-dunes.jpg`).
+- It is an edit of picture 4 and not a new picture: it says what stays, the top with three named changes, and what changes, everything under the land. Google's guide for the model asks exactly that of an edit: what is changing and what is staying the same (`cloud.google.com/blog/products/ai-machine-learning/ultimate-prompting-guide-for-nano-banana`, March 2026).
+- The underside is described in planes from front to back, since his complaint was that near could not be told from far: the near wall with two unequal hanging masses and an arch between them, the hollow, the core, the far wall, the stream. Then the sides, the rock, what broke away, two lights, the palette by its hex values, and what to leave out (fog, haze, lava).
+- Three things in it are Fable's and were said to him: the far wall behind the core, the core's light leaking through the near wall's cracks, and a thin ring of fragments round the lower half of the planet, which passes in front of the planet and behind it.
+
+**The prompt, as given**
+
+```
+Edit the attached image. Keep the top of the planet. Rebuild everything under it.
+
+WHAT THIS IS
+Concept art for the hero of a website: a small planet torn open, with a city on top, floating in a night sky. It will be rebuilt as a real 3D model, so every shape has to work as a solid object. One consistent set of lights, real cast shadows, photoreal, nothing painterly.
+
+KEEP EXACTLY AS IT IS
+- The camera, the framing and the night sky with its moon.
+- Everything standing on the top: the spire and its ring, every tower and where it stands, the trees, the avenue, the road round the left rim, the dunes and their shadows.
+- The shape and the width of the planet's top.
+
+THREE CHANGES ON THE TOP, AND NO OTHERS
+1. The pyramid stays the same size in the same place, but its faces become mirror polished gold: a true mirror that reflects the towers, the trees and the night sky, with one hard highlight from the moon down its right edge.
+2. Add three towers at the far right end of the skyline, behind the dunes, where there are only trees now. Same style as the others, low to medium height, so the skyline runs from one end of the land to the other.
+3. Give about one tower in four a polished gold cap, crown or needle.
+
+REPLACE THE WHOLE UNDERSIDE
+Right now it is a flat cracked wall with the core set into it, inside a smooth round bowl. That looks cut. I want it to look ripped apart by something catastrophic, and I want it to be the most striking part of the picture.
+
+The idea: the planet is solid rock, a deep half sphere. Its front has been torn out from just under the land down to the bottom, and a great hollow has been ripped out of its middle. About half of the front is gone. The core hangs in the open inside that hollow. You look past a broken near wall, into the hollow, to the core, and on to the far wall behind it. Those layers have to read clearly. It must always be obvious what is near and what is far.
+
+From front to back:
+1. The near wall. A band of broken cliff survives under the front edge of the land. At the left and at the right it runs down into two huge hanging masses of rock. They are not a matching pair: the left one is longer and heavier and reaches almost to the bottom of the planet, the right one is shorter and snapped off. Between them the wall is ripped away much higher, in a rough uneven arch, so the middle is wide open. Splintered columns of rock hang from the torn edge, some as long as the tallest tower.
+2. The hollow. Behind the near wall, a cavern about a third as wide as the planet. Its roof and sides are the broken ends of great slabs and long splinters, all pointing in toward the core. This rock is the brightest rock in the picture.
+3. The core. A sphere of pure light, like a small sun, centered under the spire, a little below the middle of the planet's depth, about one eighth of the planet's width across. It touches nothing and nothing is in front of it. Its surface is grained like the sun's, pale gold at the center and deep orange at the edge, with a hard sharp outline.
+4. The far wall. Behind the core, the inside of the far side of the planet: a concave wall of cracked rock, lit by the core at its middle and falling to black toward its edges. Its bottom is torn open too, so under the core there is only dark space.
+5. The stream. From the underside of the core one thin stream of the same light falls straight down, no thicker than the spire, and runs out of the bottom of the frame. It is light, not liquid: no drips, no splashes, no lava.
+
+The sides. At the far left and the far right the planet's outer surface survives, curved and weathered, with fine cracks. It never ends in a smooth line. Where it meets the opening it is snapped off in big jagged steps that show how thick the crust is. More of it survives on the left than on the right.
+
+The front edge of the land is ragged where ground has broken off, but no crack runs back into the dunes and no dune is cut.
+
+THE ROCK
+It breaks the way hard stone breaks: huge angular blocks with flat faces and sharp edges, each one as big as several towers, split by deep cracks. Every crack is a real gap you can see into, with black inside it. Broken faces show the planet's layers as bands of slightly different tone, darker the deeper they lie. No rounded lumps, no melted shapes, no gravel texture.
+
+WHAT BROKE AWAY
+- Five to seven great pieces hanging close under and beside the opening, tilted at different angles. The two largest still carry what was on top of them: one a broken piece of street with two or three towers and trees, the other a slab of dune.
+- Dozens of boulders between them and hundreds of small chips, thickest near the opening and thinning with distance.
+- A thin tilted ring of small fragments circling the lower half of the planet, crossing in front of the left hanging mass and passing behind the planet on the right.
+- All of it is the same rock, sharp edged. Nothing floats in front of the core, and nothing floats above the level of the land.
+
+LIGHT
+Two lights only.
+- The moon, behind the world and to the upper right. It lights the top from behind: the right edges of the towers and the crests of the dunes, with the hollows of the dunes that face us in black shadow. Keep that. The near wall of the underside faces away from the moon, so it is dark, but not black: every block and every crack on it can still be read.
+- The core. It lights the hollow hard and warm, brightest close to it and falling off fast. Every hanging splinter throws a long black shadow away from the core onto the rock behind it. Every broken edge that faces the core is rimmed with its light. Its light leaks out through the cracks of the near wall as thin bright slits.
+- The dark near wall in front of the bright hollow is what gives the depth.
+- The air is perfectly clear. No fog, no smoke, no dust clouds, no haze, no light rays, no glow washing over the rock.
+
+COLOR
+Only warm colors, from this palette or between two of its colors.
+- Background and deepest shadow: #070403 and #1f0b00
+- Rock in shadow: #3d2513. Rock in moonlight: #96602f. Rock lit by the core: #c9803d to #e3a567
+- The core and the stream: #f78e1e at the edge, then #ffb866, and #ffe3c2 at the hottest. Never white.
+- Moonlight: #ffe3c2
+No blue, no green, no purple, no grey and no white anywhere.
+
+OUTPUT
+One image, in the same wide frame as the attached one, at the highest resolution you can make. If the pieces under the planet need more room, make the whole world slightly smaller in the frame. Do not crop it and do not move the camera.
+```
+
+**When a picture comes back**
+
+- Judge only the underside from it. An image model will change the top a little however it is told to keep it: picture 4 stays the plan of the top.
+- Write his words into `BRIEF.md`, keep the picture in `reference/concept/` as `06-*`, and say what of it can be built in code and what cannot before he signs anything off.
+- If it is close but not right, the next prompt is a short edit of that picture, naming one or two changes, in the same chat.
+
+**Still open with him**
+
+- That picture 4 replaces the earlier lines where they differ, and that the far side of the planet stays. The prompt assumes yes to both.
+- The fixed light on the hero, with the cursor's light as a glint on metal.
+- Whether the first screen ends at the same place of the world on every screen.
+
 ## 2026-11-15 · His look at the third round, read back to him before anything is built (Fable, web chat)
 
 **What Brandon said**
