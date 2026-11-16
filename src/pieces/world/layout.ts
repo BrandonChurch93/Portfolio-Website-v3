@@ -197,7 +197,11 @@ export const LIGHT = {
   // power of fall. 2 is what a ball of light does in empty space. Lower carries its light further across the hollow.
   // At 24 every face near it came out a pale peach, where picture 9's hollow is a deep red brown: 16 keeps the
   // stone's own color in the light.
-  core: { color: 'hot', power: 16, fall: 1.45 },
+  // A fall of 1.45 carried it so far that a face two radii out was as bright as one beside the ball, and the far
+  // walls stayed lit: picture 9's light hugs the core as a bright ring and is gone to near black within a few
+  // radii. So it falls a little faster than a ball of light does in empty space, and burns brighter at its surface
+  // to keep the ring.
+  core: { color: 'hot', power: 22, fall: 2.1 },
   // What comes from every direction that escapes the world: almost nothing.
   sky: { color: 'ember', power: 0.05 },
   // The most irradiance a stored bounce can hold.
