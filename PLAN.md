@@ -157,6 +157,7 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **The eighth picture (Nov 15, 18:41):** its underside "looks awesome" and is now the reference for everything under the land. Gemini put the wrong city on it. Fable gave him a prompt that edits picture 8 and takes only the top from picture 6 (`LOG.md`, top entry). Waiting on what comes back
 - **The ninth picture (Nov 15, 18:43):** the whole world in one picture, "it looks really good". The dunes are to be picture 4's. `BRIEF.md`, Settled, Hero, says what each picture is the reference for. Asked of him: go on the prototype at `/lab/hero-blockout` built to these, with picture 4's number and spacing of towers and a fixed moon. Nothing is built before his go
 - **His answers (Nov 15, 18:48):** as many gold roofs as picture 9. The debris made new for this world, low and caught in gravity, not picture 6's. The light left to Fable: the hero's own moon, fixed, with the cursor as a glint. He asked how far to build in the web chat: Fable recommends a high detail prototype in stills for the look, then Claude Code for the finished world and everything that moves. **No code until he says go**
+- **Go (Nov 15, 18:50):** Fable is building the fourth round of Study 32 at `/lab/hero-blockout`: the high detail prototype in stills, to pictures 9 and 4. He struck "no two pieces move alike": the debris is one scene. His test for it is a premium film or a AAA game
 
 
 ## Phase 0 · Foundation
