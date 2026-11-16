@@ -160,6 +160,7 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **Go (Nov 15, 18:50):** Fable is building the fourth round of Study 32 at `/lab/hero-blockout`: the high detail prototype in stills, to pictures 9 and 4. He struck "no two pieces move alike": the debris is one scene. His test for it is a premium film or a AAA game
 - **Stopped and corrected (Nov 15, 20:10):** he found the fourth round's layout different from picture 9. Picture 9 is the target for the whole world, top and underside, with only the agreed changes (`BRIEF.md`, Hero, "Picture 9 is the target, whole"). The fourth round's code is kept on `kept/hero-round-4-before-picture-9` and is not on `main`. His yes to the list of changes came at 20:15. Fable is re-planning the top, the planet's proportions and the view to picture 9, then stills, then his sign off.
 - **Rebuilt to picture 9 (Nov 15, 20:55):** the fourth round is at `/lab/hero-blockout`, with stills in `reference/studies/65-*`. Waiting on his verdict (`BRIEF.md`, Hero, "The fourth round as rebuilt to picture 9").
+- **His verdict (Nov 15, 20:47):** a good starting point, a far cry from picture 9's quality, and the build must look tremendously better and not be this study with minor updates. Next: his yes to the layout, then Fable writes the world's kit and its tests so the quality level is in the repo, and Claude Code proves it on one slice before building the rest.
 
 
 ## Phase 0 · Foundation

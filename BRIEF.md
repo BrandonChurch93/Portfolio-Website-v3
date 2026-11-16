@@ -1137,6 +1137,12 @@ Kept so nobody walks the same road twice. Nothing in this list is a rule now.
     - Where Fable finds it at the bar: how close the whole is to picture 9, the hollow's light and shadow, the cracks, the craters, the dunes, the pyramid's gold.
     - Where Fable finds it short, plainly: buildings seen close are simple forms with windows on a grid, loose pieces seen close are faceted solids with a rough face and not film rock, the city is greyer than picture 9's golden one, the core's grain is faint, the cracks are finer than picture 9's, the small streams are plain lines. The night sky and the moon itself are the page's and are not in this study.
     - What his sign off settles: the layout and the look to build to. What it does not: the finish of buildings and loose rock, which Claude Code's build takes further on his graphics card, and everything that moves.
+- **His verdict on the world rebuilt to picture 9, and what the build must be (Nov 15, 20:47).** "I think this is a good starting point, but honestly, it's still a far cry from the quality that Gemini gave us. I just want to make sure that Claude Code is not gonna rebuild this as is with minor updates. It needs to look tremendously better. It needs to be aware of the quality level." In exact terms:
+    - The study at `/lab/hero-blockout` is the layout and a starting point. It is not the look, and it is not the floor to beat by a little.
+    - The quality to reach is picture 9's. The build is not a port of the study: its meshes and shaders are not carried over with small changes.
+    - Whatever is handed to Claude Code has to state that quality level so it cannot be missed.
+    - He has not yet said yes to the layout in so many words. Fable has asked for that yes.
+    - Still standing: item 12 of the target above, made in code and not in Blender.
 - An idea to revisit with the hero, not decided: his first thought was the city breaking apart into the stream as the visitor scrolls. Fable's twist, which he asked to have noted: building, not breaking. The city assembles out of the stream's facets in the opening, and the stream carries the same pieces on down the page. (Nov 12)
 
 **The hero, the city at rest: the agreement (Nov 14)**
