@@ -25,7 +25,9 @@ const VIEW = { f32: Float32Array, u8: Uint8Array, i8: Int8Array, u16: Uint16Arra
 const NAMES: Record<string, string> = { light: 'aLight', bounce: 'aBounce' };
 
 export async function load(file: string): Promise<WorldFile> {
-  const res = await fetch(`/world/${file}`);
+  // Asked for by this build's name (next.config.ts), so the browser may keep it for good: a visitor who comes back
+  // does not ask again for 20 MB he already has, and a new build never gets an old file.
+  const res = await fetch(`/world/${file}?v=${process.env.NEXT_PUBLIC_BUILD ?? 'dev'}`);
   if (!res.ok) throw new Error(`The world's file ${file} is missing (${res.status}). Make it with: npm run world`);
   let buf = await res.arrayBuffer();
   // A packed file (the letters WRLZ) is unpacked first. One written before files were packed is read as it is.

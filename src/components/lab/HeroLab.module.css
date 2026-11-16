@@ -48,6 +48,15 @@
   pointer-events: none;
 }
 
+/* On a screen wider than the board (2400 px) the sky's canvas ends at the board's sides, and the band of far stars
+   was cut there by a straight line with flat black beside it. There its sides fade into the ground. */
+@media (min-width: 2401px) {
+  .sky {
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 9%, #000 91%, transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 9%, #000 91%, transparent 100%);
+  }
+}
+
 .city {
   position: absolute;
   left: 0;

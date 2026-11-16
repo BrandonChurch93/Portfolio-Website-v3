@@ -1,0 +1,66 @@
+/* The plain pages: a page that does not exist and a page that broke. The site's ground and type, nothing drawn. */
+.main {
+  display: grid;
+  place-content: center;
+  min-height: 100vh;
+  min-height: 100svh;
+  padding: var(--space-8) var(--gut);
+  text-align: center;
+}
+
+.label {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: 0.28em;
+  margin-right: -0.28em;
+  text-transform: uppercase;
+  color: var(--copper-light);
+}
+
+.title {
+  margin-top: var(--space-4);
+  font-family: var(--font-display);
+  font-size: var(--step-3);
+  font-weight: 600;
+  letter-spacing: var(--track-tight);
+  color: var(--text);
+}
+
+.note {
+  margin-top: var(--space-3);
+  color: var(--text-3);
+}
+
+.links {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-6);
+  margin-top: var(--space-6);
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--touch);
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--copper-light);
+  cursor: pointer;
+  transition: color var(--dur-1) linear;
+}
+
+.link:hover {
+  color: var(--hot);
+}
+
+.link:focus-visible {
+  outline: var(--focus);
+  outline-offset: var(--focus-offset);
+}

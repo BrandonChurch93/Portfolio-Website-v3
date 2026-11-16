@@ -13,8 +13,9 @@
   --font-body: 'Inter Variable', 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, Menlo, monospace;
 
-  /* The root size grows with the viewport, so every rem is larger on wide and 4K screens. 16px up to 1440 wide. */
-  --root: clamp(16px, calc(0.5vw + 8.8px), 28px);
+  /* The root size grows with the viewport, so every rem is larger on wide and 4K screens. 16px up to 1440 wide at the
+     browser's usual font size. It is set in rem, so a visitor who has chosen a larger font in his browser gets one. */
+  --root: clamp(1rem, calc(0.5vw + 0.55rem), 1.75rem);
 
   --step--2: 0.75rem;
   --step--1: 0.8125rem;
