@@ -13,10 +13,11 @@ export const DECODE = 'vec3 kbDecode(vec3 c){ return c * c * 4.0; }';
 export const KIND = { body: 0, cut: 1, plate: 2, housing: 3, cap: 4, knob: 5, dark: 6, rubber: 7, dot: 8 } as const;
 
 // Each kind's color, roughness and metalness: the anodised case, its cut edge, the plate, the switches, the caps, the
-// knob, the dark collar and the rubber.
+// knob, the dark collar and the rubber. The cut edge is a warm satin: bright and polished, it mirrored the cursor's
+// light straight back along the case's front as a near white line, which bloomed into a pale spot on the mat.
 const FINISH: [color: number, rough: number, metal: number][] = [
   [0x202020, 0.42, 1],
-  [0x8e8a84, 0.24, 1],
+  [0x5e564c, 0.36, 1],
   [0x151515, 0.55, 0.6],
   [0x1c1c1c, 0.32, 0],
   [0x1d1d1d, 0.82, 0],

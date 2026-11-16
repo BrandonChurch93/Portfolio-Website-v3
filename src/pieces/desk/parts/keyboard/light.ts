@@ -23,7 +23,8 @@ const WAVE = { band: 0.42, flare: 0.34 };
 // At rest: the level each key sits at, and the slow swell across the board.
 const REST = { level: 0.3, swell: 0.08, period: 8.5, second: 0.045, period2: 13.7 };
 // The pointer's glow: its reach in millimetres, how quickly it follows, how long a key it left takes to cool, and how
-// much it adds at its middle.
+// much it adds at its middle. The glow lifts the keys only: what spills onto the case and the mat is written without
+// it, since carried there it spread a pale patch onto the mat in front of the pointer.
 export const TRAIL = { reach: 38, follow: 0.075, cool: 0.55, peak: 1.05 };
 
 const encode = (v: number) => Math.round(Math.sqrt(Math.min(1, Math.max(0, v / 4))) * 255);
@@ -81,8 +82,10 @@ export class KeyLight {
   readonly keyTex = makeTex(128, 1, false);
   readonly sharpTex = makeTex(SHARP.nx, SHARP.nz, true);
   readonly softTex = makeTex(SOFT.nx, SOFT.nz, true);
-  // Each key's light, as a color already scaled by its strength.
+  // Each key's light, as a color already scaled by its strength, and the same without the pointer's glow, which is
+  // what spills onto the case's rim and the mat.
   readonly emit = new Float32Array(KEYS.length * 3);
+  private calm = new Float32Array(KEYS.length * 3);
   private heat = new Float32Array(KEYS.length);
   private passed = new Float64Array(KEYS.length).fill(-Infinity);
   private across = KEYS.map((k) => ((k.x + BOARD.w / 2) / BOARD.w) * 0.84 + (k.row / 5) * 0.16);
@@ -130,9 +133,11 @@ export class KeyLight {
       const h = o.still ? glow : Math.max(this.heat[i] * cool, glow);
       if (h > 0.004 && h > glow + 0.002) busy = true;
       this.heat[i] = h;
-      const level = on * (rest + h * TRAIL.peak) + flare * 0.72;
+      const level = on * (rest + h * TRAIL.peak) + flare * 0.72, calm = on * rest + flare * 0.72;
       ramp(level, this.col).multiplyScalar(Math.min(level, 1.35) * 0.95);
       this.emit[i * 3] = this.col.r; this.emit[i * 3 + 1] = this.col.g; this.emit[i * 3 + 2] = this.col.b;
+      ramp(calm, this.col).multiplyScalar(Math.min(calm, 1.35) * 0.95);
+      this.calm[i * 3] = this.col.r; this.calm[i * 3 + 1] = this.col.g; this.calm[i * 3 + 2] = this.col.b;
     }
     this.first = false;
     this.level = o.keys;
@@ -144,20 +149,20 @@ export class KeyLight {
     const kd = this.keyTex.image.data as Uint8Array;
     for (let i = 0; i < KEYS.length; i++) for (let c = 0; c < 3; c++) kd[i * 4 + c] = encode(this.emit[i * 3 + c]);
     this.keyTex.needsUpdate = true;
-    this.fill(this.sharp, this.sharpF, SHARP);
+    this.fill(this.sharp, this.sharpF, SHARP, this.emit);
     blur(this.sharpF, SHARP.nx, SHARP.nz, 1, 1, this.tmp);
     this.pack(this.sharpF, this.sharpTex);
-    this.fill(this.soft, this.softF, SOFT);
+    this.fill(this.soft, this.softF, SOFT, this.calm);
     blur(this.softF, SOFT.nx, SOFT.nz, 2, 3, this.tmp);
     this.pack(this.softF, this.softTex);
   }
 
-  private fill(c: { key: Int16Array; w: Float32Array }, out: Float32Array, g: Grid): void {
+  private fill(c: { key: Int16Array; w: Float32Array }, out: Float32Array, g: Grid, emit: Float32Array): void {
     for (let i = 0; i < g.nx * g.nz; i++) {
       const k = c.key[i];
       if (k < 0) { out[i * 3] = out[i * 3 + 1] = out[i * 3 + 2] = 0; continue; }
       const w = c.w[i];
-      out[i * 3] = this.emit[k * 3] * w; out[i * 3 + 1] = this.emit[k * 3 + 1] * w; out[i * 3 + 2] = this.emit[k * 3 + 2] * w;
+      out[i * 3] = emit[k * 3] * w; out[i * 3 + 1] = emit[k * 3 + 1] * w; out[i * 3 + 2] = emit[k * 3 + 2] * w;
     }
   }
 
