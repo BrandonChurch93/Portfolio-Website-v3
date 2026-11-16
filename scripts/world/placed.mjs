@@ -120,9 +120,12 @@ const stand = (t, px, py, z) => {
   const [x, y] = W.fromPicture(px, py, depth);
   t[0] = n(x); t[1] = n(depth); t[4] = n(Math.max(14, y - W.ground(x, depth)));
 };
+// The city's fifth round, laid over the picture, stood 10 to 15 pixels low at the left end with black sky showing
+// between its buildings: there every top is that much higher and every building a sixth wider than first read.
+const RAISE = { py: 11, wide: 1.16 };
 for (const [i, a] of Object.entries(AT)) {
-  const t = towers[i], [cx, cy] = W.pictured(t[0], W.ground(t[0], t[1]) + t[4], t[1]), px = a.px ?? cx, py = a.py ?? cy;
-  if (a.wide) { const k = (a.wide * W.PICTURE.unit) / seenWide(t); t[2] = n(t[2] * k); t[3] = n(t[3] * k); }
+  const t = towers[i], [cx, cy] = W.pictured(t[0], W.ground(t[0], t[1]) + t[4], t[1]), px = a.px ?? cx, end = px <= LEFT_END, py = (a.py ?? cy) - (end ? RAISE.py : 0);
+  if (a.wide) { const k = (a.wide * (end ? RAISE.wide : 1) * W.PICTURE.unit) / seenWide(t); t[2] = n(t[2] * k); t[3] = n(t[3] * k); }
   if (a.form) t[6] = a.form;
   // At the left end the low lit mass stands in front, and the towers behind it by their height, the tallest furthest back.
   const z = a.z ?? (px > LEFT_END ? t[1] : a.low !== undefined ? 150 + 22 * a.low : Math.max(-300, 118 - 2.1 * (268 - py)));
