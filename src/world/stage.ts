@@ -41,6 +41,9 @@ export interface StageOptions {
   aoSamples?: number;
   aoScale?: number;
   bloomScale?: number;
+  // The most pixels its canvas has on a handheld, in place of HANDHELD.piece: for a piece whose canvas is far larger
+  // than the others'.
+  pixels?: number;
 }
 
 const TIER_POST: Record<Tier, { ao: boolean; aoScale: number; shadow: number; smaa: boolean }> = {
@@ -424,7 +427,7 @@ export class Stage {
     const r = this.host.getBoundingClientRect();
     const w = Math.max(1, Math.round(r.width)), h = Math.max(1, Math.round(r.height));
     const drawn = pixelRatioFor(this.tier, devicePixelRatio || 1, w * h) * this.resScale;
-    const dpr = handheld() ? Math.min(drawn, Math.sqrt(HANDHELD.piece / (w * h))) : drawn;
+    const dpr = handheld() ? Math.min(drawn, Math.sqrt((this.o.pixels ?? HANDHELD.piece) / (w * h))) : drawn;
     this.width = w;
     this.height = h;
     this.renderer.setPixelRatio(dpr);

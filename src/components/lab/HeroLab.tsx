@@ -111,7 +111,7 @@ export function HeroLab({ hub }: { hub?: Hub }) {
           </div>
         </header>
         <p ref={cue} className={styles.cue} aria-hidden="true">{hero.cue}</p>
-        <div ref={bar} id="work" className={styles.bar} style={{ width: u(WORK.bar) }} aria-hidden="true">
+        <div ref={bar} id={hub ? undefined : 'work'} className={styles.bar} style={{ width: u(WORK.bar) }} aria-hidden="true">
           <span>Work begins here</span>
         </div>
       </div>

@@ -66,7 +66,7 @@ export function WorkLab({ hub, under }: { hub?: Hub; under?: boolean }) {
           <p className={styles.note}>Software&rsquo;s four cards are the live site&rsquo;s. The cards for Games, 3D art and Photography are stand ins: nothing on them is real. The category bar&rsquo;s look and the button are stand ins too.</p>
         </header>
       )}
-      <section className={styles.section} aria-labelledby="work-title">
+      <section id="work" className={styles.section} aria-labelledby="work-title">
         <h2 ref={title} id="work-title" className={styles.title}>Work</h2>
         <div ref={bar} className={styles.bar} role="group" aria-label="Categories">
           {categories.map((cat, index) => (

@@ -95,7 +95,7 @@ export function ContactLab({ hub }: { hub?: Hub }) {
         </div>
       )}
       <div ref={board} className={styles.board}>
-        <section ref={section} className={styles.contact} aria-labelledby={`${id}-title`} style={{ height: u(CONTACT.h) }}>
+        <section ref={section} id="contact" className={styles.contact} aria-labelledby={`${id}-title`} style={{ height: u(CONTACT.h) }}>
           <div className={styles.pad} data-part="pad" style={{ left: u(PAD.l), width: u(PAD.w), '--foot': PAD.b } as CSSProperties}>
             {wide && <PieceView name="pad" reach={REACH} className={styles.piece} onPiece={(p: Piece | null) => { pad.current = p as PadPiece | null; }} />}
           </div>

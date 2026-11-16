@@ -172,6 +172,178 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 - **If Fable's access ends:** the briefs for every part's next round are plain text, and `LOG.md`'s top entry says where each part stands and how the rounds are run. `reference/kits/world.md` is what every builder shares.
 
 
+## Ready to deploy: what is left
+
+From a read only audit on the night of Nov 15 to 16, asked for by his word that night ("do anything else you need to get the site ready for deployment"): seven auditors, one thing each, and every serious finding checked by a second reader. Nothing in it is ticked until it is done and measured. Items marked **Owner** are his to decide.
+
+Measured on production builds served at `127.0.0.1:5331`, in Chromium and WebKit. The weight and memory figures for the hero come from a build with the new world switched on (`WORLD.shown: true`, scratch checkout at commit 6aba13c).
+
+### Blockers
+
+**Technical**
+
+- **The hero's buttons go nowhere.** On `/lab/whole`, "See the work" (`#work`) and "Get in touch" (`#contact`) leave the scroll at 0.
+  - The only `id="work"` is the hero's stand-in bar, which is `aria-hidden` and `display: none` when embedded (`HeroLab.tsx:105`, `HeroLab.module.css:206-208`). No element has `id="contact"`.
+  - Fix: put `id="work"` on Work's `<section>` (`WorkLab.tsx:69`) and `id="contact"` on Contact's (`ContactLab.tsx:98`). Render the bar's id only with no hub (`id={hub ? undefined : 'work'}`). Add `scroll-margin-top` once the navigation exists.
+- **`/` serves the study index**, headed "Work in progress", with 37 links into `/lab`. `/lab/whole` shows the title "The whole page so far · Brandon Church" and the label "Study 29".
+  - Fix: at launch move the index to `src/app/lab/page.tsx`. Make `src/app/page.tsx` render the whole page through a `bare` prop on `WholeLab` that drops the lab head, so `/lab/whole` keeps its label.
+- **The whole page sends none of its content in its HTML.** `WholeLab.tsx:19-44` renders the sections only once `useEffect` has made the hub. The HTML is 9.4 KB with no h1 and only the study label, so crawlers, link previews and slow devices get an empty page.
+  - Fix: an `embed` prop on each section, separate from `hub`, that renders the embedded markup on the server. Each stage effect returns early while `embed && !hub`. `WholeLab` renders all four sections unconditionally.
+  - Check that curl shows his name, the lead, the card titles, Skills, About and Contact, and that `npm run mem --walk` still shows one stream.
+- **Every route is `noindex`** (`src/app/layout.tsx:14`, `robots: { index: false }`). Change it in the same change that puts the real page at `/`, not before.
+  - Remove `robots` from the root metadata and set `metadataBase` to the launch domain.
+  - Add `src/app/lab/layout.tsx` exporting `robots: { index: false, follow: false }`.
+  - Add `src/app/robots.ts` and `src/app/sitemap.ts` (listing `/` only). Leave `/lab/` out of the disallow list while it stays reachable, so crawlers can see its noindex.
+- **No description, Open Graph or Twitter tags**, so a shared link shows a bare URL or just "Brandon Church".
+  - Fix: put `metadataBase`, `description`, `openGraph { type, siteName, locale }` and `twitter { card: 'summary_large_image' }` in the root layout.
+  - Set `openGraph.url: '/'`, the title and the description only in the home page's own metadata. The description's wording is his to approve: `hero.lead` is a reasonable default.
+- **The whole page holds too much memory for an iPad.** In WebKit at the iPad's size, `/lab/whole` holds 1588 MB of GPU at load and 1822 at its foot, against a line of about 1000. A walk reached 1997 to 2219.
+  - The world is about 650 MB of it. LOG.md's estimates for the rest: the desk about 550, Work's 16 cards about 450, the stream's per-frame buffers about 200.
+  - Fix: the memory steps under Should, in order. Run `npm run mem -- /lab/whole` alone and with `--walk --warn` after each step.
+- **The hero runs at 20 to 30 frames a second** on an M4 Pro with hardware drawing. The median at scroll 0 is 33.4 to 50 ms, with 432 of 464 frames over 25 ms. Further down the page holds 16.7 ms. The cause is the world piece (`/lab/piece/world` alone: 33.4 ms median).
+  - Fix: on a quiet machine, run `npm run perf` on `/lab/piece/world?only=<part>` for each part, and with `?glow=0`. Then cut the most expensive part. Likely candidates are the rock's triplanar grain (`stone.ts:199`, over 345k vertices) and the 580k-vertex city.
+  - Judge the result with `npm run look -- whole`, then run `npm run mem`.
+- **The world appears all at once, late.** At 10 Mbps it shows only 25 to 40 s after load, and the underside is fetched first.
+  - Parallel loading is already at HEAD (a113ff0): measure again on a build of HEAD.
+  - Then let the first frame wait only for the parts above the fold (land, towers, spire, pyramid, trees, skin, core) and add the rock and debris as they arrive. A part added late means setting `cast` back to 3. Build `rest` only once every part is in.
+
+**Owner**
+
+- **Which domain does the site launch on, and does the `*.vercel.app` address redirect to it?** `metadataBase`, robots, the sitemap and the canonical URL all need it. Today the live site is `www.brandonchurchportfolio.com`.
+- **The résumé: where is it hosted, or is the link dropped for launch?** The footer's Résumé link (`src/content/contact.ts:29`, `/downloads/BrandonChurch-Resume.pdf`) returns 404.
+  - Putting the PDF in `public/` commits his phone number to the public repo for good, against his rule of no phone number on the site.
+  - The choices:
+    - host it outside the repo and link to that
+    - commit a copy with the phone number removed and its metadata stripped
+    - take Résumé out of `foot.links` until it is ready
+  - A `/downloads` path also needs the `target=_blank` condition at `ContactLab.tsx:149` widened.
+- **Where do the case studies live?** Every real card's title and "Case study" link point at `LIVE_SITE/projects/...` (`src/content/work.ts:33`, lines 48, 66, 86, 102). This app has no `/projects` route.
+  - The choices: keep the old site on a subdomain and point there, or hide "Case study" until the case studies are built.
+- **Where does "View all work" go, or does it go?** `WorkLab.tsx:93` has no href and no onClick, so it is an inert button in the tab order.
+  - The stream's two sides meet at this button. If it has no destination, hide it but leave it in place, and Fable looks before it is removed.
+- **Do Games, 3D art and Photography ship?** Each shows four stand-in cards ("Game · stand in 01, case study"), whose links go to `#work-title`. The choices: supply the real projects, or cut the bar down to Software. Cutting it changes the surge and the bar, so Fable looks.
+- **The copy still marked as stand-in:**
+  - About, both tabs, with a visible "PLACEHOLDER TEXT" pill (`SkillsLab.tsx:168`, removed once he has written it)
+  - Contact's words, all but his city (`src/content/contact.ts`)
+  - the hero's two button labels (`src/content/hero.ts:7-8`)
+
+### Should
+
+**Technical**
+
+- **Memory step 1:** stop the world's `setTier` from rebuilding the moon's shadow map at 4096 with an unused 64 MB color texture. In `src/pieces/world/index.ts` setTier, the first line becomes `if (!stage || tier === stage.tier) return;`.
+  - Saves 116 to 130 MB on the world alone and 64 MB on desktop, with the same look.
+  - Check with `shots/audit/alloc.mjs` that no 4096x4096 RGBA8 (8058) allocation is left.
+- **Memory step 2:** give the world its own pixel budget on a handheld, about 0.8 to 1.0 MP in place of `HANDHELD.piece`'s 1.6, through a Stage option. Other pieces are untouched.
+  - With step 1, the hero came to 897 to 981 MB, under the line.
+  - Fable or Brandon judges the softer iPad image before it ships.
+- **Memory step 3:** the stream rewrites two vertex buffers every frame (`src/stream/renderer.ts:412-417`), about 200 MB in WebKit on every page.
+  - Fix: pack the data into an RGBA32F texture updated with `texSubImage2D`, read in the vertex shader over a static index buffer.
+  - Keep frozen frames and the shard counts that `streamCount`, `streamRiders` and `streamProbe` read identical. Confirm with a filmstrip and `npm run live`.
+- **Memory step 4:** the world's decompressed files (about 70 MB) stay alive in the page's own process. The world adds 230 to 250 MB there.
+  - Fix: set `onUploadCallback` to null out the arrays of rock, towers, land, spire and skin once each is built. Not for geometry that debris and trees read.
+- **Memory step 5:** `/lab/skills` is 1353 MB at load. Count the live contexts in `known` (`contexts.ts`), or run `alloc.mjs`, before changing anything. The desk's canvas and shadow maps on a handheld are the likely lever.
+- **Too many WebGL contexts in a long walk.** WebKit warned "too many active WebGL contexts, the oldest context will be lost", and "loseContext: context already lost".
+  - Fix:
+    - find the step that goes over by counting `known` through the `--walk` run
+    - restore and lose swept contexts one after another, not all together
+    - guard the second `loseContext()` with `!gl.isContextLost()`
+    - force a loss of the plates' context and confirm the plates come back
+- **The world's textures are 8.6 MB of PNG.** Examples: `rockmat-grain.png` 3.5 MB, `towers-city-windows.png` 2.4 MB, `trees-leaves.png` 1.6 MB.
+  - Fix: keep the window and lots maps lossless (WebP or a palette PNG). Move the grain and leaves to KTX2 or lossy WebP, keeping their alpha, only after a look with `npm run look`.
+  - Write the files from `scripts/world/parts/*`. Expect to save about half.
+- **The world's meshes are 20.3 MB and packed loosely.** `towers-city.bin` still shrinks 21% under gzip.
+  - Fix in `scripts/world/lib/pack.mjs`: quantize the f32 attributes, then byte-plane split and delta encode, or use meshoptimizer. Make no change while builders are writing `public/world`.
+- **`/world/*` and `/media/*` are served with `max-age=0`**, so a repeat visit sends about 30 conditional requests before the hero can build.
+  - Fix: hash the world files' names with a manifest, or add `?v=<hash>`. Then add `headers()` in `next.config.ts` with `immutable` for the hashed world files and `max-age=86400, stale-while-revalidate=604800` for `/media/*`.
+- **No security headers** (`next.config.ts`).
+  - Fix: add CSP, `frame-ancestors`, `X-Content-Type-Options`, `Referrer-Policy` and `Permissions-Policy`. The CSP applies only when `NODE_ENV === 'production'`, or the dev server breaks.
+  - It was tested clean on `/lab/whole` and `/lab/contact`. Run `shots/audit/csp-check.mjs` again once the world is on the hero.
+- **No 404 page.** Unknown routes get Next's stock page, which is pale text on white on a light-mode system and has two `<title>` tags.
+  - Fix: add `src/app/not-found.tsx` on the site's ground and tokens, with one line, a link to `/` and `metadata = { title: 'Not found' }`. No WebGL. The wording is his, with a one-line stand-in until then.
+- **No error boundary.** Fix:
+  - add `src/app/error.tsx` (`'use client'`, `reset()`, in the site's tokens)
+  - add `src/app/global-error.tsx`, with its own `<html lang="en"><body>`, the imported tokens and global CSS, and the palette variables
+  - keep three.js and the stream out of both
+- **A hard seam in the sky on screens over 2400 px.** At 2560 the canvas stops at x=80 and x=2480. The Milky Way is cut by a vertical line, with flat black bands either side.
+  - Fix: feather the sky canvas's side edges into the ground. If it is widened to `100vw` instead, `mountSky` must be given the host's offset, or the glow shifts off center.
+- **Sending the contact form loses focus and may not be announced** (`ContactLab.tsx:112-143`). Fix:
+  - keep one hidden `role="status"` region in the page at all times
+  - focus the sent block (`tabIndex={-1}`) after it appears, and the first field after "Send another"
+  - use `aria-disabled` in place of `disabled` while sending
+- **No footer landmark.** Contact's `<footer>` sits inside `<main>` (`ContactLab.tsx:146`). Fix: make the footer its own component, rendered after `</main>` in `WholeLab`, keeping its `--u` sizing.
+- **Some small text does not grow with browser zoom.** Contact's field labels, "or send a message", "Boise, Idaho · Mountain Time" and the hero's role and lead are sized in `--u` with no floor, and stay 10.4 px at 125 percent zoom (`ContactLab.module.css:122,161,292,306`, `HeroLab.module.css:77,124,143`).
+  - Fix: add rem floors as `SkillsLab.module.css` does. Check that the Contact plate's fixed columns still fit at 1100 px.
+- **`--root` is set in px** (`src/styles/tokens.css`), so a larger default font chosen in the browser has no effect. Fix: `clamp(1rem, calc(0.5vw + 0.55rem), 1.75rem)`, which gives the same sizes at 16 px.
+- **Canonical URL.** Add `alternates: { canonical: '/' }` to the home page's metadata once the domain is chosen.
+
+**Owner**
+
+- **Does the launch wait for the navigation and the footer's design?** `/lab/whole` notes both as "Not here yet".
+- **Are the studies reachable on the launch domain?** All 37 `/lab` routes and `/lab/piece/[name]` are public, with notes about him in the third person, and some are heavy WebGL pages.
+  - The recommended way is a redirect gated on the real domain's host in `next.config.ts` `redirects()`, not on `VERCEL_ENV`. Every push to main is a production deploy at the vercel.app address, where he reviews the labs, so gating on `VERCEL_ENV` would lock him out.
+  - The lab layout's noindex applies either way.
+- **Which mark is the favicon?** Every page asks for `/favicon.ico` and gets a 404, so the tab, bookmarks and the iOS home screen show a blank icon.
+  - Once it is chosen: `src/app/icon.svg`, `src/app/apple-icon.png` (180x180) and `src/app/favicon.ico`.
+- **Which picture shows when a link is shared?** It needs to be 1200x630, saved as `src/app/opengraph-image.png` or `.jpg` with `opengraph-image.alt.txt`. The portrait files are the wrong shape.
+- **Confirm the form delivers.** From the launch domain:
+  1. Send one test message.
+  2. Click FormSubmit's activation email.
+  3. Put the alias it gives in `contact.form.endpoint` (`src/contact/send.ts:13`, `src/content/contact.ts:20`).
+  - Leave the address itself for "Copy my email".
+- **Test the whole page on his iPad.** Once the memory steps are deployed:
+  1. Open `/lab/whole` on the deployed address.
+  2. Scroll top to foot and back, twice.
+  3. Go to another page and come back.
+  - The real limit on his iPad is not known.
+- **Text cannot reach 200 percent on very wide windows.** Above about 2200 px, the scaled board means 200 percent zoom grows text by only 6 to 38 percent (WCAG 1.4.4). At 1440 and 1920 it is fine. This is a design call.
+
+### Nice
+
+**Technical**
+
+- **`/lab/stream-facets` logs 150 three.js warnings on every load.** Fix: drop `.toNonIndexed()` at `src/stream-facets/facets.ts:90`.
+- **`/` prefetches all 35 study routes**, and the browser warns that the preloads went unused. Fix: `prefetch={false}` on the index's Links, or leave it, since the index moves at launch.
+- **Without WebGL, three.js logs two console errors per canvas**, 18 on `/lab/whole`. Fix: test for WebGL once (`src/world/device.ts`) and skip making renderers. Also align the "Book on Calendly" label with "Copy my email".
+- **The contact form has no `method` or `action`** (`ContactLab.tsx:119`). Submitted without scripts, it puts the message in the URL. Fix: `method="post"` and the FormSubmit endpoint as `action`.
+- **The contact form has no length limits, and "Send another" allows an instant resend.** Fix: `maxLength` of 100 (name), 254 (email) and 5000 (message), and refuse a send within about 30 seconds of the last one.
+- **The About tabs** (`SkillsLab.tsx:162-169`): Home and End do nothing, and the panel cannot be focused. Fix: handle Home and End, and add `tabIndex={0}` to the tabpanel.
+- **Skip link.** Once the navigation lands, add a hidden "Skip to content" link that shows on focus, pointing at `<main id="main">`.
+- **Structured data.** On the home page, add a schema.org Person from the content files: name, role, the launch domain, the portrait, Boise, LinkedIn and GitHub. Include the email only if he wants it in markup.
+- **Web manifest.** Once the icons exist, add `src/app/manifest.ts` with `SITE_NAME`, `start_url: '/'` and `#070403` for the background and theme colors.
+- **No font is preloaded.** Sora, the font of his name, is fetched at 271 ms, so his name first draws in a fallback font. Fix: preload Sora and Inter latin, through `next/font/local` or with stable copies in `public/fonts/`.
+- **About 160 KB gzip of 3D code is fetched at load and not needed then.** That is the desk's area-light tables and the GTAO and Bloom passes. Fix: call `areaLightTables()` only when the desk mounts, and import those passes only when a piece asks for them.
+- **`.gitignore` covers only `.env` and `.env.local`.** Fix: `.env*`, with `!.env.example` if a template is ever committed.
+- **The index has no link to `/lab/skills`**, so `npm run mem --walk` cannot walk into it. Fix: add one.
+- **The sky alone holds about 330 MB of GPU** for about 28 MB of logged allocations. Fix: measure `/lab/sky` drawn once against every frame, and at a lower `HANDHELD.screen`.
+
+**Owner**
+
+- **Should his portrait's lower edge fade out further?** His arms read as two dark rounded shapes either side of his torso, at every width. The fix would be in the portrait's fade and `.cover`.
+
+### In good shape
+
+- **Errors:** across 49 routes in Chromium and WebKit, there were no uncaught errors, no crashes and no failed requests. Every route returned 200 and drew.
+- **Without WebGL:** the deployment routes still show all their text, buttons and the form.
+- **The whole page holds together at every size tested:** 1440, 1920, 2560 and an iPad held sideways. Nothing is cut off or overlapping, the text stays readable over the stream, and the sections join smoothly.
+- **Keyboard:** the tab order makes sense, and focus is visible everywhere: a 2px #f78e1e outline, 8.6:1 against the ground. Hidden categories' cards are skipped.
+- **Structure:** `lang="en"`, one h1 and correct heading levels. Each section is labelled inside one `main`. All 27 canvases are `aria-hidden`.
+- **Labels:** the portrait has alt text, and each card picture has a role=img label.
+- **Category bar:** `aria-pressed` and a status line. The About tabs are a correct tablist.
+- **Form:** every field has a real label, the error line is `role=alert`, and the honeypot is hidden.
+- **Contrast:** every text pair passes (lead 11.3:1, small labels 5.8 to 9.6:1, About over the glow at least about 9:1).
+- **Targets:** every target is at least 44 px tall, apart from the footer links, which pass on spacing.
+- **Reduced motion:** honoured. Everything is whole and lit, the stream is held still and the surge is off.
+- **Reflow:** at 720 and 360 px the plain stand-in has no sideways scroll.
+- **Flashing:** nothing near three flashes a second was found (not measured frame by frame).
+- **Leaving a page:** gives most of its memory back. Work (881 MB) and Contact (820 MB) are under the line.
+- **Secrets:** nothing secret is committed, there is no GPS data in the photos, and the only email in the source is the public contact address.
+- **Dependencies:** `npm audit --omit=dev` finds 0 vulnerabilities, and only runtime packages ship.
+- **The `?hook=1` test hook:** safe on a live site. It runs only in the visitor's own tab, with no network calls and no storage.
+- **First paint:** two small stylesheets block it, scripts are async, first paint is 24 to 72 ms locally, and his words, the sky and the glow are up within 1 s even at 10 Mbps.
+- **`/_next/static`:** cached immutable and gzipped. The site's own images are WebP at 1600 px.
+- **Theme and fonts:** `theme-color`, `color-scheme` and the viewport are right. The fonts are split by unicode-range with swap.
+
 ## Phase 0 · Foundation
 
 - [~] `BRIEF.md`: Brandon reads Settled and Dropped and corrects them

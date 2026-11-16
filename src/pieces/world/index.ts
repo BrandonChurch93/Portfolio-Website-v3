@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import type { Tier } from '../../config/site';
+import { HANDHELD, type Tier } from '../../config/site';
 import { clock } from '../../world/clock';
 import { loading } from '../../world/loading';
 import { handheld } from '../../world/device';
@@ -181,7 +181,7 @@ export function createWorld(): WorldPiece {
       close = CLOSE[q.get('close') ?? ''] ?? null;
       if (Number(q.get('zoom')) > 0) zoom = Number(q.get('zoom'));
       glow = q.get('glow') === '1';
-      stage = new Stage(h, canvas, { tier: opts.tier, fov: ALONE.fov, near: 0.3, far: 40, bloom: GLOW, bloomScale: 0.5, envIntensity: LIGHT.night, env: night, lampAngle: 0.9 });
+      stage = new Stage(h, canvas, { tier: opts.tier, fov: ALONE.fov, near: 0.3, far: 40, bloom: GLOW, bloomScale: 0.5, envIntensity: LIGHT.night, env: night, lampAngle: 0.9, pixels: HANDHELD.world });
       trueDarks(stage.renderer);
       lean();
       finish(stage, RIM, WARM);
@@ -283,7 +283,9 @@ export function createWorld(): WorldPiece {
     setWaterLight() {},
     setMaking(on: boolean) { if (stage) { stage.setMaking(on, stage.scene); stale = true; } },
     setTier(tier: Tier) {
-      if (!stage) return;
+      // The page tells every piece its tier as it mounts. Told the tier it already has, the world used to throw its
+      // moon's shadow map away and make it again, with a color texture nobody reads: over 100 MB in Safari.
+      if (!stage || tier === stage.tier) return;
       stage.setTier(tier);
       lean();
       finish(stage, RIM, WARM);
