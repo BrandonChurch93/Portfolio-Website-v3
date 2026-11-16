@@ -594,6 +594,13 @@ export function routeThroughWork(P: WorkPlan): Route {
     const br = branches[0], mid = (P.button!.l + P.button!.r) / 2, s = first(br, (x) => Math.abs(x - mid) < W.meet.near * u, landings.filter((l) => l.side === 0).at(-1)!.s + 40 * u);
     landings.push({ ...met('meet', mid, br.y[Math.min(br.n - 1, Math.round(s / br.step))], 0, -UP, C.meet), side: 0, s });
   }
+  // Just above a strike a height on the page gives the strike itself, so the leading end never rests there.
+  if (W.snap > 0) for (const L of landings) for (const b of L.kind === 'strike' || L.kind === 'meet' ? branches : [branches[L.side]]) {
+    const at = Math.min(b.n - 1, Math.ceil(L.s / b.step) + 1);
+    let from = at;
+    while (from > 0 && b.floor[at] - b.floor[from - 1] < W.snap * u) from--;
+    for (let i = from; i <= at; i++) b.floor[i] = b.floor[from];
+  }
   return { branches, split, join, landings, ...S, fins, flows, fall: W.fall * u, unit: u };
 }
 

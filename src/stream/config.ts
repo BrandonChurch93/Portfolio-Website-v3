@@ -42,6 +42,10 @@ export const STREAM = {
 
   // The route through Work (routeThroughWork in route.ts). Lengths in units.
   work: {
+    // The leading end never comes to rest within this far above a thing it is about to strike, in the stream's own
+    // units: it goes on and strikes, as on Skills and Contact. Resting just short of a card it sprayed sparks at a
+    // blank that never woke (measured Nov 16: 6 scrolls in 69). 0 puts it back as it was.
+    snap: 22,
     // Onto the category bar: how far the fall leans the way it will run, the least it keeps between where it lands
     // and the end, and the turn onto the top (how early it leaves the fall, how late it joins the run). Then, where
     // the page is too narrow for the stones and the rail and the stream goes on down off the bar's end as it falls:
