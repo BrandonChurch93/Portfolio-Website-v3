@@ -213,7 +213,10 @@ export const LIGHT = {
   // which is a fall of about 0.7 to 1, far gentler than a ball of light in empty space (2). Its light fills the
   // hollow, and what is dark there is dark because it is turned away or hidden, not because it is far. At 2.1 the
   // outer plates were a stop and a half too dark whatever way they were turned.
-  core: { color: 'hot', power: 15, fall: 1 },
+  // Where its light is strongest it is paler: `pale` is how far toward the palette's pale it goes, at the same
+  // brightness, and between which shares of r / d. One orange light made every lit face one orange whatever the
+  // stone's own color, where picture 9's faces beside the ball are cream and the ones further off are tan.
+  core: { color: 'hot', power: 15, fall: 1, pale: [0.7, 0.45, 0.95] },
   // What comes from every direction that escapes the world: almost nothing.
   sky: { color: 'ember', power: 0.05 },
   // The most irradiance a stored bounce can hold.

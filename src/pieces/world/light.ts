@@ -38,6 +38,14 @@ const tried = (name: string, usual: number): number => (asked.has(name) && Numbe
 const POWER = tried('corepower', LIGHT.core.power), FILL = tried('fill', LIGHT.fill);
 const TINT = asked.has('filltint') ? String(asked.get('filltint')).split(',').map(Number) : LIGHT.warm;
 const KNEE = tried('bounceknee', LIGHT.bounced[2]);
+const PALE = tried('corepale', LIGHT.core.pale[0]);
+
+const luma = (c: THREE.Color): number => 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
+// The palette's pale at the brightness of the color given.
+function paled(of: THREE.Color): THREE.Color {
+  const pale = color('pale');
+  return pale.multiplyScalar(luma(of) / luma(pale));
+}
 
 // The cursor's glint on polished metal: how far in front of the world the light stands, in scene units, how far it
 // moves for the cursor crossing the host, as a share of the host's height, and its strength. A part reads it here
@@ -57,6 +65,7 @@ const shared = {
   uCoreAt: { value: new THREE.Vector3(...CORE.at).multiplyScalar(SCALE) },
   uCoreR: { value: CORE.r * SCALE },
   uCoreColor: { value: color(LIGHT.core.color, POWER) },
+  uCorePale: { value: paled(color(LIGHT.core.color, POWER)) },
   uCoreLevel: { value: 1 },
   uCoreFall: { value: tried('corefall', LIGHT.core.fall) },
   uBounceMost: { value: LIGHT.bounce * POWER / LIGHT.core.power },
@@ -119,6 +128,7 @@ const FRAG_PARS = `
 uniform vec3 uCoreAt;
 uniform float uCoreR;
 uniform vec3 uCoreColor;
+uniform vec3 uCorePale;
 uniform float uCoreLevel;
 uniform float uCoreFall;
 uniform vec3 uGlintAt;
@@ -143,7 +153,7 @@ const CORE_LIGHT = `
 	#else
 		float wSeen = 1.0;
 	#endif
-	vec3 wE = uCoreColor * ( uCoreLevel * wSeen * pow( wS, uCoreFall ) );
+	vec3 wE = mix( uCoreColor, uCorePale, ${PALE.toFixed(3)} * smoothstep( ${LIGHT.core.pale[1].toFixed(3)}, ${LIGHT.core.pale[2].toFixed(3)}, wS ) ) * ( uCoreLevel * wSeen * pow( wS, uCoreFall ) );
 	vec3 wH = normalize( wL + geometryViewDir );
 	vec3 wF = F_Schlick( material.specularColor, material.specularF90, saturate( dot( geometryViewDir, wH ) ) );
 	reflectedLight.directDiffuse += wE * worldIllum( wC, wS ) * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - wF );
