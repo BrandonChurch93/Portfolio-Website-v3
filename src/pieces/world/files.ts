@@ -57,8 +57,21 @@ export async function load(file: string): Promise<WorldFile> {
   return { meta: header.meta, meshes, bytes: buf.byteLength };
 }
 
-// A mesh of a loaded geometry, put where its numbers say it is, in the world's units.
-export function mesh(l: Loaded, material: THREE.Material | THREE.Material[]): THREE.Mesh {
+// Once a mesh's numbers are with the graphics card the page lets its own copy of them go. Unpacked, the world's
+// files are about 70 MB, which the page's own process held for as long as the hero lived: memory an iPad counts.
+// Nothing reads them again: the box each mesh lies in comes with its file.
+function letGo(this: { array: unknown }): void { this.array = null; }
+
+// A mesh of a loaded geometry, put where its numbers say it is, in the world's units. `keep` is for a geometry whose
+// numbers something reads after it is drawn.
+export function mesh(l: Loaded, material: THREE.Material | THREE.Material[], keep = false): THREE.Mesh {
+  if (!keep) {
+    for (const a of Object.values(l.geometry.attributes)) {
+      if ((a as THREE.InterleavedBufferAttribute).isInterleavedBufferAttribute) (a as THREE.InterleavedBufferAttribute).data.onUpload(letGo);
+      else (a as THREE.BufferAttribute).onUpload(letGo);
+    }
+    l.geometry.index?.onUpload(letGo);
+  }
   const m = new THREE.Mesh(l.geometry, material);
   m.position.copy(l.at);
   m.scale.setScalar(l.size);
