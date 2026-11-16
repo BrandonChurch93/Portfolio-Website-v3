@@ -64,30 +64,32 @@ void main() {
 	float quiet = 1.0 - GRAIN_BAND * smoothstep( 0.92, 0.965, rrU );
 	float v = g.x * quiet, w = g.y * quiet;
 	vec3 col = coreBand( rrU, bandPx ) * coreTint( v, w );
+	// Under the fizz a soft mottle a few grains across, lighter and darker, which turns with the surface and
+	// churns slowly: picture 9's face is clouded at that size, and a fizz on a flat ground reads as printed.
+	col *= 1.0 + MOTTLE.y * quiet * coreLump( q / MOTTLE.x + vec3( 0.0, 0.0, uTime * MOTTLE.z ), 517u );
 	col *= 1.0 + BAND_LIFT * ( 1.0 - smoothstep( 0.6, 0.95, px * uR ) ) * smoothstep( BAND_AT.x, BAND_AT.y, rrU ) * ( 1.0 - smoothstep( BAND_AT.z, BAND_AT.w, rrU ) );
 
 	// Depth: the hotter body is seen through the cooler surface, through more of it the further out a ray meets the
-	// ball, so the middle is the body's. Measured against the middle, so the ball's light there is
-	// the picture's.
+	// ball, so the middle is the body's. Measured against the middle, so the ball's light there is the picture's.
 	float mu = sqrt( max( 1.0 - rr * rr, 0.0 ) ), T = exp( - DEPTH_TAU / max( mu, 0.05 ) ), T0 = exp( - DEPTH_TAU );
 	vec3 depth = mix( DEPTH_SKIN, DEPTH_BODY, T ) / mix( DEPTH_SKIN, DEPTH_BODY, T0 );
-	// Under the surface a deeper layer of hotter, larger grains, softened by what lies over it and turning its own way,
-	// so the two slide across each other: seen most in the middle. It only ever
-	// adds light, less its own mean: taken away, it laid grey stains on the face.
-	vec3 qd = uDeep * ( P * DEEP_AT );
-	vec2 gd = coreSalt( qd / DEEP_SCALE, max( fp / DEEP_SCALE, DEEP_SOFT ), uTime, 1.0 );
-	depth *= 1.0 + DEEP_LIGHT * ( max( gd.x * GRAIN_BACK, 0.0 ) - DEEP_MEAN ) * ( T / T0 ) * DEEP_TINT;
+	// A slow drift of broad light across the face, larger than any grain and moving all the time, so the ball is
+	// alive at the page's size. Seen through the surface as the body is, so it is strongest in the middle. It only
+	// ever adds light, as clouds of it over a ground a little under the face's mean: taken away too, it laid grey
+	// stains on the face.
+	float dr = smoothstep( DRIFT_ON.x, DRIFT_ON.y, coreDrift( uDeep * P, uTime ) ) * mix( 0.5, 1.0, T / T0 );
+	depth *= ( 1.0 + DRIFT_LIGHT * dr * DRIFT_TINT ) / ( 1.0 + DRIFT_LIGHT * DRIFT_ON.z );
 	col *= mix( depth, vec3( 1.0 ), smoothstep( LIMB_TO.x, LIMB_TO.y, rrU ) );
 	vec2 hp = P.xy / uR - HOT_AT;
 	col *= coreFall( rrU ) * mix( 1.0 + HOT * exp( - dot( hp, hp ) / ( HOT_R * HOT_R ) ), 1.0, smoothstep( LIMB_TO.x, LIMB_TO.y, rrU ) );
 
-	// The facets among the grains: a little deeper than the ground, lit across their faces, and flashing whole when
-	// a face turns to the light within.
+	// The facets among the grains: crystal faces that show only when a face turns to the light within, and then
+	// flash whole, brighter and paler than the face round them. At rest they are the face's own light: darker than
+	// it, they read as dirt.
 	vec3 fc = coreFacets( q, fp, uTime, P.xy / uR );
 	float fq = fc.x * quiet * ( 1.0 - smoothstep( 0.4, 1.0, fp / FACET_CELL ) );
-	vec3 flash = min( col * FACET_FLASH, CAP );
-	col *= mix( vec3( 1.0 ), FACET_REST * ( 1.0 + FACET_SIDE * fc.y ), fq );
-	col = mix( col, flash, fq * fc.z );
+	vec3 flash = max( min( col * FACET_FLASH, CAP ), col );
+	col = mix( col, flash, fq * fc.z * ( 1.0 + FACET_SIDE * fc.y ) );
 
 	// Before the stream sets off, the grain over the foot runs hot and draws down to it in a narrowing seam, swelling
 	// and easing on two slow waves. Only the grains change, so it is the face's own matter gathering and never a spot.
@@ -111,7 +113,10 @@ void main() {
 	// Over the foot the neck's own matter takes over, flowing out, so the ball and the neck are one thing.
 	if ( on > 0.001 && d > - NECK_JOIN.x ) {
 		vec4 n = neckLight( Q.x, d, max( length( vec2( dFdx( Q.x ), dFdy( Q.x ) ) ), 1e-3 ) );
-		col = mix( col, n.rgb * uLevel + col * ( 1.0 - n.a ), smoothstep( - NECK_JOIN.x, - NECK_JOIN.y, d ) );
+		// Only near the ball's own outline: the plane is behind the face it is read through, so further in, light from
+		// under the foot showed through the face as a pale wedge.
+		float edge = 1.0 - smoothstep( NECK_JOIN.z, NECK_JOIN.w, ( 1.0 - rr ) * uR );
+		col = mix( col, n.rgb * uLevel + col * ( 1.0 - n.a ), smoothstep( - NECK_JOIN.x, - NECK_JOIN.y, d ) * edge );
 	}
 	gl_FragColor = vec4( coreUnbalance( col * cover ) / max( cover, 1e-3 ), cover );
 }`;

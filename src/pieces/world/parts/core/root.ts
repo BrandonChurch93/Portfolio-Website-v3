@@ -4,13 +4,12 @@ import { CORE_HALF } from '../../../../stream/shaders';
 import type { Tier } from '../../../../config/site';
 import { GRAIN } from './grain';
 
-// The neck of the beam: where the page's stream leaves the core's foot, as picture 9's neck. The ball and the neck are
-// one shape, the ball's outline and the neck's sides joined by a smooth union, so the band at the ball's edge runs on
-// round the fillet and down the neck's sides. Its top is the ball's own matter, cream with the face's grain, pouring
-// out and stretching as it speeds up. Lower down it unravels into the page's own strands, a few fibres of light that
-// twist round each other, round the stream's heart, with surges of light of every length running down them. Past the
-// cut the page's stream takes it up: its heart from a thread that widens, its strands gathering, and the neck's heart
-// narrows into that thread and its strands give way to the page's own, at the same places on the same clock.
+// The neck of the beam: where the page's stream leaves the core's foot, as picture 9's broad pale column. The ball and
+// the column are one shape, the ball's outline and the column's sides joined by a smooth union, and the column cuts
+// through the band. It is the stream's light: pale at its middle, its strands as streaks inside it with surges of
+// every length running down them, the page's own heart down its middle, and an edge that goes soft into the dark
+// through the stream's own colors. It draws itself in to the page's heart by the cut, where the page's stream takes it
+// up: its strands spread to the page's own and give way to them, at the same places on the same clock.
 
 // How much brighter the page makes the heart on a wide screen, and over which widths (renderer.ts, GLOW.more.heart,
 // and STREAM.presence).
@@ -134,11 +133,15 @@ vec2 neckReach() {
 	float reach = uRootState.x > 0.001 ? uRootState.y : 0.0;
 	return vec2( reach, min( NECK_TIP, 0.9 * reach ) );
 }
-// Half the neck's width here, in units of the world, as picture 9's: broad where it leaves and drawing itself thin
-// quickly and then slowly, and as broad as where it leaves up inside the ball. A point at its end while its leading
-// end is still close.
+// Half the column's width here, in units of the world, as picture 9's: broad where it leaves, drawing itself in
+// quickly and then slowly, and as broad as where it leaves up inside the ball. Over the stretch before the cut it
+// draws in to the page's own heart, inside which it ends. Its leading end is blunt: a beam, not a drop.
 float neckWidth( float d, vec2 R, float on ) {
-	float w = NECK_RIB + ( NECK_FOOT - NECK_RIB ) * exp( - max( d, 0.0 ) / NECK_FALL );
+	float dd = max( d, 0.0 );
+	float w = NECK_RIB + NECK_FLARE.x * exp( - dd / NECK_FLARE.y ) + NECK_BODY.x * exp( - dd / NECK_BODY.y );
+	w = mix( w, NECK_INTO.z / max( uRootScale.x, 1e-3 ), smoothstep( NECK_CUT - NECK_INTO.x, NECK_CUT - NECK_INTO.y, d ) );
+	// It ends by width and never by light: dimmed, its pale goes orange, which was a waist at the join.
+	w *= 1.0 - uRootState.z * smoothstep( NECK_CUT + 0.4 * NECK_INTO.w, NECK_CUT + NECK_INTO.w, d );
 	w *= mix( NECK_QUIET, 1.0, on );
 	return w * pow( clamp( ( R.x - d ) / max( R.y, 1e-3 ), 0.0, 1.0 ), NECK_ROUND );
 }
@@ -153,9 +156,14 @@ float neckShape( float x, float d, float on ) {
 	return mix( neck, ball, h ) - k * h * ( 1.0 - h );
 }
 // The band's place across the shape's edge, as a share of the ball's radius from its middle: the ball's own on the
-// ball, and down the neck's sides a band that narrows as the neck does.
+// ball, and where the column's side is the nearest edge a band so narrow it is only the column's outline, so the
+// column cuts through the band as picture 9's does and the band does not run down its sides.
 float neckRim( float x, float d, float on ) {
-	return 1.0 + neckShape( x, d, on ) / ( uR * mix( 1.0, NECK_BAND, smoothstep( 0.0, NECK_BAND_FALL, d ) ) );
+	float shape = neckShape( x, d, on ), ball = length( vec2( x, uR + d ) ) - uR;
+	vec2 R = neckReach();
+	float neck = on < 0.001 || R.x < 0.5 ? 1e3 : max( abs( x ) - neckWidth( d, R, on ), d - R.x );
+	float own = smoothstep( - NECK_FILLET, NECK_FILLET, neck - ball );
+	return 1.0 + shape / ( uR * mix( NECK_BAND, 1.0, own ) );
 }
 vec3 rootRamp( float a ) {
 	vec3 c = uEmber * clamp( a / 0.11, 0.0, 1.0 );
@@ -196,6 +204,8 @@ vec2 coreGrainSteps( vec3 q, float fp ) {
 	return vec2( clamp( GRAIN_GAIN * ( 1.0 + GRAIN_FAR * smoothstep( 0.4, 1.0, fp ) ) * g.x, - 3.0, 3.0 ), clamp( GRAIN_WARM * g.y, - 3.0, 3.0 ) );
 }
 // The neck: light to hand the world, and how much of what is behind it it covers. px is a pixel's width in units.
+// A broad column of the stream's light, paler at its middle, with its strands as streaks inside it and an edge that
+// goes soft into the dark through the stream's own colors: light, never a liquid with an outline.
 vec4 neckLight( float x, float d, float px ) {
 	float on = uRootState.x, since = uRootState.w, t = uTime;
 	vec2 R = neckReach();
@@ -203,41 +213,54 @@ vec4 neckLight( float x, float d, float px ) {
 	float along = uRootScale.y, s = max( d, 0.0 ) * along, xs = x * uRootScale.x, lead = ( R.x - d ) * along;
 	// Where the page takes it up, in stream units, and how far its own strands have gathered there.
 	float cut = NECK_CUT * along, begun = uRootState.z * smoothstep( cut, cut + ROOT_RISE, s );
-	float shape = neckShape( x, d, on );
-	// The matter: the ball's own, solid at the top, unravelling into the strands lower down.
-	float solid = 1.0 - smoothstep( NECK_SOLID.x, NECK_SOLID.y, d );
+	float shape = neckShape( x, d, on ), hw = neckWidth( d, R, on );
 	vec3 amount, rides;
 	rootSurges( s, t, amount, rides );
 	amount *= smoothstep( 0.0, NECK_PULSE_IN, d ) * smoothstep( 0.0, 30.0, lead ) * ( 1.0 - begun );
-	// The strands lie inside the neck, and from the cut spread to the page's own ribbon, which they become.
-	float wide = mix( NECK_STRANDS * neckWidth( d, R, on ) * uRootScale.x, rootWide( s, t, lead ), uRootState.z * smoothstep( cut, cut + NECK_SPREAD * ROOT_RISE, s ) );
+	float whole = dot( amount, vec3( lessThan( rides, vec3( 0.0 ) ) ) );
+	// The strands lie inside the column, and from the cut spread to the page's own ribbon, which they become.
+	float wide = mix( NECK_STRANDS * max( hw, NECK_INTO.z / max( uRootScale.x, 1e-3 ) ) * uRootScale.x, rootWide( s, t, lead ), uRootState.z * smoothstep( cut, cut + NECK_SPREAD * ROOT_RISE, s ) );
 	float sheet = mix( NECK_SHEET, 1.0, smoothstep( cut - ROOT_RISE * NECK_SPREAD, cut, s ) );
 	float fib = rootFibres( xs, s, t, wide, sheet, amount, rides ) * ( 1.0 - begun ) * smoothstep( - NECK_UP, NECK_UP, d );
-	fib *= mix( 1.0, smoothstep( 1.0, - 2.0, shape ), solid );
-	// The heart: carried only a little where it leaves, where the matter is, and the page's whole further down. From
-	// the cut it narrows into the page's thread, which is widening round it, and ends inside the page's heart.
-	float hw = mix( 1.0, NECK_HAND.z, uRootState.z * smoothstep( cut + NECK_HAND.x, cut + NECK_HAND.y, s ) );
-	float heart = rootHeart( xs, s, t, hw ) * uRootScale.z * mix( NECK_HEART.x, 1.0, smoothstep( NECK_HEART.y, NECK_HEART.z, d ) ) * smoothstep( 0.0, NECK_UP, d );
-	heart *= 1.0 + NECK_LIFT.x * dot( amount, vec3( lessThan( rides, vec3( 0.0 ) ) ) );
+	// The heart: carried only a little where it leaves, and the page's whole further down. Before the cut it narrows
+	// to the page's own heart as the page draws it, which shows less of it pale, and it ends inside that heart.
+	float hn = mix( 1.0, NECK_HAND.z, uRootState.z * smoothstep( cut - NECK_HAND.x, cut - NECK_HAND.y, s ) );
+	float heart = rootHeart( xs, s, t, hn ) * uRootScale.z * mix( NECK_HEART.x, 1.0, smoothstep( NECK_HEART.y, NECK_HEART.z, d ) ) * smoothstep( 0.0, NECK_UP, d );
+	heart *= 1.0 + NECK_LIFT.x * whole;
 	heart *= 1.0 - uRootState.z * step( cut + NECK_HAND.w, s );
-	// As it sets off, a surge of light runs down it from the foot.
+	// The column: inside its outline, paler toward its middle and broadly pale near the ball, with its edge smoothed
+	// over a pixel and a share of its width. Outside, the skirt, falling away through the stream's colors. It ends
+	// inside the page's heart a few units past the cut.
+	float soft = max( NECK_EDGE.x * px, NECK_EDGE.y * hw );
+	float inside = clamp( - shape / soft + 0.5, 0.0, 1.0 );
+	float u = clamp( abs( x ) / max( hw, 1e-3 ), 0.0, 1.0 );
+	float mid = mix( NECK_LIGHT.y, NECK_LIGHT.z, smoothstep( 0.0, NECK_LIGHT.w, d ) );
+	float body = mix( NECK_LIGHT.x, mid, 1.0 - u * u ) * ( 1.0 + NECK_LIFT.x * NECK_STREAK.y * whole );
+	float beyond = max( shape, 0.0 );
+	float skirt = NECK_SKIRT.x * exp( - beyond / NECK_SKIRT.y ) + NECK_SKIRT.z * exp( - beyond / NECK_SKIRT.w );
+	float ends = 1.0 - smoothstep( NECK_CUT, NECK_CUT + NECK_INTO.w, d ) * uRootState.z;
+	float lit = uRootState.z * smoothstep( cut, cut + NECK_LIT * along, s );
+	float column = body * inside * smoothstep( - NECK_UP, 0.0, d );
+	skirt *= ( 1.0 - inside ) * ( 1.0 - lit ) * ends * smoothstep( 0.0, NECK_UP, d );
+	// The strands show inside it as paler streaks, and past its end run on as the page's own.
+	fib *= mix( 1.0, NECK_STREAK.x, ends * inside );
+	// As it sets off, a burst of light runs down it from the foot, and its leading end burns hotter.
 	float surge = ROOT_SURGE * exp( - pow( ( d - since * ROOT_SURGE_V ) / ROOT_SURGE_W, 2.0 ) ) * ( 1.0 - smoothstep( 0.5, 1.2, since ) );
-	float a = ( fib + heart ) * rootRun( xs, s, t, lead ) * ( 1.0 + surge ) * on;
+	// The column comes on by width and never by light: brought up by light it was a dim orange under the ball's cream.
+	float a = ( ( fib + heart ) * rootRun( xs, s, t, lead ) * on + column * rootRun( 0.0, s, t, lead ) ) * ( 1.0 + surge * smoothstep( 0.0, NECK_UP, d ) );
 	vec4 c = rootColor( max( a - ROOT_FLOOR, 0.0 ) );
+	// The skirt is light laid on what is behind it, and covers none of it: covering, it laid an orange outline
+	// down the column's sides over the lit rock.
+	c.rgb += rootColor( skirt * rootRun( 0.0, s, t, lead ) * on * ( 1.0 + surge ) ).rgb;
+	float solid = 1.0 - smoothstep( NECK_SOLID.x, NECK_SOLID.y, d );
 	if ( solid < 0.001 ) return c;
-	// The matter: the face's own cream and grain, its band down its sides, flowing out and drawn out as it speeds up,
-	// with the strands in it as paler fibres. In the gaps between them it thins first, so it comes apart into them.
-	float env = clamp( - shape / max( px, NECK_EDGE_PX ) + 0.5, 0.0, 1.0 );
+	// Over the foot, the ball's own matter: its band round the fillet, which narrows to nothing a little way down,
+	// and its cream and grain, flowing out and giving way to the column's light.
+	float env = clamp( - shape / max( px, NECK_EDGE.x * px ) + 0.5, 0.0, 1.0 );
 	vec2 g = coreGrainSteps( vec3( x, neckFlow( d, t ), 0.0 ), px );
 	float rim = min( neckRim( x, d, on ), 1.0 ), quiet = 1.0 - GRAIN_BAND * smoothstep( 0.92, 0.965, rim );
-	vec3 matter = coreRim( rim ) * coreFall( rim ) * coreTint( g.x * quiet, g.y * quiet );
-	float lit = clamp( NECK_MATTER.x * ( fib + heart ) * on, 0.0, 1.0 ), held = clamp( NECK_MATTER.y * ( fib + heart ), 0.0, 1.0 );
-	// Between the strands it warms toward the band's gold as it comes apart, so the strands show in it as cream fibres.
-	matter = mix( matter, coreRim( NECK_WARM ) * coreTint( g.x * quiet, g.y * quiet ), ( 1.0 - solid ) * ( 1.0 - held ) );
-	// Where the strands and the heart run through it, it pales toward the stream's own heart.
-	matter = mix( min( matter, CAP ), rootColor( 2.0 ).rgb, lit * lit );
-	float keep = clamp( ( solid - ( 1.0 - held ) * ( 1.0 - solid ) * NECK_MATTER.z ) * 3.0, 0.0, 1.0 );
-	float K = env * keep * smoothstep( 0.0, 0.3, on );
+	vec3 matter = min( coreRim( rim ) * coreFall( rim ) * coreTint( g.x * quiet, g.y * quiet ), CAP );
+	float K = env * solid * smoothstep( 0.0, 0.3, on );
 	return vec4( matter * K + c.rgb * ( 1.0 - K ), K + c.a * ( 1.0 - K ) );
 }
 `;

@@ -11,9 +11,10 @@ vec3 coreUnbalance( vec3 c ) {
 
 // The core's grain, in GLSL, worked out per pixel from a place in three dimensions, so nothing in it has a seam, a
 // pole or an outline. The surface is a fine speckle of points of light, each hottest at its middle with a soft edge,
-// a few sizes, each let go as it grows finer than a pixel with what is let go given back to the sizes kept. Among
-// them, facets: small flat crystal faces, deeper gold, which rock slowly and flash whole when a face turns to the
-// light within. Under it all a deeper layer of hotter, larger, softer grains turning its own way (shaders.ts).
+// a few sizes, each let go as it grows finer than a pixel with what is let go given back to the sizes kept, every
+// grain brighter than the ground between them. Among them, facets: small flat crystal faces, which rock slowly and
+// flash whole, brighter than the face, when a face turns to the light within. Under it all a slow drift of broad light
+// (coreDrift, shaders.ts).
 
 export const GRAIN = /* glsl */ `
 uvec3 corePcg( uvec3 v ) {
@@ -65,6 +66,8 @@ vec2 coreSalt( vec3 q, float fp, float t, float dense ) {
 	float kept = 0.0, all = 0.0;
 	for ( int i = 0; i < GRAIN_SIZES; i ++ ) {
 		float cell = GRAIN_CELL * pow( 0.5, float( i ) ), a = pow( GRAIN_FALL, float( i ) ), k = coreKeep( cell * GRAIN_SEEN, fp );
+		// The coarsest size is there only for a screen too coarse to show the finer ones: seen close, it was blobs.
+		if ( i == 0 ) a *= smoothstep( GRAIN_COARSE.x, GRAIN_COARSE.y, fp / cell );
 		all += a * a;
 		if ( k > 0.0 ) {
 			float warm;
@@ -79,8 +82,8 @@ vec2 coreSalt( vec3 q, float fp, float t, float dense ) {
 }
 
 // The facets: a share of the grains are flat crystal faces, each a small polygon with its own tilt, which rocks
-// slowly. Each is a little deeper than the ground until its face turns to the light within, and then the whole face
-// flashes, as a solid shard of the stream does. At p in units, a pixel fp wide, a time t, and n the face's normal on
+// slowly. Each is the face's own light until its face turns to the light within, and then the whole face flashes,
+// as a solid shard of the stream does. At p in units, a pixel fp wide, a time t, and n the face's normal on
 // the ball as seen. Returns how much of the pixel is a facet, how far it is lit across its face (-1 to 1), and how
 // strongly it flashes (0 to 1).
 vec3 coreFacets( vec3 p, float fp, float t, vec2 n ) {
@@ -113,6 +116,20 @@ vec3 coreFacets( vec3 p, float fp, float t, vec2 n ) {
 		best = vec3( cover, across, flash );
 	}
 	return best;
+}
+
+// The drift: a slow, broad light that moves across the face, as smooth noise in three dimensions, two sizes, each
+// drifting its own way. About -1 to 1, with a mean of 0.
+float coreLump( vec3 p, uint seed ) {
+	vec3 i = floor( p ), f = p - i, u = f * f * ( 3.0 - 2.0 * f );
+	ivec3 c = ivec3( i );
+	float v[ 8 ];
+	for ( int k = 0; k < 8; k ++ ) v[ k ] = coreUnit( coreHash( c + ivec3( k & 1, ( k >> 1 ) & 1, k >> 2 ), seed ) ).x;
+	return mix( mix( mix( v[ 0 ], v[ 1 ], u.x ), mix( v[ 2 ], v[ 3 ], u.x ), u.y ), mix( mix( v[ 4 ], v[ 5 ], u.x ), mix( v[ 6 ], v[ 7 ], u.x ), u.y ), u.z ) * 2.0 - 1.0;
+}
+float coreDrift( vec3 p, float t ) {
+	return 0.68 * coreLump( p / DRIFT_SIZE.x + t * DRIFT_FLOW.x * vec3( 0.6, 0.7, 0.4 ), 501u )
+		+ 0.42 * coreLump( p / DRIFT_SIZE.y - t * DRIFT_FLOW.y * vec3( 0.5, - 0.3, 0.8 ), 509u );
 }
 
 // The grain's light as shares of the light where it is, from its steps of brightness and of warmth.

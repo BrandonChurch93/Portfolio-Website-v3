@@ -7,7 +7,7 @@ import { seeded } from '../../../../stream/rand';
 // the cut, where the page's own riding shards gather. Each is lit as the page lights its own: a solid face is dark
 // until it turns to the light and then flashes whole, a clear one holds the light and burns along its edges. Their
 // light is the ball over them and the beam beside them. Everything moves in the vertex shader, from the clock.
-// They are drawn in two passes of one program, those behind the beam before it and those in front after it.
+// They ride round the back of the beam and past its sides, and are drawn before it.
 
 // rides: how many at each cost; from: the least and most depth under the foot a shard's run begins at, and how
 // strongly they are drawn toward the deeper end (above 1, more of them lower down); run: how long a run is, least
@@ -17,8 +17,8 @@ import { seeded } from '../../../../stream/rand';
 // clear glass; past: over how many units past the cut they are let go, as the page's own take over.
 export const RIDE = {
   rides: { full: 26, lean: 14 },
-  from: [18, 250, 0.55], run: [70, 150], time: [2.6, 4.6], size: [1.8, 5.2], out: [1.5, 7], turn: [0.5, 1.4], spin: [0.6, 2.2],
-  clear: 0.4, past: 90,
+  from: [18, 250, 0.55], run: [70, 150], time: [2.6, 4.6], size: [2, 7.5], out: [1.5, 7], turn: [0.5, 1.4], spin: [0.6, 2.2],
+  clear: 0.2, past: 90,
 } as const;
 
 // Per rider: its own numbers, which kind of facet it is, and whether it is clear.
@@ -57,7 +57,6 @@ attribute vec4 aMore;
 uniform float uTime;
 uniform float uR;
 uniform vec4 uRootState;
-uniform float uSide;
 varying vec3 vN;
 varying vec3 vView;
 varying vec3 vEdge;
@@ -83,11 +82,11 @@ void main() {
 	life *= on * smoothstep( 0.0, 30.0, reach - d ) * smoothstep( 4.0, 16.0, d );
 	float size = mix( RIDE_SIZE.x, RIDE_SIZE.y, aMore.y ) * life;
 	// Round the beam's line, at its own distance out from the beam's edge and its own pace, either way round.
-	float wide = NECK_RIB + ( NECK_FOOT - NECK_RIB ) * exp( - d / NECK_FALL );
+	float wide = NECK_RIB + NECK_FLARE.x * exp( - d / NECK_FLARE.y ) + NECK_BODY.x * exp( - d / NECK_BODY.y );
 	float ring = wide + mix( RIDE_OUT.x, RIDE_OUT.y, aMore.z ), turn = aMore.w * 6.2832 + uTime * mix( RIDE_TURN.x, RIDE_TURN.y, riderHash( a * 5.1 ) ) * ( riderHash( b * 3.3 ) < 0.5 ? - 1.0 : 1.0 );
-	vec3 at = vec3( ring * cos( turn ), - uR - d, ring * sin( turn ) );
-	// Each in its own pass: behind the beam, or in front of it.
-	if ( at.z * uSide < 0.0 ) size = 0.0;
+	// Round the back of the beam and past its sides, never across its front: one that crossed in front of the pale
+	// column parked on it as a dark knot.
+	vec3 at = vec3( ring * cos( turn ), - uR - d, - abs( ring * sin( turn ) ) );
 	vec3 axis = normalize( vec3( riderHash( a * 2.9 ) - 0.5, riderHash( b * 4.7 ) - 0.5, riderHash( c * 6.1 ) - 0.5 ) + 1e-3 );
 	float spin = aMore.x * 6.2832 + uTime * mix( RIDE_SPIN.x, RIDE_SPIN.y, riderHash( c * 8.3 ) );
 	vec3 p = at + riderTurn( position, axis, spin ) * size;
@@ -155,13 +154,15 @@ void main() {
 	vec3 col;
 	float cover = 1.0;
 	if ( vClear < 0.5 ) {
-		// Solid: dark copper, each face its own tone, flashing whole when it turns to the beam or the ball.
-		float light = 0.02 + beam * ( flash + sheen + 0.06 * max( dot( N, T ), 0.0 ) ) + ball * ( 1.6 * sky + 0.12 * lit );
-		light = mix( light, max( light, 0.4 * ( beam + ball ) ), line ) + tip * ( 1.4 * beam + 0.5 * ball );
+		// Solid: dark copper, each face its own tone, a face flashing whole when it turns to the beam, and every edge
+		// a sharp line of the light round it, as the stream's own shards are.
+		float light = 0.015 + beam * ( flash + sheen + 0.05 * max( dot( N, T ), 0.0 ) ) + ball * ( RIDE_SKY * sky + 0.05 * lit );
 		col = mix( uCopper, uCopperLight, 0.3 * clamp( light - 0.6, 0.0, 1.0 ) ) * vec3( 1.0, 0.92, 0.8 ) * light * 1.35;
 		float mx = max( col.r, max( col.g, col.b ) );
 		col *= ( 1.0 - exp( - mx * 1.15 ) ) / ( mx * 0.955 + 1e-5 );
 		col = mix( col, uPale, clamp( ( light - 1.7 ) * 0.4, 0.0, 0.85 ) );
+		float rim = clamp( line * RIDE_EDGE * ( beam + ball ) + tip * ( 1.4 * beam + 0.5 * ball ), 0.0, 1.6 );
+		col = mix( col, riderRamp( 0.4 + rim ), clamp( rim, 0.0, 1.0 ) );
 	} else {
 		// Clear: it holds the light inside, most through the middle of a face, and burns along its edges.
 		float deep = pow( smoothstep( 0.0, 0.34 * vSize, e ), 1.3 );
