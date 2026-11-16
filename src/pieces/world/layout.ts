@@ -209,6 +209,8 @@ export const LIGHT = {
   sky: { color: 'ember', power: 0.05 },
   // The most irradiance a stored bounce can hold.
   bounce: 8,
+  // How much of its own color the stored bounce keeps (the rest is its grey), and how much it is lifted.
+  bounced: [0.5, 1.7],
   // How strongly a thing reflects the night round it, and the share of that which falls on a matte face as light.
   // The night is made for metal to mirror: as light on rock it was a second moon with no shadows, which filled
   // every gap in the hollow with grey.
@@ -220,7 +222,7 @@ export const LIGHT = {
   fill: 0.08,
   // Less red than it was (1, 0.58, 0.36): on a red brown stone that tint made every dark rust, where picture 9's
   // darks are a nearly neutral brown.
-  warm: [1, 0.74, 0.55],
+  warm: [1, 0.82, 0.68],
   // The planet's stone under white light: the first of these palette colors eased toward the second, and how bright.
   // The baker lights the rock with it and the stone's material wears it.
   stone: { of: ['bronze', 'copper'], ease: 0.4, power: 0.85 },

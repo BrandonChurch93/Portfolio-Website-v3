@@ -48,7 +48,7 @@ const CLOSE: Record<string, readonly [number, number, number]> = {
 };
 // The moon's shadow map: how far each side of the planet's middle it reaches, in units, how many pixels square by
 // tier, and where the planet's middle is.
-const MOON = { reach: 980, mid: -330, far: 4.5, map: { high: 4096, mid: 2048, low: 1024, static: 4096 } as Record<Tier, number>, bias: -0.00025, normalBias: 0.0012, radius: 1.6 };
+const MOON = { reach: 980, mid: -330, far: 4.5, map: { high: 4096, mid: 2048, low: 1024, static: 4096 } as Record<Tier, number>, bias: -0.0005, normalBias: 0.0026, radius: 1.6 };
 // The cursor's glint: how far in front of the world it stands, in metres, how far it ranges as a share of what the
 // host shows, and how strong it is.
 export { GLINT };

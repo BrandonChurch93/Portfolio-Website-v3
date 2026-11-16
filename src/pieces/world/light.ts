@@ -98,6 +98,10 @@ const VERT = `
 #ifdef WORLD_BAKED
 	wLight = aLight;
 	wBounce = aBounce.rgb * aBounce.rgb * uBounceMost;
+	// Light that has bounced off red brown stone under an orange core comes back twice as orange, and every dark it
+	// lit was rust. Picture 9's darks are a nearly neutral brown: the bounce keeps part of its color and is lifted,
+	// so a face turned from the core is a deep brown and not black.
+	wBounce = mix( vec3( dot( wBounce, vec3( 0.2126, 0.7152, 0.0722 ) ) ), wBounce, ${LIGHT.bounced[0].toFixed(3)} ) * ${LIGHT.bounced[1].toFixed(3)};
 #endif`;
 const FRAG_PARS = `
 uniform vec3 uCoreAt;
