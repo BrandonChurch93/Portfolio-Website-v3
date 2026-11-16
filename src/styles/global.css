@@ -4,6 +4,15 @@
   box-sizing: border-box;
 }
 
+/* A press on a link to a place in the page travels there, where it used to cut. Only while something in the page
+   has focus, which a press gives it: a script that sets the scroll (the screenshot tools, the stream's own tests)
+   still gets where it asked at once. */
+@media (prefers-reduced-motion: no-preference) {
+  html:focus-within {
+    scroll-behavior: smooth;
+  }
+}
+
 html {
   font-size: var(--root);
   background: var(--bg);

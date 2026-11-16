@@ -99,9 +99,10 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
   };
   const step = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
     const by = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0, n = ABOUT_TABS.length;
-    if (!by) return;
+    const end = e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : -1;
+    if (!by && end < 0) return;
     e.preventDefault();
-    const next = (i + by + n) % n;
+    const next = end >= 0 ? end : (i + by + n) % n;
     pick(next);
     document.getElementById(`${id}-tab-${next}`)?.focus();
   };
@@ -164,7 +165,7 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
                 <button key={t.name} type="button" role="tab" id={`${id}-tab-${i}`} aria-selected={tab === i} aria-controls={`${id}-panel`} tabIndex={tab === i ? 0 : -1} className={styles.tab} onClick={() => pick(i)} onKeyDown={(e) => step(e, i)}>{t.name}</button>
               ))}
             </div>
-            <div className={styles.panel} role="tabpanel" id={`${id}-panel`} aria-labelledby={`${id}-tab-${tab}`} data-part="panel" data-swapping={showing !== tab} style={{ top: u(T.text) }}>
+            <div className={styles.panel} role="tabpanel" tabIndex={0} id={`${id}-panel`} aria-labelledby={`${id}-tab-${tab}`} data-part="panel" data-swapping={showing !== tab} style={{ top: u(T.text) }}>
               <p className={styles.tag}>Placeholder text</p>
               {ABOUT_TABS[showing].text.map((para) => <p key={para.slice(0, 24)}>{para}</p>)}
             </div>
