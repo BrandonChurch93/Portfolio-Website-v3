@@ -11,14 +11,14 @@
 // draft makes it fast and rough: a cell twice as large and far fewer rays. Options: box (the space looked at),
 // crease (degrees), keep (how far a vertex may move when the mesh is reduced, in units), budget (the most triangles
 // in `break`), extra (more meshes that block and bounce light but are not written, such as the core's neighbours).
-import { L, light, linear, storeBounce } from './plan.mjs';
+import { L, light, linear, stone, storeBounce } from './plan.mjs';
 import { surface, simplify } from './surface.mjs';
 import { creased } from './mesh.mjs';
 import { bake } from './bake.mjs';
 import { pack } from './pack.mjs';
 
 // The color the rock's light is worked out with, which the page's plain material also wears.
-export const ALBEDO = linear('text-3');
+export const ALBEDO = stone();
 // How near the planet's outer surface or its top a vertex is taken to be skin, in units.
 const SKIN = 2.5;
 export const onSkin = (x, y, z) => Math.abs(1 - L.shell(x, y, z)) * L.WORLD.deep < SKIN || y > L.dome(x, z) - 3 - SKIN + L.land(x, z);

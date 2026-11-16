@@ -16,6 +16,11 @@ export function linear(name) {
   return [1, 3, 5].map((i) => { const c = parseInt(h.slice(i, i + 2), 16) / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; });
 }
 const times = (c, k) => c.map((v) => v * k);
+// The planet's stone under white light (LIGHT.stone in the layout), as linear light: what the baker lights rock with.
+export function stone() {
+  const { of, ease, power } = L.LIGHT.stone, [a, b] = of.map(linear);
+  return a.map((v, i) => (v + (b[i] - v) * ease) * power);
+}
 
 // The two lights as the baker wants them (scripts/world/lib/bake.mjs), from LIGHT in the layout.
 export function light() {

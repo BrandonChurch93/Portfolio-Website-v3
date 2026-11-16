@@ -195,7 +195,9 @@ export const LIGHT = {
   moon: { color: 'pale', power: 2.6, spread: 0.7 },
   // The core: the irradiance at its own surface on a face turned to it. Further off it falls as (r / d) to the
   // power of fall. 2 is what a ball of light does in empty space. Lower carries its light further across the hollow.
-  core: { color: 'hot', power: 24, fall: 1.45 },
+  // At 24 every face near it came out a pale peach, where picture 9's hollow is a deep red brown: 16 keeps the
+  // stone's own color in the light.
+  core: { color: 'hot', power: 16, fall: 1.45 },
   // What comes from every direction that escapes the world: almost nothing.
   sky: { color: 'ember', power: 0.05 },
   // The most irradiance a stored bounce can hold.
@@ -204,7 +206,13 @@ export const LIGHT = {
   // The night is made for metal to mirror: as light on rock it was a second moon with no shadows, which filled
   // every gap in the hollow with grey.
   night: 0.55,
-  fill: 0.1,
+  // On the torn rock that share is tinted warm (`warm`, red, green and blue): untinted it turned the masses round
+  // the hollow grey, and at a tenth of this they were a flat black with no form.
+  fill: 0.35,
+  warm: [1, 0.58, 0.36],
+  // The planet's stone under white light: the first of these palette colors eased toward the second, and how bright.
+  // The baker lights the rock with it and the stone's material wears it.
+  stone: { of: ['bronze', 'copper'], ease: 0.4, power: 0.85 },
   // The same share for what stands on top of the world, which the night lights in full: the city's faces toward
   // the visitor are turned from the moon, and are seen by the night's own light.
   top: 1,

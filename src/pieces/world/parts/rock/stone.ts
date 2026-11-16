@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CORE, SCALE, SOURCE } from '../../layout';
-import { color, lit } from '../../light';
+import { color, lit, stone } from '../../light';
 
 // The planet's stone: what the torn rock is made of, and what every piece that broke away is made of. One warm stone
 // whose color comes from the light on it, with beds of paler, redder and darker stone through it, clean sheared faces
@@ -26,7 +26,7 @@ import { color, lit } from '../../light';
 // redder or darker than it. A chipped edge is fresher and paler, dust is paler and flatter.
 const mix = (a: THREE.Color, b: THREE.Color, k: number): THREE.Color => a.clone().lerp(b, k);
 export const STONE = {
-  own: mix(color('text-3'), color('bronze'), 0.65).multiplyScalar(1.1),
+  own: stone(),
   pale: mix(color('text-3'), color('text-2'), 0.3),
   red: mix(color('bronze'), color('copper'), 0.35).multiplyScalar(0.95),
   dark: mix(color('bronze-deep'), color('text-3'), 0.3),

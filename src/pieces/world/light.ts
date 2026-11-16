@@ -28,14 +28,23 @@ const spec = typeof location !== 'undefined' && new URLSearchParams(location.sea
 const gold = color('hot').lerp(color('pale'), GOLD.ease);
 if (!spec) gold.offsetHSL(GOLD.turn / 360, 0, 0);
 export const METAL = { gold, bronze: color('bronze'), copper: color('copper') } as const;
+// The planet's stone under white light (LIGHT.stone): what the torn rock and everything that broke away are made of.
+export const stone = (): THREE.Color => color(LIGHT.stone.of[0]).lerp(color(LIGHT.stone.of[1]), LIGHT.stone.ease).multiplyScalar(LIGHT.stone.power);
+
+// While the light is being set: ?corepower=, ?corefall=, ?fill= and ?filltint=1,0.6,0.4 try another of each without
+// a change of code.
+const asked = new URLSearchParams(typeof location !== 'undefined' ? location.search : '');
+const tried = (name: string, usual: number): number => (asked.has(name) && Number.isFinite(Number(asked.get(name))) ? Number(asked.get(name)) : usual);
+const POWER = tried('corepower', LIGHT.core.power), FILL = tried('fill', LIGHT.fill);
+const TINT = asked.has('filltint') ? String(asked.get('filltint')).split(',').map(Number) : LIGHT.warm;
 
 const shared = {
   uCoreAt: { value: new THREE.Vector3(...CORE.at).multiplyScalar(SCALE) },
   uCoreR: { value: CORE.r * SCALE },
-  uCoreColor: { value: color(LIGHT.core.color, LIGHT.core.power) },
+  uCoreColor: { value: color(LIGHT.core.color, POWER) },
   uCoreLevel: { value: 1 },
-  uCoreFall: { value: LIGHT.core.fall },
-  uBounceMost: { value: LIGHT.bounce },
+  uCoreFall: { value: tried('corefall', LIGHT.core.fall) },
+  uBounceMost: { value: LIGHT.bounce * POWER / LIGHT.core.power },
   // The cursor's glint: where it stands, in the camera's own space, and its color and strength.
   uGlintAt: { value: new THREE.Vector3(0, 0, 1) },
   uGlint: { value: color('pale', 0) },
@@ -115,8 +124,8 @@ const CORE_LIGHT = `
 #endif`;
 const BOUNCE = `
 #ifdef WORLD_CORE
-	iblIrradiance *= ${LIGHT.fill.toFixed(3)};
-	radiance *= ${LIGHT.fill.toFixed(3)};
+	iblIrradiance *= ${FILL.toFixed(3)} * vec3( ${TINT.map((v) => v.toFixed(3)).join(', ')} );
+	radiance *= ${FILL.toFixed(3)};
 #else
 	iblIrradiance *= ${LIGHT.top.toFixed(3)};
 #endif
