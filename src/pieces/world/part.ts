@@ -10,6 +10,9 @@ import type { Tier } from '../../config/site';
 // as plain dark shapes in its place, and it leaves out what the parts before it say they have built.
 export const PARTS = ['rock', 'skin', 'core', 'land', 'pyramid', 'spire', 'towers', 'trees', 'debris', 'rest'] as const;
 export type PartName = (typeof PARTS)[number];
+// What of the world is on the first screen. The rest is under it: the world is shown as soon as these are made,
+// and the others are fetched and made after, so a first visit waits for about half of the world's files.
+export const ABOVE: readonly PartName[] = ['land', 'pyramid', 'spire', 'towers', 'trees'];
 
 // What the page's preloader knows the world's loading by (src/world/loading.ts). A page that waits for the world
 // begins it under this name, and the world says how far along it is and when its first frame is drawn.

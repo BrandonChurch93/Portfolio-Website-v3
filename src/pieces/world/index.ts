@@ -6,12 +6,13 @@ import { clock } from '../../world/clock';
 import { loading } from '../../world/loading';
 import { handheld } from '../../world/device';
 import type { Piece, PieceOptions } from '../../world/piece';
+import { slice } from '../../world/build';
 import { Stage } from '../../world/stage';
 import { finish, trueDarks } from '../../world/tone';
 import { CORE, D2R, HOST, LIGHT, MOONWARD, PYRAMID, SCALE, SPIRE, VIEW, coreLevel, drawn, ground } from './layout';
 import { GLINT, STREAM_LONG, WARM, color, world } from './light';
 import { night } from './night';
-import { LOADING, PARTS, type PartFactory, type PartName, type PartState, type WorldPart } from './part';
+import { ABOVE, LOADING, PARTS, type PartFactory, type PartName, type PartState, type WorldPart } from './part';
 import { STEP, TOWERS } from './placed';
 
 // The hero's world, built to picture 9 (reference/kits/world.md): the top of a small planet torn open, with a city
@@ -91,7 +92,7 @@ export function createWorld(): WorldPiece {
   let stage: Stage | null = null, canvas: HTMLCanvasElement | null = null, host: HTMLElement | null = null;
   let parts: { name: PartName; part: WorldPart; span: [number, number]; on: boolean }[] = [];
   let off: (() => void) | null = null, watch: ResizeObserver | null = null, near: IntersectionObserver | null = null, moon: THREE.DirectionalLight | null = null;
-  let seen = true, stale = true, moving = false, cast = 3, hold: number | null = null, only: PartName | null = null, close: readonly [number, number, number] | null = null, zoom = 3;
+  let seen = true, stale = true, moving = false, warming = false, cast = 3, hold: number | null = null, only: PartName | null = null, close: readonly [number, number, number] | null = null, zoom = 3;
   let lampUV = { x: 0.6, y: 0.3 }, reach = 1, first = 0;
   const stream = { on: 0, since: 60, long: 0 };
   const built: Record<string, number> = {};
@@ -154,7 +155,7 @@ export function createWorld(): WorldPiece {
   };
 
   const frame = () => {
-    if (!stage || !seen) return;
+    if (!stage || !seen || warming) return;
     const frozen = clock.isFrozen() || hold !== null;
     if (shown()) stale = true;
     if (!stale && !moving) return;
@@ -212,11 +213,17 @@ export function createWorld(): WorldPiece {
       const names = only ? [only] : [...PARTS];
       parts = [];
       const made = new Set<PartName>(), stands = new Set<number>();
-      // The parts are made side by side, so their files come down together and not one after another: made in turn,
-      // the world took as long to load as all its files end to end. Only `rest` waits for the others, since it
-      // stands in for whatever they did not build. A part that fails (a file missing, or half written while its
-      // builder works) is left out and said so: one broken part must not take the whole world off the page.
+      // The world is made in two helpings. What is on the first screen first (ABOVE), side by side, so those files
+      // come down together: the page is shown as soon as they are drawn. Then what is under the first screen, which
+      // is fetched and made while the visitor reads. Made all at once, a first visit waited for every file of the
+      // world before it saw anything. One part alone, a close view and ?load=whole are made in one helping.
+      // Only `rest` waits for all the others, since it stands in for whatever they did not build. A part that fails
+      // (a file missing, or half written while its builder works) is left out and said so: one broken part must not
+      // take the whole world off the page.
       const renderer = stage.renderer, got = new Map<PartName, WorldPart>();
+      const whole = !!only || !!close || q.get('load') === 'whole';
+      const above = names.filter((n) => n !== 'rest' && (whole || ABOVE.includes(n)));
+      const under = names.filter((n) => n !== 'rest' && !above.includes(n));
       let ready = 0;
       const make = async (name: PartName): Promise<void> => {
         const from = performance.now();
@@ -227,23 +234,37 @@ export function createWorld(): WorldPiece {
           got.set(name, { group: new THREE.Group() });
         }
         built[name] = Math.round(performance.now() - from);
-        loading.progress(LOADING, ++ready / (names.length + 1));
+        loading.progress(LOADING, ++ready / (above.length + 1));
       };
-      await Promise.all(names.filter((n) => n !== 'rest').map(make));
-      for (const name of names) {
-        const part = got.get(name);
-        if (!part) continue;
-        if (part.group.children.length) made.add(name);
-        for (const i of part.stands ?? []) stands.add(i);
-      }
-      if (names.includes('rest')) await make('rest');
+      const note = (list: PartName[]): void => {
+        for (const name of list) {
+          const part = got.get(name);
+          if (!part) continue;
+          if (part.group.children.length) made.add(name);
+          for (const i of part.stands ?? []) stands.add(i);
+        }
+      };
+      // In the order the parts are listed in, whenever each was made: what is drawn over what must not turn on
+      // which file came down first.
+      const order = new Map<THREE.Object3D, number>();
+      const add = (list: PartName[]): void => {
+        for (const name of list) {
+          const part = got.get(name);
+          if (!part) continue;
+          order.set(part.group, PARTS.indexOf(name));
+          root.add(part.group);
+          root.updateMatrixWorld(true);
+          parts.push({ name, part, span: spanOf(part), on: true });
+        }
+        root.children.sort((a, b) => (order.get(a) ?? 0) - (order.get(b) ?? 0));
+      };
+      const last = names.includes('rest') ? (['rest'] as PartName[]) : [];
+      await Promise.all(above.map(make));
       if (!stage) return;
-      for (const name of names) {
-        const part = got.get(name)!;
-        root.add(part.group);
-        root.updateMatrixWorld(true);
-        parts.push({ name, part, span: spanOf(part), on: true });
-      }
+      note(above);
+      if (!under.length) { for (const name of last) await make(name); }
+      if (!stage) return;
+      add(under.length ? above : [...above, ...last]);
       if (only && parts[0]) {
         const own = parts[0].part.alone, ball = own ? new THREE.Sphere(new THREE.Vector3(...own.at).multiplyScalar(M), own.r * M) : new THREE.Box3().setFromObject(parts[0].part.group).getBoundingSphere(new THREE.Sphere());
         aim.copy(ball.center);
@@ -253,7 +274,7 @@ export function createWorld(): WorldPiece {
       place();
       const from = performance.now();
       await stage.warm();
-      first = Math.round(performance.now() - from);
+      if (!stage) return;
       watch = new ResizeObserver(() => { stage?.resize(); stale = true; frame(); });
       watch.observe(h);
       near = new IntersectionObserver((es) => { seen = es.some((e) => e.isIntersecting); if (seen) { stale = true; frame(); } });
@@ -263,6 +284,26 @@ export function createWorld(): WorldPiece {
       frame();
       loading.end(LOADING);
       opts.onReady?.();
+      if (!under.length) { first = Math.round(performance.now() - from); return; }
+      // The rest of the world. Nothing is drawn while its programs are compiled and its buffers sent, a little at a
+      // time: that work shows and hides every thing in the scene in turn, and the frame before it stays on the
+      // canvas. Then the moon's shadows are drawn again with every part there to cast them.
+      const live = stage;
+      void (async () => {
+        await Promise.all(under.map(make));
+        if (stage !== live) return;
+        note(under);
+        for (const name of last) await make(name);
+        if (stage !== live) return;
+        add([...under, ...last]);
+        warming = true;
+        try { await live.warm(slice); } finally { warming = false; }
+        if (stage !== live) return;
+        cast = 3;
+        stale = true;
+        frame();
+        first = Math.round(performance.now() - from);
+      })();
     },
     setLamp(x: number, y: number) {
       if (Math.abs(x - lampUV.x) + Math.abs(y - lampUV.y) < 0.003) return;
