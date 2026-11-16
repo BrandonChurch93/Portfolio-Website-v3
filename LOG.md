@@ -2,6 +2,43 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · Craters, lit cracks and the smaller streams (Fable, web chat)
+
+**What Brandon said**
+
+- Craters on the smooth outer surface at the right of the planet, lit as the hero's moon is. Something else on the left, perhaps deep 3D cracks: he asked what would look good.
+- The smaller streams are missing: "a few smaller streams of the inner stream coming down", as the world Claude Code built has. He asked for Fable's thoughts. His words are in `BRIEF.md`, Settled, Hero.
+
+**What was done**
+
+- Nothing built. Nothing in `src/` was changed.
+- The record was read for the smaller streams. They are settled already, in "The hero, the city at rest", item 7, and built as `VENTS` in `src/pieces/skycity/layout.ts` and `falls` in the stream's planner. `reference/studies/59-hero-the-finished-surface-he-turned-down-whole.jpg` shows them: six thin lines of the stream's light, evenly spaced, of one length.
+- Fable's answers, given to him:
+    - Craters: yes. One addition, the torn edge cutting through a large crater.
+    - The left: cracks lit from inside, since that side is turned from the moon and unlit relief would not be seen on it.
+    - The smaller streams: yes, three or four, uneven, faint beside the main one. Six equal ones read as legs.
+- A fourth prompt was written, to send in the same Gemini chat once the combined picture is back.
+
+**The fourth prompt, as given**
+
+```
+Edit this image. Keep everything as it is except for these three additions.
+
+1. Craters on the right side. The smooth outer surface of the planet at the right gets impact craters, like the moon's: three or four large ones with raised rims and flat floors, and many small ones. The moon lights them from the upper right, so every rim throws a hard black shadow across its floor. The torn edge cuts straight through one of the large craters.
+
+2. Lit cracks on the left side. The smooth outer surface at the left gets deep cracks that run out from the torn edge and branch as they go, widest at the tear and thinner with distance. The same light as the core shows deep inside them, brightest near the tear and fading to nothing further out. The rock between the cracks stays dark.
+
+3. Three or four small streams of light. The same light as the core leaks out of the torn rock at a few places: from the ends of the cracks on the left, from under the hanging rock, from the ledge under the core. Each is a thin straight line falling straight down, much thinner and dimmer than the main stream, each a different length, fading out before the bottom of the frame. They are spread unevenly, some nearer and some further back. The main stream from the core stays the brightest by far.
+
+Only warm colors. No blue, no green, no grey, no white.
+```
+
+**For the build**
+
+- Craters are relief in the rock's own field, so the moon's shadow in them is real: a bowl with a raised rim, taken out of the outer surface only where it survives. A texture would not do it.
+- The lit cracks are the same cracks the slabs already make (`SLAB` in `src/hero-blockout/plan.ts`), opened wider near the tear, with an emissive deep inside that falls off with distance from the core. No fog.
+- The smaller streams belong to the stream's renderer, as `falls` do now, so they are the same light as the stream. Their places come from the world's plan.
+
 ## 2026-11-15 · The seventh picture: an underside he likes, his notes on the top, and a prompt to combine the two (Fable, web chat)
 
 **What Brandon said**
