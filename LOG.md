@@ -2,6 +2,28 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-15 · The eighth picture: the underside he loves, the wrong city, and a prompt for the top (Fable, web chat)
+
+- "Wow, the bottom on this one looks awesome! But it looks like [it] got confused and [used] the wrong city."
+- Kept as `reference/concept/08-*`. Gemini started from image 2 and not image 1, so the underside came across whole with the three additions, and the top is picture 7's.
+- The references now: the top is picture 4 with picture 6's changes and his notes. The debris is picture 6. Everything under the land is picture 8, with the core's surface from picture 7.
+- The next prompt makes picture 8 the picture that is edited, since an edit keeps what it starts from, and asks only for the top of picture 6.
+
+```
+I am attaching two images. Image 1 is the planet I want to keep. Image 2 has the city I want on top of it.
+
+Edit image 1. Change only what stands on top of the land. Keep the whole underside exactly as it is: the hollow, the rock, the lit cracks on the left, the craters on the right, the small streams, the debris, the camera and the framing.
+
+Replace the city, the pyramid, the trees and the dunes on top of image 1 with the top of image 2: its spire with the ring in the middle, its towers where they stand, its pyramid at the front left, its trees, its avenue and its dunes at the front right. Fit it to the land of image 1 so the two join as one object.
+
+Three small changes while you do it:
+1. The pyramid is polished gold: very shiny, with bright highlights, no glare and no sharp reflection of the scene.
+2. Three towers, spread out across the skyline, get a polished gold top, and a few others get polished bronze bands.
+3. The sphere of light is pale gold with a grained surface and a deeper orange edge, not a flat white disc.
+
+Only warm colors. No blue, no green, no grey, no white.
+```
+
 ## 2026-11-15 · One prompt for the combined picture (Fable, web chat)
 
 - He said "Love this idea!" to the lit cracks and the smaller streams, and asked for one prompt and the two pictures in one place.
