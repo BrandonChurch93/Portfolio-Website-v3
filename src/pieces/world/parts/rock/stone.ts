@@ -3,6 +3,7 @@ import { CORE, LIGHT, MOONWARD, RIM, SCALE, SOURCE, WORLD } from '../../layout';
 import { color, lit, stone, world } from '../../light';
 import { slice } from '../../../../world/build';
 import { GRAIN, grain } from './grain';
+import { NIGHT } from '../../night';
 
 // The planet's stone: what the torn rock is made of, and what a piece that broke away may wear. A broken sandstone
 // whose color comes from the light on it: cream only where a face squarely meets the core, a deep orange in every
@@ -67,11 +68,15 @@ export const STONE = {
   // no darkness of its own there.
   // Past the warm grey a little toward its pale and cool side: under the core's orange the lit faces came out a
   // saturated orange of one hue, where the picture's roll to a cream.
-  litTint: tint(own, 0.7).map((v, i) => v * [0.96, 1.05, 1.25][i]),
+  litTint: tint(own, 0.7).map((v, i) => v * [0.94, 1.1, 1.2][i]),
   // Where the core's light begins to take the stone to tan and where it is full, as the share of the light a face
   // turned square to the core at its surface would have: in between, the mid tones keep the redder brown.
   full: [0.14, 0.52] as const,
-  shadeTint: [1.16, 0.92, 0.8] as const,
+  // Round 7: the mid tones no redder than the stone: under the core's orange they came out rust, where picture 9's are a
+  // tan brown.
+  shadeTint: [1.02, 1.0, 1.02] as const,
+  // Each block a hue of its own, between a redder and a yellower: the picture's stone runs from 12 to 32 degrees.
+  blockHue: [[1.06, 0.92, 0.84], [0.96, 1.04, 1.02]] as const,
   // Stone nearest the core is paler and less saturated, so that the core's light takes it toward a peach tan: from
   // how far from the core's middle it begins and where it is full, in units, how much at most, and the share of its
   // color it keeps there.
@@ -114,6 +119,11 @@ export const STONE = {
 
 // The stream's light on the stone: a line from the core's foot straight down, as far as the page's stream has run,
 // warm, gone within `reach` units. near is how fast it falls, and power how strong it is where it is full.
+// The night's soft light from the visitor's side (night.ts, NIGHT.front) on the crust under the land: the roof's
+// broken lip faces the visitor, and with the moon behind the world it was a dark band where picture 9's is a pale grey
+// brown crust lit along its top. How strong, against the night's own.
+export const CRUST_LIGHT = { power: 2.5 } as const;
+
 export const STREAM = { reach: 78, near: 26, power: 16, color: mix(color('flame'), color('hot'), 0.35) } as const;
 
 export interface StoneMaps {
@@ -203,6 +213,7 @@ vec3 stoneNormal;
 vec3 stoneAlbedo;
 float stoneRough;
 float stoneSheen;
+float stoneCrust;
 float stoneHash1( float n ) { return fract( sin( n * 12.9898 + 4.1414 ) * 43758.5453 ); }
 float stoneHash3( vec3 p ) { p = fract( p * 0.1031 ); p += dot( p, p.zyx + 31.32 ); return fract( ( p.x + p.y ) * p.z ); }
 float stoneNoise3( vec3 p ) {
@@ -278,6 +289,7 @@ vec4 stoneScallop( vec3 p, float cell, float seed ) {
 const STONE_FRAG = /* glsl */ `
 {
 	vec3 p = vStoneP, n = vStoneN / max( length( vStoneN ), 1e-6 );
+	stoneCrust = 0.0;
 	float facing = abs( dot( normalize( vNormal + vec3( 1e-6 ) ), normalize( vViewPosition + vec3( 1e-6 ) ) ) );
 	vec3 toC = ${C} - p;
 	float dC = max( length( toC ), 1e-3 );
@@ -354,7 +366,8 @@ const STONE_FRAG = /* glsl */ `
 			float d = ( fract( u ) - o ) * P / max( bTl, 0.18 );
 			float hk = stoneHash1( k * 3.71 + seed + 0.5 );
 			float runs = s == 0 ? ${f(STONE.bed.run[0])} : ${f(STONE.bed.run[1])};
-			float there = smoothstep( hk, hk + 0.14, stoneNoise3( p / runs + vec3( k * 0.73, seed, 0.0 ) ) * ( s == 0 ? bed.w : 0.3 + 0.4 * bed.w ) );
+			// A block the sculpt left unbedded has no partings at all: on every block they read as planks and wood grain.
+			float there = step( 0.2, bed.w ) * smoothstep( hk, hk + 0.14, stoneNoise3( p / runs + vec3( k * 0.73, seed, 0.0 ) ) * ( s == 0 ? bed.w : 0.3 + 0.4 * bed.w ) );
 			float wR = mix( s == 0 ? ${f(STONE.bed.riser[0])} : ${f(STONE.bed.riser[2])}, s == 0 ? ${f(STONE.bed.riser[1])} : ${f(STONE.bed.riser[3])}, stoneHash1( k * 5.3 + seed ) );
 			// Seen at least a pixel and a half wide, or faded to the tone it averages to.
 			float seenR = smoothstep( 1.0, 2.2, wR / pix ) * there * across * edgeOn;
@@ -379,6 +392,8 @@ const STONE_FRAG = /* glsl */ `
 		float underLand = sqrt( max( 1.0, ${f(WORLD.top * WORLD.top)} - dot( p.xz, p.xz ) ) ) - ${f(WORLD.top)} - p.y;
 		float crustK = 1.0 - smoothstep( ${f(STONE.crust.near)}, ${f(STONE.crust.far)}, min( inside, underLand ) + 12.0 * ( stoneNoise3( p / 19.0 + 3.0 ) - 0.5 ) );
 		float moonK = smoothstep( 0.05, 0.5, moon ) * smoothstep( 0.0, 0.3, dot( n, ${MOON} ) );
+		// Only the crust under the land: on the planet's outer shell at the sides it lit broad flat planes.
+		stoneCrust = ( 1.0 - smoothstep( ${f(STONE.crust.near)}, ${f(STONE.crust.far)}, underLand + 12.0 * ( stoneNoise3( p / 19.0 + 3.0 ) - 0.5 ) ) ) * smoothstep( 0.1, 0.5, open );
 
 		// A convex edge turned to the core is chipped pale: a worn lip a unit and a half to three wide, missing here and
 		// there, with a bevel turned to the core. Where two plates meet in a concave crease, a warm dark lies in the
@@ -414,6 +429,7 @@ const STONE_FRAG = /* glsl */ `
 
 	// The color: the block's tone, the stains, the knapped relief, the grain, the hot zone, the crust, the marks.
 	c *= 0.93 + 0.14 * bTone;
+	c *= mix( ${v3(STONE.blockHue[0])}, ${v3(STONE.blockHue[1])}, stoneHash1( bTone * 31.7 + 2.3 ) );
 	float stA = stoneNoise3( p / ${f(STONE.stain.wide[0])} + bOff * 1.1 ), stB = stoneNoise3( p / ${f(STONE.stain.wide[1])} + 6.1 );
 	c *= mix( ${f(STONE.stain.range[0])}, ${f(STONE.stain.range[1])}, smoothstep( 0.2, 0.8, ${f(1 - STONE.stain.small)} * stA + ${f(STONE.stain.small)} * stB ) );
 	float redK = ${f(STONE.stain.red[1])} * smoothstep( 0.4, 0.75, stoneNoise3( p / ${f(STONE.stain.red[0])} + bOff * 0.3 + 2.9 ) );
@@ -509,6 +525,13 @@ const STREAM_LIGHT = /* glsl */ `
 	reflectedLight.directDiffuse += ${v3(STREAM.color)} * ( ${f(STREAM.power)} * uStoneStreamPower * uStoneStream.x * fall * clamp( ( c + 0.3 ) / 1.3, 0.0, 1.0 ) ) * BRDF_Lambert( material.diffuseContribution );
 }`;
 
+const FRONT = v3(new THREE.Vector3(...NIGHT.front.toward).normalize().toArray());
+const CRUST_FRONT = /* glsl */ `
+{
+	float k = stoneCrust * pow( clamp( dot( stoneNormal, ${FRONT} ), 0.0, 1.0 ), 1.3 );
+	reflectedLight.directDiffuse += ${v3(color('pale'))} * ( ${f(CRUST_LIGHT.power * NIGHT.front.power)} * k ) * BRDF_Lambert( material.diffuseContribution );
+}`;
+
 // How much a face of the stone mirrors the light, against what a standard material does. Broken sandstone is dull: at
 // the standard share the core's light came off every lit face as an orange sheen, which was most of what a lit face
 // showed whatever the stone's own color, and why it read as pumpkin and not peach tan.
@@ -535,7 +558,7 @@ export function stoneShader(sh: Shader, maps: StoneMaps, own = false, grainOnly 
   fr = after(fr, 'roughnessmap_fragment', 'roughnessFactor = stoneRough;');
   fr = after(fr, 'normal_fragment_maps', 'normal = normalize( ( viewMatrix * vec4( stoneNormal, 0.0 ) ).xyz );');
   fr = after(fr, 'lights_physical_fragment', SHEEN);
-  fr = after(fr, 'lights_fragment_begin', STREAM_LIGHT);
+  fr = after(fr, 'lights_fragment_begin', grainOnly ? STREAM_LIGHT : STREAM_LIGHT + CRUST_FRONT);
   sh.fragmentShader = fr;
 }
 

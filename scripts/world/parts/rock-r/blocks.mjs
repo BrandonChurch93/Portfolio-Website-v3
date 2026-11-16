@@ -19,7 +19,9 @@ import { shellAlong, edgeZ, CORE_PX, J, VIEW, norm, dot } from './relief.mjs';
 export const BY = 2, MARGIN = 48;
 // The fan of a great plate: few, large cells, each one plane over 120 to 190 of the picture's pixels, with low steps:
 // on a plate turned hard to the core a high step's face is what the visitor sees, and read as a stair.
-const GREAT = { wedge: [0.32, 0.55], ring: [120, 190], drop: [2.5, 6] };
+// Round 7: wide wedges, so its tiers follow the ball's curve, and its blocks of a middle size half as stepped: a plate
+// turned hard to the core is seen at a slant, and every small step on it showed as a row of bumps.
+const GREAT = { wedge: [0.9, 1.5], ring: [90, 150], drop: [2.5, 6], pieces: 0.5, scars: 0.3 };
 const C = L.CORE.at;
 
 export const BLOCKS = [
@@ -33,14 +35,15 @@ export const BLOCKS = [
   { name: 'right-1', kind: 'plate', slabs: [43, 86, 87], z: 105, lean: 0.6, thick: 62, fan: GREAT },
   { name: 'right-2', kind: 'plate', slabs: [37, 28, 23], z: 170, lean: 1.0, thick: 48, fan: GREAT },
   { name: 'left-2', kind: 'plate', slabs: [26], z: 75, lean: 1.0, thick: 52, fan: GREAT },
-  { name: 'left-1', kind: 'plate', slabs: [60, 49, 54, 46, 75, 83, 85], z: 160, lean: 1.1, thick: 66, fan: GREAT },
+  // Round 7: turned less hard to the core, so its broken face is what is seen and not its side.
+  { name: 'left-1', kind: 'plate', slabs: [60, 49, 54, 46, 75, 83, 85], z: 160, lean: 0.55, thick: 66, fan: GREAT },
   { name: 'left-low', kind: 'plate', slabs: [88, 95, 97, 99], z: 215, lean: 0.95, thick: 58, fan: GREAT },
   // Recesses turned from the core, lit only by what bounces.
   { name: 'shade-left', kind: 'shade', slabs: [47], z: 0, out: 0.9, thick: 40 },
   { name: 'shade-right', kind: 'plate', slabs: [22], z: 120, lean: 0.5, out: 0.3, thick: 40 },
   // The floor: a ledge under the core, its top turned up to the core, and under its front edge a dark belly turned
   // down and out, from the core. Both stand behind the stream's line, which falls in front of them.
-  { name: 'floor', kind: 'floor', slabs: [84, 81, 70, 96, 98, 93], cut: ['lane', 'belly', 'recess'], z: 140, up: 0.4, lean: 0.2, thick: 70 },
+  { name: 'floor', kind: 'floor', slabs: [84, 81, 70, 96, 98, 93], cut: ['lane', 'belly', 'recess'], z: 140, down: 0.2, thick: 70 },
   { name: 'belly', kind: 'belly', slabs: [84, 81, 70, 96, 98, 93], cut: ['lane'], only: 'belly', z: 152, down: 0.75, out: 0.25, thick: 70 },
   // Behind the stream the shelf is set back, so the stream falls in front of its lit lip.
   { name: 'floor-back', kind: 'floor', slabs: [84, 81, 70, 96, 98, 93], only: 'lane', z: 112, up: 0.5, lean: 0.3, thick: 60 },
@@ -54,9 +57,13 @@ export const BLOCKS = [
   { name: 'lid-left', kind: 'roof', slabs: [21, 30, 14, 29], cut: 'stratL', band: { foot: 24, keep: false }, back: 85, down: 0.2, out: 0.5, thick: 110 },
   { name: 'lid-mid', kind: 'roof', slabs: [8, 5, 15], band: { foot: 26, keep: false }, back: 80, down: 0.15, out: 0.5, thick: 120 },
   { name: 'lid-right', kind: 'roof', slabs: [3], band: { foot: 26, keep: false }, back: 80, down: 0.15, out: 0.5, thick: 120 },
-  { name: 'teeth-left', kind: 'roof', slabs: [21, 30, 14, 29], cut: 'stratL', band: { foot: 24, keep: true }, back: 28, down: 0.55, lean: 0.35, thick: 90 },
-  { name: 'teeth-mid', kind: 'roof', slabs: [8, 5, 15], band: { foot: 26, keep: true }, back: 14, down: 0.55, lean: 0.35, thick: 90 },
-  { name: 'teeth-right', kind: 'roof', slabs: [3], band: { foot: 26, keep: true }, back: 14, down: 0.5, lean: 0.35, thick: 90 },
+  { name: 'teeth-left', kind: 'roof', slabs: [21, 30, 14, 29], cut: 'stratL', band: { foot: 24, keep: true }, back: 28, down: 0.55, out: 0.35, thick: 90 },
+  { name: 'teeth-mid', kind: 'roof', slabs: [8, 5, 15], band: { foot: 26, keep: true }, back: 14, down: 0.55, out: 0.35, thick: 90 },
+  { name: 'teeth-right', kind: 'roof', slabs: [3], band: { foot: 26, keep: true }, back: 14, down: 0.5, out: 0.35, thick: 90 },
+  // Round 7: the roof's two hanging lobes, to about 400 down, dark against the lit ring, turned down and out from the
+  // core. They take every pixel of their shapes, over whatever slab is there, and hang in front of the ring's plates.
+  { name: 'lobe-left', kind: 'roof', slabs: [], add: 'lobeL', over: true, back: 40, down: 0.5, out: 0.45, thick: 80 },
+  { name: 'lobe-right', kind: 'roof', slabs: [], add: 'lobeR', over: true, back: 40, down: 0.5, out: 0.45, thick: 80 },
   { name: 'hang-right', kind: 'plate', slabs: [6, 12, 18], back: 70, lean: 1.4, thick: 44, tuck: true },
   // The frame: heavy masses standing forward at each side, near black, with voids between them.
   { name: 'frame-left-top', kind: 'frame', slabs: [42, 50, 44], cut: 'stratL', z: 0, out: 0.4, down: 0.6, thick: 130 },
@@ -70,7 +77,23 @@ export const BLOCKS = [
   { name: 'frame-right-edge', kind: 'frame', slabs: [39, 71, 17, 16], add: 'tornR', z: 0, out: -0.25, down: 0.18, thick: 130 },
   { name: 'frame-right-mid', kind: 'frame', slabs: [33, 76], z: 330, lean: 0.85, down: 0.05, thick: 120 },
   { name: 'frame-right-low', kind: 'frame', slabs: [90], z: 0, out: -0.2, down: 0.2, thick: 130 },
+  // Round 7: the far inner wall of the planet seen through the open bottom, under the floor, well behind the core and
+  // turned down from it, lit only by what bounces (Fable's ruling of Nov 16: the stream falls in front of it).
+  { name: 'under', kind: 'frame', slabs: [], add: 'under', z: 20, down: 0.35, thick: 70 },
 ];
+// Round 7: the deep black wedges of picture 9's ring, where no slab of the ring is: left of the ball, between the
+// great left slab and the ring, and two at the right. The plates of the ring are cut away inside them, so what is far
+// behind shows, in shadow.
+export const VOIDS = [
+  [[528, 395], [540, 402], [552, 418], [561, 444], [566, 478], [559, 506], [546, 497], [535, 470], [524, 434]],
+  [[453, 338], [464, 348], [472, 386], [474, 420], [468, 452], [460, 468], [453, 436], [449, 388]],
+  [[838, 384], [851, 393], [863, 424], [871, 466], [868, 506], [857, 526], [847, 498], [841, 452]],
+  [[884, 330], [895, 341], [899, 392], [905, 466], [901, 532], [893, 558], [886, 518], [882, 452], [879, 380]],
+  // Under the roof, over the ball: the black band whose lower edge is the roof's sawtooth against the lit ring.
+  [[540, 290], [840, 290], [834, 314], [819, 333], [801, 320], [789, 336], [758, 342], [741, 331], [727, 345], [703, 340], [688, 346], [661, 333], [649, 343], [622, 337], [611, 326], [590, 340], [571, 330], [553, 334], [546, 318]],
+];
+// The kinds of block the wedges are cut from.
+export const VOIDED = ['plate', 'shade'];
 
 // Places in the picture a block is cut to, in its pixels: the shelf behind the stream, a ragged bay round its line.
 const SHAPES = {
@@ -81,6 +104,10 @@ const SHAPES = {
   recess: [[566, 528], [590, 536], [612, 534], [640, 542], [668, 546], [708, 547], [736, 541], [764, 544], [790, 536], [812, 530], [818, 541], [792, 549], [762, 553], [730, 551], [700, 556], [668, 555], [636, 552], [606, 545], [584, 546], [560, 538]],
   // Under the floor's ledge: its belly, below a ragged line under the ledge's lit top.
   belly: [[430, 572], [470, 566], [508, 576], [546, 569], [580, 579], [622, 574], [660, 582], [700, 578], [742, 586], [786, 579], [830, 588], [880, 582], [930, 590], [930, 720], [430, 720]],
+  lobeL: [[438, 312], [532, 312], [528, 334], [519, 352], [514, 371], [503, 388], [497, 403], [489, 396], [481, 378], [470, 366], [462, 350], [449, 340], [442, 326]],
+  lobeR: [[820, 312], [908, 312], [905, 333], [898, 349], [893, 368], [884, 381], [877, 401], [868, 394], [862, 375], [852, 361], [845, 345], [833, 336], [825, 324]],
+  // Under the floor, the far inner wall: its top behind the floor's underside, its lower edge ragged.
+  under: [[380, 571], [430, 556], [482, 566], [530, 552], [577, 561], [626, 549], [676, 558], [722, 547], [770, 560], [815, 550], [866, 563], [918, 553], [962, 571], [1000, 590], [1036, 640], [1040, 688], [1028, 698], [1012, 680], [990, 690], [962, 674], [934, 684], [902, 666], [872, 660], [842, 649], [812, 656], [780, 641], [744, 649], [704, 637], [664, 646], [622, 639], [592, 652], [560, 645], [530, 662], [500, 670], [470, 662], [440, 682], [410, 690], [384, 702], [356, 706], [334, 698], [330, 650], [352, 610]],
   lane: [[646, 510], [659, 521], [653, 533], [662, 547], [656, 558], [666, 571], [661, 584], [669, 596], [681, 594], [690, 603], [701, 597], [713, 599], [716, 586], [710, 574], [721, 561], [714, 549], [724, 537], [717, 524], [730, 510]],
 };
 // What of the picture is not the rock though it looked it: the stream's own light under the shelf. Its top carries on
@@ -182,6 +209,11 @@ export async function plan({ draft = false } = {}) {
   const rockMask = new Uint8Array(S.W * S.H);
   for (let i = 0; i < rockMask.length; i++) rockMask[i] = S.kind[i] === 1 || S.kind[i] === 2 ? 1 : 0;
   for (const poly of NOT_ROCK) for (let y = 0; y < S.H; y++) for (let x = 0; x < S.W; x++) if (inside(poly, x + 0.5, y + 0.5)) rockMask[x + y * S.W] = 0;
+  // The far wall under the floor is rock behind the stream too: the stream falls in front of it.
+  for (let y = 0; y < S.H; y++) for (let x = 0; x < S.W; x++) if (inside(SHAPES.under, x + 0.5, y + 0.5)) rockMask[x + y * S.W] = 1;
+  const voidMask = new Uint8Array(S.W * S.H);
+  for (const poly of VOIDS) for (let y = 0; y < S.H; y++) for (let x = 0; x < S.W; x++) if (inside(poly, x + 0.5, y + 0.5)) voidMask[x + y * S.W] = 1;
+  const voids = { x0: 0, y0: 0, w: S.W, h: S.H, by: 1, sd: signed(voidMask, S.W, S.H, 1) };
   const rock = { x0: 0, y0: 0, w: S.W, h: S.H, by: 1, sd: signed(rockMask, S.W, S.H, 1) };
   const shapes = (v) => (v ? (Array.isArray(v) ? v : [v]).map((q) => SHAPES[q]) : []);
   const blocks = BLOCKS.map((b, k) => {
@@ -193,7 +225,7 @@ export async function plan({ draft = false } = {}) {
     for (let i = 0; i < W * H; i++) {
       const s = m.slab[i], x = i % W, y = (i / W) | 0, px = (x + 0.5) / BY, py = (y + 0.5) / BY;
       let take = s >= 0 && b.slabs.includes(s);
-      if (!take && adds.length && (s < 0 || b.slabs.includes(s)) && adds.some((q) => inside(q, px, py))) take = true;
+      if (!take && adds.length && (b.over || s < 0 || b.slabs.includes(s)) && adds.some((q) => inside(q, px, py))) take = true;
       if (!take) continue;
       if (cuts.some((q) => inside(q, px, py))) continue;
       if (onlys.length && !onlys.some((q) => inside(q, px, py))) continue;
@@ -251,5 +283,5 @@ export async function plan({ draft = false } = {}) {
     const P = L.fromPicture(...b.at, z), n = faceNormal(b, b.at, P);
     b.z = z; b.n = n; b.h = dot(n, P); b.seed = 17 + b.id * 31;
   }
-  return { blocks, rock, draft, core: { at: [...C], r: L.CORE.r } };
+  return { blocks, rock, voids, voided: VOIDED, draft, core: { at: [...C], r: L.CORE.r } };
 }

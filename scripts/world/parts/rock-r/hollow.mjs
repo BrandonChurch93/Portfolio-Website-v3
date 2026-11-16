@@ -33,11 +33,11 @@ export const BEDS = { thick: [5, 34], step: 1.4, lean: 0.08, warp: 9 };
 // partings are of very different lengths. `share` of the blocks of a kind are bedded at all: the rest are clean. The
 // riser's slope, rise over run, is `steep`.
 export const BEDDING = {
-  plate: { share: 0.75, thick: [7, 30], deep: [0.8, 3.6], tilt: [0.25, 0.7], pinch: 70, steep: 1.6 },
-  floor: { share: 1, thick: [6, 18], deep: [1.5, 4.5], tilt: [0.5, 0.9], pinch: 90, steep: 1.6 },
-  roof: { share: 1, thick: [7, 20], deep: [2.5, 7], tilt: [0, 0], pinch: 80, steep: 1.6, level: true },
-  frame: { share: 0.6, thick: [9, 34], deep: [1, 4], tilt: [0.3, 0.8], pinch: 70, steep: 1.6 },
-  belly: { share: 1, thick: [6, 16], deep: [1.5, 4], tilt: [0.4, 0.9], pinch: 60, steep: 1.6 },
+  plate: { share: 0, thick: [7, 30], deep: [0.8, 3.6], tilt: [0.25, 0.7], pinch: 70, steep: 1.6 },
+  floor: { share: 0, thick: [6, 18], deep: [1.5, 4.5], tilt: [0.5, 0.9], pinch: 90, steep: 1.6 },
+  roof: { share: 0, thick: [7, 20], deep: [2.5, 7], tilt: [0, 0], pinch: 80, steep: 1.6, level: true },
+  frame: { share: 0, thick: [9, 34], deep: [1, 4], tilt: [0.3, 0.8], pinch: 70, steep: 1.6 },
+  belly: { share: 0, thick: [6, 16], deep: [1.5, 4], tilt: [0.4, 0.9], pinch: 60, steep: 1.6 },
 };
 // The fan of cells a block's face is broken into, round the core: how wide a wedge is (radians), how far apart its
 // breaks across are (pixels), how far each cell leans in toward the core and twists (degrees), where the first cell
@@ -45,23 +45,43 @@ export const BEDDING = {
 // how steep that drop's face is (rise over run: it faces away from the core), how much a cell's face is dished in
 // (a shell shaped break) or swells, so the light falls across it, how far the wedges curl (radians for
 // each 100 pixels across, mirrored either side of the core, so they lean as picture 9's do).
+// Round 7: the fan wraps the ball. Its wedges are wide and its breaks across are curves round the core that wander
+// (`wave`, pixels) and slope a little across the wedge (`slope`), so a plate's cells are tiers whose long sides follow
+// the ball's curve, as picture 9's folded layers do: round 6's narrow wedges of long cells read as sheets shattered
+// away from the ball. A block away from the ball (`wrap: false`) is broken into large cells of its own instead
+// (BIG): tiers round a core far off are parallel bands, and read as planks.
 export const FAN = {
-  all: { wedge: [0.26, 0.5], ring: [80, 150], lean: [5, 13], twist: 5, sunk: [-8, 4], drop: [8, 17], dish: 0.0011, steep: 1.3, spiral: 0.22, slant: 0.45, rise: 16, range: [-22, 12] },
-  frame: { wedge: [0.16, 0.34], ring: [55, 120], lean: [-4, 12], twist: 10, drop: [1, 4], scars: 0.4 },
-  roof: { wedge: [0.22, 0.42], ring: [60, 120], lean: [2, 9], twist: 8, drop: [5, 12] },
-  floor: { wedge: [0.2, 0.36], ring: [50, 100], lean: [2, 8], drop: [5, 10] },
-  belly: { wedge: [0.2, 0.36], ring: [40, 90], lean: [-4, 6], twist: 10, drop: [4, 10] },
+  all: { wrap: true, wedge: [0.8, 1.4], ring: [38, 66], wave: 9, slope: 0.18, lean: [5, 13], twist: 6, sunk: [-8, 4], drop: [7, 15], dish: 0.0011, steep: 1.3, spiral: 0.12, slant: 0, rise: 16, range: [-22, 12] },
+  frame: { wrap: false, lean: [-4, 12], twist: 10, drop: [1, 4], scars: 0.4 },
+  roof: { wrap: false, lean: [2, 9], twist: 8, drop: [5, 12] },
+  floor: { wrap: false, lean: [2, 8], drop: [5, 10] },
+  belly: { wrap: false, lean: [-4, 6], twist: 10, drop: [4, 10] },
   shade: { drop: [4, 10] },
 };
+// The large cells of a block away from the ball: a jittered grid on its face, `size` units apart, each one plane of
+// its own tilted `tilt` degrees (least, most) any way, standing `step` units proud or sunk, and how steep the face
+// between two cells is.
+// How far a broken side wanders in and out as it goes back from the face, in units.
+export const SIDE_RAG = 3.2;
+export const BIG = { size: 64, jitter: 0.8, tilt: [3, 11], step: 7, steep: 1.2, round: 3 };
+// Every large cell is broken again into blocks of a middle size by a few long fractures (`lines`, least and most),
+// straight, each at an angle of its own and passing within `spread` units of the cell's middle, so a cell is three to
+// seven blocks of 10 to 60 units with no two fractures parallel, and the fractures of one cell end at its border. Each
+// block is tilted `tilt` degrees its own way and stands `step` proud or sunk; `missing` of them are gone to a black
+// notch `notch` deep; `scoop` of them hold a shell shaped scoop `dish` deep; the arris between two is worn round over
+// `round` units, its face `steep`. A fracture wanders `warp` units over `warpOver`. The cave's bowl has cells `bowl`
+// apart of its own. Round 7's first try, a grid of small cells, read as a net of cracks.
+export const SUB = { lines: [2, 4], spread: 26, least: 0.5, warp: 2.5, warpOver: 21, tilt: [1.5, 5.5], step: 2.2, missing: 0.1, notch: [6, 11], scoop: 0.25, dish: 2.4, round: 1.8, steep: 1.5, bowl: 70, size: 22 };
 // The laminations on a slab's face: grooves running its length, how far apart (units, each its
 // own), how wide and deep, the share left out, and how far one lamina stands from the next.
 export const LAMINAE = { apart: 13, jitter: 0.9, half: 1.7, deep: [0.4, 1.1], gone: 0.45, offset: 0.25, pinch: 40 };
 // The knapped scars at a face's edges: three sizes, each a concave shell scar, how far in from the edge it reaches
 // and how deep at the edge, in units. The smallest only at the very edge.
 // Round 6: the smallest, which scalloped every edge into a torn paper fringe, is gone, and the middle one is shallower.
+// Round 7: shallower again. On a plate seen at a slant every scar was a dark pit, and they lay in rows like a cracker.
 export const DENTS = [
-  { size: 20, band: 26, deep: 5 },
-  { size: 9, band: 10, deep: 1.4 },
+  { size: 20, band: 26, deep: 2 },
+  { size: 9, band: 10, deep: 0.5 },
 ];
 // Kept so the old probes still run: round 5 has no knapped facets inside a face.
 export const FACETS = { tilt: [0, 0], steep: [0, 0], jitter: 0, lift: 0, dish: [0, 0] };
@@ -69,7 +89,7 @@ export const FACETS = { tilt: [0, 0], steep: [0, 0], jitter: 0, lift: 0, dish: [
 export const SWELL = { deep: 1.1, over: 85 };
 // The backing: how far behind the core's middle it is straight behind the core, and how much further back it goes
 // for each pixel out from the core, and the furthest back it goes (inside the space the hollow is made in).
-export const BACKING = { at: -95, back: 0.32, from: 100, thick: 70, least: -205 };
+export const BACKING = { at: -95, back: 0.32, from: 100, thick: 70, least: -205, deep: -268 };
 // The core's clearance: nothing nearer its middle than this, in units, give or take a ragged few, and nothing in
 // front of it inside its outline.
 export const CLEAR = { r: 116, rag: 12, disc: 101, open: 0.3 };
@@ -79,8 +99,10 @@ export const CLEAR = { r: 116, rag: 12, disc: 101, open: 0.3 };
 // right), ragged at three sizes, with a shell `thick` units behind it and a slow ripple so its light falls softly. It is
 // shallow (a large curve): a deep one round the light at its focus is lit evenly, and read as a flat disc, and one
 // that falls back toward its lip read as a dark halo.
-export const BOWL = { deep: 122, curve: 400, lip: 1.15, wide: [[0, 0.1], [40, 0.02], [90, -0.14], [140, 0.0], [180, 0.12], [230, 0.04], [270, -0.12], [320, 0.06]], rag: [0.1, 0.06, 0.03], thick: 46, ripple: 6, rippleOver: 55,
-  terraces: [{ at: 1.02, fall: 6, wide: 5, rag: 9 }, { at: 1.1, fall: 7, wide: 5, rag: 8 }] };
+// broken: how much more the bowl's blocks are tilted, stepped and missing than a face's: lit evenly by the ball at its
+// focus, they read as a pale peach donut.
+export const BOWL = { seed: 911, broken: 3.4, deep: 122, curve: 400, lip: 1.15, wide: [[0, 0.1], [40, 0.02], [90, -0.14], [140, 0.0], [180, 0.12], [230, 0.04], [270, -0.12], [320, 0.06]], rag: [0.1, 0.06, 0.03], thick: 46, ripple: 6, rippleOver: 55,
+  terraces: [] };
 // Right of `from` (units across), rock standing in front of the land's edge falls away forward by `fall` under it,
 // and so does every block tucked under the land (the roof's lid and teeth) wherever it is.
 export const BEVEL = { from: 200, fall: 2.5 };
@@ -145,7 +167,9 @@ function prepare(b) {
   const P0 = L.fromPicture(b.at[0], b.at[1], b.z);
   const t1 = norm(cross(b.n, Math.abs(b.n[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0])), t2 = cross(b.n, t1);
   b.P0 = P0; b.t1 = t1; b.t2 = t2;
-  b.beds = b.kind === 'plate' || b.kind === 'floor';
+  // Round 7: no courses stepped into a block's broken sides. A step that jumped from one course to the next was a
+  // break in the field itself, and the surface maker drew it as a column of square teeth on a side seen edge on.
+  b.beds = false;
   b.tuck = b.tuck ?? (b.kind === 'roof' && b.back > 0);
   b.laminae = b.kind === 'plate' || b.kind === 'floor' || b.kind === 'roof';
   // The laminations run along the block's own length (its outline's long axis), on its face.
@@ -177,13 +201,12 @@ function prepare(b) {
   const scale = TAU / sum, turn0 = r(199) * TAU;
   b.wedges = [turn0];
   for (const wd of widths) b.wedges.push(b.wedges[b.wedges.length - 1] + wd * scale);
-  // Its breaks across: straight lines over the wedge, each at a slant of its own, never arcs round the core.
+  // Its breaks across: curves round the core over the wedge, each wandering and sloping its own way.
   b.rings = widths.map((_, k) => {
-    const out = [], mid = (b.wedges[k] + b.wedges[k + 1]) / 2;
+    const out = [];
     for (let j = 0, R = 0; R < 900; j++) {
       R += F.ring[0] + (F.ring[1] - F.ring[0]) * hash(b.seed * 3 + k, 300 + j);
-      const a = mid + F.slant * (hash(b.seed * 3 + k, 500 + j) - 0.5) * 2;
-      out.push({ R, d: [Math.cos(a), Math.sin(a)], cos: Math.cos(a - mid) });
+      out.push({ R, slope: F.slope * (hash(b.seed * 3 + k, 500 + j) - 0.5) * 2, wave: hash(b.seed * 3 + k, 700 + j) * 50 });
     }
     return out;
   });
@@ -236,13 +259,18 @@ function fanAt(b, px, py) {
   let k = 0;
   while (k < N - 1 && W[k + 1] - W[0] <= th) k++;
   const lo = th - (W[k] - W[0]), hi = W[k + 1] - W[0] - th;
-  const band = (kk) => { let j = 0, near = Infinity; for (const g of b.rings[kk]) { const p = dx * g.d[0] + dy * g.d[1] - g.R * g.cos; if (p > 0) j++; near = Math.min(near, Math.abs(p)); if (g.R > rr + 200) break; } return [j, near]; };
+  // How far out of a break across a place is, in pixels: the break is a curve round the core that wanders and slopes.
+  const across = (kk, g) => {
+    const a = th - (W[kk] - W[0]) - (W[kk + 1] - W[kk]) / 2, aa = a > Math.PI ? a - TAU : a < -Math.PI ? a + TAU : a;
+    return rr - g.R * (1 + g.slope * aa) - b.fan.wave * (L.noise(aa * 2.2 + g.wave, g.wave * 0.37, 0.5, 29) - 0.5) * 2;
+  };
+  const band = (kk) => { let j = 0, near = Infinity; for (const g of b.rings[kk]) { const p = across(kk, g); if (p > 0) j++; near = Math.min(near, Math.abs(p)); if (g.R > rr + 200) break; } return [j, near]; };
   const [j, dr] = band(k);
   const da = rr * Math.sin(Math.min(Math.min(lo, hi), 1.2));
   let other;
   if (da < dr) { const kk = lo < hi ? (k + N - 1) % N : (k + 1) % N; other = [kk, band(kk)[0]]; } else {
     let up = true, best = Infinity;
-    for (const g of b.rings[k]) { const p = dx * g.d[0] + dy * g.d[1] - g.R * g.cos; if (Math.abs(p) < best) { best = Math.abs(p); up = p < 0; } if (g.R > rr + 200) break; }
+    for (const g of b.rings[k]) { const p = across(k, g); if (Math.abs(p) < best) { best = Math.abs(p); up = p < 0; } if (g.R > rr + 200) break; }
     other = [k, up ? j + 1 : Math.max(0, j - 1)];
   }
   return { own: [k, j], other, d: Math.min(da, dr) * UNIT };
@@ -307,6 +335,78 @@ function dents(b, u, v, e) {
   return out;
 }
 
+// A break's edge worn round: 0 well inside a cell, the distance out of it well outside, eased between over `r`.
+const worn = (e, r) => (e <= -r ? 0 : e >= r ? e : ((e + r) * (e + r)) / (4 * r));
+
+// The nearest and next nearest points of a jittered grid, `size` apart, at a place (u, v), with how far the place is
+// from the border between them: the cells of a broken face.
+function nearest(seed, u, v, size, jitter) {
+  const gu = u / size, gv = v / size, iu = Math.floor(gu), iv = Math.floor(gv), pts = [];
+  for (let a = -1; a <= 1; a++) for (let c = -1; c <= 1; c++) {
+    const i = iu + a, j = iv + c, h = (q) => hash(seed + i * 7.31 + j * 1.97, q);
+    pts.push({ i, j, u: (i + 0.5 + jitter * (h(1) - 0.5)) * size, v: (j + 0.5 + jitter * (h(2) - 0.5)) * size });
+  }
+  let best = null, bd = Infinity;
+  for (const p of pts) { const d = (u - p.u) ** 2 + (v - p.v) ** 2; if (d < bd) { bd = d; best = p; } }
+  let other = null, e = Infinity;
+  for (const p of pts) {
+    if (p === best) continue;
+    const du = p.u - best.u, dv = p.v - best.v, l = Math.hypot(du, dv) || 1e-6;
+    const m = ((u - best.u) * du + (v - best.v) * dv) / l - l / 2;
+    if (-m < e) { e = -m; other = p; }
+  }
+  return { own: best, other, e };
+}
+// One piece's plane at a place: its tilt (degrees, least and most, any way), how far it stands proud, a scoop. h is
+// the piece's own hash, (cu, cv) a place it is round.
+function plane(h, cu, cv, u, v, tilt, step, missing, notch, scoop, dish, r) {
+  const ang = h(3) * TAU, g = Math.tan(((tilt[0] + (tilt[1] - tilt[0]) * h(4)) * Math.PI) / 180);
+  const du = u - cu, dv = v - cv;
+  let o = (h(2) - 0.5) * 2 * step;
+  if (h(1) < missing) o = -(notch[0] + (notch[1] - notch[0]) * h(6));
+  const sc = h(5) < scoop ? dish * Math.max(0, 1 - (du * du + dv * dv) / (r * r)) : 0;
+  return o + g * (Math.cos(ang) * du + Math.sin(ang) * dv) - sc;
+}
+// The pieces of a large cell (seed, round its middle cu, cv) at a place on the face: the height of the piece the
+// place is in and of the one across the nearest fracture, each with how far out of it the place is.
+export function piecesAt(seed, cu, cv, u, v, k = 1) {
+  const hc = (q) => hash(seed * 0.731 + 19.3, q);
+  const n = SUB.lines[0] + Math.floor((SUB.lines[1] - SUB.lines[0] + 1) * hc(1) * 0.999);
+  const wu = u + SUB.warp * (L.noise(u / SUB.warpOver, v / SUB.warpOver, (seed * 0.013) % 97, 37) - 0.5) * 2;
+  const wv = v + SUB.warp * (L.noise(u / SUB.warpOver + 5.3, v / SUB.warpOver, (seed * 0.013) % 97, 39) - 0.5) * 2;
+  let code = 0, near = Infinity, flip = 0;
+  // Each fracture's angle is spread round the half turn with a jitter, so no two are parallel.
+  const a0 = hc(2) * Math.PI;
+  for (let k = 0; k < n; k++) {
+    const a = a0 + (k + 0.3 * (hc(10 + k) - 0.5)) * (Math.PI / n), nu = Math.cos(a), nv = Math.sin(a);
+    const o = SUB.spread * (hc(20 + k) - 0.5) * 2, d = (wu - cu) * nu + (wv - cv) * nv - o;
+    // A fracture may stop part way: past a place along it of its own it is not there.
+    const along = -(wu - cu) * nv + (wv - cv) * nu, stop = hc(30 + k) < SUB.least ? 0 : Infinity, side = hc(40 + k) < 0.5 ? -1 : 1;
+    if (stop === 0 && along * side > SUB.spread * (hc(50 + k) - 0.3)) continue;
+    if (d > 0) code |= 1 << k;
+    if (Math.abs(d) < near) { near = Math.abs(d); flip = 1 << k; }
+  }
+  const at = (c) => { const h = (q) => hash(seed * 1.37 + c * 13.7 + 3.1, q); return plane(h, cu, cv, wu, wv, [SUB.tilt[0] * k, SUB.tilt[1] * k], SUB.step * k, SUB.missing * k, SUB.notch, SUB.scoop, SUB.dish, SUB.size * 0.7); };
+  if (!flip) return [[at(code), -1e3]];
+  return [[at(code), -near], [at(code ^ flip), near]];
+}
+// The large cells of a block at a place: its own and the one across the nearest break, each with its height and how
+// far out of it the place is, and that distance.
+function cellsAt(b, fu, fv, qx, qy) {
+  if (b.fan.wrap) {
+    const fan = fanAt(b, qx, qy), out = [];
+    for (const [[k, j], e] of [[fan.own, -fan.d], [fan.other, fan.d]]) {
+      const c = cellAt(b, k, j);
+      out.push({ H: c.o + c.g[0] * (fu - c.Q[0]) + c.g[1] * (fv - c.Q[1]) - c.dish * ((fu - c.Q[0]) ** 2 + (fv - c.Q[1]) ** 2), e, steep: b.fan.steep, round: BIG.round, key: b.seed * 97 + k * 31 + j, at: c.Q });
+    }
+    return { cells: out, d: fan.d };
+  }
+  const n = nearest(b.seed + 57, fu, fv, BIG.size, BIG.jitter);
+  const at = (p) => plane((q) => hash(b.seed * 1.3 + p.i * 3.17 + p.j * 11.9, q), p.u, p.v, fu, fv, BIG.tilt, BIG.step, 0, [0, 0], 0, 0, 1);
+  const cell = (p, e) => ({ H: at(p), e, steep: BIG.steep, round: BIG.round, key: b.seed * 97 + p.i * 7 + p.j * 131, at: [p.u, p.v] });
+  return { cells: [cell(n.own, -n.e), cell(n.other, n.e)], d: n.e };
+}
+
 const boxGap = (p, lo, hi) => Math.hypot(Math.max(0, lo[0] - p[0], p[0] - hi[0]), Math.max(0, lo[1] - p[1], p[1] - hi[1]), Math.max(0, lo[2] - p[2], p[2] - hi[2]));
 
 // How far a place is outside a block: its own field.
@@ -327,18 +427,22 @@ export function block(b, x, y, z) {
     side -= BEDS.step * (hash(kk, b.seed) - 0.5) * 2 * pinch;
   }
   if (side > 30) return Math.max(side, 1);
-  // The face: the fan's cells, each one plane with its laminations; at a break the higher cell's edge falls to the
-  // lower in a steep face turned from the core. Near every edge the face is knapped.
+  // The broken side is not the outline drawn straight back: it wanders in and out as it goes back, so the outline's
+  // kinks do not run along it as ruled stripes.
+  // Slow: a finer wander drew a side seen broad as a field of pits.
+  if (u0 > 0.5) side += SIDE_RAG * Math.min(1, u0 / 6) * (L.noise(qx / 20, qy / 20, u0 / 16, (b.seed + 17) & 1023) - 0.5) * 2;
+  // The face: its large cells (a fan's tiers round the core, or a grid of its own), each one plane, and in every one
+  // the blocks of a middle size. At a break the higher edge is worn round and falls to the lower in a steep face.
   const sw = SWELL.deep * (L.noise(x / SWELL.over, y / SWELL.over, z / SWELL.over, (b.seed + 3) & 1023) - 0.5) * 2;
   const rel = [q[0] - b.P0[0], q[1] - b.P0[1], q[2] - b.P0[2]], fu = dot(rel, b.t1), fv = dot(rel, b.t2);
-  const fan = fanAt(b, qx, qy);
-  const scar = dents(b, fu, fv, Math.max(0, Math.min(fan.d, -outline))) * (b.fan.scars ?? 1);
-  const T = b.fan.steep, bed = b.bedded ? bedding(b, x, y, z) : 0;
+  const big = cellsAt(b, fu, fv, qx, qy);
+  // Knapped only at the block's own outline: at every break inside it as well, the scars covered a narrow block as a
+  // waffle (round 7's first draft).
+  const scar = dents(b, fu, fv, Math.max(0, -outline)) * (b.fan.scars ?? 1);
   let face = Infinity;
-  for (const [[k, j], e] of [[fan.own, -fan.d], [fan.other, fan.d]]) {
-    const c = cellAt(b, k, j);
-    const H = c.o + c.g[0] * (fu - c.Q[0]) + c.g[1] * (fv - c.Q[1]) - c.dish * ((fu - c.Q[0]) ** 2 + (fv - c.Q[1]) ** 2) + (b.bedded ? bed : 0);
-    face = Math.min(face, Math.max(s - H + sw + scar + T * Math.max(0, e), e - 24));
+  for (const C of big.cells) for (const [h, e] of piecesAt(C.key, C.at[0], C.at[1], fu, fv, b.fan.pieces ?? 1)) {
+    const t = s - C.H - h + sw + scar + C.steep * worn(C.e, C.round) + SUB.steep * worn(e, SUB.round);
+    face = Math.min(face, Math.max(t, C.e - 24, e - 12));
   }
   let f = Math.max(face, -s - b.thick, side);
   // A block tucked under the land falls away forward under its edge, so no flat top of it shows in front of the land.
@@ -352,7 +456,9 @@ export function block(b, x, y, z) {
 // The backing: the inner shell of the cave far behind everything, falling back as it goes out from the core.
 function backing(x, y, z, px, py) {
   const rho = Math.hypot(px - A.corePx[0], py - A.corePx[1]);
-  const z0 = Math.max(BACKING.least, BACKING.at - BACKING.back * Math.max(0, rho - BACKING.from));
+  let z0 = Math.max(BACKING.least, BACKING.at - BACKING.back * Math.max(0, rho - BACKING.from));
+  // Behind a wedge the backing is far back, so the core's light that comes in at the wedge's slant lands out of sight.
+  if (A.voids) { const k = Math.min(1, Math.max(0, 0.5 - sample(A.voids, px, py) / 16)); z0 += (BACKING.deep - z0) * k * k * (3 - 2 * k); }
   const zb = z0 + 6 * (L.noise(x / 50, y / 50, 3.3, 77) - 0.5);
   return Math.max(z - zb, z0 - BACKING.thick - z);
 }
@@ -385,9 +491,24 @@ function bowl(x, y, z, px, py) {
   }
   const surf = C[2] - BOWL.deep + (rho * rho) / (2 * BOWL.curve) + ripple + ter;
   // Distance in front of the bowl's face, near enough: along z, eased by its slope.
-  const slope = rho / BOWL.curve, inFront = (z - surf) / Math.sqrt(1 + slope * slope);
-  const inLip = (lipPx - rpx) * UNIT;
-  return { hollow: Math.min(inFront, inLip), shell: Math.max(-inFront, inFront + BOWL.thick, -inLip) };
+  // Round 7: the bowl is broken into the same blocks of a middle size as every face: smooth, it read as a flat brown
+  // crescent round the ball.
+  const cells = nearest(BOWL.seed, x, y, SUB.bowl, 0.8);
+  let raised = Infinity;
+  for (const [cell, ce] of [[cells.own, -cells.e], [cells.other, cells.e]]) {
+    for (const [h, e] of piecesAt(BOWL.seed + cell.i * 7 + cell.j * 131, cell.u, cell.v, x, y, BOWL.broken)) raised = Math.min(raised, Math.max(z - surf - h + SUB.steep * (worn(e, SUB.round) + worn(ce, SUB.round)), e - 12, ce - 12));
+  }
+  const slope = rho / BOWL.curve, inFront = raised / Math.sqrt(1 + slope * slope);
+  // The lip draws in as it goes back, so its wall is never seen edge on: along the line of sight the surface maker
+  // drew it as a saw of square teeth.
+  const inLip = (lipPx - rpx) * UNIT - 0.5 * Math.max(0, surf - z);
+  // Its shell is the rock behind its face, `thick` deep, inside its lip. Round 6 had the signs the wrong way round, so the
+  // shell was never rock, and where no block stood behind the bowl the backing showed: the flat brown crescent.
+  // In front of the bowl the lip draws in toward the visitor, so what it cuts from the blocks in front is an undercut
+  // hidden under their edges and not a wall along the line of sight, which came out as a saw of teeth round the ball.
+  // (Opened toward the visitor instead, it carved away everything in front of the ball.)
+  const openLip = (lipPx - rpx) * UNIT - 0.3 * Math.max(0, z - surf);
+  return { hollow: Math.min(inFront, openLip), shell: Math.max(inFront, -inFront - BOWL.thick, -inLip) };
 }
 
 // A stone of rubble: the inside of a few planes round its middle.
@@ -404,10 +525,12 @@ function stone(st, x, y, z) {
 export function bare(x, y, z) {
   const [px, py] = L.pictured(x, y, z);
   let d = backing(x, y, z, px, py);
-  for (const b of A.blocks) { const v = block(b, x, y, z); if (v < d) d = v; }
+  // Straight back along the line of sight: widened as it went back, each wedge showed the layers it cut through as rings.
+  const cut = A.voids ? -sample(A.voids, px, py) * UNIT + 6 * (L.noise(px / 9, py / 9, 3.7, 83) - 0.5) * 2 : -Infinity;
+  for (const b of A.blocks) { let v = block(b, x, y, z); if (cut > -30 && A.voided.includes(b.kind)) v = Math.max(v, cut); if (v < d) d = v; }
   // The cave round the core: nothing in its hollow, and its smooth bowl behind.
   const bw = bowl(x, y, z, px, py);
-  d = Math.min(Math.max(d, bw.hollow), bw.shell);
+  d = Math.min(Math.max(d, bw.hollow), Math.max(bw.shell, cut));
   // Inside the picture's rock, inside the planet, under the land.
   d = Math.max(d, sample(A.rock, px, py) * UNIT);
   d = Math.max(d, (L.shell(x, y, z) - 1) * L.WORLD.deep + 2);
@@ -456,7 +579,7 @@ export function owner(x, y, z) {
 export function beds(args) {
   setup(args);
   const out = Array.from({ length: OWN.count }, () => [0, 1, 0, 0]);
-  A.blocks.forEach((b, k) => { if (b.bedN) out[k + 1] = [...b.bedN.map((v) => +v.toFixed(4)), b.bedded ? +(0.55 + 0.45 * hash(b.seed, 51)).toFixed(3) : 0.12]; });
+  A.blocks.forEach((b, k) => { if (b.bedN) out[k + 1] = [...b.bedN.map((v) => +v.toFixed(4)), b.bedded ? +(0.55 + 0.45 * hash(b.seed, 51)).toFixed(3) : 0]; });
   return out;
 }
 
