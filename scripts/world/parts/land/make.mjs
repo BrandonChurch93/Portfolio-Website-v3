@@ -3,7 +3,7 @@
 //   land.bin         the ground, one mesh: a fine height field reduced to what the eye can tell, ending exactly on
 //                    the land's edge (within() = 0) with a thin turned down edge so no gap shows under it
 //   land-a.png       what lies where: grass, desert, and how far inside the land's edge
-//   land-b.png       how open each place is, and the dust blown over it
+//   land-b.png       how open each place is, the dust blown over it, and how much of it is broken ground
 //   land-lots.png    which building's lot a place is in, and the next nearest, for the paving to follow
 //   land-light.png   the light that reaches each place after bouncing, with the buildings as blockers giving off
 //                    their windows' light, and the trees and the pyramid as blockers
@@ -26,7 +26,7 @@ const began = performance.now(), say = (s) => console.log(`land: ${s} · ${((per
 
 // How fine everything is: the height field's spacing and how far the reduced mesh may stray from it, in units, and
 // the maps' sizes in texels.
-const FINE = draft ? { grid: 1.6, error: 0.12, map: 512, lots: 256, light: 192, hemi: 32, bounces: 1 } : { grid: 0.7, error: 0.2, map: 1024, lots: 512, light: 768, hemi: 256, bounces: 2 };
+const FINE = draft ? { grid: 1.6, error: 0.12, map: 512, lots: 256, light: 192, hemi: 32, bounces: 1 } : { grid: 0.7, error: 0.24, map: 1024, lots: 512, light: 768, hemi: 256, bounces: 2 };
 // How far the paving and the grass stand over the dome, the kerb between them, how far down the turned edge goes.
 const LIFT = { paving: 0.45, grass: 0.1, skirt: 4 };
 // The sand's lip down the planet's side: how far down it reaches (least and most, ragged along the rim), how far
@@ -42,6 +42,24 @@ const SPILL = { out: [0, 3, 6.5, 10, 13], down: [0, 0.9, 1.9, 2.8, 3.6], ragged:
 // fades out over toward the land's edge (from, to, and how much that wanders), leaving the pale strip of worn stone
 // along the edge that picture 9 has in front of its trees.
 const BELT = { kerb: 3, from: 13, to: 21, wander: 6 };
+// The broken ground along the city's front edge, in front of the belt: heaps of what the break threw up, as picture
+// 9 has between the pyramid and the desert. How far in from the edge they reach, how tall the largest is, how wide
+// they are, and the rubble over all of it. They only raise the ground, so nothing under the land shows through.
+// The broken ground is everywhere in front of the city's front line that is not the desert, the pyramid's court or
+// the belt of grass, and along the edge in front of the belt: roughOf, 0 to 1, which the shader reads from
+// land-b.png's third channel and lays its broken stone by.
+const HEAP = { reach: 13, tall: 6, size: 11, fine: 0.5 };
+const roughOf = (x, z, w) => {
+  const [pu, pv] = L.pyramidal(x, z);
+  const court = L.ramp(L.PYRAMID.court + 1, L.PYRAMID.court + 5, Math.max(Math.abs(pu), Math.abs(pv)));
+  return court * Math.max(L.ramp(HEAP.reach, HEAP.reach * 0.35, w), L.ramp(-1, 6, z - L.front(x))) * (1 - desert(x, z));
+};
+const heapOf = (x, z, w) => {
+  const k = roughOf(x, z, w);
+  if (k <= 0) return 0;
+  const n = 0.6 * L.noise(x / HEAP.size, 1, z / HEAP.size, 61) + 0.4 * L.noise(x / 3.2, 3, z / 3.2, 62), blob = Math.max(0, n - 0.45) / 0.55;
+  return (HEAP.tall * blob * blob + HEAP.fine * L.noise(x / 1.3, 5, z / 1.3, 63)) * k * (1 - sample(grass, x, z));
+};
 // The city's own light on its walls, as radiance, for what it throws on the ground.
 const CITY = 0.12;
 
@@ -110,8 +128,8 @@ say('maps');
 // ---------------------------------------------------------------------------------------------------------------
 // The height of the land at a place.
 function height(x, z) {
-  const d = desert(x, z), g = sample(grass, x, z), base = L.dome(x, z) + d * F.relief(x, z, L.within(x, z)) + (1 - d) * (LIFT.paving + (LIFT.grass - LIFT.paving) * g);
   const w = L.within(x, z);
+  const d = desert(x, z), g = sample(grass, x, z), base = L.dome(x, z) + d * F.relief(x, z, w) + (1 - d) * (LIFT.paving + (LIFT.grass - LIFT.paving) * g + heapOf(x, z, w));
   if (w > F.BREAK.reach + F.BREAK.cell) return base;
   const sl = F.slabOf(x, z), b = F.broken(L.within(sl.cx, sl.cz)) * (1 - desert(sl.cx, sl.cz));
   if (b <= 0) return base;
@@ -374,7 +392,7 @@ say(`light: ${stats.vertices} vertices, ${(stats.rays / 1e6).toFixed(0)} million
     const v = lid[k];
     if (v < 0) continue;
     const x = lat(k % NL), z = lat(Math.floor(k / NL));
-    out.set([l.open[v], dustAt(x, z), 0, storeBounce(l.bounce[v * 3]), storeBounce(l.bounce[v * 3 + 1]), storeBounce(l.bounce[v * 3 + 2])].map((c) => Math.round(Math.min(1, Math.max(0, c)) * 255)), k * 6);
+    out.set([l.open[v], dustAt(x, z), roughOf(x, z, L.within(x, z)), storeBounce(l.bounce[v * 3]), storeBounce(l.bounce[v * 3 + 1]), storeBounce(l.bounce[v * 3 + 2])].map((c) => Math.round(Math.min(1, Math.max(0, c)) * 255)), k * 6);
     have[k] = 1;
   }
   // Under a building nothing is seen, and the shut in dark the box left there showed as a dark footprint wherever a
