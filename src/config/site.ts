@@ -13,7 +13,8 @@ export type PieceName = (typeof PIECES)[number];
 export const READING_LINE = 0.66;
 // A piece mounts within this many viewport heights of the screen and disposes beyond the second number. At most max
 // pieces hold a WebGL context at once, because browsers drop the oldest context past a small limit.
-export const PIECE_MOUNT = { near: 1, far: 2.5, max: 6 } as const;
+// fade: how long a piece made while it is on the screen takes to come on, in milliseconds.
+export const PIECE_MOUNT = { near: 1, far: 2.5, max: 6, fade: 260 } as const;
 
 // What a handheld is held to (src/world/device.ts). An iPad's or a phone's browser ends a page that holds more
 // graphics memory than it allows: Safari reloads it, and after a few of those says a problem repeatedly occurred.

@@ -50,6 +50,7 @@ export function PieceView({ name, entrance = false, once, making = false, classN
     let mounted: Extra | null = null;
     let loading: Promise<void> | null = null;
     let played = false;
+    let again = false;
     tiers.detect();
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const seen = once ? sessionStorage.getItem(`played:${once}`) === '1' : false;
@@ -60,9 +61,18 @@ export function PieceView({ name, entrance = false, once, making = false, classN
       // The entrance plays on the first mount only; coming back later the piece is already at rest.
       const play = entrance && !reduced && !seen && !played;
       played = true;
-      await p.mount(h, { tier: tiers.get(), entrance: play, onReady, frame, entranceFrom: play ? entranceFrom : 0 });
+      // A piece made while it is on the screen, as after a jump down the page or a long way back up it, comes on
+      // over a quarter second where it used to cut in. Never the first piece of a page that has not been scrolled:
+      // that would be an opening, and the site has none.
+      const eased = !reduced && (again || scrollY > 0);
+      const ready = () => {
+        if (eased && distanceOf(h) === 0) h.querySelector('canvas')?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: PIECE_MOUNT.fade, easing: 'ease-out' });
+        onReady?.();
+      };
+      await p.mount(h, { tier: tiers.get(), entrance: play, onReady: ready, frame, entranceFrom: play ? entranceFrom : 0 });
       if (!alive || !near || evicted) { p.dispose(); loading = null; budget.drop(id); return; }
       mounted = p;
+      again = true;
       piece.current = p;
       onPiece?.(p);
       if (once && play) sessionStorage.setItem(`played:${once}`, '1');
