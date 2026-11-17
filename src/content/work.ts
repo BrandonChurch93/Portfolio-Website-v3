@@ -68,7 +68,7 @@ export const software: WorkItem[] = [
       alt: 'The Ask the Claude Docs type specimen: an answer set in a serif with a cited passage, and a question set in a sans',
       focus: [0.43, 0.4],
     },
-    page: `${LIVE_SITE}/ask-the-claude-docs`,
+    page: `${ALL_WORK}/ask-the-claude-docs`,
     links: [
       { label: 'Live', href: 'https://ask-the-claude-docs.vercel.app' },
       { label: 'Evals', href: 'https://ask-the-claude-docs.vercel.app/evals' },
@@ -113,6 +113,61 @@ export const software: WorkItem[] = [
   },
 ];
 
+// The rest of his software, which the page of all his work shows after the four on the home page. The words are
+// the live site's and the pictures are its screenshots. The years are a guess until he says: the live site gives none.
+export const more: WorkItem[] = [
+  {
+    slug: 'modern-softworks',
+    name: 'Modern Softworks',
+    kind: 'Studio Site',
+    year: '2026',
+    line: 'My studio\u2019s site, where accessibility and SEO literally fail the build below a 90. Hand-built design system on 194 CSS tokens, no UI framework, 22 routes of MDX content.',
+    tags: ['Design System', 'GSAP', 'Security Headers'],
+    picture: { src: '/media/work/softworks.webp', alt: 'The home page of the Modern Softworks studio site', focus: [0.5, 0.3] },
+    page: `${LIVE_SITE}/modern-softworks`,
+    links: [{ label: 'Live', href: 'https://www.modernsoftworks.com' }],
+  },
+  {
+    slug: 'hero-animation-builder',
+    name: 'Hero Animation Builder',
+    kind: 'Design Tool',
+    year: '2026',
+    line: 'An SVG animation builder with 36 live controls that never lag, because React never re-renders the graphic. Design a layered arc hero, watch a staged fintech site light up with it, and share the whole design as a URL.',
+    tags: ['36 Live Controls', 'Shareable State', 'APCA Contrast'],
+    picture: { src: '/media/work/hero-builder.webp', alt: 'The builder: a layered arc hero beside its panel of controls', focus: [0.5, 0.4] },
+    page: `${LIVE_SITE}/hero-animation-builder`,
+    links: [
+      { label: 'Live', href: 'https://hero-animation-builder.vercel.app' },
+      { label: 'Code', href: `${GITHUB}/HeroAnimationBuilder` },
+    ],
+  },
+  {
+    slug: 'meridian',
+    name: 'Meridian',
+    kind: 'Procedural Watch Movement',
+    year: '2026',
+    line: 'A working tourbillon watch movement built entirely in code. Every gear turns on real tooth counts from a single beat counter, and visitors can wind it, take it apart, and watch it run down.',
+    tags: ['Procedural 3D', 'Working Mechanics', 'Spec-Driven AI Build'],
+    picture: { src: '/media/work/meridian.webp', alt: 'The Meridian movement: a tourbillon watch movement with its gears and bridges', focus: [0.5, 0.5] },
+    page: `${LIVE_SITE}/meridian`,
+    links: [{ label: 'Live', href: 'https://meridian-calibre.vercel.app/' }],
+  },
+  {
+    slug: 'micro-interactions-library',
+    name: 'Micro-Interactions Library',
+    kind: 'Component Library',
+    year: '2026',
+    line: 'Fifteen copy-paste micro-interactions, zero animation libraries. The code you copy is the exact code you just watched run, and accessibility isn\u2019t a checkbox here, it\u2019s three of the fifteen patterns.',
+    tags: ['Zero Animation Libs', 'React Aria', 'Reduced Motion'],
+    picture: { src: '/media/work/stand-in-art-2.webp', alt: 'A plain picture standing in for the Micro-Interactions Library, which has no screenshot yet' },
+    page: `${LIVE_SITE}/micro-interactions-library`,
+    links: [
+      { label: 'Live', href: 'https://micro-interactions-library.vercel.app/' },
+      { label: 'Code', href: `${GITHUB}/micro-interactions-library` },
+    ],
+  },
+];
+
 // Stand ins for the three categories that have no projects on the cards yet. Nothing on them is real: the names say
 // so, the words only fill the room real words will take, and the pictures are plain shapes. Every card is one size,
 // so their words are written to the length a Software card's are.
@@ -124,24 +179,34 @@ const standIn = (set: string, kind: string, names: string, n: number, line: stri
   year: '2026',
   line,
   tags,
-  picture: { src: `/media/work/stand-in-${set}-${n}.webp`, alt: `A plain picture standing in for ${names.toLowerCase()} ${n}` },
+  picture: { src: `/media/work/stand-in-${set}-${((n - 1) % 4) + 1}.webp`, alt: `A plain picture standing in for ${names.toLowerCase()} ${n}` },
   page: HOME,
   links: [],
 });
 
-const games: WorkItem[] = [1, 2, 3, 4].map((n) => standIn('game', 'Game', 'Game', n,
+const count = (n: number) => Array.from({ length: n }, (_, i) => i + 1);
+const games = (n: number): WorkItem[] => count(n).map((n) => standIn('game', 'Game', 'Game', n,
   'A stand in for a game. Its real words go here: what the game is, what it was built in and the one thing in it worth a closer look, in about as many words as a project card carries, and no more than that.',
   ['Stand in', 'Game', 'Unity']));
-const art: WorkItem[] = [1, 2, 3, 4].map((n) => standIn('art', '3D art', '3D piece', n,
+const art = (n: number): WorkItem[] => count(n).map((n) => standIn('art', '3D art', '3D piece', n,
   'A stand in for a 3D piece. Its real words go here: what the piece is, what it was made in and what was hard about it, in about as many words as a project card carries, and no more than that.',
   ['Stand in', '3D art', 'Blender']));
-const photography: WorkItem[] = [1, 2, 3, 4].map((n) => standIn('photo', 'Photography', 'Photo set', n,
+const photography = (n: number): WorkItem[] => count(n).map((n) => standIn('photo', 'Photography', 'Photo set', n,
   'A stand in for a set of photographs. Its real words go here: where the set was shot, what it was shot on and what light it was after, in about as many words as a project card carries.',
   ['Stand in', 'Photography', 'Natural light']));
 
 export const categories: WorkCategory[] = [
   { name: 'Software', items: software },
-  { name: 'Games', items: games, standIn: true },
-  { name: '3D art', items: art, standIn: true },
-  { name: 'Photography', items: photography, standIn: true },
+  { name: 'Games', items: games(4), standIn: true },
+  { name: '3D art', items: art(4), standIn: true },
+  { name: 'Photography', items: photography(4), standIn: true },
+];
+
+// Everything, for the page of all his work: the same four categories, each with all it holds. Every category shows,
+// the three without real projects as stand ins, until he adds the real ones (his word, Nov 17).
+export const catalog: WorkCategory[] = [
+  { name: 'Software', items: [...software, ...more] },
+  { name: 'Games', items: games(6), standIn: true },
+  { name: '3D art', items: art(6), standIn: true },
+  { name: 'Photography', items: photography(6), standIn: true },
 ];
