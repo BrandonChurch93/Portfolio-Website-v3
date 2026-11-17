@@ -76,7 +76,7 @@ const STRIPE = { w: 1.65, a: (VIEW.az + 62) * DEG } as const;
 const PALE_GOLD = `mix(${GOLD}, ${C('pale')}, 0.22)`;
 const RED_GOLD = `mix(${GOLD}, ${C('copper')}, 0.6)`;
 const STEEL = 'vec3(0.062, 0.042, 0.018)';
-const POLISH = 'vec3(0.34, 0.22, 0.085)';
+const POLISH = 'vec3(0.55, 0.38, 0.17)';
 
 export const VHEAD = /* glsl */ `
 attribute vec4 cell;
@@ -176,6 +176,9 @@ vec2 watTilt;
 vec3 watCol;
 float watRough;
 float watMetal;
+// How much of the reflected room a finish takes: the frosted plate little, the polished wheels most, so the movement
+// has three values at the page's size and not one.
+float watRoomK;
 // The grain of a ground or turned face: which way its highlight is drawn out, in the part's own (x, z), and how far.
 vec2 watAD;
 float watAni;
@@ -215,25 +218,36 @@ vec3 watRimLight(vec3 n, vec3 v){
   if (uRim.w <= 0.0) return vec3(0.0);
   float graze = 1.0 - clamp(dot(n, v), 0.0, 1.0);
   float toward = clamp(dot(n, uRim.xyz), 0.0, 1.0);
-  // Held under the tone curve's knee: far past it, any light is pulled to the palette's pale, which reads grey here.
-  return ${C('hot')} * min(pow(graze, 7.0) * pow(toward, 2.0) * uRim.w, 0.9);
+  // Its brightest goes past the tone curve's knee, which turns it to the palette's pale: a crisp pale line on an edge.
+  float k = pow(graze, 7.0) * pow(toward, 2.0) * uRim.w;
+  return mix(${C('hot')}, ${C('pale')}, smoothstep(0.6, 1.8, k)) * min(k, 2.2);
 }
 // Perlage: small spots in offset rows, each ground by a turning peg, so each is a disc of fine circular scratches and
-// flashes as a narrow slice under a light. Each row overlaps the one before, and each spot the one before it.
+// flashes as a narrow slice under a light. Each row overlaps the one before, and each spot the one before it. It was
+// done by hand: each spot is set down a little off its place and is a little larger or smaller, and the rows wander,
+// so close up it reads as a hand's work and not as a grid.
 void watPerlage(vec2 p){
   vec2 q = (p - ${MC}) / ${f(PERL.step)};
-  float R = ${f(PERL.r / PERL.step)};
   vec2 g0 = floor(vec2(q.x, q.y / 0.86));
   vec2 cb = vec2(0.0);
-  float best = -1e9;
+  float best = -1e9, Rb = 1.0, near = 1e9;
+  vec2 cn = vec2(0.0);
+  float Rn = 1.0;
   for (int j = -2; j <= 2; j++) for (int i = -2; i <= 2; i++) {
     vec2 g = g0 + vec2(float(i), float(j));
-    vec2 c = vec2(g.x + mod(g.y, 2.0) * 0.5, g.y * 0.86) + (vec2(watH(g), watH(g + 7.31)) - 0.5) * 0.12;
-    float order = g.y * 1000.0 + g.x;
-    if (length(q - c) < R && order > best) { best = order; cb = c; }
+    vec2 c = vec2(g.x + mod(g.y, 2.0) * 0.5, g.y * 0.86);
+    c.y += 0.16 * sin(g.x * 0.37 + g.y * 2.1) + 0.1 * sin(g.x * 0.13 - g.y * 0.7);
+    c += (vec2(watH(g), watH(g + 7.31)) - 0.5) * 0.36;
+    float R = ${f(PERL.r / PERL.step)} * (0.9 + 0.32 * watH(g + 3.17));
+    float order = g.y * 1000.0 + g.x + watH(g + 11.3) * 1.5;
+    float l = length(q - c);
+    if (l < R && order > best) { best = order; cb = c; Rb = R; }
+    if (l / R < near) { near = l / R; cn = c; Rn = R; }
   }
+  // Where the hand left no spot, the nearest spot's grain runs on to it.
+  if (best < -1e8) { cb = cn; Rb = Rn * max(near, 1.0); }
   vec2 d = q - cb;
-  float rr = length(d) / R;
+  float rr = length(d) / Rb;
   float k = watFine(${f(PERL.step * 0.4)});
   watAD = d / max(length(d), 1e-4);
   watAni = 0.6 * k * smoothstep(0.04, 0.22, rr);
@@ -257,6 +271,7 @@ void watFinish(){
   watAD = vec2(1.0, 0.0);
   watAni = 0.0;
   watFlashK = 0.0;
+  watRoomK = 1.0;
   vec2 p = vWatR.xz;
   vec2 rd = vWatAxis.z > 0.0 ? p - vWatAxis.xy : vec2(1.0, 0.0);
   rd /= max(length(rd), 1e-4);
@@ -275,21 +290,26 @@ void watFinish(){
     watRough = 0.16 + 0.1 * tarn;
     watMetal = 1.0;
   } else if (watM == ${FIN.gold}) {
-    watCol = ${RED_GOLD} * 0.95;
-    watRough = mix(0.32, watBevel > 0.5 ? 0.05 : 0.1, watFine(0.15));
+    watCol = mix(${PALE_GOLD}, ${RED_GOLD}, 0.35);
+    watRough = mix(0.3, watBevel > 0.5 ? 0.05 : 0.12, watFine(0.15));
     watMetal = 1.0;
+    watRoomK = 2.2;
   } else if (watM == ${FIN.plaque} || watM == ${FIN.chapter}) {
     // Polished, a step deeper than the dial: under the white balance a satin gold held at a middle brightness reads
     // as tan, and only polish that catches the light keeps its color.
-    watCol = watM == ${FIN.plaque} ? ${RED_GOLD} * 0.85 : mix(${GOLD}, ${C('copper')}, 0.5) * 0.85;
+    // The plaque is held a step darker and redder than the face, or under the face's own broad light the two were
+    // one gold and the plaque read only as a dotted outline.
+    watCol = watM == ${FIN.plaque} ? ${RED_GOLD} * 0.5 : mix(${GOLD}, ${C('copper')}, 0.5) * 0.85;
     watRough = 0.16;
     watMetal = 1.0;
-    if (watBevel > 0.5) watRough = 0.08;
+    watRoomK = 0.5;
+    if (watBevel > 0.5) watRough = mix(0.2, 0.08, watFine(0.25));
   } else if (watM == ${FIN.wheel} || watM == ${FIN.sun}) {
-    watCol = ${PALE_GOLD} * (watM == ${FIN.sun} ? 0.8 : 0.94);
+    watCol = ${PALE_GOLD} * (watM == ${FIN.sun} ? 0.9 : 1.0);
     // Polish seen from far is a little rough: the turned grain is finer than a pixel and spreads the light.
-    watRough = mix(0.3, 0.13, watFine(0.12));
+    watRough = mix(0.32, 0.16, watFine(0.12));
     watMetal = 1.0;
+    watRoomK = 3.0;
     if (watUp > 0.5) {
       // A wheel's faces are turned in fine circles, a ratchet's grained in rays from its arbor: each throws its
       // highlight across its grain, so a wheel's light lies along its radius and a ratchet's round it.
@@ -297,30 +317,31 @@ void watFinish(){
       watAD = watM == ${FIN.sun} ? vec2(-rd.y, rd.x) : rd;
       watAni = (watM == ${FIN.sun} ? 0.75 : 0.5) * (0.4 + 0.6 * k);
     }
-    if (watBevel > 0.5) watRough = 0.05;
+    if (watBevel > 0.5) { watRough = mix(0.18, 0.05, watFine(0.25)); watRoomK = 2.6; }
   } else if (watM == ${FIN.dial}) {
     watCol = mix(${GOLD}, ${C('copper-light')}, 0.6);
     watRough = 0.12;
     watMetal = 1.0;
+    // The face takes its light from its own panel: the room it mirrors is kept low, so away from the highlight the
+    // face falls to a darker copper and the highlight reads as one.
+    watRoomK = 0.5;
     vec2 d = p - ${DC};
     float r = length(d);
     vec2 dir = d / max(r, 1e-3);
     float a = atan(d.y, d.x);
     if (r < ${f(NUMERALS.r0 - 0.35)}) {
-      // Engine turned in rings: each ring waves twelve times round, as a rose engine cuts it.
+      // Engine turned in rings: each ring waves twelve times round, as a rose engine cuts it. The cuts are shallow, so
+      // the face is still one mirror and takes its light as one broad soft highlight, which the rings break up.
       float ph = r / 0.3 + 0.11 * sin(a * 12.0) * smoothstep(1.2, 4.0, r);
       float k = watFine(0.3);
-      watTilt = dir * 0.22 * sin(ph * 6.2832) * k;
-      watRough = 0.1 + 0.06 * (1.0 - k);
-      watCol *= 0.97 + 0.05 * cos(ph * 6.2832) * k;
-      watAD = dir;
-      watAni = 0.3;
+      float cut = sin(ph * 6.2832);
+      watTilt = dir * 0.06 * cut * k;
+      watRough = 0.07 + 0.03 * (1.0 - k) - 0.02 * cut * k;
+      watCol *= 0.94 + 0.09 * (0.5 + 0.5 * cos(ph * 6.2832)) * k;
     } else {
       float k = watFine(0.05);
       watTilt = vec2(-dir.y, dir.x) * 0.04 * (watN2(vec2(a * 300.0, r * 2.0)) - 0.5) * k;
-      watRough = 0.16;
-      watAD = dir;
-      watAni = 0.3;
+      watRough = 0.2;
     }
   } else if (watM == ${FIN.sub}) {
     watCol = mix(${GOLD}, ${C('copper')}, 0.45) * 0.72;
@@ -337,14 +358,15 @@ void watFinish(){
     watCol = ${STEEL};
     watRough = watM == ${FIN.dark} ? 0.4 : 0.14;
     watMetal = 1.0;
-    if (watBevel > 0.3 || (watM == ${FIN.steel} && watUp < 0.5)) { watCol = ${POLISH}; watRough = 0.07; }
-    if (watM == ${FIN.numeral} && watBevel > 0.3) watCol = ${POLISH} * 0.45;
+    if (watBevel > 0.3 || (watM == ${FIN.steel} && watUp < 0.5)) { watCol = ${POLISH}; watRough = mix(0.16, 0.07, watFine(0.2)); }
+    if (watM == ${FIN.numeral} && watBevel > 0.3) watCol = ${POLISH} * 0.28;
     if (watM == ${FIN.dark}) watCol = ${STEEL} * 0.45;
     if (watM == ${FIN.spring}) { watCol = ${STEEL} * 1.5; watRough = 0.2; }
   } else if (watM == ${FIN.bridge}) {
-    watCol = mix(${GOLD}, ${C('copper')}, 0.2) * 0.5;
-    watRough = 0.24;
+    watCol = mix(${GOLD}, ${C('copper')}, 0.5) * 0.6 * vec3(1.0, 0.86, 0.66);
+    watRough = 0.32;
     watMetal = 1.0;
+    watRoomK = 1.3;
     if (watUp > 0.5) {
       // Geneva stripes: each a low rounded band, ground by a turning wheel run along it.
       vec2 ax = vec2(${f(Math.cos(STRIPE.a))}, ${f(Math.sin(STRIPE.a))});
@@ -353,15 +375,17 @@ void watFinish(){
       float fr = fract(s) - 0.5;
       watTilt = ax * fr * 0.5 * k;
       float along = dot(p, vec2(-ax.y, ax.x));
-      watRough = 0.2 + 0.1 * watFine(0.04) * (watN2(vec2(along * 1.5, s * 60.0)) - 0.5) + 0.05 * abs(fr) * 2.0;
+      watRough = 0.28 + 0.1 * watFine(0.04) * (watN2(vec2(along * 1.5, s * 60.0)) - 0.5) + 0.05 * abs(fr) * 2.0;
       watCol *= 0.93 + 0.1 * (1.0 - abs(fr) * 2.0);
       watAD = vec2(-ax.y, ax.x);
       watAni = 0.6 * k;
-    } else if (watBevel > 0.3) { watCol = ${PALE_GOLD}; watRough = 0.05; }
+    } else if (watBevel > 0.3) { watCol = ${PALE_GOLD}; watRough = mix(0.18, 0.05, watFine(0.25)); watRoomK = 1.8; }
   } else if (watM == ${FIN.plate}) {
-    watCol = mix(${GOLD}, ${C('copper')}, 0.55) * 0.12;
-    watRough = 0.55;
+    // The dark ground the gilt parts stand on: a deep bronze brown, frosted, which only its perlage lifts.
+    watCol = ${C('bronze')} * 0.11;
+    watRough = 0.5;
     watMetal = 1.0;
+    watRoomK = 0.45;
     if (watUp > 0.5) watPerlage(p);
   } else if (watM == ${FIN.jewel}) {
     watCol = ${C('ember')} * 0.9;
@@ -505,17 +529,17 @@ const PHYSICAL = THREE.ShaderChunk.lights_physical_pars_fragment
 
 // The reflected room is the room's light, the palette's pale, as every other light here is. Mirrored neutral, it put
 // pale gold past the white balance's reach into grey.
-const ROOM = `radiance *= ${C('pale')}; iblIrradiance *= ${C('pale')};`;
+const ROOM = `radiance *= ${C('pale')} * watRoomK; iblIrradiance *= ${C('pale')} * watRoomK;`;
 
-// A glint goes to hot gold and stops short of pale: the tone curve pulls whatever is far past its knee toward the
-// palette's pale, and under the white balance that pale measures as more blue than this watch may have.
+// A glint on gold keeps gold's hue through the middle of its rise, where the white balance would turn a neutral
+// reflection grey, and only far past the tone curve's knee may it go to the palette's pale, which the curve gives it.
 const GLINT = /* glsl */ `
 {
   float pk = max(outgoingLight.r, max(outgoingLight.g, outgoingLight.b));
-  float h = smoothstep(0.6, 1.2, pk);
+  float h = smoothstep(0.25, 0.8, pk) * (1.0 - smoothstep(1.0, 2.0, pk));
   outgoingLight.g = min(outgoingLight.g, outgoingLight.r * mix(1.0, 0.8, h));
-  outgoingLight.b = min(outgoingLight.b, outgoingLight.r * mix(1.0, 0.42, h));
-  outgoingLight *= min(1.0, 1.6 / max(pk, 1e-4));
+  outgoingLight.b = min(outgoingLight.b, outgoingLight.r * mix(1.0, 0.5, h));
+  outgoingLight *= min(1.0, 6.0 / max(pk, 1e-4));
 }`;
 
 // Joins the watch's chunks to a standard material: the part's move in the vertex shader, its finish in the fragment.
@@ -549,7 +573,7 @@ const ARC = /* glsl */ `
   vec2 d = vWatR.xz - ${DC};
   float side = smoothstep(0.35, 0.8, dot(d / max(length(d), 1e-3), vec2(-0.7071, -0.7071)));
   float arc = smoothstep(0.935, 0.955, r) * (1.0 - smoothstep(0.975, 0.99, r)) * side;
-  gl_FragColor.rgb *= ${C('hot')} * (0.025 + 0.975 * arc);
+  gl_FragColor.rgb *= mix(${C('hot')}, ${C('pale')}, arc * arc) * (0.025 + 0.975 * arc);
 }`;
 export function glassMaterial(m: THREE.MeshPhysicalMaterial, u: Shared): THREE.MeshPhysicalMaterial {
   m.onBeforeCompile = (sh) => {

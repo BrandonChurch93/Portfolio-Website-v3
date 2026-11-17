@@ -462,9 +462,11 @@ export async function buildWatch(): Promise<WatchModel> {
     }
     bowEnd = [dx, BOW.wire + 0.05, dz + zc - 13.6];
   }
-  // The chain: links in turn lying flat and standing on edge, each through the last, running off the bow.
+  // The chain: links in turn lying flat and standing on edge, each through the last, running off the bow and back
+  // round toward the hinge, to lie on the table in the crook between the two halves. Run away from the eye, it stood
+  // up over the row's border on the page.
   {
-    const ctrl: P2[] = [[0, 0], [1.2, -3.6], [3.8, -7.0], [7.6, -9.4], [12.0, -10.6], [16.6, -10.6], [21.0, -9.4], [25.0, -7.6]];
+    const ctrl: P2[] = [[0, 0], [-2.4, -1.4], [-6.0, -1.6], [-10.2, 0.4], [-14.6, 3.4], [-18.6, 7.6], [-21.8, 12.8], [-23.6, 18.8], [-24.4, 24.4]];
     const curve = new THREE.CatmullRomCurve3(ctrl.map(([x, z]) => new THREE.Vector3(bowEnd[0] + x, 0, bowEnd[2] + z - 0.6)), false, 'centripetal');
     const L = curve.getLength();
     const oval: Vec3[] = [];
