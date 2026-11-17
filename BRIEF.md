@@ -2606,6 +2606,11 @@ Each line has Fable's recommendation where there is one. None of these are rules
     - **The stream on a narrow screen (Nov 16, about 15:00):** it strikes and wakes Work's cards and comes back at Contact to launch the rocket, live (Settled, Hero, "His look at the whole page on his Mac", point 8, "Built").
     - **Still to design in the mobile pass, none of it started:** whether an upright iPad gets the live world and the live desk in place of their pictures, and the rest of point 8 for it. Open 18 stands.
 
+33. **The All work page (Nov 17). Being designed with him, nothing agreed yet.** "We should talk about the all work page and come up with the design and a build plan for that. I want to review what you recommend, approve it and maybe even tweak it, and we'll work together on it to make sure it looks great and up to par with the rest of the site."
+    - **What is already settled about it** (Settled, Work): "A View more button goes to an All work page with the same categories, showing everything. There are no separate pages for games, photography or 3D art." The hero's and Work's View all work buttons go to `/work`, which is a plain placeholder today.
+    - **What is known:** his live site's All Work page lists 8 projects, all software: the four on the home page, and Modern Softworks, Hero Animation Builder, Meridian and Micro-interactions Library. Games, 3D art and Photography have nothing real yet.
+    - **`PLAN.md` gave this page to Opus from a handoff (Phase 7).** His word of Nov 17 makes it a piece Fable designs with him. Fable's recommendation was put to him the same hour, in the chat: `LOG.md`, top entry.
+
 ## Dropped
 
 - Shards that have to read as copper leaf and as glass. They are abstract facets in a solid and a clear material (Nov 12)
