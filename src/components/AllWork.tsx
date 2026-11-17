@@ -13,10 +13,14 @@ import styles from './AllWork.module.css';
 // The page of all his work (BRIEF.md, Open 33): the same four categories as the home page, each with everything it
 // holds, in two columns of the home page's own card. No stream runs here and no card sleeps: a visitor comes to
 // see all of it at once. What ties the page to the home page is its material, the cards, the type and the cursor's
-// light. The room under the bar is kept for a row of filter words, when a category has grown enough to want one.
+// light. Under the bar a category that is divided shows its sub categories, and picking one shows only what is
+// under it. Photography is not divided: a card there is a shoot.
 export function AllWork() {
   const [category, setCategory] = useState(0);
-  const now = catalog[category], n = now.items.length;
+  // The sub category picked within the category, or none: everything in it.
+  const [sub, setSub] = useState<string | null>(null);
+  const now = catalog[category], shown = sub ? now.items.filter((i) => i.subs?.includes(sub)) : now.items, n = shown.length;
+  const pick = (index: number) => { setCategory(index); setSub(null); };
   return (
     <main className={styles.page}>
       <nav className={styles.way} aria-label="Back">
@@ -28,12 +32,19 @@ export function AllWork() {
       </header>
       <div className={styles.bar} role="group" aria-label="Categories">
         {catalog.map((cat, index) => (
-          <button key={cat.name} type="button" className={styles.category} aria-pressed={category === index} onClick={() => setCategory(index)}>{cat.name}</button>
+          <button key={cat.name} type="button" className={styles.category} aria-pressed={category === index} onClick={() => pick(index)}>{cat.name}</button>
         ))}
       </div>
-      <p className={styles.count} role="status">{now.name} · {n} {now.standIn ? allWork.standIns : n === 1 ? allWork.project : allWork.projects}</p>
-      <section key={now.name} className={styles.grid} aria-label={now.name}>
-        {now.items.map((item) => <WorkCard key={item.slug} item={item} />)}
+      {now.subs && (
+        <div className={styles.subs} role="group" aria-label={`${now.name}, ${allWork.subs}`}>
+          {[null, ...now.subs].map((name) => (
+            <button key={name ?? 'all'} type="button" className={styles.sub} aria-pressed={sub === name} onClick={() => setSub(name)}>{name ?? allWork.all}</button>
+          ))}
+        </div>
+      )}
+      <p className={styles.count} role="status">{now.name}{sub ? ` · ${sub}` : ''} · {n} {now.standIn ? (n === 1 ? allWork.standIn : allWork.standIns) : n === 1 ? allWork.project : allWork.projects}</p>
+      <section key={`${now.name}:${sub ?? ''}`} className={styles.grid} aria-label={now.name}>
+        {shown.map((item) => <WorkCard key={item.slug} item={item} />)}
       </section>
       <section className={styles.close} aria-label={allWork.close.line}>
         <p className={styles.closeLine}>{allWork.close.line}</p>

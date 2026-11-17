@@ -19,6 +19,9 @@ export interface WorkItem {
   picture: { src: string; alt: string; focus?: [number, number]; zoom?: number; loop?: string };
   page: string;
   links: WorkLink[];
+  // The sub categories it is under on the page of all his work. A project is in one category and may be under
+  // several of that category's sub categories.
+  subs?: string[];
 }
 
 // A kind of work, as the category bar names it, and the four projects it shows on the home page.
@@ -27,6 +30,8 @@ export interface WorkCategory {
   items: WorkItem[];
   // Not real projects: cards that stand in until he has the work to show and says which projects go where.
   standIn?: boolean;
+  // Its sub categories, in the order they are shown. None: the category is not divided, as Photography is not.
+  subs?: string[];
 }
 
 const GITHUB = 'https://github.com/BrandonChurch93';
@@ -204,9 +209,29 @@ export const categories: WorkCategory[] = [
 
 // Everything, for the page of all his work: the same four categories, each with all it holds. Every category shows,
 // the three without real projects as stand ins, until he adds the real ones (his word, Nov 17).
+// The sub categories (his word, Nov 17). Games' and 3D art's are the ones he named. Software's are Fable's
+// proposal, and which project goes under which is his to say. Photography has none: a card there is a shoot.
+const SUBS = {
+  software: ['AI', '3D', 'Design systems', 'Tools'],
+  games: ['Web', 'Steam', 'Unreal', 'Unity'],
+  art: ['Printable', 'Game asset'],
+} as const;
+const UNDER: Record<string, string[]> = {
+  'proactive-ui-for-ai-glasses': ['AI', '3D'],
+  'ask-the-claude-docs': ['AI'],
+  'design-system-extractor': ['Design systems', 'Tools'],
+  'generative-ui-github': ['AI'],
+  'modern-softworks': ['Design systems'],
+  'hero-animation-builder': ['Tools'],
+  meridian: ['3D'],
+  'micro-interactions-library': ['Design systems'],
+};
+// A stand in is put under each sub category in turn, so every one of them shows something.
+const turn = (items: WorkItem[], subs: readonly string[]): WorkItem[] => items.map((item, i) => ({ ...item, subs: [subs[i % subs.length]] }));
+
 export const catalog: WorkCategory[] = [
-  { name: 'Software', items: [...software, ...more] },
-  { name: 'Games', items: games(6), standIn: true },
-  { name: '3D art', items: art(6), standIn: true },
+  { name: 'Software', items: [...software, ...more].map((item) => ({ ...item, subs: UNDER[item.slug] ?? [] })), subs: [...SUBS.software] },
+  { name: 'Games', items: turn(games(6), SUBS.games), standIn: true, subs: [...SUBS.games] },
+  { name: '3D art', items: turn(art(6), SUBS.art), standIn: true, subs: [...SUBS.art] },
   { name: 'Photography', items: photography(6), standIn: true },
 ];

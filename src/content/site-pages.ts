@@ -14,7 +14,10 @@ export const allWork = {
   lead: 'The full catalog. Everything here is real and running, and the list grows as I build.',
   project: 'project',
   projects: 'projects',
+  standIn: 'stand in',
   standIns: 'stand ins',
+  all: 'All',
+  subs: 'sub categories',
   close: { line: 'Have something in mind?', button: 'Get in touch' },
 } as const;
 

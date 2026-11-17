@@ -105,8 +105,62 @@
   border-radius: var(--radius-2);
 }
 
+/* The sub categories: a row of quiet words under the bar, not a second bar. The one picked is copper with a rule
+   under it. */
+.subs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-1) var(--space-2);
+  width: var(--grid);
+  margin-top: var(--space-5);
+}
+
+.sub {
+  position: relative;
+  min-height: var(--touch);
+  padding: 0 var(--space-4);
+  border: 0;
+  background: none;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color var(--dur-1) var(--ease-settle);
+}
+
+.sub::after {
+  content: '';
+  position: absolute;
+  inset: auto var(--space-4) 0.55rem;
+  height: 1px;
+  background: var(--copper-light);
+  scale: 0 1;
+  transition: scale var(--dur-2) var(--ease-settle);
+}
+
+.sub:hover {
+  color: var(--text-2);
+}
+
+.sub[aria-pressed='true'] {
+  color: var(--copper-light);
+}
+
+.sub[aria-pressed='true']::after {
+  scale: 1 1;
+}
+
+.sub:focus-visible {
+  outline: var(--focus);
+  outline-offset: -4px;
+  border-radius: var(--radius-2);
+}
+
 .count {
-  margin: var(--space-5) 0 0;
+  margin: var(--space-4) 0 0;
   font-family: var(--font-mono);
   font-size: var(--step--1);
   letter-spacing: var(--track-label);
