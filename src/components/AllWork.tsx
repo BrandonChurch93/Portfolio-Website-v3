@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { Look } from '../atmosphere/atmosphere';
 import { HOME } from '../config/site';
 import { allWork } from '../content/site-pages';
 import { catalog } from '../content/work';
@@ -15,14 +16,27 @@ import styles from './AllWork.module.css';
 // see all of it at once. What ties the page to the home page is its material, the cards, the type and the cursor's
 // light. Under the bar a category that is divided shows its sub categories, and picking one shows only what is
 // under it. Photography is not divided: a card there is a shoot.
-export function AllWork() {
+// look puts a room behind the page (src/atmosphere, Study 33): a derby of three, until he has picked one.
+export function AllWork({ look = null }: { look?: Look | null }) {
+  const page = useRef<HTMLElement>(null);
   const [category, setCategory] = useState(0);
+
+  useEffect(() => {
+    const host = page.current;
+    if (!look || !host) return;
+    let made: { dispose(): void } | null = null, gone = false;
+    void import('../atmosphere/atmosphere').then(({ mountAtmosphere }) => {
+      if (!gone) made = mountAtmosphere(host, look, () => [...host.querySelectorAll('article')]);
+    });
+    return () => { gone = true; made?.dispose(); };
+  }, [look]);
+
   // The sub category picked within the category, or none: everything in it.
   const [sub, setSub] = useState<string | null>(null);
   const now = catalog[category], shown = sub ? now.items.filter((i) => i.subs?.includes(sub)) : now.items, n = shown.length;
   const pick = (index: number) => { setCategory(index); setSub(null); };
   return (
-    <main className={styles.page}>
+    <main ref={page} className={styles.page} data-room={look ?? undefined}>
       <nav className={styles.way} aria-label="Back">
         <Link href={HOME} className={styles.back}>← {allWork.home}</Link>
       </nav>

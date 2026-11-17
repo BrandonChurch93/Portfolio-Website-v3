@@ -1,0 +1,39 @@
+.bar {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-5);
+  z-index: 20;
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  translate: -50% 0;
+  backdrop-filter: blur(10px);
+}
+
+.bar button {
+  min-height: var(--touch);
+  padding: 0 var(--space-4);
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.bar button[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--copper-light) 16%, transparent);
+  color: var(--copper-light);
+}
+
+.bar button:focus-visible {
+  outline: var(--focus);
+  outline-offset: 2px;
+}

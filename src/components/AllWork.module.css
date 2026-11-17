@@ -9,6 +9,16 @@
   background: var(--bg);
 }
 
+/* In a room the page has no ground of its own: the room is drawn behind everything on it. */
+.page[data-room] {
+  background: none;
+}
+
+.page[data-room] > :not(canvas) {
+  position: relative;
+  z-index: 1;
+}
+
 .way {
   justify-self: start;
   padding: var(--space-6) var(--edge) 0;
