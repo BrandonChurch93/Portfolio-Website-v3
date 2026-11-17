@@ -191,20 +191,22 @@
     display: none;
   }
 
-  /* The first screen ends at the city's foot, as a wide screen's does, and the tear and the core come with the
-     scroll (his ruling, Nov 16): his words take what the screen has above the city, and the picture's top, which
-     is the city (the first quarter of its width in height), stands at the foot of the screen. */
+  /* The first screen holds the whole city and ends at the land's front edge, on every narrow screen, and the tear
+     and the core come with the scroll (his rulings, Nov 16 and 17): his words take what the screen has above the
+     city. In the picture the land's front edge is 0.39 of the way down and the top of the core 0.45, and the
+     picture is 0.7246 as tall as it is wide, so the screen's foot is 0.42 of the way down it: 0.304 of its width.
+     At a quarter of its width, as it was first, an iPhone showed only the tips of the towers. */
   .words {
     position: static;
     width: auto !important;
     translate: none;
-    min-height: calc(100vh - var(--space-9) - max(100vw, 540px) * 0.25);
-    min-height: calc(100svh - var(--space-9) - max(100vw, 540px) * 0.25);
+    min-height: calc(100vh - var(--space-9) - max(100vw, 540px) * 0.304);
+    min-height: calc(100svh - var(--space-9) - max(100vw, 540px) * 0.304);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding-bottom: 6vh;
+    padding-bottom: 3vh;
   }
 
   /* As wide as the screen, and on a phone wider: the picture is centred on the spire and its two ends are off the

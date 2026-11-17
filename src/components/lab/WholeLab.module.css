@@ -27,13 +27,14 @@
   color: var(--text-3);
 }
 
-/* On a narrow screen the study's label stood over the hero's first words. It stands in the page above them, and
-   keeps only its name: the note is for a desk. */
+/* On a narrow screen the study's label keeps only its name: the note is for a desk. It stays out of the page's
+   flow, in the room over the hero's words: standing in the flow it pushed the hero's first screen down by its own
+   height, and the city with it. */
 @media (max-width: 1099.98px) {
   .head {
-    position: static;
+    top: var(--space-5);
+    left: var(--gut);
     max-width: none;
-    padding: var(--space-5) var(--gut) 0;
   }
 
   .note {

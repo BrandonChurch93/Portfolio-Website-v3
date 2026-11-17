@@ -204,20 +204,6 @@
   gap: clamp(2.6rem, 5vw, 4.4rem) var(--gap);
   width: var(--grid);
   margin-top: clamp(2.6rem, 5vw, 4rem);
-  animation: arrive var(--dur-2) var(--ease-settle) both;
-}
-
-@keyframes arrive {
-  from {
-    opacity: 0;
-    translate: 0 0.75rem;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .grid {
-    animation: none;
-  }
 }
 
 .close {

@@ -209,29 +209,32 @@ export const categories: WorkCategory[] = [
 
 // Everything, for the page of all his work: the same four categories, each with all it holds. Every category shows,
 // the three without real projects as stand ins, until he adds the real ones (his word, Nov 17).
-// The sub categories (his word, Nov 17). Games' and 3D art's are the ones he named. Software's are Fable's
-// proposal, and which project goes under which is his to say. Photography has none: a card there is a shoot.
+// The sub categories (his words, Nov 17). Games' and 3D art's are the ones he named. Software's three are Fable's
+// answer to his asking for them (AI, tools, and sites, which takes his "marketing site"), and which project goes
+// under which is his to say. Photography has none: a card there is a shoot.
 const SUBS = {
-  software: ['AI', '3D', 'Design systems', 'Tools'],
-  games: ['Web', 'Steam', 'Unreal', 'Unity'],
-  art: ['Printable', 'Game asset'],
+  software: ['AI', 'Tools', 'Sites'],
+  games: ['Web', 'Unreal', 'Unity'],
+  art: ['3D print', 'Game asset'],
 } as const;
 const UNDER: Record<string, string[]> = {
-  'proactive-ui-for-ai-glasses': ['AI', '3D'],
+  'proactive-ui-for-ai-glasses': ['AI'],
   'ask-the-claude-docs': ['AI'],
-  'design-system-extractor': ['Design systems', 'Tools'],
   'generative-ui-github': ['AI'],
-  'modern-softworks': ['Design systems'],
+  'design-system-extractor': ['Tools'],
   'hero-animation-builder': ['Tools'],
-  meridian: ['3D'],
-  'micro-interactions-library': ['Design systems'],
+  'micro-interactions-library': ['Tools'],
+  'modern-softworks': ['Sites'],
+  meridian: ['Sites'],
 };
-// A stand in is put under each sub category in turn, so every one of them shows something.
-const turn = (items: WorkItem[], subs: readonly string[]): WorkItem[] => items.map((item, i) => ({ ...item, subs: [subs[i % subs.length]] }));
+// A stand in is put under each sub category in turn, so every one of them shows something, and its card says
+// which it is under, where the category's own name was: a visitor sees at once that a piece is a 3D print or a
+// game asset (his word, Nov 17).
+const turn = (items: WorkItem[], subs: readonly string[], kind: (sub: string) => string): WorkItem[] => items.map((item, i) => { const sub = subs[i % subs.length]; return { ...item, subs: [sub], kind: kind(sub) }; });
 
 export const catalog: WorkCategory[] = [
   { name: 'Software', items: [...software, ...more].map((item) => ({ ...item, subs: UNDER[item.slug] ?? [] })), subs: [...SUBS.software] },
-  { name: 'Games', items: turn(games(6), SUBS.games), standIn: true, subs: [...SUBS.games] },
-  { name: '3D art', items: turn(art(6), SUBS.art), standIn: true, subs: [...SUBS.art] },
+  { name: 'Games', items: turn(games(6), SUBS.games, (sub) => `${sub} game`), standIn: true, subs: [...SUBS.games] },
+  { name: '3D art', items: turn(art(6), SUBS.art, (sub) => sub), standIn: true, subs: [...SUBS.art] },
   { name: 'Photography', items: photography(6), standIn: true },
 ];

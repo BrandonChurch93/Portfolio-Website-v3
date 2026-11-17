@@ -44,10 +44,17 @@
   display: none;
 }
 
+/* A card's words come with its plate and never before it. Shown first, they stood on a black box until the metal
+   arrived under them, at every load and every change of category (his words, Nov 17). */
+.card:has(.plate[data-state='loading']) .inner {
+  opacity: 0;
+}
+
 .inner {
   --u: calc(100cqw / var(--card-w));
   position: relative;
   z-index: 1;
+  transition: opacity var(--dur-3) var(--ease-settle);
   display: flex;
   flex-direction: column;
   border-radius: calc(var(--u) * var(--radius));

@@ -43,11 +43,14 @@ export function mountAtmosphere(host: HTMLElement, look: Look, cards: () => Elem
   gl.enableVertexAttribArray(at);
   gl.vertexAttribPointer(at, 2, gl.FLOAT, false, 0, 0);
   const u = (name: string) => gl.getUniformLocation(prog, name);
-  const U = { res: u('uRes'), dpr: u('uDpr'), scroll: u('uScroll'), time: u('uTime'), led: u('uLed'), lamp: u('uLamp'), cards: u('uCards[0]'), count: u('uCount'), radius: u('uRadius') };
+  const U = { res: u('uRes'), dpr: u('uDpr'), scroll: u('uScroll'), time: u('uTime'), led: u('uLed'), lamp: u('uLamp'), cards: u('uCards[0]'), on: u('uOn[0]'), count: u('uCount'), radius: u('uRadius') };
   host.prepend(canvas);
 
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const boxes = new Float32Array(MOST * 4);
+  const boxes = new Float32Array(MOST * 4), on = new Float32Array(MOST);
+  // When each card's plate was first seen ready: a card comes onto the wall over as long as its plate fades in.
+  const since = new WeakMap<Element, number>();
+  const ARRIVE = 0.9;
   let dpr = 1, w = 1, h = 1, light = { px: innerWidth * 0.3, py: innerHeight * 0.3, led: 0 }, gone = false;
   const size = () => {
     w = innerWidth; h = innerHeight;
@@ -65,7 +68,14 @@ export function mountAtmosphere(host: HTMLElement, look: Look, cards: () => Elem
       if (n >= MOST) break;
       const r = el.getBoundingClientRect();
       if (r.bottom < -400 || r.top > h + 400 || r.width < 2) continue;
+      const plate = el.querySelector<HTMLElement>('[data-kind="card"]');
+      let k = 1;
+      if (plate) {
+        if (plate.dataset.state !== 'ready') k = 0;
+        else { if (!since.has(el)) since.set(el, performance.now()); k = still ? 1 : Math.min(1, (performance.now() - since.get(el)!) / 1000 / ARRIVE); }
+      }
       boxes.set([r.left, r.top, r.width, r.height], n * 4);
+      on[n] = k * k * (3 - 2 * k);
       n++;
     }
     for (const el of type()) {
@@ -83,6 +93,7 @@ export function mountAtmosphere(host: HTMLElement, look: Look, cards: () => Elem
     gl.uniform1f(U.led, light.led);
     gl.uniform2f(U.lamp, light.px, light.py);
     gl.uniform4fv(U.cards, boxes);
+    gl.uniform1fv(U.on, on);
     gl.uniform1i(U.count, n);
     gl.uniform1f(U.radius, radius);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);

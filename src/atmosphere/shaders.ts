@@ -14,6 +14,7 @@ uniform vec2 uRes;
 uniform float uDpr, uScroll, uTime, uLed;
 uniform vec2 uLamp;
 uniform vec4 uCards[${MOST}];
+uniform float uOn[${MOST}];
 uniform int uCount;
 uniform float uRadius;
 out vec4 frag;
@@ -60,11 +61,12 @@ void main() {
     // Where it meets the wall it is darkest, in a narrow line. Its shadow from the raking light lies down and to
     // the right of it, sharper by the card and softer at its far edge. Its shadow from the cursor's light lies
     // away from the cursor and grows with how far off the cursor is.
-    near = min(near, smoothstep(-2.0, 14.0, d));
+    // A card that is still arriving throws as much of a shadow as there is of it (uOn).
+    near = min(near, mix(1.0, smoothstep(-2.0, 14.0, d), uOn[i]));
     float thrown = sdBox(p - c - off, b, uRadius);
-    shadeKey = min(shadeKey, smoothstep(-14.0, 8.0 + 30.0 * smoothstep(0.0, 60.0, d), thrown));
+    shadeKey = min(shadeKey, mix(1.0, smoothstep(-14.0, 8.0 + 30.0 * smoothstep(0.0, 60.0, d), thrown), uOn[i]));
     vec2 cl = uLamp + (c - uLamp) * grow;
-    shadeLamp = min(shadeLamp, smoothstep(-8.0, 12.0 + 0.06 * length(c - uLamp), sdBox(p - cl, b * grow, uRadius * grow)));
+    shadeLamp = min(shadeLamp, mix(1.0, smoothstep(-8.0, 12.0 + 0.06 * length(c - uLamp), sdBox(p - cl, b * grow, uRadius * grow)), uOn[i]));
   }
   vec3 plaster = vec3(0.30, 0.185, 0.115) * (0.82 + 0.36 * h0);
   vec3 col = GROUND * 0.9;
@@ -105,7 +107,7 @@ void main() {
     float behind = smoothstep(-b.y * 0.6, b.y * 0.9, along);
     float edge = smoothstep(wide + 6.0 + along * 0.05, wide - 14.0 - along * 0.03, side);
     float fade = 1.0 - smoothstep(180.0, 980.0, along);
-    shade *= 1.0 - 0.86 * behind * edge * fade;
+    shade *= 1.0 - 0.86 * behind * edge * fade * uOn[i];
   }
   float light = bars * far * haze;
   vec3 col = GROUND * 0.8;
