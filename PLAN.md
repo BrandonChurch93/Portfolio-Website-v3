@@ -468,7 +468,8 @@ Set aside, kept as records: the molten metal test shot at `/lab/pour`, its looks
 ## Phase 7 · The remaining pages (Opus)
 
 - [ ] A short handoff written from the finished home page
-- [ ] The All work page
+- [~] The All work page. Designed with him and built as a first version by Fable, by his word of Nov 17 (`BRIEF.md`, Open 33). Waiting on his look
+- [~] One project page, Ask the Claude Docs, built as a first version in ten parts (`/work/ask-the-claude-docs`). Waiting on his look
 - [ ] Every project page, from the approved one
 - [ ] The résumé
 - [ ] The not found page
