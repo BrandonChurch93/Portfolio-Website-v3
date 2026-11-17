@@ -26,7 +26,7 @@ export function AllWork({ look = null }: { look?: Look | null }) {
     if (!look || !host) return;
     let made: { dispose(): void } | null = null, gone = false;
     void import('../atmosphere/atmosphere').then(({ mountAtmosphere }) => {
-      if (!gone) made = mountAtmosphere(host, look, () => [...host.querySelectorAll('article')]);
+      if (!gone) made = mountAtmosphere(host, look, () => [...host.querySelectorAll('article, [data-stands]')], 14, () => [...host.querySelectorAll<HTMLElement>('[data-casts]')]);
     });
     return () => { gone = true; made?.dispose(); };
   }, [look]);
@@ -41,10 +41,10 @@ export function AllWork({ look = null }: { look?: Look | null }) {
         <Link href={HOME} className={styles.back}>← {allWork.home}</Link>
       </nav>
       <header className={styles.head}>
-        <h1 className={styles.title}>{allWork.title}</h1>
+        <h1 className={styles.title} data-casts="">{allWork.title}</h1>
         <p className={styles.lead}>{allWork.lead}</p>
       </header>
-      <div className={styles.bar} role="group" aria-label="Categories">
+      <div className={styles.bar} role="group" aria-label="Categories" data-stands="">
         {catalog.map((cat, index) => (
           <button key={cat.name} type="button" className={styles.category} aria-pressed={category === index} onClick={() => pick(index)}>{cat.name}</button>
         ))}
@@ -61,7 +61,7 @@ export function AllWork({ look = null }: { look?: Look | null }) {
         {shown.map((item) => <WorkCard key={item.slug} item={item} />)}
       </section>
       <section className={styles.close} aria-label={allWork.close.line}>
-        <p className={styles.closeLine}>{allWork.close.line}</p>
+        <p className={styles.closeLine} data-casts="">{allWork.close.line}</p>
         <MetalButton label={allWork.close.button} variant="primary" href={`${HOME}#contact`} />
       </section>
       <SiteFoot />

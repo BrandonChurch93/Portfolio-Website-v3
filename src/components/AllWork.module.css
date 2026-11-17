@@ -19,6 +19,24 @@
   z-index: 1;
 }
 
+/* On the wall the title's letters stand off it: one shadow from the raking light, down and to the right, and one
+   from the cursor's light, which the room moves (--sx, --sy). The bar is a thing on the wall as the cards are. */
+.page[data-room='wall'] :is(.title, .closeLine) {
+  text-shadow:
+    0.16em 0.11em 0.22em rgb(0 0 0 / 0.5),
+    var(--sx, 0px) var(--sy, 0px) 0.3em rgb(0 0 0 / 0.42);
+}
+
+.page[data-room='wall'] .closeLine {
+  text-shadow:
+    0.1em 0.07em 0.2em rgb(0 0 0 / 0.5),
+    calc(var(--sx, 0px) * 0.5) calc(var(--sy, 0px) * 0.5) 0.3em rgb(0 0 0 / 0.4);
+}
+
+.page[data-room='wall'] .bar {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bronze) 14%, var(--bg-2)), var(--bg-2) 40%, color-mix(in srgb, var(--bronze-deep) 14%, var(--bg)));
+}
+
 .way {
   justify-self: start;
   padding: var(--space-6) var(--edge) 0;

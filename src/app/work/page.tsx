@@ -5,5 +5,5 @@ import { allWork } from '../../content/site-pages';
 export const metadata: Metadata = { title: allWork.title };
 
 export default function Page() {
-  return <AllWork />;
+  return <AllWork look="wall" />;
 }

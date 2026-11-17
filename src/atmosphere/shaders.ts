@@ -38,7 +38,7 @@ float dither() { return (hash(gl_FragCoord.xy) + hash(gl_FragCoord.xy + 7.3) - 1
 // is a second, warm light close to the wall: the cards' shadows swing away from it as it moves.
 export const WALL = `${HEAD}
 const vec3 KEY = normalize(vec3(-0.72, -0.5, 0.48));
-const float LIFT = 16.0;
+const float LIFT = 24.0;
 const float OVER = 210.0;
 float relief(vec2 w) { return fbm(w * 0.011) * 0.62 + fbm(w * 0.07 + 40.0) * 0.26 + noise(w * 0.55) * 0.07; }
 void main() {
@@ -57,16 +57,20 @@ void main() {
     if (i >= uCount) break;
     vec2 c = uCards[i].xy + uCards[i].zw * 0.5, b = uCards[i].zw * 0.5;
     float d = sdBox(p - c, b, uRadius);
-    near = min(near, smoothstep(-2.0, 26.0, d));
-    shadeKey = min(shadeKey, smoothstep(-22.0, 26.0, sdBox(p - c - off, b, uRadius)));
+    // Where it meets the wall it is darkest, in a narrow line. Its shadow from the raking light lies down and to
+    // the right of it, sharper by the card and softer at its far edge. Its shadow from the cursor's light lies
+    // away from the cursor and grows with how far off the cursor is.
+    near = min(near, smoothstep(-2.0, 14.0, d));
+    float thrown = sdBox(p - c - off, b, uRadius);
+    shadeKey = min(shadeKey, smoothstep(-14.0, 8.0 + 30.0 * smoothstep(0.0, 60.0, d), thrown));
     vec2 cl = uLamp + (c - uLamp) * grow;
-    shadeLamp = min(shadeLamp, smoothstep(-10.0, 16.0 + 0.05 * length(c - uLamp), sdBox(p - cl, b * grow, uRadius * grow)));
+    shadeLamp = min(shadeLamp, smoothstep(-8.0, 12.0 + 0.06 * length(c - uLamp), sdBox(p - cl, b * grow, uRadius * grow)));
   }
   vec3 plaster = vec3(0.30, 0.185, 0.115) * (0.82 + 0.36 * h0);
   vec3 col = GROUND * 0.9;
-  col += plaster * vec3(1.0, 0.84, 0.66) * key * reach * 1.05 * mix(0.2, 1.0, shadeKey);
+  col += plaster * vec3(1.0, 0.84, 0.66) * key * reach * 1.05 * mix(0.16, 1.0, shadeKey);
   col += plaster * mix(HOT, PALE, 0.35) * lamp * 0.78 * mix(0.12, 1.0, shadeLamp);
-  col *= mix(0.62, 1.0, near);
+  col *= mix(0.5, 1.0, near);
   // A little haze in the key light, and dust in it.
   float beam = reach * smoothstep(0.9, 0.0, abs(dot(p / uRes.x - vec2(0.1, 0.0), vec2(0.62, -0.78)) - 0.02) * 2.4);
   col += EMBER * beam * 0.11 * (0.55 + 0.45 * fbm(p * 0.004 + vec2(uTime * 0.012, 0.0)));

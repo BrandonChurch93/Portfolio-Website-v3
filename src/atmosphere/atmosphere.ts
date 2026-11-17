@@ -18,7 +18,11 @@ const SHARP: Record<Look, number> = { wall: 1.5, shaft: 1, night: 1.5 };
 
 export interface Atmosphere { dispose(): void }
 
-export function mountAtmosphere(host: HTMLElement, look: Look, cards: () => Element[], radius = 14): Atmosphere | null {
+// How far a line of type that stands off the wall throws its shadow from the cursor's light, as a share of how far
+// the cursor is from it, and the most, in pixels.
+const TYPE = { share: 0.035, most: 22 };
+
+export function mountAtmosphere(host: HTMLElement, look: Look, cards: () => Element[], radius = 14, type: () => HTMLElement[] = () => []): Atmosphere | null {
   const canvas = document.createElement('canvas');
   canvas.setAttribute('aria-hidden', 'true');
   canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none';
@@ -63,6 +67,14 @@ export function mountAtmosphere(host: HTMLElement, look: Look, cards: () => Elem
       if (r.bottom < -400 || r.top > h + 400 || r.width < 2) continue;
       boxes.set([r.left, r.top, r.width, r.height], n * 4);
       n++;
+    }
+    for (const el of type()) {
+      const r = el.getBoundingClientRect();
+      if (r.bottom < -200 || r.top > h + 200) continue;
+      const dx = (r.left + r.width / 2 - light.px) * TYPE.share, dy = (r.top + r.height / 2 - light.py) * TYPE.share, far = Math.hypot(dx, dy) || 1, k = Math.min(1, TYPE.most / far);
+      const sx = `${(dx * k).toFixed(1)}px`, sy = `${(dy * k).toFixed(1)}px`;
+      if (el.style.getPropertyValue('--sx') !== sx) el.style.setProperty('--sx', sx);
+      if (el.style.getPropertyValue('--sy') !== sy) el.style.setProperty('--sy', sy);
     }
     gl.uniform2f(U.res, w, h);
     gl.uniform1f(U.dpr, dpr);
