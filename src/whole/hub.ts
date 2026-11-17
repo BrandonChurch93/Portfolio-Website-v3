@@ -72,9 +72,10 @@ export function createHub(page: () => HTMLElement | null, has: () => { hero: boo
     // With the hero's stand in above it, the stream begins under the hero and not at the top of the page.
     if (!wide()) {
       const title = work.title, still = host.querySelector('[data-part="still"]');
-      const begins = (box: (el: Element) => Box): number => {
-        const b = still ? box(still) : null;
-        return b && b.b - b.t > 1 ? b.t + (b.b - b.t) * NARROW.still : box(title).t - NARROW.over;
+      // Under the fall in the picture, which is the picture's middle, where there is a picture.
+      const begins = (box: (el: Element) => Box): number | { x: number; y: number } => {
+        const img = still?.querySelector('img'), b = img ? box(img) : null;
+        return b && b.b - b.t > 1 ? { x: (b.l + b.r) / 2, y: b.t + (b.b - b.t) * NARROW.still } : box(title).t - NARROW.over;
       };
       // Its two sides end at the foot of Work, beside the button. Run on to the foot of the page they crossed the
       // words of every section under it.

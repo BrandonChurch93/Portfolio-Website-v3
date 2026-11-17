@@ -211,22 +211,33 @@
 
   /* As wide as the screen, and on a phone wider: the picture is centred on the spire and its two ends are off the
      screen, so the city and the core are large enough to read. It fades into the page at its sides and its foot. */
+  /* The world's glow goes on up past the top of its picture and dies away into the page: the picture is cut where
+     the glow is still a third as bright as it gets, and faded in over its own top it began as a level line (his
+     phone, Nov 17). So the box is taller than the picture by a fifth of the picture's width, and in that room the
+     glow is drawn on in the picture's own color at its top. */
   .still {
+    --glow: calc(max(100vw, 540px) * 0.2);
     display: block;
     overflow: hidden;
-    margin: 0 calc(var(--gut) * -1) 0;
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent), linear-gradient(transparent, #000 9%, #000 76%, transparent);
-    mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent), linear-gradient(transparent, #000 9%, #000 76%, transparent);
+    margin: calc(var(--glow) * -1) calc(var(--gut) * -1) 0;
+    padding-top: var(--glow);
+    pointer-events: none;
+    background: radial-gradient(ellipse calc(max(100vw, 540px) * 0.37) calc(var(--glow) * 1.1) at 50% calc(var(--glow) + max(100vw, 540px) * 0.03), rgb(40 17 3) 0, rgb(34 14 3 / 0.86) 30%, rgb(26 10 3 / 0.6) 55%, rgb(14 6 3 / 0.25) 80%, transparent 100%);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent), linear-gradient(#000 0, #000 81%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 7%, #000 93%, transparent), linear-gradient(#000 0, #000 81%, transparent);
     -webkit-mask-composite: source-in;
     mask-composite: intersect;
   }
 
+  /* The picture's own top gives way to the glow drawn behind it, so there is no line where the picture begins. */
   .still img {
     display: block;
     width: 100%;
     height: auto;
     margin-left: 50%;
     translate: -50% 0;
+    -webkit-mask-image: linear-gradient(transparent, #000 13%);
+    mask-image: linear-gradient(transparent, #000 13%);
   }
 
   .name {

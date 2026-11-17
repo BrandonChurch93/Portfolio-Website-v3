@@ -93,7 +93,7 @@ interface Options {
   // How far down the page the stream begins, on a page where something stands above Work and no plan carries the
   // stream down to it, as the hero's plain stand in does on a narrow screen. Without it the stream comes in from
   // above the top of the page, which there took it straight through his name. It comes on there by light.
-  begins?: (box: (el: Element) => Box) => number;
+  begins?: (box: (el: Element) => Box) => number | { x: number; y: number };
   // Open with the frame held: nothing moves but the cursor's light. The test shot only.
   hold?: boolean;
   look?: Look;
@@ -361,7 +361,8 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
       });
       const barBox = boxOf(W.bar);
       const pre = opts.before ? opts.before({ box: (el) => boxOf(el as HTMLElement), width: w, bottom, unit, view: clock.view.h }) : null, above = pre?.route.branches[0];
-      route = routeThroughWork({ title: ink, bar: barBox, cards: places, posts, rail: shown(W.rail) ? boxOf(W.rail) : null, button: shown(W.button) ? boxOf(W.button) : null, width: w, bottom: opts.until && (opts.plan || opts.begins) ? opts.until((el) => boxOf(el as HTMLElement)) : bottom, unit, from: above ? above.y[above.n - 1] : opts.begins?.((el) => boxOf(el as HTMLElement)) });
+      const begun = opts.begins?.((el) => boxOf(el as HTMLElement));
+      route = routeThroughWork({ title: ink, bar: barBox, cards: places, posts, rail: shown(W.rail) ? boxOf(W.rail) : null, button: shown(W.button) ? boxOf(W.button) : null, width: w, bottom: opts.until && (opts.plan || opts.begins) ? opts.until((el) => boxOf(el as HTMLElement)) : bottom, unit, from: above ? above.y[above.n - 1] : typeof begun === 'object' ? begun.y : begun, at: typeof begun === 'object' ? begun.x : undefined });
       if (pre) route = join(pre.route, route);
       else if (opts.begins) route.dark = [...(route.dark ?? []), { from: 0, to: unit, core: true, ease: [0, 0], source: true }];
       const landed = places.map((box) => route!.landings.flatMap((L, i) => ((L.kind === 'land' || L.kind === 'side') && Math.hypot(Math.max(box.l - L.x, 0, L.x - box.r), Math.max(box.t - L.y, 0, L.y - box.b)) < 10 * unit ? [i] : [])));
