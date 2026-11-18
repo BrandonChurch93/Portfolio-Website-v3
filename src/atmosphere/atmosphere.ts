@@ -22,7 +22,11 @@ export interface Atmosphere { dispose(): void }
 // the cursor is from it, and the most, in pixels.
 const TYPE = { share: 0.035, most: 22 };
 
-export function mountAtmosphere(host: HTMLElement, look: Look, cards: () => Element[], radius = 14, type: () => HTMLElement[] = () => []): Atmosphere | null {
+// quiet is the wall for a page a person reads: its raking light dies away this many screens down the page, and it
+// takes this much of the cursor's light.
+export interface Quiet { fall: number; lamp: number }
+
+export function mountAtmosphere(host: HTMLElement, look: Look, cards: () => Element[], radius = 14, type: () => HTMLElement[] = () => [], quiet: Quiet | null = null): Atmosphere | null {
   const canvas = document.createElement('canvas');
   canvas.setAttribute('aria-hidden', 'true');
   canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none';
@@ -43,7 +47,7 @@ export function mountAtmosphere(host: HTMLElement, look: Look, cards: () => Elem
   gl.enableVertexAttribArray(at);
   gl.vertexAttribPointer(at, 2, gl.FLOAT, false, 0, 0);
   const u = (name: string) => gl.getUniformLocation(prog, name);
-  const U = { res: u('uRes'), dpr: u('uDpr'), scroll: u('uScroll'), time: u('uTime'), led: u('uLed'), lamp: u('uLamp'), cards: u('uCards[0]'), on: u('uOn[0]'), count: u('uCount'), radius: u('uRadius') };
+  const U = { res: u('uRes'), dpr: u('uDpr'), scroll: u('uScroll'), time: u('uTime'), led: u('uLed'), lamp: u('uLamp'), cards: u('uCards[0]'), on: u('uOn[0]'), fall: u('uFall'), lampK: u('uLampK'), count: u('uCount'), radius: u('uRadius') };
   host.prepend(canvas);
 
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -96,6 +100,8 @@ export function mountAtmosphere(host: HTMLElement, look: Look, cards: () => Elem
     gl.uniform1fv(U.on, on);
     gl.uniform1i(U.count, n);
     gl.uniform1f(U.radius, radius);
+    gl.uniform1f(U.fall, quiet ? quiet.fall * h : 0);
+    gl.uniform1f(U.lampK, quiet ? quiet.lamp : 1);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   });
 

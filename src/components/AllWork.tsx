@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import type { Look } from '../atmosphere/atmosphere';
+import { useRoom } from '../atmosphere/useRoom';
 import { HOME } from '../config/site';
 import { allWork } from '../content/site-pages';
 import { catalog } from '../content/work';
@@ -21,15 +22,7 @@ export function AllWork({ look = null }: { look?: Look | null }) {
   const page = useRef<HTMLElement>(null);
   const [category, setCategory] = useState(0);
 
-  useEffect(() => {
-    const host = page.current;
-    if (!look || !host) return;
-    let made: { dispose(): void } | null = null, gone = false;
-    void import('../atmosphere/atmosphere').then(({ mountAtmosphere }) => {
-      if (!gone) made = mountAtmosphere(host, look, () => [...host.querySelectorAll('article, [data-stands]')], 14, () => [...host.querySelectorAll<HTMLElement>('[data-casts]')]);
-    });
-    return () => { gone = true; made?.dispose(); };
-  }, [look]);
+  useRoom(page, look);
 
   // The sub category picked within the category, or none: everything in it.
   const [sub, setSub] = useState<string | null>(null);

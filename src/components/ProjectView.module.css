@@ -6,6 +6,23 @@
   background: var(--bg);
 }
 
+/* In a room the page has no ground of its own: the room is drawn behind everything on it, and the name stands
+   off the wall as the title of the page of all his work does. */
+.page[data-room] {
+  background: none;
+}
+
+.page[data-room] > :not(canvas) {
+  position: relative;
+  z-index: 1;
+}
+
+.page[data-room] .title {
+  text-shadow:
+    0.08em 0.06em 0.18em rgb(0 0 0 / 0.5),
+    calc(var(--sx, 0px) * 0.6) calc(var(--sy, 0px) * 0.6) 0.25em rgb(0 0 0 / 0.4);
+}
+
 .top,
 .first,
 .name,
@@ -53,14 +70,22 @@
   display: grid;
   grid-template-columns: minmax(0, 1.5fr) minmax(19rem, 1fr);
   gap: clamp(2rem, 4vw, 4rem);
-  align-items: start;
   padding-top: clamp(1rem, 2.4vw, 2.2rem);
 }
 
+/* The summary is exactly as tall as the viewer beside it, links and all: its name starts level with the picture's
+   top and its figures end level with the foot of the links. Shorter or taller, the two sides ended at different
+   heights (his iPad, Nov 17). */
 .summary {
-  display: grid;
-  justify-items: start;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-height: 100%;
+}
+
+.summary .figures {
+  margin-top: auto;
+  padding-top: var(--space-6);
 }
 
 .kind {
@@ -104,7 +129,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-5) var(--space-5);
   width: 100%;
-  margin: var(--space-6) 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
@@ -139,16 +164,16 @@
   color: var(--copper-light);
 }
 
+/* The links stand directly under the picture, sharing its width between them. */
 .links {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
   width: 100%;
-  margin-top: var(--space-6);
+  margin-top: var(--space-4);
 }
 
-/* Up to three links share one row of the summary. */
-.summary .links > * {
+.links > * {
   flex: 1 1 0;
   width: auto;
   min-width: 6.5rem;

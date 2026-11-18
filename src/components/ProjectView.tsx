@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import type { Look, Quiet } from '../atmosphere/atmosphere';
+import { useRoom } from '../atmosphere/useRoom';
 import type { GalleryPage, ProjectPage, StudyPage } from '../content/projects';
 import { projectPage as words } from '../content/site-pages';
 import { ALL_WORK, type WorkItem } from '../content/work';
@@ -24,6 +26,24 @@ const STUDY_ASPECT = 2000 / 1230;
 
 type Found = { page: ProjectPage; item: WorkItem; prev: WorkItem | null; next: WorkItem | null };
 
+// The room behind a project's page: the wall of the page of all his work, quieter. Its raking light is on the
+// viewer and has died away a screen and a half down, so his words are read on a wall that is nearly dark, and it
+// takes less than half of the cursor's light. ?room=wall is the wall as All work has it and ?room=none is no room,
+// for telling the three apart.
+const QUIET: Quiet = { fall: 1.5, lamp: 0.45 };
+
+function Page({ children }: { children: ReactNode }) {
+  const page = useRef<HTMLElement>(null);
+  const [room, setRoom] = useState<{ look: Look | null; quiet: Quiet | null }>({ look: 'wall', quiet: QUIET });
+  useEffect(() => {
+    const asked = new URLSearchParams(location.search).get('room');
+    if (asked === 'none') setRoom({ look: null, quiet: null });
+    if (asked === 'wall') setRoom({ look: 'wall', quiet: null });
+  }, []);
+  useRoom(page, room.look, room.quiet);
+  return <main ref={page} className={styles.page} data-room={room.look ?? undefined}>{children}</main>;
+}
+
 function Top() {
   return (
     <nav className={styles.top} aria-label="Back">
@@ -38,7 +58,7 @@ const reach = (to: WorkItem) => (to.page.startsWith('/') || to.page.startsWith('
 function Ways({ prev, next }: { prev: WorkItem | null; next: WorkItem | null }) {
   const way = (to: WorkItem | null, label: string, side: 'prev' | 'next') => to && (
     <a href={reach(to)} className={styles.way} data-side={side}>
-      <span className={styles.wayPicture}><img src={to.picture.src} alt="" decoding="async" /></span>
+      <span className={styles.wayPicture} data-stands=""><img src={to.picture.src} alt="" decoding="async" /></span>
       <span className={styles.wayLabel}>{side === 'prev' ? '← ' : ''}{label}{side === 'next' ? ' →' : ''}</span>
       <span className={styles.wayName}>{to.name}</span>
     </a>
@@ -66,13 +86,18 @@ function Words({ id, name, text, blank }: { id: string; name: string; text: stri
 function Study({ page, item, prev, next }: Found & { page: StudyPage }) {
   const [all, setAll] = useState(false);
   return (
-    <main className={styles.page}>
+    <Page>
       <Top />
       <div className={styles.first}>
-        <Viewer shots={page.shots} aspect={STUDY_ASPECT} label={`${item.name}, video and pictures`} />
+        <Viewer
+          shots={page.shots}
+          aspect={STUDY_ASPECT}
+          label={`${item.name}, video and pictures`}
+          under={<div className={styles.links}>{item.links.map((l, i) => <MetalButton key={l.label} label={l.label} variant={i === 0 ? 'primary' : 'accent'} href={l.href} />)}</div>}
+        />
         <header className={styles.summary}>
           <p className={styles.kind}><span>{item.kind}</span><span>{item.year}</span></p>
-          <h1 className={styles.title}>{item.name}</h1>
+          <h1 className={styles.title} data-casts="">{item.name}</h1>
           <p className={styles.sub}>{page.sub}</p>
           <ul className={styles.figures}>
             {page.proved.map((f) => (
@@ -82,9 +107,6 @@ function Study({ page, item, prev, next }: Found & { page: StudyPage }) {
               </li>
             ))}
           </ul>
-          <div className={styles.links}>
-            {item.links.map((l, i) => <MetalButton key={l.label} label={l.label} variant={i === 0 ? 'primary' : 'accent'} href={l.href} />)}
-          </div>
         </header>
       </div>
 
@@ -115,13 +137,13 @@ function Study({ page, item, prev, next }: Found & { page: StudyPage }) {
 
       <Ways prev={prev} next={next} />
       <SiteFoot />
-    </main>
+    </Page>
   );
 }
 
 function Gallery({ page, item, prev, next }: Found & { page: GalleryPage }) {
   return (
-    <main className={styles.page}>
+    <Page>
       <Top />
       <header className={styles.name}>
         <p className={styles.kind}><span>{item.kind}</span><span>{item.year}</span></p>
@@ -142,7 +164,7 @@ function Gallery({ page, item, prev, next }: Found & { page: GalleryPage }) {
       )}
       <Ways prev={prev} next={next} />
       <SiteFoot />
-    </main>
+    </Page>
   );
 }
 

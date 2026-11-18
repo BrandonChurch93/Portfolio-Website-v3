@@ -37,7 +37,11 @@ float dither() { return (hash(gl_FragCoord.xy) + hash(gl_FragCoord.xy + 7.3) - 1
 // A · The wall. The page is a plastered wall in a dim room. One large soft light rakes it from the upper left, so
 // its grain shows, and every card stands off it and throws a soft shadow down and to the right. The cursor's light
 // is a second, warm light close to the wall: the cards' shadows swing away from it as it moves.
+// uFall is how far down the page the raking light has died away, in pixels, and 0 says it never does: on a page a
+// person reads, the wall is lit where the thing to look at stands and is nearly dark behind the words. uLampK is
+// how much of the cursor's light the wall takes.
 export const WALL = `${HEAD}
+uniform float uFall, uLampK;
 const vec3 KEY = normalize(vec3(-0.72, -0.5, 0.48));
 const float LIFT = 24.0;
 const float OVER = 210.0;
@@ -48,9 +52,10 @@ void main() {
   vec3 n = normalize(vec3((h0 - relief(w + vec2(e, 0.0))) * 5.2, (h0 - relief(w + vec2(0.0, e))) * 5.2, 1.0));
   float key = max(dot(n, KEY), 0.0);
   float reach = 1.0 - smoothstep(0.15, 1.25, length((p - vec2(-0.08, -0.12) * uRes) / uRes.x));
+  if (uFall > 0.0) reach *= 1.0 - smoothstep(uFall * 0.3, uFall, w.y);
   vec2 lp = uLamp - p;
   vec3 L = normalize(vec3(lp, OVER));
-  float lamp = max(dot(n, L), 0.0) / (1.0 + dot(lp, lp) / (380.0 * 380.0));
+  float lamp = uLampK * max(dot(n, L), 0.0) / (1.0 + dot(lp, lp) / (380.0 * 380.0));
   float shadeKey = 1.0, shadeLamp = 1.0, near = 1.0;
   vec2 off = -KEY.xy / KEY.z * LIFT;
   float grow = OVER / (OVER - LIFT);

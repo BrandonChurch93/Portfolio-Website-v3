@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import type { Shot } from '../content/projects';
 import { projectPage as words } from '../content/site-pages';
 import { Plate } from './Plate';
@@ -10,7 +10,8 @@ import styles from './Viewer.module.css';
 // plate, and beside it a thumbnail of every one, all showing. A video's place is one of them, marked with a play
 // sign, never apart from the pictures. A thumbnail switches the large one, the large one opens larger, and the
 // arrow keys move through them. rail says where the thumbnails stand: beside the large one, or under it.
-export function Viewer({ shots, aspect, rail = 'side', label }: { shots: Shot[]; aspect: number; rail?: 'side' | 'under'; label: string }) {
+// under is what stands directly under the large one, as wide as it is: a case study's links.
+export function Viewer({ shots, aspect, rail = 'side', label, under }: { shots: Shot[]; aspect: number; rail?: 'side' | 'under'; label: string; under?: ReactNode }) {
   const [at, setAt] = useState(0);
   const [large, setLarge] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -43,7 +44,7 @@ export function Viewer({ shots, aspect, rail = 'side', label }: { shots: Shot[];
         ))}
       </ul>
       <figure className={styles.stage}>
-        <div className={styles.frame} style={{ aspectRatio: String(aspect) }}>
+        <div className={styles.frame} style={{ aspectRatio: String(aspect) }} data-stands="">
           <Plate finish="card" kind="card" card={{ aspect, edge: 'deep', plain: true }} tilt={false} className={styles.metal} />
           <div className={styles.window}>
             {now.slot === 'video' && now.video
@@ -61,6 +62,7 @@ export function Viewer({ shots, aspect, rail = 'side', label }: { shots: Shot[];
           {now.standIn && pill}
           <span>{now.caption}</span>
         </figcaption>
+        {under}
       </figure>
 
       <dialog ref={dialog} className={styles.large} onClose={() => setLarge(false)} onClick={(e) => { if (e.target === dialog.current) setLarge(false); }} onKeyDown={keys}>
