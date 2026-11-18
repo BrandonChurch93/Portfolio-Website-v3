@@ -53,6 +53,7 @@
   --focus: 2px solid var(--flame);
   --focus-offset: 3px;
   --touch: 44px;
+  --nav: calc(var(--touch) + 2 * var(--space-3));
 
   --ease-settle: cubic-bezier(0.2, 0.7, 0.2, 1);
   --dur-1: 0.18s;

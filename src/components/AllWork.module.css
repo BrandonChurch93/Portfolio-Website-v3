@@ -37,38 +37,11 @@
   background: linear-gradient(180deg, color-mix(in srgb, var(--bronze) 14%, var(--bg-2)), var(--bg-2) 40%, color-mix(in srgb, var(--bronze-deep) 14%, var(--bg)));
 }
 
-.way {
-  justify-self: start;
-  padding: var(--space-6) var(--edge) 0;
-}
-
-.back {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--touch);
-  font-family: var(--font-mono);
-  font-size: var(--step--1);
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-  text-decoration: none;
-  color: var(--text-3);
-  transition: color var(--dur-1) var(--ease-settle);
-}
-
-.back:hover {
-  color: var(--copper-light);
-}
-
-.back:focus-visible {
-  outline: var(--focus);
-  outline-offset: var(--focus-offset);
-}
-
 .head {
   display: grid;
   justify-items: center;
   gap: var(--space-5);
-  padding: clamp(2.5rem, 7vw, 6rem) var(--gut) 0;
+  padding: calc(var(--nav) + clamp(1.5rem, 5vw, 4rem)) var(--gut) 0;
   text-align: center;
 }
 

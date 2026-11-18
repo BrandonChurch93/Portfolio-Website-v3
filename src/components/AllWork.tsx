@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useRef, useState } from 'react';
 import type { Look } from '../atmosphere/atmosphere';
 import { useRoom } from '../atmosphere/useRoom';
@@ -9,6 +8,7 @@ import { allWork } from '../content/site-pages';
 import { catalog } from '../content/work';
 import { MetalButton } from './MetalButton';
 import { SiteFoot } from './SiteFoot';
+import { SiteNav } from './SiteNav';
 import { WorkCard } from './WorkCard';
 import styles from './AllWork.module.css';
 
@@ -29,10 +29,9 @@ export function AllWork({ look = null }: { look?: Look | null }) {
   const now = catalog[category], shown = sub ? now.items.filter((i) => i.subs?.includes(sub)) : now.items, n = shown.length;
   const pick = (index: number) => { setCategory(index); setSub(null); };
   return (
+    <>
+    <SiteNav here="work" />
     <main ref={page} className={styles.page} data-room={look ?? undefined}>
-      <nav className={styles.way} aria-label="Back">
-        <Link href={HOME} className={styles.back}>← {allWork.home}</Link>
-      </nav>
       <header className={styles.head}>
         <h1 className={styles.title} data-casts="">{allWork.title}</h1>
         <p className={styles.lead}>{allWork.lead}</p>
@@ -59,5 +58,6 @@ export function AllWork({ look = null }: { look?: Look | null }) {
       </section>
       <SiteFoot />
     </main>
+    </>
   );
 }

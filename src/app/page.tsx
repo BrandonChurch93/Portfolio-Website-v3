@@ -34,7 +34,7 @@ export default function Index() {
         </li>
         <li>
           <Link href="/lab/whole">The whole page so far</Link>
-          <span className={styles.minor}>Phase 3 · Work, Skills, About and Contact on one page with one stream, from the top of Work to the stone under the rocket. Not here yet, on purpose: the hero, the navigation and the footer&rsquo;s design</span>
+          <span className={styles.minor}>Phase 3 · Work, Skills, About and Contact on one page with one stream, from the top of Work to the stone under the rocket. Not here yet, on purpose: the opening and the footer&rsquo;s design</span>
         </li>
         <li>
           <Link href="/lab/contact">Contact, the first build</Link>

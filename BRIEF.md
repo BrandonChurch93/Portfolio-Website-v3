@@ -2668,7 +2668,12 @@ Each line has Fable's recommendation where there is one. None of these are rules
 34. **The navigation (Nov 17, 23:11). His design, to be built.** "The navigation system still hasn't been built yet. I'm thinking a simple navigation that has my name in the top left-hand corner. To the right we have our all work link, and if you were on the all work page, I think that should turn to the home link, unless you push against it. We could add a download résumé button, but I don't think it's really needed. They can do that on the hero. Plus most people here will already have access to my résumé."
     - **In exact terms:** one bar on every page. His name at the top left, which goes to the home page. At the right one link: All work, and on the page of all his work it reads Home. No résumé button.
     - **This replaces what was drawn for Open 17** (a slim bar hidden during the hero, with the four sections or the categories in it), which was never ruled.
-    - **Fable's answers to what he left open** are under this item once built, each marked as Fable's.
+    - **Built (Nov 17), on the home page (`/lab/whole`), the page of all his work and every project's page** (`src/components/SiteNav.tsx`). His name in the display face at the top left, and at the right ALL WORK, or HOME on the page of all his work, in the small capitals the footer's links are in. No bar is drawn and the middle of the screen is left clear, where the stream runs. The "← All work" and "← Home" links at the top of those pages are gone, as he said they would be once there was a navigation, and so is the study's label on the whole page.
+    - **Fable's answers to what he left open, each his to overturn:**
+        - **No résumé button.** Agreed with him: the hero has one and the footer has the link.
+        - **On a project's page the link reads All work**, which is the way back from it.
+        - **It leaves as the page is scrolled down and comes back the moment the page is scrolled up**, or when the keyboard's focus goes into it. Standing still at the top of the screen, his name and the link lay over the cards and the pictures as they passed under the corners. When it comes back part way down a page it has a soft patch of the page's ground behind each corner (one band on a narrow screen), so it reads over whatever is under it.
+        - **On the home page his name goes back to the top of the page**, since he is already there.
 
 ## Dropped
 

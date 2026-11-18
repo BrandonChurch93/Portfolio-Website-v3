@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { Look, Quiet } from '../atmosphere/atmosphere';
 import { useRoom } from '../atmosphere/useRoom';
@@ -10,6 +9,7 @@ import { ALL_WORK, type WorkItem } from '../content/work';
 import { Framed } from './Framed';
 import { MetalButton } from './MetalButton';
 import { SiteFoot } from './SiteFoot';
+import { SiteNav } from './SiteNav';
 import { Viewer } from './Viewer';
 import styles from './ProjectView.module.css';
 
@@ -44,14 +44,11 @@ function Page({ children }: { children: ReactNode }) {
     if (asked === 'wall') setRoom({ look: 'wall', quiet: null });
   }, []);
   useRoom(page, room.look, room.quiet);
-  return <main ref={page} className={styles.page} data-room={room.look ?? undefined}>{children}</main>;
-}
-
-function Top() {
   return (
-    <nav className={styles.top} aria-label="Back">
-      <Link href={ALL_WORK} className={styles.back}>← {words.back}</Link>
-    </nav>
+    <>
+      <SiteNav here="project" />
+      <main ref={page} className={styles.page} data-room={room.look ?? undefined}>{children}</main>
+    </>
   );
 }
 
@@ -99,7 +96,6 @@ function Study({ page, item, prev, next }: Found & { page: StudyPage }) {
   const [all, setAll] = useState(false);
   return (
     <Page>
-      <Top />
       <div className={styles.first}>
         <header className={styles.head}>
           <p className={styles.kind}><span>{item.kind}</span><span>{item.year}</span></p>
@@ -159,7 +155,6 @@ function Study({ page, item, prev, next }: Found & { page: StudyPage }) {
 function Gallery({ page, item, prev, next }: Found & { page: GalleryPage }) {
   return (
     <Page>
-      <Top />
       <header className={styles.name}>
         <p className={styles.kind}><span>{item.kind}</span><span>{item.year}</span></p>
         <h1 className={styles.title}>{item.name}</h1>

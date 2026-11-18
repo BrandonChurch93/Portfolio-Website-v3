@@ -7,10 +7,12 @@ export const pages = {
   broken: { label: 'Error', title: 'Something on this page broke.', note: 'It is not you. Try it again, or go back to the start.', again: 'Try again', home: 'Back to the start' },
 } as const;
 
+// The navigation: his name, which is the hero's own, and one link. On the page of all his work the link goes home.
+export const nav = { label: 'Site', work: 'All work', home: 'Home' } as const;
+
 // The page of all his work. The lead is his live site's own line. The rest are stand ins, his to rewrite.
 export const allWork = {
   title: 'All work',
-  home: 'Home',
   lead: 'The full catalog. Everything here is real and running, and the list grows as I build.',
   project: 'project',
   projects: 'projects',
@@ -23,7 +25,6 @@ export const allWork = {
 
 // A project's own page: the names of its parts and its ways out. Stand ins, his to rewrite.
 export const projectPage = {
-  back: 'All work',
   parts: { why: 'Why I built this', what: 'What this is', how: 'How it works', built: 'Built with', note: 'About it' },
   standIn: 'Stand in',
   why: 'Not written yet. This is where the reason goes: what was missing, who it was for, and what his part in it was.',
