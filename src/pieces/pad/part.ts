@@ -5,7 +5,7 @@ import type { Tier } from '../../config/site';
 // contract. A part builds its group in units, in the pad's own frame (./layout.ts), and is told each frame what the
 // pad is doing. It never touches the stage, the camera or another part.
 
-export const PARTS = ['stone', 'table', 'tower', 'rocket'] as const;
+export const PARTS = ['stone', 'table', 'tower', 'rocket', 'debris'] as const;
 export type PartName = (typeof PARTS)[number];
 
 export interface PartState {

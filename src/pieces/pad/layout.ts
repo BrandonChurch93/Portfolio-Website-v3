@@ -41,6 +41,26 @@ export const climbed = (age: number) => (age <= LAUNCH.lift ? 0 : LAUNCH.climb *
 // as the rocket leaves the table.
 export const burn = (age: number) => (age <= 0 ? 0 : Math.min(1, 0.35 + 0.65 * Math.min(1, age / LAUNCH.lift) ** 2));
 
+// What broke away from the planet, gathered round the pad: where the field may be and where its clusters hang. The
+// field keeps inside `bounds` with everything of its motion: across from `l` to `r` (the right is where the stream
+// falls and the plate stands, and the host's sides fade within 70 units), up to `top` as the page sees it, and over
+// `low` unless it is wholly behind the stone. It keeps `clear` of the table, the tower and the rocket as the page sees
+// them, of the stone's top, and of each other. A cluster is its middle, how far its pieces spread about it, its great
+// piece (how far across, or 0), and how many middle and small pieces it holds. Lengths in units.
+export const DEBRIS = {
+  bounds: { l: -326, r: 118, top: 700, low: 14 },
+  clear: 10,
+  clusters: [
+    { at: [-252, 40, -420], spread: [60, 45, 70], great: 70, middle: 3, small: 10 },
+    { at: [-258, 250, 40], spread: [36, 55, 80], great: 54, middle: 2, small: 8 },
+    { at: [-262, 470, -150], spread: [36, 50, 90], great: 46, middle: 2, small: 7 },
+    { at: [-220, 640, -120], spread: [70, 25, 80], great: 0, middle: 1, small: 9 },
+    { at: [-20, 652, -300], spread: [90, 25, 60], great: 0, middle: 1, small: 5 },
+    { at: [88, 410, -150], spread: [14, 130, 90], great: 0, middle: 2, small: 9 },
+    { at: [-215, 110, 120], spread: [30, 30, 60], great: 0, middle: 1, small: 6 },
+  ],
+} as const;
+
 // How it is looked at: from straight in front and a little above, in degrees, from this far away, in units. The
 // stone is seen about a sixth as deep as it is wide.
 export const VIEW = { az: 0, el: 10, back: 3000 } as const;

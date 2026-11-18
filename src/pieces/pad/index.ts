@@ -81,6 +81,7 @@ const loaders: Record<PartName, () => Promise<PartFactory>> = {
   table: () => import('./parts/table').then((m) => m.build),
   tower: () => import('./parts/tower').then((m) => m.build),
   rocket: () => import('./parts/rocket').then((m) => m.build),
+  debris: () => import('./parts/debris').then((m) => m.build),
 };
 
 export interface PadExtras {
