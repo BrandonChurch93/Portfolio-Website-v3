@@ -110,6 +110,9 @@ export const STONE = {
   // where it is missing, how far its bevel turns to the core, and how fast the stored openness must grow toward an
   // edge, for each unit, for it to be convex, from none to full.
   edge: { wide: 2.8, thin: 1.2, missing: 0.84, bevel: 0.4, rate: [0.006, 0.015] },
+  // A quiet stone (StoneOptions.quiet, sculpt S): its knapped scars this share as deep and as marked, so the form and
+  // the light carry the face and no pattern of scallops reads across it.
+  quiet: { roll: 0.25, knap: 0.2 },
 } as const;
 
 // The stream's light on the stone: a line from the core's foot straight down, as far as the page's stream has run,
@@ -408,6 +411,10 @@ const STONE_FRAG = /* glsl */ `
 	vec3 roll = r1.xyz * ${f(STONE.roll.deep[0] / STONE.roll.wide[0])} + sc1.xyz * ${f(STONE.roll.deep[1])} * ( 0.5 + bRough ) + sc2.xyz * ${f(STONE.roll.deep[2])} * fine2;
 	// A flake's bowl is a little darker at its middle, and the ridges between are proud and catch the light.
 	float knap = ( smoothstep( 0.25, 0.62, sc1.w ) - 0.5 ) + 0.4 * fine2 * ( smoothstep( 0.25, 0.62, sc2.w ) - 0.5 );
+	#ifdef STONE_QUIET
+		roll *= ${f(STONE.quiet.roll)};
+		knap *= ${f(STONE.quiet.knap)};
+	#endif
 	float up = smoothstep( 0.35, 0.75, n.y );
 	float dust = up * smoothstep( 0.2, 0.55, 0.3 + 0.45 * ( 1.0 - open ) + 0.3 * ( st1 - 0.5 ) );
 	tilt += ${f(STONE.grain.tilt)} * edgeOn * ( gNear * mix( 1.0, 1.6, dust ) + ${f(STONE.grain.wear)} * gWide * ( 1.0 - 0.6 * dust ) );
@@ -566,6 +573,8 @@ export interface StoneOptions {
   edge?: string;
   // The stone's body, grain and wear only (see stoneShader).
   grainOnly?: boolean;
+  // Its knapped scars all but gone (STONE.quiet).
+  quiet?: boolean;
   // Draws one thing the stone reads instead of the stone, to judge it: 1 openness, 2 the core's share seen, 3 the
   // distance to an edge, 4 the crust, 5 the moon's share, 6 the partings' risers, 7 how bedded the block is, 8 the chipped
   // edges, 9 the creases' shade, 10 the partings' risers, lips and feet (red, green, blue), 12 each block in a color of its
@@ -581,7 +590,8 @@ export function stoneMaterial(maps: StoneMaps, o: StoneOptions): THREE.MeshStand
     ...(o.spare === 'slab' ? { STONE_SLAB: '' } : {}),
     ...(o.edge ? { STONE_EDGE: '', STONE_EDGE_FROM: o.edge } : {}),
     ...(o.debug ? { STONE_DEBUG: String(Math.round(o.debug)) } : {}),
+    ...(o.quiet ? { STONE_QUIET: '' } : {}),
   };
   m.onBeforeCompile = (sh) => stoneShader(sh, maps, false, o.grainOnly, o.spare === 'slab' ? o.beds ?? [] : undefined, o.tans);
-  return lit(m, { key: `stone-${o.key}${o.spare ? '-slab' : ''}${o.edge ? '-edge' : ''}${o.grainOnly ? '-grain' : ''}${o.debug ? `-debug${o.debug}` : ''}`, baked: o.baked });
+  return lit(m, { key: `stone-${o.key}${o.spare ? '-slab' : ''}${o.edge ? '-edge' : ''}${o.grainOnly ? '-grain' : ''}${o.quiet ? '-quiet' : ''}${o.debug ? `-debug${o.debug}` : ''}`, baked: o.baked });
 }

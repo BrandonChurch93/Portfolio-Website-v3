@@ -5,7 +5,8 @@ import { lit } from '../light';
 import type { PartFactory } from '../part';
 import { STREAM, stoneMaps, stoneMaterial } from './rock/stone';
 
-// The torn rock: whichever sculpt is asked for (?rock=a, default r), drawn in the planet's stone (./rock/stone.ts).
+// The torn rock: whichever sculpt is asked for (?rock=a or s, default r), drawn in the planet's stone (./rock/stone.ts).
+// Sculpt S wears a quiet stone (StoneOptions.quiet): its form and the core's light carry it.
 // A world file for the rock holds two meshes: `break`, the torn rock, and `skin`, the planet's outer surface and its
 // top, which is a plain dark shape until its own part is built. Without a file it is the planet's outline, whole.
 // ?stone=0 draws the break in the plain color the sculpts' light was worked out with, to judge form alone, and
@@ -72,7 +73,7 @@ export const build: PartFactory = async ({ query, renderer }) => {
       // plain shell lay exactly where they are and fought them for every pixel. ?shell=1 draws it again.
       if (name === 'skin' && query.get('shell') !== '1') continue;
       const m = name === 'break' && maps
-        ? stoneMaterial(maps, { key: 'rock', baked: true, spare: blocks(l.geometry, meta) ? 'slab' : undefined, beds: meta.beds, tans: meta.tans, edge, debug: Number(query.get('stonedebug')) || undefined })
+        ? stoneMaterial(maps, { key: which === 's' ? 'rock-s' : 'rock', baked: true, spare: blocks(l.geometry, meta) ? 'slab' : undefined, beds: meta.beds, tans: meta.tans, edge, quiet: which === 's', debug: Number(query.get('stonedebug')) || undefined })
         : lit(new THREE.MeshStandardMaterial({ color: name === 'skin' ? DARK : CLAY, roughness: 0.92, metalness: 0 }), { key: `rock-plain-${name}`, baked: true });
       const touched = name === 'break' && maps ? nearStream(l) : null;
       const part = mesh(l, m);
