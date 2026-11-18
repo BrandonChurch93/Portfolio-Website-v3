@@ -2675,6 +2675,17 @@ Each line has Fable's recommendation where there is one. None of these are rules
         - **It leaves as the page is scrolled down and comes back the moment the page is scrolled up**, or when the keyboard's focus goes into it. Standing still at the top of the screen, his name and the link lay over the cards and the pictures as they passed under the corners. When it comes back part way down a page it has a soft patch of the page's ground behind each corner (one band on a narrow screen), so it reads over whatever is under it.
         - **On the home page his name goes back to the top of the page**, since he is already there.
 
+35. **The finishing pass: everything made ready for his review and for deployment (Nov 18). His word, to be done before he is reported to.** "I'm ready to just go ahead and get everything ready for deployment. That means reviewing the mobile, tablet, desktop, 4K versions of the site, each section, making sure they're all perfect. Doing an audit on performance, user experience." "All of this has to be planned out and really thought about beforehand, so I'm just gonna let you get to work. Feel free to utilize agents in any workflows that you need to. When you report back to me, everything should be pretty much complete and ready for my review and deployment. Besides maybe hooking up the contact form we should be all good."
+    - **The navigation could be better.** "Let's take a look at the navigation. I think that could be a bit better. I know it's super simple and that's what I asked for, but like maybe a background or something would add to it."
+    - **The footer has not been designed.** "Maybe look at the footer, we haven't really talked about that."
+    - **Every internal page.** "Look at all the internal pages, make sure they're good."
+    - **The 3D pieces.** "Make sure the 3-D assets look good. If they can be better let's make them better."
+    - **The city is blurry.** "I will say the city is a bit blurry now. I understand we probably had to do that for performance reasons, but I would love to make it look better while keeping performance."
+    - **The debris field lags.** "The asteroid field still is a bit laggy even on desktop sometimes." And what it is to him: "In my opinion, the exploded part of the planet in the asteroid field is the coolest part of the site."
+    - **More debris, in more places.** "I also wouldn't be opposed to adding more of like the asteroids. I know I keep calling them asteroids, but like the debris, even in more places around the site, like down around the contact section and the spaceship. I think it would just add some consistency and some really coolness to it."
+    - **More texture.** "I'm also open to adding more like textures around the places like our work pages."
+    - **In exact terms:** one pass over the whole site, planned in `PLAN.md` ("The finishing pass"), in which Fable does the creative work (the navigation, the footer, where debris and texture go), Opus builders make the contained things from briefs, and fresh Opus auditors check every page at a phone, a tablet upright and sideways, a desktop and 4K, its speed, its memory and its use. What is his alone stays his: the words, the real pictures, the domain, and hooking up the form.
+
 ## Dropped
 
 - Shards that have to read as copper leaf and as glass. They are abstract facets in a solid and a clear material (Nov 12)
