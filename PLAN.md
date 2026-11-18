@@ -19,20 +19,20 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 Everything made ready for his review and for deployment. Each line is ticked `[~]` when built and measured, and only he ticks `[x]`.
 
 - **Audits, by fresh Opus auditors, read only, findings checked before they are acted on:**
-    - [ ] Every page at a phone, an iPad upright and sideways, a desktop, 1920, 2560 and 4K, section by section (`shots/finish/screens/report.md`)
-    - [ ] Use and readiness: the launch list below gone through item by item against today's code, keyboard, links, errors, reduced motion, metadata (`shots/finish/ready/report.md`)
-    - [ ] Speed and memory of the whole page and the internal pages, on a production build, in Chromium and WebKit (`shots/finish/speed/report.md`)
+    - [~] Every page at a phone, an iPad upright and sideways, a desktop, 1920, 2560 and 4K, section by section: 30 findings, in `LOG.md`
+    - [~] Use and readiness: the launch list below gone through item by item against today's code, keyboard, links, errors, reduced motion, metadata: in `LOG.md`
+    - [~] Speed and memory of the whole page and the internal pages, on a production build, in Chromium and WebKit: measured by Fable, in `LOG.md`
 - **Fable's own:**
-    - [~] The navigation: his name at the left and one link at the right (Open 34). He asks for more: a ground of its own
-    - [ ] The footer, designed
-    - [ ] Where debris goes beyond the hero, and more texture on the work pages
-    - [ ] Every fault the audits find in layout, at every size
+    - [~] The navigation as a bar of bronze (Open 34)
+    - [~] The footer, designed
+    - [~] Debris round the launch pad. More texture is waiting on his answer to which he meant
+    - [~] The audits' faults in layout, at every size. Left: the upright iPad as a design of its own, and the stream's lane on a phone
 - **Opus builders, from briefs, each round judged by fresh reviewers and by Fable:**
-    - [~] The rock round the core as good as picture 9's (sculpt S, `reference/kits/world-briefs/rock-s*.md`, behind `?rock=s` until it beats the live rock on the page)
-    - [ ] The city sharp at the screen's own density, with the frame's time held
-    - [ ] The debris field smooth on a desktop, measured in real frames
-    - [ ] Debris round the launch pad in Contact
-    - [ ] The other seven software project pages, from the case study and his live site's own words
+    - [~] The rock round the core (sculpt S, six rounds, on the page since Nov 18 with the one before it at `?rock=r`). Not at picture 9's level: `BRIEF.md`, Hero, says where it is short
+    - [~] The city sharp at the screen's own density on an iPad (its stone and windows: the gold and the trees are still soft there)
+    - [~] No lag in the debris field on a desktop: every piece made behind the preloader
+    - [~] Debris round the launch pad in Contact (two rounds)
+    - [~] The other seven software project pages, in his live site's own words
 - **Then:** a production build, WebKit at an iPad's and a phone's size, `npm run mem` alone and with `--walk`, `npm run perf`, the stills taken again (`npm run still`), one push, the deployment checked.
 - **His alone:** the words, the real pictures and projects, the domain, the favicon and share picture if he wants others, hooking up the form.
 
