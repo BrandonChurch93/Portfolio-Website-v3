@@ -86,9 +86,11 @@ const want = pic.map((row, i) => row.map((_, j) => {
 want.forEach((row) => row.forEach((v, j) => { if (!v) { for (let d = 1; d < NB; d++) { const q = row[j - d] ?? row[j + d]; if (q) { row[j] = q; break; } } } }));
 const tint = now.tint.map((row, i) => row.map(([g, b], j) => {
   const m = ratio(got[i][j]), w = want[i][j];
-  if (!m || !w) return [g, b];
-  const clamp = (v) => Math.min(1.2, Math.max(0.01, v));
-  return [+clamp(g * (w[0] / m[0]) ** RATE).toFixed(4), +clamp(b * (w[1] / Math.max(m[1], 0.01)) ** RATE).toFixed(4)];
+  // A cell the still has too few pixels in is left as it is: one of 51 pixels sent its tint to a violet white.
+  if (!m || !w || got[i][j][2] < 150) return [g, b];
+  // Held to a warm light: a cell with a few dozen pixels once pushed blue over red past 1, a violet white.
+  const clamp = (v, most) => Math.min(most, Math.max(0.01, v));
+  return [+clamp(g * (w[0] / m[0]) ** RATE, 0.85).toFixed(4), +clamp(b * (w[1] / Math.max(m[1], 0.01)) ** RATE, 0.6).toFixed(4)];
 }));
 console.log('ring  step  picture g/r b/r   still g/r b/r   tint');
 rings.forEach((r, i) => { for (let j = 0; j < NB; j++) { const p = want[i][j], m = ratio(got[i][j]); console.log(`${r}`.padEnd(6), `${j * STEP}`.padEnd(5), (p ? p.map((v) => v.toFixed(2)).join(' ') : ' -').padEnd(17), (m ? m.map((v) => v.toFixed(2)).join(' ') : ' -').padEnd(15), tint[i][j].join(' '), m ? `(${Math.round(got[i][j][2])})` : ''); } });

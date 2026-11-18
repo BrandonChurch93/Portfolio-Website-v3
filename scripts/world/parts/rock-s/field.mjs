@@ -8,6 +8,9 @@
 // or standing proud of them, broken by planes into angular ends that come to points, and its face a little out or
 // back. Where two sheets part there is a slot two to four units wide and many deep, which the ball does not reach:
 // those are the cracks. A mass's back is `thick` behind its face, and its sides follow its outline in the picture.
+// Round 5: the sheets are 7 to 24 units thick and lie nearly in a mass's face (masses.mjs), so a face is one broad sheet
+// with two or three partings across it and the sheets' ends step out beyond its edge. At 4 to 14 units and on edge
+// every mass was a comb of thirty pages, which shaded one another and read as corrugated card.
 //
 //   setup(args)        args = { stones } (the rubble, from make.mjs)
 //   field(x, y, z)     the rock
@@ -56,7 +59,7 @@ const BACKFILL = { gap: 0.8, deep: 14, over: 60, high: 70, from: -150, low: 90, 
 // units over units. A mass's bedding leans `dip` degrees from its face (0: sheets lying in the face, a stack seen from above; 90:
 // sheets on edge, a comb) and its run turns up to `strike` degrees from the way to the ball. A mass may set any of
 // these (`sheet` in masses.mjs), or its bedding outright (`bed`, a direction in the world).
-const SHEET = { thin: [4, 7], thick: [8.5, 14], thinShare: 0.55, pull: [-6, 16], step: [2, 12], lift: 2.6, gap: [2.2, 4.2], deep: [9, 24], fused: 0.45, cuts: 3, bite: [3, 26], bevel: [0.5, 1.3], curl: 0.0016, fan: 0.4, wander: [4, 30, 1.2, 9], dip: [40, 72], strike: 28 };
+const SHEET = { thin: [7, 11], thick: [14, 24], thinShare: 0.4, pull: [-6, 16], step: [3, 13], lift: 3.2, gap: [2.4, 4.4], deep: [9, 24], fused: 0.3, cuts: 3, bite: [3, 26], bevel: [0.5, 1.3], curl: 0.0016, fan: 0.4, wander: [4, 30, 1.2, 9], dip: [14, 34], strike: 28 };
 // The back wall of the stream's lane under the floor: it leans back as it goes down, so it faces down from the core,
 // and is broken.
 const LANEWALL = { lean: 0.32, deep: 5, over: 11, fine: 1.6 };
@@ -295,12 +298,15 @@ export function mass(m, x, y, z, px, py) {
   return d;
 }
 
-// The bedding of the place: the mass it is of, or the roof's and the backfill's own.
+// The bedding of the place: the mass it is of, or the roof's own. The backfill has none (null: make.mjs gives it the
+// surface's own normal, so the stone draws no laminae on it): its faces turn every way in the socket, and laminae
+// cut at a slant across them drew wood grain rings round the ball. The roof's lies in its front, so the front is not
+// ruled with level lines from end to end.
 export function bedOf(x, y, z) {
   const at = which(x, y, z);
-  return at < M.length ? M[at].sheets.b : at === M.length ? ROOFBED : BACKBED;
+  return at < M.length ? M[at].sheets.b : at === M.length ? ROOFBED : null;
 }
-const ROOFBED = norm([0.08, 1, 0.22]), BACKBED = norm([0.3, 0.2, 1]);
+const ROOFBED = norm([0.1, 0.3, 1]);
 
 // The roof: under the land, in front of nothing, its front face a little behind the land's edge, broken across into
 // blocks, and its ragged underside where the picture has it.

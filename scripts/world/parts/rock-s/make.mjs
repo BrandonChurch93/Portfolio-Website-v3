@@ -127,10 +127,10 @@ const fold = (v) => {
   return [x * 0.5 + 0.5, y * 0.5 + 0.5];
 };
 for (let i = 0; i < n; i++) {
-  const p = [0, 1, 2].map((k) => brk.positions[i * 3 + k] - brk.normals[i * 3 + k] * 0.6), [ox, oy] = fold(F.bedOf(...p));
+  const p = [0, 1, 2].map((k) => brk.positions[i * 3 + k] - brk.normals[i * 3 + k] * 0.6), [ox, oy] = fold(F.bedOf(...p) ?? [brk.normals[i * 3], brk.normals[i * 3 + 1], brk.normals[i * 3 + 2]]);
   lightOf.set([l.core[i], l.moon[i], l.open[i], ox], i * 4);
   bounceOf.set([storeBounce(l.bounce[i * 3]), storeBounce(l.bounce[i * 3 + 1]), storeBounce(l.bounce[i * 3 + 2]), oy], i * 4);
 }
 said('beds');
-pack('public/world/rock-s.bin', [{ name: 'break', positions: brk.positions, indices: brk.indices, attributes: { normal: { data: brk.normals, size: 3, as: 'i16' }, light: { data: lightOf, size: 4, as: 'u8' }, bounce: { data: bounceOf, size: 4, as: 'u8' } } }], { draft, sculpt: 's', round: 4, stones: stones.length, spare: 'bed', bed: 'light.w and bounce.w, folded onto an octahedron', cell: CELL });
+pack('public/world/rock-s.bin', [{ name: 'break', positions: brk.positions, indices: brk.indices, attributes: { normal: { data: brk.normals, size: 3, as: 'i16' }, light: { data: lightOf, size: 4, as: 'u8' }, bounce: { data: bounceOf, size: 4, as: 'u8' } } }], { draft, sculpt: 's', round: 5, stones: stones.length, spare: 'bed', bed: 'light.w and bounce.w, folded onto an octahedron', cell: CELL });
 said('done');

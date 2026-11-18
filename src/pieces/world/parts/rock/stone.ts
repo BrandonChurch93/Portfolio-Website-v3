@@ -128,16 +128,16 @@ export const STONE = {
   // how far the hue wanders within a face, and over how many units, broad and finer. `paled` is how far a face the
   // core's paled light grazes takes the lit hue, and `dust` how much paler dust is than the stone it lies on. A face the
   // moon lights and the core does not fades as it is seen more nearly edge on, between the two of `thin`.
-  quietTint: { lit: [1, 0.9, 0.62] as const, shade: [1, 0.52, 0.25] as const, far: [1, 0.55, 0.4] as const, value: [1.04, 0.86, 0.86] as const, mass: [1, 0.11] as const, drift: [1.1, 60, 18] as const, paled: 0.6, dust: 1.2, thin: [0.12, 0.42] },
+  quietTint: { lit: [1, 0.9, 0.62] as const, shade: [1, 0.52, 0.25] as const, far: [1, 0.55, 0.4] as const, value: [1.12, 0.86, 1.08] as const, mass: [1, 0.11] as const, drift: [1.1, 60, 18] as const, paled: 0.6, dust: 1.2, thin: [0.12, 0.42] },
   pits: { wide: [1.6, 4.2], deep: [0.22, 0.2], share: [0.3, 0.16], tone: 0.16, cluster: 46, soft: 0.3, bare: 130 },
   // Round 4 (StoneOptions.bed): the sculpt stores each vertex's bedding, the plane its sheets lie in, and the stone
   // lays the laminae finer than the sheets along it: how far apart, wider and finer, in units, each riser's width
   // least and most, how far a lamina's riser turns the surface, how often a riser faces from the core and not to it,
   // how dark its foot is, how far its line wanders, broad and fine, in units, and how steeply the bedding must cut a
 // face for them to show, from none to full (the length of the bedding's normal along the face).
-  laminae: { apart: [2.6, 1.05], riser: [0.7, 1.5, 0.3, 0.6], tilt: 1.1, away: 0.18, foot: 0.34, warp: [0.45, 0.15], across: [0.55, 0.8] },
+  laminae: { apart: [2.6, 1.05], riser: [0.7, 1.5, 0.3, 0.6], tilt: 1.1, away: 0.18, foot: 0.34, warp: [0.45, 0.15], across: [0.72, 0.92] },
   // How far each mass's hue may differ (StoneOptions.curve): the share green and blue are moved for each unit of it.
-  hueSpread: [0.18, 0.3] as const,
+  hueSpread: [0.07, 0.1] as const,
 } as const;
 
 // The stream's light on the stone: a line from the core's foot straight down, as far as the page's stream has run,
