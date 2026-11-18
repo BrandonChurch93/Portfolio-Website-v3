@@ -25,7 +25,7 @@ const draft = process.argv.includes('--draft');
 const t0 = performance.now(), said = (s) => console.log(`${((performance.now() - t0) / 1000).toFixed(1)} s · ${s}`);
 // The grid the field is read on, in units; the most the reduced mesh may stray where it is seen and where it is not;
 // the most triangles; faces meeting at more than CREASE degrees meet at a crease.
-const cellAt = process.argv.indexOf('--cell'), CELL = cellAt > 0 ? Number(process.argv[cellAt + 1]) : draft ? 2.6 : 1.2, KEEP = draft ? 0.6 : 0.8, UNSEEN = 8, BUDGET = draft ? 200000 : 470000, CREASE = 36;
+const cellAt = process.argv.indexOf('--cell'), CELL = cellAt > 0 ? Number(process.argv[cellAt + 1]) : draft ? 2.6 : 1.2, KEEP = draft ? 0.6 : 0.8, UNSEEN = 8, BUDGET = draft ? 200000 : 600000, CREASE = 36;
 // The rubble: how many places are tried, the most stones, their least and most size (units), how far up a face must
 // look for one to lie there, and how far it is sunk into it.
 const RUBBLE = { tries: 20000, most: 110, size: [1.2, 5.5], up: 0.72, sunk: 0.5, clear: 150 };
@@ -132,5 +132,5 @@ for (let i = 0; i < n; i++) {
   bounceOf.set([storeBounce(l.bounce[i * 3]), storeBounce(l.bounce[i * 3 + 1]), storeBounce(l.bounce[i * 3 + 2]), oy], i * 4);
 }
 said('beds');
-pack('public/world/rock-s.bin', [{ name: 'break', positions: brk.positions, indices: brk.indices, attributes: { normal: { data: brk.normals, size: 3, as: 'i16' }, light: { data: lightOf, size: 4, as: 'u8' }, bounce: { data: bounceOf, size: 4, as: 'u8' } } }], { draft, sculpt: 's', round: 5, stones: stones.length, spare: 'bed', bed: 'light.w and bounce.w, folded onto an octahedron', cell: CELL });
+pack('public/world/rock-s.bin', [{ name: 'break', positions: brk.positions, indices: brk.indices, attributes: { normal: { data: brk.normals, size: 3, as: 'i16' }, light: { data: lightOf, size: 4, as: 'u8' }, bounce: { data: bounceOf, size: 4, as: 'u8' } } }], { draft, sculpt: 's', round: 6, stones: stones.length, spare: 'bed', bed: 'light.w and bounce.w, folded onto an octahedron', cell: CELL });
 said('done');

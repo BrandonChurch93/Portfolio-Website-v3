@@ -1,9 +1,10 @@
 import * as THREE from 'three';
-import { CORE, LIGHT, MOONWARD, RIM, SCALE, SOURCE, WORLD } from '../../layout';
+import { CORE, D2R, HOST, LIGHT, MOONWARD, PICTURE, RIM, SCALE, SOURCE, SPIRE, VIEW, WORLD, drawn } from '../../layout';
 import { color, lit, stone, world } from '../../light';
 import { slice } from '../../../../world/build';
 import { GRAIN, grain } from './grain';
 import { CURVE } from './curve';
+import { LIGHTMAP } from './light-map';
 
 // The planet's stone: what the torn rock is made of, and what a piece that broke away may wear. A broken sandstone
 // whose color comes from the light on it: cream only where a face squarely meets the core, a deep orange in every
@@ -129,13 +130,15 @@ export const STONE = {
   // core's paled light grazes takes the lit hue, and `dust` how much paler dust is than the stone it lies on. A face the
   // moon lights and the core does not fades as it is seen more nearly edge on, between the two of `thin`.
   quietTint: { lit: [1, 0.9, 0.62] as const, shade: [1, 0.52, 0.25] as const, far: [1, 0.55, 0.4] as const, value: [1.12, 0.86, 1.08] as const, mass: [1, 0.11] as const, drift: [1.1, 60, 18] as const, paled: 0.6, dust: 1.2, thin: [0.12, 0.42] },
-  pits: { wide: [1.6, 4.2], deep: [0.22, 0.2], share: [0.3, 0.16], tone: 0.16, cluster: 46, soft: 0.3, bare: 130 },
+  pits: { wide: [1.4, 3.2], deep: [0.3, 0.26], share: [0.42, 0.24], tone: 0.3, cluster: 40, soft: 0.22, bare: 130 },
   // Round 4 (StoneOptions.bed): the sculpt stores each vertex's bedding, the plane its sheets lie in, and the stone
   // lays the laminae finer than the sheets along it: how far apart, wider and finer, in units, each riser's width
   // least and most, how far a lamina's riser turns the surface, how often a riser faces from the core and not to it,
   // how dark its foot is, how far its line wanders, broad and fine, in units, and how steeply the bedding must cut a
 // face for them to show, from none to full (the length of the bedding's normal along the face).
-  laminae: { apart: [2.6, 1.05], riser: [0.7, 1.5, 0.3, 0.6], tilt: 1.1, away: 0.18, foot: 0.34, warp: [0.45, 0.15], across: [0.72, 0.92] },
+  // Round 6: none shows (across past 1): at three times every stack of them read as plywood, and what divides a face
+  // now is in its form.
+  laminae: { apart: [2.6, 1.05], riser: [0.7, 1.5, 0.3, 0.6], tilt: 1.1, away: 0.18, foot: 0.34, warp: [0.45, 0.15], across: [1.5, 1.6] },
   // How far each mass's hue may differ (StoneOptions.curve): the share green and blue are moved for each unit of it.
   hueSpread: [0.07, 0.1] as const,
 } as const;
@@ -189,6 +192,21 @@ const v2 = (c: readonly number[]): string => `vec2( ${f(c[0])}, ${f(c[1])} )`;
 const C = v3(CORE.at);
 const MOON = v3(new THREE.Vector3(...MOONWARD).normalize().toArray());
 
+// Sculpt S's map of picture 9's large pattern of light (./light-map.ts): the multiplier of what the core and its
+// bounce give at a place, read where the place is in the picture through the fixed view (layout.ts, pictured), so it
+// holds at any canvas size and under any scroll. Outside the map it is 1.
+const MAP_E = VIEW.el * D2R, MAP_SE = Math.sin(MAP_E), MAP_CE = Math.cos(MAP_E), MAP_Y = SPIRE.tall - (HOST.tall / 2 - HOST.over) / MAP_CE, MAP_TIP = drawn(0, SPIRE.tall, 0)[1];
+const MAP_GLSL = /* glsl */ `
+uniform sampler2D uStoneLight;
+float stoneLightK( vec3 p ) {
+	float dy = p.y - ${f(+MAP_Y.toFixed(5))};
+	float k = ${f(VIEW.back)} / max( ${f(VIEW.back)} - dy * ${f(+MAP_SE.toFixed(6))} - p.z * ${f(+MAP_CE.toFixed(6))}, 1.0 );
+	vec2 at = vec2( ${f(PICTURE.mid)} + p.x * k / ${f(PICTURE.unit)}, ${f(PICTURE.tip)} + ( ${f(HOST.tall / 2)} - ( dy * ${f(+MAP_CE.toFixed(6))} - p.z * ${f(+MAP_SE.toFixed(6))} ) * k - ${f(+MAP_TIP.toFixed(5))} ) / ${f(PICTURE.unit)} );
+	vec2 uv = ( at - ${v2(LIGHTMAP.at)} ) / ${v2(LIGHTMAP.size)};
+	float inside = step( 0.0, uv.x ) * step( uv.x, 1.0 ) * step( 0.0, uv.y ) * step( uv.y, 1.0 );
+	float g = texture2D( uStoneLight, clamp( uv, 0.0, 1.0 ) ).r;
+	return exp2( mix( 0.0, ${f(LIGHTMAP.log[0])} + ${f(LIGHTMAP.log[1] - LIGHTMAP.log[0])} * g, inside ) );
+}`;
 export const STONE_VERT_PARS = /* glsl */ `
 varying vec3 vStoneP;
 varying vec3 vStoneN;
@@ -267,6 +285,30 @@ vec3 stoneCurve( vec3 o, vec3 p ) {
 	return c * ( l / max( dot( c, vec3( 0.2126, 0.7152, 0.0722 ) ), 1e-5 ) );
 }`;
 
+// What the map does to the core's light, which lit() has just added (CORE_LIGHT in ../../light.ts): the same light
+// worked out again and added once more, times the map less one. The moon and the page's stream are left as they are.
+const MAP_CORE = /* glsl */ `
+#if defined( STONE_MAP ) && defined( WORLD_CORE ) && defined( WORLD_BAKED )
+{
+	float sK = stoneLightK( vStoneP ) - 1.0;
+	vec3 wTo = ( viewMatrix * vec4( uCoreAt, 1.0 ) ).xyz - geometryPosition;
+	float wD = max( length( wTo ), 1e-6 ), wS = min( 1.0, uCoreR / wD );
+	vec3 wL = wTo / wD;
+	float wC = dot( geometryNormal, wL );
+	vec3 wE = mix( uCoreColor, uCorePale, ${f(LIGHT.core.pale[0])} * smoothstep( ${f(LIGHT.core.pale[1])}, ${f(LIGHT.core.pale[2])}, wS ) ) * ( uCoreLevel * wLight.x * pow( wS, uCoreFall ) );
+	vec3 wH = normalize( wL + geometryViewDir );
+	vec3 wF = F_Schlick( material.specularColor, material.specularF90, saturate( dot( geometryViewDir, wH ) ) );
+	reflectedLight.directDiffuse += sK * wE * worldIllum( wC, wS ) * BRDF_Lambert( material.diffuseContribution ) * ( 1.0 - wF );
+	reflectedLight.directSpecular += sK * wE * saturate( wC ) * BRDF_GGX( wL, geometryViewDir, geometryNormal, material ) * material.multiScatteringCompensation;
+}
+#endif`;
+
+// And to the bounce, once lit() has laid it (BOUNCE in ../../light.ts), with the night's little fill on the rock.
+const MAP_BOUNCE = /* glsl */ `
+#ifdef STONE_MAP
+	reflectedLight.indirectDiffuse *= stoneLightK( vStoneP );
+#endif`;
+
 const FRAG_PARS = /* glsl */ `
 varying vec3 vStoneP;
 varying vec3 vStoneN;
@@ -286,6 +328,9 @@ varying vec3 vStoneN;
 #endif
 #ifdef STONE_CURVE
 	${CURVE_GLSL}
+#endif
+#ifdef STONE_MAP
+	${MAP_GLSL}
 #endif
 uniform sampler2D uStoneGrain;
 uniform vec2 uStoneStream;
@@ -721,6 +766,12 @@ const CURVE_OUT = /* glsl */ `
 #ifdef STONE_CURVE
 	outgoingLight = stoneCurve( outgoingLight, vStoneP );
 #endif
+#if defined( STONE_DEBUG ) && STONE_DEBUG == 16
+	outgoingLight = vec3( 0.25 );
+#endif
+#if defined( STONE_DEBUG ) && STONE_DEBUG == 17
+	outgoingLight = vec3( 0.0 );
+#endif
 #if defined( STONE_DEBUG ) && STONE_DEBUG == 15
 	outgoingLight = vec3( exp2( ${f(CURVE.ramp[0])} + ${f(CURVE.ramp[1] - CURVE.ramp[0])} * ( floor( clamp( ( vStoneP.x - ${f(CURVE.ramp[2])} ) / ${f(CURVE.ramp[3])}, 0.0, ${f(CURVE.ramp[4] - 1)} ) ) + 0.5 ) / ${f(CURVE.ramp[4])} ) );
 #endif`;
@@ -734,8 +785,9 @@ const after = (src: string, chunk: string, add: string): string => {
 // Lays the stone into a standard shader's fragment stage, and the vertex stage too unless the part sets vStoneP and
 // vStoneN itself (own: true). grainOnly leaves out the partings, the crust and the edges: the stone's
 // body, its grain, its stains, its knapped relief and its wear, for what broke away.
-export function stoneShader(sh: Shader, maps: StoneMaps, own = false, grainOnly = false, beds?: readonly (readonly number[])[], tans?: readonly number[]): void {
+export function stoneShader(sh: Shader, maps: StoneMaps, own = false, grainOnly = false, beds?: readonly (readonly number[])[], tans?: readonly number[], light?: THREE.Texture): void {
   Object.assign(sh.uniforms, { uStoneGrain: { value: maps.grain }, uStoneStreamPower: { value: 1 }, uStoneStream: world.uniforms.uStream });
+  if (light) sh.uniforms.uStoneLight = { value: light };
   if (beds) {
     sh.uniforms.uStoneBeds = { value: Array.from({ length: BEDS_MAX }, (_, i) => new THREE.Vector4(...(beds[i] ?? [0, 1, 0, 0]))) };
     sh.uniforms.uStoneTan = { value: Array.from({ length: BEDS_MAX }, (_, i) => tans?.[i] ?? 0) };
@@ -746,7 +798,8 @@ export function stoneShader(sh: Shader, maps: StoneMaps, own = false, grainOnly 
   fr = after(fr, 'roughnessmap_fragment', 'roughnessFactor = stoneRough;');
   fr = after(fr, 'normal_fragment_maps', 'normal = normalize( ( viewMatrix * vec4( stoneNormal, 0.0 ) ).xyz );');
   fr = after(fr, 'lights_physical_fragment', SHEEN);
-  fr = after(fr, 'lights_fragment_begin', STREAM_LIGHT);
+  fr = after(fr, 'lights_fragment_begin', `${MAP_CORE}\n${STREAM_LIGHT}`);
+  fr = after(fr, 'lights_fragment_end', MAP_BOUNCE);
   fr = fr.replace('#include <opaque_fragment>', `${CURVE_OUT}\n#include <opaque_fragment>`);
   sh.fragmentShader = fr;
 }
@@ -777,11 +830,15 @@ export interface StoneOptions {
   bed?: boolean;
   // With quiet: the light's hue is set to picture 9's rock at that brightness and distance from the core (./curve.ts).
   curve?: boolean;
+  // With quiet: sculpt S's map of picture 9's large pattern of light (./light-map.ts), which multiplies what the core
+  // and its bounce give.
+  light?: THREE.Texture;
   // Draws one thing the stone reads instead of the stone, to judge it: 1 openness, 2 the core's share seen, 3 the
   // distance to an edge, 4 the crust, 5 the moon's share, 6 the partings' risers, 7 how bedded the block is, 8 the chipped
   // edges, 9 the creases' shade, 10 the partings' risers, lips and feet (red, green, blue), 12 each block in a color of its
   // own, 13 concave creases green and convex red, 14 (sculpt S) each mass in a color of its own,
-  // 11 how far the core's light is full, lit, and the hot zone. 21 to 29 are 1 to 9 in bands of a quarter.
+  // 11 how far the core's light is full, lit, and the hot zone. 21 to 29 are 1 to 9 in bands of a quarter. 16 and 17
+  // (sculpt S) the rock flat grey and flat black, by which scripts/world/parts/rock-s/light.mjs finds where it is drawn.
   debug?: number;
 }
 // A standard material of the stone, joined to the world's light.
@@ -796,7 +853,8 @@ export function stoneMaterial(maps: StoneMaps, o: StoneOptions): THREE.MeshStand
     ...(o.quiet && o.mass ? { STONE_MASS: '' } : {}),
     ...(o.quiet && o.bed ? { STONE_BED: '' } : {}),
     ...(o.quiet && o.curve ? { STONE_CURVE: '' } : {}),
+    ...(o.quiet && o.light ? { STONE_MAP: '' } : {}),
   };
-  m.onBeforeCompile = (sh) => stoneShader(sh, maps, false, o.grainOnly, o.spare === 'slab' ? o.beds ?? [] : undefined, o.tans);
-  return lit(m, { key: `stone-${o.key}${o.spare ? '-slab' : ''}${o.edge ? '-edge' : ''}${o.grainOnly ? '-grain' : ''}${o.quiet ? '-quiet' : ''}${o.quiet && o.mass ? '-mass' : ''}${o.quiet && o.bed ? '-bed' : ''}${o.quiet && o.curve ? '-curve' : ''}${o.debug ? `-debug${o.debug}` : ''}`, baked: o.baked });
+  m.onBeforeCompile = (sh) => stoneShader(sh, maps, false, o.grainOnly, o.spare === 'slab' ? o.beds ?? [] : undefined, o.tans, o.quiet ? o.light : undefined);
+  return lit(m, { key: `stone-${o.key}${o.spare ? '-slab' : ''}${o.edge ? '-edge' : ''}${o.grainOnly ? '-grain' : ''}${o.quiet ? '-quiet' : ''}${o.quiet && o.mass ? '-mass' : ''}${o.quiet && o.bed ? '-bed' : ''}${o.quiet && o.curve ? '-curve' : ''}${o.quiet && o.light ? '-map' : ''}${o.debug ? `-debug${o.debug}` : ''}`, baked: o.baked });
 }

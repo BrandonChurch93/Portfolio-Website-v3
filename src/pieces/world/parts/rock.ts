@@ -4,11 +4,14 @@ import { load, mesh, type Loaded } from '../files';
 import { lit } from '../light';
 import type { PartFactory } from '../part';
 import { STREAM, stoneMaps, stoneMaterial } from './rock/stone';
+import { LIGHTMAP } from './rock/light-map';
 
 // The torn rock: whichever sculpt is asked for (?rock=a or s, default r), drawn in the planet's stone (./rock/stone.ts).
 // Sculpt S wears a quiet stone (StoneOptions.quiet): its form and the core's light carry it.
 // A world file for the rock holds two meshes: `break`, the torn rock, and `skin`, the planet's outer surface and its
 // top, which is a plain dark shape until its own part is built. Without a file it is the planet's outline, whole.
+// Sculpt S also takes picture 9's large pattern of light from a small map (./rock/light-map.ts; ?lightmap=0 leaves it
+// off). Without the map's file it is drawn without it.
 // ?stone=0 draws the break in the plain color the sculpts' light was worked out with, to judge form alone, and
 // ?stonedebug=1 to 11 one thing the stone reads (StoneOptions.debug in ./rock/stone.ts).
 //
@@ -20,6 +23,19 @@ import { STREAM, stoneMaps, stoneMaterial } from './rock/stone';
 // 'bed' (sculpt S, round 4), they hold each vertex's bedding, which the quiet stone lays its laminae along and works
 // each mass's tone out from, and the light takes picture 9's hue (./rock/curve.ts; ?curve=0 leaves it as it is).
 const DARK = 0x16110d, CLAY = 0x96897b;
+
+function lightMap(): Promise<THREE.Texture | null> {
+  return new THREE.TextureLoader().loadAsync(`/world/${LIGHTMAP.file}?v=${process.env.NEXT_PUBLIC_BUILD ?? 'dev'}`).then((t) => {
+    t.colorSpace = THREE.NoColorSpace;
+    t.flipY = false;
+    t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+    t.magFilter = THREE.LinearFilter;
+    t.minFilter = THREE.LinearFilter;
+    t.generateMipmaps = false;
+    t.needsUpdate = true;
+    return t;
+  }, () => null);
+}
 
 // Whether light.w holds a number of each block's own: said so, or, when nothing is said, many different values.
 function blocks(g: THREE.BufferGeometry, meta: { spare?: string; edge?: string }): boolean {
@@ -65,8 +81,9 @@ export const build: PartFactory = async ({ query, renderer }) => {
   const add = (g: THREE.BufferGeometry, m: THREE.Material): void => { made.push(g, m); };
   let release = (): void => {};
   try {
-    const [file, maps] = await Promise.all([load(`rock-${which}.bin`), plain ? null : stoneMaps(renderer)]);
+    const [file, maps, light] = await Promise.all([load(`rock-${which}.bin`), plain ? null : stoneMaps(renderer), which === 's' && !plain && query.get('lightmap') !== '0' ? lightMap() : null]);
     if (maps) release = () => maps.release();
+    if (light) made.push(light);
     const meta = file.meta as { spare?: string; edge?: string; edgeUnits?: number; edgeSigned?: boolean; beds?: number[][]; tans?: number[] };
     const edgeAt = meta.edge === 'light.w' ? 'aLight.w' : meta.edge === 'bounce.w' ? 'aBounce.w' : '';
     const units = (meta.edgeUnits ?? 8).toFixed(3);
@@ -77,7 +94,7 @@ export const build: PartFactory = async ({ query, renderer }) => {
       // plain shell lay exactly where they are and fought them for every pixel. ?shell=1 draws it again.
       if (name === 'skin' && query.get('shell') !== '1') continue;
       const m = name === 'break' && maps
-        ? stoneMaterial(maps, { key: which === 's' ? 'rock-s' : 'rock', baked: true, spare: blocks(l.geometry, meta) ? 'slab' : undefined, beds: meta.beds, tans: meta.tans, edge, quiet: which === 's', mass: meta.spare === 'mass', bed: meta.spare === 'bed', curve: meta.spare === 'bed' && query.get('curve') !== '0', debug: Number(query.get('stonedebug')) || undefined })
+        ? stoneMaterial(maps, { key: which === 's' ? 'rock-s' : 'rock', baked: true, spare: blocks(l.geometry, meta) ? 'slab' : undefined, beds: meta.beds, tans: meta.tans, edge, quiet: which === 's', mass: meta.spare === 'mass', bed: meta.spare === 'bed', curve: meta.spare === 'bed' && query.get('curve') !== '0', light: light ?? undefined, debug: Number(query.get('stonedebug')) || undefined })
         : lit(new THREE.MeshStandardMaterial({ color: name === 'skin' ? DARK : CLAY, roughness: 0.92, metalness: 0 }), { key: `rock-plain-${name}`, baked: true });
       const touched = name === 'break' && maps ? nearStream(l) : null;
       const part = mesh(l, m);

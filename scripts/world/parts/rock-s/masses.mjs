@@ -39,7 +39,7 @@ const BACK = [
 // The roof's teeth: slabs that hang from its lower edge over the ball, about as deep as the ball, their undersides
 // turned down to it and lit, with the dark of the roof's underside between them. The left lobe hangs in front of the
 // books.
-export const HANG = [
+const HANG_ = [
   { name: 'hang-lobe-left', poly: [[466, 336], [498, 330], [528, 336], [524, 352], [512, 372], [500, 388], [488, 374], [474, 354]], dz: 0.05, turn: [-20, -15], thick: 44, seed: 51 },
   { name: 'hang-1', poly: [[564, 342], [588, 334], [606, 342], [598, 358], [588, 376], [576, 364], [568, 354]], dz: -0.02, turn: [-8, -38], thick: 36, seed: 52 },
   { name: 'hang-2', poly: [[604, 330], [640, 324], [670, 330], [656, 346], [638, 360], [626, 352], [614, 344]], dz: 0.12, turn: [0, -42], thick: 36, seed: 53 },
@@ -48,11 +48,14 @@ export const HANG = [
   { name: 'hang-5', poly: [[818, 334], [848, 328], [872, 334], [866, 350], [854, 366], [840, 354], [826, 346]], dz: -0.04, turn: [-10, -36], thick: 40, seed: 56 },
 ];
 
+// Round 6: the teeth's sheets lie nearer their face and are thicker, so the teeth are not combs of ruled lips.
+export const HANG = HANG_.map((m) => ({ ...m, sheet: { dip: [24, 42], thin: [10, 14], thick: [16, 26] } }));
+
 // The left wall: great slabs leaning in toward the ball like fallen books, each nearer the visitor than the one
 // inside it, so each throws its shadow across the next out. Then, out to the skin, dark blocks with dimly lit edges.
 const LEFT = [
   { name: 'left-book-1', poly: [[392, 372], [426, 362], [456, 386], [482, 422], [506, 470], [520, 520], [506, 546], [470, 560], [446, 540], [420, 490], [402, 440], [388, 406]], dz: -0.5, turn: [-30, 0], thick: 60, seed: 21 },
-  { name: 'left-book-2', poly: [[490, 392], [520, 380], [534, 400], [534, 430], [528, 462], [520, 500], [512, 514], [502, 498], [492, 460], [484, 420]], dz: 0, turn: [-5, 6], thick: 52, seed: 22 },
+  { name: 'left-book-2', poly: [[490, 392], [520, 380], [537, 397], [529, 413], [539, 433], [528, 462], [520, 500], [512, 514], [502, 498], [492, 460], [484, 420]], dz: 0, turn: [-5, 6], thick: 52, seed: 22 },
   { name: 'left-book-3', poly: [[520, 374], [548, 368], [570, 374], [584, 392], [570, 408], [548, 414], [528, 400]], dz: -0.1, turn: [34, -8], thick: 46, seed: 23 },
   { name: 'left-ledge', poly: [[378, 528], [430, 512], [482, 522], [522, 540], [540, 566], [500, 580], [440, 582], [396, 578], [376, 556]], dz: -0.15, turn: [-10, 10], thick: 50, seed: 24 },
   { name: 'left-dark-1', poly: [[286, 348], [332, 352], [384, 362], [390, 400], [392, 446], [346, 452], [300, 448], [290, 400]], dz: 0, turn: [10, 0], thick: 70, proud: true, seed: 25 },
@@ -71,9 +74,9 @@ const LEFT = [
 const RIGHT = [
   { name: 'right-great', poly: [[856, 330], [884, 318], [910, 336], [920, 380], [916, 432], [910, 478], [898, 500], [878, 494], [866, 452], [858, 400]], dz: -0.05, turn: [-10, 0], thick: 60, seed: 31 },
   { name: 'right-teeth', poly: [[878, 300], [940, 294], [992, 318], [1008, 360], [988, 412], [960, 402], [930, 372], [900, 336]], dz: 0.3, turn: [8, -10], thick: 60, seed: 32 },
-  { name: 'right-mid', poly: [[930, 412], [990, 402], [1040, 430], [1060, 480], [1050, 540], [1000, 560], [956, 546], [918, 500], [914, 470], [922, 440]], dz: 0, turn: [-5, 0], thick: 70, seed: 33 },
+  { name: 'right-mid', poly: [[930, 412], [990, 402], [1040, 430], [1060, 480], [1050, 540], [1000, 560], [956, 546], [918, 500], [914, 470], [922, 440]], dz: -0.15, turn: [30, 4], thick: 70, seed: 33 },
   { name: 'right-low', poly: [[960, 552], [1010, 546], [1044, 572], [1050, 630], [1040, 690], [1014, 702], [990, 662], [966, 612]], dz: 0, turn: [-10, 6], thick: 70, seed: 34 },
-  { name: 'right-shelf', poly: [[818, 502], [880, 486], [940, 490], [966, 520], [952, 560], [902, 572], [852, 574], [830, 556]], dz: 0.12, turn: [14, -8], thick: 50, seed: 35 },
+  { name: 'right-shelf', poly: [[818, 502], [880, 486], [940, 490], [966, 520], [952, 560], [930, 590], [906, 584], [886, 594], [866, 604], [846, 612], [828, 600]], dz: 0.12, turn: [14, -8], thick: 50, seed: 35 },
   { name: 'right-upper', poly: [[990, 320], [1062, 310], [1068, 362], [1060, 412], [1020, 422], [1000, 382]], dz: 0.05, turn: [-12, 0], thick: 70, seed: 36 },
 ];
 
@@ -110,7 +113,10 @@ export const ROOF = {
   inset: 7, lean: 0,
   // It is broken into chunks, on a jittered grid this wide and tall (units), each standing out or back by up to
   // `step` units and leaning up to `tilt` its own way, with a joint this wide between.
-  cell: [96, 38], jitter: 0.8, step: 9, tilt: 0.12, joint: 0,
+  // Round 6: larger, less even chunks with seams that waver (`waver`: how far, in units, and over how far), told apart
+  // by their tilt and hardly by a step: as a jittered grid of 96 by 38 it read as flagstones with straight seams, and
+  // with steps of 16 every seam was a dark line, a net over the roof.
+  cell: [118, 64], jitter: 1, step: 4, tilt: 0.3, joint: 0, waver: [8, 30],
   // At the left the land's edge runs back toward the visitor's right, so a roof whose front followed it faced the moon
   // and came out a lit grey. Each chunk there is turned this much more (its face's slope across, units for a unit)
   // from the moon, more and more from so far left of the middle to so far, so its front is dark and only the step
@@ -119,4 +125,5 @@ export const ROOF = {
 };
 
 // Where the rock ends below, across the picture: under it is open air, where the planet's bottom was torn away.
-export const BOTTOM = [[240, 650], [260, 690], [290, 706], [320, 716], [345, 702], [362, 672], [376, 622], [400, 584], [430, 578], [460, 572], [482, 566], [500, 574], [520, 566], [560, 580], [600, 590], [620, 588], [650, 580], [690, 572], [720, 588], [748, 594], [780, 612], [802, 606], [818, 572], [840, 574], [870, 576], [900, 572], [930, 566], [960, 584], [990, 626], [1010, 650], [1030, 702], [1042, 708], [1060, 700], [1080, 690]];
+// Round 6: under the floor it hangs in lobes, as the picture's does, lowest at the right of the stream.
+export const BOTTOM = [[240, 650], [260, 690], [290, 706], [320, 716], [345, 702], [362, 672], [376, 622], [400, 584], [430, 578], [460, 568], [480, 563], [500, 572], [520, 563], [545, 568], [570, 580], [590, 590], [606, 582], [625, 574], [650, 578], [672, 584], [700, 588], [722, 596], [742, 604], [762, 610], [780, 616], [796, 620], [812, 607], [828, 602], [846, 612], [866, 600], [884, 590], [905, 586], [930, 590], [960, 584], [990, 626], [1010, 650], [1030, 702], [1042, 708], [1060, 700], [1080, 690]];
