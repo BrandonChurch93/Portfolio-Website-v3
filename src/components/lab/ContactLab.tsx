@@ -169,12 +169,15 @@ export function ContactLab({ hub }: { hub?: Hub }) {
           </div>
           <Still name="pad" className={styles.still} />
         </section>
-        <footer className={styles.foot} style={{ height: u(CONTACT.foot) }}>
-          <p>{contact.foot.line} · © {new Date().getFullYear()}</p>
-          <ul>
-            {contact.foot.links.filter((l) => !('held' in l)).map((l) => <li key={l.label}><a href={l.href} target={l.href.startsWith('http') ? '_blank' : undefined} rel={l.href.startsWith('http') ? 'noopener noreferrer' : undefined}>{l.label}</a></li>)}
-          </ul>
-        </footer>
+        {/* On the whole page the site's own foot stands under the page (SiteFoot). Alone, this page keeps a plain one. */}
+        {!hub && (
+          <footer className={styles.foot} style={{ height: u(CONTACT.foot) }}>
+            <p>{contact.foot.line} · © {new Date().getFullYear()}</p>
+            <ul>
+              {contact.foot.links.filter((l) => !('held' in l)).map((l) => <li key={l.label}><a href={l.href} target={l.href.startsWith('http') ? '_blank' : undefined} rel={l.href.startsWith('http') ? 'noopener noreferrer' : undefined}>{l.label}</a></li>)}
+            </ul>
+          </footer>
+        )}
       </div>
     </Shell>
   );

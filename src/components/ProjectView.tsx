@@ -9,7 +9,7 @@ import { ALL_WORK, type WorkItem } from '../content/work';
 import { Framed } from './Framed';
 import { MetalButton } from './MetalButton';
 import { SiteFoot } from './SiteFoot';
-import { SiteNav } from './SiteNav';
+import { MAIN, SiteNav } from './SiteNav';
 import { Viewer } from './Viewer';
 import styles from './ProjectView.module.css';
 
@@ -47,7 +47,8 @@ function Page({ children }: { children: ReactNode }) {
   return (
     <>
       <SiteNav here="project" />
-      <main ref={page} className={styles.page} data-room={room.look ?? undefined}>{children}</main>
+      <main ref={page} id={MAIN} className={styles.page} data-room={room.look ?? undefined}>{children}</main>
+      <SiteFoot />
     </>
   );
 }
@@ -147,7 +148,6 @@ function Study({ page, item, prev, next }: Found & { page: StudyPage }) {
       </section>
 
       <Ways prev={prev} next={next} />
-      <SiteFoot />
     </Page>
   );
 }
@@ -173,7 +173,6 @@ function Gallery({ page, item, prev, next }: Found & { page: GalleryPage }) {
         </section>
       )}
       <Ways prev={prev} next={next} />
-      <SiteFoot />
     </Page>
   );
 }

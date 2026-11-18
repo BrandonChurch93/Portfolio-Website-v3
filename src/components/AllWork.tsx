@@ -8,7 +8,7 @@ import { allWork } from '../content/site-pages';
 import { catalog } from '../content/work';
 import { MetalButton } from './MetalButton';
 import { SiteFoot } from './SiteFoot';
-import { SiteNav } from './SiteNav';
+import { MAIN, SiteNav } from './SiteNav';
 import { WorkCard } from './WorkCard';
 import styles from './AllWork.module.css';
 
@@ -31,7 +31,7 @@ export function AllWork({ look = null }: { look?: Look | null }) {
   return (
     <>
     <SiteNav here="work" />
-    <main ref={page} className={styles.page} data-room={look ?? undefined}>
+    <main ref={page} id={MAIN} className={styles.page} data-room={look ?? undefined}>
       <header className={styles.head}>
         <h1 className={styles.title} data-casts="">{allWork.title}</h1>
         <p className={styles.lead}>{allWork.lead}</p>
@@ -56,8 +56,8 @@ export function AllWork({ look = null }: { look?: Look | null }) {
         <p className={styles.closeLine} data-casts="">{allWork.close.line}</p>
         <MetalButton label={allWork.close.button} variant="primary" href={`${HOME}#contact`} />
       </section>
-      <SiteFoot />
     </main>
+    <SiteFoot here="work" />
     </>
   );
 }

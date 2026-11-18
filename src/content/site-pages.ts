@@ -8,7 +8,10 @@ export const pages = {
 } as const;
 
 // The navigation: his name, which is the hero's own, and one link. On the page of all his work the link goes home.
-export const nav = { label: 'Site', work: 'All work', home: 'Home' } as const;
+export const nav = { label: 'Site', work: 'All work', home: 'Home', skip: 'Skip to content' } as const;
+
+// The foot of every page: the names of its two groups of links and its way back up. Stand ins, his to rewrite.
+export const foot = { site: 'Site', elsewhere: 'Elsewhere', contact: 'Contact', top: 'Back to top' } as const;
 
 // The page of all his work. The lead is his live site's own line. The rest are stand ins, his to rewrite.
 export const allWork = {

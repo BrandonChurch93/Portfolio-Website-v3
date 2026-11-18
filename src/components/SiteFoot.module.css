@@ -1,43 +1,139 @@
+/* The foot of a page: three blocks over a hairline, then the maker's line. No box and no band: a rule of copper
+   that dies away to each side opens it, as the page's own rules do. */
 .foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3) var(--space-6);
-  width: var(--col, min(72rem, 100% - 2 * var(--gut)));
+  --k: 0px;
+  --w: min(78rem, 100% - 2 * var(--gut));
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: max(var(--space-6), calc(var(--k) * 30)) clamp(2.5rem, 7vw, 6rem);
+  width: var(--w);
   margin: 0 auto;
-  padding: var(--space-6) 0 var(--space-7);
-  border-top: 1px solid var(--line);
-  font-size: var(--step--1);
+  padding: max(clamp(2.5rem, 5vw, 3.5rem), calc(var(--k) * 52)) 0 max(var(--space-6), calc(var(--k) * 34));
+  font-size: max(var(--step--1), calc(var(--k) * 13));
+  line-height: 1.5;
   color: var(--text-3);
+}
+
+@media (min-width: 1100px) {
+  .foot[data-here='home'] {
+    --k: calc(min(100vw, 2400px) / 1460);
+    --w: calc(var(--k) * 1160);
+  }
+}
+
+.foot::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line-strong) 18%, var(--line-strong) 82%, transparent);
 }
 
 .foot p {
   margin: 0;
 }
 
-.foot ul {
-  display: flex;
-  gap: var(--space-5);
+.name {
+  font-family: var(--font-display);
+  font-size: max(var(--step-2), calc(var(--k) * 24));
+  font-weight: 600;
+  letter-spacing: var(--track-tight);
+  line-height: 1.15;
+  color: var(--text);
+}
+
+.role {
+  margin-top: var(--space-2) !important;
+  font-family: var(--font-mono);
+  font-size: max(var(--step--2), calc(var(--k) * 11.5));
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--copper-light);
+}
+
+.based {
+  margin-top: var(--space-2) !important;
+}
+
+.label {
+  margin-bottom: var(--space-3) !important;
+  font-family: var(--font-mono);
+  font-size: max(var(--step--2), calc(var(--k) * 11.5));
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.group ul {
+  display: grid;
+  gap: var(--space-1);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-.foot a {
-  font-family: var(--font-mono);
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
+.group a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  font-size: max(var(--step-0), calc(var(--k) * 15));
   text-decoration: none;
-  color: var(--text-3);
+  color: var(--text-2);
   transition: color var(--dur-1) var(--ease-settle);
 }
 
-.foot a:hover {
+.group a[aria-current='page'] {
+  color: var(--text);
+}
+
+.group a:hover,
+.top:hover {
   color: var(--copper-light);
 }
 
-.foot a:focus-visible {
+.base {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-6);
+  grid-column: 1 / -1;
+  padding-top: max(var(--space-5), calc(var(--k) * 22));
+  border-top: 1px solid var(--line);
+}
+
+.top {
+  min-height: var(--touch);
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: max(var(--step--2), calc(var(--k) * 11.5));
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-2);
+  cursor: pointer;
+  transition: color var(--dur-1) var(--ease-settle);
+}
+
+.group a:focus-visible,
+.top:focus-visible {
   outline: var(--focus);
   outline-offset: var(--focus-offset);
+}
+
+/* On a phone: who he is, then the two groups side by side. */
+@media (max-width: 699.98px) {
+  .foot {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--space-5);
+  }
+
+  .who {
+    grid-column: 1 / -1;
+  }
 }
