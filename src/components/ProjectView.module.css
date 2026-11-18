@@ -64,28 +64,31 @@
   outline-offset: var(--focus-offset);
 }
 
-/* ---- a case study's first screen: the viewer and, beside it, everything a visitor needs to decide to read on */
+/* ---- a case study's first screen: the viewer and, beside it, everything a visitor needs to decide to read on.
+   On one column: the name, the viewer, the figures. */
 
 .first {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(19rem, 1fr);
-  gap: clamp(2rem, 4vw, 4rem);
-  padding-top: clamp(1rem, 2.4vw, 2.2rem);
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'head'
+    'media'
+    'figures';
+  row-gap: clamp(1.5rem, 3.4vw, 2.25rem);
+  padding-top: clamp(0.75rem, 2.4vw, 2.2rem);
+  padding-bottom: clamp(3rem, 6vw, 5rem);
+  border-bottom: 1px solid var(--line);
 }
 
-/* The summary is exactly as tall as the viewer beside it, links and all: its name starts level with the picture's
-   top and its figures end level with the foot of the links. Shorter or taller, the two sides ended at different
-   heights (his iPad, Nov 17). */
-.summary {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  min-height: 100%;
+.head {
+  grid-area: head;
+  min-width: 0;
 }
 
-.summary .figures {
-  margin-top: auto;
-  padding-top: var(--space-6);
+.media {
+  grid-area: media;
+  display: grid;
+  min-width: 0;
 }
 
 .kind {
@@ -123,12 +126,12 @@
   color: var(--text-2);
 }
 
-/* The figures that prove it, two to a row, each under a rule of copper. */
+/* The figures that prove it. On one column, cells under a rule of copper: two to a row, then four. */
 .figures {
+  grid-area: figures;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-5) var(--space-5);
-  width: 100%;
+  gap: var(--space-5);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -151,6 +154,7 @@
   font-weight: 600;
   letter-spacing: var(--track-tight);
   line-height: 1;
+  white-space: nowrap;
   color: var(--copper-light);
 }
 
@@ -164,13 +168,57 @@
   color: var(--copper-light);
 }
 
+.keep {
+  white-space: nowrap;
+}
+
+@media (min-width: 700px) {
+  .figures {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Two columns. The viewer is as tall as the name and the figures together, and the figures are a ruled list
+   whose rows share whatever height is left, so no gap is left open in either column and both end on one line:
+   the foot of the links and the list's last rule. Nothing here is sized as a share of the other column, which a
+   real iPad worked out differently from a desktop and left the two sides ending apart (his iPad, Nov 17). A wide
+   screen gets them, and so does a short sideways one, where one column's picture would be taller than the screen. */
+@media (min-width: 1100px), (min-width: 960px) and (max-height: 820px) {
+  .first {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      'media head'
+      'media figures';
+    column-gap: clamp(2.5rem, 4vw, 4rem);
+    row-gap: var(--space-5);
+  }
+
+  .figures {
+    grid-template-columns: max-content minmax(0, 1fr);
+    grid-auto-rows: minmax(min-content, 1fr);
+    gap: 0 var(--space-5);
+    border-bottom: 1px solid var(--line-strong);
+  }
+
+  .figures li {
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    gap: normal;
+    align-content: center;
+    align-items: baseline;
+    padding-block: var(--space-2);
+    font-size: var(--step-0);
+    line-height: 1.35;
+  }
+}
+
 /* The links stand directly under the picture, sharing its width between them. */
 .links {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
   width: 100%;
-  margin-top: var(--space-4);
 }
 
 .links > * {
@@ -211,11 +259,16 @@
    heading was a label and made every part two columns (his words, Nov 17). */
 
 .part {
-  width: min(50rem, 100vw - 2 * var(--gut));
+  --read: 50rem;
+  width: min(var(--read), var(--col));
   margin-top: clamp(2.5rem, 5vw, 4rem);
 }
 
-.first + .part,
+/* The first screen closes on its own rule, as wide as it is. A gallery's first part carries one. */
+.first + .part {
+  margin-top: clamp(2.5rem, 5vw, 4rem);
+}
+
 .wide + .part {
   margin-top: clamp(3rem, 6vw, 5rem);
   padding-top: clamp(2.5rem, 5vw, 4rem);
@@ -247,7 +300,8 @@
   color: var(--text-3);
 }
 
-/* The decisions, one under another: what was decided, with its number, and one sentence under it. */
+/* How it works, one under another: its number in a column of its own, so every title and every sentence starts
+   on one edge. */
 .steps {
   display: grid;
   margin: 0;
@@ -256,6 +310,10 @@
 }
 
 .steps li {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: var(--space-4);
+  align-items: baseline;
   padding: var(--space-4) 0;
   border-bottom: 1px solid var(--line);
 }
@@ -269,10 +327,8 @@
 }
 
 .n {
-  margin-right: var(--space-3);
   font-family: var(--font-mono);
   font-size: var(--step--1);
-  font-weight: 400;
   letter-spacing: var(--track-label);
   color: var(--copper-light);
 }
@@ -288,6 +344,7 @@
 }
 
 .steps p {
+  grid-column: 2;
   margin: var(--space-1) 0 0;
   font-size: var(--step-0);
   line-height: 1.6;
@@ -316,10 +373,11 @@
   content: ' ↑';
 }
 
-/* What it is built with: one line to a group, the group's name first. */
+/* What it is built with: a group's name over its things on a phone, and beside them from there up, the names in
+   one column so the things all start on one edge. */
 .stack {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-3);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -328,13 +386,41 @@
   color: var(--text-2);
 }
 
-.stack li > span:not(.pill) {
-  margin-right: var(--space-3);
+.stack li {
+  display: grid;
+  gap: 0 var(--space-5);
+  align-items: baseline;
+}
+
+.group {
   font-family: var(--font-mono);
   font-size: var(--step--1);
   letter-spacing: var(--track-label);
   text-transform: uppercase;
   color: var(--copper-light);
+}
+
+.items {
+  text-wrap: balance;
+}
+
+@media (min-width: 700px) {
+  .stack {
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: var(--space-2) var(--space-5);
+  }
+
+  .stack li {
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    gap: normal;
+  }
+
+}
+
+.stack li[data-plain] {
+  display: block;
+  grid-column: 1 / -1;
 }
 
 /* ---- the way on: the project before and the project after, each with its picture */
@@ -343,7 +429,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: clamp(1.25rem, 3vw, 2.5rem);
-  width: min(50rem, 100vw - 2 * var(--gut));
+  width: min(50rem, var(--col));
   margin: clamp(3rem, 6vw, 5rem) auto 0;
   padding: clamp(2.5rem, 5vw, 4rem) 0 clamp(3rem, 6vw, 5rem);
   border-top: 1px solid var(--line);
@@ -387,6 +473,7 @@
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.25;
+  text-wrap: balance;
   color: var(--text);
   transition: color var(--dur-1) var(--ease-settle);
 }
@@ -395,10 +482,15 @@
   color: var(--copper-light);
 }
 
-/* ---- one column */
+/* ---- one column: a case study's parts start on the page's own left edge, under its name and its figures, and the
+   way on is as wide as the picture. Centered, the reading column stood a little in from everything over it. */
+@media (max-width: 1099.98px) {
+  .first ~ .part {
+    width: var(--col);
+    padding-right: max(0px, var(--col) - var(--read));
+  }
 
-@media (max-width: 899.98px) {
-  .first {
-    grid-template-columns: minmax(0, 1fr);
+  .first ~ .ways {
+    width: var(--col);
   }
 }

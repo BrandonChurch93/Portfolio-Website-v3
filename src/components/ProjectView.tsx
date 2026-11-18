@@ -15,9 +15,11 @@ import styles from './ProjectView.module.css';
 
 // A project's own page (BRIEF.md, Open 33), in two kinds.
 // A case study, for software and games: its first screen is a product page's. The viewer at the left, with the
-// video and every picture, and at the right the name, one line, the figures that prove it and the links. Under
-// that, in one column a person reads down, each part under its own heading: why he built it, what it is, the
-// decisions, what it is built with.
+// video and every picture and the links under them, and at the right the name, one line, and the figures that
+// prove it as a ruled list that fills the rest of the column, so the two sides start and end level whatever is in
+// them. On a narrower screen it is one column: the name, the viewer as wide as the column, the figures in a row. Under
+// that, in one column a person reads down, each part under its own heading: why he built it, what it is, how it
+// works, what it is built with.
 // A gallery, for a shoot and for a 3D piece: the pictures are the content, so the viewer is as wide as the page,
 // with his words about it under it.
 // Both end on the project before and the project after, each with its picture. No stream runs here. A part with
@@ -53,6 +55,10 @@ function Top() {
   );
 }
 
+// A link's last word keeps its arrow: an arrow alone on a line is a lone word.
+const lead = (label: string) => label.slice(0, label.lastIndexOf(' ') + 1);
+const last = (label: string) => label.slice(label.lastIndexOf(' ') + 1);
+
 // A project that has no page of its own on this site yet is reached from the page of all his work.
 const reach = (to: WorkItem) => (to.page.startsWith('/') || to.page.startsWith('http') ? to.page : ALL_WORK);
 
@@ -73,6 +79,11 @@ function Ways({ prev, next }: { prev: WorkItem | null; next: WorkItem | null }) 
   );
 }
 
+// Names in a row with a point between them. A name is never broken across two lines.
+function Items({ items }: { items: string[] }) {
+  return <span className={styles.items}>{items.map((name, i) => <span key={name}>{i > 0 && ' · '}<span className={styles.keep}>{name}</span></span>)}</span>;
+}
+
 function Words({ id, name, text, blank }: { id: string; name: string; text: string[]; blank: string }) {
   return (
     <section className={styles.part} aria-labelledby={id}>
@@ -90,25 +101,27 @@ function Study({ page, item, prev, next }: Found & { page: StudyPage }) {
     <Page>
       <Top />
       <div className={styles.first}>
-        <Viewer
-          shots={page.shots}
-          aspect={STUDY_ASPECT}
-          label={`${item.name}, video and pictures`}
-          under={<div className={styles.links}>{item.links.map((l, i) => <MetalButton key={l.label} label={l.label} variant={i === 0 ? 'primary' : 'accent'} href={l.href} />)}</div>}
-        />
-        <header className={styles.summary}>
+        <header className={styles.head}>
           <p className={styles.kind}><span>{item.kind}</span><span>{item.year}</span></p>
           <h1 className={styles.title} data-casts="">{item.name}</h1>
           <p className={styles.sub}>{page.sub}</p>
-          <ul className={styles.figures}>
-            {page.proved.map((f) => (
-              <li key={f.label}>
-                <span className={styles.value}>{f.value}</span>
-                {f.href ? <a href={f.href} target="_blank" rel="noopener noreferrer">{f.label} ↗</a> : <span>{f.label}</span>}
-              </li>
-            ))}
-          </ul>
         </header>
+        <div className={styles.media}>
+          <Viewer
+            shots={page.shots}
+            aspect={STUDY_ASPECT}
+            label={`${item.name}, video and pictures`}
+            under={<div className={styles.links}>{item.links.map((l, i) => <MetalButton key={l.label} label={l.label} variant={i === 0 ? 'primary' : 'accent'} href={l.href} />)}</div>}
+          />
+        </div>
+        <ul className={styles.figures}>
+          {page.proved.map((f) => (
+            <li key={f.label}>
+              <span className={styles.value}>{f.value}</span>
+              {f.href ? <a href={f.href} target="_blank" rel="noopener noreferrer">{lead(f.label)}<span className={styles.keep}>{last(f.label)} ↗</span></a> : <span>{f.label}</span>}
+            </li>
+          ))}
+        </ul>
       </div>
 
       <Words id="why" name={words.parts.why} text={page.why} blank={words.why} />
@@ -119,7 +132,8 @@ function Study({ page, item, prev, next }: Found & { page: StudyPage }) {
         <ol className={styles.steps}>
           {page.how.map((s, i) => (
             <li key={s.title} hidden={!all && i >= SHOWN}>
-              <h3><span className={styles.n} aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>{s.title}</h3>
+              <span className={styles.n} aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+              <h3>{s.title}</h3>
               <p>{s.text}</p>
             </li>
           ))}
@@ -132,7 +146,7 @@ function Study({ page, item, prev, next }: Found & { page: StudyPage }) {
       <section className={styles.part} aria-labelledby="built">
         <h2 id="built" className={styles.heading}>{words.parts.built}</h2>
         <ul className={styles.stack}>
-          {page.built.map(([group, items]) => <li key={group}><span>{group}</span>{items.join(' · ')}</li>)}
+          {page.built.map(([group, items]) => <li key={group}><span className={styles.group}>{group}</span><Items items={items} /></li>)}
         </ul>
       </section>
 
@@ -159,7 +173,7 @@ function Gallery({ page, item, prev, next }: Found & { page: GalleryPage }) {
         <section className={styles.part} aria-labelledby="built">
           <h2 id="built" className={styles.heading}>{words.parts.built}</h2>
           <ul className={styles.stack}>
-            <li>{page.built.standIn && <span className={styles.pill}>{words.standIn}</span>}{page.built.items.join(' · ')}</li>
+            <li data-plain="">{page.built.standIn && <span className={styles.pill}>{words.standIn}</span>}<Items items={page.built.items} /></li>
           </ul>
         </section>
       )}

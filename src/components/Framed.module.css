@@ -2,6 +2,7 @@
    renderer eases the turn and writes it here, in step with the light on the metal. */
 .area {
   position: relative;
+  width: 100%;
   container-type: inline-size;
   perspective: 1100px;
 }
