@@ -11,13 +11,10 @@ import { catalog, type WorkItem } from './work';
 export interface Shot { src: string; alt: string; caption: string; slot?: 'video'; video?: string; standIn?: boolean }
 export interface ProjectFigure { value: string; label: string; href?: string }
 export interface ProjectStep { title: string; text: string }
-export type Fact = [label: string, value: string];
-
 interface Base {
   slug: string;
   // One line under the name.
   sub: string;
-  facts: Fact[];
   shots: Shot[];
 }
 
@@ -36,6 +33,8 @@ export interface GalleryPage extends Base {
   // How wide the pictures are to how tall.
   aspect: number;
   note: string[];
+  // What it was made with, where that is worth saying, as a 3D piece's tools are. standIn: the names are a guess.
+  built?: { items: string[]; standIn?: boolean };
 }
 
 export type ProjectPage = StudyPage | GalleryPage;
@@ -48,11 +47,6 @@ export const projects: ProjectPage[] = [
     kind: 'study',
     slug: 'ask-the-claude-docs',
     sub: 'An evaluated RAG chatbot with honest refusals',
-    facts: [
-      ['Role', STAND_IN],
-      ['Status', 'Live'],
-      ['Corpus', 'The Claude Code docs, re-synced nightly'],
-    ],
     shots: [
       { src: '/media/work/claude-docs-full.webp', alt: 'A still from a video of Ask the Claude Docs', caption: 'A video of the project plays here once there is one.', slot: 'video', standIn: true },
       { src: '/media/work/claude-docs-full.webp', alt: 'The Ask the Claude Docs type specimen: an answer set in a serif with a citation, a question set in a sans, and a receipt set in a mono', caption: 'The design language: one typeface for the answer, one for the interface, one for the receipt.' },
@@ -95,7 +89,6 @@ export const projects: ProjectPage[] = [
     slug: 'photo-stand-in-1',
     sub: 'A stand in for a shoot',
     aspect: 3 / 2,
-    facts: [['Place', STAND_IN], ['Date', STAND_IN], ['Camera', STAND_IN], ['Light', STAND_IN]],
     note: [],
     shots: [1, 2, 3, 4, 5, 6, 7, 8].map((n) => still('photo', n, `Picture ${n} of the shoot, with a line about it.`)),
   },
@@ -104,8 +97,8 @@ export const projects: ProjectPage[] = [
     slug: 'art-stand-in-1',
     sub: 'A stand in for a 3D piece',
     aspect: 16 / 10,
-    facts: [['Made in', STAND_IN], ['Made for', '3D print'], ['Size', STAND_IN], ['Files', STAND_IN]],
     note: [],
+    built: { items: ['Blender', 'Nomad Sculpt'], standIn: true },
     shots: [
       { ...still('art', 1, 'A turntable of the piece plays here once there is one.'), slot: 'video' },
       ...[2, 3, 4, 5, 6].map((n) => still('art', n, `View ${n - 1} of the piece, with a line about it.`)),
@@ -115,11 +108,10 @@ export const projects: ProjectPage[] = [
 
 export const STAND_IN_WORD = STAND_IN;
 
-// A project's page with the card it belongs to. A case study also has the real projects before and after it.
+// A project's page with the card it belongs to, and the projects before and after it in its own category.
 export function projectOf(slug: string): { page: ProjectPage; item: WorkItem; prev: WorkItem | null; next: WorkItem | null } | null {
   const page = projects.find((p) => p.slug === slug);
-  const item = catalog.flatMap((c) => c.items).find((i) => i.slug === slug);
-  if (!page || !item) return null;
-  const real = catalog.flatMap((c) => (c.standIn ? [] : c.items)), at = real.findIndex((i) => i.slug === slug);
-  return { page, item, prev: at > 0 ? real[at - 1] : null, next: at >= 0 ? real[at + 1] ?? null : null };
+  const among = catalog.find((c) => c.items.some((i) => i.slug === slug))?.items ?? [], at = among.findIndex((i) => i.slug === slug);
+  if (!page || at < 0) return null;
+  return { page, item: among[at], prev: among[at - 1] ?? null, next: among[at + 1] ?? null };
 }

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import type { Fact, GalleryPage, ProjectPage, StudyPage } from '../content/projects';
+import type { GalleryPage, ProjectPage, StudyPage } from '../content/projects';
 import { projectPage as words } from '../content/site-pages';
 import { ALL_WORK, type WorkItem } from '../content/work';
 import { MetalButton } from './MetalButton';
@@ -12,31 +12,17 @@ import styles from './ProjectView.module.css';
 
 // A project's own page (BRIEF.md, Open 33), in two kinds.
 // A case study, for software and games: its first screen is a product page's. The viewer at the left, with the
-// video and every picture, and at the right the name, one line, the figures that prove it, the links and a few
-// facts. Under that, for whoever reads on: the problem, what was built, the decisions as rows, what it is built
-// with, and the way on. What matters is up front and nothing is said twice.
+// video and every picture, and at the right the name, one line, the figures that prove it and the links. Under
+// that, in one column a person reads down, each part under its own heading: why he built it, what it is, the
+// decisions, what it is built with.
 // A gallery, for a shoot and for a 3D piece: the pictures are the content, so the viewer is as wide as the page,
-// with a short note and a few facts under it.
-// No stream runs here. A part with nothing written for it says so with a stand in.
+// with his words about it under it.
+// Both end on the project before and the project after, each with its picture. No stream runs here. A part with
+// nothing written for it yet says so in its own place.
 const SHOWN = 4;
 const STUDY_ASPECT = 2000 / 1230;
 
 type Found = { page: ProjectPage; item: WorkItem; prev: WorkItem | null; next: WorkItem | null };
-
-const Pill = () => <span className={styles.pill}>{words.standIn}</span>;
-
-function Facts({ facts }: { facts: Fact[] }) {
-  return (
-    <dl className={styles.facts}>
-      {facts.map(([label, value]) => (
-        <div key={label}>
-          <dt>{label}</dt>
-          <dd>{value === words.standIn ? <Pill /> : value}</dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
 
 function Top() {
   return (
@@ -46,25 +32,39 @@ function Top() {
   );
 }
 
+// A project that has no page of its own on this site yet is reached from the page of all his work.
+const reach = (to: WorkItem) => (to.page.startsWith('/') || to.page.startsWith('http') ? to.page : ALL_WORK);
+
 function Ways({ prev, next }: { prev: WorkItem | null; next: WorkItem | null }) {
   const way = (to: WorkItem | null, label: string, side: 'prev' | 'next') => to && (
-    <a href={to.page} className={styles.way} data-side={side}>
+    <a href={reach(to)} className={styles.way} data-side={side}>
+      <span className={styles.wayPicture}><img src={to.picture.src} alt="" decoding="async" /></span>
       <span className={styles.wayLabel}>{side === 'prev' ? '← ' : ''}{label}{side === 'next' ? ' →' : ''}</span>
       <span className={styles.wayName}>{to.name}</span>
     </a>
   );
+  if (!prev && !next) return null;
   return (
     <nav className={styles.ways} aria-label="More work">
       {way(prev, words.prev, 'prev')}
-      <Link href={ALL_WORK} className={styles.all}>{words.all}</Link>
       {way(next, words.next, 'next')}
     </nav>
   );
 }
 
+function Words({ id, name, text, blank }: { id: string; name: string; text: string[]; blank: string }) {
+  return (
+    <section className={styles.part} aria-labelledby={id}>
+      <h2 id={id} className={styles.heading}>{name}</h2>
+      <div className={styles.prose}>
+        {text.length ? text.map((p) => <p key={p.slice(0, 24)}>{p}</p>) : <p className={styles.blank}>{blank}</p>}
+      </div>
+    </section>
+  );
+}
+
 function Study({ page, item, prev, next }: Found & { page: StudyPage }) {
   const [all, setAll] = useState(false);
-  const links = item.links.map((l, i) => <MetalButton key={l.label} label={l.label} variant={i === 0 ? 'primary' : 'accent'} href={l.href} />);
   return (
     <main className={styles.page}>
       <Top />
@@ -82,63 +82,44 @@ function Study({ page, item, prev, next }: Found & { page: StudyPage }) {
               </li>
             ))}
           </ul>
-          <div className={styles.links}>{links}</div>
-          <Facts facts={[['Type', item.kind], ['Year', item.year], ...page.facts]} />
+          <div className={styles.links}>
+            {item.links.map((l, i) => <MetalButton key={l.label} label={l.label} variant={i === 0 ? 'primary' : 'accent'} href={l.href} />)}
+          </div>
         </header>
       </div>
 
-      <section className={styles.part} aria-labelledby="why">
-        <h2 id="why" className={styles.label}>{words.parts.why}</h2>
-        <div className={styles.prose}>
-          {page.why.length ? page.why.map((p) => <p key={p.slice(0, 24)}>{p}</p>) : <p className={styles.blank}><Pill />{words.why}</p>}
-        </div>
-      </section>
-
-      <section className={styles.part} aria-labelledby="what">
-        <h2 id="what" className={styles.label}>{words.parts.what}</h2>
-        <div className={styles.prose}>{page.what.map((p) => <p key={p.slice(0, 24)}>{p}</p>)}</div>
-      </section>
+      <Words id="why" name={words.parts.why} text={page.why} blank={words.why} />
+      <Words id="what" name={words.parts.what} text={page.what} blank="" />
 
       <section className={styles.part} aria-labelledby="how">
-        <h2 id="how" className={styles.label}>{words.parts.how}</h2>
-        <div>
-          <ol className={styles.steps}>
-            {page.how.map((s, i) => (
-              <li key={s.title} hidden={!all && i >= SHOWN}>
-                <span className={styles.n} aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
-                <h3>{s.title}</h3>
-                <p>{s.text}</p>
-              </li>
-            ))}
-          </ol>
-          {page.how.length > SHOWN && (
-            <button type="button" className={styles.more} aria-expanded={all} onClick={() => setAll((v) => !v)}>{all ? words.fewer : words.more(page.how.length)}</button>
-          )}
-        </div>
+        <h2 id="how" className={styles.heading}>{words.parts.how}</h2>
+        <ol className={styles.steps}>
+          {page.how.map((s, i) => (
+            <li key={s.title} hidden={!all && i >= SHOWN}>
+              <h3><span className={styles.n} aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>{s.title}</h3>
+              <p>{s.text}</p>
+            </li>
+          ))}
+        </ol>
+        {page.how.length > SHOWN && (
+          <button type="button" className={styles.more} aria-expanded={all} onClick={() => setAll((v) => !v)}>{all ? words.fewer : words.more(page.how.length)}</button>
+        )}
       </section>
 
       <section className={styles.part} aria-labelledby="built">
-        <h2 id="built" className={styles.label}>{words.parts.built}</h2>
-        <dl className={styles.stack}>
-          {page.built.map(([group, items]) => (
-            <div key={group}>
-              <dt>{group}</dt>
-              <dd>{items.join(' · ')}</dd>
-            </div>
-          ))}
-        </dl>
+        <h2 id="built" className={styles.heading}>{words.parts.built}</h2>
+        <ul className={styles.stack}>
+          {page.built.map(([group, items]) => <li key={group}><span>{group}</span>{items.join(' · ')}</li>)}
+        </ul>
       </section>
 
-      <section className={styles.end} aria-label={item.name}>
-        <div className={styles.links}>{links}</div>
-        <Ways prev={prev} next={next} />
-      </section>
+      <Ways prev={prev} next={next} />
       <SiteFoot />
     </main>
   );
 }
 
-function Gallery({ page, item }: Found & { page: GalleryPage }) {
+function Gallery({ page, item, prev, next }: Found & { page: GalleryPage }) {
   return (
     <main className={styles.page}>
       <Top />
@@ -150,18 +131,16 @@ function Gallery({ page, item }: Found & { page: GalleryPage }) {
       <div className={styles.wide}>
         <Viewer shots={page.shots} aspect={page.aspect} rail="under" label={`${item.name}, pictures`} />
       </div>
-      <section className={styles.part} aria-labelledby="note">
-        <h2 id="note" className={styles.label}>{words.parts.note}</h2>
-        <div className={styles.about}>
-          <div className={styles.prose}>
-            {page.note.length ? page.note.map((p) => <p key={p.slice(0, 24)}>{p}</p>) : <p className={styles.blank}><Pill />{words.note}</p>}
-          </div>
-          <Facts facts={page.facts} />
-        </div>
-      </section>
-      <section className={styles.end} aria-label={item.name}>
-        <Ways prev={null} next={null} />
-      </section>
+      <Words id="note" name={words.parts.note} text={page.note} blank={words.note} />
+      {page.built && (
+        <section className={styles.part} aria-labelledby="built">
+          <h2 id="built" className={styles.heading}>{words.parts.built}</h2>
+          <ul className={styles.stack}>
+            <li>{page.built.standIn && <span className={styles.pill}>{words.standIn}</span>}{page.built.items.join(' · ')}</li>
+          </ul>
+        </section>
+      )}
+      <Ways prev={prev} next={next} />
       <SiteFoot />
     </main>
   );
