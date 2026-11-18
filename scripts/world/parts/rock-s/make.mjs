@@ -3,7 +3,7 @@
 //
 //   node scripts/world/parts/rock-s/make.mjs            the shipped file
 //   node scripts/world/parts/rock-s/make.mjs --draft    fast and rough
-//   --cell <units>                                     the grid the field is read on (draft 2.6, shipped 1.3)
+//   --cell <units>                                     the grid the field is read on (draft 2.6, shipped 1.2)
 //
 // The steps: rubble is laid on what faces up and is seen; the field is turned into a mesh that keeps its sharp
 // edges; what the visitor can never see is reduced hard and the rest to the budget; the mesh is split at its
@@ -25,7 +25,7 @@ const draft = process.argv.includes('--draft');
 const t0 = performance.now(), said = (s) => console.log(`${((performance.now() - t0) / 1000).toFixed(1)} s · ${s}`);
 // The grid the field is read on, in units; the most the reduced mesh may stray where it is seen and where it is not;
 // the most triangles; faces meeting at more than CREASE degrees meet at a crease.
-const cellAt = process.argv.indexOf('--cell'), CELL = cellAt > 0 ? Number(process.argv[cellAt + 1]) : draft ? 2.6 : 1.3, KEEP = draft ? 0.6 : 0.4, UNSEEN = 8, BUDGET = draft ? 160000 : 330000, CREASE = 36;
+const cellAt = process.argv.indexOf('--cell'), CELL = cellAt > 0 ? Number(process.argv[cellAt + 1]) : draft ? 2.6 : 1.2, KEEP = draft ? 0.6 : 0.8, UNSEEN = 8, BUDGET = draft ? 200000 : 470000, CREASE = 36;
 // The rubble: how many places are tried, the most stones, their least and most size (units), how far up a face must
 // look for one to lie there, and how far it is sunk into it.
 const RUBBLE = { tries: 20000, most: 110, size: [1.2, 5.5], up: 0.72, sunk: 0.5, clear: 150 };
@@ -117,16 +117,20 @@ if (outer.indices.length) meshes.push({ name: 'outer', positions: outer.position
 const lit = await bake({ meshes, ...light() }, { samples: draft ? { core: 24, moon: 8, hemi: 48 } : { core: 64, moon: 16, hemi: 160 }, bounces: draft ? 1 : 2 });
 said('lit');
 
-// Each mass's own tone, which the quiet stone reads (meta.spare 'mass'): its value in light.w and its hue in
-// bounce.w, each 0 to 1 about a half. A vertex is of the mass whose field is lowest there, a little inside the rock.
+// Each vertex's bedding, which the quiet stone lays its laminae along and works each mass's tone out from (meta.spare
+// 'bed'): the plane the sheets of its mass lie in, its normal turned to face the visitor's side and folded onto an
+// octahedron, in light.w and bounce.w. A vertex is of the mass whose field is lowest there, a little inside the rock.
 F.setup({ stones });
 const n = brk.positions.length / 3, lightOf = new Float32Array(n * 4), bounceOf = new Float32Array(n * 4), l = lit.break;
+const fold = (v) => {
+  const s = v[2] < 0 ? -1 : 1, a = Math.abs(v[0]) + Math.abs(v[1]) + Math.abs(v[2]) || 1, x = (s * v[0]) / a, y = (s * v[1]) / a;
+  return [x * 0.5 + 0.5, y * 0.5 + 0.5];
+};
 for (let i = 0; i < n; i++) {
-  const p = [0, 1, 2].map((k) => brk.positions[i * 3 + k] - brk.normals[i * 3 + k] * 0.6), at = F.which(...p);
-  const value = 0.5 + (hash(at, 91) - 0.5) * 0.9, hue = 0.5 + (hash(at, 92) - 0.5) * 0.9;
-  lightOf.set([l.core[i], l.moon[i], l.open[i], value], i * 4);
-  bounceOf.set([storeBounce(l.bounce[i * 3]), storeBounce(l.bounce[i * 3 + 1]), storeBounce(l.bounce[i * 3 + 2]), hue], i * 4);
+  const p = [0, 1, 2].map((k) => brk.positions[i * 3 + k] - brk.normals[i * 3 + k] * 0.6), [ox, oy] = fold(F.bedOf(...p));
+  lightOf.set([l.core[i], l.moon[i], l.open[i], ox], i * 4);
+  bounceOf.set([storeBounce(l.bounce[i * 3]), storeBounce(l.bounce[i * 3 + 1]), storeBounce(l.bounce[i * 3 + 2]), oy], i * 4);
 }
-said('mass tones');
-pack('public/world/rock-s.bin', [{ name: 'break', positions: brk.positions, indices: brk.indices, attributes: { normal: { data: brk.normals, size: 3, as: 'i16' }, light: { data: lightOf, size: 4, as: 'u8' }, bounce: { data: bounceOf, size: 4, as: 'u8' } } }], { draft, sculpt: 's', round: 3, stones: stones.length, spare: 'mass' });
+said('beds');
+pack('public/world/rock-s.bin', [{ name: 'break', positions: brk.positions, indices: brk.indices, attributes: { normal: { data: brk.normals, size: 3, as: 'i16' }, light: { data: lightOf, size: 4, as: 'u8' }, bounce: { data: bounceOf, size: 4, as: 'u8' } } }], { draft, sculpt: 's', round: 4, stones: stones.length, spare: 'bed', bed: 'light.w and bounce.w, folded onto an octahedron', cell: CELL });
 said('done');

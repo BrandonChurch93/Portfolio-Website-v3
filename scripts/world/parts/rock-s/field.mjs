@@ -2,10 +2,12 @@
 // body: the planet, with the torn part between the skin's two torn lines made of the great masses of masses.mjs, the
 // roof and the floor, all joined, and behind them a backfill so that no black there is a gap one can see through.
 //
-// Each mass is a thick block: a broad face on one plane, a back `thick` behind it, and sides square to the face that
-// follow its outline in the picture, ragged and chipped, with its corners knocked off. Its face carries two to five
-// fractures along its own two joint directions, each a groove one to three units wide whose far wall the core does
-// not reach, some stepping one side down, some dying out part way, some opening to a notch at an edge.
+// Round 4: each mass is a stack of sheets, like slate broken along its bedding. A mass has a bedding (the plane its
+// sheets lie in, leaning in toward the ball, its own for every mass) and is cut along it into sheets 4 to 14 units
+// thick, a thick one beside thin ones. Each sheet ends where it broke: its outline pulled back from its neighbours'
+// or standing proud of them, broken by planes into angular ends that come to points, and its face a little out or
+// back. Where two sheets part there is a slot two to four units wide and many deep, which the ball does not reach:
+// those are the cracks. A mass's back is `thick` behind its face, and its sides follow its outline in the picture.
 //
 //   setup(args)        args = { stones } (the rubble, from make.mjs)
 //   field(x, y, z)     the rock
@@ -19,9 +21,10 @@ import { MASSES, FLOOR, ROOF, BOTTOM, LANE, socket } from './masses.mjs';
 export const lip = 2.5;
 const UNIT = L.PICTURE.unit, C = L.CORE.at, R = L.CORE.r, CP = L.pictured(...L.CORE.at);
 // The space the rock is made in.
-export const BOX = [[-525, -612, -260], [478, 5, 625]];
-// How far under the land's surface the rock's top stays, in units.
-const UNDER = 3.5;
+export const BOX = [[-525, -612, -260], [478, 5, 700]];
+// How far under the land's surface the rock's top stays, in units, and how far out of the planet's surface a proud
+// mass may stand, as a share of the planet's depth.
+const UNDER = 3.5, PROUD = 1.15;
 // The core's clearance: nothing nearer its middle than r, give or take rag, cut by so many planes, and nothing in
 // front of it inside its outline (disc, opening toward the visitor by open: opened wide, its wall was a smooth
 // ring round the ball seen from in front).
@@ -43,17 +46,17 @@ const TURN = 0.3;
 // between so many radii out and so many it is `more` further back, so what shows of it beside the ball is in the
 // shadow of the masses round it: there it faced the ball at a slant and was a lit band.
 const BACKFILL = { gap: 0.8, deep: 14, over: 60, high: 70, from: -150, low: 90, under: -290, more: [0.35, 1.45, 2.7] };
-// A layer's step: its riser is this share of the layer across, within these units, and a step is this many units
-// deep at least and at most. How far a layer's edge wanders, broad and fine, and how far it is chipped, in units.
-const LAYER = { riser: 0.3, riserIn: [1.6, 4], drop: [2.5, 10], wander: [6, 2], chip: 0.7, bend: 0.0022, flat: [0.25, 0.3], turn: 0.14 };
-// Round 3. No rhythm: each lip runs at an angle of its own (up to LAYER.turn across a unit along it), and a stack is
-// crossed by `fault` fractures, each a groove across its layers that offsets them (FAULT: its angle from straight
-// across them, in radians, and the share of a layer it shifts them by).
-const FAULT = { angle: 0.55, shift: [0.35, 0.75] };
-// A lit rim on the edge of a mass that looks back at the ball, for the masses out past RIM.from core radii: a chamfer
-// turned RIM.angle degrees from the face toward the outline, from RIM.wide[0] to RIM.wide[1] units deep, missing
-// where its noise is under RIM.missing.
-const RIM = { from: 1.8, angle: 52, wide: [4, 14], over: 22, missing: 0.3 };
+// The sheets (round 4): how thick, for a thin one and a thick one (least, most), and the share that are thin; how
+// far a sheet's outline is pulled back from the mass's (under 0: proud of it), least and most, and how far it differs
+// from its neighbour's, least and most; how far its face stands out or back; its parting with the next, a slot this
+// wide (least, most) and this deep (least, most) in from where the two are seen, or none for the share `fused`; how many
+// planes break its end and how far they bite in from its outline, least and most; the chamfer on its edge; the
+// bedding's curl along the way to the ball, in units for a unit squared, how far its sheets fan (how much thicker
+// they grow for each hundred units along the way to the ball, at most), and the partings' wander, broad and fine,
+// units over units. A mass's bedding leans `dip` degrees from its face (0: sheets lying in the face, a stack seen from above; 90:
+// sheets on edge, a comb) and its run turns up to `strike` degrees from the way to the ball. A mass may set any of
+// these (`sheet` in masses.mjs), or its bedding outright (`bed`, a direction in the world).
+const SHEET = { thin: [4, 7], thick: [8.5, 14], thinShare: 0.55, pull: [-6, 16], step: [2, 12], lift: 2.6, gap: [2.2, 4.2], deep: [9, 24], fused: 0.45, cuts: 3, bite: [3, 26], bevel: [0.5, 1.3], curl: 0.0016, fan: 0.4, wander: [4, 30, 1.2, 9], dip: [40, 72], strike: 28 };
 // The back wall of the stream's lane under the floor: it leans back as it goes down, so it faces down from the core,
 // and is broken.
 const LANEWALL = { lean: 0.32, deep: 5, over: 11, fine: 1.6 };
@@ -94,7 +97,7 @@ function along(line, px) {
 const lipSoft = (x) => { let a = 0; for (let k = -4; k <= 4; k++) a += L.lip(x + k * 9); return a / 9; };
 const frontZ = (x) => Math.min(lipSoft(x), Math.sqrt(Math.max(0, L.WORLD.half ** 2 - x * x)));
 
-let M = null, CUTS = [], TUBE = null, ROOFB = null, STONES = [], GRID = null;
+export let M = null, CUTS = [], TUBE = null, ROOFB = null, STONES = [], GRID = null;
 
 // The point on a plane (through c, normal n) seen at a place in the picture.
 function onPlane(px, py, c, n) {
@@ -145,24 +148,6 @@ function prepare(m) {
   let far = 0;
   for (const k of corners) far = Math.max(far, Math.hypot(...sub(k, c)));
   const flat = new Float64Array(poly.flat());
-  // The fractures: alternately along each joint, the first more often.
-  const cracks = [];
-  for (let k = 0; k < m.cracks; k++) {
-    const th = ((m.joints[k % 2] + (r() - 0.5) * 16) * Math.PI) / 180;
-    const d = [e1[0] * Math.cos(th) + e2[0] * Math.sin(th), e1[1] * Math.cos(th) + e2[1] * Math.sin(th), e1[2] * Math.cos(th) + e2[2] * Math.sin(th)];
-    const q = cross(n, d);
-    let lo = Infinity, hi = -Infinity, plo = Infinity, phi = -Infinity;
-    for (const kk of corners) { const s = dot3(sub(kk, c), d), t = dot3(sub(kk, c), q); lo = Math.min(lo, s); hi = Math.max(hi, s); plo = Math.min(plo, t); phi = Math.max(phi, t); }
-    const off = plo + (phi - plo) * (0.18 + 0.64 * r());
-    const o = [c[0] + q[0] * off, c[1] + q[1] * off, c[2] + q[2] * off];
-    const len = hi - lo, kind = r();
-    let s0 = lo - 20, s1 = hi + 20;
-    // The second family is only short breaks, part way across, which stop where they meet the first.
-    if (k % 2 === 1) { s0 = lo + len * (0.15 + 0.35 * r()); s1 = s0 + len * (0.15 + 0.2 * r()); }
-    else if (kind < 0.45) { if (r() < 0.5) s1 = lo + len * (0.4 + 0.45 * r()); else s0 = hi - len * (0.4 + 0.45 * r()); }
-    else if (kind < 0.62) { s0 = lo + len * 0.15 * r(); s1 = s0 + len * (0.35 + 0.4 * r()); }
-    cracks.push({ o, d, q, s0, s1, hw: 0.8 + 0.8 * r(), deep: 1.8 + 1.6 * r(), step: r() < 0.35 ? (2 + 4.5 * r()) * (r() < 0.5 ? 1 : -1) : 0, wander: 2.4 + 2.6 * r(), over: 12 + 12 * r(), seed: m.seed * 31 + k });
-  }
   // Corners knocked off: at the sharpest few corners, a break 12 to 34 units in.
   const turn = poly.map((p, i) => {
     const a0 = poly[(i + poly.length - 1) % poly.length], a1 = poly[(i + 1) % poly.length];
@@ -178,36 +163,47 @@ function prepare(m) {
     const Nb = norm([flatOut[0] + n[0] * tilt + e1[0] * (r() - 0.5) * 0.6, flatOut[1] + n[1] * tilt + e2[1] * (r() - 0.5) * 0.6, flatOut[2] + n[2] * tilt]);
     breaks.push({ n: Nb, at: [K[0] - flatOut[0] * deep, K[1] - flatOut[1] * deep, K[2] - flatOut[2] * deep] });
   }
-  // The layers: their run across the face, square to the way toward the ball (or `toward`) turned by `bed`, and where
-  // each begins along the way toward the ball, with how deep its step is.
-  let layers = null;
-  if (m.layers) {
-    const Ly = m.layers, want = Ly.toward ?? sub(C, c), tb = norm(sub(want, n.map((q) => q * dot3(want, n)))), a = ((Ly.bed ?? 0) * Math.PI) / 180, side = cross(n, tb);
-    const lu = norm(tb.map((q, i) => q * Math.cos(a) + side[i] * Math.sin(a))), lv = cross(n, lu), reach = far + m.thick + 80, at = [], drop = [], wide = [];
-    // Widths spread over the whole range by ratio, so no run of layers is even.
-    const rIn = Ly.riser ?? LAYER.riserIn;
-    for (let u = -reach - 30 * r(); u < reach + 40;) {
-      const P = Ly.every[0] * (Ly.every[1] / Ly.every[0]) ** r(), w = Math.min(rIn[1], Math.max(rIn[0], LAYER.riser * P));
-      // A layer in four lies nearly in the face, so a broad face shows between the steps.
-      const tilt = ((Ly.tilt[0] + (Ly.tilt[1] - Ly.tilt[0]) * r()) * (r() < LAYER.flat[0] ? LAYER.flat[1] : 1) * Math.PI) / 180;
-      at.push(u); drop.push(Math.min(LAYER.drop[1], Math.max(LAYER.drop[0], (P - w) * Math.tan(tilt)))); wide.push(w);
-      u += P;
-    }
-    at.push(reach + 80); drop.push(0); wide.push(2);
-    const ang = new Float64Array(at.length).map(() => (r() - 0.5) * 2 * LAYER.turn * (r() < 0.3 ? 1.6 : 1));
-    const faults = [];
-    const every = (Ly.every[0] + Ly.every[1]) / 2;
-    for (let k = 0; k < (m.fault ?? 0); k++) {
-      const a = (r() - 0.5) * 2 * FAULT.angle, v0 = (r() - 0.5) * far * 0.9, off = (r() < 0.5 ? -1 : 1) * (FAULT.shift[0] + (FAULT.shift[1] - FAULT.shift[0]) * r()) * every;
-      faults.push({ ca: Math.cos(a), sa: Math.sin(a), v0, off });
-      // The fault is a groove too, along its line.
-      const d = norm(lu.map((q, i) => q * Math.cos(a) + lv[i] * Math.sin(a))), q = cross(n, d), o = [c[0] + lv[0] * v0, c[1] + lv[1] * v0, c[2] + lv[2] * v0];
-      cracks.push({ o, d, q, s0: -far - 20, s1: far + 20, hw: 1 + 0.7 * r(), deep: 2.4 + 1.4 * r(), step: 0, wander: 0.8, over: 18, seed: m.seed * 31 + 17 + k });
-    }
-    layers = { lu, lv, at: new Float64Array(at), ang, faults, drop: new Float64Array(drop), wide: new Float64Array(wide), pinch: Ly.pinch ?? 0.3, bend: LAYER.bend * (r() - 0.5) * 2 };
+  // The sheets: the bedding, then the sheets along it, each with its own pull, lift, parting, chamfer and broken end.
+  const S = { ...SHEET, ...(m.sheet ?? {}) }, want = sub(C, c), tb = norm(sub(want, n.map((q) => q * dot3(want, n)))), side = cross(n, tb);
+  let b;
+  if (S.bed) b = norm(S.bed);
+  else {
+    const st = ((S.strikeAt ?? (r() - 0.5) * 2 * S.strike) * Math.PI) / 180, dip = ((S.dipAt ?? S.dip[0] + (S.dip[1] - S.dip[0]) * r()) * Math.PI) / 180;
+    const b0 = side.map((q, i) => q * Math.cos(st) + tb[i] * Math.sin(st));
+    b = norm(n.map((q, i) => q * Math.cos(dip) + b0[i] * Math.sin(dip)));
   }
+  const s1 = norm(cross(b, Math.abs(b[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0])), s2 = cross(b, s1);
+  const ends = corners.map((k) => sub(k, c));
+  const span = far + m.thick + 24, lo = [], hi = [], pull = [], lift = [], gap = [], deep = [], bev = [], cuts = [];
+  // A small mass is pulled and bitten less: its sheets' ends would be all of it.
+  const small = Math.min(1, far / 90);
+  let pv = S.pull[0] + (S.pull[1] - S.pull[0]) * r();
+  for (let at = -span - 14 * r(); at < span;) {
+    const th = r() < S.thinShare ? S.thin[0] + (S.thin[1] - S.thin[0]) * r() : S.thick[0] + (S.thick[1] - S.thick[0]) * r();
+    lo.push(at); hi.push(at + th); at += th;
+    pull.push(pv * small);
+    const dv = (S.step[0] + (S.step[1] - S.step[0]) * r()) * (r() < 0.5 ? -1 : 1);
+    pv = pv + dv > S.pull[1] || pv + dv < S.pull[0] ? pv - dv : pv + dv;
+    lift.push((r() - 0.5) * 2 * S.lift);
+    gap.push(r() < S.fused ? 0 : S.gap[0] + (S.gap[1] - S.gap[0]) * r());
+    deep.push(S.deep[0] + (S.deep[1] - S.deep[0]) * r());
+    bev.push(S.bevel[0] + (S.bevel[1] - S.bevel[0]) * r());
+    const own = [];
+    for (let j = 0; j < S.cuts; j++) {
+      // Across the face, along the outline: a cut turned toward the face's normal took the whole face off.
+      const a = 6.283 * r(), w = [0, 1, 2].map((i) => s1[i] * Math.cos(a) + s2[i] * Math.sin(a) + b[i] * (r() - 0.5) * 0.5), wn = dot3(w, n);
+      const along = w.map((q, i) => q - n[i] * wn + n[i] * (r() - 0.5) * 0.5);
+      if (Math.hypot(...along) < 0.35) continue;
+      const u = norm(along);
+      let sup = -Infinity;
+      for (const e of ends) sup = Math.max(sup, dot3(e, u));
+      own.push(u[0], u[1], u[2], sup - (S.bite[0] + (S.bite[1] - S.bite[0]) * r() ** 1.4) * small);
+    }
+    cuts.push(new Float64Array(own));
+  }
+  const sheets = { b, tb, lo: new Float64Array(lo), hi: new Float64Array(hi), pull, lift, gap, deep, bev, cuts, curl: S.curl * (r() < 0.5 ? -1 : 1) * (0.5 + r()), fan: S.fan * (r() - 0.5) * 2, wander: S.wander, most: Math.min(...pull), seed: m.seed + 90 };
   const rho = Math.hypot(c[0] - C[0], c[1] - C[1]) / R;
-  return { ...m, c, n, e1, e2, flat, cracks, breaks, layers, rho, reach: far + m.thick + 60, top: m.top ? { at: m.top.at, n: norm(m.top.n) } : null };
+  return { ...m, c, n, e1, e2, flat, breaks, sheets, rho, reach: far + m.thick + 60, top: m.top ? { at: m.top.at, n: norm(m.top.n) } : null };
 }
 
 export function setup(args = {}) {
@@ -260,87 +256,51 @@ function facets(m, u, v) {
   return H(a) * (1 - t) + H(b) * t;
 }
 
-// How far a mass's layers stand out of its face at a place (a share of the step under 0), and how fast that changes
-// across the layers: each layer's face rises from its step's foot to its lip, and the lip drops to the next.
-function layered(m, dx, dy, dz) {
-  const Ly = m.layers, v = dx * Ly.lv[0] + dy * Ly.lv[1] + dz * Ly.lv[2];
-  let u0 = dx * Ly.lu[0] + dy * Ly.lu[1] + dz * Ly.lu[2];
-  for (const f of Ly.faults) u0 += f.off * smooth(-0.8, 0.8, -u0 * f.sa + (v - f.v0) * f.ca);
-  // The layers fan a little: each mass's run bends its own way along their length.
-  const u = u0 + Ly.bend * v * v + LAYER.wander[0] * N(u0 / 40, v / 28, 0.5, m.seed + 80) + LAYER.wander[1] * N(u0 / 12, v / 9, 1.5, m.seed + 81) + LAYER.chip * N(u0 / 3, v / 3, 2.5, m.seed + 82);
-  const at = Ly.at, last = at.length - 1;
-  let lo = 0, hi = last;
-  if (u < at[0] || u >= at[hi]) return [0, 0];
-  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (at[mid] <= u) lo = mid; else hi = mid; }
-  // Each lip at an angle of its own: the layer the place is in is found among the lips so turned.
-  const lip = (j) => at[j] + (j > 0 && j < last ? Ly.ang[j] * v : 0);
-  let k = lo;
-  if (k > 0 && u < lip(k)) k--;
-  else if (k + 1 < last && u >= lip(k + 1)) k++;
-  const L0 = lip(k), P = Math.max(1.5, lip(k + 1) - L0), t = Math.min(P, Math.max(0, u - L0)), w = Math.min(Ly.wide[k], P * 0.45);
-  // A step dies out along its length here and there: the two layers either side of it become one.
-  const there = (j) => Ly.drop[j] * smooth(Ly.pinch - 0.12, Ly.pinch + 0.12, L.noise(v / 46, j * 1.37, 0.5, m.seed + 83));
-  const H0 = there(k), H1 = there(k + 1);
-  if (t < P - w) return [-H0 + (H0 * t) / (P - w), H0 / (P - w)];
-  return [(-H1 * (t - (P - w))) / w, -H1 / w];
-}
-
 // One mass, with the projection of the place in the picture handed in for its outline when the mass is cut along
 // the line of sight (the floor).
-function mass(m, x, y, z, px, py) {
+export function mass(m, x, y, z, px, py) {
   const dx = x - m.c[0], dy = y - m.c[1], dz = z - m.c[2], far = Math.hypot(dx, dy, dz) - m.reach;
   if (far > 0) return far + 2;
   const h = dx * m.n[0] + dy * m.n[1] + dz * m.n[2];
   const rel = RELIEF.deep * N(x / RELIEF.over, y / RELIEF.over, z / RELIEF.over, m.seed) + RELIEF.fine * N(x / RELIEF.fineOver, y / RELIEF.fineOver, z / RELIEF.fineOver, m.seed + 1);
-  let face = h + rel - FACET.share * facets(m, dx * m.e1[0] + dy * m.e1[1] + dz * m.e1[2], dx * m.e2[0] + dy * m.e2[1] + dz * m.e2[2]);
-  if (m.layers && face > -16 && face < 16) { const [s, ds] = layered(m, dx, dy, dz); face = (face - s) / Math.sqrt(1 + ds * ds); }
+  const face0 = h + rel - FACET.share * facets(m, dx * m.e1[0] + dy * m.e1[1] + dz * m.e1[2], dx * m.e2[0] + dy * m.e2[1] + dz * m.e2[2]);
   // The outline, on the face: the place carried square onto the face's plane, as the picture shows it.
   let qx = px, qy = py;
   if (!m.view) [qx, qy] = L.pictured(x - m.n[0] * h, y - m.n[1] * h, z - m.n[2] * h);
-  let out = sdPoly(m.flat, qx, qy) * UNIT + RAG.deep * N(x / RAG.over, y / RAG.over, z / RAG.over, m.seed + 2) + RAG.fine * N(x / RAG.fineOver, y / RAG.fineOver, z / RAG.fineOver, m.seed + 3);
-  if (out > 40) return out - 2 * RAG.deep;
-  // Steps: one side of a fracture sunk.
-  for (const k of m.cracks) {
-    if (!k.step) continue;
-    const u = (x - k.o[0]) * k.d[0] + (y - k.o[1]) * k.d[1] + (z - k.o[2]) * k.d[2];
-    const taper = smooth(k.s0 - 8, k.s0 + 14, u) * (1 - smooth(k.s1 - 14, k.s1 + 8, u));
-    if (taper <= 0) continue;
-    const v = (x - k.o[0]) * k.q[0] + (y - k.o[1]) * k.q[1] + (z - k.o[2]) * k.q[2] - k.wander * N(u / k.over, k.seed, 0.5, 7) - 1.5 * N(u / 7, k.seed, 1.5, 10) - 0.7 * N(u / 3, k.seed, 2.5, 8);
-    const s = Math.abs(k.step) * taper, w = k.step > 0 ? v : -v;
-    face = Math.min(Math.max(face, w), Math.max(face + s, -w));
+  const out0 = sdPoly(m.flat, qx, qy) * UNIT + RAG.deep * N(x / RAG.over, y / RAG.over, z / RAG.over, m.seed + 2) + RAG.fine * N(x / RAG.fineOver, y / RAG.fineOver, z / RAG.fineOver, m.seed + 3);
+  const Sh = m.sheets;
+  if (out0 + Sh.most > 40) return out0 + Sh.most - 2 * RAG.deep;
+  // Which sheet the place is in, along the bedding, which fans, curls and wanders.
+  const u = dx * Sh.tb[0] + dy * Sh.tb[1] + dz * Sh.tb[2];
+  const s = (dx * Sh.b[0] + dy * Sh.b[1] + dz * Sh.b[2]) / (1 + Sh.fan * Math.max(-1.5, Math.min(1.5, u / 100))) + Sh.curl * u * u + Sh.wander[0] * N(x / Sh.wander[1], y / Sh.wander[1], z / Sh.wander[1], Sh.seed) + Sh.wander[2] * N(x / Sh.wander[3], y / Sh.wander[3], z / Sh.wander[3], Sh.seed + 1);
+  const lo = Sh.lo, last = lo.length - 1;
+  let a = 0, z1 = last;
+  if (s < lo[0]) z1 = 0;
+  else if (s >= lo[last]) a = last;
+  else { while (z1 - a > 1) { const mid = (a + z1) >> 1; if (lo[mid] <= s) a = mid; else z1 = mid; } }
+  let d = Infinity;
+  for (let k = Math.max(0, a - 1); k <= Math.min(last, a + 1); k++) {
+    const face = face0 - Sh.lift[k], out = out0 + Sh.pull[k];
+    // The parting opens only near where the sheets are seen: deeper in they are one rock.
+    const open = smooth(-Sh.deep[k], -Sh.deep[k] + 4, Math.max(face, out));
+    const below = k > 0 ? Sh.gap[k - 1] / 2 : 0, above = Sh.gap[k] / 2;
+    let e = Math.max(face, -h - m.thick, out + TAPER * Math.max(0, -h), lo[k] + below * open - s, s - Sh.hi[k] + above * open);
+    const cut = Sh.cuts[k];
+    for (let j = 0; j < cut.length; j += 4) e = Math.max(e, dx * cut[j] + dy * cut[j + 1] + dz * cut[j + 2] - cut[j + 3]);
+    e = Math.max(e, (face + out) * Math.SQRT1_2 + Sh.bev[k]);
+    if (e < d) d = e;
   }
-  let d = Math.max(face, -h - m.thick, out + TAPER * Math.max(0, -h));
-  // A chipped edge: a bevel of its own width all along.
-  const bev = BEVEL.least + BEVEL.more * L.noise(x / BEVEL.over, y / BEVEL.over, z / BEVEL.over, m.seed + 4);
-  d = Math.max(d, (face + out) * Math.SQRT1_2 + bev);
   if (m.top) d = Math.max(d, (x - m.top.at[0]) * m.top.n[0] + (y - m.top.at[1]) * m.top.n[1] + (z - m.top.at[2]) * m.top.n[2] + 0.8 * rel);
   for (const b of m.breaks) d = Math.max(d, (x - b.at[0]) * b.n[0] + (y - b.at[1]) * b.n[1] + (z - b.at[2]) * b.n[2]);
-  // A lit rim where the outline looks back at the ball.
-  if (m.rho > RIM.from && out > -RIM.wide[1] * 2 && face > -RIM.wide[1] * 2) {
-    const e = 0.6, gx = sdPoly(m.flat, qx + e, qy) - sdPoly(m.flat, qx - e, qy), gy = sdPoly(m.flat, qx, qy + e) - sdPoly(m.flat, qx, qy - e), gl = Math.hypot(gx, gy) || 1;
-    const bx = CP[0] - qx, by = CP[1] - qy, bl = Math.hypot(bx, by) || 1, look = (gx * bx + gy * by) / (gl * bl);
-    const there = smooth(RIM.missing - 0.08, RIM.missing + 0.08, L.noise(x / RIM.over, y / RIM.over, z / RIM.over, m.seed + 5));
-    const wide = (RIM.wide[0] + (RIM.wide[1] - RIM.wide[0]) * L.noise(x / 13, y / 13, z / 13, m.seed + 6)) * smooth(0.2, 0.65, look) * there;
-    if (wide > 0.2) { const a = (RIM.angle * Math.PI) / 180; d = Math.max(d, face * Math.cos(a) + out * Math.sin(a) + wide); }
-  }
-  // The fractures: V grooves cut into the face, widening to a notch where they reach an edge.
-  const inward = -face;
-  if (inward > -6 && inward < 10) {
-    const edge = Math.min(1, Math.max(0, 1 + out / 14));
-    for (const k of m.cracks) {
-      const u = (x - k.o[0]) * k.d[0] + (y - k.o[1]) * k.d[1] + (z - k.o[2]) * k.d[2];
-      const taper = smooth(k.s0 - 6, k.s0 + 18, u) * (1 - smooth(k.s1 - 18, k.s1 + 6, u));
-      if (taper <= 0.02) continue;
-      const v = (x - k.o[0]) * k.q[0] + (y - k.o[1]) * k.q[1] + (z - k.o[2]) * k.q[2] - k.wander * N(u / k.over, k.seed, 0.5, 7) - 1.5 * N(u / 7, k.seed, 1.5, 10) - 0.7 * N(u / 3, k.seed, 2.5, 8);
-      const wide = 0.6 + 0.8 * L.noise(u / 9, k.seed, 4.5, 9);
-      const hw = k.hw * wide * taper * (1 + 1.8 * edge * edge), deep = k.deep * Math.sqrt(taper * wide) * (1 + 0.8 * edge);
-      if (Math.abs(v) > hw + 3) continue;
-      const slope = deep / hw, groove = (inward + slope * Math.abs(v) - deep) / Math.sqrt(1 + slope * slope);
-      d = Math.max(d, -groove);
-    }
-  }
   return d;
 }
+
+// The bedding of the place: the mass it is of, or the roof's and the backfill's own.
+export function bedOf(x, y, z) {
+  const at = which(x, y, z);
+  return at < M.length ? M[at].sheets.b : at === M.length ? ROOFBED : BACKBED;
+}
+const ROOFBED = norm([0.08, 1, 0.22]), BACKBED = norm([0.3, 0.2, 1]);
 
 // The roof: under the land, in front of nothing, its front face a little behind the land's edge, broken across into
 // blocks, and its ragged underside where the picture has it.
@@ -397,6 +357,9 @@ export function bare(x, y, z) {
   let d = Math.min(inner, -tube);
   d = Math.max(d, (L.shell(x, y, z) - 1) * L.WORLD.deep);
   d = Math.max(d, y - (below(x, z) - UNDER));
+  // A mass that is `proud` may stand out of the planet's surface by PROUD of its depth, in front of the skin and of
+  // the land's own crust under its lip: its outline keeps it under the lip as the picture shows it.
+  for (const m of M) if (m.proud) d = Math.min(d, Math.max(mass(m, x, y, z, px, py), (L.shell(x, y, z) - PROUD) * L.WORLD.deep, tube));
   return d;
 }
 

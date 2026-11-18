@@ -3,6 +3,7 @@ import { CORE, LIGHT, MOONWARD, RIM, SCALE, SOURCE, WORLD } from '../../layout';
 import { color, lit, stone, world } from '../../light';
 import { slice } from '../../../../world/build';
 import { GRAIN, grain } from './grain';
+import { CURVE } from './curve';
 
 // The planet's stone: what the torn rock is made of, and what a piece that broke away may wear. A broken sandstone
 // whose color comes from the light on it: cream only where a face squarely meets the core, a deep orange in every
@@ -129,6 +130,14 @@ export const STONE = {
   // moon lights and the core does not fades as it is seen more nearly edge on, between the two of `thin`.
   quietTint: { lit: [1, 0.9, 0.62] as const, shade: [1, 0.52, 0.25] as const, far: [1, 0.55, 0.4] as const, value: [1.04, 0.86, 0.86] as const, mass: [1, 0.11] as const, drift: [1.1, 60, 18] as const, paled: 0.6, dust: 1.2, thin: [0.12, 0.42] },
   pits: { wide: [1.6, 4.2], deep: [0.22, 0.2], share: [0.3, 0.16], tone: 0.16, cluster: 46, soft: 0.3, bare: 130 },
+  // Round 4 (StoneOptions.bed): the sculpt stores each vertex's bedding, the plane its sheets lie in, and the stone
+  // lays the laminae finer than the sheets along it: how far apart, wider and finer, in units, each riser's width
+  // least and most, how far a lamina's riser turns the surface, how often a riser faces from the core and not to it,
+  // how dark its foot is, how far its line wanders, broad and fine, in units, and how steeply the bedding must cut a
+// face for them to show, from none to full (the length of the bedding's normal along the face).
+  laminae: { apart: [2.6, 1.05], riser: [0.7, 1.5, 0.3, 0.6], tilt: 1.1, away: 0.18, foot: 0.34, warp: [0.45, 0.15], across: [0.55, 0.8] },
+  // How far each mass's hue may differ (StoneOptions.curve): the share green and blue are moved for each unit of it.
+  hueSpread: [0.18, 0.3] as const,
 } as const;
 
 // The stream's light on the stone: a line from the core's foot straight down, as far as the page's stream has run,
@@ -176,6 +185,7 @@ const v3 = (c: THREE.Color | readonly number[]): string => {
   const [r, g, b] = c instanceof THREE.Color ? [c.r, c.g, c.b] : c;
   return `vec3( ${f(+r.toFixed(4))}, ${f(+g.toFixed(4))}, ${f(+b.toFixed(4))} )`;
 };
+const v2 = (c: readonly number[]): string => `vec2( ${f(c[0])}, ${f(c[1])} )`;
 const C = v3(CORE.at);
 const MOON = v3(new THREE.Vector3(...MOONWARD).normalize().toArray());
 
@@ -190,6 +200,9 @@ varying vec3 vStoneN;
 #endif
 #ifdef STONE_QUIET
 	varying vec2 vStoneMass;
+#endif
+#ifdef STONE_BED
+	varying vec3 vStoneBed;
 #endif`;
 // The place and normal in the world, in units, for a mesh drawn as it is.
 const VERT = /* glsl */ `
@@ -205,12 +218,53 @@ const VERT = /* glsl */ `
 		vStoneSlab = floor( aLight.w * 255.0 + 0.5 );
 	#endif
 	#ifdef STONE_QUIET
-		#if defined( WORLD_BAKED ) && defined( STONE_MASS )
+		#if defined( WORLD_BAKED ) && defined( STONE_BED )
+			// The bedding, stored folded onto an octahedron in light.w and bounce.w. Each mass has its own, so its tone is
+			// worked out from it.
+			vec2 stoneO = vec2( aLight.w, aBounce.w ) * 2.0 - 1.0;
+			vec3 stoneB = vec3( stoneO, 1.0 - abs( stoneO.x ) - abs( stoneO.y ) );
+			if ( stoneB.z < 0.0 ) stoneB.xy = ( 1.0 - abs( stoneB.yx ) ) * vec2( stoneB.x >= 0.0 ? 1.0 : - 1.0, stoneB.y >= 0.0 ? 1.0 : - 1.0 );
+			vStoneBed = mat3( modelMatrix ) * stoneB;
+			vec2 stoneQ = floor( vec2( aLight.w, aBounce.w ) * 255.0 + 0.5 );
+			vStoneMass = fract( sin( vec2( dot( stoneQ, vec2( 12.9898, 78.233 ) ), dot( stoneQ, vec2( 39.3468, 11.1351 ) ) ) ) * 43758.5453 );
+		#elif defined( WORLD_BAKED ) && defined( STONE_MASS )
 			vStoneMass = vec2( aBounce.w, aLight.w );
 		#else
 			vStoneMass = vec2( 0.5 );
 		#endif
 	#endif
+}`;
+
+// Sculpt S's light, its hue set by its brightness and by how far from the core it is as the visitor sees it, to the
+// colors picture 9's rock has there (./curve.ts, measured off the picture and fitted to the world's last pass by
+// scripts/world/parts/rock-s/fit.mjs). Its brightness is the light's own: only its hue is changed.
+const glslList = (v: readonly number[]): string => v.map(f).join(', ');
+const CURVE_GLSL = /* glsl */ `
+const float stoneCurveAt[ ${CURVE.at.length} ] = float[]( ${glslList(CURVE.at.map((v) => +v.toPrecision(5)))} );
+const float stoneCurveRing[ ${CURVE.rings.length} ] = float[]( ${glslList(CURVE.rings)} );
+const vec2 stoneCurveTint[ ${CURVE.tint.flat().length} ] = vec2[]( ${CURVE.tint.flat().map(([g, b]) => `vec2( ${f(+g.toFixed(4))}, ${f(+b.toFixed(4))} )`).join(', ')} );
+float stoneQH;
+vec3 stoneCurve( vec3 o, vec3 p ) {
+	float l = dot( o, vec3( 0.2126, 0.7152, 0.0722 ) );
+	float x = 0.0;
+	for ( int i = 0; i < ${CURVE.at.length - 1}; i ++ ) {
+		float a = stoneCurveAt[ i ], b = stoneCurveAt[ i + 1 ];
+		if ( l >= a ) x = float( i ) + clamp( ( l - a ) / max( b - a, 1e-6 ), 0.0, 1.0 );
+	}
+	x = clamp( x - 0.5, 0.0, ${f(CURVE.at.length - 2)} );
+	float rho = length( p.xy - ${v3(CORE.at)}.xy ) / ${f(CORE.r)}, y = 0.0;
+	for ( int i = 0; i < ${CURVE.rings.length - 1}; i ++ ) {
+		float a = stoneCurveRing[ i ], b = stoneCurveRing[ i + 1 ];
+		if ( rho >= a ) y = float( i ) + clamp( ( rho - a ) / ( b - a ), 0.0, 1.0 );
+	}
+	int x0 = int( floor( x ) ), y0 = int( floor( y ) );
+	int x1 = min( x0 + 1, ${CURVE.at.length - 2} ), y1 = min( y0 + 1, ${CURVE.rings.length - 1} );
+	float fx = x - float( x0 ), fy = y - float( y0 );
+	const int W = ${CURVE.at.length - 1};
+	vec2 t = mix( mix( stoneCurveTint[ y0 * W + x0 ], stoneCurveTint[ y0 * W + x1 ], fx ), mix( stoneCurveTint[ y1 * W + x0 ], stoneCurveTint[ y1 * W + x1 ], fx ), fy );
+	t *= 1.0 + ${v2(STONE.hueSpread)} * stoneQH;
+	vec3 c = vec3( 1.0, t );
+	return c * ( l / max( dot( c, vec3( 0.2126, 0.7152, 0.0722 ) ), 1e-5 ) );
 }`;
 
 const FRAG_PARS = /* glsl */ `
@@ -226,6 +280,12 @@ varying vec3 vStoneN;
 #endif
 #ifdef STONE_QUIET
 	varying vec2 vStoneMass;
+#endif
+#ifdef STONE_BED
+	varying vec3 vStoneBed;
+#endif
+#ifdef STONE_CURVE
+	${CURVE_GLSL}
 #endif
 uniform sampler2D uStoneGrain;
 uniform vec2 uStoneStream;
@@ -310,6 +370,9 @@ vec4 stoneScallop( vec3 p, float cell, float seed ) {
 // Works out the stone at this place. In a part's fragment shader it goes after <color_fragment>.
 const STONE_FRAG = /* glsl */ `
 {
+	#ifdef STONE_CURVE
+		stoneQH = 0.0;
+	#endif
 	vec3 p = vStoneP, n = vStoneN / max( length( vStoneN ), 1e-6 );
 	float facing = abs( dot( normalize( vNormal + vec3( 1e-6 ) ), normalize( vViewPosition + vec3( 1e-6 ) ) ) );
 	vec3 toC = ${C} - p;
@@ -341,7 +404,12 @@ const STONE_FRAG = /* glsl */ `
 	float pix = max( max( length( dFdx( p ) ), length( dFdy( p ) ) ), 1e-4 );
 
 	// The grain, near and wider, from the three axes. A face seen nearly edge on keeps only its grain's tone.
-	vec3 w = pow( abs( n ), vec3( 4.0 ) );
+	// Sculpt S's faces lean every way: blended evenly from two axes the grain was drawn out into streaks on a slope.
+	#ifdef STONE_BED
+		vec3 w = pow( abs( n ), vec3( 10.0 ) );
+	#else
+		vec3 w = pow( abs( n ), vec3( 4.0 ) );
+	#endif
 	w /= max( w.x + w.y + w.z, 1e-5 );
 	vec3 gNear, gWide;
 	vec2 tNear, tWide;
@@ -370,16 +438,34 @@ const STONE_FRAG = /* glsl */ `
 		#ifdef STONE_SLAB
 			bed = uStoneBeds[ int( clamp( vStoneSlab + 0.5, 0.0, ${f(BEDS_MAX - 1)} ) ) ];
 		#endif
+		#ifdef STONE_BED
+			bed = vec4( vStoneBed, 1.0 );
+		#endif
 		vec3 bN = bed.xyz / max( length( bed.xyz ), 1e-4 );
 		vec3 bT = bN - n * dot( bN, n );
 		float bTl = length( bT );
-		// Where the layers lie nearly in the face, a parting is too wide to be a line: it is left out.
-		float across = smoothstep( 0.18, 0.42, bTl );
+		// Where the layers lie nearly in the face, a parting is too wide to be a line: it is left out. The laminae
+		// only where their plane cuts the face steeply: cut at a slant they drew wide rings, as wood grain does.
+		#ifdef STONE_BED
+			float across = smoothstep( ${f(STONE.laminae.across[0])}, ${f(STONE.laminae.across[1])}, bTl );
+		#else
+			float across = smoothstep( 0.18, 0.42, bTl );
+		#endif
 		bT = bTl > 1e-4 ? bT / bTl : vec3( 0.0 );
-		float tb = dot( p, bN ) + ${f(STONE.bed.warp[0])} * ( w1.w - 0.5 ) * 2.0 + ${f(STONE.bed.warp[1])} * ( w3.w - 0.5 ) * 2.0;
+		#ifdef STONE_BED
+			float tb = dot( p, bN ) + ${f(STONE.laminae.warp[0])} * ( w1.w - 0.5 ) * 2.0 + ${f(STONE.laminae.warp[1])} * ( w3.w - 0.5 ) * 2.0;
+			// The laminae's risers face the core, so each is a lit lip toward it with a shadow under it.
+			float toCore = dot( bT, lT ) >= 0.0 ? 1.0 : - 1.0;
+		#else
+			float tb = dot( p, bN ) + ${f(STONE.bed.warp[0])} * ( w1.w - 0.5 ) * 2.0 + ${f(STONE.bed.warp[1])} * ( w3.w - 0.5 ) * 2.0;
+		#endif
 		float riser = 0.0, lipB = 0.0, foot = 0.0, layerTone = 0.0;
 		for ( int s = 0; s < 2; s++ ) {
-			float P = s == 0 ? ${f(STONE.bed.apart[0])} : ${f(STONE.bed.apart[1])};
+			#ifdef STONE_BED
+				float P = s == 0 ? ${f(STONE.laminae.apart[0])} : ${f(STONE.laminae.apart[1])};
+			#else
+				float P = s == 0 ? ${f(STONE.bed.apart[0])} : ${f(STONE.bed.apart[1])};
+			#endif
 			float seed = bSeed + float( s ) * 17.0;
 			float u = tb / P, k = floor( u );
 			float o = 0.15 + 0.7 * stoneHash1( k * 1.37 + seed );
@@ -389,13 +475,22 @@ const STONE_FRAG = /* glsl */ `
 			float runs = s == 0 ? ${f(STONE.bed.run[0])} : ${f(STONE.bed.run[1])};
 			// A block that is not bedded has no partings at all (round 8): the finer ones ran parallel on every block.
 			float there = smoothstep( hk, hk + 0.14, stoneNoise3( p / runs + vec3( k * 0.73, seed, 0.0 ) ) * ( s == 0 ? bed.w : 0.3 + 0.4 * bed.w ) ) * step( 0.05, bed.w );
-			float wR = mix( s == 0 ? ${f(STONE.bed.riser[0])} : ${f(STONE.bed.riser[2])}, s == 0 ? ${f(STONE.bed.riser[1])} : ${f(STONE.bed.riser[3])}, stoneHash1( k * 5.3 + seed ) );
+			#ifdef STONE_BED
+				float wR = mix( s == 0 ? ${f(STONE.laminae.riser[0])} : ${f(STONE.laminae.riser[2])}, s == 0 ? ${f(STONE.laminae.riser[1])} : ${f(STONE.laminae.riser[3])}, stoneHash1( k * 5.3 + seed ) );
+				float up = stoneHash1( k * 2.9 + seed + 3.3 ) < ${f(STONE.laminae.away)} ? - toCore : toCore;
+			#else
+				float wR = mix( s == 0 ? ${f(STONE.bed.riser[0])} : ${f(STONE.bed.riser[2])}, s == 0 ? ${f(STONE.bed.riser[1])} : ${f(STONE.bed.riser[3])}, stoneHash1( k * 5.3 + seed ) );
+				float up = stoneHash1( k * 2.9 + seed + 3.3 ) < 0.5 ? - 1.0 : 1.0;
+			#endif
 			// Seen at least a pixel and a half wide, or faded to the tone it averages to.
 			float seenR = smoothstep( 1.0, 2.2, wR / pix ) * there * across * edgeOn;
 			float inR = clamp( min( d, wR - d ) / pix + 0.5, 0.0, 1.0 );
-			float up = stoneHash1( k * 2.9 + seed + 3.3 ) < 0.5 ? - 1.0 : 1.0;
 			float rK = inR * seenR;
-			tilt += bT * up * ( ${f(STONE.bed.tilt)} * rK );
+			#ifdef STONE_BED
+				tilt += bT * up * ( ${f(STONE.laminae.tilt)} * rK );
+			#else
+				tilt += bT * up * ( ${f(STONE.bed.tilt)} * rK );
+			#endif
 			riser = max( riser, rK );
 			float lw = max( 0.45 * wR, 0.9 * pix );
 			lipB = max( lipB, clamp( ( lw - abs( d - ( up > 0.0 ? wR : 0.0 ) ) ) / pix, 0.0, 1.0 ) * seenR * smoothstep( 1.2, 2.4, lw / pix ) );
@@ -455,7 +550,14 @@ const STONE_FRAG = /* glsl */ `
 			float W = ( s == 0 ? ${f(STONE.pits.wide[0])} : ${f(STONE.pits.wide[1])} ) * ( 0.6 + 0.9 * stoneNoise3( p / 31.0 + vec3( float( s ) * 3.3 ) ) );
 			// In clusters, never an even speckle: over most of a face there are none, and whole faces have none at all.
 			float th = 1.0 - ( s == 0 ? ${f(STONE.pits.share[0])} : ${f(STONE.pits.share[1])} ) * smoothstep( 0.5, 0.78, stoneNoise3( p / ${f(STONE.pits.cluster)} + vec3( float( s ) * 7.1 ) ) ) * smoothstep( 0.45, 0.6, stoneNoise3( p / ${f(STONE.pits.bare)} + 4.4 ) );
-			vec4 q = stoneNoiseD( p / W + vec3( float( s ) * 13.7 + 5.3 ) );
+			#ifdef STONE_BED
+				// Turned off the noise's own grid and pushed about by a wider noise, or every pit was the same square stud.
+				mat3 qR = mat3( 0.788, 0.3, -0.537, -0.211, 0.951, 0.225, 0.578, -0.073, 0.813 );
+				vec4 q = stoneNoiseD( ( qR * p + 3.0 * vec3( st2, stoneNoise3( p / 13.0 + 1.9 ), st3 ) ) / W + vec3( float( s ) * 13.7 + 5.3 ) );
+				q.xyz = q.xyz * qR;
+			#else
+				vec4 q = stoneNoiseD( p / W + vec3( float( s ) * 13.7 + 5.3 ) );
+			#endif
 			float t = clamp( ( q.w - th ) / ${f(STONE.pits.soft)}, 0.0, 1.0 ), m = t * t * ( 3.0 - 2.0 * t );
 			float shows = 1.0 - smoothstep( 0.2, 0.55, pix / W );
 			tilt += ( s == 0 ? ${f(STONE.pits.deep[0])} : ${f(STONE.pits.deep[1])} ) * 6.0 * t * ( 1.0 - t ) / ${f(STONE.pits.soft)} * q.xyz * shows * edgeOn;
@@ -511,6 +613,9 @@ const STONE_FRAG = /* glsl */ `
 		// And within a face its hue drifts, broad and finer, as weathered stone's does.
 		float qH = ${f(STONE.quietTint.mass[0])} * qM.x + ${f(STONE.quietTint.drift[0])} * ( 1.4 * ( stoneNoise3( p / ${f(STONE.quietTint.drift[1])} + 3.3 ) - 0.5 ) + 0.6 * ( stoneNoise3( p / ${f(STONE.quietTint.drift[2])} + 9.1 ) - 0.5 ) ) * 2.0;
 		qHue *= vec3( 1.0, 1.0 + 0.045 * qH, 1.0 + 0.09 * qH );
+		#ifdef STONE_CURVE
+			stoneQH = qH;
+		#endif
 		qV *= 1.0 + ${f(STONE.quietTint.mass[1])} * qM.y;
 		c = qHue / max( dot( qHue, vec3( 0.2126, 0.7152, 0.0722 ) ), 1e-4 ) * dot( c, vec3( 0.2126, 0.7152, 0.0722 ) ) * qV * ( 1.0 - ${f(STONE.pits.tone)} * qPit );
 	}
@@ -527,7 +632,11 @@ const STONE_FRAG = /* glsl */ `
 		// A parting: its riser a little darker and redder, fresh; its worn lip paler; its foot a dark line.
 		c *= mix( vec3( 1.0 ), ${v3(STONE.bed.riserTint)}, riser );
 		c = mix( c, ${v3(STONE.chip)} * ( 0.92 + 0.16 * st3 ), ${f(STONE.bed.lip)} * lipB * lit );
-		c *= 1.0 - ${f(STONE.bed.foot)} * foot;
+		#ifdef STONE_BED
+			c *= 1.0 - ${f(STONE.laminae.foot)} * foot;
+		#else
+			c *= 1.0 - ${f(STONE.bed.foot)} * foot;
+		#endif
 		c = mix( c, ${v3(STONE.chip)} * ( 0.9 + 0.2 * tNear.x ), 0.4 * chipped );
 		c *= mix( vec3( 1.0 ), ${v3(STONE.crease.tint)}, crease );
 		rough = foot;
@@ -606,6 +715,16 @@ material.specularColor *= stoneSheen;
 material.specularColorBlended = material.specularColor;
 material.specularF90 *= stoneSheen;`;
 
+// Sculpt S's light given the picture's hue (STONE_CURVE), and with ?stonedebug=15 a ramp of greys in bands across
+// the hollow, 40 units wide, by which fit.mjs reads what the world's last pass makes of a light.
+const CURVE_OUT = /* glsl */ `
+#ifdef STONE_CURVE
+	outgoingLight = stoneCurve( outgoingLight, vStoneP );
+#endif
+#if defined( STONE_DEBUG ) && STONE_DEBUG == 15
+	outgoingLight = vec3( exp2( ${f(CURVE.ramp[0])} + ${f(CURVE.ramp[1] - CURVE.ramp[0])} * ( floor( clamp( ( vStoneP.x - ${f(CURVE.ramp[2])} ) / ${f(CURVE.ramp[3])}, 0.0, ${f(CURVE.ramp[4] - 1)} ) ) + 0.5 ) / ${f(CURVE.ramp[4])} ) );
+#endif`;
+
 type Shader = THREE.WebGLProgramParametersWithUniforms;
 const after = (src: string, chunk: string, add: string): string => {
   if (!src.includes(`#include <${chunk}>`)) throw new Error(`stone: the shader has no ${chunk}`);
@@ -628,6 +747,7 @@ export function stoneShader(sh: Shader, maps: StoneMaps, own = false, grainOnly 
   fr = after(fr, 'normal_fragment_maps', 'normal = normalize( ( viewMatrix * vec4( stoneNormal, 0.0 ) ).xyz );');
   fr = after(fr, 'lights_physical_fragment', SHEEN);
   fr = after(fr, 'lights_fragment_begin', STREAM_LIGHT);
+  fr = fr.replace('#include <opaque_fragment>', `${CURVE_OUT}\n#include <opaque_fragment>`);
   sh.fragmentShader = fr;
 }
 
@@ -652,6 +772,11 @@ export interface StoneOptions {
   quiet?: boolean;
   // With quiet: the sculpt stores a tone of each mass's own in light.w (its value) and bounce.w (its hue).
   mass?: boolean;
+  // With quiet: the sculpt stores each vertex's bedding in light.w and bounce.w, folded onto an octahedron, and the
+  // stone lays its laminae along it (STONE.laminae). Each mass's tone is worked out from it.
+  bed?: boolean;
+  // With quiet: the light's hue is set to picture 9's rock at that brightness and distance from the core (./curve.ts).
+  curve?: boolean;
   // Draws one thing the stone reads instead of the stone, to judge it: 1 openness, 2 the core's share seen, 3 the
   // distance to an edge, 4 the crust, 5 the moon's share, 6 the partings' risers, 7 how bedded the block is, 8 the chipped
   // edges, 9 the creases' shade, 10 the partings' risers, lips and feet (red, green, blue), 12 each block in a color of its
@@ -669,7 +794,9 @@ export function stoneMaterial(maps: StoneMaps, o: StoneOptions): THREE.MeshStand
     ...(o.debug ? { STONE_DEBUG: String(Math.round(o.debug)) } : {}),
     ...(o.quiet ? { STONE_QUIET: '' } : {}),
     ...(o.quiet && o.mass ? { STONE_MASS: '' } : {}),
+    ...(o.quiet && o.bed ? { STONE_BED: '' } : {}),
+    ...(o.quiet && o.curve ? { STONE_CURVE: '' } : {}),
   };
   m.onBeforeCompile = (sh) => stoneShader(sh, maps, false, o.grainOnly, o.spare === 'slab' ? o.beds ?? [] : undefined, o.tans);
-  return lit(m, { key: `stone-${o.key}${o.spare ? '-slab' : ''}${o.edge ? '-edge' : ''}${o.grainOnly ? '-grain' : ''}${o.quiet ? '-quiet' : ''}${o.quiet && o.mass ? '-mass' : ''}${o.debug ? `-debug${o.debug}` : ''}`, baked: o.baked });
+  return lit(m, { key: `stone-${o.key}${o.spare ? '-slab' : ''}${o.edge ? '-edge' : ''}${o.grainOnly ? '-grain' : ''}${o.quiet ? '-quiet' : ''}${o.quiet && o.mass ? '-mass' : ''}${o.quiet && o.bed ? '-bed' : ''}${o.quiet && o.curve ? '-curve' : ''}${o.debug ? `-debug${o.debug}` : ''}`, baked: o.baked });
 }
