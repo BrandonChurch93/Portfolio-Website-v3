@@ -8,6 +8,7 @@ import { lamp } from '../lamp/lamp';
 import { loaderFor } from '../pieces/load';
 import { budget, distanceOf } from '../world/budget';
 import { handheld } from '../world/device';
+import { loading as wait } from '../world/loading';
 import { tiers } from '../world/tier';
 import type { Piece } from '../world/piece';
 import styles from './PieceView.module.css';
@@ -30,13 +31,19 @@ interface Props {
   // on mounts it well before it is reached: building a piece holds the page for a moment, and that must not fall in
   // the middle of a scroll.
   reach?: number;
+  // Made at once, wherever it is on the page, and never let go, on anything but a handheld (which has no memory to
+  // spare): the page's preloader waits for it, so no piece is built while the visitor scrolls. Building Skills' and
+  // Contact's pieces from five screens away fell in the middle of the scroll through the hero's debris field, which
+  // is where he felt the page lag (Nov 18). 'quiet' is the same without telling the preloader, for a piece that
+  // tells it itself.
+  early?: boolean | 'quiet';
 }
 
 type Extra = Piece & { opening?: (t: number | null) => void; skip?: () => void };
 
 // Hosts one 3D piece: mounts it near the viewport, feeds it the lamp and the tier, and registers it for the test hooks.
 // The "how this is made" switch is off unless a page asks for it (BRIEF.md, Open).
-export function PieceView({ name, entrance = false, once, making = false, className, onReady, frame, entranceFrom, onPiece, children, switchSide = 'right', reach }: Props) {
+export function PieceView({ name, entrance = false, once, making = false, className, onReady, frame, entranceFrom, onPiece, children, switchSide = 'right', reach, early }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const [isMaking, setMaking] = useState(false);
   const piece = useRef<Extra | null>(null);
@@ -125,9 +132,12 @@ export function PieceView({ name, entrance = false, once, making = false, classN
     let evicted = false;
     const id = `piece:${name}`;
     // On a handheld a piece is mounted from nearer and let go sooner, so fewer hold their memory at once.
-    const small = SMALL_PIECES.includes(name), held = handheld();
-    const from = held ? Math.min(reach ?? PIECE_MOUNT.near, small ? HANDHELD.small : HANDHELD.reach) : reach ?? PIECE_MOUNT.near;
-    const gone = held ? from + 1 : Math.max(PIECE_MOUNT.far, (reach ?? 0) + 1.5);
+    const small = SMALL_PIECES.includes(name), held = handheld(), first = !!early && !held;
+    const from = first ? Infinity : held ? Math.min(reach ?? PIECE_MOUNT.near, small ? HANDHELD.small : HANDHELD.reach) : reach ?? PIECE_MOUNT.near;
+    const gone = first ? Infinity : held ? from + 1 : Math.max(PIECE_MOUNT.far, (reach ?? 0) + 1.5);
+    // The preloader waits for it only on a page opened at its top, as it does for the hero's world.
+    const awaited = first && early !== 'quiet' && scrollY < innerHeight * 1.5;
+    if (awaited) wait.begin(id, 2);
     const check = () => {
       const dist = distanceOf(h), vh = innerHeight;
       // A small piece on a handheld is let go a screen and a half after it has gone off the top, and made again a
@@ -139,7 +149,7 @@ export function PieceView({ name, entrance = false, once, making = false, classN
         // A piece that gave its place up asks again once any of it is on the screen.
         if (evicted && dist === 0) evicted = false;
         if (!mounted && !loading && !evicted) {
-          if (small || budget.claim(id, { distance: () => distanceOf(h), keepsStill: false, release: () => { evicted = true; stop(); } })) loading = registry.track(start());
+          if (small || budget.claim(id, { distance: () => distanceOf(h), keepsStill: false, release: () => { evicted = true; stop(); } })) loading = registry.track(start().finally(() => { if (awaited) wait.end(id); }));
           else evicted = true;
         }
       } else if (dist > vh * (behind ? PIECE_MOUNT.near + 0.5 : gone)) {

@@ -124,7 +124,7 @@ export function ContactLab({ hub }: { hub?: Hub }) {
       <div ref={board} className={styles.board} data-live={live || undefined}>
         <section ref={section} id="contact" className={styles.contact} aria-labelledby={`${id}-title`} style={{ height: u(CONTACT.h) }}>
           <div className={styles.pad} data-part="pad" style={{ left: u(PAD.l), width: u(PAD.w), '--foot': PAD.b } as CSSProperties}>
-            {wide !== null && <PieceView name="pad" reach={REACH} className={styles.piece} onPiece={(p: Piece | null) => { pad.current = p as PadPiece | null; setLive(!!p); }} />}
+            {wide !== null && <PieceView name="pad" reach={REACH} early className={styles.piece} onPiece={(p: Piece | null) => { pad.current = p as PadPiece | null; setLive(!!p); }} />}
           </div>
           <h2 id={`${id}-title`} className={styles.title} data-part="title" style={{ left: u(CONTACT.title.l), top: u(CONTACT.title.t), fontSize: u(CONTACT.title.size) }}>{contact.title}</h2>
           <div className={styles.plate} data-part="plate" data-plate-area="" style={{ left: u(P.l), top: u(P.t), width: u(P.w), height: u(P.h) }}>

@@ -133,7 +133,7 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
           {/* The desk as one picture, with the section's title on its floor, on a screen too narrow for the live desk. */}
           <Still name="desk" className={styles.still} />
           <div className={styles.desk} data-part="desk" aria-hidden="true" style={at(SKILLS.desk.x, SKILLS.desk.y, SKILLS.desk.w, SKILLS.desk.h)}>
-            {wide && <PieceView name="desk" reach={REACH} className={styles.piece} onPiece={holdDesk} />}
+            {wide && <PieceView name="desk" reach={REACH} early className={styles.piece} onPiece={holdDesk} />}
           </div>
           <div className={styles.rows} style={{ marginLeft: u(SKILLS.rows.l), width: u(SKILLS.rows.r - SKILLS.rows.l), paddingTop: u(SKILLS.rows.t), paddingBottom: u(SKILLS.foot), '--thing': K.w, '--least': SKILLS.rows.least, '--meet': K.meet, '--wide': K.wide, '--host': K.host, '--rise': K.rise } as CSSProperties}>
             {COMPETENCIES.map((c, i) => (
@@ -141,7 +141,7 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
                 <div className={styles.thing} aria-hidden="true">
                   {THINGS[i] && wide && (
                     <div className={styles.thingHost} data-part="thing" data-row={i} style={i ? ({ '--rise': 0 } as CSSProperties) : undefined}>
-                      <PieceView name={THINGS[i]!} reach={REACH} className={styles.piece} onPiece={holdThing(i)} />
+                      <PieceView name={THINGS[i]!} reach={REACH} early className={styles.piece} onPiece={holdThing(i)} />
                     </div>
                   )}
                 </div>
@@ -162,10 +162,10 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
         <section ref={about} className={styles.about} aria-labelledby={`${id}-about`} style={{ height: u(ABOUT.h) }}>
           <div className={styles.glow} aria-hidden="true"><Glow /></div>
           <div className={styles.prop} data-part="reflector" aria-hidden="true" style={{ width: u(ABOUT.reflector.host), height: u(ABOUT.reflector.host) }}>
-            {wide && <PieceView name="reflector" reach={REACH} className={styles.piece} onPiece={hold('reflector')} />}
+            {wide && <PieceView name="reflector" reach={REACH} early className={styles.piece} onPiece={hold('reflector')} />}
           </div>
           <div className={styles.prop} data-part="light" aria-hidden="true" style={{ width: u(ABOUT.light.host), height: u(ABOUT.light.host) }}>
-            {wide && <PieceView name="studio-light" reach={REACH} className={styles.piece} onPiece={hold('light')} />}
+            {wide && <PieceView name="studio-light" reach={REACH} early className={styles.piece} onPiece={hold('light')} />}
           </div>
           <div className={styles.cover} data-part="cover" aria-hidden="true" style={at(P.x, P.y, P.w, P.h * 1.02)}>
             <div className={styles.coverGlow} style={{ left: u(-P.x), top: u(-P.y), height: u(ABOUT.h) }}><Glow /></div>

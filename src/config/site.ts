@@ -47,7 +47,12 @@ export const HANDHELD = {
   // A small piece is mounted from this many screens away at the most: far enough to be made before it is reached,
   // near enough that the five of them are not all alive from the top of the page (that held 600 MB more).
   small: 2.5,
+  // The most pixels of the picture of the hero's city at the screen's own density (src/pieces/world/sharp.ts), a
+  // plain 2D canvas of about 9 bytes a pixel in WebKit: an iPad's whole city at two pixels to a CSS pixel.
+  sharp: 4e6,
 } as const;
+// The same on a desktop, where memory is no limit: a city 2400 wide at three.
+export const SHARP = { pixels: 2.4e7 } as const;
 
 export type Tier = 'high' | 'mid' | 'low' | 'static';
 export const TIERS: readonly Tier[] = ['high', 'mid', 'low', 'static'];

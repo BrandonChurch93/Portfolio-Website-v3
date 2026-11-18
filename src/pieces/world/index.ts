@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { HANDHELD, type Tier } from '../../config/site';
+import { HANDHELD, SHARP, type Tier } from '../../config/site';
 import { clock } from '../../world/clock';
 import { loading } from '../../world/loading';
 import { handheld } from '../../world/device';
@@ -13,6 +13,7 @@ import { CORE, D2R, HOST, LIGHT, MOONWARD, PYRAMID, SCALE, SPIRE, VIEW, coreLeve
 import { GLINT, STREAM_LONG, WARM, color, world } from './light';
 import { night } from './night';
 import { keep, type Kept } from './kept';
+import { sharpen, type Sharp, type SharpParts } from './sharp';
 import { ABOVE, LOADING, PARTS, type PartFactory, type PartName, type PartState, type WorldPart } from './part';
 import { STEP, TOWERS } from './placed';
 
@@ -35,7 +36,10 @@ const M = SCALE;
 const ALONE = { fill: 0.8, fov: 9 };
 // The places looked at closely, each a point of the world, in units.
 // How much of a screen's height is drawn above and below what the screen shows of the world.
-const MARGIN = 0.3;
+// Ahead of a scroll the screen is about to show it, behind one it has just been drawn, and at rest a scroll may begin
+// either way: how much is drawn ahead and behind while the page moves, each side at rest, and for how many seconds
+// after it last moved it is still taken to be moving. ?was=1 draws as before: 0.3 each side always.
+const MARGIN = { ahead: 0.3, behind: 0.05, rest: 0.12, settle: 0.4, was: 0.3 } as const;
 const CLOSE: Record<string, readonly [number, number, number]> = {
   hollow: [CORE.at[0], CORE.at[1] - 10, CORE.at[2]],
   pyramid: [PYRAMID.x, ground(PYRAMID.x, PYRAMID.z) + PYRAMID.tall * 0.45, PYRAMID.z],
@@ -91,8 +95,13 @@ export interface WorldExtras {
   // drew, how many shader programs it has had compiled, and what the graphics card holds for it.
   // For timing a frame: the world drawn without these parts.
   without(names: string[]): void;
-  stats(): { built: Record<string, number>; first: number; calls: number; triangles: number; programs: number; geometries: number; textures: number; passes: string[] };
+  stats(): { built: Record<string, number>; first: number; calls: number; triangles: number; programs: number; geometries: number; textures: number; passes: string[]; sharp: ReturnType<Sharp['state']> | null };
+  // With ?trace=1, what each frame did and what the making did, since the last call: for finding the frames that run long.
+  trace(): TraceRow[];
+  // With ?trace=1, the world drawn this many times back to back as it stands, waited for to the end: milliseconds a frame.
+  bench(n: number): number;
 }
+export interface TraceRow { at: number; what: string; ms?: number; rows?: number; on?: string }
 export type WorldPiece = Piece & WorldExtras;
 
 export function createWorld(): WorldPiece {
@@ -104,9 +113,17 @@ export function createWorld(): WorldPiece {
   // The land and the rock as kept pictures (./kept.ts), and what is in them now ('' when they are not of the world as
   // it is lit now). ?keep=0 draws both every frame as before, and ?keep=land keeps the land alone.
   let kept: Kept | null = null, taken = '', keeps = true, keepsRock = true;
+  // The city at the screen's density where the canvas has less (./sharp.ts), and for a frozen frame what it was taken
+  // for. full: the next frame draws the whole canvas, after the clearing in it was put away.
+  let sharp: Sharp | null = null, sharpFor = '', full = false;
   let seen = true, stale = true, moving = false, warming = false, cast = 3, hold: number | null = null, only: PartName | null = null, close: readonly [number, number, number] | null = null, zoom = 3;
   let lampUV = { x: 0.6, y: 0.3 }, reach = 1, first = 0;
+  // Which way the page last moved (1 down it), when, and where the host's top was. was: everything as before this
+  // round's changes (?was=1), for timing against.
+  let way = 0, movedAt = -1e9, lastTop = 0, was = false;
   const stream = { on: 0, since: 60, long: 0 };
+  let log: TraceRow[] | null = null;
+  const mark = (what: string, more?: Omit<TraceRow, 'at' | 'what'>) => { log?.push({ at: performance.now(), what, ...more }); };
   const built: Record<string, number> = {};
   const aim = new THREE.Vector3(), right = new THREE.Vector3(), up = new THREE.Vector3(), back = new THREE.Vector3(), glint = new THREE.Vector3();
   const reduced = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -156,15 +173,20 @@ export function createWorld(): WorldPiece {
     const r = host.getBoundingClientRect(), px = stage.width / HOST.wide, from = -r.top / px, to = (innerHeight - r.top) / px;
     // Only what is on the screen is drawn, and a share of a screen each side of it for a scroll to run into. A
     // frame is owed whenever the screen has come to show something the last frame did not draw.
-    view = [-r.top - innerHeight * MARGIN, innerHeight - r.top + innerHeight * MARGIN];
+    const now = performance.now();
+    if (Math.abs(r.top - lastTop) > 0.5) { way = r.top < lastTop ? 1 : -1; movedAt = now; lastTop = r.top; }
+    const going = now - movedAt < MARGIN.settle * 1000;
+    const above = was ? MARGIN.was : !going ? MARGIN.rest : way < 0 ? MARGIN.ahead : MARGIN.behind;
+    const below = was ? MARGIN.was : !going ? MARGIN.rest : way > 0 ? MARGIN.ahead : MARGIN.behind;
+    view = [-r.top - innerHeight * above, innerHeight - r.top + innerHeight * below];
     const top = Math.max(0, -r.top), foot = Math.min(stage.height, innerHeight - r.top);
     if (foot > top && (top < drew[0] || foot > drew[1])) stale = true;
     let changed = false;
     for (const p of parts) { const on = p.span[1] >= from && p.span[0] <= to; if (on !== p.on) { p.on = on; changed = true; } }
     return changed;
   };
-  const spanOf = (part: WorldPart): [number, number] => {
-    const box = new THREE.Box3().setFromObject(part.group);
+  const spanOf = (o: WorldPart | THREE.Object3D): [number, number] => {
+    const box = new THREE.Box3().setFromObject('group' in o ? o.group : o);
     if (box.isEmpty()) return [0, HOST.tall];
     let lo = Infinity, hi = -Infinity;
     for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) { const [, down] = drawn(x / M, y / M, z / M); lo = Math.min(lo, down); hi = Math.max(hi, down); }
@@ -176,12 +198,58 @@ export function createWorld(): WorldPiece {
     stage.setTier(tier);
     lean();
     finish(stage, RIM, WARM);
+    sharp?.edges();
     if (moon) { moon.shadow.mapSize.setScalar(MOON.map[tier]); moon.shadow.map?.dispose(); moon.shadow.map = null as unknown as THREE.WebGLRenderTarget; }
     cast = 3;
     stale = true;
+    unsharp();
+  };
+
+  const unsharp = () => { if (sharp && (sharp.ready() || sharp.busy())) { sharp.drop(); full = true; } };
+  // What of the world never changes on the screen, what stands round it and over it, and the rows it covers.
+  const STILL: readonly PartName[] = ['land', 'towers', 'spire', 'pyramid', 'rest'];
+  const solid = (m: THREE.Mesh) => m.isMesh && m.visible && !!m.geometry.getAttribute('position')?.count && ![m.material].flat().some((x) => x.transparent || x.blending !== THREE.NormalBlending);
+  const glints = (m: THREE.Mesh) => [m.material].flat().some((x) => !!x.defines && 'WORLD_GLINT' in x.defines);
+  // The still things' materials clear themselves once the picture is up: set before their programs are made.
+  const ownStill = () => { if (sharp) for (const p of parts) if (STILL.includes(p.name)) p.part.group.traverse((o) => { const m = o as THREE.Mesh; if (solid(m) && !glints(m)) sharp!.own(m); }); };
+  const sharpParts = (): SharpParts | null => {
+    if (!stage) return null;
+    const statics: THREE.Mesh[] = [], laid: THREE.Mesh[] = [], behind: THREE.Mesh[] = [], over: THREE.Object3D[] = [], px = stage.width / HOST.wide;
+    let lo = Infinity, hi = -Infinity;
+    for (const p of parts) {
+      if (p.name === 'trees') over.push(p.part.group);
+      if (p.name === 'rock' || p.name === 'skin') p.part.group.traverse((o) => { if (solid(o as THREE.Mesh)) behind.push(o as THREE.Mesh); });
+      if (!STILL.includes(p.name)) {
+        if (p.name !== 'trees') p.part.group.traverse((o) => { const m = o as THREE.Mesh; if (m.isMesh && m.visible && [m.material].flat().some((x) => x.transparent)) over.push(m); });
+        continue;
+      }
+      p.part.group.traverse((o) => {
+        const m = o as THREE.Mesh;
+        if (!m.isMesh || !m.visible || !m.geometry.getAttribute('position')?.count) return;
+        if (!solid(m)) { over.push(m); return; }
+        if (glints(m)) { behind.push(m); return; }
+        statics.push(m);
+        if (p.name === 'land') laid.push(m);
+        const [from, to] = spanOf(m);
+        lo = Math.min(lo, from);
+        hi = Math.max(hi, to);
+      });
+    }
+    const band: [number, number] = [Math.max(0, Math.floor(lo * px)), Math.min(stage.height, Math.ceil(hi * px))];
+    if (!statics.length || band[1] <= band[0]) return null;
+    return {
+      statics, laid, behind, over, band,
+      view(top, tall = 0) {
+        if (!stage || top === null) { place(); return; }
+        const cam = stage.camera, k = stage.width / HOST.wide;
+        cam.setViewOffset(HOST.wide * k, HOST.tall * k, 0, top, stage.width, tall);
+        cam.updateProjectionMatrix();
+      },
+    };
   };
 
   const frame = () => {
+    if (warming) mark('warming');
     if (!stage || !seen || warming) return;
     const frozen = clock.isFrozen() || hold !== null;
     if (shown()) stale = true;
@@ -207,8 +275,10 @@ export function createWorld(): WorldPiece {
     if (casting) taken = '';
     if (rock && near) for (const o of rock.part.group.children) o.visible = near.includes(o) === stone;
     if (laid && (taken !== holds || !kept!.fresh())) {
+      sharp?.holes(false);
       for (const p of parts) p.part.group.visible = p === land || (stone && p === rock);
       if (stone) for (const o of rock!.part.group.children) o.visible = !near!.includes(o);
+      mark('take');
       kept!.take((k) => world.setCore(k));
       world.setCore(level);
       if (stone) for (const o of rock!.part.group.children) o.visible = near!.includes(o);
@@ -220,10 +290,32 @@ export function createWorld(): WorldPiece {
       if (p.on && p.part.update?.(s) && !still) moving = true;
     }
     if (moon && casting) { moon.shadow.needsUpdate = true; if (cast > 0) { cast--; stale = true; } }
-    const all = casting || only !== null || close !== null || !view;
+    // The city at the screen's density: taken once the whole world is made and its shadows drawn, and in a frozen
+    // frame again for each moment and place of the cursor, so a still is always the same picture.
+    const sharpens = !!sharp && first > 0 && only === null && close === null && left.size === 0 && !stage.isMaking() && sharp.wanted();
+    const sharpKey = frozen ? `${now}|${lampUV.x}|${lampUV.y}` : 'live';
+    if (sharp && (!sharpens || sharpKey !== sharpFor || (cast > 0 && !frozen))) { unsharp(); sharpFor = sharpKey; }
+    sharp?.holes(sharpens);
+    // The moon's shadows are drawn into their own map whatever is drawn of the canvas, so a frame that draws them
+    // draws only what is on the screen. What lies outside is drawn again when the screen comes to it.
+    const all = (was ? casting : frozen) || full || only !== null || close !== null || !view;
+    full = false;
     stage.setWindow(all ? null : view![0], all ? 0 : view![1]);
     drew = all ? [-Infinity, Infinity] : [Math.max(0, view![0]), Math.min(stage.height, view![1])];
     stage.render();
+    if (sharp && sharpens && !sharp.ready() && (frozen || cast === 0)) {
+      if (!sharp.busy()) { ownStill(); const p = sharpParts(); if (p) { mark('sharp begin', { rows: p.band[1] - p.band[0] }); sharp.begin(p); } }
+      if (sharp.busy()) {
+        sharp.step(frozen);
+        if (sharp.ready()) {
+          mark('sharp ready');
+          // A frozen frame is drawn again at once with the city cleared over its picture. A live one is next frame.
+          if (frozen) { sharp.holes(true); if (moon) moon.shadow.needsUpdate = false; stage.render(); }
+        }
+        stale = true;
+      }
+    }
+    if (log) mark(casting ? 'cast' : 'frame', { ms: stage.frameMs, rows: all ? stage.height : drew[1] - drew[0], on: parts.filter((p) => p.on).map((p) => p.name).join(' ') });
   };
 
   const make = async (h: HTMLElement, opts: PieceOptions) => {
@@ -239,11 +331,14 @@ export function createWorld(): WorldPiece {
       glow = q.get('glow') === '1';
       keeps = q.get('keep') !== '0';
       keepsRock = q.get('keep') !== 'land';
+      was = q.get('was') === '1';
+      if (q.get('trace') === '1') { log = []; mark('mount'); }
       stage = new Stage(h, canvas, { tier: opts.tier, fov: ALONE.fov, near: 0.3, far: 40, bloom: GLOW, bloomScale: 0.5, envIntensity: LIGHT.night, env: night, lampAngle: 0.9, pixels: HANDHELD.world });
       trueDarks(stage.renderer);
       lean();
       finish(stage, RIM, WARM);
       kept = keep(stage);
+      if (!only && !close && !was && q.get('sharp') !== '0') sharp = sharpen(stage, canvas, handheld() ? HANDHELD.sharp : SHARP.pixels);
       stage.lamp.intensity = 0;
       stage.lamp.castShadow = false;
       const s = stage.scene, root = new THREE.Group();
@@ -273,7 +368,10 @@ export function createWorld(): WorldPiece {
       // (a file missing, or half written while its builder works) is left out and said so: one broken part must not
       // take the whole world off the page.
       const renderer = stage.renderer, got = new Map<PartName, WorldPart>();
-      const whole = !!only || !!close || q.get('load') === 'whole';
+      // Made where the screen is already well under the first screen, as when the page comes back up to the world
+      // after it was let go below, the world is made in one helping: the first would be what is not on the screen.
+      const under0 = h.getBoundingClientRect().top < -innerHeight * 0.5 && !was;
+      const whole = !!only || !!close || q.get('load') === 'whole' || under0;
       const above = names.filter((n) => n !== 'rest' && (whole || ABOVE.includes(n)));
       const under = names.filter((n) => n !== 'rest' && !above.includes(n));
       let ready = 0;
@@ -323,11 +421,12 @@ export function createWorld(): WorldPiece {
         reach = ball.radius / ALONE.fill;
       }
       stage.resize();
+      if (sharp?.wanted()) { sharp.edges(); ownStill(); }
       place();
       const from = performance.now();
       await stage.warm();
       if (!stage) return;
-      watch = new ResizeObserver(() => { stage?.resize(); drew = [0, 0]; stale = true; frame(); });
+      watch = new ResizeObserver(() => { unsharp(); stage?.resize(); drew = [0, 0]; stale = true; frame(); });
       watch.observe(h);
       near = new IntersectionObserver((es) => { seen = es.some((e) => e.isIntersecting); if (seen) { stale = true; frame(); } });
       near.observe(h);
@@ -341,18 +440,23 @@ export function createWorld(): WorldPiece {
       // time: that work shows and hides every thing in the scene in turn, and the frame before it stays on the
       // canvas. Then the moon's shadows are drawn again with every part there to cast them.
       const live = stage;
+      mark('above shown');
       void (async () => {
         await Promise.all(under.map(make));
+        mark('under made');
         if (stage !== live) return;
         note(under);
         for (const name of last) await make(name);
         if (stage !== live) return;
         add([...under, ...last]);
+        if (sharp?.wanted()) ownStill();
         warming = true;
         try { await live.warm(slice); } finally { warming = false; }
+        mark('under warmed');
         if (stage !== live) return;
         if (later) { const tier = later; later = null; retier(tier); }
         cast = 3;
+        unsharp();
         stale = true;
         frame();
         first = Math.round(performance.now() - from);
@@ -391,14 +495,22 @@ export function createWorld(): WorldPiece {
     },
     stats() {
       const r = stage?.renderer.info;
-      return { built, first, calls: r?.render.calls ?? 0, triangles: r?.render.triangles ?? 0, programs: r?.programs?.length ?? 0, geometries: r?.memory.geometries ?? 0, textures: r?.memory.textures ?? 0, passes: stage?.composer.passes.map((x) => x.constructor.name + (x.enabled ? '' : ' off')) ?? [] };
+      return { built, first, calls: r?.render.calls ?? 0, triangles: r?.render.triangles ?? 0, programs: r?.programs?.length ?? 0, geometries: r?.memory.geometries ?? 0, textures: r?.memory.textures ?? 0, passes: stage?.composer.passes.map((x) => x.constructor.name + (x.enabled ? '' : ' off')) ?? [], sharp: sharp?.state() ?? null };
     },
     setProgress() {},
     setWaterLight() {},
     setMaking(on: boolean) { if (stage) { stage.setMaking(on, stage.scene); stale = true; } },
     // For timing a frame: the world drawn without these parts (npm run perf, scripts that call piece('world')).
     // 'kept' draws the land and the rock every frame, and 'kept-rock' the rock, to hold a frame against the pictures.
-    without(names: string[]) { left = new Set(names); stale = true; },
+    without(names: string[]) { left = new Set(names); stale = true; unsharp(); },
+    trace() { return log ? log.splice(0) : []; },
+    bench(n: number) {
+      if (!log || !stage) return -1;
+      const gl = stage.renderer.getContext(), px = new Uint8Array(4), t0 = performance.now();
+      for (let i = 0; i < n; i++) { stale = true; frame(); }
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      return (performance.now() - t0) / n;
+    },
     setTier(tier: Tier) {
       // The page tells every piece its tier as it mounts. Told the tier it already has, the world used to throw its
       // moon's shadow map away and make it again, with a color texture nobody reads: over 100 MB in Safari.
@@ -419,6 +531,8 @@ export function createWorld(): WorldPiece {
       parts = [];
       kept?.dispose();
       kept = null;
+      sharp?.dispose();
+      sharp = null;
       stage?.dispose();
       stage = null;
       moon = null;

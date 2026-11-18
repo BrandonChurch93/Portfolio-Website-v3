@@ -462,6 +462,8 @@ export class Stage {
     if (this.clay) root.traverse((o) => { if (o.userData.clayHidden) o.visible = false; });
   }
 
+  isMaking(): boolean { return this.making; }
+
   setMaking(on: boolean, root: THREE.Object3D): void {
     if (on === this.making) return;
     this.making = on;
