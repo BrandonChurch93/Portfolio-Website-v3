@@ -477,6 +477,14 @@
   }
 }
 
+/* On a phone the stream comes down the screen's right edge to the pad, and the plate keeps clear of it: as wide as
+   the screen's own margins allowed, its right border lay under the stream. */
+@media (max-width: 699.98px) {
+  .plate {
+    margin-right: var(--space-6);
+  }
+}
+
 /* On a phone a name and an email side by side are each too narrow to read what was typed. */
 @media (max-width: 559.98px) {
   .pair {
