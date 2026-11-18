@@ -177,6 +177,8 @@ export const more: WorkItem[] = [
 // so, the words only fill the room real words will take, and the pictures are plain shapes. Every card is one size,
 // so their words are written to the length a Software card's are.
 const HOME = '#work-title';
+// The stand ins that have a page of their own on this site, so the gallery page can be seen with one of each.
+const PAGED = new Set(['photo-stand-in-1', 'art-stand-in-1']);
 const standIn = (set: string, kind: string, names: string, n: number, line: string, tags: string[]): WorkItem => ({
   slug: `${set}-stand-in-${n}`,
   name: `${names} · stand in 0${n}`,
@@ -185,7 +187,7 @@ const standIn = (set: string, kind: string, names: string, n: number, line: stri
   line,
   tags,
   picture: { src: `/media/work/stand-in-${set}-${((n - 1) % 4) + 1}.webp`, alt: `A plain picture standing in for ${names.toLowerCase()} ${n}` },
-  page: HOME,
+  page: PAGED.has(`${set}-stand-in-${n}`) ? `${ALL_WORK}/${set}-stand-in-${n}` : HOME,
   links: [],
 });
 

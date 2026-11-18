@@ -1,51 +1,77 @@
 import { catalog, type WorkItem } from './work';
 
-// A project's own page (BRIEF.md, Open 33): what it is, why it was built, how it works, what it proved, what it is
-// built with, and its pictures. The words are the live site's own wherever it has them. Where it has none, the
-// page says so with a stand in, and never with words made up in his voice. All of it is his to rewrite.
+// A project's own page (BRIEF.md, Open 33). Two kinds. A case study, for software and games: a viewer with the
+// video and the pictures at the top beside a summary, then the problem, what was built, the decisions, and what
+// it is built with. A gallery, for a shoot and for a 3D piece: the pictures first, a short note, and a few facts.
+// The words are the live site's own wherever it has them. Where it has none, the page says so with a stand in,
+// and never with words made up in his voice. All of it is his to rewrite.
 
+// One thing in a viewer. slot 'video' is a video's place: it plays `video` when there is one, and until then
+// shows `src` as its picture and says it is a stand in.
+export interface Shot { src: string; alt: string; caption: string; slot?: 'video'; video?: string; standIn?: boolean }
 export interface ProjectFigure { value: string; label: string; href?: string }
 export interface ProjectStep { title: string; text: string }
-export interface ProjectShot { src: string; alt: string; standIn?: boolean }
+export type Fact = [label: string, value: string];
 
-export interface ProjectPage {
+interface Base {
   slug: string;
-  // One line under the title.
+  // One line under the name.
   sub: string;
-  intro: string;
-  facts: [label: string, value: string][];
-  // The lead picture, and a video of the project when there is one: the picture is then its first frame.
-  lead: { src: string; alt: string; video?: string };
-  what: string[];
-  // Empty until he has written it: the page shows a stand in.
-  why: string[];
-  how: ProjectStep[];
-  proved: ProjectFigure[];
-  built: [group: string, items: string[]][];
-  gallery: ProjectShot[];
+  facts: Fact[];
+  shots: Shot[];
 }
 
-const shot = (set: string, n: number): ProjectShot => ({ src: `/media/work/stand-in-${set}-${n}.webp`, alt: `A plain picture standing in for a screenshot`, standIn: true });
+export interface StudyPage extends Base {
+  kind: 'study';
+  proved: ProjectFigure[];
+  // Empty until he has written it: the page shows a stand in.
+  why: string[];
+  what: string[];
+  how: ProjectStep[];
+  built: [group: string, items: string[]][];
+}
+
+export interface GalleryPage extends Base {
+  kind: 'gallery';
+  // How wide the pictures are to how tall.
+  aspect: number;
+  note: string[];
+}
+
+export type ProjectPage = StudyPage | GalleryPage;
+
+const STAND_IN = 'Stand in';
+const still = (set: string, n: number, caption: string): Shot => ({ src: `/media/work/stand-in-${set}-${((n - 1) % 4) + 1}.webp`, alt: 'A plain picture standing in for a real one', caption, standIn: true });
 
 export const projects: ProjectPage[] = [
   {
+    kind: 'study',
     slug: 'ask-the-claude-docs',
     sub: 'An evaluated RAG chatbot with honest refusals',
-    intro: 'A RAG assistant over the live Claude Code documentation. Every answer cites the exact doc passage it came from; when nothing clears a calibrated confidence threshold, it declines instead of guessing, and shows its receipts. Quality is measured, not claimed: a CI eval harness scores retrieval and answer quality on every change and publishes the results, failures included.',
     facts: [
-      ['Type', 'RAG chatbot'],
-      ['Year', '2026'],
-      ['Role', 'Stand in'],
+      ['Role', STAND_IN],
       ['Status', 'Live'],
       ['Corpus', 'The Claude Code docs, re-synced nightly'],
     ],
-    lead: { src: '/media/work/claude-docs-full.webp', alt: 'A screenshot of Ask the Claude Docs' },
+    shots: [
+      { src: '/media/work/claude-docs-full.webp', alt: 'A still from a video of Ask the Claude Docs', caption: 'A video of the project plays here once there is one.', slot: 'video', standIn: true },
+      { src: '/media/work/claude-docs-full.webp', alt: 'The Ask the Claude Docs type specimen: an answer set in a serif with a citation, a question set in a sans, and a receipt set in a mono', caption: 'The design language: one typeface for the answer, one for the interface, one for the receipt.' },
+      still('art', 1, 'A screenshot goes here: an answer with its citations.'),
+      still('art', 3, 'A screenshot goes here: a refusal, with its receipt.'),
+      still('photo', 2, 'A screenshot goes here: the public eval scoreboard.'),
+    ],
+    proved: [
+      { value: '0', label: 'LLM calls when it refuses' },
+      { value: '26 s', label: 'to re-sync an unchanged corpus' },
+      { value: '30x', label: 'less for a decline than an answer' },
+      { value: 'Live', label: 'CI-scored eval scoreboard', href: 'https://ask-the-claude-docs.vercel.app/evals' },
+    ],
+    why: [],
     what: [
       'A production RAG pipeline end to end: a nightly GitHub Action ingests the live Claude Code docs, chunks them along heading boundaries, and embeds only what changed (an unchanged corpus re-syncs in 26 seconds with zero embedding calls). Questions are answered by Claude Haiku from retrieved passages only, streamed with the sources arriving before the first token, with real cost printed on every receipt.',
       'The distinctive part is what happens when it can’t answer: a server-side gate calibrated from measured score distributions refuses before the model is ever called, and a public /evals page shows retrieval accuracy, LLM-judged answer quality with a noise margin, and the refusal tests, all re-run by CI so a regression cannot merge.',
       'The entire application was built by Claude Code executing twelve specification documents I wrote, under a three-tier decision authority that escalated ten real engineering conflicts to me for rulings. Hand-built editorial design system in three typefaces, no UI framework, with accessibility gated in CI.',
     ],
-    why: [],
     how: [
       { title: 'A refusal gate on the server', text: 'Below the calibrated similarity threshold the model is never called; a decline costs 30x less than an answer and says so on its receipt.' },
       { title: 'Citations to the passage', text: 'Passage-level citations streamed sources-first over SSE; every [n] marker deep-links to the exact heading on code.claude.com.' },
@@ -56,32 +82,44 @@ export const projects: ProjectPage[] = [
       { title: 'A hand-built design system', text: 'Three typefaces as three voices, token palette with measured WCAG contrast, no UI framework.' },
       { title: 'Hardened CI', text: 'Playwright e2e with axe, Lighthouse budgets, payload assertions, secret greps and CVE gates that caught three real advisories mid-build.' },
     ],
-    proved: [
-      { value: '0', label: 'LLM calls when it refuses' },
-      { value: '26 s', label: 'to re-sync an unchanged corpus' },
-      { value: '30x', label: 'less for a decline than an answer' },
-      { value: 'Live', label: 'CI-scored eval scoreboard', href: 'https://ask-the-claude-docs.vercel.app/evals' },
-    ],
     built: [
       ['Front end', ['Next.js 16', 'React 19', 'TypeScript']],
       ['Data', ['PostgreSQL + pgvector', 'Upstash Redis']],
       ['AI', ['Anthropic API', 'OpenAI Embeddings']],
       ['Delivery', ['GitHub Actions', 'Playwright', 'Vercel']],
     ],
-    gallery: [
-      { src: '/media/work/claude-docs-full.webp', alt: 'A screenshot of Ask the Claude Docs' },
-      shot('art', 1),
-      shot('art', 3),
-      shot('photo', 2),
+  },
+  // A shoot and a 3D piece, both stand ins, so the gallery page can be judged with one of each.
+  {
+    kind: 'gallery',
+    slug: 'photo-stand-in-1',
+    sub: 'A stand in for a shoot',
+    aspect: 3 / 2,
+    facts: [['Place', STAND_IN], ['Date', STAND_IN], ['Camera', STAND_IN], ['Light', STAND_IN]],
+    note: [],
+    shots: [1, 2, 3, 4, 5, 6, 7, 8].map((n) => still('photo', n, `Picture ${n} of the shoot, with a line about it.`)),
+  },
+  {
+    kind: 'gallery',
+    slug: 'art-stand-in-1',
+    sub: 'A stand in for a 3D piece',
+    aspect: 16 / 10,
+    facts: [['Made in', STAND_IN], ['Made for', '3D print'], ['Size', STAND_IN], ['Files', STAND_IN]],
+    note: [],
+    shots: [
+      { ...still('art', 1, 'A turntable of the piece plays here once there is one.'), slot: 'video' },
+      ...[2, 3, 4, 5, 6].map((n) => still('art', n, `View ${n - 1} of the piece, with a line about it.`)),
     ],
   },
 ];
 
-const all: WorkItem[] = catalog.flatMap((c) => (c.standIn ? [] : c.items));
+export const STAND_IN_WORD = STAND_IN;
 
-// A project's page with the card it belongs to, and the projects before and after it among those that have pages.
+// A project's page with the card it belongs to. A case study also has the real projects before and after it.
 export function projectOf(slug: string): { page: ProjectPage; item: WorkItem; prev: WorkItem | null; next: WorkItem | null } | null {
-  const page = projects.find((p) => p.slug === slug), at = all.findIndex((i) => i.slug === slug);
-  if (!page || at < 0) return null;
-  return { page, item: all[at], prev: all[at - 1] ?? null, next: all[at + 1] ?? null };
+  const page = projects.find((p) => p.slug === slug);
+  const item = catalog.flatMap((c) => c.items).find((i) => i.slug === slug);
+  if (!page || !item) return null;
+  const real = catalog.flatMap((c) => (c.standIn ? [] : c.items)), at = real.findIndex((i) => i.slug === slug);
+  return { page, item, prev: at > 0 ? real[at - 1] : null, next: at >= 0 ? real[at + 1] ?? null : null };
 }

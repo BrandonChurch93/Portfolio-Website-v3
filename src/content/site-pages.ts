@@ -24,14 +24,17 @@ export const allWork = {
 // A project's own page: the names of its parts and its ways out. Stand ins, his to rewrite.
 export const projectPage = {
   back: 'All work',
-  kind: 'Case study',
-  parts: { what: 'What it is', why: 'Why I built it', how: 'How it works', proved: 'What it proved', built: 'Built with', gallery: 'Gallery' },
+  parts: { why: 'The problem', what: 'What I built', how: 'Key decisions', built: 'Built with', note: 'About it' },
   standIn: 'Stand in',
   why: 'Not written yet. This is where the problem goes: what was missing, who it was for, and why it was worth building.',
-  video: 'A video of the project plays here once there is one.',
+  note: 'Not written yet. This is where his words go: what this was, what he was after, and the one thing in it worth a closer look.',
+  more: (n: number) => `Show all ${n}`,
+  fewer: 'Show fewer',
   prev: 'Previous',
   next: 'Next',
   all: 'All work',
-  shot: 'Open picture',
+  open: 'Open large',
   close: 'Close',
+  video: 'Video',
+  picture: 'Picture',
 } as const;

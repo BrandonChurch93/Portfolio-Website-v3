@@ -1,0 +1,273 @@
+.viewer {
+  --thumb: clamp(3.6rem, 6vw, 5.2rem);
+  display: grid;
+  grid-template-columns: var(--thumb) minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+/* Under the large one: for a page whose pictures are its content, and on any narrow screen. */
+.viewer[data-rail='under'] {
+  --thumb: clamp(4.2rem, 8vw, 6.4rem);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.viewer[data-rail='under'] .stage {
+  grid-row: 1;
+}
+
+.thumbs {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Every thumbnail shows: one that is hidden behind a control is not looked for. They wrap, they never scroll away. */
+.viewer[data-rail='under'] .thumbs {
+  grid-template-columns: repeat(auto-fill, var(--thumb));
+  justify-content: center;
+}
+
+.thumb {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-1);
+  background: var(--bg-2);
+  cursor: pointer;
+  opacity: 0.62;
+  transition: opacity var(--dur-1) var(--ease-settle), border-color var(--dur-1) var(--ease-settle);
+}
+
+.thumb:hover {
+  opacity: 0.9;
+}
+
+.thumb[aria-pressed='true'] {
+  opacity: 1;
+  border-color: var(--copper-light);
+  box-shadow: 0 0 0 1px var(--copper-light);
+}
+
+.thumb:focus-visible,
+.open:focus-visible {
+  outline: var(--focus);
+  outline-offset: var(--focus-offset);
+}
+
+.thumb img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* A video's place, on its thumbnail and on its still. */
+.play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 34%;
+  max-width: 5rem;
+  aspect-ratio: 1;
+  border: 1px solid var(--copper-light);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  translate: -50% -50%;
+  pointer-events: none;
+}
+
+.play::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 54%;
+  width: 34%;
+  aspect-ratio: 0.9;
+  background: var(--copper-light);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  translate: -50% -50%;
+}
+
+.stage {
+  min-width: 0;
+  margin: 0;
+}
+
+.frame {
+  position: relative;
+  container-type: inline-size;
+}
+
+.metal {
+  position: absolute;
+  inset: 0;
+}
+
+/* The picture sits inside the plate's bead, as a card's picture does, and is never cropped: a screenshot is shown
+   whole. */
+.window {
+  position: absolute;
+  inset: 2.1cqw;
+  overflow: hidden;
+  border-radius: 1cqw;
+  background: var(--bg-2);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bg) 70%, transparent);
+}
+
+.open {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
+.window img,
+.window video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  animation: shown var(--dur-2) var(--ease-settle) both;
+}
+
+@keyframes shown {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .window img,
+  .window video {
+    animation: none;
+  }
+}
+
+.caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+  min-height: 2.8em;
+  margin-top: var(--space-3);
+  font-size: var(--step--1);
+  line-height: 1.4;
+  color: var(--text-2);
+}
+
+.count {
+  font-family: var(--font-mono);
+  letter-spacing: var(--track-label);
+  color: var(--text-3);
+}
+
+.pill {
+  flex: none;
+  padding: 0.15em 0.6em;
+  border: 1px dashed var(--line-strong);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--copper-light);
+}
+
+/* ---- opened large */
+
+.large {
+  width: 100vw;
+  max-width: none;
+  height: 100vh;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: clamp(1rem, 3vw, 2.5rem);
+  border: 0;
+  background: color-mix(in srgb, var(--bg) 95%, transparent);
+  color: var(--text-2);
+}
+
+.large[open] {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: var(--space-4);
+  justify-items: center;
+}
+
+.large::backdrop {
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+}
+
+.large img {
+  max-width: 100%;
+  max-height: 100%;
+  min-height: 0;
+  object-fit: contain;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-2);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+}
+
+.bar button {
+  min-width: var(--touch);
+  min-height: var(--touch);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-2);
+  background: var(--bg-2);
+  color: var(--text-2);
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.bar button:hover {
+  color: var(--copper-light);
+  border-color: var(--copper-light);
+}
+
+.bar button:focus-visible {
+  outline: var(--focus);
+  outline-offset: var(--focus-offset);
+}
+
+/* On a narrow screen the thumbnails always stand under the large one, in a row that wraps. */
+@media (max-width: 899.98px) {
+  .viewer,
+  .viewer[data-rail='side'] {
+    --thumb: clamp(3.4rem, 15vw, 5rem);
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .viewer .stage {
+    grid-row: 1;
+  }
+
+  .viewer .thumbs {
+    grid-template-columns: repeat(auto-fill, var(--thumb));
+    justify-content: center;
+  }
+}

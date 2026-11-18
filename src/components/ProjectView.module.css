@@ -1,6 +1,6 @@
 .page {
-  --col: min(72rem, 100vw - 2 * var(--gut));
-  --side: 13rem;
+  --col: min(78rem, 100vw - 2 * var(--gut));
+  --side: 12rem;
   position: relative;
   min-height: 100vh;
   min-height: 100svh;
@@ -8,8 +8,9 @@
 }
 
 .top,
-.head,
-.show,
+.first,
+.name,
+.wide,
 .part,
 .end {
   width: var(--col);
@@ -17,7 +18,7 @@
 }
 
 .top {
-  padding-top: var(--space-6);
+  padding-top: var(--space-5);
 }
 
 .back,
@@ -42,17 +43,26 @@
 .back:focus-visible,
 .all:focus-visible,
 .way:focus-visible,
-.figures a:focus-visible {
+.figures a:focus-visible,
+.more:focus-visible {
   outline: var(--focus);
   outline-offset: var(--focus-offset);
 }
 
-/* ---- the head */
+/* ---- a case study's first screen: the viewer and, beside it, everything a visitor needs to decide to read on */
 
-.head {
+.first {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(19rem, 1fr);
+  gap: clamp(2rem, 4vw, 4rem);
+  align-items: start;
+  padding-top: clamp(1rem, 2.4vw, 2.2rem);
+}
+
+.summary {
   display: grid;
   justify-items: start;
-  padding-top: clamp(2.5rem, 6vw, 5rem);
+  align-content: start;
 }
 
 .kind {
@@ -73,245 +83,48 @@
 }
 
 .title {
-  margin: var(--space-4) 0 0;
+  margin: var(--space-3) 0 0;
   font-family: var(--font-display);
-  font-size: var(--step-5);
+  font-size: var(--step-4);
   font-weight: 600;
   letter-spacing: var(--track-display);
-  line-height: 1.02;
+  line-height: 1.04;
+  text-wrap: balance;
   color: var(--text);
 }
 
 .sub {
-  margin: var(--space-4) 0 0;
-  font-family: var(--font-display);
-  font-size: var(--step-3);
-  font-weight: 300;
-  letter-spacing: var(--track-tight);
-  line-height: 1.2;
-  color: var(--text-2);
-}
-
-.intro {
-  max-width: 46rem;
-  margin: var(--space-6) 0 0;
-  font-size: var(--step-1);
-  line-height: 1.65;
-  color: var(--text-2);
-}
-
-.links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  margin-top: var(--space-6);
-}
-
-/* ---- the lead picture or video on its plate, and the plate of facts beside it */
-
-.show {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 17rem;
-  gap: clamp(1.5rem, 3vw, 3rem);
-  align-items: start;
-  margin-top: clamp(3rem, 6vw, 5rem);
-}
-
-.lead {
-  margin: 0;
-}
-
-.frame {
-  position: relative;
-  container-type: inline-size;
-}
-
-.metal {
-  position: absolute;
-  inset: 0;
-}
-
-/* The picture sits inside the plate's bead, as a card's picture does. */
-.window {
-  position: absolute;
-  inset: 2.1cqw;
-  overflow: hidden;
-  border-radius: 1cqw;
-  background: var(--bg-2);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bg) 70%, transparent);
-}
-
-.window img,
-.window video {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.note {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  margin-top: var(--space-4);
-  font-size: var(--step--1);
-  color: var(--text-3);
-}
-
-.pill {
-  flex: none;
-  padding: 0.15em 0.6em;
-  border: 1px dashed var(--line-strong);
-  border-radius: 999px;
-  font-family: var(--font-mono);
-  font-size: var(--step--2);
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-  white-space: nowrap;
-  color: var(--copper-light);
-}
-
-/* A plate in plain paint, as Contact's is on a narrow screen: a dark bronze face, a bead of copper along its upper
-   edge, its own shadow. */
-.facts {
-  display: grid;
-  gap: var(--space-5);
-  margin: 0;
-  padding: var(--space-6) var(--space-5);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-3);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--bronze) 16%, var(--bg-2)), var(--bg-2) 34%, color-mix(in srgb, var(--bronze-deep) 12%, var(--bg)) 100%);
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--copper-light) 34%, transparent),
-    inset 0 0 0 1px color-mix(in srgb, var(--bg) 60%, transparent),
-    0 1.6rem 2.6rem -1.4rem #000;
-}
-
-.facts dt,
-.label,
-.stack dt {
-  font-family: var(--font-mono);
-  font-size: var(--step--2);
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-  color: var(--copper-light);
-}
-
-.facts dd {
-  margin: var(--space-1) 0 0;
-  font-size: var(--step-0);
-  line-height: 1.4;
-  color: var(--text);
-}
-
-/* ---- a part: its name in a column of its own, as a row of skills has its label */
-
-.part {
-  display: grid;
-  grid-template-columns: var(--side) minmax(0, 1fr);
-  column-gap: clamp(1.5rem, 3vw, 3rem);
-  margin-top: clamp(3.5rem, 7vw, 6rem);
-  padding-top: clamp(2rem, 4vw, 3rem);
-  border-top: 1px solid var(--line);
-}
-
-.label {
-  margin: 0.35em 0 0;
-  font-weight: 400;
-  font-size: var(--step--1);
-}
-
-.prose {
-  max-width: 46rem;
-}
-
-.prose p {
-  margin: 0;
-  font-size: var(--step-1);
-  line-height: 1.7;
-  color: var(--text-2);
-}
-
-.prose p:first-child {
-  color: var(--text);
-}
-
-.prose p + p {
-  margin-top: var(--space-5);
-}
-
-.prose .blank {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-3);
-  color: var(--text-3);
-}
-
-.steps {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
-  gap: var(--space-5);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.steps li {
-  padding: var(--space-5);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-2);
-  background: color-mix(in srgb, var(--bg-2) 70%, transparent);
-  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--copper-light) 12%, transparent);
-}
-
-.n {
-  font-family: var(--font-mono);
-  font-size: var(--step--1);
-  letter-spacing: var(--track-label);
-  color: var(--copper-light);
-}
-
-.steps h3 {
   margin: var(--space-3) 0 0;
-  font-family: var(--font-display);
   font-size: var(--step-1);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
-  color: var(--text);
-}
-
-.steps p {
-  margin: var(--space-2) 0 0;
-  font-size: 0.9375rem;
-  line-height: 1.6;
+  line-height: 1.45;
   color: var(--text-2);
 }
 
+/* The figures that prove it, two to a row, each under a rule of copper. */
 .figures {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11.5rem), 1fr));
-  gap: var(--space-6) var(--space-5);
-  margin: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5) var(--space-5);
+  width: 100%;
+  margin: var(--space-6) 0 0;
   padding: 0;
   list-style: none;
 }
 
 .figures li {
   display: grid;
-  gap: var(--space-2);
+  gap: var(--space-1);
   align-content: start;
-  padding-left: var(--space-4);
-  border-left: 1px solid var(--line-strong);
-  font-size: 0.9375rem;
-  line-height: 1.45;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line-strong);
+  font-size: var(--step--1);
+  line-height: 1.4;
   color: var(--text-2);
 }
 
 .value {
   font-family: var(--font-display);
-  font-size: var(--step-4);
+  font-size: var(--step-3);
   font-weight: 600;
   letter-spacing: var(--track-tight);
   line-height: 1;
@@ -328,9 +141,217 @@
   color: var(--copper-light);
 }
 
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  width: 100%;
+  margin-top: var(--space-6);
+}
+
+/* Up to three links share one row of the summary. */
+.summary .links > * {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 6.5rem;
+}
+
+/* A few facts as a list of two columns: what, and its answer. */
+.facts {
+  display: grid;
+  gap: var(--space-2);
+  width: 100%;
+  margin: var(--space-6) 0 0;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+}
+
+.facts > div {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  column-gap: var(--space-3);
+  align-items: baseline;
+}
+
+.facts dt,
+.label,
+.stack dt {
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--copper-light);
+}
+
+.facts dd {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: var(--text-2);
+}
+
+.pill {
+  flex: none;
+  display: inline-block;
+  padding: 0.15em 0.6em;
+  border: 1px dashed var(--line-strong);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: var(--step--2);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--copper-light);
+}
+
+/* ---- a gallery: the name, then the pictures as wide as the page */
+
+.name {
+  display: grid;
+  justify-items: center;
+  padding-top: clamp(0.5rem, 2vw, 1.5rem);
+  text-align: center;
+}
+
+.wide {
+  --col: min(68rem, 100vw - 2 * var(--gut));
+  margin-top: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+.about {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 17rem;
+  gap: clamp(1.5rem, 4vw, 4rem);
+  align-items: start;
+}
+
+.about .facts {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+/* ---- a part: its name in a column of its own, as a row of skills has its label */
+
+.part {
+  display: grid;
+  grid-template-columns: var(--side) minmax(0, 1fr);
+  column-gap: clamp(1.5rem, 3vw, 3rem);
+  margin-top: clamp(2.5rem, 5vw, 4.5rem);
+  padding-top: clamp(1.75rem, 3vw, 2.5rem);
+  border-top: 1px solid var(--line);
+}
+
+.label {
+  margin: 0.35em 0 0;
+  font-weight: 400;
+  font-size: var(--step--1);
+}
+
+.prose {
+  max-width: 46rem;
+}
+
+.prose p {
+  margin: 0;
+  font-size: var(--step-1);
+  line-height: 1.65;
+  color: var(--text-2);
+}
+
+.prose p:first-child {
+  color: var(--text);
+}
+
+.prose p + p {
+  margin-top: var(--space-4);
+}
+
+.prose .blank {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-3);
+  color: var(--text-3);
+}
+
+/* The decisions: rows and no boxes. A number, what was decided, and one sentence, each row under a rule. On cards
+   they took two screens for eight sentences (his words, Nov 17). */
+.steps {
+  display: grid;
+  max-width: 54rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.steps li {
+  display: grid;
+  grid-template-columns: 2.4rem minmax(9rem, 15rem) minmax(0, 1fr);
+  column-gap: var(--space-4);
+  align-items: baseline;
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.steps li[hidden] {
+  display: none;
+}
+
+.steps li:first-child {
+  padding-top: 0;
+}
+
+.n {
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--track-label);
+  color: var(--copper-light);
+}
+
+.steps h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--step-0);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  color: var(--text);
+}
+
+.steps p {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.more {
+  min-height: var(--touch);
+  margin-top: var(--space-3);
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--copper-light);
+  cursor: pointer;
+}
+
+.more::after {
+  content: ' ↓';
+}
+
+.more[aria-expanded='true']::after {
+  content: ' ↑';
+}
+
 .stack {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-3);
+  max-width: 54rem;
   margin: 0;
 }
 
@@ -342,68 +363,10 @@
 }
 
 .stack dd {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
   margin: 0;
-}
-
-.tag {
-  padding: 0.3em 0.8em;
-  border: 1px solid var(--line-strong);
-  border-radius: 999px;
-  font-family: var(--font-mono);
-  font-size: var(--step--2);
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
+  font-size: var(--step-0);
+  line-height: 1.5;
   color: var(--text-2);
-}
-
-.gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr));
-  gap: var(--space-4);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.shot {
-  position: relative;
-  display: block;
-  width: 100%;
-  aspect-ratio: 16 / 10;
-  padding: 0;
-  overflow: hidden;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-2);
-  background: var(--bg-2);
-  cursor: zoom-in;
-  transition: border-color var(--dur-1) var(--ease-settle), translate var(--dur-2) var(--ease-settle);
-}
-
-.shot:hover {
-  border-color: var(--copper-light);
-  translate: 0 -2px;
-}
-
-.shot:focus-visible {
-  outline: var(--focus);
-  outline-offset: var(--focus-offset);
-}
-
-.shot img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.shot .pill {
-  position: absolute;
-  top: var(--space-2);
-  left: var(--space-2);
-  background: color-mix(in srgb, var(--bg) 80%, transparent);
 }
 
 /* ---- the foot: the links again, and the way on */
@@ -411,8 +374,8 @@
 .end {
   display: grid;
   gap: var(--space-7);
-  margin-top: clamp(3.5rem, 7vw, 6rem);
-  padding: clamp(2rem, 4vw, 3rem) 0 clamp(3.5rem, 7vw, 6rem);
+  margin-top: clamp(2.5rem, 5vw, 4.5rem);
+  padding: clamp(1.75rem, 3vw, 2.5rem) 0 clamp(3rem, 6vw, 5rem);
   border-top: 1px solid var(--line);
 }
 
@@ -469,94 +432,34 @@
   color: var(--copper-light);
 }
 
-/* ---- the gallery, opened */
-
-.viewer {
-  width: 100vw;
-  max-width: none;
-  height: 100vh;
-  height: 100dvh;
-  max-height: none;
-  margin: 0;
-  padding: clamp(1rem, 3vw, 2.5rem);
-  border: 0;
-  background: color-mix(in srgb, var(--bg) 94%, transparent);
-  color: var(--text-2);
-}
-
-.viewer[open] {
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-  gap: var(--space-4);
-  justify-items: center;
-}
-
-.viewer::backdrop {
-  background: color-mix(in srgb, var(--bg) 80%, transparent);
-}
-
-.viewer img {
-  max-width: 100%;
-  max-height: 100%;
-  min-height: 0;
-  object-fit: contain;
-  border-radius: var(--radius-2);
-  border: 1px solid var(--line-strong);
-}
-
-.viewerBar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-5);
-  font-family: var(--font-mono);
-  font-size: var(--step--1);
-  letter-spacing: var(--track-label);
-  text-transform: uppercase;
-}
-
-.viewerBar button {
-  min-width: var(--touch);
-  min-height: var(--touch);
-  padding: 0 var(--space-3);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-2);
-  background: var(--bg-2);
-  color: var(--text-2);
-  font: inherit;
-  letter-spacing: inherit;
-  text-transform: inherit;
-  cursor: pointer;
-}
-
-.viewerBar button:hover {
-  color: var(--copper-light);
-  border-color: var(--copper-light);
-}
-
-.viewerBar button:focus-visible {
-  outline: var(--focus);
-  outline-offset: var(--focus-offset);
-}
-
 /* ---- one column */
 
 @media (max-width: 899.98px) {
-  .show {
+  .first {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .facts {
-    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  .about {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .part {
     grid-template-columns: minmax(0, 1fr);
-    row-gap: var(--space-5);
+    row-gap: var(--space-4);
+  }
+
+  .steps li {
+    grid-template-columns: 2.2rem minmax(0, 1fr);
+    row-gap: var(--space-1);
+  }
+
+  .steps p {
+    grid-column: 2;
   }
 
   .stack > div {
     grid-template-columns: minmax(0, 1fr);
-    row-gap: var(--space-2);
+    row-gap: var(--space-1);
   }
 
   .ways {
