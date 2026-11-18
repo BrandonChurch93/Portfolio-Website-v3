@@ -41,23 +41,33 @@ export const climbed = (age: number) => (age <= LAUNCH.lift ? 0 : LAUNCH.climb *
 // as the rocket leaves the table.
 export const burn = (age: number) => (age <= 0 ? 0 : Math.min(1, 0.35 + 0.65 * Math.min(1, age / LAUNCH.lift) ** 2));
 
-// What broke away from the planet, gathered round the pad: where the field may be and where its clusters hang. The
-// field keeps inside `bounds` with everything of its motion: across from `l` to `r` (the right is where the stream
-// falls and the plate stands, and the host's sides fade within 70 units), up to `top` as the page sees it, and over
-// `low` unless it is wholly behind the stone. It keeps `clear` of the table, the tower and the rocket as the page sees
-// them, of the stone's top, and of each other. A cluster is its middle, how far its pieces spread about it, its great
-// piece (how far across, or 0), and how many middle and small pieces it holds. Lengths in units.
+// What broke away from the planet, gathered round the pad and hanging in the sky over it, through which the rocket
+// climbs. The field keeps inside `bounds` with everything of its motion: across from `l` to `r` (the right is where
+// the stream falls and the plate stands, and the host's sides fade within 70 units), up to `top` as the page sees it
+// (the host's top on a screen 1440 by 900, less the fade: on a shorter host the shader shrinks what is near the top
+// to nothing), and over `low` unless it is wholly behind the stone. Nothing is within `lane` of the rocket's axis at any
+// height or depth, nothing over the table, the tower or the rocket as the page sees them, and nothing over the
+// stone's top but a piece that hangs wholly in front of the stone at one of its ends: at least `front.end` from its
+// middle, and on the right at least `front.land` past where the stream lands. Pieces keep `clear` of all of it and of
+// each other.
+// A cluster is a great piece (where its middle is and how far across) with middle and small pieces trailing from it
+// along `trail`, as far as `long` past its edge and spread `spread` either side; a cluster with no great piece trails
+// from `at` itself. `front` holds the pieces in front of the stone. Lengths in units.
 export const DEBRIS = {
-  bounds: { l: -326, r: 118, top: 700, low: 14 },
+  bounds: { l: -326, r: 120, top: 970, low: 14 },
+  lane: 72,
   clear: 10,
+  front: { end: 190, land: 35, right: 334, pieces: [[-262, 52, 330, 66], [-236, 36, 440, 42], [301, 62, 400, 28]] as [number, number, number, number][] },
   clusters: [
-    { at: [-252, 40, -420], spread: [60, 45, 70], great: 70, middle: 3, small: 10 },
-    { at: [-258, 250, 40], spread: [36, 55, 80], great: 54, middle: 2, small: 8 },
-    { at: [-262, 470, -150], spread: [36, 50, 90], great: 46, middle: 2, small: 7 },
-    { at: [-220, 640, -120], spread: [70, 25, 80], great: 0, middle: 1, small: 9 },
-    { at: [-20, 652, -300], spread: [90, 25, 60], great: 0, middle: 1, small: 5 },
-    { at: [88, 410, -150], spread: [14, 130, 90], great: 0, middle: 2, small: 9 },
-    { at: [-215, 110, 120], spread: [30, 30, 60], great: 0, middle: 1, small: 6 },
+    { at: [-200, 829, 160], great: 168, trail: [0.5, -0.35, 0.6], long: 190, spread: 34, middle: 3, small: 4 },
+    { at: [-244, 690, -60], great: 92, trail: [0.2, -0.5, -0.8], long: 170, spread: 30, middle: 2, small: 3 },
+    { at: [-226, 816, -360], great: 128, trail: [-0.1, -0.5, -0.8], long: 150, spread: 30, middle: 2, small: 3 },
+    { at: [-244, 432, -240], great: 92, trail: [0, -0.85, 0.4], long: 150, spread: 26, middle: 2, small: 3 },
+    { at: [-244, 140, -440], great: 92, trail: [0.6, 0.3, -0.7], long: 130, spread: 26, middle: 1, small: 3 },
+    { at: [-150, 872, -120], great: 100, trail: [0.2, -0.7, 0.4], long: 130, spread: 24, middle: 1, small: 2 },
+    { at: [-242, 250, 120], great: 84, trail: [0.1, 0.8, -0.5], long: 120, spread: 24, middle: 2, small: 3 },
+    { at: [98, 300, -210], great: 0, trail: [0, 1, 0], long: 560, spread: 4, middle: 2, small: 5 },
+    { at: [-96, 700, -200], great: 0, trail: [-0.05, 1, 0], long: 320, spread: 8, middle: 2, small: 3 },
   ],
 } as const;
 

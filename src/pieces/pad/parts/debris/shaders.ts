@@ -1,4 +1,4 @@
-import { ROCKET, SCALE, STONE } from '../../layout';
+import { LAUNCH, ROCKET, SCALE, STONE } from '../../layout';
 import { MOTION } from './look';
 
 // The shader of what broke away round the pad, laid into a standard material. Every piece is drawn from its model
@@ -9,7 +9,10 @@ import { MOTION } from './look';
 // its creases.
 
 const f = (v: number): string => (Number.isInteger(v) ? `${v}.0` : `${v}`);
-const M = MOTION, B = MOTION.blast;
+const M = MOTION, B = MOTION.blast, P = MOTION.plume;
+// A piece reaching within the first of these of the host's sides and top shrinks, and is gone by the time it reaches
+// within the second, in units: so nothing whole is ever within 70 units of them.
+const EDGE = [70, 20] as const;
 
 export const VERT_PARS = /* glsl */ `
 uniform highp sampler2D uPieces;
@@ -23,6 +26,7 @@ varying vec3 vLocalN;
 varying vec4 vTurn;
 varying vec4 vInfo;
 varying float vOpen;
+varying vec3 vGrow;
 const float TAU = 6.2831853;
 float dbHash1( float n ) { return fract( sin( n * 12.9898 + 4.1414 ) * 43758.5453 ); }
 vec3 dbTurn( vec4 q, vec3 v ) { return v + 2.0 * cross( q.xyz, cross( q.xyz, v ) + q.w * v ); }
@@ -45,13 +49,26 @@ export const VERT_MOTION = /* glsl */ `
 	// A smaller piece bobs within it.
 	float bp = ${f(M.bob.period[0])} + ${f(M.bob.period[1] - M.bob.period[0])} * fract( seed * 0.618 );
 	vec3 bob = ${f(M.bob.size)} * vec3( sin( TAU * t / bp + seed ), sin( TAU * t / ( bp * 1.37 ) + seed * 1.9 ), sin( TAU * t / ( bp * 0.83 ) + seed * 2.7 ) ) * ( great ? 0.0 : kind > 0.5 ? 0.5 : 1.0 );
-	// The blast: out from the engine's mouth and up, reaching the nearer pieces first, shoving each furthest a
-	// moment later and letting it come back as slowly, and turning it over a little for good.
+	// The blast at the pad: out from the engine's mouth and up, reaching the nearer pieces first, shoving each furthest
+	// a moment later and letting it come back slowly. Then the plume, as the engine climbs past a piece's height: out
+	// from the rocket's axis, the nearer first. Each turns a piece over a little for good. All of it has come back by
+	// the launch's end, where the page holds it.
 	vec3 rel = dbA.xyz - vec3( 0.0, ${f(ROCKET.mouth)}, 0.0 );
 	vec3 way = normalize( vec3( rel.x, 0.5 * length( rel.xz ) + 0.5 * max( rel.y, 0.0 ), rel.z ) + vec3( 0.0, 1e-4, 0.0 ) );
 	float tau = max( uLaunch - ${f(B.start)} - length( rel ) / ${f(B.speed)}, 0.0 ), bx = tau / ${f(B.peak)}, by = 2.0 * bx;
 	float shove = bx * bx * exp( 2.0 * ( 1.0 - bx ) ), turned = 1.0 - exp( - by ) * ( 1.0 + by + 0.5 * by * by );
-	vec3 at = dbA.xyz + drift + bob + way * dbC.z * shove;
+	float dbFlat = max( length( dbA.xz ), 1e-3 ), dbPass = rel.y <= 0.0 ? ${f(B.start)} : ${f(LAUNCH.lift)} + sqrt( rel.y / ${f(LAUNCH.climb)} );
+	float pt = max( uLaunch - dbPass - dbFlat / ${f(P.speed)}, 0.0 ) / ${f(B.peak)};
+	vec3 dbOut = normalize( vec3( dbA.x / dbFlat, ${f(P.rise)}, dbA.z / dbFlat ) );
+	float settle = 1.0 - smoothstep( ${f(LAUNCH.end - M.settle)}, ${f(LAUNCH.end)}, uLaunch );
+	vec3 at = dbA.xyz + drift + bob + ( way * dbC.z * shove + dbOut * dbK.z * pt * pt * exp( 2.0 * ( 1.0 - pt ) ) ) * settle;
+	turned += 1.0 - exp( - 2.0 * pt ) * ( 1.0 + 2.0 * pt );
+	// Near the host's sides and top a piece shrinks away to nothing (EDGE).
+	vec4 dbP0 = projectionMatrix * modelViewMatrix * vec4( at, 1.0 ), dbP1 = projectionMatrix * modelViewMatrix * vec4( at + vec3( 1.0, 1.0, 0.0 ), 1.0 );
+	vec2 dbN0 = dbP0.xy / dbP0.w, dbU = abs( dbP1.xy / dbP1.w - dbN0 ), dbR = dbU * dbA.w * ${f(0.66)};
+	vec3 dbRoom = vec3( 1.0 - dbN0.y - dbR.y, dbN0.x - dbR.x + 1.0, 1.0 - dbN0.x - dbR.x ) / vec3( dbU.y, dbU.x, dbU.x );
+	float grow = smoothstep( ${f(EDGE[1])}, ${f(EDGE[0])}, min( dbRoom.x, min( dbRoom.y, dbRoom.z ) ) );
+	vGrow = vec3( min( dbRoom.x, min( dbRoom.y, dbRoom.z ) ) / 200.0 );
 	float spin = great ? ${f(M.spin.rock)} * sin( TAU * t / ${f(M.spin.rockT)} + dbC.y * TAU ) : dbX.w * t + dbC.y * TAU;
 	spin += dbC.w * turned;
 	vec4 dbS = vec4( dbX.xyz * sin( 0.5 * spin ), cos( 0.5 * spin ) );
@@ -63,7 +80,7 @@ export const VERT_MOTION = /* glsl */ `
 	vOpen = aLight.z;`;
 
 export const VERT_PLACE = /* glsl */ `
-	transformed = at + dbTurn( vTurn, position );
+	transformed = at + dbTurn( vTurn, position ) * grow;
 	vP = transformed;`;
 
 export const FRAG_PARS = /* glsl */ `
@@ -88,6 +105,8 @@ uniform vec3 uCrease;
 uniform vec3 uPits;
 uniform vec3 uDeep;
 uniform vec3 uSpeck;
+uniform vec4 uKnap;
+uniform vec4 uBeds;
 uniform vec2 uSheen;
 uniform float uShow;
 varying vec3 vP;
@@ -96,6 +115,7 @@ varying vec3 vLocalN;
 varying vec4 vTurn;
 varying vec4 vInfo;
 varying float vOpen;
+varying vec3 vGrow;
 vec3 dbTurnF( vec4 q, vec3 v ) { return v + 2.0 * cross( q.xyz, cross( q.xyz, v ) + q.w * v ); }
 float dbH( vec3 p ) { p = fract( p * 0.3183099 + 0.1 ); p *= 17.0; return fract( p.x * p.y * p.z * ( p.x + p.y + p.z ) ); }
 float dbN( vec3 x ) {
@@ -119,6 +139,20 @@ vec4 dbFacets( vec3 p, vec3 n, float cell, float tilt ) {
 	vec3 t = vec3( dbH( id + 5.7 ), dbH( id + 11.3 ), dbH( id + 23.9 ) ) * 2.0 - 1.0;
 	t -= n * dot( t, n );
 	return vec4( t * tilt * ( 0.4 + 0.6 * dbH( id + 41.1 ) ), sqrt( d2 ) - sqrt( d1 ) );
+}
+// The conchoidal breaks of a larger piece, as the hero's knapped faces are: shallow bowls meeting along ridges, each
+// cell a bowl round a point of its own. The tilt of the face in the bowl, and how near a ridge it is.
+vec4 dbScallop( vec3 p, vec3 n, float cell, float depth ) {
+	vec3 q = p / cell, b = floor( q - 0.5 ), o1 = vec3( 0.0 );
+	float d1 = 1e9, d2 = 1e9;
+	for ( int k = 0; k < 8; k++ ) {
+		vec3 i = b + vec3( float( k & 1 ), float( ( k >> 1 ) & 1 ), float( ( k >> 2 ) & 1 ) );
+		vec3 o = q - i - ( 0.2 + 0.6 * vec3( dbH( i + 3.1 ), dbH( i + 17.3 ), dbH( i + 29.7 ) ) );
+		float d = dot( o, o );
+		if ( d < d1 ) { d2 = d1; d1 = d; o1 = o; } else if ( d < d2 ) d2 = d;
+	}
+	vec3 t = - o1 * depth;
+	return vec4( t - n * dot( t, n ), sqrt( d2 ) - sqrt( d1 ) );
 }`;
 
 // The stone, and every light on it, in the pad's own units.
@@ -131,12 +165,20 @@ export const FRAG_LIGHT = /* glsl */ `
 		// The breaks, two sizes as large as the piece allows, and the grain, each gone where a pixel covers it.
 		float c1 = clamp( size * uFacet.x, 0.9, 9.0 ), c2 = c1 * uFacet.z;
 		float k1 = 1.0 - smoothstep( 0.18, 0.45, px / c1 ), k2 = 1.0 - smoothstep( 0.18, 0.45, px / c2 );
-		vec4 f1 = k1 > 0.0 ? dbFacets( sp, n0, c1, uFacet.y ) : vec4( 0.0, 0.0, 0.0, 1.0 );
-		vec4 f2 = k2 > 0.0 ? dbFacets( sp + 31.7, n0, c2, uFacet.w ) : vec4( 0.0, 0.0, 0.0, 1.0 );
+		vec4 f1 = vec4( 0.0, 0.0, 0.0, 1.0 ), f2 = f1;
+		if ( kind < 0.5 ) {
+			if ( k1 > 0.0 ) f1 = dbFacets( sp, n0, c1, uFacet.y );
+			if ( k2 > 0.0 ) f2 = dbFacets( sp + 31.7, n0, c2, uFacet.w );
+		} else {
+			// A larger piece breaks into bowls, a broad size and a fine one, sized to the piece.
+			c1 = max( size * uKnap.x, 0.9 ); c2 = max( size * uKnap.z, 0.9 );
+			k1 = 1.0 - smoothstep( 0.12, 0.35, px / c1 ); k2 = 1.0 - smoothstep( 0.12, 0.35, px / c2 );
+			if ( k1 > 0.0 ) f1 = dbScallop( sp, n0, c1, uKnap.y );
+			if ( k2 > 0.0 ) f2 = dbScallop( sp + 13.1, n0, c2, uKnap.w );
+		}
 		float gc = max( size * uGrain.x, 0.5 ), kg = 1.0 - smoothstep( 0.35, 0.8, px / gc );
 		float g = kg > 0.0 ? dbN( sp / gc ) * 0.65 + dbN( sp / ( gc * 2.3 ) + 5.1 ) * 0.35 - 0.5 : 0.0;
 		vec3 gn = kg > 0.0 ? vec3( dbN( sp / gc + 9.1 ), dbN( sp / gc + 4.3 ), dbN( sp / gc + 1.7 ) ) - 0.5 : vec3( 0.0 );
-		// The hero's great models are broken already: on them the breaks are a little of the relief, not all of it.
 		float carve = kind < 0.5 ? 1.0 : uGrain.w;
 		vec3 nl = normalize( n0 + ( f1.xyz * k1 + f2.xyz * k2 ) * carve + ( gn - n0 * dot( gn, n0 ) ) * uGrain.z * kg );
 		vec3 N = dbTurnF( vTurn, nl ), G = dbTurnF( vTurn, n0 );
@@ -156,6 +198,19 @@ export const FRAG_LIGHT = /* glsl */ `
 			vec3 q = sp / pc, i = floor( q ), o = fract( q ) - 0.5 - 0.3 * ( vec3( dbH( i + 3.1 ), dbH( i + 7.7 ), dbH( i + 1.3 ) ) - 0.5 );
 			float r = 0.18 + 0.2 * dbH( i + 9.9 ), pit = ( 1.0 - smoothstep( r * 0.6, r, length( o ) ) ) * step( dbH( i + 5.5 ), uPits.x );
 			tone *= 1.0 - uPits.y * pit * kp;
+		}
+		// A larger piece shows its bedding as bands of tone, broad and fine, along a plane of its own, wandering a little.
+		if ( kind > 0.5 ) {
+			vec3 bedN = normalize( vec3( dbH( vec3( seed, 1.7, 3.1 ) ), dbH( vec3( seed, 5.3, 0.7 ) ), dbH( vec3( seed, 2.9, 8.3 ) ) ) - 0.5 + 1e-3 );
+			float tb = dot( sp, bedN ) + ( dbN( sp / max( size * 0.3, 1.0 ) ) - 0.5 ) * size * 0.06, layer = 0.0;
+			for ( int b = 0; b < 2; b++ ) {
+				float period = size * ( b == 0 ? uBeds.x : uBeds.y ), kb = 1.0 - smoothstep( 0.3, 0.7, px / ( period * 0.35 ) );
+				if ( kb <= 0.0 ) continue;
+				float u = tb / period, k = floor( u ), fr = fract( u );
+				float here = mix( dbH( vec3( k, seed, float( b ) ) ), dbH( vec3( k + 1.0, seed, float( b ) ) ), smoothstep( 0.82, 1.0, fr ) ) - 0.5;
+				layer += here * kb * ( b == 0 ? uBeds.z : uBeds.w );
+			}
+			tone *= 1.0 + layer;
 		}
 		vec3 alb = uOwn * tone;
 		float ridge = ( 1.0 - smoothstep( 0.0, 0.12, f1.w ) ) * k1 * 0.6 + ( 1.0 - smoothstep( 0.0, 0.1, f2.w ) ) * k2 * 0.4;
@@ -215,9 +270,9 @@ export const FRAG_LIGHT = /* glsl */ `
 		reflectedLight.indirectDiffuse = vec3( 0.0 );
 		reflectedLight.indirectSpecular = vec3( 0.0 );
 		// ?paddebrisshow= draws one number in grey in place of the light: 1 how far the normal faces up, 2 how far it faces
-		// the lit stone, 3 how open the place is, 4 its bend.
+		// the lit stone, 3 how open the place is, 4 its bend, 5 how far the piece is from the host's edges.
 		if ( uShow > 0.5 ) {
-			reflectedLight.directDiffuse = vec3( 0.3 * ( uShow < 1.5 ? step( 0.0, N.y ) : uShow < 2.5 ? dbgL * 0.5 + 0.5 : uShow < 3.5 ? vOpen : bend ) );
+			reflectedLight.directDiffuse = uShow > 4.5 ? vGrow * 0.3 : vec3( 0.3 * ( uShow < 1.5 ? step( 0.0, N.y ) : uShow < 2.5 ? dbgL * 0.5 + 0.5 : uShow < 3.5 ? vOpen : bend ) );
 			reflectedLight.directSpecular = vec3( 0.0 );
 		}
 	}`;

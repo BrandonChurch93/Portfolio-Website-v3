@@ -10,11 +10,18 @@ export const MOTION = {
   drift: { across: [5, 71], up: [3.5, 47], back: [4, 89], spread: 0.3, great: 0.45 },
   // Each small piece bobs a little within its cluster, over these many seconds.
   bob: { size: 2.2, period: [23, 41] as const },
-  // The launch's blast: how fast it runs out from the engine's mouth, in units a second, the seconds into the launch
-  // it sets out (the engine lights low at 0), the seconds a piece takes to be shoved furthest, within what distance
-  // of the mouth it is felt in full and past what it is not felt, how far it shoves a small, a middle and a great piece
-  // at most, and how far it turns each over.
-  blast: { speed: 520, start: 0.15, peak: 1.15, near: 320, far: 820, shove: [40, 24, 8] as const, kick: [1.6, 0.7, 0.08] as const },
+  // The launch's blast at the pad: how fast it runs out from the engine's mouth, in units a second, the seconds into
+  // the launch it sets out (the engine lights low at 0), the seconds a piece takes to be shoved furthest, within what
+  // distance of the mouth it is felt in full and past what it is not felt, how far it shoves a small, a middle and a
+  // great piece at most, and how far it turns each over.
+  blast: { speed: 520, start: 0.15, peak: 0.9, near: 300, far: 820, shove: [34, 30, 26] as const, kick: [1.4, 0.6, 0.07] as const },
+  // The plume as the rocket climbs past: a piece is shoved out from the lane when the engine reaches its height, by
+  // how far it is from the rocket's axis (in full within the first, none past the second), this far at most for a
+  // small, a middle and a great piece, and a little up. The run out from the axis takes this pace.
+  plume: { near: 90, far: 300, shove: [30, 28, 24] as const, rise: 0.25, speed: 420 },
+  // Everything the launch moved has come back by the time it is over (LAUNCH.end), beginning this many seconds
+  // before: the page holds the launch there, and a shove held part way would hang a piece out of its place.
+  settle: 1,
   // The time a held frame is drawn at, when nothing may move: a moment the field is well spread.
   still: 37,
 };

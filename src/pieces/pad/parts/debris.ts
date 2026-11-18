@@ -32,10 +32,16 @@ const LOOK = {
   // larger's, and its tilt.
   facet: [0.3, 0.3, 0.36, 0.16] as const,
   // The grain: its cell as a share of the piece's size, how much it moves the tone, and how much it tilts the face;
-  // and the share of the breaks a middle or great piece takes.
-  grain: [0.024, 0.3, 0.15, 0.35] as const,
+  // and how much of the bowls' tilt a middle or great piece takes.
+  grain: [0.024, 0.3, 0.15, 0.6] as const,
+  // A larger piece's conchoidal breaks: the broad bowls' cell as a share of its size and how deep they tilt the face,
+  // and the fine ones'.
+  knap: [0.12, 0.16, 0.045, 0.1] as const,
+  // A larger piece's bedding: the broad and fine layers' spacing as shares of its size, and how much each layer's tone
+  // differs from the next.
+  beds: [0.14, 0.045, 0.36, 0.18] as const,
   // The speckle: its grain as a share of the piece's size, how much darker the dark grains and paler the pale.
-  speck: [0.016, 0.38, 0.22] as const,
+  speck: [0.012, 0.42, 0.24] as const,
   // The pits: the share of cells that hold one, how dark one is, and the cell as a share of the piece's size.
   pits: [0.3, 0.45, 0.045] as const,
   // How dark the stone is where it is most shut in, and the openness from which it is not dark at all.
@@ -73,7 +79,7 @@ export const build: PartFactory = async () => {
     put(1, i, p.turn);
     put(2, i, [...p.axis, p.rate]);
     put(3, i, [p.cluster, p.phase, p.shove, p.kick]);
-    put(4, i, [p.kind, p.seed, 0, 0]);
+    put(4, i, [p.kind, p.seed, p.plume, 0]);
   });
   const table = new THREE.DataTexture(data, n, ROWS, THREE.RGBAFormat, THREE.FloatType);
   table.magFilter = table.minFilter = THREE.NearestFilter;
@@ -140,7 +146,7 @@ export const build: PartFactory = async () => {
     uLampAt: { value: new THREE.Vector3() }, uLamp: { value: L.lamp.color.clone().multiplyScalar(L.lamp.power) }, uLampK: { value: new THREE.Vector3(L.lamp.body, L.lamp.rim, L.lamp.tight) },
     uAir: { value: L.air }, uOwn: { value: L.own }, uChip: { value: L.chip }, uTan: { value: L.tan },
     uTone: { value: new THREE.Vector4(...L.tone) }, uFacet: { value: new THREE.Vector4(...L.facet) }, uGrain: { value: new THREE.Vector4(...L.grain) },
-    uCrease: { value: new THREE.Vector3(...L.crease) }, uPits: { value: new THREE.Vector3(...L.pits) }, uDeep: { value: new THREE.Vector3(...L.deep) }, uSpeck: { value: new THREE.Vector3(...L.speck) }, uSheen: { value: new THREE.Vector2(...L.sheen) },
+    uCrease: { value: new THREE.Vector3(...L.crease) }, uPits: { value: new THREE.Vector3(...L.pits) }, uDeep: { value: new THREE.Vector3(...L.deep) }, uSpeck: { value: new THREE.Vector3(...L.speck) }, uKnap: { value: new THREE.Vector4(...L.knap) }, uBeds: { value: new THREE.Vector4(...L.beds) }, uSheen: { value: new THREE.Vector2(...L.sheen) },
     uShow: { value: Number(new URLSearchParams(location.search).get('paddebrisshow') ?? 0) || 0 },
   };
   const material = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 0 });
@@ -173,7 +179,7 @@ export const build: PartFactory = async () => {
   const fire = L.fire.color.clone().multiplyScalar(L.fire.power);
   return {
     group,
-    alone: { at: [-100, 320, -220], r: 470 },
+    alone: { at: [-100, 520, -100], r: 640 },
     update(s) {
       uniforms.uTime.value = s.still ? MOTION.still : s.t;
       uniforms.uLaunch.value = Math.max(0, s.launch);
