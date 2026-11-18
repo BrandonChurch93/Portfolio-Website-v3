@@ -15,12 +15,14 @@ import { STREAM, stoneMaps, stoneMaterial } from './rock/stone';
 // What the sculpt stores for the stone, read from the file's meta and, where the meta is silent, from the file
 // itself: meta.edge, when it is there, names where each vertex's distance to the nearest crease is (light.w or
 // bounce.w) and meta.edgeUnits the units a stored 1 is. light.w is a number of each block's own when meta.spare says
-// 'slab', never when it holds the distance, and otherwise only if it plainly varies from block to block.
+// 'slab', never when it holds the distance, and otherwise only if it plainly varies from block to block. When it says
+// 'mass' (sculpt S), light.w and bounce.w hold a tone of each mass's own, which the quiet stone reads.
 const DARK = 0x16110d, CLAY = 0x96897b;
 
 // Whether light.w holds a number of each block's own: said so, or, when nothing is said, many different values.
 function blocks(g: THREE.BufferGeometry, meta: { spare?: string; edge?: string }): boolean {
   if (meta.spare === 'slab') return true;
+  if (meta.spare === 'mass') return false;
   if (meta.spare === 'edge' || meta.edge === 'light.w') return false;
   const a = g.getAttribute('aLight');
   if (!a) return false;
@@ -73,7 +75,7 @@ export const build: PartFactory = async ({ query, renderer }) => {
       // plain shell lay exactly where they are and fought them for every pixel. ?shell=1 draws it again.
       if (name === 'skin' && query.get('shell') !== '1') continue;
       const m = name === 'break' && maps
-        ? stoneMaterial(maps, { key: which === 's' ? 'rock-s' : 'rock', baked: true, spare: blocks(l.geometry, meta) ? 'slab' : undefined, beds: meta.beds, tans: meta.tans, edge, quiet: which === 's', debug: Number(query.get('stonedebug')) || undefined })
+        ? stoneMaterial(maps, { key: which === 's' ? 'rock-s' : 'rock', baked: true, spare: blocks(l.geometry, meta) ? 'slab' : undefined, beds: meta.beds, tans: meta.tans, edge, quiet: which === 's', mass: meta.spare === 'mass', debug: Number(query.get('stonedebug')) || undefined })
         : lit(new THREE.MeshStandardMaterial({ color: name === 'skin' ? DARK : CLAY, roughness: 0.92, metalness: 0 }), { key: `rock-plain-${name}`, baked: true });
       const touched = name === 'break' && maps ? nearStream(l) : null;
       const part = mesh(l, m);

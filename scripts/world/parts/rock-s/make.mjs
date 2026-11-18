@@ -117,10 +117,16 @@ if (outer.indices.length) meshes.push({ name: 'outer', positions: outer.position
 const lit = await bake({ meshes, ...light() }, { samples: draft ? { core: 24, moon: 8, hemi: 48 } : { core: 64, moon: 16, hemi: 160 }, bounces: draft ? 1 : 2 });
 said('lit');
 
+// Each mass's own tone, which the quiet stone reads (meta.spare 'mass'): its value in light.w and its hue in
+// bounce.w, each 0 to 1 about a half. A vertex is of the mass whose field is lowest there, a little inside the rock.
+F.setup({ stones });
 const n = brk.positions.length / 3, lightOf = new Float32Array(n * 4), bounceOf = new Float32Array(n * 4), l = lit.break;
 for (let i = 0; i < n; i++) {
-  lightOf.set([l.core[i], l.moon[i], l.open[i], 0], i * 4);
-  bounceOf.set([storeBounce(l.bounce[i * 3]), storeBounce(l.bounce[i * 3 + 1]), storeBounce(l.bounce[i * 3 + 2]), 0], i * 4);
+  const p = [0, 1, 2].map((k) => brk.positions[i * 3 + k] - brk.normals[i * 3 + k] * 0.6), at = F.which(...p);
+  const value = 0.5 + (hash(at, 91) - 0.5) * 0.9, hue = 0.5 + (hash(at, 92) - 0.5) * 0.9;
+  lightOf.set([l.core[i], l.moon[i], l.open[i], value], i * 4);
+  bounceOf.set([storeBounce(l.bounce[i * 3]), storeBounce(l.bounce[i * 3 + 1]), storeBounce(l.bounce[i * 3 + 2]), hue], i * 4);
 }
-pack('public/world/rock-s.bin', [{ name: 'break', positions: brk.positions, indices: brk.indices, attributes: { normal: { data: brk.normals, size: 3, as: 'i16' }, light: { data: lightOf, size: 4, as: 'u8' }, bounce: { data: bounceOf, size: 4, as: 'u8' } } }], { draft, sculpt: 's', round: 2, stones: stones.length, spare: 'none' });
+said('mass tones');
+pack('public/world/rock-s.bin', [{ name: 'break', positions: brk.positions, indices: brk.indices, attributes: { normal: { data: brk.normals, size: 3, as: 'i16' }, light: { data: lightOf, size: 4, as: 'u8' }, bounce: { data: bounceOf, size: 4, as: 'u8' } } }], { draft, sculpt: 's', round: 3, stones: stones.length, spare: 'mass' });
 said('done');

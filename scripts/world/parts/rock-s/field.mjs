@@ -17,7 +17,7 @@ import { TORN } from '../rock-r/trace.mjs';
 import { MASSES, FLOOR, ROOF, BOTTOM, LANE, socket } from './masses.mjs';
 
 export const lip = 2.5;
-const UNIT = L.PICTURE.unit, C = L.CORE.at, R = L.CORE.r;
+const UNIT = L.PICTURE.unit, C = L.CORE.at, R = L.CORE.r, CP = L.pictured(...L.CORE.at);
 // The space the rock is made in.
 export const BOX = [[-525, -612, -260], [478, 5, 625]];
 // How far under the land's surface the rock's top stays, in units.
@@ -39,10 +39,24 @@ const TURN = 0.3;
 // The backfill: how far behind the socket it lies, in the core's radii, so what shows between the masses is a recess
 // the ball barely reaches. Under the roof it goes far back (high, from so far up), so what shows between the roof
 // and the plates is black.
-const BACKFILL = { gap: 0.8, deep: 14, over: 60, high: 70, from: -150 };
+// Under the ball it goes far back too (low, from under down): there it faced the ball and was a flat lit table. And
+// between so many radii out and so many it is `more` further back, so what shows of it beside the ball is in the
+// shadow of the masses round it: there it faced the ball at a slant and was a lit band.
+const BACKFILL = { gap: 0.8, deep: 14, over: 60, high: 70, from: -150, low: 90, under: -290, more: [0.35, 1.45, 2.7] };
 // A layer's step: its riser is this share of the layer across, within these units, and a step is this many units
 // deep at least and at most. How far a layer's edge wanders, broad and fine, and how far it is chipped, in units.
-const LAYER = { riser: 0.3, riserIn: [1.6, 4], drop: [2.5, 10], wander: [6, 2], chip: 0.7, bend: 0.0022, flat: [0.25, 0.3] };
+const LAYER = { riser: 0.3, riserIn: [1.6, 4], drop: [2.5, 10], wander: [6, 2], chip: 0.7, bend: 0.0022, flat: [0.25, 0.3], turn: 0.14 };
+// Round 3. No rhythm: each lip runs at an angle of its own (up to LAYER.turn across a unit along it), and a stack is
+// crossed by `fault` fractures, each a groove across its layers that offsets them (FAULT: its angle from straight
+// across them, in radians, and the share of a layer it shifts them by).
+const FAULT = { angle: 0.55, shift: [0.35, 0.75] };
+// A lit rim on the edge of a mass that looks back at the ball, for the masses out past RIM.from core radii: a chamfer
+// turned RIM.angle degrees from the face toward the outline, from RIM.wide[0] to RIM.wide[1] units deep, missing
+// where its noise is under RIM.missing.
+const RIM = { from: 1.8, angle: 52, wide: [4, 14], over: 22, missing: 0.3 };
+// The back wall of the stream's lane under the floor: it leans back as it goes down, so it faces down from the core,
+// and is broken.
+const LANEWALL = { lean: 0.32, deep: 5, over: 11, fine: 1.6 };
 
 const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -180,9 +194,20 @@ function prepare(m) {
       u += P;
     }
     at.push(reach + 80); drop.push(0); wide.push(2);
-    layers = { lu, lv, at: new Float64Array(at), drop: new Float64Array(drop), wide: new Float64Array(wide), pinch: Ly.pinch ?? 0.3, bend: LAYER.bend * (r() - 0.5) * 2 };
+    const ang = new Float64Array(at.length).map(() => (r() - 0.5) * 2 * LAYER.turn * (r() < 0.3 ? 1.6 : 1));
+    const faults = [];
+    const every = (Ly.every[0] + Ly.every[1]) / 2;
+    for (let k = 0; k < (m.fault ?? 0); k++) {
+      const a = (r() - 0.5) * 2 * FAULT.angle, v0 = (r() - 0.5) * far * 0.9, off = (r() < 0.5 ? -1 : 1) * (FAULT.shift[0] + (FAULT.shift[1] - FAULT.shift[0]) * r()) * every;
+      faults.push({ ca: Math.cos(a), sa: Math.sin(a), v0, off });
+      // The fault is a groove too, along its line.
+      const d = norm(lu.map((q, i) => q * Math.cos(a) + lv[i] * Math.sin(a))), q = cross(n, d), o = [c[0] + lv[0] * v0, c[1] + lv[1] * v0, c[2] + lv[2] * v0];
+      cracks.push({ o, d, q, s0: -far - 20, s1: far + 20, hw: 1 + 0.7 * r(), deep: 2.4 + 1.4 * r(), step: 0, wander: 0.8, over: 18, seed: m.seed * 31 + 17 + k });
+    }
+    layers = { lu, lv, at: new Float64Array(at), ang, faults, drop: new Float64Array(drop), wide: new Float64Array(wide), pinch: Ly.pinch ?? 0.3, bend: LAYER.bend * (r() - 0.5) * 2 };
   }
-  return { ...m, c, n, e1, e2, flat, cracks, breaks, layers, reach: far + m.thick + 60, top: m.top ? { at: m.top.at, n: norm(m.top.n) } : null };
+  const rho = Math.hypot(c[0] - C[0], c[1] - C[1]) / R;
+  return { ...m, c, n, e1, e2, flat, cracks, breaks, layers, rho, reach: far + m.thick + 60, top: m.top ? { at: m.top.at, n: norm(m.top.n) } : null };
 }
 
 export function setup(args = {}) {
@@ -238,14 +263,21 @@ function facets(m, u, v) {
 // How far a mass's layers stand out of its face at a place (a share of the step under 0), and how fast that changes
 // across the layers: each layer's face rises from its step's foot to its lip, and the lip drops to the next.
 function layered(m, dx, dy, dz) {
-  const Ly = m.layers, u0 = dx * Ly.lu[0] + dy * Ly.lu[1] + dz * Ly.lu[2], v = dx * Ly.lv[0] + dy * Ly.lv[1] + dz * Ly.lv[2];
+  const Ly = m.layers, v = dx * Ly.lv[0] + dy * Ly.lv[1] + dz * Ly.lv[2];
+  let u0 = dx * Ly.lu[0] + dy * Ly.lu[1] + dz * Ly.lu[2];
+  for (const f of Ly.faults) u0 += f.off * smooth(-0.8, 0.8, -u0 * f.sa + (v - f.v0) * f.ca);
   // The layers fan a little: each mass's run bends its own way along their length.
   const u = u0 + Ly.bend * v * v + LAYER.wander[0] * N(u0 / 40, v / 28, 0.5, m.seed + 80) + LAYER.wander[1] * N(u0 / 12, v / 9, 1.5, m.seed + 81) + LAYER.chip * N(u0 / 3, v / 3, 2.5, m.seed + 82);
-  const at = Ly.at;
-  let lo = 0, hi = at.length - 1;
+  const at = Ly.at, last = at.length - 1;
+  let lo = 0, hi = last;
   if (u < at[0] || u >= at[hi]) return [0, 0];
   while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (at[mid] <= u) lo = mid; else hi = mid; }
-  const k = lo, P = at[k + 1] - at[k], t = u - at[k], w = Math.min(Ly.wide[k], P * 0.45);
+  // Each lip at an angle of its own: the layer the place is in is found among the lips so turned.
+  const lip = (j) => at[j] + (j > 0 && j < last ? Ly.ang[j] * v : 0);
+  let k = lo;
+  if (k > 0 && u < lip(k)) k--;
+  else if (k + 1 < last && u >= lip(k + 1)) k++;
+  const L0 = lip(k), P = Math.max(1.5, lip(k + 1) - L0), t = Math.min(P, Math.max(0, u - L0)), w = Math.min(Ly.wide[k], P * 0.45);
   // A step dies out along its length here and there: the two layers either side of it become one.
   const there = (j) => Ly.drop[j] * smooth(Ly.pinch - 0.12, Ly.pinch + 0.12, L.noise(v / 46, j * 1.37, 0.5, m.seed + 83));
   const H0 = there(k), H1 = there(k + 1);
@@ -283,6 +315,14 @@ function mass(m, x, y, z, px, py) {
   d = Math.max(d, (face + out) * Math.SQRT1_2 + bev);
   if (m.top) d = Math.max(d, (x - m.top.at[0]) * m.top.n[0] + (y - m.top.at[1]) * m.top.n[1] + (z - m.top.at[2]) * m.top.n[2] + 0.8 * rel);
   for (const b of m.breaks) d = Math.max(d, (x - b.at[0]) * b.n[0] + (y - b.at[1]) * b.n[1] + (z - b.at[2]) * b.n[2]);
+  // A lit rim where the outline looks back at the ball.
+  if (m.rho > RIM.from && out > -RIM.wide[1] * 2 && face > -RIM.wide[1] * 2) {
+    const e = 0.6, gx = sdPoly(m.flat, qx + e, qy) - sdPoly(m.flat, qx - e, qy), gy = sdPoly(m.flat, qx, qy + e) - sdPoly(m.flat, qx, qy - e), gl = Math.hypot(gx, gy) || 1;
+    const bx = CP[0] - qx, by = CP[1] - qy, bl = Math.hypot(bx, by) || 1, look = (gx * bx + gy * by) / (gl * bl);
+    const there = smooth(RIM.missing - 0.08, RIM.missing + 0.08, L.noise(x / RIM.over, y / RIM.over, z / RIM.over, m.seed + 5));
+    const wide = (RIM.wide[0] + (RIM.wide[1] - RIM.wide[0]) * L.noise(x / 13, y / 13, z / 13, m.seed + 6)) * smooth(0.2, 0.65, look) * there;
+    if (wide > 0.2) { const a = (RIM.angle * Math.PI) / 180; d = Math.max(d, face * Math.cos(a) + out * Math.sin(a) + wide); }
+  }
   // The fractures: V grooves cut into the face, widening to a notch where they reach an edge.
   const inward = -face;
   if (inward > -6 && inward < 10) {
@@ -305,7 +345,7 @@ function mass(m, x, y, z, px, py) {
 // The roof: under the land, in front of nothing, its front face a little behind the land's edge, broken across into
 // blocks, and its ragged underside where the picture has it.
 function roof(x, y, z, px, py) {
-  const under = (py - along(ROOF.under, px) - 7 * N(px / 14, 3.3, 1.1, 51) - 2.2 * N(px / 4.5, py / 4.5, 2.2, 52)) * UNIT;
+  const under = (py - along(ROOF.under, px) - 7 * N(px / 14, 3.3, 1.1, 51) - 3 * N(px / 9, 1.7, 0.4, 53) - 0.8 * N(px / 5, py / 5, 2.2, 52)) * UNIT;
   if (under > 30) return under;
   const zl = frontZ(x), top = L.dome(x, zl), down = top - y;
   const j0 = Math.floor(down / ROOF.cell[1]), cells = [];
@@ -334,7 +374,7 @@ function roof(x, y, z, px, py) {
 const BACKFACETS = { seed: 63, facet: 46 }, ROOFFACETS = { seed: 57, facet: 30 };
 function backfill(x, y, z) {
   const rho = Math.hypot(x - C[0], y - C[1]);
-  const zb = C[2] + R * (socket(rho / R) - BACKFILL.gap) - BACKFILL.high * smooth(BACKFILL.from, BACKFILL.from + 70, y) + BACKFILL.deep * N(x / BACKFILL.over, y / BACKFILL.over, 2.9, 61) + 2.5 * N(x / 13, y / 13, 4.1, 62) + 2.2 * facets(BACKFACETS, x, y);
+  const zb = C[2] + R * (socket(rho / R) - BACKFILL.gap - BACKFILL.more[0] * smooth(BACKFILL.more[1], BACKFILL.more[1] + 0.35, rho / R) * (1 - smooth(BACKFILL.more[2] - 0.4, BACKFILL.more[2], rho / R))) - BACKFILL.high * smooth(BACKFILL.from, BACKFILL.from + 70, y) - BACKFILL.low * (1 - smooth(BACKFILL.under - 50, BACKFILL.under, y)) * (1 - smooth(1.6 * R, 2.4 * R, rho)) + BACKFILL.deep * N(x / BACKFILL.over, y / BACKFILL.over, 2.9, 61) + 2.5 * N(x / 13, y / 13, 4.1, 62) + 2.2 * facets(BACKFACETS, x, y);
   return (z - zb) * 0.85;
 }
 
@@ -360,6 +400,15 @@ export function bare(x, y, z) {
   return d;
 }
 
+// Which mass a place is of: its number in the masses and the floor, then the roof, then the backfill.
+export function which(x, y, z) {
+  const [px, py] = L.pictured(x, y, z);
+  let best = backfill(x, y, z), at = M.length + 1;
+  M.forEach((m, i) => { const v = mass(m, x, y, z, px, py); if (v < best) { best = v; at = i; } });
+  if (roof(x, y, z, px, py) < best) at = M.length;
+  return at;
+}
+
 // What keeps the core and the stream's lane clear: over 0 where nothing may be.
 function clear(x, y, z, px, py) {
   const cx = x - C[0], cy = y - C[1], cz = z - C[2], cr = Math.hypot(cx, cy, cz);
@@ -373,7 +422,10 @@ function clear(x, y, z, px, py) {
   }
   const rho = Math.hypot(px - L.pictured(...C)[0], py - L.pictured(...C)[1]) * UNIT;
   if (cz > -20) d = Math.max(d, Math.min(CLEAR.disc + CLEAR.open * Math.max(0, cz) + 3 * N(x / 9, y / 9, z / 9, 45) - rho, cz + 20));
-  if (y < LANE.top + 40) d = Math.max(d, -Math.max(Math.abs(x) - LANE.half - LANE.widen * Math.max(0, z - LANE.z), LANE.z - z, y - LANE.top));
+  if (y < LANE.top + 40) {
+    const back = LANE.z - LANEWALL.lean * Math.max(0, LANE.top - y) + LANEWALL.deep * N(x / LANEWALL.over, y / LANEWALL.over, 0.7, 46) + LANEWALL.fine * N(x / 3.7, y / 3.7, 1.9, 47);
+    d = Math.max(d, -Math.max(Math.abs(x) - LANE.half - LANE.widen * Math.max(0, z - LANE.z), back - z, y - LANE.top));
+  }
   return d;
 }
 

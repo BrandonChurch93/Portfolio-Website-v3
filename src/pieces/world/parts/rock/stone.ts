@@ -117,9 +117,18 @@ export const STONE = {
   // deep warm brown, as picture 9's are (multiplying the stone as the lit and shade tints do), how much of its color
   // it keeps lit and in the dark (in the cave round the core and past it: the mid tones beside the ball a saturated
   // brown, the ones further off greyer), and pits and small spalls of two sizes (how wide, in units, how deep against how
-  // wide, how much of a face they take, and how much darker a pit is), shown only where a pixel is fine enough.
-  quietTint: { lit: [0.9, 1.12, 0.96] as const, shade: [1, 0.96, 0.78] as const, far: [1, 1.12, 1.3] as const, chroma: [1, 0.72, 0.55] as const },
-  pits: { wide: [1.6, 4.2], deep: [0.22, 0.2], share: [0.3, 0.16], tone: 0.16, cluster: 46, soft: 0.3 },
+  // wide, how much of a face they take, and how much darker a pit is), shown only where a pixel is fine enough, and
+  // (round 3) left off whole faces by a field `bare` units across.
+  // Round 3: the stone's hue is set outright, at the brightness the stone has there (as linear colors, red 1): under
+  // the core's full light the hue the sculpts' light was worked out with (?stone=0), which comes out the picture's
+  // golden tan, and in the mid tones a warm brown between that and the stone's own red brown, greyer past the cave.
+  // `value` is how bright each is against the stone. Each mass is its own a little (the sculpt stores a tone for each,
+  // light.w and bounce.w): `mass` is how far its hue (1 is about three degrees) and its value may differ, and `drift`
+  // how far the hue wanders within a face, and over how many units, broad and finer. `paled` is how far a face the
+  // core's paled light grazes takes the lit hue, and `dust` how much paler dust is than the stone it lies on. A face the
+  // moon lights and the core does not fades as it is seen more nearly edge on, between the two of `thin`.
+  quietTint: { lit: [1, 0.9, 0.62] as const, shade: [1, 0.52, 0.25] as const, far: [1, 0.55, 0.4] as const, value: [1.04, 0.86, 0.86] as const, mass: [1, 0.11] as const, drift: [1.1, 60, 18] as const, paled: 0.6, dust: 1.2, thin: [0.12, 0.42] },
+  pits: { wide: [1.6, 4.2], deep: [0.22, 0.2], share: [0.3, 0.16], tone: 0.16, cluster: 46, soft: 0.3, bare: 130 },
 } as const;
 
 // The stream's light on the stone: a line from the core's foot straight down, as far as the page's stream has run,
@@ -178,6 +187,9 @@ varying vec3 vStoneN;
 #endif
 #ifdef STONE_SLAB
 	flat varying float vStoneSlab;
+#endif
+#ifdef STONE_QUIET
+	varying vec2 vStoneMass;
 #endif`;
 // The place and normal in the world, in units, for a mesh drawn as it is.
 const VERT = /* glsl */ `
@@ -192,6 +204,13 @@ const VERT = /* glsl */ `
 	#ifdef STONE_SLAB
 		vStoneSlab = floor( aLight.w * 255.0 + 0.5 );
 	#endif
+	#ifdef STONE_QUIET
+		#if defined( WORLD_BAKED ) && defined( STONE_MASS )
+			vStoneMass = vec2( aBounce.w, aLight.w );
+		#else
+			vStoneMass = vec2( 0.5 );
+		#endif
+	#endif
 }`;
 
 const FRAG_PARS = /* glsl */ `
@@ -204,6 +223,9 @@ varying vec3 vStoneN;
 	flat varying float vStoneSlab;
 	uniform vec4 uStoneBeds[ ${BEDS_MAX} ];
 	uniform float uStoneTan[ ${BEDS_MAX} ];
+#endif
+#ifdef STONE_QUIET
+	varying vec2 vStoneMass;
 #endif
 uniform sampler2D uStoneGrain;
 uniform vec2 uStoneStream;
@@ -429,9 +451,10 @@ const STONE_FRAG = /* glsl */ `
 	float qPit = 0.0;
 	#ifdef STONE_QUIET
 		for ( int s = 0; s < 2; s++ ) {
-			float W = s == 0 ? ${f(STONE.pits.wide[0])} : ${f(STONE.pits.wide[1])};
-			// In clusters, never an even speckle: over most of a face there are none.
-			float th = 1.0 - ( s == 0 ? ${f(STONE.pits.share[0])} : ${f(STONE.pits.share[1])} ) * smoothstep( 0.45, 0.75, stoneNoise3( p / ${f(STONE.pits.cluster)} + vec3( float( s ) * 7.1 ) ) );
+			// Of sizes that differ from place to place.
+			float W = ( s == 0 ? ${f(STONE.pits.wide[0])} : ${f(STONE.pits.wide[1])} ) * ( 0.6 + 0.9 * stoneNoise3( p / 31.0 + vec3( float( s ) * 3.3 ) ) );
+			// In clusters, never an even speckle: over most of a face there are none, and whole faces have none at all.
+			float th = 1.0 - ( s == 0 ? ${f(STONE.pits.share[0])} : ${f(STONE.pits.share[1])} ) * smoothstep( 0.5, 0.78, stoneNoise3( p / ${f(STONE.pits.cluster)} + vec3( float( s ) * 7.1 ) ) ) * smoothstep( 0.45, 0.6, stoneNoise3( p / ${f(STONE.pits.bare)} + 4.4 ) );
 			vec4 q = stoneNoiseD( p / W + vec3( float( s ) * 13.7 + 5.3 ) );
 			float t = clamp( ( q.w - th ) / ${f(STONE.pits.soft)}, 0.0, 1.0 ), m = t * t * ( 3.0 - 2.0 * t );
 			float shows = 1.0 - smoothstep( 0.2, 0.55, pix / W );
@@ -477,7 +500,20 @@ const STONE_FRAG = /* glsl */ `
 	#endif
 	c *= mix( ${v3(STONE.shadeTint)}, ${v3(STONE.litTint)}, full );
 	#ifdef STONE_QUIET
-		c *= mix( mix( ${v3(STONE.quietTint.shade)}, ${v3(STONE.quietTint.far)}, cave ), ${v3(STONE.quietTint.lit)}, full ) * ( 1.0 - ${f(STONE.pits.tone)} * qPit );
+	{
+		// Where the core's light is paled (LIGHT.core.pale) a face it only grazes takes some of the lit hue too: in the
+		// shade's hue under that pale light it came out salmon.
+		float qF = max( full, ${f(STONE.quietTint.paled)} * lit * smoothstep( ${f(LIGHT.core.pale[1])}, ${f(LIGHT.core.pale[2])}, min( 1.0, ${f(CORE.r)} / dC ) ) );
+		vec3 qHue = mix( mix( ${v3(STONE.quietTint.shade)}, ${v3(STONE.quietTint.far)}, cave ), ${v3(STONE.quietTint.lit)}, qF );
+		float qV = mix( mix( ${f(STONE.quietTint.value[1])}, ${f(STONE.quietTint.value[2])}, cave ), ${f(STONE.quietTint.value[0])}, qF );
+		// Each mass's own: its hue a few degrees toward gold or red, its value a little up or down.
+		vec2 qM = ( vStoneMass - 0.5 ) * 2.0;
+		// And within a face its hue drifts, broad and finer, as weathered stone's does.
+		float qH = ${f(STONE.quietTint.mass[0])} * qM.x + ${f(STONE.quietTint.drift[0])} * ( 1.4 * ( stoneNoise3( p / ${f(STONE.quietTint.drift[1])} + 3.3 ) - 0.5 ) + 0.6 * ( stoneNoise3( p / ${f(STONE.quietTint.drift[2])} + 9.1 ) - 0.5 ) ) * 2.0;
+		qHue *= vec3( 1.0, 1.0 + 0.045 * qH, 1.0 + 0.09 * qH );
+		qV *= 1.0 + ${f(STONE.quietTint.mass[1])} * qM.y;
+		c = qHue / max( dot( qHue, vec3( 0.2126, 0.7152, 0.0722 ) ), 1e-4 ) * dot( c, vec3( 0.2126, 0.7152, 0.0722 ) ) * qV * ( 1.0 - ${f(STONE.pits.tone)} * qPit );
+	}
 	#endif
 	float hotK = ${f(STONE.hot.most)} * seen * smoothstep( 0.05, 0.45, cf ) * ( 1.0 - smoothstep( ${f(STONE.hot.full)}, ${f(STONE.hot.from)}, dC ) );
 	c = mix( c, ${v3(STONE.hot.color)}, hotK );
@@ -495,14 +531,24 @@ const STONE_FRAG = /* glsl */ `
 		c = mix( c, ${v3(STONE.chip)} * ( 0.9 + 0.2 * tNear.x ), 0.4 * chipped );
 		c *= mix( vec3( 1.0 ), ${v3(STONE.crease.tint)}, crease );
 		rough = foot;
+		#ifdef STONE_QUIET
+			// A step the moon lights and the visitor sees nearly edge on fades as it thins (common.md, 04:20): the roof's
+			// steps drew thin pale lines with square bends, which read as steel brackets.
+			c *= mix( 1.0, smoothstep( ${f(STONE.quietTint.thin[0])}, ${f(STONE.quietTint.thin[1])}, facing ), moonK * ( 1.0 - lit ) );
+		#endif
 	#endif
-	c = mix( c, ${v3(STONE.dust)} * ( 0.88 + 0.24 * tNear.x ) * mix( 0.85, 1.0, tNear.y ), 0.7 * dust );
+	#ifdef STONE_QUIET
+		// The dust in its own hue, a little paler: in the old dust's greyed red it came out salmon under the paled light.
+		c = mix( c, c * ${f(STONE.quietTint.dust)} * ( 0.88 + 0.24 * tNear.x ) * mix( 0.85, 1.0, tNear.y ), 0.7 * dust );
+	#else
+		c = mix( c, ${v3(STONE.dust)} * ( 0.88 + 0.24 * tNear.x ) * mix( 0.85, 1.0, tNear.y ), 0.7 * dust );
+	#endif
 	float chroma = mix( mix( ${f(STONE.chroma[1])}, ${f(STONE.chroma[0])}, lit ), ${f(STONE.hot.chroma)}, hotK / ${f(STONE.hot.most)} );
 	#ifndef STONE_GRAIN
 		chroma *= mix( 1.0, ${f(STONE.crust.moonChroma)}, moonK * ( 1.0 - lit ) );
 	#endif
 	#ifdef STONE_QUIET
-		chroma = mix( mix( ${f(STONE.quietTint.chroma[1])}, ${f(STONE.quietTint.chroma[2])}, cave ), ${f(STONE.quietTint.chroma[0])}, lit );
+		chroma = 1.0;
 	#endif
 	stoneAlbedo = mix( vec3( dot( c, vec3( 0.2126, 0.7152, 0.0722 ) ) ), c, chroma );
 	stoneRough = mix( mix( mix( ${f(STONE.rough[0])}, ${f(STONE.rough[1])}, rough ), ${f(STONE.rough[2])}, dust ), ${f(STONE.rough[3])}, glints );
@@ -530,6 +576,9 @@ const STONE_FRAG = /* glsl */ `
 				if ( STONE_DEBUG == 13 ) totalEmissiveRadiance = vec3( step( 0.0, vStoneEdge ), 1.0 - step( 0.0, vStoneEdge ), 0.0 ) * ( 1.0 - smoothstep( 0.0, 8.0, fromEdge ) );
 			#endif
 			if ( STONE_DEBUG == 11 ) totalEmissiveRadiance = vec3( full, lit, hotK );
+			#ifdef STONE_QUIET
+				if ( STONE_DEBUG == 14 ) totalEmissiveRadiance = 0.5 * vec3( fract( vStoneMass.x * 7.31 ), fract( vStoneMass.y * 5.13 ), fract( ( vStoneMass.x + vStoneMass.y ) * 3.77 ) );
+			#endif
 		#endif
 	#endif
 }`;
@@ -601,10 +650,12 @@ export interface StoneOptions {
   grainOnly?: boolean;
   // Its knapped scars all but gone (STONE.quiet).
   quiet?: boolean;
+  // With quiet: the sculpt stores a tone of each mass's own in light.w (its value) and bounce.w (its hue).
+  mass?: boolean;
   // Draws one thing the stone reads instead of the stone, to judge it: 1 openness, 2 the core's share seen, 3 the
   // distance to an edge, 4 the crust, 5 the moon's share, 6 the partings' risers, 7 how bedded the block is, 8 the chipped
   // edges, 9 the creases' shade, 10 the partings' risers, lips and feet (red, green, blue), 12 each block in a color of its
-  // own, 13 concave creases green and convex red,
+  // own, 13 concave creases green and convex red, 14 (sculpt S) each mass in a color of its own,
   // 11 how far the core's light is full, lit, and the hot zone. 21 to 29 are 1 to 9 in bands of a quarter.
   debug?: number;
 }
@@ -617,7 +668,8 @@ export function stoneMaterial(maps: StoneMaps, o: StoneOptions): THREE.MeshStand
     ...(o.edge ? { STONE_EDGE: '', STONE_EDGE_FROM: o.edge } : {}),
     ...(o.debug ? { STONE_DEBUG: String(Math.round(o.debug)) } : {}),
     ...(o.quiet ? { STONE_QUIET: '' } : {}),
+    ...(o.quiet && o.mass ? { STONE_MASS: '' } : {}),
   };
   m.onBeforeCompile = (sh) => stoneShader(sh, maps, false, o.grainOnly, o.spare === 'slab' ? o.beds ?? [] : undefined, o.tans);
-  return lit(m, { key: `stone-${o.key}${o.spare ? '-slab' : ''}${o.edge ? '-edge' : ''}${o.grainOnly ? '-grain' : ''}${o.quiet ? '-quiet' : ''}${o.debug ? `-debug${o.debug}` : ''}`, baked: o.baked });
+  return lit(m, { key: `stone-${o.key}${o.spare ? '-slab' : ''}${o.edge ? '-edge' : ''}${o.grainOnly ? '-grain' : ''}${o.quiet ? '-quiet' : ''}${o.quiet && o.mass ? '-mass' : ''}${o.debug ? `-debug${o.debug}` : ''}`, baked: o.baked });
 }
