@@ -113,6 +113,13 @@ export const STONE = {
   // A quiet stone (StoneOptions.quiet, sculpt S): its knapped scars this share as deep and as marked, so the form and
   // the light carry the face and no pattern of scallops reads across it.
   quiet: { roll: 0.25, knap: 0.2 },
+  // And its color and its smallest breaks (sculpt S's second round): its lit stone a golden tan and its mid tones a
+  // deep warm brown, as picture 9's are (multiplying the stone as the lit and shade tints do), how much of its color
+  // it keeps lit and in the dark (in the cave round the core and past it: the mid tones beside the ball a saturated
+  // brown, the ones further off greyer), and pits and small spalls of two sizes (how wide, in units, how deep against how
+  // wide, how much of a face they take, and how much darker a pit is), shown only where a pixel is fine enough.
+  quietTint: { lit: [0.9, 1.12, 0.96] as const, shade: [1, 0.96, 0.78] as const, far: [1, 1.12, 1.3] as const, chroma: [1, 0.72, 0.55] as const },
+  pits: { wide: [1.6, 4.2], deep: [0.22, 0.2], share: [0.3, 0.16], tone: 0.16, cluster: 46, soft: 0.3 },
 } as const;
 
 // The stream's light on the stone: a line from the core's foot straight down, as far as the page's stream has run,
@@ -419,6 +426,19 @@ const STONE_FRAG = /* glsl */ `
 	float dust = up * smoothstep( 0.2, 0.55, 0.3 + 0.45 * ( 1.0 - open ) + 0.3 * ( st1 - 0.5 ) );
 	tilt += ${f(STONE.grain.tilt)} * edgeOn * ( gNear * mix( 1.0, 1.6, dust ) + ${f(STONE.grain.wear)} * gWide * ( 1.0 - 0.6 * dust ) );
 	tilt += roll * edgeOn * ( 0.6 + 0.8 * bRough ) * ( 1.0 - 0.5 * dust );
+	float qPit = 0.0;
+	#ifdef STONE_QUIET
+		for ( int s = 0; s < 2; s++ ) {
+			float W = s == 0 ? ${f(STONE.pits.wide[0])} : ${f(STONE.pits.wide[1])};
+			// In clusters, never an even speckle: over most of a face there are none.
+			float th = 1.0 - ( s == 0 ? ${f(STONE.pits.share[0])} : ${f(STONE.pits.share[1])} ) * smoothstep( 0.45, 0.75, stoneNoise3( p / ${f(STONE.pits.cluster)} + vec3( float( s ) * 7.1 ) ) );
+			vec4 q = stoneNoiseD( p / W + vec3( float( s ) * 13.7 + 5.3 ) );
+			float t = clamp( ( q.w - th ) / ${f(STONE.pits.soft)}, 0.0, 1.0 ), m = t * t * ( 3.0 - 2.0 * t );
+			float shows = 1.0 - smoothstep( 0.2, 0.55, pix / W );
+			tilt += ( s == 0 ? ${f(STONE.pits.deep[0])} : ${f(STONE.pits.deep[1])} ) * 6.0 * t * ( 1.0 - t ) / ${f(STONE.pits.soft)} * q.xyz * shows * edgeOn;
+			qPit = max( qPit, m * shows );
+		}
+	#endif
 	tilt -= n * dot( tilt, n );
 	stoneNormal = normalize( n + tilt );
 
@@ -456,6 +476,9 @@ const STONE_FRAG = /* glsl */ `
 		full = max( full, uStoneTan[ int( clamp( vStoneSlab + 0.5, 0.0, ${f(BEDS_MAX - 1)} ) ) ] * lit );
 	#endif
 	c *= mix( ${v3(STONE.shadeTint)}, ${v3(STONE.litTint)}, full );
+	#ifdef STONE_QUIET
+		c *= mix( mix( ${v3(STONE.quietTint.shade)}, ${v3(STONE.quietTint.far)}, cave ), ${v3(STONE.quietTint.lit)}, full ) * ( 1.0 - ${f(STONE.pits.tone)} * qPit );
+	#endif
 	float hotK = ${f(STONE.hot.most)} * seen * smoothstep( 0.05, 0.45, cf ) * ( 1.0 - smoothstep( ${f(STONE.hot.full)}, ${f(STONE.hot.from)}, dC ) );
 	c = mix( c, ${v3(STONE.hot.color)}, hotK );
 	float rough = 0.0;
@@ -477,6 +500,9 @@ const STONE_FRAG = /* glsl */ `
 	float chroma = mix( mix( ${f(STONE.chroma[1])}, ${f(STONE.chroma[0])}, lit ), ${f(STONE.hot.chroma)}, hotK / ${f(STONE.hot.most)} );
 	#ifndef STONE_GRAIN
 		chroma *= mix( 1.0, ${f(STONE.crust.moonChroma)}, moonK * ( 1.0 - lit ) );
+	#endif
+	#ifdef STONE_QUIET
+		chroma = mix( mix( ${f(STONE.quietTint.chroma[1])}, ${f(STONE.quietTint.chroma[2])}, cave ), ${f(STONE.quietTint.chroma[0])}, lit );
 	#endif
 	stoneAlbedo = mix( vec3( dot( c, vec3( 0.2126, 0.7152, 0.0722 ) ) ), c, chroma );
 	stoneRough = mix( mix( mix( ${f(STONE.rough[0])}, ${f(STONE.rough[1])}, rough ), ${f(STONE.rough[2])}, dust ), ${f(STONE.rough[3])}, glints );

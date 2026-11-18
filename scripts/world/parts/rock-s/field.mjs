@@ -14,8 +14,7 @@
 import { L } from '../../lib/plan.mjs';
 import { below } from '../land/shape.mjs';
 import { TORN } from '../rock-r/trace.mjs';
-import { LANE } from '../rock-r/hollow.mjs';
-import { MASSES, FLOOR, ROOF, BOTTOM } from './masses.mjs';
+import { MASSES, FLOOR, ROOF, BOTTOM, LANE, socket } from './masses.mjs';
 
 export const lip = 2.5;
 const UNIT = L.PICTURE.unit, C = L.CORE.at, R = L.CORE.r;
@@ -37,10 +36,13 @@ const BEVEL = { least: 1.2, more: 3.6, over: 7 };
 const TAPER = 0.22;
 // How far a plate of the back wall is turned its own way, at most, in radians (any other mass, 0.4 of it).
 const TURN = 0.3;
-// The backfill: how far behind the core's middle it is straight behind it, and how far forward it comes for each unit
-// out from the core in the picture's plane.
-// Under the roof it goes far back (high, from so far up), so what shows between the roof and the plates is black.
-const BACKFILL = { at: -70, out: 0.5, deep: 16, over: 60, high: 70, from: -150 };
+// The backfill: how far behind the socket it lies, in the core's radii, so what shows between the masses is a recess
+// the ball barely reaches. Under the roof it goes far back (high, from so far up), so what shows between the roof
+// and the plates is black.
+const BACKFILL = { gap: 0.8, deep: 14, over: 60, high: 70, from: -150 };
+// A layer's step: its riser is this share of the layer across, within these units, and a step is this many units
+// deep at least and at most. How far a layer's edge wanders, broad and fine, and how far it is chipped, in units.
+const LAYER = { riser: 0.3, riserIn: [1.6, 4], drop: [2.5, 10], wander: [6, 2], chip: 0.7, bend: 0.0022, flat: [0.25, 0.3] };
 
 const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -97,21 +99,30 @@ function prepare(m) {
   let cx = 0, cy = 0;
   for (const [x, y] of poly) { cx += x; cy += y; }
   cx /= poly.length; cy /= poly.length;
-  let z = m.z;
-  if (m.S) {
-    let lo = C[2] - m.S - 40, hi = C[2];
-    for (let k = 0; k < 40; k++) { const mid = (lo + hi) / 2, d = Math.hypot(...sub(L.fromPicture(cx, cy, mid), C)); if (d > m.S) lo = mid; else hi = mid; }
-    z = (lo + hi) / 2;
+  let z = m.z, c, n;
+  if (z === undefined) {
+    // On the socket: its depth where the outline's middle is seen, and its face along the socket there.
+    z = C[2];
+    for (let k = 0; k < 6; k++) { const p = L.fromPicture(cx, cy, z); z = C[2] + R * (socket(Math.hypot(p[0] - C[0], p[1] - C[1]) / R) + (m.dz ?? 0)); }
+    c = L.fromPicture(cx, cy, z);
+    const rho = Math.hypot(c[0] - C[0], c[1] - C[1]) / R, out = [(c[0] - C[0]) / (rho * R || 1), (c[1] - C[1]) / (rho * R || 1), 0];
+    const slope = (socket(rho + 0.02) - socket(rho - 0.02)) / 0.04;
+    n = norm([-slope * out[0], -slope * out[1], 1]);
+    // Turned from the ball (toward the outside) and up, each by its own degrees.
+    const turnTo = (v, deg) => { const t = norm(sub(v, n.map((q) => q * dot3(v, n)))), a = (deg * Math.PI) / 180; n = norm(n.map((q, i) => q * Math.cos(a) + t[i] * Math.sin(a))); };
+    const [tOut, tUp] = m.turn ?? [0, 0];
+    if (tOut) turnTo(out, tOut);
+    if (tUp) turnTo([0, 1, 0], tUp);
+  } else {
+    c = L.fromPicture(cx, cy, z);
+    const toBall = norm(sub(C, c)), a = m.aim;
+    n = norm([toBall[0] * a.ball + VIEW[0] * a.view, toBall[1] * a.ball + VIEW[1] * a.view + (a.up ?? 0), toBall[2] * a.ball + VIEW[2] * a.view]);
   }
-  const c = L.fromPicture(cx, cy, z), toBall = norm(sub(C, c)), a = m.aim;
-  // Inward: turned toward the line through the core along the line of sight, so a plate's outer edge stands proud.
-  const radial = norm([c[0] - C[0], c[1] - C[1], 0]), inward = a.inward ?? 0;
-  let n = norm([toBall[0] * a.ball + VIEW[0] * a.view - radial[0] * inward, toBall[1] * a.ball + VIEW[1] * a.view + (a.up ?? 0) - radial[1] * inward, toBall[2] * a.ball + VIEW[2] * a.view]);
   let e1 = cross([0, 1, 0], n);
   e1 = Math.hypot(...e1) < 0.2 ? norm(cross(n, [0, 0, 1])) : norm(e1);
   let e2 = cross(n, e1);
-  // Each mass turned a little its own way, so no two faces take the ball's light alike.
-  const vary = TURN * (m.S ? 1 : 0.4), [t1, t2] = m.turn ?? [(r() - 0.5) * 2 * vary, (r() - 0.5) * 2 * vary];
+  // A mass placed by hand is turned a little its own way, so no two faces take the ball's light alike.
+  const vary = TURN * 0.4, [t1, t2] = m.z !== undefined ? m.turn ?? [(r() - 0.5) * 2 * vary, (r() - 0.5) * 2 * vary] : [0, 0];
   n = norm([n[0] + e1[0] * t1 + e2[0] * t2, n[1] + e1[1] * t1 + e2[1] * t2, n[2] + e1[2] * t1 + e2[2] * t2]);
   e1 = cross([0, 1, 0], n);
   e1 = Math.hypot(...e1) < 0.2 ? norm(cross(n, [0, 0, 1])) : norm(e1);
@@ -132,7 +143,9 @@ function prepare(m) {
     const o = [c[0] + q[0] * off, c[1] + q[1] * off, c[2] + q[2] * off];
     const len = hi - lo, kind = r();
     let s0 = lo - 20, s1 = hi + 20;
-    if (kind < 0.45) { if (r() < 0.5) s1 = lo + len * (0.4 + 0.45 * r()); else s0 = hi - len * (0.4 + 0.45 * r()); }
+    // The second family is only short breaks, part way across, which stop where they meet the first.
+    if (k % 2 === 1) { s0 = lo + len * (0.15 + 0.35 * r()); s1 = s0 + len * (0.15 + 0.2 * r()); }
+    else if (kind < 0.45) { if (r() < 0.5) s1 = lo + len * (0.4 + 0.45 * r()); else s0 = hi - len * (0.4 + 0.45 * r()); }
     else if (kind < 0.62) { s0 = lo + len * 0.15 * r(); s1 = s0 + len * (0.35 + 0.4 * r()); }
     cracks.push({ o, d, q, s0, s1, hw: 0.8 + 0.8 * r(), deep: 1.8 + 1.6 * r(), step: r() < 0.35 ? (2 + 4.5 * r()) * (r() < 0.5 ? 1 : -1) : 0, wander: 2.4 + 2.6 * r(), over: 12 + 12 * r(), seed: m.seed * 31 + k });
   }
@@ -151,11 +164,29 @@ function prepare(m) {
     const Nb = norm([flatOut[0] + n[0] * tilt + e1[0] * (r() - 0.5) * 0.6, flatOut[1] + n[1] * tilt + e2[1] * (r() - 0.5) * 0.6, flatOut[2] + n[2] * tilt]);
     breaks.push({ n: Nb, at: [K[0] - flatOut[0] * deep, K[1] - flatOut[1] * deep, K[2] - flatOut[2] * deep] });
   }
-  return { ...m, c, n, e1, e2, flat, cracks, breaks, reach: far + m.thick + 60, top: m.top ? { at: m.top.at, n: norm(m.top.n) } : null };
+  // The layers: their run across the face, square to the way toward the ball (or `toward`) turned by `bed`, and where
+  // each begins along the way toward the ball, with how deep its step is.
+  let layers = null;
+  if (m.layers) {
+    const Ly = m.layers, want = Ly.toward ?? sub(C, c), tb = norm(sub(want, n.map((q) => q * dot3(want, n)))), a = ((Ly.bed ?? 0) * Math.PI) / 180, side = cross(n, tb);
+    const lu = norm(tb.map((q, i) => q * Math.cos(a) + side[i] * Math.sin(a))), lv = cross(n, lu), reach = far + m.thick + 80, at = [], drop = [], wide = [];
+    // Widths spread over the whole range by ratio, so no run of layers is even.
+    const rIn = Ly.riser ?? LAYER.riserIn;
+    for (let u = -reach - 30 * r(); u < reach + 40;) {
+      const P = Ly.every[0] * (Ly.every[1] / Ly.every[0]) ** r(), w = Math.min(rIn[1], Math.max(rIn[0], LAYER.riser * P));
+      // A layer in four lies nearly in the face, so a broad face shows between the steps.
+      const tilt = ((Ly.tilt[0] + (Ly.tilt[1] - Ly.tilt[0]) * r()) * (r() < LAYER.flat[0] ? LAYER.flat[1] : 1) * Math.PI) / 180;
+      at.push(u); drop.push(Math.min(LAYER.drop[1], Math.max(LAYER.drop[0], (P - w) * Math.tan(tilt)))); wide.push(w);
+      u += P;
+    }
+    at.push(reach + 80); drop.push(0); wide.push(2);
+    layers = { lu, lv, at: new Float64Array(at), drop: new Float64Array(drop), wide: new Float64Array(wide), pinch: Ly.pinch ?? 0.3, bend: LAYER.bend * (r() - 0.5) * 2 };
+  }
+  return { ...m, c, n, e1, e2, flat, cracks, breaks, layers, reach: far + m.thick + 60, top: m.top ? { at: m.top.at, n: norm(m.top.n) } : null };
 }
 
 export function setup(args = {}) {
-  M = [...MASSES, FLOOR].map(prepare);
+  M = [...MASSES, ...FLOOR].map(prepare);
   // The planes round the core: directions spread evenly over a sphere and jittered, each at its own distance.
   const rc = rng(4111);
   CUTS = [];
@@ -189,7 +220,7 @@ export function setup(args = {}) {
 // falls on each a little differently: cells of a jittered grid on the face, FACET.size units apart, each tilted up
 // to FACET.tilt and set out or back by up to FACET.step, eased into the next over FACET.ease units. Gives how far the
 // surface stands out of the face's plane at (u, v), across and up the face.
-const FACET = { size: 34, tilt: 0.13, step: 1.6, ease: 1.4, jitter: 0.85 };
+const FACET = { size: 34, tilt: 0.13, step: 1.6, ease: 1.4, jitter: 0.85, share: 0.6 };
 const cellHash = (i, j, s, k) => { const h = Math.sin(i * 127.1 + j * 311.7 + s * 74.7 + k * 19.3) * 43758.5453; return h - Math.floor(h); };
 function facets(m, u, v) {
   const F = m.facet ?? FACET.size, i0 = Math.floor(u / F), j0 = Math.floor(v / F);
@@ -204,6 +235,24 @@ function facets(m, u, v) {
   return H(a) * (1 - t) + H(b) * t;
 }
 
+// How far a mass's layers stand out of its face at a place (a share of the step under 0), and how fast that changes
+// across the layers: each layer's face rises from its step's foot to its lip, and the lip drops to the next.
+function layered(m, dx, dy, dz) {
+  const Ly = m.layers, u0 = dx * Ly.lu[0] + dy * Ly.lu[1] + dz * Ly.lu[2], v = dx * Ly.lv[0] + dy * Ly.lv[1] + dz * Ly.lv[2];
+  // The layers fan a little: each mass's run bends its own way along their length.
+  const u = u0 + Ly.bend * v * v + LAYER.wander[0] * N(u0 / 40, v / 28, 0.5, m.seed + 80) + LAYER.wander[1] * N(u0 / 12, v / 9, 1.5, m.seed + 81) + LAYER.chip * N(u0 / 3, v / 3, 2.5, m.seed + 82);
+  const at = Ly.at;
+  let lo = 0, hi = at.length - 1;
+  if (u < at[0] || u >= at[hi]) return [0, 0];
+  while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (at[mid] <= u) lo = mid; else hi = mid; }
+  const k = lo, P = at[k + 1] - at[k], t = u - at[k], w = Math.min(Ly.wide[k], P * 0.45);
+  // A step dies out along its length here and there: the two layers either side of it become one.
+  const there = (j) => Ly.drop[j] * smooth(Ly.pinch - 0.12, Ly.pinch + 0.12, L.noise(v / 46, j * 1.37, 0.5, m.seed + 83));
+  const H0 = there(k), H1 = there(k + 1);
+  if (t < P - w) return [-H0 + (H0 * t) / (P - w), H0 / (P - w)];
+  return [(-H1 * (t - (P - w))) / w, -H1 / w];
+}
+
 // One mass, with the projection of the place in the picture handed in for its outline when the mass is cut along
 // the line of sight (the floor).
 function mass(m, x, y, z, px, py) {
@@ -211,7 +260,8 @@ function mass(m, x, y, z, px, py) {
   if (far > 0) return far + 2;
   const h = dx * m.n[0] + dy * m.n[1] + dz * m.n[2];
   const rel = RELIEF.deep * N(x / RELIEF.over, y / RELIEF.over, z / RELIEF.over, m.seed) + RELIEF.fine * N(x / RELIEF.fineOver, y / RELIEF.fineOver, z / RELIEF.fineOver, m.seed + 1);
-  let face = h + rel - facets(m, dx * m.e1[0] + dy * m.e1[1] + dz * m.e1[2], dx * m.e2[0] + dy * m.e2[1] + dz * m.e2[2]);
+  let face = h + rel - FACET.share * facets(m, dx * m.e1[0] + dy * m.e1[1] + dz * m.e1[2], dx * m.e2[0] + dy * m.e2[1] + dz * m.e2[2]);
+  if (m.layers && face > -16 && face < 16) { const [s, ds] = layered(m, dx, dy, dz); face = (face - s) / Math.sqrt(1 + ds * ds); }
   // The outline, on the face: the place carried square onto the face's plane, as the picture shows it.
   let qx = px, qy = py;
   if (!m.view) [qx, qy] = L.pictured(x - m.n[0] * h, y - m.n[1] * h, z - m.n[2] * h);
@@ -273,7 +323,7 @@ function roof(x, y, z, px, py) {
       cell = Math.max(cell, ((x - c.at[0]) * ex + (down - c.at[1]) * ey) / l - l / 2);
     }
     if (cell > 20 || dc > 200) continue;
-    const zf = zl - ROOF.inset + c.step - (ROOF.lean + c.lean) * Math.max(0, down) + c.twist * (x - c.at[0]) + 1.6 * N(x / 17, y / 17, 5.5, 54) + 1.4 * facets(ROOFFACETS, x, y);
+    const zf = zl - ROOF.inset + c.step - (ROOF.lean + c.lean) * Math.max(0, down) + (c.twist + ROOF.away[0] * smooth(ROOF.away[1], ROOF.away[2], -x)) * (x - c.at[0]) + 1.6 * N(x / 17, y / 17, 5.5, 54) + 1.4 * facets(ROOFFACETS, x, y);
     d = Math.min(d, Math.max((z - zf) * 0.88, cell + ROOF.joint));
   }
   return Math.max(d, under);
@@ -284,7 +334,7 @@ function roof(x, y, z, px, py) {
 const BACKFACETS = { seed: 63, facet: 46 }, ROOFFACETS = { seed: 57, facet: 30 };
 function backfill(x, y, z) {
   const rho = Math.hypot(x - C[0], y - C[1]);
-  const zb = BACKFILL.at + BACKFILL.out * rho - BACKFILL.high * smooth(BACKFILL.from, BACKFILL.from + 70, y) + BACKFILL.deep * N(x / BACKFILL.over, y / BACKFILL.over, 2.9, 61) + 2.5 * N(x / 13, y / 13, 4.1, 62) + 2.2 * facets(BACKFACETS, x, y);
+  const zb = C[2] + R * (socket(rho / R) - BACKFILL.gap) - BACKFILL.high * smooth(BACKFILL.from, BACKFILL.from + 70, y) + BACKFILL.deep * N(x / BACKFILL.over, y / BACKFILL.over, 2.9, 61) + 2.5 * N(x / 13, y / 13, 4.1, 62) + 2.2 * facets(BACKFACETS, x, y);
   return (z - zb) * 0.85;
 }
 

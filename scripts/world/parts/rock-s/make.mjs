@@ -3,6 +3,7 @@
 //
 //   node scripts/world/parts/rock-s/make.mjs            the shipped file
 //   node scripts/world/parts/rock-s/make.mjs --draft    fast and rough
+//   --cell <units>                                     the grid the field is read on (draft 2.6, shipped 1.3)
 //
 // The steps: rubble is laid on what faces up and is seen; the field is turned into a mesh that keeps its sharp
 // edges; what the visitor can never see is reduced hard and the rest to the budget; the mesh is split at its
@@ -24,10 +25,10 @@ const draft = process.argv.includes('--draft');
 const t0 = performance.now(), said = (s) => console.log(`${((performance.now() - t0) / 1000).toFixed(1)} s · ${s}`);
 // The grid the field is read on, in units; the most the reduced mesh may stray where it is seen and where it is not;
 // the most triangles; faces meeting at more than CREASE degrees meet at a crease.
-const CELL = draft ? 2.6 : 1.3, KEEP = draft ? 0.6 : 0.4, UNSEEN = 8, BUDGET = draft ? 160000 : 330000, CREASE = 36;
+const cellAt = process.argv.indexOf('--cell'), CELL = cellAt > 0 ? Number(process.argv[cellAt + 1]) : draft ? 2.6 : 1.3, KEEP = draft ? 0.6 : 0.4, UNSEEN = 8, BUDGET = draft ? 160000 : 330000, CREASE = 36;
 // The rubble: how many places are tried, the most stones, their least and most size (units), how far up a face must
 // look for one to lie there, and how far it is sunk into it.
-const RUBBLE = { tries: 14000, most: 55, size: [1.8, 5], up: 0.75, sunk: 0.5, clear: 175 };
+const RUBBLE = { tries: 20000, most: 110, size: [1.2, 5.5], up: 0.72, sunk: 0.5, clear: 150 };
 
 const module = fileURLToPath(new URL('./field.mjs', import.meta.url));
 const hash = (a, b) => { const h = Math.sin(a * 127.1 + b * 311.7) * 43758.5453; return h - Math.floor(h); };
@@ -121,5 +122,5 @@ for (let i = 0; i < n; i++) {
   lightOf.set([l.core[i], l.moon[i], l.open[i], 0], i * 4);
   bounceOf.set([storeBounce(l.bounce[i * 3]), storeBounce(l.bounce[i * 3 + 1]), storeBounce(l.bounce[i * 3 + 2]), 0], i * 4);
 }
-pack('public/world/rock-s.bin', [{ name: 'break', positions: brk.positions, indices: brk.indices, attributes: { normal: { data: brk.normals, size: 3, as: 'i16' }, light: { data: lightOf, size: 4, as: 'u8' }, bounce: { data: bounceOf, size: 4, as: 'u8' } } }], { draft, sculpt: 's', round: 1, stones: stones.length, spare: 'none' });
+pack('public/world/rock-s.bin', [{ name: 'break', positions: brk.positions, indices: brk.indices, attributes: { normal: { data: brk.normals, size: 3, as: 'i16' }, light: { data: lightOf, size: 4, as: 'u8' }, bounce: { data: bounceOf, size: 4, as: 'u8' } } }], { draft, sculpt: 's', round: 2, stones: stones.length, spare: 'none' });
 said('done');
