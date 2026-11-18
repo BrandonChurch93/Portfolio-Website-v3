@@ -29,6 +29,9 @@ const nextConfig: NextConfig = {
           { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()' },
+          // Everything the site runs is its own. The form posts to FormSubmit, pictures may be made in the page,
+          // and Next writes small scripts and styles into the page itself.
+          { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; font-src 'self' data:; connect-src 'self' https://formsubmit.co; worker-src 'self' blob:; frame-ancestors 'self'; base-uri 'self'; form-action 'self' https://formsubmit.co" },
         ],
       },
       {

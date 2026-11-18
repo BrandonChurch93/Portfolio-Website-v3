@@ -22,6 +22,8 @@ import { LIGHTMAP } from './rock/light-map';
 // 'mass' (sculpt S), light.w and bounce.w hold a tone of each mass's own, which the quiet stone reads. When it says
 // 'bed' (sculpt S, round 4), they hold each vertex's bedding, which the quiet stone lays its laminae along and works
 // each mass's tone out from, and the light takes picture 9's hue (./rock/curve.ts; ?curve=0 leaves it as it is).
+// The sculpt the world wears: S, the solid one (BRIEF.md, Settled, Hero, Nov 18). ?rock=r is the one before it.
+const ROCK = 's';
 const DARK = 0x16110d, CLAY = 0x96897b;
 
 function lightMap(): Promise<THREE.Texture | null> {
@@ -76,7 +78,7 @@ function nearStream(l: Loaded): THREE.BufferGeometry | null {
 }
 
 export const build: PartFactory = async ({ query, renderer }) => {
-  const group = new THREE.Group(), which = query.get('rock') ?? 'r', made: { dispose(): void }[] = [], near: THREE.Mesh[] = [];
+  const group = new THREE.Group(), which = query.get('rock') ?? ROCK, made: { dispose(): void }[] = [], near: THREE.Mesh[] = [];
   const plain = query.get('stone') === '0';
   const add = (g: THREE.BufferGeometry, m: THREE.Material): void => { made.push(g, m); };
   let release = (): void => {};
