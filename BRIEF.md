@@ -1399,6 +1399,10 @@ For Claude Code, added to the work it has in hand. His words are in the list abo
     - Fable's call, his to overturn: the six small streams that left the torn face go with the world, since they would hang from nothing. The main stream stays and still runs into Work, setting off from where the core's underside was.
     - One switch brings it all back: `WORLD.shown` in `src/hero/board.ts`. The new world goes in that place.
 
+- **The rock round the core is to be as good as picture 9's. His ask (Nov 17, 23:11), with a screenshot of the live hero and picture 9 beside it, the broken rock round the core circled roughly in red ("don't take it too literal").** "I want to take a look at the planet around the core, the broken part. If you compare it to the Gemini image, you'll notice that theirs looks super more detailed than ours, and it's because of where their cracks are and how the lighting interacts with it. We should do the same workflow we did earlier, where we have critics review and make sure that we're making something that looks just as good as the image."
+    - **In exact terms:** the torn rock of the hollow (`rock` in `src/pieces/world/`), from the roof under the land down to the floor under the ball and out to the skin each side. Today it is thin flakes, pale near the ball, with flat black masses beside them. Picture 9's is great blocks with clean broken faces, each with a face lit by the core and a side in shadow, divided by cracks that follow the rock's own joints. The bar is his: as good as the picture.
+    - **How:** rounds as before. An Opus builder from a brief, two fresh Opus reviewers, Fable judging beside picture 9 and writing the next brief. He is shown it when it is at the bar or when Fable can say plainly where it falls short.
+
 ### Work
 
 - One section. A centered title. No featured card.
@@ -2660,6 +2664,11 @@ Each line has Fable's recommendation where there is one. None of these are rules
         - **Rebuilt, as Fable's answer for him to judge. Not ruled.** Two columns only on a wide screen or a short sideways one (1100 px, or 960 px wide and under 820 px tall). There the viewer with its links stands at the left, and at the right the name and, filling the rest of the column, the four figures as a ruled list whose rows share the height: no gap is left open, and the foot of the links and the list's last rule are on one line, measured at 1024, 1100, 1133, 1180, 1280, 1440, 1488, 1812 and 1920 px. On one column: the name, the picture as wide as the column, its caption, the thumbnails, the links, the figures four in a row (two on a phone). On an upright iPad the thumbnails and the links share one row. Everything under the first screen starts on the page's own left edge on one column. Also mended: the two pictures of the way on stood 19 px wider than their column, the numbers of How it works now stand in a column of their own, the names in Built with start on one edge, and the footer is as wide as the page.
         - **A rule Fable holds itself to from this:** a page is judged in WebKit stills at a phone, an upright iPad, a sideways iPad, a desktop and his zoomed view before he is shown it, and `QUALITY.md` is read again after every compaction, as `CLAUDE.md` already says.
     - **`PLAN.md` gave this page to Opus from a handoff (Phase 7).** His word of Nov 17 makes it a piece Fable designs with him. Fable's recommendation was put to him the same hour, in the chat: `LOG.md`, top entry.
+
+34. **The navigation (Nov 17, 23:11). His design, to be built.** "The navigation system still hasn't been built yet. I'm thinking a simple navigation that has my name in the top left-hand corner. To the right we have our all work link, and if you were on the all work page, I think that should turn to the home link, unless you push against it. We could add a download résumé button, but I don't think it's really needed. They can do that on the hero. Plus most people here will already have access to my résumé."
+    - **In exact terms:** one bar on every page. His name at the top left, which goes to the home page. At the right one link: All work, and on the page of all his work it reads Home. No résumé button.
+    - **This replaces what was drawn for Open 17** (a slim bar hidden during the hero, with the four sections or the categories in it), which was never ruled.
+    - **Fable's answers to what he left open** are under this item once built, each marked as Fable's.
 
 ## Dropped
 
