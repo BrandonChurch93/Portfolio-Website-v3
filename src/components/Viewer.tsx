@@ -23,7 +23,13 @@ export function Viewer({ shots, aspect, rail = 'side', label, under }: { shots: 
   const [large, setLarge] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const now = shots[at], n = shots.length;
-  const step = (by: number) => setAt((i) => (i + by + n) % n);
+  const list = useRef<HTMLUListElement>(null);
+  // An arrow key moves to the next one, and takes the keyboard's focus with it when the focus was on a thumbnail.
+  const step = (by: number) => {
+    const to = (at + by + n) % n, on = list.current?.contains(document.activeElement);
+    setAt(to);
+    if (on) list.current?.querySelectorAll('button')[to]?.focus();
+  };
   const keys = (e: KeyboardEvent) => {
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); step(1); }
     if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); step(-1); }
@@ -40,16 +46,6 @@ export function Viewer({ shots, aspect, rail = 'side', label, under }: { shots: 
   const play = <span className={styles.play} aria-hidden="true" />;
   return (
     <div className={styles.viewer} data-rail={rail} role="group" aria-label={label} style={{ '--few': rows(n, FEW), '--many': rows(n, MANY) } as CSSProperties}>
-      <ul className={styles.thumbs} onKeyDown={keys}>
-        {shots.map((s, i) => (
-          <li key={`${s.src}-${i}`}>
-            <button type="button" className={styles.thumb} aria-pressed={i === at} aria-label={`${s.slot === 'video' ? words.video : words.picture} ${i + 1}: ${s.caption}`} onClick={() => setAt(i)}>
-              <img src={s.src} alt="" decoding="async" />
-              {s.slot === 'video' && play}
-            </button>
-          </li>
-        ))}
-      </ul>
       <div className={styles.stage}>
         <Framed aspect={aspect}>
           <div className={styles.window}>
@@ -69,9 +65,19 @@ export function Viewer({ shots, aspect, rail = 'side', label, under }: { shots: 
         {now.standIn && pill}
         <span>{now.caption}</span>
       </p>
+      <ul ref={list} className={styles.thumbs} onKeyDown={keys}>
+        {shots.map((s, i) => (
+          <li key={`${s.src}-${i}`}>
+            <button type="button" className={styles.thumb} aria-pressed={i === at} aria-label={`${s.slot === 'video' ? words.video : words.picture} ${i + 1}: ${s.caption}`} onClick={() => setAt(i)}>
+              <img src={s.src} alt="" decoding="async" />
+              {s.slot === 'video' && play}
+            </button>
+          </li>
+        ))}
+      </ul>
       {under && <div className={styles.under}>{under}</div>}
 
-      <dialog ref={dialog} className={styles.large} onClose={() => setLarge(false)} onClick={(e) => { if (e.target === dialog.current) setLarge(false); }} onKeyDown={keys}>
+      <dialog ref={dialog} className={styles.large} aria-label={label} onClose={() => setLarge(false)} onClick={(e) => { if (e.target === dialog.current) setLarge(false); }} onKeyDown={keys}>
         {large && (
           <>
             <img src={now.src} alt={now.alt} />

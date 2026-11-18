@@ -228,8 +228,11 @@
   text-align: center;
 }
 
+/* As wide as the page allows and never taller than the screen has room for: the picture, its caption and its
+   thumbnails are seen together. */
 .wide {
-  --col: min(68rem, 100vw - 2 * var(--gut));
+  --col: min(68rem, 100vw - 2 * var(--gut), (100vh - 19.5rem) * var(--shape, 1.5));
+  --col: min(68rem, 100vw - 2 * var(--gut), max(20rem, (100svh - 19.5rem) * var(--shape, 1.5)));
   margin-top: clamp(1.5rem, 3vw, 2.5rem);
 }
 

@@ -8,6 +8,15 @@
   text-align: center;
 }
 
+/* Between the navigation and the foot: a soft pool of the page's warm dark behind the words, so they do not stand
+   on bare black, and room left for the foot to show at the screen's own foot. */
+.inside {
+  min-height: 72vh;
+  min-height: 72svh;
+  padding-top: calc(var(--nav) + var(--space-8));
+  background: radial-gradient(ellipse 60% 55% at 50% 46%, color-mix(in srgb, var(--ember-deep) 85%, transparent), transparent 72%);
+}
+
 .label {
   font-family: var(--font-mono);
   font-size: var(--step--1);

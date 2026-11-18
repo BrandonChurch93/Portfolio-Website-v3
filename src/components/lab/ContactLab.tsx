@@ -148,16 +148,16 @@ export function ContactLab({ hub }: { hub?: Hub }) {
                   <div className={styles.pair}>
                     <label className={styles.field}>
                       {cap('name')}
-                      <input name="name" type="text" required autoComplete="name" aria-invalid={wrong.name || undefined} />
+                      <input name="name" type="text" required maxLength={100} autoComplete="name" aria-invalid={wrong.name || undefined} />
                     </label>
                     <label className={styles.field}>
                       {cap('email')}
-                      <input name="email" type="email" required autoComplete="email" aria-invalid={wrong.email || undefined} />
+                      <input name="email" type="email" required maxLength={254} autoComplete="email" aria-invalid={wrong.email || undefined} />
                     </label>
                   </div>
                   <label className={`${styles.field} ${styles.message}`}>
                     {cap('message')}
-                    <textarea name="message" required rows={4} aria-invalid={wrong.message || undefined} />
+                    <textarea name="message" required rows={4} maxLength={5000} aria-invalid={wrong.message || undefined} />
                   </label>
                   <MetalButton label={state === 'sending' ? F.sending : F.send} variant="accent" submit disabled={state === 'sending'} className={styles.send} />
                   <span className="visually-hidden" role="alert">{state === 'failed' ? F.failed : ''}</span>

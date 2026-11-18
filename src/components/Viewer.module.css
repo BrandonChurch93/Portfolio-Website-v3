@@ -28,7 +28,8 @@
 }
 
 /* A page whose pictures are its content is centered on them. */
-.viewer[data-rail='under'] .thumbs {
+.viewer[data-rail='under'] .thumbs,
+.viewer[data-rail='under'] .caption {
   justify-content: center;
 }
 

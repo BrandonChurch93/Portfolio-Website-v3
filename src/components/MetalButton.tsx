@@ -42,7 +42,8 @@ export function MetalButton({ label, variant = 'primary', href, download, onClic
       {label}
     </Plate>
   );
-  if (!href) return <button type={submit ? 'submit' : 'button'} disabled={disabled} onClick={onClick} {...shared}>{face}</button>;
+  // Busy, it says so and does nothing, and keeps the focus: disabled, a button drops the keyboard's focus to the page.
+  if (!href) return <button type={submit ? 'submit' : 'button'} aria-disabled={disabled || undefined} onClick={disabled ? (e) => e.preventDefault() : onClick} {...shared}>{face}</button>;
   if (/^https?:/.test(href)) {
     return (
       <a href={href} target="_blank" rel="noopener noreferrer" {...shared}>

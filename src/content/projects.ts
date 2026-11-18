@@ -369,7 +369,7 @@ export const projects: ProjectPage[] = [
     kind: 'gallery',
     slug: 'photo-stand-in-1',
     sub: 'A stand in for a shoot',
-    aspect: 3 / 2,
+    aspect: 2,
     note: [],
     shots: [1, 2, 3, 4, 5, 6, 7, 8].map((n) => still('photo', n, `Picture ${n} of the shoot, with a line about it.`)),
   },
@@ -377,7 +377,7 @@ export const projects: ProjectPage[] = [
     kind: 'gallery',
     slug: 'art-stand-in-1',
     sub: 'A stand in for a 3D piece',
-    aspect: 16 / 10,
+    aspect: 2,
     note: [],
     built: { items: ['Blender', 'Nomad Sculpt'], standIn: true },
     shots: [
@@ -394,5 +394,7 @@ export function projectOf(slug: string): { page: ProjectPage; item: WorkItem; pr
   const page = projects.find((p) => p.slug === slug);
   const among = catalog.find((c) => c.items.some((i) => i.slug === slug))?.items ?? [], at = among.findIndex((i) => i.slug === slug);
   if (!page || at < 0) return null;
-  return { page, item: among[at], prev: among[at - 1] ?? null, next: among[at + 1] ?? null };
+  // The way on goes round, so a category of three or more always has a project before and one after.
+  const round = among.length > 2, n = among.length;
+  return { page, item: among[at], prev: among[at - 1] ?? (round ? among[n - 1] : null), next: among[at + 1] ?? (round ? among[0] : null) };
 }

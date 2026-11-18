@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Look, Quiet } from '../atmosphere/atmosphere';
 import { useRoom } from '../atmosphere/useRoom';
 import type { GalleryPage, ProjectPage, StudyPage } from '../content/projects';
@@ -160,7 +160,7 @@ function Gallery({ page, item, prev, next }: Found & { page: GalleryPage }) {
         <h1 className={styles.title}>{item.name}</h1>
         <p className={styles.sub}>{page.sub}</p>
       </header>
-      <div className={styles.wide}>
+      <div className={styles.wide} style={{ '--shape': page.aspect } as CSSProperties}>
         <Viewer shots={page.shots} aspect={page.aspect} rail="under" label={`${item.name}, pictures`} />
       </div>
       <Words id="note" name={words.parts.note} text={page.note} blank={words.note} />

@@ -40,7 +40,7 @@
 /* What it holds sits inside the plate's bead, as a card's picture does. */
 .window {
   position: absolute;
-  inset: 2.1cqw;
+  inset: var(--inset);
   overflow: hidden;
   border-radius: 1cqw;
   background: var(--bg-2);
