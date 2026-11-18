@@ -361,15 +361,9 @@
   text-align: right;
 }
 
+/* A card's own frame round the picture, and a card's own turn under the pointer (Framed.tsx). */
 .wayPicture {
-  display: block;
-  aspect-ratio: 16 / 10;
-  margin-bottom: var(--space-2);
-  overflow: hidden;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-2);
-  background: var(--bg-2);
-  transition: border-color var(--dur-1) var(--ease-settle), translate var(--dur-2) var(--ease-settle);
+  margin-bottom: var(--space-3);
 }
 
 .wayPicture img {
@@ -377,11 +371,6 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-}
-
-.way:hover .wayPicture {
-  border-color: var(--copper-light);
-  translate: 0 -3px;
 }
 
 .wayLabel {

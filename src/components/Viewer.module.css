@@ -100,25 +100,10 @@
   margin: 0;
 }
 
-.frame {
-  position: relative;
-  container-type: inline-size;
-}
-
-.metal {
-  position: absolute;
-  inset: 0;
-}
-
-/* The picture sits inside the plate's bead, as a card's picture does, and is never cropped: a screenshot is shown
-   whole. */
+/* The picture fills its frame (Framed.tsx) and is never cropped: a screenshot is shown whole. */
 .window {
-  position: absolute;
-  inset: 2.1cqw;
-  overflow: hidden;
-  border-radius: 1cqw;
-  background: var(--bg-2);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bg) 70%, transparent);
+  width: 100%;
+  height: 100%;
 }
 
 .open {

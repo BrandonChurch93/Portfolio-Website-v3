@@ -24,7 +24,7 @@ export const allWork = {
 // A project's own page: the names of its parts and its ways out. Stand ins, his to rewrite.
 export const projectPage = {
   back: 'All work',
-  parts: { why: 'Why I built this', what: 'What is this', how: 'Key decisions', built: 'Built with', note: 'About it' },
+  parts: { why: 'Why I built this', what: 'What is this', how: 'How it works', built: 'Built with', note: 'About it' },
   standIn: 'Stand in',
   why: 'Not written yet. This is where the reason goes: what was missing, who it was for, and what his part in it was.',
   note: 'Not written yet. This is where his words go: what this was, what he was after, and the one thing in it worth a closer look.',

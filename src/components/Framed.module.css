@@ -1,0 +1,47 @@
+/* The frame stays where it is and what is in it turns, as a project card does (WorkCard.module.css): the plate
+   renderer eases the turn and writes it here, in step with the light on the metal. */
+.area {
+  position: relative;
+  container-type: inline-size;
+  perspective: 1100px;
+}
+
+.turn {
+  position: absolute;
+  inset: 0;
+  transform: rotateX(var(--turn-x, 0deg)) rotateY(var(--turn-y, 0deg));
+  transition: scale var(--dur-1) var(--ease-settle);
+  will-change: transform;
+}
+
+@media (hover: hover) {
+  .area[data-awake='true'] .turn {
+    scale: calc(1 + var(--grow));
+    transition: scale 0.32s cubic-bezier(0.3, 1.45, 0.5, 1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turn {
+    transition: none;
+  }
+}
+
+.metal {
+  position: absolute;
+  inset: 0;
+}
+
+.metal [data-plate-shadow] {
+  display: none;
+}
+
+/* What it holds sits inside the plate's bead, as a card's picture does. */
+.window {
+  position: absolute;
+  inset: 2.1cqw;
+  overflow: hidden;
+  border-radius: 1cqw;
+  background: var(--bg-2);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bg) 70%, transparent);
+}

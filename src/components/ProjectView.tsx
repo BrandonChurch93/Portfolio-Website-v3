@@ -7,6 +7,7 @@ import { useRoom } from '../atmosphere/useRoom';
 import type { GalleryPage, ProjectPage, StudyPage } from '../content/projects';
 import { projectPage as words } from '../content/site-pages';
 import { ALL_WORK, type WorkItem } from '../content/work';
+import { Framed } from './Framed';
 import { MetalButton } from './MetalButton';
 import { SiteFoot } from './SiteFoot';
 import { Viewer } from './Viewer';
@@ -58,7 +59,7 @@ const reach = (to: WorkItem) => (to.page.startsWith('/') || to.page.startsWith('
 function Ways({ prev, next }: { prev: WorkItem | null; next: WorkItem | null }) {
   const way = (to: WorkItem | null, label: string, side: 'prev' | 'next') => to && (
     <a href={reach(to)} className={styles.way} data-side={side}>
-      <span className={styles.wayPicture} data-stands=""><img src={to.picture.src} alt="" decoding="async" /></span>
+      <Framed aspect={16 / 10} className={styles.wayPicture}><img src={to.picture.src} alt="" decoding="async" /></Framed>
       <span className={styles.wayLabel}>{side === 'prev' ? '← ' : ''}{label}{side === 'next' ? ' →' : ''}</span>
       <span className={styles.wayName}>{to.name}</span>
     </a>

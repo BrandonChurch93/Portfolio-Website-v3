@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import type { Shot } from '../content/projects';
 import { projectPage as words } from '../content/site-pages';
-import { Plate } from './Plate';
+import { Framed } from './Framed';
 import styles from './Viewer.module.css';
 
 // The pictures and the video of a project, together and up front (BRIEF.md, Open 33): one large thing on a lit
@@ -44,8 +44,7 @@ export function Viewer({ shots, aspect, rail = 'side', label, under }: { shots: 
         ))}
       </ul>
       <figure className={styles.stage}>
-        <div className={styles.frame} style={{ aspectRatio: String(aspect) }} data-stands="">
-          <Plate finish="card" kind="card" card={{ aspect, edge: 'deep', plain: true }} tilt={false} className={styles.metal} />
+        <Framed aspect={aspect}>
           <div className={styles.window}>
             {now.slot === 'video' && now.video
               ? <video key={now.video} src={now.video} poster={now.src} controls playsInline preload="metadata" />
@@ -56,7 +55,7 @@ export function Viewer({ shots, aspect, rail = 'side', label, under }: { shots: 
                 </button>
               )}
           </div>
-        </div>
+        </Framed>
         <figcaption className={styles.caption}>
           <span className={styles.count}>{at + 1} / {n}</span>
           {now.standIn && pill}
