@@ -55,7 +55,7 @@ export const software: WorkItem[] = [
       alt: 'The view through the glasses on a city street: a card for the Grace Theater pinned at its storefront, with a label for Trattoria da Lia beside it',
       focus: [0.5, 0.5],
     },
-    page: `${LIVE_SITE}/proactive-ui-for-ai-glasses`,
+    page: `${ALL_WORK}/proactive-ui-for-ai-glasses`,
     links: [
       { label: 'Live', href: 'https://proactive-ui-for-ai-glasses.vercel.app' },
       { label: 'Code', href: `${GITHUB}/Proactive-UI-for-AI-Glasses` },
@@ -93,7 +93,7 @@ export const software: WorkItem[] = [
       focus: [0.67, 0.3],
       zoom: 1.75,
     },
-    page: `${LIVE_SITE}/design-system-extractor`,
+    page: `${ALL_WORK}/design-system-extractor`,
     links: [{ label: 'Code', href: `${GITHUB}/design-system-extractor` }],
   },
   {
@@ -109,7 +109,7 @@ export const software: WorkItem[] = [
       focus: [0.36, 0.6],
       zoom: 1.3,
     },
-    page: `${LIVE_SITE}/generative-ui-github`,
+    page: `${ALL_WORK}/generative-ui-github`,
     links: [
       { label: 'Live', href: 'https://generative-ui-github.vercel.app' },
       { label: 'Evals', href: 'https://generative-ui-github.vercel.app/evals' },
@@ -129,7 +129,7 @@ export const more: WorkItem[] = [
     line: 'My studio\u2019s site, where accessibility and SEO literally fail the build below a 90. Hand-built design system on 194 CSS tokens, no UI framework, 22 routes of MDX content.',
     tags: ['Design System', 'GSAP', 'Security Headers'],
     picture: { src: '/media/work/softworks.webp', alt: 'The home page of the Modern Softworks studio site', focus: [0.5, 0.3] },
-    page: `${LIVE_SITE}/modern-softworks`,
+    page: `${ALL_WORK}/modern-softworks`,
     links: [{ label: 'Live', href: 'https://www.modernsoftworks.com' }],
   },
   {
@@ -140,7 +140,7 @@ export const more: WorkItem[] = [
     line: 'An SVG animation builder with 36 live controls that never lag, because React never re-renders the graphic. Design a layered arc hero, watch a staged fintech site light up with it, and share the whole design as a URL.',
     tags: ['36 Live Controls', 'Shareable State', 'APCA Contrast'],
     picture: { src: '/media/work/hero-builder.webp', alt: 'The builder: a layered arc hero beside its panel of controls', focus: [0.5, 0.4] },
-    page: `${LIVE_SITE}/hero-animation-builder`,
+    page: `${ALL_WORK}/hero-animation-builder`,
     links: [
       { label: 'Live', href: 'https://hero-animation-builder.vercel.app' },
       { label: 'Code', href: `${GITHUB}/HeroAnimationBuilder` },
@@ -154,7 +154,7 @@ export const more: WorkItem[] = [
     line: 'A working tourbillon watch movement built entirely in code. Every gear turns on real tooth counts from a single beat counter, and visitors can wind it, take it apart, and watch it run down.',
     tags: ['Procedural 3D', 'Working Mechanics', 'Spec-Driven AI Build'],
     picture: { src: '/media/work/meridian.webp', alt: 'The Meridian movement: a tourbillon watch movement with its gears and bridges', focus: [0.5, 0.5] },
-    page: `${LIVE_SITE}/meridian`,
+    page: `${ALL_WORK}/meridian`,
     links: [{ label: 'Live', href: 'https://meridian-calibre.vercel.app/' }],
   },
   {
@@ -165,7 +165,7 @@ export const more: WorkItem[] = [
     line: 'Fifteen copy-paste micro-interactions, zero animation libraries. The code you copy is the exact code you just watched run, and accessibility isn\u2019t a checkbox here, it\u2019s three of the fifteen patterns.',
     tags: ['Zero Animation Libs', 'React Aria', 'Reduced Motion'],
     picture: { src: '/media/work/stand-in-art-2.webp', alt: 'A plain picture standing in for the Micro-Interactions Library, which has no screenshot yet' },
-    page: `${LIVE_SITE}/micro-interactions-library`,
+    page: `${ALL_WORK}/micro-interactions-library`,
     links: [
       { label: 'Live', href: 'https://micro-interactions-library.vercel.app/' },
       { label: 'Code', href: `${GITHUB}/micro-interactions-library` },
