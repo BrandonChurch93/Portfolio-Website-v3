@@ -192,10 +192,12 @@ export function WorkCard({ item, look = CARD_LOOK, held, className }: Props) {
           </div>
           <div className={styles.words}>
             <h3 className={styles.title}>
-              <a href={item.page} className={styles.open}>
-                {item.name}
-                <span className="visually-hidden">, case study</span>
-              </a>
+              {item.page ? (
+                <a href={item.page} className={styles.open}>
+                  {item.name}
+                  <span className="visually-hidden">, case study</span>
+                </a>
+              ) : item.name}
             </h3>
             <p className={styles.line}>{item.line}</p>
             <ul className={styles.tags}>
@@ -213,7 +215,7 @@ export function WorkCard({ item, look = CARD_LOOK, held, className }: Props) {
                   </li>
                 ))}
               </ul>
-              <span className={styles.go} aria-hidden="true">Case study <span className={styles.arrow}>→</span></span>
+              {item.page && <span className={styles.go} aria-hidden="true">Case study <span className={styles.arrow}>→</span></span>}
             </div>
           </div>
         </div>

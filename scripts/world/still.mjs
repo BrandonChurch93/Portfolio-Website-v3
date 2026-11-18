@@ -37,7 +37,7 @@ try {
     await page.evaluate(() => window.__site.settle());
     await page.waitForTimeout(3000);
     const png = await page.screenshot({ type: 'png', clip: { x: left + K.x, y: K.y, width: K.w, height: K.h } });
-    // The browser writes the file, at one pixel to a CSS pixel: the build has no image library of its own.
+    // The browser writes the file, at the picture's own scale: the build has no image library of its own.
     const kind = S.file.endsWith('.jpg') ? 'image/jpeg' : 'image/webp';
     const webp = await page.evaluate(async ([data, w, h, q, kind]) => {
       const img = new Image();
@@ -49,10 +49,10 @@ try {
       g.imageSmoothingQuality = 'high';
       g.drawImage(img, 0, 0, w, h);
       return c.toDataURL(kind, q).split(',')[1];
-    }, [png.toString('base64'), K.w, K.h, S.quality, kind]);
+    }, [png.toString('base64'), K.w * S.scale, K.h * S.scale, S.quality, kind]);
     const buf = Buffer.from(webp, 'base64'), out = `public${S.file}`;
     writeFileSync(out, buf);
-    console.log(`still: ${out} · ${K.w} by ${K.h} · ${(buf.length / 1024).toFixed(0)} KB`);
+    console.log(`still: ${out} · ${K.w * S.scale} by ${K.h * S.scale} · ${(buf.length / 1024).toFixed(0)} KB`);
     await ctx.close();
   }
 } finally {

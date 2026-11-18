@@ -177,6 +177,11 @@
 
 /* A screen too narrow for the layout shows a plain stand in: his words, with no stream and no city. Phones are
    designed in one pass after every section is finished. */
+/* The sky as a picture, for a narrow screen. Not there at all on a wide one, which has the sky itself. */
+.night {
+  display: none;
+}
+
 @media (max-width: 1099.98px) {
   .board {
     --u: 1px;
@@ -191,13 +196,42 @@
     display: none;
   }
 
+  /* The night sky as a picture behind his words, at its own size and cut to the screen: the top of the page, a
+     screen and a little more, dying away into the page before the world's own glow begins. */
+  .night {
+    display: block;
+    position: absolute;
+    top: calc(var(--nav) * 0.7);
+    left: 0;
+    right: 0;
+    z-index: 0;
+    height: 112vh;
+    height: 112svh;
+    overflow: hidden;
+    pointer-events: none;
+    -webkit-mask-image: linear-gradient(#000 52%, transparent 96%);
+    mask-image: linear-gradient(#000 52%, transparent 96%);
+  }
+
+  /* Held to the screen's right edge, where its moon is, and never narrower than a phone needs for the moon to be a
+     moon: on a phone the far left of the picture is off the screen. */
+  .night img {
+    display: block;
+    width: max(100%, 34rem);
+    height: auto;
+    margin-left: auto;
+    float: right;
+  }
+
   /* The first screen holds the whole city and ends at the land's front edge, on every narrow screen, and the tear
      and the core come with the scroll (his rulings, Nov 16 and 17): his words take what the screen has above the
      city. In the picture the land's front edge is 0.39 of the way down and the top of the core 0.45, and the
      picture is 0.7246 as tall as it is wide, so the screen's foot is 0.42 of the way down it: 0.304 of its width.
      At a quarter of its width, as it was first, an iPhone showed only the tips of the towers. */
   .words {
-    position: static;
+    position: relative;
+    top: auto;
+    left: auto;
     width: auto !important;
     translate: none;
     min-height: calc(100vh - var(--space-9) - max(100vw, 540px) * 0.304);
@@ -217,6 +251,8 @@
      glow is drawn on in the picture's own color at its top. */
   .still {
     --glow: calc(max(100vw, 540px) * 0.2);
+    position: relative;
+    z-index: 1;
     display: block;
     overflow: hidden;
     margin: calc(var(--glow) * -1) calc(var(--gut) * -1) 0;

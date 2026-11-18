@@ -91,4 +91,7 @@ export type ViewportName = 'phone' | 'tablet' | 'desktop' | 'wide' | '4k';
 
 // The home page's address. It is the whole page's study until launch, when the whole page moves to the root
 // (PLAN.md, Ready to deploy) and this becomes '/'.
-export const HOME = '/lab/whole';
+export const HOME = '/';
+// Whether the site is on its own domain and may be found by a search engine. Until he says so, no page is indexed
+// (src/app/layout.tsx, src/app/robots.ts).
+export const LAUNCHED = false;

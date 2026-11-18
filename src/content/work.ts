@@ -35,12 +35,8 @@ export interface WorkCategory {
 }
 
 const GITHUB = 'https://github.com/BrandonChurch93';
-const LIVE_SITE = 'https://www.brandonchurchportfolio.com/projects';
-// Where "View all work" goes until this site has its own page of all the work: his live site's, as a case study does.
-// Where "View all work" goes: the page of all his work on this site, which is a placeholder until it is built
-// (src/app/work/page.tsx). ALL_WORK_NOW is where the work can be seen meanwhile, his live site.
+// The page of all his work on this site (src/app/work/page.tsx), where "View all work" goes.
 export const ALL_WORK = '/work';
-export const ALL_WORK_NOW = LIVE_SITE;
 
 export const software: WorkItem[] = [
   {
@@ -176,7 +172,6 @@ export const more: WorkItem[] = [
 // Stand ins for the three categories that have no projects on the cards yet. Nothing on them is real: the names say
 // so, the words only fill the room real words will take, and the pictures are plain shapes. Every card is one size,
 // so their words are written to the length a Software card's are.
-const HOME = '#work-title';
 // The stand ins that have a page of their own on this site, so the gallery page can be seen with one of each.
 const PAGED = new Set(['photo-stand-in-1', 'art-stand-in-1']);
 const standIn = (set: string, kind: string, names: string, n: number, line: string, tags: string[]): WorkItem => ({
@@ -187,7 +182,7 @@ const standIn = (set: string, kind: string, names: string, n: number, line: stri
   line,
   tags,
   picture: { src: `/media/work/stand-in-${set}-${((n - 1) % 4) + 1}.webp`, alt: `A plain picture standing in for ${names.toLowerCase()} ${n}` },
-  page: PAGED.has(`${set}-stand-in-${n}`) ? `${ALL_WORK}/${set}-stand-in-${n}` : HOME,
+  page: PAGED.has(`${set}-stand-in-${n}`) ? `${ALL_WORK}/${set}-stand-in-${n}` : '',
   links: [],
 });
 

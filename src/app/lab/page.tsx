@@ -1,9 +1,11 @@
 import Link from 'next/link';
-import { PIECES } from '../config/site';
+import type { Metadata } from 'next';
+import { PIECES } from '../../config/site';
 import styles from './index.module.css';
 
-// Not the home page. A plain index of the work in progress, so each study can be opened on its own.
-// The real home page is built in Phase 3 (PLAN.md).
+export const metadata: Metadata = { title: 'Studies' };
+
+// A plain index of the studies, so each can be opened on its own. The home page is at the root.
 export default function Index() {
   return (
     <main className={styles.main}>

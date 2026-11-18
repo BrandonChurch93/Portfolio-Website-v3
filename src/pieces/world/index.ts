@@ -226,8 +226,7 @@ export function createWorld(): WorldPiece {
     stage.render();
   };
 
-  return {
-    async mount(h: HTMLElement, opts: PieceOptions) {
+  const make = async (h: HTMLElement, opts: PieceOptions) => {
       host = h;
       canvas = document.createElement('canvas');
       canvas.setAttribute('aria-hidden', 'true');
@@ -358,6 +357,19 @@ export function createWorld(): WorldPiece {
         frame();
         first = Math.round(performance.now() - from);
       })().catch((e) => { if (stage === live) console.warn(`world: what is under the first screen could not be finished. ${String(e)}`); });
+  };
+
+  return {
+    // A world that cannot be made (no WebGL, a lost context) tells the preloader so at once: left unsaid, the
+    // first screen waited out the preloader's longest wait behind a bar that never moved.
+    async mount(h: HTMLElement, opts: PieceOptions) {
+      try {
+        await make(h, opts);
+      } catch (e) {
+        loading.end(LOADING);
+        throw e;
+      }
+    
     },
     setLamp(x: number, y: number) {
       if (Math.abs(x - lampUV.x) + Math.abs(y - lampUV.y) < 0.003) return;

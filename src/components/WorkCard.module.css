@@ -285,11 +285,13 @@
   .words { --lines: 8; }
 }
 
-@container (min-width: 265px) {
+/* Measured in WebKit and Chromium on every card (Nov 18): WebKit sets the same words a little wider, and at 265 and
+   at 290 to 295 px it needed one line more than these gave, so a phone's cards ended in an ellipsis. */
+@container (min-width: 270px) {
   .words { --title-lines: 1; --lines: 7; }
 }
 
-@container (min-width: 290px) {
+@container (min-width: 300px) {
   .words { --lines: 6; }
 }
 

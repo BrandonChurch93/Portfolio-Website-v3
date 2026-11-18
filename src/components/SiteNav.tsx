@@ -30,7 +30,7 @@ export function SiteNav({ here }: { here: 'home' | 'work' | 'project' }) {
       else return;
       last = y;
     };
-    read();
+    if (scrollY >= NAV.top) setState('shown');
     addEventListener('scroll', read, { passive: true });
     return () => removeEventListener('scroll', read);
   }, []);

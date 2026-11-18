@@ -99,6 +99,7 @@ export function HeroLab({ hub }: { hub?: Hub }) {
       )}
       <div ref={board} className={styles.board} style={vars}>
         <div ref={sky} className={styles.sky} aria-hidden="true" />
+        <Still name="sky" className={styles.night} />
         <div ref={city} className={styles.city} style={{ width: u(HOST.wide) }}>
           {wide && WORLD.shown && <PieceView name={WORLD.piece} className={styles.piece} onPiece={(p) => { world.current = p as unknown as { setStream(on: number, since: number): void } | null; }} />}
         </div>

@@ -53,6 +53,8 @@
   --focus: 2px solid var(--flame);
   --focus-offset: 3px;
   --touch: 44px;
+  /* The one column every section of the home page keeps on a screen too narrow for its layout. */
+  --narrow: min(40rem, 100vw - 2 * var(--gut));
   --nav: calc(var(--touch) + 2 * var(--space-3));
 
   --ease-settle: cubic-bezier(0.2, 0.7, 0.2, 1);

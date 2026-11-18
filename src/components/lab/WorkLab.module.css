@@ -213,7 +213,7 @@
      falls about 22 px in from the screen's edge and clear of the bar and the cards (`narrow` in STREAM.work). At
      9.2rem a card on a 390 px phone was 243 px, narrower than its own foot. */
   .section {
-    --grid: min(30rem, 100vw - 6.25rem);
+    --grid: min(40rem, 100vw - 6.25rem);
   }
 
   /* One row of four, as on a wide screen, each as wide as its word: in two rows of two it was a block of words

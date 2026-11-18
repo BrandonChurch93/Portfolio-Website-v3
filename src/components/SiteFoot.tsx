@@ -27,18 +27,18 @@ export function SiteFoot({ here = 'page' }: { here?: 'home' | 'work' | 'page' })
         <p className={styles.role}>{hero.role}</p>
         <p className={styles.based}>{contact.based}</p>
       </div>
-      <nav className={styles.group} aria-label={words.site}>
-        <p className={styles.label} aria-hidden="true">{words.site}</p>
-        <ul>
+      <div className={styles.group}>
+        <p className={styles.label} id="foot-site">{words.site}</p>
+        <ul aria-labelledby="foot-site">
           {site.map((l) => <li key={l.label}><Link href={l.href} aria-current={l.now ? 'page' : undefined}>{l.label}</Link></li>)}
         </ul>
-      </nav>
-      <nav className={styles.group} aria-label={words.elsewhere}>
-        <p className={styles.label} aria-hidden="true">{words.elsewhere}</p>
-        <ul>
-          {contact.foot.links.filter((l) => !('held' in l)).map((l) => <li key={l.label}><a href={l.href} {...out(l.href)}>{l.label}</a></li>)}
+      </div>
+      <div className={styles.group}>
+        <p className={styles.label} id="foot-elsewhere">{words.elsewhere}</p>
+        <ul aria-labelledby="foot-elsewhere">
+          {contact.foot.links.filter((l) => !('held' in l)).map((l) => <li key={l.label}><a href={l.href} {...out(l.href)} download={l.href.endsWith('.pdf') || undefined}>{l.label}</a></li>)}
         </ul>
-      </nav>
+      </div>
       <div className={styles.base}>
         <p suppressHydrationWarning>{contact.foot.line} · © {new Date().getFullYear()}</p>
         <button type="button" className={styles.top} onClick={up}>{words.top} <span aria-hidden="true">↑</span></button>

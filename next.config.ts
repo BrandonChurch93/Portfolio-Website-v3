@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
   images: { unoptimized: true },
   devIndicators: false,
   env: { NEXT_PUBLIC_BUILD: BUILD },
+  // On his own domain the studies are not for visitors: they go to the home page. On the vercel.app address, where
+  // he reviews the work, they stay open.
+  async redirects() {
+    return ['brandonchurchportfolio.com', 'www.brandonchurchportfolio.com'].map((value) => ({ source: '/lab/:path*', has: [{ type: 'host' as const, value }], destination: '/', permanent: false }));
+  },
   async headers() {
     // Only on a built site: the dev server serves files that change under it.
     if (!live) return [];

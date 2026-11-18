@@ -49,7 +49,8 @@ export function AllWork({ look = null }: { look?: Look | null }) {
         </div>
       )}
       <p className={styles.count} role="status">{now.name}{sub ? ` · ${sub}` : ''} · {n} {now.standIn ? (n === 1 ? allWork.standIn : allWork.standIns) : n === 1 ? allWork.project : allWork.projects}</p>
-      <section key={`${now.name}:${sub ?? ''}`} className={styles.grid} aria-label={now.name}>
+      <section key={`${now.name}:${sub ?? ''}`} className={styles.grid} aria-labelledby="work-shown">
+        <h2 id="work-shown" className="visually-hidden">{now.name}{sub ? `, ${sub}` : ''}</h2>
         {shown.map((item) => <WorkCard key={item.slug} item={item} />)}
       </section>
       <section className={styles.close} aria-label={allWork.close.line}>
