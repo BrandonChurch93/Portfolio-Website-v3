@@ -63,10 +63,15 @@ export const HANDHELD = {
   // side: the window it is shown in is about 700 across.
   plates: 1.5,
   photo: 1024,
-  // Whether the night sky is drawn once and kept as a picture, as it is for a visitor who asks for reduced motion:
-  // no twinkle and no meteors. Its WebGL context held about 175 MB on the first screen (Nov 20). Left live: he asked
-  // for more going on in the sky (Nov 16), so stilling it on an iPad is his to say. 'still' is the switch.
+  // Whether the night sky is drawn once and kept as a picture, its WebGL context let go, with meteors and a few
+  // twinkling stars laid over it as plain elements the browser animates (src/hero/sky/alive.ts). Its context held
+  // about 175 MB on the first screen (Nov 20). Left live: he asked for more going on in the sky (Nov 16), so stilling
+  // it on an iPad is his to say. 'still' is the switch.
   sky: 'live' as 'still' | 'live',
+  // On an iPad held sideways these are pictures in place of the live pieces (src/skills/pictures.ts): the desk
+  // dark and lit, crossfaded as its lights come on, and the rows' things, each wiped on from its strike. His ruling of
+  // Nov 20: the page held about 2000 MB at Skills there with them live.
+  pictures: ['desk', 'cpu', 'watch', 'palette'] as readonly string[],
   // The most pixels of the picture of the hero's city at the screen's own density (src/pieces/world/sharp.ts), a
   // plain 2D canvas of about 9 bytes a pixel in WebKit: an iPad's whole city at two pixels to a CSS pixel.
   sharp: 4e6,

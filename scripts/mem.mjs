@@ -8,6 +8,9 @@
 //                         What matters is that a second visit costs what the first did, and that leaving gives it back
 //   --warn                with --walk, send WebKit the memory warning an iPad sends a page that is getting large
 //   --url <base>          use a site that is already running somewhere else
+//   --profile             go down the page a screen at a time, as a visitor scrolls, resting three seconds on each, and
+//                         print the GPU figure on each screen and the most of them: "the most it holds on the way
+//                         down". The last screen is the foot. Read the most against the rule as well as loaded and foot
 //
 // It prints the footprint of WebKit's graphics process (GPU) and of the page's own process (Web), in MB, when the
 // page has loaded and after it has been scrolled to its foot. These are the figures the system ends a process by.
@@ -20,8 +23,8 @@ import { webkit } from 'playwright';
 import { parseArgs, server } from './lib.mjs';
 
 const argv = process.argv.slice(2);
-const walk = argv.includes('--walk'), warn = argv.includes('--warn');
-const { flags, rest: routes } = parseArgs(argv.filter((a) => a !== '--walk' && a !== '--warn'));
+const walk = argv.includes('--walk'), warn = argv.includes('--warn'), profile = argv.includes('--profile');
+const { flags, rest: routes } = parseArgs(argv.filter((a) => a !== '--walk' && a !== '--warn' && a !== '--profile'));
 if (!routes.length) { console.error('usage: npm run mem -- <route> [<route> ...] [--walk] [--warn] [--vp desktop] [--url <base>]'); process.exit(1); }
 if (process.platform !== 'darwin') { console.error('mem: macOS only, it reads memory with the footprint tool'); process.exit(1); }
 
@@ -63,7 +66,22 @@ try {
     await page.evaluate((tall) => new Promise((done) => { const t0 = performance.now(), dur = Math.min(30000, Math.max(4000, tall * 3)); const f = () => { const k = Math.min(1, (performance.now() - t0) / dur); scrollTo(0, tall * k); if (k < 1) requestAnimationFrame(f); else done(); }; requestAnimationFrame(f); }), tall);
     await page.waitForTimeout(2500);
   };
-  const say = (label) => console.log(`${label.padEnd(36)} ${foot()}`);
+  const say = (label) => { const s = foot(); console.log(`${label.padEnd(36)} ${s}`); return Number(s.match(/GPU\s+(\d+)/)[1]); };
+  // A screen at a time, with frames asked for all the while, so the page draws and mounts as it would.
+  const down = async (r, loaded) => {
+    const tall = await page.evaluate(() => document.documentElement.scrollHeight - innerHeight), vh = await page.evaluate(() => innerHeight);
+    const glide = (from, to) => page.evaluate(([from, to]) => new Promise((done) => { const t0 = performance.now(); const f = () => { const k = Math.min(1, (performance.now() - t0) / 700); scrollTo(0, from + (to - from) * k); if (k < 1) requestAnimationFrame(f); else done(); }; requestAnimationFrame(f); }), [from, to]);
+    const rest = (ms) => page.evaluate((ms) => new Promise((done) => { const t0 = performance.now(); const f = () => { if (performance.now() - t0 < ms) requestAnimationFrame(f); else done(); }; requestAnimationFrame(f); }), ms);
+    let y = 0, most = loaded;
+    while (y < tall) {
+      const to = Math.min(tall, y + vh);
+      await glide(y, to);
+      y = to;
+      await rest(3000);
+      most = Math.max(most, say(`${r}, ${(y / vh).toFixed(1)} screens down`));
+    }
+    console.log(`${`${r}, the most, loaded or on the way down`.padEnd(36)} GPU ${String(most).padStart(5)} MB`);
+  };
   if (walk) {
     await page.goto(`${srv.base}/`, { waitUntil: 'load' });
     await page.waitForTimeout(2500);
@@ -86,7 +104,8 @@ try {
       await page.waitForTimeout(1500);
       await page.goto(`${srv.base}${r}`, { waitUntil: 'load' });
       await page.waitForTimeout(6000);
-      say(`${r}, loaded`);
+      const loaded = say(`${r}, loaded`);
+      if (profile) { await down(r, loaded); continue; }
       await toFoot();
       say(`${r}, scrolled to its foot`);
     }

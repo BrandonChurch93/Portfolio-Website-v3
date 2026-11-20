@@ -2,11 +2,14 @@
 
 import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { ABOUT_TABS, COMPETENCIES } from '../../skills-about/content';
-import type { DeskPiece } from '../../pieces/desk/index';
 import { ABOUT, BOARD, SKILLS, throwLine } from '../../skills/plan';
+import type { DeskPiece } from '../../pieces/desk/index';
+import type { DeskLike, ThingLike } from '../../skills/pictures';
 import type { SkillsStage } from '../../skills/stage';
+import { HANDHELD } from '../../config/site';
+import { STILLS } from '../../config/stills';
 import type { Piece } from '../../world/piece';
-import { webgl } from '../../world/device';
+import { handheld, webgl } from '../../world/device';
 import { WAYS, type StruckPiece, type Way } from '../../world/struck';
 import { PieceView } from '../PieceView';
 import { Still, kept } from '../Still';
@@ -27,6 +30,8 @@ const lines = (name: string): string[] => {
 const THINGS = ['cpu', 'watch', 'palette'] as const;
 // Where the desk's picture stands, where there is no WebGL for the live desk.
 const DESK_STILL = kept('desk');
+// How much of its host's height a row thing's picture is across: it is cut square round the host's middle.
+const THING_SHARE = STILLS.cpu.keep.w / Number(new URLSearchParams(STILLS.cpu.route.split('?')[1]).get('size'));
 const u = (n: number) => `calc(var(--u) * ${Number(n.toFixed(2))})`;
 const at = (x: number, y: number, w?: number, h?: number): CSSProperties => ({ left: u(x), top: u(y), width: w === undefined ? undefined : u(w), height: h === undefined ? undefined : u(h) });
 
@@ -68,7 +73,8 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
   const id = useId().replace(/:/g, '');
   const page = useRef<HTMLElement>(null), board = useRef<HTMLDivElement>(null), skills = useRef<HTMLElement>(null), about = useRef<HTMLElement>(null);
   const stage = useRef<SkillsStage | null>(null);
-  const pieces = useRef<{ things: (StruckPiece | null)[]; reflector: StruckPiece | null; light: StruckPiece | null; desk: DeskPiece | null }>({ things: [null, null, null], reflector: null, light: null, desk: null });
+  const pieces = useRef<{ things: (ThingLike | null)[]; reflector: StruckPiece | null; light: StruckPiece | null; desk: DeskLike | null }>({ things: [null, null, null], reflector: null, light: null, desk: null });
+  const dark = useRef<HTMLImageElement>(null), bright = useRef<HTMLImageElement>(null), thingPics = useRef<(HTMLImageElement | null)[]>([null, null, null]);
   const [ui, setUi] = useState(!hub);
   const [way, setWay] = useState<Way>('shards');
   const [tab, setTab] = useState(0);
@@ -76,6 +82,9 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
   // Whether the screen is wide enough for the layout. Narrower, the page is a plain stand in with no stream, no
   // desk and no small pieces. Not known until the page is in a browser.
   const [wide, setWide] = useState<boolean | null>(null);
+  // An iPad held sideways: the desk and the rows' things are pictures (HANDHELD.pictures).
+  const [held, setHeld] = useState(false);
+  const pictured = (name: string) => !!wide && held && HANDHELD.pictures.includes(name);
   const live = useRef({ way });
   live.current.way = way;
 
@@ -84,6 +93,7 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
     setUi(q.get('ui') !== '0' && !hub);
     if (asked && WAYS.includes(asked)) setWay(asked);
     const fits = matchMedia(`(min-width: ${BOARD.least}px)`), read = () => setWide(fits.matches);
+    setHeld(handheld() && webgl());
     read();
     fits.addEventListener('change', read);
     return () => fits.removeEventListener('change', read);
@@ -99,6 +109,24 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
     });
     return () => { alive = false; stage.current = null; made?.dispose(); };
   }, [wide, hub]);
+
+  // The pictures are driven by the stage as the live pieces are.
+  const deskPictured = pictured('desk'), thingsPictured = THINGS.map((n) => pictured(n)).join();
+  useEffect(() => {
+    if (!deskPictured && !thingsPictured.includes('true')) return;
+    let alive = true;
+    void Promise.all([import('../../skills/pictures'), import('../../pieces/cpu/life'), import('../../pieces/watch/life'), import('../../pieces/palette/life')]).then(([made, ...lives]) => {
+      if (!alive) return;
+      if (deskPictured && dark.current && bright.current) pieces.current.desk = made.deskPictures(dark.current, bright.current);
+      THINGS.forEach((name, i) => { const el = thingPics.current[i]; if (pictured(name) && el) pieces.current.things[i] = made.thingPicture(el, lives[i].LIFE); });
+    });
+    return () => {
+      alive = false;
+      if (deskPictured) pieces.current.desk = null;
+      THINGS.forEach((name, i) => { if (pictured(name)) pieces.current.things[i] = null; });
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deskPictured, thingsPictured]);
 
   const hold = (name: 'reflector' | 'light') => (p: Piece | null) => { pieces.current[name] = p as StruckPiece | null; };
   const holdThing = (row: number) => (p: Piece | null) => { pieces.current.things[row] = p as StruckPiece | null; };
@@ -136,8 +164,16 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
           {/* The desk as one picture, with the section's title on its floor, on a screen too narrow for the live desk. */}
           <Still name="desk" className={styles.still} style={{ '--still-x': SKILLS.desk.x + SKILLS.desk.w / 2 + DESK_STILL.x, '--still-y': SKILLS.desk.y + DESK_STILL.y, '--still-w': DESK_STILL.w } as CSSProperties} />
           <div className={styles.desk} data-part="desk" aria-hidden="true" style={at(SKILLS.desk.x, SKILLS.desk.y, SKILLS.desk.w, SKILLS.desk.h)}>
-            {wide && <PieceView name="desk" reach={REACH} early className={styles.piece} onPiece={holdDesk} />}
+            {wide && !deskPictured && <PieceView name="desk" reach={REACH} early className={styles.piece} onPiece={holdDesk} />}
           </div>
+          {deskPictured && (
+            <div className={styles.pictures} aria-hidden="true" style={{ '--still-x': SKILLS.desk.x + SKILLS.desk.w / 2 + DESK_STILL.x, '--still-y': SKILLS.desk.y + DESK_STILL.y, '--still-w': DESK_STILL.w } as CSSProperties}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img ref={dark} src={STILLS.deskDark.file} alt="" width={STILLS.deskDark.keep.w} height={STILLS.deskDark.keep.h} decoding="async" />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img ref={bright} src={STILLS.desk.file} alt="" width={STILLS.desk.keep.w} height={STILLS.desk.keep.h} decoding="async" />
+            </div>
+          )}
           <div className={styles.rows} style={{ marginLeft: u(SKILLS.rows.l), width: u(SKILLS.rows.r - SKILLS.rows.l), paddingTop: u(SKILLS.rows.t), paddingBottom: u(SKILLS.foot), '--thing': K.w, '--least': SKILLS.rows.least, '--meet': K.meet, '--wide': K.wide, '--host': K.host, '--rise': K.rise } as CSSProperties}>
             {COMPETENCIES.map((c, i) => (
               <article key={c.name} className={styles.row} data-part="row">
@@ -146,7 +182,10 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
                   {THINGS[i] && <Still name={THINGS[i]!} className={styles.thingStill} />}
                   {THINGS[i] && wide && (
                     <div className={styles.thingHost} data-part="thing" data-row={i} style={i ? ({ '--rise': 0 } as CSSProperties) : undefined}>
-                      <PieceView name={THINGS[i]!} reach={REACH} early className={styles.piece} onPiece={holdThing(i)} />
+                      {pictured(THINGS[i]!) ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img ref={(el) => { thingPics.current[i] = el; }} className={styles.thingPicture} src={STILLS[THINGS[i]!].file} alt="" width={STILLS[THINGS[i]!].keep.w} height={STILLS[THINGS[i]!].keep.h} decoding="async" style={{ '--share': THING_SHARE } as CSSProperties} />
+                      ) : <PieceView name={THINGS[i]!} reach={REACH} early className={styles.piece} onPiece={holdThing(i)} />}
                     </div>
                   )}
                 </div>

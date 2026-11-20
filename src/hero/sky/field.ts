@@ -37,6 +37,8 @@ export const FIELD = { cell: 128, density: 0.026, faint: 0.0019, slope: 1.12, mo
 export const BAND_STARS = { tries: 70000, faint: 0.0013, slope: 1.15, most: 140 } as const;
 // The bright few with four points.
 export const SPARKS = { count: 18, big: 4, apart: 135, flux: [5, 10], bigFlux: [16, 24], len: [9, 14], bigLen: [22, 30] } as const;
+// Every bright star's spikes lie the same way, as one lens draws them, a little off square.
+export const TILT = 0.21;
 // A meteor often: the first after so many seconds, then one every so many. He found the hero too static (Nov 16:
 // "more stuff going on in the sky"): one every 20 to 40 seconds was a sky a visitor never saw move.
 export const METEORS = { count: 700, first: 2.5, every: [4, 11], dur: [0.38, 0.7], len: [80, 230], after: 0.32 } as const;

@@ -1,4 +1,3 @@
-import type { DeskPiece } from '../pieces/desk/index';
 import { BAY, DESK, MAT, PLACES, SCREEN, SHADE, VIEW, WORD } from '../pieces/desk/layout';
 import { registry } from '../hooks/registry';
 import { lamp } from '../lamp/lamp';
@@ -9,6 +8,7 @@ import { routeThroughSkills } from '../stream/route-skills';
 import { mountStream, type PlanContext, type Planned, type StreamHandle } from '../stream/stream';
 import { clock } from '../world/clock';
 import type { Anchor, StruckPiece, Way } from '../world/struck';
+import type { DeskLike, ThingLike } from './pictures';
 import { tiers } from '../world/tier';
 import { ABOUT, BOARD, CX, SKILLS, SWING, swingOf, throwLine } from './plan';
 
@@ -25,7 +25,7 @@ export interface SkillsParts {
   skills: HTMLElement;
   about: HTMLElement;
   // A row's thing is under its row's own number: the CPU in the first, and whatever the others have.
-  pieces: () => { things: (StruckPiece | null)[]; reflector: StruckPiece | null; light: StruckPiece | null; desk: DeskPiece | null };
+  pieces: () => { things: (ThingLike | null)[]; reflector: StruckPiece | null; light: StruckPiece | null; desk: DeskLike | null };
   way: () => Way;
 }
 
@@ -122,7 +122,7 @@ export function mountSkills(parts: SkillsParts, host?: StreamHost): SkillsStage 
   const heading = q('about-title'), tabs = q('tabs'), panel = q('panel');
   const auras = all('aura'), beams = all('beam');
 
-  let stream: StreamHandle | null = null, bench: DeskPiece | null = null, disposed = false, hush = 0, quietTo = 0, quietBack = 0;
+  let stream: StreamHandle | null = null, bench: DeskLike | null = null, disposed = false, hush = 0, quietTo = 0, quietBack = 0;
   let anchors: { things: Anchor[]; reflector: Anchor; strike: Anchor; lens: Anchor } = { things: [[-0.36, 0], [-0.36, 0], [-0.36, 0]], reflector: [0, 0], strike: [0.02, -0.14], lens: [-0.12, 0.16] };
   let lives: Record<Way, number>[] = [0, 1, 2].map(() => ({ shards: 1.3, band: 0.9, flash: 0.8 }));
   let rules: Rail[] = [], cues: Cue[] = [];

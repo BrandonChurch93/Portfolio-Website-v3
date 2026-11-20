@@ -713,7 +713,8 @@
 }
 
 @media (min-width: 1100px) {
-  :global(html[data-plain]) .still {
+  :global(html[data-plain]) .still,
+  .pictures {
     position: absolute;
     left: calc(var(--u) * var(--still-x));
     top: calc(var(--u) * var(--still-y));
@@ -732,6 +733,38 @@
     display: block;
     width: 100%;
     height: auto;
+  }
+
+  /* An iPad held sideways: the desk as two pictures where the live desk stands, the lit one over the dark one, each
+     as far on as src/skills/pictures.ts says. */
+  .pictures {
+    z-index: 1;
+  }
+
+  .pictures img {
+    display: block;
+    width: 100%;
+    height: auto;
+    opacity: 0;
+  }
+
+  .pictures img + img {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  /* And a row's thing as its picture, in its host's middle, wiped on from where the stream strikes it. */
+  .thingPicture {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: calc(var(--u) * var(--host) * var(--share));
+    height: auto;
+    translate: -50% -50%;
+    --at: calc(50% + var(--ax, -0.36) / var(--share) * 100%) calc(50% + var(--ay, 0) / var(--share) * 100%);
+    -webkit-mask-image: radial-gradient(ellipse 120% 120% at var(--at), #000 calc(var(--wipe, 0) * 100% - 8%), transparent calc(var(--wipe, 0) * 100%));
+    mask-image: radial-gradient(ellipse 120% 120% at var(--at), #000 calc(var(--wipe, 0) * 100% - 8%), transparent calc(var(--wipe, 0) * 100%));
   }
 
   :global(html[data-plain]) .page[data-embed] .board {

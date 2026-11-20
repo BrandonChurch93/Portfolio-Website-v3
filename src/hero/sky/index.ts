@@ -3,7 +3,8 @@ import { HANDHELD } from '../../config/site';
 import { clock } from '../../world/clock';
 import { sweep } from '../../world/contexts';
 import { handheld } from '../../world/device';
-import { CRATER, SECOND, SPARK, SPLAT, TINT, craters, meteorAt, meteors, mix3, scale3, sparks, stars, type Meteor, type V3 } from './field';
+import { liven } from './alive';
+import { CRATER, SECOND, SPARK, SPLAT, TILT, TINT, craters, meteorAt, meteors, mix3, scale3, sparks, stars, type Meteor, type V3 } from './field';
 import { BAND_FS, BLIT_FS, GLOW_FS, HEIGHT_FS, METEOR_FS, MOON_FS, RECT_VS, RESOLVE_FS, SPARK_FS, SPARK_VS, SPLAT_FS, SPLAT_VS } from './shaders';
 
 // The night sky of the hero, on its own canvas: the stars, the bright few with four points, a moon, a band of far
@@ -35,8 +36,6 @@ export interface Sky { replan(): void; dispose(): void; meteor(): void }
 
 const MAX_DPR = 2;
 const TWINKLE = { hz: 20, amp: 0.22 } as const;
-// Every bright star's spikes lie the same way, as one lens draws them, a little off square.
-const TILT = 0.21;
 // How bright anything in the sky may get: a share of pale gold.
 const CEIL = 0.8;
 const BAND = { bright: 0.056 } as const;
@@ -110,7 +109,7 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
   if (add) canvas.style.mixBlendMode = 'plus-lighter';
   host.appendChild(canvas);
   const glOr = canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: true, antialias: false, depth: false, stencil: false, preserveDrawingBuffer: false });
-  const still = keep || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches, still = keep || reduced;
   if (!glOr) return { replan() {}, dispose() { canvas.remove(); }, meteor() {} };
   const gl = glOr;
 
@@ -120,7 +119,7 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
   let floatOk = false;
   let sky: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null;
   let W = 1, H = 1, s = 1, sparkCount = 0, alive = true, dirty = true, visible = true, last = '';
-  let falls: Meteor[] = [];
+  let falls: Meteor[] = [], brightest: { x: number; y: number; big: boolean }[] = [];
   let forced: { at: number; m: Meteor } | null = null;
   let current: SkyPlan | null = null;
   const white = scale3(TINT.pale, CEIL);
@@ -264,6 +263,7 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
     const field = stars(p, s);
     const bright = sparks(p, s);
     falls = meteors(p, bright.at);
+    brightest = bright.at;
     sparkCount = bright.count;
     gl.bindBuffer(gl.ARRAY_BUFFER, splatBuf);
     gl.bufferData(gl.ARRAY_BUFFER, field.data, gl.STATIC_DRAW);
@@ -439,7 +439,7 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
   init();
   build();
 
-  let picture: HTMLCanvasElement | null = null;
+  let picture: HTMLCanvasElement | null = null, unliven: (() => void) | null = null;
   const seen = new IntersectionObserver((e) => { visible = e[e.length - 1].isIntersecting; });
   seen.observe(host);
   const off = clock.onFrame((t) => {
@@ -458,6 +458,7 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
       picture.style.cssText = canvas.style.cssText;
       picture.getContext('2d')?.drawImage(canvas, 0, 0);
       host.appendChild(picture);
+      if (!reduced && current) unliven = liven(host, falls, brightest, current.u);
       alive = false;
       off();
       seen.disconnect();
@@ -506,6 +507,7 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
       sweep(gl);
       canvas.remove();
       if (picture) { picture.width = 0; picture.height = 0; picture.remove(); picture = null; }
+      unliven?.();
     },
   };
 }

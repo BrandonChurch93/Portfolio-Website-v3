@@ -36,7 +36,10 @@ try {
     await page.evaluate((v) => window.__site.freeze(v), Number(flags.t ?? S.t));
     await page.evaluate(() => window.__site.settle());
     await page.waitForTimeout(3000);
-    const png = await page.screenshot({ type: 'png', clip: { x: left + K.x, y: K.y, width: K.w, height: K.h } });
+    // A piece draws on a clear ground. `clear` keeps it so: nothing of the page is painted behind the piece.
+    if (S.clear) await page.addStyleTag({ content: '*:not(canvas), *::before, *::after { background: transparent !important; box-shadow: none !important; }' });
+    if (S.clear) await page.waitForTimeout(500);
+    const png = await page.screenshot({ type: 'png', omitBackground: !!S.clear, clip: { x: left + K.x, y: K.y, width: K.w, height: K.h } });
     // The browser writes the file, at the picture's own scale: the build has no image library of its own.
     const kind = S.file.endsWith('.jpg') ? 'image/jpeg' : 'image/webp';
     const webp = await page.evaluate(async ([data, w, h, q, kind]) => {
