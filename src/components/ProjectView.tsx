@@ -63,11 +63,16 @@ const reach = (to: WorkItem) => (to.page.startsWith('/') || to.page.startsWith('
 // The way on wears the card's own picture, in the card's own shape, so it is cut as the card cuts it and no worse:
 // in a taller frame a wide screenshot lost a third of its width and its words were cut through.
 const WAY_ASPECT = PICTURE_ASPECT;
+// The part of a card's picture the card keeps in view, and how far it is cropped in (WorkItem.picture).
+const kept = (to: WorkItem): CSSProperties => {
+  const [x, y] = to.picture.focus ?? [0.5, 0.3], at = `${x * 100}% ${y * 100}%`;
+  return { objectPosition: at, transformOrigin: at, scale: to.picture.zoom ?? 1 };
+};
 
 function Ways({ prev, next }: { prev: WorkItem | null; next: WorkItem | null }) {
   const way = (to: WorkItem | null, label: string, side: 'prev' | 'next') => to && (
     <a href={reach(to)} className={styles.way} data-side={side}>
-      <Framed aspect={WAY_ASPECT} className={styles.wayPicture}><img src={to.picture.src} alt="" decoding="async" /></Framed>
+      <Framed aspect={WAY_ASPECT} className={styles.wayPicture}><img src={to.picture.src} alt="" decoding="async" style={kept(to)} /></Framed>
       <span className={styles.wayLabel}>{side === 'prev' ? '← ' : ''}{label}{side === 'next' ? ' →' : ''}</span>
       <span className={styles.wayName}>{to.name}</span>
     </a>
