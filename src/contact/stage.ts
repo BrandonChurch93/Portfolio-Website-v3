@@ -49,9 +49,6 @@ const JUMP = 1;
 const clamp = (v: number) => Math.max(0, Math.min(1, v));
 const ramp = (v: number, [a, b]: [number, number]) => { const k = clamp((v - a) / (b - a)); return k * k * (3 - 2 * k); };
 
-// A mask that shows everything under it.
-const WHOLE = 'linear-gradient(#000, #000)';
-
 export function mountContact(parts: ContactParts, host?: StreamHost): ContactStage {
   const q = <T extends HTMLElement = HTMLElement>(part: string) => parts.contact.querySelector<T>(`[data-part="${part}"]`)!;
   const title = q('title'), plate = q('plate'), content = q('content');
@@ -149,9 +146,7 @@ export function mountContact(parts: ContactParts, host?: StreamHost): ContactSta
       plates.setBand(metal, awake ? null : wipe, burning);
     }
     const words = veil(awake ? null : wipe, hw, hh, unit);
-    // Awake, the words keep a mask that hides nothing. With none at all, both engines left the last line of the
-    // plate as the band's final step had drawn it, part lit and part dim, until the pointer next moved (Nov 20).
-    if (words !== wore) { wore = words; content.style.setProperty('--veil', words === 'none' ? WHOLE : words); }
+    if (words !== wore) { wore = words; content.style.setProperty('--veil', words); }
     set('content:p', content, 'pointer-events', wake.across > 0.5 ? 'auto' : 'none');
     plate.toggleAttribute('data-awake', wake.across > 0);
     set('title:o', title, 'opacity', ramp(wake.across, SHOW.title).toFixed(3));

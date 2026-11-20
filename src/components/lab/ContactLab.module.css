@@ -307,7 +307,11 @@
   color: var(--copper-light);
 }
 
+/* Over the Send button's shadow, which falls across this line: under it, the line's first word stood clear of the
+   shadow and was brighter than the rest (seen Nov 20). */
 .based {
+  position: relative;
+  z-index: 1;
   margin-top: calc(var(--u) * 14);
   font-family: var(--font-mono);
   font-size: max(0.625rem, calc(var(--u) * 10.5));
