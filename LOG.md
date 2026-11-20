@@ -88,6 +88,12 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 9. Rule on four things: the navigation, his words coming down with the world on tall screens (`?words=third` shows the rule kept), whether an iPad may still its sky or show the desk as a picture to hold less memory, and whether debris goes in the 4K bands.
 10. In the repo's folder on his Mac: two world files are an older version than the committed one (`git checkout -- public/world/skin.bin public/world/skin-map.bin` puts them right), and `public/world/rock-a.bin`, `rock-b.bin`, `off.png` and a second copy of his résumé are untracked: keep or delete.
 
+**Where it stands at the end of the pass.**
+- **Pushed in four pushes, each one's deployment read as success before going on:** `4860dfb`, `48bf0e5`, `e80dde1`, `9bfe46a`. A production build passes.
+- **The deployed site was walked top to foot and back** in WebKit at a phone's size and an iPad's held sideways, top to foot at an iPad's held upright, and in Chromium at 1440 by 900: every section comes on and goes away as it should, the rocket goes, no console error, no sideways scroll. All work, a case study and the 404 were looked at there at a desktop's size.
+- **Kept stills:** `reference/studies/70-*` (the navigation), `71-*` (the watch, the palette, the rows), `72-*` (the launch and the return in real frames), `73-*` (Contact's plate on a built site, the hero on tall and very wide screens, debris, the rows on a phone and an upright iPad).
+- **Scratch copies of the repo** from this session are registered as git worktrees under the session's scratch folder (`ship`, `mine`, `memlab`, `nogl`). They are safe to prune (`git worktree prune` once the folder is gone).
+
 ## 2026-11-20 · The final pass handed to a fresh session (Fable, web chat)
 
 - **What he said (12:55).** The portfolio is pretty much done and he has gone through it himself for speed and for how clear the 3D things are. He wants one final pass in a new Claude Code session, since the last one had compacted many times. `BRIEF.md`, Open 36, has his words.
