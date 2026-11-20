@@ -1,24 +1,30 @@
-/* A slim bar of the site's dark bronze, in the recipe of the category bar on the page of all his work: his name at
-   its left and one link at its right, a copper hairline on its upper edge, and the cursor's light pooling on it
-   where the cursor is near. It stands in from the screen's edges, so the sky and the stream show round it. */
+/* The head of every page, flush with the top of the screen and as wide as it: his name at the left, one link at the
+   right, and under them a rule of copper that dies away to each side, as the foot's does. No box. At the top of a
+   page it has no ground of its own, so the sky or the wall is seen through it. Brought back part way down a page it
+   stands on a band of the page's ground from edge to edge. The cursor's light pools on the rule, and whatever the
+   pointer or the keyboard is on lights the stretch of rule under it. */
 .nav {
   --w: min(78rem, 100vw - 2 * var(--gut));
-  --top: max(var(--space-3), env(safe-area-inset-top, 0px));
+  --h: var(--nav);
+  --up: env(safe-area-inset-top, 0px);
   position: fixed;
   top: 0;
   right: 0;
   left: 0;
   z-index: 30;
-  height: var(--nav);
+  height: calc(var(--h) + var(--up));
+  padding-top: var(--up);
+  box-sizing: border-box;
   pointer-events: none;
   transition: translate var(--dur-2) var(--ease-settle), opacity var(--dur-2) var(--ease-settle);
 }
 
-/* On the home page everything is drawn on a board that grows with the screen, and the bar grows with it. */
+/* On the home page everything is drawn on a board that grows with the screen, and the head grows with it. */
 @media (min-width: 1100px) {
   .nav[data-here='home'] {
     --k: calc(min(100vw, 2400px) / 1460);
     --w: calc(var(--k) * 1160);
+    --h: max(var(--nav), calc(var(--k) * 66));
   }
 }
 
@@ -32,44 +38,129 @@
   opacity: 1;
 }
 
+/* The band it stands on once the page has been scrolled: the page's own ground, solid, so nothing reads through
+   it, and a short shade under the rule so what passes beneath goes into it and not under a hard edge. The band
+   takes the pointer, or a press on it would reach a card hidden under it. */
+.ground {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  opacity: 0;
+  transition: opacity var(--dur-1) var(--ease-settle);
+}
+
+.ground::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  height: 1.4rem;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 62%, transparent), transparent);
+}
+
+.nav[data-state='shown'] .ground {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* At the top of a page: only a shade that deepens toward the screen's edge, so the head has a ground on a lit
+   wall and none that can be seen on the night sky. */
+.nav::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 78%, transparent), color-mix(in srgb, var(--bg) 30%, transparent) 70%, transparent);
+}
+
+/* The rule: a bead of copper with its shadow under it, and the cursor's light on it, a pool that follows the
+   cursor along the rule and dies as it moves away. */
+.rule,
+.rule::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+}
+
+.rule {
+  background: linear-gradient(90deg, transparent, var(--line-strong) 14%, var(--line-strong) 86%, transparent);
+  box-shadow: 0 1px 0 color-mix(in srgb, #000 46%, transparent);
+}
+
+.rule::after {
+  content: '';
+  background: radial-gradient(34rem 22rem at var(--lamp-x, -100vw) calc(var(--lamp-y, -100vh) - var(--h) - var(--up)), var(--pale), color-mix(in srgb, var(--copper-light) 78%, transparent) 30%, transparent 70%);
+}
+
 .bar {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   box-sizing: border-box;
   width: var(--w);
-  height: max(3rem, calc(var(--k, 0px) * 50));
-  margin: var(--top) auto 0;
-  padding: 0 max(var(--space-5), calc(var(--k, 0px) * 26));
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-3);
-  background:
-    radial-gradient(18rem 8rem at calc(var(--lamp-x, -100vw) - (100vw - var(--w)) / 2) calc(var(--lamp-y, -100vh) - var(--top)), color-mix(in srgb, var(--copper) 26%, transparent), transparent 72%),
-    linear-gradient(180deg, color-mix(in srgb, var(--bronze) 18%, var(--bg-2)), var(--bg-2) 46%, color-mix(in srgb, var(--bronze-deep) 16%, var(--bg)));
-  box-shadow:
-    inset 0 1px 0 color-mix(in srgb, var(--copper-light) 26%, transparent),
-    0 1.2rem 2.4rem -1.2rem #000;
-  pointer-events: auto;
+  height: 100%;
+  margin: 0 auto;
 }
 
 .name,
 .link {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  min-height: var(--touch);
+  align-self: center;
+  min-width: var(--touch);
+  height: var(--touch);
   text-decoration: none;
+  pointer-events: auto;
   transition: color var(--dur-1) var(--ease-settle);
+}
+
+/* The stretch of rule under a thing lights when the pointer or the keyboard is on it. */
+.name::after,
+.link::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: calc((var(--touch) - var(--h)) / 2);
+  left: 0;
+  height: 1px;
+  background: var(--copper-light);
+  box-shadow: 0 0 0.5rem color-mix(in srgb, var(--flame) 70%, transparent);
+  opacity: 0;
+  scale: 0.4 1;
+  transition: opacity var(--dur-1) var(--ease-settle), scale var(--dur-2) var(--ease-settle);
+}
+
+.name::after {
+  transform-origin: 0 50%;
+}
+
+.link::after {
+  transform-origin: 100% 50%;
+}
+
+.name:hover::after,
+.link:hover::after,
+.name:focus-visible::after,
+.link:focus-visible::after {
+  opacity: 1;
+  scale: 1;
 }
 
 .name {
   font-family: var(--font-display);
-  font-size: max(var(--step-0), calc(var(--k, 0px) * 16));
+  font-size: max(var(--step-0), calc(var(--k, 0px) * 17));
   font-weight: 600;
   letter-spacing: var(--track-tight);
   color: var(--text);
 }
 
 .link {
+  gap: 0.6em;
+  justify-content: flex-end;
   font-family: var(--font-mono);
   font-size: max(var(--step--1), calc(var(--k, 0px) * 12.5));
   letter-spacing: var(--track-label);
@@ -77,9 +168,22 @@
   color: var(--text-2);
 }
 
+.arrow {
+  color: var(--copper-light);
+  transition: translate var(--dur-1) var(--ease-settle);
+}
+
 .name:hover,
 .link:hover {
-  color: var(--copper-light);
+  color: var(--pale);
+}
+
+.link:hover .arrow {
+  translate: 0.22em 0;
+}
+
+.link[data-way='back']:hover .arrow {
+  translate: -0.22em 0;
 }
 
 .name:focus-visible,
@@ -92,11 +196,11 @@
 /* For the keyboard: straight to the page's content. Seen only when it has the focus. */
 .skip {
   position: absolute;
-  top: calc(var(--top) + 3.6rem);
+  top: calc(var(--h) + var(--up) + var(--space-3));
   left: calc((100vw - var(--w)) / 2);
   padding: var(--space-2) var(--space-4);
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius-2);
+  border-radius: var(--radius-1);
   background: var(--bg-2);
   font-family: var(--font-mono);
   font-size: var(--step--1);
@@ -122,6 +226,17 @@
   }
 
   .nav[data-state='away'] {
+    translate: none;
+  }
+
+  .arrow,
+  .name::after,
+  .link::after {
+    transition: opacity var(--dur-1) linear;
+    scale: 1;
+  }
+
+  .link:hover .arrow {
     translate: none;
   }
 }
