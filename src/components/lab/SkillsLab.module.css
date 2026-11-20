@@ -123,6 +123,11 @@
   align-self: stretch;
 }
 
+/* The thing's picture is for a narrow screen. */
+.thingStill {
+  display: none;
+}
+
 /* The thing's host is larger than its place, so what flies in at its strike is not cut off. It stands so that the
    point the stream meets it at is on the stream's route: --ax and --ay are that point, from the host's middle, in
    host heights (src/world/struck.ts), --meet is how far left of the row's edge the stream meets it, and --rise how
@@ -545,7 +550,7 @@
   }
 
   .desk,
-  .thing,
+  .thingHost,
   .glow,
   .prop,
   .cover,
@@ -560,11 +565,57 @@
     padding: 0 !important;
   }
 
+  /* A row is its thing as a picture with its name beside it, and its lists under both. On an iPad held upright
+     the thing stands at the row's left and the name and the lists beside it, as on a wide screen. */
   .row {
-    display: block;
+    display: grid;
+    grid-template-columns: 5.25rem minmax(0, 1fr);
+    column-gap: var(--space-4);
+    align-items: center;
     min-height: 0;
     padding: var(--space-5) 0;
     border-top: 1px solid var(--line);
+  }
+
+  .thing {
+    align-self: center;
+    margin-left: -0.5rem;
+  }
+
+  .thingStill {
+    display: block;
+    -webkit-mask-image: radial-gradient(closest-side, #000 78%, transparent);
+    mask-image: radial-gradient(closest-side, #000 78%, transparent);
+  }
+
+  .thingStill img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .row .groups {
+    grid-column: 1 / -1;
+  }
+
+  @media (min-width: 700px) {
+    .row {
+      grid-template-columns: 9.5rem minmax(0, 1fr);
+      /* What a short row has to spare lies under its lists, not between its name and them. */
+      grid-template-rows: auto 1fr;
+      column-gap: var(--space-5);
+      align-items: start;
+    }
+
+    .thing {
+      grid-row: 1 / span 2;
+      align-self: center;
+      margin: 0 0 0 -1rem;
+    }
+
+    .row .groups {
+      grid-column: 2;
+    }
   }
 
   /* One column has the width for a name on one line. */

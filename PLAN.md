@@ -18,13 +18,13 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 
 Testing and polish, in a fresh Claude Code session, from the prompt in `LOG.md`, top entry. Ticked `[~]` when built and measured. Only he ticks `[x]`.
 
-- [ ] Every section and every internal page at a phone, an iPad upright and sideways, a laptop, 1920, 2560 and 4K: fast and beautiful, and what is not premium fixed
-- [ ] The navigation designed again: he turned down the bar of bronze as a floating card
-- [ ] The things in Skills for Full-Stack Engineering and for Design Systems & Craft brought up to the one for AI Product Engineering
-- [ ] The rocket confirmed taking off, and coming back, on the whole page, from real frames
-- [ ] Where more of the hero's debris belongs across the site: found, added where it earns its place, the rest reported
-- [ ] Speed and memory measured on a production build in Chromium and WebKit
-- [ ] "Ready to deploy: what is left", below, gone through against today's code, and one short list handed to him of what only he can do
+- [~] Every section and every internal page at a phone, an iPad upright and sideways, a laptop, 1920, 2560 and 4K: four fresh auditors, their findings checked and mended (`LOG.md`, top entry). Not done: an upright iPad still gets the one column and no 3D in Skills
+- [~] The navigation designed again: the head of the page, flush with the screen, a rule of copper the cursor lights (`reference/studies/70-the-navigation-before-and-after.jpg`)
+- [~] The things in Skills for Full-Stack Engineering and for Design Systems & Craft: the watch and the palette remade, two rounds each
+- [~] The rocket confirmed taking off, and coming back, on the whole page, from real frames, in both engines at four sizes
+- [~] Where more of the hero's debris belongs: added on the page that is not there and under a narrow hero, held back in six places, each with its reason
+- [~] Speed and memory measured on a production build in Chromium and WebKit: `LOG.md`, top entry
+- [~] "Ready to deploy: what is left", below, gone through against today's code, and one short list handed to him of what only he can do
 - **His alone, as he sees it:** hooking up the contact form, and the Work projects' real screenshots and content
 
 ### The finishing pass (his word, Nov 18: `BRIEF.md`, Open 35)

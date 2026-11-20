@@ -18,6 +18,11 @@ export const STILLS = {
   // The night sky alone, for behind his words on a narrow screen's first screen: without it they stood on bare
   // black. Shown at its own size and cut to the screen, so a star is as large on a phone as on an iPad.
   sky: { file: '/media/sky-still.webp', route: '/lab/sky?ui=0&outline=0&city=0&glow=0', screen: [1100, 1400], top: '', t: 6, keep: { x: 0, y: 0, w: 1100, h: 1400 }, scale: 2, quality: 0.8, least: 0 },
+  // The three things in the rows of skills, each lit by the stream, for a row on a narrow screen: there a row had
+  // its words and no thing at all. Each is its own page at a host 240 tall, cut square round the host's middle.
+  cpu: { file: '/media/cpu-still.webp', route: '/lab/piece/cpu?size=240&label=0&ui=0&stream=1', screen: [1440, 900], top: '', t: 6, keep: { x: 612, y: 342, w: 216, h: 216 }, scale: 2, quality: 0.86, least: 0 },
+  watch: { file: '/media/watch-still.webp', route: '/lab/piece/watch?size=240&label=0&ui=0&stream=1', screen: [1440, 900], top: '', t: 6, keep: { x: 612, y: 342, w: 216, h: 216 }, scale: 2, quality: 0.86, least: 0 },
+  palette: { file: '/media/palette-still.webp', route: '/lab/piece/palette?size=240&label=0&ui=0&stream=1', screen: [1440, 900], top: '', t: 6, keep: { x: 612, y: 342, w: 216, h: 216 }, scale: 2, quality: 0.86, least: 0 },
   // What a shared link shows: the hero's first screen at the size link previews ask for. A JPEG, which every
   // service that makes a preview can read.
   share: { file: '/media/share.jpg', route: '/lab/hero?ui=0', screen: [1200, 630], top: '', t: 6, keep: { x: 0, y: 0, w: 1200, h: 630 }, scale: 1, quality: 0.86, least: 0 },

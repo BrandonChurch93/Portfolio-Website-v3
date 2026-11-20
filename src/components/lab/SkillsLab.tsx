@@ -139,6 +139,8 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
             {COMPETENCIES.map((c, i) => (
               <article key={c.name} className={styles.row} data-part="row">
                 <div className={styles.thing} aria-hidden="true">
+                  {/* The thing as a picture, on a screen too narrow for the live one. */}
+                  {THINGS[i] && <Still name={THINGS[i]!} className={styles.thingStill} />}
                   {THINGS[i] && wide && (
                     <div className={styles.thingHost} data-part="thing" data-row={i} style={i ? ({ '--rise': 0 } as CSSProperties) : undefined}>
                       <PieceView name={THINGS[i]!} reach={REACH} early className={styles.piece} onPiece={holdThing(i)} />
