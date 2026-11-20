@@ -7,7 +7,7 @@ import { registry, type PieceHandle } from '../hooks/registry';
 import { lamp } from '../lamp/lamp';
 import { loaderFor } from '../pieces/load';
 import { budget, distanceOf } from '../world/budget';
-import { handheld } from '../world/device';
+import { handheld, webgl } from '../world/device';
 import { loading as wait } from '../world/loading';
 import { tiers } from '../world/tier';
 import type { Piece } from '../world/piece';
@@ -51,7 +51,7 @@ export function PieceView({ name, entrance = false, once, making = false, classN
   useEffect(() => {
     const h = host.current;
     const load = loaderFor(name);
-    if (!h || !load) return;
+    if (!h || !load || !webgl()) return;
     let alive = true;
     let offs: (() => void)[] = [];
     let mounted: Extra | null = null;

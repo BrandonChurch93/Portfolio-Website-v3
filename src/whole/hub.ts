@@ -3,6 +3,7 @@ import type { StreamHost } from '../skills/stage';
 import { join } from '../stream/join';
 import type { Box } from '../stream/route';
 import { mountStream, type PlanContext, type Planned, type StreamHandle, type WorkParts } from '../stream/stream';
+import { webgl } from '../world/device';
 
 // The whole page so far: the hero, Work, Skills and About, and Contact on one page, with one stream. Each section still lays
 // itself out and runs its own stage. What it does not do here is mount a stream of its own: it hands this its part
@@ -58,7 +59,7 @@ export function createHub(page: () => HTMLElement | null, has: () => { hero: boo
     pulse: (from, to, seconds) => real?.pulse(from, to, seconds),
     strike: (n, hard) => real?.strike(n, hard),
     replan: () => real?.replan(),
-    runs: () => real?.runs() ?? true,
+    runs: () => (real ? real.runs() : webgl()),
     dispose: () => undefined,
   };
 
@@ -67,7 +68,7 @@ export function createHub(page: () => HTMLElement | null, has: () => { hero: boo
   const mount = () => {
     const host = page();
     if (real && !wide() && !planned && plans.contact && !gone) { real.dispose(); real = null; }
-    if (real || gone || !host || !work) return;
+    if (real || gone || !host || !work || !webgl()) return;
     // A screen too narrow for the sections under Work shows them as plain stand ins, and Work runs its stream alone.
     // With the hero's stand in above it, the stream begins under the hero and not at the top of the page.
     if (!wide()) {

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import type { Finish } from '../metal/finishes';
-import type { CardShape, PlateKind } from '../metal/mask';
+import { CARD, type CardShape, type PlateKind } from '../metal/mask';
 import { plates, type PlateLook, type PlatePhoto } from '../metal/renderer';
 import styles from './Plate.module.css';
 
@@ -110,6 +110,10 @@ export function Plate({ finish, kind = 'plate', label, big, facts, photo, card, 
       <div className={styles.shadow} data-plate-shadow="" aria-hidden="true" />
       <canvas ref={canvas} className={styles.canvas} aria-hidden="true" />
       <div className={state === 'failed' ? styles.plain : 'visually-hidden'} data-plate-text="">
+        {state === 'failed' && photo && !photo.video && card && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={photo.src} alt="" decoding="async" className={styles.plainPhoto} style={{ '--pad': CARD.edges[card.edge ?? 'thin'].pad / CARD.width, aspectRatio: String(card.aspect), objectPosition: `${(photo.focus?.[0] ?? 0.5) * 100}% ${(photo.focus?.[1] ?? 0.3) * 100}%` } as CSSProperties} />
+        )}
         {children ?? (
           <>
             {label ? <span className={styles.plainLabel}>{label}</span> : null}

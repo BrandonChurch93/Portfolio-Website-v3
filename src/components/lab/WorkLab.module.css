@@ -282,3 +282,15 @@
     padding-bottom: var(--space-8);
   }
 }
+
+/* A browser with no WebGL (data-plain on <html>) has no stream to draw the stones and the rail, or to fall from the
+   hero's picture of the world into Work: neither stands in for them, and Work keeps less room above it. */
+:global(html[data-plain]) :is(.stone, .rail) {
+  display: none;
+}
+
+@media (min-width: 1100px) {
+  :global(html[data-plain]) .page[data-embed='under'] .section {
+    padding-top: calc(min(100vw, 2400px) / 1460 * 200);
+  }
+}

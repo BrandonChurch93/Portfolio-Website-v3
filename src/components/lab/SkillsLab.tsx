@@ -6,9 +6,10 @@ import type { DeskPiece } from '../../pieces/desk/index';
 import { ABOUT, BOARD, SKILLS, throwLine } from '../../skills/plan';
 import type { SkillsStage } from '../../skills/stage';
 import type { Piece } from '../../world/piece';
+import { webgl } from '../../world/device';
 import { WAYS, type StruckPiece, type Way } from '../../world/struck';
 import { PieceView } from '../PieceView';
-import { Still } from '../Still';
+import { Still, kept } from '../Still';
 import type { Hub } from '../../whole/hub';
 import { Shell } from './Shell';
 import styles from './SkillsLab.module.css';
@@ -24,6 +25,8 @@ const lines = (name: string): string[] => {
   return cut > 0 ? [w.slice(0, cut).join(' '), w.slice(cut).join(' ')] : [name];
 };
 const THINGS = ['cpu', 'watch', 'palette'] as const;
+// Where the desk's picture stands, where there is no WebGL for the live desk.
+const DESK_STILL = kept('desk');
 const u = (n: number) => `calc(var(--u) * ${Number(n.toFixed(2))})`;
 const at = (x: number, y: number, w?: number, h?: number): CSSProperties => ({ left: u(x), top: u(y), width: w === undefined ? undefined : u(w), height: h === undefined ? undefined : u(h) });
 
@@ -87,7 +90,7 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
   }, []);
 
   useEffect(() => {
-    if (!wide || !page.current || !board.current || !skills.current || !about.current) return;
+    if (!wide || !webgl() || !page.current || !board.current || !skills.current || !about.current) return;
     let alive = true, made: SkillsStage | null = null;
     void import('../../skills/stage').then(({ mountSkills }) => {
       if (!alive) return;
@@ -131,7 +134,7 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
         <section ref={skills} className={styles.skills} aria-labelledby={`${id}-skills`}>
           <h2 id={`${id}-skills`} className={`${styles.title} ${styles.heading2}`}>Skills</h2>
           {/* The desk as one picture, with the section's title on its floor, on a screen too narrow for the live desk. */}
-          <Still name="desk" className={styles.still} />
+          <Still name="desk" className={styles.still} style={{ '--still-x': SKILLS.desk.x + SKILLS.desk.w / 2 + DESK_STILL.x, '--still-y': SKILLS.desk.y + DESK_STILL.y, '--still-w': DESK_STILL.w } as CSSProperties} />
           <div className={styles.desk} data-part="desk" aria-hidden="true" style={at(SKILLS.desk.x, SKILLS.desk.y, SKILLS.desk.w, SKILLS.desk.h)}>
             {wide && <PieceView name="desk" reach={REACH} early className={styles.piece} onPiece={holdDesk} />}
           </div>

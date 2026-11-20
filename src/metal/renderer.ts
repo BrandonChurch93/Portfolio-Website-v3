@@ -2,6 +2,7 @@ import { LAMP } from '../config/site';
 import { registry, stats } from '../hooks/registry';
 import { lamp } from '../lamp/lamp';
 import { clock } from '../world/clock';
+import { webgl } from '../world/device';
 import { tiers } from '../world/tier';
 import { BAND, CONTROL_RING, FACE, FACE_LIT, FINISHES, GLOW, INK, RAMP } from './finishes';
 import { MASK_FONTS, paintMask, type Mask, type PlateSpec } from './mask';
@@ -163,6 +164,7 @@ class PlateRenderer {
   private init(): boolean {
     if (this.gl) return true;
     if (this.broken || typeof document === 'undefined') return false;
+    if (!webgl()) { this.broken = true; return false; }
     try {
       const c = document.createElement('canvas');
       c.width = 4;

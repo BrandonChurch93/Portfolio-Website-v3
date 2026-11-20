@@ -1,4 +1,5 @@
 import { useEffect, type RefObject } from 'react';
+import { webgl } from '../world/device';
 import type { Look, Quiet } from './atmosphere';
 
 // Puts a room behind a page (./atmosphere.ts) for as long as the page is there. Whatever on the page is marked
@@ -8,7 +9,7 @@ export function useRoom(page: RefObject<HTMLElement | null>, look: Look | null, 
   const fall = quiet?.fall, lamp = quiet?.lamp;
   useEffect(() => {
     const host = page.current;
-    if (!look || !host) return;
+    if (!look || !host || !webgl()) return;
     let made: { dispose(): void } | null = null, gone = false;
     void import('./atmosphere').then(({ mountAtmosphere }) => {
       if (gone) return;

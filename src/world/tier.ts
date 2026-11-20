@@ -1,12 +1,14 @@
 import { TIER_PROBE, type Tier } from '../config/site';
 import { chooseTier } from './tier-choice';
 import { sweep } from './contexts';
+import { webgl } from './device';
 
 type Listener = (t: Tier) => void;
 
 // A short GPU timing test: a full screen fragment shader with a fixed loop, drawn a number of frames, timed with a
 // read back so the GPU must finish. Returns milliseconds per frame, or null if WebGL is missing.
 function probeGpu(): { webgl: boolean; ms: number | null } {
+  if (!webgl()) return { webgl: false, ms: null };
   const canvas = document.createElement('canvas');
   canvas.width = 512;
   canvas.height = 512;
@@ -57,7 +59,7 @@ class TierStore {
   detect(): Tier {
     if (this.measured || typeof window === 'undefined') return this.get();
     const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const probe = reducedMotion ? { webgl: !!document.createElement('canvas').getContext('webgl2'), ms: null } : probeGpu();
+    const probe = reducedMotion ? { webgl: webgl(), ms: null } : probeGpu();
     this.probeMs = probe.ms;
     const nav = navigator as Navigator & { deviceMemory?: number };
     this.measured = chooseTier({

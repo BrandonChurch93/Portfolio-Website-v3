@@ -5,7 +5,7 @@ import { CARD } from '../metal/mask';
 import { plates } from '../metal/renderer';
 import { advance, asleep, band, edge, veil, VEILED, type Band, type Start } from '../metal/wake';
 import { clock } from '../world/clock';
-import { handheld } from '../world/device';
+import { handheld, webgl } from '../world/device';
 import { tiers } from '../world/tier';
 import { STREAM, STREAM_BUDGET, STREAM_BUDGET_HELD, STREAM_STEP, unitFor, type StreamBudget } from './config';
 import { hash, seeded } from './rand';
@@ -242,7 +242,14 @@ function titleField(el: HTMLElement, host: DOMRect, dpr: number): { field: Title
   };
 }
 
+// What a page holds where no stream can be drawn: it never runs, and the page shows everything whole.
+const NONE: StreamHandle = {
+  setLook: () => undefined, since: () => 0, follow: () => undefined, struck: () => ({ on: 0, at: -100, hard: 0 }), reached: () => 0, head: () => 0,
+  nearest: () => 0, pulse: () => undefined, strike: () => undefined, replan: () => undefined, runs: () => false, dispose: () => undefined,
+};
+
 export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
+  if (!webgl()) return NONE;
   const canvas = document.createElement('canvas');
   canvas.setAttribute('aria-hidden', 'true');
   canvas.style.cssText = `position:absolute;left:0;top:0;width:100%;height:calc(100vh + ${S.margin * 2}px);height:calc(100lvh + ${S.margin * 2}px);pointer-events:none;will-change:transform;z-index:3`;

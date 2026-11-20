@@ -6,12 +6,14 @@ import { BOARD, CITY, CX, SKY, WORDS, WORK, WORLD } from '../../hero/board';
 import type { HeroStage } from '../../hero/stage';
 import { HOST } from '../../pieces/world/layout';
 import { LOADING } from '../../pieces/world/part';
+import { webgl } from '../../world/device';
 import { loading } from '../../world/loading';
 import { MetalButton } from '../MetalButton';
 import { PieceView } from '../PieceView';
 import type { Adrift } from '../../config/debris';
 import { Drift } from '../Drift';
 import { Still } from '../Still';
+import { STILLS } from '../../config/stills';
 import { Preloader } from '../Preloader';
 import type { Hub } from '../../whole/hub';
 import { Shell } from './Shell';
@@ -59,13 +61,13 @@ export function HeroLab({ hub }: { hub?: Hub }) {
     // The first screen waits for the world, where there is one and the page has been opened at its top: the
     // preloader is told so before the world has begun to load (src/world/loading.ts). The world is by far the most
     // of the wait.
-    if (fits.matches && WORLD.shown && scrollY < innerHeight * 1.5) loading.begin(LOADING, 9);
+    if (fits.matches && WORLD.shown && webgl() && scrollY < innerHeight * 1.5) loading.begin(LOADING, 9);
     fits.addEventListener('change', read);
     return () => { fits.removeEventListener('change', read); loading.clear(); };
   }, []);
 
   useEffect(() => {
-    if (!wide || !page.current || !board.current || !city.current || !bar.current) return;
+    if (!wide || !webgl() || !page.current || !board.current || !city.current || !bar.current) return;
     let made: HeroStage | null = null, gone = false;
     void import('../../hero/stage').then(({ mountHero }) => {
       if (gone) return;
@@ -76,7 +78,7 @@ export function HeroLab({ hub }: { hub?: Hub }) {
 
   // The sky is planned from where the page has put the words and the world.
   useEffect(() => {
-    if (!wide || !board.current || !city.current || !sky.current || !words.current) return;
+    if (!wide || !webgl() || !board.current || !city.current || !sky.current || !words.current) return;
     const b = board.current, c = city.current, w = words.current, host = sky.current;
     let made: { replan(): void; dispose(): void } | null = null, gone = false;
     const plan = () => {
@@ -129,7 +131,7 @@ export function HeroLab({ hub }: { hub?: Hub }) {
           </div>
         </header>
         {/* The world as one picture, under his words, on a screen too narrow for the live world. */}
-        <Still name="world" className={styles.still} />
+        <Still name="world" className={styles.still} style={{ '--still-x': STILLS.world.keep.x, '--still-w': STILLS.world.keep.w } as CSSProperties} />
         {/* And under the picture, where its own stream falls on into Work, a few of the planet's pieces that move:
             the picture cannot. */}
         <Drift field={FALL} className={styles.fall} />

@@ -67,7 +67,8 @@
 
 .card:has(.open:focus-visible) .inner {
   outline: var(--focus);
-  outline-offset: var(--focus-offset);
+  /* Clear of the card's own copper edge, which the ring's orange is lost against. */
+  outline-offset: calc(var(--focus-offset) + 5px);
 }
 
 .picture {

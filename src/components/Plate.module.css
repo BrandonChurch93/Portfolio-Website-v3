@@ -81,3 +81,54 @@
   font-size: var(--step-2);
   color: var(--text);
 }
+
+/* A card's plate with no WebGL, in plain paint as Contact's plate is on a narrow screen: a dark bronze face a little
+   lighter toward its top, a bead of copper round its edge, and its picture in a window inside the bead. */
+.plate[data-kind='card'] .plain {
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--copper) 52%, transparent);
+  border-radius: clamp(0.75rem, 3.9cqw, 1.375rem);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bronze) 16%, var(--bg-2)), var(--bg-2) 34%, color-mix(in srgb, var(--bronze-deep) 12%, var(--bg)) 100%);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--copper-light) 34%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--bg) 60%, transparent),
+    inset 0 0 0 3px color-mix(in srgb, var(--bronze) 22%, transparent);
+}
+
+.plainPhoto {
+  position: absolute;
+  top: calc(var(--pad) * 100cqw);
+  left: calc(var(--pad) * 100cqw);
+  width: calc(100% - var(--pad) * 200cqw);
+  height: auto;
+  object-fit: cover;
+  border-radius: clamp(0.5rem, 2.3cqw, 1rem) clamp(0.5rem, 2.3cqw, 1rem) 2px 2px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--bronze) 45%, transparent);
+}
+
+/* A button with no WebGL: polished copper with its words cut in, or dark bronze with its words in copper. */
+.plate[data-kind='control'] .plain {
+  place-content: center;
+  padding: 0 0.75em;
+  border-radius: 0.625rem;
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.plate[data-kind='control'][data-finish='coated'] .plain {
+  border: 1px solid color-mix(in srgb, var(--bronze-deep) 70%, var(--copper));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--pale) 28%, var(--copper-light)), var(--copper) 55%, color-mix(in srgb, var(--bronze) 70%, var(--copper)));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--pale) 55%, transparent), inset 0 -1px 0 color-mix(in srgb, var(--bronze-deep) 60%, transparent), 0 0.4rem 1rem -0.4rem #000;
+  color: var(--bg-3);
+}
+
+.plate[data-kind='control'][data-finish='bronze'] .plain {
+  border: 1px solid color-mix(in srgb, var(--copper) 55%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bronze) 42%, var(--bronze-deep)), var(--bronze-deep) 60%, color-mix(in srgb, #000 30%, var(--bronze-deep)));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--copper-light) 30%, transparent), 0 0.4rem 1rem -0.4rem #000;
+  color: var(--copper-light);
+}

@@ -522,3 +522,44 @@
     padding-top: var(--space-5);
   }
 }
+
+/* A browser with no WebGL (data-plain on <html>): no stream and no live pad. The title is there, the plate is in
+   plain paint (Plate.module.css) and awake, so its form can be used, and on a wide screen the pad's picture stands
+   where the pad would, with less room above it, which was the stream's. */
+:global(html[data-plain]) .title {
+  opacity: 1 !important;
+}
+
+:global(html[data-plain]) .content {
+  pointer-events: auto !important;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+@media (min-width: 1100px) {
+  :global(html[data-plain]) .still {
+    position: absolute;
+    left: calc(var(--u) * var(--still-x));
+    top: calc(var(--u) * var(--still-y));
+    z-index: 1;
+    display: block;
+    width: calc(var(--u) * var(--still-w));
+    pointer-events: none;
+    /* The picture's ground is a little darker than the page's: drawn lighter only, it shows no box. */
+    mix-blend-mode: lighten;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent), linear-gradient(transparent, #000 14%);
+    mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent), linear-gradient(transparent, #000 14%);
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
+  }
+
+  :global(html[data-plain]) .still img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  :global(html[data-plain]) .page[data-embed] .board {
+    padding-top: calc(var(--u) * 200);
+  }
+}

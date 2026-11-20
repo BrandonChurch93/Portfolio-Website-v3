@@ -6,13 +6,14 @@ import { send } from '../../contact/send';
 import type { ContactStage } from '../../contact/stage';
 import { contact } from '../../content/contact';
 import type { PadPiece } from '../../pieces/pad/index';
+import { webgl } from '../../world/device';
 import type { Piece } from '../../world/piece';
 import { MetalButton } from '../MetalButton';
 import { PieceView } from '../PieceView';
 import { Plate } from '../Plate';
 import type { Hub } from '../../whole/hub';
 import { Shell } from './Shell';
-import { Still } from '../Still';
+import { Still, kept } from '../Still';
 import styles from './ContactLab.module.css';
 
 // The pad is mounted from this many screens away, so it is not being built as the stream reaches it.
@@ -22,6 +23,8 @@ const P = CONTACT.plate;
 const FIELDS = ['name', 'email', 'message'] as const;
 type Field = (typeof FIELDS)[number];
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Where the pad's picture stands, where there is no WebGL for the live pad.
+const PAD_STILL = kept('pad');
 
 // Contact, built for real (BRIEF.md, Settled, "Contact, the first build"). The page only lays things out: the
 // title, the one plate that holds everything, the launch pad (src/pieces/pad) and a plain footer. The stream plans
@@ -55,7 +58,7 @@ export function ContactLab({ hub }: { hub?: Hub }) {
   }, []);
 
   useEffect(() => {
-    if (wide === null || !page.current || !board.current || !section.current) return;
+    if (wide === null || !webgl() || !page.current || !board.current || !section.current) return;
     let made: ContactStage | null = null, gone = false;
     void import('../../contact/stage').then(({ mountContact }) => {
       if (gone) return;
@@ -171,7 +174,7 @@ export function ContactLab({ hub }: { hub?: Hub }) {
               <p className={styles.based} data-failed={state === 'failed' || undefined} aria-hidden={state === 'failed' || undefined}>{state === 'failed' ? F.failed : contact.based}</p>
             </div>
           </div>
-          <Still name="pad" className={styles.still} />
+          <Still name="pad" className={styles.still} style={{ '--still-x': PAD.l + PAD.w / 2 + PAD_STILL.x, '--still-y': PAD.b - PAD_STILL.tall + PAD_STILL.y, '--still-w': PAD_STILL.w } as CSSProperties} />
         </section>
         {/* On the whole page the site's own foot stands under the page (SiteFoot). Alone, this page keeps a plain one. */}
         {!hub && (
