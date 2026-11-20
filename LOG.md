@@ -2,6 +2,15 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-20 · After the pass's report: nothing ships over the memory rule on a sideways iPad (Fable, Claude Code)
+
+**In progress. Kept true as it goes.**
+
+- **What he said, on reading the report** (`BRIEF.md`, Open 36, last bullets): "Do not ship over the memory budget on a sideways iPad. My iPad holding does not prove an older one will." The desk as two pictures there, dark and lit, crossfaded when the stream lands. If the most the page holds at Skills is still over, the three row things as pictures there too. The world, the stream and the rocket stay live. `npm run mem` on a production build as a sideways iPad, alone and with `--walk`, giving loaded, peak and foot, and the scroll recorded again. And: his words on a tall screen come down with the world, as a ruling.
+- **Fable's recommendation in that report was to ship with the desk live and watch his own iPad. He turned it down, and he is right:** one iPad that holds says nothing of an older one.
+- **How it is being done.** The engineer who measured the memory is on it in its own copy, from a brief sent as a message (the session has it): a stand in for the desk piece that keeps the stage's contract without WebGL (`where`, `setLights`, `setStream`, `setSwing`), so the stage is unchanged, with the dark picture's opacity following `room` and the lit one's the lights. The row things the same way, wiped on from the strike. The first screen is the hard part: with the sky live the page loads at about 1200 MB, so the sky may have to be kept as a picture with meteors and a twinkle made in CSS, which is built behind `HANDHELD.sky` and switched on only if the figures need it.
+- **While it measures, no other WebKit runs on this Mac:** `npm run mem` counts every WebKit process started after it.
+
 ## 2026-11-20 · The final pass (Fable, Claude Code)
 
 **Kept true as it goes. Read it first after any loss of memory.** `BRIEF.md`, Open 36, is the job, and `PLAN.md`, "The final pass", its list.
