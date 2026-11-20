@@ -44,6 +44,9 @@ export interface StageOptions {
   // The most pixels its canvas has on a handheld, in place of HANDHELD.piece: for a piece whose canvas is far larger
   // than the others'.
   pixels?: number;
+  // On a handheld, its pictures and its lights' shadow maps are kept at their own size, and not held to
+  // HANDHELD.texture and HANDHELD.shadow.piece: the hero's world, which is the first thing seen.
+  full?: boolean;
 }
 
 const TIER_POST: Record<Tier, { ao: boolean; aoScale: number; shadow: number; smaa: boolean }> = {
@@ -85,6 +88,22 @@ function ditherPass(): ShaderPass {
   return pass;
 }
 
+// three says so each time it makes a picture smaller to fit the most a renderer takes, which a handheld's pieces are
+// held to on purpose (HANDHELD.texture), and that a picture made of numbers is larger than that and is sent as it is.
+// Everything else it says is passed on as it was.
+let quiet = false;
+function quietResize(): void {
+  if (quiet) return;
+  quiet = true;
+  const say = { log: console.log, warn: console.warn, error: console.error } as Record<string, (...a: unknown[]) => void>;
+  THREE.setConsoleFunction((kind: string, message: string, ...rest: unknown[]) => {
+    if (kind === 'warn' && typeof message === 'string' && (message.includes('Texture has been resized') || message.includes('DataTexture is too big'))) return;
+    const trace = rest[0] as { isStackTrace?: boolean; getError?(m: string): unknown } | undefined;
+    if (trace?.isStackTrace && trace.getError) (say[kind] ?? console.log)(trace.getError(message));
+    else (say[kind] ?? console.log)(message, ...rest);
+  });
+}
+
 // How many vertices warm() sends to the GPU at a time when it is paced.
 const DRAW_AHEAD = 40000;
 
@@ -117,6 +136,8 @@ export class Stage {
   // A factor on the tier's pixel ratio, for moments in motion where full resolution is not needed.
   private resScale = 1;
   private lean = false;
+  // The most a picture may be on a side as the device has it, before a handheld's pieces are held to less.
+  private maxTexture = 4096;
 
   constructor(private host: HTMLElement, private canvas: HTMLCanvasElement, private o: StageOptions) {
     this.tier = o.tier;
@@ -127,6 +148,12 @@ export class Stage {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFShadowMap;
     this.renderer.setClearColor(0x0c0a09, 0);
+    this.maxTexture = this.renderer.capabilities.maxTextureSize;
+    // three makes any picture larger than this smaller as it sends it to the GPU, and again each time it is sent.
+    if (handheld() && !o.full) {
+      quietResize();
+      this.renderer.capabilities.maxTextureSize = Math.min(this.maxTexture, HANDHELD.texture);
+    }
     const pmrem = new THREE.PMREMGenerator(this.renderer);
     const envScene = typeof o.env === 'function' ? o.env() : o.env === 'studio' ? studioScene() : new RoomEnvironment();
     this.envRT = pmrem.fromScene(envScene, 0.04);
@@ -214,7 +241,7 @@ export class Stage {
   // for a map 4096 square. Made here first, the map has one of a single byte. A point light's cube is left to three.
   private leanShadows(): void {
     this.lean = true;
-    const most = Math.min(this.renderer.capabilities.maxTextureSize, handheld() ? HANDHELD.shadow.most : Infinity);
+    const most = Math.min(this.maxTexture, handheld() ? (this.o.full ? HANDHELD.shadow.most : HANDHELD.shadow.piece) : Infinity);
     this.scene.traverse((o) => {
       const light = o as THREE.Light & { shadow?: THREE.LightShadow };
       if (!light.isLight || !light.castShadow || !light.shadow) return;

@@ -131,10 +131,11 @@ export function PieceView({ name, entrance = false, once, making = false, classN
     let near = false;
     let evicted = false;
     const id = `piece:${name}`;
-    // On a handheld a piece is mounted from nearer and let go sooner, so fewer hold their memory at once.
+    // On a handheld a piece is mounted from nearer and let go sooner, so fewer hold their memory at once: the hero's
+    // world is let go before Skills' pieces are made, and the desk before Contact's pad.
     const small = SMALL_PIECES.includes(name), held = handheld(), first = !!early && !held;
     const from = first ? Infinity : held ? Math.min(reach ?? PIECE_MOUNT.near, small ? HANDHELD.small : HANDHELD.reach) : reach ?? PIECE_MOUNT.near;
-    const gone = first ? Infinity : held ? from + 1 : Math.max(PIECE_MOUNT.far, (reach ?? 0) + 1.5);
+    const gone = first ? Infinity : held ? from + HANDHELD.past : Math.max(PIECE_MOUNT.far, (reach ?? 0) + 1.5);
     // The preloader waits for it only on a page opened at its top, as it does for the hero's world.
     const awaited = first && early !== 'quiet' && scrollY < innerHeight * 1.5;
     if (awaited) wait.begin(id, 2);

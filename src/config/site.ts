@@ -36,17 +36,37 @@ export const HANDHELD = {
   // see on the device he tests on. This is the middle: a little over one pixel to a CSS pixel.
   world: 1.8e6,
   screen: 2.4e6,
-  // The longest side of the cursor light's shadow map, and of any other light's.
-  shadow: { lamp: 1024, most: 2048 },
+  // The longest side of the cursor light's shadow map, and of any other light's: the hero's world's moon at most,
+  // every other piece's lights at piece. Measured in WebKit on Nov 20, the desk's and the small pieces' maps at 2048
+  // held about 85 MB more at Skills than at 1024.
+  shadow: { lamp: 1024, most: 2048, piece: 1024 },
+  // The longest side of a picture a piece's materials are made from, the hero's world's aside. The small pieces and
+  // the desk drew theirs at 2048 and more for a thing a few hundred pixels across: at 1024 Skills held about 190 MB
+  // less (Nov 20).
+  texture: 1024,
   // The stream's multisampling.
   samples: 2,
-  // A piece is mounted from no further than this many screens away, and let go one screen further. And no more than
-  // this many hold a WebGL context at once, the small pieces aside (SMALL_PIECES).
-  reach: 1.5,
+  // A piece is mounted from no further than this many screens away, and let go `past` screens further. And no more
+  // than this many hold a WebGL context at once, the small pieces aside (SMALL_PIECES). Measured in WebKit on Nov 20:
+  // let go a full screen further, the hero's world was still alive when Skills' pieces were made, and the desk at
+  // the foot of the page, about 500 MB of the most the page held and 300 of what it held at its foot.
+  reach: 1.25,
+  past: 0.3,
   pieces: 3,
   // A small piece is mounted from this many screens away at the most: far enough to be made before it is reached,
-  // near enough that the five of them are not all alive from the top of the page (that held 600 MB more).
-  small: 2.5,
+  // near enough that the five of them are not all alive from the top of the page (that held 600 MB more), and not
+  // while the hero's world is.
+  small: 1.5,
+  // A plate (Work's cards, a button, Contact's plate) this many screens from the screen gives up its relief, its
+  // picture and its pixels, and makes them again as it comes back (src/metal/renderer.ts). Work's sixteen cards held
+  // about 300 MB from the first screen on (Nov 20). And a card's picture is held to this many pixels on its longest
+  // side: the window it is shown in is about 700 across.
+  plates: 1.5,
+  photo: 1024,
+  // Whether the night sky is drawn once and kept as a picture, as it is for a visitor who asks for reduced motion:
+  // no twinkle and no meteors. Its WebGL context held about 175 MB on the first screen (Nov 20). Left live: he asked
+  // for more going on in the sky (Nov 16), so stilling it on an iPad is his to say. 'still' is the switch.
+  sky: 'live' as 'still' | 'live',
   // The most pixels of the picture of the hero's city at the screen's own density (src/pieces/world/sharp.ts), a
   // plain 2D canvas of about 9 bytes a pixel in WebKit: an iPad's whole city at two pixels to a CSS pixel.
   sharp: 4e6,

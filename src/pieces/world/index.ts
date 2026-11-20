@@ -333,7 +333,7 @@ export function createWorld(): WorldPiece {
       keepsRock = q.get('keep') !== 'land';
       was = q.get('was') === '1';
       if (q.get('trace') === '1') { log = []; mark('mount'); }
-      stage = new Stage(h, canvas, { tier: opts.tier, fov: ALONE.fov, near: 0.3, far: 40, bloom: GLOW, bloomScale: 0.5, envIntensity: LIGHT.night, env: night, lampAngle: 0.9, pixels: HANDHELD.world });
+      stage = new Stage(h, canvas, { tier: opts.tier, fov: ALONE.fov, near: 0.3, far: 40, bloom: GLOW, bloomScale: 0.5, envIntensity: LIGHT.night, env: night, lampAngle: 0.9, pixels: HANDHELD.world, full: true });
       trueDarks(stage.renderer);
       lean();
       finish(stage, RIM, WARM);

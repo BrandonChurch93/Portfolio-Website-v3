@@ -1,8 +1,8 @@
-import { LAMP } from '../config/site';
+import { HANDHELD, LAMP } from '../config/site';
 import { registry, stats } from '../hooks/registry';
 import { lamp } from '../lamp/lamp';
 import { clock } from '../world/clock';
-import { webgl } from '../world/device';
+import { handheld, webgl } from '../world/device';
 import { tiers } from '../world/tier';
 import { BAND, CONTROL_RING, FACE, FACE_LIT, FINISHES, GLOW, INK, RAMP } from './finishes';
 import { MASK_FONTS, paintMask, type Mask, type PlateSpec } from './mask';
@@ -77,6 +77,8 @@ interface Plate extends PlateEntry {
   banded: boolean;
   // Whether it is to be drawn at all. A card that is waiting behind another keeps its bake and is not lit.
   shown: boolean;
+  // Far from the screen on a handheld: its relief, its picture and its pixels are let go (HANDHELD.plates).
+  away: boolean;
 }
 
 // A card's relief as it was baked, read back out so that something else can light it too: the stream lays its own
@@ -152,6 +154,7 @@ class PlateRenderer {
   private plates = new Set<Plate>();
   private io: IntersectionObserver | null = null;
   private ro: ResizeObserver | null = null;
+  private far: IntersectionObserver | null = null;
   private byHost = new Map<Element, Plate>();
   private started = false;
   private still = false;
@@ -188,6 +191,10 @@ class PlateRenderer {
       this.io = new IntersectionObserver((entries) => {
         for (const en of entries) { const p = this.byHost.get(en.target); if (p) { p.visible = en.isIntersecting; p.sig = ''; } }
       }, { rootMargin: '300px 0px' });
+      // On a handheld a plate far from the screen holds nothing on the GPU, and is baked again as it comes near.
+      if (handheld()) this.far = new IntersectionObserver((entries) => {
+        for (const en of entries) { const p = this.byHost.get(en.target); if (p) { if (en.isIntersecting) this.near(p); else this.away(p); } }
+      }, { rootMargin: `${HANDHELD.plates * 100}% 0px` });
       this.ro = new ResizeObserver((entries) => {
         for (const en of entries) { const p = this.byHost.get(en.target); if (p) this.measure(p); }
       });
@@ -237,13 +244,15 @@ class PlateRenderer {
       area: entry.spec.kind === 'card' ? entry.host.closest<HTMLElement>('[data-plate-area]') : null,
       visible: false, bakeGen: 0, sig: '', tilt: { x: 0, y: 0, gx: 0, gy: 0 }, stream: { x: 0, y: 0, z: 26, k: 0 },
       hover: { v: 0, goal: 0, pinned: false }, pointer: { x: 0, y: 0 }, hovered: '',
-      seed: seedOf(entry.spec), baked: 0, wipe: new Float32Array(3), burn: 0, blank: false, wiping: false, end: { x: 0, y: 0, k: 0 }, banded: false, enter: { x: 0, y: 0 }, meant: false, shown: true,
+      seed: seedOf(entry.spec), baked: 0, wipe: new Float32Array(3), burn: 0, blank: false, wiping: false, end: { x: 0, y: 0, k: 0 }, banded: false, enter: { x: 0, y: 0 }, meant: false, shown: true, away: false,
     };
     this.plates.add(p);
     this.byHost.set(entry.host, p);
     this.io!.observe(entry.host);
     this.ro!.observe(entry.host);
-    if (entry.photo) this.loadPhoto(p, entry.photo);
+    // Until the first word of how far it is, a plate on a handheld is taken to be far.
+    if (this.far) { p.away = true; this.far.observe(entry.host); }
+    if (entry.photo && (!p.away || entry.photo.video)) this.loadPhoto(p, entry.photo);
     this.measure(p);
     this.start();
     return () => this.remove(p);
@@ -254,9 +263,10 @@ class PlateRenderer {
     this.byHost.delete(p.host);
     this.io?.unobserve(p.host);
     this.ro?.unobserve(p.host);
+    this.far?.unobserve(p.host);
     // Safari keeps a host these two have watched after it is unobserved, and with it the page it was in. Disconnected,
     // they keep nothing.
-    if (!this.plates.size) { this.io?.disconnect(); this.ro?.disconnect(); }
+    if (!this.plates.size) { this.io?.disconnect(); this.ro?.disconnect(); this.far?.disconnect(); }
     const gl = this.gl;
     if (gl) { if (p.b0) gl.deleteTexture(p.b0); if (p.b1) gl.deleteTexture(p.b1); if (p.photoTex) gl.deleteTexture(p.photoTex); if (p.loopTex) gl.deleteTexture(p.loopTex); }
     p.videoEl?.pause();
@@ -338,6 +348,10 @@ class PlateRenderer {
     // A card that is put away is not under the pointer, whatever the pointer was on when it went: a browser does
     // not always say the pointer has left a thing that was hidden under it, and the card came back still lit.
     if (!on && !p.hover.pinned) { p.hover.goal = 0; p.hover.v = 0; p.meant = false; }
+    // On a handheld a card that is put away keeps its relief and its picture, so it comes back at once, but not its
+    // pixels: twelve of Work's sixteen cards are put away at any time.
+    if (!on && this.far) { p.canvas.width = 0; p.canvas.height = 0; }
+    if (on && p.mask && p.canvas.width !== p.mask.w) { p.canvas.width = p.mask.w; p.canvas.height = p.mask.h; }
     // It is drawn as it now is before it is seen. Its canvas still holds what it showed when it was put away.
     if (on && p.visible && p.mask) this.draw(p, false);
   }
@@ -387,7 +401,7 @@ class PlateRenderer {
       v.play().catch(() => undefined);
       return;
     }
-    if (photo.loop) {
+    if (photo.loop && !p.loopEl) {
       // Only its size and length are fetched until the card first wakes.
       const v = document.createElement('video');
       v.muted = true;
@@ -403,12 +417,23 @@ class PlateRenderer {
     im.src = photo.src;
     registry.track(im.decode().then(() => {
       const gl = this.gl;
-      if (!gl || !this.plates.has(p)) return;
+      if (!gl || !this.plates.has(p) || p.away || p.photoTex) return;
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
       gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
       const t = gl.createTexture()!;
       gl.bindTexture(gl.TEXTURE_2D, t);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, im);
+      // On a handheld the picture is sent no larger than HANDHELD.photo on its longest side.
+      const k = handheld() ? Math.min(1, HANDHELD.photo / Math.max(im.naturalWidth, im.naturalHeight)) : 1;
+      if (k < 1) {
+        const c = document.createElement('canvas');
+        c.width = Math.round(im.naturalWidth * k);
+        c.height = Math.round(im.naturalHeight * k);
+        const g = c.getContext('2d')!;
+        g.imageSmoothingQuality = 'high';
+        g.drawImage(im, 0, 0, c.width, c.height);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+        c.width = c.height = 0;
+      } else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, im);
       gl.generateMipmap(gl.TEXTURE_2D);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -422,7 +447,29 @@ class PlateRenderer {
     }).catch(() => undefined));
   }
 
+  private away(p: Plate): void {
+    if (p.away) return;
+    p.away = true;
+    p.bakeGen++;
+    const gl = this.gl;
+    if (gl) for (const t of [p.b0, p.b1, p.photoTex, p.loopTex]) if (t) gl.deleteTexture(t);
+    p.b0 = p.b1 = p.photoTex = p.loopTex = null;
+    p.mask = null;
+    p.sig = '';
+    p.canvas.width = 0;
+    p.canvas.height = 0;
+  }
+
+  private near(p: Plate): void {
+    if (!p.away) return;
+    p.away = false;
+    // A video is sent again with each frame it shows, so only a picture has to be fetched again.
+    if (p.photo && !p.photo.video && !p.videoEl) this.loadPhoto(p, p.photo);
+    this.measure(p);
+  }
+
   private measure(p: Plate): void {
+    if (p.away) return;
     const r = p.host.getBoundingClientRect();
     // Plates keep crisp words: the device's own ratio up to 3x, and never under 2x, because at 1x the cut walls of
     // small letters swallow their strokes. On a 1x screen the browser scales the plate down, which smooths it.
@@ -441,7 +488,7 @@ class PlateRenderer {
 
   private async rebake(p: Plate, gen: number): Promise<void> {
     await this.fontsReady;
-    if (gen !== p.bakeGen || !this.gl) return;
+    if (gen !== p.bakeGen || !this.gl || p.away) return;
     const mask = paintMask(p.spec, p.cssW, p.cssH, p.dpr);
     const rg = await distanceField(mask.glyphs, mask.panel, mask.w, mask.h);
     if (gen !== p.bakeGen || !this.gl) return;
@@ -495,8 +542,10 @@ class PlateRenderer {
     gl.deleteTexture(sdf);
     p.mask = mask;
     p.baked++;
-    p.canvas.width = mask.w;
-    p.canvas.height = mask.h;
+    if (p.shown || !this.far) {
+      p.canvas.width = mask.w;
+      p.canvas.height = mask.h;
+    }
     p.sig = '';
     if (this.glCanvas!.width < mask.w || this.glCanvas!.height < mask.h) {
       this.glCanvas!.width = Math.max(this.glCanvas!.width, mask.w);

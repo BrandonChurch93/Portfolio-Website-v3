@@ -48,6 +48,46 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
     - WebKit: a phone, median 17 ms, worst 55, 3 frames over 33 ms. An upright iPad the same. An iPad held sideways: median 17 ms but 33 frames over 33 ms and a worst of 173, which is the pieces being built as the page is scrolled: a handheld cannot build them all up front for memory.
     - A phone with the processor slowed four times: median 16.7 ms, 95th 33 ms, worst 50.
 
+**Memory in Safari's engine, measured and cut** (an Opus engineer in a scratch copy, three hours of measuring; its patch checked and applied by Fable, with the sky left live). `npm run mem -- / --url <production build>`, GPU, loaded and at the foot:
+
+| | Before | After |
+|---|---|---|
+| A phone | 827 · 1148 | 512 · 815 |
+| An iPad held upright | 1059 · 1407 | 643 · 910 |
+| An iPad held sideways | about 1560 · 2030 to 2310, 2600 to 2780 at Skills | about 1200 · 1610 to 1770, about 2000 at Skills |
+| All work, a case study, a gallery (an iPad's size) | 716 · 544 (Nov 18) | 456 · 508, 403 · 360, 350 · 356 |
+| A desktop window (1728 by 1000 at two to one) | 5231 · 5468 | 5198 · 5447 |
+
+- **What was cut, on a handheld only** (`HANDHELD` in `src/config/site.ts` has each figure): a plate more than a screen and a half away lets go its relief, its picture and its pixels and bakes again as it comes near (`away` and `near` in `src/metal/renderer.ts`: Work's sixteen cards held about 300 MB from the first screen on). A card's picture is sent at 1024 at most. A put away card keeps no pixels. Every piece but the world makes its pictures at 1024 at most and its shadow maps at 1024 (`full` on a stage keeps the world's). A piece is mounted from a screen and a quarter away and let go 0.3 of a screen further, where it was a whole screen: the world is now let go before Skills' pieces are made, and the desk before the pad.
+- **What a desktop draws is unchanged**: the engineer's stills before and after differ by nothing, and a real scroll times the same.
+- **It costs no smoothness that could be measured**: a real scroll in WebKit loses the same frames as before on all three handheld sizes.
+- **Still over the rule: an iPad held sideways,** by about 200 MB loaded, 600 to 770 at the foot and 1000 at Skills. The engineer's table of what each thing holds says why: at Skills the desk (600 to 700 MB), the five small pieces (about 120 each), Work's cards, the stream and WebKit's own cost of anything that draws every frame are all alive together. **It cannot be brought inside the rule there while the desk and the small pieces are live.** What would: the desk as its picture on an iPad held sideways (about 700 less at Skills, 500 at the foot: its lights would no longer come on with the stream), then the pad as its picture (250 less at the foot: no launch), then the sky drawn once (175 less on the first screen: no twinkle and no meteors, `HANDHELD.sky = 'still'` is the switch and is off). Each is his to say. His own iPad has run the page as it was.
+- **Known and not mended:** scrolled to the foot and back twice, WebKit says "too many active WebGL contexts, the oldest context will be lost" (it did before the cuts too: a swept context still counts toward WebKit's sixteen for a while). Nothing was seen missing in stills of the way down and the way back. A desktop window in Safari holds 5.2 GB of GPU, which nobody has decided is too much.
+- **The engineer's raw runs and scripts** are in the session's scratch folder (`memlab/shots/`), not the repo. What a later session needs is here and in `HANDHELD`'s own comments.
+
+**Not at the bar, or not done, plainly.**
+- The sideways iPad's memory, above.
+- An iPad held sideways drops frames as pieces are built while it scrolls (WebKit on this Mac: about 32 frames over 33 ms in a top to foot scroll, the worst about 160 ms). A handheld cannot build them up front for memory. Not changed in this pass.
+- An iPad held upright and a phone still get the one column, pictures in place of the world, the desk and the pad's sky, and no stream through Skills and About. The rows have their things as pictures now. "As near the desktop's whole experience as fits" (his words, Nov 16) is not built.
+- 4K: the board stops at 2400 px, so every section is a column with dark bands beside it. The hero now has stars to the edges and his words near the city. The bands beside the rest are bare.
+- The CPU is still the crispest of the three things. The reflector in About is small and lost in the stream's glare at its strike.
+- A change of category on All work leaves the grid bare for about half a second while the new cards' plates bake (a sub category no longer does).
+- A project's pictures are letterboxed in a frame of another shape, and its first slot shows a play button over a still: both wait for his pictures and videos.
+- A browser set to 150 percent text or more overflows Contact's plate, whose height is fixed.
+- Not done from the launch list: font preloading, a schema.org Person, the world's meshes packed tighter, a wait before a second send.
+
+**What only he can do.**
+1. Hook up the form: from the live domain send one test message, click the activation link FormSubmit emails him, and give the alias it sends. It goes in `form.endpoint` and `form.plain` in `src/content/contact.ts`.
+2. The Work projects: real screenshots (a card's window is 2 to 1, a project's viewer 2000 by 1230), a video for each first slot, and "Why I built this" for all eight (`src/content/projects.ts`, `src/content/work.ts`, `public/media/work/`). Micro-Interactions Library has no real picture at all.
+3. Games, 3D art and Photography: the real projects, or his word to cut the bar to Software.
+4. About's two tabs, which still read "Placeholder text" (`src/skills-about/content.ts`).
+5. The stand in words, to approve or rewrite: Contact's field errors and its sent and failed lines, the preloader's "Loading", the 404 and error pages, the foot's two headings, the labels on All work and a project's page (`src/content/contact.ts`, `hero.ts`, `site-pages.ts`).
+6. The domain: add brandonchurchportfolio.com and www to the Vercel project, point DNS, and say which is the primary (`SITE_URL` is the bare domain). Then say when, so `LAUNCHED` in `src/config/site.ts` is set to true and the site can be found.
+7. Confirm the Calendly link is his studio's (`calendly.com/modernsoftworks`), and approve the favicon, the share picture and its line.
+8. Scroll the home page top to foot twice on his iPad, held both ways.
+9. Rule on four things: the navigation, his words coming down with the world on tall screens (`?words=third` shows the rule kept), whether an iPad may still its sky or show the desk as a picture to hold less memory, and whether debris goes in the 4K bands.
+10. In the repo's folder on his Mac: two world files are an older version than the committed one (`git checkout -- public/world/skin.bin public/world/skin-map.bin` puts them right), and `public/world/rock-a.bin`, `rock-b.bin`, `off.png` and a second copy of his résumé are untracked: keep or delete.
+
 ## 2026-11-20 · The final pass handed to a fresh session (Fable, web chat)
 
 - **What he said (12:55).** The portfolio is pretty much done and he has gone through it himself for speed and for how clear the 3D things are. He wants one final pass in a new Claude Code session, since the last one had compacted many times. `BRIEF.md`, Open 36, has his words.

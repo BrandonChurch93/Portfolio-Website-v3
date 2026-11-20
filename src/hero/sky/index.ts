@@ -87,7 +87,20 @@ function target(gl: WebGL2RenderingContext, w: number, h: number, float: boolean
   return { fb, tex };
 }
 
+// On a handheld the sky is drawn once, as it is for a visitor who asks for reduced motion, and kept as a picture in a
+// plain 2D canvas: its WebGL context is let go once it has drawn (HANDHELD.sky). A new plan draws it again.
 export function mountSky(host: HTMLElement, plan: () => SkyPlan): Sky {
+  if (!handheld() || HANDHELD.sky !== 'still') return mountLive(host, plan, false);
+  const sized = () => { const p = plan(); return `${Math.round(p.w)}:${Math.round(p.h)}:${Math.round(p.end)}`; };
+  let made = sized(), now = mountLive(host, plan, true);
+  return {
+    replan() { const k = sized(); if (k === made) return; made = k; now.dispose(); now = mountLive(host, plan, true); },
+    meteor() {},
+    dispose() { now.dispose(); },
+  };
+}
+
+function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
   const canvas = document.createElement('canvas');
   canvas.setAttribute('aria-hidden', 'true');
   Object.assign(canvas.style, { position: 'absolute', left: '0', top: '0', width: '100%', height: '100%', pointerEvents: 'none', display: 'block' });
@@ -97,7 +110,7 @@ export function mountSky(host: HTMLElement, plan: () => SkyPlan): Sky {
   if (add) canvas.style.mixBlendMode = 'plus-lighter';
   host.appendChild(canvas);
   const glOr = canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: true, antialias: false, depth: false, stencil: false, preserveDrawingBuffer: false });
-  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const still = keep || matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (!glOr) return { replan() {}, dispose() { canvas.remove(); }, meteor() {} };
   const gl = glOr;
 
@@ -426,6 +439,7 @@ export function mountSky(host: HTMLElement, plan: () => SkyPlan): Sky {
   init();
   build();
 
+  let picture: HTMLCanvasElement | null = null;
   const seen = new IntersectionObserver((e) => { visible = e[e.length - 1].isIntersecting; });
   seen.observe(host);
   const off = clock.onFrame((t) => {
@@ -435,6 +449,21 @@ export function mountSky(host: HTMLElement, plan: () => SkyPlan): Sky {
     last = k;
     dirty = false;
     draw(t);
+    if (keep) {
+      // Read in the same task it was drawn in, before the drawing buffer is given to the page and cleared.
+      picture = document.createElement('canvas');
+      picture.width = W;
+      picture.height = H;
+      picture.setAttribute('aria-hidden', 'true');
+      picture.style.cssText = canvas.style.cssText;
+      picture.getContext('2d')?.drawImage(canvas, 0, 0);
+      host.appendChild(picture);
+      alive = false;
+      off();
+      seen.disconnect();
+      sweep(gl);
+      canvas.remove();
+    }
   });
 
   const lost = (e: Event) => { e.preventDefault(); sky = null; };
@@ -476,6 +505,7 @@ export function mountSky(host: HTMLElement, plan: () => SkyPlan): Sky {
       canvas.removeEventListener('webglcontextrestored', restored);
       sweep(gl);
       canvas.remove();
+      if (picture) { picture.width = 0; picture.height = 0; picture.remove(); picture = null; }
     },
   };
 }
