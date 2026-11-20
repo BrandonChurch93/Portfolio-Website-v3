@@ -126,6 +126,25 @@
   outline-offset: var(--focus-offset);
 }
 
+/* On the home page a screen too narrow for the board keeps every section to one column (--narrow in tokens.css),
+   and the foot keeps to it too: on an iPad held upright its edges stood well outside the sections' own. */
+@media (max-width: 1099.98px) {
+  .foot[data-here='home'] {
+    --w: var(--narrow);
+  }
+}
+
+/* Under a finger a link is as tall as a finger needs. */
+@media (pointer: coarse) {
+  .group ul {
+    gap: 0;
+  }
+
+  .group a {
+    min-height: var(--touch);
+  }
+}
+
 /* On a phone: who he is, then the two groups side by side. */
 @media (max-width: 699.98px) {
   .foot {

@@ -19,6 +19,14 @@
   transition: translate var(--dur-2) var(--ease-settle), opacity var(--dur-2) var(--ease-settle);
 }
 
+/* On the home page a screen too narrow for the board keeps every section to one column, and the head's two words
+   stand on that column's edges. */
+@media (max-width: 1099.98px) {
+  .nav[data-here='home'] {
+    --w: var(--narrow);
+  }
+}
+
 /* On the home page everything is drawn on a board that grows with the screen, and the head grows with it. */
 @media (min-width: 1100px) {
   .nav[data-here='home'] {

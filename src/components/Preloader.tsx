@@ -71,6 +71,8 @@ export function Preloader({ name, word }: { name: string; word: string }) {
 
   if (gone) return null;
   return (
+    <>
+    <noscript><style>{`.${styles.loader}{display:none}`}</style></noscript>
     <div ref={root} className={styles.loader} data-lifting={lifting ? '' : undefined} role="progressbar" aria-label={word} aria-valuemin={0} aria-valuemax={100} aria-valuenow={0}>
       <div className={styles.block}>
         <p className={styles.name}>{name}</p>
@@ -81,5 +83,6 @@ export function Preloader({ name, word }: { name: string; word: string }) {
         </p>
       </div>
     </div>
+    </>
   );
 }

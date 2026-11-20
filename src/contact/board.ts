@@ -22,10 +22,17 @@ export const CONTACT = {
   // The foot of the section: the foot of the stone, where the footer begins.
   h: Math.round(734 + STONE.r * FLAT + STONE.edge),
   // When the stream lands the screen has to hold the title, the plate, the rocket and the stone. So the stone's
-  // foot is this far above the foot of the screen as it lands.
+  // foot is this far above the foot of the screen as it lands. On a screen too short for all of that (a browser
+  // window on a 1080p screen is, by about thirty units) the stone stands lower, as low as keeps `head` clear over
+  // the title, and never nearer the foot of the screen than `low`: there the title was cut off as the stream landed.
   seat: 78,
+  head: 20,
+  low: 10,
   foot: 100,
 } as const;
+
+// How far the stone's foot stands over the foot of a screen so many units tall as the stream lands.
+export const seatOn = (tall: number): number => Math.max(CONTACT.low, Math.min(CONTACT.seat, tall - (CONTACT.h - CONTACT.title.t) - CONTACT.head));
 
 // Where the pad's host stands: as wide as the pad draws itself, with the stone's middle where the board has it.
 export const PAD = { l: CONTACT.pad.x - HOST.wide / 2, w: HOST.wide, b: CONTACT.pad.y + HOST.up } as const;

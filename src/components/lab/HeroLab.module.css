@@ -22,14 +22,16 @@
 /* The screen's height is part of the layout. His words are set from the top of the screen: a third of the way down
    it, less a little, and never nearer its top than a least. The tip of the world's spire hangs a set way under
    them, or lower on a tall screen, so that no more than a set depth of the dome shows at rest: its torn edge and
-   everything under it are under the foot of the screen until the page is scrolled. */
+   everything under it are under the foot of the screen until the page is scrolled. Where that leaves more than a
+   set room between the words and the spire, the words come down with the world (WORDS.give in src/hero/board.ts). */
 .board {
   --u: calc(min(100vw, 2400px) / 1460);
   --screen: 100vh;
   --screen: 100svh;
-  --words: max(calc(var(--u) * var(--words-least)), calc(var(--screen) * var(--words-third) - var(--u) * var(--words-rise)));
+  --words-set: max(calc(var(--u) * var(--words-least)), calc(var(--screen) * var(--words-third) - var(--u) * var(--words-rise)));
   /* How far down the page the spire's tip is, and the lowest of what broke away from the world. */
-  --tip: max(calc(var(--words) + var(--u) * (var(--words-tall) + var(--words-gap))), calc(var(--screen) - var(--u) * (var(--city-pole) + var(--city-show))));
+  --tip: max(calc(var(--words-set) + var(--u) * (var(--words-tall) + var(--words-gap))), calc(var(--screen) - var(--u) * (var(--city-pole) + var(--city-show))));
+  --words: max(var(--words-set), calc(var(--tip) - var(--u) * (var(--words-tall) + var(--words-gap) + var(--words-give))));
   --low: calc(var(--tip) + var(--u) * var(--city-low));
   position: relative;
   width: calc(var(--u) * 1460);
@@ -39,6 +41,10 @@
 
 /* The night sky, which also draws the light a far off city throws into it. It ends a little under the world's torn
    edge. */
+.board[data-words='third'] {
+  --words: var(--words-set);
+}
+
 .sky {
   position: absolute;
   left: 0;
@@ -67,6 +73,38 @@
     inset: 0 0 auto;
     height: min(100%, 175vh);
     background: linear-gradient(#000 62%, transparent);
+    pointer-events: none;
+  }
+
+  /* And stars beside the board, out to the screen's edges: the sky's own canvas is no wider than the board, and
+     on a 4K screen the hero was a lit column between two blank bands. Small still points in three tiles of
+     unlike sizes, so no pattern is seen, shown only beside the board and under where the sky's sides fade. */
+  .page::after {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto;
+    height: min(100%, 150vh);
+    --star: #ffe9d2;
+    background:
+      radial-gradient(1.1px 1.1px at 7% 12%, color-mix(in srgb, var(--star) 80%, transparent) 60%, transparent 62%),
+      radial-gradient(0.9px 0.9px at 23% 71%, color-mix(in srgb, var(--star) 55%, transparent) 60%, transparent 62%),
+      radial-gradient(1.3px 1.3px at 41% 33%, color-mix(in srgb, var(--star) 70%, transparent) 60%, transparent 62%),
+      radial-gradient(0.8px 0.8px at 58% 88%, color-mix(in srgb, var(--star) 45%, transparent) 60%, transparent 62%),
+      radial-gradient(1px 1px at 74% 19%, color-mix(in srgb, var(--star) 60%, transparent) 60%, transparent 62%),
+      radial-gradient(0.9px 0.9px at 91% 54%, color-mix(in srgb, var(--star) 50%, transparent) 60%, transparent 62%),
+      radial-gradient(1.6px 1.6px at 16% 44%, color-mix(in srgb, var(--star) 90%, transparent) 55%, transparent 62%),
+      radial-gradient(0.8px 0.8px at 36% 9%, color-mix(in srgb, var(--star) 40%, transparent) 60%, transparent 62%),
+      radial-gradient(1.2px 1.2px at 63% 61%, color-mix(in srgb, var(--star) 65%, transparent) 60%, transparent 62%),
+      radial-gradient(0.9px 0.9px at 83% 83%, color-mix(in srgb, var(--star) 45%, transparent) 60%, transparent 62%),
+      radial-gradient(1px 1px at 12% 86%, color-mix(in srgb, var(--star) 50%, transparent) 60%, transparent 62%),
+      radial-gradient(2px 2px at 52% 27%, color-mix(in srgb, var(--star) 95%, transparent) 50%, transparent 62%),
+      radial-gradient(0.8px 0.8px at 69% 4%, color-mix(in srgb, var(--star) 40%, transparent) 60%, transparent 62%),
+      radial-gradient(1px 1px at 94% 37%, color-mix(in srgb, var(--star) 55%, transparent) 60%, transparent 62%);
+    background-size: 617px 743px, 617px 743px, 617px 743px, 617px 743px, 617px 743px, 617px 743px, 883px 571px, 883px 571px, 883px 571px, 883px 571px, 883px 571px, 1291px 1087px, 1291px 1087px, 1291px 1087px;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(50% - 1150px), transparent calc(50% - 990px), transparent calc(50% + 990px), #000 calc(50% + 1150px)), linear-gradient(#000 45%, transparent);
+    mask-image: linear-gradient(90deg, #000 calc(50% - 1150px), transparent calc(50% - 990px), transparent calc(50% + 990px), #000 calc(50% + 1150px)), linear-gradient(#000 45%, transparent);
+    -webkit-mask-composite: source-in;
+    mask-composite: intersect;
     pointer-events: none;
   }
 }

@@ -1,5 +1,11 @@
+/* The page runs on a little way under the site's foot, which stands over that stretch: what the stream's landing
+   throws and lights round the stone then dies away behind the foot, where it used to be cut off on a level line at
+   the page's own end (the stone stands at the very foot of the page). The page is no longer for it. */
 .page {
+  --spill: 9rem;
   position: relative;
   overflow: clip;
+  margin-bottom: calc(-1 * var(--spill));
+  padding-bottom: var(--spill);
   background: var(--bg);
 }

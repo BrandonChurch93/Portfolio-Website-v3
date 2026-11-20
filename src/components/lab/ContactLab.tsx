@@ -40,7 +40,7 @@ export function ContactLab({ hub }: { hub?: Hub }) {
   // and the pad under it, live, with the stream falling beside the plate onto its stone.
   const [wide, setWide] = useState<boolean | null>(null);
   const [live, setLive] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<'' | 'yes' | 'no'>('');
   const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
   // The fields the form was sent with empty or wrong. The plate says so itself, in place of the browser's bubble.
   const [wrong, setWrong] = useState<Partial<Record<Field, boolean>>>({});
@@ -66,11 +66,14 @@ export function ContactLab({ hub }: { hub?: Hub }) {
 
   useEffect(() => {
     if (!copied) return;
-    const t = setTimeout(() => setCopied(false), 2000);
+    const t = setTimeout(() => setCopied(''), 2000);
     return () => clearTimeout(t);
   }, [copied]);
 
+  // It says Copied only when the address is on the clipboard. Where the browser will not allow that, a letter to
+  // him is opened in the visitor's own mail, which is what the address was wanted for.
   const copy = async () => {
+    let ok = true;
     try {
       await navigator.clipboard.writeText(contact.email.address);
     } catch {
@@ -79,10 +82,11 @@ export function ContactLab({ hub }: { hub?: Hub }) {
       t.style.cssText = 'position:fixed;opacity:0';
       document.body.appendChild(t);
       t.select();
-      document.execCommand('copy');
+      try { ok = document.execCommand('copy'); } catch { ok = false; }
       t.remove();
     }
-    setCopied(true);
+    setCopied(ok ? 'yes' : 'no');
+    if (!ok) location.href = `mailto:${contact.email.address}`;
   };
 
   // Focus goes with what replaced the thing it was on: to the confirmation when the form has gone, and back to the
@@ -132,8 +136,8 @@ export function ContactLab({ hub }: { hub?: Hub }) {
             <div className={styles.content} data-part="content" style={{ padding: u(P.pad) }}>
               <div className={styles.actions}>
                 <MetalButton label={contact.calendly.label} href={contact.calendly.href} className={styles.book} />
-                <MetalButton label={copied ? contact.email.copied : contact.email.label} variant="accent" onClick={copy} className={styles.copy} />
-                <span className="visually-hidden" role="status">{copied ? 'Email address copied' : ''}</span>
+                <MetalButton label={copied === 'yes' ? contact.email.copied : contact.email.label} variant="accent" onClick={copy} className={styles.copy} />
+                <span className="visually-hidden" role="status">{copied === 'yes' ? contact.email.said : copied === 'no' ? contact.email.unsaid : ''}</span>
               </div>
               {state !== 'sent' && <p className={styles.rule}><span>{contact.rule}</span></p>}
               {state === 'sent' ? (
@@ -143,7 +147,7 @@ export function ContactLab({ hub }: { hub?: Hub }) {
                   <button type="button" className={styles.again} onClick={() => setState('idle')}>{F.again}</button>
                 </div>
               ) : (
-                <form ref={form} className={styles.form} onSubmit={submit} onInput={typed} noValidate aria-busy={state === 'sending'}>
+                <form ref={form} className={styles.form} method="post" action={F.plain} onSubmit={submit} onInput={typed} noValidate aria-busy={state === 'sending'}>
                   <input type="text" name="_honey" className={styles.honey} tabIndex={-1} autoComplete="off" aria-hidden="true" />
                   <div className={styles.pair}>
                     <label className={styles.field}>

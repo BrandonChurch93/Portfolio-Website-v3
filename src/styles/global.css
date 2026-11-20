@@ -14,6 +14,9 @@
 }
 
 html {
+  /* Whatever the keyboard or a link brings onto the screen clears the head of the page above it, and does not
+     stop against the screen's foot. */
+  scroll-padding: calc(var(--nav) + var(--space-4)) 0 var(--space-6);
   font-size: var(--root);
   background: var(--bg);
   color: var(--text);

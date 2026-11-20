@@ -122,7 +122,13 @@
   border-top: 1px solid var(--line-strong);
   font-size: var(--step--1);
   line-height: 1.4;
+  text-wrap: balance;
   color: var(--text-2);
+}
+
+/* An odd one out takes the whole row, so it does not stand beside a hole. */
+.figures li:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
 }
 
 .value {
@@ -149,9 +155,14 @@
   white-space: nowrap;
 }
 
+/* In one row, shared between as many as there are: three in a row of four left its last quarter empty. */
 @media (min-width: 700px) {
   .figures {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--figures, 4), minmax(0, 1fr));
+  }
+
+  .figures li:last-child:nth-child(odd) {
+    grid-column: auto;
   }
 }
 
@@ -205,6 +216,18 @@
   max-width: 15rem;
 }
 
+/* On the narrowest phones three links keep to one row: at their usual least width the third fell under the other
+   two, alone. */
+@media (max-width: 379.98px) {
+  .links {
+    gap: var(--space-2);
+  }
+
+  .links > * {
+    min-width: 5.4rem;
+  }
+}
+
 .pill {
   display: inline-block;
   margin-right: var(--space-3);
@@ -231,8 +254,8 @@
 /* As wide as the page allows and never taller than the screen has room for: the picture, its caption and its
    thumbnails are seen together. */
 .wide {
-  --col: min(68rem, 100vw - 2 * var(--gut), (100vh - 19.5rem) * var(--shape, 1.5));
-  --col: min(68rem, 100vw - 2 * var(--gut), max(20rem, (100svh - 19.5rem) * var(--shape, 1.5)));
+  --col: min(68rem, 100vw - 2 * var(--gut), (100vh - 25.5rem) * var(--shape, 1.5));
+  --col: min(68rem, 100vw - 2 * var(--gut), max(20rem, (100svh - 25.5rem) * var(--shape, 1.5)));
   margin-top: clamp(1.5rem, 3vw, 2.5rem);
 }
 

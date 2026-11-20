@@ -5,7 +5,8 @@ const ADDRESS = 'brandonleochurch@gmail.com';
 export const contact = {
   title: 'Contact',
   calendly: { label: 'Book on Calendly', href: 'https://calendly.com/modernsoftworks' },
-  email: { label: 'Copy my email', copied: 'Copied', address: ADDRESS },
+  // `said` and `unsaid` are what a screen reader hears when the address was copied and when it could not be.
+  email: { label: 'Copy my email', copied: 'Copied', address: ADDRESS, said: 'Email address copied', unsaid: 'It could not be copied here. A new email to me is opening instead.' },
   rule: 'or send a message',
   form: {
     name: 'Name',
@@ -20,6 +21,8 @@ export const contact = {
     again: 'Send another',
     // His live site's form goes through FormSubmit, which mails what is posted to the address at the end of this.
     endpoint: `https://formsubmit.co/ajax/${ADDRESS}`,
+    // Where the form posts itself with scripts off: without it a send put the message in the page's address.
+    plain: `https://formsubmit.co/${ADDRESS}`,
     subject: 'New Portfolio Contact!',
   },
   based: 'Boise, Idaho · Mountain Time',

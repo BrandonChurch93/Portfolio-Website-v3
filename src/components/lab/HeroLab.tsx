@@ -35,9 +35,12 @@ export function HeroLab({ hub }: { hub?: Hub }) {
   const [ui, setUi] = useState(!hub);
   // Whether the screen is wide enough for the layout. Narrower, the page is a plain stand in with no stream and no city.
   const [wide, setWide] = useState<boolean | null>(null);
+  // ?words=third holds his words a third of the way down every screen, as they were before Nov 20 (WORDS.give).
+  const [third, setThird] = useState(false);
 
   useEffect(() => {
     setUi(new URLSearchParams(location.search).get('ui') !== '0' && !hub);
+    setThird(new URLSearchParams(location.search).get('words') === 'third');
     const fits = matchMedia(`(min-width: ${BOARD.least}px)`), read = () => setWide(fits.matches);
     read();
     // The first screen waits for the world, where there is one and the page has been opened at its top: the
@@ -84,7 +87,7 @@ export function HeroLab({ hub }: { hub?: Hub }) {
   }, [wide]);
 
   const vars = {
-    '--words-tall': WORDS.tall, '--words-least': WORDS.least, '--words-third': WORDS.third, '--words-rise': WORDS.rise, '--words-gap': WORDS.gap,
+    '--words-tall': WORDS.tall, '--words-least': WORDS.least, '--words-third': WORDS.third, '--words-rise': WORDS.rise, '--words-gap': WORDS.gap, '--words-give': WORDS.give,
     '--city-tall': CITY.tall, '--city-over': CITY.over, '--city-pole': CITY.pole, '--city-show': CITY.show, '--city-edge': CITY.edge, '--city-low': CITY.low, '--work-under': WORK.under, '--work-tail': WORK.tail,
     '--sky-tail': SKY.tail,
   } as CSSProperties;
@@ -97,7 +100,7 @@ export function HeroLab({ hub }: { hub?: Hub }) {
           <p className={styles.label}>Study 30 · The hero</p>
         </div>
       )}
-      <div ref={board} className={styles.board} style={vars}>
+      <div ref={board} className={styles.board} style={vars} data-words={third ? 'third' : undefined}>
         <div ref={sky} className={styles.sky} aria-hidden="true" />
         <Still name="sky" className={styles.night} />
         <div ref={city} className={styles.city} style={{ width: u(HOST.wide) }}>

@@ -71,7 +71,8 @@ export function createHub(page: () => HTMLElement | null, has: () => { hero: boo
     // A screen too narrow for the sections under Work shows them as plain stand ins, and Work runs its stream alone.
     // With the hero's stand in above it, the stream begins under the hero and not at the top of the page.
     if (!wide()) {
-      const title = work.title, still = host.querySelector('[data-part="still"]');
+      // The world's picture by its name: the night sky behind the hero's words is a picture too, and comes first.
+      const title = work.title, still = host.querySelector('[data-still="world"]');
       // Under the fall in the picture, which is the picture's middle, where there is a picture.
       const begins = (box: (el: Element) => Box): number | { x: number; y: number } => {
         const img = still?.querySelector('img'), b = img ? box(img) : null;

@@ -389,6 +389,10 @@ export const projects: ProjectPage[] = [
 
 export const STAND_IN_WORD = STAND_IN;
 
+// Whether a page belongs to a category that is all stand ins: such a page is for judging the layout, and is kept
+// out of the sitemap and away from search engines.
+export const standsIn = (slug: string): boolean => !!catalog.find((c) => c.items.some((i) => i.slug === slug))?.standIn;
+
 // A project's page with the card it belongs to, and the projects before and after it in its own category.
 export function projectOf(slug: string): { page: ProjectPage; item: WorkItem; prev: WorkItem | null; next: WorkItem | null } | null {
   const page = projects.find((p) => p.slug === slug);

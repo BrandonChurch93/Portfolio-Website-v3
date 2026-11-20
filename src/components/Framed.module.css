@@ -28,7 +28,9 @@
   }
 }
 
-.metal {
+/* Named through what it turns in, so it outranks the plate renderer's own `position: relative` whichever
+   stylesheet a build loads last (ContactLab.module.css has why). */
+.turn .metal {
   position: absolute;
   inset: 0;
 }

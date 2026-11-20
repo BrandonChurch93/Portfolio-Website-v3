@@ -2,8 +2,8 @@
 import { hex, palette } from './palette';
 
 export const SITE_NAME = 'Brandon Church';
-// Where the site is served, for the addresses a shared link carries. The Vercel address until he names the domain it
-// launches on (PLAN.md, Ready to deploy, Owner).
+// Where the site is served, for the addresses a shared link carries: the domain he named on Nov 16 (BRIEF.md,
+// Settled, Hero, "His résumé, the domain and the striped ground"). He sets up its DNS himself.
 export const SITE_URL = 'https://brandonchurchportfolio.com';
 
 // The names the carried 3D pieces use for the palette. waterAmber3d is the stream's color as a number.
@@ -94,8 +94,7 @@ export const SETTLE = { frames: 3, timeoutMs: 60000, pictureMs: 15000 } as const
 // Sizes the screenshot scripts use. scripts/shot.mjs keeps its own copy because it runs outside the app.
 export type ViewportName = 'phone' | 'tablet' | 'desktop' | 'wide' | '4k';
 
-// The home page's address. It is the whole page's study until launch, when the whole page moves to the root
-// (PLAN.md, Ready to deploy) and this becomes '/'.
+// The home page's address.
 export const HOME = '/';
 // Whether the site is on its own domain and may be found by a search engine. Until he says so, no page is indexed
 // (src/app/layout.tsx, src/app/robots.ts).

@@ -38,7 +38,7 @@ export function Viewer({ shots, aspect, rail = 'side', label, under }: { shots: 
   useEffect(() => {
     const d = dialog.current;
     if (!d) return;
-    if (large && !d.open) d.showModal();
+    if (large && !d.open) { d.showModal(); d.focus(); }
     if (!large && d.open) d.close();
   }, [large]);
 
@@ -77,7 +77,7 @@ export function Viewer({ shots, aspect, rail = 'side', label, under }: { shots: 
       </ul>
       {under && <div className={styles.under}>{under}</div>}
 
-      <dialog ref={dialog} className={styles.large} aria-label={label} onClose={() => setLarge(false)} onClick={(e) => { if (e.target === dialog.current) setLarge(false); }} onKeyDown={keys}>
+      <dialog ref={dialog} tabIndex={-1} className={styles.large} aria-label={label} onClose={() => setLarge(false)} onClick={(e) => { if (e.target === dialog.current) setLarge(false); }} onKeyDown={keys}>
         {large && (
           <>
             <img src={now.src} alt={now.alt} />

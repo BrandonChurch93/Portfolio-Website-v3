@@ -191,15 +191,17 @@ export function WorkCard({ item, look = CARD_LOOK, held, className }: Props) {
             <span>{item.year}</span>
           </div>
           <div className={styles.words}>
-            <h3 className={styles.title}>
-              {item.page ? (
-                <a href={item.page} className={styles.open}>
-                  {item.name}
-                  <span className="visually-hidden">, case study</span>
-                </a>
-              ) : item.name}
-            </h3>
-            <p className={styles.line}>{item.line}</p>
+            <div className={styles.say}>
+              <h3 className={styles.title}>
+                {item.page ? (
+                  <a href={item.page} className={styles.open}>
+                    {item.name}
+                    <span className="visually-hidden">, case study</span>
+                  </a>
+                ) : item.name}
+              </h3>
+              <p className={styles.line}>{item.line}</p>
+            </div>
             <ul className={styles.tags}>
               {item.tags.map((t) => <li key={t}>{t}</li>)}
             </ul>

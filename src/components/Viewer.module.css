@@ -245,7 +245,7 @@
   margin: 0;
   padding: clamp(1rem, 3vw, 2.5rem);
   border: 0;
-  background: color-mix(in srgb, var(--bg) 95%, transparent);
+  background: color-mix(in srgb, var(--bg) 98%, transparent);
   color: var(--text-2);
 }
 
@@ -254,6 +254,17 @@
   grid-template-rows: minmax(0, 1fr) auto;
   gap: var(--space-4);
   justify-items: center;
+}
+
+/* The picture stands in the middle of its room. Left at the top, a wide picture on a phone had most of a screen
+   of nothing between it and the bar under it. */
+.large img {
+  align-self: center;
+}
+
+/* Opened, the view itself takes the focus and not its first button, which wore a focus ring after a tap. */
+.large:focus {
+  outline: none;
 }
 
 .large::backdrop {

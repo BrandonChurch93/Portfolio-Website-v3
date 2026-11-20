@@ -7,19 +7,18 @@ import '../styles/tokens.css';
 import '../styles/global.css';
 import { paletteVars } from '../config/palette';
 import { COLORS, LAUNCHED, SITE_NAME, SITE_URL } from '../config/site';
-import { STILLS } from '../config/stills';
+import { SHARE } from '../config/share';
 import { hero } from '../content/hero';
 import { Runtime } from '../components/Runtime';
 
-// What a shared link shows: his own first paragraph and a picture of the hero's first screen. The words are his to
-// approve. Nothing is indexed until he says the site is launched (LAUNCHED in src/config/site.ts).
-const SHARE = STILLS.share;
+// What a shared link shows is in src/config/share.ts. Nothing is indexed until he says the site is launched
+// (LAUNCHED in src/config/site.ts).
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: { default: SITE_NAME, template: `%s · ${SITE_NAME}` },
   description: hero.lead,
-  openGraph: { type: 'website', siteName: SITE_NAME, title: SITE_NAME, description: hero.lead, locale: 'en_US', images: [{ url: SHARE.file, width: SHARE.keep.w, height: SHARE.keep.h, alt: `${hero.name}, ${hero.role}` }] },
-  twitter: { card: 'summary_large_image', title: SITE_NAME, description: hero.lead, images: [SHARE.file] },
+  openGraph: SHARE.openGraph,
+  twitter: SHARE.twitter,
   robots: LAUNCHED ? undefined : { index: false },
 };
 

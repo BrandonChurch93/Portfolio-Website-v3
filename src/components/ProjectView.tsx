@@ -11,6 +11,7 @@ import { MetalButton } from './MetalButton';
 import { SiteFoot } from './SiteFoot';
 import { MAIN, SiteNav } from './SiteNav';
 import { Viewer } from './Viewer';
+import { PICTURE_ASPECT } from './WorkCard';
 import styles from './ProjectView.module.css';
 
 // A project's own page (BRIEF.md, Open 33), in two kinds.
@@ -59,11 +60,14 @@ const last = (label: string) => label.slice(label.lastIndexOf(' ') + 1);
 
 // A project that has no page of its own on this site yet is reached from the page of all his work.
 const reach = (to: WorkItem) => (to.page.startsWith('/') || to.page.startsWith('http') ? to.page : ALL_WORK);
+// The way on wears the card's own picture, in the card's own shape, so it is cut as the card cuts it and no worse:
+// in a taller frame a wide screenshot lost a third of its width and its words were cut through.
+const WAY_ASPECT = PICTURE_ASPECT;
 
 function Ways({ prev, next }: { prev: WorkItem | null; next: WorkItem | null }) {
   const way = (to: WorkItem | null, label: string, side: 'prev' | 'next') => to && (
     <a href={reach(to)} className={styles.way} data-side={side}>
-      <Framed aspect={16 / 10} className={styles.wayPicture}><img src={to.picture.src} alt="" decoding="async" /></Framed>
+      <Framed aspect={WAY_ASPECT} className={styles.wayPicture}><img src={to.picture.src} alt="" decoding="async" /></Framed>
       <span className={styles.wayLabel}>{side === 'prev' ? '← ' : ''}{label}{side === 'next' ? ' →' : ''}</span>
       <span className={styles.wayName}>{to.name}</span>
     </a>
@@ -111,7 +115,7 @@ function Study({ page, item, prev, next }: Found & { page: StudyPage }) {
             under={<div className={styles.links}>{item.links.map((l, i) => <MetalButton key={l.label} label={l.label} variant={i === 0 ? 'primary' : 'accent'} href={l.href} />)}</div>}
           />
         </div>
-        <ul className={styles.figures}>
+        <ul className={styles.figures} style={{ '--figures': page.proved.length } as CSSProperties}>
           {page.proved.map((f) => (
             <li key={f.label}>
               <span className={styles.value}>{f.value}</span>

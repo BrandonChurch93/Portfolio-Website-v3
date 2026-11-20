@@ -12,7 +12,7 @@ import type { StreamHost } from '../skills/stage';
 import { mountStream, type PlanContext, type Planned, type StreamHandle } from '../stream/stream';
 import { clock } from '../world/clock';
 import { tiers } from '../world/tier';
-import { BOARD, CONTACT, LANDS, SHOW, onBoard } from './board';
+import { BOARD, CONTACT, LANDS, SHOW, onBoard, seatOn } from './board';
 
 // What the stream does to Contact. The page lays the section out. This hands the stream's planner the places
 // (plan), and in every frame the stream draws it runs what the landing sets going (frame): the plate woken by its
@@ -99,7 +99,7 @@ export function mountContact(parts: ContactParts, host?: StreamHost): ContactSta
     const pr = parts.page.getBoundingClientRect();
     origin = { x: pr.left + scrollX, y: pr.top + scrollY };
     return {
-      route: routeThroughContact({ width: c.width, unit: c.unit, view: c.view, board: k, from, joined: !!c.from, via, hidden: narrow && !!c.from, land, inward: -1, seat: mid.y + (CONTACT.h - CONTACT.pad.y + CONTACT.seat) * k, rests }),
+      route: routeThroughContact({ width: c.width, unit: c.unit, view: c.view, board: k, from, joined: !!c.from, via, hidden: narrow && !!c.from, land, inward: -1, seat: mid.y + (CONTACT.h - CONTACT.pad.y + seatOn(c.view / k)) * k, rests }),
       after: frame,
       off: (x, y) => keepOff.some((o) => x >= o.l && x <= o.r && y >= o.t && y <= o.b),
     };

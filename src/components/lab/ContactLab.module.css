@@ -79,7 +79,10 @@
   --r: calc(var(--u) * 20);
 }
 
-.metal {
+/* Named through the plate it lies in, so it outranks the plate renderer's own `position: relative` whichever
+   stylesheet a build happens to load last: at one class each, a production build loaded that one last, the
+   metal's box was no height at all, and Contact's plate was never drawn on a wide screen (found Nov 20). */
+.plate .metal {
   position: absolute;
   inset: 0;
 }

@@ -5,7 +5,7 @@ import { BLANK, STILLS, STILLS_UNDER, type StillName } from '../config/stills';
 export function Still({ name, className }: { name: StillName; className?: string }) {
   const s = STILLS[name];
   return (
-    <div className={className} data-part="still" aria-hidden="true">
+    <div className={className} data-part="still" data-still={name} aria-hidden="true">
       <picture>
         <source media={`(max-width: ${STILLS_UNDER - 0.02}px)`} srcSet={s.file} />
         <img src={BLANK} alt="" width={s.keep.w} height={s.keep.h} decoding="async" style={{ minWidth: s.least }} />

@@ -101,6 +101,8 @@
 .words {
   --title-lines: 2;
   --lines: 9;
+  --title-size: max(19px, calc(var(--u) * 23));
+  --line-size: max(13.5px, calc(var(--u) * 14.5));
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -108,7 +110,7 @@
 }
 
 .title {
-  font-size: max(19px, calc(var(--u) * 23));
+  font-size: var(--title-size);
   font-weight: 600;
   letter-spacing: -0.028em;
   line-height: 1.15;
@@ -136,7 +138,7 @@
 
 .line {
   margin-top: calc(var(--u) * 9);
-  font-size: max(13.5px, calc(var(--u) * 14.5));
+  font-size: var(--line-size);
   line-height: 1.55;
   color: var(--text-2);
   display: -webkit-box;
@@ -283,6 +285,29 @@
 
 @container (min-width: 245px) {
   .words { --lines: 8; }
+}
+
+/* A card under 270 px keeps two lines for its title, and a title of one line left the second as a hole between it
+   and the description (a 360 px phone, Nov 20). There the title and the description share one block as tall as
+   the two were: the title takes the lines it needs and the description follows it, so what is spare lies under
+   the description, where a paragraph ends. The card is the same size either way. On a wider card the block is not
+   a box at all. */
+.say {
+  display: contents;
+}
+
+@container (max-width: 269.98px) {
+  .say {
+    display: block;
+    height: calc(var(--title-lines) * 1.15 * var(--title-size) + var(--u) * 9 + var(--lines) * 1.55 * var(--line-size));
+    overflow: hidden;
+  }
+
+  .title {
+    height: auto;
+    max-height: calc(var(--title-lines) * 1.15em + 0.14em);
+    padding-bottom: 0.14em;
+  }
 }
 
 /* Measured in WebKit and Chromium on every card (Nov 18): WebKit sets the same words a little wider, and at 265 and
