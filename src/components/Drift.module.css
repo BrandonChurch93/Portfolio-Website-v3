@@ -15,16 +15,19 @@
 }
 
 /* A piece sways about where it hangs and rolls a few degrees, slowly, a far one less. Its light is the hero's own,
-   from above: a far piece is dimmer, as the field's are. */
+   from above: a far piece is dimmer, as the field's are, which on this ground is the same as fainter. Only its
+   place and its turn move, so the browser can move it without drawing it again. */
 .piece img {
   display: block;
   width: 100%;
   height: auto;
   scale: var(--flip) 1;
   rotate: var(--turn);
-  filter: brightness(calc(1.25 - var(--far) * 0.7));
+  opacity: calc(1 - var(--far) * 0.55);
+}
+
+.field[data-sway] .piece img {
   animation: sway var(--dur) ease-in-out var(--delay) infinite alternate;
-  will-change: transform;
 }
 
 @keyframes sway {
@@ -61,7 +64,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .piece,
-  .piece img {
+  .field[data-sway] .piece img {
     animation: none;
   }
 }

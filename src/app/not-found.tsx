@@ -28,7 +28,7 @@ export default function NotFound() {
     <>
       <SiteNav here="project" />
       <main id={MAIN} className={`${styles.main} ${styles.inside} ${styles.lost}`}>
-        <Drift field={ADRIFT} className={styles.adrift} />
+        <Drift field={ADRIFT} className={styles.adrift} sway />
         <p className={styles.label}>{p.label}</p>
         <h1 className={styles.title}>{p.title}</h1>
         <p className={styles.note}>{p.note}</p>
