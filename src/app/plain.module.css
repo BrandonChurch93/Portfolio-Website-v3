@@ -73,3 +73,28 @@
   outline: var(--focus);
   outline-offset: var(--focus-offset);
 }
+
+/* A page that does not exist has pieces of the hero's debris adrift round its words (src/app/not-found.tsx). The
+   words stand over them, and on a narrow screen the pieces keep to the edges, clear of the words. */
+.lost {
+  position: relative;
+  overflow: clip;
+}
+
+.lost > :not(.adrift) {
+  position: relative;
+  z-index: 1;
+}
+
+.lost .adrift {
+  z-index: 0;
+  width: min(100%, 90rem);
+  margin: 0 auto;
+}
+
+@media (max-width: 699.98px) {
+  .lost .adrift {
+    width: 112%;
+    left: -6%;
+  }
+}

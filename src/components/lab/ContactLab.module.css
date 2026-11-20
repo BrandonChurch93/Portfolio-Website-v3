@@ -54,7 +54,10 @@
   pointer-events: none;
 }
 
-.piece {
+/* A class handed to another component is named twice wherever it sets what that component's own class sets
+   too. At one class each, which rule won was whichever stylesheet a build loaded last: on a built site that cost
+   Contact its plate and its buttons their widths (found Nov 20). */
+.piece.piece {
   position: absolute;
   inset: 0;
 }
@@ -106,12 +109,12 @@
   gap: calc(var(--u) * 20);
 }
 
-.book {
+.book.book {
   width: calc(var(--u) * 262);
   min-width: 0;
 }
 
-.copy {
+.copy.copy {
   width: calc(var(--u) * 178);
   min-width: 0;
 }
@@ -228,7 +231,7 @@
   margin-top: calc(var(--u) * 14);
 }
 
-.send {
+.send.send {
   width: 100%;
   min-width: 0;
   margin-top: calc(var(--u) * 16);
@@ -446,8 +449,8 @@
     flex-wrap: wrap;
   }
 
-  .book,
-  .copy {
+  .book.book,
+  .copy.copy {
     flex: 1 1 11rem;
     width: auto;
     min-width: 11rem;

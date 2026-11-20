@@ -45,6 +45,12 @@
   --words: var(--words-set);
 }
 
+/* The pieces that hang round the fall under the world's picture are for a narrow screen, where the world is a
+   picture. A wide screen has the live field. */
+.fall.fall {
+  display: none;
+}
+
 .sky {
   position: absolute;
   left: 0;
@@ -118,7 +124,9 @@
   pointer-events: none;
 }
 
-.piece {
+/* Named twice so it outranks the piece's own host, whichever stylesheet a build loads last (ContactLab.module.css
+   has why). */
+.piece.piece {
   position: absolute;
   inset: 0;
 }
@@ -328,6 +336,16 @@
     mask-image: linear-gradient(transparent, #000 13%);
   }
 
+  /* From the picture's fading foot down to where Work begins, as wide as the picture is. */
+  .fall.fall {
+    display: block;
+    inset: auto 50% calc(var(--space-9) * -1.1) auto;
+    z-index: 1;
+    width: max(100vw, 540px);
+    height: calc(max(100vw, 540px) * 0.62);
+    translate: 50% 0;
+  }
+
   .name {
     font-size: var(--step-5);
     white-space: normal;
@@ -337,7 +355,7 @@
     flex-wrap: wrap;
   }
 
-  .button {
+  .buttons .button {
     width: 13rem;
   }
 }
@@ -346,6 +364,29 @@
   .buttons {
     flex-direction: column;
     align-items: center;
+  }
+}
+
+/* A phone held sideways is too short for his words and the city together: the words take the first screen whole,
+   with their buttons clear of its foot, and the city comes with the scroll. Left to the taller rule, the buttons
+   were cut by the foot of the screen. */
+@media (max-width: 1099.98px) and (max-height: 479.98px) {
+  .board {
+    padding-top: calc(var(--nav) + var(--space-3));
+  }
+
+  .words {
+    min-height: calc(100vh - var(--nav) - var(--space-3));
+    min-height: calc(100svh - var(--nav) - var(--space-3));
+    padding-bottom: var(--space-5);
+  }
+
+  .lead {
+    margin-top: var(--space-3);
+  }
+
+  .buttons {
+    margin-top: var(--space-4);
   }
 }
 

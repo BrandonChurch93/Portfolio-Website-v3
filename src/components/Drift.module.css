@@ -1,0 +1,67 @@
+/* A field of the hero's debris as pictures (Drift.tsx). The field is a box the page places: a piece's place and
+   size are shares of it. Nothing here takes the pointer. */
+.field {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.piece {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--w);
+  translate: -50% -50%;
+}
+
+/* A piece sways about where it hangs and rolls a few degrees, slowly, a far one less. Its light is the hero's own,
+   from above: a far piece is dimmer, as the field's are. */
+.piece img {
+  display: block;
+  width: 100%;
+  height: auto;
+  scale: var(--flip) 1;
+  rotate: var(--turn);
+  filter: brightness(calc(1.25 - var(--far) * 0.7));
+  animation: sway var(--dur) ease-in-out var(--delay) infinite alternate;
+  will-change: transform;
+}
+
+@keyframes sway {
+  from {
+    translate: calc((1 - var(--far) * 0.6) * -0.5rem) calc((1 - var(--far) * 0.6) * 0.7rem);
+    rotate: calc(var(--turn) - (1 - var(--far) * 0.5) * 3.5deg);
+  }
+
+  to {
+    translate: calc((1 - var(--far) * 0.6) * 0.5rem) calc((1 - var(--far) * 0.6) * -0.7rem);
+    rotate: calc(var(--turn) + (1 - var(--far) * 0.5) * 3.5deg);
+  }
+}
+
+/* As the page scrolls, a near piece passes faster than the page and a far one more slowly, which is what gives the
+   field its depth. Where the browser cannot tie a movement to the scroll the pieces only sway. */
+@supports (animation-timeline: view()) {
+  .piece {
+    animation: pass linear both;
+    animation-timeline: view();
+    animation-range: entry 0% exit 100%;
+  }
+
+  @keyframes pass {
+    from {
+      translate: -50% calc(-50% + (0.55 - var(--far)) * 5rem);
+    }
+
+    to {
+      translate: -50% calc(-50% - (0.55 - var(--far)) * 5rem);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .piece,
+  .piece img {
+    animation: none;
+  }
+}

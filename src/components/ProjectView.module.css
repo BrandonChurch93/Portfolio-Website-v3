@@ -209,7 +209,8 @@
   width: 100%;
 }
 
-.links > * {
+.links > a,
+.links > button {
   flex: 1 1 0;
   width: auto;
   min-width: 6.5rem;
@@ -223,7 +224,8 @@
     gap: var(--space-2);
   }
 
-  .links > * {
+  .links > a,
+  .links > button {
     min-width: 5.4rem;
   }
 }

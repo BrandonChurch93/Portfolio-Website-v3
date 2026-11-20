@@ -139,7 +139,9 @@
   pointer-events: none;
 }
 
-.piece {
+/* Named twice so it outranks the piece's own host, whichever stylesheet a build loads last (ContactLab.module.css
+   has why). */
+.piece.piece {
   position: absolute;
   inset: 0;
   overflow: visible;

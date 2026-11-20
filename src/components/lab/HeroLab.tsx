@@ -9,6 +9,8 @@ import { LOADING } from '../../pieces/world/part';
 import { loading } from '../../world/loading';
 import { MetalButton } from '../MetalButton';
 import { PieceView } from '../PieceView';
+import type { Adrift } from '../../config/debris';
+import { Drift } from '../Drift';
 import { Still } from '../Still';
 import { Preloader } from '../Preloader';
 import type { Hub } from '../../whole/hub';
@@ -28,6 +30,17 @@ const u = (n: number) => `calc(var(--u) * ${Number(n.toFixed(2))})`;
 // everything, and draws the glow behind the world. ?ui=0 hides the label.
 // On a page with more sections than this one (hub), it hands the hub its plan, the hub mounts the one stream, and
 // the stream runs on from the core into Work.
+// What hangs round the stream's fall under the world's picture on a narrow screen (src/components/Drift.tsx): clear
+// of the fall itself, which is the middle of the box.
+const FALL: Adrift[] = [
+  { rock: 'slab', x: 0.2, y: 0.16, w: 0.19, turn: -12, far: 0.2 },
+  { rock: 'block', x: 0.81, y: 0.3, w: 0.14, turn: 18, far: 0.35 },
+  { rock: 'wedge', x: 0.31, y: 0.52, w: 0.085, turn: 26, far: 0.5 },
+  { rock: 'tooth', x: 0.68, y: 0.63, w: 0.06, turn: -8, far: 0.6 },
+  { rock: 'chip', x: 0.13, y: 0.78, w: 0.075, turn: 10, far: 0.55, flip: true },
+  { rock: 'flake', x: 0.87, y: 0.84, w: 0.065, turn: -30, far: 0.7 },
+];
+
 export function HeroLab({ hub }: { hub?: Hub }) {
   const page = useRef<HTMLElement>(null), board = useRef<HTMLDivElement>(null), city = useRef<HTMLDivElement>(null), bar = useRef<HTMLDivElement>(null);
   const sky = useRef<HTMLDivElement>(null), words = useRef<HTMLElement>(null);
@@ -117,6 +130,9 @@ export function HeroLab({ hub }: { hub?: Hub }) {
         </header>
         {/* The world as one picture, under his words, on a screen too narrow for the live world. */}
         <Still name="world" className={styles.still} />
+        {/* And under the picture, where its own stream falls on into Work, a few of the planet's pieces that move:
+            the picture cannot. */}
+        <Drift field={FALL} className={styles.fall} />
         <div ref={bar} id={hub ? undefined : 'work'} className={styles.bar} style={{ width: u(WORK.bar) }} aria-hidden="true">
           <span>Work begins here</span>
         </div>
