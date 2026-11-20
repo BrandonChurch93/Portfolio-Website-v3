@@ -40,7 +40,7 @@ const BAND = { cross: 0.58, back: 280, past: 30 } as const;
 
 // The flash way: how far the brush and the knife stand over the board and how far they are tipped, how small the
 // paints are, how hard things fall, and how the paints swell home.
-const FLASH = { brush: 15, knife: 12, flat: 11, dipper: 9, tip: 7, small: 0.3, mixFlat: 0.25, g: 420, swell: { at: 0.06, apart: 0.035, dur: 0.3, wobble: 0.16 } } as const;
+const FLASH = { brush: 15, knife: 12, dipper: 9, tip: 7, small: 0.3, mixFlat: 0.25, g: 420, swell: { at: 0.06, apart: 0.035, dur: 0.3, wobble: 0.16 } } as const;
 
 // The shards way, in seconds. The board's tiles leave first and lock together in a wave from the struck end. Then each
 // dab along the rim, one shard each, in order from the strike; the mixing ground; the knife; the brush, with its bead.
@@ -49,13 +49,11 @@ const FLASH = { brush: 15, knife: 12, flat: 11, dipper: 9, tip: 7, small: 0.3, m
 const SHARDS = {
   tiles: { leave: [0, 0.18] as [number, number], fly: [0.12, 0.17] as [number, number], gap: 1.8, slide: 0.07, open: 0.06, size: [11, 18] as [number, number], lit: 1, turn: 25 },
   dabs: { first: 0.32, apart: 0.045, fly: 0.15, open: 0.08, size: 13, lit: 2.2, lift: 30 },
-  crusts: { first: 0.24, apart: 0.02, fly: 0.13, open: 0.06, size: 8, lit: 1.6, lift: 18 },
   big: [
     { kinds: ['mix'], leave: 0.56, fly: 0.17, open: 0.1, size: 28, lit: 3.0, lift: 40, crumple: 0.14 },
     { kinds: ['knife'], leave: 0.64, fly: 0.17, open: 0.09, size: 22, lit: 2.2, lift: 44, crumple: 0.12 },
-    { kinds: ['dipper', 'tape'], leave: 0.7, fly: 0.16, open: 0.09, size: 18, lit: 2.2, lift: 36, crumple: 0.12 },
+    { kinds: ['dipper'], leave: 0.7, fly: 0.16, open: 0.09, size: 18, lit: 2.2, lift: 36, crumple: 0.12 },
     { kinds: ['brush', 'bead'], leave: 0.76, fly: 0.2, open: 0.1, size: 26, lit: 2.6, lift: 52, crumple: 0.1 },
-    { kinds: ['flat'], leave: 0.82, fly: 0.19, open: 0.1, size: 22, lit: 2.4, lift: 46, crumple: 0.1 },
   ],
 } as const;
 
@@ -132,12 +130,6 @@ export class Life {
       const leave = D.first + k * D.apart * (0.8 + 0.4 * r());
       fly({ opens: [{ i, at: 0, c, r: P[i].r }], leave, land: leave + D.fly, open: D.open, to: c.clone().setY(3), size: D.size, lit: D.lit, lift: D.lift, tile: false, crumple: 0.3 });
     });
-    const Cr = SHARDS.crusts;
-    P.map((p, i) => (p.kind === 'crust' ? i : -1)).filter((i) => i >= 0).sort((a, b) => dist(a) - dist(b)).forEach((i, k) => {
-      const c = new THREE.Vector3(P[i].c[0], 0, P[i].c[2]);
-      const leave = Cr.first + k * Cr.apart * (0.7 + 0.6 * r());
-      fly({ opens: [{ i, at: 0, c, r: P[i].r }], leave, land: leave + Cr.fly, open: Cr.open, to: c.clone().setY(1), size: Cr.size, lit: Cr.lit, lift: Cr.lift, tile: false, crumple: 0.25 });
-    });
     for (const big of SHARDS.big) {
       const list = P.map((p, i) => ((big.kinds as readonly string[]).includes(p.kind) ? i : -1)).filter((i) => i >= 0);
       if (!list.length) continue;
@@ -213,7 +205,7 @@ export class Life {
           home += s;
           continue;
         }
-        if (p.kind === 'brush' || p.kind === 'flat') brushHome = Math.max(brushHome, open);
+        if (p.kind === 'brush') brushHome = Math.max(brushHome, open);
         const drop = this.rebound(age, f.land + o.at + f.open, p.kind === 'dab' || p.kind === 'bead' ? 0.6 : 1.1, 0.07);
         const m = new THREE.Matrix4().makeTranslation(0, -drop, 0).multiply(turn);
         this.write(out, o.i, m, heat, fold);
@@ -237,14 +229,14 @@ export class Life {
         const t = age - S.at - k * S.apart;
         const w = t <= 0 ? 0 : t >= S.dur ? 1 : 1 - Math.exp(-t / (S.dur * 0.22)) * Math.cos((t / S.dur) * Math.PI * 2.2) * (1 - t / S.dur);
         const g = (p.kind === 'mix' ? FLASH.mixFlat : FLASH.small) + (1 - (p.kind === 'mix' ? FLASH.mixFlat : FLASH.small)) * Math.min(1 + S.wobble, w);
-        const sx = p.kind === 'mix' ? 1 : g, sy = g;
+        const sx = g, sy = g;
         this.m.makeTranslation(c.x, 0, c.z).multiply(new THREE.Matrix4().makeScale(sx, sy, sx)).multiply(new THREE.Matrix4().makeTranslation(-c.x, 0, -c.z));
         this.write(out, i, this.m);
         continue;
       }
-      if (p.kind !== 'brush' && p.kind !== 'knife' && p.kind !== 'flat' && p.kind !== 'dipper') continue;
+      if (p.kind !== 'brush' && p.kind !== 'knife' && p.kind !== 'dipper') continue;
       const lift = FLASH[p.kind];
-      const g = FLASH.g, fall = Math.sqrt((2 * lift) / g), t = age - 0.05 - o.fall - (p.kind === 'knife' ? 0.04 : p.kind === 'flat' ? 0.07 : p.kind === 'dipper' ? 0.02 : 0);
+      const g = FLASH.g, fall = Math.sqrt((2 * lift) / g), t = age - 0.05 - o.fall - (p.kind === 'knife' ? 0.04 : p.kind === 'dipper' ? 0.02 : 0);
       let y: number, k: number;
       if (t <= 0) { y = lift; k = 0; }
       else if (t < fall) { y = lift - 0.5 * g * t * t; k = 1 - y / lift; }

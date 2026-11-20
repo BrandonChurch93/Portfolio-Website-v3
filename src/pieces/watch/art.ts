@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { seeded } from '../../world/build';
-import { BALANCE, BARREL, BRIDGES, CARTOUCHE, CHAPTER, COCK, DIAL, MOV, SECONDS, type P2 } from './layout';
+import { BALANCE, BARREL, CARTOUCHE, CHAPTER, COCK, DIAL, MOV, SECONDS, SWEEP, type P2 } from './layout';
 import { ART, CART } from './shading';
 
 // What is cut and printed on the watch, drawn once on a 2D canvas laid over the table from above, in millimetres:
@@ -129,13 +129,13 @@ export function watchArt(): THREE.CanvasTexture {
   arcText(g, 'Nº 41762', mx + bx, mz + bz, 7.95, Math.PI / 2 + 0.55, 0.85, false, 600);
   // The train bridge, along its arm: how many jewels, and how it was set.
   {
-    const [ax, az, bx2, bz2] = BRIDGES[1].bars[0];
-    const a = Math.atan2(bz2 - az, bx2 - ax) + Math.PI;
-    const tx = mx + (ax * 0.42 + bx2 * 0.58), tz = mz + (az * 0.42 + bz2 * 0.58);
-    text(g, 'FIFTEEN JEWELS', tx, tz, 0.78, { turn: a, weight: 600, space: 0.16 });
-    const [cx2, cz2, dx2, dz2] = BRIDGES[1].bars[3];
-    const a2 = Math.atan2(dz2 - cz2, dx2 - cx2);
-    text(g, 'ADJ · 3 POS', mx + (cx2 + dx2) / 2 + 0.6, mz + (cz2 + dz2) / 2 + 0.2, 0.62, { turn: a2, weight: 600, space: 0.14 });
+    const along = (a: P2, b: P2, t: number, size: number, w: string, space: number) => {
+      const ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
+      const turn = Math.cos(ang) < 0 ? ang + Math.PI : ang;
+      text(g, w, mx + a[0] + (b[0] - a[0]) * t, mz + a[1] + (b[1] - a[1]) * t, size, { turn, weight: 600, space });
+    };
+    along(SWEEP[0], SWEEP[1], 0.44, 0.5, 'FIFTEEN JEWELS', 0.1);
+    along(SWEEP[2], SWEEP[3], 0.5, 0.56, 'ADJ · 3 POS', 0.12);
   }
   // The balance cock: foliage round the endstone and down the neck, and the regulator's scale.
   {

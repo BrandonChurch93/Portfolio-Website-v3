@@ -5,7 +5,7 @@ import { cartoucheArt, watchArt } from './art';
 import { bar, cut, disc, fieldSlab, flat, meet, shapes, teeth, union, wheel, type Field } from './geom';
 import {
   BACK, BALANCE, BARREL, BODY, BOW, BRIDGES, BRIDGE_TOP, CARTOUCHE, CASE, CHAIN, CHAPTER, COCK, CROWN, DIAL, DIAL_FACE, HANDS, HINGE, JEWELS,
-  MOV, NUMERALS, PALLET, PENDANT, PLATE, RATCHET, SECONDS, SPRING, TBAR, TRAIN, type P2,
+  MOV, NUMERALS, PALLET, PENDANT, PLATE, RATCHET, SECONDS, SPRING, SUNK, REHAUT, TBAR, TRAIN, TURN, STAND, turned, type P2,
 } from './layout';
 import { FIN, depthMaterial, glassMaterial, shared, watchMaterial, type Fin, type Shared } from './shading';
 
@@ -48,7 +48,6 @@ const M = (p: P2): P2 => [p[0] + MOV.x, p[1] + MOV.z];
 const D = (p: P2): P2 => [p[0] + DIAL.x, p[1] + DIAL.z];
 const ang = (a: P2, b: P2) => Math.atan2(b[1] - a[1], b[0] - a[0]);
 const ringPts = (cx: number, cz: number, r: number, n = 96): P2[] => Array.from({ length: n }, (_, i) => [cx + Math.cos((i / n) * Math.PI * 2) * r, cz + Math.sin((i / n) * Math.PI * 2) * r]);
-const move = (l: P2[], dx: number, dz: number): P2[] => l.map(([x, z]) => [x + dx, z + dz]);
 
 // A screw head standing on a face at y: a low dome with its slot, in polished dark steel.
 function screwHead(r: number): { head: THREE.BufferGeometry; slot: THREE.BufferGeometry } {
@@ -132,13 +131,15 @@ export async function buildWatch(): Promise<WatchModel> {
       const k0 = z0 + k * len + 0.06, k1 = z0 + (k + 1) * len - 0.06;
       const knuckle = lathe([[0, 0], [HINGE.r - 0.25, 0], [HINGE.r, 0.22], [HINGE.r, k1 - k0 - 0.22], [HINGE.r - 0.25, k1 - k0], [0, k1 - k0]], 28);
       knuckle.rotateX(Math.PI / 2);
-      add(iHinge, FIN.bronze, knuckle, at(0, HINGE.y, k0));
-      const side = k % 2 ? 1 : -1;
-      add(iHinge, FIN.bronze, rbox(2.6, 2.2, k1 - k0, 0.5, 2), at(side * 1.3, HINGE.y - 0.4, (k0 + k1) / 2));
+      // Each knuckle belongs to one half in turn, and stands with it.
+      const side = k % 2 ? 1 : -1, of = side > 0 ? iHinge : iBack;
+      add(of, FIN.bronze, knuckle, at(0, HINGE.y, k0));
+      const w = side > 0 ? 1.9 : -MOV.x - CASE.r + 0.5;
+      add(of, FIN.bronze, rbox(w, 2.0, k1 - k0, 0.5, 2), at(side * w / 2, HINGE.y - 0.3, (k0 + k1) / 2));
     }
     const pin = new THREE.SphereGeometry(0.55, 16, 8);
-    add(iHinge, FIN.copper, pin.clone(), at(0, HINGE.y, z0 - 0.05));
-    add(iHinge, FIN.copper, pin, at(0, HINGE.y, z1 + 0.05));
+    add(iHinge, FIN.polish, pin.clone(), at(0, HINGE.y, z0 - 0.05));
+    add(iHinge, FIN.polish, pin, at(0, HINGE.y, z1 + 0.05));
   }
   await pause();
 
@@ -226,16 +227,16 @@ export async function buildWatch(): Promise<WatchModel> {
     ];
     let f = meet(union(fs, br.k), plateClip);
     for (const [x, z, r] of br.cuts ?? []) f = cut(f, disc(x + MOV.x, z + MOV.z, r));
-    const xs = [...br.discs.map((d) => d[0]), ...br.bars.flatMap((b2) => [b2[0], b2[2]])], zs = [...br.discs.map((d) => d[1]), ...br.bars.flatMap((b2) => [b2[1], b2[3]])];
+    const xs = [...br.discs.map((d) => d[0]), ...br.bars.flatMap((b2) => [b2[0], b2[2]]), ...(br.tapers ?? []).flatMap((t2) => [t2[0], t2[2]])], zs = [...br.discs.map((d) => d[1]), ...br.bars.flatMap((b2) => [b2[1], b2[3]]), ...(br.tapers ?? []).flatMap((t2) => [t2[1], t2[3]])];
     const box: [number, number, number, number] = [Math.min(...xs) + MOV.x - 12, Math.min(...zs) + MOV.z - 12, Math.max(...xs) + MOV.x + 12, Math.max(...zs) + MOV.z + 12];
     const c = br.discs[0];
     const i = part({ kind: 'bridge', side: 'mov', c: [c[0] + MOV.x, BRIDGE_TOP, c[1] + MOV.z], r: 9, row: `bridge${k}` });
     bridgeParts.push(i);
-    for (const g of fieldSlab(f, box, 0.09, 0.02, PLATE.y1, BRIDGE_TOP, 0.2)) add(i, FIN.bridge, g);
+    for (const g of fieldSlab(f, box, 0.09, 0.02, PLATE.y1, BRIDGE_TOP, 0.26)) add(i, FIN.bridge, g);
     screws(i, br.screws.map(M), BRIDGE_TOP, 0.9, k * 0.7);
     for (const j of JEWELS) {
-      const on = (br.name === 'train' && ['center', 'third', 'fourth'].includes(j.of)) || (br.name === 'escape' && j.of === 'escape') || (br.name === 'pallet' && j.of === 'pallet');
-      if (on) jewel(i, M(j.c), j.y, j.r, ang(j.c, [0, 0]) + Math.PI / 2 + k, br.name === 'train');
+      const on = (br.name === 'barrel' && j.of === 'center') || (br.name === 'train' && ['third', 'fourth'].includes(j.of)) || (br.name === 'escape' && j.of === 'escape') || (br.name === 'pallet' && j.of === 'pallet');
+      if (on) jewel(i, M(j.c), j.y, j.r, ang(j.c, [0, 0]) + Math.PI / 2 + k, br.name === 'train' || br.name === 'barrel');
     }
     if (br.name === 'barrel') {
       // The click: a pawl in the ratchet's teeth and the spring that holds it there.
@@ -262,12 +263,12 @@ export async function buildWatch(): Promise<WatchModel> {
     const arms = union([bar(-ri - 0.2, 0, ri + 0.2, 0, 0.3), disc(0, 0, 0.85)], 0.35);
     for (const g of fieldSlab(rim, [-R - 0.5, -R - 0.5, R + 0.5, R + 0.5], 0.03, 0.012, y0, y1, 0.06)) add(iBal, FIN.wheel, g, at(blx, 0, blz));
     for (const g of fieldSlab(arms, [-R, -2, R, 2], 0.03, 0.005, y0 + 0.04, y1 - 0.1, 0.05)) add(iBal, FIN.wheel, g, at(blx, 0, blz));
-    const screw = lathe([[0, 0], [0.24, 0], [0.24, 0.26], [0.3, 0.3], [0.3, 0.52], [0.24, 0.56], [0, 0.56]], 10);
+    const screw = lathe([[0, 0], [0.28, 0], [0.28, 0.3], [0.37, 0.35], [0.37, 0.66], [0.3, 0.72], [0, 0.72]], 12);
     screw.rotateZ(-Math.PI / 2);
     for (let k = 0; k < BALANCE.screws; k++) {
       const a = (k / BALANCE.screws) * Math.PI * 2 + 0.17;
       if (Math.abs(Math.sin(a - 1.75)) < 0.08 || Math.abs(Math.sin(a + 1.39)) < 0.08) continue;
-      add(iBal, k % 4 === 0 ? FIN.copper : FIN.gold, screw.clone(), xf({ p: [blx + Math.cos(a) * (R - 0.05), (y0 + y1) / 2, blz + Math.sin(a) * (R - 0.05)], r: [0, -a, 0] }));
+      add(iBal, FIN.gold, screw.clone(), xf({ p: [blx + Math.cos(a) * (R - 0.05), (y0 + y1) / 2, blz + Math.sin(a) * (R - 0.05)], r: [0, -a, 0] }));
     }
     add(iBal, FIN.steel, lathe([[0, 4.8], [0.2, 4.8], [0.3, 5.0], [0.28, 6.4], [0.22, 7.05], [0, 7.05]], 18), at(blx, 0, blz));
     add(iBal, FIN.steel, flat(ringPts(0, 0, 1.15, 48), [], 5.2, 5.38, 0.04), at(blx, 0, blz));
@@ -345,8 +346,8 @@ export async function buildWatch(): Promise<WatchModel> {
     // The bezel: a coin edge milled round its side, a polished lip over the crystal's edge.
     const [b0, b1] = BODY.bezel;
     const lip: [number, number][] = [[25.42, b1 - 0.62], [25.1, b1 - 0.2], [24.4, b1], [23.3, b1 - 0.02], [BODY.open + 0.05, b1 - 0.25], [BODY.open, b1 - 0.5], [BODY.open, DIAL_FACE.y]];
-    add(iBody, FIN.copper, lathe(lip, 200), at(dx, 0, dz));
-    add(iBody, FIN.copper, lathe([[25.05, BODY.band], [25.3, b0 + 0.05], [25.45, b0 + 0.2]], 200), at(dx, 0, dz));
+    add(iBody, FIN.polish, lathe(lip, 200), at(dx, 0, dz));
+    add(iBody, FIN.polish, lathe([[25.05, BODY.band], [25.3, b0 + 0.05], [25.45, b0 + 0.2]], 200), at(dx, 0, dz));
     const ridges = 150, seg = ridges * 4, rows: [number, number][] = [[25.45, b0 + 0.2], [25.62, b0 + 0.45], [25.62, b1 - 0.85], [25.42, b1 - 0.62]];
     const pos: number[] = [];
     const rAt = (a: number, base: number, k: number) => base - k * 0.17 * (1 - Math.abs(Math.cos((a * ridges) / 2))) ** 0.6;
@@ -362,14 +363,18 @@ export async function buildWatch(): Promise<WatchModel> {
     const knurl = new THREE.BufferGeometry();
     knurl.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
     knurl.computeVertexNormals();
-    add(iBody, FIN.copper, toCreasedNormals(knurl, (70 * Math.PI) / 180));
+    add(iBody, FIN.gold, toCreasedNormals(knurl, (70 * Math.PI) / 180));
   }
   const iDial = part({ kind: 'dial', side: 'dial', c: [dx, DIAL_FACE.y, dz], r: DIAL_FACE.r });
   {
     const [sx, sz] = D(SECONDS.c);
-    add(iDial, FIN.dial, flat(ringPts(dx, dz, DIAL_FACE.r, 200), [ringPts(sx, sz, SECONDS.r, 96)], DIAL_FACE.y - 0.5, DIAL_FACE.y, 0.03));
-    add(iDial, FIN.sub, flat(ringPts(sx, sz, SECONDS.r + 0.05, 96), [], DIAL_FACE.y - 0.6, DIAL_FACE.y - SECONDS.sink, 0.02));
+    const sunk = DIAL_FACE.y - SUNK.d;
+    add(iDial, FIN.dial, flat(ringPts(dx, dz, DIAL_FACE.r, 200), [ringPts(dx, dz, SUNK.r, 160)], DIAL_FACE.y - 0.5, DIAL_FACE.y, 0.04));
+    add(iDial, FIN.dial, flat(ringPts(dx, dz, SUNK.r + 0.05, 160), [ringPts(sx, sz, SECONDS.r, 96)], DIAL_FACE.y - 0.5, sunk, 0.03));
+    add(iDial, FIN.sub, flat(ringPts(sx, sz, SECONDS.r + 0.05, 96), [], DIAL_FACE.y - 0.6, sunk - SECONDS.sink, 0.02));
     add(iDial, FIN.chapter, flat(ringPts(dx, dz, CHAPTER.r[1], 200), [ringPts(dx, dz, CHAPTER.r[0], 200)], CHAPTER.y[0], CHAPTER.y[1], 0.07));
+    // The rehaut: a slim polished gold ring sloping from the chapter ring up to the bezel, the dial's one bright line.
+    add(iDial, FIN.gold, lathe([[DIAL_FACE.r + 0.02, DIAL_FACE.y - 0.2], [DIAL_FACE.r + 0.02, REHAUT.y], [REHAUT.r, REHAUT.y], [CHAPTER.r[1] - 0.02, CHAPTER.y[1] + 0.02], [CHAPTER.r[1] - 0.02, DIAL_FACE.y - 0.2]], 200), at(dx, 0, dz));
     const cw = CARTOUCHE.w / 2, cd = CARTOUCHE.d / 2, [cx, cz] = D(CARTOUCHE.c);
     const plaque = (x: number, z: number) => { const qx = Math.abs(x - cx) - (cw - 1.0), qz = Math.abs(z - cz) - (cd - 1.0); return Math.hypot(Math.max(qx, 0), Math.max(qz, 0)) + Math.min(Math.max(qx, qz), 0) - 1.0; };
     for (const g of fieldSlab(plaque, [cx - cw - 1, cz - cd - 1, cx + cw + 1, cz + cd + 1], 0.05, 0.008, CARTOUCHE.y[0], CARTOUCHE.y[1], 0.06)) add(iDial, FIN.plaque, g);
@@ -423,7 +428,7 @@ export async function buildWatch(): Promise<WatchModel> {
   {
     const neck = lathe([[0, PENDANT.from - 0.6], [PENDANT.r + 0.35, PENDANT.from - 0.6], [PENDANT.r + 0.35, PENDANT.from + 0.4], [PENDANT.r, PENDANT.from + 0.6], [PENDANT.r, PENDANT.to - 0.5], [PENDANT.r + 0.45, PENDANT.to - 0.3], [PENDANT.r + 0.45, PENDANT.to], [0, PENDANT.to]], 32);
     neck.rotateX(-Math.PI / 2);
-    add(iCrown, FIN.copper, neck, at(dx, PENDANT.y, dz));
+    add(iCrown, FIN.polish, neck, at(dx, PENDANT.y, dz));
     const crown = new THREE.BufferGeometry();
     {
       const segs = CROWN.flutes * 6, z0 = PENDANT.to, rows: [number, number][] = [[0, 0], [CROWN.r * 0.7, 0], [CROWN.r * 0.96, 0.25], [CROWN.r, 0.6], [CROWN.r, CROWN.len - 0.7], [CROWN.r * 0.95, CROWN.len - 0.3], [CROWN.r * 0.7, CROWN.len], [0, CROWN.len]];
@@ -440,25 +445,25 @@ export async function buildWatch(): Promise<WatchModel> {
       crown.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
       crown.computeVertexNormals();
     }
-    add(iCrown, FIN.copper, toCreasedNormals(crown, (50 * Math.PI) / 180), at(dx, PENDANT.y, dz));
+    add(iCrown, FIN.gold, toCreasedNormals(crown, (50 * Math.PI) / 180), at(dx, PENDANT.y, dz));
     // The bow: it pivots on a pin through a boss on the pendant, its ends against the boss's sides and the pin's
     // riveted heads outside them, and it lies back over the crown onto the table.
     const zc = -(PENDANT.to - 0.9);
     const end = BOW.boss + BOW.wire * 0.55;
-    const path: Vec3[] = [[-end, PENDANT.y, zc], [-4.6, PENDANT.y - 0.4, zc - 1.4], [-7.2, 3.1, zc - 4.6], [-7.6, 2.0, zc - 8.8], [-4.8, 1.2, zc - 12.2], [0, BOW.wire + 0.05, zc - 13.6], [4.8, 1.2, zc - 12.2], [7.6, 2.0, zc - 8.8], [7.2, 3.1, zc - 4.6], [4.6, PENDANT.y - 0.4, zc - 1.4], [end, PENDANT.y, zc]];
-    add(iCrown, FIN.copper, tube(path.map(([x, y, z]) => [x + dx, y, z + dz] as Vec3), BOW.wire, 100, 10), undefined);
+    const path = bowPath();
+    add(iCrown, FIN.polish, tube(path.map(([x, y, z]) => [x + dx, y, z + dz] as Vec3), BOW.wire, 100, 10), undefined);
     const h = BOW.wire * 1.05, d0 = -zc - h, d1 = -zc + h, R = BOW.boss;
     const boss = lathe([[0, d0], [R - 0.25, d0], [R, d0 + 0.25], [R, d1 - 0.25], [R - 0.25, d1], [0, d1]], 32);
     boss.rotateX(-Math.PI / 2);
-    add(iCrown, FIN.copper, boss, at(dx, PENDANT.y, dz));
+    add(iCrown, FIN.polish, boss, at(dx, PENDANT.y, dz));
     const reach = end + BOW.wire + 0.12;
     const pin = new THREE.CylinderGeometry(BOW.pin, BOW.pin, reach * 2, 12);
     pin.rotateZ(Math.PI / 2);
-    add(iCrown, FIN.copper, pin, at(dx, PENDANT.y, dz + zc));
+    add(iCrown, FIN.polish, pin, at(dx, PENDANT.y, dz + zc));
     for (const e of [-1, 1]) {
       const head = lathe([[0, 0], [BOW.pin * 1.55, 0], [BOW.pin * 1.4, BOW.pin * 0.45], [BOW.pin * 0.8, BOW.pin * 0.8], [0, BOW.pin * 0.9]], 16);
       head.rotateZ(-e * Math.PI / 2);
-      add(iCrown, FIN.copper, head, at(dx + e * reach, PENDANT.y, dz + zc));
+      add(iCrown, FIN.polish, head, at(dx + e * reach, PENDANT.y, dz + zc));
     }
     bowEnd = [dx, BOW.wire + 0.05, dz + zc - 13.6];
   }
@@ -466,8 +471,7 @@ export async function buildWatch(): Promise<WatchModel> {
   // round toward the hinge, to lie on the table in the crook between the two halves. Run away from the eye, it stood
   // up over the row's border on the page.
   {
-    const ctrl: P2[] = [[0, 0], [-2.4, -1.4], [-6.0, -1.6], [-10.2, 0.4], [-14.6, 3.4], [-18.6, 7.6], [-21.8, 12.8], [-23.6, 18.8], [-24.4, 24.4]];
-    const curve = new THREE.CatmullRomCurve3(ctrl.map(([x, z]) => new THREE.Vector3(bowEnd[0] + x, 0, bowEnd[2] + z - 0.6)), false, 'centripetal');
+    const curve = chainCurve(bowEnd);
     const L = curve.getLength();
     const oval: Vec3[] = [];
     const lg = CHAIN.long / 2 - CHAIN.wide / 2, wd = CHAIN.wide / 2 - CHAIN.wire;
@@ -500,13 +504,13 @@ export async function buildWatch(): Promise<WatchModel> {
       const c = p.clone().addScaledVector(tg, TBAR.eye + TBAR.r * 0.6);
       const rod = lathe([[0, -TBAR.len / 2], [TBAR.r * 0.8, -TBAR.len / 2], [TBAR.r, -TBAR.len / 2 + 1.2], [TBAR.r * 0.85, -0.6], [TBAR.r * 1.25, -0.3], [TBAR.r * 1.25, 0.3], [TBAR.r * 0.85, 0.6], [TBAR.r, TBAR.len / 2 - 1.2], [TBAR.r * 0.8, TBAR.len / 2], [0, TBAR.len / 2]], 16);
       rod.rotateZ(Math.PI / 2);
-      const across = new THREE.Matrix4().makeRotationY(yaw).setPosition(c.x, TBAR.knob, c.z);
-      add(i, FIN.copper, rod, across);
+      const across = new THREE.Matrix4().makeRotationY(yaw + TBAR.lie).setPosition(c.x, TBAR.knob, c.z);
+      add(i, FIN.polish, rod, across);
       for (const e of [-1, 1]) {
         const knob = lathe([[0, -TBAR.knob], [TBAR.knob * 0.7, -TBAR.knob * 0.75], [TBAR.knob, 0], [TBAR.knob * 0.7, TBAR.knob * 0.75], [TBAR.knob * 0.3, TBAR.knob * 1.1], [0, TBAR.knob * 1.1]], 16);
         knob.rotateZ(-e * Math.PI / 2);
         knob.translate(e * (TBAR.len / 2 + TBAR.knob * 0.6), 0, 0);
-        add(i, FIN.copper, knob, across);
+        add(i, FIN.polish, knob, across);
       }
     }
   }
@@ -515,11 +519,11 @@ export async function buildWatch(): Promise<WatchModel> {
   const meshes = b.build(root, 'watch');
   const depth = depthMaterial(u);
   for (const m of meshes) { m.customDepthMaterial = depth; m.frustumCulled = false; }
-  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(150, 110), shadowMaterial(u));
+  const shadow = new THREE.Mesh(new THREE.PlaneGeometry(220, 180), shadowMaterial(u));
   {
     const g = shadow.geometry;
     g.rotateX(-Math.PI / 2);
-    g.translate(0, -0.02, -8);
+    g.translate(0, -0.02, 0);
     g.setAttribute('cell', new THREE.Float32BufferAttribute(new Float32Array(g.getAttribute('position').count * 4), 4));
     shadow.frustumCulled = false;
     shadow.renderOrder = -1;
@@ -528,6 +532,39 @@ export async function buildWatch(): Promise<WatchModel> {
   }
   void iBack; void iHinge; void iPlate; void iFork; void iBal; void iSpring; void iCock; void iBody; void iDial; void iCrystal; void iCrown; void bridgeParts; void trainParts;
   return { root, parts, u, meshes, shadow, tris: b.tris, spend, phase };
+}
+
+// The bow's wire, from the dial's middle, laid back over the crown onto the table.
+function bowPath(): Vec3[] {
+  const zc = -(PENDANT.to - 0.9), end = BOW.boss + BOW.wire * 0.55;
+  return [[-end, PENDANT.y, zc], [-4.6, PENDANT.y - 0.4, zc - 1.4], [-7.2, 3.1, zc - 4.6], [-7.6, 2.0, zc - 8.8], [-4.8, 1.2, zc - 12.2], [0, BOW.wire + 0.05, zc - 13.6], [4.8, 1.2, zc - 12.2], [7.6, 2.0, zc - 8.8], [7.2, 3.1, zc - 4.6], [4.6, PENDANT.y - 0.4, zc - 1.4], [end, PENDANT.y, zc]];
+}
+// It curls round the body close to its case, so it stays inside the watch's outline.
+const CHAIN_RUN: P2[] = [[0, 0], [5.9, 2.2], [11.2, 4.9], [16.0, 8.1], [20.0, 11.8], [23.4, 15.9], [26.1, 20.4], [27.9, 25.1], [29.0, 29.8]];
+// The line the chain lies along on the table, from where the bow touches it.
+function chainCurve(from: Vec3): THREE.CatmullRomCurve3 {
+  return new THREE.CatmullRomCurve3(CHAIN_RUN.map(([x, z]) => new THREE.Vector3(from[0] + x, 0, from[2] + z - 0.6)), false, 'centripetal');
+}
+
+// The watch's outline as loops round it, in its millimetres laid flat, each with how it is set where it rests: the
+// body's case and crystal, the case back's rim (stood on its hinge), and the crown, bow and chain (turned with the
+// crown). The page is framed from these, so they follow the model's own profiles.
+export function silhouette(): { pts: Vec3[]; pose: 'mov' | 'crown' | null }[] {
+  const loops: { pts: Vec3[]; pose: 'mov' | 'crown' | null }[] = [];
+  const ring = (cx: number, cz: number, r: number, y: number, pose: 'mov' | 'crown' | null, n = 180) => loops.push({ pose, pts: Array.from({ length: n }, (_, k): Vec3 => [cx + Math.cos((k / n) * Math.PI * 2) * r, y, cz + Math.sin((k / n) * Math.PI * 2) * r]) });
+  for (const [r, y] of [[23.6, 2.9], [24.7, 3.9], [CASE.r, 5.8], [CASE.r, 7.7], [25.62, BODY.bezel[0] + 0.45], [25.62, BODY.bezel[1] - 0.85], [24.4, BODY.bezel[1]]]) ring(DIAL.x, DIAL.z, r, y, null);
+  for (const [r, y] of [[18.5, 1.15], [21.6, 1.95], [23.6, 2.9], [24.7, 3.9], [CASE.r, 5.6], [24.65, 6.4]]) ring(MOV.x, MOV.z, r, y, 'mov');
+  for (const dz of [0, CROWN.len]) ring(DIAL.x, DIAL.z - PENDANT.to - dz, CROWN.r, PENDANT.y, 'crown', 24);
+  const bow = bowPath().map(([x, y, z]): Vec3 => [x + DIAL.x, y, z + DIAL.z]);
+  for (const w of [-BOW.wire, BOW.wire]) loops.push({ pose: 'crown', pts: bow.map(([x, y, z]): Vec3 => [x + w, y + Math.abs(w), z + w]) });
+  const zc = -(PENDANT.to - 0.9);
+  const curve = chainCurve([DIAL.x, BOW.wire + 0.05, DIAL.z + zc - 13.6]);
+  const line = curve.getSpacedPoints(40).map((v): Vec3 => [v.x, CHAIN.wide, v.z]);
+  const L = curve.getLength(), t = Math.min(1, (CHAIN.links * CHAIN.pitch + 0.15) / L), p = curve.getPointAt(t), tg = curve.getTangentAt(t);
+  const c = p.clone().addScaledVector(tg, TBAR.eye + TBAR.r * 0.6), side = new THREE.Vector3(tg.z, 0, -tg.x).applyAxisAngle(new THREE.Vector3(0, 1, 0), TBAR.lie).multiplyScalar(TBAR.len / 2 + TBAR.knob * 1.6);
+  line.push([c.x + side.x, TBAR.knob * 2, c.z + side.z], [c.x - side.x, TBAR.knob * 2, c.z - side.z]);
+  loops.push({ pose: 'crown', pts: [...line, ...line.slice().reverse()] });
+  return loops;
 }
 
 // A bar that narrows from half width w0 to w1.
@@ -542,7 +579,7 @@ function taper(ax: number, ay: number, bx: number, by: number, w0: number, w1: n
 // A Roman numeral as strokes: thick and thin, with serifs, its foot at v = 0 and its head at the numeral's height.
 // An X is cut as two strokes, the thin one passing a hair under the thick, so each outline stays simple.
 function glyph(s: string): { fields: { field: Field; drop: number }[]; width: number } {
-  const h = NUMERALS.h, thick = 0.2, thin = 0.085, serif = 0.055, gap = 0.36;
+  const h = NUMERALS.h, thick = 0.27, thin = 0.115, serif = 0.07, gap = 0.34;
   const widths: Record<string, number> = { I: 0.5, V: 1.7, X: 1.75 };
   const total = [...s].reduce((t, ch) => t + widths[ch], 0) + gap * (s.length - 1);
   const main: Field[] = [], under: Field[] = [];
@@ -567,11 +604,14 @@ function glyph(s: string): { fields: { field: Field; drop: number }[]; width: nu
   return { fields: [{ field: union(main, 0.06), drop: 0 }, ...(under.length ? [{ field: union(under, 0.06), drop: 0.035 }] : [])], width: total };
 }
 
-// A soft dark pool under each half that fades out a little beyond its edge, coming and going with the watch.
+// The shadows on the table: a soft pool under the body that fades out a little beyond its edge, and the standing case
+// back's own shadow cast by the key light, worked out as the disc it is, soft as it falls farther from it, with a dark
+// line under its rim where it stands nearest the table. Each comes and goes with its half.
 function shadowMaterial(u: Shared): THREE.ShaderMaterial {
   const c = (p: P2) => `vec2(${p[0].toFixed(2)}, ${p[1].toFixed(2)})`;
+  const b3 = turned(DIAL.x, 0, DIAL.z - 37, TURN.crown), bow: P2 = [b3[0], b3[2]];
   return new THREE.ShaderMaterial({
-    uniforms: { ...u, uShadow: { value: new THREE.Vector2(1, 1) } },
+    uniforms: { ...u, uShadow: { value: new THREE.Vector2(1, 1) }, uKey: { value: new THREE.Vector3(0, 1, 0) }, uStand: { value: STAND.deg } },
     transparent: true,
     depthWrite: false,
     vertexShader: /* glsl */ `
@@ -585,14 +625,30 @@ uniform float uBandOn;
 uniform vec2 uShadow;
 uniform vec4 uBand;
 uniform vec3 uEye;
+uniform vec3 uKey;
+uniform float uStand;
 varying vec3 vWatP;
+// A point of the case back laid flat, as it stands on its hinge.
+vec3 watStand(vec3 p){ float a = -radians(uStand), c = cos(a), s = sin(a), h = p.y - ${HINGE.y.toFixed(2)}; return vec3(p.x * c - h * s, p.x * s + h * c + ${HINGE.y.toFixed(2)}, p.z); }
 vec2 watOnTable(vec3 p){ return uEye.xz + (p.xz - uEye.xz) * (uEye.y / max(uEye.y - p.y, 1.0)); }
 void main(){
   if (uBandOn > 0.5 && length(watOnTable(vWatP) - uBand.xy) > uBand.z) discard;
-  float m = (1.0 - smoothstep(-3.0, 9.0, length(vWatP.xz - ${c([MOV.x, MOV.z])}) - ${(CASE.r - 3).toFixed(1)})) * uShadow.x;
   float d = (1.0 - smoothstep(-3.0, 9.0, length(vWatP.xz - ${c([DIAL.x, DIAL.z])}) - ${(CASE.r - 3).toFixed(1)})) * uShadow.y;
-  vec2 q = vWatP.xz - ${c([DIAL.x, DIAL.z - 37])};
+  vec2 q = vWatP.xz - ${c(bow)};
   d = max(d, (1.0 - smoothstep(0.0, 6.0, length(q * vec2(0.8, 1.0)) - 6.0)) * 0.47 * uShadow.y);
+  vec3 p = vec3(vWatP.x, 0.0, vWatP.z);
+  vec3 C = watStand(vec3(${MOV.x.toFixed(2)}, 3.2, ${MOV.z.toFixed(2)})), N = normalize(watStand(vec3(0.0, ${(HINGE.y + 1).toFixed(2)}, 0.0)) - vec3(0.0, ${HINGE.y.toFixed(2)}, 0.0));
+  float rimX = watStand(vec3(${(MOV.x + CASE.r).toFixed(2)}, 6.0, 0.0)).x;
+  float dn = dot(uKey, N);
+  float t = dot(C - p, N) / (abs(dn) > 1e-3 ? dn : 1e-3);
+  float m = 0.0;
+  if (t > 0.0) {
+    float r = length(p + uKey * t - C);
+    float soft = 1.2 + 0.07 * t;
+    m = (1.0 - smoothstep(${(CASE.r).toFixed(1)} - soft, ${(CASE.r).toFixed(1)} + soft, r)) * 0.85 * exp(-t / 140.0);
+  }
+  float line = (1.0 - smoothstep(0.0, 6.0, abs(vWatP.x - rimX))) * (1.0 - smoothstep(18.0, 26.0, abs(vWatP.z - ${MOV.z.toFixed(2)})));
+  m = max(m, line * 0.6) * uShadow.x;
   gl_FragColor = vec4(0.0, 0.0, 0.0, max(m, d) * 0.75);
 }`,
   });

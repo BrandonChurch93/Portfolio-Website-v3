@@ -10,15 +10,15 @@ import { Stage } from '../../world/stage';
 import { balance, trueDarks } from '../../world/tone';
 import { WAYS, type Anchor, type StruckPiece, type Way } from '../../world/struck';
 import { shardMeshes, shardUniforms, SHARD_KINDS } from '../cpu/shard';
-import { BOARD, DEG, MIX, STRIKE, VIEW, YAW, rim } from './layout';
+import { BOARD, DEG, KNIFE, STRIKE, VIEW, YAW, knifeAxis, rim } from './layout';
 import { LIFE, Life, type LifeAt } from './life';
 import { buildPalette, type PaletteModel } from './model';
 import { PARTS_MAX, PART_TEXELS } from './shading';
 
 // The painter's palette and brush, at the left of the third row of skills, Design Systems & Craft. It is not on the
-// page until the stream strikes it, and comes on in one of three ways (./life.ts), as the CPU does. With the stream on
-// it, the paints along the rim light from inside one after another, and the light runs along the knife's strokes and
-// up the brush's loaded hairs.
+// page until the stream strikes it, and comes on in one of three ways (./life.ts), as the CPU does. Its paints are a
+// scale, nine steps from dark to pale with their numbers beside them. With the stream on it they light from inside one
+// after another along the arc from the strike, dark end first, then the swatches the knife drew, then the brush's tip.
 
 export { LIFE };
 
@@ -86,6 +86,7 @@ export function createPalette(): StruckPiece {
   let stage: Stage | null = null;
   let model: PaletteModel | null = null;
   let life: Life | null = null;
+  let partOf = { brush: 0, knife: 0 };
   let canvas: HTMLCanvasElement | null = null;
   let host: HTMLElement | null = null;
   let off: (() => void) | null = null;
@@ -174,6 +175,14 @@ export function createPalette(): StruckPiece {
     place();
     turn.updateMatrixWorld(true);
     (u.uParts.value.image.data as Float32Array).set(partData);
+    // How much of each dab and tool is in its place, from its transform this frame, so the shadows they sit in come and
+    // go with them.
+    const there = (i: number, drop: number) => {
+      const o = i * PART_TEXELS * 4, sy = Math.hypot(partData[o + 1], partData[o + 5], partData[o + 9]), open = partData[o + 13];
+      return clamp(sy * (open < 0.999 ? open : 1) * Math.exp(-Math.max(0, partData[o + 7]) / drop), 0, 1);
+    };
+    model.parts.forEach((p, i) => { if (p.kind === 'dab') u.uSit.value[p.n ?? 0] = there(i, 1.5); });
+    u.uTools.value.set(there(partOf.brush, 4), there(partOf.knife, 4), 1);
     u.uParts.value.needsUpdate = true;
     const lightsOn = L.lit >= 0 ? smooth(L.lit / 0.05) : 0;
     u.uGlow.value = on * lightsOn;
@@ -296,12 +305,13 @@ export function createPalette(): StruckPiece {
       stage.lamp.shadow.camera.near = 0.1;
       stage.lamp.shadow.camera.far = 2;
       stage.lamp.shadow.bias = -0.0004;
-      stage.lamp.shadow.normalBias = 0.0008;
+      stage.lamp.shadow.normalBias = 0.0018;
       stage.lamp.shadow.radius = 3;
       const t0 = performance.now();
       model = await buildPalette();
       built = Math.round(performance.now() - t0);
       life = new Life(model.parts);
+      partOf = { brush: model.parts.findIndex((p) => p.kind === 'brush'), knife: model.parts.findIndex((p) => p.kind === 'knife') };
       const sm = model.shadow.material as THREE.ShaderMaterial;
       shadowU = { uShadow: sm.uniforms.uShadow as { value: number }, uBrush: sm.uniforms.uBrush as { value: number } };
       model.root.rotation.y = YAW;
@@ -318,15 +328,16 @@ export function createPalette(): StruckPiece {
       key.castShadow = true;
       key.shadow.mapSize.set(2048, 2048);
       key.shadow.bias = -0.0002;
-      key.shadow.normalBias = 0.0016;
+      key.shadow.normalBias = 0.003;
       key.shadow.radius = KEY.soft;
       key.shadow.camera.near = 0.5;
       key.shadow.camera.far = 1.8;
       rimL = new THREE.SpotLight(ROOM_LIGHT, RIM.power, 0, 0.5, 0.6, 2);
       rimL.position.set(...RIM.at);
       rimL.target.position.set(0.01, 0.004, 0);
-      // The strips stand where the wet paint of the mixing ground mirrors them to the eye at rest.
-      const wetAt = toWorld(MIX.x, 2, MIX.z);
+      // The strips stand where the knife's polished blade mirrors them to the eye at rest.
+      const bladeAt = knifeAxis(KNIFE.blade.len * 0.45);
+      const wetAt = toWorld(bladeAt[0], 0.5, bladeAt[1]);
       const mirror = EYE_DIR.clone().multiply(new THREE.Vector3(-1, 1, -1));
       for (const st of STRIPS) {
         const dir = mirror.clone().applyAxisAngle(new THREE.Vector3(mirror.z, 0, -mirror.x).normalize(), st.tilt * DEG);

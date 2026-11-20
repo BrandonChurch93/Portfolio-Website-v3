@@ -5,20 +5,21 @@ import { lin, shade } from '../../world/surface';
 import { hex, type PaletteName } from '../../config/palette';
 import { boardArt } from './art';
 import {
-  BAY_AT, BOARD, BRUSH, CHIP_AT, CRUSTS, DABS, DIPPER, FLAT, HOLE, KNIFE, MIX, PRINTS, RING, RUN, STROKES, TAPE, WIPES,
-  brushAxis, flatAxis, holeAt, knifeAxis, rim, rimAt, type Dab, type P2,
+  BAY_AT, BOARD, BRUSH, CHIP_AT, DABS, DIPPER, HOLE, KNIFE, MARK, MIX, SWATCHES,
+  brushAxis, holeAt, knifeAxis, rim, rimAt, type P2, type Swatch,
 } from './layout';
+import { coil } from './coil';
 import { PAINT, depthMaterial, partChunks, shared, type Shared } from './shading';
 
 // The palette and everything on it, in millimetres under a root scaled by 0.001. Every part is merged by material
 // with the others and carries its own number, so the shaders can move it alone.
 //
-// Only the paints are colored. The walnut runs from near black in its pores to a warm brown in its light streaks;
-// the round's lacquer is a near black and the flat's a dark bronze; the steel of the knife's neck is grey; the
-// ferrules, the blade, the rivets and the dipper are the metal, brass and bronze and copper. That is what tells the
-// materials apart: wet paint beside dried skins beside oiled wood beside lacquer beside paper beside metal.
+// Only the paints are colored. The walnut runs from a dark pore to a warm mid brown in its light streaks; the brush's
+// lacquer is a near black with a copper band; the knife's blade and neck are warm steel; the ferrule, the bolster, the
+// rivets, the pins and the dipper are copper and brass. That is what tells the materials apart: wet paint beside
+// varnished wood beside lacquer beside polished steel beside copper.
 
-export type Kind = 'board' | 'dab' | 'mix' | 'bead' | 'knife' | 'brush' | 'flat' | 'dipper' | 'tape' | 'crust';
+export type Kind = 'board' | 'dab' | 'mix' | 'bead' | 'knife' | 'brush' | 'dipper';
 export interface PartDef {
   kind: Kind;
   c: Vec3;
@@ -66,7 +67,7 @@ function boardSurface(seeds: P2[]): { geo: THREE.BufferGeometry; tiles: Tile[]; 
   for (let i = 0; i < n; i++) { const a = outer[i], b = outer[(i + 1) % n]; area += a[0] * b[1] - b[0] * a[1]; }
   const turn = area > 0 ? 1 : -1;
   const cols: { p: Vec3[]; nm: Vec3[]; hole: boolean[] }[] = [];
-  const TOP = 18;
+  const TOP = 8;
   for (let i = 0; i < n; i++) {
     const O = outer[i], a = outer[(i + n - 1) % n], b = outer[(i + 1) % n];
     const tx = b[0] - a[0], tz = b[1] - a[1], tl = Math.hypot(tx, tz) || 1;
@@ -84,7 +85,7 @@ function boardSurface(seeds: P2[]): { geo: THREE.BufferGeometry; tiles: Tile[]; 
     const R = 6;
     for (let k = 1; k <= R; k++) { const a2 = (k / R) * (Math.PI / 2); put(edge[0] + N[0] * e * Math.sin(a2), -e + e * Math.cos(a2), edge[1] + N[1] * e * Math.sin(a2), N[0] * Math.sin(a2), Math.cos(a2), N[1] * Math.sin(a2)); }
     for (let k = 0; k <= R; k++) { const a2 = (k / R) * (Math.PI / 2); put(edge[0] + N[0] * e * Math.cos(a2), -T + e - e * Math.sin(a2), edge[1] + N[1] * e * Math.cos(a2), N[0] * Math.cos(a2), -Math.sin(a2), N[1] * Math.cos(a2)); }
-    for (let k = 1; k <= 4; k++) { const s = k / 5; put(edge[0] + (inner[0] - edge[0]) * s, -T, edge[1] + (inner[1] - edge[1]) * s, 0, -1, 0); }
+    put(edge[0] + (inner[0] - edge[0]) * 0.5, -T, edge[1] + (inner[1] - edge[1]) * 0.5, 0, -1, 0);
     for (let k = 0; k <= R; k++) { const a2 = (k / R) * (Math.PI / 2); put(inner[0] - u[0] * e * Math.sin(a2), -T + e - e * Math.cos(a2), inner[1] - u[1] * e * Math.sin(a2), -u[0] * Math.sin(a2), -Math.cos(a2), -u[1] * Math.sin(a2), true); }
     for (let k = 0; k < R; k++) { const a2 = (k / R) * (Math.PI / 2); put(inner[0] - u[0] * e * Math.cos(a2), -e + e * Math.sin(a2), inner[1] - u[1] * e * Math.cos(a2), -u[0] * Math.cos(a2), Math.sin(a2), -u[1] * Math.cos(a2), true); }
     cols.push({ p, nm, hole });
@@ -175,61 +176,17 @@ function blob(cx: number, cz: number, rings: number, segs: number, foot: (a: num
   return g;
 }
 
-// A dab squeezed from a tube and left: a slumped dome with the coil it was laid in, its tip pulled up and over. Old,
-// it has dried flat topped and lumpy; scraped, the knife has taken its top off flat on one side.
-function dabSurface(d: Dab, small = false): { g: THREE.BufferGeometry; scraped: (x: number, z: number) => number } {
-  const r = seeded(d.seed), nz = noise2(d.seed);
-  const ph = [r() * 6.28, r() * 6.28, r() * 6.28];
-  const lean = (d.lean * Math.PI) / 180, lx = Math.cos(lean), lz = Math.sin(lean);
-  const lumpy = 0.08 + 0.1 * d.age;
-  const foot = (a: number) => d.r * (1 + lumpy * Math.sin(2 * a + ph[0]) + 0.06 * Math.sin(3 * a + ph[1]) + 0.04 * Math.sin(5 * a + ph[2]) + 0.025 * d.age * Math.sin(9 * a + ph[0]));
-  const sa = d.scrape ? (d.scrape.a * Math.PI) / 180 : 0;
-  const scraped = (x: number, z: number) => (d.scrape ? sm(d.scrape.from - 0.1, d.scrape.from + 0.06, (x * Math.cos(sa) + z * Math.sin(sa)) / d.r) : 0);
-  const f = (rr: number, a: number, x: number, z: number) => {
-    const fresh = (() => {
-      const dome = d.h * 0.58 * Math.pow(1 - rr * rr, 0.5);
-      const coil = small ? 0 : d.h * 0.12 * (0.5 + 0.5 * Math.cos(2 * Math.PI * (rr * 2.3) - a - d.twist)) * Math.sin(Math.PI * Math.min(1, rr * 1.1));
-      const px = x - lx * 0.2 * d.r, pz = z - lz * 0.2 * d.r;
-      const peak = small ? 0 : d.h * 0.42 * Math.exp(-((Math.hypot(px, pz) / (0.34 * d.r)) ** 2));
-      return dome + coil + peak;
-    })();
-    const old = d.h * Math.pow(Math.max(0, 1 - rr ** 3), 0.4) * (0.85 + 0.3 * nz(x * 0.35 + 3, z * 0.35)) + d.h * 0.12 * Math.cos(2 * Math.PI * rr * 1.6 - a);
-    let y = fresh * (1 - d.age) + old * d.age;
-    if (d.scrape) {
-      const k = scraped(x, z);
-      const across = -x * Math.sin(sa) + z * Math.cos(sa);
-      const cut = d.scrape.h * (0.85 + 0.15 * Math.sin(across * 2.1)) * Math.min(1, (1 - rr) * 4);
-      y = y * (1 - k) + Math.min(y, cut) * k;
-    }
-    return y;
-  };
-  const push = (rr: number, _a: number, y: number): P2 => { if (d.age > 0.5) return [0, 0]; const k = (y / d.h) ** 2.4 * 0.22 * d.r; return [lx * k, lz * k]; };
-  const g = blob(d.x, d.z, small ? 8 : 15, small ? 24 : 44, foot, f, push);
-  return { g, scraped: (x, z) => scraped(x - d.x, z - d.z) };
-}
-
-// A thin skin of old paint on the wood: a flat top, a steep edge that has lifted a little where it dried, a ragged
-// outline.
-function crustSurface(c: { x: number; z: number; r: number; seed: number }, th: number): THREE.BufferGeometry {
-  const nz = noise2(c.seed), r = seeded(c.seed);
-  const ph = [r() * 6.28, r() * 6.28, r() * 6.28];
-  const foot = (a: number) => c.r * (1 + 0.18 * Math.sin(2 * a + ph[0]) + 0.12 * Math.sin(3 * a + ph[1]) + 0.1 * Math.sin(7 * a + ph[2]) + 0.06 * Math.sin(13 * a + ph[0]));
-  const f = (rr: number, _a: number, x: number, z: number) => th * (sm(1.0, 0.86, rr) * (0.8 + 0.4 * nz(x * 0.6, z * 0.6)) + 0.35 * sm(0.72, 0.9, rr) * (1 - sm(0.92, 1.0, rr)));
-  return blob(c.x, c.z, 7, 30, foot, f);
-}
-
-// A paint film with a thumb's ridges in it: the shader draws the ridges from its uv, the film's own millimetres
-// turned to the print's way.
-function printSurface(p: (typeof PRINTS)[number]): THREE.BufferGeometry {
-  const r = seeded(p.seed), a0 = (p.a * Math.PI) / 180;
-  const ph = [r() * 6.28, r() * 6.28];
-  const foot = (a: number) => {
-    const c = Math.cos(a - a0), s = Math.sin(a - a0);
-    return (1 / Math.sqrt((c / 6.6) ** 2 + (s / 8.6) ** 2)) * (1 + 0.08 * Math.sin(3 * a + ph[0]) + 0.05 * Math.sin(8 * a + ph[1]));
-  };
-  const f = (rr: number) => 0.14 * sm(1.0, 0.75, rr);
-  const uvOf = (x: number, z: number): P2 => [x * Math.cos(a0) + z * Math.sin(a0), -x * Math.sin(a0) + z * Math.cos(a0)];
-  return blob(p.x, p.z, 6, 32, foot, f, undefined, uvOf);
+function dabSurface(d: { x: number; z: number; r: number; h: number; lean: number; twist: number }, small = false): THREE.BufferGeometry {
+  if (small) {
+    const f = (rr: number) => d.h * Math.pow(Math.max(0, 1 - rr * rr), 0.5);
+    return blob(d.x, d.z, 8, 24, () => d.r, f);
+  }
+  const c = coil(d);
+  const ln = (d.lean * Math.PI) / 180, lx = Math.cos(ln), lz = Math.sin(ln);
+  const f = (_rr: number, _a: number, x: number, z: number) => c.at(x, z);
+  // The peak hangs a little over the way it was pulled, as soft paint does.
+  const push = (_rr: number, _a: number, y: number): P2 => { const k = Math.max(0, y / d.h) ** 4 * 0.2 * d.r; return [lx * k, lz * k]; };
+  return blob(d.x, d.z, 18, 48, c.reach, f, push);
 }
 
 // A section of something swept along a path: half its width (across, lying flat) and half its thickness (up), and
@@ -284,71 +241,45 @@ function sweep(path: THREE.Vector3[], ups: THREE.Vector3[] | THREE.Vector3, sec:
   return g;
 }
 
-// The mixing ground: a height worked out from the knife's passes, in order. Each pass lays its paint flat to the
-// blade, thinner as it goes, leaves a ridge along each side where the paint was squeezed out, and breaks up into
-// streaks at its far end where the blade lifted, ending in a ragged lip. Cells the paint does not reach are left out,
-// and those it only partly covers are kept, so its edge is where the paint meets the wood and not a step of the grid.
-function mixSurface(): THREE.BufferGeometry {
-  const STEP = 0.6;
-  const nz = noise2(9), nb = noise2(21);
-  let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
-  for (const s of STROKES) for (const p of [s.a, s.b]) { x0 = Math.min(x0, p[0] - s.w); x1 = Math.max(x1, p[0] + s.w); z0 = Math.min(z0, p[1] - s.w); z1 = Math.max(z1, p[1] + s.w); }
-  const nx = Math.ceil((x1 - x0) / STEP), nzc = Math.ceil((z1 - z0) / STEP);
-  const W = nx + 1;
-  const H = new Float32Array(W * (nzc + 1)), top = new Float32Array(H.length), ridge = new Float32Array(H.length), al = new Float32Array(H.length), ac = new Float32Array(H.length);
-  for (let j = 0; j <= nzc; j++) for (let i = 0; i <= nx; i++) {
-    const x = x0 + i * STEP, z = z0 + j * STEP;
-    let h = -0.6, who = 0, rd = 0, along = 0, across = 0;
-    STROKES.forEach((s, k) => {
-      const dx = s.b[0] - s.a[0], dz = s.b[1] - s.a[1], len = Math.hypot(dx, dz), ux = dx / len, uz = dz / len;
-      const t = (x - s.a[0]) * ux + (z - s.a[1]) * uz, u = t / len;
-      const c = -(x - s.a[0]) * uz + (z - s.a[1]) * ux - s.bow * 4 * Math.min(1, Math.max(0, u)) * (1 - Math.min(1, Math.max(0, u)));
-      const half = (s.w / 2) * (0.92 + 0.08 * Math.sin(t * 0.2 + k)) * (1 - 0.22 * sm(0.6, 1.0, u));
-      const end = len * (0.84 + 0.16 * nz(c * 0.35 + k * 7, 1.3));
-      const streak = nb(c * 0.75 + k * 13, t * 0.05);
-      const broken = sm(0.2, 0.62, streak + 0.7 * (1 - sm(0.4, 0.95, t / end)));
-      const inside = sm(-1.6, 0.6, t) * (1 - sm(end - 3, end + 0.3, t)) * (1 - sm(half - 1.8, half + 0.4, Math.abs(c)));
-      const thin = s.t * (1.08 - 0.62 * sm(0, 1, t / end)) * (0.82 + 0.36 * (c / s.w + 0.5) * 0.6);
-      const layer = (thin * (0.75 + 0.5 * streak) + 0.04 * s.t * Math.sin(c * 2.6 + 3 * nz(t * 0.08, k))) * broken;
-      const prev = h;
-      h = h + (layer - h) * inside * sm(0.04, 0.2, layer);
-      const edge = Math.exp(-(((Math.abs(c) - half) / 0.85) ** 2)) * sm(0, 3, t) * (1 - sm(end * 0.7, end, t)) * (0.6 + 0.4 * nz(t * 0.15, c));
-      const set = Math.exp(-(((t + 0.4) / 1.8) ** 2)) * Math.exp(-((c / half) ** 2) * 1.4);
-      const lip = Math.exp(-(((t - end + 1.2) / 1.1) ** 2)) * (1 - sm(half * 0.6, half, Math.abs(c))) * broken;
-      const raised = Math.max(prev, layer * 0.9) + 1.0 * edge * s.t + 1.3 * set * s.t + 0.7 * lip * s.t;
-      const lift = Math.max(edge * 0.95, set, lip);
-      if (lift > 0.05 && raised > h) h = h + (raised - h) * Math.min(1, lift * 1.3);
-      if (inside > 0.5 || lift > 0.4) { who = k; along = t / len; across = c / half; rd = Math.max(edge, set, lip); }
-    });
-    const o = j * W + i;
-    H[o] = h; top[o] = who; ridge[o] = rd; al[o] = along; ac[o] = across;
+// A swatch drawn down with the knife: a flat strip of paint pulled from where the blade set down, a ridge along each
+// side where the paint was squeezed out from under the blade's edges, a roll where it set down, and the far end
+// broken into streaks with a ragged lip where it lifted. Cells the paint does not reach are left out, and those it
+// only partly covers kept, so its edge is where the paint meets the wood and not a step of the grid.
+function swatchSurface(sw: Swatch, k: number): THREE.BufferGeometry {
+  const nz = noise2(sw.seed), nb = noise2(sw.seed + 40);
+  const a = (sw.dir * Math.PI) / 180, ux = Math.cos(a), uz = Math.sin(a), vx = -uz, vz = ux;
+  const half = sw.w / 2, SA = 0.85, SC = 0.42;
+  const na = Math.ceil((sw.len + 4) / SA), nc = Math.ceil((sw.w + 3) / SC);
+  const W = nc + 1;
+  const H = new Float32Array((na + 1) * W), R = new Float32Array(H.length);
+  for (let i = 0; i <= na; i++) for (let j = 0; j <= nc; j++) {
+    const t = -1.5 + i * SA, c = -half - 1.5 + j * SC;
+    const edge = half * (1 + 0.025 * (nz(t * 0.15, 3) - 0.5)) + 0.25 * (nz(t * 0.6, 9) - 0.5);
+    const end = sw.len * (0.9 + 0.1 * nz(c * 0.32, 5)) - 0.9 * nb(c * 1.4, 2);
+    const streak = nb(c * 0.9, 7) + 0.25 * nb(c * 3.1, 1);
+    const broken = sm(0.18, 0.5, streak + 1.05 * (1 - sm(0.62, 0.98, t / end)));
+    const inside = sm(-0.5, 0.4, t) * (1 - sm(end - 0.6, end + 0.2, t)) * (1 - sm(edge - 0.3, edge + 0.15, Math.abs(c)));
+    const film = 0.28 + 0.05 * Math.sin(c * 4.2 + 2 * nz(t * 0.1, c)) - 0.08 * (t / sw.len);
+    const ridge = 0.55 * Math.exp(-(((Math.abs(c) - edge + 0.7) / 0.55) ** 2)) * (1 - 0.6 * sm(0.7, 1, t / end)) * (0.8 + 0.4 * nz(t * 0.2, c > 0 ? 1 : 4));
+    const roll = 0.85 * Math.exp(-(((t - 0.6) / 1.1) ** 2)) * (0.85 + 0.3 * nz(c * 0.4, 8));
+    const lip = 0.38 * Math.exp(-(((t - end + 0.7) / 0.6) ** 2)) * broken;
+    const h = (film * broken + ridge + roll + lip) * inside;
+    const o = i * W + j;
+    H[o] = h > 0.06 ? h : -0.5;
+    R[o] = Math.max(ridge / 0.55, roll / 0.85, lip / 0.38);
   }
-  // Paint is soft: its walls and ridges are rounded, and where one pass ran over another there is no step.
-  for (let pass = 0; pass < 2; pass++) {
-    const T = new Float32Array(H.length);
-    for (let j = 0; j <= nzc; j++) for (let i = 0; i <= nx; i++) {
-      let sum = 0, wsum = 0;
-      for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
-        const jj = Math.min(nzc, Math.max(0, j + dj)), ii = Math.min(nx, Math.max(0, i + di)), w = (2 - Math.abs(di)) * (2 - Math.abs(dj));
-        sum += Math.max(H[jj * W + ii], -0.2) * w; wsum += w;
-      }
-      T[j * W + i] = sum / wsum;
-    }
-    H.set(T);
-  }
-  for (let o = 0; o < H.length; o++) if (H[o] < 0.06) H[o] = -0.6;
   const pos: number[] = [], uv: number[] = [], cell: number[] = [];
-  for (let j = 0; j <= nzc; j++) for (let i = 0; i <= nx; i++) {
-    const o = j * W + i;
-    pos.push(x0 + i * STEP, H[o], z0 + j * STEP);
-    uv.push(al[o], ac[o]);
-    cell.push(PAINT.mix, top[o], ridge[o], 0);
+  for (let i = 0; i <= na; i++) for (let j = 0; j <= nc; j++) {
+    const t = -1.5 + i * SA, c = -half - 1.5 + j * SC, o = i * W + j;
+    pos.push(sw.at[0] + ux * t + vx * c, H[o], sw.at[1] + uz * t + vz * c);
+    uv.push(t / sw.len, c / half);
+    cell.push(PAINT.mix, k, R[o], 0);
   }
   const idx: number[] = [];
-  for (let j = 0; j < nzc; j++) for (let i = 0; i < nx; i++) {
-    const a = j * W + i, b = a + 1, c = a + W, d = c + 1;
-    if (H[a] < 0 && H[b] < 0 && H[c] < 0 && H[d] < 0) continue;
-    idx.push(a, c, b, b, c, d);
+  for (let i = 0; i < na; i++) for (let j = 0; j < nc; j++) {
+    const p0 = i * W + j, p1 = p0 + 1, p2 = p0 + W, p3 = p2 + 1;
+    if (H[p0] < 0 && H[p1] < 0 && H[p2] < 0 && H[p3] < 0) continue;
+    idx.push(p0, p1, p2, p1, p3, p2);
   }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
@@ -356,31 +287,10 @@ function mixSurface(): THREE.BufferGeometry {
   g.setAttribute('cell', new THREE.Float32BufferAttribute(cell, 4));
   g.setIndex(idx);
   g.computeVertexNormals();
-  return g;
-}
-
-// A smear where the knife was wiped: thick where it began, thinning and breaking into streaks to nothing.
-function wipeSurface(w: (typeof WIPES)[number], seed: number): THREE.BufferGeometry {
-  const nb = noise2(seed);
-  const NA = 30, NC = 10;
-  const dx = w.b[0] - w.a[0], dz = w.b[1] - w.a[1], len = Math.hypot(dx, dz), ux = dx / len, uz = dz / len;
-  const pos: number[] = [], uv: number[] = [];
-  for (let i = 0; i <= NA; i++) for (let k = 0; k <= NC; k++) {
-    const u = i / NA, v = (k / NC) * 2 - 1;
-    const half = (w.w / 2) * (1 - 0.15 * u) * (0.85 + 0.3 * nb(u * 3, 7)) * Math.min(1, 0.4 + u * 6);
-    const x = w.a[0] + ux * u * len - uz * v * half, z = w.a[1] + uz * u * len + ux * v * half;
-    const streak = sm(0.25, 0.5, nb(v * 2.2, u * 2) + 1.2 * (1 - u));
-    const y = Math.abs(v) > 0.97 ? -0.4 : 0.22 * (1 - u) ** 1.2 * Math.sqrt(1 - v * v) * streak * sm(0, 0.08, u) * (1 - sm(0.92, 1, u)) + 0.04;
-    pos.push(x, y < 0.07 ? -0.4 : y, z);
-    uv.push(u, v);
-  }
-  const idx: number[] = [], W = NC + 1;
-  for (let i = 0; i < NA; i++) for (let k = 0; k < NC; k++) { const a = i * W + k; idx.push(a, a + 1, a + W, a + 1, a + W + 1, a + W); }
-  const g = new THREE.BufferGeometry();
-  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-  g.setIndex(idx);
-  g.computeVertexNormals();
+  const Nn = g.getAttribute('normal');
+  let up = 0;
+  for (let i = 0; i < Nn.count; i++) up += Nn.getY(i);
+  if (up < 0) { for (let t = 0; t < idx.length; t += 3) { const x = idx[t + 1]; idx[t + 1] = idx[t + 2]; idx[t + 2] = x; } g.setIndex(idx); g.computeVertexNormals(); }
   return g;
 }
 
@@ -424,7 +334,7 @@ function upright(profile: [number, number][], segs: number, x: number, y: number
 
 // A small domed head (a rivet, a pin's end) standing on a face at p, its dome along up.
 function dome(p: THREE.Vector3, up: THREE.Vector3, r: number, h: number): THREE.BufferGeometry {
-  const g = new THREE.LatheGeometry([[0.0001, h], [r * 0.5, h * 0.88], [r * 0.85, h * 0.55], [r, h * 0.15], [r * 0.98, -0.2]].map(([a, b]) => new THREE.Vector2(a, b)), 20);
+  const g = new THREE.LatheGeometry([[r * 0.98, -0.2], [r, h * 0.15], [r * 0.85, h * 0.55], [r * 0.5, h * 0.88], [0.0001, h]].map(([a, b]) => new THREE.Vector2(a, b)), 20);
   const U = up.clone().normalize(), S = new THREE.Vector3(1, 0, 0);
   if (Math.abs(S.dot(U)) > 0.9) S.set(0, 0, 1);
   const T = new THREE.Vector3().crossVectors(S, U).normalize();
@@ -492,48 +402,29 @@ export async function buildPalette(): Promise<PaletteModel> {
   }
   await pause();
 
-  // ---- the paints: the dabs, the old skins, the wipes, the run, the prints, the mixing ground ----
+  // ---- the paints: the scale along the rim, each with its pin and number, and the swatches ----
   DABS.forEach((d, k) => {
     const i = part({ kind: 'dab', c: [d.x, 0, d.z], r: d.r * 1.1, n: k });
-    const { g, scraped } = dabSurface(d);
-    add(i, g, paint, (x, _y, z) => [k, d.age, scraped(x, z)]);
+    // How far each point lies in a crease where the rope folds on itself, and how far out on a ridge, from the height
+    // round it: the shader darkens the one and puts the wet highlight on the other.
+    const c = coil(d), R = 0.9;
+    const fold = (x: number, z: number): [number, number, number] => {
+      const lx = x - d.x, lz = z - d.z, h = c.at(lx, lz);
+      const ring = (c.at(lx + R, lz) + c.at(lx - R, lz) + c.at(lx, lz + R) + c.at(lx, lz - R)) / 4;
+      return [k, Math.min(1, Math.max(0, (ring - h) / 0.9)), Math.min(1, Math.max(0, (h - ring) / 0.6))];
+    };
+    add(i, dabSurface(d), paint, (x, _y, z) => fold(x, z));
   });
-  CRUSTS.forEach((c) => {
-    const i = part({ kind: 'crust', c: [c.x, 0, c.z], r: c.r * 1.2 });
-    add(i, crustSurface(c, 0.32 + 0.05 * c.r), paint, [PAINT.crust, c.paint, 0]);
-  });
-  WIPES.forEach((w, k) => {
-    const i = part({ kind: 'crust', c: [(w.a[0] + w.b[0]) / 2, 0, (w.a[1] + w.b[1]) / 2], r: Math.hypot(w.b[0] - w.a[0], w.b[1] - w.a[1]) / 2 + w.w });
-    add(i, wipeSurface(w, 31 + k), paint, [PAINT.wipe, w.paint, 0]);
-  });
-  PRINTS.forEach((p) => {
-    const i = part({ kind: 'crust', c: [p.x, 0, p.z], r: 9 });
-    add(i, printSurface(p), paint, [PAINT.print, p.paint, 0]);
-  });
+  // The pins go with the tile of the board they are driven into.
   {
-    // The run: from the old ember at the left end, across the top, over the rounded edge and down its side, where it
-    // stopped in a bead.
-    const d = DABS[RUN.from], e = BOARD.round, T = BOARD.thick;
-    const f = Math.PI + Math.asin(Math.max(-1, Math.min(1, -d.z / 108)));
-    const { p: O, n: Nn } = rimAt(f);
-    const Nv = V3(Nn[0], 0, Nn[1]);
-    const E = V3(O[0] - Nn[0] * e, 0, O[1] - Nn[1] * e);
-    const pts: THREE.Vector3[] = [], ups: THREE.Vector3[] = [];
-    const start = V3(d.x + Nn[0] * d.r * 0.5, 0, d.z + Nn[1] * d.r * 0.5);
-    for (let k = 0; k <= 8; k++) { pts.push(start.clone().lerp(E, k / 8).setY(0.02)); ups.push(V3(0, 1, 0)); }
-    for (let k = 1; k <= 8; k++) { const a = (k / 8) * (Math.PI / 2); pts.push(E.clone().addScaledVector(Nv, e * Math.sin(a) + 0.02).setY(-e + (e + 0.02) * Math.cos(a))); ups.push(Nv.clone().multiplyScalar(Math.sin(a)).setY(Math.cos(a))); }
-    for (let k = 1; k <= 4; k++) { pts.push(E.clone().addScaledVector(Nv, e + 0.02).setY(-e - (k / 4) * 1.4)); ups.push(Nv.clone()); }
-    const total = pts.length;
-    const i = part({ kind: 'crust', c: [O[0], -1, O[1]], r: 12 });
-    add(i, sweep(pts, ups, (k) => ({ w: (RUN.w / 2) * (0.75 + 0.35 * (k / total)), t: 0.45 + 0.25 * (k / total), n: 2.4, flat: true }), 14), paint, [PAINT.run, 1, 0]);
-    const bead = new THREE.SphereGeometry(1, 18, 12);
-    bead.scale(RUN.bead * 1.1, RUN.bead * 1.25, RUN.bead * 0.75);
-    const Tg = V3(-Nn[1], 0, Nn[0]);
-    bead.applyMatrix4(new THREE.Matrix4().makeBasis(Tg, V3(0, 1, 0), Nv).setPosition(E.clone().addScaledVector(Nv, e + 0.3).setY(-e - 2.0)));
-    add(i, bead, paint, [PAINT.run, 1, 0]);
+    const near = (x: number, z: number) => { let best = 0, bd = Infinity; tiles.forEach((t, k) => { const dd = (t.c[0] - x) ** 2 + (t.c[1] - z) ** 2; if (dd < bd) { bd = dd; best = k; } }); return tileParts[best]; };
+    for (const d of DABS) {
+      const l = d.r + MARK.pin, x = d.x + d.inward[0] * l, z = d.z + d.inward[1] * l;
+      add(near(x, z), dome(V3(x, 0, z), V3(0, 1, 0), MARK.pinR, MARK.pinH), metal, [7, 0, 0]);
+    }
   }
-  const iMix = part({ kind: 'mix', c: [MIX.x, 0, MIX.z], r: 44 });
-  add(iMix, mixSurface(), paint, 'keep');
+  const iMix = part({ kind: 'mix', c: [MIX.x, 0, MIX.z], r: 40 });
+  SWATCHES.forEach((sw, k) => add(iMix, swatchSurface(sw, k), paint, 'keep'));
   await pause();
 
   // ---- the round brush ----
@@ -542,52 +433,32 @@ export async function buildPalette(): Promise<PaletteModel> {
   const bMid = brushAxis(BRUSH.hair + 60);
   const iBrush = part({ kind: 'brush', c: [bMid[0], BRUSH.lift, bMid[1]], r: 60 });
   {
-    const h = BRUSH.hair, f = BRUSH.ferrule, Lh = BRUSH.handle, g = 1.38;
-    const R = (pts: [number, number][]): [number, number][] => pts.map(([r, sv]) => [r * g, sv]);
-    const hairP = profileOf(R([[0.02, 0], [0.9, h * 0.08], [1.9, h * 0.23], [2.62, h * 0.5], [2.72, h * 0.67], [2.5, h], [2.42, h + 1.5]]), 0.5);
-    const bend = (sv: number) => (sv < h ? (BRUSH.lift - 1.0) * (1 - sv / h) ** 2 : 0);
-    add(iBrush, turned(hairP, 40, tip, A, bend), hair, [0, 0, 0]);
-    const c1 = h + f - 8, c2 = h + f - 11;
+    const h = BRUSH.hair, f = BRUSH.ferrule, Lh = BRUSH.handle, F = h + f;
+    // The hairs: a full belly gathered to a fine point, bent down at the point onto the bead.
+    const G = BRUSH.lift / 5;
+    const R = (pts: [number, number][]): [number, number][] => pts.map(([r, sv]) => [r * G, sv]);
+    const hairP = profileOf(R([[0.02, 0], [1.1, 1.8], [2.3, 5], [3.25, 10.5], [3.6, 15.5], [3.5, 21], [3.32, h], [3.3, h + 1.5]]), 0.7);
+    const bend = (sv: number) => (sv < h ? (BRUSH.lift - 1.05) * (1 - sv / h) ** 2 : 0);
+    add(iBrush, turned(hairP, 32, tip, A, bend), hair, [0, 0, 0]);
+    // The ferrule: seamless, drawn from one tube, swelling toward the handle, with two crimp rings and a rolled lip.
+    const c1 = F - 5.5, c2 = F - 9.5;
     const ferP = profileOf(R([
-      [2.45, h - 0.2], [2.72, h + 0.2], [2.66, h + 0.8], [2.7, h + 5], [2.95, c2 - 1.8], [3.0, c2 - 0.6], [2.78, c2], [3.0, c2 + 0.6],
-      [3.04, c1 - 0.7], [2.82, c1], [3.06, c1 + 0.7], [3.12, h + f - 1.2], [3.22, h + f - 0.35], [3.12, h + f], [3.0, h + f + 0.05],
+      [3.3, h - 0.3], [3.62, h + 0.25], [3.58, h + 1.1], [3.7, h + 8], [4.12, c2 - 2.5], [4.18, c2 - 0.75], [3.88, c2], [4.18, c2 + 0.75],
+      [4.24, c1 - 0.75], [3.94, c1], [4.26, c1 + 0.75], [4.32, F - 1.4], [4.44, F - 0.45], [4.3, F], [4.15, F + 0.05],
     ]), 1.2);
-    add(iBrush, turned(ferP, 48, tip, A), metal, [0, 0, 0]);
-    const s0 = h + f - 2, end = h + f + Lh;
-    const handP = profileOf(R([[3.0, s0], [3.1, h + f + 1], [3.65, h + f + 30], [3.5, h + f + 70], [2.55, end - 30], [2.15, end - 6], [1.9, end - 2.4], [1.2, end - 0.6], [0.02, end]]), 4);
-    add(iBrush, turned(handP, 40, tip, A), handle, [0, 0, 0]);
+    add(iBrush, turned(ferP, 44, tip, A), metal, [0, 0, 0]);
+    // The handle: turned, swelling to a belly it rests on and drawn out to a long taper, in a deep lacquer.
+    const s0 = F - 2, end = F + Lh;
+    const handP = profileOf(R([[4.12, s0], [4.22, F + 0.8], [4.6, F + 12], [5.0, F + 42], [4.85, F + 80], [3.7, end - 40], [3.05, end - 12], [2.7, end - 3], [1.8, end - 0.7], [0.02, end]]), 3);
+    add(iBrush, turned(handP, 32, tip, A), handle, [0, 0, 0]);
   }
-  const beadAt = brushAxis(-1.5);
+  const beadAt = brushAxis(-2.5);
   const iBead = part({ kind: 'bead', c: [beadAt[0], 0, beadAt[1]], r: 5 });
-  add(iBead, dabSurface({ x: beadAt[0], z: beadAt[1], r: BRUSH.bead.r, h: BRUSH.bead.h, lean: 0, twist: 0, seed: 7, paint: 3, age: 0 }, true).g, paint, [PAINT.hot, 0, 0]);
-  await pause();
-
-  // ---- the flat brush ----
   {
-    const F = FLAT, dir = V3(Math.cos(F.dir), 0, Math.sin(F.dir));
-    const mid = flatAxis(60);
-    const iFlat = part({ kind: 'flat', c: [mid[0], F.lift, mid[1]], r: 70 });
-    const along = (s: number, y: number) => { const p = flatAxis(s); return V3(p[0], y, p[1]); };
-    const hl = F.hair.len, fl = F.ferrule;
-    // The hairs: a flat bundle squared off to a chisel edge, bent down to rest on the board at its edge.
-    const hp: THREE.Vector3[] = [];
-    const HN = 16;
-    for (let k = 0; k <= HN; k++) { const s = (k / HN) * (hl + 1); hp.push(along(s, F.lift - (F.lift - 0.45) * (1 - s / hl) ** 2 * (s < hl ? 1 : 0))); }
-    add(iFlat, sweep(hp, V3(0, 1, 0), (k) => { const q = k / HN; return { w: F.hair.w / 2 * (0.97 + 0.06 * Math.sin(q * 3)), t: 0.35 + (F.hair.t / 2 - 0.35) * Math.min(1, q * 1.3), n: 3.2 }; }, 24), hair, [1, 0, 0]);
-    // The ferrule: pressed flat at the hairs, round at the handle, with the crimp between.
-    const fp: THREE.Vector3[] = [];
-    const FN = 22;
-    for (let k = 0; k <= FN; k++) fp.push(along(hl - 0.6 + (k / FN) * fl, F.lift));
-    add(iFlat, sweep(fp, V3(0, 1, 0), (k) => {
-      const q = k / FN, s = q * fl, round = sm(0.35, 0.8, q);
-      const crimp = 1 - 0.07 * Math.exp(-(((s - fl * 0.72) / 0.5) ** 2)) - 0.07 * Math.exp(-(((s - fl * 0.8) / 0.5) ** 2));
-      const lip = 1 + 0.06 * Math.exp(-((s / 0.6) ** 2));
-      return { w: (5.3 * (1 - round) + 3.15 * round) * crimp * lip, t: (1.75 * (1 - round) + 3.15 * round) * crimp * lip, n: 4.5 - 2.5 * round };
-    }, 32), metal, [6, 0, 0]);
-    const from = along(hl + fl - 1.5, F.lift);
-    const len = F.handle;
-    const prof = profileOf([[3.05, 0], [3.2, 2], [3.45, 18], [3.2, 50], [2.35, len - 22], [2.05, len - 5], [1.6, len - 1.6], [0.02, len]], 3.5);
-    add(iFlat, turned(prof, 36, from, dir), handle, [3, 0, 0]);
+    // The bead: wet paint pressed out where the point rests, drawn a little way along the way the brush lies.
+    const B = BRUSH.bead, nb = noise2(17);
+    const foot = (a: number) => B.r / Math.hypot(Math.cos(a - BRUSH.dir) / 1.45, Math.sin(a - BRUSH.dir) / 0.8) * (0.92 + 0.16 * nb(Math.cos(a) * 2 + 3, Math.sin(a) * 2));
+    add(iBead, blob(beadAt[0], beadAt[1], 9, 36, foot, (rr) => B.h * Math.pow(Math.max(0, 1 - rr * rr), 0.6)), paint, [PAINT.hot, 0, 0]);
   }
   await pause();
 
@@ -697,41 +568,6 @@ export async function buildPalette(): Promise<PaletteModel> {
   }
   await pause();
 
-  // ---- the tape, over the left front edge ----
-  {
-    const iTape = part({ kind: 'tape', c: [rimAt(TAPE.f).p[0], 0, rimAt(TAPE.f).p[1]], r: 22 });
-    const e = BOARD.round, T = BOARD.thick, nt = noise2(5);
-    const NW = 26, NP = 28, pos: number[] = [], uv: number[] = [];
-    for (let j = 0; j <= NW; j++) {
-      const w = (j / NW - 0.5) * TAPE.w;
-      const { p: O, n: Nn } = rimAt(TAPE.f + w / 112);
-      const Nv = V3(Nn[0], 0, Nn[1]);
-      const E = V3(O[0] - Nn[0] * e, 0, O[1] - Nn[1] * e);
-      const reach = TAPE.inward + 2.2 * (nt(j * 0.45, 1) - 0.5) + 1.1 * (nt(j * 1.7, 4) - 0.5) + 0.5 * Math.sin(j * 4.1) * nt(j, 9) + (j / NW) * 2.5;
-      const lift = 0.07;
-      for (let k = 0; k <= NP; k++) {
-        const q = k / NP;
-        let p: THREE.Vector3;
-        if (q < 0.55) p = E.clone().addScaledVector(Nv, -reach * (1 - q / 0.55)).setY(lift);
-        else if (q < 0.8) { const a = ((q - 0.55) / 0.25) * (Math.PI / 2); p = E.clone().addScaledVector(Nv, (e + lift) * Math.sin(a)).setY(-e + (e + lift) * Math.cos(a)); }
-        else { const s = (q - 0.8) / 0.2; p = E.clone().addScaledVector(Nv, e + lift).setY(-e - s * (T - e - 0.3)); }
-        pos.push(p.x, p.y, p.z);
-        uv.push(j / NW, q);
-      }
-    }
-    const idx: number[] = [], W = NP + 1;
-    for (let j = 0; j < NW; j++) for (let k = 0; k < NP; k++) { const a = j * W + k; idx.push(a, a + 1, a + W, a + 1, a + W + 1, a + W); }
-    const g = new THREE.BufferGeometry();
-    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
-    g.setIndex(idx);
-    g.computeVertexNormals();
-    const Nn = g.getAttribute('normal');
-    if (Nn.getY(Math.floor(NW / 2) * W + 2) < 0) { for (let t = 0; t < idx.length; t += 3) { const x = idx[t + 1]; idx[t + 1] = idx[t + 2]; idx[t + 2] = x; } g.setIndex(idx); g.computeVertexNormals(); }
-    add(iTape, g, satin, [2, 0, 0]);
-  }
-  await pause();
-
   const tris = b.tris;
   const meshes = b.build(root, 'palette');
   const depth = depthMaterial(u);
@@ -765,27 +601,23 @@ vec3 palBump(vec3 n, float h, float k){
   return l > 1e-12 ? o / l : n;
 }`;
 
-// Cracks in dried paint: the edges of cells about `size` millimetres across, as a value from 0 to 1 that fades out
-// before it is finer than a pixel.
-const CRACK = /* glsl */ `
-float palCrack(vec2 p, float size){
-  vec2 q = p / size, i = floor(q), f = fract(q);
-  float d1 = 8.0, d2 = 8.0;
-  for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
-    vec2 g = vec2(float(x), float(y));
-    vec2 o = vec2(wHash(vec3(i + g, 1.0)), wHash(vec3(i + g, 2.0)));
-    float d = length(g + o - f);
-    if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) d2 = d;
-  }
-  float px = length(fwidth(q));
-  return (1.0 - smoothstep(0.0, 0.035 + px * 1.0, d2 - d1)) * (1.0 - smoothstep(0.2, 0.5, px));
-}`;
-
 // The knots: two, off centre, in open wood. Where, how large across and along the grain.
 const KNOTS = [{ x: 22, z: 42, r: 4.2 }, { x: 128, z: -24, r: 2.6 }] as const;
 // The growth rings: an axis under the board that rises toward the thumb hole, so the rings come up through the top
 // as nested arches whose tips lie round the hole, and run out as long lines to the left.
 const AXIS = { apex: 108, rise: 0.15, shallow: 6, z: HOLE.z } as const;
+// Walnut, as shares of the site's bronze and its grey: the light streak, the body, the dark of a late year, the pore.
+// year is how wide a growth ring is, in millimetres out from the axis.
+// The varnish's sheen: the sharpness and strength of the broad band and of the brighter middle inside it.
+// The lines the room's light draws down turned things (palLine): how sharp, and how bright.
+const FINISH = { blade: 1.0, metal: { sharp: 300, soft: 3, k: 3.2 }, lacquer: { sharp: 1400, k: 1.3 }, satin: { sharp: 90, k: 0.22 } } as const;
+// The wet paint's highlight: how sharp, and how bright.
+const PAINT_GLINT = { sharp: 90, cut: [0.035, 0.075], k: 1.8, softK: 1.2 } as const;
+// How the board falls off: the share of its own brown it keeps, how much darker it goes from z = from to z = to (its
+// near edge), how much the tools darken what is under them, and the line of light along the far rim's chamfer.
+const DEPTH = { body: 0.62, near: 0.72, from: 0, to: 105, under: 1.25, rim: 0.32 } as const;
+const VARNISH = { band: 1500, bandK: 0.75, core: 9000, coreK: 0.35 } as const;
+const GRAIN = { light: [0.5, 0.075], mid: [0.32, 0.05], dark: [0.12, 0.02], pore: [0.025, 0.0], year: 5.5 } as const;
 
 function boardMaterial(u: Shared): THREE.MeshPhysicalMaterial {
   const m = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.6, specularIntensity: 0.1 });
@@ -794,11 +626,28 @@ function boardMaterial(u: Shared): THREE.MeshPhysicalMaterial {
   m.userData.uniforms = u;
   const v2 = (p: P2) => `vec2(${p[0].toFixed(1)}, ${p[1].toFixed(1)})`;
   // Walnut, from the pore to its lightest streak: the site's deep bronze and its grey, in proportion.
-  const wc = (a: number, b: number) => `(${L('bronze-deep')} * ${a.toFixed(3)} + ${L('text-3')} * ${b.toFixed(3)})`;
+  const wc = (a: number, b: number) => `(${L('bronze')} * ${a.toFixed(3)} + ${L('text-3')} * ${b.toFixed(3)})`;
   const knot = (k: (typeof KNOTS)[number]) => `vec3(${k.x.toFixed(1)}, ${k.z.toFixed(1)}, ${k.r.toFixed(1)})`;
   return shade(m, 'palette-wood', partChunks({
     head: /* glsl */ `${BUMP}
 const vec3 PAL_KNOT[2] = vec3[2](${KNOTS.map(knot).join(', ')});
+float palSegT(vec2 p, vec2 a, vec2 b, out float t){ vec2 e = b - a; t = clamp(dot(p - a, e) / dot(e, e), 0.0, 1.0); return length(p - a - e * t); }
+// The short soft dark the tools lay on the wood where they lie on it or close over it, deepest where they touch.
+float palContact(vec2 p){
+  float t, c = 0.0;
+  float d = palSegT(p, ${v2(brushAxis(0))}, ${v2(brushAxis(BRUSH.hair + BRUSH.ferrule + BRUSH.handle))}, t);
+  float s = t * ${(BRUSH.hair + BRUSH.ferrule + BRUSH.handle).toFixed(1)};
+  float r = ${(BRUSH.lift / 5).toFixed(3)} * (s < ${BRUSH.hair.toFixed(1)} ? 3.3 * smoothstep(0.0, 12.0, s) : s < ${(BRUSH.hair + BRUSH.ferrule).toFixed(1)} ? 4.2 : 4.9 - 1.6 * smoothstep(${(BRUSH.hair + BRUSH.ferrule + 80).toFixed(1)}, ${(BRUSH.hair + BRUSH.ferrule + BRUSH.handle).toFixed(1)}, s));
+  float gap = max(${BRUSH.lift.toFixed(2)} - ${(BRUSH.lift - 1.05).toFixed(2)} * pow(max(1.0 - s / ${BRUSH.hair.toFixed(1)}, 0.0), 2.0) - r, 0.0);
+  c = max(c, (1.0 - smoothstep(r * 0.25, r * 0.95 + 2.6 + gap, d)) * 0.62 * exp(-gap / 2.5) * uTools.x);
+  d = palSegT(p, ${v2(knifeAxis(0))}, ${v2(knifeAxis(KNIFE.blade.len * 0.86))}, t);
+  float bw = ${(KNIFE.blade.w / 2).toFixed(1)} * pow(sin(3.14159 * min(1.0, t / 0.7) * 0.5), 0.62) * (t > 0.7 ? 1.0 - 0.6 * smoothstep(0.7, 1.0, t) : 1.0);
+  c = max(c, (1.0 - smoothstep(0.0, 1.6, abs(d - bw))) * step(d, bw + 1.6) * 0.5 * uTools.y);
+  d = palSegT(p, ${v2(knifeAxis(KNIFE.blade.len + KNIFE.neck.run + 6.0))}, ${v2(knifeAxis(KNIFE.blade.len + KNIFE.neck.run + KNIFE.bolster.len + KNIFE.handle.len))}, t);
+  float kg = mix(${(KNIFE.neck.rise - KNIFE.bolster.r).toFixed(2)}, 0.0, t);
+  c = max(c, (1.0 - smoothstep(2.0, ${(KNIFE.handle.w / 2).toFixed(1)} + 2.5 + kg, d)) * 0.55 * exp(-kg / 2.5) * uTools.y);
+  return c;
+}
 // The distance out from the rings' axis, with the grain bending round the knots. The axis wanders a little and lies
 // shallowest just short of the hole's far side.
 float palRadius(vec3 o){
@@ -813,12 +662,12 @@ float palRadius(vec3 o){
   return r;
 }
 // The rings counted out from the axis: years of fast growth and slow, so the lines bunch and open.
-float palYears(float r){ return (r + 7.0 * sin(r * 0.07 + 1.3) + 1.9 * sin(r * 0.21 + 0.4)) / 2.9; }
+float palYears(float r){ return (r + 7.0 * sin(r * 0.07 + 1.3) + 1.9 * sin(r * 0.21 + 0.4)) / ${GRAIN.year.toFixed(2)}; }
 // Pores: short dark dashes along the grain, six rows to a year, more of them in the early wood. Under a pixel they
 // become what they average to.
 float palPores(float x, float yr, float late){
-  float v = yr * 6.0, row = floor(v), fv = fract(v) - 0.5;
-  float uu = x / 3.4 + palH(row * 1.7 + 3.0) * 13.0, cell = floor(uu), fu = fract(uu) - 0.5;
+  float v = yr * 9.0, row = floor(v), fv = fract(v) - 0.5;
+  float uu = x / 2.4 + palH(row * 1.7 + 3.0) * 13.0, cell = floor(uu), fu = fract(uu) - 0.5;
   float h1 = palH(row * 3.1 + cell * 7.3 + 1.0), h2 = palH(row * 5.7 + cell * 1.9 + 2.0);
   float len = 0.16 + 0.22 * h2, dens = 0.36 - 0.24 * late;
   float aa = max(fwidth(uu), fwidth(v));
@@ -840,18 +689,22 @@ float palPores(float x, float yr, float late){
   float palTop = smoothstep(0.92, 0.99, vObjN.y);
   float palEnd = 1.0 - palTop;
   float palPr = palPores(palO.x, palYr, palLate) * palTop * (0.75 + 0.25 * palRun);
-  float palStreak = smoothstep(0.25, 0.75, wFbm(vec3(palO.x * 0.003, palRad * 0.035, 5.0)));
+  // The figure: broad streaks tens of millimetres wide that follow the rings, some years lighter, some a deeper
+  // brown, so at the page's size the board reads as timber and not as a dark film.
+  float palStreak = smoothstep(0.2, 0.8, wFbm(vec3(palO.x * 0.004, palRad * 0.06, 5.0)));
+  float palBandY = 0.5 + 0.5 * sin(palRad * 0.21 + 3.0 * wNoise(vec3(palO.x * 0.01, palRad * 0.05, 7.0)));
   float palV = wFbm(palO * 0.018 + 4.0);
-  vec3 palLight = ${wc(1.05, 0.04)}, palMid = ${wc(0.56, 0.016)}, palDark = ${wc(0.2, 0.004)}, palPore = ${wc(0.04, 0.0)};
-  vec3 palWood = mix(palMid, palLight, palStreak * 0.7) * (0.9 + 0.2 * palV);
-  palWood = mix(palWood, palDark, palLate * (0.4 + 0.2 * (1.0 - palStreak)));
+  vec3 palLight = ${wc(GRAIN.light[0], GRAIN.light[1])}, palMid = ${wc(GRAIN.mid[0], GRAIN.mid[1])}, palDark = ${wc(GRAIN.dark[0], GRAIN.dark[1])}, palPore = ${wc(GRAIN.pore[0], GRAIN.pore[1])};
+  vec3 palWood = mix(palMid, palLight, palStreak * 0.85) * (0.88 + 0.24 * palV);
+  palWood = mix(palWood, mix(palDark, palMid, 0.45), (1.0 - palStreak) * smoothstep(0.55, 0.95, palBandY) * 0.6);
+  palWood = mix(palWood, palDark, palLate * (0.42 + 0.2 * (1.0 - palStreak)));
   // The knots: a dark heart with tight rings of its own, a darker rim, and a check across it.
   for (int k = 0; k < 2; k++) {
     vec2 d = (palO.xz - PAL_KNOT[k].xy) / vec2(1.25, 1.0);
     float l = length(d), R = PAL_KNOT[k].z;
     float inK = 1.0 - smoothstep(R * 0.92, R * 1.08, l);
     float kr = 0.5 + 0.5 * cos(l / R * 15.0 + 2.0 * wNoise(vec3(d * 0.6, 4.0)));
-    vec3 kc = mix(${wc(0.3, 0.01)}, ${wc(0.12, 0.002)}, kr * 0.6 + 0.4 * smoothstep(R * 0.6, R, l));
+    vec3 kc = mix(${wc(0.08, 0.012)}, ${wc(0.03, 0.003)}, kr * 0.6 + 0.4 * smoothstep(R * 0.6, R, l));
     kc = mix(kc, palPore, (1.0 - smoothstep(0.0, 0.18 + fwidth(d.y), abs(d.y + 0.3 * d.x * d.x / R))) * (1.0 - smoothstep(R * 0.2, R * 0.7, l)) * 0.8);
     palWood = mix(palWood, kc, inK * palTop);
     palWood *= 1.0 - 0.35 * exp(-pow((l - R * 1.15) / (R * 0.5), 2.0)) * palTop;
@@ -865,7 +718,7 @@ float palPores(float x, float yr, float late){
   float palWhich = floor(wNoise(vec3(palO.xz * 0.01, 3.0)) * 3.999);
   vec3 palTint = palWhich < 1.0 ? palAlbedo(2) : palWhich < 2.0 ? palAlbedo(1) : palWhich < 3.0 ? palAlbedo(6) : palAlbedo(3);
   vec3 palPoreC = mix(palPore, palTint * 0.07, palFill * 0.7);
-  palWood = mix(palWood, palPoreC, palPr * 0.85);
+  palWood = mix(palWood, palPoreC, palPr * 0.32);
   // A faint ghost of paint wiped thin over years, in broad patches.
   float palGhost = smoothstep(0.55, 0.8, wFbm(vec3(palO.xz * 0.012, 2.0))) * min(palNear, 1.0) * palTop;
   palWood = mix(palWood, palWood * 0.6 + palTint * 0.05, palGhost * 0.5);
@@ -873,248 +726,238 @@ float palPores(float x, float yr, float late){
   float palHand = max(exp(-pow(length(vObj.xz - vec2(${HOLE.x.toFixed(1)}, ${HOLE.z.toFixed(1)})) / 30.0, 2.0)), exp(-pow(length(vObj.xz - ${v2(BAY_AT)}) / 44.0, 2.0)));
   float palWear = palEnd * smoothstep(0.1, 0.75, abs(vObjN.y)) * (0.45 + 0.55 * palHand) * (0.6 + 0.4 * wNoise(palO * 0.15));
   palWear = max(palWear, palTop * palHand * smoothstep(0.35, 0.7, wFbm(palO * 0.06 + 2.0)) * 0.8);
-  vec3 palWorn = ${wc(1.6, 0.16)};
+  vec3 palWorn = ${wc(0.62, 0.16)};
   palWood = mix(palWood, palWorn * (0.85 + 0.3 * palV) * (1.0 - 0.4 * palLate), palWear);
   float palChip = exp(-pow(length(vObj.xz - ${v2(CHIP_AT)}) / 5.5, 2.0)) * (1.0 - palTop * 0.7);
-  palWood = mix(palWood, ${wc(2.4, 0.5)}, palChip * 0.85);
+  palWood = mix(palWood, ${wc(0.9, 0.32)}, palChip * 0.85);
   // Each dab sits in a crisp shadow of its own, close round its foot.
-  float palOut = palOutside(palO.xz);
-  float palSit = exp(-max(palOut, 0.0) / 0.7) * step(-0.6, palOut) * palTop;
+  float palSit = palSitAt(palO.xz) * palTop;
   palWood *= 1.0 - 0.62 * palSit;
-  // What is drawn on it: pencil, the burned stamp, the cup's ring.
+  float palUnder = palContact(palO.xz) * palTop;
+  palWood *= 1.0 - ${DEPTH.under.toFixed(2)} * palUnder;
+  // What is set into it: the scale's numbers in brass, the burned stamp.
   vec4 palA = palArt(vObj.xz) * palTop;
   float palBurn = palA.g;
-  palWood = mix(palWood, ${wc(0.5, 0.06)} * 0.6, smoothstep(0.0, 0.5, palBurn) * 0.55);
-  palWood = mix(palWood, ${wc(0.04, 0.0)}, smoothstep(0.35, 0.9, palBurn));
+  palWood = mix(palWood, ${wc(0.1, 0.02)}, smoothstep(0.0, 0.5, palBurn) * 0.55);
+  palWood = mix(palWood, ${wc(0.012, 0.0)}, smoothstep(0.35, 0.9, palBurn));
   palWood = mix(palWood, palWood * 0.5 + ${L('ember', 0.25)} * 0.25, palA.b * 0.75);
-  palWood = mix(palWood, ${L('text-3', 0.2)}, palA.r * 0.8);
+  // The scale's numbers, inlaid in brass flush with the top.
+  float palInlay = smoothstep(0.25, 0.75, palA.r);
+  palWood = mix(palWood, ${L('copper-light', 0.7)} * 0.75 + ${L('bronze', 0.9)} * 0.25, palInlay);
   // The top's polished chamfer: a thin band of the rounded edge just over its shoulder, round the outline and the hole.
   float palAng = acos(clamp(normalize(vObjN).y, -1.0, 1.0));
   float palAw = max(0.09, fwidth(palAng) * 0.8);
   float palCham = exp(-pow((palAng - 0.6) / palAw, 2.0)) * (0.09 / palAw) * (1.0 - 0.5 * palChip);
+  // The board falls off: a deeper, richer brown overall, darker still toward its near edge, so the scale and the
+  // tools stand off it.
+  palWood *= ${DEPTH.body.toFixed(2)} * mix(1.0, ${DEPTH.near.toFixed(2)}, smoothstep(${DEPTH.from.toFixed(1)}, ${DEPTH.to.toFixed(1)}, vObj.z));
   diffuseColor.rgb = palWood;`,
     rough: 'roughnessFactor = clamp(0.5 + 0.25 * palPr + 0.25 * palWear + 0.55 * smoothstep(0.1, 0.6, palBurn) + 0.2 * palA.b - 0.22 * palA.r + 0.25 * palChip + 0.12 * palEnd + 0.15 * palSit, 0.04, 1.0);',
     normal: /* glsl */ `
   { float h = -0.03 * smoothstep(0.2, 0.9, palBurn) - 0.4 * palChip * wNoise(vObj * 1.4) + 0.004 * palLate - 0.006 * palPr;
     normal = palBump(normal, h, 0.9); }`,
     emissive: /* glsl */ `
-  // The varnish. What it mirrors is the cursor's light, as a long narrow streak in the light's own warmth with a soft
-  // fall round it, broken where the finish is worn or burned and dark in the pores. The stage's white balance takes
-  // the warmth out of dim light, so the streak is drawn in hot: after the balance it is amber to pale gold.
-  { float k = (1.0 - 0.8 * palWear) * (1.0 - 0.85 * smoothstep(0.3, 0.8, palBurn)) * (1.0 - 0.4 * palPr) * (1.0 - 0.6 * palA.b) * (1.0 - 0.6 * palChip) * (1.0 - 0.7 * palSit);
-    vec3 palGleam = ${L('hot')} * 0.88 + ${L('pale')} * 0.12;
+  // The varnish is satin: what it mirrors is the cursor's light as one broad soft band, which slides across the board
+  // with the cursor. The varnish lies over the figure, so the band breaks over it: brighter on the light streaks,
+  // dimmer over a dark year, gone in the pores, and the surface rolls a little with the rings so its edge wavers.
+  { float k = (1.0 - 0.8 * palWear) * (1.0 - 0.85 * smoothstep(0.3, 0.8, palBurn)) * (1.0 - 0.5 * palPr) * (1.0 - 0.6 * palChip) * (1.0 - 0.75 * palSit) * (1.0 - palUnder);
+    k *= (0.45 + 0.55 * palStreak) * (1.0 - 0.45 * palLate);
+    vec3 palGleam = ${L('hot')} * 0.55 + ${L('pale')} * 0.45;
     vec3 palVn = normalize(nonPerturbedNormal);
-    totalEmissiveRadiance += palGleam * (palTube(palVn, 260000.0) * 1.7 + palTube(palVn, 30000.0) * 0.3 + palTube(palVn, 4000.0) * 0.05) * k * palTop;
+    float roll = (wNoise(vec3(palRad * 0.35, palO.x * 0.01, 3.0)) - 0.5) * smoothstep(0.3, 0.05, palRw);
+    vec3 palVr = normalize(palVn + cross(vAxX, vAxY) * roll * 0.035 + vAxX * roll * 0.015);
+    totalEmissiveRadiance += palGleam * (palTube(palVr, ${VARNISH.band.toFixed(1)}) * ${VARNISH.bandK.toFixed(3)} + palTube(palVr, ${VARNISH.core.toFixed(1)}) * ${VARNISH.coreK.toFixed(3)}) * k * palTop;
     totalEmissiveRadiance += ${L('hot')} * palStrips(palVn, 90000.0) * 0.03 * k * palTop;
     // Chatoyance: the fibres lie at a tilt that turns over in bands across the grain, so a soft glow in the wood's
     // own color moves along the board as the cursor's light does.
     float tilt = (wNoise(vec3(vObj.x * 0.13, vObj.z * 0.008, 6.0)) * 2.0 - 1.0) * (0.5 + 0.5 * palStreak);
     vec3 nC = normalize(palVn + vAxX * tilt * 0.22);
     totalEmissiveRadiance += ${L('copper')} * palTube(nC, 420.0) * 0.05 * palTop * (1.0 - 0.7 * palSit) * (1.0 - 0.5 * palLate);
-    totalEmissiveRadiance += palEdgeLit(palVn, palCham); }`,
+    // The far rim's chamfer and the thumb hole's catch a clear line of the room's light.
+    float palFar = smoothstep(0.05, -0.5, vObjN.z) + exp(-pow(length(vObj.xz - vec2(${HOLE.x.toFixed(1)}, ${HOLE.z.toFixed(1)})) / 22.0, 2.0));
+    totalEmissiveRadiance += palEdgeLit(palVn, palCham) * 1.6 + mix(${L('hot')}, ${L('pale')}, 0.6) * palCham * min(palFar, 1.0) * ${DEPTH.rim.toFixed(2)};
+    totalEmissiveRadiance += (${L('copper-light')} * 0.8 + ${L('pale')} * 0.2) * (palTube(palVn, 2600.0) * 1.1 + 0.05) * palInlay * palTop; }`,
   }));
 }
 
 function paintMaterial(u: Shared): THREE.MeshPhysicalMaterial {
-  const m = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.4, clearcoat: 0.22, clearcoatRoughness: 0.38, specularIntensity: 0.5 });
+  const m = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.3, clearcoat: 0.5, clearcoatRoughness: 0.12, specularIntensity: 0.6 });
   m.name = 'palettePaint';
   m.defines = { USE_UV: '' };
-  m.envMapIntensity = 0.4;
+  m.envMapIntensity = 0.45;
   m.userData.uniforms = u;
+  const S = SWATCHES.length;
   return shade(m, 'palette-paint', partChunks({
-    head: /* glsl */ `${BUMP}${CRACK}
-vec3 palStrokeDir(int s){ vec4 q = PAL_STROKE[s]; vec2 d = q.zw - q.xy; return vec3(d / max(length(d), 1e-3), length(d)); }`,
+    head: /* glsl */ `${BUMP}
+const int PAL_SW_A[${S}] = int[${S}](${SWATCHES.map((w) => w.a).join(', ')});
+const int PAL_SW_B[${S}] = int[${S}](${SWATCHES.map((w) => w.b).join(', ')});
+const float PAL_SW_K[${S}] = float[${S}](${SWATCHES.map((w) => w.k.toFixed(2)).join(', ')});
+const float PAL_SW_WET[${S}] = float[${S}](${SWATCHES.map((w) => w.wet.toFixed(2)).join(', ')});`,
     color: /* glsl */ `
   int palK = int(vCell.x + 0.5);
-  float palSkin = 0.0, palWet = 0.0, palRidge = 0.0, palCr = 0.0, palAge = 0.0, palPrint = 0.0;
+  int palSw = int(vCell.y + 0.5);
+  float palWet = 0.0, palRidge = 0.0, palFoot = 1.0, palCrease = 0.0;
   vec3 palC;
   if (palK < ${PAINT.mix}) {
+    // A squeeze of oil paint: one color through, a shade deeper in its creases and where it meets the wood.
     palSelf = palK;
-    palAge = vCell.y;
-    palC = palAlbedo(PAL_DAB_PAINT[palK]);
-    // Fresh: the slumped foot has dried a little and wrinkled, the peak is wet. Old: dried through, darker, cracked
-    // across, and where the knife took its top off the cut face is flat and streaked.
-    palSkin = mix((1.0 - smoothstep(0.35, 0.75, vUv.y)) * smoothstep(0.2, 0.7, vUv.x), 1.0, palAge);
-    palWet = (1.0 - palAge) * smoothstep(0.3, 0.8, vUv.y);
-    palC *= (0.94 + 0.12 * wNoise(vObj * 0.9)) * (1.0 - 0.22 * palAge);
-    palCr = palCrack(vObj.xz + vObj.y * 0.3, 1.7) * palAge * (1.0 - 0.5 * vCell.z);
-    palC *= 1.0 - 0.85 * palCr;
-    palC = mix(palC, palC * (0.85 + 0.35 * wNoise(vec3(vObj.xz * vec2(0.3, 2.5), 1.0))), vCell.z);
-    // Where it sits on the wood the paint is in its own shadow.
-    palC *= mix(0.62, 1.0, smoothstep(0.0, 0.14, vUv.y));
-  } else if (palK == ${PAINT.mix}) {
-    float palAl;
-    int s = palTopStroke(vObj.xz, palAl);
-    vec3 sd = palStrokeDir(s);
-    vec2 q = vObj.xz - PAL_STROKE[s].xy;
-    float along = dot(q, sd.xy), across = dot(q, vec2(-sd.y, sd.x));
-    float st = wFbm(vec3(along * 0.03, across * 0.5, float(s) * 3.1)) + 0.3 * wNoise(vec3(along * 0.08, across * 1.6, 2.0));
-    float k = smoothstep(0.44, 0.56, st + (PAL_STROKE_MIX[s] - 0.5) * 0.55);
-    palC = mix(palAlbedo(2), palAlbedo(4), k);
-    palC = mix(palC, palAlbedo(3), 0.4 * (1.0 - abs(k - 0.5) * 2.0));
+    palC = palAlbedo(palK) * (0.96 + 0.08 * wNoise(vObj * 0.8));
+    palFoot = smoothstep(0.0, 0.22, vUv.y);
+    palC *= mix(0.55, 1.0, palFoot);
+    // The crease where the rope lies on itself goes deep and dark; the ridges carry the wet light.
+    palCrease = smoothstep(0.05, 0.7, vCell.y);
+    palC *= 1.0 - 0.72 * palCrease;
     palRidge = vCell.z;
-    palWet = 0.55 + 0.45 * palRidge;
+    palWet = 0.85 + 0.15 * palFoot;
+  } else if (palK == ${PAINT.mix}) {
+    // A swatch: two steps drawn into each other by the blade, not quite mixed, so faint streaks of each run along it.
+    palSelf = 100 + palSw;
+    vec2 q = palInSwatch(palSw, vObj.xz);
+    float st = wNoise(vec3(q.y * 1.1, q.x * 0.05, float(palSw) * 3.0)) * 0.7 + wNoise(vec3(q.y * 3.3, q.x * 0.1, 5.0)) * 0.3;
+    float k = clamp(PAL_SW_K[palSw] + (st - 0.5) * 0.4, 0.0, 1.0);
+    palC = mix(palAlbedo(PAL_SW_A[palSw]), palAlbedo(PAL_SW_B[palSw]), k);
+    palRidge = vCell.z;
+    palWet = PAL_SW_WET[palSw];
   } else if (palK == ${PAINT.hot}) {
-    palC = palAlbedo(3);
+    palC = palAlbedo(5);
     palWet = 1.0;
   } else if (palK == ${PAINT.knife}) {
-    palC = mix(palAlbedo(2), palAlbedo(4), smoothstep(0.3, 0.7, wNoise(vObj * 0.5)));
-    palSkin = 0.3;
-    palWet = 0.6;
-  } else if (palK == ${PAINT.pool}) {
-    // The medium: a dark amber oil, with a skin of flame swirled on it; on the cup's side a dried run.
-    palC = ${L('ember-deep', 0.5)} + palAlbedo(2) * 0.06 * smoothstep(0.55, 0.8, wFbm(vec3(vObj.xz * 0.6, 1.0)));
+    palC = mix(palAlbedo(4), palAlbedo(8), smoothstep(0.3, 0.7, wNoise(vObj * 0.5)) * 0.6);
+    palWet = 0.8;
+  } else {
+    // The medium in the dipper: a dark oil that mirrors, with a dried run down the cup's side.
+    palC = ${L('ember-deep', 0.6)};
     palC = mix(palC, ${L('ember', 0.42)}, vCell.y);
     palWet = 1.0 - 0.5 * vCell.y;
-    palSkin = 1.0 - vCell.y;
-  } else if (palK == ${PAINT.crust} || palK == ${PAINT.run}) {
-    palC = palAlbedo(int(vCell.y + 0.5)) * (0.62 + 0.1 * wNoise(vObj * 0.7));
-    palAge = 0.6;
-    palSkin = 0.4;
-    palCr = palK == ${PAINT.crust} ? palCrack(vObj.xz + 1.4 * vec2(wNoise(vObj * 0.4), wNoise(vObj * 0.4 + 9.0)), 3.2) * smoothstep(0.1, 0.25, vObj.y) * 0.7 : 0.0;
-    palC *= 1.0 - 0.6 * palCr;
-    palWet = palK == ${PAINT.run} ? 0.45 : 0.0;
-  } else if (palK == ${PAINT.wipe}) {
-    palC = palAlbedo(int(vCell.y + 0.5)) * (0.55 + 0.22 * wNoise(vec3(vUv.x * 30.0, vUv.y * 9.0, 2.0)));
-    palAge = 0.8;
-    palSkin = 0.8;
-    palWet = 0.2;
-  } else {
-    // A thumbprint: the ridges carry the paint, the furrows between show it thin.
-    // A loop: ridges come up from one side, turn round the core and go back, as on a thumb, broken here and there and
-    // lighter toward where the thumb lifted.
-    vec2 q = vUv * vec2(1.0, 0.8) - vec2(0.0, 1.2);
-    float flow = length(q * vec2(1.0, 1.6)) + 0.35 * q.y + 0.6 * smoothstep(-2.0, 4.0, -q.y) * abs(q.x) * 0.25;
-    float ridge = 0.5 + 0.5 * sin(flow * 12.0 + 2.2 * wNoise(vec3(vUv * 0.7, 3.0)));
-    ridge *= smoothstep(0.25, 0.55, wNoise(vec3(vUv * 1.6, 5.0)) + 0.35);
-    float px = length(fwidth(vUv));
-    float near = 1.0 - smoothstep(0.08, 0.3, px);
-    if (near > 0.5 && ridge < 0.42 + 0.25 * smoothstep(2.0, 8.0, vUv.x + 4.0)) discard;
-    palPrint = mix(ridge, 0.5, 1.0 - near);
-    palC = palAlbedo(int(vCell.y + 0.5)) * (0.3 + 0.22 * palPrint);
-    palAge = 0.7;
-    palSkin = 0.7;
-    palWet = 0.25 * palPrint;
   }
   diffuseColor.rgb = palC;`,
-    rough: `roughnessFactor = clamp(mix(mix(0.34, 0.55, palSkin), 0.7, palAge) - 0.06 * palRidge + 0.2 * palCr - 0.12 * palWet * (1.0 - palAge), 0.05, 1.0); if (palK == ${PAINT.pool}) roughnessFactor = 0.5 - 0.2 * vCell.y;`,
+    rough: `roughnessFactor = clamp(mix(0.55, 0.12, palWet) - 0.06 * palRidge + 0.25 * palCrease, 0.05, 1.0); if (palK == ${PAINT.pool}) roughnessFactor = 0.06 + 0.4 * vCell.y;`,
     normal: /* glsl */ `
   { float px = length(fwidth(vObj));
-    float fine = 1.0 - smoothstep(0.25, 0.6, px);
-    float h = palSkin * (wNoise(vObj * 0.55) - 0.5) * 0.12 * fine - palCr * 0.015;
-    if (palK == ${PAINT.mix}) { float al0; int s = palTopStroke(vObj.xz, al0); vec3 sd = palStrokeDir(s); float ac = dot(vObj.xz, vec2(-sd.y, sd.x)); h += 0.04 * sin(ac * 5.5 + wNoise(vObj * 0.6) * 3.0) * fine; }
-    if (palK < ${PAINT.mix}) {
-      h += vCell.z * 0.05 * sin(dot(vObj.xz, vec2(0.3, 2.7))) * fine;
-      // The ribs the tube's nozzle left along the coil, softened where it slumped, gone where it dried.
-      vec2 d = vObj.xz - PAL_DAB[palK].xy;
-      float rr = length(d) / PAL_DAB[palK].z, an = atan(d.y, d.x);
-      float coil = rr * 2.3 - an / 6.2832;
-      float ribs = sin(6.2832 * coil * 3.0 + 2.4 * wNoise(vObj * 0.35)) * smoothstep(0.25, 0.65, wNoise(vec3(an * 2.0, coil * 1.5, 7.0)));
-      h += 0.1 * ribs * (1.0 - palAge) * smoothstep(0.12, 0.4, vUv.y) * (1.0 - smoothstep(0.3, 0.65, px));
+    float fine = 1.0 - smoothstep(0.15, 0.5, px);
+    float h = (wNoise(vObj * 1.3) - 0.5) * 0.025 * fine;
+    if (palK == ${PAINT.mix}) {
+      // The blade's marks: fine lines along the pull, and the paint's own slight tooth on the dry ones.
+      vec2 q = palInSwatch(palSw, vObj.xz);
+      h += 0.018 * sin(q.y * 7.5 + 2.5 * wNoise(vec3(q.x * 0.08, q.y * 0.6, 3.0))) * fine * (1.0 - palRidge);
+      h += (wNoise(vObj * 2.6) - 0.5) * 0.03 * (1.0 - palWet) * fine;
     }
-    h += palPrint * 0.03;
     normal = palBump(normal, h, 1.0); }`,
     emissive: /* glsl */ `
-  // A soft sheen on its ridges, as oil paint has: never a glassy pin point.
-  totalEmissiveRadiance += mix(${L('pale')}, palC * 1.4, 0.3) * (palTube(normal, 520.0) * 0.5 * palWet + palTube(normal, 90.0) * 0.08 * (1.0 - palAge));
+  // A wet skin: a small sharp highlight from the cursor's light that moves with it, and a soft sheen round it.
+  { vec3 hot = mix(${L('pale')}, ${L('hot')}, 0.2);
+    float ridge = palK < ${PAINT.mix} ? 0.6 + 0.8 * palRidge : 0.25 + 1.2 * palRidge;
+    // The paint's ridges are so tightly curved that a mirror's highlight on them is a speck: the lobe is taken wide and
+    // cut off hard, so it is a small crisp hot spot the size the eye expects on wet paint.
+    float g = palTube(normal, ${PAINT_GLINT.sharp.toFixed(1)});
+    float glint = smoothstep(${PAINT_GLINT.cut[0].toFixed(3)}, ${PAINT_GLINT.cut[1].toFixed(3)}, g) * ${PAINT_GLINT.k.toFixed(2)} + g * ${PAINT_GLINT.softK.toFixed(2)};
+    totalEmissiveRadiance += hot * glint * palWet * ridge * (1.0 - 0.9 * palCrease) * palFoot + palC * palTube(normal, 260.0) * 0.06 * palWet; }
   if (uGlow > 0.001) {
     vec3 palE = vec3(0.0);
     if (palK < ${PAINT.mix}) {
-      // Lit, the paint is still paint: its own color brought up, shaded by its form toward the light above the
-      // strike, its foot in its own shadow. A glow strongest where it is thinnest made it read as amber jelly.
-      vec3 nO = normalize(vPalN);
-      vec3 palLs = normalize(vec3(-0.45, 1.0, 0.25));
-      float form = 0.12 + 0.88 * pow(clamp(dot(nO, palLs), 0.0, 1.0), 1.6);
-      float foot = smoothstep(0.0, 0.2, vUv.y);
+      // Lit, a dab burns in its own color from inside, brightest through its thin crests and the peak, its foot in its
+      // own shadow: a small bright thing.
       float lit = palDab(palK);
-      vec3 gc = palGlowCol(PAL_DAB_PAINT[palK]);
-      palE = gc * lit * form * (0.35 + 0.65 * foot) * (1.0 + 0.6 * palCr) * 0.6;
-      // and its ridges catch that light as a soft sheen, a little paler than the paint
-      vec3 palVo = normalize(uEye - vPalP);
-      float sh = pow(max(dot(reflect(-palVo, normalize(normal * 0.0 + nO)), palLs), 0.0), 18.0);
-      palE += mix(gc, ${L('pale')}, 0.35) * lit * sh * 0.35 * (1.0 - palAge);
+      vec3 gc = palGlowCol(palK);
+      float up = smoothstep(0.15, 1.0, vUv.y);
+      palE = gc * lit * (0.4 + 0.6 * up) * (0.35 + 0.65 * palFoot) * 1.7;
+      // The pale steps burn to pale at their crests; the dark ones stay ember through, as a dark paint lit from inside does.
+      palE += mix(gc, ${L('pale')}, palK < 2 ? 0.0 : 0.45) * lit * smoothstep(0.65, 1.0, vUv.y) * 0.7;
+      if (palK < 2) palE *= 1.0 - 0.5 * palCrease;
     } else if (palK == ${PAINT.mix}) {
-      float al1;
-      int s = palTopStroke(vObj.xz, al1);
-      float g = palStroke(s, clamp(al1, 0.0, 1.1));
-      palE = palRamp(0.3 + 0.7 * g) * g * (0.2 + 2.4 * smoothstep(0.15, 0.7, vCell.z));
+      vec2 q = palInSwatch(palSw, vObj.xz);
+      float g = palSwatchLit(palSw, clamp(q.x / PAL_SW_LEN[palSw], 0.0, 1.1));
+      palE = mix(palC * 1.6, palRamp(0.3 + 0.7 * g), 0.4) * g * (0.35 + 1.2 * smoothstep(0.2, 0.8, palRidge));
     } else if (palK == ${PAINT.hot}) {
-      palE = ${L('hot')} * palHair(0.0) * 0.8 * (0.35 + 0.65 * clamp(normalize(vPalN).y, 0.0, 1.0));
+      palE = palGlowCol(5) * palHair(0.0) * 0.9 * (0.35 + 0.65 * clamp(normalize(vPalN).y, 0.0, 1.0));
     } else if (palK == ${PAINT.knife}) {
-      float g = 0.0; for (int s = 0; s < ${STROKES.length}; s++) g += palStroke(s, 0.9);
-      palE = palRamp(0.4) * g * 0.35;
+      float g = 0.0; for (int s = 0; s < ${S}; s++) g += palSwatchLit(s, 0.95);
+      palE = palRamp(0.4) * g * 0.25;
     }
     totalEmissiveRadiance += palE;
   }`,
   }, { bounce: true, rim: 0.6 }));
 }
 
-// The turned and the cut wood: the round's handle a near black lacquer worn through behind the ferrule, its end
-// dipped in bronze; the knife's scales in old oiled walnut, polished by the palm, with the steel of the tang between
-// them; the flat's handle a dark bronze lacquer, chipped. And the tape: a crepe paper gone a little yellow, written on.
+// The size and code stamped in foil on the brush's handle, as a texture along it: white where the foil is.
+const LEGEND = { from: 12, len: 44, band: 0.085, text: 'N° 12   ROUND   SABLE' } as const;
+function legendTexture(): THREE.Texture {
+  const c = document.createElement('canvas');
+  c.width = 1024; c.height = 64;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#000'; g.fillRect(0, 0, c.width, c.height);
+  g.fillStyle = '#fff';
+  g.font = '600 46px "Helvetica Neue", Helvetica, Arial, sans-serif';
+  g.textBaseline = 'middle';
+  g.textAlign = 'center';
+  g.fillText(LEGEND.text, c.width / 2, c.height / 2 + 2, c.width - 20);
+  const t = new THREE.CanvasTexture(c);
+  t.generateMipmaps = true;
+  t.minFilter = THREE.LinearMipmapLinearFilter;
+  t.anisotropy = 8;
+  return t;
+}
+
+// The turned and the cut wood: the round's handle a deep lacquer, near black, with a band of copper lacquer toward its
+// end and its size stamped in foil behind the ferrule; the knife's scales in old oiled walnut, polished by the palm,
+// with the steel of the tang between them.
 function handleMaterial(u: Shared, satin = false): THREE.MeshPhysicalMaterial {
-  const m = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.3, clearcoat: satin ? 0 : 1, clearcoatRoughness: 0.08, specularIntensity: satin ? 0.4 : 0.6 });
+  const m = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.3, clearcoat: satin ? 0 : 1, clearcoatRoughness: 0.16, specularIntensity: satin ? 0.4 : 0.6 });
   m.name = satin ? 'paletteSatin' : 'paletteHandle';
   m.defines = { USE_UV: '' };
   m.envMapIntensity = 0.6;
-  m.userData.uniforms = u;
-  const endAt = BRUSH.hair + BRUSH.ferrule + BRUSH.handle;
+  m.userData.uniforms = { ...u, uLegend: { value: satin ? null : legendTexture() } };
+  const F = BRUSH.hair + BRUSH.ferrule, endAt = F + BRUSH.handle;
   return shade(m, satin ? 'palette-satin' : 'palette-handle', partChunks({
-    head: BUMP,
+    head: `${BUMP}\nuniform sampler2D uLegend;`,
     color: /* glsl */ `
   int palH4 = int(vCell.x + 0.5);
-  float palS = vUv.x, palWr = 0.0, palGr = 0.0, palTang = 0.0, palPaper = 0.0, palCoat = 1.0, palTorn = 0.0;
+  float palS = vUv.x, palWr = 0.0, palGr = 0.0, palTang = 0.0, palFoil = 0.0, palBand = 0.0;
   vec3 palC;
   if (palH4 == 0) {
-    vec3 palLq = ${L('bg-3', 0.85)} * 0.7 + ${L('text-3', 0.03)} * 0.3;
-    float palHold = exp(-pow((palS - ${(BRUSH.hair + BRUSH.ferrule + 22).toFixed(1)}) / 18.0, 2.0));
-    palWr = smoothstep(0.58, 0.7, wFbm(vec3(palS * 0.12, vUv.y * 9.0, 1.0)) + 0.32 * palHold);
-    vec3 palBare = ${L('bronze-deep', 0.7)} * 0.6 + ${L('text-3', 0.28)} * 0.4;
-    float palDip = smoothstep(${(endAt - 27).toFixed(1)}, ${(endAt - 26.4).toFixed(1)}, palS);
-    palC = mix(palLq, palBare, palWr * 0.85);
-    palC = mix(palC, ${L('bronze', 0.75)}, palDip);
-  } else if (palH4 == 1) {
+    vec3 palLq = ${L('bg-3', 1.1)} * 0.8 + ${L('ember-deep', 1.0)} * 0.2;
+    // The copper band, with a fine pale line at each of its edges.
+    float palB0 = ${(endAt - 40).toFixed(1)}, palB1 = ${(endAt - 27).toFixed(1)};
+    float aa = max(fwidth(palS), 0.05);
+    palBand = smoothstep(palB0 - aa, palB0 + aa, palS) * (1.0 - smoothstep(palB1 - aa, palB1 + aa, palS));
+    float palLine = max(1.0 - smoothstep(0.0, 0.35 + aa, abs(palS - palB0 + 0.9)), 1.0 - smoothstep(0.0, 0.35 + aa, abs(palS - palB1 - 0.9)));
+    palC = mix(palLq, ${L('copper', 0.62)} * 0.8 + ${L('ember', 1.0)} * 0.2, palBand);
+    // Its size, stamped in foil on the top of the handle behind the ferrule.
+    float palV = fract(vUv.y + 0.5) - 0.5;
+    vec2 palL = vec2((palS - ${(F + LEGEND.from).toFixed(1)}) / ${LEGEND.len.toFixed(1)}, 0.5 - palV / ${(LEGEND.band * 2).toFixed(3)});
+    palFoil = (palL.x > 0.0 && palL.x < 1.0 && palL.y > 0.0 && palL.y < 1.0) ? smoothstep(0.3, 0.7, texture2D(uLegend, palL).r) : 0.0;
+    palFoil = max(palFoil, palLine * 0.9);
+    palC = mix(palC, ${L('copper-light', 0.85)}, palFoil);
+    palWr = smoothstep(0.62, 0.74, wFbm(vec3(palS * 0.12, vUv.y * 9.0, 1.0)) + 0.3 * exp(-pow((palS - ${(F + 22).toFixed(1)}) / 16.0, 2.0))) * 0.12;
+    palC = mix(palC, ${L('bronze-deep', 0.9)}, palWr * 0.5 * (1.0 - palBand));
+  } else {
     palGr = wFbm(vec3(palS * 0.05, vUv.y * 6.0, 2.0)) + 0.25 * sin(vUv.y * 46.0 + palS * 0.06);
-    vec3 palDk = ${L('bronze-deep', 0.42)} * 0.9 + ${L('text-3', 0.03)} * 0.1, palLt = ${L('bronze-deep', 1.3)} * 0.85 + ${L('text-3', 0.12)} * 0.15;
+    vec3 palDk = ${L('bronze', 0.16)} * 0.9 + ${L('text-3', 0.03)} * 0.1, palLt = ${L('bronze', 0.42)} * 0.85 + ${L('text-3', 0.12)} * 0.15;
     palC = mix(palLt, palDk, smoothstep(0.42, 0.62, palGr));
     float palPalm = exp(-pow((palS - 40.0) / 22.0, 2.0)) * smoothstep(0.1, 0.6, sin(vUv.y * 6.2832));
     palWr = palPalm * (0.5 + 0.5 * wNoise(vObj * 0.3));
-    palC = mix(palC, ${L('bronze-deep', 1.6)} * 0.6 + ${L('text-3', 0.35)} * 0.4, palWr * 0.6);
+    palC = mix(palC, ${L('bronze', 0.6)} * 0.7 + ${L('text-3', 0.3)} * 0.3, palWr * 0.6);
     palTang = 1.0 - smoothstep(0.035, 0.06, abs(sin(vUv.y * 6.2832)));
     palC = mix(palC, ${L('text', 0.1)}, palTang);
-  } else if (palH4 == 2) {
-    // The tape: crepe paper, its fine creases across its length, darker where the board's oil soaked in at its edge.
-    palPaper = 1.0;
-    palCoat = 0.0;
-    float crepe = wNoise(vec3(vUv.x * 4.0, vUv.y * 110.0, 3.0));
-    palC = ${L('text-3', 0.5)} * (0.88 + 0.16 * crepe) + ${L('bronze', 0.5)} * 0.35 + ${L('hot', 0.12)} * 0.2;
-    palC *= 1.0 - 0.3 * smoothstep(0.35, 0.0, min(vUv.x, 1.0 - vUv.x)) * 0.5;
-    palC = mix(palC, ${L('flame', 0.6)}, 0.25 * smoothstep(0.6, 0.8, wFbm(vec3(vObj.xz * 0.2, 4.0))));
-    float pen = palArt(vObj.xz).r * step(0.0, vObj.y);
-    palC = mix(palC, ${L('text-3', 0.16)}, pen * 0.85);
-    palWr = pen;
-    // The torn end, its fibres standing up and catching the light, and the two cut edges.
-    float tw = max(0.012, fwidth(vUv.y) * 1.2), cw = max(0.012, fwidth(vUv.x) * 1.2);
-    palTorn = (1.0 - smoothstep(0.0, tw, vUv.y - 0.004)) * (0.012 / tw) + 0.6 * (1.0 - smoothstep(0.0, cw, min(vUv.x, 1.0 - vUv.x))) * (0.012 / cw) * step(vObj.y, 0.5) * step(-0.5, vObj.y);
-  } else {
-    vec3 palLq = ${L('bronze-deep', 0.85)} * 0.85 + ${L('text-3', 0.03)} * 0.15;
-    palWr = smoothstep(0.66, 0.74, wFbm(vec3(palS * 0.2, vUv.y * 8.0, 6.0)));
-    palC = mix(palLq, ${L('bronze-deep', 1.4)} * 0.6 + ${L('text-3', 0.3)} * 0.4, palWr);
-    palC = mix(palC, palAlbedo(6) * 0.7, smoothstep(0.8, 0.84, wNoise(vec3(palS * 0.25, vUv.y * 9.0, 8.0))) * smoothstep(60.0, 20.0, palS) * 0.8);
   }
   diffuseColor.rgb = palC;`,
-    rough: 'roughnessFactor = palH4 == 2 ? (0.85 - 0.45 * palWr) : palH4 == 1 ? (0.42 - 0.12 * palWr + 0.3 * palTang * 0.0) : mix(0.22, 0.55, palWr);',
-    metal: 'metalnessFactor = palTang * 0.9;',
-    normal: '{ float h = palH4 == 2 ? 0.02 * wNoise(vec3(vUv.x * 4.0, vUv.y * 110.0, 3.0)) : palH4 == 1 ? -0.04 * smoothstep(0.4, 0.6, palGr) - 0.06 * palTang : palWr * 0.15; normal = palBump(normal, h, 1.0); }',
+    rough: 'roughnessFactor = palH4 == 1 ? (0.42 - 0.12 * palWr) : mix(mix(0.16, 0.42, palWr), 0.22, palBand);',
+    metal: 'metalnessFactor = max(palTang * 0.9, palFoil * 0.9);',
+    normal: '{ float h = palH4 == 1 ? -0.04 * smoothstep(0.4, 0.6, palGr) - 0.06 * palTang : palWr * 0.1 - palFoil * 0.02; normal = palBump(normal, h, 1.0); }',
     emissive: /* glsl */ `
-  { float sharp = palH4 == 1 ? 260.0 : 1300.0, k = palH4 == 1 ? 0.35 : palH4 == 2 ? 0.0 : 1.1 * (1.0 - palWr);
-    totalEmissiveRadiance += ${L('pale')} * palTube(normal, sharp) * k + palEdgeLit(normalize(nonPerturbedNormal), palTorn) * 0.8; }`,
+  { float sharp = palH4 == 1 ? 260.0 : 2200.0, k = palH4 == 1 ? 0.35 : 1.25 * (1.0 - palWr);
+    vec3 palNg = palTurnedN(palH4 == 0);
+    // The lacquer's one crisp line down the whole handle, as a lacquered pencil has; the knife's satin scales a softer one.
+    vec3 palAx = palAxis(palH4 == 0 ? PAL_BRUSH_DIR : PAL_KNIFE_DIR);
+    totalEmissiveRadiance += ${L('pale')} * (palH4 == 0 ? palLine(palNg, palAx, ${FINISH.lacquer.sharp.toFixed(1)}) * ${FINISH.lacquer.k.toFixed(2)} * 1.0 : palLine(palNg, palAx, ${FINISH.satin.sharp.toFixed(1)}) * ${FINISH.satin.k.toFixed(2)});
+    vec3 tint = palH4 == 0 ? mix(${L('pale')}, ${L('copper-light')}, max(palBand, palFoil) * 0.6) : ${L('pale')};
+    totalEmissiveRadiance += tint * palTube(palNg, sharp) * k + ${L('copper-light')} * palTube(palNg, 700.0) * 0.6 * palFoil; }`,
   }));
 }
 
-// The metal, by the cell's x: the round's ferrule a polished brass that is copper's neighbour; the knife's blade a
-// thin bronze, brushed along its length; its neck spring steel, grey; its bolster copper; the dipper a brass worn
-// bright on its rim and dark inside; the rivets and pins copper; the flat's ferrule a bronze.
+// The metal, by the cell's x: the brush's ferrule polished copper, the piece's brightest metal; the knife's blade a
+// polished warm steel that mirrors; its neck spring steel, grey; its bolster copper; the dipper a brass worn bright on
+// its rim and dark inside; the rivets copper; the scale's pins brass.
 function metalMaterial(u: Shared): THREE.MeshPhysicalMaterial {
   const m = new THREE.MeshPhysicalMaterial({ color: 0xffffff, metalness: 1, roughness: 0.2 });
   m.name = 'paletteMetal';
@@ -1125,36 +968,71 @@ function metalMaterial(u: Shared): THREE.MeshPhysicalMaterial {
     head: BUMP,
     color: /* glsl */ `
   int palM = int(vCell.x + 0.5);
-  vec3 palC = palM == 0 ? ${L('copper-light', 0.8)} * 0.55 + ${L('bronze', 1.0)} * 0.45
-    : palM == 1 ? ${L('bronze', 0.95)}
+  vec3 palC = palM == 0 ? ${L('copper-light', 0.95)} * 0.35 + ${L('copper', 1.0)} * 0.65
+    : palM == 1 ? ${L('bronze-deep', 0.5)}
     : palM == 2 ? ${L('text', 0.2)} * 0.85 + ${L('bronze', 0.2)} * 0.15
     : palM == 3 ? ${L('copper', 0.85)}
     : palM == 4 ? ${L('copper-light', 0.72)} * 0.5 + ${L('bronze', 0.95)} * 0.5
     : palM == 5 ? ${L('copper', 0.95)}
+    : palM == 7 ? ${L('copper-light', 0.82)} * 0.7 + ${L('bronze', 1.0)} * 0.3
     : ${L('bronze', 0.9)} * 0.7 + ${L('copper-light', 0.6)} * 0.3;
   float palBr = wNoise(vec3(vObj.x * 0.04 + vObj.z * 0.04, vObj.y * 20.0 + (vObj.x - vObj.z) * 4.0, 1.0));
+  if (palM <= 1) palBr = 0.5 + 0.15 * (wNoise(vObj * 0.08) - 0.5);
   float palTn = smoothstep(0.55, 0.8, wFbm(vObj * 0.12 + 1.0));
-  palTn *= palM == 3 || palM == 5 || palM == 6 ? 0.3 : 1.0;
+  palTn *= palM == 0 || palM == 1 ? 0.12 : palM == 3 || palM == 5 || palM == 7 ? 0.3 : 1.0;
   palC *= (0.92 + 0.14 * palBr) * (1.0 - 0.38 * palTn);
   diffuseColor.rgb = palC;`,
-    rough: 'roughnessFactor = clamp((palM == 0 ? 0.16 : palM == 1 ? 0.3 : palM == 2 ? 0.34 : palM == 4 ? 0.2 : 0.26) + 0.12 * (palBr - 0.5) + 0.22 * palTn, 0.05, 1.0);',
+    rough: 'roughnessFactor = clamp((palM == 0 ? 0.1 : palM == 1 ? 0.07 : palM == 2 ? 0.34 : palM == 4 ? 0.2 : 0.26) + (palM <= 1 ? 0.03 : 0.12) * (palBr - 0.5) + 0.22 * palTn, 0.04, 1.0);',
     normal: /* glsl */ `
   { float px = length(fwidth(vObj)); float fine = 1.0 - smoothstep(0.08, 0.3, px);
-    float h = palM == 1 || palM == 2 ? (palBr - 0.5) * 0.02 * fine : 0.0;
+    float h = palM == 2 ? (palBr - 0.5) * 0.02 * fine : 0.0;
     normal = palBump(normal, h, 1.0); }`,
     emissive: /* glsl */ `
   { float r = clamp(roughnessFactor, 0.05, 1.0);
     totalEmissiveRadiance += diffuseColor.rgb * palTube(normal, 2.0 / (r * r * r) + 20.0) * 1.6;
+    // The polished blade and ferrule mirror the room's long lights as sharp streaks, so they read as mirrors and
+    // not as holes in the board.
+    if (palM == 0) totalEmissiveRadiance += mix(diffuseColor.rgb, ${L('pale')}, 0.3) * (palStrips(normal, 380.0) * 0.55 + palStrips(normal, 80.0) * 0.4) * 0.45;
+    if (palM == 1 && vPalN.y > 0.5) {
+      // The blade is a mirror of the room: from near black at its point through a warm mid to a pale band toward the
+      // heel, and past it warm again. The sweep slides along the blade as the cursor moves across it, as a mirror's
+      // does, and a hard bright line runs round its polished edge.
+      vec2 kd = vec2(cos(PAL_KNIFE_DIR), sin(PAL_KNIFE_DIR));
+      vec2 q = vObj.xz - vec2(${KNIFE.tip[0].toFixed(2)}, ${KNIFE.tip[1].toFixed(2)});
+      float along = dot(q, kd) / ${KNIFE.blade.len.toFixed(1)}, across = dot(q, vec2(-kd.y, kd.x));
+      float bw = ${(KNIFE.blade.w / 2).toFixed(2)} * pow(sin(1.5708 * min(1.0, along / 0.68)), 0.62) * (along > 0.68 ? 1.0 - 0.78 * smoothstep(0.68, 1.0, along) : 1.0);
+      vec3 Tm = 0.5 * (uTubeA + uTubeB) + vViewPosition;
+      float t = along + 0.12 * across / max(bw, 1.0) - 0.3 * clamp(Tm.x / 0.2, -1.5, 1.5);
+      vec3 sweep = mix(${L('bronze-deep', 0.12)}, ${L('bronze', 0.42)} * 0.85 + ${L('text-3', 0.3)} * 0.15, smoothstep(0.02, 0.5, t));
+      sweep = mix(sweep, ${L('bronze', 0.3)}, smoothstep(0.75, 1.0, t));
+      sweep += ${L('pale')} * (exp(-pow((t - 0.62) / 0.06, 2.0)) * 1.3 + exp(-pow((t - 0.62) / 0.16, 2.0)) * 0.25);
+      float aw = max(0.22, fwidth(across) * 1.2);
+      float rim = 1.0 - smoothstep(0.0, aw, bw - abs(across));
+      totalEmissiveRadiance += sweep * ${FINISH.blade.toFixed(2)} + ${L('pale')} * rim * 1.1;
+    }
+    // The ferrule is the piece's brightest metal: polished copper that keeps the room's light along its length, with the
+    // cursor's light on it as a long sharp streak and a softer one round it.
+    if (palM == 0 || palM == 3) {
+      // Polished copper turned round an axis: a long sharp pale line down its length with a warm fall round it, dark
+      // toward its edges, where it mirrors the dark room.
+      vec3 V = normalize(vViewPosition);
+      vec3 ax = palAxis(palM == 0 ? PAL_BRUSH_DIR : PAL_KNIFE_DIR);
+      float face = abs(dot(normal, V));
+      vec3 nG = palTurnedN(palM == 0);
+      float core = palLine(nG, ax, ${FINISH.metal.sharp.toFixed(1)}), fall = palLine(nG, ax, ${FINISH.metal.soft.toFixed(1)});
+      totalEmissiveRadiance += mix(diffuseColor.rgb, ${L('pale')}, 0.55) * core * ${FINISH.metal.k.toFixed(2)} + diffuseColor.rgb * (fall * 0.9 + 0.04) * smoothstep(0.05, 0.6, face);
+      totalEmissiveRadiance += diffuseColor.rgb * palTube(normal, 160.0) * 0.5;
+    }
     // Its crisp edges: a lip, a crimp, a rivet's rim, and the thin sides of the blade, the neck and the clip.
     vec3 nO = normalize(vPalN);
     float em = palCurveEdge(vPalN, vObj, 0.75, 2.4);
-    if (palM == 1 || palM == 2) em = max(em, 1.0 - smoothstep(0.3, 0.7, abs(nO.y)));
+    if (palM == 2) em = max(em, 1.0 - smoothstep(0.3, 0.7, abs(nO.y)));
     totalEmissiveRadiance += palEdgeLit(normalize(nonPerturbedNormal), em) * (palM == 2 ? vec3(1.0) : mix(vec3(1.0), diffuseColor.rgb * 2.2, 0.35)); }`,
   }));
 }
 
-// Sable: a red brown fibre, fine strands along the bundle, wet with paint over the half nearest the point, the line
-// between ragged. The round is loaded with hot, the flat with copper.
+// Sable: a red brown fibre, fine strands along the bundle, wet with the hot step over the half nearest the point, the
+// line between ragged.
 function hairMaterial(u: Shared): THREE.MeshPhysicalMaterial {
   const m = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.5, sheen: 0.6, sheenRoughness: 0.4, sheenColor: shadeOf('bronze', 0.6), clearcoat: 0.6, clearcoatRoughness: 0.15 });
   m.name = 'paletteHair';
@@ -1163,12 +1041,12 @@ function hairMaterial(u: Shared): THREE.MeshPhysicalMaterial {
   return shade(m, 'palette-hair', partChunks({
     head: BUMP,
     color: /* glsl */ `
-  float palFl = step(0.5, vCell.x);
-  float palSs = clamp(vUv.x / mix(${BRUSH.hair.toFixed(1)}, ${FLAT.hair.len.toFixed(1)}, palFl), 0.0, 1.2);
+  float palFl = 0.0;
+  float palSs = clamp(vUv.x / ${BRUSH.hair.toFixed(1)}, 0.0, 1.2);
   float palStr = wNoise(vec3(vUv.y * mix(140.0, 220.0, palFl), palSs * 2.0, 1.0));
   vec3 palSable = mix(${L('bronze-deep', 0.75)} * 0.7 + ${L('text-3', 0.1)} * 0.3, ${L('bronze', 0.55)}, smoothstep(0.3, 0.8, palStr));
-  float palLoad = 1.0 - smoothstep(mix(0.5, 0.66, palFl), mix(0.62, 0.8, palFl), palSs + 0.08 * (wNoise(vec3(vUv.y * 18.0, 0.0, 3.0)) - 0.5));
-  vec3 palPaint = mix(palAlbedo(3), palAlbedo(6), palFl) * (0.9 + 0.1 * palStr);
+  float palLoad = 1.0 - smoothstep(0.55, 0.7, palSs + 0.08 * (wNoise(vec3(vUv.y * 18.0, 0.0, 3.0)) - 0.5));
+  vec3 palPaint = palAlbedo(5) * (0.9 + 0.1 * palStr);
   diffuseColor.rgb = mix(palSable, palPaint, palLoad);`,
     rough: 'roughnessFactor = mix(0.55 + 0.2 * palStr, 0.16, palLoad);',
     normal: '{ float px = length(fwidth(vObj)); float h = (palStr - 0.5) * 0.04 * (1.0 - palLoad) * (1.0 - smoothstep(0.05, 0.2, px)); normal = palBump(normal, h, 1.0); }',
@@ -1200,7 +1078,6 @@ function shadowMaterial(u: Shared): THREE.ShaderMaterial {
   tex.minFilter = tex.magFilter = THREE.LinearFilter;
   tex.needsUpdate = true;
   const b0 = brushAxis(BRUSH.hair + 10), b1 = brushAxis(BRUSH.hair + BRUSH.ferrule + BRUSH.handle);
-  const f0 = flatAxis(FLAT.hair.len + 5), f1 = flatAxis(FLAT.hair.len + FLAT.ferrule + FLAT.handle);
   const dc = rimAt(DIPPER.f), cupAt: P2 = [dc.p[0] + dc.n[0] * (DIPPER.r + 0.7), dc.p[1] + dc.n[1] * (DIPPER.r + 0.7)];
   const v2 = (p: P2) => `vec2(${p[0].toFixed(1)}, ${p[1].toFixed(1)})`;
   return new THREE.ShaderMaterial({
@@ -1226,7 +1103,6 @@ void main(){
   vec2 p = vPalP.xz;
   float off = smoothstep(-2.0, 4.0, sd);
   a = max(a, (1.0 - smoothstep(1.0, 9.0, palSeg(p, ${v2(b0)}, ${v2(b1)}))) * 0.45 * uBrush * off);
-  a = max(a, (1.0 - smoothstep(1.0, 8.0, palSeg(p, ${v2(f0)}, ${v2(f1)}))) * 0.42 * uBrush * off);
   a = max(a, (1.0 - smoothstep(${(DIPPER.r - 2).toFixed(1)}, ${(DIPPER.r + 7).toFixed(1)}, length(p - ${v2(cupAt)}))) * 0.7 * uShadow);
   gl_FragColor = vec4(0.0, 0.0, 0.0, a);
 }`,

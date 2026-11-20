@@ -89,103 +89,85 @@ export const STRIKE = (() => {
   return { x: best[0], y: -BOARD.round * 0.6, z: best[1] };
 })();
 
-// The site's palette in order, which is the order of the paints along the rim.
-export const PAINTS = ['ember-deep', 'ember', 'flame', 'hot', 'pale', 'bronze', 'copper'] as const;
-export type PaintName = (typeof PAINTS)[number];
+// The paints are a scale, the thing a design system is: nine steps from a near black umber to the palette's cream,
+// each a share of two of the site's colors (src/config/palette.ts) and a brightness, dark to pale. Each step's name is
+// the number stamped beside it.
+export interface Step { name: string; a: string; b: string; k: number; v: number }
+export const STEPS: Step[] = [
+  { name: '900', a: 'bg-3', b: 'bronze-deep', k: 0.55, v: 1 },
+  { name: '800', a: 'ember-deep', b: 'ember', k: 0.45, v: 1.05 },
+  { name: '700', a: 'ember', b: 'flame', k: 0.12, v: 1.08 },
+  { name: '600', a: 'ember', b: 'flame', k: 0.72, v: 1 },
+  { name: '500', a: 'copper', b: 'flame', k: 0.15, v: 1 },
+  { name: '400', a: 'flame', b: 'hot', k: 0.4, v: 1 },
+  { name: '300', a: 'hot', b: 'copper-light', k: 0.45, v: 0.98 },
+  { name: '200', a: 'hot', b: 'pale', k: 0.55, v: 1 },
+  { name: '100', a: 'pale', b: 'pale', k: 0, v: 1 },
+];
 
-// A dab of paint: where it stands, how wide and tall, which way its tip was pulled, which paint (an index into
-// PAINTS), and how old it is: 0 fresh from the tube with a wet peak, 1 dried to a cracked skin. An old dab may have
-// been scraped flat with the knife: `scrape` is the way the blade went, where across the dab it began (-1 to 1) and
-// the height it left.
-export interface Dab {
-  x: number; z: number; r: number; h: number; lean: number; twist: number; seed: number; paint: number; age: number;
-  scrape?: { a: number; from: number; h: number };
+// Where the dabs stand: an arc that runs this far in from the far rim, from the angle on the outline nearest the
+// strike to the one before the thumb's end, with the dabs evenly spaced along it.
+export const ARC = { from: Math.PI + 0.3, to: 2 * Math.PI - 0.58, inset: 21 } as const;
+// A dab: where it stands, its radius and height, which way its peak was pulled (degrees round from x), how far the
+// coil is turned, its step, and the way into the board and along the arc there.
+export interface Dab { x: number; z: number; r: number; h: number; lean: number; twist: number; seed: number; step: number; inward: P2; along: P2 }
+export const DAB = { r: 9.6, h: 11.5 } as const;
+// The mark beside each dab: a brass pin head this far in from the dab's edge, and its step number stamped further in.
+export const MARK = { pin: 6.0, pinR: 1.6, pinH: 0.9, label: 12.8, size: 3.4 } as const;
+
+// The arc is an oval inside the board's own, so it follows the rim but none of its chips and bays.
+function arcAt(f: number): P2 {
+  const x = (150 - ARC.inset) * Math.cos(f);
+  return [x, (108 - ARC.inset) * Math.sin(f) * (1 - 0.13 * sm(-20, 150, x))];
 }
-// Along the far rim, left to right in the picture, fresh dabs in the palette's order with the old ones left between
-// them: a second squeeze of flame, a scraped hot, a crust of pale, an old bronze at the edge, a copper scraped down,
-// and an ember gone hard at the left end whose run went over the edge.
-export const DABS: Dab[] = [
-  { x: -134, z: -12, r: 7.5, h: 2.6, lean: 180, twist: 0.2, seed: 101, paint: 1, age: 1 },
-  { x: -114, z: -40, r: 10, h: 6.2, lean: 40, twist: 0.4, seed: 11, paint: 0, age: 0 },
-  { x: -80, z: -58, r: 12.5, h: 7.8, lean: 160, twist: -0.3, seed: 23, paint: 1, age: 0 },
-  { x: -48, z: -74, r: 14, h: 9.6, lean: 80, twist: 0.6, seed: 37, paint: 2, age: 0 },
-  { x: -32, z: -52, r: 6, h: 4.2, lean: 250, twist: 0.1, seed: 43, paint: 2, age: 0.15 },
-  { x: -12, z: -82, r: 13, h: 9.0, lean: 210, twist: -0.5, seed: 41, paint: 3, age: 0 },
-  { x: 4, z: -60, r: 8.5, h: 3.4, lean: 30, twist: 0.3, seed: 47, paint: 3, age: 0.85, scrape: { a: 20, from: -0.2, h: 1.1 } },
-  { x: 24, z: -80, r: 15, h: 10.4, lean: 300, twist: 0.3, seed: 53, paint: 4, age: 0 },
-  { x: 40, z: -60, r: 6, h: 1.8, lean: 90, twist: 0, seed: 59, paint: 4, age: 1 },
-  { x: 40, z: -93, r: 6, h: 1.6, lean: 0, twist: 0, seed: 61, paint: 5, age: 1 },
-  { x: 57, z: -70, r: 12, h: 7.5, lean: 120, twist: -0.4, seed: 67, paint: 5, age: 0 },
-  { x: 86, z: -54, r: 11.5, h: 7.0, lean: 20, twist: 0.5, seed: 79, paint: 6, age: 0 },
-  { x: 108, z: -48, r: 7, h: 2.6, lean: 200, twist: 0, seed: 83, paint: 6, age: 0.9, scrape: { a: 140, from: 0.1, h: 0.7 } },
-];
+export const DABS: Dab[] = (() => {
+  const fine = 600, pts: P2[] = [], len = [0];
+  for (let i = 0; i <= fine; i++) pts.push(arcAt(ARC.from + ((ARC.to - ARC.from) * i) / fine));
+  for (let i = 1; i <= fine; i++) len.push(len[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const out: Dab[] = [];
+  const LEAN = [205, 150, 230, 120, 260, 175, 300, 140, 240], TWIST = [0.4, 1.9, 3.1, 0.9, 4.4, 2.5, 5.3, 1.3, 3.7];
+  for (let k = 0; k < STEPS.length; k++) {
+    const want = (len[fine] * k) / (STEPS.length - 1);
+    let j = 0;
+    while (j < fine - 1 && len[j + 1] < want) j++;
+    const q = pts[j], t = [pts[j + 1][0] - pts[j][0], pts[j + 1][1] - pts[j][1]], tl = Math.hypot(t[0], t[1]);
+    const along: P2 = [t[0] / tl, t[1] / tl];
+    out.push({ x: q[0], z: q[1], r: DAB.r * (0.97 + 0.06 * ((k * 7) % 3) / 2), h: DAB.h * (0.94 + 0.12 * ((k * 5) % 4) / 3), lean: LEAN[k], twist: TWIST[k], seed: 11 + k * 13, step: k, inward: [-along[1], along[0]], along });
+  }
+  return out;
+})();
 
-// The mixing ground in the middle: flame drawn into pale with the knife. Each stroke is one pass of the blade: where
-// it set down, where it lifted, how far it bowed, how wide it laid the paint and how thick, and how much pale is in it.
-export interface Stroke { a: P2; b: P2; bow: number; w: number; t: number; mix: number }
-export const MIX = { x: -34, z: 2 } as const;
-export const STROKES: Stroke[] = [
-  { a: [-76, 8], b: [-30, -16], bow: 4, w: 20, t: 1.25, mix: 0.15 },
-  { a: [-62, 24], b: [-14, 10], bow: -3, w: 18, t: 1.05, mix: 0.75 },
-  { a: [-22, -22], b: [-46, 24], bow: 5, w: 16, t: 0.95, mix: 0.45 },
-  { a: [-70, -6], b: [-24, 2], bow: -2, w: 14, t: 1.2, mix: 0.6 },
-  { a: [-6, 18], b: [-40, 32], bow: 3, w: 12, t: 0.8, mix: 0.3 },
+// The swatches: four drawdowns pulled with the knife side by side in the middle, each a clean strip of paint with a
+// ridge along both sides, thick where the blade set down and ragged where it lifted. Each is two steps mixed, a and b,
+// by k, and the last is still wet. at is where the blade set down, dir the way it was pulled (degrees round from x).
+export interface Swatch { at: P2; dir: number; len: number; w: number; a: number; b: number; k: number; wet: number; seed: number }
+export const SWATCHES: Swatch[] = [
+  { at: [-78, -24], dir: 86, len: 31, w: 14, a: 1, b: 4, k: 0.5, wet: 0, seed: 3 },
+  { at: [-61, -24.5], dir: 88, len: 30, w: 14, a: 3, b: 5, k: 0.5, wet: 0.15, seed: 5 },
+  { at: [-44, -25], dir: 89, len: 30.5, w: 14, a: 5, b: 7, k: 0.5, wet: 0.35, seed: 7 },
+  { at: [-27, -25.5], dir: 91, len: 29, w: 14, a: 6, b: 8, k: 0.55, wet: 1, seed: 9 },
 ];
+export const MIX = { x: -52, z: -10 } as const;
 
-// Old paint gone hard on the wood, thin skins with an edge you could lift with a nail: where, how large, which paint.
-export interface Crust { x: number; z: number; r: number; paint: number; seed: number }
-export const CRUSTS: Crust[] = [
-  { x: -90, z: -12, r: 5.5, paint: 2, seed: 3 },
-  { x: -62, z: 42, r: 4.2, paint: 4, seed: 5 },
-  { x: -64, z: -88, r: 4.5, paint: 1, seed: 7 },
-  { x: 6, z: -97, r: 4, paint: 3, seed: 9 },
-  { x: 72, z: -79, r: 3.6, paint: 6, seed: 13 },
-  { x: 2, z: -30, r: 3.4, paint: 2, seed: 17 },
-];
-// Where the knife was wiped clean: a smear dragged along the wood, thick where it began and gone to nothing.
-export interface Wipe { a: P2; b: P2; w: number; paint: number }
-export const WIPES: Wipe[] = [
-  { a: [-118, -58], b: [-102, -70], w: 4.5, paint: 0 },
-];
-// The run that went over the edge from the old ember at the left end while the palette stood on its end, and the bead
-// it left hanging under the edge.
-export const RUN = { from: 0, len: 15, w: 3.4, bead: 2.3 } as const;
-// Thumbprints in paint by the hole, where the hand that holds it smudged: where, which way, which paint.
-export const PRINTS: { x: number; z: number; a: number; paint: number; seed: number }[] = [
-  { x: 72, z: 10, a: 35, paint: 2, seed: 2 },
-  { x: 120, z: 12, a: -25, paint: 6, seed: 4 },
-];
-
-// The brush: a round sable, lying across the front half with its handle out over the bay. Its axis runs from the
-// tip of its hairs along `dir`, `lift` over the board, the hairs bent down onto a bead of hot paint.
+// The brush: a round sable, the largest thing on the board after the board, lying across the front half with its
+// handle out over the edge. Its axis runs from the tip of its hairs along `dir`, `lift` over the board, which is the
+// handle's belly, and the hairs bend down onto a bead of the hot step.
 export const BRUSH = {
-  tip: [-98, 46] as P2,
+  tip: [-102, 40] as P2,
   dir: 17 * DEG,
-  lift: 5.1,
-  girth: 1.38,
-  hair: 21,
-  ferrule: 30,
-  handle: 162,
-  bead: { r: 5.6, h: 2.0 },
+  lift: 6.0,
+  hair: 24,
+  ferrule: 34,
+  handle: 172,
+  bead: { r: 4.4, h: 1.7 },
 } as const;
 export const brushAxis = (s: number): P2 => [BRUSH.tip[0] + Math.cos(BRUSH.dir) * s, BRUSH.tip[1] + Math.sin(BRUSH.dir) * s];
 
-// A second, smaller brush: a flat, loaded with copper, lying in front of the round with its handle over the edge.
-export const FLAT = {
-  tip: [-62, 82] as P2,
-  dir: 13 * DEG,
-  lift: 3.9,
-  hair: { len: 15, w: 9.5, t: 2.6 },
-  ferrule: 20,
-  handle: 118,
-} as const;
-export const flatAxis = (s: number): P2 => [FLAT.tip[0] + Math.cos(FLAT.dir) * s, FLAT.tip[1] + Math.sin(FLAT.dir) * s];
-
-// The palette knife: a bronze trowel blade flat on the board beside the mixing ground, a cranked neck of flat spring
+// The palette knife: a polished steel trowel blade flat on the board beside the swatches it drew, a cranked neck of flat spring
 // steel, a bolster, and a handle of two wooden scales held by rivets, which comes down to rest its end on the board.
 export const KNIFE = {
-  tip: [-3, -9] as P2,
-  dir: -12 * DEG,
+  tip: [-8, 4] as P2,
+  dir: -3 * DEG,
   blade: { len: 56, w: 23 },
   neck: { run: 15, rise: 9.5, w: 3.4, t: 0.9 },
   bolster: { len: 9, r: 4.4 },
@@ -195,13 +177,7 @@ export const knifeAxis = (s: number): P2 => [KNIFE.tip[0] + Math.cos(KNIFE.dir) 
 
 // The dipper: a small brass cup clipped to the back rim, its cup outside the edge, a spring clip over the board's
 // edge on a hinge, and a dark pool of medium in it. f is where on the outline, by angle.
-export const DIPPER = { f: Math.PI + 0.86, r: 11.5, top: 9, bottom: -4.95, pool: 3.2, jaw: 9 } as const;
+export const DIPPER = { f: Math.PI - 0.6, r: 11.5, top: 9, bottom: -4.95, pool: 3.2, jaw: 9 } as const;
 
-// A strip of masking tape over the left front edge, written on in pencil. f is where on the outline; it reaches in
-// over the top and wraps under.
-export const TAPE = { f: Math.PI - 0.36, w: 16, inward: 30, under: 10 } as const;
-
-// What is drawn on the wood rather than built: the maker's stamp burned in at the left end, the ring a cup left, and
-// pencil.
+// The maker's stamp, burned into the wood at the left end.
 export const STAMP = { x: -124, z: 4, w: 13, h: 23 } as const;
-export const RING = { x: 58, z: 58, r: 16 } as const;

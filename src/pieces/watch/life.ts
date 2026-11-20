@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { seeded } from '../../world/build';
 import type { Way } from '../../world/struck';
 import { facetKind } from '../../stream/shards';
-import { HINGE, STRIKE } from './layout';
+import { DIAL, HINGE, MOV, STAND, TURN } from './layout';
 import type { Kind, PartDef } from './model';
 import { PART_TEXELS } from './shading';
 
@@ -22,6 +22,8 @@ export interface LifeAt {
   lit: number;
   // How much of each half's contact shadow is under it: the case back's, and the body's.
   shadow: [number, number];
+  // How far the case back stands open on its hinge, in degrees, which its shadow on the table follows.
+  stand: number;
   band: { c: [number, number]; r: number; k: number } | null;
   shards: ShardAt[];
 }
@@ -34,13 +36,27 @@ const FLAT = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0),
 
 const BAND = { cross: 0.6, back: 1.0, past: 14 } as const;
 
+// The dial's print, or the crown and chain, turned on the table about the dial's middle.
+function turnAt(deg: number): THREE.Matrix4 {
+  return new THREE.Matrix4().makeTranslation(DIAL.x, 0, DIAL.z).multiply(new THREE.Matrix4().makeRotationY(deg * (Math.PI / 180))).multiply(new THREE.Matrix4().makeTranslation(-DIAL.x, 0, -DIAL.z));
+}
+// The movement is turned in its case about its own middle.
+const SPUN = new THREE.Matrix4().makeTranslation(MOV.x, 0, MOV.z).multiply(new THREE.Matrix4().makeRotationY(STAND.spin * (Math.PI / 180))).multiply(new THREE.Matrix4().makeTranslation(-MOV.x, 0, -MOV.z));
+const PRINT = turnAt(TURN.print), CROWN_TURN = turnAt(TURN.crown);
+const PRINTED: Kind[] = ['dial', 'numeral', 'hand'];
+
+// The case back's turn on its hinge, deg degrees up from lying flat.
+function hingeAt(deg: number): THREE.Matrix4 {
+  return new THREE.Matrix4().makeTranslation(0, HINGE.y, 0).multiply(new THREE.Matrix4().makeRotationZ(-deg * (Math.PI / 180))).multiply(new THREE.Matrix4().makeTranslation(0, -HINGE.y, 0));
+}
+
 // The flash way: how far each kind stands off its seat, how hard things fall, when each lets go, and the case back
 // standing half closed on its hinge, falling open first.
 const FLASH = {
   lift: { bridge: 3.6, wheel: 6.5, fork: 5, cock: 5.5, balance: 9, hand: 4.2, numeral: 1.6, crystal: 3.8 } as Partial<Record<Kind, number>>,
   go: { bridge: 0.3, wheel: 0.26, fork: 0.3, cock: 0.36, balance: 0.5, hand: 0.1, numeral: 0.06, crystal: 0.16 } as Partial<Record<Kind, number>>,
   g: 420,
-  hinge: { open: 64, fall: 0.28 },
+  hinge: { open: 18, fall: 0.28 },
 } as const;
 
 // The shards way: the case back and the plate, the body and the dial, then the train in a run from the barrel, the
@@ -92,6 +108,7 @@ export class Life {
   private fliers: Flier[];
   private own: { lift: number; go: number; tilt: THREE.Vector3 }[];
   private m = new THREE.Matrix4();
+  private m2 = new THREE.Matrix4();
   private s = new THREE.Matrix4();
   private q = new THREE.Quaternion();
   private v = new THREE.Vector3();
@@ -99,27 +116,42 @@ export class Life {
   private spin: Float32Array;
   private light: Float32Array;
   private arc: Float32Array;
-  readonly strike = new THREE.Vector3(STRIKE.x, STRIKE.y + 1.5, STRIKE.z);
+  readonly strike: THREE.Vector3;
   readonly far: number;
   readonly c: [number, number];
+  private near: number;
+  // The case back's turn on its hinge for this frame.
+  private hinge = hingeAt(STAND.deg);
+  private inCase = this.hinge.clone().multiply(SPUN);
 
-  constructor(private parts: PartDef[]) {
+  // strike is the point the stream meets, and onTable where it lies on the table seen down the eye's ray, both in the
+  // watch's millimetres as it stands.
+  constructor(private parts: PartDef[], strike: THREE.Vector3, onTable: [number, number]) {
+    this.strike = strike.clone();
     const r = seeded(4712);
     this.spin = new Float32Array(parts.length);
     this.light = new Float32Array(parts.length);
     this.arc = new Float32Array(parts.length);
     this.own = parts.map((p) => ({
-      lift: FLASH.lift[p.kind] ?? 0,
+      // The case back's parts stand off toward the dial, so they stand off less, or they would pass into its bezel.
+      lift: (FLASH.lift[p.kind] ?? 0) * (p.side === 'mov' ? 0.45 : 1),
       go: (FLASH.go[p.kind] ?? 0) + 0.04 * r(),
       tilt: new THREE.Vector3(r() - 0.5, 0, r() - 0.5).normalize().multiplyScalar((3 + r() * 7) * (Math.PI / 180)),
     }));
     for (let i = 0; i < 96; i++) this.pool.push({ p: new THREE.Vector3(), q: new THREE.Quaternion(), s: new THREE.Vector3(), kind: 0, lit: 1 });
-    // The band's circle stands behind the strike, away from the watch's middle.
-    const mid = new THREE.Vector2(0, -6), st = new THREE.Vector2(STRIKE.x, STRIKE.z);
+    // The band's circle stands behind the strike, away from the watch's middle. Everything is measured where it falls
+    // on the table down the eye's ray, as the shader cuts it, so a standing part is reached by where it is seen.
+    const mid = new THREE.Vector2(0, -6), st = new THREE.Vector2(...onTable);
     const dir = st.clone().sub(mid).normalize(), back = BAND.back * 105;
     this.c = [st.x + dir.x * back, st.y + dir.y * back];
+    this.near = st.distanceTo(new THREE.Vector2(...this.c)) - 1;
     let far = 0;
-    for (const p of parts) for (const x of [p.lo[0], p.hi[0]]) for (const z of [p.lo[2], p.hi[2]]) far = Math.max(far, Math.hypot(x - this.c[0], z - this.c[1]));
+    const v = new THREE.Vector3();
+    for (const p of parts) for (const x of [p.lo[0], p.hi[0]]) for (const y of [p.lo[1], p.hi[1]]) for (const z of [p.lo[2], p.hi[2]]) {
+      v.set(x, y, z);
+      this.put(parts.indexOf(p), v);
+      far = Math.max(far, Math.hypot(v.x - this.c[0], v.z - this.c[1]) + v.y * 1.4);
+    }
     this.far = far + BAND.past;
     this.fliers = this.plan(seeded(93));
   }
@@ -129,7 +161,7 @@ export class Life {
 
   private plan(r: () => number): Flier[] {
     const P = this.parts, out: Flier[] = [], S = this.strike;
-    const top = (i: number) => new THREE.Vector3(P[i].c[0], P[i].hi[1], P[i].c[2]);
+    const top = (i: number) => this.put(i, new THREE.Vector3(P[i].c[0], P[i].hi[1], P[i].c[2]));
     for (const st of STEPS) {
       const list = P.map((p, i) => ((st.kinds?.includes(p.kind) && !p.row) || (st.row && p.row === st.row) ? i : -1)).filter((i) => i >= 0);
       if (!list.length) continue;
@@ -150,12 +182,25 @@ export class Life {
       const lo = new THREE.Vector3(Infinity, Infinity, Infinity), hi = new THREE.Vector3(-Infinity, -Infinity, -Infinity);
       for (const i of list) { lo.min(new THREE.Vector3(...P[i].lo)); hi.max(new THREE.Vector3(...P[i].hi)); }
       const at = new THREE.Vector3((lo.x + hi.x) / 2, hi.y, (lo.z + hi.z) / 2);
-      out.push({ ...base, to: at, opens: list.map((i) => ({ i, at: 0, c: at.clone(), r: this.reach(i) })) });
+      out.push({ ...base, to: this.put(list[0], at.clone()), opens: list.map((i) => ({ i, at: 0, c: at.clone(), r: this.reach(i) })) });
     }
     return out;
   }
 
-  // Each part's transform (three rows), heat and fold, and the point it folds about with the light on it.
+  // A point of a part laid flat, where it is as the part stands.
+  private put(i: number, v: THREE.Vector3): THREE.Vector3 { const m = this.pose(i); return m ? v.applyMatrix4(m) : v; }
+  // How a part laid out flat is set where it rests: the case back's parts stood on the hinge, the print and the crown
+  // turned about the dial's middle.
+  private pose(i: number): THREE.Matrix4 | null {
+    const p = this.parts[i];
+    if (p.side === 'mov') return p.kind === 'back' ? this.hinge : this.inCase;
+    if (PRINTED.includes(p.kind)) return PRINT;
+    if (p.kind === 'crown' || p.kind === 'chain') return CROWN_TURN;
+    return null;
+  }
+
+  // Each part's transform (three rows), heat and fold, and the point it folds about with the light on it. The
+  // transform is given as the part laid flat; the case back's parts are then stood on the hinge.
   private write(out: Float32Array, i: number, m: THREE.Matrix4, heat = 0, fold?: { open: number; crumple: number; small: number; c: THREE.Vector3 }) {
     const p = this.parts[i];
     if (p.axis && this.spin[i] !== 0) {
@@ -163,6 +208,8 @@ export class Life {
       this.s.makeTranslation(ax, 0, az).multiply(new THREE.Matrix4().makeRotationY(this.spin[i])).multiply(new THREE.Matrix4().makeTranslation(-ax, 0, -az));
       m = this.m.copy(m).multiply(this.s);
     }
+    const pose = this.pose(i);
+    if (pose) m = this.m2.copy(pose).multiply(m);
     const e = m.elements, o = i * PART_TEXELS * 4;
     out[o] = e[0]; out[o + 1] = e[4]; out[o + 2] = e[8]; out[o + 3] = e[12];
     out[o + 4] = e[1]; out[o + 5] = e[5]; out[o + 6] = e[9]; out[o + 7] = e[13];
@@ -184,7 +231,9 @@ export class Life {
     if (light) this.light.set(light); else this.light.fill(0);
     if (arc) this.arc.set(arc); else this.arc.fill(0);
     const L = LIFE[way];
-    const res: LifeAt = { show: age > 0, room: 1, flash: 0, lit: age - LIGHTS[way], shadow: [1, 1], band: null, shards: [] };
+    this.hinge = hingeAt(STAND.deg);
+    this.inCase.copy(this.hinge).multiply(SPUN);
+    const res: LifeAt = { show: age > 0, room: 1, flash: 0, lit: age - LIGHTS[way], shadow: [1, 1], stand: STAND.deg, band: null, shards: [] };
     const id = new THREE.Matrix4();
     if (!res.show) { const z = new THREE.Matrix4().makeScale(0, 0, 0); for (let i = 0; i < this.parts.length; i++) { this.spin[i] = 0; this.write(out, i, z); } return res; }
     if (age >= L) { for (let i = 0; i < this.parts.length; i++) this.write(out, i, id); return res; }
@@ -245,12 +294,13 @@ export class Life {
   private flash(age: number, out: Float32Array, res: LifeAt) {
     res.flash = Math.exp(-age / 0.24) * (1 - span(age, 0.55, LIFE.flash));
     res.room = smooth(span(age, 0.12, 0.55));
-    // The case back, half closed on its hinge, falls open and knocks against the table.
+    // The case back, half closed on its hinge, falls open to where it stands and knocks against its stop.
     const H = FLASH.hinge, u = span(age, 0, H.fall);
-    let a = -(H.open * Math.PI / 180) * (1 - u * u);
-    a -= (H.open * Math.PI / 180) * this.rebound(age, H.fall, 0.05, 0.12);
+    const deg = STAND.deg + H.open * (1 - u * u) - H.open * this.rebound(age, H.fall, 0.06, 0.12);
+    this.hinge = hingeAt(deg);
+    this.inCase.copy(this.hinge).multiply(SPUN);
     res.shadow = [u * u, 1];
-    const hinge = new THREE.Matrix4().makeTranslation(0, HINGE.y, 0).multiply(new THREE.Matrix4().makeRotationZ(a)).multiply(new THREE.Matrix4().makeTranslation(0, -HINGE.y, 0));
+    res.stand = deg;
     for (let i = 0; i < this.parts.length; i++) {
       const p = this.parts[i], o = this.own[i];
       let y = 0, k = 1;
@@ -267,7 +317,6 @@ export class Life {
       this.q.setFromAxisAngle(len > 1e-6 ? this.v.copy(o.tilt).divideScalar(len) : UP, len * (1 - k));
       const c = new THREE.Vector3(...p.c);
       const m = new THREE.Matrix4().compose(new THREE.Vector3(c.x, c.y + y, c.z), this.q, new THREE.Vector3(1, 1, 1)).multiply(new THREE.Matrix4().makeTranslation(-c.x, -c.y, -c.z));
-      if (p.side === 'mov') m.premultiply(hinge);
       this.write(out, i, m);
     }
   }
@@ -275,7 +324,7 @@ export class Life {
   private band(age: number, res: LifeAt) {
     const k = clamp01(age / BAND.cross);
     if (k >= 1) return;
-    const near = Math.hypot(STRIKE.x - this.c[0], STRIKE.z - this.c[1]) - 1;
+    const near = this.near;
     const r = near + (this.far - near) * (1 - (1 - Math.min(1, k / 0.9)) ** 1.6);
     res.band = { c: this.c, r, k: Math.min(1, k / 0.025) * Math.min(1, (1 - k) / 0.1) * (0.5 + 0.5 * (1 - k)) };
   }

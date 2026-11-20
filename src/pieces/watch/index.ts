@@ -10,9 +10,10 @@ import { Stage } from '../../world/stage';
 import { balance, trueDarks } from '../../world/tone';
 import { WAYS, type Anchor, type StruckPiece, type Way } from '../../world/struck';
 import { shardMeshes, shardUniforms, SHARD_KINDS } from '../cpu/shard';
-import { BODY, CASE, CROWN, DEG, DIAL, DIAL_FACE, MOV, PENDANT, STRIKE, VIEW, YAW } from './layout';
+import { CASE, DEG, DIAL, DIAL_FACE, MOV, STAND, TURN as SPIN, VIEW, YAW, stand, turned } from './layout';
 import { LIFE, LIGHTS, Life, type LifeAt } from './life';
-import { buildWatch, type WatchModel } from './model';
+import { buildWatch, silhouette, type WatchModel } from './model';
+import type { Vec3 } from '../../world/build';
 import { Runner } from './run';
 import { PARTS_MAX, PART_TEXELS } from './shading';
 
@@ -25,39 +26,50 @@ export { LIFE };
 const MM = 0.001;
 // A point of the watch, in millimetres, where it stands in the world at rest.
 const toWorld = (x: number, y: number, z: number) => new THREE.Vector3(x * Math.cos(YAW) + z * Math.sin(YAW), y, -x * Math.sin(YAW) + z * Math.cos(YAW)).multiplyScalar(MM);
-const STRIKE_W = toWorld(STRIKE.x, STRIKE.y, STRIKE.z);
+const toModel = (v: THREE.Vector3) => new THREE.Vector3(v.x * Math.cos(YAW) - v.z * Math.sin(YAW), v.y, v.x * Math.sin(YAW) + v.z * Math.cos(YAW)).divideScalar(MM);
 const EYE_DIR = new THREE.Vector3(-Math.sin(VIEW.az * DEG) * Math.cos(VIEW.el * DEG), Math.sin(VIEW.el * DEG), Math.cos(VIEW.az * DEG) * Math.cos(VIEW.el * DEG));
+// The standing face's normal, in the watch's millimetres.
+const MOV_N = new THREE.Vector3(Math.sin(STAND.deg * DEG), Math.cos(STAND.deg * DEG), 0);
 
-// It frames a fixed height of its world: the pair is 0.73 of the host's height across at its widest, centered
-// across the host, with the point the stream meets at the host's middle height.
-function framing(): { target: THREE.Vector3; dist: number; strike: Anchor; span: [number, number] } {
+// It frames a fixed height of its world: the watch's silhouette is VIEW.wide of the host's height across or VIEW.tall down,
+// whichever binds, and centred on the host's middle. The stream meets it at the left most point of the silhouette
+// on the line across the host's middle.
+function framing(): { target: THREE.Vector3; dist: number; strike: Anchor; at: THREE.Vector3; span: [number, number]; box: [number, number, number, number] } {
   const cam = new THREE.PerspectiveCamera(VIEW.fov, 1, 0.01, 10);
-  const pts: THREE.Vector3[] = [];
-  for (const c of [MOV, DIAL]) for (let k = 0; k < 96; k++) for (const y of [0, c === DIAL ? BODY.crystal : 6.4]) {
-    const a = (k / 96) * Math.PI * 2;
-    pts.push(toWorld(c.x + Math.cos(a) * (CASE.r + 0.4), y, c.z + Math.sin(a) * (CASE.r + 0.4)));
-  }
-  pts.push(toWorld(DIAL.x, 1, DIAL.z - PENDANT.to - CROWN.len - 10));
+  const put = { mov: (v: Vec3) => stand(...v), crown: (v: Vec3) => turned(...v, SPIN.crown) };
+  const loops = silhouette().map((l) => l.pts.map((v) => toWorld(...(l.pose ? put[l.pose](v) : v))));
   const target = new THREE.Vector3(), p = new THREE.Vector3(), right = new THREE.Vector3(), up = new THREE.Vector3();
-  let dist = 0.6, strike: Anchor = [0, 0], span: [number, number] = [0, 0];
+  let dist = 0.6, box: [number, number, number, number] = [0, 0, 0, 0];
   const at = (v: THREE.Vector3): Anchor => { p.copy(v).project(cam); return [p.x / 2, -p.y / 2]; };
   for (let it = 0; it < 60; it++) {
     cam.position.copy(target).addScaledVector(EYE_DIR, dist);
     cam.lookAt(target);
     cam.updateMatrixWorld(true);
     let lo = Infinity, hi = -Infinity, top = Infinity, bot = -Infinity;
-    for (const c of pts) { const [x, y] = at(c); lo = Math.min(lo, x); hi = Math.max(hi, x); top = Math.min(top, y); bot = Math.max(bot, y); }
-    strike = at(STRIKE_W);
-    span = [top, bot];
+    for (const l of loops) for (const c of l) { const [x, y] = at(c); lo = Math.min(lo, x); hi = Math.max(hi, x); top = Math.min(top, y); bot = Math.max(bot, y); }
+    box = [lo, top, hi, bot];
     const vh = 2 * dist * Math.tan((VIEW.fov / 2) * DEG);
     right.setFromMatrixColumn(cam.matrixWorld, 0);
     up.setFromMatrixColumn(cam.matrixWorld, 1);
-    target.addScaledVector(right, ((lo + hi) / 2) * vh).addScaledVector(up, -strike[1] * vh);
-    dist *= (hi - lo) / VIEW.across;
+    target.addScaledVector(right, ((lo + hi) / 2) * vh).addScaledVector(up, -((top + bot) / 2) * vh);
+    dist *= Math.max((hi - lo) / VIEW.wide, (bot - top) / VIEW.tall);
   }
-  return { target, dist, strike: [Number(strike[0].toFixed(4)), Number(strike[1].toFixed(4))], span };
+  let best = Infinity;
+  const hit = new THREE.Vector3();
+  for (const l of loops) for (let k = 0; k < l.length; k++) {
+    const a = l[k], b = l[(k + 1) % l.length], [ax, ay] = at(a), [bx, by] = at(b);
+    if ((ay < 0) === (by < 0)) continue;
+    const t = ay / (ay - by), x = ax + (bx - ax) * t;
+    if (x < best) { best = x; hit.copy(a).lerp(b, t); }
+  }
+  return { target, dist, strike: [Number(best.toFixed(4)), 0], at: hit, span: [box[1], box[3]], box };
 }
 const FRAME = framing();
+const STRIKE_W = FRAME.at;
+// The point the stream meets in the watch's millimetres, and where it lies on the table seen down the eye's ray.
+const STRIKE_M = toModel(STRIKE_W);
+const EYE_M = toModel(EYE_DIR.clone().multiplyScalar(0.001)).normalize();
+const STRIKE_T: [number, number] = [STRIKE_M.x - EYE_M.x * (STRIKE_M.y / EYE_M.y), STRIKE_M.z - EYE_M.z * (STRIKE_M.y / EYE_M.y)];
 
 export const WATCH: { strike: Anchor } = { strike: FRAME.strike };
 
@@ -66,18 +78,18 @@ const ROOM_LIGHT = new THREE.Color(hex('pale'));
 const LAMP = { power: 0.045, reach: 0.34, height: 0.006, bound: 0.2 } as const;
 const KEY = { power: 1.0, at: [-0.44, 0.3, -0.02] as const, soft: 2 };
 const RIM = { power: 0.9, at: [0.12, 0.06, -0.42] as const, line: 3.2 };
-// The strips stand where the dial and the movement's plate mirror them to the eye at rest, so each lies across one
-// half as a long reflection that slides as the watch turns toward the cursor.
+// The strip stands where the standing movement mirrors it to the eye at rest, so it lies across the movement as a
+// long reflection that slides as the watch turns toward the cursor.
 const STRIPS = [
-  { power: 1.2, w: 0.5, h: 0.008, along: 0.36, tilt: -7, at: [MOV.x, 6, MOV.z] as const },
+  { power: 1.2, w: 0.5, h: 0.008, along: 0.36, at: [MOV.x, 6, MOV.z] as const },
 ] as const;
 // The dial's own light: a broad soft panel, so the face takes one broad highlight as the CPU's lid does, and the
 // guilloché breaks it into rings. It stands wherever the face mirrors it to the eye at a point that follows the
 // cursor across the face (follow: how far the point moves for the cursor's move, held within reach of the middle),
 // so the highlight slides with the cursor and is never turned off the face by the watch's own turn.
-const FACE = { power: 4, w: 0.03, h: 0.02, along: 0.3, follow: 0.2, reach: 0.55 } as const;
+const FACE = { power: 2.2, w: 0.045, h: 0.007, along: 0.3, follow: 0.2, reach: 0.55 } as const;
 // A wider, dimmer panel round it, so the highlight has no hard edge and falls off softly across the face.
-const HALO = { power: 0.4, w: 0.085, h: 0.06 } as const;
+const HALO = { power: 0.08, w: 0.07, h: 0.02 } as const;
 // The movement's own panel, broad and soft, mirrored by it the same way and following the cursor a little: lit
 // evenly, each finish is as bright as its metal is, so the frosted plate stays dark, the gilt bridges come out a
 // middle gold and the polished wheels the brightest things on it.
@@ -92,6 +104,7 @@ const SHARDS_MOST = 64;
 // The watch runs while this much of the stream is on it, and its balance swings with how much.
 const RUNS = 0.12;
 
+const UP = new THREE.Vector3(0, 1, 0);
 const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 const smooth = (k: number) => { k = clamp(k, 0, 1); return k * k * (3 - 2 * k); };
 
@@ -125,11 +138,13 @@ export function createWatch(): StruckPiece {
   let works: THREE.RectAreaLight | null = null;
   const faceAt = new THREE.Vector3(), faceN = new THREE.Vector3(), faceV = new THREE.Vector3(), faceHit = new THREE.Vector3();
   const facePlane = new THREE.Plane();
+  const rootQ = new THREE.Quaternion();
   let fill: THREE.HemisphereLight | null = null;
   let flashFill: THREE.HemisphereLight | null = null;
   let strikeLight: THREE.PointLight | null = null;
   let shards: THREE.InstancedMesh[] = [];
   let shadowU: { value: THREE.Vector2 } | null = null;
+  let standU: { value: number } | null = null;
   const su = shardUniforms();
   const partData = new Float32Array(PART_TEXELS * PARTS_MAX * 4);
   const ray = new THREE.Raycaster();
@@ -206,6 +221,7 @@ export function createWatch(): StruckPiece {
     if (L.band) u.uBand.value.set(L.band.c[0], L.band.c[1], L.band.r, L.band.k);
     u.uEye.value.copy(model.root.worldToLocal(eye.copy(stage.camera.position)));
     if (shadowU) shadowU.value.set(...L.shadow);
+    if (standU) standU.value = L.stand;
     const room = L.show ? L.room : 0;
     const w = L.show ? smooth(L.flash * 1.3) : 0;
     key.position.copy(KEY_AT).lerp(FLASH_AT, w);
@@ -221,9 +237,10 @@ export function createWatch(): StruckPiece {
     strips.forEach((st, i) => { st.intensity = STRIPS[i].power * Math.max(room, 1.2 * w); });
     // A panel stands where the face at (x, y, z) mirrors it to the eye, at a point that follows the cursor.
     const root = model.root, cam = stage.camera;
-    const mirror = (l: THREE.RectAreaLight, x: number, y: number, z: number, o: { along: number; follow: number; reach: number }, r: number) => {
+    root.getWorldQuaternion(rootQ);
+    const mirror = (l: THREE.RectAreaLight, x: number, y: number, z: number, o: { along: number; follow: number; reach: number }, r: number, n: THREE.Vector3) => {
       const mid = root.localToWorld(faceAt.set(x, y, z));
-      faceN.set(0, 1, 0).applyQuaternion(turn.quaternion);
+      faceN.copy(n).applyQuaternion(rootQ);
       facePlane.setFromNormalAndCoplanarPoint(faceN, mid);
       ndc.set(clamp(lampUV.x * 2 - 1, -3, 3), clamp(1 - lampUV.y * 2, -3, 3));
       ray.setFromCamera(ndc, cam);
@@ -239,11 +256,11 @@ export function createWatch(): StruckPiece {
       l.lookAt(faceHit);
     };
     if (works) {
-      mirror(works, MOV.x, WORKS.y, MOV.z, WORKS, CASE.r);
+      mirror(works, ...stand(MOV.x, WORKS.y, MOV.z), WORKS, CASE.r, MOV_N);
       works.intensity = WORKS.power * Math.max(room, 1.2 * w);
     }
     if (face) {
-      mirror(face, DIAL.x, DIAL_FACE.y, DIAL.z, FACE, DIAL_FACE.r);
+      mirror(face, DIAL.x, DIAL_FACE.y, DIAL.z, FACE, DIAL_FACE.r, UP);
       face.intensity = FACE.power * Math.max(room, 1.2 * w);
       if (halo) { halo.position.copy(face.position); halo.quaternion.copy(face.quaternion); halo.intensity = HALO.power * Math.max(room, 1.2 * w); }
     }
@@ -354,9 +371,12 @@ export function createWatch(): StruckPiece {
       model = await buildWatch();
       model.root.rotation.y = YAW;
       built = Math.round(performance.now() - t0);
-      life = new Life(model.parts);
+      life = new Life(model.parts, STRIKE_M, STRIKE_T);
       runner = new Runner(model.parts);
-      shadowU = (model.shadow.material as THREE.ShaderMaterial).uniforms.uShadow as { value: THREE.Vector2 };
+      const su2 = (model.shadow.material as THREE.ShaderMaterial).uniforms;
+      shadowU = su2.uShadow as { value: THREE.Vector2 };
+      standU = su2.uStand as { value: number };
+      (su2.uKey.value as THREE.Vector3).copy(toModel(new THREE.Vector3(...KEY.at))).normalize();
       const s = stage.scene;
       turn.add(model.root);
       s.add(turn);
@@ -377,10 +397,10 @@ export function createWatch(): StruckPiece {
       rim = new THREE.SpotLight(ROOM_LIGHT, RIM.power, 0, 0.5, 0.6, 2);
       rim.position.set(...RIM.at);
       rim.target.position.set(0.01, 0.004, 0);
-      const mirror = EYE_DIR.clone().multiply(new THREE.Vector3(-1, 1, -1));
+      const nW = toWorld(MOV_N.x, MOV_N.y, MOV_N.z).normalize();
+      const dir = nW.clone().multiplyScalar(2 * nW.dot(EYE_DIR)).sub(EYE_DIR);
       for (const st of STRIPS) {
-        const at = toWorld(st.at[0], st.at[1], st.at[2]);
-        const dir = mirror.clone().applyAxisAngle(new THREE.Vector3(mirror.z, 0, -mirror.x).normalize(), st.tilt * DEG);
+        const at = toWorld(...stand(st.at[0], st.at[1], st.at[2]));
         const l = new THREE.RectAreaLight(ROOM_LIGHT, st.power, st.w, st.h);
         l.position.copy(at).addScaledVector(dir, st.along);
         l.lookAt(at);
@@ -393,7 +413,10 @@ export function createWatch(): StruckPiece {
       s.add(face, halo, works);
       fill = new THREE.HemisphereLight(ROOM_LIGHT.clone().multiplyScalar(0.6), new THREE.Color(hex('bg-3')), FILL);
       strikeLight = new THREE.PointLight(hex('hot'), 0, 0, 2);
-      strikeLight.position.copy(toWorld(STRIKE.x - 10, 4, STRIKE.z - 6));
+      {
+        const out = new THREE.Vector3(STRIKE_M.x, 0, STRIKE_M.z).normalize().multiplyScalar(8);
+        strikeLight.position.copy(toWorld(STRIKE_M.x + out.x, STRIKE_M.y + 4, STRIKE_M.z + out.z));
+      }
       flashFill = new THREE.HemisphereLight(new THREE.Color(hex('hot')), new THREE.Color(hex('ember-deep')), 0);
       // Every light stands in the scene and is never hidden, only dimmed, so no program is built again mid strike.
       s.add(key, key.target, rim, rim.target, fill, flashFill, strikeLight);
@@ -457,8 +480,12 @@ export function createWatch(): StruckPiece {
       let topKind = '';
       for (const m of model.meshes) {
         const pos = m.geometry.getAttribute('position'), cell = m.geometry.getAttribute('cell');
+        if (!cell) continue;
         for (let i = 0; i < pos.count; i++) {
-          v.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld).project(stage.camera);
+          v.fromBufferAttribute(pos, i);
+          const o = Math.round(cell.getW(i)) * PART_TEXELS * 4, d = partData;
+          v.set(d[o] * v.x + d[o + 1] * v.y + d[o + 2] * v.z + d[o + 3], d[o + 4] * v.x + d[o + 5] * v.y + d[o + 6] * v.z + d[o + 7], d[o + 8] * v.x + d[o + 9] * v.y + d[o + 10] * v.z + d[o + 11]);
+          v.applyMatrix4(m.matrixWorld).project(stage.camera);
           const x = (v.x * stage.width) / stage.height / 2, y = -v.y / 2;
           b[0] = Math.min(b[0], x); b[2] = Math.max(b[2], x); b[3] = Math.max(b[3], y);
           if (y < b[1]) { b[1] = y; topKind = model.parts[Math.round(cell.getW(i))]?.kind ?? ''; }
@@ -475,7 +502,7 @@ export function createWatch(): StruckPiece {
     },
     stats() {
       const i = stage?.renderer.info;
-      return { triangles: model?.tris ?? 0, spend: model?.spend, drawn: i?.render.triangles ?? 0, calls: i?.render.calls ?? 0, programs: i?.programs?.length ?? 0, built, first, frameMs: stage?.frameMs ?? 0, anchor: WATCH.strike, span: FRAME.span, dist: FRAME.dist };
+      return { triangles: model?.tris ?? 0, spend: model?.spend, drawn: i?.render.triangles ?? 0, calls: i?.render.calls ?? 0, programs: i?.programs?.length ?? 0, built, first, frameMs: stage?.frameMs ?? 0, anchor: WATCH.strike, span: FRAME.span, box: FRAME.box, dist: FRAME.dist };
     },
     info() { return (piece as unknown as { stats(): unknown }).stats(); },
   });
