@@ -14,6 +14,19 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 
 ## Now
 
+### The final pass (his word, Nov 20: `BRIEF.md`, Open 36)
+
+Testing and polish, in a fresh Claude Code session, from the prompt in `LOG.md`, top entry. Ticked `[~]` when built and measured. Only he ticks `[x]`.
+
+- [ ] Every section and every internal page at a phone, an iPad upright and sideways, a laptop, 1920, 2560 and 4K: fast and beautiful, and what is not premium fixed
+- [ ] The navigation designed again: he turned down the bar of bronze as a floating card
+- [ ] The things in Skills for Full-Stack Engineering and for Design Systems & Craft brought up to the one for AI Product Engineering
+- [ ] The rocket confirmed taking off, and coming back, on the whole page, from real frames
+- [ ] Where more of the hero's debris belongs across the site: found, added where it earns its place, the rest reported
+- [ ] Speed and memory measured on a production build in Chromium and WebKit
+- [ ] "Ready to deploy: what is left", below, gone through against today's code, and one short list handed to him of what only he can do
+- **His alone, as he sees it:** hooking up the contact form, and the Work projects' real screenshots and content
+
 ### The finishing pass (his word, Nov 18: `BRIEF.md`, Open 35)
 
 Everything made ready for his review and for deployment. Each line is ticked `[~]` when built and measured, and only he ticks `[x]`.

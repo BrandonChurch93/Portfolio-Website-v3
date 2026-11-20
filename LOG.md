@@ -2,6 +2,40 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-20 · The final pass handed to a fresh session (Fable, web chat)
+
+- **What he said (12:55).** The portfolio is pretty much done and he has gone through it himself for speed and for how clear the 3D things are. He wants one final pass in a new Claude Code session, since the last one had compacted many times. `BRIEF.md`, Open 36, has his words.
+- **What is new in it.** The navigation as a bar of bronze is turned down: "like a floating card on the screen". Two of the three things in Skills need more work. The rocket's launch is to be confirmed. More of the hero's debris is to be found places for.
+- **What was done here.** The record only: `BRIEF.md`, Open 36, and `PLAN.md`, "The final pass". No code was changed.
+- **Checked while writing this, not fixed:** About still shows "Placeholder text" (`src/components/lab/SkillsLab.tsx`), Games, 3D art and Photography still hold stand in cards (`src/content/work.ts`), and the footer's Résumé link points at `/downloads/BrandonChurch-Resume.pdf`. He named only the form and the Work screenshots as left for him, so the pass is to hand him the whole list.
+- **The prompt he was given:**
+
+```
+This is a fresh session. Read CLAUDE.md, then BRIEF.md, PLAN.md, QUALITY.md and the top entries of LOG.md from disk before anything else. BRIEF.md, Open 36 is this job in my words, and PLAN.md, "The final pass" is its list.
+
+The site is pretty much done. This is the final pass: testing and polish. When you finish it has to be ready to deploy. The only things left for me are hooking up the contact form and the real screenshots and content for the Work projects.
+
+What I want:
+
+1. Every viewport. Go through every section of the home page and every internal page on a phone, an iPad upright and sideways, a laptop, 1920, 2560 and 4K. It has to be fast and beautiful on all of them. Fix anything that stands out as not premium. You do not need to ask me about faults: fix them.
+2. The navigation. Right now it looks like a floating card on the screen. It looks amateur and does not match the rest of the site. Redesign it so it belongs to this site. Show me before and after.
+3. The 3D things in Skills. The one for AI Product Engineering is OK. The ones for Full-Stack Engineering and Design Systems & Craft need more love. Bring them up to the first one's level or past it.
+4. The rocket. Confirm it still takes off, on the whole page, from a real scroll, with real frames, and that it comes back when I scroll up. Fix it if it does not.
+5. Asteroids. Find where more of the hero's debris could go across the site to tie the page to the hero. Add it where it clearly earns its place and costs little. Tell me every place you added it and any place you held back, and why.
+6. Performance. Measure the whole page and the internal pages on a production build, in Chromium and WebKit, with npm run perf and npm run mem. Nothing ships over the budgets in CLAUDE.md.
+7. Ready to deploy. Go through "Ready to deploy: what is left" in PLAN.md against today's code. Close everything that is yours. Give me one short list of what only I can do, with the form and the Work screenshots on it and anything else you find.
+
+How to work:
+- Pull first. Lose nothing: change only what this pass needs, and do not delete, move or rewrite anything else. Leave the set aside studies and pieces as they are.
+- You are Fable. The creative calls are yours. Give contained builds and read only audits to Opus agents, check their findings yourself before acting on them, and judge every round. Every subagent runs on Opus.
+- Do not redesign what I have approved: the stream, the cards, the buttons, the desk, the world's layout, the words. Fix faults in them. If you think one of them needs more than a fix, tell me and wait.
+- Look at everything you change: stills at every size, and filmstrips and real frames for anything that moves. Judge against QUALITY.md and assume your first verdict is too kind.
+- Leave the contact form's sending to me. Make sure everything round it is finished: its states, its errors, the keyboard.
+- Keep BRIEF.md, PLAN.md and LOG.md true as you go. Commit and push after each piece, and check the deployment after each push.
+
+When you are done, report once: what you fixed, with before and after stills for the navigation, the two Skills pieces and anything else that changed how the site looks, the numbers for speed and memory, what is not at the bar and why, and my short list. Do not tell me it is ready unless a production build passes and the deployed site has been checked at a phone, an iPad and a desktop.
+```
+
 ## 2026-11-15 to 16 · The night: the whole world, and where it stands (Fable, Claude Code)
 
 **In progress, being worked through the night. This entry is kept true as it goes: read it first after any loss of memory.**
