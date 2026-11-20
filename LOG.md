@@ -2,6 +2,40 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-20 · The blanks come off the home page, by his word (Fable, web chat)
+
+**Where the final pass stands is still the next entry down. Read that one too.**
+
+- **His word (15:39):** "As much as I hate to do this, I think I want to remove the placeholder cards that are on top of the work projects and the contact form from the landing page. I feel like they're just not needed. I wanna keep that asset as I may want to use it in the future but for now I want to disable it."
+- **Recorded:** `BRIEF.md`, Open 37, with what it sets aside (The stream, "The fourth pass", items 5 to 8, and Contact, "Contact, the first build", items 8 to 10, each with a line pointing to Open 37), what stands again, and what does not change. `PLAN.md`, "The final pass", has a box for it.
+- **Nothing is built.** The web chat changed no code: it is motion, and the Claude Code session on his Mac may have work in the same files. Where the code decides it, for whoever builds:
+    - Work's cards: `stepBands` in `src/stream/stream.ts`. Where its `can` is false no card sleeps, which is what reduced motion already gets.
+    - A press: the `asleep` flags a press is given in `src/stream/surge.ts` (`mountSwap`, from `Stops.on`). A card marked asleep changes `unseen`, in one frame. With the blanks off that would be a hard cut on a card that is showing, so a card the stream is not on needs a change of its own.
+    - Contact's plate: `wake` in `src/contact/stage.ts`. With the stream not running (`whole`) the plate is already awake.
+    - `data-asleep` in `WorkCard.module.css` only stops a blank growing under a pointer at rest. `data-awake` on a card is the pointer's light and has nothing to do with the blank.
+- **The one design call in it, Fable's and not ruled:** a card the stream is not on changes at a press by a short plain fade in place, in its row's turn, top down. His words of Nov 13 are why it is not the drop and rise: "when the light's not touching them ... that animation does not play at all". This is Open 21 come back, and he was told so.
+- **The prompt he was given for the same Claude Code session:**
+
+```
+Pull first. Lose nothing: everything not named here stays as it is. BRIEF.md, Open 37, is the ruling.
+
+Switch the sleeping blanks off on the home page. Keep the asset.
+- One constant in src/config/site.ts turns them off everywhere: Work's cards (stepBands in src/stream/stream.ts, and the asleep flags in src/stream/surge.ts) and Contact's plate (src/contact/stage.ts). At every width.
+- Off means every Work card shows its picture and words from the start and never becomes the blank. Contact's plate, title, buttons and form are there from the start. No band, no waking, no going back to sleep.
+- The blank, the knob and the band stay in the code and working. /lab/work-blank still shows them, and ?blanks=1 turns them back on for any page.
+- Nothing else changes: the strikes, the rim flare, the stones, the surge, a card under the pointer, the tap rule, the stone lighting and the rocket launching when the stream lands.
+
+One case comes back: a category pressed while the stream has not reached a card that is on the screen. That card changes in place by a short plain fade, in its row's turn, top down. No drop, no rise, no strike, no flash. Cards the stream is on keep the surge as it is.
+
+Check a production build in real frames at a desktop, a sideways iPad and a phone: a scroll from Work to Contact, and a press with the second row not reached. Then tell me where to look and what the press does now.
+```
+
+- **Also said to him today and not answered, so not rules (15:25, on the final pass's report):**
+    - The navigation is at the bar from the stills. The watch is very dark and may sink into the page at the page's size: he should look at that row live.
+    - The hero's words coming down with the world on tall screens goes against "his words a third of the way down the screen". Fable recommends keeping the change. Not ruled.
+    - Shipping over the memory rule on an iPad held sideways goes against "nothing ships over the budgets", and Fable recommends against it: his iPad holding does not prove an older one will, and the report's own numbers (about 2000 MB at Skills, the desk as a picture saving about 700) do not bring it under 1000. Fable's proposal: on a sideways iPad the desk as two pictures, dark and lit, crossfaded when the stream lands, then the three row things as pictures if Skills is still over, with the world, the stream and the rocket kept live, all of it measured with `npm run mem`. He was given a prompt for that. Whether he sent it is not known here.
+    - His list before launch, as given to him: the form, About's two tabs, Games, 3D art and Photography as real projects or cut, the domain and then indexing, the stand in words, the Calendly link, the favicon and the share picture. The Work screenshots can follow.
+
 ## 2026-11-20 · The final pass (Fable, Claude Code)
 
 **Kept true as it goes. Read it first after any loss of memory.** `BRIEF.md`, Open 36, is the job, and `PLAN.md`, "The final pass", its list.

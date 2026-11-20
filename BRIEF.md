@@ -650,6 +650,7 @@ One round in Claude Code, on `/lab/work`. It takes in everything he has ruled si
 3. **The bolt runs only from the landing on the category bar to the meeting under the button.** Above and below, the path as it was before the bolt (the same, 3). The switch between the two paths, and `?path=now`, come off the page.
 4. **A strike does not color a card's picture** (the same, 4).
 5. **A card is asleep whenever the stream is not on it.** It wakes at the strike and goes back to sleep when the stream draws back above it ("A card sleeps again").
+    - **Switched off on the home page for now, by his word (Nov 20): Open 37.** Items 5 to 8 are set aside while the switch is off. The blank and its band are kept.
 6. **The blank is D · Engine turned,** made in the card's own plate and lit by long lights that stand off the screen ("His pick of a blank").
 7. **The change between asleep and awake is D's:** a band of light that crosses the card with the card behind it, and runs back to put it to sleep.
 8. **On a press, a row the stream has not reached does nothing** ("His reaction to the ideas").
@@ -1939,6 +1940,7 @@ What Claude Code builds, at `/lab/contact`. The wireframe at `/lab/contact-draft
 
 7. **One plate holds all of Contact's content.** It is a real plate of the cards' family (`src/metal/`): the same edge, the same dark face, lit by the same lights, the cursor and the stream.
 8. **Asleep it is the engine turned blank with its knob,** the same as a sleeping card's, at the plate's own size. It is asleep until the stream lands.
+    - **Switched off on the home page for now, by his word (Nov 20): Open 37.** Items 8 to 10 are set aside while the switch is off: the plate, its title, its buttons and its form are there from the start.
 9. **It wakes by the one band of light,** which sets out from its corner nearest the landing. No word, field or button shows ahead of the band. It goes back to sleep by the band when the stream draws back.
 10. **A pointer put on it, or keyboard focus inside it, wakes it,** as on a card. A pointer at rest that the page is scrolled under does not.
 11. **What it holds, in this order:** "Book on Calendly", "Copy my email", a rule that reads "or send a message", the form, and "Boise, Idaho · Mountain Time". The title, Contact, stands over the plate and comes on with it. No line stands beside the title.
@@ -2712,6 +2714,27 @@ Each line has Fable's recommendation where there is one. None of these are rules
         - **A phone and an upright iPad have each row's thing as a picture,** and a browser with no WebGL gets a plain, whole page (`?plain=1` shows it).
         - **Memory in Safari's engine: a phone and an upright iPad are inside the rule now, and an iPad held sideways is not.** `LOG.md`, top entry, has the table. On a sideways iPad the home page holds about 1200 MB loaded and 1600 to 1770 at its foot where it held 1560 and over 2000, against a rule of about 1000. It cannot come inside the rule at Skills while the desk and the five small pieces are live. What would bring it there is his to say, each with what it costs to look at: the desk as its picture on an iPad held sideways, the pad as its picture, the sky drawn once (`HANDHELD.sky`, off). Nothing he approved was taken off an iPad without his word.
         - **One call that goes against a settled line, his to keep or reverse.** "His words a third of the way down the screen" (Settled, Hero, the layout). On a screen much taller than the board is wide (4K, where the board stops at 2400 px, and an upright screen laid out wide, as his iPad's Safari does) that line left 600 to 850 px of empty sky between his words and the city. There his words now come down with the world. No laptop, 1080p screen or sideways iPad is changed. `?words=third` shows the rule kept.
+37. **The sleeping blanks come off the home page, and are kept (Nov 20, 15:39). His word.** "As much as I hate to do this, I think I want to remove the placeholder cards that are on top of the work projects and the contact form from the landing page. I feel like they're just not needed. I wanna keep that asset as I may want to use it in the future but for now I want to disable it."
+    - **In exact terms (Fable's reading, put to him the same minute, his to correct):**
+        - "The placeholder cards" are the engine turned blank with its knob: what a Work card is while the stream is not on it, and what Contact's plate is until the stream lands on the stone.
+        - Now: on the home page a Work card is the blank until the stream strikes it, or a pointer or keyboard focus is put on it, and it goes back to the blank when the stream draws back above it. Contact's plate, with its title, buttons and form, is the blank until the stream lands.
+        - To be: on the home page, at every width, every Work card shows its picture and its words from the start and never becomes the blank. Contact's plate, its title, its buttons and its form are there from the start. No band of light, no waking, no going back to sleep.
+        - Kept: the blank, its knob and the band of light stay in the code and working, behind one switch. `/lab/work-blank` still shows them, and `?blanks=1` turns them back on for a look at any page. Nothing of them is deleted.
+    - **What this sets aside while the switch is off. Set aside, not dropped: each stands again the moment he turns the blanks back on.**
+        - The stream, "The fourth pass", items 5 to 8: "A card is asleep whenever the stream is not on it", the blank as what a sleeping card is, the band as the change between asleep and awake, and "On a press, a row the stream has not reached does nothing". With them, "A card sleeps again", "A sleeping card is a blank", "The band, mended" and the rules for a pointer or keyboard focus waking a card.
+        - Contact, "Contact, the first build", items 8 to 10 ("Asleep it is the engine turned blank with its knob", "It wakes by the one band of light", "A pointer put on it, or keyboard focus inside it, wakes it"), and "The plate wakes when the stream lands on the pool under the rocket".
+        - The tests for the blank and the band in `QUALITY.md` are for the blanks switched on.
+    - **What stands again as first written:** "A card is always readable. The stream's strike lights it and never hides it" (Cards and buttons), and `QUALITY.md`'s "The card is never dark waiting for the stream". The Nov 13 change of that line to "readable once the stream has reached it" holds only with the blanks on.
+    - **What does not change:**
+        - The stream still strikes every card it reaches: the rim flares, shards are thrown, and the picture is left as it was. The stones, the rail, the button and the surge are as they are.
+        - A card under the pointer still lights, turns and grows as he picked, and on a touch screen larger than a phone a first tap still lights a card and a second opens it.
+        - In Contact the stone still lights when the stream lands, the rocket still launches, and the screen is still seated for the landing.
+        - Skills and About still come onto the page with the stream. He did not name them.
+    - **One thing comes back with it, said to him.** The blanks were the answer to Open 21: a category pressed while the stream has not reached the second row, with those two cards on the screen (his words then: "looks horrible", and "when the light's not touching them ... that animation does not play at all"). With the blanks off those cards are awake and have to change with the stream not on them.
+        - **Fable's call, his to overturn, and it goes against "On a press, a row the stream has not reached does nothing":** a card the stream is not on changes in place by a short plain fade, in its row's turn, top down. No drop, no rise, no strike, no flash, so the surge's animation still never plays where the light is not touching. Cards the stream is on keep the surge exactly as it is.
+        - It is motion, so it is judged on his Mac. He rules on it once he has pressed the bar with the second row not reached.
+    - **Fable's view, said to him:** it is the right call for a page whose job is to show his work, since every project and the form are seen at once by someone who scrolls fast or lands part way down. What it costs is the wake as a moment, and the press case above.
+    - **Not built.** The prompt for Claude Code is in `LOG.md`, Nov 20, "The blanks come off the home page".
 
 ## Dropped
 
