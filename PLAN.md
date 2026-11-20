@@ -25,6 +25,7 @@ Testing and polish, in a fresh Claude Code session, from the prompt in `LOG.md`,
 - [~] Where more of the hero's debris belongs: added on the page that is not there and under a narrow hero, held back in six places, each with its reason
 - [~] Speed and memory measured on a production build in Chromium and WebKit: `LOG.md`, top entry
 - [~] "Ready to deploy: what is left", below, gone through against today's code, and one short list handed to him of what only he can do
+- [ ] The sleeping blanks switched off on the home page and kept behind one switch: Work's cards and Contact's plate show their content from the start (his word, Nov 20, 15:39: `BRIEF.md`, Open 37). Not built: the prompt is in `LOG.md`, Nov 20, "The blanks come off the home page". His to rule on once built: what a press does to a card the stream has not reached
 - **His alone, as he sees it:** hooking up the contact form, and the Work projects' real screenshots and content
 
 ### The finishing pass (his word, Nov 18: `BRIEF.md`, Open 35)
