@@ -2,6 +2,37 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-21 · The web chat's read of the sideways iPad report. Nothing ruled (Fable, web chat)
+
+**The figures and where the build stands are in the next entry down. This one is only what he was told and what waits on him.**
+
+- **What happened (11:59):** he pasted Claude Code's report: what he ordered for an iPad held sideways is built, measured, and not inside the rule, with four options and a recommendation of option 2. He gave no ruling with it.
+- **Checked here:** the report's figures against the entry below, and the two stills (`reference/studies/74-*`). The desk as two pictures and the rows as pictures read as the live ones do.
+- **What the web chat told him:**
+    - The rule's number is not a limit. It is what Work alone held on his iPad Pro without the page ending (`LOG.md`, Nov 15: "The limit on his iPad is not known"). Nobody has measured a real older iPad.
+    - The oldest and smallest iPads are under 1100 px wide either way up, so they always get the narrow layout, and that layout holds about 1300 at its most. A sideways iPad under 1000 would not make those safe. One line should cover both layouts.
+    - Option 4 costs the launch and still leaves the narrow layout at 1300.
+- **The recommendation, which goes against two of his lines and was said so in bold ("Nothing ships over the memory rule on an iPad held sideways", and "Keep the world live"):**
+    1. An iPad laid out wide: option 2. The world and About's two things as pictures, the sky, the stream and the rocket live. He sees the world's picture before it is the default.
+    2. An iPad laid out narrow: brought to the same line, about 1150, by letting far cards go sooner, only if a fast flick through Work holds up in real frames.
+    3. A net: a page that Safari ended while it was on the screen comes back as the plain page (`?plain=1`, already built) and stays plain on that device. Not proven. The idea: a mark kept fresh while the page is on the screen, cleared when it is hidden or left, and found fresh at the next load only when the page died.
+    4. `?live=1`, remembered on the device, shows an iPad everything live as it was before the pictures. For his own iPad, whose Safari lays the page out wide either way. The net still applies.
+- **Also said:** cutting the category bar to Software would leave Work holding 4 cards and not 16, which would bring both iPads down further. Not measured. That choice is still his.
+- **The prompt he was given for the same Claude Code session:**
+
+```
+Option 2, plus a net, the same line for an upright iPad, and a switch for my own iPad. Write it into BRIEF.md as my ruling: an iPad holds about 1150 at most on the way down, with the net under it. That replaces "nothing ships over the memory rule" for iPads. A phone and a desktop stay as they are.
+
+1. An iPad laid out wide: the world and About's two things as pictures. The sky, the stream and the rocket stay live. Build the world's picture properly, with the stream still leaving the core and debris that moves, and show it to me before it is the default.
+2. An iPad laid out narrow: bring the most it holds down to the same line by letting far cards go sooner. Look at a fast flick through Work in real frames first. If a card can be seen being made, stop and tell me.
+3. The net: if Safari ends the page while it is on the screen, it comes back as the plain page (?plain=1) and stays plain on that device. Prove it in Safari on this Mac by killing the page's process.
+4. ?live=1, remembered on the device, shows an iPad everything live as it was before the pictures. It is for my own iPad. The net still applies to it.
+
+Measure both layouts on a production build with npm run mem, --profile and --walk, and give me loaded, most and foot.
+```
+
+- **Still unsent:** the prompt for the blanks (Open 37, two entries down).
+
 ## 2026-11-20 · After the pass's report: nothing ships over the memory rule on a sideways iPad (Fable, Claude Code)
 
 **Built as he gave it, measured, and not inside the rule. It waits on him.** `BRIEF.md`, Open 36, last bullets, is the ruling and where it stands.
