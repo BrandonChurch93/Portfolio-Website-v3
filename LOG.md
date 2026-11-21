@@ -2,6 +2,20 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-21 · His note on the navigation's rule at the top of the hero (Fable, web chat)
+
+- **What he said (14:26):** at the top of the home page the copper rule under the navigation is too close to the hero, to the moon and to his words on a 1080p screen. He likes the rule and its light. He left open whether it goes on every screen or shows only where there is room. His words are in `BRIEF.md`, Open 36, under the navigation.
+- **He had not yet sent the prompt in the entry below.** This one replaces it and adds the rule.
+- **Fable's recommendation, not ruled until he sends it:** no rule at the top of the home page on any screen. It shows as now once the navigation comes back part way down, and on every other page. In `SiteNav.tsx` that is the `top` state on the home page.
+- **The prompt he was given for the same Claude Code session:**
+
+```
+The world's picture: yes. Make it the default on an iPad laid out wide.
+The second row's fade is right.
+An iPad laid out narrow: turn the gentler way on and leave the rest to the net. Write it into BRIEF.md as my ruling: a narrow iPad holds about 1220 for a moment.
+The navigation: at the top of the home page, do not show the copper rule, on any screen. It is too close to the moon and to my words on 1080p. Keep it as it is once the navigation comes back part way down, and on every other page.
+```
+
 ## 2026-11-21 · His verdict: the world's picture and the second row's fade (Fable, web chat)
 
 **The build and every figure are in the next entry down.**
