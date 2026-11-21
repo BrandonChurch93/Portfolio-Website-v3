@@ -2,6 +2,39 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-21 · His note on the navigation's rule at the top of the hero (Fable, web chat)
+
+- **What he said (14:26):** at the top of the home page the copper rule under the navigation is too close to the hero, to the moon and to his words on a 1080p screen. He likes the rule and its light. He left open whether it goes on every screen or shows only where there is room. His words are in `BRIEF.md`, Open 36, under the navigation.
+- **He had not yet sent the prompt in the entry below.** This one replaces it and adds the rule.
+- **Fable's recommendation, not ruled until he sends it:** no rule at the top of the home page on any screen. It shows as now once the navigation comes back part way down, and on every other page. In `SiteNav.tsx` that is the `top` state on the home page.
+- **The prompt he was given for the same Claude Code session:**
+
+```
+The world's picture: yes. Make it the default on an iPad laid out wide.
+The second row's fade is right.
+An iPad laid out narrow: turn the gentler way on and leave the rest to the net. Write it into BRIEF.md as my ruling: a narrow iPad holds about 1220 for a moment.
+The navigation: at the top of the home page, do not show the copper rule, on any screen. It is too close to the moon and to my words on 1080p. Keep it as it is once the navigation comes back part way down, and on every other page.
+```
+
+## 2026-11-21 · His verdict: the world's picture and the second row's fade (Fable, web chat)
+
+**The build and every figure are in the next entry down.**
+
+- **What he said (13:45), with Claude Code's report pasted:** "I did the testing on my end and honestly everything looks great to me."
+- **Read as, and put to him:** yes to the world's picture, and the second row's fade is right. Both are in `BRIEF.md` (Open 36, under "Built (Nov 21, Claude Code)", and Open 37), and `PLAN.md`'s box for the blanks is ticked.
+- **Checked here:** `reference/studies/75-the-hero-world-live-and-as-pictures.jpg`. In a still the pictures and the live world cannot be told apart.
+- **Not done:** the world's picture is still behind `?world=picture`. Making it the default on an iPad laid out wide is Claude Code's.
+- **Not ruled: an iPad laid out narrow** (1318 to 1338 at the most, the line is about 1150). The web chat agreed with Claude Code's recommendation and said in bold that it goes against "an iPad holds about 1150 at most": the gentler way on, about 1220 for a moment, with the net under it. What it costs: a press followed at once by a fast flick shows a quarter of a card unmade for three or four frames.
+- **The prompt he was given for the same Claude Code session:**
+
+```
+The world's picture: yes. Make it the default on an iPad laid out wide.
+The second row's fade is right.
+An iPad laid out narrow: turn the gentler way on and leave the rest to the net. Write it into BRIEF.md as my ruling: a narrow iPad holds about 1220 for a moment.
+```
+
+- **Still his before launch:** the form, About's two tabs, Games, 3D art and Photography as real projects or cut, the domain and then indexing, the stand in words, the Calendly link, the favicon and the share picture. The Work screenshots can follow.
+
 ## 2026-11-21 · An iPad at about 1150 with a net under it, and the blanks switched off (Fable, Claude Code)
 
 **His ruling of Nov 21 is built. Two parts of it wait on him: the world's picture, which he has to see, and an iPad laid out narrow, which is not at the line.** `BRIEF.md`, Open 36 (the last bullets) and Open 37, have the rulings and where each stands.
