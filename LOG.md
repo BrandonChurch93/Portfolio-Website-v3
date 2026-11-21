@@ -2,6 +2,63 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-21 · An iPad at about 1150 with a net under it, and the blanks switched off (Fable, Claude Code)
+
+**His ruling of Nov 21 is built. Two parts of it wait on him: the world's picture, which he has to see, and an iPad laid out narrow, which is not at the line.** `BRIEF.md`, Open 36 (the last bullets) and Open 37, have the rulings and where each stands.
+
+- **What he said:** "Option 2, plus a net, the same line for an upright iPad, and a switch for my own iPad." "An iPad holds about 1150 at most on the way down, with the net under it. That replaces 'nothing ships over the memory rule' for iPads. A phone and a desktop stay as they are." Then, while it was being built: switch the sleeping blanks off on the home page (Open 37), keep the blank behind one switch, and show him the category press with the second row not reached.
+
+**1. The world as pictures (`src/hero/picture/`, `npm run picture`). Built, behind `?world=picture`, not the default.**
+- The planet is one picture on a clear ground (`public/media/world/planet.webp`, 2920 by 3040, 468 KB). What broke away is cut into 91 groups (a family, or a slab of one by depth), each at rest, with and without the stream's light, as 742 cuts packed onto two pages (570 KB together) with `layers.json`. The first visit to the hero fetches about 1.1 MB where the live world fetches about 20.
+- Each group drifts as the live family does, by the live shader's own numbers (`drift.ts`): a great piece rises, slides and rocks, its ring swings round it, a clump slides, an arm swings round the stream, the dust turns. The 118 chips fall down the stream each on its own run. Sixteen shards ride the neck of light and go round the back of it.
+- The stream's light: everything it changes is there twice, and the lit copy is under a cover whose foot is the stream's leading end. Only two transforms change as the stream runs, so nothing is painted again.
+- **What it cost to get right, for the next one:**
+    - Taken on the lab page the pieces are wherever the clock has them, so the shader got a switch that holds every piece where it rests (`uDrift`, 1 on the page).
+    - A piece that hangs behind the neck of light showed as a dark knot on it: the neck is its own cut now, laid over what is behind it and under what is in front.
+    - The shards riding the neck were frozen on it: they are their own cuts, moved as the live ones move.
+    - **In Safari's engine the pictures drew slower than the live world, 24 ms a frame at rest against 17.** Not the pictures: the cursor light's place was written onto the page's root as two CSS variables in every frame, which made WebKit style every element of the page again, and the pictures are about two thousand elements. Only the navigation reads those variables, so the navigation writes them onto itself now (`SiteNav.tsx`). At rest 17 ms, as the live world. This mend speeds every page.
+- **Judged by Fable:** beside the live world in stills and in real frames 12 seconds apart it is the same picture and the same drift (`reference/studies/75-*`). What it lacks: no piece tumbles, the core's grain does not turn, the neck's own surges of light do not run, and the cursor's glint is gone (an iPad has no cursor). The hand over from the neck to the page's stream is a still fan of strands where the live one shifts: under the stream's own light it is hard to find.
+- **A scroll, top to foot, WebKit as a sideways iPad, 600 px a second:** frames over 33 ms 8 and 10 with the pictures, 5 and 6 with the world live. The worst 90 to 136 ms against 90 to 100.
+
+**2. About's two things as pictures on an iPad laid out wide.** On by default (`HANDHELD.pictures`). Each is two pictures, with the stream on it and without (`reflector-still.webp`, `studio-still.webp` and their `-dark-` twins), and the lit one comes up as the stream comes onto it. The reflector no longer nods.
+
+**3. The net (`src/world/device.ts`, `NET` in `src/config/site.ts`).** A handheld's page writes the time into its tab's `sessionStorage` every two seconds while it is on the screen and takes it away when it is hidden or left. A load that finds a mark under 30 seconds old knows the page before it was ended: it writes `site:plain` into `localStorage` and comes back plain. `?plain=0` or `?live=1` lets the device go.
+- **Proved in Safari on his Mac** by an Opus agent, read from a logging proxy in front of the production build (`?handheld=1`, since the net is under a handheld only). The page's process (2579, the new one holding 600 MB) was ended at 20:05:58. Safari asked for the page again at 20:05:58.990 and showed "This webpage was reloaded because a problem occurred". That load asked for no file of the live world. The next load was plain too, and so was a new tab. `&plain=0` was live again, and so was the load after it.
+- Not proved: an iPad's own Safari. The mechanism is the same engine and the same storage.
+
+**4. `?live=1`**, remembered until `?live=0`: `pictured()` is false for every piece on that device. For his own iPad.
+
+**5. An iPad laid out narrow: not changed. He asked to be told if a card could be seen being made, and one can.**
+- The test (`shots/final/tools/flick.mjs`, WebKit as an upright iPad): the page is thrown through Work as a finger throws it (a speed that falls by 0.998 a millisecond), down, down, up, up, down, and every frame reads each showing card's place and whether its plate holds anything.
+- With every far plate let go from 0.75 of a screen (`?plates=0.75`): on a flick back through Work a card is on the screen with only its words for 0.14 seconds at 9000 px a second and 0.3 to 0.4 at 15000. Before the mend below it was 1.3 seconds.
+- **The mend, which is on:** at today's distance a fast flick already showed it, for up to half a second, because the twelve cards that are put away were remade ahead of the four that show. What shows is made first now (`waited` in `src/metal/renderer.ts`). At 9000 px a second no card is seen unmade. At 15000 one is for 0.12 to 0.15 seconds.
+- A gentler way, built and left off (`?put=0.25`): only the cards that are put away are let go sooner. No showing card is made late in a flick. A press followed within a tenth of a second by a flick shows a quarter of a card unmade for three or four frames.
+- **Neither reaches the line.** The most a narrow iPad holds: 1318 and 1338 as it is, 1188 and 1197 with `?plates=0.75`, 1211 and 1232 with `?put=0.25`, 1245 with `?put=0.75`, 1187 with both. The moment is four screens down, where the foot of Work and Contact's plates are both within reach.
+
+**The figures.** A production build, WebKit on this Mac, GPU, MB. Raw runs: `shots/final/mem2/`.
+
+| | Loaded | The most on the way down | Foot | After leaving |
+|---|---|---|---|---|
+| A wide iPad, the world as pictures (`?world=picture`) | 693 to 771 | 1148, 1154, 1173 | 1146 to 1194 | 332, 345 |
+| A wide iPad as it ships (the world live) | 1170 to 1308 | 1585, 1592 | 1396 to 1464 | 640 |
+| A wide iPad with `?live=1` | 1167 | 2181 | 1749 | |
+| A narrow iPad | 644 to 676 | 1318, 1338 | 940 to 981 | 308 |
+| A phone | 502 | 858 | 813 | |
+
+- With the world as pictures the most is at the foot, in Contact: the launch pad, the stream and the plates. The pictures add about 10 at the foot and 60 to 90 at the load over one plain still.
+
+**6. The blanks are off (Open 37).** Built by an Opus builder in its own worktree from the web chat's prompt (branch `blanks-off`, commit `fb7d644`), read by Fable and applied here as a patch.
+- `BLANKS` in `src/config/site.ts`, `blanksOn()` in `src/metal/wake.ts` (`?blanks=1`). `stepBands` sleeps no card, Contact's `wake.across` is held at 1.
+- A card the stream is not on changes at a press by a crossfade in place in its row's turn (`STREAM.change.fade`, `turn` in `mountSwap`). The builder's first timing faded the old card out before the new came in and left the place empty for a tenth of a second: the two overlap now.
+- Its checks, each in real frames on a production build in Chromium: a scroll from Work to Contact at a desktop, a sideways iPad and a phone, a press with the second row not reached, a press with both reached (the same frames as with `?blanks=1`), `/lab/work-blank` unchanged, a held frame the same twice, reduced motion and a narrow screen. Fable walked the final build in WebKit as a sideways iPad, an upright iPad and a phone, and in Chromium as a desktop: no blank anywhere, Contact's plate there from the start.
+- **For him to judge:** `reference/studies/76-a-press-with-the-second-row-not-reached.jpg`. Where the surge's front catches the stream's leading end beside the second row the end bursts, as before. He may read that as the surge touching the row.
+
+**Where it stands.**
+- Pushed: everything above. A wide iPad draws the world live until he says yes to the picture.
+- **His to do:** open the home page with `?world=picture` on his iPad and say yes or no. Press a category with the second row not reached and say whether the fade is right. Rule on an iPad laid out narrow.
+- **Fable's recommendation for a narrow iPad, which goes against "bring the most it holds down to the same line":** leave it at about 1320 for a moment, under the net, with `?put=0.25` turned on (about 1220). Reaching 1150 there needs something that shows: cards seen being made, or fewer cards in Work.
+- Scratch tools, not committed: `shots/final/tools/flick.mjs`, `press.mjs`, `restperf.mjs`, `scrollperf.mjs`, `tour.mjs`, `burst.mjs`, `membatch5.sh`.
+
 ## 2026-11-21 · The web chat's read of the sideways iPad report. Nothing ruled (Fable, web chat)
 
 **The figures and where the build stands are in the next entry down. This one is only what he was told and what waits on him.**
