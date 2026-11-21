@@ -2,6 +2,22 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-21 · The web chat's read of the four rulings as built. Nothing ruled (Fable, web chat)
+
+**The build and its figures are in the next entry down.**
+
+- **What happened (15:37):** he pasted Claude Code's report: the world's picture is the default on an iPad laid out wide, the second row's fade is recorded, the gentler way is on for an iPad laid out narrow, and the rule is gone from the top of the home page. He gave no ruling with it.
+- **Checked here:** `reference/studies/78-the-navigation-with-no-rule-at-the-top-of-the-home-page.jpg`. At the top of the home page the navigation is his name and the link with nothing under them, and the rule is back on the band and on All work.
+- **The one open point:** an iPad laid out narrow measures 1211 to 1270 at the most over seven runs, against his line of about 1220. A stricter setting measures 1196 and 1198 and is not flick tested.
+- **The web chat's recommendation, said in bold as going against "a narrow iPad holds about 1220 for a moment":** keep it as it is and make the line about 1250. The runs spread by 60, so a line set to within 30 was never something the measure could hold. The net is proved. The stricter setting buys about 50 for a new chance of a card seen unmade.
+- **Also recommended:** keep the short lit line under his name or the link while the pointer is on it at the top of the home page.
+- **The prompt he was given:**
+
+```
+A narrow iPad: keep it as it is. Write it into BRIEF.md as my ruling: about 1250 for a moment, with the net under it. That replaces about 1220.
+Keep the lit line under my name and the link at the top.
+```
+
 ## 2026-11-21 · His four rulings built: the world's picture the default, a narrow iPad, the navigation's rule (Fable, Claude Code)
 
 **Built, measured and pushed. One thing was said to him plainly: a narrow iPad measures about 1250 for a moment, not 1220.** `BRIEF.md`, Open 36 and 37, have the rulings.
