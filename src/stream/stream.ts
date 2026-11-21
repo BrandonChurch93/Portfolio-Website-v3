@@ -3,7 +3,7 @@ import { lamp } from '../lamp/lamp';
 import { signedDistance } from '../metal/edt';
 import { CARD } from '../metal/mask';
 import { plates } from '../metal/renderer';
-import { advance, asleep, band, edge, veil, VEILED, type Band, type Start } from '../metal/wake';
+import { advance, asleep, band, blanksOn, edge, veil, VEILED, type Band, type Start } from '../metal/wake';
 import { clock } from '../world/clock';
 import { handheld, webgl } from '../world/device';
 import { tiers } from '../world/tier';
@@ -481,15 +481,16 @@ export function mountStream(host: HTMLElement, opts: Options): StreamHandle {
   // wears it, and so does every card that is put away, so one that comes back is already as its place is.
   let bands: Band[] = [];
   let sleeping = false;
+  const blanks = blanksOn();
 
   // A card is asleep whenever the stream is not on it: a blank, with nothing the card holds on it. The change
   // between the two is a band of light that crosses the card with the dial ahead of it and the card behind.
   // It sets out from where the stream strikes the card, and runs back the way it came when the stream draws
   // back above it. On a card the stream is not on, a pointer that is put on it or keyboard focus wakes it by the
   // same band, from where the pointer came onto it. Only where the stream strikes the cards: with reduced motion
-  // no card sleeps, nor does one the stream has no room to strike.
+  // no card sleeps, nor does one the stream has no room to strike, nor any with the blanks off (blanksOn).
   const stepBands = (showing: Card[]) => {
-    const can = !!sim && !still && ((!!sides[0] && !!sides[1]) || cards.some((c) => c.landings.length > 0));
+    const can = blanks && !!sim && !still && ((!!sides[0] && !!sides[1]) || cards.some((c) => c.landings.length > 0));
     if (!can || !table[0]) { sleeping = false; return; }
     if (bands.length !== table[0].length) { bands = table[0].map(() => asleep()); sleeping = false; }
     const frozen = clock.isFrozen();

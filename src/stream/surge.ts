@@ -1,5 +1,6 @@
 import { registry } from '../hooks/registry';
 import { plates } from '../metal/renderer';
+import { blanksOn } from '../metal/wake';
 import { clock } from '../world/clock';
 import { STREAM } from './config';
 
@@ -24,7 +25,8 @@ export interface Stops {
   // Whether the stream has reached the bar, which is where a surge starts. If it has not, nothing plays.
   reached: () => boolean;
   // Whether the stream is on the card in a place. Where it is not, the card is asleep, a blank like every other,
-  // and a press changes what it will be with nothing to see.
+  // and a press changes what it will be with nothing to see. With the blanks off it is showing, and changes in
+  // place by a plain fade in its row's turn (C.fade).
   on: (place: number) => boolean;
 }
 
@@ -60,7 +62,7 @@ export interface State {
 }
 
 interface Press { t: number; cat: number; surge: boolean; asleep: boolean[] }
-interface Change { at: number; from: number; to: number; quiet: boolean; unseen: boolean; via: { until: number; to: number }[] }
+interface Change { at: number; from: number; to: number; quiet: boolean; unseen: boolean; fade: boolean; via: { until: number; to: number }[] }
 
 export interface SwapParts {
   bar: HTMLElement;
@@ -87,7 +89,7 @@ export interface Swap {
 const smooth = (k: number) => { const q = Math.max(0, Math.min(1, k)); return q * q * (3 - 2 * q); };
 
 export function mountSwap(parts: SwapParts, first = 0): Swap {
-  const places = parts.cards[0].length, still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const places = parts.cards[0].length, still = matchMedia('(prefers-reduced-motion: reduce)').matches, blanks = blanksOn();
   let base = first;
   let presses: Press[] = [];
   let stops: Stops | null = null;
@@ -107,18 +109,27 @@ export function mountSwap(parts: SwapParts, first = 0): Swap {
     const T = C.length;
     changes = Array.from({ length: places }, () => []);
     fronts = []; struck = []; stones = [[], []]; mets = []; knocks = [];
-    const arrive: { t: number; slot: number; quiet: boolean; only?: boolean; unseen?: boolean }[] = [];
+    const arrive: { t: number; slot: number; quiet: boolean; only?: boolean; unseen?: boolean; fade?: boolean }[] = [];
     presses.forEach((p, n) => {
       // A later press cuts in: what an earlier surge had not reached yet is left to the new one, which takes every
       // card from the top again and in order, and the earlier front dies where it is.
       const cut = n + 1 < presses.length ? presses[n + 1].t : Infinity;
+      // When the surge reaches a place's row, timed by the two sides' mean: the two sides are not the same length,
+      // and a row's two cards still go together.
+      const turn = (slot: number) => p.t + T * (stops ? (stops.at[0][slot < 2 ? 0 : 2] + stops.at[1][slot < 2 ? 0 : 2]) / 2 : 0);
+      // With the blanks off, a card the stream is not on is showing: it fades in place in its row's turn, with no
+      // drop, no rise and no strike, whether a surge runs or not.
+      const fades = (slot: number) => !blanks && !!stops && !still && p.asleep[slot];
       if (!p.surge || !stops || still) {
-        for (let slot = 0; slot < places; slot++) arrive.push({ t: p.t, slot, quiet: true, unseen: p.asleep[slot] });
+        for (let slot = 0; slot < places; slot++) {
+          if (!fades(slot)) arrive.push({ t: p.t, slot, quiet: true, unseen: p.asleep[slot] });
+          else if (turn(slot) < cut) arrive.push({ t: turn(slot), slot, quiet: true, fade: true });
+        }
         return;
       }
       knocks.push(p.t);
       // The press itself lets nothing go. But a card on its way in that cannot be seen yet becomes the newest at once.
-      for (let slot = 0; slot < places; slot++) arrive.push(p.asleep[slot] ? { t: p.t, slot, quiet: true, unseen: true } : { t: p.t, slot, quiet: false, only: true });
+      for (let slot = 0; slot < places; slot++) arrive.push(p.asleep[slot] && blanks ? { t: p.t, slot, quiet: true, unseen: true } : { t: p.t, slot, quiet: false, only: true });
       // Both sides start at the press, each from where it rests on the bar, so the two cards of a row let go
       // together and the two fronts reach the meeting together.
       for (let side = 0; side < 2; side++) {
@@ -126,11 +137,12 @@ export function mountSwap(parts: SwapParts, first = 0): Swap {
         fronts.push({ side, t0, cut });
         const strike = (t: number, stop: Stop, hard: number, loose: number): void => { if (t < cut) struck.push({ t, stop, side, hard, loose }); };
         strike(t0, 'bar', C.knock, C.loose);
-        // The two sides are not the same length, and a row's two cards still go together: each row is timed by the
-        // two sides' mean.
-        const both = stops.at, row = (n: number) => (both[0][n] + both[1][n]) / 2;
         // A card the stream is not on is a blank, and stays one: it does not drop, nothing rises and nothing strikes.
-        for (const [t, slot] of [[t0 + T * row(0), side], [t0 + T * row(2), 2 + side]]) if (t < cut && !p.asleep[slot]) arrive.push({ t, slot, quiet: false });
+        for (const slot of [side, 2 + side]) {
+          const t = turn(slot);
+          if (t < cut && !p.asleep[slot]) arrive.push({ t, slot, quiet: false });
+          else if (t < cut && fades(slot)) arrive.push({ t, slot, quiet: true, fade: true });
+        }
         if (t0 + T * at[1] < cut) stones[side].push(t0 + T * at[1]);
         strike(t0 + T * at[1], 'stone', C.hard[2], 1);
         strike(t0 + T * at[3], 'rail', C.light, C.loose);
@@ -141,21 +153,23 @@ export function mountSwap(parts: SwapParts, first = 0): Swap {
     arrive.sort((a, b) => a.t - b.t);
     const newest = (t: number) => { let cat = base; for (const p of presses) if (p.t <= t) cat = p.cat; return cat; };
     const seat = still ? 0 : C.seat;
+    // How long a change takes, and how far into it the new card can first be seen.
+    const span = (c: Change) => (c.fade ? C.fade[2] : seat), solid = (c: Change) => (c.fade ? C.fade[1] : solidAt);
     for (let slot = 0; slot < places; slot++) {
       let shown = base, open: Change | null = null;
       for (const e of arrive) {
         if (e.slot !== slot) continue;
-        if (open && e.t >= open.at + seat) { shown = open.to; open = null; }
+        if (open && e.t >= open.at + span(open)) { shown = open.to; open = null; }
         const want = newest(e.t);
         if (want === (open ? open.to : shown)) continue;
         // A press that comes while a card is on its way in does not queue a second change: the card coming in becomes
         // the newest one, and there is still one strike. Once that card can be seen it is not swapped in the air: it
         // seats, and goes again at once.
-        if (open && e.t <= open.at + solidAt) { open.via.push({ until: e.t, to: open.to }); open.to = want; continue; }
+        if (open && e.t <= open.at + solid(open)) { open.via.push({ until: e.t, to: open.to }); open.to = want; continue; }
         if (e.only) continue;
-        const from: number = open ? open.to : shown, when: number = open ? open.at + seat : e.t;
+        const from: number = open ? open.to : shown, when: number = open ? open.at + span(open) : e.t;
         if (open) shown = open.to;
-        open = { at: when, from, to: want, quiet: e.quiet, unseen: !!e.unseen, via: [] };
+        open = { at: when, from, to: want, quiet: e.quiet, unseen: !!e.unseen, fade: !!e.fade, via: [] };
         changes[slot].push(open);
         continue;
       }
@@ -176,7 +190,7 @@ export function mountSwap(parts: SwapParts, first = 0): Swap {
       let c: Change | null = null;
       for (const k of changes[slot]) if (k.at <= t) c = k;
       const u = c ? t - c.at : Infinity;
-      if (!c || u >= C.seat || still || c.unseen) {
+      if (!c || u >= (c.fade ? C.fade[2] : C.seat) || still || c.unseen) {
         z.cards.push({ cat: c ? c.to : base, slot, alpha: 1, dy: 0, leaving: false });
         const v = u - C.seat;
         // Struck, the stream springs off the card and bounces to rest on it: below nothing here means away from the
@@ -187,6 +201,13 @@ export function mountSwap(parts: SwapParts, first = 0): Swap {
       }
       let to = c.to;
       for (const v of c.via) if (t < v.until) { to = v.to; break; }
+      if (c.fade) {
+        const [out, from, whole] = C.fade, shown = u >= from ? smooth((u - from) / (whole - from)) : 0;
+        if (u < out) z.cards.push({ cat: c.from, slot, alpha: 1 - smooth(u / out), dy: 0, leaving: true });
+        if (u >= from) z.cards.push({ cat: to, slot, alpha: shown, dy: 0, leaving: false });
+        z.give.push(0); z.below.push(0); z.shown.push(shown); z.gone.push(Infinity); z.clear.push(0);
+        continue;
+      }
       // The old card drops first and is gone at the end of its fall: faded from the start, it would be a fade in place.
       let below = Infinity, shown = 0, gone = Infinity, faded = 1;
       if (u < C.out) {

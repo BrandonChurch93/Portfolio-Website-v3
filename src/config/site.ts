@@ -119,6 +119,11 @@ export const SETTLE = { frames: 3, timeoutMs: 60000, pictureMs: 15000 } as const
 // Sizes the screenshot scripts use. scripts/shot.mjs keeps its own copy because it runs outside the app.
 export type ViewportName = 'phone' | 'tablet' | 'desktop' | 'wide' | '4k';
 
+// Whether a Work card the stream is not on sleeps as the engine turned blank, and Contact's plate until the stream
+// lands, each woken by a band of light. Off by his ruling of Nov 20 (BRIEF.md, Open 37): the blanks are kept, and
+// ?blanks=1 in a page's address turns them on for that page (blanksOn in src/metal/wake.ts).
+export const BLANKS = false;
+
 // The home page's address.
 export const HOME = '/';
 // Whether the site is on its own domain and may be found by a search engine. Until he says so, no page is indexed

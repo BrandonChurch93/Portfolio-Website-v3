@@ -1,3 +1,5 @@
+import { BLANKS } from '../config/site';
+
 // How a sleeping card changes into an awake one and back: a band of light that crosses the card, with the blank
 // ahead of it and the card behind.
 //
@@ -12,6 +14,9 @@
 //
 // The stream says how far across each band is (src/stream/stream.ts). The card's plate draws the blank, the card
 // and the band's light (./shaders.ts), and the card's words wear a mask that uncovers them behind it.
+
+// Whether the blanks are on for this page: BLANKS, or ?blanks=1 in its address.
+export const blanksOn = (): boolean => BLANKS || (typeof location !== 'undefined' && new URLSearchParams(location.search).get('blanks') === '1');
 
 export const WAKE = {
   // How long a band takes to cross when the stream wakes a card or draws back off it, in seconds.

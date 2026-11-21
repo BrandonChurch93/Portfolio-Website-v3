@@ -21,7 +21,9 @@ const ROWS = [0, 1];
 // surge reaches it, the new one comes up, and the stream strikes it as it seats (src/stream/surge.ts).
 // A card the stream is not on is asleep: a blank, an engine turned dial with none of the card on it (src/metal/dial.ts).
 // A band of light crosses it to wake it when the stream strikes it, and runs back when the stream draws back above it
-// (src/metal/wake.ts). A row the stream is not on does nothing when a category is picked.
+// (src/metal/wake.ts). A row the stream is not on does nothing when a category is picked. All of that only with the
+// blanks on (BLANKS in src/config/site.ts, or ?blanks=1): off, every card shows from the start, and a card the stream
+// is not on changes by a plain fade in its row's turn.
 // Software's cards are the live site's. The cards for the other three categories are stand ins, and the page says
 // so. The category bar's look and the button are stand ins too. ?ui=0 hides the label.
 // On a page with more sections than this one (hub), it lays itself out and hands the hub its things, and the hub

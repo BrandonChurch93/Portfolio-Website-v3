@@ -2,7 +2,7 @@ import { registry } from '../hooks/registry';
 import { lamp } from '../lamp/lamp';
 import { CARD } from '../metal/mask';
 import { plates } from '../metal/renderer';
-import { WAKE, advance, asleep, band, edge, veil, type Band, type Start } from '../metal/wake';
+import { WAKE, advance, asleep, band, blanksOn, edge, veil, type Band, type Start } from '../metal/wake';
 import type { PadPiece } from '../pieces/pad/index';
 import { FILL, HOST, LAUNCH, ROCKET, TABLE, TOWER, burn, climbed } from '../pieces/pad/layout';
 import { STREAM } from '../stream/config';
@@ -59,7 +59,7 @@ export function mountContact(parts: ContactParts, host?: StreamHost): ContactSta
   // comes down faster than it went up.
   const FULL = FILL.run + LAUNCH.end;
   let lit = 0, before = 0, on = false, last = clock.now();
-  const wake: Band = asleep(), wipe = new Float32Array(3);
+  const wake: Band = asleep(), wipe = new Float32Array(3), blanks = blanksOn();
   let size = { hw: 1, hh: 1, unit: 1 }, wore = '', held: number | null = null;
   let pointerOn = false, focusOn = false, entered: Start = [0, 0, -1, 0];
   let keepOff: Box[] = [], k = 1;
@@ -131,6 +131,7 @@ export function mountContact(parts: ContactParts, host?: StreamHost): ContactSta
     // down and the stone has all but gone dark, and its band is back as the stone's last light goes.
     const streamOn = whole || on || lit > WAKE.cross * FILL.back, pointer = pointerOn || focusOn;
     if (held !== null) { wake.across = held; wake.from = struck; }
+    else if (!blanks) { wake.across = 1; wake.from = struck; }
     else if (jump || whole) { wake.across = streamOn || pointer ? 1 : 0; wake.from = struck; wake.stream = true; }
     else advance(wake, streamOn, pointer, struck, entered, dt);
     const awake = wake.across >= 1, burning = awake ? 0 : band(wipe, hw, hh, unit, wake.from, wake.across);

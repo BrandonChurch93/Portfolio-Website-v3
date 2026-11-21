@@ -226,6 +226,10 @@ export const STREAM = {
     out: 0.09,
     in: 0.08,
     seat: 0.18,
+    // With the blanks off, a card the stream is not on changes by a plain fade in place, from its row's turn: the
+    // old card is gone by the first, and the new one comes on from the second and is whole by the third. The two
+    // overlap: one after the other left the place empty for a moment.
+    fade: [0.26, 0.04, 0.3] as [number, number, number],
     drop: 34,
     rise: 40,
     // How the new card gathers speed on its way up (1 is a steady rise), and how long the stream takes to sag once
