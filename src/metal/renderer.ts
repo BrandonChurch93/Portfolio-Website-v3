@@ -1,4 +1,5 @@
-import { HANDHELD, LAMP } from '../config/site';
+import { HANDHELD, LAMP, PHONE_SIDE } from '../config/site';
+import { STILLS_UNDER } from '../config/stills';
 import { registry, stats } from '../hooks/registry';
 import { lamp } from '../lamp/lamp';
 import { clock } from '../world/clock';
@@ -77,7 +78,7 @@ interface Plate extends PlateEntry {
   banded: boolean;
   // Whether it is to be drawn at all. A card that is waiting behind another keeps its bake and is not lit.
   shown: boolean;
-  // Within HANDHELD.plates of the screen, and within ?put of it.
+  // Within HANDHELD.plates of the screen, and within HANDHELD.put of it.
   inFar: boolean;
   inClose: boolean;
   // Far from the screen on a handheld: its relief, its picture and its pixels are let go (HANDHELD.plates).
@@ -158,8 +159,8 @@ class PlateRenderer {
   private io: IntersectionObserver | null = null;
   private ro: ResizeObserver | null = null;
   private far: IntersectionObserver | null = null;
-  // With ?put=0.25, which plates are near enough for one that is put away to keep what it holds (HANDHELD.plates has
-  // why it is only a switch).
+  // On an iPad laid out narrow, which plates are near enough for one that is put away to keep what it holds
+  // (HANDHELD.put).
   private close: IntersectionObserver | null = null;
   private byHost = new Map<Element, Plate>();
   private started = false;
@@ -202,13 +203,13 @@ class PlateRenderer {
         for (const en of entries) { const p = this.byHost.get(en.target); if (p) { p.visible = en.isIntersecting; p.sig = ''; } }
       }, { rootMargin: '300px 0px' });
       // On a handheld a plate far from the screen holds nothing on the GPU, and is baked again as it comes near.
-      const q = new URLSearchParams(location.search), asked = Number(q.get('plates')), put = q.get('put');
+      const q = new URLSearchParams(location.search), asked = Number(q.get('plates')), put = q.get('put'), narrow = innerWidth < STILLS_UNDER && Math.min(screen.width, screen.height) >= PHONE_SIDE;
       if (handheld()) this.far = new IntersectionObserver((entries) => {
         for (const en of entries) { const p = this.byHost.get(en.target); if (p) { p.inFar = en.isIntersecting; this.place(p); } }
       }, { rootMargin: `${(asked > 0 ? asked : HANDHELD.plates) * 100}% 0px` });
-      if (handheld() && put !== null && Number(put) >= 0) this.close = new IntersectionObserver((entries) => {
+      if (handheld() && (put !== null ? Number(put) >= 0 : narrow)) this.close = new IntersectionObserver((entries) => {
         for (const en of entries) { const p = this.byHost.get(en.target); if (p) { p.inClose = en.isIntersecting; this.place(p); } }
-      }, { rootMargin: `${Number(put) * 100}% 0px` });
+      }, { rootMargin: `${(put !== null ? Number(put) : HANDHELD.put) * 100}% 0px` });
       this.ro = new ResizeObserver((entries) => {
         for (const en of entries) { const p = this.byHost.get(en.target); if (p) this.measure(p); }
       });
@@ -466,8 +467,8 @@ class PlateRenderer {
     }).catch(() => undefined));
   }
 
-  // Whether a plate on a handheld holds anything: while it is within HANDHELD.plates of the screen. With ?put, one
-  // that is put away only while it is within that many screens.
+  // Whether a plate on a handheld holds anything: while it is within HANDHELD.plates of the screen. On an iPad laid
+  // out narrow one that is put away only while it is within HANDHELD.put.
   private place(p: Plate): void {
     if (p.inFar && (p.shown || !this.close || p.inClose)) this.near(p); else this.away(p);
   }

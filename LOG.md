@@ -2,6 +2,27 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-21 · His four rulings built: the world's picture the default, a narrow iPad, the navigation's rule (Fable, Claude Code)
+
+**Built, measured and pushed. One thing was said to him plainly: a narrow iPad measures about 1250 for a moment, not 1220.** `BRIEF.md`, Open 36 and 37, have the rulings.
+
+- **What he said:** "The world's picture: yes. Make it the default on an iPad laid out wide." "The second row's fade is right." "An iPad laid out narrow: turn the gentler way on and leave the rest to the net. Write it into BRIEF.md as my ruling: a narrow iPad holds about 1220 for a moment." "The navigation: at the top of the home page, do not show the copper rule, on any screen. It is too close to the moon and to my words on 1080p. Keep it as it is once the navigation comes back part way down, and on every other page."
+- **Built:**
+    - `world` is in `HANDHELD.pictures`: an iPad laid out wide draws the hero's world as its pictures and never fetches the live world's files. `?world=live` shows the live world there, `?live=1` everything live, `?world=picture` the pictures on any device.
+    - `HANDHELD.put` is 0.25 and on for an iPad laid out narrow (a handheld under 1100 px wide whose shorter side is 600 or more): a card that is put away holds nothing unless it is within a quarter of a screen of the screen (`place` in `src/metal/renderer.ts`). A phone and an iPad laid out wide are as they were.
+    - `.nav[data-here='home'][data-state='top'] .rule` has no opacity (`SiteNav.module.css`). The lit line under his name or the link while the pointer or the keyboard is on it is kept.
+- **Checked** on a production build: the rule's opacity read at 1920 by 1080, 1440 by 900 and a phone (0 at the top of the home page, 1 brought back part way down, 0 at the top again, 1 at the top of `/work`), with stills (`reference/studies/78-*`).
+- **The figures as it ships** (production build, WebKit on this Mac, GPU, MB, raw runs in `shots/final/mem3/`):
+
+| | Loaded | The most on the way down | Foot | After leaving |
+|---|---|---|---|---|
+| An iPad laid out wide | 680 to 750 | 1135, 1175 | 1127 to 1170 | 330 |
+| An iPad laid out narrow | 568 to 606 | 1211 to 1270 over seven runs | 958 to 1044 | 329 |
+
+- **A narrow iPad is about 1250, not 1220.** The seven: 1211, 1224, 1232, 1256, 1266, 1269, 1270. The 1220 he was given came from the first two. The moment is four screens down.
+- With the cards that are put away held only while their own place is on the screen (`?put=0`): 1196 and 1198. Not on. It is the same kind of change, a little further.
+- **Not done here:** nothing. The web chat's two entries below hold his words to it and the prompts.
+
 ## 2026-11-21 · His note on the navigation's rule at the top of the hero (Fable, web chat)
 
 - **What he said (14:26):** at the top of the home page the copper rule under the navigation is too close to the hero, to the moon and to his words on a 1080p screen. He likes the rule and its light. He left open whether it goes on every screen or shows only where there is room. His words are in `BRIEF.md`, Open 36, under the navigation.

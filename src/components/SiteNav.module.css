@@ -1,6 +1,7 @@
 /* The head of every page, flush with the top of the screen and as wide as it: his name at the left, one link at the
    right, and under them a rule of copper that dies away to each side, as the foot's does. No box. At the top of a
-   page it has no ground of its own, so the sky or the wall is seen through it. Brought back part way down a page it
+   page it has no ground of its own, so the sky or the wall is seen through it, and at the top of the home page no
+   rule either. Brought back part way down a page it
    stands on a band of the page's ground from edge to edge. The cursor's light pools on the rule, and whatever the
    pointer or the keyboard is on lights the stretch of rule under it. */
 .nav {
@@ -95,6 +96,13 @@
 .rule {
   background: linear-gradient(90deg, transparent, var(--line-strong) 14%, var(--line-strong) 86%, transparent);
   box-shadow: 0 1px 0 color-mix(in srgb, #000 46%, transparent);
+  transition: opacity var(--dur-1) var(--ease-settle);
+}
+
+/* At the top of the home page there is no rule, on any screen: it stood close over the moon and over his words
+   (his ruling of Nov 21). It is there once the navigation is brought back part way down, and on every other page. */
+.nav[data-here='home'][data-state='top'] .rule {
+  opacity: 0;
 }
 
 .rule::after {

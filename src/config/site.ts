@@ -61,14 +61,16 @@ export const HANDHELD = {
   // picture and its pixels, and makes them again as it comes back (src/metal/renderer.ts). Work's sixteen cards held
   // about 300 MB from the first screen on (Nov 20). And a card's picture is held to this many pixels on its longest
   // side: the window it is shown in is about 700 across.
-  // An iPad laid out narrow holds about 1320 MB for a moment four screens down, and his ruling of Nov 21 asked for
-  // far cards let go sooner there if no card could then be seen being made. One can (WebKit as an upright iPad,
-  // Nov 21), so nothing was changed and both ways are switches for him to rule on (BRIEF.md, Open 36):
-  // ?plates=0.75 lets every plate go from nearer (about 1190 MB, and on a fast flick back through Work a card is on
-  // the screen with only its words for 0.15 to 0.4 s). ?put=0.25 lets only the cards that are put away go sooner,
-  // twelve of Work's sixteen (about 1220 MB, and only a press followed within a tenth of a second by a fast flick
-  // shows a quarter of a card unmade for three or four frames).
+  // ?plates=0.75 tries another distance: nearer than this, on a fast flick back through Work a card is on the
+  // screen with only its words for 0.15 to 0.4 s (WebKit as an upright iPad, Nov 21).
   plates: 1.5,
+  // On an iPad laid out narrow a plate that is put away (twelve of Work's sixteen cards at any time) holds its
+  // relief and its picture only while it is within this many screens of the screen. His ruling of Nov 21: that
+  // layout held about 1320 MB for a moment four screens down and holds about 1220 with this, which is its line, with
+  // the net under it. The cards that show are as they were. What it costs: a press followed within a tenth of a
+  // second by a fast flick shows a quarter of a card unmade for three or four frames. ?put=1.5 tries another
+  // distance, on any handheld.
+  put: 0.25,
   photo: 1024,
   // Whether the night sky is drawn once and kept as a picture, its WebGL context let go, with meteors and a few
   // twinkling stars laid over it as plain elements the browser animates (src/hero/sky/alive.ts). Its context held
@@ -77,10 +79,10 @@ export const HANDHELD = {
   sky: 'live' as 'still' | 'live',
   // On an iPad laid out wide these are pictures in place of the live pieces (pictured in src/world/device.ts): the
   // desk dark and lit, crossfaded as its lights come on, the rows' things, each wiped on from its strike, and About's
-  // two things (src/skills/pictures.ts). His rulings of Nov 20 and 21: the page held about 2000 MB at Skills there
-  // with them live. The hero's world (src/hero/picture/) joins them once he has seen its pictures: until then
-  // ?world=picture shows them.
-  pictures: ['desk', 'cpu', 'watch', 'palette', 'reflector', 'studio-light'] as readonly string[],
+  // two things (src/skills/pictures.ts), and the hero's world (src/hero/picture/). His rulings of Nov 20 and 21: the
+  // page held about 2000 MB at Skills there with them live, and with the world live it could not come under 1500.
+  // ?world=live shows the live world there, and ?live=1 every piece live.
+  pictures: ['world', 'desk', 'cpu', 'watch', 'palette', 'reflector', 'studio-light'] as readonly string[],
   // The most pixels of the picture of the hero's city at the screen's own density (src/pieces/world/sharp.ts), a
   // plain 2D canvas of about 9 bytes a pixel in WebKit: an iPad's whole city at two pixels to a CSS pixel.
   sharp: 4e6,

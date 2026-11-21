@@ -93,7 +93,7 @@ export function live(): boolean {
 
 // Whether a piece is shown as a picture where the page is laid out wide: on a handheld, those it is held to
 // (HANDHELD.pictures), unless it has been asked for everything live. ?world=picture shows the hero's world as its
-// pictures on any device, and ?world=live as the live piece.
+// pictures on any device, a desktop too, and ?world=live as the live piece on a handheld.
 export function pictured(name: string): boolean {
   if (typeof window === 'undefined' || !webgl()) return false;
   const asked = name === 'world' ? new URLSearchParams(location.search).get('world') : null;
