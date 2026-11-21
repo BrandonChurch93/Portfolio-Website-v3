@@ -332,6 +332,12 @@ export const build: PartFactory = (ctx) => {
       ballU.uDeep.value.setFromMatrix4(m4.makeRotationFromQuaternion(q.setFromAxisAngle(DEEP.axis, (s.t * DEEP.rate) % (2 * Math.PI))));
     return true;
     },
+    // For the script that takes the world as pictures (scripts/world/picture.mjs): the shards that ride the beam
+    // shown or not, and what it needs of how they ride, in units.
+    tools: {
+      riders(on: boolean) { riders.visible = on; },
+      ride: { ...RIDE, rib: NECK.rib, flare: NECK.flare, body: NECK.body, cut: PAGE.hero.hand[0] / host.host },
+    },
     dispose() { for (const d of [ballG, ballM, rootG, rootM, riderG, riderM]) d.dispose(); },
   };
 };

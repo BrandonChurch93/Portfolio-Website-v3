@@ -4,12 +4,12 @@ import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEv
 import { ABOUT_TABS, COMPETENCIES } from '../../skills-about/content';
 import { ABOUT, BOARD, SKILLS, throwLine } from '../../skills/plan';
 import type { DeskPiece } from '../../pieces/desk/index';
-import type { DeskLike, ThingLike } from '../../skills/pictures';
+import type { DeskLike, PropLike, ThingLike } from '../../skills/pictures';
 import type { SkillsStage } from '../../skills/stage';
 import { HANDHELD } from '../../config/site';
 import { STILLS } from '../../config/stills';
 import type { Piece } from '../../world/piece';
-import { handheld, webgl } from '../../world/device';
+import { pictured as asPicture, webgl } from '../../world/device';
 import { WAYS, type StruckPiece, type Way } from '../../world/struck';
 import { PieceView } from '../PieceView';
 import { Still, kept } from '../Still';
@@ -73,8 +73,9 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
   const id = useId().replace(/:/g, '');
   const page = useRef<HTMLElement>(null), board = useRef<HTMLDivElement>(null), skills = useRef<HTMLElement>(null), about = useRef<HTMLElement>(null);
   const stage = useRef<SkillsStage | null>(null);
-  const pieces = useRef<{ things: (ThingLike | null)[]; reflector: StruckPiece | null; light: StruckPiece | null; desk: DeskLike | null }>({ things: [null, null, null], reflector: null, light: null, desk: null });
+  const pieces = useRef<{ things: (ThingLike | null)[]; reflector: PropLike | null; light: PropLike | null; desk: DeskLike | null }>({ things: [null, null, null], reflector: null, light: null, desk: null });
   const dark = useRef<HTMLImageElement>(null), bright = useRef<HTMLImageElement>(null), thingPics = useRef<(HTMLImageElement | null)[]>([null, null, null]);
+  const faceLit = useRef<HTMLImageElement>(null), lampLit = useRef<HTMLImageElement>(null);
   const [ui, setUi] = useState(!hub);
   const [way, setWay] = useState<Way>('shards');
   const [tab, setTab] = useState(0);
@@ -82,9 +83,9 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
   // Whether the screen is wide enough for the layout. Narrower, the page is a plain stand in with no stream, no
   // desk and no small pieces. Not known until the page is in a browser.
   const [wide, setWide] = useState<boolean | null>(null);
-  // An iPad held sideways: the desk and the rows' things are pictures (HANDHELD.pictures).
-  const [held, setHeld] = useState(false);
-  const pictured = (name: string) => !!wide && held && HANDHELD.pictures.includes(name);
+  // An iPad laid out wide: the desk, the rows' things and About's two things are pictures (HANDHELD.pictures).
+  const [pics, setPics] = useState<readonly string[]>([]);
+  const pictured = (name: string) => !!wide && pics.includes(name);
   const live = useRef({ way });
   live.current.way = way;
 
@@ -93,7 +94,7 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
     setUi(q.get('ui') !== '0' && !hub);
     if (asked && WAYS.includes(asked)) setWay(asked);
     const fits = matchMedia(`(min-width: ${BOARD.least}px)`), read = () => setWide(fits.matches);
-    setHeld(handheld() && webgl());
+    setPics(HANDHELD.pictures.filter(asPicture));
     read();
     fits.addEventListener('change', read);
     return () => fits.removeEventListener('change', read);
@@ -111,24 +112,37 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
   }, [wide, hub]);
 
   // The pictures are driven by the stage as the live pieces are.
-  const deskPictured = pictured('desk'), thingsPictured = THINGS.map((n) => pictured(n)).join();
+  const deskPictured = pictured('desk'), thingsPictured = THINGS.map((n) => pictured(n)).join(), propsPictured = pictured('reflector') || pictured('studio-light');
   useEffect(() => {
-    if (!deskPictured && !thingsPictured.includes('true')) return;
+    if (!deskPictured && !thingsPictured.includes('true') && !propsPictured) return;
     let alive = true;
     void Promise.all([import('../../skills/pictures'), import('../../pieces/cpu/life'), import('../../pieces/watch/life'), import('../../pieces/palette/life')]).then(([made, ...lives]) => {
       if (!alive) return;
       if (deskPictured && dark.current && bright.current) pieces.current.desk = made.deskPictures(dark.current, bright.current);
       THINGS.forEach((name, i) => { const el = thingPics.current[i]; if (pictured(name) && el) pieces.current.things[i] = made.thingPicture(el, lives[i].LIFE); });
+      if (pictured('reflector') && faceLit.current) pieces.current.reflector = made.propPictures(faceLit.current);
+      if (pictured('studio-light') && lampLit.current) pieces.current.light = made.propPictures(lampLit.current);
     });
     return () => {
       alive = false;
       if (deskPictured) pieces.current.desk = null;
       THINGS.forEach((name, i) => { if (pictured(name)) pieces.current.things[i] = null; });
+      if (pictured('reflector')) pieces.current.reflector = null;
+      if (pictured('studio-light')) pieces.current.light = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deskPictured, thingsPictured]);
+  }, [deskPictured, thingsPictured, propsPictured]);
 
   const hold = (name: 'reflector' | 'light') => (p: Piece | null) => { pieces.current[name] = p as StruckPiece | null; };
+  // One of About's two things as two pictures, the one with the stream on it over the one without.
+  const pair = (dark: 'reflectorDark' | 'studioDark', lit: 'reflector' | 'studio', ref: typeof faceLit) => (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className={styles.propPicture} src={STILLS[dark].file} alt="" width={STILLS[dark].keep.w} height={STILLS[dark].keep.h} decoding="async" />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img ref={ref} className={styles.propPicture} data-lit="" src={STILLS[lit].file} alt="" width={STILLS[lit].keep.w} height={STILLS[lit].keep.h} decoding="async" />
+    </>
+  );
   const holdThing = (row: number) => (p: Piece | null) => { pieces.current.things[row] = p as StruckPiece | null; };
   const holdDesk = (p: Piece | null) => { pieces.current.desk = p as DeskPiece | null; };
   const pick = (i: number) => {
@@ -206,10 +220,10 @@ export function SkillsLab({ hub }: { hub?: Hub }) {
         <section ref={about} className={styles.about} aria-labelledby={`${id}-about`} style={{ height: u(ABOUT.h) }}>
           <div className={styles.glow} aria-hidden="true"><Glow /></div>
           <div className={styles.prop} data-part="reflector" aria-hidden="true" style={{ width: u(ABOUT.reflector.host), height: u(ABOUT.reflector.host) }}>
-            {wide && <PieceView name="reflector" reach={REACH} early className={styles.piece} onPiece={hold('reflector')} />}
+            {wide && (pictured('reflector') ? pair('reflectorDark', 'reflector', faceLit) : <PieceView name="reflector" reach={REACH} early className={styles.piece} onPiece={hold('reflector')} />)}
           </div>
           <div className={styles.prop} data-part="light" aria-hidden="true" style={{ width: u(ABOUT.light.host), height: u(ABOUT.light.host) }}>
-            {wide && <PieceView name="studio-light" reach={REACH} early className={styles.piece} onPiece={hold('light')} />}
+            {wide && (pictured('studio-light') ? pair('studioDark', 'studio', lampLit) : <PieceView name="studio-light" reach={REACH} early className={styles.piece} onPiece={hold('light')} />)}
           </div>
           <div className={styles.cover} data-part="cover" aria-hidden="true" style={at(P.x, P.y, P.w, P.h * 1.02)}>
             <div className={styles.coverGlow} style={{ left: u(-P.x), top: u(-P.y), height: u(ABOUT.h) }}><Glow /></div>

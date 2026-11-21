@@ -45,6 +45,8 @@ export interface WorldPart {
   // Called before a frame is drawn, and only while something of the part is on the screen. It returns true while
   // the part is moving by itself and needs the next frame drawn too.
   update?(s: PartState): boolean | void;
+  // What a part hands the scripts that take pictures of it, if anything.
+  tools?: unknown;
   dispose?(): void;
 }
 

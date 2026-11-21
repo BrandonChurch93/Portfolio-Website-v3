@@ -61,6 +61,13 @@ export const HANDHELD = {
   // picture and its pixels, and makes them again as it comes back (src/metal/renderer.ts). Work's sixteen cards held
   // about 300 MB from the first screen on (Nov 20). And a card's picture is held to this many pixels on its longest
   // side: the window it is shown in is about 700 across.
+  // An iPad laid out narrow holds about 1320 MB for a moment four screens down, and his ruling of Nov 21 asked for
+  // far cards let go sooner there if no card could then be seen being made. One can (WebKit as an upright iPad,
+  // Nov 21), so nothing was changed and both ways are switches for him to rule on (BRIEF.md, Open 36):
+  // ?plates=0.75 lets every plate go from nearer (about 1190 MB, and on a fast flick back through Work a card is on
+  // the screen with only its words for 0.15 to 0.4 s). ?put=0.25 lets only the cards that are put away go sooner,
+  // twelve of Work's sixteen (about 1220 MB, and only a press followed within a tenth of a second by a fast flick
+  // shows a quarter of a card unmade for three or four frames).
   plates: 1.5,
   photo: 1024,
   // Whether the night sky is drawn once and kept as a picture, its WebGL context let go, with meteors and a few
@@ -68,16 +75,23 @@ export const HANDHELD = {
   // about 175 MB on the first screen (Nov 20). Left live: he asked for more going on in the sky (Nov 16), so stilling
   // it on an iPad is his to say. 'still' is the switch.
   sky: 'live' as 'still' | 'live',
-  // On an iPad held sideways these are pictures in place of the live pieces (src/skills/pictures.ts): the desk
-  // dark and lit, crossfaded as its lights come on, and the rows' things, each wiped on from its strike. His ruling of
-  // Nov 20: the page held about 2000 MB at Skills there with them live.
-  pictures: ['desk', 'cpu', 'watch', 'palette'] as readonly string[],
+  // On an iPad laid out wide these are pictures in place of the live pieces (pictured in src/world/device.ts): the
+  // desk dark and lit, crossfaded as its lights come on, the rows' things, each wiped on from its strike, and About's
+  // two things (src/skills/pictures.ts). His rulings of Nov 20 and 21: the page held about 2000 MB at Skills there
+  // with them live. The hero's world (src/hero/picture/) joins them once he has seen its pictures: until then
+  // ?world=picture shows them.
+  pictures: ['desk', 'cpu', 'watch', 'palette', 'reflector', 'studio-light'] as readonly string[],
   // The most pixels of the picture of the hero's city at the screen's own density (src/pieces/world/sharp.ts), a
   // plain 2D canvas of about 9 bytes a pixel in WebKit: an iPad's whole city at two pixels to a CSS pixel.
   sharp: 4e6,
 } as const;
 // The same on a desktop, where memory is no limit: a city 2400 wide at three.
 export const SHARP = { pixels: 2.4e7 } as const;
+
+// The net under a handheld and the switch for his own iPad (src/world/device.ts): the names things are kept under,
+// how often the page's mark is made fresh while it is on the screen, and how fresh a mark found at a load has to be
+// for the page before it to have been ended, in milliseconds. Safari loads an ended page again at once.
+export const NET = { mark: 'site:on-screen', plain: 'site:plain', live: 'site:live', every: 2000, fresh: 30000 } as const;
 
 export type Tier = 'high' | 'mid' | 'low' | 'static';
 export const TIERS: readonly Tier[] = ['high', 'mid', 'low', 'static'];

@@ -17,7 +17,7 @@ const DARK = 0x16110d, SPOKES = 720, RINGS = 72;
 export const STREAM = 7;
 export const STREAM_LIGHT = new THREE.Color(hex('pale')).multiplyScalar(1.25);
 
-export const build: PartFactory = ({ built, stands }) => {
+export const build: PartFactory = ({ built, stands, query }) => {
   const group = new THREE.Group(), plain = lit(new THREE.MeshStandardMaterial({ color: DARK, roughness: 1, metalness: 0 }), { key: 'rest', core: false });
 
   // The land: a sheet over the top, in rings out from the middle, each spoke ending exactly where the land ends.
@@ -62,7 +62,8 @@ export const build: PartFactory = ({ built, stands }) => {
   // Lines of light where the stream and the small streams are, for the world seen alone in the lab. On a page the
   // stream is the page's own, drawn over the world, and these are left out.
   const made: { dispose(): void }[] = [stand, plain];
-  if (location.pathname.startsWith('/lab/piece')) {
+  // ?lines=0 leaves them out there too, for a picture of the world as the page has it.
+  if (location.pathname.startsWith('/lab/piece') && query.get('lines') !== '0') {
     const light = new THREE.MeshBasicMaterial({ color: STREAM_LIGHT, side: THREE.DoubleSide });
     const line = (x: number, y: number, z: number, long: number, wide: number): THREE.BufferGeometry => new THREE.PlaneGeometry(wide, long).translate(x, y - long / 2, z);
     const foot = HOST.tall - drawn(SOURCE[0], SOURCE[1], SOURCE[2])[1];

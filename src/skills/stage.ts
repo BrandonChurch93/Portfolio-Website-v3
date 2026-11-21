@@ -7,8 +7,8 @@ import type { Cue, Rail } from '../stream/route';
 import { routeThroughSkills } from '../stream/route-skills';
 import { mountStream, type PlanContext, type Planned, type StreamHandle } from '../stream/stream';
 import { clock } from '../world/clock';
-import type { Anchor, StruckPiece, Way } from '../world/struck';
-import type { DeskLike, ThingLike } from './pictures';
+import type { Anchor, Way } from '../world/struck';
+import type { DeskLike, PropLike, ThingLike } from './pictures';
 import { tiers } from '../world/tier';
 import { ABOUT, BOARD, CX, SKILLS, SWING, swingOf, throwLine } from './plan';
 
@@ -25,7 +25,7 @@ export interface SkillsParts {
   skills: HTMLElement;
   about: HTMLElement;
   // A row's thing is under its row's own number: the CPU in the first, and whatever the others have.
-  pieces: () => { things: (ThingLike | null)[]; reflector: StruckPiece | null; light: StruckPiece | null; desk: DeskLike | null };
+  pieces: () => { things: (ThingLike | null)[]; reflector: PropLike | null; light: PropLike | null; desk: DeskLike | null };
   way: () => Way;
 }
 

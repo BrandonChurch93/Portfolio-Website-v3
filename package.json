@@ -18,7 +18,8 @@
     "blockout": "node scripts/blockout.mjs",
     "look": "node scripts/world/look.mjs",
     "match": "node scripts/world/match.mjs",
-    "still": "node scripts/world/still.mjs"
+    "still": "node scripts/world/still.mjs",
+    "picture": "node scripts/world/picture.mjs"
   },
   "license": "UNLICENSED",
   "dependencies": {

@@ -196,7 +196,7 @@ export const build: PartFactory = async ({ query, renderer }) => {
   // strengths without a change of code.
   const tried = (query.get('debrislight') ?? '').split(',').map(Number), pick = (i: number, usual: number): number => (Number.isFinite(tried[i]) && query.has('debrislight') && tried[i] >= 0 && String(query.get('debrislight')).split(',')[i] !== '' ? tried[i] : usual);
   const uniforms = {
-    uPieces: { value: pieces }, uTime: { value: 0 }, uBounceK: { value: pick(1, LOOK.bounce) }, uCoreK: { value: pick(0, LOOK.core) }, uDebrisCore: { value: new THREE.Vector3(...CORE.at) },
+    uPieces: { value: pieces }, uTime: { value: 0 }, uDrift: { value: 1 }, uBounceK: { value: pick(1, LOOK.bounce) }, uCoreK: { value: pick(0, LOOK.core) }, uDebrisCore: { value: new THREE.Vector3(...CORE.at) },
     uCoreSteep: { value: new THREE.Vector2(...LOOK.steep) }, uCoreSteepF: { value: new THREE.Vector2(LOOK.steep[0] * SCALE, LOOK.steep[1]) },
     uStone: { value: stone() }, uChip: { value: LOOK.chip },
     uGlow: { value: LOOK.glow.clone().multiplyScalar(pick(7, 1)) }, uGlowRim: { value: new THREE.Vector2(...LOOK.glowRim) },
@@ -271,6 +271,17 @@ export const build: PartFactory = async ({ query, renderer }) => {
     group,
     alone: query.get('debris') === 'models' ? (table.length === 1 ? { at: [table[0][col.x], table[0][col.y], 150], r: Math.max(8, table[0][col.big] * 1.1) } : { at: [0, -860, 150], r: 380 }) : { at: [0, -800, 200], r: 720 },
     update(s) { uniforms.uTime.value = s.t; return !s.still; },
+    // For the script that takes the world as pictures (scripts/world/picture.mjs): every piece's row of the table,
+    // only some of the pieces drawn, and every piece held where it rests.
+    tools: {
+      pieces: () => table.map((p) => ({ kind: p[col.kind], family: p[col.family], at: [p[col.x], p[col.y], p[col.z]], big: p[col.big] ?? 1, size: [p[col.sx], p[col.sy], p[col.sz]], extra: p[col.extra], model: p[col.model] })),
+      show(ids: readonly number[] | null) {
+        const on = ids && new Set(ids);
+        table.forEach((p, i) => { const k = !on || on.has(i) ? 1 : 0; data.set([p[col.sx] * k, p[col.sy] * k, p[col.sz] * k], (2 * n + i) * 4); });
+        pieces.needsUpdate = true;
+      },
+      rest(on: boolean) { uniforms.uDrift.value = on ? 0 : 1; },
+    },
     dispose() { geometry.dispose(); material.dispose(); deep?.dispose(); pieces.dispose(); maps.release(); },
   };
 };

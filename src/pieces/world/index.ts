@@ -95,6 +95,11 @@ export interface WorldExtras {
   // drew, how many shader programs it has had compiled, and what the graphics card holds for it.
   // For timing a frame: the world drawn without these parts.
   without(names: string[]): void;
+  // For the script that takes the world as pictures (scripts/world/picture.mjs): what broke away's own tools, and
+  // every other part drawn as depth alone, so a picture of some pieces is cut where the planet stands before them.
+  debris(): unknown;
+  core(): unknown;
+  ghost(on: boolean): void;
   stats(): { built: Record<string, number>; first: number; calls: number; triangles: number; programs: number; geometries: number; textures: number; passes: string[]; sharp: ReturnType<Sharp['state']> | null };
   // With ?trace=1, what each frame did and what the making did, since the last call: for finding the frames that run long.
   trace(): TraceRow[];
@@ -122,6 +127,7 @@ export function createWorld(): WorldPiece {
   // round's changes (?was=1), for timing against.
   let way = 0, movedAt = -1e9, lastTop = 0, was = false;
   const stream = { on: 0, since: 60, long: 0 };
+  const ghosts = new Map<THREE.Material, boolean>();
   let log: TraceRow[] | null = null;
   const mark = (what: string, more?: Omit<TraceRow, 'at' | 'what'>) => { log?.push({ at: performance.now(), what, ...more }); };
   const built: Record<string, number> = {};
@@ -503,6 +509,19 @@ export function createWorld(): WorldPiece {
     // For timing a frame: the world drawn without these parts (npm run perf, scripts that call piece('world')).
     // 'kept' draws the land and the rock every frame, and 'kept-rock' the rock, to hold a frame against the pictures.
     without(names: string[]) { left = new Set(names); stale = true; unsharp(); },
+    debris: () => parts.find((p) => p.name === 'debris')?.part.tools ?? null,
+    core: () => parts.find((p) => p.name === 'core')?.part.tools ?? null,
+    ghost(on: boolean) {
+      for (const p of parts) if (p.name !== 'debris') p.part.group.traverse((o) => {
+        for (const m of [(o as THREE.Mesh).material].flat()) {
+          if (!m) continue;
+          if (on && !ghosts.has(m)) ghosts.set(m, m.colorWrite);
+          m.colorWrite = on ? false : ghosts.get(m) ?? m.colorWrite;
+        }
+      });
+      if (!on) ghosts.clear();
+      stale = true;
+    },
     trace() { return log ? log.splice(0) : []; },
     bench(n: number) {
       if (!log || !stage) return -1;

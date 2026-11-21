@@ -258,6 +258,19 @@
   pointer-events: none;
 }
 
+/* One of About's two things as a picture, on an iPad laid out wide (HANDHELD.pictures): the one with the stream on
+   it lies over the one without, and the stage brings it up. */
+.propPicture {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.propPicture[data-lit] {
+  opacity: 0;
+}
+
 /* His own outline, filled with the page's ground and the same light as under the stream, over the stream: behind
    him the stream is not seen. Its own foot fades, so the stream's light under him never ends at a line. It leans
    with his portrait, and the light inside it leans back, so the light stays where it is on the page. */

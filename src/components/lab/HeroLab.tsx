@@ -6,7 +6,7 @@ import { BOARD, CITY, CX, SKY, WORDS, WORK, WORLD } from '../../hero/board';
 import type { HeroStage } from '../../hero/stage';
 import { HOST } from '../../pieces/world/layout';
 import { LOADING } from '../../pieces/world/part';
-import { webgl } from '../../world/device';
+import { pictured, webgl } from '../../world/device';
 import { loading } from '../../world/loading';
 import { MetalButton } from '../MetalButton';
 import { PieceView } from '../PieceView';
@@ -28,6 +28,8 @@ const u = (n: number) => `calc(var(--u) * ${Number(n.toFixed(2))})`;
 // is under all of it, and on this page is a stand in. The world is the piece in src/pieces/world, at whatever
 // stage its parts have reached. The stream plans its route from where these are (src/stream/route-hero.ts): out
 // of the core's underside and down to the bar.
+// Where the live world is too much for a device to hold (pictured in src/world/device.ts) it is its pictures
+// (src/hero/picture/), which the stage is told of as it tells the live world.
 // There is no opening: the world and the words are simply there. The night sky (src/hero/sky) is behind
 // everything, and draws the glow behind the world. ?ui=0 hides the label.
 // On a page with more sections than this one (hub), it hands the hub its plan, the hub mounts the one stream, and
@@ -46,7 +48,10 @@ const FALL: Adrift[] = [
 export function HeroLab({ hub }: { hub?: Hub }) {
   const page = useRef<HTMLElement>(null), board = useRef<HTMLDivElement>(null), city = useRef<HTMLDivElement>(null), bar = useRef<HTMLDivElement>(null);
   const sky = useRef<HTMLDivElement>(null), words = useRef<HTMLElement>(null);
-  const world = useRef<{ setStream(on: number, since: number): void } | null>(null);
+  const world = useRef<{ setStream(on: number, since: number, long: number): void; whole?(): boolean } | null>(null);
+  const picture = useRef<HTMLDivElement>(null);
+  // Whether the world is its pictures here. Not known until the page is in a browser.
+  const [flat, setFlat] = useState<boolean | null>(null);
   const [ui, setUi] = useState(!hub);
   // Whether the screen is wide enough for the layout. Narrower, the page is a plain stand in with no stream and no city.
   const [wide, setWide] = useState<boolean | null>(null);
@@ -57,6 +62,7 @@ export function HeroLab({ hub }: { hub?: Hub }) {
     setUi(new URLSearchParams(location.search).get('ui') !== '0' && !hub);
     setThird(new URLSearchParams(location.search).get('words') === 'third');
     const fits = matchMedia(`(min-width: ${BOARD.least}px)`), read = () => setWide(fits.matches);
+    setFlat(pictured('world'));
     read();
     // The first screen waits for the world, where there is one and the page has been opened at its top: the
     // preloader is told so before the world has begun to load (src/world/loading.ts). The world is by far the most
@@ -75,6 +81,18 @@ export function HeroLab({ hub }: { hub?: Hub }) {
     });
     return () => { gone = true; made?.dispose(); };
   }, [wide, hub]);
+
+  useEffect(() => {
+    if (!wide || !flat || !picture.current) return;
+    const host = picture.current;
+    let made: { setStream(on: number, since: number, long: number): void; whole(): boolean; dispose(): void } | null = null, gone = false;
+    void import('../../hero/picture').then(({ mountPicture }) => {
+      if (gone) return;
+      made = mountPicture(host, { onProgress: (k) => loading.progress(LOADING, k), onReady: () => loading.end(LOADING) });
+      world.current = made;
+    });
+    return () => { gone = true; if (world.current === made) world.current = null; made?.dispose(); };
+  }, [wide, flat]);
 
   // The sky is planned from where the page has put the words and the world.
   useEffect(() => {
@@ -119,7 +137,8 @@ export function HeroLab({ hub }: { hub?: Hub }) {
         <div ref={sky} className={styles.sky} aria-hidden="true" />
         <Still name="sky" className={styles.night} />
         <div ref={city} className={styles.city} style={{ width: u(HOST.wide) }}>
-          {wide && WORLD.shown && <PieceView name={WORLD.piece} early="quiet" className={styles.piece} onPiece={(p) => { world.current = p as unknown as { setStream(on: number, since: number): void } | null; }} />}
+          {wide && WORLD.shown && flat === false && <PieceView name={WORLD.piece} early="quiet" className={styles.piece} onPiece={(p) => { world.current = p as unknown as { setStream(on: number, since: number, long: number): void; whole?(): boolean } | null; }} />}
+          {wide && WORLD.shown && flat && <div ref={picture} className={styles.piece} data-part="world-picture" />}
         </div>
         <header ref={words} className={styles.words} style={{ width: u(WORDS.w) }}>
           <p className={styles.role}>{hero.role}</p>

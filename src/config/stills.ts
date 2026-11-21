@@ -28,6 +28,12 @@ export const STILLS = {
   cpu: { file: '/media/cpu-still.webp', route: '/lab/piece/cpu?size=240&label=0&ui=0&stream=1', screen: [1440, 900], top: '', t: 6, keep: { x: 612, y: 342, w: 216, h: 216 }, scale: 2, quality: 0.86, least: 0, clear: true },
   watch: { file: '/media/watch-still.webp', route: '/lab/piece/watch?size=240&label=0&ui=0&stream=1', screen: [1440, 900], top: '', t: 6, keep: { x: 612, y: 342, w: 216, h: 216 }, scale: 2, quality: 0.86, least: 0, clear: true },
   palette: { file: '/media/palette-still.webp', route: '/lab/piece/palette?size=240&label=0&ui=0&stream=1', screen: [1440, 900], top: '', t: 6, keep: { x: 612, y: 342, w: 216, h: 216 }, scale: 2, quality: 0.86, least: 0, clear: true },
+  // About's two things, each without the stream on it and with, for an iPad laid out wide (HANDHELD.pictures):
+  // the whole of each one's host, on a clear ground.
+  reflector: { file: '/media/reflector-still.webp', route: '/lab/piece/reflector?size=260&wide=260&label=0&ui=0&stream=1', screen: [1440, 900], top: '', t: 6, keep: { x: 590, y: 320, w: 260, h: 260 }, scale: 2, quality: 0.88, least: 0, clear: true },
+  reflectorDark: { file: '/media/reflector-dark-still.webp', route: '/lab/piece/reflector?size=260&wide=260&label=0&ui=0', screen: [1440, 900], top: '', t: 6, keep: { x: 590, y: 320, w: 260, h: 260 }, scale: 2, quality: 0.88, least: 0, clear: true },
+  studio: { file: '/media/studio-still.webp', route: '/lab/piece/studio-light?size=300&wide=300&label=0&ui=0&stream=1', screen: [1440, 900], top: '', t: 6, keep: { x: 570, y: 300, w: 300, h: 300 }, scale: 2, quality: 0.88, least: 0, clear: true },
+  studioDark: { file: '/media/studio-dark-still.webp', route: '/lab/piece/studio-light?size=300&wide=300&label=0&ui=0', screen: [1440, 900], top: '', t: 6, keep: { x: 570, y: 300, w: 300, h: 300 }, scale: 2, quality: 0.88, least: 0, clear: true },
   // What a shared link shows: the hero's first screen at the size link previews ask for. A JPEG, which every
   // service that makes a preview can read.
   share: { file: '/media/share.jpg', route: '/lab/hero?ui=0', screen: [1200, 630], top: '', t: 6, keep: { x: 0, y: 0, w: 1200, h: 630 }, scale: 1, quality: 0.86, least: 0 },

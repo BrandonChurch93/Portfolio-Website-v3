@@ -4,10 +4,12 @@ import { DESK, VIEW } from '../pieces/desk/layout';
 import type { DeskLights } from '../pieces/desk/part';
 import type { Struck, Way } from '../world/struck';
 
-// What Skills' stage drives, live or as a picture (HANDHELD.pictures). On an iPad held sideways the desk is two
-// pictures, dark and lit, and a row's thing is its picture: the stage drives these as it drives the pieces.
+// What Skills' stage drives, live or as a picture (HANDHELD.pictures). On an iPad laid out wide the desk is two
+// pictures, dark and lit, a row's thing is its picture, and each of About's two things is two pictures, without the
+// stream on it and with: the stage drives these as it drives the pieces.
 export type DeskLike = Pick<DeskPiece, 'where' | 'setLights' | 'setStream' | 'setSwing'>;
 export type ThingLike = Pick<Struck, 'setStream' | 'setLife'>;
+export type PropLike = Pick<Struck, 'setStream'>;
 
 const D2R = Math.PI / 180;
 let view: THREE.PerspectiveCamera | null = null;
@@ -58,5 +60,19 @@ export function thingPicture(el: HTMLElement, life: Record<Way, number>): ThingL
       el.style.setProperty('--wipe', eased.toFixed(4));
     },
     setStream() {},
+  };
+}
+
+// One of About's two things: the picture with the stream on it comes up over the one without as the stream comes
+// onto it, and goes as it draws back.
+export function propPictures(lit: HTMLElement): PropLike {
+  let was = -1;
+  return {
+    setStream(on) {
+      const k = Math.max(0, Math.min(1, on));
+      if (k === was) return;
+      was = k;
+      lit.style.opacity = k.toFixed(3);
+    },
   };
 }

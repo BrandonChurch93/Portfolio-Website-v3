@@ -1,0 +1,71 @@
+/* The hero's world as pictures (./index.ts). Lengths are in units of the board (--u). */
+.world {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.planet {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* What broke away. A group is moved as one and holds no pixels of its own: each of its tiles is a layer. */
+.field,
+.group {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+}
+
+.group {
+  will-change: transform;
+}
+
+.tile {
+  position: absolute;
+  will-change: transform;
+}
+
+.cut,
+.chip {
+  position: absolute;
+  background-repeat: no-repeat;
+}
+
+/* Everything the stream's light changes, drawn again with that light and uncovered down to the stream's leading
+   end. The cover moves down with the leading end and what it holds moves back up by as much, so only two
+   transforms change as the stream runs and nothing is painted again. Its foot gives way softly (--soft). */
+.reach {
+  position: absolute;
+  opacity: 0;
+  will-change: transform, opacity;
+  -webkit-mask-image: linear-gradient(#000 calc(100% - var(--u) * var(--soft)), transparent);
+  mask-image: linear-gradient(#000 calc(100% - var(--u) * var(--soft)), transparent);
+}
+
+.hold {
+  position: absolute;
+  left: 0;
+  width: 0;
+  height: 0;
+  will-change: transform;
+}
+
+.chip {
+  left: 0;
+  top: 0;
+  will-change: transform;
+  transform: scale(0);
+}
+
+/* Far from the screen it holds no layers. */
+.world[data-far] .field,
+.world[data-far] .reach {
+  display: none;
+}

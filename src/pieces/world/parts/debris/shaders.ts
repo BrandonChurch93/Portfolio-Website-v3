@@ -23,6 +23,8 @@ const M = MOTION;
 export const VERT_PARS = /* glsl */ `
 uniform highp sampler2D uPieces;
 uniform float uTime;
+// How much of its drift a piece has: 1 on the page, 0 for a picture of every piece where it rests (../debris.ts).
+uniform float uDrift;
 // The core, in the world's units (the world's light has its own, in the stage's measure).
 uniform vec3 uDebrisCore;
 uniform float uBounceK;
@@ -81,36 +83,37 @@ export const VERT_MOTION = /* glsl */ `
 	vec3 at = dA.xyz, axis = dX.xyz;
 	float spin = dX.w * t + dE.x * TAU, dRound = 0.0, grow = 1.0;
 	if ( kind < ${f(KIND.plate + 0.5)} ) {
-		at += dPlate( fam, t );
+		at += uDrift * dPlate( fam, t );
 		axis = normalize( uDebrisCore - dA.xyz );
-		spin = ${f(M.plate.rock)} * sin( TAU * t / ${f(M.plate.rockT)} + fc );
+		spin = uDrift * ${f(M.plate.rock)} * sin( TAU * t / ${f(M.plate.rockT)} + fc );
 	} else if ( kind < ${f(KIND.ring + 0.5)} ) {
-		float swing = ${f(M.ring.swing)} * sin( TAU * t / ${f(M.ring.swingT)} + dHash( dE.y * 3.1 ) * TAU );
-		at = dP.xyz + dTurnY( swing, dA.xyz - dP.xyz ) + dPlate( dE.y, t );
+		float swing = uDrift * ${f(M.ring.swing)} * sin( TAU * t / ${f(M.ring.swingT)} + dHash( dE.y * 3.1 ) * TAU );
+		at = dP.xyz + dTurnY( swing, dA.xyz - dP.xyz ) + uDrift * dPlate( dE.y, t );
 		dRound = swing;
 	} else if ( kind < ${f(KIND.clump + 0.5)} ) {
-		at += vec3( ${f(M.clump.slide)} * sin( TAU * t / ${f(M.clump.slideT)} + fa ), ${f(M.clump.rise)} * sin( TAU * t / ${f(M.clump.riseT)} + fb ), ${f(M.clump.deep)} * sin( TAU * t / ${f(M.clump.slideT * 1.41)} + fc ) );
+		at += uDrift * vec3( ${f(M.clump.slide)} * sin( TAU * t / ${f(M.clump.slideT)} + fa ), ${f(M.clump.rise)} * sin( TAU * t / ${f(M.clump.riseT)} + fb ), ${f(M.clump.deep)} * sin( TAU * t / ${f(M.clump.slideT * 1.41)} + fc ) );
 	} else if ( kind < ${f(KIND.whirl + 0.5)} ) {
 		vec3 rel = vec3( dA.x, 0.0, dA.z - uDebrisCore.z );
 		float period = ${f(M.whirl.swingT[0])} + ${f(M.whirl.swingT[1] - M.whirl.swingT[0])} * dHash( fam * 7.7 );
-		dRound = dE.y * sin( TAU * t / period + fa );
+		dRound = uDrift * dE.y * sin( TAU * t / period + fa );
 		vec3 now = dTurnY( dRound, rel );
 		at = vec3( now.x, dA.y - ${f(M.whirl.tilt)} * ( now.z - rel.z ), now.z + uDebrisCore.z );
 	} else if ( kind < ${f(KIND.fall + 0.5)} ) {
 		float span = ${f(M.fall.from - M.fall.to)};
-		float u = fract( ( ${f(M.fall.from)} - dA.y ) / span + dE.y * t / span ), s = pow( u, ${f(M.fall.gather)} );
+		float u = fract( ( ${f(M.fall.from)} - dA.y ) / span + uDrift * dE.y * t / span ), s = pow( u, ${f(M.fall.gather)} );
 		float y = ${f(M.fall.from)} - span * s, k = 1.0 - ${f(M.fall.pull)} * s, back = uDebrisCore.z - ${f(M.fall.behind)};
 		at = vec3( dA.x * k, y, back + ( dA.z - back ) * k );
 		// Only where the stream has run is there a stream to carry it.
 		float run = ${f(SOURCE[1])} - uStream.y;
 		grow = smoothstep( ${f(M.fall.from)}, ${f(M.fall.from - M.fall.fade)}, y ) * smoothstep( max( ${f(M.fall.to)}, run ), max( ${f(M.fall.to)}, run ) + ${f(M.fall.fade)}, y ) * step( 0.001, uStream.x );
+		grow = mix( 1.0, grow, uDrift );
 	} else if ( kind < ${f(KIND.dust + 0.5)} ) {
 		vec3 rel = vec3( dA.x, 0.0, dA.z - uDebrisCore.z );
-		dRound = ${f(M.dust.turn)} * sin( TAU * t / ${f(M.dust.turnT)} + fa );
+		dRound = uDrift * ${f(M.dust.turn)} * sin( TAU * t / ${f(M.dust.turnT)} + fa );
 		vec3 now = dTurnY( dRound, rel );
-		at = vec3( now.x, dA.y + ${f(M.dust.rise)} * sin( TAU * t / ${f(M.dust.riseT)} + fb ), now.z + uDebrisCore.z );
+		at = vec3( now.x, dA.y + uDrift * ${f(M.dust.rise)} * sin( TAU * t / ${f(M.dust.riseT)} + fb ), now.z + uDebrisCore.z );
 	} else {
-		at += vec3( ${f(M.scatter.slide)} * sin( TAU * t / ${f(M.scatter.slideT)} + fa ), ${f(M.scatter.rise)} * sin( TAU * t / ${f(M.scatter.riseT)} + fb ), 0.0 );
+		at += uDrift * vec3( ${f(M.scatter.slide)} * sin( TAU * t / ${f(M.scatter.slideT)} + fa ), ${f(M.scatter.rise)} * sin( TAU * t / ${f(M.scatter.riseT)} + fb ), 0.0 );
 	}
 	vLocal = position * dS.xyz;
 	vGreat = kind < ${f(KIND.plate + 0.5)} ? 1.0 : 0.0;

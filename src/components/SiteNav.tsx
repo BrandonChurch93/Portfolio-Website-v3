@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState, type MouseEvent } from 'react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { HOME } from '../config/site';
 import { hero } from '../content/hero';
 import { nav as words } from '../content/site-pages';
 import { ALL_WORK } from '../content/work';
+import { lamp } from '../lamp/lamp';
 import styles from './SiteNav.module.css';
 
 // The navigation (BRIEF.md, Open 34 and 36): the head of the page, flush with the top of the screen, with his name
@@ -20,6 +21,17 @@ export const MAIN = 'main';
 
 export function SiteNav({ here }: { here: 'home' | 'work' | 'project' }) {
   const [state, setState] = useState<'top' | 'shown' | 'away'>('top');
+  const bar = useRef<HTMLElement>(null);
+
+  // The cursor's light as CSS variables, for the rule to catch. On the navigation itself, which is all that reads
+  // them: written on the page's root, every element of the page was styled again in every frame the light moved,
+  // about 7 ms a frame in Safari on a page with the hero's world as pictures.
+  useEffect(() => lamp.subscribe((s) => {
+    const style = bar.current?.style;
+    if (!style) return;
+    style.setProperty('--lamp-x', `${s.px.toFixed(0)}px`);
+    style.setProperty('--lamp-y', `${s.py.toFixed(0)}px`);
+  }), []);
 
   useEffect(() => {
     let last = scrollY;
@@ -45,7 +57,7 @@ export function SiteNav({ here }: { here: 'home' | 'work' | 'project' }) {
     scrollTo({ top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   };
   return (
-    <nav className={styles.nav} aria-label={words.label} data-state={state} data-here={here}>
+    <nav ref={bar} className={styles.nav} aria-label={words.label} data-state={state} data-here={here}>
       <a href={`#${MAIN}`} className={styles.skip}>{words.skip}</a>
       <span className={styles.ground} aria-hidden="true" />
       <span className={styles.rule} aria-hidden="true" />

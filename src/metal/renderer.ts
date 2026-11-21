@@ -77,6 +77,9 @@ interface Plate extends PlateEntry {
   banded: boolean;
   // Whether it is to be drawn at all. A card that is waiting behind another keeps its bake and is not lit.
   shown: boolean;
+  // Within HANDHELD.plates of the screen, and within ?put of it.
+  inFar: boolean;
+  inClose: boolean;
   // Far from the screen on a handheld: its relief, its picture and its pixels are let go (HANDHELD.plates).
   away: boolean;
 }
@@ -155,6 +158,9 @@ class PlateRenderer {
   private io: IntersectionObserver | null = null;
   private ro: ResizeObserver | null = null;
   private far: IntersectionObserver | null = null;
+  // With ?put=0.25, which plates are near enough for one that is put away to keep what it holds (HANDHELD.plates has
+  // why it is only a switch).
+  private close: IntersectionObserver | null = null;
   private byHost = new Map<Element, Plate>();
   private started = false;
   private still = false;
@@ -162,6 +168,10 @@ class PlateRenderer {
   private rects = new Map<Plate, DOMRect>();
   private broken = false;
   private fontsReady: Promise<unknown> | null = null;
+  // The plates that are showing and being made, and the put away ones that wait for them (waits in rebake).
+  private making = 0;
+  private turn: Plate | null = null;
+  private waits = new Map<Plate, () => void>();
   frameMs = 0;
 
   private init(): boolean {
@@ -192,9 +202,13 @@ class PlateRenderer {
         for (const en of entries) { const p = this.byHost.get(en.target); if (p) { p.visible = en.isIntersecting; p.sig = ''; } }
       }, { rootMargin: '300px 0px' });
       // On a handheld a plate far from the screen holds nothing on the GPU, and is baked again as it comes near.
+      const q = new URLSearchParams(location.search), asked = Number(q.get('plates')), put = q.get('put');
       if (handheld()) this.far = new IntersectionObserver((entries) => {
-        for (const en of entries) { const p = this.byHost.get(en.target); if (p) { if (en.isIntersecting) this.near(p); else this.away(p); } }
-      }, { rootMargin: `${HANDHELD.plates * 100}% 0px` });
+        for (const en of entries) { const p = this.byHost.get(en.target); if (p) { p.inFar = en.isIntersecting; this.place(p); } }
+      }, { rootMargin: `${(asked > 0 ? asked : HANDHELD.plates) * 100}% 0px` });
+      if (handheld() && put !== null && Number(put) >= 0) this.close = new IntersectionObserver((entries) => {
+        for (const en of entries) { const p = this.byHost.get(en.target); if (p) { p.inClose = en.isIntersecting; this.place(p); } }
+      }, { rootMargin: `${Number(put) * 100}% 0px` });
       this.ro = new ResizeObserver((entries) => {
         for (const en of entries) { const p = this.byHost.get(en.target); if (p) this.measure(p); }
       });
@@ -244,7 +258,7 @@ class PlateRenderer {
       area: entry.spec.kind === 'card' ? entry.host.closest<HTMLElement>('[data-plate-area]') : null,
       visible: false, bakeGen: 0, sig: '', tilt: { x: 0, y: 0, gx: 0, gy: 0 }, stream: { x: 0, y: 0, z: 26, k: 0 },
       hover: { v: 0, goal: 0, pinned: false }, pointer: { x: 0, y: 0 }, hovered: '',
-      seed: seedOf(entry.spec), baked: 0, wipe: new Float32Array(3), burn: 0, blank: false, wiping: false, end: { x: 0, y: 0, k: 0 }, banded: false, enter: { x: 0, y: 0 }, meant: false, shown: true, away: false,
+      seed: seedOf(entry.spec), baked: 0, wipe: new Float32Array(3), burn: 0, blank: false, wiping: false, end: { x: 0, y: 0, k: 0 }, banded: false, enter: { x: 0, y: 0 }, meant: false, shown: true, away: false, inFar: false, inClose: false,
     };
     this.plates.add(p);
     this.byHost.set(entry.host, p);
@@ -252,6 +266,7 @@ class PlateRenderer {
     this.ro!.observe(entry.host);
     // Until the first word of how far it is, a plate on a handheld is taken to be far.
     if (this.far) { p.away = true; this.far.observe(entry.host); }
+    this.close?.observe(entry.host);
     if (entry.photo && (!p.away || entry.photo.video)) this.loadPhoto(p, entry.photo);
     this.measure(p);
     this.start();
@@ -264,9 +279,11 @@ class PlateRenderer {
     this.io?.unobserve(p.host);
     this.ro?.unobserve(p.host);
     this.far?.unobserve(p.host);
-    // Safari keeps a host these two have watched after it is unobserved, and with it the page it was in. Disconnected,
+    this.close?.unobserve(p.host);
+    this.waits.delete(p);
+    // Safari keeps a host these have watched after it is unobserved, and with it the page it was in. Disconnected,
     // they keep nothing.
-    if (!this.plates.size) { this.io?.disconnect(); this.ro?.disconnect(); this.far?.disconnect(); }
+    if (!this.plates.size) { this.io?.disconnect(); this.ro?.disconnect(); this.far?.disconnect(); this.close?.disconnect(); }
     const gl = this.gl;
     if (gl) { if (p.b0) gl.deleteTexture(p.b0); if (p.b1) gl.deleteTexture(p.b1); if (p.photoTex) gl.deleteTexture(p.photoTex); if (p.loopTex) gl.deleteTexture(p.loopTex); }
     p.videoEl?.pause();
@@ -352,6 +369,8 @@ class PlateRenderer {
     // pixels: twelve of Work's sixteen cards are put away at any time.
     if (!on && this.far) { p.canvas.width = 0; p.canvas.height = 0; }
     if (on && p.mask && p.canvas.width !== p.mask.w) { p.canvas.width = p.mask.w; p.canvas.height = p.mask.h; }
+    if (on) this.waits.get(p)?.();
+    if (this.close) this.place(p);
     // It is drawn as it now is before it is seen. Its canvas still holds what it showed when it was put away.
     if (on && p.visible && p.mask) this.draw(p, false);
   }
@@ -447,6 +466,12 @@ class PlateRenderer {
     }).catch(() => undefined));
   }
 
+  // Whether a plate on a handheld holds anything: while it is within HANDHELD.plates of the screen. With ?put, one
+  // that is put away only while it is within that many screens.
+  private place(p: Plate): void {
+    if (p.inFar && (p.shown || !this.close || p.inClose)) this.near(p); else this.away(p);
+  }
+
   private away(p: Plate): void {
     if (p.away) return;
     p.away = true;
@@ -486,11 +511,39 @@ class PlateRenderer {
     registry.track(this.rebake(p, gen));
   }
 
+  // What is showing is made before what is put away. On a handheld the sixteen cards of Work come near together
+  // after they were let go, twelve of them put away: made in the order they stand in the page, the four on the
+  // screen waited for the others, and on a fast flick a card was on the screen with only its words for over half a
+  // second (WebKit as an iPad, Nov 21). A put away plate waits until none that shows is being made, then they go one
+  // at a time. One that is shown while it waits goes at once.
+  private waited(p: Plate): Promise<void> {
+    if (p.shown || !this.far) return Promise.resolve();
+    return new Promise((resolve) => {
+      const go = () => { if (this.waits.delete(p)) resolve(); };
+      this.waits.set(p, go);
+      if (!this.making) setTimeout(() => this.next(), 0);
+    });
+  }
+
+  private next(): void {
+    if (this.making || this.turn) return;
+    const first = this.waits.entries().next();
+    if (first.done) return;
+    this.turn = first.value[0];
+    first.value[1]();
+  }
+
   private async rebake(p: Plate, gen: number): Promise<void> {
     await this.fontsReady;
-    if (gen !== p.bakeGen || !this.gl || p.away) return;
+    await this.waited(p);
+    const done = () => { if (this.turn === p) this.turn = null; setTimeout(() => this.next(), 0); };
+    if (gen !== p.bakeGen || !this.gl || p.away) { done(); return; }
+    const showing = p.shown;
+    if (showing) this.making++;
     const mask = paintMask(p.spec, p.cssW, p.cssH, p.dpr);
     const rg = await distanceField(mask.glyphs, mask.panel, mask.w, mask.h);
+    if (showing) this.making--;
+    done();
     if (gen !== p.bakeGen || !this.gl) return;
     const gl = this.gl;
     const sdf = texture(gl, mask.w, mask.h, gl.RG16F, gl.RG, gl.FLOAT, rg, gl.LINEAR);

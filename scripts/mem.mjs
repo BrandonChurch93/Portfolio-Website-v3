@@ -6,6 +6,8 @@
 //                         iPad held upright, or a phone. The last two get the page of one column
 //   --walk                open the index, go into each route by its link and come back, in one tab, as he does.
 //                         What matters is that a second visit costs what the first did, and that leaving gives it back
+//   --from <route>        with --walk, the page the walk begins on, in place of the index: "/?world=picture" walks
+//                         the home page with the hero's world as its pictures
 //   --warn                with --walk, send WebKit the memory warning an iPad sends a page that is getting large
 //   --url <base>          use a site that is already running somewhere else
 //   --profile             go down the page a screen at a time, as a visitor scrolls, resting three seconds on each, and
@@ -83,7 +85,7 @@ try {
     console.log(`${`${r}, the most, loaded or on the way down`.padEnd(36)} GPU ${String(most).padStart(5)} MB`);
   };
   if (walk) {
-    await page.goto(`${srv.base}/`, { waitUntil: 'load' });
+    await page.goto(`${srv.base}${flags.from ?? '/'}`, { waitUntil: 'load' });
     await page.waitForTimeout(2500);
     say('the index');
     for (const r of routes) {

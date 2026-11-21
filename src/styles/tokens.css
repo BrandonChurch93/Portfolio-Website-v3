@@ -62,7 +62,7 @@
   --dur-2: 0.45s;
   --dur-3: 0.9s;
 
-  /* The lamp, written every frame by src/components/Runtime.tsx. */
+  /* The lamp, until src/components/SiteNav.tsx writes it onto the navigation, which is all that reads it. */
   --lamp-x: 50vw;
   --lamp-y: 38vh;
 
