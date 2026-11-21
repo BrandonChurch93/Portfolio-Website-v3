@@ -38,6 +38,7 @@ Keep the lit line under my name and the link at the top.
 - **A narrow iPad is about 1250, not 1220.** The seven: 1211, 1224, 1232, 1256, 1266, 1269, 1270. The 1220 he was given came from the first two. The moment is four screens down.
 - With the cards that are put away held only while their own place is on the screen (`?put=0`): 1196 and 1198. Not on. It is the same kind of change, a little further.
 - **Not done here:** nothing. The web chat's two entries below hold his words to it and the prompts.
+- **His answer the same day:** "A narrow iPad: keep it as it is. Write it into BRIEF.md as my ruling: about 1250 for a moment, with the net under it. That replaces about 1220." And: "Keep the lit line under my name and the link at the top." Both are in `BRIEF.md`, Open 36. Nothing in the page changed for either: the stricter setting stays a switch (`?put=0`).
 
 ## 2026-11-21 · His note on the navigation's rule at the top of the hero (Fable, web chat)
 

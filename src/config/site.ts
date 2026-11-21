@@ -66,7 +66,7 @@ export const HANDHELD = {
   plates: 1.5,
   // On an iPad laid out narrow a plate that is put away (twelve of Work's sixteen cards at any time) holds its
   // relief and its picture only while it is within this many screens of the screen. His ruling of Nov 21: that
-  // layout held about 1320 MB for a moment four screens down and holds about 1220 with this, which is its line, with
+  // layout held about 1320 MB for a moment four screens down and holds about 1250 with this, which is its line, with
   // the net under it. The cards that show are as they were. What it costs: a press followed within a tenth of a
   // second by a fast flick shows a quarter of a card unmade for three or four frames. ?put=1.5 tries another
   // distance, on any handheld.
