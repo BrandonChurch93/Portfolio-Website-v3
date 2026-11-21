@@ -4,12 +4,50 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 
 ## 2026-11-20 · After the pass's report: nothing ships over the memory rule on a sideways iPad (Fable, Claude Code)
 
-**In progress. Kept true as it goes.**
+**Built as he gave it, measured, and not inside the rule. It waits on him.** `BRIEF.md`, Open 36, last bullets, is the ruling and where it stands.
 
-- **What he said, on reading the report** (`BRIEF.md`, Open 36, last bullets): "Do not ship over the memory budget on a sideways iPad. My iPad holding does not prove an older one will." The desk as two pictures there, dark and lit, crossfaded when the stream lands. If the most the page holds at Skills is still over, the three row things as pictures there too. The world, the stream and the rocket stay live. `npm run mem` on a production build as a sideways iPad, alone and with `--walk`, giving loaded, peak and foot, and the scroll recorded again. And: his words on a tall screen come down with the world, as a ruling.
+- **What he said, on reading the report:** "Do not ship over the memory budget on a sideways iPad. My iPad holding does not prove an older one will." The desk as two pictures there, dark and lit, crossfaded when the stream lands. If the most the page holds at Skills is still over, the three row things as pictures there too. The world, the stream and the rocket stay live. `npm run mem` on a production build as a sideways iPad, alone and with `--walk`, giving loaded, peak and foot, and the scroll recorded again. And: his words on a tall screen come down with the world, as a ruling.
 - **Fable's recommendation in that report was to ship with the desk live and watch his own iPad. He turned it down, and he is right:** one iPad that holds says nothing of an older one.
-- **How it is being done.** The engineer who measured the memory is on it in its own copy, from a brief sent as a message (the session has it): a stand in for the desk piece that keeps the stage's contract without WebGL (`where`, `setLights`, `setStream`, `setSwing`), so the stage is unchanged, with the dark picture's opacity following `room` and the lit one's the lights. The row things the same way, wiped on from the strike. The first screen is the hard part: with the sky live the page loads at about 1200 MB, so the sky may have to be kept as a picture with meteors and a twinkle made in CSS, which is built behind `HANDHELD.sky` and switched on only if the figures need it.
-- **While it measures, no other WebKit runs on this Mac:** `npm run mem` counts every WebKit process started after it.
+- **Built** (the memory engineer's patch from its own copy, read line by line and applied by Fable, with the sky left live):
+    - `src/skills/pictures.ts` stands in for the desk and for a row's thing on a handheld from 1100 px wide (`HANDHELD.pictures`). Each keeps the part of the piece's contract the stage drives, so `src/skills/stage.ts` does not know which it has. The desk is two pictures, the lit one over the dark one (`desk-still.webp`, `desk-dark-still.webp`), whose opacities follow the room's light and the desk's lights. A row's thing is its picture, wiped on from its strike.
+    - **The rows' pictures are taken on a clear ground now** (`clear` in `src/config/stills.ts`, `scripts/world/still.mjs`). With the page's ground in them each cut a dark disc out of the stream's light, which is behind a row's thing. Fable found it in the engineer's own stills.
+    - `npm run mem -- / --profile` goes down the page a screen at a time and prints what it holds on each: "the most on the way down".
+    - `src/hero/sky/alive.ts`: meteors and a twinkle as plain elements, for a sky kept as a picture. Behind `HANDHELD.sky`, which is off. Not judged in frames, and by the figures below not needed.
+- **Looked at** on a production build: WebKit as a sideways iPad walked down and back (`shots/final/side-a/`), the desk fades from dark to lit as the stream lands and back, the rows wipe on and go away in reverse, the rocket goes. A desktop's Skills and About and an upright iPad's rows are as they were.
+
+**The figures.** A production build, WebKit on this Mac as an iPad held sideways (1194 by 834 at two to one), GPU, MB. Loaded, the most on the way down, the foot. The rule is about 1000.
+
+| | Loaded | Most | Foot |
+|---|---|---|---|
+| Before (the desk and the rows' things live) | 1190 to 1380 | 2056 to 2135 | 1475 to 1794 |
+| **As he gave it, which is what is pushed** | 1190 to 1440 | 1590 to 1650 | 1260 to 1590 |
+| And the sky as a picture | 1136, 1145 | 1566, 1546 | 1351, 1238 |
+| The world live, everything else a picture but the stream and the rocket | 1253, 1084 | 1588, 1552 | 1469, 1431 |
+| The world as a picture too | 666, 645 | 1306, 1274 | 1233, 1255 |
+| The world and the sky | 547, 537 | 1221, 1234 | 1221, 1206 |
+| The world and About's two things | 679, 647 | 1163, 1138 | 1133, 1138 |
+| The world, the sky and About's two things | 534, 535, 554 | 1149, 1105, 1114 | 1119, 1079, 1062 |
+| The world, About's two things and the pad: only the stream live | 679, 667 | 966, 918 | 841, 836 |
+
+- As he gave it, run by run: `npm run mem -- /` loaded 1369, 1276, foot 1592, 1378. `--profile` loaded 1382, 1366, 1192, most 1637, 1646, 1587, foot 1282, 1256, 1562. `--walk` loaded 1442, 1321, foot 1593, 1541, and 741, 700 still held after the page is left.
+- **It cannot be inside the rule with the world live.** With everything else a picture the page still loads at 1084 to 1253. The engineer had the same from the other side: with three more cuts that show (put away cards holding nothing, far plates let go from 0.6 of a screen, the world at 1.2 million pixels) it loaded at 1016 to 1027 and held 1307 to 1433.
+- **The sky is not what decides it:** with the world and About's two things as pictures, a live sky costs about 110 loaded, where there is room, and about 30 at the most.
+- **Only with the rocket gone too is a sideways iPad under 1000 at every moment.**
+- **An upright iPad is over the rule for a moment, which nobody knew:** `--profile --vp upright` gives loaded 664, 652, most 1305, 1307 (four screens down), foot 985, 983, and about 1100 all through Work. By loaded and foot alone, which is all that was measured before today, it is inside (638, 922). A phone is inside throughout: 511, 496 loaded, 866, 871 at the most, 821, 827 at the foot. Letting a far card go sooner (`HANDHELD.plates`, tried in the scratch copy as `?farm=`) brings an upright iPad's most to 1233 at one screen and about 1165 at 0.75 or 0.5. Not changed: a card would then be made nearer the screen, and a fast flick has to be looked at in real frames first.
+- The variants were measured with switches that exist only in the session's scratch copy (`?world=still`, `?sky=still`, `?about=still`, `?pad=still`, `?farm=`), with the world's own picture shown in the world's place. None is built for showing. Raw runs: `shots/final/mem/`.
+
+**The scroll, recorded again** (WebKit as a sideways iPad, 600 px a second, top to foot, three runs).
+- Before: 135, 182, 87 frames over 20 ms. 46, 46, 31 over 33 ms. The worst 203, 221, 148 ms.
+- Now: 51, 39, 45 over 20 ms. 8, 9, 8 over 33 ms. 95 in 100 inside 23 to 25 ms. The worst 71, 68, 70 ms.
+- **Much less, and not gone.** What is left, by where it falls: two frames of about 70 ms as Work's two rows come near (Fable's reading, not proven: a card's relief being made as it comes within a screen and a half, which is one of the memory cuts), and a few of 35 to 50 ms as About's two things and the pad are made. With those as pictures it was 6, 6, 5 over 33 ms and the worst still about 70.
+
+**Where it stands.**
+- **What he gave is built, pushed and still over the rule.** The world, the stream and the rocket are live as he said.
+- **His to rule on:** which gives way on an iPad held sideways, the rule or the live world, and where the line is drawn now that an upright iPad is known to pass 1300 for a moment.
+- **Fable's recommendation, which goes against "Nothing ships over the memory rule on an iPad held sideways" by about 150 MB at Contact:** the world and About's two things as pictures there, the sky, the stream and the rocket live. It is what an upright iPad already holds or less. Strictly under 1000 costs the launch as well.
+- His own iPad's Safari lays the page out wide held either way, so whatever is ruled for a sideways iPad is what his shows upright too.
+- If he rules for the world as a picture, it is a piece of design and not a switch: the whole world cut out on a clear ground at the board's size (a first cut is `shots/final/world-clear.png`, taken with `shots/final/tools/worldpic.mjs`), the stream still leaving the core, and something that moves in the debris. It is shown to him before it is the default.
+- **The web chat's ruling on the blanks (Open 37, the next entry) is not built.** He has not sent its prompt to this session.
 
 ## 2026-11-20 · The blanks come off the home page, by his word (Fable, web chat)
 
