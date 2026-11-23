@@ -118,6 +118,21 @@ export const software: WorkItem[] = [
 // the live site's and the pictures are its screenshots. The years are a guess until he says: the live site gives none.
 export const more: WorkItem[] = [
   {
+    slug: 'desktop-pc-builder',
+    name: 'Desktop PC Builder',
+    kind: '3D Configurator',
+    year: '2026',
+    line: 'A 3D gaming PC builder that runs in the browser. Drag 43 invented parts into six cases, watch each one seat, and get told in one plain sentence why a part does not fit. Light it, power it on, share it as a link.',
+    tags: ['Three.js', 'WebGL', 'TypeScript'],
+    // Framed for the card's window as it is, so it is not cropped in. The loop's first frame is the picture.
+    picture: { src: '/media/work/pc-builder.webp', alt: 'A white gaming PC on a dark stage, its lights off', focus: [0.5, 0.5], loop: '/media/work/pc-builder-loop.mp4' },
+    page: `${ALL_WORK}/desktop-pc-builder`,
+    links: [
+      { label: 'Live', href: 'https://pc-desktop-builder.vercel.app/' },
+      { label: 'Code', href: `${GITHUB}/PC-Desktop-Builder` },
+    ],
+  },
+  {
     slug: 'modern-softworks',
     name: 'Modern Softworks',
     kind: 'Studio Site',
@@ -222,6 +237,7 @@ const UNDER: Record<string, string[]> = {
   'hero-animation-builder': ['Tools'],
   'micro-interactions-library': ['Tools'],
   'modern-softworks': ['Sites'],
+  'desktop-pc-builder': ['Sites'],
   meridian: ['Sites'],
 };
 // A stand in is put under each sub category in turn, so every one of them shows something, and its card says

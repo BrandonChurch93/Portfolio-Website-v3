@@ -48,6 +48,51 @@ const video = (src: string, alt: string): Shot => ({ src, alt, caption: 'A video
 // its text, its stack grouped here, and its figures. The opening paragraph above an overview is kept only where the
 // overview does not already say it.
 export const projects: ProjectPage[] = [
+  // From the project's own session (pc-builder-entry.md, Nov 23), each fact with its source there. A draft of his
+  // to rewrite. Left out until he says: who it was made with, which the entry and the video's end card give
+  // differently.
+  {
+    kind: 'study',
+    slug: 'desktop-pc-builder',
+    sub: 'Build a gaming PC in 3D, part by part, in the browser. No AI, no accounts.',
+    shots: [
+      { src: '/media/work/pc-builder-poster.webp', alt: 'A tour of the app. A white PC lights up and the lighting panel recolors it live. Single parts turn in the Inspector, and a graphics card is refused for being too thick. Then come the cable colors, the exploded view with labels, airflow at load with the spec sheet, and the cases in turn, ending on the title.', caption: 'A tour: lighting, parts, fit checks, cables, exploded view and airflow.', slot: 'video', video: '/media/work/pc-builder-video.mp4' },
+      { src: '/media/work/pc-builder-1.webp', alt: 'The Prism build in Build mode, a black case with rainbow lighting, with the lighting panel on the left, the spec sheet on the right and the builds tray below.', caption: 'The whole bench: lighting, spec sheet and the builds tray.' },
+      { src: '/media/work/pc-builder-2.webp', alt: 'The Prism build in exploded view, its radiator, glass and fans pulled away from the case, with a label naming each part.', caption: 'Exploded view, every part pulled out and labeled.' },
+      { src: '/media/work/pc-builder-3.webp', alt: 'The Foundry build in an amber-lit case with the airflow view on, streams of air running from the intake fans to the exhaust at 80 percent load.', caption: 'Airflow at 80 percent load, with simulated temperatures.' },
+      { src: '/media/work/pc-builder-4.webp', alt: 'A close view inside the case of a liquid cooler pump with a green ring, beside four blue memory sticks and a yellow fan.', caption: 'Up close on the pump, memory and fans.' },
+      { src: '/media/work/pc-builder-5.webp', alt: 'A white three-fan graphics card on a purple turntable in the Inspector, with a panel listing its length, thickness, power and draw.', caption: 'A single part on the Inspector turntable, with its specs.' },
+    ],
+    proved: [
+      { value: '43', label: 'parts, each modeled in code' },
+      { value: '6', label: 'cases in twelve finishes' },
+      { value: '400', label: 'automated tests' },
+      { value: '360', label: 'screenshots, each with a recorded verdict' },
+    ],
+    why: [
+      'A PC configurator usually means a list of parts with a compatibility checker beside it. You never see the machine take shape, and when a part is refused you rarely learn why. The project set out to make building a PC physical: pick up a part, see where it can go, watch it seat, and be told the real reason when it does not fit.',
+      'It is also a portfolio piece. It exists to show design engineering, cinematic web animation, interaction craft and systems thinking. The bar was a top-tier real-time product configurator, with every part modeled with real geometry and physically based materials.',
+    ],
+    what: [
+      'A static web app. You choose a case and drag parts into it by mouse, touch or keyboard. Sockets appear where each part can really go, and every install has its own motion: memory latches close, card bracket screws turn, fans drop onto their mounts. A rules engine knows what fits. It says why in one sentence with the numbers, for example “Too long. This card is 322 mm and the case has 310 mm free.” When a part is removed, the parts that depend on it go with it, and undo brings everything back.',
+      'The lighting system works per LED, with eight effects, a gradient editor, per-part overrides and nine presets. A power-on sequence spins the fans up and brings the light up part by part. A load control drives simulated temperatures, and an airflow view draws air from intake to exhaust. Showcase mode adds a camera tour, and an exploded view separates the build with labels. Builds are kept as share links that rebuild exactly, saved in the browser, or exported as posters. The app has desktop, tablet and phone layouts, three quality tiers, and screen reader support.',
+      'It runs entirely in the browser from static files, with no server, database, account or API key. Every brand and part in it is invented.',
+    ],
+    how: [
+      { title: 'Every part is generated in code', text: 'There are no downloaded models. Each board, card, cooler and fan is built from geometry with physically based materials, so all 43 parts and 6 cases share one look and one level of detail.' },
+      { title: 'The rules engine is separate from the 3D', text: 'It is pure TypeScript with no Three.js and no DOM, and it reproduces a fixed set of known inputs and outputs exactly. The same engine drives the socket highlights, the refusal messages and the spec sheet.' },
+      { title: 'Glass that reads as glass', text: 'A reflected environment map made the side panel look either open or milky in early reviews. The glass shader now ray-traces soft studio light cards at real distances, the way product photographers light glass.' },
+      { title: 'No stutter after loading', text: 'The app warms every shader program up front and keeps the light count fixed with dark spare lights, so changing builds never compiles anything. It measured 530 programs at the end of the warm-up and 530 after cycling through every preset and part.' },
+      { title: 'Demo reels inside the app', text: 'The marketing video is not edited footage. The app plays scripted reels with hard cuts, and anything it needs is generated before play. That cut the pause at each cut from 270–590 ms to 50–80 ms.' },
+    ],
+    built: [
+      ['3D', ['Three.js', 'WebGL 2', 'Custom shaders for glass, perforated metal and LEDs', 'Ambient occlusion, bloom and outline passes']],
+      ['Interface', ['React 19', 'CSS Modules', 'Zustand', 'GSAP']],
+      ['Language and build', ['TypeScript (strict)', 'Vite']],
+      ['Testing', ['Vitest', 'Playwright', 'A screenshot harness with a verdict ledger']],
+      ['Hosting', ['Static files on Vercel']],
+    ],
+  },
   {
     kind: 'study',
     slug: 'proactive-ui-for-ai-glasses',

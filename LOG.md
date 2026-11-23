@@ -18,6 +18,22 @@ A narrow iPad: keep it as it is. Write it into BRIEF.md as my ruling: about 1250
 Keep the lit line under my name and the link at the top.
 ```
 
+## 2026-11-23 · Real projects begin: the Desktop PC Builder is in (Fable, Claude Code)
+
+**One project is wired and pushed. Three small calls on it wait on him.** `BRIEF.md`, Open 33, last bullet.
+
+- **What he said:** he is ready to add projects. Each project's Claude Code session has the assets and the facts. A project's page has a video that starts by itself when the page opens, and a card has a screenshot that plays a looping video under the pointer.
+- **The brief the other sessions answer** (given to him to paste): the card's name (32 characters), kind, year, description (about 225), three tags (13 each), links, category. The page's line under the name, up to four figures, the problem, what was built, three to six decisions, what it is built with. The files, in one Desktop folder, named by slug: `<slug>.webp` or `-card.webp` (1600 by 800, the loop's first frame), `-loop.mp4` (1600 by 800, 6 to 10 s, no audio, seamless, under about 4 MB), `-video.mp4` (1920 by 1080, no audio, faststart), `-poster.webp`, `-1.webp` and on, each with alt text and a caption.
+- **Desktop PC Builder**, from `~/Desktop/portfolio-loop/` (its `pc-builder-entry.md` has every fact with its source):
+    - Files copied to `public/media/work/pc-builder*`. The originals are left on the Desktop.
+    - **The page video was 53 MB and is 24.5 MB here**: the same 1080p at 60 frames a second, encoded again by Fable with `ffmpeg -c:v libx264 -preset slow -crf 27 -movflags +faststart -an`. A frame beside the original shows no difference at the page's size.
+    - `src/content/work.ts`: its card, in `more` (the page of all his work), under Sites, with `picture.loop`. `src/content/projects.ts`: its page.
+    - `src/components/Viewer.tsx`: a project's video starts by itself, muted and round again (`Film`). With reduced motion it waits to be played.
+    - The repo link is `github.com/BrandonChurch93/PC-Desktop-Builder`, which this repo's own `CLAUDE.md` names as the PC Builder's. The one he gave that session was a space shooter's.
+- **Checked** on a production build: the video is playing four seconds after the page opens on a desktop and a phone, the card's loop plays under the pointer and its picture is back when the pointer leaves, no errors. `npm run mem`: the project's page 394 loaded and 370 at its foot, the page of all his work 448 and 445.
+- **Left out until he says:** who it was made with. The entry says Claude Code (and its fifth decision, "Built by an unattended AI agent", says so too). The video ends on "Built with Perplexity Computer". The page says neither.
+- **Also for him:** the video's first title says "6 cases. 55 parts." and the entry says 43 parts, from the catalog. And whether it takes one of the four places on the home page.
+
 ## 2026-11-21 · His four rulings built: the world's picture the default, a narrow iPad, the navigation's rule (Fable, Claude Code)
 
 **Built, measured and pushed. One thing was said to him plainly: a narrow iPad measures about 1250 for a moment, not 1220.** `BRIEF.md`, Open 36 and 37, have the rulings.
