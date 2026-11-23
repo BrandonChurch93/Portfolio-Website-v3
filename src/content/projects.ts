@@ -49,11 +49,11 @@ const video = (src: string, alt: string): Shot => ({ src, alt, caption: 'A video
 // overview does not already say it.
 export const projects: ProjectPage[] = [
   // From the project's own session (HALATION-ENTRY.md, Nov 23), each figure with its source there. A draft of his
-  // to rewrite. No tool is named as its maker, by his word of Nov 23.
+  // to rewrite. Nothing on it says an agent or a tool built it, by his word of Nov 23 (BRIEF.md, Open 33).
   {
     kind: 'study',
     slug: 'halation',
-    sub: 'A neon twin-stick shooter built end to end by an AI agent, films included.',
+    sub: 'A neon twin-stick shooter for the browser, with films made from the real game.',
     shots: [
       { src: '/media/work/halation-poster.webp', alt: 'The title draws itself over the grid, then the ship fights growing swarms, fires a bomb, loses its last ship and reaches a new best score.', caption: 'One unbroken run, flown by the game’s own bot pilot.', slot: 'video', video: '/media/work/halation-video.mp4' },
       { src: '/media/work/halation-1.webp', alt: 'The Halation title in blue line type over a dimmed arena, with “Click or press any key to start” beneath it.', caption: 'The title screen, with a bot playing behind it.' },
@@ -66,16 +66,15 @@ export const projects: ProjectPage[] = [
       { value: '10', label: 'enemy kinds, each with its own behavior' },
       { value: '584,589', label: 'spawns checked for fairness, 0 breaches' },
       { value: '473', label: 'unit tests, all passing' },
-      { value: '33 h', label: 'of unsupervised agent build time' },
+      { value: '30,000', label: 'sparks on screen at once' },
     ],
     why: [
       'The bar was a twin-stick shooter as good to look at and to play as the best released games of the genre, but entirely original: every name, shape, sound and screen made from scratch. Alongside the game the same codebase had to produce two videos: a showcase film and a silent loop for the portfolio card.',
-      'All of it was to be built by an AI agent working alone, from a written kit, with no questions asked along the way. That called for rules and checks the agent could hold itself to (balance, fairness, determinism, the look) instead of a person checking each step.',
     ],
     what: [
       'The game: one ship in a walled arena whose floor is a grid of light that bends under every blast. Ten kinds of enemy warp in without end, alone at first and then in surges of seven formations. The weapon climbs five tiers, power cores give four timed overdrives, and every shard collected raises the multiplier. The game makes its shapes, its letters and its sound in code, with no image or audio files. It plays with keyboard and mouse, keyboard only, gamepad or touch, and steps its own quality down to hold 60 fps.',
       'The films: both are recordings of the real game. The expert bot pilot plays from a fixed seed, and a headless browser draws each frame with the game’s own renderer. The loop closes exactly: the game’s state repeats, so frame 480 is identical to frame 0. An export page renders the same films at full speed on a computer with a GPU.',
-      'The harness: 46 scripts that run the game in Node, render stills and films, measure the pictures and sound, and gate each of the eight build phases. Three bot pilots tune the balance. Juries of critic models from six model families scored the stills and films in 21 rounds.',
+      'The harness: 46 scripts that run the game in Node, render stills and films, measure the pictures and sound, and gate each of the eight build phases. Three bot pilots tune the balance.',
     ],
     how: [
       { title: 'Everything in code', text: 'No sprite, font or sound file ships with the game. Shapes, line type, music and effects are generated live, so the look can be tuned from numbers in one config file.' },
@@ -89,7 +88,7 @@ export const projects: ProjectPage[] = [
       ['Game', ['TypeScript', 'three.js (WebGL) with custom line and glow shaders', 'GSAP for interface easing', 'Web Audio API for live sound and music']],
       ['Build', ['Vite']],
       ['Films', ['Playwright driving headless Chromium', 'ffmpeg', 'WebCodecs for the in-browser export page']],
-      ['Testing', ['Vitest', 'Node against browser determinism checks', 'Bot pilots for balance and fairness', 'AI critic juries']],
+      ['Testing', ['Vitest', 'Node against browser determinism checks', 'Bot pilots for balance and fairness']],
     ],
   },
   // From the project's own session (pc-builder-entry.md, Nov 23), each fact with its source there. A draft of his
@@ -158,7 +157,6 @@ export const projects: ProjectPage[] = [
       'An assistant on a screen waits to be asked. Glasses have to decide when to speak at all, to someone who is walking, watching for traffic and can’t afford to read. This project is a study of that decision.',
       'One looping city block renders in real time in Three.js. The wearer walks it on rails and looks where they like, with a viewfinder standing in for eye tracking. Ten times a second a rules engine reads a snapshot of the walk (pace, gaze and dwell, the crossing and its signal, nearby cars and people, messages and the goal) and returns decisions, each with a level, a timing, a placement and a reason. Gates beat everything: in a crossing the glass steps back and the safety text shows. A settled view lights the labels of the places in sight, a held look grows one into its card and then its expanded view, and turning away plays it back down a level at a time.',
       'The brain is a rules policy, not a model: no LLM, no keys, no server, and a seeded simulation, so the same inputs make the same decisions every run. That is what keeps the proof exact. The inspector replays every decision with its reason, and the eval suite runs two recorded walks and 41 focused cases through the engine headless, scoring them against hand-written expectations.',
-      'Claude Code on Opus built it from a written spec across 31 gated phases. In the final rounds a second Claude Code session reviewed each phase and reran its checks, and I played each build before the next one was written.',
     ],
     how: [
       { title: 'Thirteen walking rules', text: 'The clear center of view grows with pace, unread labels fold themselves in 2.5 seconds at a walk, and a brisk pace gets one captioned line in place of a pane.' },
@@ -197,7 +195,7 @@ export const projects: ProjectPage[] = [
     what: [
       'A production RAG pipeline end to end: a nightly GitHub Action ingests the live Claude Code docs, chunks them along heading boundaries, and embeds only what changed (an unchanged corpus re-syncs in 26 seconds with zero embedding calls). Questions are answered by Claude Haiku from retrieved passages only, streamed with the sources arriving before the first token, with real cost printed on every receipt.',
       'The distinctive part is what happens when it can’t answer: a server-side gate calibrated from measured score distributions refuses before the model is ever called, and a public /evals page shows retrieval accuracy, LLM-judged answer quality with a noise margin, and the refusal tests, all re-run by CI so a regression cannot merge.',
-      'The entire application was built by Claude Code executing twelve specification documents I wrote, under a three-tier decision authority that escalated ten real engineering conflicts to me for rulings. Hand-built editorial design system in three typefaces, no UI framework, with accessibility gated in CI.',
+      'Hand-built editorial design system in three typefaces, no UI framework, with accessibility gated in CI.',
     ],
     how: [
       { title: 'A refusal gate on the server', text: 'Below the calibrated similarity threshold the model is never called; a decline costs 30x less than an answer and says so on its receipt.' },
@@ -205,7 +203,6 @@ export const projects: ProjectPage[] = [
       { title: 'A public eval scoreboard', text: 'Retrieval hit@5 and MRR plus a four-check LLM judge with a measured noise margin, re-run by CI on every change; regressions cannot merge.' },
       { title: 'A corpus that keeps itself', text: 'A daily Action hash-diffs the live docs and embeds only deltas; first ingest 8 minutes, unchanged re-sync 26 seconds.' },
       { title: 'Spend defenses', text: 'Asymmetric failure postures: per-IP rate limiting fails open, the global daily spend cap fails closed; every receipt computes cost from real API usage.' },
-      { title: 'Built by an agent under governance', text: 'Twelve frozen spec documents, three-tier decision authority, phase gates with self-audits, ten escalated rulings, all logged.' },
       { title: 'A hand-built design system', text: 'Three typefaces as three voices, token palette with measured WCAG contrast, no UI framework.' },
       { title: 'Hardened CI', text: 'Playwright e2e with axe, Lighthouse budgets, payload assertions, secret greps and CVE gates that caught three real advisories mid-build.' },
     ],
@@ -238,7 +235,6 @@ export const projects: ProjectPage[] = [
       'A product that treats a website’s design system as data. Paste a URL and a headless crawler visits its key pages, captures every component in every state it can reach, clusters raw values into tokens, runs five measured checks per component and reports where the system is drifting. It’s free to try, with paid plans through Stripe, and everything exports to Tailwind, W3C tokens and an MCP server.',
       'Reading stylesheets isn’t enough, so this watches the page. A Playwright crawler picks the pages that matter, walks the real Tab order for focus, holds the mouse down for active states and reads motion from the running page, including GSAP. Values cluster into tokens in OKLCH, and components are grouped by structure, not selectors. Every preview is rebuilt as sanitized HTML and CSS, then pixel-diffed against the real page before it’s shown live. Real sites fought back. stripe.com first took 773 seconds against a six-minute limit, and live preview rates started near 30%. Four measured rounds of cause-by-cause fixes brought them to between 72% and 83%.',
       'The model only names and narrates. Every call has a deterministic fallback, and every number in a narrative is checked against the facts. Free runs sit behind a daily budget that fails closed, per-visitor caps and a worst-case reservation. Paid plans through Stripe lift those limits, and a typical run costs under a cent in model spend.',
-      'Claude Code on Opus built it from a kit I planned, across nineteen gated phases and 112 logged decisions, with a second Claude Code session reviewing each round before I tested it.',
     ],
     how: [
       { title: 'Previews checked by pixels', text: 'Each component is rebuilt as sanitized HTML and CSS and pixel-diffed against the real page. Within 2.5% it renders live; otherwise the crop shows with the measured reason.' },
@@ -248,7 +244,6 @@ export const projects: ProjectPage[] = [
       { title: 'Measured checks and a safe drift fix', text: 'Five checks per component, counted as measured, never claimed. The drift report proposes a smaller token set that keeps every passing contrast pair passing.' },
       { title: 'Built for AI reuse', text: 'Exports to CSS, JSON, Tailwind and W3C tokens, a prompt for any model, an MCP server with seven tools, and a CLI that can reach logged-in pages.' },
       { title: 'Free and paid tiers', text: 'Free runs are protected by a daily budget that fails closed, per-visitor caps and a worst-case reservation. Paid plans bill through Stripe and lift the caps.' },
-      { title: 'Built by an AI agent under a written spec', text: 'Nineteen gated phases, 112 logged decisions, and a release gate of 801 tests, 134 visual goldens, zero axe violations and Lighthouse budgets.' },
     ],
     built: [
       ['Front end', ['Next.js 16', 'React 19', 'TypeScript']],
@@ -399,7 +394,7 @@ export const projects: ProjectPage[] = [
       'A browser-native 3D specimen of a fictional hand-wound tourbillon, framed as a plate from a watchmaker’s reference folio. Nothing is imported. Every gear, jewel and texture, and the clockwork moth that lives on the bench, is generated in code. The mechanism runs on its own logic: real tooth counts, driven from a single beat counter. Visitors can wind it, take it apart, tour it part by part, and watch it run down.',
       'A deterministic kinematic model, not an animation. The escapement, tourbillon and gear train all derive from one integer beat counter at 8 beats per second, and the train is solved backward from the cage by real tooth counts: 60:1 from the centre wheel to the cage, 12:1 between the hands.',
       'The whole scene is procedural: 27 parts, 555 instances and 51 PBR material families, with perlage, Geneva stripes and engravings baked to canvas at load, at about a million triangles per frame. Material changes happen per fragment in custom shaders. A re-plating wave sweeps a new finish across the movement from the crown, and a terminator dissolve turns day into night.',
-      'The build was spec-driven. I wrote fifteen specification documents with a 41-item acceptance list, an eight-step review ritual that gated each of twelve phases, and an override order for when rules collide. Perplexity Computer built it across those phases and seven review rounds. I then took it into Claude Code and added a hidden menu of 23 scripted camera takes, so the page can film its own commercials.',
+      'The build was spec-driven. I wrote fifteen specification documents with a 41-item acceptance list, an eight-step review ritual that gated each of twelve phases, and an override order for when rules collide. I then added a hidden menu of 23 scripted camera takes, so the page can film its own commercials.',
     ],
     how: [
       { title: 'Mechanics from one beat counter', text: 'The escapement, tourbillon and gear train all follow an integer beat counter solved by real tooth counts, with no keyframes anywhere in the mechanism.' },
@@ -409,12 +404,10 @@ export const projects: ProjectPage[] = [
       { title: 'Take it apart', text: 'The Dissected view fans the movement out by layer with labelled leaders. Click any of 27 parts for its card, or take a six-stop guided tour.' },
       { title: 'A living companion', text: 'A procedurally modelled clockwork moth that perches on moving parts, flies, and reacts to the movement’s state, starring in a 12-second opening film where the watch assembles around it.' },
       { title: 'A page that films itself', text: 'A hidden reel menu of 23 scripted takes with a camera director, focus pulls and an on-page pointer that clicks the real controls, all frame-repeatable.' },
-      { title: 'Built by an AI agent under a written spec', text: 'Fifteen documents, a 41-item acceptance list, review gates on every phase, and seven review rounds, then a Claude Code pass for filming and sharing.' },
     ],
     built: [
       ['3D', ['three.js', 'Custom GLSL Shaders']],
       ['Front end', ['JavaScript ES Modules', 'GSAP']],
-      ['Built by', ['Perplexity Computer', 'Claude Code']],
       ['Delivery', ['Vercel']],
     ],
   },

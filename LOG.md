@@ -18,6 +18,18 @@ A narrow iPad: keep it as it is. Write it into BRIEF.md as my ruling: about 1250
 Keep the lit line under my name and the link at the top.
 ```
 
+## 2026-11-23 · No project says an agent built it, and Halation has its live link (Fable, Claude Code)
+
+- **What he said:** "Going forward on all these projects they should never say an AI agent built it. This is something I worked very hard with the agent, came up with the idea, iterated on multiple different times on all of these projects, so be sure that never hits my portfolio." The live link: `https://space-shooter-game-perpelxity.vercel.app/` (it answers). And: start the dev server and open the changes in Chrome.
+- **Ruled into `BRIEF.md`, Open 33.** It replaces "a page may say an AI agent built a thing".
+- **Taken off the site, every place found** (`grep -i "built by\|agent\|claude code\|perplexity\|critic"` over `src/content/` now finds only the Claude Code docs as a product's subject, and the footer's own "Designed and built by Brandon Church"):
+    - Halation: "built by an AI agent" on the card, the line under its name, the paragraph that began "All of it was to be built by an AI agent working alone", the figure "33 h of unsupervised agent build time" (in its place the entry's own spare, 30,000 sparks on screen at once), and the critic juries.
+    - **The seven pages already on the site, in his live site's words:** the last paragraph of AI Glasses and of Design System Extractor ("Claude Code on Opus built it..."), the first sentence of Ask the Claude Docs' last paragraph, the decision "Built by an agent under governance" (Claude Docs) and "Built by an AI agent under a written spec" (Design System Extractor, Meridian), Meridian's "Perplexity Computer built it" sentence and its "Built by" row, and "AI" in Meridian's tag "Spec-Driven AI Build".
+    - What stays, because it is his own part: "The build was spec-driven. I wrote fifteen specification documents..." on Meridian.
+- **Halation's card has Live and Code.**
+- The dev server was already up on 5330. Opened in Chrome: `/work/halation`, `/work/desktop-pc-builder`, `/work`, `/`.
+- **For whoever wires the next project:** read the session's entry for this before any of it goes in. Both entries so far said it.
+
 ## 2026-11-23 · Halation is in, the first real game, and no tool is named as a maker (Fable, Claude Code)
 
 - **What he said on the PC Builder:** it was built with Claude Code and the video was made with Perplexity. "I don't think we really have to mention either definitely not perplexity. The video ending is fine for now. I'll fix that later." Nothing on its page changed: it already named neither. `BRIEF.md`, Open 33, last bullet, has it as a rule for every project.
