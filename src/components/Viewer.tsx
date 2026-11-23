@@ -18,20 +18,6 @@ import styles from './Viewer.module.css';
 const FEW = 6, MANY = 10;
 const rows = (n: number, most: number) => Math.ceil(n / Math.ceil(n / most));
 
-// A project's video. It starts by itself when the page opens, without sound and round again, as he asked (Nov 23):
-// a browser only lets a video start by itself when it is muted, and React does not set that in time as an
-// attribute, so it is set on the element. With reduced motion it waits to be played.
-function Film({ src, poster, label }: { src: string; poster: string; label: string }) {
-  const film = useRef<HTMLVideoElement>(null);
-  useEffect(() => {
-    const v = film.current;
-    if (!v || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    v.muted = true;
-    v.play().catch(() => undefined);
-  }, []);
-  return <video ref={film} src={src} poster={poster} aria-label={label} controls muted loop playsInline preload="metadata" />;
-}
-
 export function Viewer({ shots, aspect, rail = 'side', label, under }: { shots: Shot[]; aspect: number; rail?: 'side' | 'under'; label: string; under?: ReactNode }) {
   const [at, setAt] = useState(0);
   const [large, setLarge] = useState(false);
@@ -64,7 +50,9 @@ export function Viewer({ shots, aspect, rail = 'side', label, under }: { shots: 
         <Framed aspect={aspect}>
           <div className={styles.window}>
             {now.slot === 'video' && now.video
-              ? <Film key={now.video} src={now.video} poster={now.src} label={now.alt} />
+              // It waits to be played, with its sound: his films are cut to their music, and a browser only starts
+              // a video by itself when it is silent (his ruling of Nov 23).
+              ? <video key={now.video} src={now.video} poster={now.src} aria-label={now.alt} controls playsInline preload="metadata" />
               : (
                 <button type="button" className={styles.open} onClick={() => setLarge(true)} onKeyDown={keys} aria-label={`${words.open}: ${now.alt}`}>
                   <img key={`${now.src}-${at}`} src={now.src} alt={now.alt} decoding="async" />

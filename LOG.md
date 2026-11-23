@@ -18,6 +18,15 @@ A narrow iPad: keep it as it is. Write it into BRIEF.md as my ruling: about 1250
 Keep the lit line under my name and the link at the top.
 ```
 
+## 2026-11-23 · A project's video keeps its sound and waits to be played (Fable, Claude Code)
+
+- **What he asked:** why neither video had music. Because Fable's brief asked the other sessions for silent files, so the video could start by itself. **Fable also told him the PC Builder's source had no sound, which was wrong:** `Gaming-PC-Builder.mp4` has an AAC track. The first check cut the probe's output short.
+- **His ruling:** "The video doesn't have to start by itself. The audio has been fine tuned to match the video perfectly so it has to be included." In `BRIEF.md`, Open 33. It replaces the start by itself.
+- **Done:** each site video has its own sound again, laid in beside the same pictures (`ffmpeg -map 0:v -map 1:a -c:v copy -c:a aac -b:a 160k`): the PC Builder's from `~/Desktop/Perplexity Showcases/PC-Builder/Gaming-PC-Builder.mp4` (26.9 MB now), Halation's from the repo's `out/cuts/halation-film-straight-1080p60.mp4` (36.2 MB). `Viewer.tsx` shows the video with its poster and controls and no longer starts it.
+- **Checked** on the dev server in Chromium: each video is paused at rest, and played it runs with sound decoded and not muted.
+- **The brief for the next sessions changes in one line:** the page video keeps its sound.
+- Halation's track has no named source or license in that repo's own notes (`cut/music/TRACK.md`). He was told and said it is fine.
+
 ## 2026-11-23 · No project says an agent built it, and Halation has its live link (Fable, Claude Code)
 
 - **What he said:** "Going forward on all these projects they should never say an AI agent built it. This is something I worked very hard with the agent, came up with the idea, iterated on multiple different times on all of these projects, so be sure that never hits my portfolio." The live link: `https://space-shooter-game-perpelxity.vercel.app/` (it answers). And: start the dev server and open the changes in Chrome.
