@@ -48,9 +48,52 @@ const video = (src: string, alt: string): Shot => ({ src, alt, caption: 'A video
 // its text, its stack grouped here, and its figures. The opening paragraph above an overview is kept only where the
 // overview does not already say it.
 export const projects: ProjectPage[] = [
+  // From the project's own session (HALATION-ENTRY.md, Nov 23), each figure with its source there. A draft of his
+  // to rewrite. No tool is named as its maker, by his word of Nov 23.
+  {
+    kind: 'study',
+    slug: 'halation',
+    sub: 'A neon twin-stick shooter built end to end by an AI agent, films included.',
+    shots: [
+      { src: '/media/work/halation-poster.webp', alt: 'The title draws itself over the grid, then the ship fights growing swarms, fires a bomb, loses its last ship and reaches a new best score.', caption: 'One unbroken run, flown by the game’s own bot pilot.', slot: 'video', video: '/media/work/halation-video.mp4' },
+      { src: '/media/work/halation-1.webp', alt: 'The Halation title in blue line type over a dimmed arena, with “Click or press any key to start” beneath it.', caption: 'The title screen, with a bot playing behind it.' },
+      { src: '/media/work/halation-2.webp', alt: 'A pink burst flares at the center of the grid as purple chevrons circle and the ship fires from the right.', caption: 'A well wakes and drags the field toward it.' },
+      { src: '/media/work/halation-3.webp', alt: 'Hundreds of orange squares and purple chevrons close in on the ship as it fans yellow shots into them.', caption: 'The surge before the bomb, multiplier at x291.' },
+      { src: '/media/work/halation-4.webp', alt: 'A cyan shockwave ring leaves the ship in the middle of a dense crowd of orange and purple enemies.', caption: 'The bomb’s shockwave leaves the ship.' },
+      { src: '/media/work/halation-5.webp', alt: 'The game over screen: 16,153,995 points, marked new best, 2:08 survived, 1,630 kills, best multiplier x500.', caption: 'The run ends on a new best score.' },
+    ],
+    proved: [
+      { value: '10', label: 'enemy kinds, each with its own behavior' },
+      { value: '584,589', label: 'spawns checked for fairness, 0 breaches' },
+      { value: '473', label: 'unit tests, all passing' },
+      { value: '33 h', label: 'of unsupervised agent build time' },
+    ],
+    why: [
+      'The bar was a twin-stick shooter as good to look at and to play as the best released games of the genre, but entirely original: every name, shape, sound and screen made from scratch. Alongside the game the same codebase had to produce two videos: a showcase film and a silent loop for the portfolio card.',
+      'All of it was to be built by an AI agent working alone, from a written kit, with no questions asked along the way. That called for rules and checks the agent could hold itself to (balance, fairness, determinism, the look) instead of a person checking each step.',
+    ],
+    what: [
+      'The game: one ship in a walled arena whose floor is a grid of light that bends under every blast. Ten kinds of enemy warp in without end, alone at first and then in surges of seven formations. The weapon climbs five tiers, power cores give four timed overdrives, and every shard collected raises the multiplier. The game makes its shapes, its letters and its sound in code, with no image or audio files. It plays with keyboard and mouse, keyboard only, gamepad or touch, and steps its own quality down to hold 60 fps.',
+      'The films: both are recordings of the real game. The expert bot pilot plays from a fixed seed, and a headless browser draws each frame with the game’s own renderer. The loop closes exactly: the game’s state repeats, so frame 480 is identical to frame 0. An export page renders the same films at full speed on a computer with a GPU.',
+      'The harness: 46 scripts that run the game in Node, render stills and films, measure the pictures and sound, and gate each of the eight build phases. Three bot pilots tune the balance. Juries of critic models from six model families scored the stills and films in 21 rounds.',
+    ],
+    how: [
+      { title: 'Everything in code', text: 'No sprite, font or sound file ships with the game. Shapes, line type, music and effects are generated live, so the look can be tuned from numbers in one config file.' },
+      { title: 'A deterministic sim, separate from drawing', text: 'The rules run on a fixed step with no browser in them, so a seed and the input of each tick replay the same game. 61 state snapshots match between Node and the browser.' },
+      { title: 'Films made from the real game', text: 'Nothing is screen-captured or faked: a bot plays, and each frame is rendered from the sim’s state. That is what lets the loop end on its own first frame.' },
+      { title: 'Tune the game to the bots, not the bots to the game', text: 'Three pilots were frozen early, then the config was tuned until each pilot’s median survival sat in its band: novice 56.7 s, average 295.3 s, expert 600 s.' },
+      { title: 'Fairness checked by machine', text: 'Six rules (no spawn near the ship, no hit before a warp completes, a warning line before every lancer charge, and so on) are checked across 50 seeds of 5 minutes each.' },
+      { title: 'Match the look by measuring it', text: 'The approved concept image was measured (line profiles, glow rings, saturation) and those numbers became checks. Enemies blend with max, not addition, so crossing lines never burn to white.' },
+    ],
+    built: [
+      ['Game', ['TypeScript', 'three.js (WebGL) with custom line and glow shaders', 'GSAP for interface easing', 'Web Audio API for live sound and music']],
+      ['Build', ['Vite']],
+      ['Films', ['Playwright driving headless Chromium', 'ffmpeg', 'WebCodecs for the in-browser export page']],
+      ['Testing', ['Vitest', 'Node against browser determinism checks', 'Bot pilots for balance and fairness', 'AI critic juries']],
+    ],
+  },
   // From the project's own session (pc-builder-entry.md, Nov 23), each fact with its source there. A draft of his
-  // to rewrite. Left out until he says: who it was made with, which the entry and the video's end card give
-  // differently.
+  // to rewrite. No tool is named as its maker, by his word of Nov 23.
   {
     kind: 'study',
     slug: 'desktop-pc-builder',
@@ -436,7 +479,7 @@ export const STAND_IN_WORD = STAND_IN;
 
 // Whether a page belongs to a category that is all stand ins: such a page is for judging the layout, and is kept
 // out of the sitemap and away from search engines.
-export const standsIn = (slug: string): boolean => !!catalog.find((c) => c.items.some((i) => i.slug === slug))?.standIn;
+export const standsIn = (slug: string): boolean => !!catalog.flatMap((c) => c.items).find((i) => i.slug === slug)?.standIn;
 
 // A project's page with the card it belongs to, and the projects before and after it in its own category.
 export function projectOf(slug: string): { page: ProjectPage; item: WorkItem; prev: WorkItem | null; next: WorkItem | null } | null {

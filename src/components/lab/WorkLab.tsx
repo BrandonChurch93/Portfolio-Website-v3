@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ALL_WORK, categories } from '../../content/work';
+import { ALL_WORK, categories, standIns } from '../../content/work';
 import { mountStream } from '../../stream/stream';
 import { mountSwap, type Swap } from '../../stream/surge';
 import type { Hub } from '../../whole/hub';
@@ -75,7 +75,7 @@ export function WorkLab({ hub, under }: { hub?: Hub; under?: boolean }) {
             <button key={cat.name} type="button" className={styles.category} aria-pressed={category === index} onClick={() => pick(index)}>{cat.name}</button>
           ))}
         </div>
-        <p className="visually-hidden" role="status">Showing {categories[category].name}{categories[category].standIn ? ', four stand in cards' : ''}</p>
+        <p className="visually-hidden" role="status">Showing {categories[category].name}{standIns(categories[category].items) ? `, ${standIns(categories[category].items)} stand in cards` : ''}</p>
         <div ref={grid} className={styles.grid}>
           {ROWS.map((row) => (
             <div key={row} className={styles.row} data-part="row">

@@ -22,14 +22,14 @@ export interface WorkItem {
   // The sub categories it is under on the page of all his work. A project is in one category and may be under
   // several of that category's sub categories.
   subs?: string[];
+  // Not a real project: a card that stands in until he has the work to show.
+  standIn?: boolean;
 }
 
 // A kind of work, as the category bar names it, and the four projects it shows on the home page.
 export interface WorkCategory {
   name: string;
   items: WorkItem[];
-  // Not real projects: cards that stand in until he has the work to show and says which projects go where.
-  standIn?: boolean;
   // Its sub categories, in the order they are shown. None: the category is not divided, as Photography is not.
   subs?: string[];
 }
@@ -199,7 +199,26 @@ const standIn = (set: string, kind: string, names: string, n: number, line: stri
   picture: { src: `/media/work/stand-in-${set}-${((n - 1) % 4) + 1}.webp`, alt: `A plain picture standing in for ${names.toLowerCase()} ${n}` },
   page: PAGED.has(`${set}-stand-in-${n}`) ? `${ALL_WORK}/${set}-stand-in-${n}` : '',
   links: [],
+  standIn: true,
 });
+// How many of a list are stand ins.
+export const standIns = (items: WorkItem[]): number => items.filter((i) => i.standIn).length;
+
+// His games. From each project's own session, a draft of his to rewrite.
+export const played: WorkItem[] = [
+  {
+    slug: 'halation',
+    name: 'Halation',
+    kind: 'Browser Arena Shooter',
+    year: '2026',
+    line: 'A neon twin-stick arena shooter for the browser, built by an AI agent. Every shape, letter and sound is generated in code, and its films are the real game, played by a bot pilot and rendered frame by frame.',
+    tags: ['Three.js', 'TypeScript', 'Web Audio'],
+    picture: { src: '/media/work/halation-card.webp', alt: 'A white arrow ship streaks across a glowing blue grid toward a crowd of neon squares, chevrons, pinwheels and a green segmented serpent.', focus: [0.5, 0.5], loop: '/media/work/halation-loop.mp4' },
+    page: `${ALL_WORK}/halation`,
+    links: [{ label: 'Code', href: `${GITHUB}/Space-Shooter-Game-Perpelxity` }],
+    subs: ['Web'],
+  },
+];
 
 const count = (n: number) => Array.from({ length: n }, (_, i) => i + 1);
 const games = (n: number): WorkItem[] => count(n).map((n) => standIn('game', 'Game', 'Game', n,
@@ -214,9 +233,9 @@ const photography = (n: number): WorkItem[] => count(n).map((n) => standIn('phot
 
 export const categories: WorkCategory[] = [
   { name: 'Software', items: software },
-  { name: 'Games', items: games(4), standIn: true },
-  { name: '3D art', items: art(4), standIn: true },
-  { name: 'Photography', items: photography(4), standIn: true },
+  { name: 'Games', items: [...played, ...games(4 - played.length)] },
+  { name: '3D art', items: art(4) },
+  { name: 'Photography', items: photography(4) },
 ];
 
 // Everything, for the page of all his work: the same four categories, each with all it holds. Every category shows,
@@ -247,7 +266,7 @@ const turn = (items: WorkItem[], subs: readonly string[], kind: (sub: string) =>
 
 export const catalog: WorkCategory[] = [
   { name: 'Software', items: [...software, ...more].map((item) => ({ ...item, subs: UNDER[item.slug] ?? [] })), subs: [...SUBS.software] },
-  { name: 'Games', items: turn(games(6), SUBS.games, (sub) => `${sub} game`), standIn: true, subs: [...SUBS.games] },
-  { name: '3D art', items: turn(art(6), SUBS.art, (sub) => sub), standIn: true, subs: [...SUBS.art] },
-  { name: 'Photography', items: photography(6), standIn: true },
+  { name: 'Games', items: [...played, ...turn(games(6 - played.length), SUBS.games, (sub) => `${sub} game`)], subs: [...SUBS.games] },
+  { name: '3D art', items: turn(art(6), SUBS.art, (sub) => sub), subs: [...SUBS.art] },
+  { name: 'Photography', items: photography(6) },
 ];

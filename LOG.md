@@ -18,6 +18,17 @@ A narrow iPad: keep it as it is. Write it into BRIEF.md as my ruling: about 1250
 Keep the lit line under my name and the link at the top.
 ```
 
+## 2026-11-23 · Halation is in, the first real game, and no tool is named as a maker (Fable, Claude Code)
+
+- **What he said on the PC Builder:** it was built with Claude Code and the video was made with Perplexity. "I don't think we really have to mention either definitely not perplexity. The video ending is fine for now. I'll fix that later." Nothing on its page changed: it already named neither. `BRIEF.md`, Open 33, last bullet, has it as a rule for every project.
+- **Halation**, from `~/Desktop/Halation-Space-Shooter/portfolio/` (`HALATION-ENTRY.md` has every figure with its source):
+    - Files copied to `public/media/work/halation*`. The page video is that session's 30 frames a second version, 35 MB: Fable's own encodes of the 60 one came out at 37 to 45 MB, since the picture is all small bright sparks.
+    - **The poster is Fable's**, the frame a second and a half in, with the title drawn: the first frame is nearly black and made a black thumbnail.
+    - `src/content/work.ts`: `played` holds his games. Games on the home page is Halation and three stand ins, and on the page of all his work Halation and five. A stand in is marked on the card itself now (`standIn` on a `WorkItem`, `standIns()`), not on its category, so the count reads "1 project · 5 stand ins" and only a stand in's page is kept out of the index.
+    - Left off: the Live link (there is none), an Evals link to the repo's scorecards (the scores are 5 to 8 against a bar of 9), "Perplexity Computer" wherever the entry named it, and "for X" after the showcase film. "A music track Brandon supplied" is left out with the sentence it was in, since the page's films are silent.
+- **Checked** on a production build: the page's video playing four seconds after it opens on a desktop and a phone, the card bronze at rest and its loop in color under the pointer, the count line, no errors. `npm run mem -- /work/halation`: 395 loaded, 366 at its foot.
+- **For him:** deploy the game if he wants a Live link. Say what his part in it was. Whether the PC Builder takes a place on the home page, and its 55 parts against 43.
+
 ## 2026-11-23 · Real projects begin: the Desktop PC Builder is in (Fable, Claude Code)
 
 **One project is wired and pushed. Three small calls on it wait on him.** `BRIEF.md`, Open 33, last bullet.

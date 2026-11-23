@@ -5,7 +5,10 @@ import type { Look } from '../atmosphere/atmosphere';
 import { useRoom } from '../atmosphere/useRoom';
 import { HOME } from '../config/site';
 import { allWork } from '../content/site-pages';
-import { catalog } from '../content/work';
+import { catalog, standIns } from '../content/work';
+
+// A count with its word, or nothing where there are none: "1 project", "5 stand ins".
+const said = (n: number, one: string, many: string): string => (n ? `${n} ${n === 1 ? one : many}` : '');
 import { MetalButton } from './MetalButton';
 import { SiteFoot } from './SiteFoot';
 import { MAIN, SiteNav } from './SiteNav';
@@ -48,7 +51,7 @@ export function AllWork({ look = null }: { look?: Look | null }) {
           ))}
         </div>
       )}
-      <p className={styles.count} role="status">{now.name}{sub ? ` · ${sub}` : ''} · {n} {now.standIn ? (n === 1 ? allWork.standIn : allWork.standIns) : n === 1 ? allWork.project : allWork.projects}</p>
+      <p className={styles.count} role="status">{now.name}{sub ? ` · ${sub}` : ''} · {n ? [said(n - standIns(shown), allWork.project, allWork.projects), said(standIns(shown), allWork.standIn, allWork.standIns)].filter(Boolean).join(' · ') : `0 ${allWork.projects}`}</p>
       <section key={now.name} className={styles.grid} aria-labelledby="work-shown">
         <h2 id="work-shown" className="visually-hidden">{now.name}{sub ? `, ${sub}` : ''}</h2>
         {shown.map((item) => <WorkCard key={item.slug} item={item} />)}
