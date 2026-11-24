@@ -175,8 +175,10 @@
   margin-top: calc(var(--u) * 30);
 }
 
-.button {
-  width: calc(var(--u) * 176);
+/* Never narrower than "Download résumé" needs: its words grow with the type and not with the board, and held to the
+   board's width alone they touched the button's border on a laptop and were cut on an iPad laid out wide. */
+.buttons .button {
+  width: max(calc(var(--u) * 176), 13rem);
   min-width: 0;
 }
 

@@ -2,6 +2,14 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-24 · The buttons' words clear of their borders, at every size (Opus, Claude Code)
+
+- **What he said:** on "Download résumé" the D and the final E touch the button's border, on every screen.
+- **Why:** a metal button draws its words at 14/48 of its height, and its height is in rem, so its words grow with the type. The hero gave both its buttons a width in board units (176), which grows with the screen's width instead. "Download résumé" had 8 px each side on a 1440 laptop and was cut on an iPad laid out wide (142 px wide). Contact's "Copy my email" had the same fault: 7 px each side at 1180 and about 2 at 1100.
+- **Done:** the hero's two buttons are never narrower than 13rem, the width a phone already gave them (`.buttons .button` in `HeroLab.module.css`). "Copy my email" holds at least 9.75rem, and "Book on Calendly" beside it gives way (`.copy.copy` in `ContactLab.module.css`). That width is fixed and not taken from the label, so the button keeps its width when it says Copied. From 1440 up nothing changed except where the words needed it.
+- **Measured** on a production build, every metal button on the home page and All work, from 1100 to 4K and at a phone and an iPad both ways (`shots/resume/room.mjs`, which works out the room from the plate's own font and border): the least room is now 10.8 px each side ("Book on Calendly" at 1100). "Download résumé" has 25 everywhere. The project pages' Live and Code have 56 or more.
+- Done by Opus (he changed the model), as a fix and not a change of design.
+
 ## 2026-11-23 · Sunflower is in, and its film is to be switched before launch (Fable, Claude Code)
 
 **Come back to this before the site is launched: he is switching the film for a newer one.** `PLAN.md`, Now, has the line.

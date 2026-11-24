@@ -114,9 +114,12 @@
   min-width: 0;
 }
 
+/* Its words grow with the type and not with the board: on a narrow board it holds room for them and the book button
+   gives way. Fixed and not from its label, so it does not change width when it says Copied. */
 .copy.copy {
+  flex-shrink: 0;
   width: calc(var(--u) * 178);
-  min-width: 0;
+  min-width: 9.75rem;
 }
 
 .rule {
