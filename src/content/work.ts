@@ -118,7 +118,6 @@ export const software: WorkItem[] = [
 // the live site's and the pictures are its screenshots. The years are a guess until he says: the live site gives none.
 export const more: WorkItem[] = [
   // His video for the page is to be switched for a newer one before the site is launched (his word, Nov 23).
-  // No Live link until he gives one.
   {
     slug: 'sunflower',
     name: 'Sunflower',
@@ -128,7 +127,10 @@ export const more: WorkItem[] = [
     tags: ['WebGL', 'Time Lapse', 'Music Sync'],
     picture: { src: '/media/work/sunflower-card.webp', alt: 'A closed sunflower bud ringed by pointed green bracts stands against a low, hazy sun and a blurred field.', focus: [0.5, 0.5], loop: '/media/work/sunflower-loop.mp4' },
     page: `${ALL_WORK}/sunflower`,
-    links: [{ label: 'Code', href: `${GITHUB}/Sun-Flower-Perplexity` }],
+    links: [
+      { label: 'Live', href: 'https://sun-flower-perplexity.vercel.app/' },
+      { label: 'Code', href: `${GITHUB}/Sun-Flower-Perplexity` },
+    ],
   },
   {
     slug: 'desktop-pc-builder',
