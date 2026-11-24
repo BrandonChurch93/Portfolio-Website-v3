@@ -30,6 +30,7 @@ Testing and polish, in a fresh Claude Code session, from the prompt in `LOG.md`,
 - [~] No copper rule under the navigation at the top of the home page, on any screen (his ruling of Nov 21). The lit line under his name and the link while the pointer is on them is kept there, by his word. The rule is there once the navigation comes back part way down, and on every other page: `reference/studies/78-the-navigation-with-no-rule-at-the-top-of-the-home-page.jpg`
 - [x] The sleeping blanks switched off on the home page and kept behind one switch (`BLANKS`, `?blanks=1`): Work's cards and Contact's plate show their content from the start (his word, Nov 20, 15:39: `BRIEF.md`, Open 37). What a press does to a card the stream has not reached, a crossfade in place in its row's turn: **he looked and said it is right (Nov 21, 13:45)**
 - **His alone, as he sees it:** hooking up the contact form, and the Work projects' real screenshots and content
+- [ ] **Before the site is launched: switch Sunflower's film for his newer one** (his word, Nov 23: `BRIEF.md`, Open 33). `public/media/work/sunflower-video.mp4`, its poster if the frame changes, and its Live link once he has one
 
 ### The finishing pass (his word, Nov 18: `BRIEF.md`, Open 35)
 

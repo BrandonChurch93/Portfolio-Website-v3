@@ -151,8 +151,11 @@
   color: var(--copper-light);
 }
 
+/* Kept whole on a line of its own before it is ever broken: a name longer than a phone's line ran off the screen. */
 .keep {
-  white-space: nowrap;
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: baseline;
 }
 
 /* In one row, shared between as many as there are: three in a row of four left its last quarter empty. */

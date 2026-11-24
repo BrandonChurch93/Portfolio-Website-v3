@@ -48,6 +48,52 @@ const video = (src: string, alt: string): Shot => ({ src, alt, caption: 'A video
 // its text, its stack grouped here, and its figures. The opening paragraph above an overview is kept only where the
 // overview does not already say it.
 export const projects: ProjectPage[] = [
+  // From the project's own session (portfolio/SUNFLOWER-ENTRY.md in its repository, Nov 23), each figure with its
+  // source there. A draft of his to rewrite. The video is to be switched for a newer one before the site is launched.
+  {
+    kind: 'study',
+    slug: 'sunflower',
+    sub: 'One sunflower and fifteen days of sky, drawn frame by frame to one piece of music.',
+    shots: [
+      { src: '/media/work/sunflower-poster.webp', alt: 'A film of 2 minutes 7 seconds in which one sunflower grows from bare soil to an open flower, through frost and a storm, and ends above a field at sunset, with music.', caption: 'The whole film with its music, from soil to field.', slot: 'video', video: '/media/work/sunflower-video.mp4' },
+      { src: '/media/work/sunflower-1.webp', alt: 'A sunflower seedling with two seed leaves stands beside its split seed husk on dark, crumbly soil under a low sun.', caption: 'The seedling at sunrise, beside the husk it left behind.' },
+      { src: '/media/work/sunflower-2.webp', alt: 'Frost crystals cover the tip and the leaves of the young plant, seen close against a pale sun in the mist.', caption: 'The frost hold: ice on the growing tip, sun behind.' },
+      { src: '/media/work/sunflower-3.webp', alt: 'The young sunflower stands in a puddle on wet soil while heavy rain falls from a dark sky, lit for a moment by lightning.', caption: 'The storm hold: the plant stands still in the rain.' },
+      { src: '/media/work/sunflower-4.webp', alt: 'The sunflower is fully open and faces the camera, its petals lit from behind by a low sun, with a field of sunflowers out of focus behind it.', caption: 'The flower fully open in the light of the evening.' },
+      { src: '/media/work/sunflower-5.webp', alt: 'Seen from above, a field of sunflowers runs to a ridge on the horizon where the sun is setting, with the film’s own plant in front.', caption: 'The field at sunset as the camera rises over it.' },
+    ],
+    proved: [
+      { value: '3,810', label: 'frames, each computed from its number' },
+      { value: '15', label: 'days of sky over one plant' },
+      { value: '47', label: 'cues placed on the music' },
+      { value: '1,500', label: 'disc florets in the flower head' },
+    ],
+    why: [
+      'A time lapse and a piece of music keep different time. A sunflower needs a season and the film has two minutes, yet the picture only works when its events land where the music does: a sunrise on a bar line, the bud opening on the loudest bar. No camera in a field can be asked for that.',
+      'The film also has to stop. When the frost comes and when the storm breaks, the time lapse gives way to real time and the plant must not grow at all, then carry on as if nothing had paused. All of it has to hold without a cut between the days, without nights long enough to lose the picture, and with each frame coming out the same every time it is drawn.',
+    ],
+    what: [
+      'Sunflower is a film of 2 minutes 7 seconds at 1920 x 1080 and 30 frames a second. One sunflower grows from bare soil to an open flower while the sky runs through fifteen days. Twice the time lapse stops and the plant stands still in real time, once under frost and once in a storm, and the film ends above a field at sunset.',
+      'None of it is footage. A web scene draws every frame: a plant grown along a skeleton, with its stem, 24 leaves, hairs, a bud, 34 ray florets and 1,500 disc florets set out by the golden angle; soil, a field of sunflowers and the far land; a sky whose sun, moon, stars and clouds all follow one clock; rain, mist and frost; and a lens with focus, glare and a grade. Apart from one soil scan, everything in the picture is drawn by the code or read from maps made for the film.',
+      'The music sets the time. The track is mapped to bars and beats, and each event of the film is written as a bar and a beat in a cue sheet that is compiled against that map. The plant has a clock of its own, which stands still in the two holds while the sky runs on. The frames are drawn one by one in a browser without a window, joined into the film and set to the track. The same scene also plays live on a web page, where the camera can be swung round the plant.',
+    ],
+    how: [
+      { title: 'Bars and beats, not seconds', text: 'Every event is placed as a bar and a beat of the track, at 140 beats a minute, and compiled to frames. All 15 sunrises cross the horizon on a bar line, and the bud begins to open on bar 57, the loudest bar of the track.' },
+      { title: 'Growth stops in the weather', text: 'In the frost and in the storm, 8 bars each, the plant’s clock stands still to the frame. Frost and rain arrive and leave inside their holds, so the time lapse never shows them.' },
+      { title: 'One camera move, four cuts', text: 'The film cuts four times, on the downbeats of bars 19, 21, 23 and 25, to three close shots of the frozen seedling and back. Everywhere else the camera is one unbroken move, from the soil to above the field.' },
+      { title: 'Nights shorter than a second', text: 'Each of the 14 nights lasts 0.86 to 0.96 seconds and the sun goes no deeper than 14 degrees, so a glow always stays on the horizon.' },
+      { title: 'A frame is a function of its number', text: 'Any frame can be drawn alone and gives the same pixels, so the film was drawn in parts on 12 machines side by side and joined. Nothing is made after loading: every program, texture and buffer exists before frame 0.' },
+      { title: 'Rules as commands', text: 'Each rule of the film is a command that measures the film and fails when the rule is broken: nothing grows in a hold, no night runs long, every sunrise sits on its bar line, the film cuts only on its four frames.' },
+    ],
+    built: [
+      ['Scene', ['TypeScript', 'three.js', 'WebGL 2', 'GLSL shaders']],
+      ['Time and music', ['A map of the track in bars and beats', 'A cue sheet compiled against it', 'Python with NumPy and SciPy']],
+      ['Drawing the frames', ['Node.js', 'Playwright', 'Chromium without a window', 'A software renderer in place of a graphics card']],
+      ['Film and pictures', ['ffmpeg', 'H.264', 'AAC', 'WebP']],
+      ['Site', ['Vite', 'Plain HTML and CSS']],
+      ['Checks', ['Vitest', 'The film’s own rule checks']],
+    ],
+  },
   // From the project's own session (HALATION-ENTRY.md, Nov 23), each figure with its source there. A draft of his
   // to rewrite. Nothing on it says an agent or a tool built it, by his word of Nov 23 (BRIEF.md, Open 33).
   {

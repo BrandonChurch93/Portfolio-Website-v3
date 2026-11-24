@@ -86,9 +86,10 @@ function Ways({ prev, next }: { prev: WorkItem | null; next: WorkItem | null }) 
   );
 }
 
-// Names in a row with a point between them. A name is never broken across two lines.
+// Names in a row with a point between them. A name is kept whole unless it is longer than the line, and its
+// point stays with it, so no line begins with one.
 function Items({ items }: { items: string[] }) {
-  return <span className={styles.items}>{items.map((name, i) => <span key={name}>{i > 0 && ' · '}<span className={styles.keep}>{name}</span></span>)}</span>;
+  return <span className={styles.items}>{items.map((name, i) => <span key={name}><span className={styles.keep}>{name}{i < items.length - 1 && '\u00A0·'}</span>{' '}</span>)}</span>;
 }
 
 function Words({ id, name, text, blank }: { id: string; name: string; text: string[]; blank: string }) {

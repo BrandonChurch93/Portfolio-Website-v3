@@ -117,6 +117,19 @@ export const software: WorkItem[] = [
 // The rest of his software, which the page of all his work shows after the four on the home page. The words are
 // the live site's and the pictures are its screenshots. The years are a guess until he says: the live site gives none.
 export const more: WorkItem[] = [
+  // His video for the page is to be switched for a newer one before the site is launched (his word, Nov 23).
+  // No Live link until he gives one.
+  {
+    slug: 'sunflower',
+    name: 'Sunflower',
+    kind: 'Procedural Short Film',
+    year: '2026',
+    line: 'A two minute film of one sunflower, from bare soil to open bloom, while fifteen days cross the sky. Nothing is filmed: each of its 3,810 frames is computed from its frame number, and every sunrise lands on a bar line of the music.',
+    tags: ['WebGL', 'Time Lapse', 'Music Sync'],
+    picture: { src: '/media/work/sunflower-card.webp', alt: 'A closed sunflower bud ringed by pointed green bracts stands against a low, hazy sun and a blurred field.', focus: [0.5, 0.5], loop: '/media/work/sunflower-loop.mp4' },
+    page: `${ALL_WORK}/sunflower`,
+    links: [{ label: 'Code', href: `${GITHUB}/Sun-Flower-Perplexity` }],
+  },
   {
     slug: 'desktop-pc-builder',
     name: 'Desktop PC Builder',
@@ -260,6 +273,7 @@ const UNDER: Record<string, string[]> = {
   'micro-interactions-library': ['Tools'],
   'modern-softworks': ['Sites'],
   'desktop-pc-builder': ['Sites'],
+  sunflower: ['Sites'],
   meridian: ['Sites'],
 };
 // A stand in is put under each sub category in turn, so every one of them shows something, and its card says
