@@ -2,6 +2,13 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-25 · Sunflower's new film (Opus, Claude Code)
+
+- **What he said:** a new time lapse is in `Perplexity Showcases/Sunflower-timelapse/` on his Desktop, the one without the prompt, to replace the film on the project's page. Then push.
+- **Which file:** `Sunflower-Timelapse-Final.mp4` (the other new one, `-With-Prompt`, shows the prompt and is kept off by his ruling of Nov 23). 1920 by 1080, 30 frames a second, 127 s, 3,810 frames, H.264 and AAC, faststart, 99.5 MB. Copied as it came, as the first was.
+- **What changed in it:** measured frame by frame against the old film, the two are the same to 1:49.9, and only the last shot is new. So the page's words (2 minutes 7 seconds, 3,810 frames) still hold. The poster was 1:51 and still 5 was 1:56, both in that shot: each taken again from the new film at the same second, 1920 by 1080, WebP at quality 96. The card picture and its loop are 1:37 to 1:45 and stay as they were.
+- **Checked** on the dev server: the page's film plays with its sound decoded, 127 s at 1920 by 1080, and seeks into the new ending.
+
 ## 2026-11-24 · Kestrel links to its app and its site (Opus, Claude Code)
 
 - **What he said:** the link he gave was the application's. The marketing site is `https://warehouse-robot-manager.vercel.app/`, and a visitor should reach both.
