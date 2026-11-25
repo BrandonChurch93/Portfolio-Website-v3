@@ -2,6 +2,12 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-24 · Kestrel links to its app and its site (Opus, Claude Code)
+
+- **What he said:** the link he gave was the application's. The marketing site is `https://warehouse-robot-manager.vercel.app/`, and a visitor should reach both.
+- **Done:** a link may now be named App or Site as well as Live (`WorkLink` in `src/content/work.ts`). Kestrel has App (the platform, `/app/`), Site (the marketing site) and Code, on its card and as three buttons on its page, App first as the primary one.
+- **Checked** on the dev server: the card's foot at 360, 390, 820, 1100 and 1440 holds App, Site and Code with Case study at the right, none overlapping. The page's three buttons have 26 px or more each side of their words from a phone to 4K.
+
 ## 2026-11-24 · Kestrel is in, the warehouse robot manager (Opus, Claude Code)
 
 - **What he said:** a new project, "This is the page. https://warehouse-robot-manager.vercel.app/app/", with the screenshot and the loop for the card in `github.com/BrandonChurch93/Warehouse-Robot-Manager`.

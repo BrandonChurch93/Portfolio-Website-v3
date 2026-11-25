@@ -3,7 +3,8 @@
 // is in, and rewrites the words.
 
 export interface WorkLink {
-  label: 'Live' | 'Evals' | 'Code';
+  // App and Site: a project that is both a product and the site that sells it, each with its own address.
+  label: 'Live' | 'App' | 'Site' | 'Evals' | 'Code';
   href: string;
 }
 
@@ -129,7 +130,8 @@ export const more: WorkItem[] = [
     picture: { src: '/media/work/kestrel-card.webp', alt: 'Robots carrying totes and pallets along lit lanes between racks of cartons on a warehouse floor at night, seen from above.', focus: [0.5, 0.5], loop: '/media/work/kestrel-loop.mp4' },
     page: `${ALL_WORK}/kestrel`,
     links: [
-      { label: 'Live', href: 'https://warehouse-robot-manager.vercel.app/app/' },
+      { label: 'App', href: 'https://warehouse-robot-manager.vercel.app/app/' },
+      { label: 'Site', href: 'https://warehouse-robot-manager.vercel.app/' },
       { label: 'Code', href: `${GITHUB}/Warehouse-Robot-Manager` },
     ],
   },
