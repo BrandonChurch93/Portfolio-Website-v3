@@ -48,6 +48,51 @@ const video = (src: string, alt: string): Shot => ({ src, alt, caption: 'A video
 // its text, its stack grouped here, and its figures. The opening paragraph above an overview is kept only where the
 // overview does not already say it.
 export const projects: ProjectPage[] = [
+  // From its own repository, Nov 24: README.md, kit/02A-PRODUCT.md, kit/02B-WORLD.md and config/showcase.json, each
+  // figure from there. A draft of his to rewrite. The film is the cut without the prompt, which opened on a tool's
+  // prompt box (BRIEF.md, Open 33: no project says an AI agent built it).
+  {
+    kind: 'study',
+    slug: 'kestrel',
+    sub: 'Fleet control for warehouse robots: a live 3D floor, the platform around it and the site that sells it.',
+    shots: [
+      { src: '/media/work/kestrel-poster.webp', alt: 'A film of the product cut to music: the robots on the floor, the fleet overview, a fault dispatched to a technician, an aisle closed on the map, the analytics, the site and the phone, ending on the Kestrel name over the floor.', caption: 'The product film, cut bar by bar to its music.', slot: 'video', video: '/media/work/kestrel-video.mp4' },
+      { src: '/media/work/kestrel-1.webp', alt: 'The Kestrel home page: the headline “Keep every robot moving.” beside a 3D warehouse floor with an obstruction flagged in aisle 05, and a row of customer marks under it.', caption: 'The site that sells it, with the live floor as its hero.' },
+      { src: '/media/work/kestrel-2.webp', alt: 'The fleet overview: figures for robots online, tasks per hour, on-time delivery and battery across the top, the 3D floor in the middle, a queue of what needs attention and the fleet list at the right.', caption: 'The overview: the floor, the queue and the fleet.' },
+      { src: '/media/work/kestrel-3.webp', alt: 'The page of one robot, T-09, at 13 percent battery: a close view of it on the floor, its status, charts of its battery, speed and tasks over the shift, its task history and event log.', caption: 'One robot’s page, from its status to its event log.' },
+      { src: '/media/work/kestrel-4.webp', alt: 'The map with aisle 05 south closed by an obstruction: the closed aisle hatched in red on the floor, and a table of every aisle with its traffic, its robots and a control to close it.', caption: 'An aisle closed on the map. Robots route round it.' },
+      { src: '/media/work/kestrel-5.webp', alt: 'The analytics screen: tasks per hour, battery levels now, the share of the fleet in each state, alerts by kind, on-time delivery against its target and the five busiest aisles.', caption: 'Analytics for the shift, all from the simulation.' },
+    ],
+    proved: [
+      { value: '38', label: 'robots on one simulated floor' },
+      { value: '15', label: 'pages, seven of the site and eight of the platform' },
+      { value: '106', label: 'cues placed on the music' },
+      { value: '3,255', label: 'frames of film, drawn by the product’s own code' },
+    ],
+    why: [
+      'A warehouse that runs robots needs one place that shows the whole floor and says plainly what needs a person. The bar was a product that reads as a real company’s: the platform and the site that sells it, on one design system and one simulated fleet, finished down to type, spacing, motion, empty states and small screens.',
+      'Kestrel is a portfolio concept. The company, its customers and every figure it shows are made up, and the site says so in its footer.',
+    ],
+    what: [
+      'The platform is a live 3D floor of a warehouse at night, with 38 robots at work on it: 28 tote carriers and 10 pallet movers, between racks, charging docks, dock doors and pack-out stations. Beside it are a queue of what needs attention and screens for robots, tasks, alerts, maps, analytics and settings. A fault can be sent to a technician, an aisle closed so that robots take another route, and a robot followed from the queue to its own page.',
+      'The site sells it, with pages for the product, customers, pricing, a changelog, a live demo and its design system. Its hero is the same live floor.',
+      'The fleet is simulated in the browser from a fixed seed, so nothing talks to a server and every number on screen comes from the simulation. The product film and the card’s loop are drawn by the product’s own code, frame by frame at 3840 x 2160, and the loop’s frame after its last is its first frame exactly.',
+    ],
+    how: [
+      { title: 'One world, drawn everywhere', text: 'One class draws the floor in the site’s hero, in the platform, in the film and in the loop, so all four show the same warehouse, lit the same way.' },
+      { title: 'A fleet from a fixed seed', text: 'The simulation runs from one seed with no server behind it. The film and the loop come out the same picture on every capture, and any frame can be drawn alone.' },
+      { title: 'Color means the robot’s state', text: 'The accent means working, selected or the main action. Amber and red appear only when something needs a person. No state is shown by color alone: each has its own icon and a label.' },
+      { title: 'Hover set in code, not in CSS', text: 'Hover and pressed styles come from state the components set from pointer events, so the cursor in the film gets the same answer a visitor’s does.' },
+      { title: 'Cut to the music by numbers', text: 'The track is mapped to bars and beats, and every cut, press and camera move is a cue on that map. A check fails on any cue that names a hit the music does not have there.' },
+    ],
+    built: [
+      ['3D', ['three.js', 'WebGL', 'Maps and textures generated for it']],
+      ['Interface', ['React 19', 'TypeScript', 'GSAP', 'One design system in dark and light']],
+      ['Build and hosting', ['Vite', 'Static files on Vercel']],
+      ['Film and loop', ['Playwright', 'Headless Chromium', 'ffmpeg']],
+      ['Testing', ['Vitest', 'axe-core']],
+    ],
+  },
   // From the project's own session (portfolio/SUNFLOWER-ENTRY.md in its repository, Nov 23), each figure with its
   // source there. A draft of his to rewrite. The video is to be switched for a newer one before the site is launched.
   {

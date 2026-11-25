@@ -2,6 +2,15 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-24 · Kestrel is in, the warehouse robot manager (Opus, Claude Code)
+
+- **What he said:** a new project, "This is the page. https://warehouse-robot-manager.vercel.app/app/", with the screenshot and the loop for the card in `github.com/BrandonChurch93/Warehouse-Robot-Manager`.
+- **What the repository holds:** the card's screenshot and loop in `out/portfolio/` (3840 by 2160), silent cuts of the film, stills of every screen in `out/stills/`, and no entry with the words. The film with its music is not in it (the track's licence is unknown, and each cut is over GitHub's limit). Both cuts with the music were on his Desktop, `Perplexity Showcases/Warehouse-Robots-Manager/`: `kestrel-with-prompt.mp4` and `kestrel-without-prompt.mp4`, 4K, about 355 MB each.
+- **The film is the cut without the prompt.** The other opens on an AI tool's prompt box typing "Build me a warehouse robot management application. Also build a mobile app and a marketing site for it.", which his ruling of Nov 23 keeps off the site. The one used starts on the product and the music's first bar.
+- **Files, in `public/media/work/kestrel*`:** the film scaled to 1920 by 1080 (x264 CRF 20, the AAC copied as it was, faststart, 73.7 MB, 108.5 s). The loop cropped to 2:1 from the middle and scaled to 1600 by 800 (CRF 22, silent, 3.2 MB, 240 frames; the step from its last frame to its first measures 28.2 dB against 28.8 for an ordinary step). The card picture is that loop's own first frame, so nothing jumps when it starts. The poster is the film's fleet overview at 20 s: the last frame, with the name, sat under the player's controls. Five screenshots from the repository's judged stills: the site's first screen, the overview, robot T-09, the map with an aisle closed, analytics.
+- **Words:** drafted by Opus from the repository's README, `kit/02A-PRODUCT.md`, `kit/02B-WORLD.md` and `config/showcase.json`, every figure from there (38 robots: 28 tote carriers and 10 pallet movers; 15 pages in its routes; 106 cues in `src/film/music/cues.json`; 3,255 frames in the cut without the prompt). Nothing says an agent or a tool built it. The repository's critics, rounds and scorecards are left out, as Halation's were.
+- **Checked** on a production build: the card bronze at rest and its loop in color under the pointer, the page at a desktop and a phone, the film paused at rest and, played, running with its sound decoded, nothing past a phone's edge in Built with, no errors.  `npm run mem -- /work/kestrel`: 442 loaded, 394 at its foot.
+
 ## 2026-11-24 · The buttons' words clear of their borders, at every size (Opus, Claude Code)
 
 - **What he said:** on "Download résumé" the D and the final E touch the button's border, on every screen.

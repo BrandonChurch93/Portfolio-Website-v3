@@ -117,6 +117,22 @@ export const software: WorkItem[] = [
 // The rest of his software, which the page of all his work shows after the four on the home page. The words are
 // the live site's and the pictures are its screenshots. The years are a guess until he says: the live site gives none.
 export const more: WorkItem[] = [
+  // From its own repository (README.md, kit/02A-PRODUCT.md, kit/02B-WORLD.md, config/showcase.json), Nov 24. A draft
+  // of his to rewrite.
+  {
+    slug: 'kestrel',
+    name: 'Kestrel',
+    kind: 'Fleet Control Platform',
+    year: '2026',
+    line: 'Fleet control for warehouse robots, and the site that sells it. 38 robots work a live 3D floor simulated in the browser, a queue says what needs a person, and its film is cut bar by bar to music.',
+    tags: ['Three.js', 'React', 'Fleet Sim'],
+    picture: { src: '/media/work/kestrel-card.webp', alt: 'Robots carrying totes and pallets along lit lanes between racks of cartons on a warehouse floor at night, seen from above.', focus: [0.5, 0.5], loop: '/media/work/kestrel-loop.mp4' },
+    page: `${ALL_WORK}/kestrel`,
+    links: [
+      { label: 'Live', href: 'https://warehouse-robot-manager.vercel.app/app/' },
+      { label: 'Code', href: `${GITHUB}/Warehouse-Robot-Manager` },
+    ],
+  },
   // His video for the page is to be switched for a newer one before the site is launched (his word, Nov 23).
   {
     slug: 'sunflower',
@@ -276,6 +292,7 @@ const UNDER: Record<string, string[]> = {
   'modern-softworks': ['Sites'],
   'desktop-pc-builder': ['Sites'],
   sunflower: ['Sites'],
+  kestrel: ['Sites'],
   meridian: ['Sites'],
 };
 // A stand in is put under each sub category in turn, so every one of them shows something, and its card says
