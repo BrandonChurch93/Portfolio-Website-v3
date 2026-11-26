@@ -3,7 +3,7 @@ import { unshown } from '../../../../world/tone';
 import { CORE, DRAWN, HOST, SCALE, SOURCE, SPIRE, VIEW, drawn } from '../../layout';
 import { load } from '../../files';
 import { WARM, color, world } from '../../light';
-import type { PartFactory } from '../../part';
+import type { PartFactory, PartState } from '../../part';
 import { falls } from './falls';
 import { CE, EYE, SE, SWING_GLSL, letGo, picture, sheet as laid, texture } from './sheet';
 import { STREAM } from './stone';
@@ -62,6 +62,18 @@ export const GIVES_WAY = /* glsl */ `
 	float dy = vUnit.y - ${f(SPIRE.tall - (HOST.tall / 2 - HOST.over) / CE)};
 	if ( vUnit.x * ${f(VIEW.back)} / ( ${f(VIEW.back)} - dy * ${f(SE)} - vUnit.z * ${f(CE)} ) > ${f(DRAWN.sand[1])} ) discard;
 }`;
+
+// Where a place of the world, in units, is drawn in the host, for another part's shader: `drawn` in ../../layout.ts.
+export const HOSTED = /* glsl */ `
+vec2 hosted( vec3 unit ) {
+	float dy = unit.y - ${f(SPIRE.tall - (HOST.tall / 2 - HOST.over) / CE)}, k = ${f(VIEW.back)} / ( ${f(VIEW.back)} - dy * ${f(SE)} - unit.z * ${f(CE)} );
+	return vec2( ${f(HOST.wide / 2)} + unit.x * k, ${f(HOST.tall / 2)} - ( dy * ${f(CE)} - unit.z * ${f(SE)} ) * k );
+}`;
+// The cursor's light as every part of this look takes it: where it is in the host, in units, and how much of it is there.
+export const lampOf = (s: PartState, into: THREE.Vector3): THREE.Vector3 => {
+  const on = s.pointer.led;
+  return into.set(s.pointer.x * HOST.wide, s.pointer.y * HOST.tall, on * on * (3 - 2 * on));
+};
 
 // A mesh that is drawn nowhere and still casts the moon's shadow.
 export function castsOnly(o: THREE.Mesh): void {
@@ -228,8 +240,7 @@ export const build: PartFactory = async () => {
     update(s) {
       uniforms.uTime.value = s.t;
       uniforms.uSurge.value.set(s.stream.on, s.stream.since);
-      const on = s.pointer.led;
-      uniforms.uLamp.value.set(s.pointer.x * HOST.wide, s.pointer.y * HOST.tall, on * on * (3 - 2 * on));
+      lampOf(s, uniforms.uLamp.value);
       return !s.still;
     },
     dispose() { for (const d of made) d.dispose(); },

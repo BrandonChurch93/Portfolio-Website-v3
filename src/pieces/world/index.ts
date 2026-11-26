@@ -267,7 +267,7 @@ export function createWorld(): WorldPiece {
     place();
     const still = reduced || frozen || stage.tier === 'static', level = still && hold === null && !clock.isFrozen() ? 1 : coreLevel(now);
     world.setCore(level);
-    const s: PartState = { t: now, core: level, stream, pointer: lampUV, still };
+    const s: PartState = { t: now, core: level, stream, pointer: lampUV, still, held: frozen };
     moving = false;
     // The moon's shadows are drawn once, with every part there to cast them. After that a part none of which is on
     // the screen is not drawn and not told the time.

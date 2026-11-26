@@ -34,6 +34,8 @@ export interface PartState {
   pointer: { x: number; y: number; led: number };
   // Nothing loops and nothing drifts: reduced motion, the static tier, or a held frame.
   still: boolean;
+  // The clock is held at t, as it is for each frame of a film in turn.
+  held: boolean;
 }
 
 export interface WorldPart {

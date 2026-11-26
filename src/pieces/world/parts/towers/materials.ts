@@ -5,6 +5,7 @@ import { STEP, TOWERS } from '../../placed';
 import { METAL, WARM as KEPT, lit } from '../../light';
 import { FRONT, LANTERN_AT, PALE_STONE, PLACE, SLIVER, STONES, WARM, WINDOW } from './windows';
 import { OBELISK, SUN, discAt, obeliskPoint } from './marks';
+import { HOSTED } from '../rock/drawn';
 
 const FOOT = PLACE.foot;
 // Where his stepped tower stands, so the gold's material lights his crown as its own (MARK.his, LANTERN).
@@ -123,6 +124,12 @@ const CURTAIN = { mullion: 0.08, through: 0.32, tint: 0.6, gild: 0.5, metal: 0.9
 // toward the palette's pale the line is.
 const BAND = { moon: 2.4, city: 1.6, tight: 24, pale: 0.3 };
 const CURTAIN_TINT = METAL.bronze.clone().lerp(METAL.gold, CURTAIN.gild).multiplyScalar(CURTAIN.tint);
+// Rooms that wake as the cursor's light passes, in picture 10's look alone. A dark room wakes within about `near`
+// units of the light in the host, each at a nearness of its own from `from` up and over `soft` of it, `share` of all
+// rooms at most, to between `level` of the brightest room's level as the map stores it. The light leaves a mark
+// where it has moved `step` units on, `marks` at most with the light itself and never so often that one is dropped
+// before its time, and a place it has left goes back to sleep over `lasts` seconds, room by room.
+export const WAKE = { near: 120, from: 0.2, soft: 0.14, share: 0.6, level: [0.62, 0.96], lasts: 2.4, step: 40, marks: 12 } as const;
 const BAY = { bronze: 0.62, rough: 0.5, metal: 0.85, glass: 0.06, bevel: 0.07, copper: 0.4, stone: 0.9 };
 // A field of windows seen from far off, where a window is a few pixels or less: it is drawn as its own wall, a warm
 // stone of this tone, with only its brightest rooms lit, each a small crisp light, one at most in each block of
@@ -427,13 +434,14 @@ outgoingLight = tAir( outgoingLight, vWPos.z );
   return lit(m, { key: 'towers-stone', baked: true, core: false });
 }
 
-function bay(map: THREE.Texture): THREE.MeshStandardMaterial {
+function bay(map: THREE.Texture, wake?: THREE.IUniform<THREE.Vector3[]>): THREE.MeshStandardMaterial {
   const fr = WINDOW.frame, [c0, c1, c2] = WINDOW.colors, img = map.image as { width: number; height: number };
   const blindMean = 1 - WINDOW.blind * WINDOW.blinds * 0.5;
   const m = new THREE.MeshStandardMaterial({ color: METAL.bronze.clone().multiplyScalar(BAY.bronze), roughness: BAY.rough, metalness: BAY.metal });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uWin = { value: map };
     sh.uniforms.uWinSize = { value: new THREE.Vector2(img.width, img.height) };
+    if (wake) sh.uniforms.uWake = wake;
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute vec2 cell;\nattribute vec2 cellSize;\nuniform vec2 uWinSize;\nvarying vec4 vCell;\nvarying vec3 vWPos;\nvarying vec3 vWNorm;\nvarying vec2 vFoot;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvCell = vec4( cell * uWinSize, cellSize );\nvWPos = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;\nvWNorm = mat3( modelMatrix ) * objectNormal;\nvFoot = vec2( aLight.w, aBounce.w );');
@@ -454,7 +462,17 @@ ${COMMON}
 vec3 tTint( float w ) {
 	float t = 2.0 * w;
 	return t < 1.0 ? mix( ${lin(c0)}, ${lin(c1)}, t ) : mix( ${lin(c1)}, ${lin(c2)}, t - 1.0 );
-}`)
+}
+#ifdef WAKES
+uniform vec3 uWake[ WAKES ];
+${HOSTED}
+float tWoken( vec2 id, float stored, float near ) {
+	float h = tHash( id + vec2( 13.0, 57.0 ) ) / ${f(WAKE.share)};
+	if ( h > 1.0 ) return stored;
+	float mine = mix( ${f(WAKE.from)}, ${f(1 - WAKE.soft)}, h );
+	return max( stored, smoothstep( mine, mine + ${f(WAKE.soft)}, near ) * mix( ${f(WAKE.level[0])}, ${f(WAKE.level[1])}, tHash( id + vec2( 71.0, 29.0 ) ) ) );
+}
+#endif`)
       .replace('#include <lights_physical_pars_fragment>', `#include <lights_physical_pars_fragment>${RIM_DIRECT}`)
       .replace('#include <color_fragment>', `#include <color_fragment>
 tRimOn = 1.0;
@@ -504,12 +522,25 @@ vec3 bAcross = vec3( 1.0, 0.0, 0.0 );
 		// over the pixel's own height up it, so a lit run along a floor stays a bar of light a few pixels long and a
 		// floor's height, and never spreads up and down into a blot, as the map's smaller copies made it.
 		vec3 d = textureGrad( uWin, ( id + 0.5 ) / uWinSize, dFdx( c ) / uWinSize, dFdy( c ) / uWinSize ).rgb;
+		#ifdef WAKES
+			float woke = 0.0;
+			vec2 here = hosted( vWPos / ${f(SCALE)} );
+			for ( int i = 0; i < WAKES; i ++ ) {
+				vec2 off = ( here - uWake[ i ].xy ) / ${f(WAKE.near)};
+				woke = max( woke, uWake[ i ].z / ( 1.0 + dot( off, off ) ) );
+			}
+			d.r = tWoken( id, d.r, woke );
+		#endif
 		if ( bFar > 0.0 ) {
 			vec3 run = vec3( 0.0 );
 			float across = ${f(FAR.patch)} * fw.x;
 			for ( int i = 0; i < ${FAR.taps}; i ++ ) for ( int j = 0; j < 2; j ++ ) {
 				vec2 q = c + vec2( ( ( float( i ) + 0.5 ) / ${f(FAR.taps)} - 0.5 ) * across, ( float( j ) - 0.5 ) * 0.5 * fw.y );
-				run += texelFetch( uWin, ivec2( floor( q ) ), 0 ).rgb;
+				vec3 one = texelFetch( uWin, ivec2( floor( q ) ), 0 ).rgb;
+				#ifdef WAKES
+					one.r = tWoken( floor( q ), one.r, woke );
+				#endif
+				run += one;
 			}
 			d = mix( d, run / ${f(2 * FAR.taps)}, bFar );
 		}
@@ -648,7 +679,8 @@ if ( abs( bTilt.x ) + abs( bTilt.y ) > 0.0 ) {
 }
 #include <opaque_fragment>`);
   };
-  return lit(m, { key: 'towers-bay', baked: true, core: false });
+  if (wake) m.defines = { WAKES: wake.value.length };
+  return lit(m, { key: wake ? 'towers-bay-wake' : 'towers-bay', baked: true, core: false });
 }
 
 // Where the marks stand in the world, for the gold's shader: the obelisk's point from its plinth to its head, the
@@ -868,7 +900,7 @@ if ( vFlute.y > 0.5 && vFlute.y < 1.5 ) {
 
 export interface TowerMaterials { stone: THREE.MeshStandardMaterial; bay: THREE.MeshStandardMaterial; gold: THREE.MeshStandardMaterial; dispose(): void }
 
-export function materials(map: THREE.Texture): TowerMaterials {
-  const all = { stone: stone(), bay: bay(map), gold: gold() };
+export function materials(map: THREE.Texture, wake?: THREE.IUniform<THREE.Vector3[]>): TowerMaterials {
+  const all = { stone: stone(), bay: bay(map, wake), gold: gold() };
   return { ...all, dispose() { for (const m of Object.values(all)) m.dispose(); } };
 }
