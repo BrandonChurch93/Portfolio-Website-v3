@@ -14,6 +14,21 @@ The checklist for the build. `BRIEF.md` holds the rules. This file holds the ord
 
 ## Now
 
+### The hero's world, built to picture 10 (his word, Nov 26: `BRIEF.md`, Hero, "Picture D is the target for the whole world")
+
+In the web chat, on the branch `slice/layered-hollow`, not pushed to `main`. Behind one switch on the lab's pages (`?look=d`): the world as it is today stays the default until he says so. Ticked `[~]` when built and measured. Only he ticks `[x]`.
+
+- He picked picture D on Nov 26 at 00:05 and asked for it built start to finish. It is picture 10 in `reference/concept/`. The entries of Nov 25 above it in the brief are what led there
+- [ ] The sources: picture 10's torn rock and its dunes at the page's sharpness, each with how far off every place is, laid to the world's own layout
+- [ ] The torn rock from picture 10, lit by the page: the core's breath, the stream's surge and its own light, the pointer's light
+- [ ] The dunes from picture 10, in the land's place, lit by the page
+- [ ] Sand that moves: falling over the right rim and down the cratered side, and blown off the crests. What he named as his favorite
+- [ ] The city: the haze and far towers behind it (a departure from "Everything up in the sky should remain as is", his to refuse), windows that wake near the pointer
+- [ ] The cracks on the left: brighter, flaring near the pointer, with embers
+- [ ] The pointer's light on the rock, the sand and the walls, added to the moon's and the core's
+- [ ] Proof: stills and a film of today beside the new world, the type check, a production build, memory and frame times, and where he opens it on his Mac
+- [~] The hollow as pictures cast by a script and lit by the page, behind `?rock=p` (`/lab/hollow`): seven rounds, not at the bar. Superseded by picture 10's rock, and left as it is
+
 ### The final pass (his word, Nov 20: `BRIEF.md`, Open 36)
 
 Testing and polish, in a fresh Claude Code session, from the prompt in `LOG.md`, Nov 20, "The final pass handed to a fresh session". Ticked `[~]` when built and measured. Only he ticks `[x]`.

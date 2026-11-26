@@ -2,6 +2,19 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-25 · The hero's world: a slice of the hollow, then his pause on the top and the search for a new target (Fable, web chat)
+
+- **What he said:** the whole world could look better, the hollow and the top, and "it's all a bit static and boring". The stream is not touched. Then, on seeing the top beside picture 9 (22:50): "Pause before you make any changes to the top. Our top actually looks better than the reference!" He wants it less bland, more that answers the mouse, and sand like real dunes, and a new target found by brainstorming and by pictures from an image model. All his words and the rulings are in `BRIEF.md`, Hero, the two entries of Nov 25.
+- **Done, the hollow, behind `?rock=p`:** the torn rock cast ahead by scripts (`scripts/world/slice/`: real shadows, the core's light bounced from face to face) and kept as four pictures of the one view (`public/world/rock-p-*.png`, 8.8 MB), lit by the page in `src/pieces/world/parts/rock/pictured.ts`. `/lab/hollow` is its address and hands on to `/lab/whole?rock=p`. Seven rounds. Today's rock is still the default and is not changed.
+- **Where the hollow is short, as told to him:** plates of one size fanned evenly round the ball, two tall slabs left of the ball that read as planks, thin dark lines on the plates' faces, far walls a little redder and greyer than picture 9's. No film of it yet.
+- **Done and taken out again, the top:** a trial behind `?top=p` (a lower glow behind the skyline, warmer walls). At his pause it came out of the code whole. Nothing of it is in the repo.
+- **Found about the dunes:** today's are pointed ridges with flat lit faces (`src/pieces/world/parts/land/field.ts`). Round 9 of the land (`kept/land-r9`) is rounder and paler and leaves trees standing on a jagged edge, so it is not the answer. A crescent with a hollow slip face is a new shape.
+- **Shown to him in the web chat, none in the repo until he picks:** six pictures made by an image model from his screenshot, each keeping the layout, the cracks on the left, the craters on the right, the hollow and the core. A: real sand. B: a richer city. C: A and B together. D: the whole world drawn again, with layered rock and taller hollow dunes. E: veins of light in the rock. F: crystals in the hollow. With them, a mockup film (made offline, not the site) of a light that follows the pointer over picture D, shaded from a depth map estimated from the picture itself.
+- **Not ruled, and his to rule:** which picture is the target, how it is built (code, pictures, or both: `BRIEF.md` says which rules that would change), and which things answer the mouse.
+- **Half finished, and held until he picks:** the hollow's slice. A new target may change the rock, so the planks are not mended, there is no film, and no production build, `npm run mem` or `npm run perf` has been run on it.
+- **Checked:** `npm run typecheck` is clean. Nothing under `src/stream` or `src/hero` differs from `main`. The work is on the branch `slice/layered-hollow`, not pushed.
+- **A tool for the next session:** `node scripts/world/slice/beside.mjs` lays pictures side by side at one height with their names under them, whole or cut to a part.
+
 ## 2026-11-25 · Sunflower's new film (Opus, Claude Code)
 
 - **What he said:** a new time lapse is in `Perplexity Showcases/Sunflower-timelapse/` on his Desktop, the one without the prompt, to replace the film on the project's page. Then push.

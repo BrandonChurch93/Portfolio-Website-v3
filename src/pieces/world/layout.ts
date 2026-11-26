@@ -76,6 +76,32 @@ export function drawn(x: number, y: number, z: number): [number, number] {
   return [x * k, HOST.tall / 2 - (dy * ce - z * se) * k];
 }
 
+// The torn rock as pictures of this one view, which the page lights (./parts/rock/pictured.ts; made by
+// scripts/world/slice/hollow.mjs and pack.mjs): the part of the host they cover, in units from where the core's
+// middle is drawn (across, down, wide, tall), how many of their pixels a unit is, the furthest and the nearest their
+// stored depth can say, in units toward the visitor from the plane the view is aimed at, and their files.
+export const PICTURED = {
+  window: [-672, -196, 1344, 500] as const,
+  ppu: 2.5,
+  depth: [-260, 740] as const,
+  files: { tone: 'rock-p-tone.png', form: 'rock-p-form.png', bounce: 'rock-p-bounce.png', depth: 'rock-p-depth.png' },
+} as const;
+
+// The world as picture 10 has it (?look=d): the torn planet under the land, and the dunes, as pictures of this one
+// view, which the page lights (./parts/rock/drawn.ts; made by scripts/world/drawn.mjs from
+// reference/concept/10-parts/). The part of the host they cover, as PICTURED's is told, how many of their pixels a
+// unit is, the furthest and the nearest their stored depth can say, how many units their stored height spans, from
+// how far right of the host's center line the picture's sand thins in over the land to where it is whole, which is
+// where the land gives way to it, and their files.
+export const DRAWN = {
+  window: [-690, -291, 1380, 620] as const,
+  ppu: 2.5,
+  depth: [-260, 740] as const,
+  relief: 455,
+  sand: [273, 334] as const,
+  files: { tone: 'd-tone.webp', form: 'd-form.avif', light: 'd-light.webp', cut: 'd-cut.png' },
+} as const;
+
 const hash = (x: number, y: number, z: number, s: number): number => {
   let n = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(z, 1440662683) ^ Math.imul(s, 1274126177);
   n = Math.imul(n ^ (n >>> 13), 1274126177);

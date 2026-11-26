@@ -3,6 +3,7 @@ import { hex, type PaletteName } from '../../../config/palette';
 import { load, mesh } from '../files';
 import { lit, stone as planetStone } from '../light';
 import type { PartFactory } from '../part';
+import { castsOnly, isDrawn } from './rock/drawn';
 import { CRACK_CELL, DARK_LIGHT, GLOW, KNOT_POOL, STONE, UNDER } from './skin/look';
 import * as S from './skin/shaders';
 
@@ -129,6 +130,7 @@ export const build: PartFactory = async ({ query, renderer }) => {
   // It lays the moon's shadow on itself (skin/shaders.ts, NIGHT), so the stage does not.
   o.castShadow = true;
   o.receiveShadow = false;
+  if (isDrawn(query)) castsOnly(o);
   const group = new THREE.Group();
   group.add(o);
   const at = query.get('skinat')?.split(',').map(Number);

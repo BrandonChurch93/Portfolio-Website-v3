@@ -14,6 +14,8 @@
 //   --scale <n>      device pixels to a CSS pixel (default 2)
 //   --t <seconds>    hold the clock at this time (default 4)
 //   --q "a=1&b=2"    more for the page's address
+//   --without a,b   leave these parts out of the world (rock, skin, land and so on)
+//   --clear          a PNG on a clear ground: nothing of the page is painted behind the world
 //   --tier, --lamp x,y, --eval js, --wait ms, --png, --url, --headed   as npm run shot has them
 //
 // It prints hardware or software, and every error the page logged: a shader that does not compile leaves a still
@@ -69,7 +71,7 @@ const query = new URLSearchParams(`label=0&ui=0&size=${win.h}&wide=${win.w}`);
 if (only) query.set('only', only);
 if (close) { query.set('close', close); if (flags.zoom) query.set('zoom', String(flags.zoom)); }
 for (const [k, v] of new URLSearchParams(String(flags.q ?? ''))) query.set(k, v);
-const out = flags.out ?? `shots/world/${what.replace(':', '-')}.${flags.png ? 'png' : 'jpg'}`;
+const out = flags.out ?? `shots/world/${what.replace(':', '-')}.${flags.png || flags.clear ? 'png' : 'jpg'}`;
 
 const srv = await server(flags), b = await browser(flags), errors = [];
 try {
@@ -89,9 +91,12 @@ try {
   await settle(p);
   const r = await renderer(p);
   console.log(`renderer: ${r.name} · ${r.hardware ? 'hardware' : 'software'}`);
+  if (flags.without) await p.evaluate((names) => window.__site.piece('world').without(names), String(flags.without).split(','));
   await apply(p, { ...flags, t: flags.t ?? 4 });
+  if (flags.clear) { await p.addStyleTag({ content: '*:not(canvas), *::before, *::after { background: transparent !important; box-shadow: none !important; }' }); await p.waitForTimeout(500); }
   const cut = !close && !only && CUT[what];
-  const shot = { type: flags.png ? 'png' : 'jpeg', ...(flags.png ? {} : { quality: 93 }), ...(cut ? { clip: { x: cut[0], y: cut[1], width: cut[2], height: cut[3] } } : {}) };
+  const png = flags.png || flags.clear;
+  const shot = { type: png ? 'png' : 'jpeg', ...(png ? {} : { quality: 93 }), ...(flags.clear ? { omitBackground: true } : {}), ...(cut ? { clip: { x: cut[0], y: cut[1], width: cut[2], height: cut[3] } } : {}) };
   save(out, await p.screenshot(shot));
   console.log(`look: ${out}`);
   const stats = await p.evaluate(() => { try { return window.__site.piece('world').stats(); } catch { return null; } });

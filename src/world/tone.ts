@@ -12,8 +12,9 @@ import { DITHER, type Stage } from './stage';
 // and not to white. And nothing is ever greener or bluer than it is red, or brighter than pale: a guarantee, so a
 // glint on polished metal cannot burn to white whatever the lights do.
 const PALE = 'vec3( 1.0, 0.767, 0.548 )';
+const START = 0.8;
 const CURVE = `vec3 CustomToneMapping( vec3 color ) {
-	const float StartCompression = 0.8;
+	const float StartCompression = ${START.toFixed(1)};
 	const float Desaturation = 0.15;
 	color *= toneMappingExposure;
 	float peak = max( color.r, max( color.g, color.b ) );
@@ -43,6 +44,7 @@ export function trueDarks(renderer: THREE.WebGLRenderer): void {
 // copper, timber and the lights keep their warmth beside it. Bright things are left alone: a light stays its color.
 // It is one pass before the tone curve. The stage rebuilds its passes when its tier changes, so a piece calls this
 // again after it sets a tier.
+const WHITE = 'vec3( 0.96, 1.21, 1.59 )', DARKS = 'smoothstep( 0.3, 0.85, peak )';
 const BALANCE = {
   name: 'balance',
   uniforms: { tDiffuse: { value: null as THREE.Texture | null } },
@@ -51,8 +53,8 @@ const BALANCE = {
 void main() {
 	vec4 c = texture2D( tDiffuse, vUv );
 	float peak = max( c.r, max( c.g, c.b ) );
-	float k = 1.0 - smoothstep( 0.3, 0.85, peak );
-	vec3 o = c.rgb * mix( vec3( 1.0 ), vec3( 0.96, 1.21, 1.59 ), k );
+	float k = 1.0 - ${DARKS};
+	vec3 o = c.rgb * mix( vec3( 1.0 ), ${WHITE}, k );
 	o.g = min( o.g, o.r );
 	o.b = min( o.b, o.g );
 	gl_FragColor = vec4( o, c.a );
@@ -84,8 +86,8 @@ float h( vec2 p ) { vec3 q = fract( vec3( p.xyx ) * 0.1031 ); q += dot( q, q.yzx
 void main() {
 	vec4 c = texture2D( tDiffuse, vUv );
 	float peak = max( c.r, max( c.g, c.b ) );
-	float k = 1.0 - smoothstep( 0.3, 0.85, peak );
-	vec3 o = c.rgb * mix( vec3( 1.0 ), vec3( 0.96, 1.21, 1.59 ), k * ${bal.toFixed(3)} );
+	float k = 1.0 - ${DARKS};
+	vec3 o = c.rgb * mix( vec3( 1.0 ), ${WHITE}, k * ${bal.toFixed(3)} );
 	o.g = min( o.g, o.r );
 	o.b = min( o.b, o.g );
 	vec4 s = sRGBTransferOETF( vec4( CustomToneMapping( o ), c.a ) );
@@ -99,6 +101,22 @@ void main() {
 	s.a = max( s.a, max( s.r, max( s.g, s.b ) ) );
 	vec2 e = clamp( min( vUv, 1.0 - vUv ) / ${rim.toFixed(4)}, 0.0, 1.0 );
 	gl_FragColor = s * ( e.x * e.y );
+}`;
+
+// The other way round: the light a thing has to give off for finish() to show it as a color already made for the
+// screen, as a picture drawn elsewhere is. vec3 unshown( vec3 ), for a shader. Nothing comes out brighter than `most`,
+// which a piece sets under what its glow starts at, so a picture's brightest places do not bloom.
+export const unshown = (bal: number, most: number): string => `vec3 unshown( vec3 s ) {
+	vec3 t = mix( s / 12.92, pow( ( s + 0.055 ) / 1.055, vec3( 2.4 ) ), step( 0.04045, s ) );
+	float top = max( t.r, max( t.g, t.b ) );
+	float d = ${(1 - START).toFixed(3)};
+	if ( top > ${START.toFixed(1)} ) t *= min( ${most.toFixed(3)}, ${START.toFixed(1)} - d + d * d / max( 1.0 - top, 1e-3 ) ) / top;
+	vec3 c = t;
+	for ( int i = 0; i < 2; i ++ ) {
+		float peak = max( c.r, max( c.g, c.b ) );
+		c = t / mix( vec3( 1.0 ), ${WHITE}, ( 1.0 - ${DARKS} ) * ${bal.toFixed(3)} );
+	}
+	return c;
 }`;
 
 // bal is how much of the white balance is kept: all of it for a thing seen in a warm room, which is what it was

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { color, lit, stone } from '../light';
 import { load, mesh } from '../files';
 import type { PartFactory } from '../part';
+import { GIVES_WAY, isDrawn } from './rock/drawn';
 import { TOWERS } from '../placed';
 import { DUNES, GLSL, HEIGHT, MAP, ROW, crestTexels } from './land/field';
 import * as S from './land/shaders';
@@ -121,6 +122,7 @@ export const build: PartFactory = async ({ query, renderer }) => {
     fr = after(fr, 'metalnessmap_fragment', S.METAL);
     fr = after(fr, 'normal_fragment_maps', S.NORMAL);
     fr = after(fr, 'lights_fragment_begin', S.DIRECT);
+    if (isDrawn(query)) fr = fr.replace('void main() {', `void main() {${GIVES_WAY}`);
     if (query.get('landdebug')) fr = fr.replace('#include <opaque_fragment>', `#include <opaque_fragment>\ngl_FragColor = vec4(${query.get('landdebug')}, 1.0);`);
     fr = fr.replace('#include <lights_fragment_end>', `${S.LIGHT_END}\n#include <lights_fragment_end>`);
     sh.fragmentShader = fr;
