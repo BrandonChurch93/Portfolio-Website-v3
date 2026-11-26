@@ -5,7 +5,7 @@ import { STEP, TOWERS } from '../../placed';
 import { METAL, WARM as KEPT, lit } from '../../light';
 import { FRONT, LANTERN_AT, PALE_STONE, PLACE, SLIVER, STONES, WARM, WINDOW } from './windows';
 import { OBELISK, SUN, discAt, obeliskPoint } from './marks';
-import { HOSTED } from '../rock/drawn';
+import { HOSTED, LAMPED } from '../rock/drawn';
 
 const FOOT = PLACE.foot;
 // Where his stepped tower stands, so the gold's material lights his crown as its own (MARK.his, LANTERN).
@@ -128,8 +128,36 @@ const CURTAIN_TINT = METAL.bronze.clone().lerp(METAL.gold, CURTAIN.gild).multipl
 // units of the light in the host, each at a nearness of its own from `from` up and over `soft` of it, `share` of all
 // rooms at most, to between `level` of the brightest room's level as the map stores it. The light leaves a mark
 // where it has moved `step` units on, `marks` at most with the light itself and never so often that one is dropped
-// before its time, and a place it has left goes back to sleep over `lasts` seconds, room by room.
-export const WAKE = { near: 120, from: 0.2, soft: 0.14, share: 0.6, level: [0.62, 0.96], lasts: 2.4, step: 40, marks: 12 } as const;
+// before its time, and a place it has left goes back to sleep over `lasts` seconds. Rooms wake together in runs of
+// `run` along a floor, as a floor's lights do. `walls` is how much of the cursor's light a wall facing it takes, as a
+// share of its own color.
+export const WAKE = { near: 120, from: 0.2, soft: 0.14, share: 0.6, level: [0.62, 0.96], lasts: 2.4, step: 40, marks: 12, run: [2, 4], walls: 0.6 } as const;
+// For a shader of this city that has tHash, where WAKES is defined: the cursor's light and the marks it has left
+// (./wake.ts), how near the nearest of them is to a place of the world, a room's level once that has woken it, and
+// what a wall takes of the light itself.
+export const WOKEN = /* glsl */ `
+#ifdef WAKES
+uniform vec3 uWake[ WAKES ];${HOSTED}${LAMPED}
+float tNearLight( vec3 unit ) {
+	float near = 0.0;
+	vec2 here = hosted( unit );
+	for ( int i = 0; i < WAKES; i ++ ) {
+		vec2 off = ( here - uWake[ i ].xy ) / ${f(WAKE.near)};
+		near = max( near, uWake[ i ].z / ( 1.0 + dot( off, off ) ) );
+	}
+	return near;
+}
+float tWoken( vec2 id, float stored, float near ) {
+	float len = floor( mix( ${f(WAKE.run[0])}, ${f(WAKE.run[1] + 1)}, tHash( vec2( id.y, 5.0 ) ) ) );
+	float h = tHash( vec2( floor( ( id.x + len * tHash( vec2( id.y, 17.0 ) ) ) / len ), id.y ) + vec2( 13.0, 57.0 ) ) / ${f(WAKE.share)};
+	if ( h > 1.0 ) return stored;
+	float mine = mix( ${f(WAKE.from)}, ${f(1 - WAKE.soft)}, h );
+	return max( stored, smoothstep( mine, mine + ${f(WAKE.soft)}, near ) * mix( ${f(WAKE.level[0])}, ${f(WAKE.level[1])}, tHash( id + vec2( 71.0, 29.0 ) ) ) );
+}
+vec3 tWallLit( vec3 own, vec3 facing, vec3 unit ) {
+	return ${f(WAKE.walls)} * lamped( own, facing, hosted( unit ), uWake[ 0 ] );
+}
+#endif`;
 const BAY = { bronze: 0.62, rough: 0.5, metal: 0.85, glass: 0.06, bevel: 0.07, copper: 0.4, stone: 0.9 };
 // A field of windows seen from far off, where a window is a few pixels or less: it is drawn as its own wall, a warm
 // stone of this tone, with only its brightest rooms lit, each a small crisp light, one at most in each block of
@@ -368,13 +396,14 @@ const SKY_LIGHT = `
 }
 #endif`;
 
-function stone(): THREE.MeshStandardMaterial {
+function stone(wake?: THREE.IUniform<THREE.Vector3[]>): THREE.MeshStandardMaterial {
   const m = new THREE.MeshStandardMaterial({ color: PALE, roughness: STONE.rough, metalness: 0 });
   m.onBeforeCompile = (sh) => {
+    if (wake) sh.uniforms.uWake = wake;
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute vec3 kind;\nvarying vec3 vKind;\nvarying vec3 vWPos;\nvarying vec3 vWNorm;\nvarying vec2 vFoot;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvKind = kind;\nvWPos = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;\nvWNorm = mat3( modelMatrix ) * objectNormal;\nvFoot = vec2( aLight.w, aBounce.w );');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>\nvarying vec3 vKind;\nvarying vec3 vWPos;\nvarying vec3 vWNorm;\nvarying vec2 vFoot;\nvec2 sFinish;\nfloat tRimOn;\nfloat tThin;\nfloat tPpu;\nfloat tRimFade;\nvec3 tRimLight;\n#define OWN ( vKind.y < ${f(0.5 / (STONES.length - 1))} ? 1.0 : 0.0 )${COMMON}`)
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>\nvarying vec3 vKind;\nvarying vec3 vWPos;\nvarying vec3 vWNorm;\nvarying vec2 vFoot;\nvec2 sFinish;\nfloat tRimOn;\nfloat tThin;\nfloat tPpu;\nfloat tRimFade;\nvec3 tRimLight;\n#define OWN ( vKind.y < ${f(0.5 / (STONES.length - 1))} ? 1.0 : 0.0 )${COMMON}${WOKEN}`)
       .replace('#include <lights_physical_pars_fragment>', `#include <lights_physical_pars_fragment>${RIM_DIRECT}`)
       .replace('#include <color_fragment>', `#include <color_fragment>
 tRimOn = 1.0;
@@ -426,12 +455,16 @@ tRimLight = vec3( 0.0 );
 {
 	vec3 upV = ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz;
 	totalEmissiveRadiance += diffuseColor.rgb * ( 1.0 - 0.7 * sFinish.x ) * ( ${lin3(CITY_LIGHT)} * tFlood( normal, vFoot.y ) + ${lin3(HOT)} * tStreet( vFoot.x * ${f(FOOT)}, dot( normal, upV ), wLight.z, vWPos.x / ${f(SCALE)} ) + mix( ${lin3(CITY_LIGHT)}, ${lin3(HIS_LIGHT)}, OWN ) * tCity( normal, vFoot.x * ${f(FOOT)}, wLight.x, wLight.z, OWN ) );
+	#ifdef WAKES
+		totalEmissiveRadiance += tWallLit( diffuseColor.rgb * ( 1.0 - 0.7 * sFinish.x ), ( vec4( normal, 0.0 ) * viewMatrix ).xyz, vWPos / ${f(SCALE)} );
+	#endif
 }`).replace('#include <lights_fragment_end>', `iblIrradiance *= ${f(STONE.night)};\n#define SKY_KEEP mix( 1.0, ${f(SHADE.his)}, OWN )${SKY_LIGHT}\n#include <lights_fragment_end>`).replace('#include <opaque_fragment>', `outgoingLight = tPale( tKnee( tCooled( ( outgoingLight - totalEmissiveRadiance ) * tRise( vFoot.y ), tCool( vKind.y ) ) ) + totalEmissiveRadiance + tRimLight );
 outgoingLight = max( mix( outgoingLight, tKeep( outgoingLight ), mix( ${f(STONE.keep[0])}, ${f(STONE.keep[1])}, sFinish.x ) ), 0.0 );
 outgoingLight = tAir( outgoingLight, vWPos.z );
 #include <opaque_fragment>`);
   };
-  return lit(m, { key: 'towers-stone', baked: true, core: false });
+  if (wake) m.defines = { WAKES: wake.value.length };
+  return lit(m, { key: wake ? 'towers-stone-wake' : 'towers-stone', baked: true, core: false });
 }
 
 function bay(map: THREE.Texture, wake?: THREE.IUniform<THREE.Vector3[]>): THREE.MeshStandardMaterial {
@@ -463,16 +496,7 @@ vec3 tTint( float w ) {
 	float t = 2.0 * w;
 	return t < 1.0 ? mix( ${lin(c0)}, ${lin(c1)}, t ) : mix( ${lin(c1)}, ${lin(c2)}, t - 1.0 );
 }
-#ifdef WAKES
-uniform vec3 uWake[ WAKES ];
-${HOSTED}
-float tWoken( vec2 id, float stored, float near ) {
-	float h = tHash( id + vec2( 13.0, 57.0 ) ) / ${f(WAKE.share)};
-	if ( h > 1.0 ) return stored;
-	float mine = mix( ${f(WAKE.from)}, ${f(1 - WAKE.soft)}, h );
-	return max( stored, smoothstep( mine, mine + ${f(WAKE.soft)}, near ) * mix( ${f(WAKE.level[0])}, ${f(WAKE.level[1])}, tHash( id + vec2( 71.0, 29.0 ) ) ) );
-}
-#endif`)
+${WOKEN}`)
       .replace('#include <lights_physical_pars_fragment>', `#include <lights_physical_pars_fragment>${RIM_DIRECT}`)
       .replace('#include <color_fragment>', `#include <color_fragment>
 tRimOn = 1.0;
@@ -523,12 +547,7 @@ vec3 bAcross = vec3( 1.0, 0.0, 0.0 );
 		// floor's height, and never spreads up and down into a blot, as the map's smaller copies made it.
 		vec3 d = textureGrad( uWin, ( id + 0.5 ) / uWinSize, dFdx( c ) / uWinSize, dFdy( c ) / uWinSize ).rgb;
 		#ifdef WAKES
-			float woke = 0.0;
-			vec2 here = hosted( vWPos / ${f(SCALE)} );
-			for ( int i = 0; i < WAKES; i ++ ) {
-				vec2 off = ( here - uWake[ i ].xy ) / ${f(WAKE.near)};
-				woke = max( woke, uWake[ i ].z / ( 1.0 + dot( off, off ) ) );
-			}
+			float woke = tNearLight( vWPos / ${f(SCALE)} );
 			d.r = tWoken( id, d.r, woke );
 		#endif
 		if ( bFar > 0.0 ) {
@@ -668,6 +687,9 @@ if ( abs( bTilt.x ) + abs( bTilt.y ) > 0.0 ) {
 		}
 	}
 	totalEmissiveRadiance += diffuseColor.rgb * matte * ( 1.0 - max( bGlass, bSheet ) ) * ${lin3(CITY_LIGHT)} * tFlood( normal, vFoot.y );
+	#ifdef WAKES
+		totalEmissiveRadiance += tWallLit( diffuseColor.rgb * matte * ( 1.0 - max( bGlass, bSheet ) ), ( vec4( normal, 0.0 ) * viewMatrix ).xyz, vWPos / ${f(SCALE)} );
+	#endif
 	totalEmissiveRadiance += bEmit + diffuseColor.rgb * ${lin3(HOT)} * ( ( 1.0 - max( bGlass, bSheet ) ) * bSpill + ${f(CURTAIN.city)} * bPolish ) + diffuseColor.rgb * matte * ( ${lin3(HOT)} * tStreet( vFoot.x * ${f(FOOT)}, dot( normal, upV ), wLight.z, vWPos.x / ${f(SCALE)} ) + ${lin3(CITY_LIGHT)} * tCity( normal, vFoot.x * ${f(FOOT)}, wLight.x, wLight.z, 0.0 ) );
 }`)
       .replace('#include <lights_fragment_end>', `iblIrradiance *= mix( 1.0, ${f(STONE.night)}, max( bStone, bFar ) * ( 1.0 - bSheet ) );\n#define SKY_KEEP 1.0${SKY_LIGHT}\n#include <lights_fragment_end>`)
@@ -901,6 +923,6 @@ if ( vFlute.y > 0.5 && vFlute.y < 1.5 ) {
 export interface TowerMaterials { stone: THREE.MeshStandardMaterial; bay: THREE.MeshStandardMaterial; gold: THREE.MeshStandardMaterial; dispose(): void }
 
 export function materials(map: THREE.Texture, wake?: THREE.IUniform<THREE.Vector3[]>): TowerMaterials {
-  const all = { stone: stone(), bay: bay(map, wake), gold: gold() };
+  const all = { stone: stone(wake), bay: bay(map, wake), gold: gold() };
   return { ...all, dispose() { for (const m of Object.values(all)) m.dispose(); } };
 }

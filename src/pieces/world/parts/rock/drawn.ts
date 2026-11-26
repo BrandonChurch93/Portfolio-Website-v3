@@ -69,6 +69,14 @@ vec2 hosted( vec3 unit ) {
 	float dy = unit.y - ${f(SPIRE.tall - (HOST.tall / 2 - HOST.over) / CE)}, k = ${f(VIEW.back)} / ( ${f(VIEW.back)} - dy * ${f(SE)} - unit.z * ${f(CE)} );
 	return vec2( ${f(HOST.wide / 2)} + unit.x * k, ${f(HOST.tall / 2)} - ( dy * ${f(CE)} - unit.z * ${f(SE)} ) * k );
 }`;
+// What a built face takes of the cursor's light, for another part's shader: of its own color `own`, turned as
+// `facing` in the world, standing at `here` in the host, with the light as lampOf gives it.
+export const LAMPED = /* glsl */ `
+vec3 lamped( vec3 own, vec3 facing, vec2 here, vec3 lamp ) {
+	vec3 q = vec3( lamp.x - here.x, ( here.y - lamp.y ) * ${f(CE)} + ${f(LAMP.lift * SE)}, ( lamp.y - here.y ) * ${f(SE)} + ${f(LAMP.lift * CE)} );
+	float d = length( q ), fall = 1.0 / ( 1.0 + ( d / ${f(LAMP.near)} ) * ( d / ${f(LAMP.near)} ) );
+	return mix( own, dot( own, ${v3(LUMA)} ) * ${v3(HOT.toArray())}, ${f(LAMP.turn)} ) * ( max( dot( facing, q / d ), 0.0 ) * fall * lamp.z );
+}`;
 // The cursor's light as every part of this look takes it: where it is in the host, in units, and how much of it is there.
 export const lampOf = (s: PartState, into: THREE.Vector3): THREE.Vector3 => {
   const on = s.pointer.led;
