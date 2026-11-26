@@ -104,7 +104,7 @@ const v3 = (a: readonly number[]): string => `vec3( ${a.map(f).join(', ')} )`;
 // gathers speed, and far down, where the air holds it.
 const takes = (far: number, most: number): number => Math.sqrt(2 * far / MOVES.pull + (far / most) ** 2);
 
-const CHANCE = /* glsl */ `
+export const CHANCE = /* glsl */ `
 float chance( float p ) { p = fract( p * 0.1031 ); p *= p + 33.33; p *= p + p; return fract( p ); }
 float chance( vec2 p ) { vec3 q = fract( vec3( p.xyx ) * 0.1031 ); q += dot( q, q.yzx + 33.33 ); return fract( ( q.x + q.y ) * q.z ); }
 float wave( float x ) { float i = floor( x ), k = fract( x ); k = k * k * ( 3.0 - 2.0 * k ); return mix( chance( i ), chance( i + 1.0 ), k ); }

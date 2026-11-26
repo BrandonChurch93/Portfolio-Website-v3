@@ -27,9 +27,9 @@ export const FAR = {
   // The far towers, furthest first: how wide and how tall over the far edge they are, in units, how much of what is
   // behind one it hides, how much of the haze is in front of it, and how bright its lit rooms are (0: it has none).
   towers: [
-    { wide: [9, 16], tall: [22, 58], hides: 0.6, front: 0.84, rooms: 0 },
-    { wide: [11, 20], tall: [22, 70], hides: 0.7, front: 0.74, rooms: 0.3 },
-    { wide: [13, 24], tall: [20, 84], hides: 0.8, front: 0.62, rooms: 0.5 },
+    { wide: [9, 16], tall: [22, 58], hides: 0.2, front: 0.84, rooms: 0 },
+    { wide: [11, 20], tall: [22, 70], hides: 0.32, front: 0.74, rooms: 0.6 },
+    { wide: [13, 24], tall: [20, 84], hides: 0.46, front: 0.62, rooms: 0.9 },
   ],
   // Where across the host they begin and where they end, each over a fade, in units.
   ends: [[110, 260], [980, 1150]],

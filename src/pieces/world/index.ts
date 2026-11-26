@@ -383,7 +383,9 @@ export function createWorld(): WorldPiece {
       // after it was let go below, the world is made in one helping: the first would be what is not on the screen.
       const under0 = h.getBoundingClientRect().top < -innerHeight * 0.5 && !was;
       const whole = !!only || !!close || q.get('load') === 'whole' || under0;
-      const above = names.filter((n) => n !== 'rest' && (whole || ABOVE.includes(n)));
+      // In picture 10's look the dunes are of the rock's picture, so the rock is of the first screen as well.
+      const soonest: readonly PartName[] = isDrawn(q) ? [...ABOVE, 'rock'] : ABOVE;
+      const above = names.filter((n) => n !== 'rest' && (whole || soonest.includes(n)));
       const under = names.filter((n) => n !== 'rest' && !above.includes(n));
       let ready = 0;
       const make = async (name: PartName): Promise<void> => {

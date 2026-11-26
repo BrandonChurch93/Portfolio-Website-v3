@@ -4,8 +4,9 @@ import { CORE, DRAWN, HOST, SCALE, SOURCE, SPIRE, VIEW, drawn, isDrawn } from '.
 import { load } from '../../files';
 import { WARM, color, world } from '../../light';
 import type { PartFactory, PartState } from '../../part';
-import { falls } from './falls';
-import { CE, EYE, SE, SWING_GLSL, letGo, picture, sheet as laid, texture } from './sheet';
+import { embers } from './embers';
+import { CHANCE, falls } from './falls';
+import { CE, EYE, MOST, SE, SWING_GLSL, letGo, picture, sheet as laid, texture } from './sheet';
 import { STREAM } from './stone';
 
 // The world as picture 10 has it (?look=d): the torn planet under the land, and the dunes, as that picture drew
@@ -20,13 +21,10 @@ import { STREAM } from './stone';
 // each place and is hidden behind what stands in its way. Each pixel writes its own depth, so the core, the land,
 // the city and what broke away stand in front of the picture and behind it.
 //
-// Sculpt S's file is still fetched, for its shape alone: the moon's shadows are cast by it.
+// Sculpt S's file is still fetched, for its shape alone: the moon's shadows are cast by it (shade, below).
 
 export { isDrawn };
 
-// Nothing of the picture is brighter than this as light, which is under what the world's glow starts at (GLOW in
-// ../../index.ts): the picture's brightest places do not bloom at rest.
-const MOST = 1.4;
 // How many times the swing of the core's light shows on what the core lights.
 const SWING = 1.6;
 // The stream's light on the picture: how far across the host it reaches from the stream's line and how fast it
@@ -43,6 +41,13 @@ const NEAR_STREAM = { deep: 30, own: 2.2, any: 0.012 } as const;
 // much a lit crack or rim near the cursor brightens and within how many units. It is there while a real cursor
 // leads the page's lamp and gone while the lamp drifts on its own, so at rest the moon and the core light the world.
 const LAMP = { lift: 114, near: 174, own: 2.4, turn: 0.7, any: 0.114, matter: [0.02, 0.1], clear: 1.9, hid: 8.5, most: 0.92, steps: 10, shine: [48, 0.45, 0.3, 0.7], flare: [1.8, 152] } as const;
+// The lit cracks on the planet's left side run with the core's heat. `box` is where they are on the host, across
+// from and to and down from and to, and `eases` over how many units that comes in. The heat leaves the core in
+// surges, one every `long` units out from it, `rate` of them a second, and finer ones, `fine` times as many, count
+// for this `share` of it. Between the two `edge`s of that a crack goes from `low` times as bright as the picture
+// has it to `full` times. The glow on the rock round a crack follows it: it is what the picture's cracks are when
+// seen `soft` times coarser, `glow` times over.
+const HEAT = { box: [140, 268, 430, 730], eases: 10, long: 85, rate: 0.3, fine: 2.7, share: 0.35, edge: [0.25, 0.75], low: 0.55, full: 1.15, soft: 5, glow: 4 } as const;
 // The sand thins out over the city's ground in grains this many to a unit.
 const GRAINS = 4;
 
@@ -127,6 +132,7 @@ const vec4 BOX = vec4( ${BOX.map(f).join(', ')} );
 const float SE = ${f(SE)}, CE = ${f(CE)};
 ${unshown(WARM, MOST)}
 ${SWING_GLSL}
+${CHANCE}
 float grain( vec2 p ) { vec3 q = fract( vec3( p.xyx ) * 0.1031 ); q += dot( q, q.yzx + 33.33 ); return fract( ( q.x + q.y ) * q.z ); }
 void main() {
 	vec4 cut = texture2D( uCut, vUv );
@@ -150,6 +156,16 @@ void main() {
 	vec3 out3 = p - CORE;
 	float dist = length( out3 );
 	c *= 1.0 + ${f(SWING)} * light.r * ( uCoreLevel * coreSwing( out3 / max( dist, 1e-3 ), dist ) - 1.0 );
+	{
+		vec2 from = smoothstep( ${`vec2( ${f(HEAT.box[0] - HEAT.eases)}, ${f(HEAT.box[2] - HEAT.eases)} )`}, ${`vec2( ${f(HEAT.box[0])}, ${f(HEAT.box[2])} )`}, at ), to = 1.0 - smoothstep( ${`vec2( ${f(HEAT.box[1])}, ${f(HEAT.box[3])} )`}, ${`vec2( ${f(HEAT.box[1] + HEAT.eases)}, ${f(HEAT.box[3] + HEAT.eases)} )`}, at );
+		float crack = from.x * from.y * to.x * to.y * light.r * min( 1.0, max( light.g, ${f(HEAT.glow)} * textureLod( uLight, vUv, ${f(HEAT.soft)} ).g ) );
+		if ( crack > 0.0 ) {
+			float run = dist / ${f(HEAT.long)} - uTime * ${f(HEAT.rate)};
+			float heat = smoothstep( ${f(HEAT.edge[0])}, ${f(HEAT.edge[1])}, mix( wave( run ), wave( run * ${f(HEAT.fine)} + 17.0 ), ${f(HEAT.share)} ) );
+			c *= 1.0 + crack * ( mix( ${f(HEAT.low)}, ${f(HEAT.full)}, heat ) - 1.0 );
+			c *= mix( 1.0, min( 1.0, ${f(MOST)} / max( c.r, max( c.g, c.b ) ) ), min( 1.0, crack * 8.0 ) );
+		}
+	}
 	{
 		float below = at.y - ${f(SOURCE_DOWN)};
 		vec3 q = vec3( ${f(HOST.wide / 2)} - at.x, clamp( below, 0.0, uStream.y ) - below, ${f(NEAR_STREAM.deep)} );
@@ -194,6 +210,27 @@ async function shown(file: string): Promise<THREE.Texture> {
   return t;
 }
 
+// What casts the moon's shadow for the picture, which is flat and casts none: sculpt S's file, read for its shape
+// alone and drawn nowhere. It is the largest file of the world and nothing on the first screen is seen by it, so it
+// is not made with the picture: the skin's part, which is made once the first screen is shown, asks for it.
+export async function shade(): Promise<{ mesh: THREE.Mesh; dispose(): void } | null> {
+  const l = (await load('rock-s.bin')).meshes.get('break');
+  if (!l) return null;
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', (l.geometry.getAttribute('position') as THREE.BufferAttribute).onUpload(letGo));
+  g.setIndex(l.geometry.index?.onUpload(letGo) ?? null);
+  g.boundingBox = l.geometry.boundingBox;
+  g.boundingSphere = l.geometry.boundingSphere;
+  const plain = new THREE.MeshBasicMaterial(), mesh = new THREE.Mesh(g, plain);
+  mesh.position.copy(l.at);
+  mesh.scale.setScalar(l.size);
+  mesh.updateMatrix();
+  mesh.matrixAutoUpdate = false;
+  mesh.castShadow = true;
+  castsOnly(mesh);
+  return { mesh, dispose() { g.dispose(); l.geometry.dispose(); plain.dispose(); } };
+}
+
 export const build: PartFactory = async () => {
   const group = new THREE.Group(), made: { dispose(): void }[] = [];
   const names = DRAWN.files, [tone, form, light, cut] = await Promise.all([shown(names.tone), shown(names.form), shown(names.light), picture(names.cut, MADE_BY)]);
@@ -219,28 +256,9 @@ export const build: PartFactory = async () => {
   const sand = falls(uniforms, { near: LAMP.near, lift: LAMP.lift, hot: HOT }, BOX);
   group.add(sand.group);
   made.push(sand);
-
-  try {
-    const l = (await load('rock-s.bin')).meshes.get('break');
-    if (l) {
-      const g = new THREE.BufferGeometry();
-      g.setAttribute('position', (l.geometry.getAttribute('position') as THREE.BufferAttribute).onUpload(letGo));
-      g.setIndex(l.geometry.index?.onUpload(letGo) ?? null);
-      g.boundingBox = l.geometry.boundingBox;
-      g.boundingSphere = l.geometry.boundingSphere;
-      const plain = new THREE.MeshBasicMaterial(), shade = new THREE.Mesh(g, plain);
-      shade.position.copy(l.at);
-      shade.scale.setScalar(l.size);
-      shade.updateMatrix();
-      shade.matrixAutoUpdate = false;
-      shade.castShadow = true;
-      castsOnly(shade);
-      group.add(shade);
-      made.push(g, l.geometry, plain);
-    }
-  } catch (e) {
-    console.warn(String(e));
-  }
+  const sparks = embers(uniforms);
+  group.add(sparks.group);
+  made.push(sparks);
 
   return {
     group,

@@ -33,6 +33,10 @@ float coreSwing( vec3 dir, float dist ) {
 // How far beyond the world the sheet stands, as a share of the way from the eye to the plane the view is aimed at.
 const SHEET = 14 / 9;
 
+// Nothing of a picture, or of what is drawn on one, is brighter than this as light, which is under what the world's
+// glow starts at (GLOW in ../../index.ts): a picture's brightest places do not bloom at rest.
+export const MOST = 1.4;
+
 const E = VIEW.el * D2R;
 export const SE = Math.sin(E), CE = Math.cos(E);
 const Y0 = SPIRE.tall - (HOST.tall / 2 - HOST.over) / CE;

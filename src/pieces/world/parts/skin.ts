@@ -3,7 +3,7 @@ import { hex, type PaletteName } from '../../../config/palette';
 import { load, mesh } from '../files';
 import { lit, stone as planetStone } from '../light';
 import type { PartFactory } from '../part';
-import { castsOnly, isDrawn } from './rock/drawn';
+import { castsOnly, isDrawn, shade } from './rock/drawn';
 import { CRACK_CELL, DARK_LIGHT, GLOW, KNOT_POOL, STONE, UNDER } from './skin/look';
 import * as S from './skin/shaders';
 
@@ -87,6 +87,9 @@ function crackTextures(lines: number[]): { seg: THREE.DataTexture; cell: THREE.D
 }
 
 export const build: PartFactory = async ({ query, renderer }) => {
+  // In picture 10's look this part also brings what casts the moon's shadow for the rock's picture (shade in
+  // ./rock/drawn.ts): without it the picture is still whole, so a fault there is said and passed over.
+  const cast = isDrawn(query) ? shade().catch((e) => { console.warn(String(e)); return null; }) : null;
   const [file, map] = await Promise.all([load('skin.bin'), readMap('skin-map.bin')]);
   const skin = file.meshes.get('skin');
   if (!skin) throw new Error('skin.bin holds no skin: make it again with scripts/world/parts/skin/make.mjs');
@@ -133,10 +136,12 @@ export const build: PartFactory = async ({ query, renderer }) => {
   if (isDrawn(query)) castsOnly(o);
   const group = new THREE.Group();
   group.add(o);
+  const shadow = await cast;
+  if (shadow) group.add(shadow.mesh);
   const at = query.get('skinat')?.split(',').map(Number);
   return {
     group,
     alone: at && at.length === 4 && at.every(Number.isFinite) ? { at: [at[0], at[1], at[2]], r: at[3] } : ALONE,
-    dispose() { skin.geometry.dispose(); m.dispose(); map.dispose(); ck.seg.dispose(); ck.cell.dispose(); },
+    dispose() { skin.geometry.dispose(); m.dispose(); map.dispose(); ck.seg.dispose(); ck.cell.dispose(); shadow?.dispose(); },
   };
 };
