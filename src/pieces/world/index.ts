@@ -281,7 +281,7 @@ export function createWorld(): WorldPiece {
     const near = rock?.part.group.userData.near as THREE.Object3D[] | undefined;
     const laid = keeps && !!kept && !!land && !casting && only === null && close === null && !left.has('land') && !left.has('kept');
     const stone = laid && keepsRock && !!rock && !!near && !left.has('rock') && !left.has('kept-rock');
-    const holds = stone ? 'land rock' : 'land';
+    const holds = stone ? 'land rock' : 'land', light = land?.part.kept;
     if (casting) taken = '';
     if (rock && near) for (const o of rock.part.group.children) o.visible = near.includes(o) === stone;
     if (laid && (taken !== holds || !kept!.fresh())) {
@@ -289,12 +289,14 @@ export function createWorld(): WorldPiece {
       for (const p of parts) p.part.group.visible = p === land || (stone && p === rock);
       if (stone) for (const o of rock!.part.group.children) o.visible = !near!.includes(o);
       mark('take');
+      light?.out(true);
       kept!.take((k) => world.setCore(k));
+      light?.out(false);
       world.setCore(level);
       if (stone) for (const o of rock!.part.group.children) o.visible = near!.includes(o);
       taken = holds;
     }
-    kept?.show(laid && (land!.on || (stone && rock!.on)), level);
+    kept?.show(laid && (land!.on || (stone && rock!.on)), level, light);
     for (const p of parts) {
       p.part.group.visible = (casting || p.on) && !left.has(p.name) && !(laid && p === land);
       if (p.on && p.part.update?.(s) && !still) moving = true;

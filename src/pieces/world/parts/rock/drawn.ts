@@ -87,6 +87,15 @@ vec3 lamped( vec3 own, vec3 facing, vec2 here, vec3 lamp ) {
 	float d = length( q ), fall = 1.0 / ( 1.0 + ( d / ${f(LAMP.near)} ) * ( d / ${f(LAMP.near)} ) );
 	return mix( own, dot( own, ${v3(LUMA)} ) * ${v3(HOT.toArray())}, ${f(LAMP.turn)} ) * ( max( dot( facing, q / d ), 0.0 ) * fall * lamp.z );
 }`;
+// What the city's ground takes of the cursor's light, for the land's shader and for its kept pictures (../../kept.ts),
+// which hold a place's color and not its turn. The ground lies flat and is seen nearly edge on: by its own turn it
+// would stay dark under the cursor and be lit far below it. So it is taken to be turned `facing`, half up and half
+// toward the visitor, and it takes `share` of its color as it stands lit at rest.
+const GROUND = { facing: [0, Math.SQRT1_2, Math.SQRT1_2], share: 0.7 } as const;
+export const GROUNDED = /* glsl */ `
+vec3 grounded( vec3 own, vec2 here, vec3 lamp ) {
+	return ${f(GROUND.share)} * lamped( own, ${v3(GROUND.facing)}, here, lamp );
+}`;
 // The cursor's light as every part of this look takes it: where it is in the host, in units, and how much of it is there.
 export const lampOf = (s: PartState, into: THREE.Vector3): THREE.Vector3 => {
   const on = s.pointer.led;

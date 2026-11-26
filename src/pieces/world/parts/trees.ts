@@ -4,6 +4,7 @@ import { D2R, MOONWARD, PYRAMID, ROW, drawn, ground, noise, pyramidal, seeded, w
 import { load } from '../files';
 import type { PartFactory } from '../part';
 import { TOWERS, TREES } from '../placed';
+import { isDrawn, lampOf } from './rock/drawn';
 import { leaves, release } from './trees/atlas';
 import { CROWN, DRAWN, FAR, FILES, MODELS, SHADE } from './trees/design';
 import { AIR, JITTER, treeDepth, treeMaterial, treeUniforms } from './trees/material';
@@ -266,7 +267,8 @@ export const build: PartFactory = async ({ query }) => {
 
   const uniforms = treeUniforms();
   uniforms.uShade.value.copy(away);
-  const passes = [treeMaterial(map, 0, uniforms, query.get('treelook')), treeMaterial(map, 1, uniforms, query.get('treelook'))], depth = treeDepth(map, uniforms);
+  const lamp = isDrawn(query) ? { value: new THREE.Vector3() } : undefined;
+  const passes = [treeMaterial(map, 0, uniforms, query.get('treelook'), lamp), treeMaterial(map, 1, uniforms, query.get('treelook'), lamp)], depth = treeDepth(map, uniforms);
   made.push(passes[0], passes[1], depth);
   let cube = 1;
   for (let k = 0; k < MODELS.length; k++) {
@@ -323,6 +325,7 @@ export const build: PartFactory = async ({ query }) => {
     alone: { at: [x0, seat(x0, z0).y + s0, z0], r: s0 * (Number(query.get('trees')) || 6) },
     update(s) {
       uniforms.uTime.value = s.still ? 0 : s.t;
+      if (lamp) lampOf(s, lamp.value);
       return true;
     },
     dispose() { for (const d of made) d.dispose(); release(map); },

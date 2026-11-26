@@ -1,5 +1,6 @@
 import type * as THREE from 'three';
 import type { Tier } from '../../config/site';
+import type { KeptLight } from './kept';
 
 // The hero's world is one piece with one stage, and each thing in it is a part: one file in ./parts, behind this
 // contract. A part builds its group in the world's units, in the world's own frame (./layout.ts), from files made
@@ -47,6 +48,8 @@ export interface WorldPart {
   // Called before a frame is drawn, and only while something of the part is on the screen. It returns true while
   // the part is moving by itself and needs the next frame drawn too.
   update?(s: PartState): boolean | void;
+  // A light of the part's own that moves, for when the world keeps the part as pictures (./kept.ts).
+  kept?: KeptLight;
   // What a part hands the scripts that take pictures of it, if anything.
   tools?: unknown;
   dispose?(): void;
