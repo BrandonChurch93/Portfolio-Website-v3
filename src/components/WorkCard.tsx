@@ -99,7 +99,8 @@ function watchTouch(): void {
   ask();
 }
 
-// A link's first word, which is all of it a narrow card has room for (`.rest` in the stylesheet).
+// A link's first word, which is all of it a narrow card has room for when its foot holds several links (`.rest` in
+// the stylesheet).
 const first = (label: string) => label.split(' ')[0];
 
 // A project card. Its plate is lit metal round a dark face and a picture, with a band of bronze that carries its
