@@ -122,7 +122,9 @@ export function createWorld(): WorldPiece {
   // for. full: the next frame draws the whole canvas, after the clearing in it was put away.
   let sharp: Sharp | null = null, sharpFor = '', full = false;
   let seen = true, stale = true, moving = false, warming = false, cast = 3, hold: number | null = null, only: PartName | null = null, close: readonly [number, number, number] | null = null, zoom = 3;
-  let lampUV = { x: 0.6, y: 0.3 }, reach = 1, first = 0;
+  let lampUV = { x: 0.6, y: 0.3, led: 0 }, reach = 1, first = 0;
+  // The held moment the last frame was drawn for: a moment held since then is owed a frame of its own.
+  let heldAt: number | null = null;
   // Which way the page last moved (1 down it), when, and where the host's top was. was: everything as before this
   // round's changes (?was=1), for timing against.
   let way = 0, movedAt = -1e9, lastTop = 0, was = false;
@@ -257,12 +259,13 @@ export function createWorld(): WorldPiece {
   const frame = () => {
     if (warming) mark('warming');
     if (!stage || !seen || warming) return;
-    const frozen = clock.isFrozen() || hold !== null;
-    if (shown()) stale = true;
+    const frozen = clock.isFrozen() || hold !== null, now = hold ?? clock.now();
+    if (shown() || (frozen && now !== heldAt)) stale = true;
     if (!stale && !moving) return;
     stale = false;
+    heldAt = frozen ? now : null;
     place();
-    const now = hold ?? clock.now(), still = reduced || frozen || stage.tier === 'static', level = still && hold === null && !clock.isFrozen() ? 1 : coreLevel(now);
+    const still = reduced || frozen || stage.tier === 'static', level = still && hold === null && !clock.isFrozen() ? 1 : coreLevel(now);
     world.setCore(level);
     const s: PartState = { t: now, core: level, stream, pointer: lampUV, still };
     moving = false;
@@ -481,9 +484,9 @@ export function createWorld(): WorldPiece {
       }
     
     },
-    setLamp(x: number, y: number) {
-      if (Math.abs(x - lampUV.x) + Math.abs(y - lampUV.y) < 0.003) return;
-      lampUV = { x, y };
+    setLamp(x: number, y: number, led = 0) {
+      if (Math.abs(x - lampUV.x) + Math.abs(y - lampUV.y) + Math.abs(led - lampUV.led) < 0.003) return;
+      lampUV = { x, y, led };
       stale = true;
     },
     whole: () => first > 0,

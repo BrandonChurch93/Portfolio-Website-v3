@@ -46,9 +46,12 @@ const CORNER = { from: [1377, 1395], strands: 8, long: [280, 560], wide: [2.2, 6
 // The sheet draped over the rim all along it, from where to where: short wide strands that lie over one another.
 // It sets off this many units up the sand from the rim, is longest, widest and strongest within about `gathers`
 // units of where a veil leaves, and at the corner, and comes in over its first `eases` units along the rim.
-const DRAPE = { from: [1236, 1395], strands: 60, long: [10, 62], wide: [8, 15], strength: [0.14, 0.62], most: [34, 52], least: 0.5, pace: 0.4, holds: 0.1, lines: 0.1, grains: 22, round: 4, strays: 1.5, over: 2.5, gathers: 7, eases: 36 } as const;
+const DRAPE = { from: [1236, 1395], strands: 60, long: [10, 62], wide: [8, 15], strength: [0.14, 0.62], most: [34, 52], least: 0.5, pace: 0.4, holds: 0.1, lines: 0.2, grains: 22, round: 4, strays: 1.5, over: 2.5, gathers: 7, eases: 36 } as const;
 // A strand narrows to this share of its width at its end, and leans by as much as this many units over its length.
 const STRAND = { thins: 0.4, leans: 4, parts: 40 } as const;
+// Sand comes over the rim in surges: along each line of a strand it thins to this share and thickens again, this
+// many times a second, and the surges fall with the sand. It is by them that a strand is seen to run.
+const SURGES = { least: 0.25, rate: 2.4 } as const;
 // A grain: how wide, in units, and how strong it shows. This share of a strand's grains set off round it and not
 // in it, this many times as far out.
 const GRAIN = { wide: [0.6, 1.2], strength: 0.55, loose: 0.3, out: 5 } as const;
@@ -141,10 +144,12 @@ void main() {
 	float u = vAt.x, left = uTime - vFlow.x, vSeed = vOwn.x;
 	float across = exp( - 3.5 * u * u ) * ( 1.0 - smoothstep( 0.7, 1.0, abs( u ) ) );
 	float thread = 1.0 - vOwn.z + vOwn.z * wave( u * 2.6 + vSeed * 37.0 + 0.8 * wave( left * 0.6 + vSeed * 11.0 ) );
-	float column = floor( u * 2.5 + vSeed * 91.0 ), speck = chance( column + 0.5 );
-	float grains = mix( 1.0 - vOwn.z, 1.0, chance( vec2( column, floor( left * ( 28.0 + 18.0 * speck ) + speck * 7.0 ) ) ) );
+	float line = u * 2.5 + vSeed * 91.0, column = floor( line ), speck = chance( column + 0.5 ), k = fract( line );
+	k = k * k * ( 3.0 - 2.0 * k );
+	float surge = mix( ${f(SURGES.least)}, 1.0, mix( wave( left * ${f(SURGES.rate)} * ( 0.7 + 0.6 * speck ) + column * 17.3 ), wave( left * ${f(SURGES.rate)} * ( 0.7 + 0.6 * chance( column + 1.5 ) ) + column * 17.3 + 17.3 ), k ) );
+	float grains = mix( 1.0 - vOwn.z, 1.0, chance( vec2( column, floor( left * ( 14.0 + 9.0 * speck ) + speck * 7.0 ) ) ) );
 	float along = smoothstep( 0.0, 0.02, vAt.y ) * ( 1.0 - smoothstep( vOwn.y, 1.0, vAt.y ) );
-	float a = vColor.a * flowing( left, vFlow.y, vFlow.z, vFlow.w ) * across * thread * grains * along;
+	float a = vColor.a * flowing( left, vFlow.y, vFlow.z, vFlow.w ) * across * thread * surge * grains * along;
 	if ( a < 0.003 ) discard;
 	gl_FragColor = vec4( vColor.rgb * a, a );
 }`;

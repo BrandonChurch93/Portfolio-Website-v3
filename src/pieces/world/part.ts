@@ -30,8 +30,8 @@ export interface PartState {
   // (uStream in ./light.ts), which in the lab is the whole line, lit.
   stream: { on: number; since: number; long: number };
   // Where the cursor is in the world's host, as shares of its width and height from its top left (the same is in
-  // the shared light as uPointer).
-  pointer: { x: number; y: number };
+  // the shared light as uPointer), and led: 1 while a real cursor leads the page's lamp, 0 while it drifts on its own.
+  pointer: { x: number; y: number; led: number };
   // Nothing loops and nothing drifts: reduced motion, the static tier, or a held frame.
   still: boolean;
 }

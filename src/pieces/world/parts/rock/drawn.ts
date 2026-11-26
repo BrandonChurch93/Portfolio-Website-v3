@@ -40,9 +40,9 @@ const NEAR_STREAM = { deep: 30, own: 2.2, any: 0.012 } as const;
 // taken to be there where the picture, seen coarsely, is brighter than `matter`. A place is hidden
 // from it by what stands more than `clear` units over the line to the light, in full at `hid`, looked for in
 // `steps` places along that line. `shine` is the glint on bright places, how sharp and how strong. `flare` is how
-// much a lit crack or rim near the cursor brightens and within how many units. It comes on over `wakes` seconds
-// once the cursor first moves.
-const LAMP = { lift: 114, near: 174, own: 2.4, turn: 0.7, any: 0.114, matter: [0.02, 0.1], clear: 1.9, hid: 8.5, most: 0.92, steps: 10, shine: [48, 0.45, 0.3, 0.7], flare: [1.8, 152], wakes: 0.6 } as const;
+// much a lit crack or rim near the cursor brightens and within how many units. It is there while a real cursor
+// leads the page's lamp and gone while the lamp drifts on its own, so at rest the moon and the core light the world.
+const LAMP = { lift: 114, near: 174, own: 2.4, turn: 0.7, any: 0.114, matter: [0.02, 0.1], clear: 1.9, hid: 8.5, most: 0.92, steps: 10, shine: [48, 0.45, 0.3, 0.7], flare: [1.8, 152] } as const;
 // The sand thins out over the city's ground in grains this many to a unit.
 const GRAINS = 4;
 
@@ -222,16 +222,13 @@ export const build: PartFactory = async () => {
     console.warn(String(e));
   }
 
-  let first: { x: number; y: number } | null = null, woke = -1;
   return {
     group,
     alone: { at: [CORE.at[0], CORE.at[1] - 30, CORE.at[2] - 60], r: 700 },
     update(s) {
       uniforms.uTime.value = s.t;
       uniforms.uSurge.value.set(s.stream.on, s.stream.since);
-      first ??= { x: s.pointer.x, y: s.pointer.y };
-      if (woke < 0 && (s.pointer.x !== first.x || s.pointer.y !== first.y)) woke = s.t;
-      const on = woke < 0 ? 0 : s.still ? 1 : Math.min(1, Math.max(0, (s.t - woke) / LAMP.wakes));
+      const on = s.pointer.led;
       uniforms.uLamp.value.set(s.pointer.x * HOST.wide, s.pointer.y * HOST.tall, on * on * (3 - 2 * on));
       return !s.still;
     },
