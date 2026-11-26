@@ -41,26 +41,43 @@ const MOVES = { pull: 34, takes: 1.6, shutter: 0.045, sways: { far: 4.5, by: 150
 interface Kind { strands: number; long: readonly [number, number]; wide: readonly [number, number]; strength: readonly [number, number]; most: readonly [number, number]; least: number; pace: number; holds: number; lines: number; grains: number; round: number; strays: number; tongue?: readonly [number, number]; draws?: readonly [number, number] }
 // The veils that run down the cratered side: where each leaves the rim, across the host, and within how many
 // units of there its strands are. The first is this share as long as the last, which is nearest the corner.
-const VEILS = { at: [1247, 1272, 1298, 1318, 1343, 1362, 1380], within: 6, strands: 3, long: [100, 250], wide: [2.2, 5], strength: [0.9, 1.3], most: [50, 72], least: 0.6, pace: 0.23, holds: 0.3, lines: 0.2, grains: 170, round: 2.2, strays: 2.2, grows: 0.45, tongue: [22, 46], draws: [10, 20] } as const;
+const VEILS = { at: [1247, 1272, 1298, 1318, 1343, 1362, 1380], within: 6, strands: 3, long: [100, 250], wide: [3, 6.5], strength: [1.2, 1.6], most: [50, 72], least: 0.6, pace: 0.23, holds: 0.4, lines: 0.2, grains: 170, round: 2.2, strays: 2.2, grows: 0.45, tongue: [22, 46], draws: [10, 20] } as const;
 // The fall off the planet's corner: from where to where along the rim it leaves.
 const CORNER = { from: [1377, 1395], strands: 8, long: [280, 560], wide: [2.2, 6], strength: [0.55, 0.92], most: [56, 90], least: 0.6, pace: 0.17, holds: 0.45, lines: 0.32, grains: 620, round: 3, strays: 3.2, tongue: [10, 22], draws: [14, 24] } as const;
 // The sheet draped over the rim all along it, from where to where: short wide strands that lie over one another.
 // It sets off this many units up the sand from the rim, is longest, widest and strongest within about `gathers`
 // units of where a veil leaves, and at the corner, and comes in over its first `eases` units along the rim.
-const DRAPE = { from: [1236, 1395], strands: 60, long: [10, 62], wide: [8, 15], strength: [0.1, 0.45], most: [34, 52], least: 0.5, pace: 0.4, holds: 0.1, lines: 0.2, grains: 6, round: 4, strays: 1.5, over: 2.5, gathers: 7, eases: 36 } as const;
+const DRAPE = { from: [1236, 1395], strands: 60, long: [10, 62], wide: [8, 15], strength: [0.15, 0.6], most: [34, 52], least: 0.5, pace: 0.4, holds: 0.1, lines: 0.2, grains: 6, round: 4, strays: 1.5, over: 2.5, gathers: 7, eases: 36 } as const;
 // A strand narrows to this share of its width at its end, and leans by as much as this many units over its length.
 // Its ribbon has this many parts, shorter toward the rim, where a tongue changes width fastest, by this power.
 const STRAND = { thins: 0.4, leans: 4, parts: 40, top: 1.6 } as const;
-// Sand comes over the rim in surges: a strand thins to this share and thickens again, this many times a second,
-// and the surges fall with the sand, the strand's middle this many seconds ahead of its edges. A surge has an edge:
-// of how full the sand is running, 0 to 1, it comes in between these two. It is by them that a strand is seen to run.
-const SURGES = { least: 0.35, rate: 2.4, lags: 0.12, edge: [0.3, 0.7] } as const;
+// Sand comes over the rim in surges, and it is by them that a strand is seen to run. How full the sand runs, 0 to
+// 1, is made of slow surges, this many a second, and of clumps, `fine` times as many, which count for this `share`
+// of it. Between the two `edge`s of that a strand goes from its least to whole: at its least it shows this share
+// as strong and, under its tongue, is this share as wide. The surges fall with the sand, the strand's middle this
+// many seconds ahead of its edges.
+const SURGES = { rate: 2.2, fine: 3.4, share: 0.45, edge: [0.42, 0.58], least: 0.5, narrow: 0.65, lags: 0.12 } as const;
 // Where a tongue is at its widest its sand is spread thin: it shows this share as strong. Its grain is in lines
 // this many units wide.
 const TONGUE = { thin: 0.85, grain: 1.3 } as const;
+// Sand that lies on the cratered side runs in soft streaks, as wide as the lines of its grain, and it is by them
+// most of all that it is seen to run. Between this many and this many pass a place each second, so a streak is
+// longer the faster its sand runs. The faintest show this share as strong and this share as light, and of a
+// streak's own chance, 0 to 1, it comes in between the two `edge`s.
+const STREAKS = { rate: [3.2, 4.8], low: 0.35, dark: 0.8, edge: [0.36, 0.64] } as const;
 // Sand on the cratered side lies on it, so it takes the wall's light: it is gone where the picture has the wall as
 // dark as `dark`, as in a crater's hollow, and whole where it is as light as `lit`.
 const WALL = { dark: 0.08, lit: 0.2 } as const;
+// How much of the sand at a place on the host shows, for sand that lies on the cratered side (1) and sand that
+// does not (0).
+const WALLED = /* glsl */ `
+uniform sampler2D uTone;
+uniform sampler2D uCut;
+float walled( vec2 at, float lies ) {
+	vec2 p = ( at - WALL_BOX.xy ) / WALL_BOX.zw, in01 = step( vec2( 0.0 ), p ) * step( p, vec2( 1.0 ) );
+	float on = lies * in01.x * in01.y * step( 0.5, textureLod( uCut, p, 0.0 ).g );
+	return mix( 1.0, smoothstep( ${WALL.dark.toFixed(4)}, ${WALL.lit.toFixed(4)}, dot( textureLod( uTone, p, 3.0 ).rgb, vec3( 0.2126, 0.7152, 0.0722 ) ) ), on );
+}`;
 // A grain: how wide, in units, and how strong it shows. This share of a strand's grains set off round it and not
 // in it, this many times as far out.
 const GRAIN = { wide: [0.6, 1.2], strength: 0.55, loose: 0.3, out: 5 } as const;
@@ -91,6 +108,7 @@ const CHANCE = /* glsl */ `
 float chance( float p ) { p = fract( p * 0.1031 ); p *= p + 33.33; p *= p + p; return fract( p ); }
 float chance( vec2 p ) { vec3 q = fract( vec3( p.xyx ) * 0.1031 ); q += dot( q, q.yzx + 33.33 ); return fract( ( q.x + q.y ) * q.z ); }
 float wave( float x ) { float i = floor( x ), k = fract( x ); k = k * k * ( 3.0 - 2.0 * k ); return mix( chance( i ), chance( i + 1.0 ), k ); }
+float wave( vec2 p ) { vec2 i = floor( p ), k = fract( p ); k = k * k * ( 3.0 - 2.0 * k ); return mix( mix( chance( i ), chance( i + vec2( 1.0, 0.0 ) ), k.x ), mix( chance( i + vec2( 0.0, 1.0 ) ), chance( i + vec2( 1.0, 1.0 ) ), k.x ), k.y ); }
 // How much of a fall there is in what left the rim at this time: each has its own number and thins to its least.
 float flowing( float left, float which, float least, float pace ) { return mix( least, 1.0, smoothstep( 0.3, 0.75, wave( left * pace + which * 7.31 ) ) ); }`;
 // What a ribbon and a grain have alike: how the falls waver, how the cursor parts them, and the sand's color at a
@@ -147,13 +165,11 @@ void main() {
 	vColor = vec4( kept( c ), aBody.y * full / wide * mix( 1.0, ${f(TONGUE.thin)}, more / full ) );
 	vOwn = vec3( aBody.z, aShape.xy );
 	vWide = vec2( full, more / full );
-	vWall = vec3( ( at - WALL_BOX.xy ) / WALL_BOX.zw, aLies.y );
+	vWall = vec3( at, aLies.y );
 }`;
 
 const RIBBON_FRAG = /* glsl */ `
 uniform float uTime;
-uniform sampler2D uTone;
-uniform sampler2D uCut;
 varying vec2 vAt;
 varying vec4 vFlow;
 varying vec4 vColor;
@@ -161,20 +177,22 @@ varying vec3 vOwn;
 varying vec2 vWide;
 varying vec3 vWall;
 ${CHANCE}
+${WALLED}
 void main() {
-	float u = vAt.x, left = uTime - vFlow.x - ${f(SURGES.lags)} * u * u, vSeed = vOwn.x;
-	float across = exp( - mix( 3.5, 1.8, vWide.y ) * u * u ) * ( 1.0 - smoothstep( 0.7, 1.0, abs( u ) ) );
+	float u = vAt.x, left = uTime - vFlow.x - ${f(SURGES.lags)} * u * u, vSeed = vOwn.x, rate = ${f(SURGES.rate)} * ( 0.75 + 0.5 * chance( vSeed * 53.0 ) );
+	float runs = smoothstep( ${f(SURGES.edge[0])}, ${f(SURGES.edge[1])}, mix( wave( left * rate + vSeed * 173.0 ), wave( left * rate * ${f(SURGES.fine)} + vSeed * 291.0 ), ${f(SURGES.share)} ) );
+	float narrow = mix( mix( ${f(SURGES.narrow)}, 1.0, runs ), 1.0, vWide.y );
+	float across = exp( - mix( 3.5, 1.8, vWide.y ) * u * u / ( narrow * narrow ) ) * ( 1.0 - smoothstep( 0.7, 1.0, abs( u ) ) );
 	float thread = 1.0 - vOwn.z + vOwn.z * wave( u * 2.6 + vSeed * 37.0 + 0.8 * wave( left * 0.6 + vSeed * 11.0 ) );
-	float surge = mix( ${f(SURGES.least)}, 1.0, smoothstep( ${f(SURGES.edge[0])}, ${f(SURGES.edge[1])}, wave( left * ${f(SURGES.rate)} * ( 0.75 + 0.5 * chance( vSeed * 53.0 ) ) + vSeed * 173.0 ) ) );
-	float column = floor( ( u * 0.5 + 0.5 ) * max( 1.0, floor( vWide.x / ${f(TONGUE.grain)} ) ) ) + floor( vSeed * 91.0 ), speck = chance( column + 0.5 );
-	float grains = mix( 1.0 - vOwn.z, 1.0, chance( vec2( column, floor( left * ( 14.0 + 9.0 * speck ) + speck * 7.0 ) ) ) );
+	float surge = mix( ${f(SURGES.least)}, 1.0, runs );
+	float lines = ( u * 0.5 + 0.5 ) * max( 1.0, floor( vWide.x / ${f(TONGUE.grain)} ) ) + floor( vSeed * 91.0 ), column = floor( lines ), speck = chance( column + 0.5 );
+	float streak = smoothstep( ${f(STREAKS.edge[0])}, ${f(STREAKS.edge[1])}, wave( vec2( lines, left * ( ${f(STREAKS.rate[0])} + ${f(STREAKS.rate[1] - STREAKS.rate[0])} * chance( vSeed * 29.0 ) ) + vSeed * 61.0 ) ) );
+	float grains = mix( mix( 1.0 - vOwn.z, 1.0, chance( vec2( column, floor( left * ( 14.0 + 9.0 * speck ) + speck * 7.0 ) ) ) ), mix( ${f(STREAKS.low)}, 1.0, streak ), vWall.z );
 	float along = smoothstep( 0.0, 0.02, vAt.y ) * ( 1.0 - smoothstep( vOwn.y, 1.0, vAt.y ) );
 	float a = vColor.a * flowing( uTime - vFlow.x, vFlow.y, vFlow.z, vFlow.w ) * across * thread * surge * grains * along;
-	vec2 in01 = step( vec2( 0.0 ), vWall.xy ) * step( vWall.xy, vec2( 1.0 ) );
-	float on = vWall.z * in01.x * in01.y * step( 0.5, texture2D( uCut, vWall.xy ).g );
-	a *= mix( 1.0, smoothstep( ${f(WALL.dark)}, ${f(WALL.lit)}, dot( textureLod( uTone, vWall.xy, 3.0 ).rgb, vec3( 0.2126, 0.7152, 0.0722 ) ) ), on );
+	a = min( 1.0, a * walled( vWall.xy, vWall.z ) );
 	if ( a < 0.003 ) discard;
-	gl_FragColor = vec4( vColor.rgb * a, a );
+	gl_FragColor = vec4( vColor.rgb * ( mix( 1.0, mix( ${f(STREAKS.dark)}, 1.0, streak ), vWall.z ) * a ), a );
 }`;
 
 const GRAIN_VERT = /* glsl */ `
@@ -183,10 +201,12 @@ attribute vec4 aGoes;
 attribute vec4 aLooks;
 attribute vec4 aFlow;
 attribute vec4 aMore;
+attribute float aLies;
 varying vec2 vAt;
 varying vec4 vColor;
 varying float vSoft;
 ${SHARED}
+${WALLED}
 void main() {
 	float life = aFrom.w, turn = uTime / life + aFlow.y, nth = floor( turn ), age = ( turn - nth ) * life;
 	float seed = aLooks.w * 977.0 + nth * 7.31;
@@ -201,6 +221,7 @@ void main() {
 	at.x += swayed( fallen, at.y, aFlow.x );
 	at = parted( at );
 	vec3 c = sand( at, fallen, step( 1.5, aMore.w ) );
+	float lies = walled( at, aLies );
 
 	float soft = aLooks.z, wide = max( aLooks.x, 1.5 * uPixel ), streak = wide * aMore.y + ( 1.0 - soft ) * length( goes ) * ${f(MOVES.shutter)};
 	vec2 way = normalize( goes + vec2( 0.0, 1e-3 ) );
@@ -210,7 +231,7 @@ void main() {
 	vSoft = soft;
 
 	float lived = age / life;
-	float shows = aLooks.y * flowing( uTime - age, aFlow.x, aFlow.z, aFlow.w ) * smoothstep( 0.0, 0.07, lived ) * ( 1.0 - smoothstep( 0.4, 1.0, lived ) ) * ( aLooks.x / wide ) * min( 1.0, 1.6 * wide * aMore.y / streak );
+	float shows = aLooks.y * flowing( uTime - age, aFlow.x, aFlow.z, aFlow.w ) * smoothstep( 0.0, 0.07, lived ) * ( 1.0 - smoothstep( 0.4, 1.0, lived ) ) * ( aLooks.x / wide ) * min( 1.0, 1.6 * wide * aMore.y / streak ) * lies;
 	c *= 1.0 + ( 1.0 - soft ) * step( ${f(1 - SAND.glints)}, r.z ) * ${f(SAND.glint)} * pow( max( sin( age * ( 5.0 + 9.0 * r.w ) + r.x * 6.2832 ), 0.0 ), 12.0 );
 	vColor = vec4( kept( c ), shows );
 }`;
@@ -245,9 +266,9 @@ export function falls(uniforms: Shared, lamp: { near: number; lift: number; hot:
   // One grain: where it sets off and how far toward the eye, how long it lives, its most speed and how fast it
   // comes to it, the wind on it and how it strays, how wide and strong and soft it is, which fall it thins with,
   // the least that thins to and how fast it changes, its first speed down, how many times as long as wide it is
-  // drawn, and the lean and length of the strand it falls with.
-  const grain = (o: { at: [number, number, number]; life: number; most: number; quick?: number; wind?: number; strays: number; wide: number; strength: number; soft?: number; which: number; least: number; pace: number; up?: number; long?: number; lean?: number; strand?: number }): void => {
-    grains.push([...o.at, o.life, o.most, o.quick ?? MOVES.pull / o.most, o.wind ?? 0, o.strays, o.wide, o.strength * (0.6 + 0.8 * R()), o.soft ?? 0, R(), o.which, R(), o.least, o.pace, -(o.up ?? 0), o.long ?? 1, o.lean ?? 0, o.strand ?? 1]);
+  // drawn, the lean and length of the strand it falls with, and whether it lies on the cratered side.
+  const grain = (o: { at: [number, number, number]; life: number; most: number; quick?: number; wind?: number; strays: number; wide: number; strength: number; soft?: number; which: number; least: number; pace: number; up?: number; long?: number; lean?: number; strand?: number; lies?: boolean }): void => {
+    grains.push([...o.at, o.life, o.most, o.quick ?? MOVES.pull / o.most, o.wind ?? 0, o.strays, o.wide, o.strength * (0.6 + 0.8 * R()), o.soft ?? 0, R(), o.which, R(), o.least, o.pace, -(o.up ?? 0), o.long ?? 1, o.lean ?? 0, o.strand ?? 1, o.lies ? 1 : 0]);
   };
   // One strand of a fall, leaving the rim at x, with its grains: `k` is how much of a main strand it is, 0 to 1,
   // and `share` how much of its kind's length and strength it has.
@@ -258,7 +279,7 @@ export function falls(uniforms: Shared, lamp: { near: number; lift: number; hot:
     ribbons.push([x0, y0, deep, long, wide, share.strength * between(kind.strength, 0.3 * R() + 0.7 * k), R(), lean, which, kind.least, kind.pace, most, kind.holds, kind.lines, Math.max(0, tongue), draws, slope, kind === CORNER ? 0 : 1]);
     for (let i = 0; i < kind.grains * (0.5 + k); i++) {
       const loose = R() < GRAIN.loose, own = between(kind.most), gx = x0 + (R() + R() - 1) * kind.round * (loose ? GRAIN.out : 1) * (0.4 + 0.6 * wide / kind.wide[1]);
-      grain({ at: [gx, rim(Math.min(gx, corner)) - 1, deep], life: takes(long * (0.55 + 0.6 * R()), own), most: own, strays: kind.strays * (loose ? 2 : 1), wide: between(GRAIN.wide), strength: GRAIN.strength * (loose ? 0.7 : 1), which, least: kind.least, pace: kind.pace, lean, strand: long });
+      grain({ at: [gx, rim(Math.min(gx, corner)) - 1, deep], life: takes(long * (0.55 + 0.6 * R()), own), most: own, strays: kind.strays * (loose ? 2 : 1), wide: between(GRAIN.wide), strength: GRAIN.strength * (loose ? 0.7 : 1), which, least: kind.least, pace: kind.pace, lean, strand: long, lies: kind !== CORNER });
     }
   };
 
@@ -284,7 +305,7 @@ export function falls(uniforms: Shared, lamp: { near: number; lift: number; hot:
   }
   for (let i = 0; i < DUST.grains; i++) {
     const far = R() < 0.6, x = far ? between(CORNER.from) + (R() - 0.5) * 16 : VEILS.at[Math.floor(R() * VEILS.at.length)] + (R() - 0.5) * 14;
-    grain({ at: [x, rim(Math.min(x, corner)) + R() * 30, toward(x)], life: between(DUST.life), most: between(DUST.most), strays: DUST.strays, wide: between(DUST.wide), strength: DUST.strength, soft: 1, which: far ? 7.2 : 40 + x / 60, least: DUST.least, pace: DUST.pace });
+    grain({ at: [x, rim(Math.min(x, corner)) + R() * 30, toward(x)], life: between(DUST.life), most: between(DUST.most), strays: DUST.strays, wide: between(DUST.wide), strength: DUST.strength, soft: 1, which: far ? 7.2 : 40 + x / 60, least: DUST.least, pace: DUST.pace, lies: !far });
   }
 
   const listed = (g: THREE.InstancedBufferGeometry, rows: number[][], names: readonly (readonly [string, number])[]): void => {
@@ -310,7 +331,7 @@ export function falls(uniforms: Shared, lamp: { near: number; lift: number; hot:
   const quad = new THREE.InstancedBufferGeometry();
   quad.setAttribute('position', new THREE.Float32BufferAttribute([-0.5, -0.5, 0, 0.5, -0.5, 0, -0.5, 0.5, 0, 0.5, 0.5, 0], 3));
   quad.setIndex([0, 2, 1, 1, 2, 3]);
-  listed(quad, grains, [['aFrom', 4], ['aGoes', 4], ['aLooks', 4], ['aFlow', 4], ['aMore', 4]]);
+  listed(quad, grains, [['aFrom', 4], ['aGoes', 4], ['aLooks', 4], ['aFlow', 4], ['aMore', 4], ['aLies', 1]]);
 
   const ribbon = new THREE.ShaderMaterial({ ...look, vertexShader: RIBBON_VERT, fragmentShader: RIBBON_FRAG }), loose = new THREE.ShaderMaterial({ ...look, vertexShader: GRAIN_VERT, fragmentShader: GRAIN_FRAG });
   const group = new THREE.Group(), size = new THREE.Vector2();
