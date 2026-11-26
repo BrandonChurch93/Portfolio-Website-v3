@@ -3,8 +3,12 @@
 // is in, and rewrites the words.
 
 export interface WorkLink {
+  // The first link says what it opens (his word, Nov 26: "Live is pretty ambiguous"). Play it: a game. View it live:
+  // a marketing site or a working app. Watch the film: a film. No link reads "Live". 3D art and photography have no
+  // word yet: he has not chosen one, so add it here when he does.
   // App and Site: a project that is both a product and the site that sells it, each with its own address.
-  label: 'Live' | 'App' | 'Site' | 'Evals' | 'Code';
+  // Code: only for a repository that is public and stays public.
+  label: 'Play it' | 'View it live' | 'Watch the film' | 'App' | 'Site' | 'Evals' | 'Code';
   href: string;
 }
 
@@ -54,7 +58,7 @@ export const software: WorkItem[] = [
     },
     page: `${ALL_WORK}/proactive-ui-for-ai-glasses`,
     links: [
-      { label: 'Live', href: 'https://proactive-ui-for-ai-glasses.vercel.app' },
+      { label: 'View it live', href: 'https://proactive-ui-for-ai-glasses.vercel.app' },
       { label: 'Code', href: `${GITHUB}/Proactive-UI-for-AI-Glasses` },
     ],
   },
@@ -72,7 +76,7 @@ export const software: WorkItem[] = [
     },
     page: `${ALL_WORK}/ask-the-claude-docs`,
     links: [
-      { label: 'Live', href: 'https://ask-the-claude-docs.vercel.app' },
+      { label: 'View it live', href: 'https://ask-the-claude-docs.vercel.app' },
       { label: 'Evals', href: 'https://ask-the-claude-docs.vercel.app/evals' },
       { label: 'Code', href: `${GITHUB}/Ask-the-Claude-Docs` },
     ],
@@ -108,7 +112,7 @@ export const software: WorkItem[] = [
     },
     page: `${ALL_WORK}/generative-ui-github`,
     links: [
-      { label: 'Live', href: 'https://generative-ui-github.vercel.app' },
+      { label: 'View it live', href: 'https://generative-ui-github.vercel.app' },
       { label: 'Evals', href: 'https://generative-ui-github.vercel.app/evals' },
       { label: 'Code', href: `${GITHUB}/generative-ui-github` },
     ],
@@ -132,7 +136,6 @@ export const more: WorkItem[] = [
     links: [
       { label: 'App', href: 'https://warehouse-robot-manager.vercel.app/app/' },
       { label: 'Site', href: 'https://warehouse-robot-manager.vercel.app/' },
-      { label: 'Code', href: `${GITHUB}/Warehouse-Robot-Manager` },
     ],
   },
   // His video for the page is to be switched for a newer one before the site is launched (his word, Nov 23).
@@ -145,10 +148,7 @@ export const more: WorkItem[] = [
     tags: ['WebGL', 'Time Lapse', 'Music Sync'],
     picture: { src: '/media/work/sunflower-card.webp', alt: 'A closed sunflower bud ringed by pointed green bracts stands against a low, hazy sun and a blurred field.', focus: [0.5, 0.5], loop: '/media/work/sunflower-loop.mp4' },
     page: `${ALL_WORK}/sunflower`,
-    links: [
-      { label: 'Live', href: 'https://sun-flower-perplexity.vercel.app/' },
-      { label: 'Code', href: `${GITHUB}/Sun-Flower-Perplexity` },
-    ],
+    links: [{ label: 'Watch the film', href: 'https://sun-flower-perplexity.vercel.app/' }],
   },
   {
     slug: 'desktop-pc-builder',
@@ -160,10 +160,7 @@ export const more: WorkItem[] = [
     // Framed for the card's window as it is, so it is not cropped in. The loop's first frame is the picture.
     picture: { src: '/media/work/pc-builder.webp', alt: 'A white gaming PC on a dark stage, its lights off', focus: [0.5, 0.5], loop: '/media/work/pc-builder-loop.mp4' },
     page: `${ALL_WORK}/desktop-pc-builder`,
-    links: [
-      { label: 'Live', href: 'https://pc-desktop-builder.vercel.app/' },
-      { label: 'Code', href: `${GITHUB}/PC-Desktop-Builder` },
-    ],
+    links: [{ label: 'View it live', href: 'https://pc-desktop-builder.vercel.app/' }],
   },
   {
     slug: 'modern-softworks',
@@ -174,7 +171,7 @@ export const more: WorkItem[] = [
     tags: ['Design System', 'GSAP', 'Security Headers'],
     picture: { src: '/media/work/softworks.webp', alt: 'The home page of the Modern Softworks studio site', focus: [0.5, 0.3] },
     page: `${ALL_WORK}/modern-softworks`,
-    links: [{ label: 'Live', href: 'https://www.modernsoftworks.com' }],
+    links: [{ label: 'View it live', href: 'https://www.modernsoftworks.com' }],
   },
   {
     slug: 'hero-animation-builder',
@@ -186,7 +183,7 @@ export const more: WorkItem[] = [
     picture: { src: '/media/work/hero-builder.webp', alt: 'The builder: a layered arc hero beside its panel of controls', focus: [0.5, 0.4] },
     page: `${ALL_WORK}/hero-animation-builder`,
     links: [
-      { label: 'Live', href: 'https://hero-animation-builder.vercel.app' },
+      { label: 'View it live', href: 'https://hero-animation-builder.vercel.app' },
       { label: 'Code', href: `${GITHUB}/HeroAnimationBuilder` },
     ],
   },
@@ -200,7 +197,7 @@ export const more: WorkItem[] = [
     // The loop's first frame is the picture.
     picture: { src: '/media/work/meridian-card.webp', alt: 'The Meridian watch movement in daylight, in its rhodium finish, with a clockwork moth perched on it', focus: [0.5, 0.5], loop: '/media/work/meridian-loop.mp4' },
     page: `${ALL_WORK}/meridian`,
-    links: [{ label: 'Live', href: 'https://meridian-calibre.vercel.app/' }],
+    links: [{ label: 'View it live', href: 'https://meridian-calibre.vercel.app/' }],
   },
   {
     slug: 'micro-interactions-library',
@@ -212,7 +209,7 @@ export const more: WorkItem[] = [
     picture: { src: '/media/work/stand-in-art-2.webp', alt: 'A plain picture standing in for the Micro-Interactions Library, which has no screenshot yet' },
     page: `${ALL_WORK}/micro-interactions-library`,
     links: [
-      { label: 'Live', href: 'https://micro-interactions-library.vercel.app/' },
+      { label: 'View it live', href: 'https://micro-interactions-library.vercel.app/' },
       { label: 'Code', href: `${GITHUB}/micro-interactions-library` },
     ],
   },
@@ -241,7 +238,7 @@ export const standIns = (items: WorkItem[]): number => items.filter((i) => i.sta
 // His games. From each project's own session, a draft of his to rewrite.
 export const played: WorkItem[] = [
   // Halation v2, a project of its own beside the first (his word, Nov 26). From its repository's README and kit. Its
-  // Live link is the address he gave on Nov 26, which opens on a page titled with the tool it was made with.
+  // link is the address he gave on Nov 26, which opens on a page titled with the tool it was made with.
   {
     slug: 'halation-v2',
     name: 'Halation v2',
@@ -252,10 +249,7 @@ export const played: WorkItem[] = [
     // The loop's first frame is the picture.
     picture: { src: '/media/work/halation-v2-card.webp', alt: 'A grey arrowhead ship with twin blue engine plumes skims a wet metal deck crossed by channels of cyan light, toward glowing orange and purple machines and a burst of pink sparks.', focus: [0.5, 0.5], loop: '/media/work/halation-v2-loop.mp4' },
     page: `${ALL_WORK}/halation-v2`,
-    links: [
-      { label: 'Live', href: 'https://www.perplexity.ai/computer/a/f83016cc-58f5-49b6-9360-28ea1cbd8046' },
-      { label: 'Code', href: `${GITHUB}/Space-Shooter-Game-v2` },
-    ],
+    links: [{ label: 'Play it', href: 'https://www.perplexity.ai/computer/a/f83016cc-58f5-49b6-9360-28ea1cbd8046' }],
     subs: ['Web'],
   },
   {
@@ -267,10 +261,7 @@ export const played: WorkItem[] = [
     tags: ['Three.js', 'TypeScript', 'Web Audio'],
     picture: { src: '/media/work/halation-card.webp', alt: 'A white arrow ship streaks across a glowing blue grid toward a crowd of neon squares, chevrons, pinwheels and a green segmented serpent.', focus: [0.5, 0.5], loop: '/media/work/halation-loop.mp4' },
     page: `${ALL_WORK}/halation`,
-    links: [
-      { label: 'Live', href: 'https://space-shooter-game-perpelxity.vercel.app/' },
-      { label: 'Code', href: `${GITHUB}/Space-Shooter-Game-Perpelxity` },
-    ],
+    links: [{ label: 'Play it', href: 'https://space-shooter-game-perpelxity.vercel.app/' }],
     subs: ['Web'],
   },
 ];

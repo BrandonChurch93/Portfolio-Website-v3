@@ -99,14 +99,18 @@ function watchTouch(): void {
   ask();
 }
 
+// A link's first word, which is all of it a narrow card has room for (`.rest` in the stylesheet).
+const first = (label: string) => label.split(' ')[0];
+
 // A project card. Its plate is lit metal round a dark face and a picture, with a band of bronze that carries its
 // facts, and its words are in the page over it.
 // At rest the picture is shown in the site's metals. Under the pointer, with keyboard focus, tapped by a finger, or
 // nearest the middle of a phone's screen, its own colors come back and its loop plays, the bead and the rail catch
 // the light, and the card grows a little.
 // It also turns in depth with the pointer, words and all, and the light on its metal turns with it.
-// The whole card opens the case study, and says so at its foot. Live, Evals and Code go elsewhere: with the pointer
-// on one of them the case study's words go quiet and that link lights, so it is always plain where a click leads.
+// The whole card opens the case study, and says so at its foot. The links at its foot (View it live, Evals, Code and
+// the like) go elsewhere: with the pointer on one of them the case study's words go quiet and that link lights, so
+// it is always plain where a click leads.
 export function WorkCard({ item, look = CARD_LOOK, held, className }: Props) {
   const el = useRef<HTMLElement>(null);
   const band = useRef<HTMLDivElement>(null);
@@ -210,9 +214,9 @@ export function WorkCard({ item, look = CARD_LOOK, held, className }: Props) {
                 {item.links.map((l) => (
                   <li key={l.label}>
                     <a href={l.href} target="_blank" rel="noopener noreferrer">
-                      {l.label}
+                      <span>{first(l.label)}{first(l.label) !== l.label && <span className={styles.rest}>{l.label.slice(first(l.label).length)}</span>}</span>
                       <span aria-hidden="true" className={styles.out}>↗</span>
-                      <span className="visually-hidden"> of {item.name} (opens in a new tab)</span>
+                      <span className="visually-hidden">, {item.name} (opens in a new tab)</span>
                     </a>
                   </li>
                 ))}
