@@ -106,7 +106,9 @@ vec3 sand( vec2 at, float fallen, float lip ) {
 	vec2 off = at - uLamp.xy;
 	float d = sqrt( dot( off, off ) + LAMP_LIFT * LAMP_LIFT ) / LAMP_NEAR, reach = 1.0 / ( 1.0 + d * d );
 	return c + dot( c, vec3( 0.2126, 0.7152, 0.0722 ) ) * LAMP_HOT * ( ${f(PARTED.light)} * uLamp.z * reach * reach );
-}`;
+}
+// Brought down whole to the most it may be: cut channel by channel, lit sand lost its red first and went yellow.
+vec3 kept( vec3 c ) { return c * min( 1.0, ${f(SAND.most)} / max( c.r, max( c.g, c.b ) ) ); }`;
 
 const RIBBON_VERT = /* glsl */ `
 attribute vec4 aFrom;
@@ -129,7 +131,7 @@ void main() {
 	gl_Position = projectionMatrix * modelViewMatrix * vec4( placed( at, aFrom.z ), 1.0 );
 	vAt = vec2( position.x * 2.0, share );
 	vFlow = vec4( sqrt( 2.0 * fallen / ${f(MOVES.pull)} + fallen * fallen / ( aFlow.w * aFlow.w ) ), aFlow.xyz );
-	vColor = vec4( min( c, vec3( ${f(SAND.most)} ) ), aBody.y * full / wide );
+	vColor = vec4( kept( c ), aBody.y * full / wide );
 	vOwn = vec3( aBody.z, aHolds );
 }`;
 
@@ -189,7 +191,7 @@ void main() {
 	float lived = age / life;
 	float shows = aLooks.y * flowing( uTime - age, aFlow.x, aFlow.z, aFlow.w ) * smoothstep( 0.0, 0.07, lived ) * ( 1.0 - smoothstep( 0.4, 1.0, lived ) ) * ( aLooks.x / wide ) * min( 1.0, 1.6 * wide * aMore.y / streak );
 	c *= 1.0 + ( 1.0 - soft ) * step( ${f(1 - SAND.glints)}, r.z ) * ${f(SAND.glint)} * pow( max( sin( age * ( 5.0 + 9.0 * r.w ) + r.x * 6.2832 ), 0.0 ), 12.0 );
-	vColor = vec4( min( c, vec3( ${f(SAND.most)} ) ), shows );
+	vColor = vec4( kept( c ), shows );
 }`;
 
 const GRAIN_FRAG = /* glsl */ `
