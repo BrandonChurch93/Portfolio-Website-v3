@@ -197,7 +197,8 @@ export const more: WorkItem[] = [
     year: '2026',
     line: 'A working tourbillon watch movement built entirely in code. Every gear turns on real tooth counts from a single beat counter, and visitors can wind it, take it apart, and watch it run down.',
     tags: ['Procedural 3D', 'Working Mechanics', 'Spec-Driven Build'],
-    picture: { src: '/media/work/meridian.webp', alt: 'The Meridian movement: a tourbillon watch movement with its gears and bridges', focus: [0.5, 0.5] },
+    // The loop's first frame is the picture.
+    picture: { src: '/media/work/meridian-card.webp', alt: 'The Meridian watch movement in daylight, in its rhodium finish, with a clockwork moth perched on it', focus: [0.5, 0.5], loop: '/media/work/meridian-loop.mp4' },
     page: `${ALL_WORK}/meridian`,
     links: [{ label: 'Live', href: 'https://meridian-calibre.vercel.app/' }],
   },
@@ -239,6 +240,24 @@ export const standIns = (items: WorkItem[]): number => items.filter((i) => i.sta
 
 // His games. From each project's own session, a draft of his to rewrite.
 export const played: WorkItem[] = [
+  // Halation v2, a project of its own beside the first (his word, Nov 26). From its repository's README and kit. Its
+  // Live link is the address he gave on Nov 26, which opens on a page titled with the tool it was made with.
+  {
+    slug: 'halation-v2',
+    name: 'Halation v2',
+    kind: '3D Arena Shooter',
+    year: '2026',
+    line: 'The same arena shooter, rule for rule, rebuilt as a 3D world of solid machines over a wet metal deck. Proven to play exactly as the first version does, and filmed by its own renderer, frame by frame.',
+    tags: ['Three.js', 'WebGL2', 'Deterministic Sim'],
+    // The loop's first frame is the picture.
+    picture: { src: '/media/work/halation-v2-card.webp', alt: 'A grey arrowhead ship with twin blue engine plumes skims a wet metal deck crossed by channels of cyan light, toward glowing orange and purple machines and a burst of pink sparks.', focus: [0.5, 0.5], loop: '/media/work/halation-v2-loop.mp4' },
+    page: `${ALL_WORK}/halation-v2`,
+    links: [
+      { label: 'Live', href: 'https://www.perplexity.ai/computer/a/f83016cc-58f5-49b6-9360-28ea1cbd8046' },
+      { label: 'Code', href: `${GITHUB}/Space-Shooter-Game-v2` },
+    ],
+    subs: ['Web'],
+  },
   {
     slug: 'halation',
     name: 'Halation',

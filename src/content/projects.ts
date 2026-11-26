@@ -139,6 +139,46 @@ export const projects: ProjectPage[] = [
       ['Checks', ['Vitest', 'The film’s own rule checks']],
     ],
   },
+  // From its repository, Nov 26: README.md, kit/ and kit/PROGRESS.md, each figure from there. A draft of his to rewrite.
+  // The film is the cut with no opening, which began on a tool's prompt box (BRIEF.md, Open 33).
+  {
+    kind: 'study',
+    slug: 'halation-v2',
+    sub: 'The same game, rule for rule, drawn as a real 3D world.',
+    shots: [
+      { src: '/media/work/halation-v2-poster.webp', alt: 'The ship, ringed in blue light on the wet deck, in the middle of a crowd of orange box machines and purple chevrons, with sparks flying off the far wall.', caption: 'The film: one run of the game, cut on the beats of its music.', slot: 'video', video: '/media/work/halation-v2-video.mp4' },
+      { src: '/media/work/halation-v2-1.webp', alt: 'Close beside the ship as it skims the deck, firing yellow shots past a round grey machine, its plumes and hull reflected in the wet metal.', caption: 'The ship as a machine, with a dormant well beside it.' },
+      { src: '/media/work/halation-v2-2.webp', alt: 'The game from its own tilted camera, with the score and the multiplier at the top: the ship fires into purple chevrons as two bursts of purple and green sparks go off.', caption: 'The game as it is played, from its own camera.' },
+      { src: '/media/work/halation-v2-3.webp', alt: 'A swarm of orange box machines bursting into sparks around the ship, which fans yellow shots into them, the multiplier at x120.', caption: 'A crowd of drifters coming apart.' },
+      { src: '/media/work/halation-v2-4.webp', alt: 'Low on the deck, a green serpent’s armoured head and the links of its tail beside a purple burst, as the ship flies past firing.', caption: 'A serpent, seen from the deck.' },
+      { src: '/media/work/halation-v2-5.webp', alt: 'The game on a tablet, held sideways, with a thumb stick at each lower corner and a pause button at the top right.', caption: 'On a tablet, with its touch controls.' },
+    ],
+    proved: [
+      { value: '48 of 48', label: 'test runs play exactly as the first version' },
+      { value: '993', label: 'tests, all passing' },
+      { value: '584,589', label: 'spawns checked for fairness, 0 breaches' },
+      { value: '10', label: 'kinds of enemy, each a machine of its own' },
+    ],
+    why: [],
+    what: [
+      'Halation is a twin-stick arena shooter for the browser. One ship, a walled arena, and enemies that warp in without end, alone at first and then in surges. Shards raise the multiplier and the weapon through its five tiers, and a bomb clears the arena but scores nothing. It plays with a mouse and keyboard, a keyboard alone, a gamepad or touch.',
+      'Version two keeps every rule and every number of the first and changes the picture. The flat neon lines became a real 3D world: dark machined plates under a film of water, channels of light in the seams, a wall of light at the far edge, and every enemy a solid machine that hovers over its own reflection. The camera is tilted, so the fight still reads like a map and now shows height.',
+      'The film is made from the real game. One run of the game’s own simulation from a fixed seed is drawn frame by frame by the game’s renderer, at 1920 by 1080 and 60 frames a second, and cut on the beats of a music track.',
+    ],
+    how: [
+      { title: 'The same game, proven', text: 'The rules are frozen. Recorded runs of the first version, 3 pilots on 4 seeds, are played through the new code and compared at 8,688 points over 145 minutes of play. All 48 runs match.' },
+      { title: 'A picture that is a function of the state', text: 'The renderer reads a state and writes pixels and keeps nothing between frames. Motion blur is drawn from several states inside one frame, never from the frame before, so any frame can be drawn again on any machine and match.' },
+      { title: 'Solid machines, not outlines', text: 'Each enemy keeps the silhouette and the color it had from above, now as a hull with beveled edges, seams of light in its own hue and a glass core, throwing its light onto the wet deck.' },
+      { title: 'A deck that moves', text: 'The grid of the first version became the seams between the plates. A woken well drags the deck down into a funnel, and a burst sends a ring rolling outward.' },
+      { title: 'A loop that closes', text: 'The card’s loop is the game’s own state running in a circle: the frame after the last is the first again, measured at 82.1 dB.' },
+    ],
+    built: [
+      ['Game', ['TypeScript', 'three.js on WebGL2', 'GSAP for interface easing', 'Web Audio API']],
+      ['Build', ['Vite']],
+      ['Films', ['Playwright', 'ffmpeg', 'mediabunny for the in-browser export page']],
+      ['Testing', ['Vitest', 'Replays against the first version', 'Determinism checks between Node and the browser']],
+    ],
+  },
   // From the project's own session (HALATION-ENTRY.md, Nov 23), each figure with its source there. A draft of his
   // to rewrite. Nothing on it says an agent or a tool built it, by his word of Nov 23 (BRIEF.md, Open 33).
   {
@@ -468,11 +508,11 @@ export const projects: ProjectPage[] = [
     slug: 'meridian',
     sub: 'A working watch movement, built entirely in code',
     shots: [
-      video('/media/work/meridian.webp', 'A still from a video of Meridian'),
+      { src: '/media/work/meridian-poster.webp', alt: 'The Meridian watch at night in its rose finish, its open movement and tourbillon under a violet sky crossed by ribbons of gold light, a clockwork moth perched on the case', caption: 'The film: the movement is built, runs down, is wound by hand and runs through the night to noon, cut to its music.', slot: 'video', video: '/media/work/meridian-video.mp4' },
       { src: '/media/work/meridian.webp', alt: 'The Meridian movement in its gold case, with its gears, bridges and blue screws, a clockwork moth perched on it, beside a card about how it runs', caption: 'The movement in its case, with the clockwork moth on it.' },
-      still('photo', 2, 'A screenshot goes here: the Dissected view, with its labelled parts.'),
-      still('art', 4, 'A screenshot goes here: the movement at night.'),
-      still('game', 3, 'A screenshot goes here: a part’s card, from the guided tour.'),
+      { src: '/media/work/meridian-1.webp', alt: 'The Dissected view at night: the movement taken apart into a rising stack of parts, each one labelled, beside the card that explains how the watch runs', caption: 'The Dissected view, with its labelled parts.' },
+      { src: '/media/work/meridian-2.webp', alt: 'A low view across the movement at night, its chapter ring glowing in a spectrum of lume and a clockwork moth perched on the rim', caption: 'The movement at night.' },
+      { src: '/media/work/meridian-3.webp', alt: 'A close view of the movement in its rose finish beside the card for the mainspring barrel, which stores the power; here one wind lasts forty seconds', caption: 'A part’s card, from the guided tour.' },
     ],
     proved: [
       { value: '0', label: 'imported models or textures' },
