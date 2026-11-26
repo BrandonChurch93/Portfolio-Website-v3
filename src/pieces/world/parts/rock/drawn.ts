@@ -196,7 +196,7 @@ export const build: PartFactory = async () => {
   group.add(face);
   made.push(sheet, m);
 
-  const sand = falls(uniforms, { near: LAMP.near, lift: LAMP.lift, hot: HOT });
+  const sand = falls(uniforms, { near: LAMP.near, lift: LAMP.lift, hot: HOT }, BOX);
   group.add(sand.group);
   made.push(sand);
 
