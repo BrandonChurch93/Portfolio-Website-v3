@@ -51,6 +51,16 @@ const THIN = { round: 16.6, over: [0.06, 0.22], bright: [0.35, 0.6], strong: [0.
 // dark, taken over `fine` pixels, counts as so many units of height (`grain`).
 const TURN = { calm: 3.8, first: 1, fine: 8.3, grain: 8.53 };
 const QUALITY = { tone: 92, form: 82, light: 88 };
+// Where the sand ends over the city's ground. Picture 10's dunes are cut off straight where its own ground began,
+// and sand that thinned out evenly from that line read as a straight ramp of grit. So each band of the dunes runs
+// out in a tongue, as the foot of a low dune does: where its middle is down the host, how far its tip is right of
+// DRAWN.sand[0], and how far up and down from its middle it has widened by `long` units, slowly at first by
+// `blunt`. The edge wanders by `wanders` units, over `every` units down the host, and the sand thins to nothing
+// over `thins` units, which the page draws as grains. The last tongue lies along the planet's rim, where the land
+// stops short and only the sand hides the night: below its middle the sand begins `rim[0]` units left of the tip,
+// straight down, and is whole within `rim[1]`, so that no grain is left out there. However the tongues lie, the
+// sand is whole by DRAWN.sand[1], where the land gives way.
+const TOE = { tongues: [[348.5, 10, 10.5], [370.5, 7, 11], [387.5, 11, 9]], long: 26, blunt: 3, wanders: 1.6, every: 3.2, thins: 6, rim: [6, 0.4] };
 // Picture 10 drew a few embers in the air off the lit cracks on the left, each a short bright stroke. The page
 // draws its own, which drift (src/pieces/world/parts/rock/embers.ts), and a drawn one beside them would be seen
 // to stand still. So each is taken out and the rock round it is carried in over it: where it is on the host,
@@ -58,6 +68,8 @@ const QUALITY = { tone: 92, form: 82, light: 88 };
 const EMBERS_OUT = { at: [[143.4, 488.3, 2.2], [154.5, 477, 5], [164.1, 506.7, 4.5], [180.4, 517, 3.4], [225.7, 508.7, 6.5]], soft: 1.2 };
 
 const ss = (a, b, t) => { const k = Math.min(1, Math.max(0, (t - a) / (b - a))); return k * k * (3 - 2 * k); };
+const chance = (i) => { const v = Math.sin(i * 127.1 + 311.7) * 43758.5453; return v - Math.floor(v); };
+const wander = (t) => { const i = Math.floor(t), k = t - i, e = k * k * (3 - 2 * k); return 2 * (chance(i) * (1 - e) + chance(i + 1) * e) - 1; };
 const along = (table, x) => {
   if (x <= table[0][0]) return table[0][1];
   for (let i = 1; i < table.length; i++) if (x <= table[i][0]) { const [x0, y0] = table[i - 1], [x1, y1] = table[i]; return y0 + ((y1 - y0) * (x - x0)) / (x1 - x0); }
@@ -202,6 +214,14 @@ for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
   cores[n] = (1 - ss(CORE_LIGHT.near, CORE_LIGHT.far, d)) * ss(CORE_LIGHT.strong[0], CORE_LIGHT.strong[1], deep[n]) * (1 - sand[n]);
 }
 const thins = blur(thin, W, H, THIN.soft), coreSoft = blur(cores, W, H, 1.5);
+// The sand's toe down the host, in units right of the center line, and over how many units it thins there.
+const LAST = TOE.tongues.at(-1), toes = new Float32Array(H), fades = new Float32Array(H);
+for (let j = 0; j < H; j++) {
+  const Y = top + (j + 0.5) / P.ppu, low = Y > LAST[0];
+  const tips = TOE.tongues.map(([down, tip, tall]) => P.sand[0] + tip + TOE.long * Math.abs((Y - down) / tall) ** TOE.blunt);
+  toes[j] = low ? P.sand[0] + LAST[1] - TOE.rim[0] : Math.min(P.sand[1] - TOE.thins - TOE.wanders, ...tips) + TOE.wanders * wander(Y / TOE.every);
+  fades[j] = low ? TOE.rim[1] : TOE.thins;
+}
 const light = Buffer.alloc(N * 3), tone = Buffer.alloc(N * 3), cut = new Uint8Array(N * 4);
 const byte = (v) => Math.round(255 * Math.min(1, Math.max(0, v)));
 for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
@@ -210,7 +230,7 @@ for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
   tone[n * 3] = byte(col[n * 3]); tone[n * 3 + 1] = byte(col[n * 3 + 1]); tone[n * 3 + 2] = byte(col[n * 3 + 2]);
   const dx = (X - coreX) / SORT.bowl.wide, dy = Y - coreY, bowl = SORT.bowl.deep + ((dx * dx + dy * dy) / (SORT.bowl.reach * SORT.bowl.reach)) * SORT.bowl.rise;
   const isSand = sand[n] > 0.5, z = isSand ? shape(X, Y, SORT.outside) : Math.min(shape(X, Y, -SORT.inside), bowl);
-  const keep = 1 - sand[n] * (1 - ss(coreX + P.sand[0], coreX + P.sand[1], X));
+  const keep = isSand ? ss(toes[j], toes[j] + fades[j], X - coreX) : 1;
   cut[n * 4] = byte((z - P.depth[0]) / (P.depth[1] - P.depth[0]));
   cut[n * 4 + 1] = byte(keep < 1 ? Math.max(cover[n], sand[n] * ss(0.02, 0.1, cover[n])) : cover[n]);
   cut[n * 4 + 2] = byte(keep);
