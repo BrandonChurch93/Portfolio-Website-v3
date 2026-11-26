@@ -51,6 +51,11 @@ const THIN = { round: 16.6, over: [0.06, 0.22], bright: [0.35, 0.6], strong: [0.
 // dark, taken over `fine` pixels, counts as so many units of height (`grain`).
 const TURN = { calm: 3.8, first: 1, fine: 8.3, grain: 8.53 };
 const QUALITY = { tone: 92, form: 82, light: 88 };
+// Picture 10 drew a few embers in the air off the lit cracks on the left, each a short bright stroke. The page
+// draws its own, which drift (src/pieces/world/parts/rock/embers.ts), and a drawn one beside them would be seen
+// to stand still. So each is taken out and the rock round it is carried in over it: where it is on the host,
+// across and down, and within how many units, and over how many more units that eases in.
+const EMBERS_OUT = { at: [[143.4, 488.3, 2.2], [154.5, 477, 5], [164.1, 506.7, 4.5], [180.4, 517, 3.4], [225.7, 508.7, 6.5]], soft: 1.2 };
 
 const ss = (a, b, t) => { const k = Math.min(1, Math.max(0, (t - a) / (b - a))); return k * k * (3 - 2 * k); };
 const along = (table, x) => {
@@ -162,6 +167,10 @@ console.log(`drawn: laid into ${W} x ${H} · ${((performance.now() - t0) / 1000)
 
 const known = new Float32Array(N);
 for (let n = 0; n < N; n++) known[n] = ss(0.1, 0.6, cover[n]);
+for (const [X, Y, within] of EMBERS_OUT.at) {
+  const reach = within + EMBERS_OUT.soft, i0 = Math.floor((X - reach - left) * P.ppu), i1 = Math.ceil((X + reach - left) * P.ppu), j0 = Math.floor((Y - reach - top) * P.ppu), j1 = Math.ceil((Y + reach - top) * P.ppu);
+  for (let j = Math.max(0, j0); j <= Math.min(H - 1, j1); j++) for (let i = Math.max(0, i0); i <= Math.min(W - 1, i1); i++) known[j * W + i] *= ss(within, reach, Math.hypot(left + (i + 0.5) / P.ppu - X, top + (j + 0.5) / P.ppu - Y));
+}
 carry(col, known, W, H);
 
 const lum = new Float32Array(N), val = new Float32Array(N), strong = new Float32Array(N);

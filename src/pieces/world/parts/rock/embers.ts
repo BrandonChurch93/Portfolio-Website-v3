@@ -1,10 +1,9 @@
 import * as THREE from 'three';
-import { hex, type PaletteName } from '../../../../config/palette';
 import { unshown } from '../../../../world/tone';
 import { VIEW, seeded } from '../../layout';
 import { WARM } from '../../light';
 import { CHANCE } from './falls';
-import { MOST, PLACED_GLSL } from './sheet';
+import { MOST, PLACED_GLSL, seen } from './sheet';
 
 // The embers the lit cracks on the planet's left side shed, as picture 10 has them (?look=d).
 //
@@ -28,15 +27,15 @@ const CRACKS = [
 // slow air it ends in, across the host and down it, in units a second, so it rises to the left. It wanders by
 // this many units to either side, this many times a second. How wide it is, in units, how strong it shows, how
 // much of that flickers, how far in front of the rock it stands, and how long it is drawn along its own way, in
-// seconds.
-const EMBERS = { many: 56, sheds: 0.36, life: [3.2, 7.5], round: 4, leaves: [6, 22], slows: 1.4, way: [-0.5, 1.6], air: [[-9, -3], [-12, -4]], wanders: [1.5, 4.5], turns: [0.2, 0.55], wide: [1.4, 2.6], strength: [0.9, 1], flickers: 0.2, ahead: 12, shutter: 0.045 } as const;
+// seconds: picture 10's embers are short bright strokes, about twice as long as they are wide.
+const EMBERS = { many: 56, sheds: 0.36, life: [3.2, 7.5], round: 4, leaves: [6, 22], slows: 1.4, way: [-0.5, 1.6], air: [[-9, -3], [-12, -4]], wanders: [1.5, 4.5], turns: [0.2, 0.55], wide: [1.5, 2.8], strength: [0.9, 1], flickers: 0.2, ahead: 12, shutter: 0.2 } as const;
 // How one looks, as picture 10 has them: a small bright middle with a deeper glow close round it and nothing past
 // that. The middle is the palette's flame at its brightest, never its pale or its hot, which read as white at this
 // size. It cools to the glow's color over these shares of its life and goes out over the last of it, from `fades`
 // on. The glow is the flame with this much of the palette's ember in it, turned `red` degrees toward red, which is
 // where the picture's own embers and the rock they light have theirs, and is this strong beside the middle.
 // `tight` is how fast the middle and the glow fall off from the ember's own middle: the larger, the smaller.
-const COAL = { cools: [0.3, 0.9], fades: 0.6, deep: 0.55, red: 7, glow: 0.45, tight: [16, 5] } as const;
+const COAL = { cools: [0.5, 0.95], fades: 0.7, deep: 0.55, red: 7, glow: 0.45, tight: [16, 5] } as const;
 // The cursor stirs them: an ember is moved off its way by as much as `far` units, within about `wide` units of
 // the cursor.
 const STIRRED = { far: 10, wide: 40 } as const;
@@ -45,8 +44,6 @@ const f = (n: number): string => n.toFixed(4);
 const v2 = (a: readonly number[]): string => `vec2( ${a.map(f).join(', ')} )`;
 const v3 = (a: readonly number[]): string => `vec3( ${a.map(f).join(', ')} )`;
 const span = (a: readonly [number, number], k: string): string => `mix( ${f(a[0])}, ${f(a[1])}, ${k} )`;
-// A color of the palette as the screen is to show it, for unshown().
-const seen = (name: PaletteName): number[] => { const n = hex(name); return [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((x) => x / 255); };
 // An orange turned toward red: its green, which is what its hue is told by, is brought down toward its blue.
 const redder = ([r, g, b]: number[], degrees: number): number[] => [r, Math.max(b, g - (r - b) * degrees / 60), b];
 const DEEP = redder(seen('flame').map((x, i) => x + (seen('ember')[i] - x) * COAL.deep), COAL.red);
@@ -86,7 +83,7 @@ void main() {
 	gl_Position = projectionMatrix * modelViewMatrix * vec4( placed( at, aFrom.z ), 1.0 );
 	vAt = position.xy * 2.0;
 
-	float shows = step( sheds, ${f(EMBERS.sheds)} ) * smoothstep( 0.0, 0.03, lived ) * ( 1.0 - smoothstep( ${f(COAL.fades)}, 1.0, lived ) ) * ( aLooks.x / wide ) * sqrt( wide / streak );
+	float shows = step( sheds, ${f(EMBERS.sheds)} ) * smoothstep( 0.0, 0.03, lived ) * ( 1.0 - smoothstep( ${f(COAL.fades)}, 1.0, lived ) ) * ( aLooks.x / wide );
 	shows *= 1.0 - ${f(EMBERS.flickers)} * ( 0.5 + 0.5 * sin( age * ( 9.0 + 8.0 * r.x ) + r.y * 6.2832 ) );
 	vec3 c = unshown( mix( ${v3(BRIGHT)}, ${v3(DEEP)}, smoothstep( ${f(COAL.cools[0])}, ${f(COAL.cools[1])}, lived ) ) );
 	vColor = vec4( c, aLooks.y * shows );

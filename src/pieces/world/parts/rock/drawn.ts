@@ -6,7 +6,7 @@ import { WARM, color, world } from '../../light';
 import type { PartFactory, PartState } from '../../part';
 import { embers } from './embers';
 import { CHANCE, falls } from './falls';
-import { CE, EYE, MOST, SE, SWING_GLSL, letGo, picture, sheet as laid, texture } from './sheet';
+import { CE, EYE, MOST, SE, SWING_GLSL, letGo, picture, seen, sheet as laid, texture } from './sheet';
 import { STREAM } from './stone';
 
 // The world as picture 10 has it (?look=d): the torn planet under the land, and the dunes, as that picture drew
@@ -46,8 +46,13 @@ const LAMP = { lift: 114, near: 174, own: 2.4, turn: 0.7, any: 0.114, matter: [0
 // surges, one every `long` units out from it, `rate` of them a second, and finer ones, `fine` times as many, count
 // for this `share` of it. Between the two `edge`s of that a crack goes from `low` times as bright as the picture
 // has it to `full` times. The glow on the rock round a crack follows it: it is what the picture's cracks are when
-// seen `soft` times coarser, `glow` times over.
-const HEAT = { box: [140, 268, 430, 730], eases: 10, long: 85, rate: 0.3, fine: 2.7, share: 0.35, edge: [0.25, 0.75], low: 0.55, full: 1.15, soft: 5, glow: 4 } as const;
+// seen `soft` times coarser, `glow` times over. A crack's own middle is paler than the core's light, so the
+// picture's maps do not count it as the core's: a crack is taken to be the core's where the core's light is round
+// it, which is that light seen `fed[0]` times coarser, `fed[1]` times over. Without it the middles stood still
+// while the glow round them moved, and the heat could not be seen. A crack's middle is so bright that on the screen
+// it hardly dims when its light is cut by half, so as it cools its color turns as well, `turns` of the way from
+// the picture's pale to the palette's flame at the same brightness: pale where the heat is, orange where it is not.
+const HEAT = { box: [140, 268, 430, 730], eases: 10, long: 50, rate: 0.4, fine: 2.7, share: 0.35, edge: [0.25, 0.75], low: 0.55, full: 1.15, soft: 5, glow: 4, fed: [4, 2.5], turns: 0.85 } as const;
 // The sand thins out over the city's ground in grains this many to a unit.
 const GRAINS = 4;
 
@@ -158,11 +163,16 @@ void main() {
 	c *= 1.0 + ${f(SWING)} * light.r * ( uCoreLevel * coreSwing( out3 / max( dist, 1e-3 ), dist ) - 1.0 );
 	{
 		vec2 from = smoothstep( ${`vec2( ${f(HEAT.box[0] - HEAT.eases)}, ${f(HEAT.box[2] - HEAT.eases)} )`}, ${`vec2( ${f(HEAT.box[0])}, ${f(HEAT.box[2])} )`}, at ), to = 1.0 - smoothstep( ${`vec2( ${f(HEAT.box[1])}, ${f(HEAT.box[3])} )`}, ${`vec2( ${f(HEAT.box[1] + HEAT.eases)}, ${f(HEAT.box[3] + HEAT.eases)} )`}, at );
-		float crack = from.x * from.y * to.x * to.y * light.r * min( 1.0, max( light.g, ${f(HEAT.glow)} * textureLod( uLight, vUv, ${f(HEAT.soft)} ).g ) );
+		float within = from.x * from.y * to.x * to.y;
+		float fed = min( 1.0, ${f(HEAT.fed[1])} * max( light.r, textureLod( uLight, vUv, ${f(HEAT.fed[0])} ).r ) );
+		float middle = within * min( 1.0, light.g * fed );
+		float crack = max( middle, within * min( 1.0, ${f(HEAT.glow)} * textureLod( uLight, vUv, ${f(HEAT.soft)} ).g * light.r ) );
 		if ( crack > 0.0 ) {
 			float run = dist / ${f(HEAT.long)} - uTime * ${f(HEAT.rate)};
 			float heat = smoothstep( ${f(HEAT.edge[0])}, ${f(HEAT.edge[1])}, mix( wave( run ), wave( run * ${f(HEAT.fine)} + 17.0 ), ${f(HEAT.share)} ) );
 			c *= 1.0 + crack * ( mix( ${f(HEAT.low)}, ${f(HEAT.full)}, heat ) - 1.0 );
+			vec3 flame = unshown( ${v3(seen('flame'))} );
+			c = mix( c, flame * ( max( c.r, max( c.g, c.b ) ) / max( flame.r, max( flame.g, flame.b ) ) ), middle * ( 1.0 - heat ) * ${f(HEAT.turns)} );
 			c *= mix( 1.0, min( 1.0, ${f(MOST)} / max( c.r, max( c.g, c.b ) ) ), min( 1.0, crack * 8.0 ) );
 		}
 	}

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { hex, type PaletteName } from '../../../../config/palette';
 import { slice } from '../../../../world/build';
 import { CORE, D2R, HOST, SPIRE, VIEW, drawn } from '../../layout';
 
@@ -36,6 +37,9 @@ const SHEET = 14 / 9;
 // Nothing of a picture, or of what is drawn on one, is brighter than this as light, which is under what the world's
 // glow starts at (GLOW in ../../index.ts): a picture's brightest places do not bloom at rest.
 export const MOST = 1.4;
+
+// A color of the palette as the screen is to show it, for unshown().
+export const seen = (name: PaletteName): number[] => { const n = hex(name); return [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((x) => x / 255); };
 
 const E = VIEW.el * D2R;
 export const SE = Math.sin(E), CE = Math.cos(E);
