@@ -342,7 +342,7 @@ export function createWorld(): WorldPiece {
       keeps = q.get('keep') !== '0';
       keepsRock = q.get('keep') !== 'land';
       was = q.get('was') === '1';
-      const hazy = isDrawn(q) && !only && !close && !was ? import('./far') : null;
+      const hazy = isDrawn(q) && !only && !close && !was ? import('./far').then((m) => m.far, () => null) : null;
       if (q.get('trace') === '1') { log = []; mark('mount'); }
       stage = new Stage(h, canvas, { tier: opts.tier, fov: ALONE.fov, near: 0.3, far: 40, bloom: GLOW, bloomScale: 0.5, envIntensity: LIGHT.night, env: night, lampAngle: 0.9, pixels: HANDHELD.world, full: true });
       trueDarks(stage.renderer);
@@ -445,9 +445,9 @@ export function createWorld(): WorldPiece {
       stale = true;
       frame();
       if (hazy) {
-        const { far } = await hazy;
+        const far = await hazy;
         if (!stage || !canvas) return;
-        hazed = far(canvas, handheld());
+        hazed = far ? far(canvas, handheld()) : null;
       }
       loading.end(LOADING);
       opts.onReady?.();
