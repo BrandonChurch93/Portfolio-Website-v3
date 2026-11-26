@@ -41,7 +41,7 @@ const MOVES = { pull: 34, takes: 1.6, shutter: 0.045, sways: { far: 4.5, by: 150
 interface Kind { strands: number; long: readonly [number, number]; wide: readonly [number, number]; strength: readonly [number, number]; most: readonly [number, number]; least: number; pace: number; holds: number; lines: number; grains: number; round: number; strays: number; tongue?: readonly [number, number]; draws?: readonly [number, number] }
 // The veils that run down the cratered side: where each leaves the rim, across the host, and within how many
 // units of there its strands are. The first is this share as long as the last, which is nearest the corner.
-const VEILS = { at: [1247, 1272, 1298, 1318, 1343, 1362, 1380], within: 6, strands: 3, long: [100, 250], wide: [2.2, 5], strength: [0.65, 1], most: [50, 72], least: 0.4, pace: 0.23, holds: 0.3, lines: 0.3, grains: 170, round: 2.2, strays: 2.2, grows: 0.45, tongue: [22, 46], draws: [10, 20] } as const;
+const VEILS = { at: [1247, 1272, 1298, 1318, 1343, 1362, 1380], within: 6, strands: 3, long: [100, 250], wide: [2.2, 5], strength: [0.9, 1.3], most: [50, 72], least: 0.6, pace: 0.23, holds: 0.3, lines: 0.2, grains: 170, round: 2.2, strays: 2.2, grows: 0.45, tongue: [22, 46], draws: [10, 20] } as const;
 // The fall off the planet's corner: from where to where along the rim it leaves.
 const CORNER = { from: [1377, 1395], strands: 8, long: [280, 560], wide: [2.2, 6], strength: [0.55, 0.92], most: [56, 90], least: 0.6, pace: 0.17, holds: 0.45, lines: 0.32, grains: 620, round: 3, strays: 3.2, tongue: [10, 22], draws: [14, 24] } as const;
 // The sheet draped over the rim all along it, from where to where: short wide strands that lie over one another.
@@ -52,9 +52,9 @@ const DRAPE = { from: [1236, 1395], strands: 60, long: [10, 62], wide: [8, 15], 
 // Its ribbon has this many parts, shorter toward the rim, where a tongue changes width fastest, by this power.
 const STRAND = { thins: 0.4, leans: 4, parts: 40, top: 1.6 } as const;
 // Sand comes over the rim in surges: a strand thins to this share and thickens again, this many times a second,
-// and the surges fall with the sand, the strand's middle this many seconds ahead of its edges. It is by them that
-// a strand is seen to run.
-const SURGES = { least: 0.45, rate: 2.4, lags: 0.12 } as const;
+// and the surges fall with the sand, the strand's middle this many seconds ahead of its edges. A surge has an edge:
+// of how full the sand is running, 0 to 1, it comes in between these two. It is by them that a strand is seen to run.
+const SURGES = { least: 0.35, rate: 2.4, lags: 0.12, edge: [0.3, 0.7] } as const;
 // Where a tongue is at its widest its sand is spread thin: it shows this share as strong. Its grain is in lines
 // this many units wide.
 const TONGUE = { thin: 0.85, grain: 1.3 } as const;
@@ -165,7 +165,7 @@ void main() {
 	float u = vAt.x, left = uTime - vFlow.x - ${f(SURGES.lags)} * u * u, vSeed = vOwn.x;
 	float across = exp( - mix( 3.5, 1.8, vWide.y ) * u * u ) * ( 1.0 - smoothstep( 0.7, 1.0, abs( u ) ) );
 	float thread = 1.0 - vOwn.z + vOwn.z * wave( u * 2.6 + vSeed * 37.0 + 0.8 * wave( left * 0.6 + vSeed * 11.0 ) );
-	float surge = mix( ${f(SURGES.least)}, 1.0, wave( left * ${f(SURGES.rate)} * ( 0.75 + 0.5 * chance( vSeed * 53.0 ) ) + vSeed * 173.0 ) );
+	float surge = mix( ${f(SURGES.least)}, 1.0, smoothstep( ${f(SURGES.edge[0])}, ${f(SURGES.edge[1])}, wave( left * ${f(SURGES.rate)} * ( 0.75 + 0.5 * chance( vSeed * 53.0 ) ) + vSeed * 173.0 ) ) );
 	float column = floor( ( u * 0.5 + 0.5 ) * max( 1.0, floor( vWide.x / ${f(TONGUE.grain)} ) ) ) + floor( vSeed * 91.0 ), speck = chance( column + 0.5 );
 	float grains = mix( 1.0 - vOwn.z, 1.0, chance( vec2( column, floor( left * ( 14.0 + 9.0 * speck ) + speck * 7.0 ) ) ) );
 	float along = smoothstep( 0.0, 0.02, vAt.y ) * ( 1.0 - smoothstep( vOwn.y, 1.0, vAt.y ) );
