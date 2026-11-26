@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { unshown } from '../../../../world/tone';
-import { CORE, DRAWN, HOST, SCALE, SOURCE, SPIRE, VIEW, drawn } from '../../layout';
+import { CORE, DRAWN, HOST, SCALE, SOURCE, SPIRE, VIEW, drawn, isDrawn } from '../../layout';
 import { load } from '../../files';
 import { WARM, color, world } from '../../light';
 import type { PartFactory, PartState } from '../../part';
@@ -22,7 +22,7 @@ import { STREAM } from './stone';
 //
 // Sculpt S's file is still fetched, for its shape alone: the moon's shadows are cast by it.
 
-export const isDrawn = (query: URLSearchParams): boolean => query.get('look') === 'd';
+export { isDrawn };
 
 // Nothing of the picture is brighter than this as light, which is under what the world's glow starts at (GLOW in
 // ../../index.ts): the picture's brightest places do not bloom at rest.

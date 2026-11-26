@@ -87,6 +87,9 @@ export const PICTURED = {
   files: { tone: 'rock-p-tone.png', form: 'rock-p-form.png', bounce: 'rock-p-bounce.png', depth: 'rock-p-depth.png' },
 } as const;
 
+// Whether the world is asked for as picture 10 has it (?look=d).
+export const isDrawn = (query: URLSearchParams): boolean => query.get('look') === 'd';
+
 // The world as picture 10 has it (?look=d): the torn planet under the land, and the dunes, as pictures of this one
 // view, which the page lights (./parts/rock/drawn.ts; made by scripts/world/drawn.mjs from
 // reference/concept/10-parts/). The part of the host they cover, as PICTURED's is told, how many of their pixels a

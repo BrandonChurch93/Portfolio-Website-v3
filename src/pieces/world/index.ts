@@ -9,11 +9,12 @@ import type { Piece, PieceOptions } from '../../world/piece';
 import { slice } from '../../world/build';
 import { Stage } from '../../world/stage';
 import { finish, trueDarks } from '../../world/tone';
-import { CORE, D2R, HOST, LIGHT, MOONWARD, PYRAMID, SCALE, SPIRE, VIEW, coreLevel, drawn, ground } from './layout';
+import { CORE, D2R, HOST, LIGHT, MOONWARD, PYRAMID, SCALE, SPIRE, VIEW, coreLevel, drawn, ground, isDrawn } from './layout';
 import { GLINT, STREAM_LONG, WARM, color, world } from './light';
 import { night } from './night';
 import { keep, type Kept } from './kept';
 import { sharpen, type Sharp, type SharpParts } from './sharp';
+import type { Far } from './far';
 import { ABOVE, LOADING, PARTS, type PartFactory, type PartName, type PartState, type WorldPart } from './part';
 import { STEP, TOWERS } from './placed';
 
@@ -120,7 +121,7 @@ export function createWorld(): WorldPiece {
   let kept: Kept | null = null, taken = '', keeps = true, keepsRock = true;
   // The city at the screen's density where the canvas has less (./sharp.ts), and for a frozen frame what it was taken
   // for. full: the next frame draws the whole canvas, after the clearing in it was put away.
-  let sharp: Sharp | null = null, sharpFor = '', full = false;
+  let sharp: Sharp | null = null, sharpFor = '', full = false, hazed: Far | null = null;
   let seen = true, stale = true, moving = false, warming = false, cast = 3, hold: number | null = null, only: PartName | null = null, close: readonly [number, number, number] | null = null, zoom = 3;
   let lampUV = { x: 0.6, y: 0.3, led: 0 }, reach = 1, first = 0;
   // The held moment the last frame was drawn for: a moment held since then is owed a frame of its own.
@@ -341,6 +342,7 @@ export function createWorld(): WorldPiece {
       keeps = q.get('keep') !== '0';
       keepsRock = q.get('keep') !== 'land';
       was = q.get('was') === '1';
+      const hazy = isDrawn(q) && !only && !close && !was ? import('./far') : null;
       if (q.get('trace') === '1') { log = []; mark('mount'); }
       stage = new Stage(h, canvas, { tier: opts.tier, fov: ALONE.fov, near: 0.3, far: 40, bloom: GLOW, bloomScale: 0.5, envIntensity: LIGHT.night, env: night, lampAngle: 0.9, pixels: HANDHELD.world, full: true });
       trueDarks(stage.renderer);
@@ -442,6 +444,11 @@ export function createWorld(): WorldPiece {
       off = clock.onFrame(frame);
       stale = true;
       frame();
+      if (hazy) {
+        const { far } = await hazy;
+        if (!stage || !canvas) return;
+        hazed = far(canvas, handheld());
+      }
       loading.end(LOADING);
       opts.onReady?.();
       if (!under.length) { first = Math.round(performance.now() - from); return; }
@@ -555,6 +562,8 @@ export function createWorld(): WorldPiece {
       kept = null;
       sharp?.dispose();
       sharp = null;
+      hazed?.dispose();
+      hazed = null;
       stage?.dispose();
       stage = null;
       moon = null;
