@@ -4,11 +4,12 @@
 
 export interface WorkLink {
   // The first link says what it opens (his word, Nov 26: "Live is pretty ambiguous"). Play it: a game. View it live:
-  // a marketing site or a working app. Watch the film: a film. No link reads "Live". 3D art and photography have no
-  // word yet: he has not chosen one, so add it here when he does.
+  // a marketing site or a working app. See how it was made: a film, whose link opens the page that shows its making.
+  // It does not say "Watch the film": the film already plays on its page here (his word, Nov 26). No link reads
+  // "Live". 3D art and photography have no word yet: he has not chosen one, so add it here when he does.
   // App and Site: a project that is both a product and the site that sells it, each with its own address.
   // Code: only for a repository that is public and stays public.
-  label: 'Play it' | 'View it live' | 'Watch the film' | 'App' | 'Site' | 'Evals' | 'Code';
+  label: 'Play it' | 'View it live' | 'See how it was made' | 'App' | 'Site' | 'Evals' | 'Code';
   href: string;
 }
 
@@ -148,7 +149,7 @@ export const more: WorkItem[] = [
     tags: ['WebGL', 'Time Lapse', 'Music Sync'],
     picture: { src: '/media/work/sunflower-card.webp', alt: 'A closed sunflower bud ringed by pointed green bracts stands against a low, hazy sun and a blurred field.', focus: [0.5, 0.5], loop: '/media/work/sunflower-loop.mp4' },
     page: `${ALL_WORK}/sunflower`,
-    links: [{ label: 'Watch the film', href: 'https://sun-flower-perplexity.vercel.app/' }],
+    links: [{ label: 'See how it was made', href: 'https://sun-flower-perplexity.vercel.app/' }],
   },
   {
     slug: 'desktop-pc-builder',

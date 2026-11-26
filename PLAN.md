@@ -31,6 +31,7 @@ Testing and polish, in a fresh Claude Code session, from the prompt in `LOG.md`,
 - [x] The sleeping blanks switched off on the home page and kept behind one switch (`BLANKS`, `?blanks=1`): Work's cards and Contact's plate show their content from the start (his word, Nov 20, 15:39: `BRIEF.md`, Open 37). What a press does to a card the stream has not reached, a crossfade in place in its row's turn: **he looked and said it is right (Nov 21, 13:45)**
 - **His alone, as he sees it:** hooking up the contact form, and the Work projects' real screenshots and content
 - [ ] **Before the site is launched: switch Sunflower's film for his newer one** (his word, Nov 23: `BRIEF.md`, Open 33). `public/media/work/sunflower-video.mp4` and its poster if the frame changes. Its Live link is in. **Switched on Nov 25 at his word** (`Sunflower-Timelapse-Final.mp4`, the cut without the prompt), with the poster and still 5 taken again from it: his to tick
+- [ ] **Before the site is launched: Sunflower's review page** (his word, Nov 26: `BRIEF.md`, Open 33, the last bullet). Its link reads See how it was made. Its address today (`sun-flower-perplexity.vercel.app`) is the film alone with two links, one of them to the repository being made private. The link is right once the page that shows how the film was made (early screenshots, the iterations, the design system) is at that address, or once the link is given that page's address
 
 ### The finishing pass (his word, Nov 18: `BRIEF.md`, Open 35)
 
