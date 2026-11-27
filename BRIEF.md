@@ -1459,6 +1459,7 @@ For Claude Code, added to the work it has in hand. His words are in the list abo
     - **Held:** everything in "More stars where the pointer is" above. Pale and warm at the palette's hue, no blue, nothing white. No circle's edge and no lag. No buffer rewritten every frame. A handheld has no pointer, so it keeps today's sky.
     - **Where:** in `src/hero/sky/`, on the branch `slice/layered-hollow`, behind a switch, and shown to him in the page beside today's sky before it becomes the default. What it costs a frame and in memory on his Mac is not known until it is built and run there.
     - **Built so far (Nov 26, about 8:15 PM), and not a ruling:** the switch (`?sky=deep`) and the hidden stars, which come up where the pointer is. With no pointer the sky measures equal to today's to the pixel. He has it as a sheet of stills, not yet in the page on his Mac. The gas, the galaxies and the cluster are not built. `LOG.md`, Nov 26, "The deep sky's first piece".
+    - **Built since (Nov 26, about 9:15 PM), and not a ruling:** the hidden sky ends at the world's real outline, worked out from the world's own layout. No added star is on the towers, the dunes or the land, or within 24 units over them, and the pointer counts as in the sky only over that outline. With no pointer the sky still measures equal to today's. Not shown to him: it changes where the hidden stars may be, not how they look. `LOG.md`, Nov 26, "The deep sky's second piece".
 
 ### Work
 

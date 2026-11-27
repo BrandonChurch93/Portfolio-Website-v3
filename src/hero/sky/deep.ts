@@ -51,6 +51,11 @@ const GATHER = {
   cloud: { x: 119.6, y: 567.8, rx: 121.7, ry: 79.1, turn: 28 },
 } as const;
 
+// Over the page's world (SkyPlan.land): how far over its outline the hidden sky begins and is whole, in units, how
+// deep in the world's glow it starts to thin and is thinnest, as shares of the glow's reach, the share of it that is
+// left there, and how far over the outline the pointer has to be for the whole of the reveal.
+const LAND = { clear: [24, 110], glow: [0.18, 0.46], least: 0.06, over: 30 } as const;
+
 const shown = (name: PaletteName): V3 => {
   const n = parseInt(palette[name].slice(1), 16);
   return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
@@ -77,11 +82,18 @@ function cloud(x: number, y: number, cell: number, octaves: number, gain: number
 
 export interface DeepField { mask: number; env: number; haze: number; lanes: number }
 
-// Where the hidden sky may be at all: never behind his words' block or on the moon, thinner toward the world's glow.
+// How far a place is over the world's outline, in CSS pixels. Under it, less than nothing.
+const over = (p: SkyPlan, land: (x: number) => number, x: number, y: number) => Math.min(land(x), p.end) - y;
+
+// Where the hidden sky may be at all: never behind his words' block or on the moon, never under the world's outline,
+// thinner toward the world's glow. A page that has told no outline has the sky's own guess of one.
 function allowed(p: SkyPlan, x: number, y: number): number {
   const w = weigh(p, x, y);
   const far = Math.hypot(Math.max(0, Math.abs(x - p.words.x) - STARS.block[0] * p.words.rx), Math.max(0, Math.abs(y - p.words.y) - STARS.block[1] * p.words.ry));
-  return smooth(STARS.clear[0] * p.u, STARS.clear[1] * p.u, far) * w.moon * w.open;
+  const clear = smooth(STARS.clear[0] * p.u, STARS.clear[1] * p.u, far) * w.moon;
+  if (!p.land) return clear * w.open;
+  const lit = LAND.least + (1 - LAND.least) * (1 - smooth(LAND.glow[0], LAND.glow[1], w.glow));
+  return clear * lit * smooth(LAND.clear[0] * p.u, LAND.clear[1] * p.u, over(p, p.land, x, y));
 }
 
 // What the hidden sky is made of at a place: where it may be, how near the band or the cloud, the band's far stars
@@ -147,7 +159,7 @@ export function follow(host: HTMLElement): { step(t: number, p: SkyPlan): Pool[]
       let goal = 0, speed = 0;
       if (at) {
         const r = host.getBoundingClientRect(), here = { x: at.x - r.left, y: at.y - r.top };
-        goal = smooth(0.12, 0.45, weigh(p, here.x, here.y).open);
+        goal = p.land ? smooth(0, LAND.over * p.u, over(p, p.land, here.x, here.y)) : smooth(0.12, 0.45, weigh(p, here.x, here.y).open);
         if (spot && dt > 0) speed = Math.hypot(here.x - spot.x, here.y - spot.y) / dt;
         spot = here;
       }

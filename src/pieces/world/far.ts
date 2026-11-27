@@ -64,15 +64,20 @@ const rgb = (name: PaletteName): [number, number, number] => { const n = hex(nam
 // The haze's color, in levels of 255: what the far picture is drawn in, and what the city's back rows go toward.
 export const DUST: readonly number[] = rgb('ember').map((v, i) => v + (rgb('bronze-deep')[i] - v) * FAR.dust);
 
-export function far(canvas: HTMLCanvasElement, handheld: boolean): Far | null {
-  if (!FAR.on) return null;
-  const dense = FAR.dense[handheld ? 1 : 0], mid = HOST.wide / 2, wide = HOST.wide * dense;
-  // The land's far edge as the host shows it: how far down the host it is, at each place across.
-  const edge: [number, number][] = [];
+// The land's far edge as the host shows it, which the far towers stand on: how far down the host it is, at places
+// across it.
+export function farEdge(): [number, number][] {
+  const mid = HOST.wide / 2, edge: [number, number][] = [];
   for (let i = 0; i <= 400; i++) {
     const x = LAND.rim * (i / 200 - 1), [dx, dy] = drawn(x, 0, -Math.sqrt(Math.max(0, LAND.rim * LAND.rim - x * x)));
     edge.push([mid + dx, dy]);
   }
+  return edge;
+}
+
+export function far(canvas: HTMLCanvasElement, handheld: boolean): Far | null {
+  if (!FAR.on) return null;
+  const dense = FAR.dense[handheld ? 1 : 0], wide = HOST.wide * dense, edge = farEdge();
   const at = (x: number): number => {
     let i = 1;
     while (i < edge.length - 1 && edge[i][0] < x) i++;

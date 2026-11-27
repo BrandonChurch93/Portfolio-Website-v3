@@ -55,8 +55,8 @@ export const SECOND = { dx: 1.55, dy: 1.3, r: 0.25 } as const;
 // How thick the sky is at a place: none behind the words, thinning toward them, fewer toward the city's glow and
 // none below where the sky ends. limit is how much brighter than the faintest a star has to be to show there. open
 // and moon are two of its parts: how much sky there is with the words and the moon left out, and how clear of the moon.
-export function weigh(p: SkyPlan, x: number, y: number): { dens: number; limit: number; dim: number; open: number; moon: number } {
-  if (y < 0 || y > p.end || x < 0 || x > p.w) return { dens: 0, limit: Infinity, dim: 0, open: 0, moon: 0 };
+export function weigh(p: SkyPlan, x: number, y: number): { dens: number; limit: number; dim: number; open: number; moon: number; glow: number } {
+  if (y < 0 || y > p.end || x < 0 || x > p.w) return { dens: 0, limit: Infinity, dim: 0, open: 0, moon: 0, glow: 0 };
   const e = Math.hypot((x - p.words.x) / p.words.rx, (y - p.words.y) / p.words.ry);
   const clear = smooth(1, 1.38, e);
   const gd = Math.hypot((x - p.glow.x) / p.glow.rx, (y - p.glow.y) / p.glow.ry);
@@ -64,7 +64,7 @@ export function weigh(p: SkyPlan, x: number, y: number): { dens: number; limit: 
   const foot = smooth(p.end, p.end - 0.12 * p.h, y);
   const m = Math.hypot(x - p.moon.x, y - p.moon.y) / (p.moon.r * moonReach(p));
   const moon = smooth(1, 1.12, m);
-  return { dens: clear * foot * moon * (1 - g) ** 2, limit: 1 + 9 * g * g, dim: 1 - 0.55 * g, open: foot * (1 - g) ** 2, moon };
+  return { dens: clear * foot * moon * (1 - g) ** 2, limit: 1 + 9 * g * g, dim: 1 - 0.55 * g, open: foot * (1 - g) ** 2, moon, glow: g };
 }
 
 const power = (r: () => number, faint: number, slope: number, most: number) => {

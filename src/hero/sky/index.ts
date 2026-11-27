@@ -31,9 +31,13 @@ export interface SkyPlan {
   band: Oval & { turn: number };
   // How far down the host the sky ends. No star below it.
   end: number;
+  // The world's outline against the sky, where the page has one: how far down the host the highest thing is, at a
+  // place across it. The deep sky keeps clear of it (deep.ts).
+  land?: (x: number) => number;
 }
 
 export interface Sky { replan(): void; dispose(): void; meteor(): void }
+export { isDeep };
 
 const MAX_DPR = 2;
 const TWINKLE = { hz: 20, amp: 0.22 } as const;

@@ -98,9 +98,9 @@ export function HeroLab({ hub }: { hub?: Hub }) {
   useEffect(() => {
     if (!wide || !webgl() || !board.current || !city.current || !sky.current || !words.current) return;
     const b = board.current, c = city.current, w = words.current, host = sky.current;
-    let made: { replan(): void; dispose(): void } | null = null, gone = false;
+    let made: { replan(): void; dispose(): void } | null = null, gone = false, outline: ((across: number) => number) | null = null;
     const plan = () => {
-      const u = b.offsetWidth / BOARD.w, tip = c.offsetTop + CITY.over * u, end = tip + CITY.edge * u;
+      const u = b.offsetWidth / BOARD.w, top = c.offsetTop, tip = top + CITY.over * u, end = tip + CITY.edge * u, line = outline;
       return {
         w: b.offsetWidth, h: end + SKY.tail * u, u,
         words: { x: CX * u, y: w.offsetTop + (WORDS.tall / 2) * u, rx: SKY.clear.rx * u, ry: SKY.clear.ry * u },
@@ -108,11 +108,15 @@ export function HeroLab({ hub }: { hub?: Hub }) {
         moon: { x: SKY.moon.x * u, y: SKY.moon.y * u, r: SKY.moon.r * u, with: 'none' as const },
         band: { x: SKY.band.x * u, y: SKY.band.y * u, rx: SKY.band.rx * u, ry: SKY.band.ry * u, turn: SKY.band.turn },
         end,
+        ...(line ? { land: (x: number) => top + line((x - CX * u) / u) * u } : {}),
       };
     };
-    void import('../../hero/sky').then(({ mountSky }) => {
-      if (gone) return;
-      made = mountSky(host, plan);
+    // The deep sky keeps clear of the world's outline, which is worked out from the world's own plan. If the outline
+    // does not load, the sky is mounted without one.
+    void import('../../hero/sky').then(({ mountSky, isDeep }) => {
+      const mount = () => { if (!gone) made = mountSky(host, plan); };
+      if (!isDeep(new URLSearchParams(location.search))) return mount();
+      void import('../../pieces/world/skyline').then(({ skyline }) => { outline = skyline; }, () => {}).then(mount);
     });
     const watch = new ResizeObserver(() => made?.replan());
     watch.observe(b);

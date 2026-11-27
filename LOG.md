@@ -2,6 +2,35 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-26 · The deep sky's second piece: the world's real outline (Fable, web chat)
+
+- **What he said:** nothing new. This is the second piece of what he said yes to on Nov 26, about 3:55 PM (`BRIEF.md`, Hero, "Yes to the sky as Fable recommended it"), built on his "Keep going" of about 8:25 PM. It was not shown to him: it changes where the hidden stars may be, not how they look. Nothing in it is a ruling.
+- **Where it is:** the branch `slice/layered-hollow`, not pushed, behind `?sky=deep` as the first piece is. Without the switch none of it runs and the outline's file is not fetched. Nothing in `src/stream` is changed.
+- **What is built:**
+    - `skyline(across)` in `src/pieces/world/skyline.ts`: the highest thing the world shows at a place across its host, in the host's units from its center line and its top. It is worked out once, on first use, from the world's own layout: the land, the 118 towers' roofs, the 648 trees, the spire and its ring, the pyramid, the far towers behind the city (`far.ts`, whose far edge is now `farEdge()`, used by both), and the crest of picture 10's dunes, a table read off the dunes' own picture (`DUNES`). Beyond the land it is level with the rim. It is then loosened so that it is never under a top: the highest within 40 units to either side, then smoothed over 24.
+    - `SkyPlan` has an optional `land(x)`: how far down the sky's host the outline is. The hero gives it (`HeroLab.tsx`) and fetches the outline's file only with the switch. If that file does not load, the hero's sky is mounted without it. `/lab/sky` gives none and keeps the first piece's stand-in.
+    - With an outline, `allowed()` in `deep.ts` puts no hidden star under it or within 24 units over it, and thins them to nothing between 110 and 24 units over it (`LAND.clear`), which are the mockup's two distances. Deep in the world's glow 6 percent of them are left (`LAND.glow`, `LAND.least`), which is the mockup's share. The first piece kept about 35.
+    - The pointer counts as in the sky by how far it is over the outline: not at all on it or under it, wholly from 30 units over it (`LAND.over`).
+- **Measured:**
+    - The glow's rule against the mockup's own, which was read off the picture: 0.004 apart at the root mean square over the sky clear of his words and the moon, and 0.007 in the low sky.
+    - The outline against the line the mockup drew by hand, at 1440 by 900: 9.6 px apart on average over the city (x 250 to 1120). There the most is 42 px lower, at x 872, in a real gap between the stepped tower and the disc tower that the hand line bridged. It is 10 to 32 px higher at x 120 to 240, where the far towers stand, and 47 px higher at x 1152, beside the last towers on the right. At the screen's two edges it is at the rim's level, 866 to 868, where the hand line was at 830. Laid over a still of the page it sits on the tops and on the dunes' crest, and is never under a top. The dunes' table is 0.8 to 15.5 units over the crest read off their picture, at every one of 173 places.
+    - In node, on the home page's plan at 1440 by 900: 88,742 hidden stars (the first piece's rule gives 94,247 in the same run, the mockup had 97,170). None under the outline, none within 24 units of it, none below the sky's end. From the top down to y 400 they are the first piece's stars, one for one. From y 600 down there are 8,606 where there were 14,799. In the page: 88,735.
+    - The pointer's rule in node: the whole reveal in the open sky, over his words, 40 px over the dunes and 28 px over the spire's tip. None on the spire, on a tower, over the city or on the dunes. A quarter of it 10 px over the obelisk.
+    - On `--png` stills of 2880 by 1800 from the production build, drawn in software, `/lab/hero?look=d&ui=0&sky=deep`:
+        - No pointer, against the first piece's still without the switch: 40 pixels differ, all low on the world (CSS x 472 to 988, y 840 to 868), where two takes of one address differ. None is in the sky. So the sky at rest is still today's.
+        - The reveal held low on the left (200, 640), on the right (1250, 560), on the band (226, 116) and over the city (720, 560): no pixel changed within 24 units over the outline, and the nearest changed pixel is 27 px over it or more. Under it 10 to 34 pixels differ, all in that same patch of the world, by 18 levels at most. In the first piece's stills of the two low places, 5,712 and 4,043 pixels changed under this outline and 4,135 and 3,240 within 24 units of it. Nothing is newly over 235 or newly whitish, no changed pixel has more blue or green than red, and nothing changed behind his words.
+        - The band's still against the first piece's: equal from the top down to CSS y 436. Below it 2,083 pixels differ.
+        - `/lab/sky`, at rest and with the band held, against the first piece's stills: 0 pixels differ.
+    - Making the hidden stars, the outline included, took 214 ms of this sandbox's CPU in the page (the first piece 174). The outline alone took 42 to 85 ms in node, once, and a million lookups of it 19 ms.
+- **Not measured, so not known:** what the first piece's entry lists, unchanged: frame time, memory and how the reveal moves on his Mac, and `/` itself.
+- **Half finished, and known:**
+    - Still only the stars. Next: the warm gas and the band's haze, then the two galaxies, the cluster and the far galaxies, then the sky's own bright stars brightening within reach.
+    - The count is a tenth under the mockup's. `STARS.keep` is left alone until the gas is in, since the gas changes how full the band reads.
+    - One outline serves both looks of the world. The dunes' crest in it is picture 10's, so in the other look the hidden sky stops higher over the dunes than it has to.
+    - The notch beside the spire's needle is given up: the outline is level for 40 units to either side of a top, as the mockup's line was.
+    - The outline and the stars are made on the main thread when the sky is built. Before the deep sky could be the default: made when the pointer first comes into the sky, or in slices. With the switch on a handheld the outline's file is fetched and not used.
+- **How to see it:** as the first piece, `/lab/hero?look=d&sky=deep`. Move the pointer down toward the skyline: the added stars stop short of the towers and the dunes, and the reveal lets go as the pointer crosses onto them.
+
 ## 2026-11-26 · The project links are on main and live, merged on his word (Fable, web chat)
 
 - **What he said** (about 8:25 PM, in the web chat, asked whether the pull request should be merged): "Keep going and merge it". The ruling is in `BRIEF.md`, Open 33, the last bullet.
