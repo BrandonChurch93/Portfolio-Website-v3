@@ -10,6 +10,10 @@ export interface WorkLink {
   // whose link opens the page that shows its making (his words, Nov 26). It does not say "Watch the film": the film
   // already plays on its page here. No link reads "Live". 3D art and photography have no word yet: he has not
   // chosen one, so add it here when he does.
+  // How it’s made is also a further link, after the main ones, on a project that plays or runs and has a film: there
+  // it opens the film's review page (his word, Nov 27: "Make sure all the other films I've created that are on my
+  // portfolio are public review pages"). That such a project keeps its first link and gains this one is the reading
+  // of the chat he keeps his projects in, his to overturn.
   // App and Site: a project that is both a product and the site that sells it, each with its own address.
   // Code: only for a repository that is public and stays public.
   label: 'Play it' | 'View it live' | 'Try it out' | 'How it’s made' | 'App' | 'Site' | 'Evals' | 'Code';
@@ -161,6 +165,7 @@ export const more: WorkItem[] = [
     links: [
       { label: 'App', href: 'https://warehouse-robot-manager.vercel.app/app/' },
       { label: 'Site', href: 'https://warehouse-robot-manager.vercel.app/' },
+      { label: 'How it’s made', href: 'https://www.perplexity.ai/computer/a/warehouse-robot-manager-review-1Y1WineOQ4WdkDgEsGK.fQ' },
     ],
   },
   // His video for the page is to be switched for a newer one before the site is launched (his word, Nov 23).
@@ -173,9 +178,7 @@ export const more: WorkItem[] = [
     tags: ['WebGL', 'Time Lapse', 'Music Sync'],
     picture: { src: '/media/work/sunflower-card.webp', alt: 'A closed sunflower bud ringed by pointed green bracts stands against a low, hazy sun and a blurred field.', focus: [0.5, 0.5], loop: '/media/work/sunflower-loop.mp4' },
     page: `${ALL_WORK}/sunflower`,
-    // No link out until the address of its review page is in (his word, Nov 26): the page that shows how the film
-    // was made. https://sun-flower-perplexity.vercel.app/ is the film alone, which already plays on its page here.
-    links: [],
+    links: [{ label: 'How it’s made', href: 'https://www.perplexity.ai/computer/a/life-of-a-sunflower-review-0xhpZ5a_S3Kaj9U7He9UlQ' }],
   },
   {
     slug: 'desktop-pc-builder',
@@ -187,7 +190,10 @@ export const more: WorkItem[] = [
     // Framed for the card's window as it is, so it is not cropped in. The loop's first frame is the picture.
     picture: { src: '/media/work/pc-builder.webp', alt: 'A white gaming PC on a dark stage, its lights off', focus: [0.5, 0.5], loop: '/media/work/pc-builder-loop.mp4' },
     page: `${ALL_WORK}/desktop-pc-builder`,
-    links: [{ label: 'Try it out', href: 'https://pc-desktop-builder.vercel.app/' }],
+    links: [
+      { label: 'Try it out', href: 'https://pc-desktop-builder.vercel.app/' },
+      { label: 'How it’s made', href: 'https://www.perplexity.ai/computer/a/desktop-pc-builder-review-.rpN3cz4TBu_O3KOU7.bLQ' },
+    ],
   },
   {
     slug: 'modern-softworks',
@@ -224,7 +230,10 @@ export const more: WorkItem[] = [
     // The loop's first frame is the picture.
     picture: { src: '/media/work/meridian-card.webp', alt: 'The Meridian watch movement in daylight, in its rhodium finish, with a clockwork moth perched on it', focus: [0.5, 0.5], loop: '/media/work/meridian-loop.mp4' },
     page: `${ALL_WORK}/meridian`,
-    links: [{ label: 'Try it out', href: 'https://meridian-calibre.vercel.app/' }],
+    links: [
+      { label: 'Try it out', href: 'https://meridian-calibre.vercel.app/' },
+      { label: 'How it’s made', href: 'https://www.perplexity.ai/computer/a/meridian-review-zXolYCTaRFaWr0kGtNPQKw' },
+    ],
   },
   {
     slug: 'micro-interactions-library',
@@ -264,8 +273,8 @@ export const standIns = (items: WorkItem[]): number => items.filter((i) => i.sta
 
 // His games. From each project's own session, a draft of his to rewrite.
 export const played: WorkItem[] = [
-  // Halation v2, a project of its own beside the first (his word, Nov 26). From its repository's README and kit. Its
-  // link is the address he gave on Nov 26, which opens on a page titled with the tool it was made with.
+  // Halation v2, a project of its own beside the first (his word, Nov 26). From its repository's README and kit.
+  // Play it opens the game's own site: the address he gave on Nov 26 asks a visitor to sign in (`BRIEF.md`, Open 33).
   {
     slug: 'halation-v2',
     name: 'Halation v2',
@@ -276,7 +285,10 @@ export const played: WorkItem[] = [
     // The loop's first frame is the picture.
     picture: { src: '/media/work/halation-v2-card.webp', alt: 'A grey arrowhead ship with twin blue engine plumes skims a wet metal deck crossed by channels of cyan light, toward glowing orange and purple machines and a burst of pink sparks.', focus: [0.5, 0.5], loop: '/media/work/halation-v2-loop.mp4' },
     page: `${ALL_WORK}/halation-v2`,
-    links: [{ label: 'Play it', href: 'https://www.perplexity.ai/computer/a/f83016cc-58f5-49b6-9360-28ea1cbd8046' }],
+    links: [
+      { label: 'Play it', href: 'https://space-shooter-game-v2-rust.vercel.app/' },
+      { label: 'How it’s made', href: 'https://www.perplexity.ai/computer/a/halation-v2-review-CkmYRdwySsSAYvQG6.wVbA' },
+    ],
     subs: ['Web'],
   },
   {
@@ -288,7 +300,10 @@ export const played: WorkItem[] = [
     tags: ['Three.js', 'TypeScript', 'Web Audio'],
     picture: { src: '/media/work/halation-card.webp', alt: 'A white arrow ship streaks across a glowing blue grid toward a crowd of neon squares, chevrons, pinwheels and a green segmented serpent.', focus: [0.5, 0.5], loop: '/media/work/halation-loop.mp4' },
     page: `${ALL_WORK}/halation`,
-    links: [{ label: 'Play it', href: 'https://space-shooter-game-perpelxity.vercel.app/' }],
+    links: [
+      { label: 'Play it', href: 'https://space-shooter-game-perpelxity.vercel.app/' },
+      { label: 'How it’s made', href: 'https://www.perplexity.ai/computer/a/halation-how-it-s-made-tNoQnccqQUyeqNpCUNAiNA' },
+    ],
     subs: ['Web'],
   },
 ];
