@@ -111,6 +111,65 @@ export type Galaxy = (typeof FINDS.galaxies)[number];
 // The parts of a galaxy, as its shader tells them apart.
 export const FIND = { arms: 0, spurs: 1, disc: 2, knots: 3, dust: 4, lane: 5 } as const;
 
+// A cluster of stars over his name: a ball of faint stars in a soft glow. over is how far its middle is across from
+// the middle of his words' block and how far over the block's top, and least how near the top of the screen it may
+// come, so it keeps its place over his name on a screen of any height. core is where the ball is thickest, reach
+// where it ends, room how much further its own picture goes, and flat how much it is squashed down the screen. count
+// is how many stars it has where a unit is madeAt CSS pixels, more or fewer as the ball's area is, so it is as thick
+// with stars on a screen of any width. A star is faint at the least and most at the most, rarer by slope as it
+// brightens. width is a star's spread where two device pixels are a CSS pixel, and how much wider one of `full`
+// levels is. A star over copper.over levels is copper that share of the time, and one over pale is pale. show is the
+// reveal the brightest star waits for, how much more a faint one needs, less as it nears `full` levels, and how much
+// more one `out` from the middle needs. heart is the glow: its brightest level, its two falls (how much, how wide,
+// how steep), how far its grain takes it either way, and the reveal its brightest and faintest light wait for.
+// Lengths are in units and light in display levels.
+export const CLUSTER = {
+  over: [231.2, 90.7],
+  least: 24,
+  core: 10.14,
+  reach: 111.5,
+  room: 1.1,
+  flat: 0.94,
+  count: 3600,
+  madeAt: 0.9863,
+  seed: 948,
+  faint: 7,
+  slope: 0.66,
+  most: 185,
+  width: { thin: 0.52, more: 0.55, full: 150 },
+  copper: { over: 50, share: 0.35 },
+  pale: 30,
+  show: { first: 0.1, faint: 0.34, full: 120, far: 0.1, out: 81.1 },
+  heart: { peak: 92, near: [0.7, 11.15, 1.15], wide: [0.3, 26.36, 1], grain: 0.28, show: [0.1, 0.34] },
+} as const;
+
+// The far galaxies: small smudges with a brighter heart, each set down within `down` of the top where the hidden sky
+// is whole (open) and bare of the band and the cloud, clear of the two galaxies by that share of their radius and
+// of the cluster by that share of its reach, and apart from each other. tries is how many places one may try before
+// it is left out. long, flat and peak are the least of its half length in units, of how flat it is and of its
+// brightest level, each with how much more the most has. warm is the share in the hidden stars' warm tone, and tone
+// what the rest are in. body and heart are its two falls (how much, how wide as a share of its length, how steep),
+// reach how many lengths its picture goes out, and show the reveal its heart and its faintest light wait for.
+export const FAR = {
+  count: 16,
+  seed: 93,
+  tries: 60,
+  down: 872,
+  open: 0.8,
+  bare: 0.3,
+  clear: [1.15, 0.6],
+  apart: 24,
+  long: [2.43, 4.06],
+  flat: [0.28, 0.55],
+  peak: [30, 44],
+  warm: 0.6,
+  tone: ['hot', 'copper-light', 0.5],
+  body: [0.75, 1, 1.1],
+  heart: [0.9, 0.28, 1.2],
+  reach: 4.5,
+  show: [0.22, 0.6],
+} as const;
+
 // Over the page's world (SkyPlan.land): how far over its outline the hidden sky begins and is whole, in units, how
 // deep in the world's glow it starts to thin and is thinnest, as shares of the glow's reach, the share of it that is
 // left there, and how far over the outline the pointer has to be for the whole of the reveal.
@@ -241,6 +300,78 @@ export function findDraws(g: Galaxy, R: number): FindDraw[] {
   out.push({ kind: FIND.knots, key: key(FIND.knots), count: C.knots, arm: [g.arms, cot, g.wind, 0], thrown: [0.01, 0.026, 0.8, 0], disc: [g.reach, 0.1, 0], light: R * R * L.knots, into: into(2), size: 2 * Math.ceil(3 * loose) + 1, gauss: [1 / (2 * Math.PI * tight * tight), 1 / (2 * tight * tight), K.more / (2 * Math.PI * loose * loose), 1 / (2 * loose * loose)] });
   add(FIND.dust, C.arms / 2, 1, t * 0.3, 3, L.dust * g.dust, S.dust, g.thin * 0.35, g.wide * 0.4, 0.7, 0.045, 0, 0.07);
   if (g.lane > 0) add(FIND.lane, C.disc, 1.25, t * 0.22, 3, L.lane * g.lane, S.lane);
+  return out;
+}
+
+// A soft oval of light, for its shader (DEEP_SMUDGE_FS): its middle, half length and reach in device pixels, its
+// turn, how flat it is, its tone at its brightest, its two falls (how much and how steep each, and how wide each as
+// a share of the length), the reveal its brightest and faintest light wait for, and how far its grain takes it.
+export interface Smudge {
+  at: [number, number];
+  turn: number;
+  long: number;
+  flat: number;
+  tone: V3;
+  falls: [number, number, number, number];
+  wide: [number, number];
+  show: [number, number];
+  grain: number;
+  reach: number;
+}
+
+// Where the cluster's middle is, in CSS pixels of the host.
+export const clusterAt = (p: SkyPlan): [number, number] => [
+  p.words.x + CLUSTER.over[0] * p.u,
+  Math.max(CLUSTER.least * p.u, p.words.y - STARS.block[1] * p.words.ry - CLUSTER.over[1] * p.u),
+];
+// How many pixels across the cluster's own picture is, and where its corner is in the hidden stars' picture.
+export function clusterPicture(p: SkyPlan, s: number): { size: number; x: number; y: number } {
+  const at = clusterAt(p), half = Math.ceil(CLUSTER.reach * CLUSTER.room * p.u * s);
+  return { size: 2 * half + 1, x: Math.floor(at[0] * s) - half, y: Math.floor(at[1] * s) - half };
+}
+
+// One splat for each star of the cluster, laid out as a hidden star is, in its own picture's pixels. Each star's
+// place and light come from its own four numbers, so a wider screen's ball is a narrower one's with more stars in it.
+export function clusterStars(p: SkyPlan, s: number): { data: Float32Array; count: number } {
+  const C = CLUSTER, r = seeded(C.seed), at = clusterAt(p), pic = clusterPicture(p, s), out: number[] = [];
+  for (let k = Math.round(C.count * (p.u / C.madeAt) ** 2); k > 0; k--) {
+    const far = C.core / Math.sqrt(Math.max(1e-6, r() ** (-2 / 3) - 1)), a = 6.2831853 * r(), rare = r(), kind = r();
+    if (far >= C.reach) continue;
+    const x = at[0] + far * Math.cos(a) * p.u, y = at[1] + far * Math.sin(a) * C.flat * p.u, m = allowed(p, x, y);
+    if (m < FAINT) continue;
+    const pk = Math.min(C.most, C.faint * Math.max(1e-6, rare) ** -C.slope);
+    const col = pk > C.copper.over && kind < C.copper.share ? COPPER : pk > C.pale ? PALE : WARM;
+    const two = C.width.thin + C.width.more * Math.min(1, pk / C.width.full), e = (pk / 255) * m * 6.2831853 * two * two * (s / 2) ** 2;
+    const wait = C.show.first + C.show.faint * (1 - Math.min(1, pk / C.show.full)) + C.show.far * Math.min(1, far / C.show.out);
+    out.push(x * s - pic.x, y * s - pic.y, col[0] * e, col[1] * e, col[2] * e, Math.max(0.45, (two * s) / 2), 0, 1 - wait);
+  }
+  return { data: new Float32Array(out), count: out.length / 8 };
+}
+export function clusterHeart(p: SkyPlan, s: number): Smudge {
+  const H = CLUSTER.heart, at = clusterAt(p);
+  return { at: [at[0] * s, at[1] * s], turn: 0, long: H.near[1] * p.u * s, flat: 1, tone: scale3(WARM, H.peak / 255), falls: [H.near[0], H.near[2], H.wide[0], H.wide[2]], wide: [1, H.wide[1] / H.near[1]], show: [H.show[0], H.show[1]], grain: H.grain, reach: CLUSTER.reach * CLUSTER.room * p.u * s };
+}
+
+// The far galaxies of a plan. Each has a stream of numbers for its place and one for its look, so one that has to
+// try again for a place is still the same galaxy.
+export function farGalaxies(p: SkyPlan, s: number): Smudge[] {
+  const F = FAR, ball = clusterAt(p), sum = F.body[0] + F.heart[0], rest = mix3(shown(F.tone[0]), shown(F.tone[1]), F.tone[2]), out: Smudge[] = [];
+  const taken: [number, number, number][] = FINDS.galaxies.map((g) => [g.at[0] * p.u, g.at[1] * p.u, g.r * F.clear[0] * p.u]);
+  taken.push([ball[0], ball[1], CLUSTER.reach * F.clear[1] * p.u]);
+  for (let i = 0; i < F.count; i++) {
+    const r = seeded(cellSeed(i, F.seed, 57)), look = seeded(cellSeed(i, F.seed, 58));
+    let at: [number, number] | null = null;
+    for (let k = 0; k < F.tries && !at; k++) {
+      const x = r() * p.w, y = r() * F.down * p.u;
+      if (taken.some(([a, b, c]) => Math.hypot(x - a, y - b) < c)) continue;
+      const f = deepField(p, x, y);
+      if (f.mask > F.open && f.env < F.bare) at = [x, y];
+    }
+    if (!at) continue;
+    const long = (F.long[0] + look() * F.long[1]) * p.u * s, flat = F.flat[0] + look() * F.flat[1], turn = look() * Math.PI, tone = look() < F.warm ? WARM : rest, peak = F.peak[0] + look() * F.peak[1];
+    taken.push([at[0], at[1], F.apart * p.u]);
+    out.push({ at: [at[0] * s, at[1] * s], turn, long, flat, tone: scale3(tone, peak / 255), falls: [F.body[0] / sum, F.body[2], F.heart[0] / sum, F.heart[2]], wide: [F.body[1], F.heart[1]], show: [F.show[0], F.show[1]], grain: 0, reach: F.reach * long });
+  }
   return out;
 }
 

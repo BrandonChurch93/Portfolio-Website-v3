@@ -551,11 +551,23 @@ void main() {
   o = uInto * (vLight * (uGauss.x * exp(-q * uGauss.y) + uGauss.z * exp(-q * uGauss.w)));
 }`;
 
+// A thing laid over the hidden stars is summed with what their picture held under its square (uUnder, a copy, with
+// its first row at the square's foot). The sum is held at the most the picture keeps in the sum's own color: added a
+// channel at a time, a bright star over a bright heart would go to white.
+const OVER = /* glsl */ `
+uniform sampler2D uUnder;
+vec4 over(vec3 c, float early, vec2 q, float size) {
+  vec4 under = texelFetch(uUnder, ivec2(q.x, size - q.y), 0);
+  vec3 sum = under.rgb + c;
+  return vec4(sum * min(1.0, 1.0 / max(max(sum.r, max(sum.g, sum.b)), 1e-4)), max(under.a, early));
+}
+`;
+
 // A galaxy laid into the hidden stars' picture from its own: the heart, what its dust leaves of each part's light,
 // the four tones, and a photograph's stretch so the faint arms show beside the heart. Its fourth channel is how
 // early the reveal shows it, the brightest first, written as a hidden star's is so the square it is drawn in never
 // shows.
-export const DEEP_FOUND_FS = HEAD + COMMON + /* glsl */ `
+export const DEEP_FOUND_FS = HEAD + COMMON + OVER + /* glsl */ `
 uniform sampler2D uAcc;
 uniform sampler2D uMask;
 uniform vec3 uGrid;
@@ -576,7 +588,48 @@ void main() {
   float most = max(c.r, max(c.g, c.b)) * 255.0;
   if (most < 0.25) discard;
   float grain = (h2(t + vec2(4171.0, 1931.0)) + h2(t + vec2(977.0, 5527.0)) - 1.0) / 255.0;
-  o = vec4(max(c + grain * step(0.5 / 255.0, c), 0.0), most > 0.6 ? 1.0 - mix(uShow.x, uShow.y, 1.0 - pow(clamp(lit, 0.0, 1.0), 0.45)) : 0.0);
+  o = over(max(c + grain * step(0.5 / 255.0, c), 0.0), most > 0.6 ? 1.0 - mix(uShow.x, uShow.y, 1.0 - pow(clamp(lit, 0.0, 1.0), 0.45)) : 0.0, q, uPlace.z);
+}`;
+
+// A soft oval of light (Smudge in deep.ts): the cluster's glow, summed into the cluster's own picture, and each far
+// galaxy, added to the hidden stars' picture. uOff is where the picture it is drawn into begins in the hidden
+// stars'. Its grain is the same from one pixel to the next but one, so it reads as stars too far to be points. Its
+// fourth channel is written as a galaxy's is.
+export const DEEP_SMUDGE_FS = HEAD + COMMON + /* glsl */ `
+uniform sampler2D uMask;
+uniform vec3 uGrid;
+uniform float uS;
+uniform vec2 uOff;
+uniform vec4 uAt;
+uniform vec2 uLong;
+uniform vec3 uTone;
+uniform vec4 uFalls;
+uniform vec4 uWide;
+uniform float uGrain;
+out vec4 o;
+void main() {
+  vec2 t = P() + uOff, d = t - uAt.xy;
+  float rr = length(vec2(d.x * uAt.z + d.y * uAt.w, (d.y * uAt.z - d.x * uAt.w) / uLong.y)) / uLong.x;
+  float lum = uFalls.x * exp(-pow(rr / uWide.x, uFalls.y)) + uFalls.z * exp(-pow(rr / uWide.y, uFalls.w));
+  lum *= 1.0 + uGrain * (0.5 * (h2(t) + h2(t + vec2(1.0, 0.0)) + h2(t + vec2(0.0, 1.0)) + h2(t + vec2(1.0, 1.0))) - 1.0);
+  vec3 c = uTone * lum * texture(uMask, (t / uS / uGrid.z + 0.5) / uGrid.xy).r;
+  float most = max(c.r, max(c.g, c.b)) * 255.0;
+  if (most < 0.25) discard;
+  float grain = (h2(t + vec2(4171.0, 1931.0)) + h2(t + vec2(977.0, 5527.0)) - 1.0) / 255.0;
+  o = vec4(max(c + grain * step(0.5 / 255.0, c), 0.0), most > 0.6 ? 1.0 - mix(uWide.z, uWide.w, 1.0 - pow(clamp(lum, 0.0, 1.0), 0.45)) : 0.0);
+}`;
+
+// The cluster laid into the hidden stars' picture from its own, where its stars and its glow were summed and no
+// channel was cut short.
+export const DEEP_LAY_FS = HEAD + COMMON + OVER + /* glsl */ `
+uniform sampler2D uAcc;
+uniform vec3 uPlace;
+out vec4 o;
+void main() {
+  vec2 q = P() - uPlace.xy;
+  vec4 acc = texelFetch(uAcc, ivec2(q.x, uPlace.z - q.y), 0);
+  if (max(acc.r, max(acc.g, acc.b)) * 255.0 < 0.25) discard;
+  o = over(acc.rgb, acc.a, q, uPlace.z);
 }`;
 
 // The deep sky's warm gas (GAS in deep.ts), drawn once into its own picture in display levels, a texel for each CSS

@@ -2,6 +2,50 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-27 · The deep sky's fourth piece, part two: the cluster and the far galaxies (Fable, web chat)
+
+- **What he said:** nothing new. This is part of what he said yes to on Nov 26, about 3:55 PM (`BRIEF.md`, Hero, "Yes to the sky as Fable recommended it"), built on his "Keep going" of about 8:25 PM. With it the things to find are all built, and they went to him together on Nov 27 at about 5:05 AM as one sheet of stills, the page beside the mockup. Nothing in it is a ruling.
+- **Where it is:** the branch `slice/layered-hollow`, not pushed, behind `?sky=deep` as the rest of the deep sky is. Without the switch none of it runs. Nothing in `src/stream` is changed. `main` was taken in first, by a merge (1a73c5b): the Cyberpunk Car Showcase card, which went onto `main` as pull request 2 on his word, "Merge pull request 2" (Nov 27, 12:34 AM).
+- **What is built:**
+    - The cluster (`CLUSTER` in `src/hero/sky/deep.ts`): a ball of stars above his name, in a soft glow of its own, hidden with no pointer. Its place is tied to his words' block: 231.2 units right of the block's middle and 90.7 over its top, and never nearer the top of the screen than 24. At 1440 by 900 its middle is at CSS (948, 66), where the mockup's is.
+    - It has 3,600 stars where a unit is 0.9863 CSS pixels, thickest in the middle, and 3,548 of them are placed (the rest fall past its reach). The count follows the ball's area (`madeAt`), so a wider screen's ball is as thick with stars: 9,810 in a window 2560 wide. Each star's place and light come from its own four numbers.
+    - A star is drawn as a hidden star is: warm when faint, pale over 30 levels, and copper for 35% of those over 50.
+    - The stars and the glow are summed in a float picture of their own, which holds more light than the hidden stars' picture can, and that is laid in (`DEEP_LAY_FS` in `shaders.ts`). Its own picture is deleted after. Nothing is rewritten once the sky is built.
+    - A thing laid over the hidden stars is now summed with what their picture held under it (`OVER`: a copy of that square), and the sum is held at the most the picture keeps, in the sum's own color. Part one took the greater of the two, which would have left the cluster's stars unable to add to its glow. The two galaxies are laid in this way now too.
+    - The far galaxies (`FAR`): 16 small soft ovals, each with a brighter heart (`DEEP_SMUDGE_FS`, which draws the cluster's glow as well), added to the hidden stars' picture. Each is in the hidden stars' warm tone six times in ten, and otherwise between the palette's hot and copper-light. Each is set down where the hidden sky is whole and bare of the band and the cloud, clear of the two galaxies and the cluster, and at least 24 units from the others. Each has one stream of numbers for its place and one for its look, so one that has to try again for a place is still the same galaxy.
+    - All of it is revealed as a hidden star is, by the fourth channel of the stars' picture, the brightest light first (`show`).
+    - Without a float picture there is no cluster. The far galaxies need none.
+    - For `?hook=1`: `skyDeepCluster` and `skyDeepFar` are the counts, `skyDeepFindMs` now covers the galaxies, the cluster and the far galaxies, and the tool `skyFinds` says where the cluster and the far galaxies are.
+- **How the numbers were chosen:** they are the mockup's own (`review/rv/skymock3.py`, in the chat's workspace, not in the repository), with its lengths turned from CSS pixels at 1440 wide into units. Nothing in the cluster was fitted by eye. The page's own: the count following the ball's area, the hold at the sky's limit, and the far galaxies keeping clear of the galaxies, the cluster and each other (the mockup's had no such rule, and one of its sixteen lies inside the spiral). The far galaxies come from the page's own random numbers, so they are a different sixteen from the mockup's.
+- **Measured**, on `--png` stills of 2880 by 1800 from the production build, drawn in software (`/lab/hero?look=d&ui=0&sky=deep` unless said):
+    - The cluster against the mockup's, the pointer held on it at (930, 84), less the still at rest: the mean of the brightest channel of the light added round its middle, page then mockup. Within 12 device pixels 134.0 and 130.3, within 24 105.0 and 105.2, within 48 55.5 and 54.8, within 110 17.1 and 17.6, within 220 6.0 and 6.7.
+    - Its brightest pixel is 235 and none is over. The least channel of any pixel within 110 device pixels of its middle is at most 173. Where 40 levels or more are added, the lit pixels read at hue 30.0 at the median (25.4 to 32.1 from the 1st to the 99th in a hundred), and none has more green or blue than red.
+    - Separate lit spots over 12 levels within 110 device pixels of its middle: 307 in the page, 456 in the mockup.
+    - With no pointer: against a still without the switch, 30 pixels differ, the most 18 levels, all low on the world (CSS x 472 to 988, y 842 to 868), where two takes without the switch differ in 34. Against the first piece's still at rest, 0 pixels differ. `/lab/sky` at rest against part one's and against a still without the switch, 0 pixels each, and again on the last build.
+    - The pointer held on the cluster (930, 84), on the spiral (1232, 376) and by the edge-on (192, 316): newly over 235, 0 pixels in each. Nothing newly whitish, no lit pixel with more blue or green than red, nothing changed behind his words, and nothing changed within 24 units over the world's outline (the nearest is 98.4, 37.8 and 55.0 CSS pixels over it). The pixels that were over 235 at rest and changed (0, 1 and 4, each in one of today's bright stars) did not rise in their brightest or their least channel.
+    - The new way of laying a galaxy in, against part one's stills: in the spiral's square 3 pixels differ, the most 8 levels. Within the edge-on's radius 7 differ, the most 2 levels. The rest of what differs in its square is a far galaxy at CSS (244.8, 267.5) and the rims of two more.
+    - The far galaxies at 1440 by 900: 16 placed, eleven of them left of the middle, two cut by the screen's edge (at CSS (51.3, 1.9) and (3.5, 306.0)). What each adds at its middle is 17.8 to 42.8 levels, at hue 26.7 to 30.0. Looked at, at four times life size, beside the mockup's: faint small smudges, as the mockup's are.
+    - After the count was made to follow the ball's area, the still with the pointer on the cluster differs from the one before in 26 pixels, all the same low pixels of the world.
+    - A wide window, `/lab/sky` at 2560 by 1440 on a 2x screen (a board 2400 wide, a unit 1.6438 CSS pixels), one still, looked at: 9,810 cluster stars, 16 far galaxies, 311,363 hidden stars, 9,300,640 galaxy points. The cluster is as thick with stars as at 1440 and nothing is banded.
+    - Times in software, at 1440 by 900 on a 2x screen: the things to find took 7.2 s on `/lab/hero` and 12.0 s on `/lab/sky`, the gas 2.3 s and 4.4 s, the whole sky 26.7 s and 31.9 s. In the wide window: 28.6 s, 11.6 s and 103 s.
+    - `npm run typecheck` is clean.
+- **What was found:**
+    - The mockup's cluster sums to more than a screen shows at its heart (up to 458 levels where 255 is the most), so its brightest stars are white there. The page holds the sum at the sky's limit, 235, in its own color, so they are gold: no white in the sky, and nothing in it brighter than the world.
+    - The page's cluster has fewer separate faint points than the mockup's (307 lit spots to 456). Not chased. The mockup sets every star on the middle of a pixel and the page sets it where it falls, which lowers a faint star's brightest pixel, and may be the whole of it.
+    - Times in software are not steady from run to run: the gas, whose code is as it was, took 2.3 s in one run here and 4.4 s in another. So what the cluster and the far galaxies add cannot be told from them.
+- **Not measured, so not known:**
+    - How the cluster opens as the pointer moves: stills only here.
+    - What any of it costs on a real graphics card, and whether the half-float sums round the same on his Mac's.
+    - `/lab/hero` and `/` in a wide window: only `/lab/sky` was looked at there.
+    - Safari.
+- **Half finished, and known:**
+    - The page's sixteen far galaxies are not the mockup's sixteen, eleven of them are left of the middle at 1440 by 900, and their places change with the window's size.
+    - The cluster's stars and its glow share one reveal on a pixel, the earlier of the two.
+    - At 1440 by 900 the top of the page cuts the cluster's upper reach, as it does the mockup's. In a window of another shape the mask may cut it too.
+    - The reveal's edge is still 0.16 soft against the mockup's 0.30.
+    - Not built: the sky's own bright stars brightening.
+- **How to see it:** `/lab/hero?look=d&sky=deep`, the pointer above his name, right of its middle. The far galaxies are small and faint, and show wherever the hidden sky is open.
+
 ## 2026-11-27 · Cyberpunk Car Showcase: its card, its loop, its page and its film, as a pull request (Fable, web chat)
 
 - **What he asked**, in the chat he keeps his projects in, passed to this one with his words. On accepting the film (passed on Nov 26 at 11:45 PM): "Looks great is my portfolio been updated with this information". Then (passed on Nov 27 at 12:01 AM): "Go to pass it into the cyberpunk chat that we need to edit the review page and get it ready for the portfolio then send a message to the portfolio letting you know to add the project cyberpunk car to the pipeline". In exact terms: a card on the page of all his work and a page of its own for the film, from the files and the words its own session made, with one link, How it's made, to the film's review page. The rules are in `BRIEF.md`, Open 33, "The sixth is in".

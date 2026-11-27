@@ -4,9 +4,9 @@ import { clock } from '../../world/clock';
 import { sweep } from '../../world/contexts';
 import { handheld } from '../../world/device';
 import { liven } from './alive';
-import { DEEP, DEEP_CAP, DEEP_HALO, FINDS, GAS, deepMask, deepStars, findDraws, findSize, follow, gasFrame, isDeep, type Pool } from './deep';
+import { DEEP, DEEP_CAP, DEEP_HALO, FINDS, GAS, clusterAt, clusterHeart, clusterPicture, clusterStars, deepMask, deepStars, farGalaxies, findDraws, findSize, follow, gasFrame, isDeep, type Pool, type Smudge } from './deep';
 import { CRATER, SECOND, SPARK, SPLAT, TILT, TINT, craters, meteorAt, meteors, mix3, scale3, sparks, stars, type Meteor, type V3 } from './field';
-import { BAND_FS, BLIT_FS, DEEP_FIND_FS, DEEP_FIND_VS, DEEP_FOUND_FS, DEEP_FS, DEEP_GAS_FS, DEEP_STAR_FS, GLOW_FS, HEIGHT_FS, METEOR_FS, MOON_FS, RECT_VS, RESOLVE_FS, SPARK_FS, SPARK_VS, SPLAT_FS, SPLAT_VS } from './shaders';
+import { BAND_FS, BLIT_FS, DEEP_FIND_FS, DEEP_FIND_VS, DEEP_FOUND_FS, DEEP_FS, DEEP_GAS_FS, DEEP_LAY_FS, DEEP_SMUDGE_FS, DEEP_STAR_FS, GLOW_FS, HEIGHT_FS, METEOR_FS, MOON_FS, RECT_VS, RESOLVE_FS, SPARK_FS, SPARK_VS, SPLAT_FS, SPLAT_VS } from './shaders';
 
 // The night sky of the hero, on its own canvas: the stars, the bright few with four points, a moon, a band of far
 // stars, the city's glow, and now and then a meteor. What never changes is drawn once into a texture when the plan
@@ -129,7 +129,7 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
   // drawn once, and the pointer's pools, a few numbers a frame. mark is those numbers as one, so a pointer at rest
   // asks for no frame of its own. A handheld keeps today's sky.
   const pointer = !still && !handheld() && isDeep(new URLSearchParams(location.search)) ? follow(host) : null;
-  let deep: { star: Prog; find: Prog; found: Prog; gas: Prog; show: Prog } | null = null, plate: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null, plateH = 1, pools: Pool[] = [], mark = 0;
+  let deep: { star: Prog; find: Prog; found: Prog; smudge: Prog; lay: Prog; gas: Prog; show: Prog } | null = null, plate: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null, plateH = 1, pools: Pool[] = [], mark = 0;
   let gas: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null, gasW = 1, gasH = 1, gasG = 1;
   const pooled = new Float32Array((DEEP.pools + 1) * 3);
   let forced: { at: number; m: Meteor } | null = null;
@@ -149,7 +149,7 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
       spark: program(gl, SPARK_VS, SPARK_FS),
       meteor: program(gl, RECT_VS, METEOR_FS),
     };
-    deep = pointer ? { star: program(gl, SPLAT_VS, DEEP_STAR_FS), find: program(gl, DEEP_FIND_VS, DEEP_FIND_FS), found: program(gl, RECT_VS, DEEP_FOUND_FS), gas: program(gl, RECT_VS, DEEP_GAS_FS), show: program(gl, RECT_VS, DEEP_FS) } : null;
+    deep = pointer ? { star: program(gl, SPLAT_VS, DEEP_STAR_FS), find: program(gl, DEEP_FIND_VS, DEEP_FIND_FS), found: program(gl, RECT_VS, DEEP_FOUND_FS), smudge: program(gl, RECT_VS, DEEP_SMUDGE_FS), lay: program(gl, RECT_VS, DEEP_LAY_FS), gas: program(gl, RECT_VS, DEEP_GAS_FS), show: program(gl, RECT_VS, DEEP_FS) } : null;
     quad = gl.createBuffer()!;
     gl.bindBuffer(gl.ARRAY_BUFFER, quad);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
@@ -369,7 +369,7 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
     gl.deleteTexture(acc.tex);
     sky = out;
     const hooked = new URLSearchParams(location.search).has('hook');
-    let hidden = 0, hiddenCpu = 0, gasMs = 0, found = 0, findMs = 0;
+    let hidden = 0, hiddenCpu = 0, gasMs = 0, found = 0, findMs = 0, ballStars = 0, farCount = 0;
     if (deep) {
       const t1 = performance.now(), field = deepStars(p, s), dp = deep.star;
       hidden = field.count;
@@ -401,6 +401,38 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
       for (const k of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, k, gl.LINEAR);
       for (const k of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE);
 
+      // What the hidden stars' picture holds under a square of it, as a picture of its own (OVER in shaders.ts).
+      const under = (x0: number, y0: number, S: number): WebGLTexture => {
+        const tex = gl.createTexture()!, low = plateH - y0 - S;
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texStorage2D(gl.TEXTURE_2D, 1, gl.RGBA8, S, S);
+        for (const k of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, k, gl.NEAREST);
+        const a = Math.max(0, x0), b = Math.max(0, low), w = Math.min(W, x0 + S) - a, h = Math.min(plateH, low + S) - b;
+        if (w > 0 && h > 0) gl.copyTexSubImage2D(gl.TEXTURE_2D, 0, a - x0, b - low, a, b, w, h);
+        gl.activeTexture(gl.TEXTURE0);
+        return tex;
+      };
+      // A soft oval drawn into a picture w by h that begins at (ox, oy) of the hidden stars'.
+      const smudge = (m: Smudge, w: number, h: number, ox: number, oy: number) => {
+        const sp = deep!.smudge;
+        gl.useProgram(sp.p);
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, maskTex);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.uniform1i(sp.u('uMask'), 1);
+        gl.uniform3f(sp.u('uGrid'), mask.cols, mask.rows, GAS.mask);
+        gl.uniform1f(sp.u('uS'), s);
+        gl.uniform2f(sp.u('uOff'), ox, oy);
+        gl.uniform4f(sp.u('uAt'), m.at[0], m.at[1], Math.cos(m.turn), Math.sin(m.turn));
+        gl.uniform2f(sp.u('uLong'), m.long, m.flat);
+        gl.uniform3fv(sp.u('uTone'), m.tone);
+        gl.uniform4fv(sp.u('uFalls'), m.falls);
+        gl.uniform4f(sp.u('uWide'), m.wide[0], m.wide[1], m.show[0], m.show[1]);
+        gl.uniform1f(sp.u('uGrain'), m.grain);
+        rect(sp, m.at[0] - ox - m.reach, m.at[1] - oy - m.reach, m.at[0] - ox + m.reach, m.at[1] - oy + m.reach, w, h);
+      };
+
       // The things to find: each galaxy's points are summed in a float picture of its own, a part to a channel, and
       // that is laid into the hidden stars' picture as the stars are. Without a float picture to sum in, or points
       // as large as its widest, there are none.
@@ -430,7 +462,8 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
           }
           gl.bindFramebuffer(gl.FRAMEBUFFER, plate.fb);
           gl.viewport(0, 0, W, plateH);
-          gl.blendEquationSeparate(gl.FUNC_ADD, gl.MAX);
+          const x0 = Math.floor(g.at[0] * p.u * s) - (S - 1) / 2, y0 = Math.floor(g.at[1] * p.u * s) - (S - 1) / 2, was = under(x0, y0, S);
+          gl.disable(gl.BLEND);
           gl.useProgram(cp.p);
           gl.activeTexture(gl.TEXTURE1);
           gl.bindTexture(gl.TEXTURE_2D, maskTex);
@@ -438,22 +471,66 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
           gl.bindTexture(gl.TEXTURE_2D, own.tex);
           gl.uniform1i(cp.u('uAcc'), 0);
           gl.uniform1i(cp.u('uMask'), 1);
+          gl.uniform1i(cp.u('uUnder'), 2);
           gl.uniform3f(cp.u('uGrid'), mask.cols, mask.rows, GAS.mask);
           gl.uniform1f(cp.u('uS'), s);
-          const x0 = Math.floor(g.at[0] * p.u * s) - (S - 1) / 2, y0 = Math.floor(g.at[1] * p.u * s) - (S - 1) / 2;
           gl.uniform4f(cp.u('uPlace'), x0, y0, S, R);
           gl.uniform3f(cp.u('uTurn'), Math.cos(g.turn * rad), Math.sin(g.turn * rad), 0.6 + 0.4 * Math.cos(g.tilt * rad));
           gl.uniform3f(cp.u('uLook'), g.heart, g.stretch, g.peak / 255);
           gl.uniform2f(cp.u('uShow'), g.show[0], g.show[1]);
           rect(cp, x0, y0, x0 + S, y0 + S, W, plateH);
-          gl.blendEquation(gl.FUNC_ADD);
+          gl.enable(gl.BLEND);
           gl.deleteFramebuffer(own.fb);
           gl.deleteTexture(own.tex);
+          gl.deleteTexture(was);
         }
-        if (hooked) {
-          sync();
-          findMs = performance.now() - t3;
-        }
+      }
+
+      // The cluster over his name: its stars and its glow are summed in a float picture of their own, which holds
+      // more light than the hidden stars' picture can, and that is laid in as a galaxy is. Without a float picture
+      // there is none.
+      if (floatOk) {
+        const pic = clusterPicture(p, s), S = pic.size, own = target(gl, S, S, true), ball = clusterStars(p, s), lp = deep.lay;
+        ballStars = ball.count;
+        gl.viewport(0, 0, S, S);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        gl.blendEquationSeparate(gl.FUNC_ADD, gl.MAX);
+        gl.useProgram(dp.p);
+        gl.uniform2f(dp.u('uSize'), S, S);
+        gl.bindBuffer(gl.ARRAY_BUFFER, splatBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, ball.data, gl.STATIC_DRAW);
+        gl.bindVertexArray(splatVao);
+        gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, ball.count);
+        smudge(clusterHeart(p, s), S, S, pic.x, pic.y);
+        gl.blendEquation(gl.FUNC_ADD);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, plate.fb);
+        gl.viewport(0, 0, W, plateH);
+        const was = under(pic.x, pic.y, S);
+        gl.disable(gl.BLEND);
+        gl.useProgram(lp.p);
+        gl.bindTexture(gl.TEXTURE_2D, own.tex);
+        gl.uniform1i(lp.u('uAcc'), 0);
+        gl.uniform1i(lp.u('uUnder'), 2);
+        gl.uniform3f(lp.u('uPlace'), pic.x, pic.y, S);
+        rect(lp, pic.x, pic.y, pic.x + S, pic.y + S, W, plateH);
+        gl.enable(gl.BLEND);
+        gl.deleteFramebuffer(own.fb);
+        gl.deleteTexture(own.tex);
+        gl.deleteTexture(was);
+      }
+
+      // The far galaxies are faint enough to be added to the hidden stars' picture as the stars are.
+      gl.bindFramebuffer(gl.FRAMEBUFFER, plate.fb);
+      gl.viewport(0, 0, W, plateH);
+      gl.blendEquationSeparate(gl.FUNC_ADD, gl.MAX);
+      for (const m of farGalaxies(p, s)) {
+        smudge(m, W, plateH, 0, 0);
+        farCount++;
+      }
+      gl.blendEquation(gl.FUNC_ADD);
+      if (hooked) {
+        sync();
+        findMs = performance.now() - t3;
       }
 
       gasG = Math.min(s, GAS.texel);
@@ -497,6 +574,8 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
       stats.skyDeepGasPx = deep ? gasW * gasH : 0;
       stats.skyDeepFindMs = findMs;
       stats.skyDeepFindPoints = found;
+      stats.skyDeepCluster = ballStars;
+      stats.skyDeepFar = farCount;
     }
     dirty = true;
   };
@@ -657,6 +736,8 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
   registry.tool('skyMeteor', fire);
   registry.tool('skyMeteors', () => falls.slice(0, 20));
   registry.tool('skyPlan', () => current);
+  // Where the cluster and the far galaxies are, in CSS pixels of the host.
+  registry.tool('skyFinds', () => current && { cluster: clusterAt(current), far: farGalaxies(current, 1).map((m) => ({ at: m.at, long: m.long, flat: m.flat, turn: m.turn, tone: m.tone })) });
   // Holds the reveal at one place of the host, in CSS pixels, as deep as given. With nothing, lets it go.
   registry.tool('skyDeep', (x?: number, y?: number, depth = 1) => { pointer?.pin(x === undefined || y === undefined ? null : { x, y, s: depth }); dirty = true; });
   // Frame times, each made to wait for the graphics card: n frames with the bright few only, and n with a meteor.
