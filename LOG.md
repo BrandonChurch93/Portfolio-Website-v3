@@ -2,6 +2,57 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-27 · The deep sky on film: the real page, the pointer touring it (Fable, web chat)
+
+- **What he said:** nothing new. He asked for updates he can see as the work goes, and the deep sky is to be "shown to him in the page beside today's sky before it becomes the default" (`BRIEF.md`, Hero, "Yes to the sky as Fable recommended it"). Until now he had it as sheets of stills beside the mockup. This is the page itself, on film. Nothing in it is a ruling.
+- **Where it is:** no line of the site changed for it. The film is of the production build of cc7eb03 ("The deep sky's fifth piece"), `/lab/hero?look=d&ui=0&sky=deep`. He has it in the web chat as "Hero - Preview 09 - Deep sky in the real page, the pointer touring - 1920x1264". Its frames are in `shots/deep/film9`, which is not committed. The scripts that took, checked and joined them are in the chat's workspace (`review/rv/p9/`), not in the repository.
+- **The branch is on GitHub now.** `slice/layered-hollow` was pushed at cc7eb03 on Nov 27 at about 7:16 AM, as a backup of the work, with no pull request. Fable's decision, and he was told. Vercel builds a preview of the branch, which only he can open, signed in to Vercel. Nothing went to `main` and nothing was published.
+- **What the film is:**
+    - 571 frames at 24 a second, 23.8 seconds, 1920 by 1200: a window of 1440 by 900 at 4/3 device pixels, the size of the mockup film (Preview 08). Under it a bar 64 pixels tall that says "THE REAL PAGE, DRAWN IN SOFTWARE" and "One frame at a time. It shows what appears and in what order, not how smooth it is."
+    - The page's clock is held and stepped a frame at a time (`__site.freeze`), and the browser itself moves the pointer along the mockup film's tour, so the page's own pointer logic runs: entering, settling and the trail. The pointer rests on the city, visits the spiral, the cluster above his name, the band, the galaxy seen from its edge and the low cloud, and comes back to the world.
+    - Every twelfth frame was taken twice at the same instant: as it is, and with the deep sky held shut (`skyDeep` with no depth), which is today's sky at that instant. The numbers below are counted on those 48 pairs.
+    - The world is not held still: the falling sand, the rooms and the stream go on under the tour. Fable's decision, and he was told.
+    - The pointer's arrow is drawn onto each frame afterward, where the browser's pointer was. A still of a page has no arrow in it.
+    - The file says what its colors are: the HD matrix (BT.709) and the sRGB curve, which is what the page's picture is. Frames taken back out of it agree with the stills they were made of to a mean of 0.75 of a level, and the 26,186 star points counted in one frame's upper sky keep all of their height over what is round them.
+- **Measured**, on the frames as PNG, drawn in software. The printout is `review/rv/p9/measured09.txt`, in the chat's workspace.
+    - 571 frames, none missing, and none equal to the one before it.
+    - With the pointer on the world (the pairs at frames 0, 12, 24, 36, 516, 528, 540, 552 and 564): 0 pixels of the sky differ from today's.
+    - With the hidden sky open (the other 39 pairs): 0 pixels newly over 235, 0 newly whitish, 0 with more blue or green than red where 6 levels or more were added, 0 changed behind his words, 0 darker in the sky. The most sky that changed in one pair is 275,021 pixels of 2,304,000.
+    - The farthest change in the sky from where the pointer had been in the last 1.6 seconds (the life of its trail) is 557 CSS pixels. The reveal passes the lowest threshold of the hidden things (0.05) out to 580 units, 572 CSS pixels here, so nothing came up outside its reach.
+    - Sorted by the world's outline as the page itself works it out (the plan's `land(x)`): within the 24 units kept clear over the outline 0 pixels changed in any pair, and on the moon 0.
+    - Under the outline 36 to 146 pixels differ in a pair, in all but three pairs by 5 levels at the most. That is there with the hidden sky shut too: two stills of the same instant always differ a little on the world (the fifth piece's entry below).
+    - The hidden sky closes as it opened, with no step: the light added in the upper sky falls evenly from frame 472, when the pointer leaves the low cloud, and by frame 512 it is no more than two frames at rest differ by.
+    - The largest change from one frame to the next is at frame 52 and at frames 489 to 494, where the pointer moves fastest (0.15 to 0.17 of a level, as a mean over the picture brought down to 480 by 300; the mean of all steps is 0.027). The frame after each pair is no different from its neighbors, so taking the second still did not disturb the page.
+    - Each frame took about 22.3 seconds in software, 3 hours 43 minutes in all.
+- **What was found:**
+    - One spot low in the hollow, 652 to 664 CSS pixels across and 855 to 856 down, is not the same in two stills of the same instant: 11 levels in the pair at frame 252, up to 28 in the pair at frame 348, 15 in the pair at frame 540, on four to six pixels each time, and brighter in either still. The pair at frame 540 has the hidden sky shut, so it is not the sky. Something small and bright in the world there does not follow the page's held clock. Not looked into. It belongs with the proof.
+    - The check's own rough outline of the world took the open sky in the lower left corner for the world, and reported hidden stars there as changes on the world. They are in open sky, 61 pixels over the outline, past the 24 units kept clear. The check now sorts by the page's own outline, and the numbers above are from that.
+    - The first cut of the film did not say what its colors are, and neither did any film sent before it (Previews 07 and 08, and the films of the build). A player has to guess for such a file. Those files were written by the SD matrix, and a player reads a file of this size by the HD one: the palette's copper, 201, 128, 61, written that way and read back by the HD matrix comes out 208, 131, 58 (measured here), a little stronger and at nearly the same hue. Apple's players also give an untagged file a lighter curve than sRGB (stated from how they are documented, not measured on his devices), so those films will have played a little lighter in the middle tones than the pictures they were made of. This film says its colors, so it should play as the page looks. The repository's own `scripts/world/slice/cut.mjs` writes files with no such tags too: to change with the proof's film.
+- **Worked out, not seen in the page (the next piece of work):** the sky's plan at other window sizes, run in node from the page's own layout rules (`review/rv/sizes/planat.mjs`, in the chat's workspace).
+    - The two galaxies are whole at every size tried (1440 by 900, 1512 by 860, 1728 by 995, 2560 by 1318, 1920 by 970).
+    - The low cloud is thinned by the world's outline where the world sits higher on the screen: the mean of its mask is 0.99 at 1440 by 900, 0.76 at 1512 by 860, 0.81 at 1728 by 995, 0.66 at 2560 by 1318 and 0.56 at 1920 by 970.
+    - The cluster's ball is cut by the top of the screen: 0.88 of it is on the screen at 1440 by 900, 0.75 at the two MacBook sizes, 0.67 and 0.64 at the two widest. Its heart is whole at the MacBook sizes.
+    - A fix for the cloud is written and not applied: the cloud is lifted to stay 190 units over the land under it (0 at 1440 by 900, so the film's picture does not change). It goes in only after stills at those sizes show it.
+    - On a window wider than 2400 pixels the sky's sides fade out over 9 % of the board (`HeroLab.module.css`, today's rule), which also fades the cloud and the tip of the galaxy seen from its edge. Not changed.
+- **What the deep sky keeps on the graphics card**, worked out from the sizes of the pictures the code makes, not measured (`review/rv/sizes/skymem.mjs`, in the chat's workspace). Today's sky keeps its canvas and one picture of the same size. The deep sky adds the hidden stars' picture at the screen's density and the gas at one texel a CSS pixel:
+    - 1440 by 900 on a 2x screen: today 40.7 MB, the deep sky 23.8 MB more.
+    - 1512 by 860 on a 2x screen: 41.0 MB, and 23.8 MB more.
+    - 1728 by 995 on a 2x screen: 54.2 MB, and 31.5 MB more.
+    - 2560 by 1318 on a 2x screen: 100.3 MB, and 58.2 MB more.
+    - The pictures made while the sky is built (the galaxies', the cluster's, the mask) are deleted when it is.
+- **Not measured, so not known:**
+    - How smooth it is. One frame at a time in software says what appears and in what order, and nothing about frame times.
+    - What it costs on a real graphics card, and what the card's memory really is with it on.
+    - Safari, the home page, and any window but 1440 by 900.
+    - How his own devices play the film's colors.
+- **Half finished, and known** (he has this list with the film):
+    - The band's ribbons lie flatter than the mockup's, and the low cloud is a different cloud.
+    - The reveal's edge is tighter than the mockup's (0.16 against 0.30).
+    - The cluster has fewer faint points (307 against 456), and its brightest are gold at 235 where the mockup's are white.
+    - The big star low on the right answers about half as much as the mockup's, and five plain bright points do not answer.
+    - At 1440 by 900 the cluster's ball is already cut a little by the top of the screen (0.88 of it shows).
+- **How to see it:** the film in the chat. In the page: `/lab/hero?look=d&sky=deep`, and move the pointer over the sky.
+
 ## 2026-11-27 · The deep sky's fifth piece: today's bright stars answer the pointer (Fable, web chat)
 
 - **What he said:** nothing new. This is the last unbuilt part of what he said yes to on Nov 26, about 3:55 PM (`BRIEF.md`, Hero, "Yes to the sky as Fable recommended it"), built on his "Keep going" of about 8:25 PM. It went to him on Nov 27 at about 6:10 AM as a sheet of stills, the page beside the mockup. Nothing in it is a ruling.
