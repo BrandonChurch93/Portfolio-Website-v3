@@ -2,6 +2,28 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-26 · A review of Work's Sun stones and rails and of the stream, nothing changed (Fable, web chat)
+
+- **What he asked (Nov 26, 11:12):** `BRIEF.md`, Hero, "A review of three things, and nothing changed by it". The sky's part was given to him the same day. This is the rest: the two Sun stones, the two rails, the stream. Nothing in `src/` was changed and nothing was built.
+- **What he got:** two sheets of stills and a written report, in the web chat. He has not answered. Nothing in it is a ruling.
+- **How the stills were taken, since a still at the high tier does not finish here in a full window:**
+    - The production build of this branch, whose `src/stream`, `src/metal` and Work components are `main`'s (the comparison is empty). The sandbox draws in software.
+    - `npm run shot` with `--tier high --scale 2` at 1440 by 900 times out. A window 1440 wide and 520 or 700 tall, at scale 2, with the tier forced high and the part wanted scrolled into it, finishes in about five to seven minutes.
+    - The low tier at 1440 by 900 draws the stream's canvas at 1 pixel to a CSS pixel, so its stones and rails are soft and stepped. Do not judge them from it.
+- **The Sun stones, measured inside the disc on the high tier stills:**
+    - At rest: hue 27.5, saturation 0.66 (5th percentile 0.60), mean RGB (94, 61, 33). Under the cursor's light: hue 28.4, saturation 0.63 (5th percentile 0.30), mean (153, 106, 63), 19 percent of its pixels with a channel over 235. Struck: hue 24, saturation 0.76. No whitish pixel and none with more blue than red in any of them.
+    - The eye and mouth openings at rest are RGB (25, 23, 21) at the median, a neutral grey, and lighter than the page beside the stone (about (19, 9, 2)). They are drawn with `INK` in `FITTING` (`src/stream/shaders.ts`), which is nearly neutral. Beside copper they read cool.
+    - Fable's view: the carving holds up at three times. Short of the bar: no edge and nothing that seats it on the page at rest (a shadow shows only where the stream lights the page), the cool openings, and going pale under the cursor. Nov 13's account said the same of the first ("a relief seen face on").
+- **The rails:**
+    - The bar, the collar and the inner end hold up at three times. What carries the bar does not pass test 16, "The rail sits": the strap and the blade under each half read as ornaments hanging from it. The Blade's shoulders are rounder than the sketch's (`reference/studies/22-work-pairing.jpg`), and at three times its highlights are two flat patches and its ridge a dotted line. The fine lines along the sloped bar step at three times. Whether they crawl in motion is not known.
+    - `railFrag` works the rail out five times for every pixel of every frame: once for the height and four times for the slope. The stone is carved once into two pictures (`stone.ts`). Carving the rail once in the same way is what Fable would do for its fine lines. What it would save is not measured.
+- **The stream:** Fable would change nothing in its look. At three times on the high tier a shard is a solid object with each face in its own tone. Noted for his Mac and not as faults: a faint crease where the two sides join over the last fall, arcs with square ends at three times, and the largest thrown shards at about 30 CSS px across. The core's face measures (241, 216, 158), hue 42, against the (241, 218, 164) its code aims at from picture 9.
+- **Not known, and worth finding out with him: which tier and which sharpness his Mac is given on the 5K screen.** Read in the code, for a window 2560 CSS px wide:
+    - The stream's canvas draws the stones and the rails too. Its sharpness is one of a few steps (`stream.ts`, where `dpr` is set): on the high tier 2 if the window is about 1350 CSS px tall or less, and 1.5 if it is taller. On the middle tier it is 1.
+    - `chooseTier` moves a machine down a tier when the window's pixels reach 3840 by 2160, unless the timing test took 3 ms a frame or less. So the high tier there needs a test twice as fast as the high tier's own limit.
+    - With `?hook=1` on the live site, `__site.info()` in the console gives the tier and the test's time. The report gives him the three steps.
+- **What Fable recommended, in order:** the sky as he approved it. Three ways to carry the rail, drawn for him to pick from, with the Blade as built beside the sketch's. The stone's edge and seat, warm openings and a tighter highlight under the cursor. The stream left alone. The stones and the rails live in `src/stream/`, so any work on them photographs the test shot before and after, as the second pass did.
+
 ## 2026-11-26 · The hero's world built to picture 10, as far as the haze among the buildings (Fable, web chat)
 
 - **What he said:** on Nov 26 he picked picture D of the six (picture 10 in `reference/concept/`) and asked for it built start to finish. The stream is not touched. On seeing the first glow behind the city he ruled that the haze is to lie in front of the buildings (11:10), and at 3:55 PM he named what was still missing: soft far buildings with the haze in front of them, so the city reads as denser, more 3D and bigger. His words and the exact terms are in `BRIEF.md`, Hero, the entries of Nov 26.
