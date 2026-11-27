@@ -560,7 +560,8 @@ void main() {
 // The deep sky shown over today's where the pointer and its pools reach. The reveal at a pixel is the most that any
 // one pool gives it, and a thing shows once the reveal passes its own threshold. What is added keeps its color: it
 // is held at uCap, and never under what today's sky has there. The gas is dithered as it is added, so it does not
-// band on an eight bit screen.
+// band on an eight bit screen. What is written is how far each channel goes from today's sky to uCap, and the blend
+// takes that share from what is drawn there, so a bright star of today's is not carried past uCap either.
 const POOLS = DEEP.pools + 1;
 export const DEEP_FS = HEAD + COMMON + /* glsl */ `
 uniform sampler2D uSky;
@@ -592,8 +593,9 @@ void main() {
   vec3 f = base.rgb + gas + grain * step(0.25 / 255.0, max(gas.r, max(gas.g, gas.b))) + d.rgb * smoothstep(th, th + uSoft, rho);
   float k = min(1.0, max(max(base.r, max(base.g, base.b)), uCap.x) / max(max(f.r, max(f.g, f.b)), 1e-3));
   k *= min(1.0, max(min(base.r, min(base.g, base.b)), uCap.y) / max(min(f.r, min(f.g, f.b)) * k, 1e-3));
-  vec3 c = max(f * k, base.rgb);
-  o = uAdd == 1 ? vec4(c, 1.0) : vec4(c, max(base.a, max(c.r, max(c.g, c.b))));
+  vec3 c = max(f * k, base.rgb), room = vec3(uCap.x, uCap.x, uCap.y) - base.rgb;
+  float top = max(c.r, max(c.g, c.b));
+  o = vec4(clamp((c - base.rgb) / max(room, vec3(1e-4)), 0.0, 1.0) * step(vec3(1e-4), room), uAdd == 1 ? 1.0 : clamp((top - base.a) / max(1.0 - base.a, 1e-4), 0.0, 1.0));
 }`;
 
 // The bright few: a small hot core, a soft halo and four thin rays that taper to nothing, as a lens shows a

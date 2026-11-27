@@ -463,38 +463,6 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
     gl.bindTexture(gl.TEXTURE_2D, sky.tex);
     gl.uniform1i(bl.u('uTex'), 0);
     rect(bl, 0, 0, W, H);
-    if (deep && plate && gas && current && pools.length) {
-      const reach = DEEP.reach * current.u, dp = deep.show;
-      let n = 0, x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-      for (const k of pools) {
-        if (k.s <= DEEP.first || n > DEEP.pools) continue;
-        const r = reach * Math.sqrt(Math.log(k.s / DEEP.first));
-        x0 = Math.min(x0, k.x - r); y0 = Math.min(y0, k.y - r); x1 = Math.max(x1, k.x + r); y1 = Math.max(y1, k.y + r);
-        pooled[n * 3] = k.x * s; pooled[n * 3 + 1] = k.y * s; pooled[n * 3 + 2] = k.s;
-        n++;
-      }
-      x0 = Math.max(0, Math.floor(x0 * s)); y0 = Math.max(0, Math.floor(y0 * s)); x1 = Math.min(W, Math.ceil(x1 * s)); y1 = Math.min(plateH, Math.ceil(y1 * s));
-      if (n && x1 > x0 && y1 > y0) {
-        gl.useProgram(dp.p);
-        gl.activeTexture(gl.TEXTURE1);
-        gl.bindTexture(gl.TEXTURE_2D, plate.tex);
-        gl.activeTexture(gl.TEXTURE2);
-        gl.bindTexture(gl.TEXTURE_2D, gas.tex);
-        gl.activeTexture(gl.TEXTURE0);
-        gl.uniform1i(dp.u('uSky'), 0);
-        gl.uniform1i(dp.u('uDeep'), 1);
-        gl.uniform1i(dp.u('uGas'), 2);
-        gl.uniform2f(dp.u('uGasInv'), gasG / (s * gasW), gasG / (s * gasH));
-        gl.uniform1i(dp.u('uDrop'), H - plateH);
-        gl.uniform3fv(dp.u('uPool'), pooled);
-        gl.uniform1i(dp.u('uPools'), n);
-        gl.uniform1f(dp.u('uReach'), reach * s);
-        gl.uniform1f(dp.u('uSoft'), DEEP.soft);
-        gl.uniform2f(dp.u('uCap'), DEEP_CAP[0], DEEP_CAP[1]);
-        gl.uniform1i(dp.u('uAdd'), add ? 1 : 0);
-        rect(dp, x0, y0, x1, y1);
-      }
-    }
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     const tw = Math.floor(t * TWINKLE.hz) / TWINKLE.hz;
@@ -528,6 +496,42 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
       gl.uniform3fv(mp.u('uTrailC'), mix3(TINT.pale, TINT.hot, 0.6));
       gl.uniform3fv(mp.u('uTailC'), mix3(TINT.hot, TINT.flame, 0.6));
       rect(mp, Math.min(ax, bx) - pad, Math.min(ay, by) - pad, Math.max(ax, bx) + pad, Math.max(ay, by) + pad);
+    }
+    // The deep sky goes on last, as a share of the way from what is drawn to the most the sky may hold, so that no
+    // star of today's or meteor with gas or a hidden star under it is carried over that.
+    if (deep && plate && gas && current && pools.length) {
+      const reach = DEEP.reach * current.u, dp = deep.show;
+      let n = 0, x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (const k of pools) {
+        if (k.s <= DEEP.first || n > DEEP.pools) continue;
+        const r = reach * Math.sqrt(Math.log(k.s / DEEP.first));
+        x0 = Math.min(x0, k.x - r); y0 = Math.min(y0, k.y - r); x1 = Math.max(x1, k.x + r); y1 = Math.max(y1, k.y + r);
+        pooled[n * 3] = k.x * s; pooled[n * 3 + 1] = k.y * s; pooled[n * 3 + 2] = k.s;
+        n++;
+      }
+      x0 = Math.max(0, Math.floor(x0 * s)); y0 = Math.max(0, Math.floor(y0 * s)); x1 = Math.min(W, Math.ceil(x1 * s)); y1 = Math.min(plateH, Math.ceil(y1 * s));
+      if (n && x1 > x0 && y1 > y0) {
+        gl.useProgram(dp.p);
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_2D, plate.tex);
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, gas.tex);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.uniform1i(dp.u('uSky'), 0);
+        gl.uniform1i(dp.u('uDeep'), 1);
+        gl.uniform1i(dp.u('uGas'), 2);
+        gl.uniform2f(dp.u('uGasInv'), gasG / (s * gasW), gasG / (s * gasH));
+        gl.uniform1i(dp.u('uDrop'), H - plateH);
+        gl.uniform3fv(dp.u('uPool'), pooled);
+        gl.uniform1i(dp.u('uPools'), n);
+        gl.uniform1f(dp.u('uReach'), reach * s);
+        gl.uniform1f(dp.u('uSoft'), DEEP.soft);
+        gl.uniform2f(dp.u('uCap'), DEEP_CAP[0], DEEP_CAP[1]);
+        gl.uniform1i(dp.u('uAdd'), add ? 1 : 0);
+        gl.blendColor(DEEP_CAP[0], DEEP_CAP[0], DEEP_CAP[1], 1);
+        gl.blendFuncSeparate(gl.CONSTANT_COLOR, gl.ONE_MINUS_SRC_COLOR, gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+        rect(dp, x0, y0, x1, y1);
+      }
     }
     draws++;
     stats.skyFrameMs = performance.now() - t0;

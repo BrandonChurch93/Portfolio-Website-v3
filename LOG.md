@@ -2,6 +2,21 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-26 · The deep sky holds today's bright stars at the sky's limit too (Fable, web chat)
+
+- **What he said:** nothing new. The third piece went to him at about 10:40 PM with one fault named: two pixels in each still came out over 235, where the gas lay under one of today's bright stars, to be fixed with the next piece. This is that fix. It was not shown to him on its own: nothing a visitor sees is meant to change. Nothing in it is a ruling.
+- **Where it is:** the branch `slice/layered-hollow`, not pushed, behind `?sky=deep`. Nothing in `src/stream` is changed.
+- **What was found:** with no pointer, today's bright stars already read 236 to 243 in a few pixels (at 1440 by 900, at CSS (50, 94), (36, 632) and (198, 548)). That is today's sky and is left alone. The fault was that the deep pass was drawn before those stars, so gas or a hidden star under one added to it.
+- **What is built:**
+    - The order in `draw()` (`src/hero/sky/index.ts`): the sky's picture, today's bright stars, the meteor, then the deep pass last.
+    - `DEEP_FS` (`shaders.ts`) writes, for each channel, the share of the way from today's sky to the limit, and the blend takes that share of the way from what is already drawn there to the limit (the blend's constant color is `DEEP_CAP`). So a pixel under the limit is never carried over it, whatever is drawn there, and a pixel with no bright star or meteor on it comes out as before, to the blend's rounding.
+- **Measured**, on `--png` stills of 2880 by 1800 from the production build, drawn in software, `/lab/hero?look=d&ui=0&sky=deep`:
+    - No pointer, against a still without the switch: 28 pixels differ, all low on the world (CSS x 472 to 988, y 850 to 868), where two takes of one address differ. None is in the sky.
+    - The pointer held on the band (226, 116) and low on the left (200, 640): newly over 235, 0 pixels in each (2 in each before). Nothing newly whitish, no changed pixel with more blue or green than red, nothing changed behind his words, nothing within 24 units over the outline, and no pixel over the outline darker than at rest.
+    - Against the third piece's stills of the same two places: 1,556 and 3,357 pixels of the sky differ, 1,449 and 3,316 of them by one level (the blend's rounding, about as many up as down). By two levels or more: 107 and 41 pixels, the most 5 levels, all but one of them within 6 device pixels of one of today's bright stars. Gas under a bright star's glow is now added as a share of the room that star leaves, not in full.
+- **Not measured, so not known:** the same on his Mac.
+- **Half finished, and known:** nothing in this fix. The two galaxies are next. Their recipe is ported to numpy and stands beside the mockup's (`review/rv/galport.py`, in the chat's workspace, not in the repository). The page's code for them is not written.
+
 ## 2026-11-26 · The deep sky's third piece: the warm gas (Fable, web chat)
 
 - **What he said:** nothing new. This is the third piece of what he said yes to on Nov 26, about 3:55 PM (`BRIEF.md`, Hero, "Yes to the sky as Fable recommended it"), built on his "Keep going" of about 8:25 PM. It went to him at about 10:40 PM as Hero - Still 27, the page beside the mockup he said yes to, with where it is short. Nothing in it is a ruling.
@@ -28,7 +43,7 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
     - Short of the mockup, and said to him: the band's ribbons lie flatter than the mockup's and are fainter at its left end. The cloud is a different cloud, soft folds and one bright ribbon where the mockup had a pillar with a fan of threads. Near the cloud the hidden stars are fewer than the mockup's.
     - One texel for a CSS pixel, so on a 2x screen the threads are softer than the mockup's, whose gas was made at the screen's own pixels. Two texels would be four times the memory (about 14 MB already on his 5K screen at one) and four times the drawing.
     - The gas is drawn in one go when the sky is built. Before the deep sky could be the default: in strips over several frames, or when the pointer first comes into the sky.
-    - Today's bright stars are drawn after the deep pass, so gas under one adds to it: up to 4 levels, in 2 pixels of each, in these stills.
+    - Today's bright stars are drawn after the deep pass, so gas under one adds to it: up to 4 levels, in 2 pixels of each, in these stills. Fixed since: the entry above.
     - The threads share the body's wide warp, and the mockup's faint gas over the whole sky (under one level) is left out.
     - Next: the two galaxies, the cluster above his name and the far galaxies, then the sky's own bright stars brightening within reach. `STARS.keep` is still left alone.
 - **How to see it:** `/lab/hero?look=d&sky=deep`. Move the pointer onto the band of far stars, upper left, or low on the left above the far towers.
