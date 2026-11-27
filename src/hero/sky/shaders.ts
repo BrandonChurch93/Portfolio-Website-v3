@@ -1,4 +1,4 @@
-import { DEEP, FAINT, FIND, FIND_TONE, FINDS, GAS, GAS_HAZE, GATHER, STARS, gasRamp } from './deep';
+import { BRIGHT, DEEP, FAINT, FIND, FIND_TONE, FINDS, GAS, GAS_HAZE, GATHER, STARS, gasRamp } from './deep';
 
 // The sky's shaders. Everything is worked out in linear light in device pixels, y down, and turned into the
 // palette's tones only at the end (TONE): what is too bright goes to pale gold, never to white.
@@ -717,21 +717,34 @@ void main() {
   o = vec4(max(c + grain.x * step(0.5 / 255.0, c), 0.0), clamp(early + grain.y * step(0.5 / 255.0, early), 0.0, 1.0));
 }`;
 
+// The reveal at a place, in device pixels: the most that any one of the pointer's pools gives it.
+const POOLS = DEEP.pools + 1;
+const REVEAL = /* glsl */ `
+uniform vec3 uPool[${POOLS}];
+uniform int uPools;
+uniform float uReach;
+float reveal(vec2 p) {
+  float rho = 0.0;
+  for (int i = 0; i < ${POOLS}; i++) {
+    if (i >= uPools) break;
+    vec2 v = p - uPool[i].xy;
+    rho = max(rho, uPool[i].z * exp(-dot(v, v) / (uReach * uReach)));
+  }
+  return rho;
+}
+`;
+
 // The deep sky shown over today's where the pointer and its pools reach. The reveal at a pixel is the most that any
 // one pool gives it, and a thing shows once the reveal passes its own threshold. What is added keeps its color: it
 // is held at uCap, and never under what today's sky has there. The gas is dithered as it is added, so it does not
 // band on an eight bit screen. What is written is how far each channel goes from today's sky to uCap, and the blend
 // takes that share from what is drawn there, so a bright star of today's is not carried past uCap either.
-const POOLS = DEEP.pools + 1;
-export const DEEP_FS = HEAD + COMMON + /* glsl */ `
+export const DEEP_FS = HEAD + COMMON + REVEAL + /* glsl */ `
 uniform sampler2D uSky;
 uniform sampler2D uDeep;
 uniform sampler2D uGas;
 uniform vec2 uGasInv;
 uniform int uDrop;
-uniform vec3 uPool[${POOLS}];
-uniform int uPools;
-uniform float uReach;
 uniform float uSoft;
 uniform vec2 uCap;
 uniform int uAdd;
@@ -741,12 +754,7 @@ void main() {
   vec4 base = texelFetch(uSky, at, 0), d = texelFetch(uDeep, at - ivec2(0, uDrop), 0);
   vec2 p = P();
   vec4 g = texture(uGas, vec2(p.x * uGasInv.x, 1.0 - p.y * uGasInv.y));
-  float rho = 0.0;
-  for (int i = 0; i < ${POOLS}; i++) {
-    if (i >= uPools) break;
-    vec2 v = p - uPool[i].xy;
-    rho = max(rho, uPool[i].z * exp(-dot(v, v) / (uReach * uReach)));
-  }
+  float rho = reveal(p);
   float th = 1.0 - d.a, thg = ${n(GAS.show.first)} - ${n(GAS.show.less)} * g.a;
   vec3 gas = g.rgb * smoothstep(thg, thg + ${n(GAS.show.soft)}, rho);
   float grain = (h2(gl_FragCoord.xy) + h2(gl_FragCoord.xy + vec2(4171.0, 1931.0)) - 1.0) / 255.0;
@@ -760,7 +768,7 @@ void main() {
 
 // The bright few: a small hot core, a soft halo and four thin rays that taper to nothing, as a lens shows a
 // bright star. They are drawn every time the sky is, so they can twinkle.
-export const SPARK_VS = HEAD + /* glsl */ `
+const sparkVs = (more: [string, string] = ['', '']) => HEAD + /* glsl */ `
 layout(location = 0) in vec2 aCorner;
 layout(location = 1) in vec2 aPos;
 layout(location = 2) in vec3 aCol;
@@ -772,15 +780,16 @@ uniform float uAmp;
 flat out vec2 vPos;
 flat out vec3 vCol;
 flat out float vE;
-flat out float vL;
+flat out float vL;${more[0]}
 void main() {
   float tw = 1.0 + uAmp * (0.6 * sin(6.2831853 * aB.z * uT + aPh.x) + 0.4 * sin(6.2831853 * aB.w * uT + aPh.y));
-  vE = aB.x * tw; vL = aB.y * (0.96 + 0.04 * tw); vPos = aPos; vCol = aCol;
+  vE = aB.x * tw; vL = aB.y * (0.96 + 0.04 * tw); vPos = aPos; vCol = aCol;${more[1]}
   vec2 p = aPos + aCorner * (vL + 3.0);
   gl_Position = vec4(p.x / uSize.x * 2.0 - 1.0, 1.0 - p.y / uSize.y * 2.0, 0.0, 1.0);
 }`;
+export const SPARK_VS = sparkVs();
 
-export const SPARK_FS = HEAD + COMMON + TONE + /* glsl */ `
+const sparkFs = (more: [string, string] = ['', '']) => HEAD + COMMON + TONE + /* glsl */ `
 flat in vec2 vPos;
 flat in vec3 vCol;
 flat in float vE;
@@ -788,7 +797,7 @@ flat in float vL;
 uniform float uS;
 uniform vec3 uRayC;
 uniform vec2 uTilt;
-out vec4 o;
+out vec4 o;${more[0]}
 // One spike, as a lens's vanes spread a star's light: brightest where it leaves the core, falling as the square of
 // the distance and widening as it fades, with the light's longer colors reaching further.
 float ray(float along, float across, float L) {
@@ -811,9 +820,30 @@ void main() {
   float bead = 0.5 + 0.5 * cos(along * 38.0);
   vec3 rc = mix(vCol, uRayC, clamp(along * along * 1.3, 0.0, 0.6) * (0.6 + 0.4 * bead));
   vec3 lin = vE * (vCol * (0.62 * core + 0.24 * glow + 0.16 * halo) + rc * 0.07 * (rx + ry));
-  vec3 col = srgb(tone(lin));
+  vec3 col = srgb(tone(lin));${more[1]}
   o = vec4(col, max(col.r, max(col.g, col.b)));
 }`;
+export const SPARK_FS = sparkFs();
+
+// With the deep sky each of the bright few is given more of its own light where the pointer's reveal reaches it
+// (BRIGHT in deep.ts), in display levels, so the whole flare grows and keeps its color. What it becomes is held at
+// uCap with what is under it, and is never under what today's sky has there. With no reveal it is today's star.
+export const DEEP_SPARK_VS = sparkVs([/* glsl */ `
+layout(location = 5) in float aOpen;${REVEAL}flat out float vMore;`, /* glsl */ `
+  vMore = ${n(BRIGHT.more)} * aOpen * smoothstep(${n(BRIGHT.from)}, ${n(BRIGHT.to)}, reveal(aPos));`]);
+export const DEEP_SPARK_FS = sparkFs([/* glsl */ `
+flat in float vMore;
+uniform sampler2D uSky;
+uniform vec2 uCap;`, /* glsl */ `
+  if (vMore > 0.0) {
+    float a = max(col.r, max(col.g, col.b)), b = min(1.0, a * (1.0 + vMore));
+    vec3 under = texelFetch(uSky, ivec2(gl_FragCoord.xy), 0).rgb;
+    vec3 was = col + (1.0 - a) * under, f = col * (1.0 + vMore) + (1.0 - b) * under;
+    float k = min(1.0, max(max(was.r, max(was.g, was.b)), uCap.x) / max(max(f.r, max(f.g, f.b)), 1e-3));
+    k *= min(1.0, max(min(was.r, min(was.g, was.b)), uCap.y) / max(min(f.r, min(f.g, f.b)) * k, 1e-3));
+    o = vec4(max(f * k, was) - (1.0 - b) * under, b);
+    return;
+  }`]);
 
 // A meteor: a short fine streak with a bright head, the trail cooling behind it.
 export const METEOR_FS = HEAD + COMMON + TONE + /* glsl */ `

@@ -170,6 +170,11 @@ export const FAR = {
   show: [0.22, 0.6],
 } as const;
 
+// Today's bright few answer the pointer: each is given up to `more` of its own light again, in display levels, as
+// the reveal at it goes from `from` to `to`. One answers where the hidden sky may be (`open`: not at all under the
+// first share of it, wholly over the second), so none does behind his words, on the moon or against the world.
+export const BRIGHT = { more: 0.6, from: 0.08, to: 0.75, open: [0.35, 0.65] } as const;
+
 // Over the page's world (SkyPlan.land): how far over its outline the hidden sky begins and is whole, in units, how
 // deep in the world's glow it starts to thin and is thinnest, as shares of the glow's reach, the share of it that is
 // left there, and how far over the outline the pointer has to be for the whole of the reveal.
@@ -208,14 +213,18 @@ const over = (p: SkyPlan, land: (x: number) => number, x: number, y: number) => 
 
 // Where the hidden sky may be at all: never behind his words' block or on the moon, never under the world's outline,
 // thinner toward the world's glow. A page that has told no outline has the sky's own guess of one.
-function allowed(p: SkyPlan, x: number, y: number): number {
+function allowed(p: SkyPlan, x: number, y: number, glow = true): number {
   const w = weigh(p, x, y);
   const far = Math.hypot(Math.max(0, Math.abs(x - p.words.x) - STARS.block[0] * p.words.rx), Math.max(0, Math.abs(y - p.words.y) - STARS.block[1] * p.words.ry));
   const clear = smooth(STARS.clear[0] * p.u, STARS.clear[1] * p.u, far) * w.moon;
   if (!p.land) return clear * w.open;
-  const lit = LAND.least + (1 - LAND.least) * (1 - smooth(LAND.glow[0], LAND.glow[1], w.glow));
+  const lit = glow ? LAND.least + (1 - LAND.least) * (1 - smooth(LAND.glow[0], LAND.glow[1], w.glow)) : 1;
   return clear * lit * smooth(LAND.clear[0] * p.u, LAND.clear[1] * p.u, over(p, p.land, x, y));
 }
+
+// How much of the pointer's answer (BRIGHT) one of today's bright few gets, from where it stands. The thinning
+// toward the world's glow is not counted against it: the star is in today's sky there already.
+export const answering = (p: SkyPlan, x: number, y: number): number => smooth(BRIGHT.open[0], BRIGHT.open[1], allowed(p, x, y, false));
 
 // The gas's dark lanes at a place of a sheet, as the gas's shader has them (DEEP_GAS_FS).
 function lanes(x: number, y: number, seed: number, own: number, at: number): number {

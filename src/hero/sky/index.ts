@@ -4,9 +4,9 @@ import { clock } from '../../world/clock';
 import { sweep } from '../../world/contexts';
 import { handheld } from '../../world/device';
 import { liven } from './alive';
-import { DEEP, DEEP_CAP, DEEP_HALO, FINDS, GAS, clusterAt, clusterHeart, clusterPicture, clusterStars, deepMask, deepStars, farGalaxies, findDraws, findSize, follow, gasFrame, isDeep, type Pool, type Smudge } from './deep';
+import { DEEP, DEEP_CAP, DEEP_HALO, FINDS, GAS, answering, clusterAt, clusterHeart, clusterPicture, clusterStars, deepMask, deepStars, farGalaxies, findDraws, findSize, follow, gasFrame, isDeep, type Pool, type Smudge } from './deep';
 import { CRATER, SECOND, SPARK, SPLAT, TILT, TINT, craters, meteorAt, meteors, mix3, scale3, sparks, stars, type Meteor, type V3 } from './field';
-import { BAND_FS, BLIT_FS, DEEP_FIND_FS, DEEP_FIND_VS, DEEP_FOUND_FS, DEEP_FS, DEEP_GAS_FS, DEEP_LAY_FS, DEEP_SMUDGE_FS, DEEP_STAR_FS, GLOW_FS, HEIGHT_FS, METEOR_FS, MOON_FS, RECT_VS, RESOLVE_FS, SPARK_FS, SPARK_VS, SPLAT_FS, SPLAT_VS } from './shaders';
+import { BAND_FS, BLIT_FS, DEEP_FIND_FS, DEEP_FIND_VS, DEEP_FOUND_FS, DEEP_FS, DEEP_GAS_FS, DEEP_LAY_FS, DEEP_SMUDGE_FS, DEEP_SPARK_FS, DEEP_SPARK_VS, DEEP_STAR_FS, GLOW_FS, HEIGHT_FS, METEOR_FS, MOON_FS, RECT_VS, RESOLVE_FS, SPARK_FS, SPARK_VS, SPLAT_FS, SPLAT_VS } from './shaders';
 
 // The night sky of the hero, on its own canvas: the stars, the bright few with four points, a moon, a band of far
 // stars, the city's glow, and now and then a meteor. What never changes is drawn once into a texture when the plan
@@ -124,12 +124,12 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
   let floatOk = false;
   let sky: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null;
   let W = 1, H = 1, s = 1, sparkCount = 0, alive = true, dirty = true, visible = true, last = '';
-  let falls: Meteor[] = [], brightest: { x: number; y: number; big: boolean }[] = [];
+  let falls: Meteor[] = [], brightest: { x: number; y: number; big: boolean }[] = [], answers: number[] = [];
   // The deep sky (deep.ts), with ?sky=deep: its stars with the things to find among them and its gas, each a picture
   // drawn once, and the pointer's pools, a few numbers a frame. mark is those numbers as one, so a pointer at rest
   // asks for no frame of its own. A handheld keeps today's sky.
   const pointer = !still && !handheld() && isDeep(new URLSearchParams(location.search)) ? follow(host) : null;
-  let deep: { star: Prog; find: Prog; found: Prog; smudge: Prog; lay: Prog; gas: Prog; show: Prog } | null = null, plate: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null, plateH = 1, pools: Pool[] = [], mark = 0;
+  let deep: { star: Prog; find: Prog; found: Prog; smudge: Prog; lay: Prog; gas: Prog; show: Prog; spark: Prog } | null = null, plate: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null, plateH = 1, pools: Pool[] = [], mark = 0;
   let gas: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null, gasW = 1, gasH = 1, gasG = 1;
   const pooled = new Float32Array((DEEP.pools + 1) * 3);
   let forced: { at: number; m: Meteor } | null = null;
@@ -149,7 +149,7 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
       spark: program(gl, SPARK_VS, SPARK_FS),
       meteor: program(gl, RECT_VS, METEOR_FS),
     };
-    deep = pointer ? { star: program(gl, SPLAT_VS, DEEP_STAR_FS), find: program(gl, DEEP_FIND_VS, DEEP_FIND_FS), found: program(gl, RECT_VS, DEEP_FOUND_FS), smudge: program(gl, RECT_VS, DEEP_SMUDGE_FS), lay: program(gl, RECT_VS, DEEP_LAY_FS), gas: program(gl, RECT_VS, DEEP_GAS_FS), show: program(gl, RECT_VS, DEEP_FS) } : null;
+    deep = pointer ? { star: program(gl, SPLAT_VS, DEEP_STAR_FS), find: program(gl, DEEP_FIND_VS, DEEP_FIND_FS), found: program(gl, RECT_VS, DEEP_FOUND_FS), smudge: program(gl, RECT_VS, DEEP_SMUDGE_FS), lay: program(gl, RECT_VS, DEEP_LAY_FS), gas: program(gl, RECT_VS, DEEP_GAS_FS), show: program(gl, RECT_VS, DEEP_FS), spark: program(gl, DEEP_SPARK_VS, DEEP_SPARK_FS) } : null;
     quad = gl.createBuffer()!;
     gl.bindBuffer(gl.ARRAY_BUFFER, quad);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
@@ -179,7 +179,7 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
     gl.bindBuffer(gl.ARRAY_BUFFER, sparkBuf);
     const ss = SPARK * 4;
-    for (const [loc, n, off] of [[1, 2, 0], [2, 3, 2], [3, 4, 5], [4, 2, 9]]) {
+    for (const [loc, n, off] of [[1, 2, 0], [2, 3, 2], [3, 4, 5], [4, 2, 9], [5, 1, SPARK - 1]]) {
       gl.enableVertexAttribArray(loc);
       gl.vertexAttribPointer(loc, n, gl.FLOAT, false, ss, off * 4);
       gl.vertexAttribDivisor(loc, 1);
@@ -281,6 +281,10 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
 
     const field = stars(p, s);
     const bright = sparks(p, s);
+    // The last number of each of the bright few is free: with the deep sky it is how much of the pointer's answer
+    // the star gets.
+    answers = pointer ? bright.at.map((q) => answering(p, q.x, q.y)) : [];
+    answers.forEach((k, i) => { bright.data[(i + 1) * SPARK - 1] = k; });
     falls = meteors(p, bright.at);
     brightest = bright.at;
     sparkCount = bright.count;
@@ -576,6 +580,7 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
       stats.skyDeepFindPoints = found;
       stats.skyDeepCluster = ballStars;
       stats.skyDeepFar = farCount;
+      stats.skyDeepBright = answers.filter((k) => k > 0).length;
     }
     dirty = true;
   };
@@ -610,9 +615,29 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     const tw = Math.floor(t * TWINKLE.hz) / TWINKLE.hz;
+    // The pointer's pools, as the bright few and the deep sky are both told them, and the part of the sky they reach.
+    const reach = current ? DEEP.reach * current.u : 0;
+    let n = 0, x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    if (deep) {
+      for (const k of pools) {
+        if (k.s <= DEEP.first || n > DEEP.pools) continue;
+        const r = reach * Math.sqrt(Math.log(k.s / DEEP.first));
+        x0 = Math.min(x0, k.x - r); y0 = Math.min(y0, k.y - r); x1 = Math.max(x1, k.x + r); y1 = Math.max(y1, k.y + r);
+        pooled[n * 3] = k.x * s; pooled[n * 3 + 1] = k.y * s; pooled[n * 3 + 2] = k.s;
+        n++;
+      }
+    }
     if (sparkCount) {
-      const sp = progs.spark;
+      // At rest they are drawn by today's own program.
+      const sp = deep && n ? deep.spark : progs.spark;
       gl.useProgram(sp.p);
+      if (deep && n) {
+        gl.uniform1i(sp.u('uSky'), 0);
+        gl.uniform3fv(sp.u('uPool'), pooled);
+        gl.uniform1i(sp.u('uPools'), n);
+        gl.uniform1f(sp.u('uReach'), reach * s);
+        gl.uniform2f(sp.u('uCap'), DEEP_CAP[0], DEEP_CAP[1]);
+      }
       gl.uniform2f(sp.u('uSize'), W, H);
       gl.uniform1f(sp.u('uT'), tw);
       gl.uniform1f(sp.u('uAmp'), still ? 0 : TWINKLE.amp);
@@ -643,18 +668,10 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
     }
     // The deep sky goes on last, as a share of the way from what is drawn to the most the sky may hold, so that no
     // star of today's or meteor with gas or a hidden star under it is carried over that.
-    if (deep && plate && gas && current && pools.length) {
-      const reach = DEEP.reach * current.u, dp = deep.show;
-      let n = 0, x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-      for (const k of pools) {
-        if (k.s <= DEEP.first || n > DEEP.pools) continue;
-        const r = reach * Math.sqrt(Math.log(k.s / DEEP.first));
-        x0 = Math.min(x0, k.x - r); y0 = Math.min(y0, k.y - r); x1 = Math.max(x1, k.x + r); y1 = Math.max(y1, k.y + r);
-        pooled[n * 3] = k.x * s; pooled[n * 3 + 1] = k.y * s; pooled[n * 3 + 2] = k.s;
-        n++;
-      }
+    if (deep && plate && gas && n) {
+      const dp = deep.show;
       x0 = Math.max(0, Math.floor(x0 * s)); y0 = Math.max(0, Math.floor(y0 * s)); x1 = Math.min(W, Math.ceil(x1 * s)); y1 = Math.min(plateH, Math.ceil(y1 * s));
-      if (n && x1 > x0 && y1 > y0) {
+      if (x1 > x0 && y1 > y0) {
         gl.useProgram(dp.p);
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, plate.tex);
@@ -738,6 +755,8 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
   registry.tool('skyPlan', () => current);
   // Where the cluster and the far galaxies are, in CSS pixels of the host.
   registry.tool('skyFinds', () => current && { cluster: clusterAt(current), far: farGalaxies(current, 1).map((m) => ({ at: m.at, long: m.long, flat: m.flat, turn: m.turn, tone: m.tone })) });
+  // The bright few: where each is, in CSS pixels of the host, and how much of the pointer's answer it gets.
+  registry.tool('skyBright', () => brightest.map((q, i) => ({ ...q, answers: answers[i] ?? 0 })));
   // Holds the reveal at one place of the host, in CSS pixels, as deep as given. With nothing, lets it go.
   registry.tool('skyDeep', (x?: number, y?: number, depth = 1) => { pointer?.pin(x === undefined || y === undefined ? null : { x, y, s: depth }); dirty = true; });
   // Frame times, each made to wait for the graphics card: n frames with the bright few only, and n with a meteor.
