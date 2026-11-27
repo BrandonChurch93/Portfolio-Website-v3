@@ -34,7 +34,7 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 - **Not known:**
     - Safari and an iPhone. There is no WebKit in this sandbox.
     - Motion: how the light crosses the arrow under a moving pointer. This sandbox draws in software.
-- **Half finished:** the merge waits for his word. The films' review pages join this branch as their addresses arrive from the chat he keeps his projects in (his word, Nov 27, 12:32 AM: "Make sure all the other films I've created that are on my portfolio are public review pages ... Go ahead and grab the links from them and pass all this to the portfolio chat"). Halation's is in and is next: a further link, How it's made, after Play it.
+- **Half finished:** the merge waits for his word. The films' review pages follow as a pull request of their own, on top of this one, as their addresses arrive from the chat he keeps his projects in (his word, Nov 27, 12:32 AM: "Make sure all the other films I've created that are on my portfolio are public review pages ... Go ahead and grab the links from them and pass all this to the portfolio chat"). They are kept off this branch so that his word on this pull request covers what he was shown of it and nothing more. Halation's address is in and is next: a further link, How it's made, after Play it.
 - `npm run typecheck` and `npm run build` pass.
 
 ## 2026-11-27 · Cyberpunk Car Showcase: its card, its loop, its page and its film, as a pull request (Fable, web chat)
