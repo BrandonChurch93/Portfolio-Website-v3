@@ -123,6 +123,21 @@ export const software: WorkItem[] = [
 // The rest of his software, which the page of all his work shows after the four on the home page. The words are
 // the live site's and the pictures are its screenshots. The years are a guess until he says: the live site gives none.
 export const more: WorkItem[] = [
+  // From the project's own session, Nov 26 (the portfolio folder of its repository), each figure with its source
+  // there. A draft of his to rewrite. Its repository is private, so it has no Code link. Its link opens the page that
+  // shows how the film was made.
+  {
+    slug: 'cyberpunk-car-showcase',
+    name: 'Cyberpunk Car Showcase',
+    kind: 'Procedural Short Film',
+    year: '2026',
+    line: 'A 46 second film of a mid-engined supercar alone on a rooftop car park at night, in heavy rain, in a neon city. Nothing is filmed: every frame is computed in code, and the water on the deck jumps to 175 measured bass hits.',
+    tags: ['WebGL', 'Rain Physics', 'Music Sync'],
+    // The loop's first frame is the picture.
+    picture: { src: '/media/work/cyberpunk-car-showcase-card.webp', alt: 'A dark supercar with white running lights stands in heavy rain on a wet rooftop deck, under neon signs and a pink and violet billboard.', focus: [0.5, 0.5], loop: '/media/work/cyberpunk-car-showcase-loop.mp4' },
+    page: `${ALL_WORK}/cyberpunk-car-showcase`,
+    links: [{ label: 'How it’s made', href: 'https://www.perplexity.ai/computer/a/cyberpunk-car-showcase-review-CgLzUoxkSvO_O.Vb.U7kZg' }],
+  },
   // From its own repository (README.md, kit/02A-PRODUCT.md, kit/02B-WORLD.md, config/showcase.json), Nov 24. A draft
   // of his to rewrite.
   {
@@ -307,6 +322,7 @@ const UNDER: Record<string, string[]> = {
   'modern-softworks': ['Sites'],
   'desktop-pc-builder': ['Sites'],
   sunflower: ['Sites'],
+  'cyberpunk-car-showcase': ['Sites'],
   kestrel: ['Sites'],
   meridian: ['Sites'],
 };
