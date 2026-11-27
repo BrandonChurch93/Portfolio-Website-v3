@@ -239,9 +239,11 @@
 }
 
 /* Narrower than that the three have no room on one row: the first has a row to itself and the other two share
-   the next. */
-@media (max-width: 339.98px) {
-  .links > :first-child:nth-last-child(n + 3) {
+   the next. (Under 340 px until the first button took its arrow: with it the three need 352.) Where the first two
+   are both main links (App and Site), they keep their row and the third has the next to itself. */
+@media (max-width: 351.98px) {
+  .links:not([data-main='2']) > :first-child:nth-last-child(n + 3),
+  .links[data-main='2'] > :last-child:nth-child(n + 3) {
     flex-basis: 100%;
     max-width: none;
   }

@@ -37,6 +37,8 @@ export interface PlateSpec {
   finish: Finish;
   kind: PlateKind;
   label?: string;
+  // A button whose link leaves this site: the arrow is cut in after its words.
+  out?: boolean;
   big?: string;
   facts?: string;
   window?: boolean;
@@ -81,6 +83,31 @@ function spaced(c: CanvasRenderingContext2D, text: string, x: number, y: number,
   let cx = align === 'center' ? x - total / 2 : x;
   c.textAlign = 'left';
   chars.forEach((ch, i) => { c.fillText(ch, cx, y); cx += widths[i] + spacing; });
+}
+
+function spacedWidth(c: CanvasRenderingContext2D, text: string, spacing: number): number {
+  const chars = [...text];
+  return chars.reduce((a, ch) => a + c.measureText(ch).width, 0) + spacing * (chars.length - 1);
+}
+
+// The arrow that says a link leaves this site, in shares of the size of the words it follows: the space before it,
+// its side, how far its foot stands over their baseline, its stroke, and where its head's two arms begin.
+const OUT = { gap: 0.4, side: 0.64, rise: 0.045, stroke: 0.125, arm: 0.38 } as const;
+
+// Up and to the right, as on a card's links. Drawn, not set in type: none of the site's fonts carries the arrow, so
+// in type its shape would be whatever the visitor's own machine has.
+function outArrow(c: CanvasRenderingContext2D, x: number, foot: number, size: number): void {
+  const a = OUT.side * size, t = OUT.stroke * size, i = t / 2;
+  c.lineWidth = t;
+  c.lineCap = 'butt';
+  c.lineJoin = 'miter';
+  c.beginPath();
+  c.moveTo(x + i, foot - i);
+  c.lineTo(x + a - i, foot - a + i);
+  c.moveTo(x + a * OUT.arm, foot - a + i);
+  c.lineTo(x + a - i, foot - a + i);
+  c.lineTo(x + a - i, foot - a * OUT.arm);
+  c.stroke();
 }
 
 function wrap(c: CanvasRenderingContext2D, text: string, maxW: number): string[] {
@@ -198,8 +225,13 @@ export function paintMask(spec: PlateSpec, cssW: number, cssH: number, dpr: numb
     const D = DESIGN[spec.kind];
     S = (cssH / D.height) * dpr;
     radius = D.radius * S;
-    g.font = `600 ${D.label * S}px ${SORA}`;
-    spaced(g, spec.label ?? '', w / 2, h / 2 + D.label * S * 0.36, (spec.kind === 'bar' ? 0.34 : 0.08) * D.label * S, 'center');
+    const size = D.label * S, track = (spec.kind === 'bar' ? 0.34 : 0.08) * D.label * S, base = h / 2 + size * 0.36;
+    g.font = `600 ${size}px ${SORA}`;
+    if (spec.out) {
+      const words = spacedWidth(g, spec.label ?? '', track), left = w / 2 - (words + (OUT.gap + OUT.side) * size) / 2;
+      spaced(g, spec.label ?? '', left, base, track);
+      outArrow(g, left + words + OUT.gap * size, base - OUT.rise * size, size);
+    } else spaced(g, spec.label ?? '', w / 2, base, track, 'center');
     if (spec.kind === 'bar') {
       screws = [[22 * S, h / 2, 6 * S, 0.6], [w - 22 * S, h / 2, 6 * S, 2.2]];
       if (f === 'aged') { border(7, 6, 1.2); }
