@@ -2,6 +2,43 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-27 · His words of Nov 27: no films, the live address, every screen, the sand under the pointer (Fable, web chat)
+
+- **What he said**, in the chat he keeps his projects in, passed to the web chat with his words quoted. Each is in `BRIEF.md` in full:
+    - 10:52 AM: no more films to show him the site, a live address he opens himself, and the hero "consistently good across all screens, both in portrait and landscape". `BRIEF.md`, How we work, "No films to show him the site", and Hero, "The hero is to be consistently good on every screen".
+    - 11:14 AM: he wants to be more in the loop, and he had not seen the review of Nov 26. `BRIEF.md`, How we work, "He wants to be in the loop".
+    - 11:17 AM: the new world "honestly looks amazing", and the one thing that looks off is the sand under the pointer: "it gets really stringy and looks bad". He likes the sand falling off. `BRIEF.md`, Hero, "The sand's answer to the pointer is not liked".
+- **Where it is:** no line of the site changed. This entry is records only: `BRIEF.md`, `PLAN.md` and this file.
+- **The live address of the branch:** `https://portfolio-website-v3-git-slice-cb001b-brandon-churchs-projects.vercel.app`
+    - Read signed out on Nov 27 at 10:54 AM and 11:08 AM: it answers 302 to `vercel.com/sso-api`, which is Vercel's sign-in. A made up name of the same shape answers 404. GitHub shows Vercel's build of f9589b9 as passed. So it is there, and it opens only for him, signed in to Vercel.
+    - Not seen from the sandbox: the page at that address. The stills below are of the same commit's production build, served in the sandbox.
+    - The pages given to him: `/lab/hero?look=d&sky=deep&ui=0&sharp=0` (the new world and the hidden sky) and `/lab/hero?ui=0` (the hero as it is today). `ui=0` hides the lab's label. `sharp=0` leaves out the city's sharp picture, which at his screen's density covers the pointer's light on the walls.
+    - `main` and the live site have none of the new world or the hidden sky. All of it is on this branch.
+- **How the hero draws, read in the code** (`src/pieces/world/index.ts`, `src/world/device.ts`, `src/config/stills.ts`): three ways, by the screen. They are listed in `BRIEF.md`, Hero, "Where it stands". A handheld is `(pointer: coarse)` or `?handheld=1`, and `?world=live` makes a handheld draw the world live.
+- **The stills.** `/lab/hero?look=d&ui=0&sky=deep` on the production build of cc7eb03, whose source is f9589b9's. Each is the first screen at rest, 4 seconds in, with what the page reports written beside it: `shots/screens/<name>-rest.png` and `<name>.json`, not committed. The script is in the chat's workspace (`review/rv/sizes/allshot.mjs`), not in the repository. Every one: 0 errors, the page no wider than the screen, tier low, drawn in software. Sizes are in page pixels, then the device's pixels to one of them, then the size of his name's type, where the buttons end and where the world's picture starts, in page pixels from the top.
+    - Drawn live, the new world: a laptop 1440 by 900 at 2 (91, 472), a laptop 1512 by 860 at 2 (95, 466), a 1080p monitor 1920 by 970 at 1 (121, 544).
+    - The world as pictures of today's world, the layout of a desktop: an iPad sideways 1194 by 834 at 2 (75, 428, 497), a 13 inch iPad sideways 1376 by 1032 at 2 (87, 509, 644).
+    - The plain stand in, one picture of today's world:
+        - A phone 390 by 844 at 3 (38, 579, 680) and sideways 844 by 390 (53, 351, 390).
+        - A folding phone closed 344 by 882 at 2.625 (38, 617, 718) and sideways 882 by 344 (54, 337, 361).
+        - A folding phone open 690 by 829 at 2.625 (47, 492, 619) and sideways 829 by 690 (52, 406, 438).
+        - An iPad upright 834 by 1194 at 2 (53, 650, 940).
+    - The folding phone's sizes are a Galaxy Z Fold 5's, from two public lists of device sizes. The phone's and the iPad's are the repository's own (`scripts/lib.mjs`).
+- **What was seen on them:**
+    - A laptop and a 1080p monitor: the new world, the words and the sky sit as at 1440 by 900. On the wider screen the world is larger and lower, so the planet's rim is under the first screen and the dunes are cut by its foot, and the cluster's middle is 32 px from the top.
+    - A phone upright: the words centered, the buttons one over the other, the city's top at the foot.
+    - A phone and a closed folding phone, sideways: no world on the first screen, only its glow, and a bright star behind his paragraph. On the closed folding phone the buttons end 7 px from the foot.
+    - A closed folding phone upright: his name on two lines.
+    - An iPad upright: 290 px empty between the buttons and the world.
+    - An iPad sideways, both sizes: the desktop's layout with today's world as pictures, the city at the foot.
+- **Not done, and where it is picked up:**
+    - Stills still being taken when this was written: a small laptop 1366 by 650, an ultra-wide monitor 3440 by 1300, a 4K monitor 3840 by 2000, an upright monitor 1440 by 2400, a narrow window 1000 by 800. Then his 5K screen at 2560 by 1318 at 2, and today's page at the same sizes, to prove the switches change nothing on a handheld. That is read in the code so far, not measured.
+    - The new world's pictures for the handhelds (`npm run picture` for `public/media/world/`, `src/config/stills.ts` for the stand in's). The sand does not move in a picture. What the falling sand is on a handheld is his to rule when it is shown.
+    - The sand's answer to the pointer. Read in `parts/rock/falls.ts`: `parted()` pushes every ribbon, streak and grain away from the pointer and `sand()` lights them. Choices go behind switches. Nothing is built.
+    - The low cloud thins and the cluster shrinks on a wider screen. The change for the cloud is written and not applied (the chat's workspace, `review/rv/sizes/cloud.patch`).
+- **Fewer messages.** The automation that wakes the web chat was told on Nov 27 to notify him only at a milestone, and its proof is stills at every screen he named, with no film.
+- **Checked:** `npm run typecheck` passes. No production build was run for this entry: nothing but these three files changed, and the build's folder was in use by the stills.
+
 ## 2026-11-27 · The deep sky on film: the real page, the pointer touring it (Fable, web chat)
 
 - **What he said:** nothing new. He asked for updates he can see as the work goes, and the deep sky is to be "shown to him in the page beside today's sky before it becomes the default" (`BRIEF.md`, Hero, "Yes to the sky as Fable recommended it"). Until now he had it as sheets of stills beside the mockup. This is the page itself, on film. Nothing in it is a ruling.
