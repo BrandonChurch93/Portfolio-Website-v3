@@ -4,9 +4,9 @@ import { clock } from '../../world/clock';
 import { sweep } from '../../world/contexts';
 import { handheld } from '../../world/device';
 import { liven } from './alive';
-import { DEEP, DEEP_CAP, DEEP_HALO, GAS, deepMask, deepStars, follow, gasFrame, isDeep, type Pool } from './deep';
+import { DEEP, DEEP_CAP, DEEP_HALO, FINDS, GAS, deepMask, deepStars, findDraws, findSize, follow, gasFrame, isDeep, type Pool } from './deep';
 import { CRATER, SECOND, SPARK, SPLAT, TILT, TINT, craters, meteorAt, meteors, mix3, scale3, sparks, stars, type Meteor, type V3 } from './field';
-import { BAND_FS, BLIT_FS, DEEP_FS, DEEP_GAS_FS, DEEP_STAR_FS, GLOW_FS, HEIGHT_FS, METEOR_FS, MOON_FS, RECT_VS, RESOLVE_FS, SPARK_FS, SPARK_VS, SPLAT_FS, SPLAT_VS } from './shaders';
+import { BAND_FS, BLIT_FS, DEEP_FIND_FS, DEEP_FIND_VS, DEEP_FOUND_FS, DEEP_FS, DEEP_GAS_FS, DEEP_STAR_FS, GLOW_FS, HEIGHT_FS, METEOR_FS, MOON_FS, RECT_VS, RESOLVE_FS, SPARK_FS, SPARK_VS, SPLAT_FS, SPLAT_VS } from './shaders';
 
 // The night sky of the hero, on its own canvas: the stars, the bright few with four points, a moon, a band of far
 // stars, the city's glow, and now and then a meteor. What never changes is drawn once into a texture when the plan
@@ -119,17 +119,17 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
   const gl = glOr;
 
   let progs: Record<'splat' | 'band' | 'glow' | 'height' | 'moon' | 'resolve' | 'blit' | 'spark' | 'meteor', Prog>;
-  let quad: WebGLBuffer, splatVao: WebGLVertexArrayObject, sparkVao: WebGLVertexArrayObject, rectVao: WebGLVertexArrayObject;
+  let quad: WebGLBuffer, splatVao: WebGLVertexArrayObject, sparkVao: WebGLVertexArrayObject, rectVao: WebGLVertexArrayObject, bareVao: WebGLVertexArrayObject;
   let splatBuf: WebGLBuffer, sparkBuf: WebGLBuffer;
   let floatOk = false;
   let sky: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null;
   let W = 1, H = 1, s = 1, sparkCount = 0, alive = true, dirty = true, visible = true, last = '';
   let falls: Meteor[] = [], brightest: { x: number; y: number; big: boolean }[] = [];
-  // The deep sky (deep.ts), with ?sky=deep: its stars and its gas, each a picture drawn once, and the pointer's pools,
-  // a few numbers a frame. mark is those numbers as one, so a pointer at rest asks for no frame of its own. A handheld
-  // keeps today's sky.
+  // The deep sky (deep.ts), with ?sky=deep: its stars with the things to find among them and its gas, each a picture
+  // drawn once, and the pointer's pools, a few numbers a frame. mark is those numbers as one, so a pointer at rest
+  // asks for no frame of its own. A handheld keeps today's sky.
   const pointer = !still && !handheld() && isDeep(new URLSearchParams(location.search)) ? follow(host) : null;
-  let deep: { star: Prog; gas: Prog; show: Prog } | null = null, plate: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null, plateH = 1, pools: Pool[] = [], mark = 0;
+  let deep: { star: Prog; find: Prog; found: Prog; gas: Prog; show: Prog } | null = null, plate: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null, plateH = 1, pools: Pool[] = [], mark = 0;
   let gas: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null, gasW = 1, gasH = 1, gasG = 1;
   const pooled = new Float32Array((DEEP.pools + 1) * 3);
   let forced: { at: number; m: Meteor } | null = null;
@@ -149,7 +149,7 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
       spark: program(gl, SPARK_VS, SPARK_FS),
       meteor: program(gl, RECT_VS, METEOR_FS),
     };
-    deep = pointer ? { star: program(gl, SPLAT_VS, DEEP_STAR_FS), gas: program(gl, RECT_VS, DEEP_GAS_FS), show: program(gl, RECT_VS, DEEP_FS) } : null;
+    deep = pointer ? { star: program(gl, SPLAT_VS, DEEP_STAR_FS), find: program(gl, DEEP_FIND_VS, DEEP_FIND_FS), found: program(gl, RECT_VS, DEEP_FOUND_FS), gas: program(gl, RECT_VS, DEEP_GAS_FS), show: program(gl, RECT_VS, DEEP_FS) } : null;
     quad = gl.createBuffer()!;
     gl.bindBuffer(gl.ARRAY_BUFFER, quad);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
@@ -184,6 +184,7 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
       gl.vertexAttribPointer(loc, n, gl.FLOAT, false, ss, off * 4);
       gl.vertexAttribDivisor(loc, 1);
     }
+    bareVao = gl.createVertexArray()!;
     gl.bindVertexArray(null);
   };
 
@@ -193,6 +194,9 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
     gl.bindVertexArray(rectVao);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   };
+
+  // Waits until the graphics card has drawn what it was given, so that a time counted after it is the drawing's own.
+  const sync = () => gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
 
   // One moon: its surface worked out into a texture, then lit into the sky.
   const body = (cx: number, cy: number, R: number, crs: Float32Array, look: { mare: boolean; ring: boolean; seed: number; dark: number; high: V3; low: V3 }) => {
@@ -365,7 +369,7 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
     gl.deleteTexture(acc.tex);
     sky = out;
     const hooked = new URLSearchParams(location.search).has('hook');
-    let hidden = 0, hiddenCpu = 0, gasMs = 0;
+    let hidden = 0, hiddenCpu = 0, gasMs = 0, found = 0, findMs = 0;
     if (deep) {
       const t1 = performance.now(), field = deepStars(p, s), dp = deep.star;
       hidden = field.count;
@@ -386,8 +390,72 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
       gl.bindVertexArray(splatVao);
       gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, field.count);
       gl.blendEquation(gl.FUNC_ADD);
+      if (hooked) sync();
 
       const t2 = performance.now(), mask = deepMask(p), frame = gasFrame(p), gp = deep.gas, maskTex = gl.createTexture()!;
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, maskTex);
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, mask.cols, mask.rows, 0, gl.RED, gl.UNSIGNED_BYTE, mask.data);
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+      for (const k of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, k, gl.LINEAR);
+      for (const k of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE);
+
+      // The things to find: each galaxy's points are summed in a float picture of its own, a part to a channel, and
+      // that is laid into the hidden stars' picture as the stars are. Without a float picture to sum in, or points
+      // as large as its widest, there are none.
+      const t3 = performance.now(), most = (gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE) as Float32Array)[1];
+      if (floatOk && most >= FINDS.point.large) {
+        const fp = deep.find, cp = deep.found, rad = Math.PI / 180;
+        for (const g of FINDS.galaxies) {
+          const R = g.r * p.u * s, S = findSize(R), own = target(gl, S, S, true);
+          gl.viewport(0, 0, S, S);
+          gl.clear(gl.COLOR_BUFFER_BIT);
+          gl.useProgram(fp.p);
+          gl.bindVertexArray(bareVao);
+          gl.uniform1f(fp.u('uSeed'), g.seed);
+          gl.uniform4f(fp.u('uView'), Math.cos(g.tilt * rad), Math.sin(g.tilt * rad), Math.cos(g.turn * rad), Math.sin(g.turn * rad));
+          for (const d of findDraws(g, R)) {
+            gl.uniform1ui(fp.u('uKey'), d.key);
+            gl.uniform1i(fp.u('uKind'), d.kind);
+            gl.uniform4fv(fp.u('uArm'), d.arm);
+            gl.uniform4fv(fp.u('uThrow'), d.thrown);
+            gl.uniform3fv(fp.u('uDisc'), d.disc);
+            gl.uniform3f(fp.u('uPic'), S, R, Math.min(d.size, most));
+            gl.uniform1f(fp.u('uLight'), d.light);
+            gl.uniform4fv(fp.u('uGauss'), d.gauss);
+            gl.uniform4fv(fp.u('uInto'), d.into);
+            gl.drawArrays(gl.POINTS, 0, d.count);
+            found += d.count;
+          }
+          gl.bindFramebuffer(gl.FRAMEBUFFER, plate.fb);
+          gl.viewport(0, 0, W, plateH);
+          gl.blendEquationSeparate(gl.FUNC_ADD, gl.MAX);
+          gl.useProgram(cp.p);
+          gl.activeTexture(gl.TEXTURE1);
+          gl.bindTexture(gl.TEXTURE_2D, maskTex);
+          gl.activeTexture(gl.TEXTURE0);
+          gl.bindTexture(gl.TEXTURE_2D, own.tex);
+          gl.uniform1i(cp.u('uAcc'), 0);
+          gl.uniform1i(cp.u('uMask'), 1);
+          gl.uniform3f(cp.u('uGrid'), mask.cols, mask.rows, GAS.mask);
+          gl.uniform1f(cp.u('uS'), s);
+          const x0 = Math.floor(g.at[0] * p.u * s) - (S - 1) / 2, y0 = Math.floor(g.at[1] * p.u * s) - (S - 1) / 2;
+          gl.uniform4f(cp.u('uPlace'), x0, y0, S, R);
+          gl.uniform3f(cp.u('uTurn'), Math.cos(g.turn * rad), Math.sin(g.turn * rad), 0.6 + 0.4 * Math.cos(g.tilt * rad));
+          gl.uniform3f(cp.u('uLook'), g.heart, g.stretch, g.peak / 255);
+          gl.uniform2f(cp.u('uShow'), g.show[0], g.show[1]);
+          rect(cp, x0, y0, x0 + S, y0 + S, W, plateH);
+          gl.blendEquation(gl.FUNC_ADD);
+          gl.deleteFramebuffer(own.fb);
+          gl.deleteTexture(own.tex);
+        }
+        if (hooked) {
+          sync();
+          findMs = performance.now() - t3;
+        }
+      }
+
       gasG = Math.min(s, GAS.texel);
       gasW = Math.max(1, Math.ceil(p.w * gasG));
       gasH = Math.max(1, Math.ceil(p.end * gasG));
@@ -397,11 +465,6 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
       gl.useProgram(gp.p);
       gl.activeTexture(gl.TEXTURE0);
       gl.bindTexture(gl.TEXTURE_2D, maskTex);
-      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, mask.cols, mask.rows, 0, gl.RED, gl.UNSIGNED_BYTE, mask.data);
-      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
-      for (const k of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, k, gl.LINEAR);
-      for (const k of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE);
       gl.uniform1i(gp.u('uMask'), 0);
       gl.uniform3f(gp.u('uGrid'), mask.cols, mask.rows, GAS.mask);
       gl.uniform1f(gp.u('uG'), gasG);
@@ -413,14 +476,14 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
       rect(gp, 0, 0, gasW, gasH, gasW, gasH);
       gl.deleteTexture(maskTex);
       if (hooked) {
-        gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
-        gasMs = performance.now() - t2;
+        sync();
+        gasMs = performance.now() - t2 - findMs;
       }
       gl.viewport(0, 0, W, H);
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     if (hooked) {
-      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+      sync();
       stats.skyBuildMs = performance.now() - t0;
       stats.skyBuildCpuMs = cpu;
       stats.skyStars = field.count;
@@ -432,6 +495,8 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
       stats.skyDeepCpuMs = hiddenCpu;
       stats.skyDeepGasMs = gasMs;
       stats.skyDeepGasPx = deep ? gasW * gasH : 0;
+      stats.skyDeepFindMs = findMs;
+      stats.skyDeepFindPoints = found;
     }
     dirty = true;
   };
@@ -596,7 +661,6 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
   registry.tool('skyDeep', (x?: number, y?: number, depth = 1) => { pointer?.pin(x === undefined || y === undefined ? null : { x, y, s: depth }); dirty = true; });
   // Frame times, each made to wait for the graphics card: n frames with the bright few only, and n with a meteor.
   registry.tool('skyBench', (n = 60) => {
-    const sync = () => gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
     const time = (fn: (i: number) => void) => { sync(); const t0 = performance.now(); for (let i = 0; i < n; i++) { fn(i); sync(); } return (performance.now() - t0) / n; };
     const keep = forced;
     forced = null;

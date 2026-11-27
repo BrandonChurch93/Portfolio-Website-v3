@@ -2,6 +2,44 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-26 · The deep sky's fourth piece, part one: the two galaxies (Fable, web chat)
+
+- **What he said:** nothing new. This is part of what he said yes to on Nov 26, about 3:55 PM (`BRIEF.md`, Hero, "Yes to the sky as Fable recommended it"), built on his "Keep going" of about 8:25 PM. It was not shown to him on its own: the cluster and the far galaxies come next, and the things to find go to him together, in the page beside the mockup. Nothing in it is a ruling.
+- **Where it is:** the branch `slice/layered-hollow`, not pushed, behind `?sky=deep` as the first three pieces are. Without the switch none of it runs. Nothing in `src/stream` is changed.
+- **What is built:**
+    - Two galaxies, every place and level of them in `FINDS` in `src/hero/sky/deep.ts`: a spiral low on the right, under the moon (at 1279.5, 409.6 units, radius 102.6), and one seen from its edge to the left of his words (at 168.3, 342.7, radius 88.6). Both are hidden with no pointer and come up where it is, the heart first.
+    - A galaxy is points: about 2.3 million for the spiral and 1.75 million for the edge-on at 1440 by 900 on a 2x screen. Each point's place in the disc and its light come from its own number (`DEEP_FIND_VS` in `shaders.ts`, drawn as points with no buffer behind them), so the same galaxy is made on every machine and the graphics card is sent a count and nothing else. The parts: the arms, their spurs, the smooth disc, the bright knots along the arms, the dust, and for the edge-on its dark lane.
+    - Each galaxy is summed once into a float picture of its own, a part to a channel (`DEEP_FIND_FS`), and laid into the hidden stars' picture (`DEEP_FOUND_FS`): the heart, what the dust leaves of each part, four tones built from the palette (`FIND_TONE`: pale, hot, copper-light and copper), a photograph's stretch so the faint arms show beside the heart, and the same mask as the gas. Its own picture is deleted after. Nothing is rewritten once the sky is built.
+    - It is revealed as a hidden star is, by the fourth channel of the stars' picture, the brightest light first (`show`).
+    - Without a float picture to sum in, or points as large as 5 pixels, there are no galaxies and the rest of the deep sky is as before.
+    - The sky's value noise is now one piece of shader text for the gas and the galaxies (`CLUMP`), and its integer hash another (`MIXU`).
+    - The counts for `?hook=1`: `skyDeepFindMs`, `skyDeepFindPoints`. Each time is now taken after waiting for the graphics card (`sync()` in `index.ts`), so it is the drawing's own.
+- **How the numbers were chosen:** the mockup's galaxies were made in Python by throwing points and smoothing them. The same recipe was written again in numpy on the page's own random numbers (`review/rv/galpage.py`, in the chat's workspace, not in the repository), the seeds picked by eye beside the mockup's (77 and 340), and each part's level fitted so it carries the same light as the mockup's part.
+- **Measured**, on `--png` stills of 2880 by 1800 from the production build, drawn in software:
+    - The numpy port against the mockup's own galaxies, light as a share of the galaxy's peak, port then mockup. The spiral: mean 0.0975 and 0.0936, over 0.1 in 25.4% and 24.6% of the patch, over 0.3 in 15.3% and 13.8%, over 0.6 in 2.95% and 3.04%. The edge-on: mean 0.0270 and 0.0272, over 0.1 in 6.5% and 6.4%, over 0.3 in 3.5% and 3.5%, over 0.6 in 0.90% and 0.93%.
+    - The page against the port, `/lab/sky?ui=0&outline=0&sky=deep`, the pointer held on each galaxy, less the still at rest, the hidden stars left out. The spiral: alike to 0.9959 (correlation), the page 1.0 level under at the median. The edge-on: alike to 0.9982, within 0.4 of a level in every band of levels. The half-float sums are sound: no banding and no clipped heart.
+    - What is added reads at hue 29.2 to 32.4 in the spiral (median 30.4) and 30.3 to 33.7 in the edge-on (median 31.5). Red is the most channel everywhere. The hearts read 161 and 143 (the port's 170 and 147). The brightest pixel in either square with the pointer held is 232 and 235, each a hidden star.
+    - With no pointer: `/lab/sky` against the third piece's still, 0 pixels differ. `/lab/hero?look=d&ui=0&sky=deep` against a still without the switch, 24 pixels differ, the most 2 levels, all low on the world (CSS x 982 to 988, y 840 to 868), where two takes of one address differ. None is in the sky.
+    - In the hero, the pointer held on the spiral (1232, 376) and by the edge-on (192, 316): newly over 235, 0 pixels in each. Nothing newly whitish, no lit pixel with more blue or green than red, nothing changed behind his words, and nothing changed within 24 units over the outline (the nearest is 37.8 and 55.0 CSS pixels over it).
+    - The pointer held on the band (226, 116), against the same still before the galaxies: 28,025 pixels differ in the edge-on's square, which that pointer reaches, none in the spiral's, and 24 elsewhere, the same low pixels of the world.
+    - In the page here, `/lab/sky` at 1440 by 900 on a 2x screen, in software: 4,052,631 points. The galaxies' own drawing took 5.5 s, the gas's 2.3 s, the whole sky 20.5 s.
+    - `npm run typecheck` is clean.
+- **What was found:**
+    - The gas's time in the third piece's entry was wrong. Its "15.3 s" had taken in drawing that was queued before it. Waited for properly, the gas's own drawing is about 2.3 s in software.
+    - The spiral's lower left is dimmer in the page than in the port, by up to 22% where it is lit: the mask is under 1 there, because the world's glow reaches that far up (`deepMask`: 1.00 at the square's upper right, 0.78 at its lit lower left). It is the rule the hidden stars and the gas follow, so it is left. The edge-on's mask is 1 but for one unlit corner.
+    - Not the galaxies', and not mended: the port fits the page best a quarter of a pixel lower, for both. The lab's sky canvas is 2880 by 2603 device pixels in a box of 2603.49, so the browser may be stretching the whole sky by part of a pixel, today's sky too. One for the landing page's quality pass (`devicePixelContentBoxSize`).
+- **Not measured, so not known:**
+    - How a galaxy opens as the pointer moves: stills only here.
+    - What drawing about 4 million points costs on a real graphics card, and whether the half-float sums round the same on his Mac's.
+    - A wide window. A galaxy's points are capped at twice the count measured here (`FINDS.count.most`), so in a window 2560 wide on a 2x screen each has about 63% as many points for a pixel as here, about 9.3 million in all. Its grain there has not been looked at.
+    - `/` itself.
+- **Half finished, and known:**
+    - The reveal's edge is 0.16 soft (`DEEP.soft`) against the mockup's 0.30, so a galaxy opens with a harder edge than the mockup's.
+    - A galaxy's place is in units, so in another window the mask may cut one (the moon, his words or the world's outline).
+    - The recipe's inner weights are written in the two shaders, once each, not in `FINDS`.
+    - Not built: the cluster above his name, the 16 far galaxies, and the sky's own bright stars brightening.
+- **How to see it:** `/lab/hero?look=d&sky=deep`, the pointer to the right of his words under the moon, and to the left of them.
+
 ## 2026-11-26 · The deep sky holds today's bright stars at the sky's limit too (Fable, web chat)
 
 - **What he said:** nothing new. The third piece went to him at about 10:40 PM with one fault named: two pixels in each still came out over 235, where the gas lay under one of today's bright stars, to be fixed with the next piece. This is that fix. It was not shown to him on its own: nothing a visitor sees is meant to change. Nothing in it is a ruling.
@@ -37,7 +75,7 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
         - The pointer held on the band (226, 116), on the cloud (156, 536) and low on the left (200, 640): the gas's light, blurred over 6 px, is at hue 23 to 34. Nothing newly whitish, no changed pixel with more blue or green than red, nothing changed behind his words, nothing within 24 units over the outline, and nothing darker in the sky.
         - Newly over 235: 2 pixels in each still, in two of today's bright stars with gas under them (234 to 238 and 235 to 236). Those stars are drawn after the deep pass, so the gas adds under them.
         - The page against the port, where the port has gas: alike to 0.991 on the band and 0.989 on the cloud (blurred over 3 px), the page 1.5 and 1.3 levels over at the median, which is the stars on top.
-    - In the page here: 91,558 hidden stars. Making them and the mask took 297 ms of this sandbox's CPU (the second piece 214). The gas's one drawing took 15.3 s, in software: this sandbox has no GPU. Its picture is 1440 by 868 texels, 5 MB.
+    - In the page here: 91,558 hidden stars. Making them and the mask took 297 ms of this sandbox's CPU (the second piece 214). The gas's one drawing took 15.3 s, in software: this sandbox has no GPU. (Corrected Nov 26, about 11:55 PM: that count had taken in drawing queued before it. The gas's own drawing is about 2.3 s. See "The deep sky's fourth piece, part one", above.) Its picture is 1440 by 868 texels, 5 MB.
 - **Not measured, so not known:** how the gas comes up, follows and fades, frame time and memory on his Mac, and how long the gas's one drawing takes on a real GPU. `/` itself.
 - **Half finished, and known:**
     - Short of the mockup, and said to him: the band's ribbons lie flatter than the mockup's and are fainter at its left end. The cloud is a different cloud, soft folds and one bright ribbon where the mockup had a pillar with a fan of threads. Near the cloud the hidden stars are fewer than the mockup's.

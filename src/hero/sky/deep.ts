@@ -86,6 +86,31 @@ export const GAS = {
   mask: 4,
 } as const;
 
+// The things to find: two galaxies, a spiral low on the right and one seen from its edge on the left. Each is a disc
+// of points whose places and light come from the point's number alone, summed once into a picture of its own and
+// laid into the hidden stars' picture. at and r are in units, tilt, turn and pitch in degrees, and reach, thin, wide
+// and thick shares of the radius. count is how many points a part has where the radius is madeAt device pixels, and
+// least and most how far that follows the disc's area. spread is a point's width in device pixels, over the width
+// past which it is drawn large, a knot's two widths shares of the radius, and room the share of its picture the disc
+// fills. peak is the display level of a galaxy's brightest light, show the reveal its brightest and its faintest
+// light wait for, and level what turns each part's sum of points into its light.
+export const FINDS = {
+  madeAt: 202.4,
+  count: { arms: 900000, disc: 500000, knots: 320, least: 0.5, most: 2 },
+  spread: { arms: 0.44, disc: 0.71, dust: 0.6, lane: 0.47 },
+  point: { small: 3, large: 5, over: 0.5 },
+  knot: { tight: 0.00435, wide: 0.01196, more: 2.4 },
+  noise: { cell: 0.8, octaves: 5, gain: 0.62 },
+  room: 0.92,
+  galaxies: [
+    { at: [1279.5, 409.6], r: 102.6, tilt: 58, turn: -24, seed: 77, arms: 3, pitch: 22, reach: 0.3, wind: 0.45, thin: 0.03, wide: 0.09, thick: 0.012, spurs: 0.5, heart: 1, stretch: 16, dust: 0.85, lane: 0, peak: 150, show: [0.08, 0.5], level: { arms: 0.115892, disc: 0.113895, knots: 8.34052e-5, dust: 0.253733, lane: 0 } },
+    { at: [168.3, 342.7], r: 88.6, tilt: 88.4, turn: 30, seed: 340, arms: 2, pitch: 14, reach: 0.3, wind: 0.9, thin: 0.03, wide: 0.085, thick: 0.022, spurs: 0, heart: 1.3, stretch: 14, dust: 0.3, lane: 3, peak: 140, show: [0.08, 0.46], level: { arms: 0.0304898, disc: 0.0449729, knots: 4.19098e-5, dust: 0.0425913, lane: 0.0389271 } },
+  ],
+} as const;
+export type Galaxy = (typeof FINDS.galaxies)[number];
+// The parts of a galaxy, as its shader tells them apart.
+export const FIND = { arms: 0, spurs: 1, disc: 2, knots: 3, dust: 4, lane: 5 } as const;
+
 // Over the page's world (SkyPlan.land): how far over its outline the hidden sky begins and is whole, in units, how
 // deep in the world's glow it starts to thin and is thinnest, as shares of the glow's reach, the share of it that is
 // left there, and how far over the outline the pointer has to be for the whole of the reveal.
@@ -181,6 +206,43 @@ export function gasFrame(p: SkyPlan): { band: [number, number, number, number]; 
 }
 export const gasRamp = (): { at: number; tone: V3 }[] => GAS.ramp.map(([at, a, b, k, bright]) => ({ at, tone: scale3(mix3(shown(a), shown(b), k), bright * GAS.level) }));
 export const GAS_HAZE: V3 = scale3(WARM, GAS.haze.level);
+
+export const FIND_TONE = { heart: mix3(PALE, shown('hot'), 0.18), disc: mix3(shown('hot'), shown('copper-light'), 0.27), arms: scale3(shown('copper'), 0.95 / shown('copper')[0]), knots: shown('hot') };
+// How many pixels across a galaxy's own picture is, where its radius is R device pixels.
+export const findSize = (R: number) => Math.ceil((2 * R) / FINDS.room) | 1;
+
+export interface FindDraw {
+  kind: number;
+  key: number;
+  count: number;
+  arm: [number, number, number, number];
+  thrown: [number, number, number, number];
+  disc: [number, number, number];
+  light: number;
+  into: [number, number, number, number];
+  size: number;
+  gauss: [number, number, number, number];
+}
+// One drawing for each part of a galaxy whose radius is R device pixels: how many points, what the shader is told
+// of them, the light of one, which channel of the picture it is summed in, and the point's size and shape.
+export function findDraws(g: Galaxy, R: number): FindDraw[] {
+  const C = FINDS.count, S = FINDS.spread, P = FINDS.point, K = FINDS.knot, L = g.level, t = g.thick, out: FindDraw[] = [];
+  const k = clamp((R / FINDS.madeAt) ** 2, C.least, C.most), cot = 1 / Math.tan((g.pitch * Math.PI) / 180);
+  const key = (kind: number) => Math.imul(g.seed * 8 + kind, 0x9e3779b1) >>> 0;
+  const into = (i: number): [number, number, number, number] => [i === 0 ? 1 : 0, i === 1 ? 1 : 0, i === 2 ? 1 : 0, i === 3 ? 1 : 0];
+  const add = (kind: number, count: number, reach: number, thick: number, channel: number, level: number, spread: number, thin = 0, wide = 0, share = 0, inner = 0, turn = 0, shift = 0) => {
+    const n = Math.round(count * k);
+    out.push({ kind, key: key(kind), count: n, arm: [g.arms, cot, g.wind, turn], thrown: [thin, wide, share, shift], disc: [g.reach * reach, inner, thick], light: ((R * R) / n) * level, into: into(channel), size: spread <= P.over ? P.small : P.large, gauss: [1 / (2 * Math.PI * spread * spread), 1 / (2 * spread * spread), 0, 0] });
+  };
+  add(FIND.arms, C.arms, 1, t, 0, L.arms, S.arms, g.thin, g.wide, 0.6, 0.045);
+  if (g.spurs > 0) add(FIND.spurs, C.arms / 2, 1, t, 0, L.arms * g.spurs * 2, S.arms, g.thin * 0.9, g.wide * 0.8, 0.6, 0.22, Math.PI / g.arms);
+  add(FIND.disc, C.disc, 1.1, t * 1.7, 1, L.disc, S.disc);
+  const tight = K.tight * R, loose = K.wide * R;
+  out.push({ kind: FIND.knots, key: key(FIND.knots), count: C.knots, arm: [g.arms, cot, g.wind, 0], thrown: [0.01, 0.026, 0.8, 0], disc: [g.reach, 0.1, 0], light: R * R * L.knots, into: into(2), size: 2 * Math.ceil(3 * loose) + 1, gauss: [1 / (2 * Math.PI * tight * tight), 1 / (2 * tight * tight), K.more / (2 * Math.PI * loose * loose), 1 / (2 * loose * loose)] });
+  add(FIND.dust, C.arms / 2, 1, t * 0.3, 3, L.dust * g.dust, S.dust, g.thin * 0.35, g.wide * 0.4, 0.7, 0.045, 0, 0.07);
+  if (g.lane > 0) add(FIND.lane, C.disc, 1.25, t * 0.22, 3, L.lane * g.lane, S.lane);
+  return out;
+}
 
 // One splat for each hidden star, laid out as the sky's own (SPLAT): where it is in device pixels, its light as a
 // share of full brightness, its size, how much of a soft glow it sits in, and how early the reveal shows it.

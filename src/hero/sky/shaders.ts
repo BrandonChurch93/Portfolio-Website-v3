@@ -1,4 +1,4 @@
-import { DEEP, FAINT, GAS, GAS_HAZE, GATHER, STARS, gasRamp } from './deep';
+import { DEEP, FAINT, FIND, FIND_TONE, FINDS, GAS, GAS_HAZE, GATHER, STARS, gasRamp } from './deep';
 
 // The sky's shaders. Everything is worked out in linear light in device pixels, y down, and turned into the
 // palette's tones only at the end (TONE): what is too bright goes to pale gold, never to white.
@@ -8,13 +8,17 @@ precision highp float;
 precision highp int;
 `;
 
+const MIXU = /* glsl */ `
+uint mixu(uint x) { x ^= x >> 16; x *= 0x7feb352du; x ^= x >> 15; x *= 0x846ca68bu; x ^= x >> 16; return x; }
+`;
+
 const COMMON = /* glsl */ `
 uniform vec2 uSize;
 vec2 P() { return vec2(gl_FragCoord.x, uSize.y - gl_FragCoord.y); }
 float erf1(float x) { float x2 = x * x; float t = x2 * (1.2732395 + 0.147 * x2) / (1.0 + 0.147 * x2); return sign(x) * sqrt(1.0 - exp(-t)); }
 // A gaussian's light over the whole of one pixel, so a star smaller than a pixel is spread, never point sampled.
 float pix(float c, float s) { float k = 0.70710678 / s; return 0.5 * (erf1((c + 0.5) * k) - erf1((c - 0.5) * k)); }
-uint mixu(uint x) { x ^= x >> 16; x *= 0x7feb352du; x ^= x >> 15; x *= 0x846ca68bu; x ^= x >> 16; return x; }
+${MIXU}
 float h2(vec2 p) { uvec2 q = uvec2(ivec2(floor(p)) + 1048576); return float(mixu(q.x ^ mixu(q.y + 0x9e3779b9u))) / 4294967296.0; }
 float h3(vec3 p) { uvec3 q = uvec3(ivec3(floor(p)) + 1048576); return float(mixu(q.x ^ mixu(q.y ^ mixu(q.z + 0x632be5abu)))) / 4294967296.0; }
 vec2 g2(vec2 i) { float a = 6.2831853 * h2(i); return vec2(cos(a), sin(a)); }
@@ -58,6 +62,31 @@ float fbm3(vec3 p, int n, float px) {
     px *= 0.483;
   }
   return s / w;
+}
+`;
+
+// The sky's own value noise as the CPU has it (clump in field.ts, cloud in deep.ts), in octaves spread to fill 0 to 1.
+const CLUMP = /* glsl */ `
+float lat(ivec2 c) { return float(mixu(uint(c.x + 4099) * 73856093u ^ uint(c.y + 7919) * 19349663u ^ 584449537u)) / 4294967296.0; }
+float clump(vec2 p) {
+  vec2 i = floor(p), f = p - i, u = f * f * (3.0 - 2.0 * f);
+  ivec2 c = ivec2(i);
+  float a = lat(c), b = lat(c + ivec2(1, 0)), d = lat(c + ivec2(0, 1)), e = lat(c + ivec2(1, 1));
+  return a + (b - a) * u.x + (d - a) * u.y + (a - b - d + e) * u.x * u.y;
+}
+float octaves(vec2 p, float cell, int count, float gain, float seed, bool ridge) {
+  float sum = 0.0, amp = 1.0, total = 0.0, power = 0.0;
+  vec2 from = vec2(seed * 37.13, -seed * 19.31);
+  for (int i = 0; i < 9; i++) {
+    if (i >= count) break;
+    float v = clump(p / cell + from + float(i) * vec2(11.7, 5.3));
+    sum += amp * (ridge ? 1.0 - abs(2.0 * v - 1.0) : v);
+    total += amp;
+    power += amp * amp;
+    amp *= gain;
+    cell *= 0.5;
+  }
+  return ridge ? sum / total : clamp(0.5 + (sum / total - 0.5) * total / (0.97 * sqrt(power)), 0.0, 1.0);
 }
 `;
 
@@ -448,15 +477,114 @@ void main() {
   o = vec4(col, most > 0.6 ? vShape.z : 0.0);
 }`;
 
-// The deep sky's warm gas (GAS in deep.ts), drawn once into its own picture in display levels, a texel for each CSS
-// pixel at most. The noise is the sky's own on the CPU (clump in field.ts), so the lanes here are the lanes the
-// hidden stars thin by. The fourth channel keeps how early the reveal shows the gas there.
 const n = (x: number) => (Number.isInteger(x) ? `${x}.0` : `${x}`);
 const v3 = (c: readonly number[]) => `vec3(${c.map(n).join(', ')})`;
 const sq = (x: number) => n(x * x);
+
+// One point of a galaxy (FINDS in deep.ts), drawn as a point with no buffer behind it: where it is in its disc and
+// its light come from its own number, so the same galaxy is made on every machine. An arm's point is thrown from a
+// place on a wound arm, a disc's is anywhere round the middle, and the noise gathers the light into clumps.
+const F = FINDS.noise;
+export const DEEP_FIND_VS = HEAD + MIXU + CLUMP + /* glsl */ `
+uniform uint uKey;
+uniform int uKind;
+uniform float uSeed;
+uniform vec4 uArm;
+uniform vec4 uThrow;
+uniform vec3 uDisc;
+uniform vec4 uView;
+uniform vec3 uPic;
+uniform float uLight;
+flat out vec2 vAt;
+flat out float vLight;
+uint base;
+float rnd(uint k) { return (float(mixu(base + k * 0x9e3779b9u) >> 8) + 0.5) / 16777216.0; }
+float bell(uint k) { return sqrt(-2.0 * log(rnd(k))) * cos(6.2831853 * rnd(k + 1u)); }
+float nz(float k, vec2 p) { return octaves(p, ${n(F.cell)}, ${F.octaves}, ${n(F.gain)}, uSeed + k, false); }
+float fade(float r) { return 1.0 - smoothstep(0.7, 1.0, r); }
+float grain(float u) { return clamp(pow(u, -0.3), 1.0, 5.0); }
+void main() {
+  base = mixu(uint(gl_VertexID) ^ uKey);
+  float r = -uDisc.x * (log(rnd(0u)) + log(rnd(1u))), w, z;
+  vec2 at;
+  bool ok = r < 1.0;
+  if (uKind == ${FIND.disc} || uKind == ${FIND.lane}) {
+    float th = 6.2831853 * rnd(2u);
+    at = r * vec2(cos(th), sin(th));
+    z = bell(3u) * uDisc.z;
+    w = fade(r) * (uKind == ${FIND.disc} ? (0.45 + 1.1 * nz(4.0, at)) * grain(rnd(5u)) : 0.75 + 0.5 * nz(5.0, at));
+  } else {
+    float th0 = uArm.y * log(r / 0.05);
+    float th = 6.2831853 * floor(rnd(2u) * uArm.x) / uArm.x + uArm.w + th0 + uArm.z * (nz(3.0, r * vec2(cos(th0), sin(th0))) - 0.5);
+    vec2 arm = r * (1.0 - uThrow.w) * vec2(cos(th), sin(th));
+    float far = (rnd(3u) < uThrow.z ? uThrow.x : uThrow.y) * (0.5 + r), m = sqrt(-2.0 * log(rnd(4u))), a = 6.2831853 * rnd(5u);
+    at = arm + far * m * vec2(cos(a), sin(a));
+    at.x += 0.06 * (nz(0.0, at) - 0.5);
+    at.y += 0.06 * (nz(1.0, at) - 0.5);
+    z = bell(6u) * uDisc.z;
+    ok = ok && r > uDisc.y;
+    if (uKind == ${FIND.arms}) w = (0.16 + 1.9 * pow(nz(2.0, arm), 2.2)) * (0.6 + 0.8 * nz(5.0, at)) * grain(rnd(8u)) * fade(r);
+    else if (uKind == ${FIND.spurs}) w = (0.02 + 2.6 * pow(nz(5.0, arm), 3.0)) * (0.5 + nz(2.0, at.yx)) * grain(rnd(8u)) * fade(r);
+    else if (uKind == ${FIND.knots}) w = (pow(rnd(9u), 2.8) + 0.06) * (0.1 + 1.8 * pow(nz(2.0, arm), 2.4)) * fade(r);
+    else {
+      float rd = length(at);
+      w = (0.04 + 2.4 * pow(nz(4.0, arm), 2.0)) * (0.5 + nz(5.0, at.yx)) * smoothstep(0.05, 0.13, rd) * (1.0 - smoothstep(0.45, 0.9, rd));
+    }
+  }
+  float up = at.y * uView.x - z * uView.y;
+  vAt = 0.5 * uPic.x + vec2(at.x * uView.z - up * uView.w, at.x * uView.w + up * uView.z) * uPic.y;
+  vLight = w * uLight;
+  gl_PointSize = uPic.z;
+  gl_Position = ok ? vec4(vAt / uPic.x * 2.0 - 1.0, 0.0, 1.0) : vec4(2.0, 2.0, 2.0, 1.0);
+}`;
+
+// The point's light over each pixel it covers, summed into one channel of the galaxy's own picture.
+export const DEEP_FIND_FS = HEAD + /* glsl */ `
+flat in vec2 vAt;
+flat in float vLight;
+uniform vec4 uGauss;
+uniform vec4 uInto;
+out vec4 o;
+void main() {
+  vec2 d = gl_FragCoord.xy - vAt;
+  float q = dot(d, d);
+  o = uInto * (vLight * (uGauss.x * exp(-q * uGauss.y) + uGauss.z * exp(-q * uGauss.w)));
+}`;
+
+// A galaxy laid into the hidden stars' picture from its own: the heart, what its dust leaves of each part's light,
+// the four tones, and a photograph's stretch so the faint arms show beside the heart. Its fourth channel is how
+// early the reveal shows it, the brightest first, written as a hidden star's is so the square it is drawn in never
+// shows.
+export const DEEP_FOUND_FS = HEAD + COMMON + /* glsl */ `
+uniform sampler2D uAcc;
+uniform sampler2D uMask;
+uniform vec3 uGrid;
+uniform float uS;
+uniform vec4 uPlace;
+uniform vec3 uTurn;
+uniform vec3 uLook;
+uniform vec2 uShow;
+out vec4 o;
+void main() {
+  vec2 t = P(), q = t - uPlace.xy, d = (q - 0.5 * uPlace.z) / uPlace.w;
+  vec4 acc = texelFetch(uAcc, ivec2(q), 0);
+  float rb = length(vec2(d.x * uTurn.x + d.y * uTurn.y, (d.y * uTurn.x - d.x * uTurn.y) / uTurn.z)), left = exp(-acc.a);
+  float heart = uLook.x * (0.9 * exp(-pow(rb / 0.05, 0.85)) + 2.2 * exp(-rb / 0.013) + 0.05 * exp(-rb / 0.16));
+  vec3 img = heart * (0.5 + 0.5 * left) * ${v3(FIND_TONE.heart)} + acc.g * (0.4 + 0.6 * left) * ${v3(FIND_TONE.disc)} + acc.r * left * ${v3(FIND_TONE.arms)} + acc.b * (0.3 + 0.7 * left) * ${v3(FIND_TONE.knots)};
+  float lum = max(img.r, max(img.g, img.b)), lit = asinh(lum * uLook.y) / asinh(2.0 * uLook.y);
+  vec3 c = min(img * (lit / max(lum, 1e-6)), 1.5) * uLook.z * texture(uMask, (t / uS / uGrid.z + 0.5) / uGrid.xy).r;
+  float most = max(c.r, max(c.g, c.b)) * 255.0;
+  if (most < 0.25) discard;
+  float grain = (h2(t + vec2(4171.0, 1931.0)) + h2(t + vec2(977.0, 5527.0)) - 1.0) / 255.0;
+  o = vec4(max(c + grain * step(0.5 / 255.0, c), 0.0), most > 0.6 ? 1.0 - mix(uShow.x, uShow.y, 1.0 - pow(clamp(lit, 0.0, 1.0), 0.45)) : 0.0);
+}`;
+
+// The deep sky's warm gas (GAS in deep.ts), drawn once into its own picture in display levels, a texel for each CSS
+// pixel at most. The noise is the sky's own on the CPU (clump in field.ts), so the lanes here are the lanes the
+// hidden stars thin by. The fourth channel keeps how early the reveal shows the gas there.
 const RAMP = [{ at: 0, tone: [0, 0, 0] }, ...gasRamp()];
 const CLOUD_TURN = (GATHER.cloud.turn * Math.PI) / 180;
-export const DEEP_GAS_FS = HEAD + COMMON + /* glsl */ `
+export const DEEP_GAS_FS = HEAD + COMMON + CLUMP + /* glsl */ `
 uniform sampler2D uMask;
 uniform vec3 uGrid;
 uniform float uG;
@@ -466,27 +594,6 @@ uniform vec4 uBand;
 uniform vec2 uAxis;
 uniform vec4 uLight;
 out vec4 o;
-float lat(ivec2 c) { return float(mixu(uint(c.x + 4099) * 73856093u ^ uint(c.y + 7919) * 19349663u ^ 584449537u)) / 4294967296.0; }
-float clump(vec2 p) {
-  vec2 i = floor(p), f = p - i, u = f * f * (3.0 - 2.0 * f);
-  ivec2 c = ivec2(i);
-  float a = lat(c), b = lat(c + ivec2(1, 0)), d = lat(c + ivec2(0, 1)), e = lat(c + ivec2(1, 1));
-  return a + (b - a) * u.x + (d - a) * u.y + (a - b - d + e) * u.x * u.y;
-}
-float octaves(vec2 p, float cell, int count, float gain, float seed, bool ridge) {
-  float sum = 0.0, amp = 1.0, total = 0.0, power = 0.0;
-  vec2 from = vec2(seed * 37.13, -seed * 19.31);
-  for (int i = 0; i < 9; i++) {
-    if (i >= count) break;
-    float v = clump(p / cell + from + float(i) * vec2(11.7, 5.3));
-    sum += amp * (ridge ? 1.0 - abs(2.0 * v - 1.0) : v);
-    total += amp;
-    power += amp * amp;
-    amp *= gain;
-    cell *= 0.5;
-  }
-  return ridge ? sum / total : clamp(0.5 + (sum / total - 0.5) * total / (0.97 * sqrt(power)), 0.0, 1.0);
-}
 vec2 warp(vec2 q, float seed, out vec2 fine) {
   fine = (vec2(octaves(q, ${n(GAS.fine.cell)}, ${GAS.fine.octaves}, ${n(GAS.fine.gain)}, seed + 4.0, false), octaves(q, ${n(GAS.fine.cell)}, ${GAS.fine.octaves}, ${n(GAS.fine.gain)}, seed + 5.0, false)) - 0.5) * ${n(GAS.fine.far)};
   vec2 at = q + fine;
