@@ -4,12 +4,15 @@
 
 export interface WorkLink {
   // The first link says what it opens (his word, Nov 26: "Live is pretty ambiguous"). Play it: a game. View it live:
-  // a marketing site or a working app. How it’s made: a film, whose link opens the page that shows its making (his
-  // words, Nov 26). It does not say "Watch the film": the film already plays on its page here. No link reads
-  // "Live". 3D art and photography have no word yet: he has not chosen one, so add it here when he does.
+  // a marketing site or a working app. Try it out: an interactive 3D showcase, which the visitor handles in the
+  // browser (his word, Nov 27: "We should change the link to try it out. I think that's better."). Today that is
+  // Desktop PC Builder and Meridian, and an interactive 3D project added later takes it too. How it’s made: a film,
+  // whose link opens the page that shows its making (his words, Nov 26). It does not say "Watch the film": the film
+  // already plays on its page here. No link reads "Live". 3D art and photography have no word yet: he has not
+  // chosen one, so add it here when he does.
   // App and Site: a project that is both a product and the site that sells it, each with its own address.
   // Code: only for a repository that is public and stays public.
-  label: 'Play it' | 'View it live' | 'How it’s made' | 'App' | 'Site' | 'Evals' | 'Code';
+  label: 'Play it' | 'View it live' | 'Try it out' | 'How it’s made' | 'App' | 'Site' | 'Evals' | 'Code';
   href: string;
 }
 
@@ -43,6 +46,12 @@ export interface WorkCategory {
 const GITHUB = 'https://github.com/BrandonChurch93';
 // The page of all his work on this site (src/app/work/page.tsx), where "View all work" goes.
 export const ALL_WORK = '/work';
+
+// How many of a project's links are its main ones, counted from the first: two where it is both a product and the
+// site that sells it (App and Site), one on every other. On a project's page a main link's button carries the arrow
+// that says it leaves this site (his word, Nov 27: "we only need to put it on the primary", and of Kestrel "both
+// the main links should probably have the arrow").
+export const mainLinks = (item: WorkItem): number => (item.links[0]?.label === 'App' && item.links[1]?.label === 'Site' ? 2 : Math.min(1, item.links.length));
 
 export const software: WorkItem[] = [
   {
@@ -178,7 +187,7 @@ export const more: WorkItem[] = [
     // Framed for the card's window as it is, so it is not cropped in. The loop's first frame is the picture.
     picture: { src: '/media/work/pc-builder.webp', alt: 'A white gaming PC on a dark stage, its lights off', focus: [0.5, 0.5], loop: '/media/work/pc-builder-loop.mp4' },
     page: `${ALL_WORK}/desktop-pc-builder`,
-    links: [{ label: 'View it live', href: 'https://pc-desktop-builder.vercel.app/' }],
+    links: [{ label: 'Try it out', href: 'https://pc-desktop-builder.vercel.app/' }],
   },
   {
     slug: 'modern-softworks',
@@ -215,7 +224,7 @@ export const more: WorkItem[] = [
     // The loop's first frame is the picture.
     picture: { src: '/media/work/meridian-card.webp', alt: 'The Meridian watch movement in daylight, in its rhodium finish, with a clockwork moth perched on it', focus: [0.5, 0.5], loop: '/media/work/meridian-loop.mp4' },
     page: `${ALL_WORK}/meridian`,
-    links: [{ label: 'View it live', href: 'https://meridian-calibre.vercel.app/' }],
+    links: [{ label: 'Try it out', href: 'https://meridian-calibre.vercel.app/' }],
   },
   {
     slug: 'micro-interactions-library',

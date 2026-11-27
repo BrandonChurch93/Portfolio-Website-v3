@@ -10,6 +10,7 @@ export interface PlateProps {
   finish: Finish;
   kind?: PlateKind;
   label?: string;
+  out?: boolean;
   big?: string;
   facts?: string;
   photo?: PlatePhoto;
@@ -35,7 +36,7 @@ const MAX_TILT = 0.06;
 const MAX_TILT_CONTROL = 0.05;
 
 // A lit metal plate. Its words are painted into the metal and also kept in the DOM.
-export function Plate({ finish, kind = 'plate', label, big, facts, photo, card, look, turn = 0, pinned, className, style, tilt = true, hover, children }: PlateProps) {
+export function Plate({ finish, kind = 'plate', label, out, big, facts, photo, card, look, turn = 0, pinned, className, style, tilt = true, hover, children }: PlateProps) {
   const host = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'failed'>('loading');
@@ -48,7 +49,7 @@ export function Plate({ finish, kind = 'plate', label, big, facts, photo, card, 
     const off = plates.add({
       host: h,
       canvas: c,
-      spec: { finish, kind, label, big, facts, window: !!photo, card },
+      spec: { finish, kind, label, out, big, facts, window: !!photo, card },
       photo,
       look,
       onState: (s) => setState(s),
@@ -56,7 +57,7 @@ export function Plate({ finish, kind = 'plate', label, big, facts, photo, card, 
     return off;
     // The spec is fixed for a plate's life; a new photo or new words make a new plate.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [finish, kind, label, big, facts, photoKey, card?.aspect, card?.stripH, card?.edge, card?.plain, look?.reveal, look?.push]);
+  }, [finish, kind, label, out, big, facts, photoKey, card?.aspect, card?.stripH, card?.edge, card?.plain, look?.reveal, look?.push]);
 
   useEffect(() => {
     const h = host.current;

@@ -5,7 +5,7 @@ import type { Look, Quiet } from '../atmosphere/atmosphere';
 import { useRoom } from '../atmosphere/useRoom';
 import type { GalleryPage, ProjectPage, StudyPage } from '../content/projects';
 import { projectPage as words } from '../content/site-pages';
-import { ALL_WORK, type WorkItem } from '../content/work';
+import { ALL_WORK, mainLinks, type WorkItem } from '../content/work';
 import { Framed } from './Framed';
 import { MetalButton } from './MetalButton';
 import { SiteFoot } from './SiteFoot';
@@ -118,7 +118,7 @@ function Study({ page, item, prev, next }: Found & { page: StudyPage }) {
             shots={page.shots}
             aspect={STUDY_ASPECT}
             label={`${item.name}, video and pictures`}
-            under={item.links.length > 0 ? <div className={styles.links}>{item.links.map((l, i) => <MetalButton key={l.label} label={l.label} variant={i === 0 ? 'primary' : 'accent'} href={l.href} />)}</div> : undefined}
+            under={item.links.length > 0 ? <div className={styles.links}>{item.links.map((l, i) => <MetalButton key={l.label} label={l.label} variant={i === 0 ? 'primary' : 'accent'} href={l.href} out={i < mainLinks(item)} />)}</div> : undefined}
           />
         </div>
         <ul className={styles.figures} style={{ '--figures': page.proved.length } as CSSProperties}>
