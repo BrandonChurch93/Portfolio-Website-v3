@@ -239,8 +239,8 @@
 }
 
 /* Narrower than that the three have no room on one row: the first has a row to itself and the other two share
-   the next. */
-@media (max-width: 339.98px) {
+   the next. (Under 340 px until the first button took its arrow: with it the three need 352.) */
+@media (max-width: 351.98px) {
   .links > :first-child:nth-last-child(n + 3) {
     flex-basis: 100%;
     max-width: none;

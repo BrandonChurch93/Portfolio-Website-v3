@@ -278,9 +278,10 @@
 }
 
 /* Under 360 px "View it live", Evals, Code and Case study do not fit the foot's one row: where a foot holds more
-   than one link, a link that says what it opens in several words (Play it, View it live, How it’s made) shows its
-   first word only, and a reader still hears all of it. A foot with one link keeps its words at every width ("How"
-   alone does not say where the click goes): the longest of them has the room on the narrowest card, 220 px. */
+   than one link, a link that says what it opens in several words (Play it, View it live, Try it out, How it’s
+   made) shows its first word only, and a reader still hears all of it. A foot with one link keeps its words at
+   every width ("How" alone does not say where the click goes): the longest of them has the room on the narrowest
+   card, 220 px. */
 @container (max-width: 359.98px) {
   .links:has(li + li) .rest {
     position: absolute;
