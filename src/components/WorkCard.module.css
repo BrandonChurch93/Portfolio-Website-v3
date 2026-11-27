@@ -281,15 +281,21 @@
    than one link, a link that says what it opens in several words (Play it, View it live, Try it out, How it’s
    made) shows its first word only, and a reader still hears all of it. A foot with one link keeps its words at
    every width ("How" alone does not say where the click goes): the longest of them has the room on the narrowest
-   card, 220 px. */
+   card, 220 px.
+   A link of several words after the first (How it’s made, beside Play it or App and Site) is left off a card that
+   narrow, for the same reason: it is on the project's page. The links that are left count as the foot's links. */
 @container (max-width: 359.98px) {
-  .links:has(li + li) .rest {
+  .links:has(li:not(.extra) ~ li:not(.extra)) .rest {
     position: absolute;
     width: 1px;
     height: 1px;
     margin: -1px;
     overflow: hidden;
     clip-path: inset(50%);
+  }
+
+  .extra {
+    display: none;
   }
 }
 

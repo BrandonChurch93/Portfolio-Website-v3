@@ -103,6 +103,10 @@ function watchTouch(): void {
 // the stylesheet).
 const first = (label: string) => label.split(' ')[0];
 
+// A link after the first whose name is several words (How it’s made, on a project that also plays or runs). Its
+// first word alone would not say where the click goes, so a narrow card leaves it to the project's page (`.extra`).
+const extra = (label: string, i: number) => i > 0 && first(label) !== label;
+
 // A project card. Its plate is lit metal round a dark face and a picture, with a band of bronze that carries its
 // facts, and its words are in the page over it.
 // At rest the picture is shown in the site's metals. Under the pointer, with keyboard focus, tapped by a finger, or
@@ -212,8 +216,8 @@ export function WorkCard({ item, look = CARD_LOOK, held, className }: Props) {
             </ul>
             <div className={styles.foot}>
               <ul className={styles.links}>
-                {item.links.map((l) => (
-                  <li key={l.label}>
+                {item.links.map((l, i) => (
+                  <li key={l.label} className={extra(l.label, i) ? styles.extra : undefined}>
                     <a href={l.href} target="_blank" rel="noopener noreferrer">
                       <span>{first(l.label)}{first(l.label) !== l.label && <span className={styles.rest}>{l.label.slice(first(l.label).length)}</span>}</span>
                       <span aria-hidden="true" className={styles.out}>↗</span>
