@@ -103,27 +103,14 @@ const AHEAD = 12;
 // grains glint as they turn, by this much. Nothing of it is brighter than `most` as light, which is under what
 // the world's glow starts at.
 const SAND = { pale: [250, 192, 122], lip: 26, lit: [232, 168, 100], dim: 0.55, by: 300, glints: 0.14, glint: 1.5, most: 1.35 } as const;
-// The cursor parts the falling sand: it is moved off its way by as much as `far` units, within about `wide` units
-// of the cursor. And the cursor's light is this strong on it.
-const PARTED = { far: 14, wide: 46, light: 2.2 } as const;
-// What the falling sand does under the cursor (?sand=): as it was built, or one of the three he chooses between.
-// In those three nothing is pushed out of the cursor's way and the wisps off the crests take none of its light.
-// Sand that lies on the cratered side takes the light as the wall does, sand in the air `air` of that and the fine
-// dust round the falls `dust` of it, so a lit fall is one soft body.
-export const ANSWERS = ['built', 'calm', 'glint', 'part'] as const;
-export type Answer = (typeof ANSWERS)[number];
-export const answerOf = (query: URLSearchParams): Answer => ANSWERS.find((a) => a === query.get('sand')) ?? 'built';
-const CALM = { air: 0.55, dust: 1.6 } as const;
-// `glint`: between this little and this much of the cursor's light a share of a fall's grains come to glint as
-// they turn, where SAND.glints of them do at rest, this many times as strong, and a glinting grain is drawn this
-// many times as wide.
+// The cursor lights the sand and never moves it. Sand that lies on the cratered side takes its light this strong,
+// as the wall does, sand in the air `air` of that and the fine dust round the falls `dust` of that again, so a lit
+// fall is one soft body. The wisps off the crests take none of it.
+const CURSOR = { light: 2.2, air: 0.55, dust: 1.6 } as const;
+// Between this little and this much of the cursor's light a share of a fall's grains come to glint as they turn,
+// where SAND.glints of them do at rest, this many times as strong, and a glinting grain is drawn this many times
+// as wide.
 export const GLINTS = { edge: [0.25, 0.8], share: 0.7, strong: 2.2, wide: 1.6 } as const;
-// `part`: the fall off the corner turns aside as one body. All of its sand at a height is moved across by the same
-// amount, never apart: by as much as `far` units when the cursor is `beside` units to one side of the fall's
-// middle, by nothing when it is on the middle. The turn is made within `over` units above and below the cursor,
-// and the sand stays aside under it, as a stream turned aside does. Sand within `by` units of the rim stays put,
-// and a cursor more than `above` units over the rim turns nothing.
-const TURNED = { far: 14, beside: 28, over: 70, by: 60, above: 50 } as const;
 
 const f = (n: number): string => n.toFixed(4);
 const v3 = (a: readonly number[]): string => `vec3( ${a.map(f).join(', ')} )`;
@@ -138,8 +125,8 @@ float wave( float x ) { float i = floor( x ), k = fract( x ); k = k * k * ( 3.0 
 float wave( vec2 p ) { vec2 i = floor( p ), k = fract( p ); k = k * k * ( 3.0 - 2.0 * k ); return mix( mix( chance( i ), chance( i + vec2( 1.0, 0.0 ) ), k.x ), mix( chance( i + vec2( 0.0, 1.0 ) ), chance( i + vec2( 1.0, 1.0 ) ), k.x ), k.y ); }
 // How much of a fall there is in what left the rim at this time: each has its own number and thins to its least.
 float flowing( float left, float which, float least, float pace ) { return mix( least, 1.0, smoothstep( 0.3, 0.75, wave( left * pace + which * 7.31 ) ) ); }`;
-// What a ribbon and a grain have alike: how the falls waver, what the cursor does to them, and the sand's color at
-// a place with the cursor's light on it.
+// What a ribbon and a grain have alike: how the falls waver, how much of the cursor's light is at a place, and the
+// sand's color there with a share of that light on it.
 const SHARED = /* glsl */ `
 uniform float uTime;
 uniform vec3 uLamp;
@@ -149,20 +136,6 @@ ${PLACED_GLSL}
 ${CHANCE}
 float swayed( float fallen, float y, float which ) {
 	return ${f(MOVES.sways.far)} * smoothstep( 0.0, ${f(MOVES.sways.by)}, fallen ) * ( wave( y * ${f(MOVES.sways.turns)} - uTime * ${f(MOVES.sways.rate)} + which * 3.7 ) * 2.0 - 1.0 );
-}
-// Where the cursor moves sand to. The last is 1 for the sand of the fall off the corner, which is in the air.
-vec2 moved( vec2 at, float fallen, float free ) {
-#if SAND_ANSWER == 0
-	vec2 off = at - uLamp.xy;
-	float d2 = dot( off, off );
-	return at + off * ( ${f(PARTED.far)} * uLamp.z * exp( - d2 / ${f(2 * PARTED.wide * PARTED.wide)} ) / sqrt( d2 + 4.0 ) );
-#elif SAND_ANSWER == 3
-	float side = ( ${f((CORNER.from[0] + CORNER.from[1]) / 2)} - uLamp.x ) / ${f(TURNED.beside)};
-	float turn = side * exp( 0.5 - 0.5 * side * side ) * smoothstep( uLamp.y - ${f(TURNED.over)}, uLamp.y + ${f(TURNED.over)}, at.y ) * smoothstep( 0.0, ${f(TURNED.by)}, fallen ) * smoothstep( ${f(RIM[RIM.length - 1][1] - TURNED.above)}, ${f(RIM[RIM.length - 1][1])}, uLamp.y );
-	return at + vec2( ${f(TURNED.far)} * uLamp.z * free * turn, 0.0 );
-#else
-	return at;
-#endif
 }
 // How much of the cursor's light is at a place: 1 right under it.
 float lamped( vec2 at ) {
@@ -175,7 +148,7 @@ vec3 sand( vec2 at, float fallen, float lip, float takes ) {
 	vec3 c = unshown( mix( ${v3(SAND.lit.map((x) => x / 255))}, ${v3(SAND.pale.map((x) => x / 255))}, lip * ( 1.0 - smoothstep( 0.0, ${f(SAND.lip)}, fallen ) ) ) ) * mix( 1.0, ${f(SAND.dim)}, smoothstep( 0.0, ${f(SAND.by)}, fallen ) );
 	vec2 off = at - uLamp.xy;
 	float d = sqrt( dot( off, off ) + LAMP_LIFT * LAMP_LIFT ) / LAMP_NEAR, reach = 1.0 / ( 1.0 + d * d );
-	return c + dot( c, vec3( 0.2126, 0.7152, 0.0722 ) ) * LAMP_HOT * ( ${f(PARTED.light)} * uLamp.z * reach * reach * takes );
+	return c + dot( c, vec3( 0.2126, 0.7152, 0.0722 ) ) * LAMP_HOT * ( ${f(CURSOR.light)} * uLamp.z * reach * reach * takes );
 }
 // Brought down whole to the most it may be: cut channel by channel, lit sand lost its red first and went yellow.
 vec3 kept( vec3 c ) { return c * min( 1.0, ${f(SAND.most)} / max( c.r, max( c.g, c.b ) ) ); }`;
@@ -197,14 +170,9 @@ void main() {
 	float share = position.y, fallen = share * aFrom.w;
 	vec2 at = aFrom.xy + vec2( aBody.w * share * share, fallen );
 	at.x += swayed( fallen, at.y, aFlow.x );
-	at = moved( at, fallen, 1.0 - aLies.y );
 	float more = aShape.z * exp( - fallen / max( aShape.w, 1.0 ) );
 	float full = aBody.x * mix( 1.0, ${f(STRAND.thins)}, share ) + more, wide = max( full, 1.5 * uPixel );
-#if SAND_ANSWER == 0
-	vec3 c = sand( at, fallen, 1.0, 1.0 );
-#else
-	vec3 c = sand( at, fallen, 1.0, mix( ${f(CALM.air)}, 1.0, aLies.y ) );
-#endif
+	vec3 c = sand( at, fallen, 1.0, mix( ${f(CURSOR.air)}, 1.0, aLies.y ) );
 	at += vec2( 1.0, aLies.x ) * ( position.x * wide );
 	gl_Position = projectionMatrix * modelViewMatrix * vec4( placed( at, aFrom.z ), 1.0 );
 	vAt = vec2( position.x * 2.0, share );
@@ -266,20 +234,12 @@ void main() {
 	vec2 at = aFrom.xy + vec2( ( r.z - 0.5 ) * 1.2 + side * ( age - ( 1.0 - ex ) / ${f(MOVES.takes)} ) + aMore.z * lean * lean, fallen );
 	vec2 goes = vec2( side * ( 1.0 - ex ), most * ( 1.0 - e ) + first * e );
 	at.x += swayed( fallen, at.y, aFlow.x );
-	float wisp = step( 0.5, aLies.y ) * step( aLies.y, 1.5 ), soft = aLooks.z, glints = step( ${f(1 - SAND.glints)}, r.z ), glint = ${f(SAND.glint)};
-	at = moved( at, fallen, ( 1.0 - aLies.x ) * ( 1.0 - wisp ) );
-#if SAND_ANSWER == 0
-	vec3 c = sand( at, fallen, step( 1.5, aMore.w ), 1.0 );
-#else
-	vec3 c = sand( at, fallen, step( 1.5, aMore.w ), mix( mix( ${f(CALM.air)}, 1.0, aLies.x ), ${f(CALM.air * CALM.dust)}, step( 1.5, aLies.y ) ) * ( 1.0 - wisp ) );
-#endif
-	float lies = walled( at, aLies.x ), flash = ( 1.0 - soft ) * pow( max( sin( age * ( 5.0 + 9.0 * r.w ) + r.x * 6.2832 ), 0.0 ), 12.0 ), wider = 1.0;
-#if SAND_ANSWER == 2
+	float wisp = step( 0.5, aLies.y ) * step( aLies.y, 1.5 ), soft = aLooks.z;
+	vec3 c = sand( at, fallen, step( 1.5, aMore.w ), mix( mix( ${f(CURSOR.air)}, 1.0, aLies.x ), ${f(CURSOR.air * CURSOR.dust)}, step( 1.5, aLies.y ) ) * ( 1.0 - wisp ) );
+	float lies = walled( at, aLies.x ), flash = ( 1.0 - soft ) * pow( max( sin( age * ( 5.0 + 9.0 * r.w ) + r.x * 6.2832 ), 0.0 ), 12.0 );
 	float near = smoothstep( ${f(GLINTS.edge[0])}, ${f(GLINTS.edge[1])}, lamped( at ) ) * step( 1.5, aMore.w );
-	glints = step( 1.0 - mix( ${f(SAND.glints)}, ${f(GLINTS.share)}, near ), r.z );
-	glint *= mix( 1.0, ${f(GLINTS.strong)}, near );
-	wider += ${f(GLINTS.wide - 1)} * near * glints * flash;
-#endif
+	float glints = step( 1.0 - mix( ${f(SAND.glints)}, ${f(GLINTS.share)}, near ), r.z ), glint = ${f(SAND.glint)} * mix( 1.0, ${f(GLINTS.strong)}, near );
+	float wider = 1.0 + ${f(GLINTS.wide - 1)} * near * glints * flash;
 
 	float wide = max( aLooks.x, 1.5 * uPixel ) * wider, streak = wide * aMore.y + ( 1.0 - soft ) * length( goes ) * ${f(MOVES.shutter)};
 	vec2 way = normalize( goes + vec2( 0.0, 1e-3 ) );
@@ -309,10 +269,9 @@ export interface Falls { group: THREE.Group; dispose(): void }
 
 // The falls, on the clock and the cursor's light the picture they fall from is on (./drawn.ts), with that picture
 // as it is shown and its cover, and where on the host it is (across, down, wide, tall): the cursor's light falls by
-// half its strength squared at `near` units, stands `lift` units over the picture and is of this color. And what
-// the sand does under the cursor.
+// half its strength squared at `near` units, stands `lift` units over the picture and is of this color.
 type Shared = { uTime: THREE.IUniform<number>; uLamp: THREE.IUniform<THREE.Vector3>; uTone: THREE.IUniform<THREE.Texture>; uCut: THREE.IUniform<THREE.Texture> };
-export function falls(uniforms: Shared, lamp: { near: number; lift: number; hot: THREE.Color }, box: readonly [number, number, number, number], answer: Answer): Falls {
+export function falls(uniforms: Shared, lamp: { near: number; lift: number; hot: THREE.Color }, box: readonly [number, number, number, number]): Falls {
   const R = seeded(90210), T = seeded(4711), between = (a: readonly [number, number], k = R()): number => a[0] + (a[1] - a[0]) * k;
   const corner = RIM[RIM.length - 1][0];
   const rim = (x: number, which: 1 | 2 = 1): number => {
@@ -379,7 +338,7 @@ export function falls(uniforms: Shared, lamp: { near: number; lift: number; hot:
     g.instanceCount = rows.length;
   };
   const own = { uTime: uniforms.uTime, uLamp: uniforms.uLamp, uTone: uniforms.uTone, uCut: uniforms.uCut, uPixel: { value: 0.5 } };
-  const defines = { LAMP_NEAR: f(lamp.near), LAMP_LIFT: f(lamp.lift), LAMP_HOT: v3(lamp.hot.toArray()), WALL_BOX: `vec4( ${box.map(f).join(', ')} )`, SAND_ANSWER: ANSWERS.indexOf(answer) };
+  const defines = { LAMP_NEAR: f(lamp.near), LAMP_LIFT: f(lamp.lift), LAMP_HOT: v3(lamp.hot.toArray()), WALL_BOX: `vec4( ${box.map(f).join(', ')} )` };
   const look = { uniforms: own, defines, transparent: true, depthWrite: false, premultipliedAlpha: true, side: THREE.DoubleSide } as const;
 
   const strip = new THREE.InstancedBufferGeometry(), rungs: number[] = [], faces: number[] = [];

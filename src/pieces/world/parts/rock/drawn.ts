@@ -5,7 +5,7 @@ import { load } from '../../files';
 import { WARM, color, world } from '../../light';
 import type { PartFactory, PartState } from '../../part';
 import { embers } from './embers';
-import { CHANCE, GLINTS, SAND_EDGE, answerOf, falls } from './falls';
+import { CHANCE, GLINTS, SAND_EDGE, falls } from './falls';
 import { CE, EYE, MOST, SE, SWING_GLSL, letGo, picture, seen, sheet as laid, texture } from './sheet';
 import { STREAM } from './stone';
 
@@ -55,7 +55,7 @@ const LAMP = { lift: 114, near: 174, own: 2.4, turn: 0.7, any: 0.114, matter: [0
 const HEAT = { box: [140, 268, 430, 730], eases: 10, long: 50, rate: 0.4, fine: 2.7, share: 0.35, edge: [0.25, 0.75], low: 0.55, full: 1.15, soft: 5, glow: 4, fed: [4, 2.5], turns: 0.85 } as const;
 // The sand thins out over the city's ground in grains this many to a unit.
 const GRAINS = 4;
-// With ?sand=glint the dunes glitter under the cursor: grains this many to a unit, this share of them able to. A
+// The dunes glitter under the cursor: grains this many to a unit, this share of them able to. A
 // grain glints while the light comes from the way it faces, the more exactly the higher `sharp`, so the glitter
 // changes as the cursor moves, soonest near it; within about `calm` units of the cursor none do. Each grain turns
 // by itself too, `drift` times a second. How strong a glint is, and how far up the sand from its front edge they
@@ -217,7 +217,6 @@ void main() {
 			add += ${v3(LAMP_LIGHT.toArray())} * ( pow( max( dot( n, h ), 0.0 ), ${f(LAMP.shine[0])} ) * fall * ( 1.0 - hid ) * smoothstep( ${f(LAMP.shine[2])}, ${f(LAMP.shine[3])}, dot( shown, LUMA ) ) * ${f(LAMP.shine[1])} );
 			add += c * ( light.g * exp( - dot( q.xy, q.xy ) / ${f(2 * LAMP.flare[1] * LAMP.flare[1])} ) * ${f(LAMP.flare[0])} );
 			c += add * uLamp.z;
-#ifdef GLITTER
 			float dune = smoothstep( ${f(HOST.wide / 2 + DRAWN.sand[0])}, ${f(HOST.wide / 2 + DRAWN.sand[1])}, at.x ) * ( 1.0 - smoothstep( ${f(-GLITTER.in - 3)}, ${f(-GLITTER.in)}, at.y - sandEdge( at.x ) ) );
 			float near = dune * uLamp.z * ( 1.0 - hid ) * smoothstep( ${f(GLINTS.edge[0])}, ${f(GLINTS.edge[1])}, fall * ${f((1 + (LAMP.lift / LAMP.near) ** 2) ** 2)} );
 			if ( near > 0.0 ) {
@@ -228,7 +227,6 @@ void main() {
 				c += ${v3(LAMP_LIGHT.toArray())} * ( on * near * ${f(GLITTER.strong)} );
 				c *= min( 1.0, top / max( c.r, max( c.g, c.b ) ) );
 			}
-#endif
 		}
 	}
 	gl_FragColor = vec4( c, 1.0 );
@@ -283,8 +281,7 @@ export const build: PartFactory = async (ctx) => {
     uProject: { value: new THREE.Vector2() }, uTime: { value: 0 }, uSurge: { value: new THREE.Vector2(0, 60) },
     uLamp: { value: new THREE.Vector3() },
   };
-  const answer = answerOf(ctx.query);
-  const m = new THREE.ShaderMaterial({ uniforms, defines: answer === 'glint' ? { GLITTER: 1 } : {}, vertexShader: VERT, fragmentShader: FRAG, depthFunc: THREE.LessEqualDepth });
+  const m = new THREE.ShaderMaterial({ uniforms, vertexShader: VERT, fragmentShader: FRAG, depthFunc: THREE.LessEqualDepth });
   const face = new THREE.Mesh(sheet, m);
   face.frustumCulled = false;
   face.renderOrder = -1e6 + 1;
@@ -292,7 +289,7 @@ export const build: PartFactory = async (ctx) => {
   group.add(face);
   made.push(sheet, m);
 
-  const sand = falls(uniforms, { near: LAMP.near, lift: LAMP.lift, hot: HOT }, BOX, answer);
+  const sand = falls(uniforms, { near: LAMP.near, lift: LAMP.lift, hot: HOT }, BOX);
   group.add(sand.group);
   made.push(sand);
   const sparks = embers(uniforms);
