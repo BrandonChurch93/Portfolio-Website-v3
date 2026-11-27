@@ -2,6 +2,19 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-26 · The project links are on main and live, merged on his word (Fable, web chat)
+
+- **What he said** (about 8:25 PM, in the web chat, asked whether the pull request should be merged): "Keep going and merge it". The ruling is in `BRIEF.md`, Open 33, the last bullet.
+- **Done:** pull request #1 (`content/project-links`: the entry "A link says what it opens, and five Code links come off", below) merged into `main` as it stood, by a merge and not a squash (5ee698e, 8:26 PM). It was open, clean, and its preview had passed. Vercel's production deployment of it completed within the minute.
+- **Read on the live site** (`portfolio-website-v3-wheat.vercel.app`, 8:27 PM), by fetching the pages and the scripts they name, not in a browser:
+    - None of the five repositories' addresses (Warehouse-Robot-Manager, Sun-Flower-Perplexity, PC-Desktop-Builder, Space-Shooter-Game-Perpelxity, Space-Shooter-Game-v2) is in the first HTML of `/`, `/work` or any of the 15 project pages, or in the 19 scripts those pages load.
+    - `/work` holds View it live eight times and no link that reads Live. Halation's and Halation v2's pages read Play it. Sunflower's page has no link out but his profiles. The four "Live" that are left are the four figures with a caption of their own, as recorded.
+    - The GitHub addresses that remain: his profile and the six public repositories.
+- **Found on the way, nothing done:** `www.brandonchurchportfolio.com`, which the pages name as their own address, serves a different, older deployment (its project pages answer 404). Its home page, `/work` and the 13 scripts they load hold none of the five addresses either. No other page of it was read.
+- **Told:** the chat he keeps his projects in, that the five repositories can be made private.
+- **This branch:** took `main` (5ee698e) in by a merge. `LOG.md` had entries on both sides: both kept, newest first. The type check passes, and nothing under `src/stream` differs from `main`.
+- **Half finished:** Sunflower's link (How it's made) when its review page's address arrives, and the card for his second film. Each is a pull request of its own from the new `main`, merged only on his word.
+
 ## 2026-11-26 · The deep sky's first piece: the switch and the hidden stars (Fable, web chat)
 
 - **What he said:** his yes of Nov 26, about 3:55 PM ("The plan you have for the sky looks incredible!": `BRIEF.md`, Hero, "Yes to the sky as Fable recommended it"). He has this piece as a sheet of stills in the web chat, not in the page on his Mac. He has not answered it, and nothing in it is a ruling.
