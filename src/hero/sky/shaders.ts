@@ -1,4 +1,4 @@
-import { DEEP } from './deep';
+import { DEEP, FAINT, GAS, GAS_HAZE, GATHER, STARS, gasRamp } from './deep';
 
 // The sky's shaders. Everything is worked out in linear light in device pixels, y down, and turned into the
 // palette's tones only at the end (TONE): what is too bright goes to pale gold, never to white.
@@ -448,13 +448,125 @@ void main() {
   o = vec4(col, most > 0.6 ? vShape.z : 0.0);
 }`;
 
+// The deep sky's warm gas (GAS in deep.ts), drawn once into its own picture in display levels, a texel for each CSS
+// pixel at most. The noise is the sky's own on the CPU (clump in field.ts), so the lanes here are the lanes the
+// hidden stars thin by. The fourth channel keeps how early the reveal shows the gas there.
+const n = (x: number) => (Number.isInteger(x) ? `${x}.0` : `${x}`);
+const v3 = (c: readonly number[]) => `vec3(${c.map(n).join(', ')})`;
+const sq = (x: number) => n(x * x);
+const RAMP = [{ at: 0, tone: [0, 0, 0] }, ...gasRamp()];
+const CLOUD_TURN = (GATHER.cloud.turn * Math.PI) / 180;
+export const DEEP_GAS_FS = HEAD + COMMON + /* glsl */ `
+uniform sampler2D uMask;
+uniform vec3 uGrid;
+uniform float uG;
+uniform float uU;
+uniform vec4 uWords;
+uniform vec4 uBand;
+uniform vec2 uAxis;
+uniform vec4 uLight;
+out vec4 o;
+float lat(ivec2 c) { return float(mixu(uint(c.x + 4099) * 73856093u ^ uint(c.y + 7919) * 19349663u ^ 584449537u)) / 4294967296.0; }
+float clump(vec2 p) {
+  vec2 i = floor(p), f = p - i, u = f * f * (3.0 - 2.0 * f);
+  ivec2 c = ivec2(i);
+  float a = lat(c), b = lat(c + ivec2(1, 0)), d = lat(c + ivec2(0, 1)), e = lat(c + ivec2(1, 1));
+  return a + (b - a) * u.x + (d - a) * u.y + (a - b - d + e) * u.x * u.y;
+}
+float octaves(vec2 p, float cell, int count, float gain, float seed, bool ridge) {
+  float sum = 0.0, amp = 1.0, total = 0.0, power = 0.0;
+  vec2 from = vec2(seed * 37.13, -seed * 19.31);
+  for (int i = 0; i < 9; i++) {
+    if (i >= count) break;
+    float v = clump(p / cell + from + float(i) * vec2(11.7, 5.3));
+    sum += amp * (ridge ? 1.0 - abs(2.0 * v - 1.0) : v);
+    total += amp;
+    power += amp * amp;
+    amp *= gain;
+    cell *= 0.5;
+  }
+  return ridge ? sum / total : clamp(0.5 + (sum / total - 0.5) * total / (0.97 * sqrt(power)), 0.0, 1.0);
+}
+vec2 warp(vec2 q, float seed, out vec2 fine) {
+  fine = (vec2(octaves(q, ${n(GAS.fine.cell)}, ${GAS.fine.octaves}, ${n(GAS.fine.gain)}, seed + 4.0, false), octaves(q, ${n(GAS.fine.cell)}, ${GAS.fine.octaves}, ${n(GAS.fine.gain)}, seed + 5.0, false)) - 0.5) * ${n(GAS.fine.far)};
+  vec2 at = q + fine;
+  return (vec2(octaves(at, ${n(GAS.wide.cell)}, ${GAS.wide.octaves}, ${n(GAS.wide.gain)}, seed + 2.0, false), octaves(at, ${n(GAS.wide.cell)}, ${GAS.wide.octaves}, ${n(GAS.wide.gain)}, seed + 3.0, false)) - 0.5) * ${n(GAS.wide.far)};
+}
+float body(vec2 at, float seed, int count) {
+  return clamp((octaves(at, ${n(GAS.body.cell)}, count, ${n(GAS.body.gain)}, seed + 1.0, false) - ${n(GAS.body.floor)}) / ${n(1 - GAS.body.floor)}, 0.0, 1.0);
+}
+float warped(vec2 q, float seed) {
+  vec2 fine;
+  vec2 wide = warp(q, seed, fine);
+  return body(q + fine + wide, seed, ${GAS.rim.octaves});
+}
+// The dark lanes at a place of a sheet, folded as the sheet is: how much of the gas's light they leave.
+float lanes(vec2 q, vec2 fine, vec2 wide, float seed, float lane) {
+  return smoothstep(lane, lane + ${n(GAS.lanes.over)}, octaves(q + fine + ${n(GAS.lanes.wide)} * wide, ${n(GAS.lanes.cell)}, ${GAS.lanes.octaves}, ${n(GAS.lanes.gain)}, seed, false));
+}
+// One sheet of gas at a place of its own frame: its light before the lanes, and how it is folded there.
+float sheet(vec2 q, float seed, vec2 light, out vec2 fine, out vec2 wide) {
+  wide = warp(q, seed, fine);
+  float m = body(q + fine + wide, seed, ${GAS.body.octaves});
+  float thread = octaves(q + ${n(GAS.threads.fine)} * fine + ${n(GAS.threads.wide)} * wide, ${n(GAS.threads.cell)}, ${GAS.threads.octaves}, ${n(GAS.threads.gain)}, seed + 6.0, true);
+  thread = pow(clamp((thread - ${n(GAS.threads.span[0])}) / ${n(GAS.threads.span[1] - GAS.threads.span[0])}, 0.0, 1.0), ${n(GAS.threads.curve)});
+  float thick = pow(smoothstep(${n(GAS.body.cloud[0])}, ${n(GAS.body.cloud[1])}, m), ${n(GAS.body.curve)});
+  float rim = clamp((warped(q + ${n(GAS.rim.step)} * light, seed) - warped(q - ${n(GAS.rim.step)} * light, seed)) * ${n(GAS.rim.gain / (2 * GAS.rim.step))}, -1.0, 1.0);
+  float lit = thick * (${n(GAS.rim.flat)} + ${n(GAS.rim.lit)} * max(rim, 0.0) - ${n(GAS.rim.shade)} * max(-rim, 0.0));
+  return lit + ${n(GAS.threads.light)} * thread * smoothstep(${n(GAS.threads.body[0])}, ${n(GAS.threads.body[1])}, m) * (${n(GAS.threads.bare)} + ${n(1 - GAS.threads.bare)} * thick);
+}
+vec3 ramp(float v) {
+  const float at[${RAMP.length}] = float[${RAMP.length}](${RAMP.map((k) => n(k.at)).join(', ')});
+  const vec3 tone[${RAMP.length}] = vec3[${RAMP.length}](${RAMP.map((k) => v3(k.tone)).join(', ')});
+  for (int i = 1; i < ${RAMP.length}; i++) if (v <= at[i]) return mix(tone[i - 1], tone[i], (v - at[i - 1]) / (at[i] - at[i - 1]));
+  return tone[${RAMP.length - 1}];
+}
+void main() {
+  vec2 t = P(), css = t / uG, X = css / uU, d = css - uBand.xy, off = css - uWords.xy;
+  float may = texture(uMask, (css / uGrid.z + 0.5) / uGrid.xy).r;
+  vec2 fr = vec2(dot(d, uAxis), dot(d, vec2(-uAxis.y, uAxis.x))) / uBand.zw;
+  float a = fr.x - ${n(GATHER.band.a)}, b = fr.y - ${n(GATHER.band.b)}, top = smoothstep(0.0, ${n(GATHER.band.top)}, X.y);
+  float band = exp(-0.5 * (a * a / ${sq(GATHER.band.along)} + b * b / ${sq(GATHER.band.across)})) * top;
+  vec2 dc = X - vec2(${n(GATHER.cloud.x)}, ${n(GATHER.cloud.y)});
+  vec2 cu = vec2(dot(dc, vec2(${n(Math.cos(CLOUD_TURN))}, ${n(Math.sin(CLOUD_TURN))})) / ${n(GATHER.cloud.rx)}, dot(dc, vec2(${n(-Math.sin(CLOUD_TURN))}, ${n(Math.cos(CLOUD_TURN))})) / ${n(GATHER.cloud.ry)});
+  float low = exp(-0.5 * dot(cu, cu));
+  float open = may * smoothstep(${n(GAS.clear[0])} * uU, ${n(GAS.clear[1])} * uU, length(max(abs(off) - vec2(${n(STARS.block[0])}, ${n(STARS.block[1])}) * uWords.zw, 0.0)));
+  float far = exp(-0.5 * (a * a / ${sq(GATHER.band.haze[0])} + b * b / ${sq(GATHER.band.haze[1])})) * smoothstep(1.0, 1.65, length(off / uWords.zw)) * top * may;
+  vec2 q = fr * uBand.zw / (uU * vec2(${n(GATHER.band.stretch)}, 1.0));
+  float gas = 0.0, dark = 0.0;
+  vec2 fine, wide, other, others;
+  if (band * open > ${n(FAINT)}) {
+    float one = sheet(q, ${n(GAS.band.seed)}, uLight.xy, fine, wide), two = sheet(q, ${n(GAS.band.second)}, uLight.xy, other, others);
+    float rich = ${n(GAS.band.patch.least)} + ${n(GAS.band.patch.more)} * octaves(X, ${n(GAS.band.patch.cell)}, ${GAS.band.patch.octaves}, ${n(GAS.band.patch.gain)}, ${n(GAS.band.patch.seed)}, false);
+    dark = lanes(q, fine, wide, ${n(GAS.band.lanes)}, ${n(GAS.band.lane)});
+    gas += (one + ${n(GAS.band.share)} * two) * (1.0 - ${n(GAS.lanes.dark)} * dark) * band * rich / ${n(GAS.band.full)};
+  } else if (far > ${n(FAINT)}) {
+    wide = warp(q, ${n(GAS.band.seed)}, fine);
+    dark = lanes(q, fine, wide, ${n(GAS.band.lanes)}, ${n(GAS.band.lane)});
+  }
+  float core = pow(low, ${n(GAS.low.tight)});
+  if (core * open > ${n(FAINT)}) {
+    float one = sheet(X, ${n(GAS.low.seed)}, uLight.zw, fine, wide);
+    gas += one * (1.0 - ${n(GAS.lanes.dark)} * lanes(X, fine, wide, ${n(GAS.low.lanes)}, ${n(GAS.low.lane)})) * core / ${n(GAS.low.full)};
+  }
+  gas = clamp(gas * open, 0.0, 1.0);
+  float haze = far > ${n(FAINT)} ? far * (${n(GAS.haze.least)} + ${n(GAS.haze.more)} * octaves(X, ${n(GAS.haze.cell)}, ${GAS.haze.octaves}, ${n(GAS.haze.gain)}, ${n(GAS.haze.seed)}, false)) * (1.0 - ${n(GAS.haze.lanes)} * dark) : 0.0;
+  vec3 c = ramp(pow(gas, ${n(GAS.curve)})) + haze * (1.0 + ${n(GAS.haze.grain)} * (2.0 * h2(t) - 1.0)) * ${v3(GAS_HAZE)};
+  float early = sqrt(clamp(gas + ${n(GAS.haze.show)} * haze, 0.0, 1.0));
+  vec2 grain = (vec2(h2(t + vec2(4171.0, 1931.0)) + h2(t + vec2(977.0, 5527.0)), h2(t + vec2(2749.0, 311.0)) + h2(t + vec2(6007.0, 8269.0))) - 1.0) / 255.0;
+  o = vec4(max(c + grain.x * step(0.5 / 255.0, c), 0.0), clamp(early + grain.y * step(0.5 / 255.0, early), 0.0, 1.0));
+}`;
+
 // The deep sky shown over today's where the pointer and its pools reach. The reveal at a pixel is the most that any
 // one pool gives it, and a thing shows once the reveal passes its own threshold. What is added keeps its color: it
-// is held at uCap, and never under what today's sky has there.
+// is held at uCap, and never under what today's sky has there. The gas is dithered as it is added, so it does not
+// band on an eight bit screen.
 const POOLS = DEEP.pools + 1;
 export const DEEP_FS = HEAD + COMMON + /* glsl */ `
 uniform sampler2D uSky;
 uniform sampler2D uDeep;
+uniform sampler2D uGas;
+uniform vec2 uGasInv;
 uniform int uDrop;
 uniform vec3 uPool[${POOLS}];
 uniform int uPools;
@@ -467,14 +579,17 @@ void main() {
   ivec2 at = ivec2(gl_FragCoord.xy);
   vec4 base = texelFetch(uSky, at, 0), d = texelFetch(uDeep, at - ivec2(0, uDrop), 0);
   vec2 p = P();
+  vec4 g = texture(uGas, vec2(p.x * uGasInv.x, 1.0 - p.y * uGasInv.y));
   float rho = 0.0;
   for (int i = 0; i < ${POOLS}; i++) {
     if (i >= uPools) break;
     vec2 v = p - uPool[i].xy;
     rho = max(rho, uPool[i].z * exp(-dot(v, v) / (uReach * uReach)));
   }
-  float th = 1.0 - d.a;
-  vec3 f = base.rgb + d.rgb * smoothstep(th, th + uSoft, rho);
+  float th = 1.0 - d.a, thg = ${n(GAS.show.first)} - ${n(GAS.show.less)} * g.a;
+  vec3 gas = g.rgb * smoothstep(thg, thg + ${n(GAS.show.soft)}, rho);
+  float grain = (h2(gl_FragCoord.xy) + h2(gl_FragCoord.xy + vec2(4171.0, 1931.0)) - 1.0) / 255.0;
+  vec3 f = base.rgb + gas + grain * step(0.25 / 255.0, max(gas.r, max(gas.g, gas.b))) + d.rgb * smoothstep(th, th + uSoft, rho);
   float k = min(1.0, max(max(base.r, max(base.g, base.b)), uCap.x) / max(max(f.r, max(f.g, f.b)), 1e-3));
   k *= min(1.0, max(min(base.r, min(base.g, base.b)), uCap.y) / max(min(f.r, min(f.g, f.b)) * k, 1e-3));
   vec3 c = max(f * k, base.rgb);

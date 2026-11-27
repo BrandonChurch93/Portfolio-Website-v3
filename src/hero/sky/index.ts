@@ -4,9 +4,9 @@ import { clock } from '../../world/clock';
 import { sweep } from '../../world/contexts';
 import { handheld } from '../../world/device';
 import { liven } from './alive';
-import { DEEP, DEEP_CAP, DEEP_HALO, deepStars, follow, isDeep, type Pool } from './deep';
+import { DEEP, DEEP_CAP, DEEP_HALO, GAS, deepMask, deepStars, follow, gasFrame, isDeep, type Pool } from './deep';
 import { CRATER, SECOND, SPARK, SPLAT, TILT, TINT, craters, meteorAt, meteors, mix3, scale3, sparks, stars, type Meteor, type V3 } from './field';
-import { BAND_FS, BLIT_FS, DEEP_FS, DEEP_STAR_FS, GLOW_FS, HEIGHT_FS, METEOR_FS, MOON_FS, RECT_VS, RESOLVE_FS, SPARK_FS, SPARK_VS, SPLAT_FS, SPLAT_VS } from './shaders';
+import { BAND_FS, BLIT_FS, DEEP_FS, DEEP_GAS_FS, DEEP_STAR_FS, GLOW_FS, HEIGHT_FS, METEOR_FS, MOON_FS, RECT_VS, RESOLVE_FS, SPARK_FS, SPARK_VS, SPLAT_FS, SPLAT_VS } from './shaders';
 
 // The night sky of the hero, on its own canvas: the stars, the bright few with four points, a moon, a band of far
 // stars, the city's glow, and now and then a meteor. What never changes is drawn once into a texture when the plan
@@ -125,10 +125,12 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
   let sky: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null;
   let W = 1, H = 1, s = 1, sparkCount = 0, alive = true, dirty = true, visible = true, last = '';
   let falls: Meteor[] = [], brightest: { x: number; y: number; big: boolean }[] = [];
-  // The deep sky (deep.ts), with ?sky=deep: its picture, drawn once, and the pointer's pools, a few numbers a frame.
-  // mark is those numbers as one, so a pointer at rest asks for no frame of its own. A handheld keeps today's sky.
+  // The deep sky (deep.ts), with ?sky=deep: its stars and its gas, each a picture drawn once, and the pointer's pools,
+  // a few numbers a frame. mark is those numbers as one, so a pointer at rest asks for no frame of its own. A handheld
+  // keeps today's sky.
   const pointer = !still && !handheld() && isDeep(new URLSearchParams(location.search)) ? follow(host) : null;
-  let deep: { star: Prog; show: Prog } | null = null, plate: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null, plateH = 1, pools: Pool[] = [], mark = 0;
+  let deep: { star: Prog; gas: Prog; show: Prog } | null = null, plate: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null, plateH = 1, pools: Pool[] = [], mark = 0;
+  let gas: { fb: WebGLFramebuffer; tex: WebGLTexture } | null = null, gasW = 1, gasH = 1, gasG = 1;
   const pooled = new Float32Array((DEEP.pools + 1) * 3);
   let forced: { at: number; m: Meteor } | null = null;
   let current: SkyPlan | null = null;
@@ -147,7 +149,7 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
       spark: program(gl, SPARK_VS, SPARK_FS),
       meteor: program(gl, RECT_VS, METEOR_FS),
     };
-    deep = pointer ? { star: program(gl, SPLAT_VS, DEEP_STAR_FS), show: program(gl, RECT_VS, DEEP_FS) } : null;
+    deep = pointer ? { star: program(gl, SPLAT_VS, DEEP_STAR_FS), gas: program(gl, RECT_VS, DEEP_GAS_FS), show: program(gl, RECT_VS, DEEP_FS) } : null;
     quad = gl.createBuffer()!;
     gl.bindBuffer(gl.ARRAY_BUFFER, quad);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
@@ -271,6 +273,7 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
     if (canvas.width !== W || canvas.height !== H) { canvas.width = W; canvas.height = H; }
     if (sky) { gl.deleteFramebuffer(sky.fb); gl.deleteTexture(sky.tex); sky = null; }
     if (plate) { gl.deleteFramebuffer(plate.fb); gl.deleteTexture(plate.tex); plate = null; }
+    if (gas) { gl.deleteFramebuffer(gas.fb); gl.deleteTexture(gas.tex); gas = null; }
 
     const field = stars(p, s);
     const bright = sparks(p, s);
@@ -361,7 +364,8 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
     gl.deleteFramebuffer(acc.fb);
     gl.deleteTexture(acc.tex);
     sky = out;
-    let hidden = 0, hiddenCpu = 0;
+    const hooked = new URLSearchParams(location.search).has('hook');
+    let hidden = 0, hiddenCpu = 0, gasMs = 0;
     if (deep) {
       const t1 = performance.now(), field = deepStars(p, s), dp = deep.star;
       hidden = field.count;
@@ -382,10 +386,40 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
       gl.bindVertexArray(splatVao);
       gl.drawArraysInstanced(gl.TRIANGLE_STRIP, 0, 4, field.count);
       gl.blendEquation(gl.FUNC_ADD);
+
+      const t2 = performance.now(), mask = deepMask(p), frame = gasFrame(p), gp = deep.gas, maskTex = gl.createTexture()!;
+      gasG = Math.min(s, GAS.texel);
+      gasW = Math.max(1, Math.ceil(p.w * gasG));
+      gasH = Math.max(1, Math.ceil(p.end * gasG));
+      gas = target(gl, gasW, gasH, false);
+      gl.viewport(0, 0, gasW, gasH);
+      gl.disable(gl.BLEND);
+      gl.useProgram(gp.p);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, maskTex);
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, mask.cols, mask.rows, 0, gl.RED, gl.UNSIGNED_BYTE, mask.data);
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
+      for (const k of [gl.TEXTURE_MIN_FILTER, gl.TEXTURE_MAG_FILTER]) gl.texParameteri(gl.TEXTURE_2D, k, gl.LINEAR);
+      for (const k of [gl.TEXTURE_WRAP_S, gl.TEXTURE_WRAP_T]) gl.texParameteri(gl.TEXTURE_2D, k, gl.CLAMP_TO_EDGE);
+      gl.uniform1i(gp.u('uMask'), 0);
+      gl.uniform3f(gp.u('uGrid'), mask.cols, mask.rows, GAS.mask);
+      gl.uniform1f(gp.u('uG'), gasG);
+      gl.uniform1f(gp.u('uU'), p.u);
+      gl.uniform4f(gp.u('uWords'), p.words.x, p.words.y, p.words.rx, p.words.ry);
+      gl.uniform4fv(gp.u('uBand'), frame.band);
+      gl.uniform2fv(gp.u('uAxis'), frame.axis);
+      gl.uniform4fv(gp.u('uLight'), frame.light);
+      rect(gp, 0, 0, gasW, gasH, gasW, gasH);
+      gl.deleteTexture(maskTex);
+      if (hooked) {
+        gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+        gasMs = performance.now() - t2;
+      }
       gl.viewport(0, 0, W, H);
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    if (new URLSearchParams(location.search).has('hook')) {
+    if (hooked) {
       gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
       stats.skyBuildMs = performance.now() - t0;
       stats.skyBuildCpuMs = cpu;
@@ -396,6 +430,8 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
       stats.skySparks = sparkCount;
       stats.skyDeepStars = hidden;
       stats.skyDeepCpuMs = hiddenCpu;
+      stats.skyDeepGasMs = gasMs;
+      stats.skyDeepGasPx = deep ? gasW * gasH : 0;
     }
     dirty = true;
   };
@@ -427,7 +463,7 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
     gl.bindTexture(gl.TEXTURE_2D, sky.tex);
     gl.uniform1i(bl.u('uTex'), 0);
     rect(bl, 0, 0, W, H);
-    if (deep && plate && current && pools.length) {
+    if (deep && plate && gas && current && pools.length) {
       const reach = DEEP.reach * current.u, dp = deep.show;
       let n = 0, x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
       for (const k of pools) {
@@ -442,9 +478,13 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
         gl.useProgram(dp.p);
         gl.activeTexture(gl.TEXTURE1);
         gl.bindTexture(gl.TEXTURE_2D, plate.tex);
+        gl.activeTexture(gl.TEXTURE2);
+        gl.bindTexture(gl.TEXTURE_2D, gas.tex);
         gl.activeTexture(gl.TEXTURE0);
         gl.uniform1i(dp.u('uSky'), 0);
         gl.uniform1i(dp.u('uDeep'), 1);
+        gl.uniform1i(dp.u('uGas'), 2);
+        gl.uniform2f(dp.u('uGasInv'), gasG / (s * gasW), gasG / (s * gasH));
         gl.uniform1i(dp.u('uDrop'), H - plateH);
         gl.uniform3fv(dp.u('uPool'), pooled);
         gl.uniform1i(dp.u('uPools'), n);
@@ -538,7 +578,7 @@ function mountLive(host: HTMLElement, plan: () => SkyPlan, keep: boolean): Sky {
     }
   });
 
-  const lost = (e: Event) => { e.preventDefault(); sky = null; plate = null; };
+  const lost = (e: Event) => { e.preventDefault(); sky = null; plate = null; gas = null; };
   const restored = () => { init(); build(); };
   canvas.addEventListener('webglcontextlost', lost);
   canvas.addEventListener('webglcontextrestored', restored);

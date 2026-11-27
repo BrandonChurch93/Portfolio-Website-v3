@@ -33,7 +33,7 @@ export const DEEP = {
 // The hidden stars: how many are tried for each CSS pixel, the share kept where the sky is thickest, and the
 // faintest and brightest of them in display levels, rarer as they brighten. block is his words' block as a share of
 // the oval kept clear round it, and clear how far from the block the stars begin and are whole.
-const STARS = {
+export const STARS = {
   cell: 16,
   tries: 0.694,
   keep: 3.4,
@@ -46,9 +46,44 @@ const STARS = {
   clear: [18.5, 71],
 } as const;
 // Where they gather: along the band as it is seen, in the band's own frame, and round a cloud low on the left.
-const GATHER = {
+export const GATHER = {
   band: { a: 0.03, b: -0.95, along: 0.45, across: 0.96, haze: [0.62, 0.74], top: 46.6, stretch: 1.7 },
   cloud: { x: 119.6, y: 567.8, rx: 121.7, ry: 79.1, turn: 28 },
+} as const;
+
+// The warm gas in the band and in the cloud: value noise folded by two warps into sheets, with fine threads, dark
+// lanes and one side lit. Cells and how far a warp carries are in units. The band's gas is two sheets laid in the
+// band's own frame, the cloud's one, each place's lanes folded as its first sheet is and seeded on their own. full is
+// the sheet's light that shows as the brightest tone, and tight the power on the cloud's oval that keeps its gas to
+// the middle of where its stars gather. ramp is what the gas's light is drawn in, darkest first: where on 0 to 1 each
+// tone sits, two of the palette's colors, how far from the first to the second, and how bright. show is the reveal
+// the faintest gas waits for, how much less the brightest needs, and how gently it comes up. The lanes also thin the
+// hidden stars, from the same numbers. texel is the most of the gas's picture there is for a CSS pixel, and mask how
+// many CSS pixels one value of deepMask covers.
+export const GAS = {
+  wide: { cell: 380, octaves: 4, gain: 0.55, far: 370 },
+  fine: { cell: 105, octaves: 4, gain: 0.55, far: 78 },
+  body: { cell: 550, octaves: 9, gain: 0.6, floor: 0.1, cloud: [0.4, 0.92], curve: 1.25 },
+  threads: { cell: 210, octaves: 6, gain: 0.62, span: [0.647, 0.924], curve: 2.2, fine: 1.3, wide: 0.9, light: 0.85, body: [0.22, 0.6], bare: 0.35 },
+  lanes: { cell: 280, octaves: 7, gain: 0.62, wide: 0.7, over: 0.2, dark: 0.92 },
+  rim: { step: 1.5, octaves: 7, gain: 54, flat: 0.42, lit: 0.95, shade: 0.25 },
+  band: { seed: 66, second: 55, share: 0.55, lanes: 190, light: 200, lane: 0.46, full: 1.3, patch: { cell: 450, octaves: 3, gain: 0.5, seed: 8, least: 0.6, more: 0.8 } },
+  low: { seed: 73, lanes: 80, light: 215, lane: 0.5, full: 0.76, tight: 2 },
+  clear: [30, 190],
+  level: 0.5,
+  curve: 0.9,
+  ramp: [
+    [0.12, 'ember-deep', 'bronze-deep', 0.25, 0.52],
+    [0.3, 'ember', 'bronze-deep', 0.4, 0.73],
+    [0.5, 'ember', 'bronze', 0.4, 0.9],
+    [0.7, 'copper', 'ember', 0.4, 0.97],
+    [0.86, 'copper', 'copper', 0, 0.985],
+    [1, 'copper-light', 'copper-light', 0, 1.02],
+  ],
+  haze: { cell: 260, octaves: 5, gain: 0.6, seed: 11, least: 0.3, more: 0.95, lanes: 0.85, level: 17 / 255, grain: 0.18, show: 0.5 },
+  show: { first: 0.56, less: 0.34, soft: 0.3 },
+  texel: 1,
+  mask: 4,
 } as const;
 
 // Over the page's world (SkyPlan.land): how far over its outline the hidden sky begins and is whole, in units, how
@@ -65,6 +100,8 @@ const PALE = shown('pale'), WARM = mix3(PALE, shown('hot'), 0.5), COPPER = scale
 export const DEEP_CAP: [number, number] = [DEEP.most - Math.max(...shown('bg')), DEEP.least - Math.min(...shown('bg'))];
 
 const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
+// Less of the band, the cloud or the gas than this is none.
+export const FAINT = 0.001;
 const gauss = (r: () => number) => Math.sqrt(-2 * Math.log(Math.max(1e-9, r()))) * Math.cos(6.2831853 * r());
 
 // Value noise in octaves, spread to fill 0 to 1. cell is the widest octave's, in units of the board.
@@ -96,6 +133,14 @@ function allowed(p: SkyPlan, x: number, y: number): number {
   return clear * lit * smooth(LAND.clear[0] * p.u, LAND.clear[1] * p.u, over(p, p.land, x, y));
 }
 
+// The gas's dark lanes at a place of a sheet, as the gas's shader has them (DEEP_GAS_FS).
+function lanes(x: number, y: number, seed: number, own: number, at: number): number {
+  const F = GAS.fine, W = GAS.wide, L = GAS.lanes;
+  const fx = (cloud(x, y, F.cell, F.octaves, F.gain, seed + 4) - 0.5) * F.far, fy = (cloud(x, y, F.cell, F.octaves, F.gain, seed + 5) - 0.5) * F.far;
+  const wx = (cloud(x + fx, y + fy, W.cell, W.octaves, W.gain, seed + 2) - 0.5) * W.far, wy = (cloud(x + fx, y + fy, W.cell, W.octaves, W.gain, seed + 3) - 0.5) * W.far;
+  return smooth(at, at + L.over, cloud(x + fx + L.wide * wx, y + fy + L.wide * wy, L.cell, L.octaves, L.gain, own));
+}
+
 // What the hidden sky is made of at a place: where it may be, how near the band or the cloud, the band's far stars
 // too fine to be points, and the dark lanes that thin both.
 export function deepField(p: SkyPlan, x: number, y: number): DeepField {
@@ -104,13 +149,38 @@ export function deepField(p: SkyPlan, x: number, y: number): DeepField {
   const band = Math.exp(-0.5 * ((a / B.along) ** 2 + (b / B.across) ** 2)) * top;
   const t = (C.turn * Math.PI) / 180, dx = X - C.x, dy = Y - C.y, cu = (dx * Math.cos(t) + dy * Math.sin(t)) / C.rx, cv = (-dx * Math.sin(t) + dy * Math.cos(t)) / C.ry;
   const low = Math.exp(-0.5 * (cu * cu + cv * cv));
-  const bx = (f.a * p.band.rx) / (p.u * B.stretch), by = (f.b * p.band.ry) / p.u;
-  const wx = (cloud(X, Y, 380, 3, 0.55, 2) - 0.5) * 240, wy = (cloud(X, Y, 380, 3, 0.55, 3) - 0.5) * 240;
-  const inBand = smooth(0.46, 0.66, cloud(bx + wx, by + wy, 280, 5, 0.62, 7)), inLow = smooth(0.5, 0.7, cloud(X + wx, Y + wy, 280, 5, 0.62, 5));
   const e = Math.hypot((x - p.words.x) / p.words.rx, (y - p.words.y) / p.words.ry);
-  const haze = Math.exp(-0.5 * ((a / B.haze[0]) ** 2 + (b / B.haze[1]) ** 2)) * (0.3 + 0.95 * cloud(X, Y, 260, 5, 0.6, 11)) * (1 - 0.85 * inBand) * smooth(1, 1.65, e) * top * mask;
+  const far = Math.exp(-0.5 * ((a / B.haze[0]) ** 2 + (b / B.haze[1]) ** 2)) * smooth(1, 1.65, e) * top * mask;
+  const inBand = band > FAINT || far > FAINT ? lanes((f.a * p.band.rx) / (p.u * B.stretch), (f.b * p.band.ry) / p.u, GAS.band.seed, GAS.band.lanes, GAS.band.lane) : 0;
+  const inLow = low > FAINT ? lanes(X, Y, GAS.low.seed, GAS.low.lanes, GAS.low.lane) : 0;
+  const H = GAS.haze, haze = far * (H.least + H.more * cloud(X, Y, H.cell, H.octaves, H.gain, H.seed)) * (1 - H.lanes * inBand);
   return { mask, env: Math.min(1.5, band + 0.55 * low + 0.03), haze, lanes: clamp(inBand * Math.min(1, band * 2.5) + inLow * Math.min(1, low * 2.5), 0, 1) };
 }
+
+// Where the hidden sky may be, for the gas's shader: one value for each GAS.mask CSS pixels across and down, each
+// the least of those round it so the gas never reaches past what the stars keep to.
+export function deepMask(p: SkyPlan): { data: Uint8Array; cols: number; rows: number } {
+  const M = GAS.mask, cols = Math.ceil(p.w / M) + 1, rows = Math.ceil(p.end / M) + 1, at = new Float32Array(cols * rows), data = new Uint8Array(cols * rows);
+  for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) at[j * cols + i] = allowed(p, Math.min(i * M, p.w), Math.min(j * M, p.end));
+  for (let j = 0; j < rows; j++) {
+    for (let i = 0; i < cols; i++) {
+      let least = 1;
+      for (let b = Math.max(0, j - 1); b <= Math.min(rows - 1, j + 1); b++) for (let a = Math.max(0, i - 1); a <= Math.min(cols - 1, i + 1); a++) least = Math.min(least, at[b * cols + a]);
+      data[j * cols + i] = Math.floor(least * 255);
+    }
+  }
+  return { data, cols, rows };
+}
+
+// What the gas's shader is told of a plan: the frames it works in and which way each sheet is lit, in the sheet's
+// own frame.
+export function gasFrame(p: SkyPlan): { band: [number, number, number, number]; axis: [number, number]; light: [number, number, number, number] } {
+  const t = (p.band.turn * Math.PI) / 180, c = Math.cos(t), s = Math.sin(t), rad = Math.PI / 180;
+  const b = [Math.cos(GAS.band.light * rad), Math.sin(GAS.band.light * rad)], l = GAS.low.light * rad;
+  return { band: [p.band.x, p.band.y, p.band.rx, p.band.ry], axis: [c, s], light: [(b[0] * c + b[1] * s) / GATHER.band.stretch, -b[0] * s + b[1] * c, Math.cos(l), Math.sin(l)] };
+}
+export const gasRamp = (): { at: number; tone: V3 }[] => GAS.ramp.map(([at, a, b, k, bright]) => ({ at, tone: scale3(mix3(shown(a), shown(b), k), bright * GAS.level) }));
+export const GAS_HAZE: V3 = scale3(WARM, GAS.haze.level);
 
 // One splat for each hidden star, laid out as the sky's own (SPLAT): where it is in device pixels, its light as a
 // share of full brightness, its size, how much of a soft glow it sits in, and how early the reveal shows it.

@@ -2,6 +2,37 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-26 · The deep sky's third piece: the warm gas (Fable, web chat)
+
+- **What he said:** nothing new. This is the third piece of what he said yes to on Nov 26, about 3:55 PM (`BRIEF.md`, Hero, "Yes to the sky as Fable recommended it"), built on his "Keep going" of about 8:25 PM. It went to him at about 10:40 PM as Hero - Still 27, the page beside the mockup he said yes to, with where it is short. Nothing in it is a ruling.
+- **Where it is:** the branch `slice/layered-hollow`, not pushed, behind `?sky=deep` as the first two pieces are. Without the switch none of it runs. Nothing in `src/stream` is changed.
+- **What is built:**
+    - The gas, every number of it in `GAS` in `src/hero/sky/deep.ts`: warm gas along the band of far stars and a smaller cloud low on the left. It is value noise folded by two warps into sheets, with fine threads, dark lanes and one side lit. The band's gas is two sheets (seeds 66 and 55, the second at 0.55) laid in the band's own frame. The cloud's is one (seed 73), kept to the middle of the oval its stars gather in (`GAS.low.tight`). Each place's dark lanes are folded as its first sheet is and seeded on their own (190 and 80).
+    - It is drawn once, when the sky is built, by `DEEP_GAS_FS` (`shaders.ts`) into a picture of its own with one texel for a CSS pixel: in its color the gas's light and the band's faint haze with its grain, in its alpha how early a place comes up. Nothing is rewritten after that. The deep pass (`DEEP_FS`) adds it by the same reveal as the hidden stars, the brightest gas first (`GAS.show`).
+    - Its tones are built from the palette (`gasRamp()`, `ember-deep` up to `copper-light`), and the haze's tint is the hidden stars' warm (`GAS_HAZE`). No color is written out.
+    - `deepMask(p)`: where the sky may deepen, one value for every 4 CSS pixels, from the same `allowed()` the stars use. So the gas stays off his words, the moon and the world's outline as the stars do.
+    - The hidden stars are now thinned by the gas's own dark lanes (`lanes()` in `deep.ts`, the same numbers as the shader), where the first piece had a stand-in.
+    - The dither is inside the sky's limit: a hidden star held at 235 stays at 235 with gas under it.
+- **How the numbers were chosen:** a port of the page's noise and of this recipe in numpy (`review/rv/gasport.py`, in the chat's workspace, not in the repository) was set against the mockup's own gas until the two measured alike, and the sheets' seeds were picked by eye from sheets of candidates beside the mockup.
+- **Measured:**
+    - The port at the page's numbers against the mockup's gas, as shares of the place: the band, mean 0.031 against 0.033, over a tenth of full 8.2 percent against 8.0, over a half 1.4 against 1.6. The cloud, mean 0.042 against 0.038, over a tenth 13.7 percent against 12.1, over a half 1.2 against 1.1.
+    - In node, on the home page's plan at 1440 by 900: the CPU's lanes against the port's 0.0001 apart at the root mean square, the mask (361 by 218) in 13 to 16 ms, 91,566 hidden stars in about 90 ms (the second piece had 88,742, the mockup 97,170).
+    - On `--png` stills of 2880 by 1800 from the production build, drawn in software, `/lab/hero?look=d&ui=0&sky=deep`:
+        - No pointer, against a still without the switch: 52 pixels differ, all low on the world (CSS x 472 to 994, y 840 to 868), where two takes of one address differ. None is in the sky. `/lab/sky` at rest against the second piece's still: 0 pixels differ.
+        - The pointer held on the band (226, 116), on the cloud (156, 536) and low on the left (200, 640): the gas's light, blurred over 6 px, is at hue 23 to 34. Nothing newly whitish, no changed pixel with more blue or green than red, nothing changed behind his words, nothing within 24 units over the outline, and nothing darker in the sky.
+        - Newly over 235: 2 pixels in each still, in two of today's bright stars with gas under them (234 to 238 and 235 to 236). Those stars are drawn after the deep pass, so the gas adds under them.
+        - The page against the port, where the port has gas: alike to 0.991 on the band and 0.989 on the cloud (blurred over 3 px), the page 1.5 and 1.3 levels over at the median, which is the stars on top.
+    - In the page here: 91,558 hidden stars. Making them and the mask took 297 ms of this sandbox's CPU (the second piece 214). The gas's one drawing took 15.3 s, in software: this sandbox has no GPU. Its picture is 1440 by 868 texels, 5 MB.
+- **Not measured, so not known:** how the gas comes up, follows and fades, frame time and memory on his Mac, and how long the gas's one drawing takes on a real GPU. `/` itself.
+- **Half finished, and known:**
+    - Short of the mockup, and said to him: the band's ribbons lie flatter than the mockup's and are fainter at its left end. The cloud is a different cloud, soft folds and one bright ribbon where the mockup had a pillar with a fan of threads. Near the cloud the hidden stars are fewer than the mockup's.
+    - One texel for a CSS pixel, so on a 2x screen the threads are softer than the mockup's, whose gas was made at the screen's own pixels. Two texels would be four times the memory (about 14 MB already on his 5K screen at one) and four times the drawing.
+    - The gas is drawn in one go when the sky is built. Before the deep sky could be the default: in strips over several frames, or when the pointer first comes into the sky.
+    - Today's bright stars are drawn after the deep pass, so gas under one adds to it: up to 4 levels, in 2 pixels of each, in these stills.
+    - The threads share the body's wide warp, and the mockup's faint gas over the whole sky (under one level) is left out.
+    - Next: the two galaxies, the cluster above his name and the far galaxies, then the sky's own bright stars brightening within reach. `STARS.keep` is still left alone.
+- **How to see it:** `/lab/hero?look=d&sky=deep`. Move the pointer onto the band of far stars, upper left, or low on the left above the far towers.
+
 ## 2026-11-26 · The deep sky's second piece: the world's real outline (Fable, web chat)
 
 - **What he said:** nothing new. This is the second piece of what he said yes to on Nov 26, about 3:55 PM (`BRIEF.md`, Hero, "Yes to the sky as Fable recommended it"), built on his "Keep going" of about 8:25 PM. It was not shown to him: it changes where the hidden stars may be, not how they look. Nothing in it is a ruling.
