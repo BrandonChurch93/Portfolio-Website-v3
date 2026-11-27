@@ -48,6 +48,54 @@ const video = (src: string, alt: string): Shot => ({ src, alt, caption: 'A video
 // its text, its stack grouped here, and its figures. The opening paragraph above an overview is kept only where the
 // overview does not already say it.
 export const projects: ProjectPage[] = [
+  // From the project's own session, Nov 26 (Cyberpunk Car Showcase - Portfolio Entry.md in the portfolio folder of
+  // its repository), each figure with its source there. A draft of his to rewrite. The film is the cut without the
+  // prompt (BRIEF.md, Open 33: no project says an AI agent built it). The entry's words are kept, but for one phrase:
+  // where it says the loop and the screenshot are "in this folder", the page says they are on the project's card.
+  {
+    kind: 'study',
+    slug: 'cyberpunk-car-showcase',
+    sub: 'A supercar in the rain on a neon rooftop, drawn frame by frame to its own score.',
+    shots: [
+      { src: '/media/work/cyberpunk-car-showcase-poster.webp', alt: 'A film of 46 seconds with music: a dark supercar on a rain soaked neon rooftop wakes its lamps, the camera moves in close over the paint, a wheel, the deck water and a headlamp, the engine starts and stops, and the camera pulls back to the opening view.', caption: 'The film, 46 seconds, with its music and the engine.', slot: 'video', video: '/media/work/cyberpunk-car-showcase-video.mp4' },
+      { src: '/media/work/cyberpunk-car-showcase-1.webp', alt: 'Close on a curved body panel lit pink and violet by the billboard, covered in rain beads, with a sharp reflected edge across it.', caption: 'Rain beads on the paint under the billboard’s light.' },
+      { src: '/media/work/cyberpunk-car-showcase-2.webp', alt: 'Close on a front wheel with dark spokes and a red caliper, rain on the tyre and water spraying off the wet deck beside it.', caption: 'The front wheel, wet, with water on the deck.' },
+      { src: '/media/work/cyberpunk-car-showcase-3.webp', alt: 'Low across the wet deck, the billboard’s pink and violet reflection breaks up in rings and ripples as the bass hits.', caption: 'The deck water breaks up on a bass drop.' },
+      { src: '/media/work/cyberpunk-car-showcase-4.webp', alt: 'Close on a headlamp: two round projectors behind wet glass and a bright white running light bending across the front.', caption: 'Inside the headlamp, rain beads on the glass.' },
+      { src: '/media/work/cyberpunk-car-showcase-5.webp', alt: 'The car from low behind, red tail lamps lit, exhaust steam rising into the rain against neon towers and the billboard.', caption: 'Engine running, the exhaust plume rising into the rain.' },
+    ],
+    proved: [
+      { value: '46', label: 'seconds of film, opening and closing on one picture' },
+      { value: '2,760', label: 'frames at 60 a second, each computed in code' },
+      { value: '23', label: 'bars of music at 120 beats a minute, the film’s clock' },
+      { value: '175', label: 'measured bass hits that the water on the deck follows' },
+    ],
+    why: [
+      'The film is meant to stop someone who has scrolled past a thousand slick car videos, and to hold up when they replay it to work out whether it is real. The setting can be impossible, a city with more signs and more layers than any city has, but the rain, the wet concrete, the paint and the light have to behave the way they do on camera.',
+      'It also has to work as one piece. It plays muted at first and loops, so the last frame must lead back into the first with no seam. The music, the engine and the picture have to agree to the frame: a cut on a downbeat, the water answering each bass hit, the exhaust answering each rev. And rain, grain and dark gradients are the first things a video upload destroys, so the picture has to survive being compressed.',
+    ],
+    what: [
+      'Cyberpunk Car Showcase is a film of 46 seconds at 1920 x 1080 and 60 frames a second, with music. A mid-engined supercar is parked across the bay lines on the open top deck of a multi-storey car park, at night, in heavy rain, among towers of neon signs and a large animated billboard. The car sits dark, its lamps wake in stages, and the camera moves in close over beads on the paint, a front wheel, the water on the deck, a headlamp and a grille. The engine starts, the exhaust plume sweeps the rain aside, the engine stops, and the camera pulls back to the opening picture so the film loops.',
+      'None of it is footage. A web scene draws every frame: the car, built in code; the deck with its puddles, drains, rails and light poles; the city, its signs and billboard; layered rain with splashes, ripples, beads and run-off; ray marched haze and beams; and a lens with depth of field, oval bokeh, glare, grain and a grade. Apart from three free texture sets and three open fonts, everything in the picture is made in the repository, and no sign carries a real brand.',
+      'The music sets the time. The score, with the engine recording mixed in, is mapped to bars and beats, and two tables measured from it drive the picture: one of bass hits for the water and one of engine speed and level for the car and the air behind it. Nothing in the scene keeps a clock of its own. In the opening and closing wide shots the billboard, the signs and two light strips on the parapet brighten on bass hits of the score; in the close-ups and the loop they hold steady. The same scene also gives the separate 9 second loop and the screenshot on this project’s card, both starting from the film’s hero pose.',
+    ],
+    how: [
+      { title: 'The score is the clock', text: 'The picture is built to the score, never the other way round: 23 bars at 120 beats a minute, scenes changing on phrase boundaries and shots on downbeats. Every cue is written as a bar and a beat, compiled to frames and checked against the map of the music.' },
+      { title: 'The water follows the bass', text: '175 hits measured from the score, five of them large sub bass drops, send rings out from the tyres and throw small drops off the deck. The biggest picture in the film goes to the strongest drop, at 36.005 seconds.' },
+      { title: 'The engine is read, not animated', text: 'Engine speed comes from the firing frequency of the recorded take, from the start at 30 seconds to the stop at 37. It drives the exhaust jet, the plume, the rain swept through it and the beads shaken loose. The true body roll on start is about 0.05 degrees, under a pixel, so it is one of only two numbers allowed to go past physics, and it is declared as such.' },
+      { title: 'A lens that behaves like a lens', text: 'Focal lengths come only from 24, 35, 50, 85 and 100 mm, with an anamorphic oval aperture. Depth of field comes from sampling the aperture, not from a blur filter, and focus is pulled, never snapped.' },
+      { title: 'One pose opens, closes and starts the loop', text: 'The hero pose at 6.5 seconds is the frame the screenshot and the 9 second loop start from. The film opens and closes on one composition, and the loop’s camera passes through that exact pose at both ends with matching speed and acceleration, so it joins with no dissolve.' },
+      { title: 'A frame is a function of its time', text: 'No randomness and no wall clock touch a pixel: every system runs from one seed and is periodic over the film. For a given build of the scene and render setting, any frame drawn alone gives the same image as the same frame drawn in sequence, so the film could be drawn in parts and joined.' },
+    ],
+    built: [
+      ['Scene', ['TypeScript', 'three.js', 'WebGL 2', 'GLSL shaders', 'GSAP for easing']],
+      ['Time and music', ['A map of the score in bars and beats', 'Measured tables of bass hits and engine speed', 'Python with NumPy and SciPy']],
+      ['Drawing the frames', ['Node.js', 'Playwright', 'A browser without a window', 'Software WebGL']],
+      ['Film and pictures', ['ffmpeg', 'H.264', 'AAC', 'WebP', 'An MP4 muxer in the page for export']],
+      ['Site', ['Vite', 'Plain HTML and CSS Modules']],
+      ['Checks', ['Vitest', 'The harness gates in tools/']],
+    ],
+  },
   // From its own repository, Nov 24: README.md, kit/02A-PRODUCT.md, kit/02B-WORLD.md and config/showcase.json, each
   // figure from there. A draft of his to rewrite. The film is the cut without the prompt, which opened on a tool's
   // prompt box (BRIEF.md, Open 33: no project says an AI agent built it).
