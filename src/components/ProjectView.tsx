@@ -118,7 +118,7 @@ function Study({ page, item, prev, next }: Found & { page: StudyPage }) {
             shots={page.shots}
             aspect={STUDY_ASPECT}
             label={`${item.name}, video and pictures`}
-            under={<div className={styles.links}>{item.links.map((l, i) => <MetalButton key={l.label} label={l.label} variant={i === 0 ? 'primary' : 'accent'} href={l.href} />)}</div>}
+            under={item.links.length > 0 ? <div className={styles.links}>{item.links.map((l, i) => <MetalButton key={l.label} label={l.label} variant={i === 0 ? 'primary' : 'accent'} href={l.href} />)}</div> : undefined}
           />
         </div>
         <ul className={styles.figures} style={{ '--figures': page.proved.length } as CSSProperties}>

@@ -214,22 +214,36 @@
 
 .links > a,
 .links > button {
+  --least: 6.5rem;
   flex: 1 1 0;
   width: auto;
-  min-width: 6.5rem;
+  /* The links share their row equally, and none is narrower than its own words: a third of a phone's width cut
+     into "View it live". */
+  min-width: max(var(--least), calc(var(--chars) * 0.55rem + 1.75rem));
   max-width: 15rem;
 }
 
-/* On the narrowest phones three links keep to one row: at their usual least width the third fell under the other
-   two, alone. */
+/* On a phone three links keep to one row: the one with the most words takes what it needs and the other two share
+   the rest. At their usual least width the third fell under the other two, alone. */
+@media (max-width: 479.98px) {
+  .links > a,
+  .links > button {
+    --least: 4.5rem;
+  }
+}
+
 @media (max-width: 379.98px) {
   .links {
     gap: var(--space-2);
   }
+}
 
-  .links > a,
-  .links > button {
-    min-width: 5.4rem;
+/* Narrower than that the three have no room on one row: the first has a row to itself and the other two share
+   the next. */
+@media (max-width: 339.98px) {
+  .links > :first-child:nth-last-child(n + 3) {
+    flex-basis: 100%;
+    max-width: none;
   }
 }
 

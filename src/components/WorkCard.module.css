@@ -209,6 +209,7 @@
   padding: 0 0.7em;
   color: var(--copper-light);
   text-decoration: none;
+  white-space: nowrap;
   transition: color var(--dur-1) var(--ease-settle);
 }
 
@@ -274,6 +275,21 @@
 .card:has(.links a:hover) .arrow,
 .card:has(.links a:focus-visible) .arrow {
   translate: 0 0;
+}
+
+/* Under 360 px "View it live", Evals, Code and Case study do not fit the foot's one row: where a foot holds more
+   than one link, a link that says what it opens in several words (Play it, View it live, How it’s made) shows its
+   first word only, and a reader still hears all of it. A foot with one link keeps its words at every width ("How"
+   alone does not say where the click goes): the longest of them has the room on the narrowest card, 220 px. */
+@container (max-width: 359.98px) {
+  .links:has(li + li) .rest {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
 }
 
 /* Under 290 px three links and Case study do not fit the foot at their own size: they close up, so the foot stays
