@@ -273,8 +273,8 @@ export const standIns = (items: WorkItem[]): number => items.filter((i) => i.sta
 
 // His games. From each project's own session, a draft of his to rewrite.
 export const played: WorkItem[] = [
-  // Halation v2, a project of its own beside the first (his word, Nov 26). From its repository's README and kit. Its
-  // link is the address he gave on Nov 26, which opens on a page titled with the tool it was made with.
+  // Halation v2, a project of its own beside the first (his word, Nov 26). From its repository's README and kit.
+  // Play it opens the game's own site: the address he gave on Nov 26 asks a visitor to sign in (`BRIEF.md`, Open 33).
   {
     slug: 'halation-v2',
     name: 'Halation v2',
@@ -286,7 +286,7 @@ export const played: WorkItem[] = [
     picture: { src: '/media/work/halation-v2-card.webp', alt: 'A grey arrowhead ship with twin blue engine plumes skims a wet metal deck crossed by channels of cyan light, toward glowing orange and purple machines and a burst of pink sparks.', focus: [0.5, 0.5], loop: '/media/work/halation-v2-loop.mp4' },
     page: `${ALL_WORK}/halation-v2`,
     links: [
-      { label: 'Play it', href: 'https://www.perplexity.ai/computer/a/f83016cc-58f5-49b6-9360-28ea1cbd8046' },
+      { label: 'Play it', href: 'https://space-shooter-game-v2-rust.vercel.app/' },
       { label: 'How it’s made', href: 'https://www.perplexity.ai/computer/a/halation-v2-review-CkmYRdwySsSAYvQG6.wVbA' },
     ],
     subs: ['Web'],

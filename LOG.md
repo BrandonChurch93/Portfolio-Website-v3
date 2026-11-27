@@ -2,6 +2,21 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-27 · Halation v2: Play it opens the game's own site, prepared for his choice (Fable, web chat)
+
+- **What was found**, by the chat he keeps his projects in, in a browser with no account signed in (Nov 27, 1:57 AM): on the live site, Play it on Halation v2 opens a page that reads "This artifact is private" over a box to sign in. Seen from the web chat's own browser too. So a visitor cannot reach the game from his portfolio today.
+- **He has not chosen between the two fixes.** This is the first of them, as one commit of its own on the branch `content/review-links`, so it can be dropped if he picks the other:
+    - **This commit:** Play it opens the game's own site, `https://space-shooter-game-v2-rust.vercel.app/`. `BRIEF.md` (Open 33, "The fifth is in") already said its address goes in as its first link once it is hosted. It also takes the link off a page titled with the tool.
+    - **The other:** the page at the address he gave on Nov 26 is made public, in the chat that owns it, and the link stays as he gave it. Then this commit is dropped. That page's access was not touched from here.
+- **Done:** the address in `src/content/work.ts` and the note above the entry, one bullet in `BRIEF.md` (Open 33, under "The fifth is in"), a line in `PLAN.md` and this entry. The words Play it, the card and the page are as they were.
+- **Measured (Chromium, drawn in software):**
+    - **The game's own site opens with no account:** it answers 200, is titled HALATION, draws its title screen over the 3D deck on a canvas of 1280 by 720, and reports no error.
+    - **Halation v2's review page links the same address,** as Play the game.
+    - **On a production build of the branch,** Play it on Halation v2's page and on the home page opens that address, with How it's made after it as it was. The address he gave is nowhere in what is served. The buttons of the other 13 pages are as the commit before left them.
+- **Not known:** how the game plays on a phone or in Safari. Here it was opened, not played.
+- **Half finished:** nothing in this piece. It waits for his choice.
+- `npm run typecheck` and `npm run build` pass.
+
 ## 2026-11-27 · The films' review pages linked from their projects, as a pull request (Fable, web chat)
 
 - **What he asked**, in the chat he keeps his projects in, passed to this one with his words (Nov 27, 12:32 AM): "Make sure all the other films I've created that are on my portfolio are public review pages, we also need to go through the past chats and they need to doctor up the review pages and get it ready for the portfolio showcase. The cyberpunk one was done really well. The other one should fit a similar vibe, matching its own aesthetic of the project. Those should be made public, if already not. Go ahead and grab the links from them and pass all this to the portfolio chat. Let him know that he may need to update links if things haven't already been set up that way". In exact terms: each film on the site has a public review page, made ready by the chat that built its project, and its address is passed here to be linked.
