@@ -2,6 +2,55 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-27 · The empty ground by the pyramid: what he asked, and what was recommended (Fable, web chat)
+
+- **What he said** (Nov 27, 2:14 PM, in the web chat: `BRIEF.md`, Hero, "The ground in front of the pyramid and to its right is empty, and he wants it filled"): "One more thing I do wanna discuss is in front of the pyramid and to the right of it is just this blank space of nothing. I feel like we should extend the foliage to in front of the pyramid, and I would love to build like some type of like statue or monument that can fill in that void. I also think the foliage or other object should fill in the blank space around the statue that way we don't have this open spot of nothing on the top. What are your thoughts on that? Would love some recommendations". His word, and a question. Nothing is built, and nothing in `src/` changed for this entry.
+- **The place, measured on a still** of `/lab/hero?look=d&ui=0&sharp=0` at 1440 by 900 at 2 device pixels, the page 450 px down, tier high:
+    - The flat paving on the top's front edge, in front of the pyramid and to its right as far as the avenue that runs to the spire: CSS x 372 to 762, y 391 to 442. About 390 px wide, and at most 35 px deep.
+    - The pyramid: its apex at (349, 311), the corners of its base at (247, 405), (370, 437) and (487, 409).
+    - With the page at the top, that ground lies along the foot of the first screen, so what stands there is seen when the page opens.
+- **Why it is bare:** on purpose. `APRON = { across: [0, 160], toward: 100 }` in `src/pieces/world/parts/trees.ts` keeps the trees off it, after picture 9's bare broken ground. His own rule of Nov 15, "No bare patches on top", is the one it does not meet.
+- **What was given to him:** one sheet, "Hero - Still 38 - The empty ground by the pyramid, marked" (1472 by 1695): the top as it is, the same with three marks (the empty ground outlined, where a monument could stand and how tall, where the planting would be carried on), and where that ground is on the first screen. The marks are outlines: a place and a size, not a design. It is made by `review/rv/ground/groundsheet.py` in the web chat's own folder, which is not in the repo.
+- **Fable's recommendations** are in `BRIEF.md` under the same bullet: one monument about half the pyramid's height, three kinds in Fable's order (a guardian lying beside the pyramid, an armillary of gold rings, three standing stones with mirror caps), a low copper hedge along the pyramid's front and a grove round the monument, none of it toward the dunes. None is a ruling.
+- **What is next, and it waits on him:** pictures of the real top with each kind in place, on one sheet, for him to pick from. They are three image generations, which are billed, so they are made only with a plan said first. Nothing on the top changes before he has picked.
+- **Not done, and where it is picked up:**
+    - The handhelds' pictures of the new world wait on this, so they are taken once.
+    - Work's derby of statues (`/lab/work-guardians`) still waits on his pick. A statue on the top can be of the family he picks there.
+- Checked: the sheet looked at whole and in its two halves. `npm run typecheck` passes.
+
+## 2026-11-27 · The sand under the pointer: grains glint, and nothing is moved (Fable, web chat)
+
+- **What he said** (Nov 27, 2:10 PM, in the web chat: `BRIEF.md`, Hero, "He picked B, the grains that glint"): "Let's go with your recommendation! I think the sand glinting is probably the best way to handle this instead of manipulating it that will solve all the issues we had while making it still visually appealing". The recommendation was B · Grains glint. A ruling.
+- **What changed:** B is what `?look=d` does. In `src/pieces/world/parts/rock/falls.ts` and `parts/rock/drawn.ts` the switch `?sand=` is gone, and with it `ANSWERS`, `Answer`, `answerOf`, `TURNED`, `PARTED`, `CALM` and `moved()`: the push the sand was built with, which made the strings, and the choices A and C. What the pointer does to the sand is said once, in `CURSOR` in `falls.ts` (`light: 2.2`, `air: 0.55`, `dust: 1.6`). `GLINTS` and `GLITTER` are as they were, and the dunes' glitter is no longer under `#ifdef`. `falls(uniforms, lamp, box)` takes no answer. Nothing in `src/stream`.
+- **In exact terms:** the pointer lights the sand and never moves it. Single grains of a fall near the pointer glint as they turn, and the dunes' surface glitters under the pointer in the pointer light's own gold. The crests' dust takes none of the pointer's light and does not move. Sand in the air takes 0.55 of the light the wall under it takes. With no pointer near, the falling sand is as it was.
+- **"Instead of manipulating it"** is taken as his rule: no answer to the pointer moves the sand. C, the lean, does not come back unless he asks for it.
+- **Measured**, on stills of the production build of this entry's code, drawn in software: `/lab/hero?look=d&ui=0&sharp=0`, 1440 by 900 at 2 device pixels (5,184,000 pixels a still), the page 450 px down, tier high, the clock held at 4 seconds, with no pointer and with the pointer's light at five places (the fall off the corner and just left of it, the big crest, the dunes' face, a veil). The load: 0 errors. The stills are in `shots/sand/pick-built/`, not committed.
+    - Against the stills of `?sand=glint` he was shown, on the sand's side of the screen (right of CSS x 1000, 1,584,000 pixels): 0 pixels differ in all six.
+    - Against the same stills, over the whole screen: 46 to 52 pixels differ in a still, by 16 levels at the most, all of them left of the sand's side. They are the run along the pyramid's foot named in the entry of the three choices, below, and a few single places.
+    - With no pointer, against the still with no switch of the build before this one (`shots/sand/hi-built/`): 5 pixels differ, by 1 level, at CSS x 983 to 989, y 387 to 418, the known flicker low in the hollow.
+    - So the run along the pyramid's foot is not from the sand's code. This build has the glint's code and places that edge where the load with no switch placed it. The load of `?sand=glint` in the entry of the three choices placed it half a pixel off. Why one load places it one way and another the other is still not known.
+- **Not known:** how it moves. The sandbox draws in software and cannot judge motion. Safari is not checked.
+- **Not done, and where it is picked up:**
+    - The embers under the planet are pushed by the pointer too (`STIRRED` in `parts/rock/embers.ts`). He did not name them, so they are as they were.
+    - What the falling sand is on a handheld, where the world is a picture, is his to rule when the handhelds' pictures are shown.
+- Checked: `npm run typecheck` passes. The production build passes. Stills as above.
+
+## 2026-11-27 · Try it out, the arrow and How it's made are on `main`, by his word (Fable, web chat)
+
+- **What he said** (Nov 27, 2:11 PM, in the web chat: `BRIEF.md`, Open 33, "Try it out, the arrow and How it's made are on `main` by his word"): "Oh, and yes, you can merge the pool request. I would love to see this live on the actual site as well as all the other updates you've made go ahead and give me the link so I can view it live once you've done that." Dictated: pool is pull.
+- **What he was answering:** the web chat's list of what waited on his word, sent at about 2:09 PM, which read: pull request 3, say "merge pull request 3", and pull request 4 goes in after it.
+- **What was done:**
+    - Pull request #3 (Try it out, and the arrow on a project page's main button) went in as it stood at 2:12 PM, by a merge: 1c2edc9.
+    - Pull request #4 (the films' review pages, and Halation v2's Play it) went in at 2:13 PM, by a merge: 4819d51.
+    - Vercel's production build of 4819d51 passed.
+- **Read on the live site at 2:18 PM,** `https://portfolio-website-v3-wheat.vercel.app`:
+    - `/work/desktop-pc-builder` and `/work/meridian`: Try it out, and How it's made.
+    - `/work/halation-v2`: Play it, which opens `https://space-shooter-game-v2-rust.vercel.app/`, and How it's made. The address of the private page he gave is nowhere in that page.
+    - `/work/halation`, `/work/kestrel` and `/work/sunflower`: How it's made.
+- **Halation v2's Play it is not his ruling.** It rode in with pull request #4 as one commit of its own. The list he answered named it apart from the pull requests, as Fable's recommendation, and his answer did not name it. It is said to him plainly, and it is his to overturn: if he would rather have the page he gave made public, the link goes back as he gave it. That page's access is not touched from here (`BRIEF.md`, Open 33, "The first went in").
+- **"As well as all the other updates you've made"** is the hero on the branch `slice/layered-hollow`. It is not on `main` yet, and what is done on that word is in `BRIEF.md`, Hero, "He wants to see the new hero, and everything else made, live on the actual site", and in `PLAN.md`, Now.
+- Checked: both merges read on GitHub. Vercel's build read as passed. The six pages read as above.
+
 ## 2026-11-27 · The sand under the pointer: three choices behind a switch (Fable, web chat)
 
 - **What he said** (Nov 27, 11:17 AM, in the chat he keeps his projects in, passed to the web chat with his words quoted: `BRIEF.md`, Hero, "The sand's answer to the pointer is not liked"): "It looks like strings with an interact with the mouse. I don't like it. I think we need to come up with a new mouse effect for the sand, dune sand or figure out a more refined way to implement that I like the sand falling off." He is shown choices and picks. Nothing in this entry is a ruling.
@@ -35,7 +84,7 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
     - With the pointer on the fall off the corner, the pixels on the sand's side at 250 or over in any channel: 6,940 as built, 6,580 (`calm`), 6,583 (`glint`), 6,579 (`part`). None of the three is brighter than today's answer.
 - **What was looked at**, on crops of those stills and of the close view's (`review/rv/sand/look/`): as built, the strings and the lit dust described above. `calm`: the fall stays one band of fine threads, a little lighter under the pointer, and the dunes' hollow faces are lit smoothly. `glint`: fine pale gold points on the dunes round the pointer and more and wider grains in the fall. `part`: the fall hangs to one side of where it was, in one piece.
 - **Not known:** how any of the three moves. The sandbox draws in software and cannot judge motion: how fast the glitter changes under a moving pointer, and how the fall swings aside and comes back, are his to see on his Mac at the branch's live address. Safari is not checked.
-- **Shown to him** (Nov 27, about 2:15 PM): the three addresses and a sheet of stills, "Hero - Still 37 - The sand under the pointer, today and three choices - 1472x2504": today's answer beside A, B and C on the fall off the corner, the dunes with no pointer near and with the pointer on the big crest, and the veils. Crops of the stills above at about one device pixel to one of the sheet's, with where the pointer is marked on each. The addresses are the branch's live address and `/lab/hero?look=d&sky=deep&ui=0&sharp=0&sand=calm`, `&sand=glint` and `&sand=part`.
+- **Shown to him** (Nov 27, about 2:09 PM): the three addresses and a sheet of stills, "Hero - Still 37 - The sand under the pointer, today and three choices - 1472x2504": today's answer beside A, B and C on the fall off the corner, the dunes with no pointer near and with the pointer on the big crest, and the veils. Crops of the stills above at about one device pixel to one of the sheet's, with where the pointer is marked on each. The addresses are the branch's live address and `/lab/hero?look=d&sky=deep&ui=0&sharp=0&sand=calm`, `&sand=glint` and `&sand=part`.
 - **Not done, and where it is picked up:**
     - His pick. Then the pick becomes what `?look=d` does, the other two and the answer as built are deleted from `falls.ts` and `drawn.ts`, and `ANSWERS` goes with them.
     - The embers under the planet are pushed by the pointer too (`STIRRED` in `parts/rock/embers.ts`). He did not name them, so they are as they were.
