@@ -2,6 +2,27 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-26 · The deep sky's first piece: the switch and the hidden stars (Fable, web chat)
+
+- **What he said:** his yes of Nov 26, about 3:55 PM ("The plan you have for the sky looks incredible!": `BRIEF.md`, Hero, "Yes to the sky as Fable recommended it"). He has this piece as a sheet of stills in the web chat, not in the page on his Mac. He has not answered it, and nothing in it is a ruling.
+- **Where it is:** the branch `slice/layered-hollow`, not pushed, behind `?sky=deep` (`isDeep` in `src/hero/sky/deep.ts`) on `/`, `/lab/hero` and `/lab/sky`. Without the switch none of it runs and nothing of it is made. Nothing in `src/stream` is changed.
+- **What is built:**
+    - `deepStars` makes the hidden stars once, when the sky is built: 94,249 on the home page's plan at 1440 by 900 (the mockup had 97,170). They gather along the band and round a cloud low on the left, there are none behind his words' block or on the moon, and they thin toward the world's glow (`allowed`). They are drawn once into their own picture (`plate` in `index.ts`) in display levels. Its fourth channel keeps how early the reveal shows each.
+    - `follow` turns the pointer into a few numbers a frame: itself and up to 16 pools it has left behind, each gone 1.6 seconds after it was dropped. `DEEP_FS` lays the picture over today's sky where they reach, in one pass over the pools' box, after the sky's own picture and before the bright few. The reveal at a pixel is the most any one pool gives it. No buffer is written after the build (the Safari rule).
+    - What is added keeps its color and is held at the limits: 235 for the brightest channel and 190 for the least, less the page's ground, since the sky's canvas is added to it (`DEEP_CAP`). It is never under what today's sky has there.
+    - A pointer at rest asks for no frame of its own (`mark` in `key()`). A handheld and a visitor who asks for reduced motion get no deep sky: nothing is made for them.
+- **Measured, on `--png` stills of 2880 by 1800 from the production build, drawn in software:**
+    - `/lab/sky`, switch on and no pointer, against no switch: 0 of 5,184,000 pixels differ. `/lab/hero?look=d&ui=0`, the same pair: 30 differ, all low on the world (CSS x 460 to 1000, y 830 to 872), where two takes of the same address without the switch differ in 34. None is in the sky.
+    - The reveal held at five places with `__site.call('skyDeep', x, y, 1)`: the band (226, 116), his name (720, 316), the moon (1278, 130), low on the left (200, 640), the right (1250, 560). In the sky nothing is darker than today, nothing is newly over 235, nothing is newly whitish (the highest least channel is 190), and no lit pixel has more blue or green than red. The lit pixels' hue is 23 to 26 at the median (5th percentile 17, 95th 30). Behind his words (CSS 366 to 1078 by 150 to 470) nothing changed, nor within 10 px of that block. Nothing changed within 56 px of the moon's center (its radius is 45.4). On the band 283,659 pixels changed.
+    - The stars' places show no grid: taken modulo the cell they are even, and the added light's autocorrelation has no peak at the cell's width.
+    - Making the stars took 174 ms of this sandbox's CPU (today's sky takes 194). It is done on the main thread when the sky is built.
+- **Not measured, so not known:** frame time and memory, and whether the reveal lags or shows an edge, on his Mac. How it comes up, follows and fades at all: the sandbox draws in software. `/` itself: a still of `/` did not finish here in seven minutes (the page waits for every piece), so the switch on `/` rests on its hero being the same component as `/lab/hero` (`HeroLab.tsx`).
+- **Half finished, and known:**
+    - Only the stars. Not built: the warm gas and the band's haze, the two galaxies, the cluster, the far galaxies, and the sky's own bright stars brightening within reach.
+    - Where the sky ends is a stand-in. The pointer counts as in the sky by `weigh().open`, which is still 0.8 to 1 over the land's shoulders and 0.78 at the spire's tip. The mockup stopped the reveal 30 px above a skyline drawn by hand, thinned the stars to nothing 24 to 110 px above it, and kept 6 percent of them inside the world's glow where this keeps about 35. Next: the world's real outline, worked out once from its layout and handed to the sky in its plan.
+    - Before it could be the default: the stars made when the pointer first comes into the sky, or in slices, not at the build. The bright few are drawn after the reveal, so a hidden star inside a spark's halo could pass 235 by a few levels. None did in the five stills.
+- **How to see it:** `/lab/hero?look=d&sky=deep`, or `/?sky=deep`, and move the pointer over the sky. For a still, hold it: `--eval "window.__site.call('skyDeep', 226, 116, 1)"`.
+
 ## 2026-11-26 · A review of Work's Sun stones and rails and of the stream, nothing changed (Fable, web chat)
 
 - **What he asked (Nov 26, 11:12):** `BRIEF.md`, Hero, "A review of three things, and nothing changed by it". The sky's part was given to him the same day. This is the rest: the two Sun stones, the two rails, the stream. Nothing in `src/` was changed and nothing was built.

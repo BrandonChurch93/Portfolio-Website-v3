@@ -43,7 +43,7 @@ export const TILT = 0.21;
 // "more stuff going on in the sky"): one every 20 to 40 seconds was a sky a visitor never saw move.
 export const METEORS = { count: 700, first: 2.5, every: [4, 11], dur: [0.38, 0.7], len: [80, 230], after: 0.32 } as const;
 
-const smooth = (a: number, b: number, x: number) => {
+export const smooth = (a: number, b: number, x: number) => {
   const k = Math.min(1, Math.max(0, (x - a) / (b - a)));
   return k * k * (3 - 2 * k);
 };
@@ -53,9 +53,10 @@ export const moonReach = (p: SkyPlan) => (p.moon.with === 'ring' ? 2.45 : p.moon
 export const SECOND = { dx: 1.55, dy: 1.3, r: 0.25 } as const;
 
 // How thick the sky is at a place: none behind the words, thinning toward them, fewer toward the city's glow and
-// none below where the sky ends. limit is how much brighter than the faintest a star has to be to show there.
-export function weigh(p: SkyPlan, x: number, y: number): { dens: number; limit: number; dim: number } {
-  if (y < 0 || y > p.end || x < 0 || x > p.w) return { dens: 0, limit: Infinity, dim: 0 };
+// none below where the sky ends. limit is how much brighter than the faintest a star has to be to show there. open
+// and moon are two of its parts: how much sky there is with the words and the moon left out, and how clear of the moon.
+export function weigh(p: SkyPlan, x: number, y: number): { dens: number; limit: number; dim: number; open: number; moon: number } {
+  if (y < 0 || y > p.end || x < 0 || x > p.w) return { dens: 0, limit: Infinity, dim: 0, open: 0, moon: 0 };
   const e = Math.hypot((x - p.words.x) / p.words.rx, (y - p.words.y) / p.words.ry);
   const clear = smooth(1, 1.38, e);
   const gd = Math.hypot((x - p.glow.x) / p.glow.rx, (y - p.glow.y) / p.glow.ry);
@@ -63,7 +64,7 @@ export function weigh(p: SkyPlan, x: number, y: number): { dens: number; limit: 
   const foot = smooth(p.end, p.end - 0.12 * p.h, y);
   const m = Math.hypot(x - p.moon.x, y - p.moon.y) / (p.moon.r * moonReach(p));
   const moon = smooth(1, 1.12, m);
-  return { dens: clear * foot * moon * (1 - g) ** 2, limit: 1 + 9 * g * g, dim: 1 - 0.55 * g };
+  return { dens: clear * foot * moon * (1 - g) ** 2, limit: 1 + 9 * g * g, dim: 1 - 0.55 * g, open: foot * (1 - g) ** 2, moon };
 }
 
 const power = (r: () => number, faint: number, slope: number, most: number) => {
@@ -85,13 +86,13 @@ const lattice = (i: number, j: number) => {
   h ^= h >>> 16; h = Math.imul(h, 0x7feb352d); h ^= h >>> 15; h = Math.imul(h, 0x846ca68b); h ^= h >>> 16;
   return (h >>> 0) / 4294967296;
 };
-function clump(x: number, y: number): number {
+export function clump(x: number, y: number): number {
   const i = Math.floor(x), j = Math.floor(y), fx = x - i, fy = y - j, u = fx * fx * (3 - 2 * fx), v = fy * fy * (3 - 2 * fy);
   const a = lattice(i, j), b = lattice(i + 1, j), c = lattice(i, j + 1), d = lattice(i + 1, j + 1);
   return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
 }
 
-const cellSeed = (i: number, j: number, k: number) => (Math.imul(i + 4099, 73856093) ^ Math.imul(j + 7919, 19349663) ^ Math.imul(k, 83492791)) >>> 0;
+export const cellSeed = (i: number, j: number, k: number) => (Math.imul(i + 4099, 73856093) ^ Math.imul(j + 7919, 19349663) ^ Math.imul(k, 83492791)) >>> 0;
 
 // The band in its own frame: across its length in rx, across it in ry.
 export function bandFrame(p: SkyPlan, x: number, y: number): { a: number; b: number } {

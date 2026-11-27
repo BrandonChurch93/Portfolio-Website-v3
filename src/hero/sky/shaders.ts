@@ -1,3 +1,5 @@
+import { DEEP } from './deep';
+
 // The sky's shaders. Everything is worked out in linear light in device pixels, y down, and turned into the
 // palette's tones only at the end (TONE): what is too bright goes to pale gold, never to white.
 
@@ -427,6 +429,57 @@ export const BLIT_FS = HEAD + /* glsl */ `
 uniform sampler2D uTex;
 out vec4 o;
 void main() { o = texelFetch(uTex, ivec2(gl_FragCoord.xy), 0); }`;
+
+// A hidden star of the deep sky (deep.ts), drawn once into its own picture in display levels: its light is added,
+// and where it is plain the picture's fourth channel keeps how early the reveal shows it, the earliest of any there.
+export const DEEP_STAR_FS = HEAD + COMMON + /* glsl */ `
+flat in vec2 vPos;
+flat in vec3 vCol;
+flat in vec3 vShape;
+uniform float uHalo;
+out vec4 o;
+void main() {
+  vec2 c = P() - vPos;
+  float I = pix(c.x, vShape.x) * pix(c.y, vShape.x);
+  if (vShape.y > 0.0) I += vShape.y * exp(-dot(c, c) / (2.0 * uHalo * uHalo)) / (6.2831853 * uHalo * uHalo);
+  vec3 col = vCol * I;
+  float most = max(col.r, max(col.g, col.b)) * 255.0;
+  if (most < 0.25) discard;
+  o = vec4(col, most > 0.6 ? vShape.z : 0.0);
+}`;
+
+// The deep sky shown over today's where the pointer and its pools reach. The reveal at a pixel is the most that any
+// one pool gives it, and a thing shows once the reveal passes its own threshold. What is added keeps its color: it
+// is held at uCap, and never under what today's sky has there.
+const POOLS = DEEP.pools + 1;
+export const DEEP_FS = HEAD + COMMON + /* glsl */ `
+uniform sampler2D uSky;
+uniform sampler2D uDeep;
+uniform int uDrop;
+uniform vec3 uPool[${POOLS}];
+uniform int uPools;
+uniform float uReach;
+uniform float uSoft;
+uniform vec2 uCap;
+uniform int uAdd;
+out vec4 o;
+void main() {
+  ivec2 at = ivec2(gl_FragCoord.xy);
+  vec4 base = texelFetch(uSky, at, 0), d = texelFetch(uDeep, at - ivec2(0, uDrop), 0);
+  vec2 p = P();
+  float rho = 0.0;
+  for (int i = 0; i < ${POOLS}; i++) {
+    if (i >= uPools) break;
+    vec2 v = p - uPool[i].xy;
+    rho = max(rho, uPool[i].z * exp(-dot(v, v) / (uReach * uReach)));
+  }
+  float th = 1.0 - d.a;
+  vec3 f = base.rgb + d.rgb * smoothstep(th, th + uSoft, rho);
+  float k = min(1.0, max(max(base.r, max(base.g, base.b)), uCap.x) / max(max(f.r, max(f.g, f.b)), 1e-3));
+  k *= min(1.0, max(min(base.r, min(base.g, base.b)), uCap.y) / max(min(f.r, min(f.g, f.b)) * k, 1e-3));
+  vec3 c = max(f * k, base.rgb);
+  o = uAdd == 1 ? vec4(c, 1.0) : vec4(c, max(base.a, max(c.r, max(c.g, c.b))));
+}`;
 
 // The bright few: a small hot core, a soft halo and four thin rays that taper to nothing, as a lens shows a
 // bright star. They are drawn every time the sky is, so they can twinkle.

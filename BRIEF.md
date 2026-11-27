@@ -1458,6 +1458,7 @@ For Claude Code, added to the work it has in hand. His words are in the list abo
     - **What it adds to, named to him in bold before he answered:** the agreement of Nov 14, item 9, whose sky holds stars, a moon, "a faint band of far stars" and a meteor. Galaxies and gas are new to it, and under the pointer the band is no longer faint. By this yes they are in. The rest of item 9 holds: none behind the words, none brighter than the world, and it "looks real and finely detailed, not a scatter of dots".
     - **Held:** everything in "More stars where the pointer is" above. Pale and warm at the palette's hue, no blue, nothing white. No circle's edge and no lag. No buffer rewritten every frame. A handheld has no pointer, so it keeps today's sky.
     - **Where:** in `src/hero/sky/`, on the branch `slice/layered-hollow`, behind a switch, and shown to him in the page beside today's sky before it becomes the default. What it costs a frame and in memory on his Mac is not known until it is built and run there.
+    - **Built so far (Nov 26, about 8:15 PM), and not a ruling:** the switch (`?sky=deep`) and the hidden stars, which come up where the pointer is. With no pointer the sky measures equal to today's to the pixel. He has it as a sheet of stills, not yet in the page on his Mac. The gas, the galaxies and the cluster are not built. `LOG.md`, Nov 26, "The deep sky's first piece".
 
 ### Work
 
