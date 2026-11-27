@@ -1,12 +1,13 @@
 import { hex, type PaletteName } from '../../config/palette';
 import { HOST, LAND, drawn, noise, ramp, seeded } from './layout';
 
-// The city going on behind the one that is built, as picture 10 has it (?look=d): a low warm haze over the land's
-// far edge and, in it, far towers as plain shapes at three depths, fainter the further, a few of their rooms lit.
+// The city going on behind the one that is built, as picture 10 has it (?look=d): a warm haze lying low over the
+// land's far edge and, in it, far towers as soft shapes at three depths, paler the further, a few of their rooms lit.
 // It is one picture, drawn once into a plain 2D canvas under the world's canvas: it shows only where the world is
-// clear, it costs nothing a frame, and nothing of the world is changed by it. It never moves.
-// It is the one thing of picture 10 that stands in the sky, which he asked to be left as it is, so it is his to
-// refuse: `on: false` takes it out.
+// clear, and it costs nothing a frame. It never moves. Being under the world it can never lie in front of a built
+// tower: the same haze among the city's own back rows is laid on by their shader (MIST in
+// ./parts/towers/materials.ts, which takes the haze's numbers and its color from here, so the two stay one haze).
+// `on: false` takes it out.
 export const FAR = {
   on: true,
   // How many of its pixels a unit is: on a desktop, and on an iPad or a phone.
@@ -18,21 +19,38 @@ export const FAR = {
   dust: 0.45,
   // How bright it is at the land's far edge, as a share of that color, how many units up it falls to about a third,
   // how far up it is gone, and how far under the edge it goes on, behind the land.
-  most: 1.25,
+  most: 0.6,
   falls: 85,
   tall: 230,
   under: 8,
+  // The thick of it, a bank lying among the towers, which is most of what picture 10's haze is: how bright it is,
+  // where its middle is across the host, how far from there it is whole and gone, how many units over the land's
+  // far edge it has thinned to half, and over how many units it thins (the fewer, the harder its top). The built
+  // city hides all of it but its top, and it is nearly gone by the tall towers' tops, so the sky over the city is
+  // as it was.
+  low: { most: 1.3, at: 630, wide: [240, 440], half: 91, soft: 12 },
   // How much of it is missing in its thinnest banks, and how many units across a bank is.
   banks: [0.14, 300],
   // The far towers, furthest first: how wide and how tall over the far edge they are, in units, how much of what is
-  // behind one it hides, how much of the haze is in front of it, and how bright its lit rooms are (0: it has none).
+  // behind one it hides, how much of the haze is in front of it, how bright its lit rooms are (0: it has none), and
+  // over how many units its edges melt into the haze, since a far thing seen through dust has no hard edge.
   towers: [
-    { wide: [9, 16], tall: [22, 58], hides: 0.2, front: 0.84, rooms: 0 },
-    { wide: [11, 20], tall: [22, 70], hides: 0.32, front: 0.74, rooms: 0.6 },
-    { wide: [13, 24], tall: [20, 84], hides: 0.46, front: 0.62, rooms: 0.9 },
+    { wide: [6, 12], tall: [60, 82], hides: 0.2, front: 0.84, rooms: 0, melts: 4 },
+    { wide: [7, 14], tall: [58, 88], hides: 0.32, front: 0.74, rooms: 0.6, melts: 3 },
+    { wide: [8, 16], tall: [54, 94], hides: 0.44, front: 0.64, rooms: 0.9, melts: 2.2 },
   ],
-  // Where across the host they begin and where they end, each over a fade, in units.
-  ends: [[110, 260], [980, 1150]],
+  // At how many places across a tower's edge is weighed to melt it.
+  weighed: 5,
+  // Where across the host the built city thins out, in units, and how much shorter the far towers are by the end of
+  // that. Behind the thick of the city only a far tower's top shows, so they stand tall there. Right of it they are
+  // seen whole in the gaps, and at that height they would stand as a second city and not a far one.
+  thins: [[735, 880], 0.36],
+  // How much haze a far tower needs round it to be seen whole. Where there is less it fades, so that none stands as
+  // a dark shape against the clear sky.
+  stands: 0.5,
+  // Where across the host they begin and where they end, each over a fade, in units. They end as the bank does, so
+  // that none is left standing dark where the haze has gone.
+  ends: [[110, 260], [870, 1070]],
   // The share of their rooms that are lit, and how far apart rooms are across and up, in units.
   lit: 0.05,
   room: [4, 5],
@@ -43,6 +61,8 @@ export interface Far {
 }
 
 const rgb = (name: PaletteName): [number, number, number] => { const n = hex(name); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+// The haze's color, in levels of 255: what the far picture is drawn in, and what the city's back rows go toward.
+export const DUST: readonly number[] = rgb('ember').map((v, i) => v + (rgb('bronze-deep')[i] - v) * FAR.dust);
 
 export function far(canvas: HTMLCanvasElement, handheld: boolean): Far | null {
   if (!FAR.on) return null;
@@ -62,11 +82,12 @@ export function far(canvas: HTMLCanvasElement, handheld: boolean): Far | null {
   const top = Math.floor(Math.min(...edge.map((p) => p[1])) - FAR.tall), foot = Math.ceil(Math.max(...edge.map((p) => p[1]))) + FAR.under;
   const tall = (foot - top) * dense;
 
-  const line = new Float32Array(wide), lit = new Float32Array(wide), shown = new Float32Array(wide);
+  const line = new Float32Array(wide), lit = new Float32Array(wide), low = new Float32Array(wide), shown = new Float32Array(wide);
   for (let c = 0; c < wide; c++) {
-    const x = (c + 0.5) / dense;
+    const x = (c + 0.5) / dense, thin = 1 - FAR.banks[0] * noise(x / FAR.banks[1], 0.5, 0.5, 5);
     line[c] = at(x);
-    lit[c] = FAR.most * (1 - ramp(FAR.wide[0], FAR.wide[1], Math.abs(x - FAR.at))) * (1 - FAR.banks[0] * noise(x / FAR.banks[1], 0.5, 0.5, 5));
+    lit[c] = FAR.most * (1 - ramp(FAR.wide[0], FAR.wide[1], Math.abs(x - FAR.at))) * thin;
+    low[c] = FAR.low.most * (1 - ramp(FAR.low.wide[0], FAR.low.wide[1], Math.abs(x - FAR.low.at))) * thin;
     shown[c] = ramp(FAR.ends[0][0], FAR.ends[0][1], x) * (1 - ramp(FAR.ends[1][0], FAR.ends[1][1], x));
   }
 
@@ -77,7 +98,7 @@ export function far(canvas: HTMLCanvasElement, handheld: boolean): Far | null {
     const tops = new Float32Array(wide), feet = new Float32Array(wide), rooms = kind.rooms > 0 ? new Uint8Array(wide * tall) : null;
     for (let x = FAR.ends[0][0] - R() * 12; x < FAR.ends[1][1];) {
       const w = Math.round(between(kind.wide)), middle = x + w / 2, base = at(middle);
-      const h = between(kind.tall, 2.2) * (0.78 + 0.22 * (1 - ramp(120, 520, Math.abs(middle - FAR.at)))), crown = R(), more = between([6, 18]), inset = between([0.2, 0.32]);
+      const h = between(kind.tall, 2.2) * (0.78 + 0.22 * (1 - ramp(120, 520, Math.abs(middle - FAR.at)))) * (1 - FAR.thins[1] * ramp(FAR.thins[0][0], FAR.thins[0][1], middle)), crown = R(), more = between([6, 18]), inset = between([0.2, 0.32]);
       for (let c = Math.max(0, Math.round(x * dense)); c < Math.min(wide, Math.round((x + w) * dense)); c++) {
         const off = Math.abs((c + 0.5) / dense - middle) / (w / 2);
         let up = h;
@@ -99,7 +120,18 @@ export function far(canvas: HTMLCanvasElement, handheld: boolean): Far | null {
       }
       x += w + (R() < 0.5 ? R() * 10 : -R() * 3);
     }
-    return { kind, tops, feet, rooms };
+    // To melt its edges: how many pixels each way the places weighed are from a pixel, and, over each column, the
+    // tallest and the highest standing of the towers within that reach, so a pixel clear of them all is passed over.
+    const reach = Array.from({ length: FAR.weighed }, (_, i) => Math.round(((i / (FAR.weighed - 1) - 0.5) * kind.melts * dense)));
+    const most = new Float32Array(wide), high = new Float32Array(wide);
+    for (let c = 0; c < wide; c++) {
+      for (const by of reach) {
+        const n = Math.min(wide - 1, Math.max(0, c + by));
+        if (!tops[n]) continue;
+        if (!most[c] || feet[n] - tops[n] < high[c] - most[c]) { most[c] = tops[n]; high[c] = feet[n]; }
+      }
+    }
+    return { kind, tops, feet, rooms, reach, most, high };
   });
 
   const under = document.createElement('canvas');
@@ -111,18 +143,24 @@ export function far(canvas: HTMLCanvasElement, handheld: boolean): Far | null {
   const pen = under.getContext('2d');
   if (!pen) return null;
   const picture = pen.createImageData(wide, tall), data = picture.data, grain = seeded(907);
-  const ember = rgb('ember'), bronze = rgb('bronze-deep'), haze = ember.map((v, i) => v + (bronze[i] - v) * FAR.dust);
+  const haze = DUST;
   const dark = rgb('bg'), room = rgb('flame'), gone = Math.exp(-FAR.tall / FAR.falls);
   for (let r = 0; r < tall; r++) {
     const y = top + (r + 0.5) / dense;
     for (let c = 0; c < wide; c++) {
       const h = line[c] - y;
       if (h < -FAR.under) continue;
-      const g = lit[c] * (h > 0 ? Math.max(0, (Math.exp(-h / FAR.falls) - gone) / (1 - gone)) : 1);
+      const g = lit[c] * (h > 0 ? Math.max(0, (Math.exp(-h / FAR.falls) - gone) / (1 - gone)) : 1) + low[c] / (1 + Math.exp((h - FAR.low.half) / FAR.low.soft));
       let red = haze[0] * g, green = haze[1] * g, blue = haze[2] * g, a = Math.max(red, green, blue) / 255;
       for (const d of depths) {
-        if (!d.tops[c] || d.feet[c] - y >= d.tops[c]) continue;
-        const hides = d.kind.hides * shown[c], lamp = d.rooms?.[r * wide + c] ? d.kind.rooms : 0, front = d.kind.front * g;
+        if (!d.most[c] || d.most[c] - (d.high[c] - y) <= 0) continue;
+        // How much of this pixel the depth's towers cover: 1 well inside one, less across its melted edge.
+        let covers = 0;
+        for (const by of d.reach) {
+          const n = Math.min(wide - 1, Math.max(0, c + by));
+          covers += Math.min(1, Math.max(0, (d.tops[n] - (d.feet[n] - y)) / d.kind.melts));
+        }
+        const hides = d.kind.hides * shown[c] * Math.min(1, g / FAR.stands) * (covers / FAR.weighed), lamp = d.rooms?.[r * wide + c] ? d.kind.rooms : 0, front = d.kind.front * g;
         red = (lamp ? room[0] * lamp : dark[0] + haze[0] * front) * hides + red * (1 - hides);
         green = (lamp ? room[1] * lamp : dark[1] + haze[1] * front) * hides + green * (1 - hides);
         blue = (lamp ? room[2] * lamp : dark[2] + haze[2] * front) * hides + blue * (1 - hides);

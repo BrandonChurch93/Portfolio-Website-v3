@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { hex } from '../../../../config/palette';
-import { MOONWARD, SCALE, ground } from '../../layout';
+import { DUST, FAR as HAZE } from '../../far';
+import { HOST, LAND, MOONWARD, SCALE, WORLD, ground } from '../../layout';
 import { STEP, TOWERS } from '../../placed';
 import { METAL, WARM as KEPT, lit } from '../../light';
 import { FRONT, LANTERN_AT, PALE_STONE, PLACE, SLIVER, STONES, WARM, WINDOW } from './windows';
@@ -93,6 +94,17 @@ const CITY = { pale: 0.15, power: 0.6, wrap: 0.1, fall: 26, floor: 0.25, his: [1
 // so the front row is lit and crisp and the last rows are near silhouettes against the glow behind the world. The air
 // is a dark warm grey, less red than the walls, so the far rows cool as they fall back.
 const DEPTH = { far: 0.5, lights: 0.5, curve: 0.6, haze: 0.5, air: [0.032, 0.022, 0.015] };
+// Where the far city stands behind the world (../../far.ts, isHazed) its haze lies among the city's rows as well,
+// after that air: a row is paler the further back it stands, palest at its feet, and the front rows are as they
+// were, so the built city goes on into the far towers with no line between them. The far picture is under the
+// world's canvas and cannot do this: laid only behind the city it read as a flat band (his ruling of Nov 26). It
+// begins `from` units in front of the spire, just behind the three gold crowned towers of the front, since from the
+// page's view the rows further back are all but hidden. `fades` units into the thick of it a place has gone 1 - 1/e
+// of the way it can go, and nothing goes more than `most` of the way, so a far room's light still shows. It is as
+// thick at a height over the ground as the far haze is bright at that height over the land's far edge, and what a
+// place goes toward is the far haze's own light where the place is drawn, so a tower in it is never brighter than
+// the haze beside it.
+const MIST = { from: 20, fades: 110, most: 0.9 };
 // A lit face: the light from without held under a soft shoulder from `knee` (the
 // brightest channel, linear) over `soft`, and going toward the palette's pale only from pale[0] to pale[1].
 const LIT_FACE = { knee: 0.5, soft: 0.3, pale: [0.75, 1.2] };
@@ -156,6 +168,31 @@ float tWoken( vec2 id, float stored, float near ) {
 }
 vec3 tWallLit( vec3 own, vec3 facing, vec3 unit ) {
 	return ${f(WAKE.walls)} * lamped( own, facing, hosted( unit ), uWake[ 0 ] );
+}
+#endif`;
+// For a shader of this city that has tKeep and WOKEN: the far haze's light at a place across the host and a height
+// (far.ts draws the same, with its banks), and a color as the haze among the city's rows leaves it (MIST), at a place
+// of the world in units. The land's far edge is found as far.ts finds it, in two steps across.
+const GONE = Math.exp(-HAZE.tall / HAZE.falls);
+const MISTED = /* glsl */ `
+#ifdef MISTS
+float tHaze( float across, float h ) {
+	float thin = max( 0.0, ( exp( - max( h, 0.0 ) / ${f(HAZE.falls)} ) - ${f(GONE)} ) / ${f(1 - GONE)} );
+	return ${f(HAZE.most)} * ( 1.0 - smoothstep( ${f(HAZE.wide[0])}, ${f(HAZE.wide[1])}, abs( across - ${f(HAZE.at)} ) ) ) * thin
+		+ ${f(HAZE.low.most)} * ( 1.0 - smoothstep( ${f(HAZE.low.wide[0])}, ${f(HAZE.low.wide[1])}, abs( across - ${f(HAZE.low.at)} ) ) ) / ( 1.0 + exp( ( h - ${f(HAZE.low.half)} ) / ${f(HAZE.low.soft)} ) );
+}
+vec2 tFarEdge( float x ) {
+	x = clamp( x, ${f(-LAND.rim)}, ${f(LAND.rim)} );
+	return hosted( vec3( x, 0.0, - sqrt( max( ${f(LAND.rim * LAND.rim)} - x * x, 0.0 ) ) ) );
+}
+vec3 tMist( vec3 c, vec3 unit ) {
+	vec2 here = hosted( unit );
+	float x = here.x - ${f(HOST.wide / 2)};
+	float edge = tFarEdge( x + here.x - tFarEdge( x ).x ).y;
+	float up = unit.y - ( sqrt( max( 1.0, ${f(WORLD.top * WORLD.top)} - dot( unit.xz, unit.xz ) ) ) - ${f(WORLD.top)} );
+	float veil = ${f(MIST.most)} * ( 1.0 - exp( - max( ${f(MIST.from)} - unit.z, 0.0 ) / ${f(MIST.fades)} * tHaze( here.x, up ) / ${f(HAZE.most + HAZE.low.most)} ) );
+	vec3 s = ${v3(DUST.map((v) => v / 255))} * tHaze( here.x, edge - here.y );
+	return mix( c, tKeep( mix( s / 12.92, pow( ( s + 0.055 ) / 1.055, vec3( 2.4 ) ), step( 0.04045, s ) ) ), veil );
 }
 #endif`;
 const BAY = { bronze: 0.62, rough: 0.5, metal: 0.85, glass: 0.06, bevel: 0.07, copper: 0.4, stone: 0.9 };
@@ -396,14 +433,14 @@ const SKY_LIGHT = `
 }
 #endif`;
 
-function stone(wake?: THREE.IUniform<THREE.Vector3[]>): THREE.MeshStandardMaterial {
+function stone(wake?: THREE.IUniform<THREE.Vector3[]>, mists = false): THREE.MeshStandardMaterial {
   const m = new THREE.MeshStandardMaterial({ color: PALE, roughness: STONE.rough, metalness: 0 });
   m.onBeforeCompile = (sh) => {
     if (wake) sh.uniforms.uWake = wake;
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute vec3 kind;\nvarying vec3 vKind;\nvarying vec3 vWPos;\nvarying vec3 vWNorm;\nvarying vec2 vFoot;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvKind = kind;\nvWPos = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;\nvWNorm = mat3( modelMatrix ) * objectNormal;\nvFoot = vec2( aLight.w, aBounce.w );');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>\nvarying vec3 vKind;\nvarying vec3 vWPos;\nvarying vec3 vWNorm;\nvarying vec2 vFoot;\nvec2 sFinish;\nfloat tRimOn;\nfloat tThin;\nfloat tPpu;\nfloat tRimFade;\nvec3 tRimLight;\n#define OWN ( vKind.y < ${f(0.5 / (STONES.length - 1))} ? 1.0 : 0.0 )${COMMON}${WOKEN}`)
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>\nvarying vec3 vKind;\nvarying vec3 vWPos;\nvarying vec3 vWNorm;\nvarying vec2 vFoot;\nvec2 sFinish;\nfloat tRimOn;\nfloat tThin;\nfloat tPpu;\nfloat tRimFade;\nvec3 tRimLight;\n#define OWN ( vKind.y < ${f(0.5 / (STONES.length - 1))} ? 1.0 : 0.0 )${COMMON}${WOKEN}${MISTED}`)
       .replace('#include <lights_physical_pars_fragment>', `#include <lights_physical_pars_fragment>${RIM_DIRECT}`)
       .replace('#include <color_fragment>', `#include <color_fragment>
 tRimOn = 1.0;
@@ -461,13 +498,16 @@ tRimLight = vec3( 0.0 );
 }`).replace('#include <lights_fragment_end>', `iblIrradiance *= ${f(STONE.night)};\n#define SKY_KEEP mix( 1.0, ${f(SHADE.his)}, OWN )${SKY_LIGHT}\n#include <lights_fragment_end>`).replace('#include <opaque_fragment>', `outgoingLight = tPale( tKnee( tCooled( ( outgoingLight - totalEmissiveRadiance ) * tRise( vFoot.y ), tCool( vKind.y ) ) ) + totalEmissiveRadiance + tRimLight );
 outgoingLight = max( mix( outgoingLight, tKeep( outgoingLight ), mix( ${f(STONE.keep[0])}, ${f(STONE.keep[1])}, sFinish.x ) ), 0.0 );
 outgoingLight = tAir( outgoingLight, vWPos.z );
+#ifdef MISTS
+	outgoingLight = tMist( outgoingLight, vWPos / ${f(SCALE)} );
+#endif
 #include <opaque_fragment>`);
   };
-  if (wake) m.defines = { WAKES: wake.value.length };
+  if (wake) m.defines = { WAKES: wake.value.length, ...(mists ? { MISTS: 1 } : {}) };
   return lit(m, { key: wake ? 'towers-stone-wake' : 'towers-stone', baked: true, core: false });
 }
 
-function bay(map: THREE.Texture, wake?: THREE.IUniform<THREE.Vector3[]>): THREE.MeshStandardMaterial {
+function bay(map: THREE.Texture, wake?: THREE.IUniform<THREE.Vector3[]>, mists = false): THREE.MeshStandardMaterial {
   const fr = WINDOW.frame, [c0, c1, c2] = WINDOW.colors, img = map.image as { width: number; height: number };
   const blindMean = 1 - WINDOW.blind * WINDOW.blinds * 0.5;
   const m = new THREE.MeshStandardMaterial({ color: METAL.bronze.clone().multiplyScalar(BAY.bronze), roughness: BAY.rough, metalness: BAY.metal });
@@ -496,7 +536,7 @@ vec3 tTint( float w ) {
 	float t = 2.0 * w;
 	return t < 1.0 ? mix( ${lin(c0)}, ${lin(c1)}, t ) : mix( ${lin(c1)}, ${lin(c2)}, t - 1.0 );
 }
-${WOKEN}`)
+${WOKEN}${MISTED}`)
       .replace('#include <lights_physical_pars_fragment>', `#include <lights_physical_pars_fragment>${RIM_DIRECT}`)
       .replace('#include <color_fragment>', `#include <color_fragment>
 tRimOn = 1.0;
@@ -698,10 +738,13 @@ if ( abs( bTilt.x ) + abs( bTilt.y ) > 0.0 ) {
 	float lamp = clamp( dot( bEmit, vec3( 1.0 ) ) / max( dot( outgoingLight, vec3( 1.0 ) ), 1e-5 ), 0.0, 1.0 );
 	outgoingLight = max( mix( outgoingLight, tKeep( outgoingLight ), max( max( max( max( max( bGlass, bLit ), bCopper ), bKeep ), lamp ), bSheet ) ), 0.0 );
 	outgoingLight = tAir( outgoingLight, vWPos.z );
+	#ifdef MISTS
+		outgoingLight = tMist( outgoingLight, vWPos / ${f(SCALE)} );
+	#endif
 }
 #include <opaque_fragment>`);
   };
-  if (wake) m.defines = { WAKES: wake.value.length };
+  if (wake) m.defines = { WAKES: wake.value.length, ...(mists ? { MISTS: 1 } : {}) };
   return lit(m, { key: wake ? 'towers-bay-wake' : 'towers-bay', baked: true, core: false });
 }
 
@@ -922,7 +965,7 @@ if ( vFlute.y > 0.5 && vFlute.y < 1.5 ) {
 
 export interface TowerMaterials { stone: THREE.MeshStandardMaterial; bay: THREE.MeshStandardMaterial; gold: THREE.MeshStandardMaterial; dispose(): void }
 
-export function materials(map: THREE.Texture, wake?: THREE.IUniform<THREE.Vector3[]>): TowerMaterials {
-  const all = { stone: stone(wake), bay: bay(map, wake), gold: gold() };
+export function materials(map: THREE.Texture, wake?: THREE.IUniform<THREE.Vector3[]>, hazed = false): TowerMaterials {
+  const mists = hazed && HAZE.on, all = { stone: stone(wake, mists), bay: bay(map, wake, mists), gold: gold() };
   return { ...all, dispose() { for (const m of Object.values(all)) m.dispose(); } };
 }

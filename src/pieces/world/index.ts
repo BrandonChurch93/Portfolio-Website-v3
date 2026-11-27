@@ -9,7 +9,7 @@ import type { Piece, PieceOptions } from '../../world/piece';
 import { slice } from '../../world/build';
 import { Stage } from '../../world/stage';
 import { finish, trueDarks } from '../../world/tone';
-import { CORE, D2R, HOST, LIGHT, MOONWARD, PYRAMID, SCALE, SPIRE, VIEW, coreLevel, drawn, ground, isDrawn } from './layout';
+import { CORE, D2R, HOST, LIGHT, MOONWARD, PYRAMID, SCALE, SPIRE, VIEW, coreLevel, drawn, ground, isDrawn, isHazed } from './layout';
 import { GLINT, STREAM_LONG, WARM, color, world } from './light';
 import { night } from './night';
 import { keep, type Kept } from './kept';
@@ -344,7 +344,7 @@ export function createWorld(): WorldPiece {
       keeps = q.get('keep') !== '0';
       keepsRock = q.get('keep') !== 'land';
       was = q.get('was') === '1';
-      const hazy = isDrawn(q) && !only && !close && !was ? import('./far').then((m) => m.far, () => null) : null;
+      const hazy = isHazed(q) ? import('./far').then((m) => m.far, () => null) : null;
       if (q.get('trace') === '1') { log = []; mark('mount'); }
       stage = new Stage(h, canvas, { tier: opts.tier, fov: ALONE.fov, near: 0.3, far: 40, bloom: GLOW, bloomScale: 0.5, envIntensity: LIGHT.night, env: night, lampAngle: 0.9, pixels: HANDHELD.world, full: true });
       trueDarks(stage.renderer);

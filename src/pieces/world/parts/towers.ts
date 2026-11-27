@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { ground } from '../layout';
+import { ground, isHazed } from '../layout';
 import { load, mesh } from '../files';
 import type { PartFactory } from '../part';
 import { STEP, TOWERS } from '../placed';
@@ -29,7 +29,7 @@ export const build: PartFactory = async ({ query }) => {
   const which = query.get('towers') === 'step' ? 'step' : 'city';
   const file = await load(FILES[which]), map = await windows(String(file.meta.windows));
   const wake = wakes(query);
-  const m = materials(map, wake?.uniform);
+  const m = materials(map, wake?.uniform, isHazed(query));
   made.push(map, m);
   for (const [name, l] of file.meshes) {
     const part = mesh(l, m[name as 'stone' | 'bay' | 'gold']);

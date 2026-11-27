@@ -89,6 +89,10 @@ export const PICTURED = {
 
 // Whether the world is asked for as picture 10 has it (?look=d).
 export const isDrawn = (query: URLSearchParams): boolean => query.get('look') === 'd';
+// Whether the far city stands behind the world in that look (./far.ts), and with it the same haze among the city's
+// own back rows (MIST in ./parts/towers/materials.ts): wherever the whole world is drawn as the page has it. The two
+// are one haze, so neither is ever on without the other.
+export const isHazed = (query: URLSearchParams): boolean => isDrawn(query) && !query.get('only') && !query.get('close') && query.get('was') !== '1';
 
 // The world as picture 10 has it (?look=d): the torn planet under the land, and the dunes, as pictures of this one
 // view, which the page lights (./parts/rock/drawn.ts; made by scripts/world/drawn.mjs from
