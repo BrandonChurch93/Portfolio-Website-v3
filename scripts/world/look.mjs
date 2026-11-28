@@ -23,7 +23,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { apply, browser, parseArgs, renderer, save, server, settle } from '../lib.mjs';
+import { apply, browser, parseArgs, renderer, save, server, settle, tierBefore, tierFirst } from '../lib.mjs';
 import { L, P } from './lib/plan.mjs';
 
 const { flags, rest } = parseArgs(process.argv.slice(2));
@@ -82,8 +82,10 @@ try {
   p.on('pageerror', (e) => errors.push(`page: ${e.message}`));
   const url = new URL(`/lab/piece/world?${query}`, `${srv.base}/`);
   url.searchParams.set('hook', '1');
+  if (flags.tier) await tierBefore(p, flags.tier);
   await p.goto(url.href, { waitUntil: 'load', timeout: 180000 });
   await p.waitForFunction(() => Boolean(window.__site), null, { timeout: 180000 });
+  if (flags.tier && !(await tierFirst(p))) errors.push(`tier: the world was made before the tier ${flags.tier} could be asked for, so what it made is this machine's own tier's and not ${flags.tier}'s`);
   await settle(p);
   // The world is ready once its piece has drawn its first frame. On a busy machine that is long after the page has
   // loaded, and a still taken before it is black.

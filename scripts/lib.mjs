@@ -15,6 +15,7 @@ export const VIEWPORTS = {
 };
 
 const DEV = 'http://127.0.0.1:5330';
+const TIERS = ['high', 'mid', 'low', 'static'];
 const SOFTWARE = /swiftshader|llvmpipe|software/i;
 
 export function parseArgs(argv) {
@@ -106,10 +107,38 @@ export async function open(b, base, route, flags, errors) {
   page.on('pageerror', (e) => errors.push(`page: ${e.message}`));
   const url = new URL(route, `${base}/`);
   url.searchParams.set('hook', '1');
+  if (flags.tier) await tierBefore(page, flags.tier);
   await page.goto(url.href, { waitUntil: 'load', timeout: 120000 });
   await page.waitForFunction(() => Boolean(window.__site), null, { timeout: 120000 });
+  if (flags.tier && !(await tierFirst(page))) errors.push(`tier: a piece was made before the tier ${flags.tier} could be asked for, so what it made is this machine's own tier's and not ${flags.tier}'s`);
   await settle(page);
   return page;
+}
+
+// A tier asked for once the page is up changes how a piece is drawn, not what it has already made. The world counts
+// its shards on the stream, its core's rings and the strands at its neck when it is made: 26, 48 and 9 at tier
+// high, 14, 40 and 7 on a machine whose own tier is low, as the one these pictures are taken on is. Until Nov 27
+// every script here asked afterwards, so a picture said to be tier high could be of the leaner world. This asks
+// inside the page's own assignment of window.__site, which comes before any piece is made. Call it before goto.
+export async function tierBefore(page, tier) {
+  if (!TIERS.includes(tier)) throw new Error(`--tier must be one of ${TIERS.join(', ')}`);
+  await page.addInitScript((v) => {
+    let site;
+    Object.defineProperty(window, '__site', {
+      configurable: true,
+      get: () => site,
+      set: (s) => {
+        site = s;
+        window.__tierFirst = !document.querySelector('[data-piece] canvas');
+        if (s) s.tier(v);
+      },
+    });
+  }, tier);
+}
+
+// Whether tierBefore was heard before any piece had a canvas. False means the picture is not that tier's.
+export async function tierFirst(page) {
+  return page.evaluate(() => window.__tierFirst === true);
 }
 
 export async function settle(page) {
@@ -131,6 +160,7 @@ const nums = (s) => String(s).split(',').map(Number);
 
 // The state flags, applied in a fixed order. t overrides --t for a filmstrip frame.
 export async function apply(page, flags, t) {
+  // Asked again here for a page that open() did not make. It changes the drawing only: see tierBefore.
   if (flags.tier) await page.evaluate((v) => window.__site.tier(v), flags.tier);
   if (flags.scroll !== undefined) {
     const s = String(flags.scroll);

@@ -2,6 +2,35 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-28 · The picture tools ask for the cost before the page makes anything (Fable, web chat)
+
+- **What was wrong.** How many shards ride the stream where it leaves the core, how many rings the core has and how many strands the stream's neck has are fixed when the world is made, from the cost the page has chosen at that moment (`BRIEF.md`, Hero, "The hero is to be consistently good on every screen", "these pictures are of a leaner world"). The repository's picture tools asked for the fullest drawing once the page was up (`scripts/lib.mjs`, `scripts/world/look.mjs`) or asked for nothing (`scripts/world/still.mjs`). The chat's own script that took the new world's picture for a narrow screen asked once the page was up too. On a slow machine the world was made by then, at that machine's own cost. So a still taken "at tier high" could be of the leaner world.
+- **Measured here** on `/lab/hero?look=d&sharp=0&ui=0` at 1460 by 1500, on the dev server, in software drawing, where this machine's own cost is the lowest. No error in any load:
+    - The cost asked before anything is made: 1,846,507 triangles in the world, 56 draw calls.
+    - The old way, the cost asked once the page is up, two loads: 1,843,631 both, 56 draw calls.
+    - A world made at the lowest cost on purpose and then drawn at the fullest: 1,843,631, 56 draw calls. The same count.
+    - Nothing asked: 1,843,628, 53 draw calls.
+    - So here the old way made the leaner world both times.
+- **The change, in the tools only. Nothing under `src` is touched.**
+    - `scripts/lib.mjs`: `tierBefore(page, tier)` asks for the cost inside the page's own setting up of its hooks, before any piece has a canvas, and `tierFirst(page)` says whether that held. `open()` uses both when `--tier` is given, and reports an error if a piece was made first.
+    - `scripts/world/look.mjs`: the same, before the page is opened.
+    - `scripts/world/still.mjs`: takes `--tier`, the fullest unless said, asks for it first, writes nothing if a piece was made first, and prints the cost the picture was made at. `--within <seconds>` is how long it waits for the page, for the first frame and for the screenshot, 180 unless said, since a slow machine needs more.
+- **Tried.** `node scripts/world/still.mjs worldD --within 1500` here, its picture copied into scratch and the repository's own put back: made at tier high, 2760 by 2000, in 19 minutes. Held beside the picture in the repository (`public/media/world-d-still.webp`): 461 of 5,520,000 pixels differ by over 24 levels of 255, in 11 spots of 12 pixels or more, all of them on the stream under the core. By eye it carries about 9 shards on that stretch where the one in the repository carries about 5, and the ones both carry sit in the same places. So the picture in the repository is of the leaner world.
+- **Not changed.** No picture in the repository is taken again by this. The new world's picture for a narrow screen is taken again when the ground by the pyramid is filled. Today's on `main` (`public/media/world-still.webp`) was taken the old way too, and taking it again is his to rule. `scripts/world/picture.mjs` is left for the helper agent's change, and `scripts/slice/film.mjs` is left as it is.
+- **For the next session.** A still at tier high takes about 19 minutes here at twice the pixels, in software. A still shown to him as "tier high" before today may be of the leaner world. The helper agent that takes the desktop's stills states that on the first screen the two differ in 3 of 887,900 pixels, by 2 levels at most, so what he was shown of the first screen stands. The difference is where the core shows.
+- **Checked:** `npm run typecheck` passes. The five loads above. One more load through the mended `open()` at tier high: the cost asked first, 1,846,507 triangles, no error. No production build was made here, since the disk is nearly full. `npm run mem` cannot run here, since the sandbox has no WebKit.
+
+## 2026-11-28 · Version 5 of the hidden sky's clearing, judged and not built in (Fable, web chat)
+
+- **What came.** The helper agent's fifth version of the clearing that keeps the hidden sky off his words (`BRIEF.md`, Hero, "The hidden sky's clearing round his words reads as a square cut", "version 5 came back"). A change to `src/hero/sky/deep.ts` and `src/hero/sky/shaders.ts` only, with stills of the real page at 1440 by 900 with the pointer at eight places, today beside it.
+- **Read here.** The change whole. It applies to the branch as it stands. Only the hidden stars and the gas follow the new edge. The things to find and the pointer's mask keep the box they had.
+- **Counted here on its eight stills.** Inside the rows of his words grown by 18 CSS px, 778,621 pixels at twice the screen's density, not one differs from today's in any channel.
+- **Looked at here.** With the brightness raised three times the square is gone: no upright edge left of his name, no level line over his role. At the page's own brightness the gain is small but there, the right side is emptier than today's, and the top is still the weakest side.
+- **The helper agent's own counts** are in the brief under the same heading, as its statement. They are not counted again here.
+- **Not built in.** Its list of hidden stars takes longer to make when the page starts (the helper agent states 274.5 ms at 1440 by 900 where today takes 150 to 211). It is asked to bring that to no more than a tenth over today's, then to bring stills at 1100 by 800 and 1920 by 970, what a screen with no pointer draws, and the cluster that the top cuts on an ultra-wide monitor as a change of its own.
+- **For the next session.** He is asked one question with a still of today beside version 5: keep today's, or take version 5. It is its own pull request and goes to `main` only on his word.
+- **Checked:** nothing under `src` is changed by this entry, so there is nothing to build. The count above is by a script of Fable's own on the helper agent's files.
+
 ## 2026-11-27 · The mend for WebKit: the new picture's script stands inside the picture (Fable, web chat)
 
 - **What was wrong.** With `?look=d` on a narrow screen, WebKit could draw today's picture for an instant before the new one (`BRIEF.md`, Hero, "The hero is to be consistently good on every screen", "Found since, in WebKit"). The words of script that put the new picture in stood after the picture and waited for the stylesheet, and an image that already exists can be drawn meanwhile, holding the first picture.
