@@ -1,9 +1,10 @@
 import * as THREE from 'three';
-import { ground } from '../layout';
+import { ground, isHazed } from '../layout';
 import { load, mesh } from '../files';
 import type { PartFactory } from '../part';
 import { STEP, TOWERS } from '../placed';
 import { materials } from './towers/materials';
+import { wakes } from './towers/wake';
 
 // The towers: the city, made ahead by scripts/world/parts/towers/city.mjs and shipped as one world file, one mesh for
 // each of the three materials in ./towers/materials.ts, with a map of the state of every window. The file says which
@@ -27,7 +28,8 @@ export const build: PartFactory = async ({ query }) => {
   const group = new THREE.Group(), made: { dispose(): void }[] = [];
   const which = query.get('towers') === 'step' ? 'step' : 'city';
   const file = await load(FILES[which]), map = await windows(String(file.meta.windows));
-  const m = materials(map);
+  const wake = wakes(query);
+  const m = materials(map, wake?.uniform, isHazed(query));
   made.push(map, m);
   for (const [name, l] of file.meshes) {
     const part = mesh(l, m[name as 'stone' | 'bay' | 'gold']);
@@ -40,5 +42,5 @@ export const build: PartFactory = async ({ query }) => {
   // ?only=towers frames the stepped tower, or the building ?tower=<its place in TOWERS>, or its top with &top=1.
   const asked = Number(query.get('tower') ?? STEP), [x, z, , , tall] = TOWERS[asked] ?? TOWERS[STEP], foot = ground(x, z), top = query.get('top') === '1';
   const alone = top ? { at: [x, foot + tall * 0.82, z] as [number, number, number], r: tall * 0.24 } : { at: [x, foot + tall * 0.55, z] as [number, number, number], r: tall * 0.62 };
-  return { group, stands, alone, dispose() { for (const d of made) d.dispose(); } };
+  return { group, stands, alone, ...(wake ? { update: wake.update } : {}), dispose() { for (const d of made) d.dispose(); } };
 };

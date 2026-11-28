@@ -93,7 +93,7 @@ export function PieceView({ name, entrance = false, once, making = false, classN
       hostObs.observe(h);
       offs.push(() => hostObs.disconnect());
       offs.push(lamp.subscribe((s) => {
-        p.setLamp((s.px - r.left) / Math.max(1, r.width), (s.py - r.top) / Math.max(1, r.height));
+        p.setLamp((s.px - r.left) / Math.max(1, r.width), (s.py - r.top) / Math.max(1, r.height), s.led);
       }));
       offs.push(tiers.subscribe((t) => p.setTier(t)));
       // Progress: how far the page's reading line (two thirds down the viewport) has

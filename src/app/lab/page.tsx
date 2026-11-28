@@ -35,6 +35,10 @@ export default function Index() {
           <span className={styles.minor}>Phase 3 · the hero&rsquo;s sky alone, in its place: fine stars, the bright few with four points, a moon with a ring or a second moon or neither, a band of far stars, the city&rsquo;s glow, and now and then a meteor. Your words and the city are stand ins</span>
         </li>
         <li>
+          <Link href="/lab/hollow">The hollow as pictures lit by the page</Link>
+          <span className={styles.minor}>A proof, Nov 25 · The whole page with the torn rock round the core drawn from pictures of its one view and lit live: the core&rsquo;s light drifts on the walls and surges when the stream sets off. <Link href="/lab/hollow?lamp=1">With the cursor&rsquo;s light on the rock</Link>, which is against a rule in the brief. Beside it: <Link href="/lab/whole">the page as it is</Link></span>
+        </li>
+        <li>
           <Link href="/lab/whole">The whole page so far</Link>
           <span className={styles.minor}>Phase 3 · Work, Skills, About and Contact on one page with one stream, from the top of Work to the stone under the rocket. Not here yet, on purpose: the opening and the footer&rsquo;s design</span>
         </li>

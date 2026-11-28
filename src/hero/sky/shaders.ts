@@ -1,3 +1,5 @@
+import { BRIGHT, DEEP, FAINT, FIND, FIND_TONE, FINDS, GAS, GAS_HAZE, GATHER, STARS, gasRamp } from './deep';
+
 // The sky's shaders. Everything is worked out in linear light in device pixels, y down, and turned into the
 // palette's tones only at the end (TONE): what is too bright goes to pale gold, never to white.
 
@@ -6,13 +8,17 @@ precision highp float;
 precision highp int;
 `;
 
+const MIXU = /* glsl */ `
+uint mixu(uint x) { x ^= x >> 16; x *= 0x7feb352du; x ^= x >> 15; x *= 0x846ca68bu; x ^= x >> 16; return x; }
+`;
+
 const COMMON = /* glsl */ `
 uniform vec2 uSize;
 vec2 P() { return vec2(gl_FragCoord.x, uSize.y - gl_FragCoord.y); }
 float erf1(float x) { float x2 = x * x; float t = x2 * (1.2732395 + 0.147 * x2) / (1.0 + 0.147 * x2); return sign(x) * sqrt(1.0 - exp(-t)); }
 // A gaussian's light over the whole of one pixel, so a star smaller than a pixel is spread, never point sampled.
 float pix(float c, float s) { float k = 0.70710678 / s; return 0.5 * (erf1((c + 0.5) * k) - erf1((c - 0.5) * k)); }
-uint mixu(uint x) { x ^= x >> 16; x *= 0x7feb352du; x ^= x >> 15; x *= 0x846ca68bu; x ^= x >> 16; return x; }
+${MIXU}
 float h2(vec2 p) { uvec2 q = uvec2(ivec2(floor(p)) + 1048576); return float(mixu(q.x ^ mixu(q.y + 0x9e3779b9u))) / 4294967296.0; }
 float h3(vec3 p) { uvec3 q = uvec3(ivec3(floor(p)) + 1048576); return float(mixu(q.x ^ mixu(q.y ^ mixu(q.z + 0x632be5abu)))) / 4294967296.0; }
 vec2 g2(vec2 i) { float a = 6.2831853 * h2(i); return vec2(cos(a), sin(a)); }
@@ -56,6 +62,31 @@ float fbm3(vec3 p, int n, float px) {
     px *= 0.483;
   }
   return s / w;
+}
+`;
+
+// The sky's own value noise as the CPU has it (clump in field.ts, cloud in deep.ts), in octaves spread to fill 0 to 1.
+const CLUMP = /* glsl */ `
+float lat(ivec2 c) { return float(mixu(uint(c.x + 4099) * 73856093u ^ uint(c.y + 7919) * 19349663u ^ 584449537u)) / 4294967296.0; }
+float clump(vec2 p) {
+  vec2 i = floor(p), f = p - i, u = f * f * (3.0 - 2.0 * f);
+  ivec2 c = ivec2(i);
+  float a = lat(c), b = lat(c + ivec2(1, 0)), d = lat(c + ivec2(0, 1)), e = lat(c + ivec2(1, 1));
+  return a + (b - a) * u.x + (d - a) * u.y + (a - b - d + e) * u.x * u.y;
+}
+float octaves(vec2 p, float cell, int count, float gain, float seed, bool ridge) {
+  float sum = 0.0, amp = 1.0, total = 0.0, power = 0.0;
+  vec2 from = vec2(seed * 37.13, -seed * 19.31);
+  for (int i = 0; i < 9; i++) {
+    if (i >= count) break;
+    float v = clump(p / cell + from + float(i) * vec2(11.7, 5.3));
+    sum += amp * (ridge ? 1.0 - abs(2.0 * v - 1.0) : v);
+    total += amp;
+    power += amp * amp;
+    amp *= gain;
+    cell *= 0.5;
+  }
+  return ridge ? sum / total : clamp(0.5 + (sum / total - 0.5) * total / (0.97 * sqrt(power)), 0.0, 1.0);
 }
 `;
 
@@ -428,9 +459,316 @@ uniform sampler2D uTex;
 out vec4 o;
 void main() { o = texelFetch(uTex, ivec2(gl_FragCoord.xy), 0); }`;
 
+// A hidden star of the deep sky (deep.ts), drawn once into its own picture in display levels: its light is added,
+// and where it is plain the picture's fourth channel keeps how early the reveal shows it, the earliest of any there.
+export const DEEP_STAR_FS = HEAD + COMMON + /* glsl */ `
+flat in vec2 vPos;
+flat in vec3 vCol;
+flat in vec3 vShape;
+uniform float uHalo;
+out vec4 o;
+void main() {
+  vec2 c = P() - vPos;
+  float I = pix(c.x, vShape.x) * pix(c.y, vShape.x);
+  if (vShape.y > 0.0) I += vShape.y * exp(-dot(c, c) / (2.0 * uHalo * uHalo)) / (6.2831853 * uHalo * uHalo);
+  vec3 col = vCol * I;
+  float most = max(col.r, max(col.g, col.b)) * 255.0;
+  if (most < 0.25) discard;
+  o = vec4(col, most > 0.6 ? vShape.z : 0.0);
+}`;
+
+const n = (x: number) => (Number.isInteger(x) ? `${x}.0` : `${x}`);
+const v3 = (c: readonly number[]) => `vec3(${c.map(n).join(', ')})`;
+const sq = (x: number) => n(x * x);
+
+// One point of a galaxy (FINDS in deep.ts), drawn as a point with no buffer behind it: where it is in its disc and
+// its light come from its own number, so the same galaxy is made on every machine. An arm's point is thrown from a
+// place on a wound arm, a disc's is anywhere round the middle, and the noise gathers the light into clumps.
+const F = FINDS.noise;
+export const DEEP_FIND_VS = HEAD + MIXU + CLUMP + /* glsl */ `
+uniform uint uKey;
+uniform int uKind;
+uniform float uSeed;
+uniform vec4 uArm;
+uniform vec4 uThrow;
+uniform vec3 uDisc;
+uniform vec4 uView;
+uniform vec3 uPic;
+uniform float uLight;
+flat out vec2 vAt;
+flat out float vLight;
+uint base;
+float rnd(uint k) { return (float(mixu(base + k * 0x9e3779b9u) >> 8) + 0.5) / 16777216.0; }
+float bell(uint k) { return sqrt(-2.0 * log(rnd(k))) * cos(6.2831853 * rnd(k + 1u)); }
+float nz(float k, vec2 p) { return octaves(p, ${n(F.cell)}, ${F.octaves}, ${n(F.gain)}, uSeed + k, false); }
+float fade(float r) { return 1.0 - smoothstep(0.7, 1.0, r); }
+float grain(float u) { return clamp(pow(u, -0.3), 1.0, 5.0); }
+void main() {
+  base = mixu(uint(gl_VertexID) ^ uKey);
+  float r = -uDisc.x * (log(rnd(0u)) + log(rnd(1u))), w, z;
+  vec2 at;
+  bool ok = r < 1.0;
+  if (uKind == ${FIND.disc} || uKind == ${FIND.lane}) {
+    float th = 6.2831853 * rnd(2u);
+    at = r * vec2(cos(th), sin(th));
+    z = bell(3u) * uDisc.z;
+    w = fade(r) * (uKind == ${FIND.disc} ? (0.45 + 1.1 * nz(4.0, at)) * grain(rnd(5u)) : 0.75 + 0.5 * nz(5.0, at));
+  } else {
+    float th0 = uArm.y * log(r / 0.05);
+    float th = 6.2831853 * floor(rnd(2u) * uArm.x) / uArm.x + uArm.w + th0 + uArm.z * (nz(3.0, r * vec2(cos(th0), sin(th0))) - 0.5);
+    vec2 arm = r * (1.0 - uThrow.w) * vec2(cos(th), sin(th));
+    float far = (rnd(3u) < uThrow.z ? uThrow.x : uThrow.y) * (0.5 + r), m = sqrt(-2.0 * log(rnd(4u))), a = 6.2831853 * rnd(5u);
+    at = arm + far * m * vec2(cos(a), sin(a));
+    at.x += 0.06 * (nz(0.0, at) - 0.5);
+    at.y += 0.06 * (nz(1.0, at) - 0.5);
+    z = bell(6u) * uDisc.z;
+    ok = ok && r > uDisc.y;
+    if (uKind == ${FIND.arms}) w = (0.16 + 1.9 * pow(nz(2.0, arm), 2.2)) * (0.6 + 0.8 * nz(5.0, at)) * grain(rnd(8u)) * fade(r);
+    else if (uKind == ${FIND.spurs}) w = (0.02 + 2.6 * pow(nz(5.0, arm), 3.0)) * (0.5 + nz(2.0, at.yx)) * grain(rnd(8u)) * fade(r);
+    else if (uKind == ${FIND.knots}) w = (pow(rnd(9u), 2.8) + 0.06) * (0.1 + 1.8 * pow(nz(2.0, arm), 2.4)) * fade(r);
+    else {
+      float rd = length(at);
+      w = (0.04 + 2.4 * pow(nz(4.0, arm), 2.0)) * (0.5 + nz(5.0, at.yx)) * smoothstep(0.05, 0.13, rd) * (1.0 - smoothstep(0.45, 0.9, rd));
+    }
+  }
+  float up = at.y * uView.x - z * uView.y;
+  vAt = 0.5 * uPic.x + vec2(at.x * uView.z - up * uView.w, at.x * uView.w + up * uView.z) * uPic.y;
+  vLight = w * uLight;
+  gl_PointSize = uPic.z;
+  gl_Position = ok ? vec4(vAt / uPic.x * 2.0 - 1.0, 0.0, 1.0) : vec4(2.0, 2.0, 2.0, 1.0);
+}`;
+
+// The point's light over each pixel it covers, summed into one channel of the galaxy's own picture.
+export const DEEP_FIND_FS = HEAD + /* glsl */ `
+flat in vec2 vAt;
+flat in float vLight;
+uniform vec4 uGauss;
+uniform vec4 uInto;
+out vec4 o;
+void main() {
+  vec2 d = gl_FragCoord.xy - vAt;
+  float q = dot(d, d);
+  o = uInto * (vLight * (uGauss.x * exp(-q * uGauss.y) + uGauss.z * exp(-q * uGauss.w)));
+}`;
+
+// A thing laid over the hidden stars is summed with what their picture held under its square (uUnder, a copy, with
+// its first row at the square's foot). The sum is held at the most the picture keeps in the sum's own color: added a
+// channel at a time, a bright star over a bright heart would go to white.
+const OVER = /* glsl */ `
+uniform sampler2D uUnder;
+vec4 over(vec3 c, float early, vec2 q, float size) {
+  vec4 under = texelFetch(uUnder, ivec2(q.x, size - q.y), 0);
+  vec3 sum = under.rgb + c;
+  return vec4(sum * min(1.0, 1.0 / max(max(sum.r, max(sum.g, sum.b)), 1e-4)), max(under.a, early));
+}
+`;
+
+// A galaxy laid into the hidden stars' picture from its own: the heart, what its dust leaves of each part's light,
+// the four tones, and a photograph's stretch so the faint arms show beside the heart. Its fourth channel is how
+// early the reveal shows it, the brightest first, written as a hidden star's is so the square it is drawn in never
+// shows.
+export const DEEP_FOUND_FS = HEAD + COMMON + OVER + /* glsl */ `
+uniform sampler2D uAcc;
+uniform sampler2D uMask;
+uniform vec3 uGrid;
+uniform float uS;
+uniform vec4 uPlace;
+uniform vec3 uTurn;
+uniform vec3 uLook;
+uniform vec2 uShow;
+out vec4 o;
+void main() {
+  vec2 t = P(), q = t - uPlace.xy, d = (q - 0.5 * uPlace.z) / uPlace.w;
+  vec4 acc = texelFetch(uAcc, ivec2(q), 0);
+  float rb = length(vec2(d.x * uTurn.x + d.y * uTurn.y, (d.y * uTurn.x - d.x * uTurn.y) / uTurn.z)), left = exp(-acc.a);
+  float heart = uLook.x * (0.9 * exp(-pow(rb / 0.05, 0.85)) + 2.2 * exp(-rb / 0.013) + 0.05 * exp(-rb / 0.16));
+  vec3 img = heart * (0.5 + 0.5 * left) * ${v3(FIND_TONE.heart)} + acc.g * (0.4 + 0.6 * left) * ${v3(FIND_TONE.disc)} + acc.r * left * ${v3(FIND_TONE.arms)} + acc.b * (0.3 + 0.7 * left) * ${v3(FIND_TONE.knots)};
+  float lum = max(img.r, max(img.g, img.b)), lit = asinh(lum * uLook.y) / asinh(2.0 * uLook.y);
+  vec3 c = min(img * (lit / max(lum, 1e-6)), 1.5) * uLook.z * texture(uMask, (t / uS / uGrid.z + 0.5) / uGrid.xy).r;
+  float most = max(c.r, max(c.g, c.b)) * 255.0;
+  if (most < 0.25) discard;
+  float grain = (h2(t + vec2(4171.0, 1931.0)) + h2(t + vec2(977.0, 5527.0)) - 1.0) / 255.0;
+  o = over(max(c + grain * step(0.5 / 255.0, c), 0.0), most > 0.6 ? 1.0 - mix(uShow.x, uShow.y, 1.0 - pow(clamp(lit, 0.0, 1.0), 0.45)) : 0.0, q, uPlace.z);
+}`;
+
+// A soft oval of light (Smudge in deep.ts): the cluster's glow, summed into the cluster's own picture, and each far
+// galaxy, added to the hidden stars' picture. uOff is where the picture it is drawn into begins in the hidden
+// stars'. Its grain is the same from one pixel to the next but one, so it reads as stars too far to be points. Its
+// fourth channel is written as a galaxy's is.
+export const DEEP_SMUDGE_FS = HEAD + COMMON + /* glsl */ `
+uniform sampler2D uMask;
+uniform vec3 uGrid;
+uniform float uS;
+uniform vec2 uOff;
+uniform vec4 uAt;
+uniform vec2 uLong;
+uniform vec3 uTone;
+uniform vec4 uFalls;
+uniform vec4 uWide;
+uniform float uGrain;
+out vec4 o;
+void main() {
+  vec2 t = P() + uOff, d = t - uAt.xy;
+  float rr = length(vec2(d.x * uAt.z + d.y * uAt.w, (d.y * uAt.z - d.x * uAt.w) / uLong.y)) / uLong.x;
+  float lum = uFalls.x * exp(-pow(rr / uWide.x, uFalls.y)) + uFalls.z * exp(-pow(rr / uWide.y, uFalls.w));
+  lum *= 1.0 + uGrain * (0.5 * (h2(t) + h2(t + vec2(1.0, 0.0)) + h2(t + vec2(0.0, 1.0)) + h2(t + vec2(1.0, 1.0))) - 1.0);
+  vec3 c = uTone * lum * texture(uMask, (t / uS / uGrid.z + 0.5) / uGrid.xy).r;
+  float most = max(c.r, max(c.g, c.b)) * 255.0;
+  if (most < 0.25) discard;
+  float grain = (h2(t + vec2(4171.0, 1931.0)) + h2(t + vec2(977.0, 5527.0)) - 1.0) / 255.0;
+  o = vec4(max(c + grain * step(0.5 / 255.0, c), 0.0), most > 0.6 ? 1.0 - mix(uWide.z, uWide.w, 1.0 - pow(clamp(lum, 0.0, 1.0), 0.45)) : 0.0);
+}`;
+
+// The cluster laid into the hidden stars' picture from its own, where its stars and its glow were summed and no
+// channel was cut short.
+export const DEEP_LAY_FS = HEAD + COMMON + OVER + /* glsl */ `
+uniform sampler2D uAcc;
+uniform vec3 uPlace;
+out vec4 o;
+void main() {
+  vec2 q = P() - uPlace.xy;
+  vec4 acc = texelFetch(uAcc, ivec2(q.x, uPlace.z - q.y), 0);
+  if (max(acc.r, max(acc.g, acc.b)) * 255.0 < 0.25) discard;
+  o = over(acc.rgb, acc.a, q, uPlace.z);
+}`;
+
+// The deep sky's warm gas (GAS in deep.ts), drawn once into its own picture in display levels, a texel for each CSS
+// pixel at most. The noise is the sky's own on the CPU (clump in field.ts), so the lanes here are the lanes the
+// hidden stars thin by. The fourth channel keeps how early the reveal shows the gas there.
+const RAMP = [{ at: 0, tone: [0, 0, 0] }, ...gasRamp()];
+const CLOUD_TURN = (GATHER.cloud.turn * Math.PI) / 180;
+export const DEEP_GAS_FS = HEAD + COMMON + CLUMP + /* glsl */ `
+uniform sampler2D uMask;
+uniform vec3 uGrid;
+uniform float uG;
+uniform float uU;
+uniform vec4 uWords;
+uniform vec4 uBand;
+uniform vec2 uAxis;
+uniform vec4 uLight;
+out vec4 o;
+vec2 warp(vec2 q, float seed, out vec2 fine) {
+  fine = (vec2(octaves(q, ${n(GAS.fine.cell)}, ${GAS.fine.octaves}, ${n(GAS.fine.gain)}, seed + 4.0, false), octaves(q, ${n(GAS.fine.cell)}, ${GAS.fine.octaves}, ${n(GAS.fine.gain)}, seed + 5.0, false)) - 0.5) * ${n(GAS.fine.far)};
+  vec2 at = q + fine;
+  return (vec2(octaves(at, ${n(GAS.wide.cell)}, ${GAS.wide.octaves}, ${n(GAS.wide.gain)}, seed + 2.0, false), octaves(at, ${n(GAS.wide.cell)}, ${GAS.wide.octaves}, ${n(GAS.wide.gain)}, seed + 3.0, false)) - 0.5) * ${n(GAS.wide.far)};
+}
+float body(vec2 at, float seed, int count) {
+  return clamp((octaves(at, ${n(GAS.body.cell)}, count, ${n(GAS.body.gain)}, seed + 1.0, false) - ${n(GAS.body.floor)}) / ${n(1 - GAS.body.floor)}, 0.0, 1.0);
+}
+float warped(vec2 q, float seed) {
+  vec2 fine;
+  vec2 wide = warp(q, seed, fine);
+  return body(q + fine + wide, seed, ${GAS.rim.octaves});
+}
+// The dark lanes at a place of a sheet, folded as the sheet is: how much of the gas's light they leave.
+float lanes(vec2 q, vec2 fine, vec2 wide, float seed, float lane) {
+  return smoothstep(lane, lane + ${n(GAS.lanes.over)}, octaves(q + fine + ${n(GAS.lanes.wide)} * wide, ${n(GAS.lanes.cell)}, ${GAS.lanes.octaves}, ${n(GAS.lanes.gain)}, seed, false));
+}
+// One sheet of gas at a place of its own frame: its light before the lanes, and how it is folded there.
+float sheet(vec2 q, float seed, vec2 light, out vec2 fine, out vec2 wide) {
+  wide = warp(q, seed, fine);
+  float m = body(q + fine + wide, seed, ${GAS.body.octaves});
+  float thread = octaves(q + ${n(GAS.threads.fine)} * fine + ${n(GAS.threads.wide)} * wide, ${n(GAS.threads.cell)}, ${GAS.threads.octaves}, ${n(GAS.threads.gain)}, seed + 6.0, true);
+  thread = pow(clamp((thread - ${n(GAS.threads.span[0])}) / ${n(GAS.threads.span[1] - GAS.threads.span[0])}, 0.0, 1.0), ${n(GAS.threads.curve)});
+  float thick = pow(smoothstep(${n(GAS.body.cloud[0])}, ${n(GAS.body.cloud[1])}, m), ${n(GAS.body.curve)});
+  float rim = clamp((warped(q + ${n(GAS.rim.step)} * light, seed) - warped(q - ${n(GAS.rim.step)} * light, seed)) * ${n(GAS.rim.gain / (2 * GAS.rim.step))}, -1.0, 1.0);
+  float lit = thick * (${n(GAS.rim.flat)} + ${n(GAS.rim.lit)} * max(rim, 0.0) - ${n(GAS.rim.shade)} * max(-rim, 0.0));
+  return lit + ${n(GAS.threads.light)} * thread * smoothstep(${n(GAS.threads.body[0])}, ${n(GAS.threads.body[1])}, m) * (${n(GAS.threads.bare)} + ${n(1 - GAS.threads.bare)} * thick);
+}
+vec3 ramp(float v) {
+  const float at[${RAMP.length}] = float[${RAMP.length}](${RAMP.map((k) => n(k.at)).join(', ')});
+  const vec3 tone[${RAMP.length}] = vec3[${RAMP.length}](${RAMP.map((k) => v3(k.tone)).join(', ')});
+  for (int i = 1; i < ${RAMP.length}; i++) if (v <= at[i]) return mix(tone[i - 1], tone[i], (v - at[i - 1]) / (at[i] - at[i - 1]));
+  return tone[${RAMP.length - 1}];
+}
+void main() {
+  vec2 t = P(), css = t / uG, X = css / uU, d = css - uBand.xy, off = css - uWords.xy;
+  float may = texture(uMask, (css / uGrid.z + 0.5) / uGrid.xy).r;
+  vec2 fr = vec2(dot(d, uAxis), dot(d, vec2(-uAxis.y, uAxis.x))) / uBand.zw;
+  float a = fr.x - ${n(GATHER.band.a)}, b = fr.y - ${n(GATHER.band.b)}, top = smoothstep(0.0, ${n(GATHER.band.top)}, X.y);
+  float band = exp(-0.5 * (a * a / ${sq(GATHER.band.along)} + b * b / ${sq(GATHER.band.across)})) * top;
+  vec2 dc = X - vec2(${n(GATHER.cloud.x)}, ${n(GATHER.cloud.y)});
+  vec2 cu = vec2(dot(dc, vec2(${n(Math.cos(CLOUD_TURN))}, ${n(Math.sin(CLOUD_TURN))})) / ${n(GATHER.cloud.rx)}, dot(dc, vec2(${n(-Math.sin(CLOUD_TURN))}, ${n(Math.cos(CLOUD_TURN))})) / ${n(GATHER.cloud.ry)});
+  float low = exp(-0.5 * dot(cu, cu));
+  float open = may * smoothstep(${n(GAS.clear[0])} * uU, ${n(GAS.clear[1])} * uU, length(max(abs(off) - vec2(${n(STARS.block[0])}, ${n(STARS.block[1])}) * uWords.zw, 0.0)));
+  float far = exp(-0.5 * (a * a / ${sq(GATHER.band.haze[0])} + b * b / ${sq(GATHER.band.haze[1])})) * smoothstep(1.0, 1.65, length(off / uWords.zw)) * top * may;
+  vec2 q = fr * uBand.zw / (uU * vec2(${n(GATHER.band.stretch)}, 1.0));
+  float gas = 0.0, dark = 0.0;
+  vec2 fine, wide, other, others;
+  if (band * open > ${n(FAINT)}) {
+    float one = sheet(q, ${n(GAS.band.seed)}, uLight.xy, fine, wide), two = sheet(q, ${n(GAS.band.second)}, uLight.xy, other, others);
+    float rich = ${n(GAS.band.patch.least)} + ${n(GAS.band.patch.more)} * octaves(X, ${n(GAS.band.patch.cell)}, ${GAS.band.patch.octaves}, ${n(GAS.band.patch.gain)}, ${n(GAS.band.patch.seed)}, false);
+    dark = lanes(q, fine, wide, ${n(GAS.band.lanes)}, ${n(GAS.band.lane)});
+    gas += (one + ${n(GAS.band.share)} * two) * (1.0 - ${n(GAS.lanes.dark)} * dark) * band * rich / ${n(GAS.band.full)};
+  } else if (far > ${n(FAINT)}) {
+    wide = warp(q, ${n(GAS.band.seed)}, fine);
+    dark = lanes(q, fine, wide, ${n(GAS.band.lanes)}, ${n(GAS.band.lane)});
+  }
+  float core = pow(low, ${n(GAS.low.tight)});
+  if (core * open > ${n(FAINT)}) {
+    float one = sheet(X, ${n(GAS.low.seed)}, uLight.zw, fine, wide);
+    gas += one * (1.0 - ${n(GAS.lanes.dark)} * lanes(X, fine, wide, ${n(GAS.low.lanes)}, ${n(GAS.low.lane)})) * core / ${n(GAS.low.full)};
+  }
+  gas = clamp(gas * open, 0.0, 1.0);
+  float haze = far > ${n(FAINT)} ? far * (${n(GAS.haze.least)} + ${n(GAS.haze.more)} * octaves(X, ${n(GAS.haze.cell)}, ${GAS.haze.octaves}, ${n(GAS.haze.gain)}, ${n(GAS.haze.seed)}, false)) * (1.0 - ${n(GAS.haze.lanes)} * dark) : 0.0;
+  vec3 c = ramp(pow(gas, ${n(GAS.curve)})) + haze * (1.0 + ${n(GAS.haze.grain)} * (2.0 * h2(t) - 1.0)) * ${v3(GAS_HAZE)};
+  float early = sqrt(clamp(gas + ${n(GAS.haze.show)} * haze, 0.0, 1.0));
+  vec2 grain = (vec2(h2(t + vec2(4171.0, 1931.0)) + h2(t + vec2(977.0, 5527.0)), h2(t + vec2(2749.0, 311.0)) + h2(t + vec2(6007.0, 8269.0))) - 1.0) / 255.0;
+  o = vec4(max(c + grain.x * step(0.5 / 255.0, c), 0.0), clamp(early + grain.y * step(0.5 / 255.0, early), 0.0, 1.0));
+}`;
+
+// The reveal at a place, in device pixels: the most that any one of the pointer's pools gives it.
+const POOLS = DEEP.pools + 1;
+const REVEAL = /* glsl */ `
+uniform vec3 uPool[${POOLS}];
+uniform int uPools;
+uniform float uReach;
+float reveal(vec2 p) {
+  float rho = 0.0;
+  for (int i = 0; i < ${POOLS}; i++) {
+    if (i >= uPools) break;
+    vec2 v = p - uPool[i].xy;
+    rho = max(rho, uPool[i].z * exp(-dot(v, v) / (uReach * uReach)));
+  }
+  return rho;
+}
+`;
+
+// The deep sky shown over today's where the pointer and its pools reach. The reveal at a pixel is the most that any
+// one pool gives it, and a thing shows once the reveal passes its own threshold. What is added keeps its color: it
+// is held at uCap, and never under what today's sky has there. The gas is dithered as it is added, so it does not
+// band on an eight bit screen. What is written is how far each channel goes from today's sky to uCap, and the blend
+// takes that share from what is drawn there, so a bright star of today's is not carried past uCap either.
+export const DEEP_FS = HEAD + COMMON + REVEAL + /* glsl */ `
+uniform sampler2D uSky;
+uniform sampler2D uDeep;
+uniform sampler2D uGas;
+uniform vec2 uGasInv;
+uniform int uDrop;
+uniform float uSoft;
+uniform vec2 uCap;
+uniform int uAdd;
+out vec4 o;
+void main() {
+  ivec2 at = ivec2(gl_FragCoord.xy);
+  vec4 base = texelFetch(uSky, at, 0), d = texelFetch(uDeep, at - ivec2(0, uDrop), 0);
+  vec2 p = P();
+  vec4 g = texture(uGas, vec2(p.x * uGasInv.x, 1.0 - p.y * uGasInv.y));
+  float rho = reveal(p);
+  float th = 1.0 - d.a, thg = ${n(GAS.show.first)} - ${n(GAS.show.less)} * g.a;
+  vec3 gas = g.rgb * smoothstep(thg, thg + ${n(GAS.show.soft)}, rho);
+  float grain = (h2(gl_FragCoord.xy) + h2(gl_FragCoord.xy + vec2(4171.0, 1931.0)) - 1.0) / 255.0;
+  vec3 f = base.rgb + gas + grain * step(0.25 / 255.0, max(gas.r, max(gas.g, gas.b))) + d.rgb * smoothstep(th, th + uSoft, rho);
+  float k = min(1.0, max(max(base.r, max(base.g, base.b)), uCap.x) / max(max(f.r, max(f.g, f.b)), 1e-3));
+  k *= min(1.0, max(min(base.r, min(base.g, base.b)), uCap.y) / max(min(f.r, min(f.g, f.b)) * k, 1e-3));
+  vec3 c = max(f * k, base.rgb), room = vec3(uCap.x, uCap.x, uCap.y) - base.rgb;
+  float top = max(c.r, max(c.g, c.b));
+  o = vec4(clamp((c - base.rgb) / max(room, vec3(1e-4)), 0.0, 1.0) * step(vec3(1e-4), room), uAdd == 1 ? 1.0 : clamp((top - base.a) / max(1.0 - base.a, 1e-4), 0.0, 1.0));
+}`;
+
 // The bright few: a small hot core, a soft halo and four thin rays that taper to nothing, as a lens shows a
 // bright star. They are drawn every time the sky is, so they can twinkle.
-export const SPARK_VS = HEAD + /* glsl */ `
+const sparkVs = (more: [string, string] = ['', '']) => HEAD + /* glsl */ `
 layout(location = 0) in vec2 aCorner;
 layout(location = 1) in vec2 aPos;
 layout(location = 2) in vec3 aCol;
@@ -442,15 +780,16 @@ uniform float uAmp;
 flat out vec2 vPos;
 flat out vec3 vCol;
 flat out float vE;
-flat out float vL;
+flat out float vL;${more[0]}
 void main() {
   float tw = 1.0 + uAmp * (0.6 * sin(6.2831853 * aB.z * uT + aPh.x) + 0.4 * sin(6.2831853 * aB.w * uT + aPh.y));
-  vE = aB.x * tw; vL = aB.y * (0.96 + 0.04 * tw); vPos = aPos; vCol = aCol;
+  vE = aB.x * tw; vL = aB.y * (0.96 + 0.04 * tw); vPos = aPos; vCol = aCol;${more[1]}
   vec2 p = aPos + aCorner * (vL + 3.0);
   gl_Position = vec4(p.x / uSize.x * 2.0 - 1.0, 1.0 - p.y / uSize.y * 2.0, 0.0, 1.0);
 }`;
+export const SPARK_VS = sparkVs();
 
-export const SPARK_FS = HEAD + COMMON + TONE + /* glsl */ `
+const sparkFs = (more: [string, string] = ['', '']) => HEAD + COMMON + TONE + /* glsl */ `
 flat in vec2 vPos;
 flat in vec3 vCol;
 flat in float vE;
@@ -458,7 +797,7 @@ flat in float vL;
 uniform float uS;
 uniform vec3 uRayC;
 uniform vec2 uTilt;
-out vec4 o;
+out vec4 o;${more[0]}
 // One spike, as a lens's vanes spread a star's light: brightest where it leaves the core, falling as the square of
 // the distance and widening as it fades, with the light's longer colors reaching further.
 float ray(float along, float across, float L) {
@@ -481,9 +820,30 @@ void main() {
   float bead = 0.5 + 0.5 * cos(along * 38.0);
   vec3 rc = mix(vCol, uRayC, clamp(along * along * 1.3, 0.0, 0.6) * (0.6 + 0.4 * bead));
   vec3 lin = vE * (vCol * (0.62 * core + 0.24 * glow + 0.16 * halo) + rc * 0.07 * (rx + ry));
-  vec3 col = srgb(tone(lin));
+  vec3 col = srgb(tone(lin));${more[1]}
   o = vec4(col, max(col.r, max(col.g, col.b)));
 }`;
+export const SPARK_FS = sparkFs();
+
+// With the deep sky each of the bright few is given more of its own light where the pointer's reveal reaches it
+// (BRIGHT in deep.ts), in display levels, so the whole flare grows and keeps its color. What it becomes is held at
+// uCap with what is under it, and is never under what today's sky has there. With no reveal it is today's star.
+export const DEEP_SPARK_VS = sparkVs([/* glsl */ `
+layout(location = 5) in float aOpen;${REVEAL}flat out float vMore;`, /* glsl */ `
+  vMore = ${n(BRIGHT.more)} * aOpen * smoothstep(${n(BRIGHT.from)}, ${n(BRIGHT.to)}, reveal(aPos));`]);
+export const DEEP_SPARK_FS = sparkFs([/* glsl */ `
+flat in float vMore;
+uniform sampler2D uSky;
+uniform vec2 uCap;`, /* glsl */ `
+  if (vMore > 0.0) {
+    float a = max(col.r, max(col.g, col.b)), b = min(1.0, a * (1.0 + vMore));
+    vec3 under = texelFetch(uSky, ivec2(gl_FragCoord.xy), 0).rgb;
+    vec3 was = col + (1.0 - a) * under, f = col * (1.0 + vMore) + (1.0 - b) * under;
+    float k = min(1.0, max(max(was.r, max(was.g, was.b)), uCap.x) / max(max(f.r, max(f.g, f.b)), 1e-3));
+    k *= min(1.0, max(min(was.r, min(was.g, was.b)), uCap.y) / max(min(f.r, min(f.g, f.b)) * k, 1e-3));
+    o = vec4(max(f * k, was) - (1.0 - b) * under, b);
+    return;
+  }`]);
 
 // A meteor: a short fine streak with a bright head, the trail cooling behind it.
 export const METEOR_FS = HEAD + COMMON + TONE + /* glsl */ `

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { hex } from '../../../../config/palette';
 import { SCALE } from '../../layout';
+import { HOSTED, LAMPED } from '../rock/drawn';
 import { lit } from '../../light';
 import { NIGHT as SKY } from '../../night';
 import { ATLAS, TILES } from './design';
@@ -248,12 +249,18 @@ uniform float uJitter;
 uniform vec2 uShade;
 uniform float uCube;`;
 
+// The cursor's light on the trees, in picture 10's look alone: what a leaf or the bark turned to it takes of it, as
+// a share of its own color (a wall behind takes WAKE.walls of its own, ../towers/materials.ts), and how much of that
+// is left to a leaf deep in its crown or in a gap its neighbours shut.
+const CURSOR = { share: 0.6, deep: 0.35 } as const;
+
 export interface TreeUniforms { uTime: { value: number }; uAir: { value: number }; uJitter: { value: number }; uShade: { value: THREE.Vector2 }; uCube: { value: number } }
 export function treeUniforms(): TreeUniforms {
   return { uTime: { value: 0 }, uAir: { value: 0 }, uJitter: { value: 0 }, uShade: { value: new THREE.Vector2(-1, 0) }, uCube: { value: 1 } };
 }
 
-export function treeMaterial(map: THREE.Texture, pass: 0 | 1, uniforms: TreeUniforms, look: string | null): THREE.MeshStandardMaterial {
+// `lamp` is the cursor's light as lampOf gives it (../rock/drawn.ts): with it the trees take that light.
+export function treeMaterial(map: THREE.Texture, pass: 0 | 1, uniforms: TreeUniforms, look: string | null, lamp?: { value: THREE.Vector3 }): THREE.MeshStandardMaterial {
   // Both passes are transparent, so both are one program; three draws a transparent card's back and its front in two
   // passes of their own, which drew every leaf twice and made a third program, unless it is told not to.
   const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: ROUGH.leaf, metalness: 0, side: THREE.DoubleSide, transparent: true, depthWrite: pass === 0, forceSinglePass: true });
@@ -262,7 +269,7 @@ export function treeMaterial(map: THREE.Texture, pass: 0 | 1, uniforms: TreeUnif
   const pale = new THREE.Color(hex(PALE.color)).lerp(new THREE.Color(hex(PALE.toward)), PALE.mix).multiplyScalar(PALE.power);
   const mc = new THREE.Color(hex(TONED.mid)), mid = 0.2126 * mc.r + 0.7152 * mc.g + 0.0722 * mc.b;
   m.onBeforeCompile = (sh) => {
-    Object.assign(sh.uniforms, uniforms, { uLeaves: { value: map }, uPass: { value: pass }, uBark: { value: bark }, uRim: { value: rim }, uPale: { value: pale }, uMid: { value: mid }, uTop: { value: top }, uFront: { value: front }, uFill: { value: fill }, uNearer: { value: NEARER * SCALE }, uLook: { value: LOOKS[look ?? ''] ?? 0 } });
+    Object.assign(sh.uniforms, uniforms, { uLeaves: { value: map }, ...(lamp ? { uLamp: lamp } : {}), uPass: { value: pass }, uBark: { value: bark }, uRim: { value: rim }, uPale: { value: pale }, uMid: { value: mid }, uTop: { value: top }, uFront: { value: front }, uFill: { value: fill }, uNearer: { value: NEARER * SCALE }, uLook: { value: LOOKS[look ?? ''] ?? 0 } });
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', `#include <common>${MOVE_PARS}
 attribute vec3 aTone;
@@ -316,7 +323,7 @@ uniform vec3 uPale;
 uniform float uMid;
 uniform vec3 uTop;
 uniform vec3 uFront;
-uniform vec3 uFill;
+uniform vec3 uFill;${lamp ? `\nuniform vec3 uLamp;${HOSTED}${LAMPED}` : ''}
 varying vec2 vLeafUv;
 varying vec2 vShadeAt;
 varying vec4 vReach;
@@ -566,11 +573,15 @@ material.diffuseContribution = mix( material.diffuseContribution, tTan( material
 	vec3 toCity = normalize( ( viewMatrix * vec4( 0.0, 0.2, - 1.0, 0.0 ) ).xyz );
 	float edge = pow( 1.0 - saturate( dot( normal, geometryViewDir ) ), ${f(RIM.tight)} ) * smoothstep( 0.5, 0.95, tOut );
 	float through = vTree.y * edge * ( 0.4 + 0.6 * saturate( dot( normal, toCity ) + 0.5 ) ) * tLeafy * step( uLook, 0.5 );
-	reflectedLight.indirectDiffuse += uRim * diffuseColor.rgb * through;
+	reflectedLight.indirectDiffuse += uRim * diffuseColor.rgb * through;${lamp ? `
+	if ( tBlob < 0.5 && uLook < 0.5 ) {
+		vec3 tTurned = ( vec4( tLeafy > 0.5 ? tNR : normal, 0.0 ) * viewMatrix ).xyz, tStands = cameraPosition + ( vec4( tS, 0.0 ) * viewMatrix ).xyz;
+		reflectedLight.indirectDiffuse += ${f(CURSOR.share)} * lamped( diffuseColor.rgb, tTurned, hosted( tStands / ${f(SCALE)} ), uLamp ) * mix( ${f(CURSOR.deep)}, 1.0, tHeart * mix( 0.5, 1.0, tOpen ) );
+	}` : ''}
 }
 #include <aomap_fragment>`);
   };
-  return lit(m, { key: 'trees', baked: true, core: false });
+  return lit(m, { key: lamp ? 'trees-lamp' : 'trees', baked: true, core: false });
 }
 
 // The moon's shadow pass for the trees: the leaves cut out of their cards by the same atlas, each lump where the

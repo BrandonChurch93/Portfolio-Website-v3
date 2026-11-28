@@ -9,11 +9,12 @@ import type { Piece, PieceOptions } from '../../world/piece';
 import { slice } from '../../world/build';
 import { Stage } from '../../world/stage';
 import { finish, trueDarks } from '../../world/tone';
-import { CORE, D2R, HOST, LIGHT, MOONWARD, PYRAMID, SCALE, SPIRE, VIEW, coreLevel, drawn, ground } from './layout';
+import { CORE, D2R, HOST, LIGHT, MOONWARD, PYRAMID, SCALE, SPIRE, VIEW, coreLevel, drawn, ground, isDrawn, isHazed } from './layout';
 import { GLINT, STREAM_LONG, WARM, color, world } from './light';
 import { night } from './night';
 import { keep, type Kept } from './kept';
 import { sharpen, type Sharp, type SharpParts } from './sharp';
+import type { Far } from './far';
 import { ABOVE, LOADING, PARTS, type PartFactory, type PartName, type PartState, type WorldPart } from './part';
 import { STEP, TOWERS } from './placed';
 
@@ -120,9 +121,11 @@ export function createWorld(): WorldPiece {
   let kept: Kept | null = null, taken = '', keeps = true, keepsRock = true;
   // The city at the screen's density where the canvas has less (./sharp.ts), and for a frozen frame what it was taken
   // for. full: the next frame draws the whole canvas, after the clearing in it was put away.
-  let sharp: Sharp | null = null, sharpFor = '', full = false;
+  let sharp: Sharp | null = null, sharpFor = '', full = false, hazed: Far | null = null;
   let seen = true, stale = true, moving = false, warming = false, cast = 3, hold: number | null = null, only: PartName | null = null, close: readonly [number, number, number] | null = null, zoom = 3;
-  let lampUV = { x: 0.6, y: 0.3 }, reach = 1, first = 0;
+  let lampUV = { x: 0.6, y: 0.3, led: 0 }, reach = 1, first = 0;
+  // The held moment the last frame was drawn for: a moment held since then is owed a frame of its own.
+  let heldAt: number | null = null;
   // Which way the page last moved (1 down it), when, and where the host's top was. was: everything as before this
   // round's changes (?was=1), for timing against.
   let way = 0, movedAt = -1e9, lastTop = 0, was = false;
@@ -257,14 +260,15 @@ export function createWorld(): WorldPiece {
   const frame = () => {
     if (warming) mark('warming');
     if (!stage || !seen || warming) return;
-    const frozen = clock.isFrozen() || hold !== null;
-    if (shown()) stale = true;
+    const frozen = clock.isFrozen() || hold !== null, now = hold ?? clock.now();
+    if (shown() || (frozen && now !== heldAt)) stale = true;
     if (!stale && !moving) return;
     stale = false;
+    heldAt = frozen ? now : null;
     place();
-    const now = hold ?? clock.now(), still = reduced || frozen || stage.tier === 'static', level = still && hold === null && !clock.isFrozen() ? 1 : coreLevel(now);
+    const still = reduced || frozen || stage.tier === 'static', level = still && hold === null && !clock.isFrozen() ? 1 : coreLevel(now);
     world.setCore(level);
-    const s: PartState = { t: now, core: level, stream, pointer: lampUV, still };
+    const s: PartState = { t: now, core: level, stream, pointer: lampUV, still, held: frozen };
     moving = false;
     // The moon's shadows are drawn once, with every part there to cast them. After that a part none of which is on
     // the screen is not drawn and not told the time.
@@ -277,7 +281,7 @@ export function createWorld(): WorldPiece {
     const near = rock?.part.group.userData.near as THREE.Object3D[] | undefined;
     const laid = keeps && !!kept && !!land && !casting && only === null && close === null && !left.has('land') && !left.has('kept');
     const stone = laid && keepsRock && !!rock && !!near && !left.has('rock') && !left.has('kept-rock');
-    const holds = stone ? 'land rock' : 'land';
+    const holds = stone ? 'land rock' : 'land', light = land?.part.kept;
     if (casting) taken = '';
     if (rock && near) for (const o of rock.part.group.children) o.visible = near.includes(o) === stone;
     if (laid && (taken !== holds || !kept!.fresh())) {
@@ -285,12 +289,14 @@ export function createWorld(): WorldPiece {
       for (const p of parts) p.part.group.visible = p === land || (stone && p === rock);
       if (stone) for (const o of rock!.part.group.children) o.visible = !near!.includes(o);
       mark('take');
+      light?.out(true);
       kept!.take((k) => world.setCore(k));
+      light?.out(false);
       world.setCore(level);
       if (stone) for (const o of rock!.part.group.children) o.visible = near!.includes(o);
       taken = holds;
     }
-    kept?.show(laid && (land!.on || (stone && rock!.on)), level);
+    kept?.show(laid && (land!.on || (stone && rock!.on)), level, light);
     for (const p of parts) {
       p.part.group.visible = (casting || p.on) && !left.has(p.name) && !(laid && p === land);
       if (p.on && p.part.update?.(s) && !still) moving = true;
@@ -338,6 +344,7 @@ export function createWorld(): WorldPiece {
       keeps = q.get('keep') !== '0';
       keepsRock = q.get('keep') !== 'land';
       was = q.get('was') === '1';
+      const hazy = isHazed(q) ? import('./far').then((m) => m.far, () => null) : null;
       if (q.get('trace') === '1') { log = []; mark('mount'); }
       stage = new Stage(h, canvas, { tier: opts.tier, fov: ALONE.fov, near: 0.3, far: 40, bloom: GLOW, bloomScale: 0.5, envIntensity: LIGHT.night, env: night, lampAngle: 0.9, pixels: HANDHELD.world, full: true });
       trueDarks(stage.renderer);
@@ -378,7 +385,9 @@ export function createWorld(): WorldPiece {
       // after it was let go below, the world is made in one helping: the first would be what is not on the screen.
       const under0 = h.getBoundingClientRect().top < -innerHeight * 0.5 && !was;
       const whole = !!only || !!close || q.get('load') === 'whole' || under0;
-      const above = names.filter((n) => n !== 'rest' && (whole || ABOVE.includes(n)));
+      // In picture 10's look the dunes are of the rock's picture, so the rock is of the first screen as well.
+      const soonest: readonly PartName[] = isDrawn(q) ? [...ABOVE, 'rock'] : ABOVE;
+      const above = names.filter((n) => n !== 'rest' && (whole || soonest.includes(n)));
       const under = names.filter((n) => n !== 'rest' && !above.includes(n));
       let ready = 0;
       const make = async (name: PartName): Promise<void> => {
@@ -439,6 +448,11 @@ export function createWorld(): WorldPiece {
       off = clock.onFrame(frame);
       stale = true;
       frame();
+      if (hazy) {
+        const far = await hazy;
+        if (!stage || !canvas) return;
+        hazed = far ? far(canvas, handheld()) : null;
+      }
       loading.end(LOADING);
       opts.onReady?.();
       if (!under.length) { first = Math.round(performance.now() - from); return; }
@@ -481,9 +495,9 @@ export function createWorld(): WorldPiece {
       }
     
     },
-    setLamp(x: number, y: number) {
-      if (Math.abs(x - lampUV.x) + Math.abs(y - lampUV.y) < 0.003) return;
-      lampUV = { x, y };
+    setLamp(x: number, y: number, led = 0) {
+      if (Math.abs(x - lampUV.x) + Math.abs(y - lampUV.y) + Math.abs(led - lampUV.led) < 0.003) return;
+      lampUV = { x, y, led };
       stale = true;
     },
     whole: () => first > 0,
@@ -552,6 +566,8 @@ export function createWorld(): WorldPiece {
       kept = null;
       sharp?.dispose();
       sharp = null;
+      hazed?.dispose();
+      hazed = null;
       stage?.dispose();
       stage = null;
       moon = null;

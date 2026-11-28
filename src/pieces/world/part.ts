@@ -1,5 +1,6 @@
 import type * as THREE from 'three';
 import type { Tier } from '../../config/site';
+import type { KeptLight } from './kept';
 
 // The hero's world is one piece with one stage, and each thing in it is a part: one file in ./parts, behind this
 // contract. A part builds its group in the world's units, in the world's own frame (./layout.ts), from files made
@@ -30,10 +31,12 @@ export interface PartState {
   // (uStream in ./light.ts), which in the lab is the whole line, lit.
   stream: { on: number; since: number; long: number };
   // Where the cursor is in the world's host, as shares of its width and height from its top left (the same is in
-  // the shared light as uPointer).
-  pointer: { x: number; y: number };
+  // the shared light as uPointer), and led: 1 while a real cursor leads the page's lamp, 0 while it drifts on its own.
+  pointer: { x: number; y: number; led: number };
   // Nothing loops and nothing drifts: reduced motion, the static tier, or a held frame.
   still: boolean;
+  // The clock is held at t, as it is for each frame of a film in turn.
+  held: boolean;
 }
 
 export interface WorldPart {
@@ -45,6 +48,8 @@ export interface WorldPart {
   // Called before a frame is drawn, and only while something of the part is on the screen. It returns true while
   // the part is moving by itself and needs the next frame drawn too.
   update?(s: PartState): boolean | void;
+  // A light of the part's own that moves, for when the world keeps the part as pictures (./kept.ts).
+  kept?: KeptLight;
   // What a part hands the scripts that take pictures of it, if anything.
   tools?: unknown;
   dispose?(): void;

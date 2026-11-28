@@ -3,6 +3,7 @@ import { SPIRE } from '../layout';
 import { load, mesh } from '../files';
 import type { PartFactory } from '../part';
 import { materials, type Band, type Court } from './spire/materials';
+import { wakes } from './towers/wake';
 
 // The spire: the tallest thing in the world, on the hero's center line under his name, with its ring of gold and
 // its court. Made ahead by scripts/world/parts/spire/make.mjs and shipped as public/world/spire.bin, with a map of
@@ -26,7 +27,8 @@ export const build: PartFactory = async (ctx) => {
       return t;
     }),
   ]);
-  const m = materials(map, (file.meta.ledges as number[] | undefined) ?? [0], (file.meta.profile as number[][] | undefined) ?? [[0, 0, 0], [1, 0, 0]], file.meta.ring as Band, file.meta.court as Court, ctx.query.get('spireringlight') !== '0'), made: { dispose(): void }[] = [map, m];
+  const wake = wakes(ctx.query);
+  const m = materials(map, (file.meta.ledges as number[] | undefined) ?? [0], (file.meta.profile as number[][] | undefined) ?? [[0, 0, 0], [1, 0, 0]], file.meta.ring as Band, file.meta.court as Court, ctx.query.get('spireringlight') !== '0', wake?.uniform), made: { dispose(): void }[] = [map, m];
   for (const [name, l] of file.meshes) {
     made.push(l.geometry);
     if (name === 'ring' && ctx.query.get('spirering') === '0') continue;
@@ -35,5 +37,5 @@ export const build: PartFactory = async (ctx) => {
     part.receiveShadow = true;
     group.add(part);
   }
-  return { group, alone: { at: [0, SPIRE.tall * 0.5, 0], r: SPIRE.tall * 0.56 }, dispose() { for (const d of made) d.dispose(); } };
+  return { group, alone: { at: [0, SPIRE.tall * 0.5, 0], r: SPIRE.tall * 0.56 }, ...(wake ? { update: wake.update } : {}), dispose() { for (const d of made) d.dispose(); } };
 };

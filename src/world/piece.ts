@@ -18,7 +18,8 @@ export interface PieceOptions {
 
 export interface Piece {
   mount(host: HTMLElement, opts: PieceOptions): Promise<void>;
-  setLamp(x: number, y: number): void;
+  // led: 1 while a real cursor leads the page's lamp, 0 while it drifts on its own (src/lamp/lamp.ts).
+  setLamp(x: number, y: number, led?: number): void;
   setProgress(p: number): void;
   setWaterLight(k: number): void;
   setMaking(on: boolean): void;

@@ -257,7 +257,7 @@ const VERT = /* glsl */ `
 // colors picture 9's rock has there (./curve.ts, measured off the picture and fitted to the world's last pass by
 // scripts/world/parts/rock-s/fit.mjs). Its brightness is the light's own: only its hue is changed.
 const glslList = (v: readonly number[]): string => v.map(f).join(', ');
-const CURVE_GLSL = /* glsl */ `
+export const CURVE_GLSL = /* glsl */ `
 const float stoneCurveAt[ ${CURVE.at.length} ] = float[]( ${glslList(CURVE.at.map((v) => +v.toPrecision(5)))} );
 const float stoneCurveRing[ ${CURVE.rings.length} ] = float[]( ${glslList(CURVE.rings)} );
 const vec2 stoneCurveTint[ ${CURVE.tint.flat().length} ] = vec2[]( ${CURVE.tint.flat().map(([g, b]) => `vec2( ${f(+g.toFixed(4))}, ${f(+b.toFixed(4))} )`).join(', ')} );

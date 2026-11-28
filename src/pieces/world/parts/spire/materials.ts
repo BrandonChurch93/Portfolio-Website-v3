@@ -4,6 +4,7 @@ import { LIGHT, MOONWARD, SCALE, SPIRE } from '../../layout';
 import { METAL, WARM, lit } from '../../light';
 import { WINDOW } from './windows';
 import { STONES } from './stones';
+import { WOKEN } from '../towers/materials';
 
 // The spire's three materials, after the towers' (./towers/materials.ts), whose ideas they share so the spire is
 // plainly of the same city: stone (warm polished granite in courses, its fronts fluted, the podium's channelled
@@ -282,16 +283,17 @@ float tBox( float x, float a, float b, float w ) { return clamp( ( min( x + 0.5 
 // A line of width w at every whole number, filtered.
 float tLine( float x, float w, float fw ) { return 1.0 - tPulse( x + 0.5, 0.5 * w, 1.0 - 0.5 * w, fw ); }`;
 
-function stone(ledges: number[], band: Band, court: Court, ringLit: boolean): THREE.MeshStandardMaterial {
+function stone(ledges: number[], band: Band, court: Court, ringLit: boolean, wake?: THREE.IUniform<THREE.Vector3[]>): THREE.MeshStandardMaterial {
   const g = STONE.granite, r = STONE.rusticated, t = STONE.trim, c = STONE.court;
   const g3 = (k: number): [PaletteName, PaletteName, number, number] => [STONES.granite[0], STONES.granite[1], STONES.granite[2], STONES.granite[3] * k];
   const m = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: g.rough, metalness: 0 });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uMoonward = { value: new THREE.Vector3(...MOONWARD).normalize() };
+    if (wake) sh.uniforms.uWake = wake;
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute vec4 grain;\nvarying vec4 vGrain;\nvarying vec3 vWorld;')
       .replace('#include <begin_vertex>', `#include <begin_vertex>\nvGrain = grain;\nvWorld = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz / ${f(SCALE)};`);
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>\nuniform vec3 uMoonward;\nvarying vec4 vGrain;\nvarying vec3 vWorld;\nvec3 sEmit;\nfloat sRough = ${f(g.rough)}, sTilt = 0.0, sLift = 0.0, sShut = 1.0;\nconst float sLedges[ ${ledges.length} ] = float[]( ${ledges.map(f).join(', ')} );${COMMON}`).replace('#include <lights_fragment_end>', `iblIrradiance *= ${f(NIGHT)};\nradiance *= ${f(SHEEN)};\n${ringLit ? ringShade(band) : ''}\n#ifdef WORLD_BAKED\niblIrradiance *= mix( 1.0, wLight.z * wLight.z, ${f(OCCLUDE)} );\n#endif\nreflectedLight.directDiffuse *= ${f(MOONLIT)};\n#include <lights_fragment_end>\nreflectedLight.indirectDiffuse *= mix( ${f(SIDE[0])}, ${f(SIDE[1])}, smoothstep( -0.8, 0.8, inverseTransformDirection( geometryNormal, viewMatrix ).x ) );\n#ifdef WORLD_BAKED\nreflectedLight.indirectDiffuse *= mix( ${f(FALL.foot)}, ${f(FALL.head)}, pow( wLight.w, ${f(FALL.curve)} ) );\n#endif${rim(RIM.stone, false, RIM.stoneTight, true)}${ringLit ? ringLight(band) : ''}`).replace('#include <opaque_fragment>', `outgoingLight = mix( outgoingLight, tKeep( outgoingLight ), ${f(KEEP.stone)} );\n#include <opaque_fragment>`).replace('#include <color_fragment>', `#include <color_fragment>
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>\nuniform vec3 uMoonward;\nvarying vec4 vGrain;\nvarying vec3 vWorld;\nvec3 sEmit;\nfloat sRough = ${f(g.rough)}, sTilt = 0.0, sLift = 0.0, sShut = 1.0;\nconst float sLedges[ ${ledges.length} ] = float[]( ${ledges.map(f).join(', ')} );${COMMON}${WOKEN}`).replace('#include <lights_fragment_end>', `iblIrradiance *= ${f(NIGHT)};\nradiance *= ${f(SHEEN)};\n${ringLit ? ringShade(band) : ''}\n#ifdef WORLD_BAKED\niblIrradiance *= mix( 1.0, wLight.z * wLight.z, ${f(OCCLUDE)} );\n#endif\nreflectedLight.directDiffuse *= ${f(MOONLIT)};\n#include <lights_fragment_end>\nreflectedLight.indirectDiffuse *= mix( ${f(SIDE[0])}, ${f(SIDE[1])}, smoothstep( -0.8, 0.8, inverseTransformDirection( geometryNormal, viewMatrix ).x ) );\n#ifdef WORLD_BAKED\nreflectedLight.indirectDiffuse *= mix( ${f(FALL.foot)}, ${f(FALL.head)}, pow( wLight.w, ${f(FALL.curve)} ) );\n#endif${rim(RIM.stone, false, RIM.stoneTight, true)}${ringLit ? ringLight(band) : ''}`).replace('#include <opaque_fragment>', `outgoingLight = mix( outgoingLight, tKeep( outgoingLight ), ${f(KEEP.stone)} );\n#include <opaque_fragment>`).replace('#include <color_fragment>', `#include <color_fragment>
 {
 	int lay = int( vGrain.z + 0.5 );
 	vec3 sWorldN = inverseTransformDirection( normalize( vNormal ), viewMatrix );
@@ -437,21 +439,23 @@ function stone(ledges: number[], band: Band, court: Court, ringLit: boolean): TH
 		diffuseColor.rgb *= 1.0 - kerb;
 	}
 	sRough = mix( sRough, 0.9, joint );
-}`).replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = sRough;').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += sEmit;').replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+}`).replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = sRough;').replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += sEmit;\n#ifdef WAKES\ntotalEmissiveRadiance += tWallLit( diffuseColor.rgb, ( vec4( normal, 0.0 ) * viewMatrix ).xyz, vWorld );\n#endif').replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
 if ( abs( sTilt ) + abs( sLift ) > 0.0 ) {
 	vec3 sAcross = ( viewMatrix * vec4( 1.0, 0.0, 0.0, 0.0 ) ).xyz, sUp = ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz;
 	vec3 sN = normal + sAcross * tan( sTilt ) + sUp * sLift;
 	normal = sN / max( length( sN ), 1e-5 );
 }`);
   };
-  return lit(m, { key: 'spire-stone', baked: true, core: false });
+  if (wake) m.defines = { WAKES: wake.value.length };
+  return lit(m, { key: wake ? 'spire-stone-wake' : 'spire-stone', baked: true, core: false });
 }
 
-function bay(map: THREE.Texture): THREE.MeshStandardMaterial {
+function bay(map: THREE.Texture, wake?: THREE.IUniform<THREE.Vector3[]>): THREE.MeshStandardMaterial {
   const fr = WINDOW.frame, [c0, c1, c2] = WINDOW.colors;
   const m = new THREE.MeshStandardMaterial({ color: METAL.bronze.clone().multiplyScalar(BAY.bronze), roughness: BAY.rough, metalness: BAY.metal });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uWin = { value: map };
+    if (wake) sh.uniforms.uWake = wake;
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute vec4 cell;\nvarying vec4 vCell;\nvarying vec3 vWPos;\nvarying vec3 vWNorm;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvCell = cell;\nvWPos = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;\nvWNorm = mat3( modelMatrix ) * objectNormal;');
@@ -465,7 +469,7 @@ ${COMMON}
 vec3 tTint( float w ) {
 	float t = 2.0 * w;
 	return t < 1.0 ? mix( ${lin(c0)}, ${lin(c1)}, t ) : mix( ${lin(c1)}, ${lin(c2)}, t - 1.0 );
-}`)
+}${WOKEN}`)
       .replace('#include <color_fragment>', `#include <color_fragment>
 float bGlass = 0.0;
 vec3 bEmit = vec3( 0.0 );
@@ -484,15 +488,24 @@ vec3 bAcross = vec3( 1.0, 0.0, 0.0 );
 		// a box filter over the cells and not a blurred map, so a lit floor is a crisp bar of light under a dark
 		// spandrel and a lit bay a crisp block, never a smear of neighbouring windows or of another strip in the map.
 		vec3 bFar = vec3( 0.0 );
+		#ifdef WAKES
+			float woke = tNearLight( vWPos / ${f(SCALE)} );
+		#endif
 		for ( int j = -1; j <= 1; j ++ ) for ( int i = -1; i <= 1; i ++ ) {
 			vec2 k = id + vec2( float( i ), float( j ) );
 			float w = tBox( c.x, k.x + a.x, k.x + b.x, fw.x ) * tBox( c.y, k.y + a.y, k.y + b.y, fw.y );
 			if ( w <= 0.0 ) continue;
 			vec3 e = texelFetch( uWin, ivec2( k ), 0 ).rgb;
+			#ifdef WAKES
+				e.r = tWoken( k, e.r, woke );
+			#endif
 			float lk = max( pow( e.r, ${f(WINDOW.curve)} ), ${f(WINDOW.dark)} );
 			bFar += w * lk * tTint( e.g * smoothstep( ${f(WINDOW.dim[0])}, ${f(WINDOW.dim[1])}, lk ) ) * ${f(WINDOW.mean)} * ( 1.0 - ${f(WINDOW.blind)} * e.b );
 		}
 		vec3 d = texelFetch( uWin, ivec2( id ), 0 ).rgb;
+		#ifdef WAKES
+			d.r = tWoken( id, d.r, woke );
+		#endif
 		float level = max( pow( d.r, ${f(WINDOW.curve)} ), ${f(WINDOW.dark)} ), blind = d.b;
 		vec3 tint = tTint( d.g * smoothstep( ${f(WINDOW.dim[0])}, ${f(WINDOW.dim[1])}, level ) );
 		float px = min( 1.0 / fw.x, 1.0 / fw.y ), detail = smoothstep( ${f(PANE.detail[0])}, ${f(PANE.detail[1])}, px );
@@ -583,10 +596,11 @@ if ( abs( bTilt.x ) + abs( bTilt.y ) > 0.0 ) {
 	vec3 tilted = normal + vt * bTilt.x + vu * bTilt.y;
 	normal = tilted / max( length( tilted ), 1e-5 );
 }`)
-      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += bEmit;')
+      .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\ntotalEmissiveRadiance += bEmit;\n#ifdef WAKES\ntotalEmissiveRadiance += tWallLit( diffuseColor.rgb, ( vec4( normal, 0.0 ) * viewMatrix ).xyz, vWPos / ${f(SCALE)} );\n#endif`)
       .replace('#include <opaque_fragment>', `outgoingLight = mix( outgoingLight, tKeep( outgoingLight ), ${f(KEEP.glass)} * max( bGlass, step( 0.001, dot( bEmit, vec3( 1.0 ) ) ) ) );\n#include <opaque_fragment>`);
   };
-  return lit(m, { key: 'spire-bay', baked: true, core: false });
+  if (wake) m.defines = { WAKES: wake.value.length };
+  return lit(m, { key: wake ? 'spire-bay-wake' : 'spire-bay', baked: true, core: false });
 }
 
 // The gold. Its reeds are drawn here and not built, as the towers' are: each rounded, its face turning from
@@ -1039,8 +1053,8 @@ export interface SpireMaterials { stone: THREE.MeshStandardMaterial; bay: THREE.
 export interface Court { top: number; front: number; steps: number[]; doors: [number, number, number][] }
 export interface Band { out: number; in: number; half: number; arris: number; crown: number; bead: [number, number] }
 
-export function materials(map: THREE.Texture, ledges: number[], profile: number[][], band: Band, court: Court, ringLit = true): SpireMaterials {
-  const all = { stone: stone(ledges, band, court, ringLit), bay: bay(map), gold: gold(profile, band, false), ring: gold(profile, band, true) };
+export function materials(map: THREE.Texture, ledges: number[], profile: number[][], band: Band, court: Court, ringLit = true, wake?: THREE.IUniform<THREE.Vector3[]>): SpireMaterials {
+  const all = { stone: stone(ledges, band, court, ringLit, wake), bay: bay(map, wake), gold: gold(profile, band, false), ring: gold(profile, band, true) };
   return { ...all, dispose() { for (const m of Object.values(all)) m.dispose(); } };
 }
 

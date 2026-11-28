@@ -1,7 +1,9 @@
 import * as THREE from 'three';
 import { color, lit, stone } from '../light';
 import { load, mesh } from '../files';
-import type { PartFactory } from '../part';
+import type { PartFactory, PartState } from '../part';
+import { HOST } from '../layout';
+import { GIVES_WAY, GROUNDED, HOSTED, LAMPED, isDrawn, lampOf } from './rock/drawn';
 import { TOWERS } from '../placed';
 import { DUNES, GLSL, HEIGHT, MAP, ROW, crestTexels } from './land/field';
 import * as S from './land/shaders';
@@ -107,7 +109,12 @@ export const build: PartFactory = async ({ query, renderer }) => {
   // crest, a little past upright, and seen from the back they were holes. The shader takes its normal from the
   // mesh's vertices and the land's own shape, so a turned triangle is lit as the ground round it.
   const m = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.85, metalness: 0, specularIntensity: SHEEN, side: THREE.DoubleSide });
+  // In picture 10's look the ground takes the cursor's light: over what the moon gives it, here when the land is
+  // drawn and from the same lines when it is laid from its kept pictures, so the two are one picture.
+  const lamp = isDrawn(query) && !query.get('landdebug') ? { value: new THREE.Vector3() } : null;
+  let held = 0;
   m.onBeforeCompile = (sh: Shader) => {
+    if (lamp) sh.uniforms.uLamp = lamp;
     Object.assign(sh.uniforms, {
       uAt: { value: ground.at }, uSize: { value: ground.size },
       uMapA: { value: a }, uMapB: { value: b }, uLight: { value: light }, uLots: { value: lots }, uTowers: { value: lots3 }, uCrest: { value: crest }, uHeight: { value: high.texture },
@@ -121,7 +128,9 @@ export const build: PartFactory = async ({ query, renderer }) => {
     fr = after(fr, 'metalnessmap_fragment', S.METAL);
     fr = after(fr, 'normal_fragment_maps', S.NORMAL);
     fr = after(fr, 'lights_fragment_begin', S.DIRECT);
+    if (isDrawn(query)) fr = fr.replace('void main() {', `void main() {${GIVES_WAY}`);
     if (query.get('landdebug')) fr = fr.replace('#include <opaque_fragment>', `#include <opaque_fragment>\ngl_FragColor = vec4(${query.get('landdebug')}, 1.0);`);
+    if (lamp) fr = fr.replace('void main() {', `uniform vec3 uLamp;${HOSTED}${LAMPED}${GROUNDED}\nvoid main() {`).replace('#include <opaque_fragment>', '#include <opaque_fragment>\ngl_FragColor.rgb += grounded( gl_FragColor.rgb, hosted( vUnit ), uLamp );');
     fr = fr.replace('#include <lights_fragment_end>', `${S.LIGHT_END}\n#include <lights_fragment_end>`);
     sh.fragmentShader = fr;
   };
@@ -134,6 +143,14 @@ export const build: PartFactory = async ({ query, renderer }) => {
   group.add(o);
   return {
     group,
+    ...(lamp ? {
+      update(s: PartState) { lampOf(s, lamp.value); },
+      kept: {
+        pars: `uniform vec3 uLamp;${LAMPED}${GROUNDED}\nvec3 keptLit( vec3 own, vec2 at ) { return grounded( own, at * ${HOST.wide.toFixed(1)}, uLamp ); }`,
+        uniforms: { uLamp: lamp },
+        out(on: boolean) { if (on) { held = lamp.value.z; lamp.value.z = 0; } else lamp.value.z = held; },
+      },
+    } : {}),
     // ?landat=x,y,z,r frames the land alone on any place of it, for judging one place close.
     alone: (() => { const [x, y, z, r] = (query.get('landat') ?? '0,0,120,560').split(',').map(Number); return { at: [x, y, z] as [number, number, number], r }; })(),
     dispose() { ground.geometry.dispose(); m.dispose(); for (const t of [a, b, lots, light, crest, lots3]) t.dispose(); high.dispose(); },

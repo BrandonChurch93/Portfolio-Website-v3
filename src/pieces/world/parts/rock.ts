@@ -5,6 +5,8 @@ import { lit } from '../light';
 import type { PartFactory } from '../part';
 import { STREAM, stoneMaps, stoneMaterial } from './rock/stone';
 import { LIGHTMAP } from './rock/light-map';
+import { build as drawnRock, isDrawn } from './rock/drawn';
+import { build as pictured } from './rock/pictured';
 
 // The torn rock: whichever sculpt is asked for (?rock=a or s, default r), drawn in the planet's stone (./rock/stone.ts).
 // Sculpt S wears a quiet stone (StoneOptions.quiet): its form and the core's light carry it.
@@ -23,6 +25,8 @@ import { LIGHTMAP } from './rock/light-map';
 // 'bed' (sculpt S, round 4), they hold each vertex's bedding, which the quiet stone lays its laminae along and works
 // each mass's tone out from, and the light takes picture 9's hue (./rock/curve.ts; ?curve=0 leaves it as it is).
 // The sculpt the world wears: S, the solid one (BRIEF.md, Settled, Hero, Nov 18). ?rock=r is the one before it.
+// ?rock=p is no sculpt: the rock as pictures of this one view, lit by the page (./rock/pictured.ts). A proof, put
+// to him on Nov 25 and not ruled on.
 const ROCK = 's';
 const DARK = 0x16110d, CLAY = 0x96897b;
 
@@ -77,7 +81,10 @@ function nearStream(l: Loaded): THREE.BufferGeometry | null {
   return out;
 }
 
-export const build: PartFactory = async ({ query, renderer }) => {
+export const build: PartFactory = async (ctx) => {
+  const { query, renderer } = ctx;
+  if (isDrawn(query)) return drawnRock(ctx);
+  if (query.get('rock') === 'p') return pictured(ctx);
   const group = new THREE.Group(), which = query.get('rock') ?? ROCK, made: { dispose(): void }[] = [], near: THREE.Mesh[] = [];
   const plain = query.get('stone') === '0';
   const add = (g: THREE.BufferGeometry, m: THREE.Material): void => { made.push(g, m); };

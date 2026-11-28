@@ -1,10 +1,12 @@
 import * as THREE from 'three';
 import { hex } from '../../../../config/palette';
-import { MOONWARD, SCALE, ground } from '../../layout';
+import { DUST, FAR as HAZE } from '../../far';
+import { HOST, LAND, MOONWARD, SCALE, WORLD, ground } from '../../layout';
 import { STEP, TOWERS } from '../../placed';
 import { METAL, WARM as KEPT, lit } from '../../light';
 import { FRONT, LANTERN_AT, PALE_STONE, PLACE, SLIVER, STONES, WARM, WINDOW } from './windows';
 import { OBELISK, SUN, discAt, obeliskPoint } from './marks';
+import { HOSTED, LAMPED } from '../rock/drawn';
 
 const FOOT = PLACE.foot;
 // Where his stepped tower stands, so the gold's material lights his crown as its own (MARK.his, LANTERN).
@@ -92,6 +94,17 @@ const CITY = { pale: 0.15, power: 0.6, wrap: 0.1, fall: 26, floor: 0.25, his: [1
 // so the front row is lit and crisp and the last rows are near silhouettes against the glow behind the world. The air
 // is a dark warm grey, less red than the walls, so the far rows cool as they fall back.
 const DEPTH = { far: 0.5, lights: 0.5, curve: 0.6, haze: 0.5, air: [0.032, 0.022, 0.015] };
+// Where the far city stands behind the world (../../far.ts, isHazed) its haze lies among the city's rows as well,
+// after that air: a row is paler the further back it stands, palest at its feet, and the front rows are as they
+// were, so the built city goes on into the far towers with no line between them. The far picture is under the
+// world's canvas and cannot do this: laid only behind the city it read as a flat band (his ruling of Nov 26). It
+// begins `from` units in front of the spire, just behind the three gold crowned towers of the front, since from the
+// page's view the rows further back are all but hidden. `fades` units into the thick of it a place has gone 1 - 1/e
+// of the way it can go, and nothing goes more than `most` of the way, so a far room's light still shows. It is as
+// thick at a height over the ground as the far haze is bright at that height over the land's far edge, and what a
+// place goes toward is the far haze's own light where the place is drawn, so a tower in it is never brighter than
+// the haze beside it.
+const MIST = { from: 20, fades: 110, most: 0.9 };
 // A lit face: the light from without held under a soft shoulder from `knee` (the
 // brightest channel, linear) over `soft`, and going toward the palette's pale only from pale[0] to pale[1].
 const LIT_FACE = { knee: 0.5, soft: 0.3, pale: [0.75, 1.2] };
@@ -123,6 +136,65 @@ const CURTAIN = { mullion: 0.08, through: 0.32, tint: 0.6, gild: 0.5, metal: 0.9
 // toward the palette's pale the line is.
 const BAND = { moon: 2.4, city: 1.6, tight: 24, pale: 0.3 };
 const CURTAIN_TINT = METAL.bronze.clone().lerp(METAL.gold, CURTAIN.gild).multiplyScalar(CURTAIN.tint);
+// Rooms that wake as the cursor's light passes, in picture 10's look alone. A dark room wakes within about `near`
+// units of the light in the host, each at a nearness of its own from `from` up and over `soft` of it, `share` of all
+// rooms at most, to between `level` of the brightest room's level as the map stores it. The light leaves a mark
+// where it has moved `step` units on, `marks` at most with the light itself and never so often that one is dropped
+// before its time, and a place it has left goes back to sleep over `lasts` seconds. Rooms wake together in runs of
+// `run` along a floor, as a floor's lights do. `walls` is how much of the cursor's light a wall facing it takes, as a
+// share of its own color.
+export const WAKE = { near: 120, from: 0.2, soft: 0.14, share: 0.6, level: [0.62, 0.96], lasts: 2.4, step: 40, marks: 12, run: [2, 4], walls: 0.6 } as const;
+// For a shader of this city that has tHash, where WAKES is defined: the cursor's light and the marks it has left
+// (./wake.ts), how near the nearest of them is to a place of the world, a room's level once that has woken it, and
+// what a wall takes of the light itself.
+export const WOKEN = /* glsl */ `
+#ifdef WAKES
+uniform vec3 uWake[ WAKES ];${HOSTED}${LAMPED}
+float tNearLight( vec3 unit ) {
+	float near = 0.0;
+	vec2 here = hosted( unit );
+	for ( int i = 0; i < WAKES; i ++ ) {
+		vec2 off = ( here - uWake[ i ].xy ) / ${f(WAKE.near)};
+		near = max( near, uWake[ i ].z / ( 1.0 + dot( off, off ) ) );
+	}
+	return near;
+}
+float tWoken( vec2 id, float stored, float near ) {
+	float len = floor( mix( ${f(WAKE.run[0])}, ${f(WAKE.run[1] + 1)}, tHash( vec2( id.y, 5.0 ) ) ) );
+	float h = tHash( vec2( floor( ( id.x + len * tHash( vec2( id.y, 17.0 ) ) ) / len ), id.y ) + vec2( 13.0, 57.0 ) ) / ${f(WAKE.share)};
+	if ( h > 1.0 ) return stored;
+	float mine = mix( ${f(WAKE.from)}, ${f(1 - WAKE.soft)}, h );
+	return max( stored, smoothstep( mine, mine + ${f(WAKE.soft)}, near ) * mix( ${f(WAKE.level[0])}, ${f(WAKE.level[1])}, tHash( id + vec2( 71.0, 29.0 ) ) ) );
+}
+vec3 tWallLit( vec3 own, vec3 facing, vec3 unit ) {
+	return ${f(WAKE.walls)} * lamped( own, facing, hosted( unit ), uWake[ 0 ] );
+}
+#endif`;
+// For a shader of this city that has tKeep and WOKEN: the far haze's light at a place across the host and a height
+// (far.ts draws the same, with its banks), and a color as the haze among the city's rows leaves it (MIST), at a place
+// of the world in units. The land's far edge is found as far.ts finds it, in two steps across.
+const GONE = Math.exp(-HAZE.tall / HAZE.falls);
+const MISTED = /* glsl */ `
+#ifdef MISTS
+float tHaze( float across, float h ) {
+	float thin = max( 0.0, ( exp( - max( h, 0.0 ) / ${f(HAZE.falls)} ) - ${f(GONE)} ) / ${f(1 - GONE)} );
+	return ${f(HAZE.most)} * ( 1.0 - smoothstep( ${f(HAZE.wide[0])}, ${f(HAZE.wide[1])}, abs( across - ${f(HAZE.at)} ) ) ) * thin
+		+ ${f(HAZE.low.most)} * ( 1.0 - smoothstep( ${f(HAZE.low.wide[0])}, ${f(HAZE.low.wide[1])}, abs( across - ${f(HAZE.low.at)} ) ) ) / ( 1.0 + exp( ( h - ${f(HAZE.low.half)} ) / ${f(HAZE.low.soft)} ) );
+}
+vec2 tFarEdge( float x ) {
+	x = clamp( x, ${f(-LAND.rim)}, ${f(LAND.rim)} );
+	return hosted( vec3( x, 0.0, - sqrt( max( ${f(LAND.rim * LAND.rim)} - x * x, 0.0 ) ) ) );
+}
+vec3 tMist( vec3 c, vec3 unit ) {
+	vec2 here = hosted( unit );
+	float x = here.x - ${f(HOST.wide / 2)};
+	float edge = tFarEdge( x + here.x - tFarEdge( x ).x ).y;
+	float up = unit.y - ( sqrt( max( 1.0, ${f(WORLD.top * WORLD.top)} - dot( unit.xz, unit.xz ) ) ) - ${f(WORLD.top)} );
+	float veil = ${f(MIST.most)} * ( 1.0 - exp( - max( ${f(MIST.from)} - unit.z, 0.0 ) / ${f(MIST.fades)} * tHaze( here.x, up ) / ${f(HAZE.most + HAZE.low.most)} ) );
+	vec3 s = ${v3(DUST.map((v) => v / 255))} * tHaze( here.x, edge - here.y );
+	return mix( c, tKeep( mix( s / 12.92, pow( ( s + 0.055 ) / 1.055, vec3( 2.4 ) ), step( 0.04045, s ) ) ), veil );
+}
+#endif`;
 const BAY = { bronze: 0.62, rough: 0.5, metal: 0.85, glass: 0.06, bevel: 0.07, copper: 0.4, stone: 0.9 };
 // A field of windows seen from far off, where a window is a few pixels or less: it is drawn as its own wall, a warm
 // stone of this tone, with only its brightest rooms lit, each a small crisp light, one at most in each block of
@@ -361,13 +433,14 @@ const SKY_LIGHT = `
 }
 #endif`;
 
-function stone(): THREE.MeshStandardMaterial {
+function stone(wake?: THREE.IUniform<THREE.Vector3[]>, mists = false): THREE.MeshStandardMaterial {
   const m = new THREE.MeshStandardMaterial({ color: PALE, roughness: STONE.rough, metalness: 0 });
   m.onBeforeCompile = (sh) => {
+    if (wake) sh.uniforms.uWake = wake;
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute vec3 kind;\nvarying vec3 vKind;\nvarying vec3 vWPos;\nvarying vec3 vWNorm;\nvarying vec2 vFoot;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvKind = kind;\nvWPos = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;\nvWNorm = mat3( modelMatrix ) * objectNormal;\nvFoot = vec2( aLight.w, aBounce.w );');
-    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>\nvarying vec3 vKind;\nvarying vec3 vWPos;\nvarying vec3 vWNorm;\nvarying vec2 vFoot;\nvec2 sFinish;\nfloat tRimOn;\nfloat tThin;\nfloat tPpu;\nfloat tRimFade;\nvec3 tRimLight;\n#define OWN ( vKind.y < ${f(0.5 / (STONES.length - 1))} ? 1.0 : 0.0 )${COMMON}`)
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', `#include <common>\nvarying vec3 vKind;\nvarying vec3 vWPos;\nvarying vec3 vWNorm;\nvarying vec2 vFoot;\nvec2 sFinish;\nfloat tRimOn;\nfloat tThin;\nfloat tPpu;\nfloat tRimFade;\nvec3 tRimLight;\n#define OWN ( vKind.y < ${f(0.5 / (STONES.length - 1))} ? 1.0 : 0.0 )${COMMON}${WOKEN}${MISTED}`)
       .replace('#include <lights_physical_pars_fragment>', `#include <lights_physical_pars_fragment>${RIM_DIRECT}`)
       .replace('#include <color_fragment>', `#include <color_fragment>
 tRimOn = 1.0;
@@ -419,21 +492,29 @@ tRimLight = vec3( 0.0 );
 {
 	vec3 upV = ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz;
 	totalEmissiveRadiance += diffuseColor.rgb * ( 1.0 - 0.7 * sFinish.x ) * ( ${lin3(CITY_LIGHT)} * tFlood( normal, vFoot.y ) + ${lin3(HOT)} * tStreet( vFoot.x * ${f(FOOT)}, dot( normal, upV ), wLight.z, vWPos.x / ${f(SCALE)} ) + mix( ${lin3(CITY_LIGHT)}, ${lin3(HIS_LIGHT)}, OWN ) * tCity( normal, vFoot.x * ${f(FOOT)}, wLight.x, wLight.z, OWN ) );
+	#ifdef WAKES
+		totalEmissiveRadiance += tWallLit( diffuseColor.rgb * ( 1.0 - 0.7 * sFinish.x ), ( vec4( normal, 0.0 ) * viewMatrix ).xyz, vWPos / ${f(SCALE)} );
+	#endif
 }`).replace('#include <lights_fragment_end>', `iblIrradiance *= ${f(STONE.night)};\n#define SKY_KEEP mix( 1.0, ${f(SHADE.his)}, OWN )${SKY_LIGHT}\n#include <lights_fragment_end>`).replace('#include <opaque_fragment>', `outgoingLight = tPale( tKnee( tCooled( ( outgoingLight - totalEmissiveRadiance ) * tRise( vFoot.y ), tCool( vKind.y ) ) ) + totalEmissiveRadiance + tRimLight );
 outgoingLight = max( mix( outgoingLight, tKeep( outgoingLight ), mix( ${f(STONE.keep[0])}, ${f(STONE.keep[1])}, sFinish.x ) ), 0.0 );
 outgoingLight = tAir( outgoingLight, vWPos.z );
+#ifdef MISTS
+	outgoingLight = tMist( outgoingLight, vWPos / ${f(SCALE)} );
+#endif
 #include <opaque_fragment>`);
   };
-  return lit(m, { key: 'towers-stone', baked: true, core: false });
+  if (wake) m.defines = { WAKES: wake.value.length, ...(mists ? { MISTS: 1 } : {}) };
+  return lit(m, { key: wake ? 'towers-stone-wake' : 'towers-stone', baked: true, core: false });
 }
 
-function bay(map: THREE.Texture): THREE.MeshStandardMaterial {
+function bay(map: THREE.Texture, wake?: THREE.IUniform<THREE.Vector3[]>, mists = false): THREE.MeshStandardMaterial {
   const fr = WINDOW.frame, [c0, c1, c2] = WINDOW.colors, img = map.image as { width: number; height: number };
   const blindMean = 1 - WINDOW.blind * WINDOW.blinds * 0.5;
   const m = new THREE.MeshStandardMaterial({ color: METAL.bronze.clone().multiplyScalar(BAY.bronze), roughness: BAY.rough, metalness: BAY.metal });
   m.onBeforeCompile = (sh) => {
     sh.uniforms.uWin = { value: map };
     sh.uniforms.uWinSize = { value: new THREE.Vector2(img.width, img.height) };
+    if (wake) sh.uniforms.uWake = wake;
     sh.vertexShader = sh.vertexShader
       .replace('#include <common>', '#include <common>\nattribute vec2 cell;\nattribute vec2 cellSize;\nuniform vec2 uWinSize;\nvarying vec4 vCell;\nvarying vec3 vWPos;\nvarying vec3 vWNorm;\nvarying vec2 vFoot;')
       .replace('#include <begin_vertex>', '#include <begin_vertex>\nvCell = vec4( cell * uWinSize, cellSize );\nvWPos = ( modelMatrix * vec4( transformed, 1.0 ) ).xyz;\nvWNorm = mat3( modelMatrix ) * objectNormal;\nvFoot = vec2( aLight.w, aBounce.w );');
@@ -454,7 +535,8 @@ ${COMMON}
 vec3 tTint( float w ) {
 	float t = 2.0 * w;
 	return t < 1.0 ? mix( ${lin(c0)}, ${lin(c1)}, t ) : mix( ${lin(c1)}, ${lin(c2)}, t - 1.0 );
-}`)
+}
+${WOKEN}${MISTED}`)
       .replace('#include <lights_physical_pars_fragment>', `#include <lights_physical_pars_fragment>${RIM_DIRECT}`)
       .replace('#include <color_fragment>', `#include <color_fragment>
 tRimOn = 1.0;
@@ -504,12 +586,20 @@ vec3 bAcross = vec3( 1.0, 0.0, 0.0 );
 		// over the pixel's own height up it, so a lit run along a floor stays a bar of light a few pixels long and a
 		// floor's height, and never spreads up and down into a blot, as the map's smaller copies made it.
 		vec3 d = textureGrad( uWin, ( id + 0.5 ) / uWinSize, dFdx( c ) / uWinSize, dFdy( c ) / uWinSize ).rgb;
+		#ifdef WAKES
+			float woke = tNearLight( vWPos / ${f(SCALE)} );
+			d.r = tWoken( id, d.r, woke );
+		#endif
 		if ( bFar > 0.0 ) {
 			vec3 run = vec3( 0.0 );
 			float across = ${f(FAR.patch)} * fw.x;
 			for ( int i = 0; i < ${FAR.taps}; i ++ ) for ( int j = 0; j < 2; j ++ ) {
 				vec2 q = c + vec2( ( ( float( i ) + 0.5 ) / ${f(FAR.taps)} - 0.5 ) * across, ( float( j ) - 0.5 ) * 0.5 * fw.y );
-				run += texelFetch( uWin, ivec2( floor( q ) ), 0 ).rgb;
+				vec3 one = texelFetch( uWin, ivec2( floor( q ) ), 0 ).rgb;
+				#ifdef WAKES
+					one.r = tWoken( floor( q ), one.r, woke );
+				#endif
+				run += one;
 			}
 			d = mix( d, run / ${f(2 * FAR.taps)}, bFar );
 		}
@@ -637,6 +727,9 @@ if ( abs( bTilt.x ) + abs( bTilt.y ) > 0.0 ) {
 		}
 	}
 	totalEmissiveRadiance += diffuseColor.rgb * matte * ( 1.0 - max( bGlass, bSheet ) ) * ${lin3(CITY_LIGHT)} * tFlood( normal, vFoot.y );
+	#ifdef WAKES
+		totalEmissiveRadiance += tWallLit( diffuseColor.rgb * matte * ( 1.0 - max( bGlass, bSheet ) ), ( vec4( normal, 0.0 ) * viewMatrix ).xyz, vWPos / ${f(SCALE)} );
+	#endif
 	totalEmissiveRadiance += bEmit + diffuseColor.rgb * ${lin3(HOT)} * ( ( 1.0 - max( bGlass, bSheet ) ) * bSpill + ${f(CURTAIN.city)} * bPolish ) + diffuseColor.rgb * matte * ( ${lin3(HOT)} * tStreet( vFoot.x * ${f(FOOT)}, dot( normal, upV ), wLight.z, vWPos.x / ${f(SCALE)} ) + ${lin3(CITY_LIGHT)} * tCity( normal, vFoot.x * ${f(FOOT)}, wLight.x, wLight.z, 0.0 ) );
 }`)
       .replace('#include <lights_fragment_end>', `iblIrradiance *= mix( 1.0, ${f(STONE.night)}, max( bStone, bFar ) * ( 1.0 - bSheet ) );\n#define SKY_KEEP 1.0${SKY_LIGHT}\n#include <lights_fragment_end>`)
@@ -645,10 +738,14 @@ if ( abs( bTilt.x ) + abs( bTilt.y ) > 0.0 ) {
 	float lamp = clamp( dot( bEmit, vec3( 1.0 ) ) / max( dot( outgoingLight, vec3( 1.0 ) ), 1e-5 ), 0.0, 1.0 );
 	outgoingLight = max( mix( outgoingLight, tKeep( outgoingLight ), max( max( max( max( max( bGlass, bLit ), bCopper ), bKeep ), lamp ), bSheet ) ), 0.0 );
 	outgoingLight = tAir( outgoingLight, vWPos.z );
+	#ifdef MISTS
+		outgoingLight = tMist( outgoingLight, vWPos / ${f(SCALE)} );
+	#endif
 }
 #include <opaque_fragment>`);
   };
-  return lit(m, { key: 'towers-bay', baked: true, core: false });
+  if (wake) m.defines = { WAKES: wake.value.length, ...(mists ? { MISTS: 1 } : {}) };
+  return lit(m, { key: wake ? 'towers-bay-wake' : 'towers-bay', baked: true, core: false });
 }
 
 // Where the marks stand in the world, for the gold's shader: the obelisk's point from its plinth to its head, the
@@ -868,7 +965,7 @@ if ( vFlute.y > 0.5 && vFlute.y < 1.5 ) {
 
 export interface TowerMaterials { stone: THREE.MeshStandardMaterial; bay: THREE.MeshStandardMaterial; gold: THREE.MeshStandardMaterial; dispose(): void }
 
-export function materials(map: THREE.Texture): TowerMaterials {
-  const all = { stone: stone(), bay: bay(map), gold: gold() };
+export function materials(map: THREE.Texture, wake?: THREE.IUniform<THREE.Vector3[]>, hazed = false): TowerMaterials {
+  const mists = hazed && HAZE.on, all = { stone: stone(wake, mists), bay: bay(map, wake, mists), gold: gold() };
   return { ...all, dispose() { for (const m of Object.values(all)) m.dispose(); } };
 }
