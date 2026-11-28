@@ -5,6 +5,7 @@ Newest first. One entry per piece of work. Say what was done, what Brandon said,
 ## 2026-11-27 · He picked M, the neighbourhood, and the city large on a phone (Fable, web chat)
 
 - **What he said (Nov 27, about 10:10 PM, in the web chat).** "I'll go with your recommendation" He was answering the message of about 8:00 PM (the entry "What he said of round 3, ground round 4 shown, and the address is a placeholder", below), which asked him two things and ended with Fable's recommendation: reply "M, city large".
+- **He said it again, in words of his own (about 10:30 PM), before the reply to the first had gone out.** "My favorite is the neighborhood, by the way. I didn't catch that you out putted those earlier. The neighborhood is definitely my favorite!" Written under the ruling in the brief. One reply answers both, and says both rulings back to him.
 - **Written into the brief as two rulings, in exact terms, and said back to him in the reply so that he can correct either** (`BRIEF.md`, Hero, "He picked M, the neighbourhood" and "He chose the city large on a phone"):
     - The bare ground in front of the pyramid's right face and to the pyramid's right is filled with a neighbourhood of low houses, as M's picture has them, on the bare ground only, in the city's own stone, with today's trees kept behind it. No monument stands there.
     - On a phone the hero's world stays laid out as it is today, the city large. The whole planet 28% smaller is not built.
