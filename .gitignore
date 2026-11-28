@@ -12,3 +12,5 @@ next-env.d.ts
 .vercel
 # Written by next dev on every start.
 /AGENTS.md
+# The new world's planet without its falling sand, written by `npm run picture -- --look d`. Nothing asks for it.
+/public/media/world-d/planet-no-sand.webp

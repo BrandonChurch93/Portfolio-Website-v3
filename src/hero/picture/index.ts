@@ -1,4 +1,4 @@
-import { CORE, HOST, SOURCE, drawn } from '../../pieces/world/layout';
+import { CORE, HOST, SOURCE, drawn, isDrawn } from '../../pieces/world/layout';
 import { clock } from '../../world/clock';
 import { carried, drift, ridden } from './drift';
 import { PICTURE, type Chip, type Group, type Layers, type Ride, type Rider, type Sprite } from './plan';
@@ -11,6 +11,8 @@ import styles from './picture.module.css';
 // a cover that comes down with the stream's leading end, so the light follows the stream as it does on the live
 // world. The page's stream is the page's own and leaves the core as it always does. No canvas, and nothing but
 // transforms changes from frame to frame. scripts/world/picture.mjs takes the pictures (npm run picture).
+// With ?look=d in the address they are the pictures of that world, from its own folder (PICTURE.drawn): its planet,
+// with its haze and far towers in it, its list and its pages.
 
 export interface WorldPicture {
   // The page's stream: how much of it is there, the seconds since it set off, and how far under the core's foot its
@@ -23,7 +25,7 @@ export interface WorldPicture {
 
 const S = PICTURE.scale;
 const U = (n: number): string => `calc(var(--u) * ${Number(n.toFixed(2))})`;
-const file = (name: string): string => `${PICTURE.dir}/${name}?v=${process.env.NEXT_PUBLIC_BUILD ?? 'dev'}`;
+const stamped = (path: string): string => `${path}?v=${process.env.NEXT_PUBLIC_BUILD ?? 'dev'}`;
 const make = (cls: string, parent: Element, tag = 'div'): HTMLElement => { const e = document.createElement(tag); e.className = cls; parent.appendChild(e); return e; };
 // How near the screen it has to be to move, and to hold its layers at all, as shares of the screen's height.
 const NEAR = { moves: 0.15, holds: 1.2 };
@@ -33,6 +35,10 @@ const FRONT = CORE.at[2] - 40;
 
 export function mountPicture(host: HTMLElement, opts: { onReady?: () => void; onProgress?: (share: number) => void } = {}): WorldPicture {
   const root = make(styles.world, host), planet = make(styles.planet, root, 'img') as HTMLImageElement;
+  // The look the address asks for has its own folder. A page is this look's own unless its list says where it is.
+  const dir = isDrawn(new URLSearchParams(location.search)) ? PICTURE.drawn.dir : PICTURE.dir;
+  const file = (name: string): string => stamped(`${dir}/${name}`);
+  let page = (i: number): string => file(PICTURE.page(i));
   root.setAttribute('aria-hidden', 'true');
   planet.alt = '';
   planet.decoding = 'async';
@@ -45,7 +51,7 @@ export function mountPicture(host: HTMLElement, opts: { onReady?: () => void; on
 
   const cut = (parent: Element, s: Sprite, ox: number, oy: number, pages: Layers['pages'], lit: boolean): void => {
     const at = lit && s.lit ? s.lit : s.at, [pw, ph] = pages[at[0]], e = make(styles.cut, parent, 'i');
-    Object.assign(e.style, { left: U(s.box[0] - ox), top: U(s.box[1] - oy), width: U(s.box[2]), height: U(s.box[3]), backgroundImage: `url(${file(PICTURE.page(at[0]))})`, backgroundSize: `${U(pw / S)} ${U(ph / S)}`, backgroundPosition: `${U(-at[1] / S)} ${U(-at[2] / S)}` });
+    Object.assign(e.style, { left: U(s.box[0] - ox), top: U(s.box[1] - oy), width: U(s.box[2]), height: U(s.box[3]), backgroundImage: `url(${page(at[0])})`, backgroundSize: `${U(pw / S)} ${U(ph / S)}`, backgroundPosition: `${U(-at[1] / S)} ${U(-at[2] / S)}` });
   };
   const within = (b: readonly number[]): boolean => b[0] < lane[0] + lane[2] && lane[0] < b[0] + b[2] && b[1] < lane[1] + lane[3] && lane[1] < b[1] + b[3];
   const group = (parent: Element, g: Group, ox: number, oy: number, pages: Layers['pages'], lit: boolean): HTMLElement => {
@@ -77,7 +83,7 @@ export function mountPicture(host: HTMLElement, opts: { onReady?: () => void; on
       ride = L.ride;
       if (ride && L.riders.length) for (let i = 0; i < PICTURE.riding; i++) {
         const r = L.riders[i % L.riders.length], [pw, ph] = L.pages[r.on[0]], e = make(styles.chip, hold!, 'i');
-        Object.assign(e.style, { width: U(r.size[0]), height: U(r.size[1]), backgroundImage: `url(${file(PICTURE.page(r.on[0]))})`, backgroundSize: `${U(pw / S)} ${U(ph / S)}`, backgroundPosition: `${U(-r.on[1] / S)} ${U(-r.on[2] / S)}` });
+        Object.assign(e.style, { width: U(r.size[0]), height: U(r.size[1]), backgroundImage: `url(${page(r.on[0])})`, backgroundSize: `${U(pw / S)} ${U(ph / S)}`, backgroundPosition: `${U(-r.on[1] / S)} ${U(-r.on[2] / S)}` });
         riders.push({ r, el: e, was: '' });
       }
       if (L.neck) cut(hold!, L.neck, lane[0], lane[1], L.pages, false);
@@ -86,7 +92,7 @@ export function mountPicture(host: HTMLElement, opts: { onReady?: () => void; on
       carriedIn = true;
       for (const c of L.chips) {
         const [pw, ph] = L.pages[c.on[0]], e = make(styles.chip, hold!, 'i');
-        Object.assign(e.style, { width: U(c.size[0]), height: U(c.size[1]), backgroundImage: `url(${file(PICTURE.page(c.on[0]))})`, backgroundSize: `${U(pw / S)} ${U(ph / S)}`, backgroundPosition: `${U(-c.on[1] / S)} ${U(-c.on[2] / S)}` });
+        Object.assign(e.style, { width: U(c.size[0]), height: U(c.size[1]), backgroundImage: `url(${page(c.on[0])})`, backgroundSize: `${U(pw / S)} ${U(ph / S)}`, backgroundPosition: `${U(-c.on[1] / S)} ${U(-c.on[2] / S)}` });
         chips.push({ c, el: e, was: '' });
       }
     };
@@ -154,7 +160,9 @@ export function mountPicture(host: HTMLElement, opts: { onReady?: () => void; on
       opts.onProgress?.(0.7);
       opts.onReady?.();
       const L = await list;
-      await Promise.all(L.pages.map((_, i) => got(new Image(), file(PICTURE.page(i)))));
+      const named = L.files;
+      if (named) page = (i) => stamped(named[i]);
+      await Promise.all(L.pages.map((_, i) => got(new Image(), page(i))));
       if (disposed) return;
       build(L);
     } catch (e) {

@@ -96,10 +96,12 @@ export interface WorldExtras {
   // drew, how many shader programs it has had compiled, and what the graphics card holds for it.
   // For timing a frame: the world drawn without these parts.
   without(names: string[]): void;
-  // For the script that takes the world as pictures (scripts/world/picture.mjs): what broke away's own tools, and
-  // every other part drawn as depth alone, so a picture of some pieces is cut where the planet stands before them.
+  // For the script that takes the world as pictures (scripts/world/picture.mjs): what broke away's own tools, the
+  // core's and the rock's (which has some only as picture 10 draws it), and every other part drawn as depth alone,
+  // so a picture of some pieces is cut where the planet stands before them.
   debris(): unknown;
   core(): unknown;
+  rock(): unknown;
   ghost(on: boolean): void;
   stats(): { built: Record<string, number>; first: number; calls: number; triangles: number; programs: number; geometries: number; textures: number; passes: string[]; sharp: ReturnType<Sharp['state']> | null };
   // With ?trace=1, what each frame did and what the making did, since the last call: for finding the frames that run long.
@@ -525,6 +527,7 @@ export function createWorld(): WorldPiece {
     without(names: string[]) { left = new Set(names); stale = true; unsharp(); },
     debris: () => parts.find((p) => p.name === 'debris')?.part.tools ?? null,
     core: () => parts.find((p) => p.name === 'core')?.part.tools ?? null,
+    rock: () => parts.find((p) => p.name === 'rock')?.part.tools ?? null,
     ghost(on: boolean) {
       for (const p of parts) if (p.name !== 'debris') p.part.group.traverse((o) => {
         for (const m of [(o as THREE.Mesh).material].flat()) {

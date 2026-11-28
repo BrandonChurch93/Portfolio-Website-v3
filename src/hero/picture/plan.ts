@@ -10,6 +10,14 @@ export const PICTURE = {
   planet: 'planet.webp',
   page: (i: number): string => `debris-${i + 1}.webp`,
   layers: 'layers.json',
+  // The page a planet taken again by itself (npm run picture -- --only planet) puts what the stream lights of it on:
+  // the rock under the core, the neck of light and the shards that ride it. The pages above are then left as they are.
+  lit: 'lit.webp',
+  // The world as picture 10 draws it (?look=d): where its files are, all of them. What broke away is the same in
+  // both looks but is cut against the planet that hides it, and the two planets do not hide the same of it, so that
+  // look has pages of its own. `bare` is its planet without the falling sand, which nothing asks for: it is there
+  // to judge a moving sand over a still planet by.
+  drawn: { dir: '/media/world-d', bare: 'planet-no-sand.webp' },
   // How many of a file's pixels a unit of the board gets, and the moment on the clock the pictures are taken at.
   scale: 2,
   t: 9,
@@ -56,6 +64,8 @@ export interface Ride { from: readonly number[]; run: readonly number[]; time: r
 export interface Layers {
   // Each page's size in its pixels.
   pages: [number, number][];
+  // Where each page is, under public, when they are not all its own folder's debris pages (PICTURE.lit).
+  files?: string[];
   // The planet where the stream's light changes it: the rock under the core with that light on it, and the neck of
   // light alone, which lies over whatever is behind it.
   rock: Sprite | null;

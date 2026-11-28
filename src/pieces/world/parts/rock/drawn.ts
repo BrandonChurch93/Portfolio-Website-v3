@@ -305,6 +305,8 @@ export const build: PartFactory = async (ctx) => {
       lampOf(s, uniforms.uLamp.value);
       return !s.still;
     },
+    // For the script that takes the world as pictures (scripts/world/picture.mjs): the falling sand shown or not.
+    tools: { sand(on: boolean) { sand.group.visible = on; } },
     dispose() { for (const d of made) d.dispose(); },
   };
 };

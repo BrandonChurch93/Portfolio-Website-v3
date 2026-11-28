@@ -4,18 +4,37 @@
 // clock held, by the piece's own canvas. Take them again whenever the world has changed, from a production build
 // of what is being pushed.
 //
-//   npm run picture [-- --url http://127.0.0.1:5333]
+//   npm run picture [-- --url http://127.0.0.1:5333] [--look d] [--only planet] [--tier high] [--wait 240] [--out folder]
+//
+// --look d takes the world as picture 10 draws it (?look=d) and writes to PICTURE.drawn.dir. Its haze and far towers
+// are a plain canvas under the world's own (src/pieces/world/far.ts), so the planet is taken with that canvas laid
+// under it: they are in the planet's picture, which lies on the page's sky as the live world does. Its planet is
+// written a second time without the falling sand (PICTURE.drawn.bare), a file nothing asks for.
+// --only planet takes the planet again and what the stream lights of it (the rock under the core, the neck of light
+// and the shards that ride it), puts those on a page of their own (PICTURE.lit) and leaves the pages of what broke
+// away as they are, with their list. That look must have been taken whole before: what broke away is cut against
+// the planet that hides it, and the two looks' planets do not hide the same of it, so each look has its own pages.
+// A planet taken alone leaves that hiding as it was: after a change to the planet's outline, take the look whole.
+// --tier high asks the world for that tier where the machine would choose a lower one by itself (a renderer in
+// software), --wait is how many seconds the world is given to be whole, and --out writes to another folder.
 import process from 'node:process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { browser, parseArgs, server } from '../lib.mjs';
 import { CORE, HOST, drawn } from '../../src/pieces/world/layout.ts';
 import { KIND, MOTION } from '../../src/pieces/world/parts/debris/motion.ts';
 import { PICTURE } from '../../src/hero/picture/plan.ts';
 
 const { flags } = parseArgs(process.argv.slice(2));
+if (flags.look !== undefined && flags.look !== 'd') throw new Error(`picture: --look takes d and nothing else, not ${flags.look}`);
+if (flags.only !== undefined && flags.only !== 'planet') throw new Error(`picture: --only takes planet and nothing else, not ${flags.only}`);
 const S = PICTURE.scale, W = HOST.wide * S, H = HOST.tall * S;
+const look = flags.look ?? null, alone = flags.only === 'planet', dir = look ? PICTURE.drawn.dir : PICTURE.dir;
+const out = flags.out ?? `public${dir}`;
+// The planet alone keeps the pages of what broke away and their list: from the folder written to if it has them,
+// else from this look's own folder. Said before any work is done if neither has them.
+const keep = !alone ? null : existsSync(`${out}/${PICTURE.page(0)}`) ? out : `public${dir}`;
+if (keep && !(existsSync(`${keep}/${PICTURE.page(0)}`) && existsSync(`${keep}/${PICTURE.layers}`))) throw new Error(`picture: ${keep} has no pages of what broke away to keep: take this look whole first (without --only planet)`);
 const srv = await server(flags), b = await browser(flags);
-const out = `public${PICTURE.dir}`;
 
 // Where a piece is drawn on the canvas, in its pixels, as a box round it.
 const boxOf = (at, big) => {
@@ -36,14 +55,16 @@ try {
   const errors = [];
   page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto(`${srv.base}/lab/piece/world?size=${HOST.tall}&wide=${HOST.wide}&label=0&ui=0&hook=1&lines=0`, { waitUntil: 'load', timeout: 240000 });
+  await page.goto(`${srv.base}/lab/piece/world?size=${HOST.tall}&wide=${HOST.wide}&label=0&ui=0&hook=1&lines=0${look ? `&look=${look}` : ''}`, { waitUntil: 'load', timeout: 240000 });
   await page.waitForFunction(() => Boolean(window.__site), null, { timeout: 180000 });
-  await page.waitForFunction(() => { try { return window.__site.piece('world').whole(); } catch { return false; } }, null, { timeout: 240000 });
+  if (flags.tier) await page.evaluate((v) => window.__site.tier(v), flags.tier);
+  await page.waitForFunction(() => { try { return window.__site.piece('world').whole(); } catch { return false; } }, null, { timeout: Number(flags.wait ?? 240) * 1000 });
   await page.evaluate((t) => window.__site.freeze(t), PICTURE.t);
   await page.evaluate(() => window.__site.settle());
   await page.waitForTimeout(1500);
 
-  const size = await page.evaluate(() => { const c = document.querySelector('[data-piece="world"] canvas'); return [c.width, c.height]; });
+  // The world's own canvas: the others in its host are plain ones laid under it (the haze, the city drawn sharp).
+  const size = await page.evaluate(() => { const c = [...document.querySelectorAll('[data-piece="world"] canvas')].find((e) => e.style.zIndex !== '-1'); return [c.width, c.height]; });
   if (size[0] !== W || size[1] !== H) throw new Error(`picture: the world's canvas is ${size.join(' by ')} and not ${W} by ${H}: take it on a screen that draws the world at ${S} pixels to a unit`);
   const pieces = (await page.evaluate(() => window.__site.piece('world').debris().pieces())).map((p, id) => ({ ...p, id }));
 
@@ -68,14 +89,25 @@ try {
   groups.sort((a, c) => a.at[2] - c.at[2]);
   console.log(`picture: ${pieces.length} pieces in ${groups.length} groups and ${chips.length} chips`);
 
-  const made = await page.evaluate(async ({ T, groups, chips, P, W, H }) => {
-    const w = window.__site.piece('world'), tools = w.debris(), core = w.core(), gl = document.querySelector('[data-piece="world"] canvas');
+  const made = await page.evaluate(async ({ T, groups, chips, P, W, H, alone }) => {
+    const w = window.__site.piece('world'), tools = w.debris(), core = w.core(), stone = w.rock(), gl = [...document.querySelectorAll('[data-piece="world"] canvas')].find((e) => e.style.zIndex !== '-1');
+    // The haze, if this look has one: the plain canvas just under the world's own, and where it lies on it, in the
+    // world's canvas's pixels. It is laid in pixel for pixel or not at all.
+    const under = gl.previousElementSibling instanceof HTMLCanvasElement ? gl.previousElementSibling : null;
+    let haze = null;
+    if (under) {
+      const a = gl.getBoundingClientRect(), f = under.getBoundingClientRect(), k = W / a.width;
+      haze = { at: [Math.round((f.left - a.left) * k), Math.round((f.top - a.top) * k)], size: [under.width, under.height] };
+      if (Math.abs(f.width * k - under.width) > 0.01 || Math.abs((f.left - a.left) * k - haze.at[0]) > 0.01 || Math.abs((f.top - a.top) * k - haze.at[1]) > 0.01) throw new Error(`the haze's canvas is ${under.width} across and shown ${f.width * k} of the world's pixels across at ${(f.left - a.left) * k}, ${(f.top - a.top) * k}: it does not lie on them pixel for pixel`);
+    }
+    let hazed = true;
     const scratch = document.createElement('canvas');
     scratch.width = W; scratch.height = H;
     const g = scratch.getContext('2d', { willReadFrequently: true });
     const stream = (on) => { if (on) w.setStream(1, 10, P.run); else w.setStream(0, 61, 1); };
     // The piece draws at once when it is held, and its canvas is read before the browser takes the frame.
-    const grab = ([x, y, ww, hh]) => { w.freeze(T); g.clearRect(0, 0, ww, hh); g.drawImage(gl, x, y, ww, hh, 0, 0, ww, hh); return g.getImageData(0, 0, ww, hh); };
+    // The planet is taken whole, with the haze under it. What broke away is taken without: it is never behind it.
+    const grab = ([x, y, ww, hh]) => { w.freeze(T); g.clearRect(0, 0, ww, hh); if (haze && hazed) g.drawImage(under, haze.at[0] - x, haze.at[1] - y); g.drawImage(gl, x, y, ww, hh, 0, 0, ww, hh); return g.getImageData(0, 0, ww, hh); };
     const crop = (im, [x, y, ww, hh]) => { const o = new ImageData(ww, hh); for (let r = 0; r < hh; r++) o.data.set(im.data.subarray(((y + r) * im.width + x) * 4, ((y + r) * im.width + x + ww) * 4), r * ww * 4); return o; };
     // The boxes round what is drawn in a pair of pictures: what touches, or nearly, is one box.
     const boxes = (a, c) => {
@@ -141,6 +173,14 @@ try {
     whole.width = W; whole.height = H;
     whole.getContext('2d').putImageData(dark, 0, 0);
     const planet = whole.toDataURL('image/webp', P.quality.planet).split(',')[1];
+    // The same without the falling sand, where the world has sand to leave out.
+    let bare = null;
+    if (stone?.sand) {
+      stone.sand(false);
+      whole.getContext('2d').putImageData(grab([0, 0, W, H]), 0, 0);
+      bare = whole.toDataURL('image/webp', P.quality.planet).split(',')[1];
+      stone.sand(true);
+    }
     stream(true);
     const bright = grab([0, 0, W, H]);
     let nb = [Infinity, Infinity, -Infinity, -Infinity];
@@ -183,33 +223,36 @@ try {
     }
 
     // What broke away, a group at a time, with every other part drawn as depth alone.
-    w.without(['kept']);
-    w.ghost(true);
-    const outGroups = [];
-    for (const G of groups) {
-      if (G.box[2] < 2 || G.box[3] < 2) continue;
-      tools.show(G.ids);
-      stream(false);
-      const off = grab(G.box);
-      stream(true);
-      const on = grab(G.box);
-      const sprites = [];
-      for (const q of boxes(off, on)) {
-        const a = crop(off, q), c = crop(on, q), [m, share] = differs(a, c), lit = m > 2.2 || share > 0.02;
-        sprites.push({ box: [G.box[0] + q[0], G.box[1] + q[1], q[2], q[3]], cut: put(a), lit: lit ? put(c) : -1, change: [Math.round(m * 10) / 10, Math.round(share * 1000) / 1000] });
+    const outGroups = [], outChips = [];
+    hazed = false;
+    if (!alone) {
+      w.without(['kept']);
+      w.ghost(true);
+      for (const G of groups) {
+        if (G.box[2] < 2 || G.box[3] < 2) continue;
+        tools.show(G.ids);
+        stream(false);
+        const off = grab(G.box);
+        stream(true);
+        const on = grab(G.box);
+        const sprites = [];
+        for (const q of boxes(off, on)) {
+          const a = crop(off, q), c = crop(on, q), [m, share] = differs(a, c), lit = m > 2.2 || share > 0.02;
+          sprites.push({ box: [G.box[0] + q[0], G.box[1] + q[1], q[2], q[3]], cut: put(a), lit: lit ? put(c) : -1, change: [Math.round(m * 10) / 10, Math.round(share * 1000) / 1000] });
+        }
+        if (sprites.length) outGroups.push({ kind: G.kind, family: G.family, at: G.at, plate: G.plate, extra: G.extra, sprites });
       }
-      if (sprites.length) outGroups.push({ kind: G.kind, family: G.family, at: G.at, plate: G.plate, extra: G.extra, sprites });
+      // The chips, each alone, as the stream lights it.
+      stream(true);
+      for (const c of chips) {
+        if (c.box[2] < 2 || c.box[3] < 2) continue;
+        tools.show([c.id]);
+        const im = grab(c.box), q = boxes(im, null).sort((p, r) => r[2] * r[3] - p[2] * p[3])[0];
+        if (!q) continue;
+        outChips.push({ at: c.at, pace: c.pace, box: [c.box[0] + q[0], c.box[1] + q[1], q[2], q[3]], cut: put(crop(im, q)) });
+      }
     }
-    // The chips, each alone, as the stream lights it.
-    stream(true);
-    const outChips = [];
-    for (const c of chips) {
-      if (c.box[2] < 2 || c.box[3] < 2) continue;
-      tools.show([c.id]);
-      const im = grab(c.box), q = boxes(im, null).sort((p, r) => r[2] * r[3] - p[2] * p[3])[0];
-      if (!q) continue;
-      outChips.push({ at: c.at, pace: c.pace, box: [c.box[0] + q[0], c.box[1] + q[1], q[2], q[3]], cut: put(crop(im, q)) });
-    }
+
     tools.show(null);
     tools.rest(false);
     core.riders(true);
@@ -239,8 +282,8 @@ try {
       cuts.forEach((im, i) => { if (where[i][0] === n) k.putImageData(im, where[i][1], where[i][2]); });
       return { size: [p.w, p.h], data: c.toDataURL('image/webp', P.quality.page).split(',')[1] };
     });
-    return { planet, files, where, neck, rock, riders, ride: core.ride, groups: outGroups, chips: outChips, area: cuts.reduce((s, im) => s + im.width * im.height, 0) };
-  }, { T: PICTURE.t, groups, chips, P: { run: PICTURE.run, most: PICTURE.most, gutter: PICTURE.gutter, quality: PICTURE.quality, neck: PICTURE.neck, riders: PICTURE.riders }, W, H });
+    return { planet, bare, haze, files, where, neck, rock, riders, ride: core.ride, groups: outGroups, chips: outChips, area: cuts.reduce((s, im) => s + im.width * im.height, 0) };
+  }, { T: PICTURE.t, groups, chips, P: { run: PICTURE.run, most: PICTURE.most, gutter: PICTURE.gutter, quality: PICTURE.quality, neck: PICTURE.neck, riders: PICTURE.riders }, W, H, alone });
 
   // In the host's units from here on.
   const u = (v) => Math.round((v / S) * 100) / 100, units = (bx) => bx.map(u);
@@ -258,7 +301,18 @@ try {
     sprites.forEach((sp, i) => { const k = top(i); if (!sets.has(k)) sets.set(k, []); sets.get(k).push(sp); });
     return [...sets.values()].map((list) => ({ box: join(list.map((sp) => sp.box)).map((v) => Math.round(v * 100) / 100), sprites: list }));
   };
-  const outGroups = made.groups.map((G) => { const sprites = G.sprites.map(sprite); return { kind: G.kind, family: G.family, at: G.at.map((v) => Math.round(v * 10) / 10), ...(G.plate ? { plate: G.plate } : {}), extra: G.extra, box: join(sprites.map((s) => s.box)).map((v) => Math.round(v * 100) / 100), tiles: tiled(sprites), lane: false }; });
+  // The planet alone: the list of what broke away is kept as it is. What the stream lights of the planet goes on a
+  // page of its own, the last, and the page an earlier planet taken alone put there is let go.
+  let kept = null;
+  if (keep) {
+    if (made.files.length !== 1) throw new Error(`picture: what the stream lights of the planet does not fit one page: it came to ${made.files.length}`);
+    const from = keep, was = JSON.parse(readFileSync(`${from}/${PICTURE.layers}`, 'utf8'));
+    let files = was.files ?? was.pages.map((_, i) => `${dir}/${PICTURE.page(i)}`), pages = was.pages;
+    if (files[files.length - 1].endsWith(`/${PICTURE.lit}`)) { files = files.slice(0, -1); pages = pages.slice(0, -1); }
+    kept = { from, files, pages, groups: was.groups, chips: was.chips };
+    for (const q of made.where) q[0] = pages.length;
+  }
+  const outGroups = kept ? kept.groups.map((G) => ({ ...G, lane: false })) : made.groups.map((G) => { const sprites = G.sprites.map(sprite); return { kind: G.kind, family: G.family, at: G.at.map((v) => Math.round(v * 10) / 10), ...(G.plate ? { plate: G.plate } : {}), extra: G.extra, box: join(sprites.map((s) => s.box)).map((v) => Math.round(v * 100) / 100), tiles: tiled(sprites), lane: false }; });
   const neck = made.neck ? { box: units(made.neck.box), at: made.where[made.neck.cut] } : null, rock = made.rock ? { box: units(made.rock.box), at: made.where[made.rock.cut] } : null;
   // The lane: everything the stream's light changes, and the whole way the chips fall. A group any of which lies in
   // it is drawn there too, under the light, so what is in front of a lit thing stays in front of it.
@@ -269,9 +323,10 @@ try {
   const lane = join(lit).map((v, i) => (i < 2 ? Math.floor(v) : Math.ceil(v) + 1));
   for (const G of outGroups) G.lane = G.box[0] < lane[0] + lane[2] && lane[0] < G.box[0] + G.box[2] && G.box[1] < lane[1] + lane[3] && lane[1] < G.box[1] + G.box[3];
   const layers = {
-    pages: made.files.map((f) => f.size),
+    pages: kept ? [...kept.pages, made.files[0].size] : made.files.map((f) => f.size),
+    ...(kept ? { files: [...kept.files, `${dir}/${PICTURE.lit}`] } : {}),
     rock, neck, lane, groups: outGroups,
-    chips: made.chips.map((c) => ({ at: c.at, pace: c.pace, size: [u(c.box[2]), u(c.box[3])], on: made.where[c.cut] })),
+    chips: kept ? kept.chips : made.chips.map((c) => ({ at: c.at, pace: c.pace, size: [u(c.box[2]), u(c.box[3])], on: made.where[c.cut] })),
     riders: made.riders.map((r) => ({ size: [u(r.box[2]), u(r.box[3])], on: made.where[r.cut] })),
     ride: made.ride,
   };
@@ -280,7 +335,12 @@ try {
   const planet = Buffer.from(made.planet, 'base64');
   writeFileSync(`${out}/${PICTURE.planet}`, planet);
   console.log(`picture: ${out}/${PICTURE.planet} · ${W} by ${H} · ${(planet.length / 1024).toFixed(0)} KB`);
-  made.files.forEach((f, i) => { const buf = Buffer.from(f.data, 'base64'); writeFileSync(`${out}/${PICTURE.page(i)}`, buf); console.log(`picture: ${out}/${PICTURE.page(i)} · ${f.size.join(' by ')} · ${(buf.length / 1024).toFixed(0)} KB`); });
+  if (made.bare) { const buf = Buffer.from(made.bare, 'base64'); writeFileSync(`${out}/${PICTURE.drawn.bare}`, buf); console.log(`picture: ${out}/${PICTURE.drawn.bare} · the planet without the falling sand, which nothing asks for · ${(buf.length / 1024).toFixed(0)} KB`); }
+  if (made.haze) console.log(`picture: the haze is in the planet's picture: ${made.haze.size.join(' by ')} at ${made.haze.at.join(', ')}`);
+  // A whole take has no page of its own for what the stream lights of the planet: one left by a planet taken alone goes.
+  if (!kept) rmSync(`${out}/${PICTURE.lit}`, { force: true });
+  made.files.forEach((f, i) => { const name = kept ? PICTURE.lit : PICTURE.page(i), buf = Buffer.from(f.data, 'base64'); writeFileSync(`${out}/${name}`, buf); console.log(`picture: ${out}/${name} · ${f.size.join(' by ')} · ${(buf.length / 1024).toFixed(0)} KB`); });
+  if (kept) console.log(`picture: what broke away is left as it is, by the list in ${kept.from}: ${kept.files.join(', ')}`);
   writeFileSync(`${out}/${PICTURE.layers}`, JSON.stringify(layers));
   const sprites = outGroups.reduce((s, G) => s + cutsOf(G).length, 0), lits = outGroups.reduce((s, G) => s + cutsOf(G).filter((q) => q.lit).length, 0), tiles = outGroups.reduce((s, G) => s + G.tiles.length * (G.lane ? 2 : 1), 0);
   console.log(`picture: ${outGroups.length} groups (${outGroups.filter((G) => G.lane).length} in the lane), ${tiles} tiles, ${sprites} cuts of them (${lits} lit), ${layers.chips.length} chips, ${layers.riders.length} riders, ${(made.area / 1e6).toFixed(1)} million pixels of cuts`);
