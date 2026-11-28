@@ -327,6 +327,17 @@
     mask-composite: intersect;
   }
 
+  /* The world as ?look=d has it (its own picture, src/config/stills.ts) drops sand off its right side, a hair
+     inside the picture's edge, and its left end is the cracks. So on a screen that shows the whole picture (an iPad
+     held upright, a narrow window) its sides give way over far less of it, or both would be faded out. A phone,
+     where the picture's two ends are off the screen, keeps the sides it has. */
+  @media (min-width: 540px) {
+    .still[data-look='d'] {
+      -webkit-mask-image: linear-gradient(90deg, transparent, #000 1.6%, #000 98.4%, transparent), linear-gradient(#000 0, #000 81%, transparent);
+      mask-image: linear-gradient(90deg, transparent, #000 1.6%, #000 98.4%, transparent), linear-gradient(#000 0, #000 81%, transparent);
+    }
+  }
+
   /* The picture's own top gives way to the glow drawn behind it, so there is no line where the picture begins. */
   .still img {
     display: block;

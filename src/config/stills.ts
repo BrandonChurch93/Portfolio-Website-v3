@@ -11,6 +11,9 @@ export const STILLS = {
   // The hero's world, from over its spire to under its hollow, with the stream fallen from the core. The screen is
   // as wide as the board, so one of its units is one pixel.
   world: { file: '/media/world-still.webp', route: '/lab/hero?ui=0', screen: [1460, 1500], top: 'world', t: 9, keep: { x: 40, y: 0, w: 1380, h: 1000 }, scale: 2, quality: 0.8, least: 540 },
+  // The same world as ?look=d has it (isDrawn in src/pieces/world/layout.ts), cut the same, so the page lays the two
+  // out alike. It stands in the world's place where the page is asked for with that look (DRAWN_STILLS).
+  worldD: { file: '/media/world-d-still.webp', route: '/lab/hero?look=d&sharp=0&ui=0', screen: [1460, 1500], top: 'world', t: 9, keep: { x: 40, y: 0, w: 1380, h: 1000 }, scale: 2, quality: 0.8, least: 540 },
   // The desk with its lights on and the section's title on its floor.
   desk: { file: '/media/desk-still.webp', route: '/lab/piece/desk?label=0&ui=0&size=808&wide=1460', screen: [1440, 900], top: '', t: 6, keep: { x: 236, y: 96, w: 968, h: 744 }, scale: 2, quality: 0.82, least: 430 },
   // The same desk in the room's light alone, as the page shows it just before the stream lands: the one an iPad held
@@ -39,6 +42,9 @@ export const STILLS = {
   share: { file: '/media/share.jpg', route: '/lab/hero?ui=0', screen: [1200, 630], top: '', t: 6, keep: { x: 0, y: 0, w: 1200, h: 630 }, scale: 1, quality: 0.86, least: 0 },
 } as const;
 export type StillName = keyof typeof STILLS;
+
+// The picture that stands in a piece's place where the page is asked for as ?look=d has the world.
+export const DRAWN_STILLS: Partial<Record<StillName, StillName>> = { world: 'worldD' };
 
 // Under this many pixels wide a page shows the pictures and not the live pieces.
 export const STILLS_UNDER = 1100;
