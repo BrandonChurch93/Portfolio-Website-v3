@@ -2,6 +2,21 @@
 
 Newest first. One entry per piece of work. Say what was done, what Brandon said, what is half finished, and anything the next session would otherwise have to rediscover. Rules go in `BRIEF.md`, not here.
 
+## 2026-11-27 · The mend for WebKit: the new picture's script stands inside the picture (Fable, web chat)
+
+- **What was wrong.** With `?look=d` on a narrow screen, WebKit could draw today's picture for an instant before the new one (`BRIEF.md`, Hero, "The hero is to be consistently good on every screen", "Found since, in WebKit"). The words of script that put the new picture in stood after the picture and waited for the stylesheet, and an image that already exists can be drawn meanwhile, holding the first picture.
+- **The change, `src/components/Still.tsx` only.** The helper agent's, read here line by line and put in as it came. The script stands inside the picture, after its source and before its image, so it runs before there is an image at all. It sets the look on the box and the source's address. It no longer puts the image in again as a new one, which was the way round an image that had already begun. It is written as the words of a hidden span: a real script element there made React complain on a page made in the browser, and an image looks only at the sources beside it, so the span is not in its way.
+- **Proved by the helper agent on a machine of its own, in Playwright's WebKit 27.2, and counted again here from its files** (`BRIEF.md`, the same heading, "Mended on the branch"):
+    - With the change: 32 filmed loads, 9,432 frames, and of the 4,912 from the page's first change on none holds today's picture. Before it, in the worst case with the test's watching on: 5 loads of 6, 22 frames of 898.
+    - Chromium: 22 filmed loads, 766 frames, and the one that holds today's picture is the page before, 28 ms after the address changed.
+    - With the switch, today's picture is no longer asked for in WebKit or in Chromium. Before the change WebKit asked for it in every load.
+- **Measured here, on the dev server in Chromium, with the change in the working tree.** Nine stills of the first screen with no error: a phone (390 by 844), an iPad upright (834 by 1194), an iPad sideways (1194 by 834) and a narrow window (1000 by 800), each with no switch and with `?look=d`, and a phone at his link. Each is the same file as before the change, byte for byte.
+- **Also found by the helper agent that takes the iPad's pictures, and written into the brief** (the same heading, "these pictures are of a leaner world"): a take that asks for the fullest drawing after the page has loaded can catch a world made with 14 shards on the stream where the fullest has 26. The helper agent states that the pictures in the repository are of that leaner world. The take is being mended and the set is taken again. Nothing of that is in this entry's code.
+- **Also for the record.** The sheet shown to him as "Hero - Still 44" names the two switches and not the address the public site is seen at, since that address is a placeholder (`BRIEF.md`, How we work).
+- **Not known.** Safari on a real phone or iPad. It is seen only on a device, after a merge.
+- **For the next session.** The merge of the handhelds' pictures onto `main`, behind the switch, is still not asked of him. It waits for the iPad's pictures to be taken again. It is his word to give and would be pull request 6.
+- **Checked:** `npm run typecheck` passes. The nine stills above. No production build was made here, since the disk is nearly full: the helper agent's was. `npm run mem` cannot run here, since the sandbox has no WebKit.
+
 ## 2026-11-27 · He picked M, the neighbourhood, and the city large on a phone (Fable, web chat)
 
 - **What he said (Nov 27, about 10:10 PM, in the web chat).** "I'll go with your recommendation" He was answering the message of about 8:00 PM (the entry "What he said of round 3, ground round 4 shown, and the address is a placeholder", below), which asked him two things and ended with Fable's recommendation: reply "M, city large".
